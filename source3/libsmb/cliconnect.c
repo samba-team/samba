@@ -190,7 +190,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	char *p;
 	fstring lanman;
 	
-	fstr_sprintf( lanman, "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -247,7 +247,8 @@ static void set_cli_session_key (struct cli_state *cli, DATA_BLOB session_key)
 }
 
 /****************************************************************************
-   do a NT1 NTLM/LM encrypted session setup
+   do a NT1 NTLM/LM encrypted session setup - for when extended security
+   is not negotiated.
    @param cli client state to create do session setup on
    @param user username
    @param pass *either* cleartext password (passlen !=24) or LM response.
@@ -267,7 +268,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	BOOL ret = False;
 	char *p;
 
-	if (passlen != 24) {
+	if (passlen == 0) {
+		/* do nothing - guest login */
+	} else if (passlen != 24) {
 		if (lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
 			DATA_BLOB names_blob;
@@ -351,7 +354,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		goto end;
 	}
 
-	show_msg(cli->inbuf);
+	/* show_msg(cli->inbuf); */
 
 	if (cli_is_error(cli)) {
 		ret = False;
@@ -610,6 +613,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	if (NT_STATUS_IS_OK(nt_status)) {
+		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		set_cli_session_key(cli, ntlmssp_state->session_key);
 	}
 
@@ -619,7 +623,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	if (!NT_STATUS_IS_OK(ntlmssp_client_end(&ntlmssp_state))) {
 		return False;
 	}
-
+	
 	return (NT_STATUS_IS_OK(nt_status));
 }
 
@@ -627,8 +631,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
  Do a spnego encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user, 
-				     const char *pass, const char *workgroup)
+BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user, 
+			      const char *pass, const char *workgroup)
 {
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
@@ -677,7 +681,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	 * and do not store results */
 
 	if (got_kerberos_mechanism && cli->use_kerberos) {
-		if (*pass) {
+		if (pass && *pass) {
 			int ret;
 			
 			use_in_memory_ccache();
@@ -1024,22 +1028,27 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
-			/* Fail if signing is mandatory and we don't want to support it. */
+		/*
+		 * As signing is slow we only turn it on if either the client or
+		 * the server require it. JRA.
+		 */
+
+		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
+			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return False;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
-		}
-
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
+			cli->sign_info.mandatory_signing = True;
+		} else if (cli->sign_info.mandatory_signing && cli->sign_info.allow_smb_signing) {
+			/* Fail if client says signing is mandatory and the server doesn't support it. */
+			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
+				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
+				return False;
+			}
 			cli->sign_info.negotiated_smb_signing = True;
-
-		/* Fail if signing is mandatory and the server doesn't support it. */
-		if (cli->sign_info.mandatory_signing && !(cli->sign_info.negotiated_smb_signing)) {
-			DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-			return False;
+			cli->sign_info.mandatory_signing = True;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
@@ -1223,7 +1232,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
  Initialise client credentials for authenticated pipe access.
 ****************************************************************************/
 
-static void init_creds(struct ntuser_creds *creds, const char* username,
+void init_creds(struct ntuser_creds *creds, const char* username,
 		       const char* domain, const char* password)
 {
 	ZERO_STRUCTP(creds);
@@ -1239,30 +1248,21 @@ static void init_creds(struct ntuser_creds *creds, const char* username,
 }
 
 /**
-   establishes a connection right up to doing tconX, password specified.
+   establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
    @param dest_host The netbios name of the remote host
    @param dest_ip (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
-   @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
-   @param service_type The 'type' of serivice. 
-   @param user Username, unix string
-   @param domain User's domain
-   @param password User's password, unencrypted unix string.
    @param retry BOOL. Did this connection fail with a retryable error ?
-*/
 
-NTSTATUS cli_full_connection(struct cli_state **output_cli, 
-			     const char *my_name, 
-			     const char *dest_host, 
-			     struct in_addr *dest_ip, int port,
-			     const char *service, const char *service_type,
-			     const char *user, const char *domain, 
-			     const char *password, int flags,
-			     int signing_state,
-			     BOOL *retry) 
+*/
+NTSTATUS cli_start_connection(struct cli_state **output_cli, 
+			      const char *my_name, 
+			      const char *dest_host, 
+			      struct in_addr *dest_ip, int port,
+			      int signing_state, int flags,
+			      BOOL *retry) 
 {
-	struct ntuser_creds creds;
 	NTSTATUS nt_status;
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -1295,7 +1295,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 
 again:
 
-	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
+	DEBUG(3,("Connecting to host=%s\n", dest_host));
 	
 	if (!cli_connect(cli, dest_host, &ip)) {
 		DEBUG(1,("cli_full_connection: failed to connect to %s (%s)\n",
@@ -1333,6 +1333,46 @@ again:
 		DEBUG(1,("failed negprot\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		cli_shutdown(cli);
+		return nt_status;
+	}
+
+	*output_cli = cli;
+	return NT_STATUS_OK;
+}
+
+
+/**
+   establishes a connection right up to doing tconX, password specified.
+   @param output_cli A fully initialised cli structure, non-null only on success
+   @param dest_host The netbios name of the remote host
+   @param dest_ip (optional) The the destination IP, NULL for name based lookup
+   @param port (optional) The destination port (0 for default)
+   @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
+   @param service_type The 'type' of serivice. 
+   @param user Username, unix string
+   @param domain User's domain
+   @param password User's password, unencrypted unix string.
+   @param retry BOOL. Did this connection fail with a retryable error ?
+*/
+
+NTSTATUS cli_full_connection(struct cli_state **output_cli, 
+			     const char *my_name, 
+			     const char *dest_host, 
+			     struct in_addr *dest_ip, int port,
+			     const char *service, const char *service_type,
+			     const char *user, const char *domain, 
+			     const char *password, int flags,
+			     int signing_state,
+			     BOOL *retry) 
+{
+	struct ntuser_creds creds;
+	NTSTATUS nt_status;
+	struct cli_state *cli = NULL;
+
+	nt_status = cli_start_connection(&cli, my_name, dest_host, 
+					 dest_ip, port, signing_state, flags, retry);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 

@@ -35,21 +35,21 @@ extern BOOL found_lm_clients;
 
 void send_browser_reset(int reset_type, const char *to_name, int to_type, struct in_addr to_ip)
 {
-  pstring outbuf;
-  char *p;
+	pstring outbuf;
+	char *p;
 
-  DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
-       reset_type, to_name, to_type, inet_ntoa(to_ip) ));
+	DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
+		reset_type, to_name, to_type, inet_ntoa(to_ip) ));
 
-  memset(outbuf,'\0',sizeof(outbuf));
-  p = outbuf;
-  SCVAL(p,0,ANN_ResetBrowserState);
-  p++;
-  SCVAL(p,0,reset_type);
-  p++;
+	memset(outbuf,'\0',sizeof(outbuf));
+	p = outbuf;
+	SCVAL(p,0,ANN_ResetBrowserState);
+	p++;
+	SCVAL(p,0,reset_type);
+	p++;
 
-  send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname(), 0x0, to_name, to_type, to_ip, 
+	send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
+		global_myname(), 0x0, to_name, to_type, to_ip, 
 		FIRST_SUBNET->myip, DGRAM_PORT);
 }
 
@@ -60,25 +60,25 @@ void send_browser_reset(int reset_type, const char *to_name, int to_type, struct
 
 void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work)
 {
-  pstring outbuf;
-  char *p;
+	pstring outbuf;
+	char *p;
 
-  work->needannounce = True;
+	work->needannounce = True;
 
-  DEBUG(3,("broadcast_announce_request: sending announce request for workgroup %s \
+	DEBUG(3,("broadcast_announce_request: sending announce request for workgroup %s \
 to subnet %s\n", work->work_group, subrec->subnet_name));
 
-  memset(outbuf,'\0',sizeof(outbuf));
-  p = outbuf;
-  SCVAL(p,0,ANN_AnnouncementRequest);
-  p++;
+	memset(outbuf,'\0',sizeof(outbuf));
+	p = outbuf;
+	SCVAL(p,0,ANN_AnnouncementRequest);
+	p++;
 
-  SCVAL(p,0,work->token); /* (local) Unique workgroup token id. */
-  p++;
-  p +=  push_string(NULL, p+1, global_myname(), 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	SCVAL(p,0,work->token); /* (local) Unique workgroup token id. */
+	p++;
+	p +=  push_string(NULL, p+1, global_myname(), 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
   
-  send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname(), 0x0, work->work_group,0x1e, subrec->bcast_ip, 
+	send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
+		global_myname(), 0x0, work->work_group,0x1e, subrec->bcast_ip, 
 		subrec->myip, DGRAM_PORT);
 }
 
@@ -91,33 +91,33 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
                               time_t announce_interval,
                               const char *server_name, int server_type, const char *server_comment)
 {
-  pstring outbuf;
-  char *p;
+	pstring outbuf;
+	char *p;
 
-  memset(outbuf,'\0',sizeof(outbuf));
-  p = outbuf+1;
+	memset(outbuf,'\0',sizeof(outbuf));
+	p = outbuf+1;
 
-  SCVAL(outbuf,0,announce_type);
+	SCVAL(outbuf,0,announce_type);
 
-  /* Announcement parameters. */
-  SCVAL(p,0,updatecount);
-  SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
+	/* Announcement parameters. */
+	SCVAL(p,0,updatecount);
+	SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
-  push_string(NULL, p+5, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	push_string(NULL, p+5, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
 
-  SCVAL(p,21,lp_major_announce_version()); /* Major version. */
-  SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
+	SCVAL(p,21,lp_major_announce_version()); /* Major version. */
+	SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
 
-  SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
-  /* Browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT). */
-  SSVAL(p,27,BROWSER_ELECTION_VERSION);
-  SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
+	SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
+	/* Browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT). */
+	SSVAL(p,27,BROWSER_ELECTION_VERSION);
+	SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
 
-  p += 31 + push_string(NULL, p+31, server_comment, -1, STR_ASCII|STR_TERMINATE);
+	p += 31 + push_string(NULL, p+31, server_comment, -1, STR_ASCII|STR_TERMINATE);
 
-  send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
-		DGRAM_PORT);
+	send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
+			from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
+			DGRAM_PORT);
 }
 
 /****************************************************************************
@@ -129,28 +129,23 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
                               time_t announce_interval,
                               char *server_name, int server_type, char *server_comment)
 {
-  pstring outbuf;
-  char *p=outbuf;
+	pstring outbuf;
+	char *p=outbuf;
 
-  memset(outbuf,'\0',sizeof(outbuf));
+	memset(outbuf,'\0',sizeof(outbuf));
 
-  SSVAL(p,0,announce_type);
-  SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
-  SCVAL(p,6,lp_major_announce_version()); /* Major version. */
-  SCVAL(p,7,lp_minor_announce_version()); /* Minor version. */
-  SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
+	SSVAL(p,0,announce_type);
+	SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
+	SCVAL(p,6,lp_major_announce_version()); /* Major version. */
+	SCVAL(p,7,lp_minor_announce_version()); /* Minor version. */
+	SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
 
-  p += 10;
-  /*StrnCpy(p,server_name,15);
-  strupper_m(p);
-  p = skip_string(p,1);
-  pstrcpy(p,server_comment);
-  p = skip_string(p,1);*/
-  p += push_string(NULL, p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
-  p += push_string(NULL, p, server_comment, sizeof(pstring)-15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p += 10;
+	p += push_string(NULL, p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p += push_string(NULL, p, server_comment, sizeof(pstring)-15, STR_ASCII|STR_UPPER|STR_TERMINATE);
 
-  send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
+	send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
+		from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
 		DGRAM_PORT);
 }
 
@@ -161,20 +156,20 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 static void send_local_master_announcement(struct subnet_record *subrec, struct work_record *work,
                                            struct server_record *servrec)
 {
-  /* Ensure we don't have the prohibited bit set. */
-  uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	/* Ensure we don't have the prohibited bit set. */
+	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-  DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
-            type, global_myname(), subrec->subnet_name, work->work_group));
+	DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
+		type, global_myname(), subrec->subnet_name, work->work_group));
 
-  send_announcement(subrec, ANN_LocalMasterAnnouncement,
-                    global_myname(),                 /* From nbt name. */
-                    work->work_group, 0x1e,          /* To nbt name. */
-                    subrec->bcast_ip,                /* To ip. */
-                    work->announce_interval,         /* Time until next announce. */
-                    global_myname(),                 /* Name to announce. */
-                    type,                            /* Type field. */
-                    servrec->serv.comment);
+	send_announcement(subrec, ANN_LocalMasterAnnouncement,
+			global_myname(),                 /* From nbt name. */
+			work->work_group, 0x1e,          /* To nbt name. */
+			subrec->bcast_ip,                /* To ip. */
+			work->announce_interval,         /* Time until next announce. */
+			global_myname(),                 /* Name to announce. */
+			type,                            /* Type field. */
+			servrec->serv.comment);
 }
 
 /****************************************************************************
@@ -183,17 +178,17 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
 
 static void send_workgroup_announcement(struct subnet_record *subrec, struct work_record *work)
 {
-  DEBUG(3,("send_workgroup_announcement: on subnet %s for workgroup %s\n",
-            subrec->subnet_name, work->work_group));
+	DEBUG(3,("send_workgroup_announcement: on subnet %s for workgroup %s\n",
+		subrec->subnet_name, work->work_group));
 
-  send_announcement(subrec, ANN_DomainAnnouncement,
-                    global_myname(),                 /* From nbt name. */
-                    MSBROWSE, 0x1,                   /* To nbt name. */
-                    subrec->bcast_ip,                /* To ip. */
-                    work->announce_interval,         /* Time until next announce. */
-                    work->work_group,                /* Name to announce. */
-                    SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT,  /* workgroup announce flags. */
-                    global_myname());                /* From name as comment. */
+	send_announcement(subrec, ANN_DomainAnnouncement,
+			global_myname(),                 /* From nbt name. */
+			MSBROWSE, 0x1,                   /* To nbt name. */
+			subrec->bcast_ip,                /* To ip. */
+			work->announce_interval,         /* Time until next announce. */
+			work->work_group,                /* Name to announce. */
+			SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT,  /* workgroup announce flags. */
+			global_myname());                /* From name as comment. */
 }
 
 /****************************************************************************
@@ -203,20 +198,20 @@ static void send_workgroup_announcement(struct subnet_record *subrec, struct wor
 static void send_host_announcement(struct subnet_record *subrec, struct work_record *work,
                                    struct server_record *servrec)
 {
-  /* Ensure we don't have the prohibited bits set. */
-  uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	/* Ensure we don't have the prohibited bits set. */
+	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-  DEBUG(3,("send_host_announcement: type %x for host %s on subnet %s for workgroup %s\n",
-            type, servrec->serv.name, subrec->subnet_name, work->work_group));
+	DEBUG(3,("send_host_announcement: type %x for host %s on subnet %s for workgroup %s\n",
+		type, servrec->serv.name, subrec->subnet_name, work->work_group));
 
-  send_announcement(subrec, ANN_HostAnnouncement,
-                    servrec->serv.name,              /* From nbt name. */
-                    work->work_group, 0x1d,          /* To nbt name. */
-                    subrec->bcast_ip,                /* To ip. */
-                    work->announce_interval,         /* Time until next announce. */
-                    servrec->serv.name,              /* Name to announce. */
-                    type,                            /* Type field. */
-                    servrec->serv.comment);
+	send_announcement(subrec, ANN_HostAnnouncement,
+			servrec->serv.name,              /* From nbt name. */
+			work->work_group, 0x1d,          /* To nbt name. */
+			subrec->bcast_ip,                /* To ip. */
+			work->announce_interval,         /* Time until next announce. */
+			servrec->serv.name,              /* Name to announce. */
+			type,                            /* Type field. */
+			servrec->serv.comment);
 }
 
 /****************************************************************************
@@ -226,20 +221,20 @@ static void send_host_announcement(struct subnet_record *subrec, struct work_rec
 static void send_lm_host_announcement(struct subnet_record *subrec, struct work_record *work,
                                    struct server_record *servrec, int lm_interval)
 {
-  /* Ensure we don't have the prohibited bits set. */
-  uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	/* Ensure we don't have the prohibited bits set. */
+	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-  DEBUG(3,("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
-            type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval));
+	DEBUG(3,("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
+		type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval));
 
-  send_lm_announcement(subrec, ANN_HostAnnouncement,
-                    servrec->serv.name,              /* From nbt name. */
-                    work->work_group, 0x00,          /* To nbt name. */
-                    subrec->bcast_ip,                /* To ip. */
-                    lm_interval,                     /* Time until next announce. */
-                    servrec->serv.name,              /* Name to announce. */
-                    type,                            /* Type field. */
-                    servrec->serv.comment);
+	send_lm_announcement(subrec, ANN_HostAnnouncement,
+			servrec->serv.name,              /* From nbt name. */
+			work->work_group, 0x00,          /* To nbt name. */
+			subrec->bcast_ip,                /* To ip. */
+			lm_interval,                     /* Time until next announce. */
+			servrec->serv.name,              /* Name to announce (fstring not netbios name struct). */
+			type,                            /* Type field. */
+			servrec->serv.comment);
 }
 
 /****************************************************************************
@@ -249,18 +244,15 @@ static void send_lm_host_announcement(struct subnet_record *subrec, struct work_
 static void announce_server(struct subnet_record *subrec, struct work_record *work,
                      struct server_record *servrec)
 {
-  /* Only do domain announcements if we are a master and it's
-     our primary name we're being asked to announce. */
+	/* Only do domain announcements if we are a master and it's
+		our primary name we're being asked to announce. */
 
-  if (AM_LOCAL_MASTER_BROWSER(work) && strequal(global_myname(),servrec->serv.name))
-  {
-    send_local_master_announcement(subrec, work, servrec);
-    send_workgroup_announcement(subrec, work);
-  }
-  else
-  {
-    send_host_announcement(subrec, work, servrec);
-  }
+	if (AM_LOCAL_MASTER_BROWSER(work) && strequal(global_myname(),servrec->serv.name)) {
+		send_local_master_announcement(subrec, work, servrec);
+		send_workgroup_announcement(subrec, work);
+	} else {
+		send_host_announcement(subrec, work, servrec);
+	}
 }
 
 /****************************************************************************
@@ -270,43 +262,39 @@ static void announce_server(struct subnet_record *subrec, struct work_record *wo
 
 void announce_my_server_names(time_t t)
 {
-  struct subnet_record *subrec;
+	struct subnet_record *subrec;
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-  {
-    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup());
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup());
 
-    if(work)
-    {
-      struct server_record *servrec;
+		if(work) {
+			struct server_record *servrec;
 
-      if (work->needannounce)
-      {
-        /* Drop back to a max 3 minute announce. This is to prevent a
-           single lost packet from breaking things for too long. */
+			if (work->needannounce) {
+				/* Drop back to a max 3 minute announce. This is to prevent a
+					single lost packet from breaking things for too long. */
 
-        work->announce_interval = MIN(work->announce_interval,
-                                    CHECK_TIME_MIN_HOST_ANNCE*60);
-        work->lastannounce_time = t - (work->announce_interval+1);
-        work->needannounce = False;
-      }
+				work->announce_interval = MIN(work->announce_interval,
+							CHECK_TIME_MIN_HOST_ANNCE*60);
+				work->lastannounce_time = t - (work->announce_interval+1);
+				work->needannounce = False;
+			}
 
-      /* Announce every minute at first then progress to every 12 mins */
-      if ((t - work->lastannounce_time) < work->announce_interval)
-        continue;
+			/* Announce every minute at first then progress to every 12 mins */
+			if ((t - work->lastannounce_time) < work->announce_interval)
+				continue;
 
-      if (work->announce_interval < (CHECK_TIME_MAX_HOST_ANNCE * 60))
-        work->announce_interval += 60;
+			if (work->announce_interval < (CHECK_TIME_MAX_HOST_ANNCE * 60))
+				work->announce_interval += 60;
 
-      work->lastannounce_time = t;
+			work->lastannounce_time = t;
 
-      for (servrec = work->serverlist; servrec; servrec = servrec->next)
-      {
-        if (is_myname(servrec->serv.name))
-          announce_server(subrec, work, servrec);
-      }
-    } /* if work */
-  } /* for subrec */
+			for (servrec = work->serverlist; servrec; servrec = servrec->next) {
+				if (is_myname(servrec->serv.name))
+					announce_server(subrec, work, servrec);
+			}
+		} /* if work */
+	} /* for subrec */
 }
 
 /****************************************************************************
@@ -316,47 +304,42 @@ void announce_my_server_names(time_t t)
 
 void announce_my_lm_server_names(time_t t)
 {
-  struct subnet_record *subrec;
-  static time_t last_lm_announce_time=0;
-  int announce_interval = lp_lm_interval();
-  int lm_announce = lp_lm_announce();
+	struct subnet_record *subrec;
+	static time_t last_lm_announce_time=0;
+	int announce_interval = lp_lm_interval();
+	int lm_announce = lp_lm_announce();
 
-  if ((announce_interval <= 0) || (lm_announce <= 0))
-  {
-    /* user absolutely does not want LM announcements to be sent. */
-    return;
-  }
+	if ((announce_interval <= 0) || (lm_announce <= 0)) {
+		/* user absolutely does not want LM announcements to be sent. */
+		return;
+	}
 
-  if ((lm_announce >= 2) && (!found_lm_clients))
-  {
-    /* has been set to 2 (Auto) but no LM clients detected (yet). */
-    return;
-  }
+	if ((lm_announce >= 2) && (!found_lm_clients)) {
+		/* has been set to 2 (Auto) but no LM clients detected (yet). */
+		return;
+	}
 
-  /* Otherwise: must have been set to 1 (Yes), or LM clients *have*
-     been detected. */
+	/* Otherwise: must have been set to 1 (Yes), or LM clients *have*
+		been detected. */
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-  {
-    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup());
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup());
 
-    if(work)
-    {
-      struct server_record *servrec;
+		if(work) {
+			struct server_record *servrec;
 
-      if (last_lm_announce_time && ((t - last_lm_announce_time) < announce_interval ))
-        continue;
+			if (last_lm_announce_time && ((t - last_lm_announce_time) < announce_interval ))
+				continue;
 
-      last_lm_announce_time = t;
+			last_lm_announce_time = t;
 
-      for (servrec = work->serverlist; servrec; servrec = servrec->next)
-      {
-        if (is_myname(servrec->serv.name))
-          /* skipping equivalent of announce_server() */
-          send_lm_host_announcement(subrec, work, servrec, announce_interval);
-      }
-    } /* if work */
-  } /* for subrec */
+			for (servrec = work->serverlist; servrec; servrec = servrec->next) {
+				if (is_myname(servrec->serv.name))
+					/* skipping equivalent of announce_server() */
+					send_lm_host_announcement(subrec, work, servrec, announce_interval);
+			}
+		} /* if work */
+	} /* for subrec */
 }
 
 /* Announce timer. Moved into global static so it can be reset
@@ -370,7 +353,7 @@ static time_t announce_timer_last=0;
 
 void reset_announce_timer(void)
 {
-  announce_timer_last = time(NULL) - (CHECK_TIME_MST_ANNOUNCE * 60);
+	announce_timer_last = time(NULL) - (CHECK_TIME_MST_ANNOUNCE * 60);
 }
 
 /****************************************************************************
@@ -379,45 +362,40 @@ void reset_announce_timer(void)
 
 void announce_myself_to_domain_master_browser(time_t t)
 {
-  struct subnet_record *subrec;
-  struct work_record *work;
+	struct subnet_record *subrec;
+	struct work_record *work;
 
-  if(!we_are_a_wins_client())
-  {
-    DEBUG(10,("announce_myself_to_domain_master_browser: no unicast subnet, ignoring.\n"));
-    return;
-  }
+	if(!we_are_a_wins_client()) {
+		DEBUG(10,("announce_myself_to_domain_master_browser: no unicast subnet, ignoring.\n"));
+		return;
+	}
 
-  if (!announce_timer_last)
-    announce_timer_last = t;
+	if (!announce_timer_last)
+		announce_timer_last = t;
 
-  if ((t-announce_timer_last) < (CHECK_TIME_MST_ANNOUNCE * 60))
-  {
-    DEBUG(10,("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
-	      (int)t, (int)announce_timer_last, 
-	      CHECK_TIME_MST_ANNOUNCE * 60 ));
-    return;
-  }
+	if ((t-announce_timer_last) < (CHECK_TIME_MST_ANNOUNCE * 60)) {
+		DEBUG(10,("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
+			(int)t, (int)announce_timer_last, 
+			CHECK_TIME_MST_ANNOUNCE * 60 ));
+		return;
+	}
 
-  announce_timer_last = t;
+	announce_timer_last = t;
 
-  /* Look over all our broadcast subnets to see if any of them
-     has the state set as local master browser. */
+	/* Look over all our broadcast subnets to see if any of them
+		has the state set as local master browser. */
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-  {
-    for (work = subrec->workgrouplist; work; work = work->next)
-    {
-      if (AM_LOCAL_MASTER_BROWSER(work))
-      {
-        DEBUG(4,( "announce_myself_to_domain_master_browser: I am a local master browser for \
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		for (work = subrec->workgrouplist; work; work = work->next) {
+			if (AM_LOCAL_MASTER_BROWSER(work)) {
+				DEBUG(4,( "announce_myself_to_domain_master_browser: I am a local master browser for \
 workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 
-        /* Look in nmbd_browsersync.c for the rest of this code. */
-        announce_and_sync_with_domain_master_browser(subrec, work);
-      }
-    }
-  }
+				/* Look in nmbd_browsersync.c for the rest of this code. */
+				announce_and_sync_with_domain_master_browser(subrec, work);
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -427,49 +405,43 @@ This must *only* be called on shutdown.
 
 void announce_my_servers_removed(void)
 {
-  int announce_interval = lp_lm_interval();
-  int lm_announce = lp_lm_announce();
-  struct subnet_record *subrec; 
+	int announce_interval = lp_lm_interval();
+	int lm_announce = lp_lm_announce();
+	struct subnet_record *subrec; 
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-  {
-    struct work_record *work;
-    for (work = subrec->workgrouplist; work; work = work->next)
-    {
-      struct server_record *servrec;
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		struct work_record *work;
+		for (work = subrec->workgrouplist; work; work = work->next) {
+			struct server_record *servrec;
 
-      work->announce_interval = 0;
-      for (servrec = work->serverlist; servrec; servrec = servrec->next)
-      {
-        if (!is_myname(servrec->serv.name))
-          continue;
-        servrec->serv.type = 0;
-        if(AM_LOCAL_MASTER_BROWSER(work))
-          send_local_master_announcement(subrec, work, servrec);
-        send_host_announcement(subrec, work, servrec);
+			work->announce_interval = 0;
+			for (servrec = work->serverlist; servrec; servrec = servrec->next) {
+				if (!is_myname(servrec->serv.name))
+					continue;
+				servrec->serv.type = 0;
+				if(AM_LOCAL_MASTER_BROWSER(work))
+					send_local_master_announcement(subrec, work, servrec);
+				send_host_announcement(subrec, work, servrec);
 
+				if ((announce_interval <= 0) || (lm_announce <= 0)) {
+					/* user absolutely does not want LM announcements to be sent. */
+					continue;
+				}
 
-        if ((announce_interval <= 0) || (lm_announce <= 0))
-        {
-          /* user absolutely does not want LM announcements to be sent. */
-          continue;
-        }
+				if ((lm_announce >= 2) && (!found_lm_clients)) {
+					/* has been set to 2 (Auto) but no LM clients detected (yet). */
+					continue;
+				}
 
-        if ((lm_announce >= 2) && (!found_lm_clients))
-        {
-          /* has been set to 2 (Auto) but no LM clients detected (yet). */
-          continue;
-        }
+				/* 
+				 * lm announce was set or we have seen lm announcements, so do
+				 * a lm announcement of host removed.
+				 */
 
-        /* 
-         * lm announce was set or we have seen lm announcements, so do
-         * a lm announcement of host removed.
-         */
-
-        send_lm_host_announcement(subrec, work, servrec, 0);
-      }
-    }
-  }
+				send_lm_host_announcement(subrec, work, servrec, 0);
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -480,132 +452,127 @@ void announce_my_servers_removed(void)
 
 void announce_remote(time_t t)
 {
-  char *s;
-  const char *ptr;
-  static time_t last_time = 0;
-  pstring s2;
-  struct in_addr addr;
-  char *comment;
-  int stype = lp_default_server_announce();
+	char *s;
+	const char *ptr;
+	static time_t last_time = 0;
+	pstring s2;
+	struct in_addr addr;
+	char *comment;
+	int stype = lp_default_server_announce();
 
-  if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
-    return;
+	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
+		return;
 
-  last_time = t;
+	last_time = t;
 
-  s = lp_remote_announce();
-  if (!*s)
-    return;
+	s = lp_remote_announce();
+	if (!*s)
+		return;
 
-  comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
+	comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
 
-  for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
-  {
-    /* The entries are of the form a.b.c.d/WORKGROUP with 
-       WORKGROUP being optional */
-    const char *wgroup;
-    char *pwgroup;
-    int i;
+	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
+		/* The entries are of the form a.b.c.d/WORKGROUP with 
+				WORKGROUP being optional */
+		const char *wgroup;
+		char *pwgroup;
+		int i;
 
-    pwgroup = strchr_m(s2,'/');
-    if (pwgroup)
-      *pwgroup++ = 0;
-    if (!pwgroup || !*pwgroup)
-      wgroup = lp_workgroup();
-    else
-      wgroup = pwgroup;
+		pwgroup = strchr_m(s2,'/');
+		if (pwgroup)
+			*pwgroup++ = 0;
+		if (!pwgroup || !*pwgroup)
+			wgroup = lp_workgroup();
+		else
+			wgroup = pwgroup;
 
-    addr = *interpret_addr2(s2);
+		addr = *interpret_addr2(s2);
     
-    /* Announce all our names including aliases */
-    /* Give the ip address as the address of our first
-       broadcast subnet. */
+		/* Announce all our names including aliases */
+		/* Give the ip address as the address of our first
+				broadcast subnet. */
 
-    for(i=0; my_netbios_names(i); i++) 
-    {
-      const char *name = my_netbios_names(i);
+		for(i=0; my_netbios_names(i); i++) {
+			const char *name = my_netbios_names(i);
 
-      DEBUG(5,("announce_remote: Doing remote announce for server %s to IP %s.\n",
-                 name, inet_ntoa(addr) ));
+			DEBUG(5,("announce_remote: Doing remote announce for server %s to IP %s.\n",
+				name, inet_ntoa(addr) ));
 
-      send_announcement(FIRST_SUBNET, ANN_HostAnnouncement,
-                    name,                      /* From nbt name. */
-                    wgroup, 0x1d,              /* To nbt name. */
-                    addr,                      /* To ip. */
-                    REMOTE_ANNOUNCE_INTERVAL,  /* Time until next announce. */
-                    name,                      /* Name to announce. */
-                    stype,                     /* Type field. */
-                    comment);
-    }
-  }
+			send_announcement(FIRST_SUBNET, ANN_HostAnnouncement,
+						name,                      /* From nbt name. */
+						wgroup, 0x1d,              /* To nbt name. */
+						addr,                      /* To ip. */
+						REMOTE_ANNOUNCE_INTERVAL,  /* Time until next announce. */
+						name,                      /* Name to announce. */
+						stype,                     /* Type field. */
+						comment);
+		}
+	}
 }
 
 /****************************************************************************
   Implement the 'remote browse sync' feature Andrew added.
   These are used to put our browse lists into remote browse lists.
-  **************************************************************************/
+**************************************************************************/
 
 void browse_sync_remote(time_t t)
 {  
-  char *s;
-  const char *ptr;
-  static time_t last_time = 0; 
-  pstring s2;
-  struct in_addr addr;
-  struct work_record *work;
-  pstring outbuf;
-  char *p;
-  fstring myname;
+	char *s;
+	const char *ptr;
+	static time_t last_time = 0; 
+	pstring s2;
+	struct in_addr addr;
+	struct work_record *work;
+	pstring outbuf;
+	char *p;
+	fstring myname;
  
-  if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
-    return;
+	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
+		return;
    
-  last_time = t;
+	last_time = t;
 
-  s = lp_remote_browse_sync();
-  if (!*s)
-    return;
+	s = lp_remote_browse_sync();
+	if (!*s)
+		return;
 
-  /*
-   * We only do this if we are the local master browser
-   * for our workgroup on the firsst subnet.
-   */
+	/*
+	 * We only do this if we are the local master browser
+	 * for our workgroup on the firsst subnet.
+	 */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup())) == NULL)
-  {   
-    DEBUG(0,("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
-           lp_workgroup(), FIRST_SUBNET->subnet_name ));
-    return;
-  }   
+	if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup())) == NULL) {   
+		DEBUG(0,("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
+			lp_workgroup(), FIRST_SUBNET->subnet_name ));
+		return;
+	}
          
-  if(!AM_LOCAL_MASTER_BROWSER(work))
-  {
-    DEBUG(5,("browse_sync_remote: We can only do this if we are a local master browser \
+	if(!AM_LOCAL_MASTER_BROWSER(work)) {
+		DEBUG(5,("browse_sync_remote: We can only do this if we are a local master browser \
 for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
-    return;
-  } 
+		return;
+	} 
 
-  memset(outbuf,'\0',sizeof(outbuf));
-  p = outbuf;
-  SCVAL(p,0,ANN_MasterAnnouncement);
-  p++;
+	memset(outbuf,'\0',sizeof(outbuf));
+	p = outbuf;
+	SCVAL(p,0,ANN_MasterAnnouncement);
+	p++;
 
-  fstrcpy(myname, global_myname());
-  strupper_m(myname);
-  myname[15]='\0';
-  push_pstring_base(p, myname, outbuf);
+	fstrcpy(myname, global_myname());
+	strupper_m(myname);
+	myname[15]='\0';
+	push_pstring_base(p, myname, outbuf);
 
-  p = skip_string(p,1);
+	p = skip_string(p,1);
 
-  for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
-  {
-    /* The entries are of the form a.b.c.d */
-    addr = *interpret_addr2(s2);
+	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
+		/* The entries are of the form a.b.c.d */
+		addr = *interpret_addr2(s2);
 
-    DEBUG(5,("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
-                 global_myname(), inet_ntoa(addr) ));
+		DEBUG(5,("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
+			global_myname(), inet_ntoa(addr) ));
 
-    send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          global_myname(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
-  }
+		send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
+			global_myname(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
+	}
 }

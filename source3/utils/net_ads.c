@@ -127,9 +127,14 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
-       char *cp;
+	char *cp;
 	
-	ads = ads_init(NULL, opt_target_workgroup, opt_host);
+	/* lp_realm() should be handled by a command line param, 
+	   However, the join requires that realm be set in smb.conf
+	   and compares our realm with the remote server's so this is
+	   ok until someone needs more flexibility */
+	   
+	ads = ads_init(lp_realm(), opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -579,10 +584,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if (!opt_password) {
-		char *user_name;
-		asprintf(&user_name, "%s$", global_myname());
-		opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
-		opt_user_name = user_name;
+		net_use_machine_password();
 	}
 
 	if (!(ads = ads_startup())) {
@@ -603,7 +605,6 @@ static int net_ads_leave(int argc, const char **argv)
 
 static int net_ads_join_ok(void)
 {
-	char *user_name;
 	ADS_STRUCT *ads = NULL;
 
 	if (!secrets_init()) {
@@ -611,9 +612,7 @@ static int net_ads_join_ok(void)
 		return -1;
 	}
 
-	asprintf(&user_name, "%s$", global_myname());
-	opt_user_name = user_name;
-	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	net_use_machine_password();
 
 	if (!(ads = ads_startup())) {
 		return -1;
@@ -648,6 +647,7 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	char *password;
+	char *machine_account = NULL;
 	char *tmp_password;
 	const char *org_unit = "Computers";
 	char *dn;
@@ -656,6 +656,8 @@ int net_ads_join(int argc, const char **argv)
 	char *ou_str;
 	uint32 sec_channel_type = SEC_CHAN_WKSTA;
 	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
+	char *short_domain_name = NULL;
+	TALLOC_CTX *ctx = NULL;
 
 	if (argc > 0) org_unit = argv[0];
 
@@ -668,6 +670,16 @@ int net_ads_join(int argc, const char **argv)
 	password = strdup(tmp_password);
 
 	if (!(ads = ads_startup())) return -1;
+
+	if (!*lp_realm()) {
+		d_printf("realm must be set in in smb.conf for ADS join to succeed.\n");
+		return -1;
+	}
+
+	if (strcmp(ads->config.realm, lp_realm()) != 0) {
+		d_printf("realm of remote server (%s) and realm in smb.conf (%s) DO NOT match.  Aborting join\n", ads->config.realm, lp_realm());
+		return -1;
+	}
 
 	ou_str = ads_ou_string(org_unit);
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
@@ -696,16 +708,47 @@ int net_ads_join(int argc, const char **argv)
 
 	rc = ads_domain_sid(ads, &dom_sid);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));
+		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));	
+	return -1;
+	}
+
+	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
+		d_printf("asprintf failed\n");
 		return -1;
 	}
 
-	rc = ads_set_machine_password(ads, global_myname(), password);
+	rc = ads_set_machine_password(ads, machine_account, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
 		return -1;
 	}
-
+	
+	/* make sure we get the right workgroup */
+	
+	if ( !(ctx = talloc_init("net ads join")) ) {
+		d_printf("talloc_init() failed!\n");
+		return -1;
+	}
+	
+	rc = ads_workgroup_name(ads, ctx, &short_domain_name);
+	if ( ADS_ERR_OK(rc) ) {
+		if ( !strequal(lp_workgroup(), short_domain_name) ) {
+			d_printf("The workgroup in smb.conf does not match the short\n");
+			d_printf("domain name obtained from the server.\n");
+			d_printf("Using the name [%s] from the server.\n", short_domain_name);
+			d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
+		}
+	}
+	else
+		short_domain_name = lp_workgroup();
+	
+	d_printf("Using short domain name -- %s\n", short_domain_name);
+	
+	/*  HACK ALRET!  Store the sid and password under bother the lp_workgroup() 
+	    value from smb.conf and the string returned from the server.  The former is
+	    neede to bootstrap winbindd's first connection to the DC to get the real 
+	    short domain name   --jerry */
+	    
 	if (!secrets_store_domain_sid(lp_workgroup(), &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
 		return -1;
@@ -716,10 +759,22 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+	if (!secrets_store_domain_sid(short_domain_name, &dom_sid)) {
+		DEBUG(1,("Failed to save domain sid\n"));
+		return -1;
+	}
+
+	if (!secrets_store_machine_password(password, short_domain_name, sec_channel_type)) {
+		DEBUG(1,("Failed to save machine password\n"));
+		return -1;
+	}
+	
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
-	free(password);
-
+	SAFE_FREE(password);
+	SAFE_FREE(machine_account);
+	if ( ctx )
+		talloc_destroy(ctx);
 	return 0;
 }
 
@@ -1020,17 +1075,13 @@ int net_ads_changetrustpw(int argc, const char **argv)
     char *host_principal;
     char *hostname;
     ADS_STATUS ret;
-    char *user_name;
 
     if (!secrets_init()) {
 	    DEBUG(1,("Failed to initialise secrets database\n"));
 	    return -1;
     }
 
-    asprintf(&user_name, "%s$", global_myname());
-    opt_user_name = user_name;
-
-    opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+    net_use_machine_password();
 
     use_in_memory_ccache();
 

@@ -218,6 +218,6 @@ typedef void **ADS_MODLIST;
 /* The older versions of heimdal that don't have this
    define don't seem to use it anyway.  I'm told they
    always use a subkey */
-#ifndef AP_OPTS_USE_SUBKEY
+#ifndef HAVE_AP_OPTS_USE_SUBKEY
 #define AP_OPTS_USE_SUBKEY 0
 #endif

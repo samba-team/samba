@@ -1706,13 +1706,24 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	int uLevel = SVAL(p,0);
 	const char *level_string;
 	int count=0;
+	SAM_ACCOUNT *sampw = NULL;
+	BOOL ret = False;
+        DOM_GID *gids = NULL;
+        int num_groups = 0;
+	int i;
+	fstring grp_domain;
+	fstring grp_name;
+	enum SID_NAME_USE grp_type;
+	DOM_SID sid, dom_sid;
 
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam,*rparam_len);
   
 	/* check it's a supported varient */
-	if (!strcmp(str1,"zWrLeh"))
+	
+	if ( strcmp(str1,"zWrLeh") != 0 )
 		return False;
+		
 	switch( uLevel ) {
 		case 0:
 			level_string = "B21";
@@ -1732,18 +1743,59 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	p = *rdata;
 
-	/* XXXX we need a real SAM database some day */
-	pstrcpy(p,"Users"); p += 21; count++;
-	pstrcpy(p,"Domain Users"); p += 21; count++;
-	pstrcpy(p,"Guests"); p += 21; count++;
-	pstrcpy(p,"Domain Guests"); p += 21; count++;
+	/* Lookup the user information; This should only be one of 
+	   our accounts (not remote domains) */
+	   
+	pdb_init_sam( &sampw );
+	
+	become_root();					/* ROOT BLOCK */
 
+	if ( !pdb_getsampwnam(sampw, UserName) )
+		goto out;
+
+	/* this next set of code is horribly inefficient, but since 
+	   it is rarely called, I'm going to leave it like this since 
+	   it easier to follow      --jerry                          */
+	   
+	/* get the list of group SIDs */
+	
+	if ( !get_domain_user_groups(conn->mem_ctx, &num_groups, &gids, sampw) ) {
+		DEBUG(1,("api_NetUserGetGroups: get_domain_user_groups() failed!\n"));
+		goto out;
+        }
+
+	/* convert to names (we don't support universal groups so the domain
+	   can only be ours) */
+	
+	sid_copy( &dom_sid, get_global_sam_sid() );
+	for (i=0; i<num_groups; i++) {
+	
+		/* make the DOM_GID into a DOM_SID and then lookup 
+		   the name */
+		
+		sid_copy( &sid, &dom_sid );
+		sid_append_rid( &sid, gids[i].g_rid );
+		
+		if ( lookup_sid(&sid, grp_domain, grp_name, &grp_type) ) {
+			pstrcpy(p, grp_name); 
+			p += 21; 
+			count++;
+		}
+	}
+	
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	SSVAL(*rparam,4,count);	/* is this right?? */
 	SSVAL(*rparam,6,count);	/* is this right?? */
 
-	return(True);
+	ret = True;
+
+out:
+	unbecome_root();				/* END ROOT BLOCK */
+
+	pdb_free_sam( &sampw );
+
+	return ret;
 }
 
 /*******************************************************************
@@ -1932,7 +1984,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
 
 			become_root();
-			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2))) {
+			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False))) {
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();
@@ -1957,7 +2009,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
 		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
 			become_root();
-			if (change_lanman_password(hnd,pass2)) {
+			if (change_lanman_password(hnd,(uchar *)pass2)) {
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();
@@ -1980,47 +2032,46 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-  fstring user;
-  char *p = param + 2;
-  *rparam_len = 2;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	fstring user;
+	char *p = param + 2;
+	*rparam_len = 2;
+	*rparam = REALLOC(*rparam,*rparam_len);
 
-  *rdata_len = 0;
+	*rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_badpass);
+	SSVAL(*rparam,0,NERR_badpass);
 
-  /*
-   * Check the parameter definition is correct.
-   */
-  if(!strequal(param + 2, "zsT")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
-    return False;
-  }
-  p = skip_string(p, 1);
+	/*
+	 * Check the parameter definition is correct.
+	 */
 
-  if(!strequal(p, "B516B16")) {
-    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
-    return False;
-  }
-  p = skip_string(p,1);
+	if(!strequal(param + 2, "zsT")) {
+		DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
+		return False;
+	}
+	p = skip_string(p, 1);
 
-  p += pull_ascii_fstring(user,p);
+	if(!strequal(p, "B516B16")) {
+		DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
+		return False;
+	}
+	p = skip_string(p,1);
+	p += pull_ascii_fstring(user,p);
 
-  DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
+	DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
-  /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
 
-  (void)map_username(user);
+	(void)map_username(user);
 
-  if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL)))
-  {
-    SSVAL(*rparam,0,NERR_Success);
-  }
+	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))) {
+		SSVAL(*rparam,0,NERR_Success);
+	}
 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************

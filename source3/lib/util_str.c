@@ -37,7 +37,7 @@
  **/
 BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
-	const char *s;
+	char *s;
 	char *pbuf;
 	BOOL quoted;
 	size_t len=1;
@@ -45,7 +45,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!ptr)
 		return(False);
 
-	s = *ptr;
+	s = (char *)*ptr;
 
 	/* default to simple separators */
 	if (!sep)
@@ -88,7 +88,7 @@ BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = (const char **)&last_ptr;
+		ptr = &last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
@@ -109,7 +109,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-	char *s=last_ptr;
+	char *s=(char *)last_ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +132,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=last_ptr;
+	s=(char *)last_ptr;
 	
 	if (!(ret=iret=malloc(ictok*sizeof(char *))))
 		return NULL;
@@ -364,9 +364,27 @@ BOOL strisnormal(const char *s)
 
 void string_replace(pstring s,char oldc,char newc)
 {
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	unsigned char *p;
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	for (p = (unsigned char *)s; *p; p++) {
+		if (*p & 0x80) /* mb string - slow path. */
+			break;
+		if (*p == oldc)
+			*p = newc;
+	}
+
+	if (!*p)
+		return;
+
+	/* Slow (mb) path. */
+	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
+	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
 }
 
 /**
@@ -406,6 +424,59 @@ size_t str_ascii_charnum(const char *s)
 	return strlen(tmpbuf2);
 }
 
+BOOL trim_char(char *s,char cfront,char cback)
+{
+	BOOL ret = False;
+	char *ep;
+	char *fp = s;
+
+	/* Ignore null or empty strings. */
+	if (!s || (s[0] == '\0'))
+		return False;
+
+	if (cfront) {
+		while (*fp && *fp == cfront)
+			fp++;
+		if (!*fp) {
+			/* We ate the string. */
+			s[0] = '\0';
+			return True;
+		}
+		if (fp != s)
+			ret = True;
+	}
+
+	ep = fp + strlen(fp) - 1;
+	if (cback) {
+		/* Attempt ascii only. Bail for mb strings. */
+		while ((ep >= fp) && (*ep == cback)) {
+			ret = True;
+			if ((ep > fp) && (((unsigned char)ep[-1]) & 0x80)) {
+				/* Could be mb... bail back to tim_string. */
+				char fs[2], bs[2];
+				if (cfront) {
+					fs[0] = cfront;
+					fs[1] = '\0';
+				}
+				bs[0] = cback;
+				bs[1] = '\0';
+				return trim_string(s, cfront ? fs : NULL, bs);
+			} else {
+				ep--;
+			}
+		}
+		if (ep < fp) {
+			/* We ate the string. */
+			s[0] = '\0';
+			return True;
+		}
+	}
+
+	ep[1] = '\0';
+	memmove(s, fp, ep-fp+2);
+	return ret;
+}
+
 /**
  Trim the specified elements off the front and back of a string.
 **/
@@ -428,7 +499,9 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
 	if (front_len) {
 		while (len && strncmp(s, front, front_len)==0) {
-			memcpy(s, s+front_len, (len-front_len)+1);
+			/* Must use memmove here as src & dest can
+			 * easily overlap. Found by valgrind. JRA. */
+			memmove(s, s+front_len, (len-front_len)+1);
 			len -= front_len;
 			ret=True;
 		}
@@ -501,7 +574,9 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 		return NULL;
 	}
 
+#ifdef DEVELOPER
 	clobber_region(fn,line,dest, maxlength+1);
+#endif
 
 	if (!src) {
 		*dest = 0;
@@ -540,7 +615,9 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
 	src_len = strnlen(src, maxlength + 1);
 	dest_len = strnlen(dest, maxlength + 1);
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
+#endif
 
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
@@ -567,7 +644,9 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
 {
 	size_t len, i;
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest, maxlength);
+#endif
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -607,7 +686,9 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 {
 	char *d = dest;
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest, n+1);
+#endif
 
 	if (!dest)
 		return(NULL);
@@ -637,8 +718,9 @@ static char *strncpyn(char *dest, const char *src, size_t n, char c)
 	char *p;
 	size_t str_len;
 
+#ifdef DEVELOPER
 	clobber_region(dest, n+1);
-
+#endif
 	p = strchr_m(src, c);
 	if (p == NULL) {
 		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
@@ -910,6 +992,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 	
 	while ((p = strstr(s,pattern))) {
 		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
 			char *t = Realloc(string, ls + ld + 1);
 			if (!t) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
@@ -917,7 +1000,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 				return NULL;
 			}
 			string = t;
-			p = t + (p - s);
+			p = t + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1098,6 +1181,19 @@ char *strchr_m(const char *s, char c)
 	pstring s2;
 	smb_ucs2_t *p;
 
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (*s && (((unsigned char)s[0]) & 0x80)) {
+		if (*s == c)
+			return s;
+	}
+
+	if (!*s)
+		return NULL;
+
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
 	if (!p)
@@ -1109,17 +1205,53 @@ char *strchr_m(const char *s, char c)
 
 char *strrchr_m(const char *s, char c)
 {
-	wpstring ws;
-	pstring s2;
-	smb_ucs2_t *p;
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars). Also, in Samba
+	   we only search for ascii characters in 'c' and that
+	   in all mb character sets with a compound character
+	   containing c, if 'c' is not a match at position
+	   p, then p[-1] > 0x7f. JRA. */
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strrchr_w(ws, UCS2_CHAR(c));
-	if (!p)
-		return NULL;
-	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	{
+		size_t len = strlen(s);
+		const char *cp = s;
+		BOOL got_mb = False;
+
+		if (len == 0)
+			return NULL;
+		cp += (len - 1);
+		do {
+			if (c == *cp) {
+				/* Could be a match. Part of a multibyte ? */
+			       	if ((cp > s) && (((unsigned char)cp[-1]) & 0x80)) {
+					/* Yep - go slow :-( */
+					got_mb = True;
+					break;
+				}
+				/* No - we have a match ! */
+			       	return cp;
+			}
+		} while (cp-- != s);
+		if (!got_mb)
+			return NULL;
+	}
+
+	/* String contained a non-ascii char. Slow path. */
+	{
+		wpstring ws;
+		pstring s2;
+		smb_ucs2_t *p;
+
+		push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+		p = strrchr_w(ws, UCS2_CHAR(c));
+		if (!p)
+			return NULL;
+		*p = 0;
+		pull_ucs2_pstring(s2, ws);
+		return (char *)(s+strlen(s2));
+	}
 }
 
 /***********************************************************************
@@ -1409,6 +1541,35 @@ void str_list_free(char ***list)
 	SAFE_FREE(*list);
 }
 
+/******************************************************************************
+ version of standard_sub_basic() for string lists; uses alloc_sub_basic() 
+ for the work
+ *****************************************************************************/
+ 
+BOOL str_list_sub_basic( char **list, const char *smb_name )
+{
+	char *s, *tmpstr;
+	
+	while ( *list ) {
+		s = *list;
+		tmpstr = alloc_sub_basic(smb_name, s);
+		if ( !tmpstr ) {
+			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
+			return False;
+		}
+
+		*list = tmpstr;
+			
+		list++;
+	}
+
+	return True;
+}
+
+/******************************************************************************
+ substritute a specific pattern in a string list
+ *****************************************************************************/
+ 
 BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 {
 	char *p, *s, *t;
@@ -1463,6 +1624,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 				}
 			}	
 		}
+		
 		
 		list++;
 	}

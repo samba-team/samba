@@ -3,7 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,20 +27,21 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
 /****************************************************************************
  Fail funtion when registering my netbios names.
-  **************************************************************************/
+**************************************************************************/
 
 static void my_name_register_failed(struct subnet_record *subrec,
                               struct response_record *rrec, struct nmb_name *nmbname)
 {
-  DEBUG(0,("my_name_register_failed: Failed to register my name %s on subnet %s.\n",
-            nmb_namestr(nmbname), subrec->subnet_name));
+	DEBUG(0,("my_name_register_failed: Failed to register my name %s on subnet %s.\n",
+		nmb_namestr(nmbname), subrec->subnet_name));
 }
 
 
 /****************************************************************************
   Add my workgroup and my given names to one subnet
   Also add the magic Samba names.
-  **************************************************************************/
+**************************************************************************/
+
 void register_my_workgroup_one_subnet(struct subnet_record *subrec)
 {
 	int i;
@@ -84,111 +85,104 @@ Exiting.\n", lp_workgroup(), subrec->subnet_name));
 static void insert_refresh_name_into_unicast( struct subnet_record *subrec,
                                                 struct nmb_name *nmbname, uint16 nb_type )
 {
-  struct name_record *namerec;
+	struct name_record *namerec;
 
-  if (!we_are_a_wins_client()) {
-    insert_permanent_name_into_unicast(subrec, nmbname, nb_type);
-    return;
-  }
+	if (!we_are_a_wins_client()) {
+		insert_permanent_name_into_unicast(subrec, nmbname, nb_type);
+		return;
+	}
 
-  if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL)
-  {
-    /* The name needs to be created on the unicast subnet. */
-    (void)add_name_to_subnet( unicast_subnet, nmbname->name,
-                              nmbname->name_type, nb_type,
-                              MIN(lp_max_ttl(), MAX_REFRESH_TIME), SELF_NAME, 1, &subrec->myip);
-  }
-  else
-  {
-    /* The name already exists on the unicast subnet. Add our local
-       IP for the given broadcast subnet to the name. */
-    add_ip_to_name_record( namerec, subrec->myip);
-  }
+	if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL) {
+		nstring name;
+		pull_ascii_nstring(name, nmbname->name);
+		/* The name needs to be created on the unicast subnet. */
+		(void)add_name_to_subnet( unicast_subnet, name,
+				nmbname->name_type, nb_type,
+				MIN(lp_max_ttl(), MAX_REFRESH_TIME), SELF_NAME, 1, &subrec->myip);
+	} else {
+		/* The name already exists on the unicast subnet. Add our local
+			IP for the given broadcast subnet to the name. */
+		add_ip_to_name_record( namerec, subrec->myip);
+	}
 }
 
 /****************************************************************************
   Add my workgroup and my given names to the subnet lists.
   Also add the magic Samba names.
-  **************************************************************************/
+**************************************************************************/
 
 BOOL register_my_workgroup_and_names(void)
 {
-  struct subnet_record *subrec;
-  int i;
+	struct subnet_record *subrec;
+	int i;
 
-  for(subrec = FIRST_SUBNET; 
-      subrec; 
-      subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-  {
-	  register_my_workgroup_one_subnet(subrec);
-  }
+	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
+		register_my_workgroup_one_subnet(subrec);
+	}
 
-  /* We still need to add the magic Samba
-     names and the netbios names to the unicast subnet directly. This is
-     to allow unicast node status requests and queries to still work
-     in a broadcast only environment. */
+	/* We still need to add the magic Samba
+		names and the netbios names to the unicast subnet directly. This is
+		to allow unicast node status requests and queries to still work
+		in a broadcast only environment. */
 
-  add_samba_names_to_subnet(unicast_subnet);
+	add_samba_names_to_subnet(unicast_subnet);
 
-  for (i=0; my_netbios_names(i); i++)
-  {
-    for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-    {
-      /*
-       * Ensure all the IP addresses are added if we are multihomed.
-       */
-      struct nmb_name nmbname;
+	for (i=0; my_netbios_names(i); i++) {
+		for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+			/*
+			 * Ensure all the IP addresses are added if we are multihomed.
+			 */
+			struct nmb_name nmbname;
 
-      make_nmb_name(&nmbname, my_netbios_names(i),0x20);
-      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
+			make_nmb_name(&nmbname, my_netbios_names(i),0x20);
+			insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      make_nmb_name(&nmbname, my_netbios_names(i),0x3);
-      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
+			make_nmb_name(&nmbname, my_netbios_names(i),0x3);
+			insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      make_nmb_name(&nmbname, my_netbios_names(i),0x0);
-      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
-    }
-  }
+			make_nmb_name(&nmbname, my_netbios_names(i),0x0);
+			insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
+		}
+	}
 
-  /*
-   * Add the WORKGROUP<0> and WORKGROUP<1e> group names to the unicast subnet
-   * also for the same reasons.
-   */
+	/*
+	 * Add the WORKGROUP<0> and WORKGROUP<1e> group names to the unicast subnet
+	 * also for the same reasons.
+	 */
 
-  for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-  {
-    /*
-     * Ensure all the IP addresses are added if we are multihomed.
-     */
-    struct nmb_name nmbname;
+	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		/*
+		 * Ensure all the IP addresses are added if we are multihomed.
+		 */
+		struct nmb_name nmbname;
 
-    make_nmb_name(&nmbname, lp_workgroup(), 0x0);
-    insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+		make_nmb_name(&nmbname, lp_workgroup(), 0x0);
+		insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
 
-    make_nmb_name(&nmbname, lp_workgroup(), 0x1e);
-    insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
-  }
+		make_nmb_name(&nmbname, lp_workgroup(), 0x1e);
+		insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+	}
 
-  /*
-   * We need to add the Samba names to the remote broadcast subnet,
-   * as NT 4.x does directed broadcast requests to the *<0x0> name.
-   */
-  add_samba_names_to_subnet(remote_broadcast_subnet);
+	/*
+	 * We need to add the Samba names to the remote broadcast subnet,
+	 * as NT 4.x does directed broadcast requests to the *<0x0> name.
+	 */
 
-  return True;
+	add_samba_names_to_subnet(remote_broadcast_subnet);
+
+	return True;
 }
 
 /****************************************************************************
   Remove all the names we registered.
 **************************************************************************/
+
 void release_wins_names(void)
 {
 	struct subnet_record *subrec = unicast_subnet;
 	struct name_record *namerec, *nextnamerec;
 
-	for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
-	     namerec;
-	     namerec = nextnamerec) {
+	for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist ); namerec; namerec = nextnamerec) {
 		nextnamerec = (struct name_record *)ubi_trNext( namerec );
 		if( (namerec->data.source == SELF_NAME)
 		    && !NAME_IS_DEREGISTERING(namerec) )
@@ -199,12 +193,14 @@ void release_wins_names(void)
 
 /*******************************************************************
   Refresh our registered names with WINS
-  ******************************************************************/
+******************************************************************/
+
 void refresh_my_names(time_t t)
 {
 	struct name_record *namerec;
 
-	if (wins_srv_count() < 1) return;
+	if (wins_srv_count() < 1)
+		return;
 
 	for (namerec = (struct name_record *)ubi_trFirst(unicast_subnet->namelist);
 	     namerec;

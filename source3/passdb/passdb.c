@@ -758,13 +758,27 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 
 	if (fallback_pdb_rid_is_user(rid)) {
 		uid_t uid;
+		struct passwd *pw = NULL;
 
 		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
 
        		uid = fallback_pdb_user_rid_to_uid(rid);
-		slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);	
-
-		return False;  /* Indicates that this user was 'not mapped' */
+		pw = sys_getpwuid( uid );
+		
+		DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
+			 pw ? "succeeded" : "failed" ));
+			 
+		if ( !pw )
+			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);	
+		else 
+			fstrcpy( name, pw->pw_name );
+			
+		DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
+			 (unsigned int)rid ));
+			 
+		*psid_name_use = SID_NAME_USER;
+		
+		return ( pw != NULL );
 	} else {
 		gid_t gid;
 		struct group *gr; 
@@ -779,16 +793,19 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
 			 gr ? "succeeded" : "failed" ));
 			
-		if(!gr) {
-			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
-			return False; /* Indicates that this group was 'not mapped' */
-		}
-			
-		fstrcpy( name, gr->gr_name);
+		if( !gr )
+			fstr_sprintf(name, "unix_group.%u", (unsigned int)gid);
+		else
+			fstrcpy( name, gr->gr_name);
 			
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			 (unsigned int)rid ));
-		return True;   
+		
+		/* assume fallback groups aer domain global groups */
+		
+		*psid_name_use = SID_NAME_DOM_GRP;
+		
+		return ( gr != NULL );
 	}
 }
 
@@ -1156,11 +1173,18 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	GROUP_MAP group;
+	BOOL ret;
 	
 	/* we don't need to disable winbindd since the gid is stored in 
 	   the GROUP_MAP object */
+	   
+	/* done as root since ldap backend requires root to open a connection */
 
-	if ( !pdb_getgrgid( &group, gid ) ) {
+	become_root();
+	ret = pdb_getgrgid( &group, gid );
+	unbecome_root();
+	
+	if ( !ret ) {
 
 		/* fallback to rid mapping if enabled */
 
@@ -1289,6 +1313,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	BOOL ret = True;
 	uid_t uid = -1;
 	gid_t gid = -1;
+	struct passwd *pw = NULL;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -1296,7 +1321,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 									
 	/* unpack the buffer into variables */
-	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING,
 		&logon_time,
 		&logoff_time,
 		&kickoff_time,
@@ -1343,6 +1368,12 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
+
+
+	if ( (pw=Get_Pwnam(username)) != NULL ) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+	}
 
 	if (homedir) {
 		pdb_set_homedir(sampass, homedir, PDB_SET);
@@ -1633,7 +1664,7 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
+	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING,
 		logon_time,
 		logoff_time,
 		kickoff_time,
@@ -1676,3 +1707,51 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 
 	return (buflen);
 }
+
+
+/**********************************************************************
+**********************************************************************/
+
+static BOOL get_free_ugid_range(uint32 *low, uint32 *high)
+{
+	uid_t u_low, u_high;
+	gid_t g_low, g_high;
+
+	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
+		return False;
+	}
+	
+	*low  = (u_low < g_low)   ? u_low  : g_low;
+	*high = (u_high < g_high) ? u_high : g_high;
+	
+	return True;
+}
+
+/******************************************************************
+ Get the the non-algorithmic RID range if idmap range are defined
+******************************************************************/
+
+BOOL get_free_rid_range(uint32 *low, uint32 *high)
+{
+	uint32 id_low, id_high;
+
+	if (!lp_enable_rid_algorithm()) {
+		*low = BASE_RID;
+		*high = (uint32)-1;
+	}
+
+	if (!get_free_ugid_range(&id_low, &id_high)) {
+		return False;
+	}
+
+	*low = fallback_pdb_uid_to_user_rid(id_low);
+	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
+		*high = (uint32)-1;
+	} else {
+		*high = fallback_pdb_uid_to_user_rid(id_high);
+	}
+
+	return True;
+}
+
+

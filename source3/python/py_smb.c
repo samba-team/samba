@@ -221,10 +221,10 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 {
 	cli_state_object *cli = (cli_state_object *)self;
 	static char *kwlist[] = { "fnum", NULL };
-	PyObject *result;
+	PyObject *result = NULL;
 	SEC_DESC *secdesc = NULL;
 	int fnum;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Parse parameters */
 
@@ -238,7 +238,6 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
-		result = NULL;
 		goto done;
 	}
 
@@ -252,7 +251,6 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 		PyErr_SetString(
 			PyExc_TypeError,
 			"Invalid security descriptor returned");
-		result = NULL;
 		goto done;
 	}
 
@@ -268,11 +266,12 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 {
 	cli_state_object *cli = (cli_state_object *)self;
 	static char *kwlist[] = { "fnum", "security_descriptor", NULL };
+	PyObject *result = NULL;
 	PyObject *py_secdesc;
 	SEC_DESC *secdesc;
-	TALLOC_CTX *mem_ctx = talloc_init("py_smb_set_secdesc");
+	TALLOC_CTX *mem_ctx = NULL;
 	int fnum;
-	BOOL result;
+	BOOL err;
 
 	/* Parse parameters */
 
@@ -280,20 +279,26 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 		    args, kw, "iO", kwlist, &fnum, &py_secdesc))
 		return NULL;
 
+	mem_ctx = talloc_init("py_smb_set_secdesc");
+
 	if (!py_to_SECDESC(&secdesc, py_secdesc, mem_ctx)) {
 		PyErr_SetString(PyExc_TypeError, 
 				"Invalid security descriptor");
-		return NULL;
+		goto done;
 	}
 
-	result = cli_set_secdesc(cli->cli, fnum, secdesc);
+	err = cli_set_secdesc(cli->cli, fnum, secdesc);
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "set_secdesc failed");
-		return NULL;
+		goto done;
 	}
 
-	return PyInt_FromLong(result);
+	result =  PyInt_FromLong(err);
+ done:
+	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 static PyMethodDef smb_hnd_methods[] = {

@@ -141,7 +141,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u);
+	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u );
 
 	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
@@ -1580,8 +1580,6 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 \pipe\spoolss commands
 ********************************************************************/
 
-NTSTATUS rpc_spoolss_init(void)
-{
   struct api_struct api_spoolss_cmds[] = 
     {
  {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
@@ -1640,6 +1638,15 @@ NTSTATUS rpc_spoolss_init(void)
  {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
 #endif
     };
+
+void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_spoolss_cmds;
+	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
+}
+
+NTSTATUS rpc_spoolss_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", api_spoolss_cmds,
 				    sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
 }

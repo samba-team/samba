@@ -84,20 +84,19 @@ BOOL hash_table_init(hash_table *table, unsigned num_buckets, compare_function c
  *	For the last few chars that cannot be int'ed, use char instead.
  *	The function returns the bucket index number for the hashed 
  *	key.
+ *	JRA. Use a djb-algorithm hash for speed.
  **************************************************************
  */
 
 static int string_hash(int hash_size, const char *key)
 {
-	u32 value;	/* Used to compute the hash value.  */
-	u32   i;	/* Used to cycle through random values. */
-
-	for (value = 0x238F13AF, i=0; key[i]; i++)
-		value = (value + (key[i] << (i*5 % 24)));
-
-	return (1103515243 * value + 12345) % hash_size;  
+	u32 n = 0;
+	const char *p;
+	for (p = key; *p != '\0'; p++) {
+		n = ((n << 5) + n) ^ (u32)(*p);
+	}
+	return (n % hash_size);
 }
-
 
 /* *************************************************************************
  * 	Search the hash table for the entry in the hash chain.

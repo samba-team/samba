@@ -80,6 +80,14 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 						  DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
+	char *contact_name;
+	const char *alternative_name = NULL;
+	
+	/* ignore alt_name if we are not in an AD domain */
+	
+	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
+		alternative_name = alt_name;
+	}
         
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
@@ -88,9 +96,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		    strcasecmp(domain_name, domain->alt_name) == 0) {
 			return domain;
 		}
-		if (alt_name && *alt_name) {
-			if (strcasecmp(alt_name, domain->name) == 0 ||
-			    strcasecmp(alt_name, domain->alt_name) == 0) {
+		if (alternative_name && *alternative_name) {
+			if (strcasecmp(alternative_name, domain->name) == 0 ||
+			    strcasecmp(alternative_name, domain->alt_name) == 0) {
 				return domain;
 			}
 		}
@@ -107,13 +115,13 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	ZERO_STRUCTP(domain);
 
 	/* prioritise the short name */
-	if (strchr_m(domain_name, '.') && alt_name && *alt_name) {
-		fstrcpy(domain->name, alt_name);
+	if (strchr_m(domain_name, '.') && alternative_name && *alternative_name) {
+		fstrcpy(domain->name, alternative_name);
 		fstrcpy(domain->alt_name, domain_name);
 	} else {
 		fstrcpy(domain->name, domain_name);
-		if (alt_name) {
-			fstrcpy(domain->alt_name, alt_name);
+		if (alternative_name) {
+			fstrcpy(domain->alt_name, alternative_name);
 		}
 	}
 
@@ -125,10 +133,12 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	/* see if this is a native mode win2k domain */
+	/* see if this is a native mode win2k domain (use realm name if possible) */
 	   
-	domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
-	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+	contact_name = *domain->alt_name ? domain->alt_name : domain->name;
+	domain->native_mode = cm_check_for_native_mode_win2k( contact_name );
+	
+	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", contact_name,
 		domain->native_mode ? "native" : "mixed (or NT4)" ));
 
 	/* Link to domain list */
@@ -141,57 +151,80 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	return domain;
 }
 
+/********************************************************************
+ Periodically we need to refresh the trusted domain cache for smbd 
+********************************************************************/
 
-/*
-  rescan our domains looking for new trusted domains
- */
-void rescan_trusted_domains(BOOL force)
+void rescan_trusted_domains( void )
 {
-	struct winbindd_domain *domain;
-	TALLOC_CTX *mem_ctx;
 	static time_t last_scan;
-	time_t t = time(NULL);
+	time_t now = time(NULL);
+	struct winbindd_domain *mydomain = NULL;
+	
+	/* see if the time has come... */
+	
+	if ( (now > last_scan) && ((now-last_scan) < WINBINDD_RESCAN_FREQ) )
+		return;
+		
+	/* get the handle for our domain */
+	
+	if ( (mydomain = find_domain_from_name(lp_workgroup())) == NULL ) {
+		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
+		return;
+	}
+	
+	/* this will only add new domains we didn't already know about */
+	
+	add_trusted_domains( mydomain );
+
+	last_scan = now;
+	
+	return;	
+}
+
+/********************************************************************
+  rescan our domains looking for new trusted domains
+********************************************************************/
+
+void add_trusted_domains( struct winbindd_domain *domain )
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS result;
+	time_t t;
+	char **names;
+	char **alt_names;
+	int num_domains = 0;
+	DOM_SID *dom_sids, null_sid;
+	int i;
+	struct winbindd_domain *new_domain;
 
 	/* trusted domains might be disabled */
 	if (!lp_allow_trusted_domains()) {
 		return;
 	}
 
-	/* Only rescan every few minutes but force if necessary */
-
-	if (((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) && !force)
-		return;
-
-	last_scan = t;
-
 	DEBUG(1, ("scanning trusted domain list\n"));
 
 	if (!(mem_ctx = talloc_init("init_domain_list")))
 		return;
+	   
+	ZERO_STRUCTP(&null_sid);
 
-	for (domain = _domain_list; domain; domain = domain->next) {
-		NTSTATUS result;
-		char **names;
-		char **alt_names;
-		int num_domains = 0;
-		DOM_SID *dom_sids, null_sid;
-		int i;
-		struct winbindd_domain *new_domain;
+	t = time(NULL);
+	
+	/* ask the DC what domains it trusts */
+	
+	result = domain->methods->trusted_domains(domain, mem_ctx, (unsigned int *)&num_domains,
+		&names, &alt_names, &dom_sids);
 		
-		ZERO_STRUCTP(&null_sid);
-
-		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
-		                                          &names, &alt_names, &dom_sids);
-		if (!NT_STATUS_IS_OK(result)) {
-			continue;
-		}
+	if ( NT_STATUS_IS_OK(result) ) {
 
 		/* Add each domain to the trusted domain list */
 		
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
 			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
-			                   domain->methods, &dom_sids[i]);
+				domain->methods, &dom_sids[i]);
 					   
 			/* if the SID was empty, we better set it now */
 			
@@ -212,7 +245,7 @@ void rescan_trusted_domains(BOOL force)
 				result = domain->methods->domain_sid( new_domain, &new_domain->sid );
 				 
 				if ( NT_STATUS_IS_OK(result) )
-				 	sid_copy( &dom_sids[i], &domain->sid );
+				 	sid_copy( &dom_sids[i], &new_domain->sid );
 			}
 			
 			/* store trusted domain in the cache */
@@ -234,18 +267,26 @@ BOOL init_domain_list(void)
 	free_domain_list();
 
 	/* Add ourselves as the first entry */
-	domain = add_trusted_domain( lp_workgroup(), NULL, &cache_methods, NULL);
+	
+	domain = add_trusted_domain( lp_workgroup(), lp_realm(), &cache_methods, NULL);
+	
+	/* get any alternate name for the primary domain */
+	
+	cache_methods.alternate_name(domain);
+	
+	/* now we have the correct netbios (short) domain name */
+	
+	if ( *domain->name )
+		set_global_myworkgroup( domain->name );
+		
 	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
 		DEBUG(1, ("Could not fetch sid for our domain %s\n",
 			  domain->name));
 		return False;
 	}
 
-	/* get any alternate name for the primary domain */
-	cache_methods.alternate_name(domain);
-
 	/* do an initial scan for trusted domains */
-	rescan_trusted_domains(True);
+	add_trusted_domains(domain);
 
 	return True;
 }

@@ -713,26 +713,19 @@ BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
  Used to reject unknown binds from Win2k.
 *******************************************************************/
 
-BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
-					RPC_IFACE* transfer)
+BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
+                    RPC_IFACE* transfer, uint32 context_id)
 {
 	extern struct pipe_id_info pipe_names[];
+	char *pipe_name = p->name;
 	int i=0;
 	fstring pname;
+	
 	fstrcpy(pname,"\\PIPE\\");
 	fstrcat(pname,pipe_name);
 
 	DEBUG(3,("check_bind_req for %s\n", pname));
 
-#ifndef SUPPORT_NEW_LSARPC_UUID
-
-	/* check for the first pipe matching the name */
-	
-	for ( i=0; pipe_names[i].client_pipe; i++ ) {
-		if ( strequal(pipe_names[i].client_pipe, pname) )
-			break;
-	}
-#else
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 		
 	for ( i=0; pipe_names[i].client_pipe; i++ ) 
@@ -743,29 +736,34 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 			&& (transfer->version == pipe_names[i].trans_syntax.version)
 			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) == 0) )
 		{
+			struct api_struct 	*fns = NULL;
+			int 			n_fns = 0;
+			PIPE_RPC_FNS		*context_fns;
+			
+			if ( !(context_fns = malloc(sizeof(PIPE_RPC_FNS))) ) {
+				DEBUG(0,("check_bind_req: malloc() failed!\n"));
+				return False;
+			}
+			
+			/* save the RPC function table associated with this bind */
+			
+			get_pipe_fns(i, &fns, &n_fns);
+			
+			context_fns->cmds = fns;
+			context_fns->n_cmds = n_fns;
+			context_fns->context_id = context_id;
+			
+			/* add to the list of open contexts */
+			
+			DLIST_ADD( p->contexts, context_fns );
+			
 			break;
 		}
 	}
-#endif
 
 	if(pipe_names[i].client_pipe == NULL)
 		return False;
 
-#ifndef SUPPORT_NEW_LSARPC_UUID
-	/* check the abstract interface */
-	if ( (abstract->version != pipe_names[i].abstr_syntax.version) 
-		|| (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(RPC_UUID)) != 0) )
-	{
-		return False;
-	}
-
-	/* check the transfer interface */
-	if ( (transfer->version != pipe_names[i].trans_syntax.version) 
-		|| (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) != 0) )
-	{
-		return False;
-	}
-#endif
 	return True;
 }
 
@@ -861,7 +859,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	if (i == rpc_lookup_size) {
-				if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
+		if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 p->name ));
                        if(!setup_bind_nak(p))
@@ -878,10 +876,10 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                        }
                 }
 
-				if (i == rpc_lookup_size) {
-					DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
-					return False;
-				}
+		if (i == rpc_lookup_size) {
+			DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
+			return False;
+		}
 	}
 
 	/* decode the bind request */
@@ -1028,7 +1026,8 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
-	if(check_bind_req(p->name, &hdr_rb.abstract, &hdr_rb.transfer)) {
+	if(check_bind_req(p, &hdr_rb.abstract, &hdr_rb.transfer, hdr_rb.context_id )) 
+	{
 		init_rpc_hdr_ba(&hdr_ba,
 	                MAX_PDU_FRAG_LEN,
 	                MAX_PDU_FRAG_LEN,
@@ -1227,10 +1226,10 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 			     sizeof(p->ntlmssp_hash));
 
 		dump_data_pw("Incoming RPC PDU (NTLMSSP sealed)\n", 
-			     data, data_len);
+			     (const unsigned char *)data, data_len);
 		NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		dump_data_pw("Incoming RPC PDU (NTLMSSP unsealed)\n", 
-			     data, data_len);
+			     (const unsigned char *)data, data_len);
 		crc32 = crc32_calc_buffer(data, data_len);
 	}
 
@@ -1392,6 +1391,48 @@ struct current_user *get_current_user(struct current_user *user, pipes_struct *p
 }
 
 /****************************************************************************
+ Find the set of RPC functions associated with this context_id
+****************************************************************************/
+
+static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 context_id )
+{
+	PIPE_RPC_FNS *fns = NULL;
+	PIPE_RPC_FNS *tmp = NULL;
+	
+	if ( !list ) {
+		DEBUG(0,("find_pipe_fns_by_context: ERROR!  No context list for pipe!\n"));
+		return NULL;
+	}
+	
+	for (tmp=list; tmp; tmp=tmp->next ) {
+		if ( tmp->context_id == context_id )
+			break;
+	}
+	
+	fns = tmp;
+	
+	return fns;
+}
+
+/****************************************************************************
+ memory cleanup
+****************************************************************************/
+
+void free_pipe_rpc_context( PIPE_RPC_FNS *list )
+{
+	PIPE_RPC_FNS *tmp = list;
+	PIPE_RPC_FNS *tmp2;
+		
+	while (tmp) {
+		tmp2 = tmp->next;
+		SAFE_FREE(tmp);
+		tmp = tmp2;
+	}
+
+	return;	
+}
+
+/****************************************************************************
  Find the correct RPC function to call for this request.
  If the pipe is authenticated then become the correct UNIX user
  before doing the call.
@@ -1399,9 +1440,9 @@ struct current_user *get_current_user(struct current_user *user, pipes_struct *p
 
 BOOL api_pipe_request(pipes_struct *p)
 {
-	int i = 0;
 	BOOL ret = False;
-
+	PIPE_RPC_FNS *pipe_fns;
+	
 	if (p->ntlmssp_auth_validated) {
 
 		if(!become_authenticated_pipe_user(p)) {
@@ -1411,36 +1452,19 @@ BOOL api_pipe_request(pipes_struct *p)
 	}
 
 	DEBUG(5, ("Requested \\PIPE\\%s\n", p->name));
-
-	for (i = 0; i < rpc_lookup_size; i++) {
-	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                        DEBUG(3,("Doing \\PIPE\\%s\n", 
-                                 rpc_lookup[i].pipe.clnt));
-                        set_current_rpc_talloc(p->mem_ctx);
-                        ret = api_rpcTNP(p, rpc_lookup[i].pipe.clnt,
-                                         rpc_lookup[i].cmds,
-                                         rpc_lookup[i].n_cmds);
-                        set_current_rpc_talloc(NULL);
-                        break;
-                }
+	
+	/* get the set of RPC functions for this context */
+	
+	pipe_fns = find_pipe_fns_by_context(p->contexts, p->hdr_req.context_id);
+	
+	if ( pipe_fns ) {
+		set_current_rpc_talloc(p->mem_ctx);
+		ret = api_rpcTNP(p, p->name, pipe_fns->cmds, pipe_fns->n_cmds);
+		set_current_rpc_talloc(NULL);	
 	}
-
-
-	if (i == rpc_lookup_size) {
-		smb_probe_module("rpc", p->name);
-
-                for (i = 0; i < rpc_lookup_size; i++) {
-                        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                                DEBUG(3,("Doing \\PIPE\\%s\n",
-                                         rpc_lookup[i].pipe.clnt));
-                                set_current_rpc_talloc(p->mem_ctx);
-                                ret = api_rpcTNP(p, rpc_lookup[i].pipe.clnt,
-                                                 rpc_lookup[i].cmds,
-                                                 rpc_lookup[i].n_cmds);
-                                set_current_rpc_talloc(NULL);
-                                break;
-                        }
-                }
+	else {
+		DEBUG(0,("api_pipe_request: No rpc function table associated with context [%d] on pipe [%s]\n",
+			p->hdr_req.context_id, p->name));
 	}
 
 	if(p->ntlmssp_auth_validated)
@@ -1529,3 +1553,56 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 
 	return True;
 }
+
+/*******************************************************************
+*******************************************************************/
+
+void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
+{
+	struct api_struct *cmds = NULL;
+	int               n_cmds = 0;
+
+	switch ( idx ) {
+		case PI_LSARPC:
+			lsa_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_LSARPC_DS:
+			lsa_ds_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_SAMR:
+			samr_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_NETLOGON:
+			netlog_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_SRVSVC:
+			srvsvc_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_WKSSVC:
+			wkssvc_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_WINREG:
+			reg_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_SPOOLSS:
+			spoolss_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_NETDFS:
+			netdfs_get_pipe_fns( &cmds, &n_cmds );
+			break;
+#ifdef DEVELOPER
+		case PI_ECHO:
+			echo_get_pipe_fns( &cmds, &n_cmds );
+			break;
+#endif
+		default:
+			DEBUG(0,("get_pipe_fns: Unknown pipe index! [%d]\n", idx));
+	}
+
+	*fns = cmds;
+	*n_fns = n_cmds;
+
+	return;
+}
+
+

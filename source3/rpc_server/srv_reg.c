@@ -367,16 +367,12 @@ static BOOL api_reg_save_key(pipes_struct *p)
 	return True;
 }
 
-
-
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
 
-NTSTATUS rpc_reg_init(void)
+static struct api_struct api_reg_cmds[] =
 {
-  static struct api_struct api_reg_cmds[] =
-    {
       { "REG_CLOSE"              , REG_CLOSE              , api_reg_close            },
       { "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
       { "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
@@ -390,7 +386,17 @@ NTSTATUS rpc_reg_init(void)
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
       { "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
-    };
+};
+
+void reg_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_reg_cmds;
+	*n_fns = sizeof(api_reg_cmds) / sizeof(struct api_struct);
+}
+    
+NTSTATUS rpc_reg_init(void)
+{
+
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", api_reg_cmds,
 				    sizeof(api_reg_cmds) / sizeof(struct api_struct));
 }

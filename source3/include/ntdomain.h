@@ -165,10 +165,21 @@ struct dcinfo
 
 };
 
+typedef struct pipe_rpc_fns {
+
+	struct pipe_rpc_fns *next, *prev;
+	
+	/* RPC function table associated with the current rpc_bind (associated by context) */
+	
+	struct api_struct *cmds;
+	int n_cmds;
+	uint32 context_id;
+	
+} PIPE_RPC_FNS;
+
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
  * NamedPipes.
- *
  */
 
 typedef struct pipes_struct
@@ -180,7 +191,12 @@ typedef struct pipes_struct
 
 	fstring name;
 	fstring pipe_srv_name;
-
+	
+	/* linked list of rpc dispatch tables associated 
+	   with the open rpc contexts */
+	   
+	PIPE_RPC_FNS *contexts;
+	
 	RPC_HDR hdr; /* Incoming RPC header. */
 	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 

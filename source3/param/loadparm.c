@@ -231,7 +231,6 @@ typedef struct
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
-	BOOL ldap_trust_ids;
 	char *szAclCompat;
 	int ldap_passwd_sync; 
 	BOOL ldap_delete_dn;
@@ -563,6 +562,7 @@ static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
+static BOOL handle_charset( const char *pszParmValue, char **ptr );
 
 static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
 static BOOL handle_ldap_sub_suffix ( const char *pszParmValue, char **ptr );
@@ -700,6 +700,7 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{True, "1"},
 	{True, "On"},
 	{True, "enabled"},
+	{Auto, "auto"},
 	{Required, "required"},
 	{Required, "mandatory"},
 	{Required, "force"},
@@ -752,9 +753,9 @@ static const struct enum_list enum_map_to_guest[] = {
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR}, 
 
-	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, FLAG_ADVANCED}, 
-	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, FLAG_ADVANCED}, 
-	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, NULL, NULL, FLAG_ADVANCED}, 
+	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, handle_charset, NULL, FLAG_ADVANCED}, 
+	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, handle_charset, NULL, FLAG_ADVANCED}, 
+	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE}, 
@@ -1071,7 +1072,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED}, 
-	{"ldap trust ids", P_BOOL, P_GLOBAL, &Globals.ldap_trust_ids, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR}, 
@@ -1309,18 +1309,18 @@ static void init_globals(void)
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
-	string_set(&Globals.unix_charset, "UTF8");
+	string_set(&Globals.unix_charset, DEFAULT_UNIX_CHARSET);
 
 #if defined(HAVE_NL_LANGINFO) && defined(CODESET)
 	/* If the system supports nl_langinfo(), try to grab the value
 	   from the user's locale */
 	string_set(&Globals.display_charset, "LOCALE");
 #else
-	string_set(&Globals.display_charset, "ASCII");
+	string_set(&Globals.display_charset, DEFAULT_DISPLAY_CHARSET);
 #endif
 
 	/* Use codepage 850 as a default for the dos character set */
-	string_set(&Globals.dos_charset, "CP850");
+	string_set(&Globals.dos_charset, DEFAULT_DOS_CHARSET);
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
@@ -1339,7 +1339,7 @@ static void init_globals(void)
 	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
-	pstrcat(s, VERSION);
+	pstrcat(s, SAMBA_VERSION_STRING);
 	string_set(&Globals.szServerString, s);
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);
@@ -1427,19 +1427,21 @@ static void init_globals(void)
 	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
-	
+	Globals.bClientNTLMv2Auth = False; /* Client should not use NTLMv2, as we can't tell that the server supports it. */
+	/* Note, that we will use NTLM2 session security (which is different), if it is available */
+
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
-	Globals.iLockSpinCount = 3; /* Try 2 times. */
+	Globals.iLockSpinCount = 3; /* Try 3 times. */
 	Globals.iLockSpinTime = 10; /* usec. */
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;
 #else
 	Globals.bUseMmap = True;
 #endif
-	Globals.bUnixExtensions = False;
+	Globals.bUnixExtensions = True;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -1514,6 +1516,9 @@ static void init_globals(void)
 	Globals.bUseSpnego = True;
 	Globals.bClientUseSpnego = True;
 
+	Globals.client_signing = Auto;
+	Globals.server_signing = False;
+
 	string_set(&Globals.smb_ports, SMB_PORTS);
 }
 
@@ -1554,8 +1559,8 @@ static char *lp_string(const char *s)
 		lp_talloc = talloc_init("lp_talloc");
 
 	tmpstr = alloc_sub_basic(current_user_info.smb_name, s);
-	if (trim_string(tmpstr, "\"", "\"")) {
-		if (strchr(tmpstr,'"') != NULL) {
+	if (trim_char(tmpstr, '\"', '\"')) {
+		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
 			tmpstr = alloc_sub_basic(current_user_info.smb_name,s);
 		}
@@ -1692,7 +1697,6 @@ FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
-FN_GLOBAL_BOOL(lp_ldap_trust_ids, &Globals.ldap_trust_ids)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
@@ -2293,13 +2297,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
 		pstrcpy(newHomedir, pszHomedir);
-	} else {
-		pstrcpy(newHomedir, lp_pathname(iDefaultService));
-		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
-		string_sub(newHomedir,"%S", pszHomename, sizeof(newHomedir)); 
-	}
-
-	string_set(&ServicePtrs[i]->szPath, newHomedir);
+		string_set(&ServicePtrs[i]->szPath, newHomedir);
+	} 
 
 	if (!(*(ServicePtrs[i]->comment))) {
 		pstring comment;
@@ -2307,7 +2306,9 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 			 "Home directory of %s", user);
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
-	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
+
+	/* set the browseable flag from the gloabl default */
+
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
@@ -2377,7 +2378,10 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* the printer name is set to the service name. */
 	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
 	string_set(&ServicePtrs[i]->comment, comment);
+
+	/* set the browseable flag from the gloabl default */
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
 	/* No share modes on printer services. */
@@ -2698,7 +2702,6 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 
 	standard_sub_basic(current_user_info.smb_name, netbios_name,sizeof(netbios_name));
 
-
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
 	
@@ -2706,6 +2709,15 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 	       global_myname()));
 
 	return ret;
+}
+
+static BOOL handle_charset(const char *pszParmValue, char **ptr)
+{
+	if (strcmp(*ptr, pszParmValue) != 0) {
+		string_set(ptr, pszParmValue);
+		init_iconv();
+	}
+	return True;
 }
 
 static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
@@ -3101,7 +3113,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			pstr_sprintf(param_key, "%s:", pszParmName);
 			slen = strlen(param_key);
 			pstrcat(param_key, sep+1);
-			trim_string(param_key+slen, " ", " ");
+			trim_char(param_key+slen, ' ', ' ');
 			not_added = True;
 			data = (snum < 0) ? Globals.param_opt : 
 				ServicePtrs[snum]->param_opt;
@@ -4158,12 +4170,11 @@ void lp_remove_service(int snum)
 
 void lp_copy_service(int snum, const char *new_name)
 {
-	char *oldname = lp_servicename(snum);
 	do_section(new_name);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
 		if (snum >= 0)
-			lp_do_parameter(snum, "copy", oldname);
+			lp_do_parameter(snum, "copy", lp_servicename(snum));
 	}
 }
 

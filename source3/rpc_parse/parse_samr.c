@@ -183,9 +183,9 @@ BOOL samr_io_r_lookup_domain(const char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u, POLICY_HND *dom_pol, DOM_SID *sid)
+void init_samr_q_remove_user_foreign_domain(SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN * q_u, POLICY_HND *dom_pol, DOM_SID *sid)
 {
-	DEBUG(5, ("samr_init_samr_q_unknown_2d\n"));
+	DEBUG(5, ("samr_init_samr_q_remove_user_foreign_domain\n"));
 
 	q_u->dom_pol = *dom_pol;
 	init_dom_sid2(&q_u->sid, sid);
@@ -195,13 +195,13 @@ void init_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u, POLICY_HND *dom_pol, DOM_SI
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_unknown_2d(const char *desc, SAMR_Q_UNKNOWN_2D * q_u,
+BOOL samr_io_q_remove_user_foreign_domain(const char *desc, SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN * q_u,
 			  prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_2d");
+	prs_debug(ps, depth, desc, "samr_io_q_remove_user_foreign_domain");
 	depth++;
 
 	if(!prs_align(ps))
@@ -223,13 +223,13 @@ BOOL samr_io_q_unknown_2d(const char *desc, SAMR_Q_UNKNOWN_2D * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_unknown_2d(const char *desc, SAMR_R_UNKNOWN_2D * r_u,
+BOOL samr_io_r_remove_user_foreign_domain(const char *desc, SAMR_R_REMOVE_USER_FOREIGN_DOMAIN * r_u,
 			  prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_2d");
+	prs_debug(ps, depth, desc, "samr_io_r_remove_user_foreign_domain");
 	depth++;
 
 	if(!prs_align(ps))

@@ -550,7 +550,11 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(map.nt_name, name);
-	fstrcpy(map.comment, comment);
+	if (delta->hdr_grp_desc.buffer) {
+		fstrcpy(map.comment, comment);
+	} else {
+		fstrcpy(map.comment, "");
+	}
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
@@ -911,8 +915,39 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		fetch_alias_mem(hdr_delta->target_rid,
 				&delta->als_mem_info, dom_sid);
 		break;
+	/* The following types are recognised but not handled */
 	case SAM_DELTA_DOMAIN_INFO:
 		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
+		break;
+	case SAM_DELTA_RENAME_GROUP:
+		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+		break;
+	case SAM_DELTA_RENAME_USER:
+		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+		break;
+	case SAM_DELTA_RENAME_ALIAS:
+		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+		break;
+	case SAM_DELTA_POLICY_INFO:
+		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+		break;
+	case SAM_DELTA_TRUST_DOMS:
+		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+		break;
+	case SAM_DELTA_PRIVS_INFO:
+		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+		break;
+	case SAM_DELTA_SECRET_INFO:
+		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+		break;
+	case SAM_DELTA_DELETE_GROUP:
+		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+		break;
+	case SAM_DELTA_DELETE_USER:
+		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+		break;
+	case SAM_DELTA_MODIFIED_COUNT:
+		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);

@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000-2002
+   Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -219,15 +219,20 @@ static BOOL wbinfo_list_domains(void)
 
 
 /* show sequence numbers */
-static BOOL wbinfo_show_sequence(void)
+static BOOL wbinfo_show_sequence(const char *domain)
 {
+	struct winbindd_request  request;
 	struct winbindd_response response;
 
 	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+
+	if ( domain )
+		fstrcpy( request.domain_name, domain );
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, NULL, &response) !=
+	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -481,9 +486,18 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	fstrcpy(request.data.auth_crap.user, name_user);
+	if (push_utf8_fstring(request.data.auth_crap.user, name_user) == -1) {
+		d_printf("unable to create utf8 string for '%s'\n",
+			 name_user);
+		return False;
+	}
 
-	fstrcpy(request.data.auth_crap.domain, name_domain);
+	if (push_utf8_fstring(request.data.auth_crap.domain, 
+			      name_domain) == -1) {
+		d_printf("unable to create utf8 string for '%s'\n",
+			 name_domain);
+		return False;
+	}
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
@@ -682,17 +696,27 @@ static BOOL wbinfo_remove_user_from_group(char *string)
 
 /* Print domain users */
 
-static BOOL print_domain_users(void)
+static BOOL print_domain_users(const char *domain)
 {
+	struct winbindd_request request;
 	struct winbindd_response response;
 	const char *extra_data;
 	fstring name;
 
 	/* Send request to winbind daemon */
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+	
+	if (domain) {
+		/* '.' is the special sign for our own domwin */
+		if ( strequal(domain, ".") )
+			fstrcpy( request.domain_name, lp_workgroup() );
+		else
+			fstrcpy( request.domain_name, domain );
+	}
 
-	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
+	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -713,15 +737,24 @@ static BOOL print_domain_users(void)
 
 /* Print domain groups */
 
-static BOOL print_domain_groups(void)
+static BOOL print_domain_groups(const char *domain)
 {
+	struct winbindd_request  request;
 	struct winbindd_response response;
 	const char *extra_data;
 	fstring name;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
+	if (domain) {
+		if ( strequal(domain, ".") )
+			fstrcpy( request.domain_name, lp_workgroup() );
+		else
+			fstrcpy( request.domain_name, domain );
+	}
+
+	if (winbindd_request(WINBINDD_LIST_GROUPS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -845,6 +878,7 @@ static BOOL wbinfo_ping(void)
 enum {
 	OPT_SET_AUTH_USER = 1000,
 	OPT_GET_AUTH_USER,
+	OPT_DOMAIN_NAME,
 	OPT_SEQUENCE
 };
 
@@ -854,8 +888,8 @@ int main(int argc, char **argv)
 
 	poptContext pc;
 	static char *string_arg;
+	static char *opt_domain_name;
 	static int int_arg;
-	BOOL got_command = False;
 	int result = 1;
 
 	struct poptOption long_options[] = {
@@ -864,8 +898,8 @@ int main(int argc, char **argv)
 		/* longName, shortName, argInfo, argPtr, value, descrip, 
 		   argDesc */
 
-		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users"},
-		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups" },
+		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users", "domain"},
+		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups", "domain" },
 		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP", "NETBIOS-NAME" },
 		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
@@ -888,6 +922,7 @@ int main(int argc, char **argv)
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
+		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operatio", "domain" },
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -917,11 +952,7 @@ int main(int argc, char **argv)
 	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
-		if (got_command) {
-			d_fprintf(stderr, "No more than one command may be specified at once.\n");
-			exit(1);
-		}
-		got_command = True;
+		/* get the generic configuration parameters like --domain */
 	}
 
 	poptFreeContext(pc);
@@ -932,13 +963,13 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'u':
-			if (!print_domain_users()) {
+			if (!print_domain_users(opt_domain_name)) {
 				d_printf("Error looking up domain users\n");
 				goto done;
 			}
 			break;
 		case 'g':
-			if (!print_domain_groups()) {
+			if (!print_domain_groups(opt_domain_name)) {
 				d_printf("Error looking up domain groups\n");
 				goto done;
 			}
@@ -1007,7 +1038,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case OPT_SEQUENCE:
-			if (!wbinfo_show_sequence()) {
+			if (!wbinfo_show_sequence(opt_domain_name)) {
 				d_printf("Could not show sequence numbers\n");
 				goto done;
 			}
@@ -1085,6 +1116,9 @@ int main(int argc, char **argv)
 			break;
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
+			break;
+		/* generic configuration options */
+		case OPT_DOMAIN_NAME:
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");

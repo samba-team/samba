@@ -299,9 +299,12 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
 
+
+#if defined(DEVELOPER)
 	/* just because we over-allocate, doesn't mean it's right to use it */
 	clobber_region(FUNCTION_MACRO, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
 	clobber_region(FUNCTION_MACRO, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
+#endif
 
 	/* initialise signing */
 	cli_null_set_signing(cli);
@@ -339,7 +342,9 @@ void cli_nt_session_close(struct cli_state *cli)
 		ntlmssp_client_end(&cli->ntlmssp_pipe_state);
 	}
 
-	cli_close(cli, cli->nt_pipe_fnum);
+	if (cli->nt_pipe_fnum != 0)
+		cli_close(cli, cli->nt_pipe_fnum);
+
 	cli->nt_pipe_fnum = 0;
 	cli->pipe_idx = -1;
 }

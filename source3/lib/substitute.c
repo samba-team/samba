@@ -57,7 +57,7 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	already_perm = perm;
 
 	fstrcpy(tmp_local_machine,local_name);
-	trim_string(tmp_local_machine," "," ");
+	trim_char(tmp_local_machine,' ',' ');
 	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 	strlower_m(local_machine);
 }
@@ -79,7 +79,7 @@ void set_remote_machine_name(const char* remote_name, BOOL perm)
 	already_perm = perm;
 
 	fstrcpy(tmp_remote_machine,remote_name);
-	trim_string(tmp_remote_machine," "," ");
+	trim_char(tmp_remote_machine,' ',' ');
 	alpha_strcpy(remote_machine,tmp_remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
 	strlower_m(remote_machine);
 }
@@ -98,23 +98,36 @@ const char* get_local_machine_name(void)
 	return local_machine;
 }
 
+/*******************************************************************
+ Setup the string used by %U substitution.
+********************************************************************/
 
-/*
-  setup the string used by %U substitution 
-*/
 void sub_set_smb_name(const char *name)
 {
 	fstring tmp;
 
 	/* don't let anonymous logins override the name */
-	if (! *name) return;
+	if (! *name)
+		return;
 
 	fstrcpy(tmp,name);
-	trim_string(tmp," "," ");
+	trim_char(tmp,' ',' ');
 	strlower_m(tmp);
 	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
 }
 
+/*******************************************************************
+ Setup the strings used by substitutions. Called per packet. Ensure
+ %U name is set correctly also.
+********************************************************************/
+
+void set_current_user_info(const userdom_struct *pcui)
+{
+	current_user_info = *pcui;
+	/* The following is safe as current_user_info.smb_name
+	 * has already been sanitised in register_vuid. */
+	fstrcpy(smb_user_name, current_user_info.smb_name);
+}
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
@@ -384,7 +397,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			string_sub(p,"%m", get_remote_machine_name(),l);
 			break;
 		case 'v' :
-			string_sub(p,"%v", VERSION,l);
+			string_sub(p,"%v", SAMBA_VERSION_STRING,l);
 			break;
 		case '$' :
 			p += expand_env_var(p,l);
@@ -539,7 +552,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			t = realloc_string_sub(t, "%m", remote_machine);
 			break;
 		case 'v' :
-			t = realloc_string_sub(t, "%v", VERSION);
+			t = realloc_string_sub(t, "%v", SAMBA_VERSION_STRING);
 			break;
 		case '$' :
 			t = realloc_expand_env_var(t, p); /* Expand environment variables */

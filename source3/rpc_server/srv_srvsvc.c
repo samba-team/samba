@@ -526,10 +526,8 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 \PIPE\srvsvc commands
 ********************************************************************/
 
-NTSTATUS rpc_srv_init(void)
+static struct api_struct api_srv_cmds[] =
 {
-  static const struct api_struct api_srv_cmds[] =
-    {
       { "SRV_NET_CONN_ENUM"         , SRV_NET_CONN_ENUM         , api_srv_net_conn_enum          },
       { "SRV_NET_SESS_ENUM"         , SRV_NET_SESS_ENUM         , api_srv_net_sess_enum          },
       { "SRV_NET_SHARE_ENUM_ALL"    , SRV_NET_SHARE_ENUM_ALL    , api_srv_net_share_enum_all     },
@@ -547,7 +545,17 @@ NTSTATUS rpc_srv_init(void)
       { "SRV_NET_NAME_VALIDATE"     , SRV_NET_NAME_VALIDATE     , api_srv_net_name_validate      },
       { "SRV_NET_FILE_QUERY_SECDESC", SRV_NET_FILE_QUERY_SECDESC, api_srv_net_file_query_secdesc },
       { "SRV_NET_FILE_SET_SECDESC"  , SRV_NET_FILE_SET_SECDESC  , api_srv_net_file_set_secdesc   }
-    };
+};
+
+void srvsvc_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_srv_cmds;
+	*n_fns = sizeof(api_srv_cmds) / sizeof(struct api_struct);
+}
+
+
+NTSTATUS rpc_srv_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "srvsvc", "ntsvcs", api_srv_cmds,
 				    sizeof(api_srv_cmds) / sizeof(struct api_struct));
 }

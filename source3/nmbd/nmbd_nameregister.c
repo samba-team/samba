@@ -3,7 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -85,7 +85,9 @@ static void register_name_response(struct subnet_record *subrec,
 		 */
 		
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup(), answer_name->name) &&
+		nstring ans_name;
+		pull_ascii_nstring(ans_name, answer_name->name);
+		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup(), ans_name) &&
 		   (answer_name->name_type == 0x1b)) {
 			/* Pretend we did not get this. */
 			rrec->num_msgs--;
@@ -161,10 +163,10 @@ static void register_name_response(struct subnet_record *subrec,
 	remove_response_record(subrec, rrec);
 }
 
-
 /****************************************************************************
  Deal with a timeout of a WINS registration request
 ****************************************************************************/
+
 static void wins_registration_timeout(struct subnet_record *subrec,
 				      struct response_record *rrec)
 {
@@ -233,7 +235,6 @@ static void wins_registration_timeout(struct subnet_record *subrec,
 	   us trying to register with each of our failover wins servers */
 }
 
-
 /****************************************************************************
  Deal with a timeout when registering one of our names.
 ****************************************************************************/
@@ -290,10 +291,10 @@ static void register_name_timeout_response(struct subnet_record *subrec,
 	remove_response_record(subrec, rrec);
 }
 
-
 /****************************************************************************
-initiate one multi-homed name registration packet
+ Initiate one multi-homed name registration packet.
 ****************************************************************************/
+
 static void multihomed_register_one(struct nmb_name *nmbname,
 				    uint16 nb_flags,
 				    register_name_success_function success_fn,
@@ -336,11 +337,11 @@ static void multihomed_register_one(struct nmb_name *nmbname,
 	free(userdata);
 }
 
-
 /****************************************************************************
-we have finished the registration of one IP and need to see if we have
-any more IPs left to register with this group of wins server for this name
+ We have finished the registration of one IP and need to see if we have
+ any more IPs left to register with this group of wins server for this name.
 ****************************************************************************/
+
 static void wins_next_registration(struct response_record *rrec)
 {
 	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
@@ -388,6 +389,7 @@ static void wins_next_registration(struct response_record *rrec)
 /****************************************************************************
  Try and register one of our names on the unicast subnet - multihomed.
 ****************************************************************************/
+
 static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 				     register_name_success_function success_fn,
 				     register_name_fail_function fail_fn)
@@ -416,6 +418,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 	struct subnet_record *subrec;
 	char **wins_tags;
 	struct in_addr *ip_list;
+	nstring name;
 
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
 		num_ips++;
@@ -431,7 +434,8 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 		ip_list[i] = subrec->myip;
 	}
 
-	add_name_to_subnet(unicast_subnet, nmbname->name, nmbname->name_type,
+	pull_ascii_nstring(name, nmbname->name);
+	add_name_to_subnet(unicast_subnet, name, nmbname->name_type,
 			   nb_flags, lp_max_ttl(), SELF_NAME,
 			   num_ips, ip_list);
 
@@ -456,10 +460,10 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 	SAFE_FREE(ip_list);
 }
 
-
 /****************************************************************************
  Try and register one of our names.
 ****************************************************************************/
+
 void register_name(struct subnet_record *subrec,
                    const char *name, int type, uint16 nb_flags,
                    register_name_success_function success_fn,
@@ -467,8 +471,18 @@ void register_name(struct subnet_record *subrec,
                    struct userdata_struct *userdata)
 {
 	struct nmb_name nmbname;
-	
-	make_nmb_name(&nmbname, name, type);
+	nstring nname;
+
+        if (strlen(name)+1 > sizeof(nstring)) {
+		memcpy(nname, name,sizeof(nstring)-1);
+		nname[sizeof(nstring)-1] = '\0';
+		DEBUG(0,("register_name: NetBIOS name %s is too long. Truncating to %s\n",
+			name, nname));
+	} else {
+		nstrcpy(nname,name);
+	}
+
+	make_nmb_name(&nmbname, nname, type);
 
 	/* Always set the NB_ACTIVE flag on the name we are
 	   registering. Doesn't make sense without it.
@@ -498,10 +512,10 @@ void register_name(struct subnet_record *subrec,
 	}
 }
 
-
 /****************************************************************************
  Try and refresh one of our names. This is *only* called for WINS refresh
 ****************************************************************************/
+
 void wins_refresh_name(struct name_record *namerec)
 {
 	int t;

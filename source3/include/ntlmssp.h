@@ -100,6 +100,7 @@ typedef struct ntlmssp_client_state
 	char *domain;
 	char *workstation;
 	char *password;
+	char *server_domain;
 
 	const char *(*get_global_myname)(void);
 	const char *(*get_domain)(void);

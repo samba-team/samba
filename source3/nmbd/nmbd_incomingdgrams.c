@@ -95,102 +95,99 @@ void tell_become_backup(void)
 
 void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  int ttl = IVAL(buf,1)/1000;
-  char *announce_name = buf+5;
-  uint32 servertype = IVAL(buf,23);
-  char *comment = buf+31;
-  struct work_record *work;
-  struct server_record *servrec;
-  const char *work_name;
-  char *source_name = dgram->source_name.name;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	int ttl = IVAL(buf,1)/1000;
+	nstring announce_name;
+	uint32 servertype = IVAL(buf,23);
+	fstring comment;
+	struct work_record *work;
+	struct server_record *servrec;
+	nstring work_name;
+	nstring source_name;
 
-  START_PROFILE(host_announce);
-  comment[43] = 0;
+	START_PROFILE(host_announce);
+
+	pull_ascii_fstring(comment, buf+31);
+	comment[42] = 0;
   
-  DEBUG(3,("process_host_announce: from %s<%02x> IP %s to \
+	pull_ascii_nstring(announce_name, buf+5);
+	pull_ascii_nstring(source_name, dgram->source_name.name);
+
+	DEBUG(3,("process_host_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              nmb_namestr(&dgram->dest_name),announce_name));
+			nmb_namestr(&dgram->dest_name),announce_name));
 
-  DEBUG(5,("process_host_announce: ttl=%d server type=%08x comment=%s\n",
-	   ttl, servertype,comment));
+	DEBUG(5,("process_host_announce: ttl=%d server type=%08x comment=%s\n",
+		ttl, servertype,comment));
 
-  /* Filter servertype to remove impossible bits. */
-  servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
+	/* Filter servertype to remove impossible bits. */
+	servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
 
-  /* A host announcement must be sent to the name WORKGROUP<1d>. */
-  if(dgram->dest_name.name_type != 0x1d)
-  {
-    DEBUG(2,("process_host_announce: incorrect name type for destination from IP %s \
+	/* A host announcement must be sent to the name WORKGROUP<1d>. */
+	if(dgram->dest_name.name_type != 0x1d) {
+		DEBUG(2,("process_host_announce: incorrect name type for destination from IP %s \
 (was %02x) should be 0x1d. Allowing packet anyway.\n",
-              inet_ntoa(p->ip), dgram->dest_name.name_type));
-    /* Change it so it was. */
-    dgram->dest_name.name_type = 0x1d;
-  }
+			inet_ntoa(p->ip), dgram->dest_name.name_type));
+		/* Change it so it was. */
+		dgram->dest_name.name_type = 0x1d;
+	}
 
-  /* For a host announce the workgroup name is the destination name. */
-  work_name = dgram->dest_name.name;
+	/* For a host announce the workgroup name is the destination name. */
+	pull_ascii_nstring(work_name, dgram->dest_name.name);
 
-  /*
-   * Syntax servers version 5.1 send HostAnnounce packets to
-   * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
-   * instead of WORKGROUP<1d> name. So to fix this we check if
-   * the workgroup name is our own name, and if so change it
-   * to be our primary workgroup name.
-   */
+	/*
+	 * Syntax servers version 5.1 send HostAnnounce packets to
+	 * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
+	 * instead of WORKGROUP<1d> name. So to fix this we check if
+	 * the workgroup name is our own name, and if so change it
+	 * to be our primary workgroup name.
+	 */
 
-  if(strequal(work_name, global_myname()))
-    work_name = lp_workgroup();
+	if(strequal(work_name, global_myname()))
+		nstrcpy(work_name,lp_workgroup());
 
-  /*
-   * We are being very agressive here in adding a workgroup
-   * name on the basis of a host announcing itself as being
-   * in that workgroup. Maybe we should wait for the workgroup
-   * announce instead ? JRA.
-   */
+	/*
+	 * We are being very agressive here in adding a workgroup
+	 * name on the basis of a host announcing itself as being
+	 * in that workgroup. Maybe we should wait for the workgroup
+	 * announce instead ? JRA.
+	 */
 
-  work = find_workgroup_on_subnet(subrec, work_name);
+	work = find_workgroup_on_subnet(subrec, work_name);
 
-  if(servertype != 0)
-  {
-    if (work ==NULL )
-    {
-      /* We have no record of this workgroup. Add it. */
-      if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
-        goto done;
-    }
+	if(servertype != 0) {
+		if (work ==NULL ) {
+			/* We have no record of this workgroup. Add it. */
+			if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+				goto done;
+		}
   
-    if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
-    {
-      /* If this server is not already in the workgroup, add it. */
-      create_server_on_workgroup(work, announce_name, 
-                                 servertype|SV_TYPE_LOCAL_LIST_ONLY, 
-                                 ttl, comment);
-    }
-    else
-    {
-      /* Update the record. */
-      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-      update_server_ttl( servrec, ttl);
-      fstrcpy(servrec->serv.comment,comment);
-    }
-  }
-  else
-  {
-    /*
-     * This server is announcing it is going down. Remove it from the 
-     * workgroup.
-     */
-    if(!is_myname(announce_name) && (work != NULL) &&
-       ((servrec = find_server_in_workgroup( work, announce_name))!=NULL)
-      )
-    {
-      remove_server_from_workgroup( work, servrec);
-    }
-  }
-  subrec->work_changed = True;
+		if((servrec = find_server_in_workgroup( work, announce_name))==NULL) {
+			/* If this server is not already in the workgroup, add it. */
+			create_server_on_workgroup(work, announce_name, 
+				servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+				ttl, comment);
+		} else {
+			/* Update the record. */
+			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+			update_server_ttl( servrec, ttl);
+			fstrcpy(servrec->serv.comment,comment);
+		}
+	} else {
+		/*
+		 * This server is announcing it is going down. Remove it from the 
+		 * workgroup.
+		 */
+		if(!is_myname(announce_name) && (work != NULL) &&
+				((servrec = find_server_in_workgroup( work, announce_name))!=NULL)) {
+			remove_server_from_workgroup( work, servrec);
+		}
+	}
+
+	subrec->work_changed = True;
 done:
-  END_PROFILE(host_announce);
+
+	END_PROFILE(host_announce);
 }
 
 /*******************************************************************
@@ -199,53 +196,55 @@ done:
 
 void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  int ttl = IVAL(buf,1)/1000;
-  char *workgroup_announce_name = buf+5;
-  uint32 servertype = IVAL(buf,23);
-  char *master_name = buf+31;
-  struct work_record *work;
-  char *source_name = dgram->source_name.name;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	int ttl = IVAL(buf,1)/1000;
+	nstring workgroup_announce_name;
+	nstring master_name;
+	uint32 servertype = IVAL(buf,23);
+	struct work_record *work;
+	nstring source_name;
+	nstring dest_name;
 
-  START_PROFILE(workgroup_announce);
-  master_name[43] = 0;
+	START_PROFILE(workgroup_announce);
 
-  DEBUG(3,("process_workgroup_announce: from %s<%02x> IP %s to \
+	pull_ascii_nstring(workgroup_announce_name,buf+5);
+	pull_ascii_nstring(master_name,buf+31);
+	pull_ascii_nstring(source_name,dgram->source_name.name);
+	pull_ascii_nstring(dest_name,dgram->dest_name.name);
+
+	DEBUG(3,("process_workgroup_announce: from %s<%02x> IP %s to \
 %s for workgroup %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              nmb_namestr(&dgram->dest_name),workgroup_announce_name));
+			nmb_namestr(&dgram->dest_name),workgroup_announce_name));
 
-  DEBUG(5,("process_workgroup_announce: ttl=%d server type=%08x master browser=%s\n",
-           ttl, servertype, master_name));
+	DEBUG(5,("process_workgroup_announce: ttl=%d server type=%08x master browser=%s\n",
+		ttl, servertype, master_name));
 
-  /* Workgroup announcements must only go to the MSBROWSE name. */
-  if (!strequal(dgram->dest_name.name, MSBROWSE) || (dgram->dest_name.name_type != 0x1))
-  {
-    DEBUG(0,("process_workgroup_announce: from IP %s should be to __MSBROWSE__<0x01> not %s\n",
-              inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
-    goto done;
-  }
+	/* Workgroup announcements must only go to the MSBROWSE name. */
+	if (!strequal(dest_name, MSBROWSE) || (dgram->dest_name.name_type != 0x1)) {
+		DEBUG(0,("process_workgroup_announce: from IP %s should be to __MSBROWSE__<0x01> not %s\n",
+			inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
+		goto done;
+	}
 
-  if ((work = find_workgroup_on_subnet(subrec, workgroup_announce_name))==NULL)
-  {
-    /* We have no record of this workgroup. Add it. */
-    if((work = create_workgroup_on_subnet(subrec, workgroup_announce_name, ttl))==NULL)
-      goto done;
-  }
-  else
-  {
-    /* Update the workgroup death_time. */
-    update_workgroup_ttl(work, ttl);
-  }
+	if ((work = find_workgroup_on_subnet(subrec, workgroup_announce_name))==NULL) {
+		/* We have no record of this workgroup. Add it. */
+		if((work = create_workgroup_on_subnet(subrec, workgroup_announce_name, ttl))==NULL)
+			goto done;
+	} else {
+		/* Update the workgroup death_time. */
+		update_workgroup_ttl(work, ttl);
+	}
 
-  if(*work->local_master_browser_name == '\0')
-  {
-    /* Set the master browser name. */
-    set_workgroup_local_master_browser_name( work, master_name );
-  }
+	if(*work->local_master_browser_name == '\0') {
+		/* Set the master browser name. */
+		set_workgroup_local_master_browser_name( work, master_name );
+	}
 
-  subrec->work_changed = True;
+	subrec->work_changed = True;
+
 done:
-  END_PROFILE(workgroup_announce);
+
+	END_PROFILE(workgroup_announce);
 }
 
 /*******************************************************************
@@ -254,117 +253,110 @@ done:
 
 void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  int ttl = IVAL(buf,1)/1000;
-  char *server_name = buf+5;
-  uint32 servertype = IVAL(buf,23);
-  char *comment = buf+31;
-  char *work_name;
-  struct work_record *work;
-  struct server_record *servrec;
-  char *source_name = dgram->source_name.name;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	int ttl = IVAL(buf,1)/1000;
+	nstring server_name;
+	uint32 servertype = IVAL(buf,23);
+	fstring comment;
+	nstring work_name;
+	struct work_record *work;
+	struct server_record *servrec;
+	nstring source_name;
 
-  START_PROFILE(local_master_announce);
-  comment[43] = 0;
+	START_PROFILE(local_master_announce);
 
-  DEBUG(3,("process_local_master_announce: from %s<%02x> IP %s to \
+	pull_ascii_nstring(server_name,buf+5);
+	pull_ascii_fstring(comment, buf+31);
+	comment[42] = 0;
+	pull_ascii_nstring(source_name, dgram->source_name.name);
+	pull_ascii_nstring(work_name, dgram->dest_name.name);
+
+	DEBUG(3,("process_local_master_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              nmb_namestr(&dgram->dest_name),server_name));
+		nmb_namestr(&dgram->dest_name),server_name));
 
-  DEBUG(5,("process_local_master_announce: ttl=%d server type=%08x comment=%s\n",
-           ttl, servertype, comment));
+	DEBUG(5,("process_local_master_announce: ttl=%d server type=%08x comment=%s\n",
+		ttl, servertype, comment));
 
-  /* A local master announcement must be sent to the name WORKGROUP<1e>. */
-  if(dgram->dest_name.name_type != 0x1e)
-  {
-    DEBUG(0,("process_local_master_announce: incorrect name type for destination from IP %s \
+	/* A local master announcement must be sent to the name WORKGROUP<1e>. */
+	if(dgram->dest_name.name_type != 0x1e) {
+		DEBUG(0,("process_local_master_announce: incorrect name type for destination from IP %s \
 (was %02x) should be 0x1e. Ignoring packet.\n",
-              inet_ntoa(p->ip), dgram->dest_name.name_type));
-    goto done;
-  }
+			inet_ntoa(p->ip), dgram->dest_name.name_type));
+		goto done;
+	}
 
-  /* Filter servertype to remove impossible bits. */
-  servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
+	/* Filter servertype to remove impossible bits. */
+	servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
 
-  /* For a local master announce the workgroup name is the destination name. */
-  work_name = dgram->dest_name.name;
+	/* For a local master announce the workgroup name is the destination name. */
 
-  if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL)
-  {
-    /* Don't bother adding if it's a local master release announce. */
-    if(servertype == 0)
-      goto done;
+	if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL) {
+		/* Don't bother adding if it's a local master release announce. */
+		if(servertype == 0)
+			goto done;
 
-    /* We have no record of this workgroup. Add it. */
-    if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
-      goto done;
-  }
+		/* We have no record of this workgroup. Add it. */
+		if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+			goto done;
+	}
 
-  /* If we think we're the local master browser for this workgroup,
-     we should never have got this packet. We don't see our own
-     packets.
-   */
-  if(AM_LOCAL_MASTER_BROWSER(work))
-  {
-    DEBUG(0,("process_local_master_announce: Server %s at IP %s is announcing itself as \
+	/* If we think we're the local master browser for this workgroup,
+		we should never have got this packet. We don't see our own
+		packets.
+	*/
+	if(AM_LOCAL_MASTER_BROWSER(work)) {
+		DEBUG(0,("process_local_master_announce: Server %s at IP %s is announcing itself as \
 a local master browser for workgroup %s and we think we are master. Forcing election.\n",
-      server_name, inet_ntoa(p->ip), work_name));
+			server_name, inet_ntoa(p->ip), work_name));
 
-    /* Samba nmbd versions 1.9.17 to 1.9.17p4 have a bug in that when
-       they have become a local master browser once, they will never
-       stop sending local master announcements. To fix this we send
-       them a reset browser packet, with level 0x2 on the __SAMBA__
-       name that only they should be listening to. */
+		/* Samba nmbd versions 1.9.17 to 1.9.17p4 have a bug in that when
+		 they have become a local master browser once, they will never
+		 stop sending local master announcements. To fix this we send
+		 them a reset browser packet, with level 0x2 on the __SAMBA__
+		 name that only they should be listening to. */
    
-    send_browser_reset( 0x2, "__SAMBA__" , 0x20, p->ip);
+		send_browser_reset( 0x2, "__SAMBA__" , 0x20, p->ip);
 
-    /* We should demote ourself and force an election. */
+		/* We should demote ourself and force an election. */
 
-    unbecome_local_master_browser( subrec, work, True);
+		unbecome_local_master_browser( subrec, work, True);
 
-    /* The actual election requests are handled in
-       nmbd_election.c */
-    goto done;
-  }  
+		/* The actual election requests are handled in nmbd_election.c */
+		goto done;
+	}  
 
-  /* Find the server record on this workgroup. If it doesn't exist, add it. */
+	/* Find the server record on this workgroup. If it doesn't exist, add it. */
 
-  if(servertype != 0)
-  {
-    if((servrec = find_server_in_workgroup( work, server_name))==NULL)
-    {
-      /* If this server is not already in the workgroup, add it. */
-      create_server_on_workgroup(work, server_name, 
-                                 servertype|SV_TYPE_LOCAL_LIST_ONLY, 
-                                 ttl, comment);
-    }
-    else
-    {
-      /* Update the record. */
-      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-      update_server_ttl(servrec, ttl);
-      fstrcpy(servrec->serv.comment,comment);
-    }
+	if(servertype != 0) {
+		if((servrec = find_server_in_workgroup( work, server_name))==NULL) {
+			/* If this server is not already in the workgroup, add it. */
+			create_server_on_workgroup(work, server_name, 
+				servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+				ttl, comment);
+		} else {
+			/* Update the record. */
+			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+			update_server_ttl(servrec, ttl);
+			fstrcpy(servrec->serv.comment,comment);
+		}
+	
+		set_workgroup_local_master_browser_name( work, server_name );
+	} else {
+		/*
+		 * This server is announcing it is going down. Remove it from the
+		 * workgroup.
+		 */
+		if(!is_myname(server_name) && (work != NULL) &&
+				((servrec = find_server_in_workgroup( work, server_name))!=NULL)) {
+			remove_server_from_workgroup( work, servrec);
+		}
+	}
 
-    set_workgroup_local_master_browser_name( work, server_name );
-  }
-  else
-  {
-    /*
-     * This server is announcing it is going down. Remove it from the
-     * workgroup.
-     */
-    if(!is_myname(server_name) && (work != NULL) &&
-       ((servrec = find_server_in_workgroup( work, server_name))!=NULL)
-      )
-    {
-      remove_server_from_workgroup( work, servrec);
-    }
-  }
-
-  subrec->work_changed = True;
+	subrec->work_changed = True;
 done:
-  END_PROFILE(local_master_announce);
+
+	END_PROFILE(local_master_announce);
 }
 
 /*******************************************************************
@@ -377,50 +369,49 @@ done:
 void process_master_browser_announce(struct subnet_record *subrec, 
                                      struct packet_struct *p,char *buf)
 {
-  char *local_master_name = buf;
-  struct work_record *work;
-  struct browse_cache_record *browrec;
+	nstring local_master_name;
+	struct work_record *work;
+	struct browse_cache_record *browrec;
 
-  START_PROFILE(master_browser_announce);
-  local_master_name[15] = 0;
+	START_PROFILE(master_browser_announce);
+
+	pull_ascii_nstring(local_master_name,buf);
   
-  DEBUG(3,("process_master_browser_announce: Local master announce from %s IP %s.\n",
-           local_master_name, inet_ntoa(p->ip)));
+	DEBUG(3,("process_master_browser_announce: Local master announce from %s IP %s.\n",
+		local_master_name, inet_ntoa(p->ip)));
   
-  if (!lp_domain_master()) 
-  {
-    DEBUG(0,("process_master_browser_announce: Not configured as domain \
+	if (!lp_domain_master()) {
+		DEBUG(0,("process_master_browser_announce: Not configured as domain \
 master - ignoring master announce.\n"));
-    goto done;
-  }
+		goto done;
+	}
   
-  if((work = find_workgroup_on_subnet(subrec, lp_workgroup())) == NULL)
-  {
-    DEBUG(0,("process_master_browser_announce: Cannot find workgroup %s on subnet %s\n",
-           lp_workgroup(), subrec->subnet_name));
-    goto done;
-  }
+	if((work = find_workgroup_on_subnet(subrec, lp_workgroup())) == NULL) {
+		DEBUG(0,("process_master_browser_announce: Cannot find workgroup %s on subnet %s\n",
+			lp_workgroup(), subrec->subnet_name));
+		goto done;
+	}
 
-  if(!AM_DOMAIN_MASTER_BROWSER(work))
-  {
-    DEBUG(0,("process_master_browser_announce: Local master announce made to us from \
+	if(!AM_DOMAIN_MASTER_BROWSER(work)) {
+		DEBUG(0,("process_master_browser_announce: Local master announce made to us from \
 %s IP %s and we are not a domain master browser.\n", local_master_name, inet_ntoa(p->ip)));
-    goto done;
-  }
+		goto done;
+	}
 
-  /* Add this host as a local master browser entry on the browse lists.
-     This causes a sync request to be made to it at a later date.
-   */
+	/* Add this host as a local master browser entry on the browse lists.
+		This causes a sync request to be made to it at a later date.
+	*/
 
-  if((browrec = find_browser_in_lmb_cache( local_master_name )) == NULL)
-  {
-    /* Add it. */
-    create_browser_in_lmb_cache( work->work_group, local_master_name, p->ip);
-  }
-  else
-    update_browser_death_time(browrec);
+	if((browrec = find_browser_in_lmb_cache( local_master_name )) == NULL) {
+		/* Add it. */
+		create_browser_in_lmb_cache( work->work_group, local_master_name, p->ip);
+	} else {
+		update_browser_death_time(browrec);
+	}
+
 done:
-  END_PROFILE(master_browser_announce);
+
+	END_PROFILE(master_browser_announce);
 }
 
 /*******************************************************************
@@ -429,123 +420,117 @@ done:
 
 void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  uint32 servertype = IVAL(buf,1);
-  int osmajor=CVAL(buf,5);           /* major version of node software */
-  int osminor=CVAL(buf,6);           /* minor version of node software */
-  int ttl = SVAL(buf,7);
-  char *announce_name = buf+9;
-  struct work_record *work;
-  struct server_record *servrec;
-  const char *work_name;
-  char *source_name = dgram->source_name.name;
-  pstring comment;
-  char *s = buf+9;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	uint32 servertype = IVAL(buf,1);
+	int osmajor=CVAL(buf,5);           /* major version of node software */
+	int osminor=CVAL(buf,6);           /* minor version of node software */
+	int ttl = SVAL(buf,7);
+	nstring announce_name;
+	struct work_record *work;
+	struct server_record *servrec;
+	nstring work_name;
+	nstring source_name;
+	fstring comment;
+	char *s = buf+9;
 
-  START_PROFILE(lm_host_announce);
-  s = skip_string(s,1);
-  StrnCpy(comment, s, 43);
+	START_PROFILE(lm_host_announce);
+	s = skip_string(s,1);
+	pull_ascii(comment, s, sizeof(fstring), 43, STR_TERMINATE);
 
-  DEBUG(3,("process_lm_host_announce: LM Announcement from %s<%02x> IP %s to \
-%s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
-              nmb_namestr(&dgram->dest_name),announce_name));
+	pull_ascii_nstring(announce_name,buf+9);
+	pull_ascii_nstring(source_name,dgram->source_name.name);
+	/* For a LanMan host announce the workgroup name is the destination name. */
+	pull_ascii_nstring(work_name,dgram->dest_name.name);
 
-  DEBUG(5,("process_lm_host_announce: os=(%d,%d) ttl=%d server type=%08x comment=%s\n",
-          osmajor, osminor, ttl, servertype,comment));
+	DEBUG(3,("process_lm_host_announce: LM Announcement from %s IP %s to \
+%s for server %s.\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+		nmb_namestr(&dgram->dest_name),announce_name));
 
-  if ((osmajor < 36) || (osmajor > 38) || (osminor !=0))
-  {
-    DEBUG(5,("process_lm_host_announce: LM Announcement packet does not \
+	DEBUG(5,("process_lm_host_announce: os=(%d,%d) ttl=%d server type=%08x comment=%s\n",
+		osmajor, osminor, ttl, servertype,comment));
+
+	if ((osmajor < 36) || (osmajor > 38) || (osminor !=0)) {
+		DEBUG(5,("process_lm_host_announce: LM Announcement packet does not \
 originate from OS/2 Warp client. Ignoring packet.\n"));
-    /* Could have been from a Windows machine (with its LM Announce enabled),
-       or a Samba server. Then don't disrupt the current browse list. */
-    goto done;
-  }
+		/* Could have been from a Windows machine (with its LM Announce enabled),
+			or a Samba server. Then don't disrupt the current browse list. */
+		goto done;
+	}
 
-  /* Filter servertype to remove impossible bits. */
-  servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
+	/* Filter servertype to remove impossible bits. */
+	servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
 
-  /* A LanMan host announcement must be sent to the name WORKGROUP<00>. */
-  if(dgram->dest_name.name_type != 0x00)
-  {
-    DEBUG(2,("process_lm_host_announce: incorrect name type for destination from IP %s \
+	/* A LanMan host announcement must be sent to the name WORKGROUP<00>. */
+	if(dgram->dest_name.name_type != 0x00) {
+		DEBUG(2,("process_lm_host_announce: incorrect name type for destination from IP %s \
 (was %02x) should be 0x00. Allowing packet anyway.\n",
-              inet_ntoa(p->ip), dgram->dest_name.name_type));
-    /* Change it so it was. */
-    dgram->dest_name.name_type = 0x00;
-  }
+			inet_ntoa(p->ip), dgram->dest_name.name_type));
+		/* Change it so it was. */
+		dgram->dest_name.name_type = 0x00;
+	}
 
-  /* For a LanMan host announce the workgroup name is the destination name. */
-  work_name = dgram->dest_name.name;
+	/*
+	 * Syntax servers version 5.1 send HostAnnounce packets to
+	 * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
+	 * instead of WORKGROUP<1d> name. So to fix this we check if
+	 * the workgroup name is our own name, and if so change it
+	 * to be our primary workgroup name. This code is probably
+	 * not needed in the LanMan announce code, but it won't hurt.
+	 */
 
-  /*
-   * Syntax servers version 5.1 send HostAnnounce packets to
-   * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
-   * instead of WORKGROUP<1d> name. So to fix this we check if
-   * the workgroup name is our own name, and if so change it
-   * to be our primary workgroup name. This code is probably
-   * not needed in the LanMan announce code, but it won't hurt.
-   */
+	if(strequal(work_name, global_myname()))
+		nstrcpy(work_name,lp_workgroup());
 
-  if(strequal(work_name, global_myname()))
-    work_name = lp_workgroup();
+	/*
+	 * We are being very agressive here in adding a workgroup
+	 * name on the basis of a host announcing itself as being
+	 * in that workgroup. Maybe we should wait for the workgroup
+	 * announce instead ? JRA.
+	 */
 
-  /*
-   * We are being very agressive here in adding a workgroup
-   * name on the basis of a host announcing itself as being
-   * in that workgroup. Maybe we should wait for the workgroup
-   * announce instead ? JRA.
-   */
+	work = find_workgroup_on_subnet(subrec, work_name);
 
-  work = find_workgroup_on_subnet(subrec, work_name);
+	if(servertype != 0) {
+		if (work == NULL) {
+			/* We have no record of this workgroup. Add it. */
+			if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+				goto done;
+		}
 
-  if(servertype != 0)
-  {
-    if (work == NULL)
-    {
-      /* We have no record of this workgroup. Add it. */
-      if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
-        goto done;
-    }
+		if((servrec = find_server_in_workgroup( work, announce_name))==NULL) {
+			/* If this server is not already in the workgroup, add it. */
+			create_server_on_workgroup(work, announce_name,
+					servertype|SV_TYPE_LOCAL_LIST_ONLY,
+					ttl, comment);
+		} else {
+			/* Update the record. */
+			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+			update_server_ttl( servrec, ttl);
+			fstrcpy(servrec->serv.comment,comment);
+		}
+	} else {
+		/*
+		 * This server is announcing it is going down. Remove it from the
+		 * workgroup.
+		 */
+		if(!is_myname(announce_name) && (work != NULL) &&
+				((servrec = find_server_in_workgroup( work, announce_name))!=NULL)) {
+			remove_server_from_workgroup( work, servrec);
+		}
+	}
 
-    if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
-    {
-      /* If this server is not already in the workgroup, add it. */
-      create_server_on_workgroup(work, announce_name,
-                                 servertype|SV_TYPE_LOCAL_LIST_ONLY,
-                                 ttl, comment);
-    }
-    else
-    {
-      /* Update the record. */
-      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-      update_server_ttl( servrec, ttl);
-      fstrcpy(servrec->serv.comment,comment);
-    }
-  }
-  else
-  {
-    /*
-     * This server is announcing it is going down. Remove it from the
-     * workgroup.
-     */
-    if(!is_myname(announce_name) && (work != NULL) &&
-       ((servrec = find_server_in_workgroup( work, announce_name))!=NULL)
-      )
-    {
-      remove_server_from_workgroup( work, servrec);
-    }
-  }
+	subrec->work_changed = True;
+	found_lm_clients = True;
 
-  subrec->work_changed = True;
-  found_lm_clients = True;
 done:
-  END_PROFILE(lm_host_announce);
+
+	END_PROFILE(lm_host_announce);
 }
 
 /****************************************************************************
   Send a backup list response.
 *****************************************************************************/
+
 static void send_backup_list_response(struct subnet_record *subrec, 
 				      struct work_record *work,
 				      struct nmb_name *send_to_name,
@@ -553,40 +538,41 @@ static void send_backup_list_response(struct subnet_record *subrec,
 				      uint32 token, struct in_addr sendto_ip,
 				      int port)
 {                     
-  char outbuf[1024];
-  char *p, *countptr;
-  unsigned int count = 0;
+	char outbuf[1024];
+	char *p, *countptr;
+	unsigned int count = 0;
+	nstring send_to_namestr;
 #if 0
   struct server_record *servrec;
 #endif
-  fstring myname;
+	fstring myname;
 
-  memset(outbuf,'\0',sizeof(outbuf));
+	memset(outbuf,'\0',sizeof(outbuf));
 
-  DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
-	   work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));
+	DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
+		work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));
   
-  p = outbuf;
+	p = outbuf;
   
-  SCVAL(p,0,ANN_GetBackupListResp); /* Backup list response opcode. */
-  p++;
+	SCVAL(p,0,ANN_GetBackupListResp); /* Backup list response opcode. */
+	p++;
 
-  countptr = p;
-  p++;
+	countptr = p;
+	p++;
 
-  SIVAL(p,0,token); /* The sender's unique info. */
-  p += 4;
+	SIVAL(p,0,token); /* The sender's unique info. */
+	p += 4;
   
-  /* We always return at least one name - our own. */
-  count = 1;
-  fstrcpy(myname, global_myname());
-  strupper_m(myname);
-  myname[15]='\0';
-  push_pstring_base(p, myname, outbuf);
+	/* We always return at least one name - our own. */
+	count = 1;
+	fstrcpy(myname, global_myname());
+	strupper_m(myname);
+	myname[15]='\0';
+	push_pstring_base(p, myname, outbuf);
 
-  p = skip_string(p,1);
+	p = skip_string(p,1);
 
-  /* Look for backup browsers in this workgroup. */
+	/* Look for backup browsers in this workgroup. */
 
 #if 0
   /* we don't currently send become_backup requests so we should never
@@ -624,16 +610,18 @@ static void send_backup_list_response(struct subnet_record *subrec,
   }
 #endif
 
-  SCVAL(countptr, 0, count);
+	SCVAL(countptr, 0, count);
 
-  DEBUG(4,("send_backup_list_response: sending response to %s<00> IP %s with %d servers.\n",
-          send_to_name->name, inet_ntoa(sendto_ip), count));
+	pull_ascii_nstring(send_to_namestr, send_to_name->name);
 
-  send_mailslot(True, BROWSE_MAILSLOT,
-                outbuf,PTR_DIFF(p,outbuf),
-                global_myname(), 0, 
-                send_to_name->name,0,
-                sendto_ip, subrec->myip, port);
+	DEBUG(4,("send_backup_list_response: sending response to %s<00> IP %s with %d servers.\n",
+		send_to_namestr, inet_ntoa(sendto_ip), count));
+
+	send_mailslot(True, BROWSE_MAILSLOT,
+		outbuf,PTR_DIFF(p,outbuf),
+		global_myname(), 0, 
+		send_to_namestr,0,
+		sendto_ip, subrec->myip, port);
 }
 
 /*******************************************************************
@@ -649,80 +637,74 @@ static void send_backup_list_response(struct subnet_record *subrec,
 void process_get_backup_list_request(struct subnet_record *subrec,
                                      struct packet_struct *p,char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct work_record *work;
-  unsigned char max_number_requested = CVAL(buf,0);
-  uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
-  int name_type = dgram->dest_name.name_type;
-  char *workgroup_name = dgram->dest_name.name;
-  struct subnet_record *search_subrec = subrec;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	struct work_record *work;
+	unsigned char max_number_requested = CVAL(buf,0);
+	uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
+	int name_type = dgram->dest_name.name_type;
+	nstring workgroup_name;
+	struct subnet_record *search_subrec = subrec;
 
-  START_PROFILE(get_backup_list);
-  DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
-           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
-           nmb_namestr(&dgram->dest_name)));
+	START_PROFILE(get_backup_list);
+	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+
+	DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
+		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+		nmb_namestr(&dgram->dest_name)));
   
-  /* We have to be a master browser, or a domain master browser
-     for the requested workgroup. That means it must be our
-     workgroup. */
+	/* We have to be a master browser, or a domain master browser
+		for the requested workgroup. That means it must be our
+		workgroup. */
 
-  if(strequal(workgroup_name, lp_workgroup()) == False)
-  {
-    DEBUG(7,("process_get_backup_list_request: Ignoring announce request for workgroup %s.\n",
-           workgroup_name));
-    goto done;
-  }
+	if(strequal(workgroup_name, lp_workgroup()) == False) {
+		DEBUG(7,("process_get_backup_list_request: Ignoring announce request for workgroup %s.\n",
+			workgroup_name));
+		goto done;
+	}
 
-  if((work = find_workgroup_on_subnet(search_subrec, workgroup_name)) == NULL)
-  {
-    DEBUG(0,("process_get_backup_list_request: Cannot find workgroup %s on \
+	if((work = find_workgroup_on_subnet(search_subrec, workgroup_name)) == NULL) {
+		DEBUG(0,("process_get_backup_list_request: Cannot find workgroup %s on \
 subnet %s.\n", workgroup_name, search_subrec->subnet_name));
-    goto done;
-  }
+		goto done;
+	}
 
-  /* 
-   * If the packet was sent to WORKGROUP<1b> instead
-   * of WORKGROUP<1d> then it was unicast to us a domain master
-   * browser. Change search subrec to unicast.
-   */
+	/* 
+	 * If the packet was sent to WORKGROUP<1b> instead
+	 * of WORKGROUP<1d> then it was unicast to us a domain master
+	 * browser. Change search subrec to unicast.
+	 */
 
-  if(name_type == 0x1b)
-  {
-    /* We must be a domain master browser in order to
-       process this packet. */
+	if(name_type == 0x1b) {
+		/* We must be a domain master browser in order to
+			process this packet. */
 
-    if(!AM_DOMAIN_MASTER_BROWSER(work))
-    {
-      DEBUG(0,("process_get_backup_list_request: domain list requested for workgroup %s \
+		if(!AM_DOMAIN_MASTER_BROWSER(work)) {
+			DEBUG(0,("process_get_backup_list_request: domain list requested for workgroup %s \
 and I am not a domain master browser.\n", workgroup_name));
-      goto done;
-    }
+			goto done;
+		}
 
-    search_subrec = unicast_subnet;
-  }
-  else if (name_type == 0x1d)
-  {
-    /* We must be a local master browser in order to
-       process this packet. */
+		search_subrec = unicast_subnet;
+	} else if (name_type == 0x1d) {
+		/* We must be a local master browser in order to process this packet. */
 
-    if(!AM_LOCAL_MASTER_BROWSER(work))
-    {
-      DEBUG(0,("process_get_backup_list_request: domain list requested for workgroup %s \
+		if(!AM_LOCAL_MASTER_BROWSER(work)) {
+			DEBUG(0,("process_get_backup_list_request: domain list requested for workgroup %s \
 and I am not a local master browser.\n", workgroup_name));
-      goto done;
-    }
-  }
-  else
-  {
-    DEBUG(0,("process_get_backup_list_request: Invalid name type %x - should be 0x1b or 0x1d.\n",
-            name_type));
-    goto done;
-  }
+			goto done;
+		}
+	} else {
+		DEBUG(0,("process_get_backup_list_request: Invalid name type %x - should be 0x1b or 0x1d.\n",
+			name_type));
+		goto done;
+	}
 
-  send_backup_list_response(subrec, work, &dgram->source_name, 
-                            max_number_requested, token, p->ip, p->port);
+	send_backup_list_response(subrec, work, &dgram->source_name,
+			max_number_requested, token, p->ip, p->port);
+
 done:
-  END_PROFILE(get_backup_list);
+
+	END_PROFILE(get_backup_list);
 }
 
 /*******************************************************************
@@ -738,49 +720,46 @@ done:
 void process_reset_browser(struct subnet_record *subrec,
                                   struct packet_struct *p,char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  int state = CVAL(buf,0);
-  struct subnet_record *sr;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	int state = CVAL(buf,0);
+	struct subnet_record *sr;
 
-  START_PROFILE(reset_browser);
-  DEBUG(1,("process_reset_browser: received diagnostic browser reset \
+	START_PROFILE(reset_browser);
+
+	DEBUG(1,("process_reset_browser: received diagnostic browser reset \
 request from %s IP %s state=0x%X\n",
-             nmb_namestr(&dgram->source_name), inet_ntoa(p->ip), state));
+		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip), state));
 
-  /* Stop being a local master browser on all our broadcast subnets. */
-  if (state & 0x1)
-  {
-    for (sr = FIRST_SUBNET; sr; sr = NEXT_SUBNET_EXCLUDING_UNICAST(sr))
-    {
-      struct work_record *work;
-      for (work = sr->workgrouplist; work; work = work->next)
-      {
-        if (AM_LOCAL_MASTER_BROWSER(work))
-          unbecome_local_master_browser(sr, work, True);
-      }
-    }
-  }
+	/* Stop being a local master browser on all our broadcast subnets. */
+	if (state & 0x1) {
+		for (sr = FIRST_SUBNET; sr; sr = NEXT_SUBNET_EXCLUDING_UNICAST(sr)) {
+			struct work_record *work;
+			for (work = sr->workgrouplist; work; work = work->next) {
+				if (AM_LOCAL_MASTER_BROWSER(work))
+					unbecome_local_master_browser(sr, work, True);
+			}
+		}
+	}
   
-  /* Discard our browse lists. */
-  if (state & 0x2)
-  {
-    /*
-     * Calling expire_workgroups_and_servers with a -1
-     * time causes all servers not marked with a PERMANENT_TTL
-     * on the workgroup lists to be discarded, and all 
-     * workgroups with empty server lists to be discarded.
-     * This means we keep our own server names and workgroup
-     * as these have a PERMANENT_TTL.
-     */
+	/* Discard our browse lists. */
+	if (state & 0x2) {
+		/*
+		 * Calling expire_workgroups_and_servers with a -1
+		 * time causes all servers not marked with a PERMANENT_TTL
+		 * on the workgroup lists to be discarded, and all 
+		 * workgroups with empty server lists to be discarded.
+		 * This means we keep our own server names and workgroup
+		 * as these have a PERMANENT_TTL.
+		 */
 
-    expire_workgroups_and_servers(-1);
-  }
+		expire_workgroups_and_servers(-1);
+	}
   
-  /* Request to stop browsing altogether. */
-  if (state & 0x4)
-    DEBUG(1,("process_reset_browser: ignoring request to stop being a browser.\n"));
+	/* Request to stop browsing altogether. */
+	if (state & 0x4)
+		DEBUG(1,("process_reset_browser: ignoring request to stop being a browser.\n"));
 
-  END_PROFILE(reset_browser);
+	END_PROFILE(reset_browser);
 }
 
 /*******************************************************************
@@ -793,33 +772,34 @@ request from %s IP %s state=0x%X\n",
 
 void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct work_record *work;
-  char *workgroup_name = dgram->dest_name.name;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	struct work_record *work;
+	nstring workgroup_name;
  
-  START_PROFILE(announce_request);
-  DEBUG(3,("process_announce_request: Announce request from %s IP %s to %s.\n",
-           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
-           nmb_namestr(&dgram->dest_name)));
+	START_PROFILE(announce_request);
+
+	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	DEBUG(3,("process_announce_request: Announce request from %s IP %s to %s.\n",
+		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+		nmb_namestr(&dgram->dest_name)));
   
-  /* We only send announcement requests on our workgroup. */
-  if(strequal(workgroup_name, lp_workgroup()) == False)
-  {
-    DEBUG(7,("process_announce_request: Ignoring announce request for workgroup %s.\n",
-           workgroup_name));
-    goto done;
-  }
+	/* We only send announcement requests on our workgroup. */
+	if(strequal(workgroup_name, lp_workgroup()) == False) {
+		DEBUG(7,("process_announce_request: Ignoring announce request for workgroup %s.\n",
+			workgroup_name));
+		goto done;
+	}
 
-  if((work = find_workgroup_on_subnet(subrec, workgroup_name)) == NULL)
-  {
-    DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
-            workgroup_name));
-    goto done;
-  }
+	if((work = find_workgroup_on_subnet(subrec, workgroup_name)) == NULL) {
+		DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
+			workgroup_name));
+		goto done;
+	}
 
-  work->needannounce = True;
+	work->needannounce = True;
 done:
-  END_PROFILE(lm_host_announce);
+
+	END_PROFILE(lm_host_announce);
 }
 
 /*******************************************************************
@@ -833,30 +813,32 @@ done:
 
 void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  char *workgroup_name = dgram->dest_name.name;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	nstring workgroup_name;
 
-  START_PROFILE(lm_announce_request);
-  DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
-           nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
-           nmb_namestr(&dgram->dest_name)));
+	START_PROFILE(lm_announce_request);
 
-  /* We only send announcement requests on our workgroup. */
-  if(strequal(workgroup_name, lp_workgroup()) == False)
-  {
-    DEBUG(7,("process_lm_announce_request: Ignoring announce request for workgroup %s.\n",
-           workgroup_name));
-    goto done;
-  }
+	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
+		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
+		nmb_namestr(&dgram->dest_name)));
 
-  if(find_workgroup_on_subnet(subrec, workgroup_name) == NULL)
-  {
-    DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
-            workgroup_name));
-    goto done;
-  }
+	/* We only send announcement requests on our workgroup. */
+	if(strequal(workgroup_name, lp_workgroup()) == False) {
+		DEBUG(7,("process_lm_announce_request: Ignoring announce request for workgroup %s.\n",
+			workgroup_name));
+		goto done;
+	}
 
-  found_lm_clients = True;
+	if(find_workgroup_on_subnet(subrec, workgroup_name) == NULL) {
+		DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
+			workgroup_name));
+		goto done;
+	}
+
+	found_lm_clients = True;
+
 done:
-  END_PROFILE(lm_host_announce);
+
+	END_PROFILE(lm_host_announce);
 }

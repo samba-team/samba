@@ -273,7 +273,7 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 
 	str_list_copy(&list, lp_readlist(conn->service));
 	if (list) {
-		if (!str_list_substitute(list, "%S", service)) {
+		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
@@ -283,7 +283,7 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 	
 	str_list_copy(&list, lp_writelist(conn->service));
 	if (list) {
-		if (!str_list_substitute(list, "%S", service)) {
+		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
@@ -642,6 +642,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 	}
+
+#ifdef WITH_FAKE_KASERVER
+	afs_login(user);
+#endif
 	
 #if CHECK_PATH_ON_TCONX
 	/* win2000 does not check the permissions on the directory
@@ -691,6 +695,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
+		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );

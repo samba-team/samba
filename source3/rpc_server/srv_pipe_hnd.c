@@ -1106,6 +1106,8 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 
 	if (p->mem_ctx)
 		talloc_destroy(p->mem_ctx);
+		
+	free_pipe_rpc_context( p->contexts );
 
 	/* Free the handles database. */
 	close_policy_by_pipe(p);

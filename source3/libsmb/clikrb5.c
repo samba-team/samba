@@ -74,7 +74,7 @@
 {
 	pkaddr->addrtype = ADDRTYPE_INET;
 	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
-	pkaddr->contents = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+	pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
 }
 #else
  __ERROR__XX__UNKNOWN_ADDRTYPE
@@ -97,7 +97,9 @@
 		return ret;
 	}
 	krb5_use_enctype(context, &eblock, enctype);
-	return krb5_string_to_key(context, &eblock, key, password, &salt);
+	ret = krb5_string_to_key(context, &eblock, key, password, &salt);
+	SAFE_FREE(salt.data);
+	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
  int create_kerberos_key_from_string(krb5_context context,
@@ -369,29 +371,27 @@ failed:
 
  BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16], BOOL remote)
  {
-#ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
-#endif
-	BOOL ret = False;
 	krb5_error_code err;
+	BOOL ret = False;
 
 	memset(session_key, 0, 16);
 
-#ifdef ENCTYPE_ARCFOUR_HMAC
 	if (remote)
 		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
 	else
 		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
 	if (err == 0 && skey != NULL) {
-		if (KRB5_KEY_TYPE(skey) ==
-		    ENCTYPE_ARCFOUR_HMAC
-		    && KRB5_KEY_LENGTH(skey) == 16) {
+		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
+		if (KRB5_KEY_LENGTH(skey) == 16) {
 			memcpy(session_key, KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+			dump_data_pw("KRB5 Session Key:\n", session_key, 16);
 			ret = True;
 		}
 		krb5_free_keyblock(context, skey);
+	} else {
+		DEBUG(10, ("KRB5 error getting session key %d\n", err));
 	}
-#endif /* ENCTYPE_ARCFOUR_HMAC */
 
 	return ret;
  }

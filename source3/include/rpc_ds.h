@@ -27,6 +27,7 @@
 /* Opcodes available on PIPE_LSARPC_DS */
 
 #define DS_GETPRIMDOMINFO      0x00
+#define DS_NOP                 0xFF	/* no op -- placeholder */
 
 /* Opcodes available on PIPE_NETLOGON */
 
@@ -35,10 +36,22 @@
 
 /* macros for RPC's */
 
+/* DSROLE_PRIMARY_DOMAIN_INFO_BASIC */
+
+/* flags */
+
 #define DSROLE_PRIMARY_DS_RUNNING           0x00000001
 #define DSROLE_PRIMARY_DS_MIXED_MODE        0x00000002
 #define DSROLE_UPGRADE_IN_PROGRESS          0x00000004
 #define DSROLE_PRIMARY_DOMAIN_GUID_PRESENT  0x01000000
+
+/* machine role */
+
+#define DSROLE_STANDALONE_SRV		2	
+#define DSROLE_DOMAIN_MEMBER_SRV	3
+#define DSROLE_BDC			4
+#define DSROLE_PDC			5
+
 
 typedef struct
 {

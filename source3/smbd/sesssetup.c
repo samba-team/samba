@@ -62,7 +62,7 @@ static int add_signature(char *outbuf, char *p)
 	char *start = p;
 	fstring lanman;
 
-	fstr_sprintf( lanman, "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);
@@ -149,7 +149,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB auth_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
-	ADS_STRUCT *ads;
 	uint8 session_key[16];
 	uint8 tok_id[2];
 	BOOL foreign = False;
@@ -165,18 +164,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ads = ads_init_simple();
+	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, session_key);
 
-	if (!ads) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
+	data_blob_free(&ticket);
 
-	ads->auth.realm = strdup(lp_realm());
-
-	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data, &ap_rep, session_key);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
-		ads_destroy(&ads);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -187,16 +180,17 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	p = strchr_m(client, '@');
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
-		ads_destroy(&ads);
 		data_blob_free(&ap_rep);
+		SAFE_FREE(client);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, ads->auth.realm) != 0) {
+	if (strcasecmp(p+1, lp_realm()) != 0) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
+			SAFE_FREE(client);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		foreign = True;
@@ -213,7 +207,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		user = smb_xstrdup(client);
 	}
 
-	ads_destroy(&ads);
+	SAFE_FREE(client);
 
 	/* setup the string used by %U */
 	sub_set_smb_name(user);
@@ -223,7 +217,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		data_blob_free(&ap_rep);
-		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {

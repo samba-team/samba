@@ -23,7 +23,7 @@
 int net_lookup_usage(int argc, const char **argv)
 {
 	d_printf(
-"  net lookup host HOSTNAME <type>\n\tgives IP for a hostname\n\n"
+"  net lookup [host] HOSTNAME[#<type>]\n\tgives IP for a hostname\n\n"
 "  net lookup ldap [domain]\n\tgives IP of domain's ldap server\n\n"
 "  net lookup kdc [realm]\n\tgives IP of realm's kerberos KDC\n\n"
 "  net lookup dc [domain]\n\tgives IP of domains Domain Controllers\n\n"
@@ -37,14 +37,22 @@ static int net_lookup_host(int argc, const char **argv)
 {
 	struct in_addr ip;
 	int name_type = 0x20;
+	const char *name = argv[0];
+	char *p;
 
-	if (argc == 0) return net_lookup_usage(argc, argv);
-	if (argc > 1) name_type = strtol(argv[1], NULL, 0);
+	if (argc == 0) 
+		return net_lookup_usage(argc, argv);
 
-	if (!resolve_name(argv[0], &ip, name_type)) {
+	p = strchr_m(name,'#');
+	if (p) {
+		*p = '\0';
+		sscanf(++p,"%x",&name_type);
+	}
+	
+	if (!resolve_name(name, &ip, name_type)) {
 		/* we deliberately use DEBUG() here to send it to stderr 
 		   so scripts aren't mucked up */
-		DEBUG(0,("Didn't find %s#%02x\n", argv[0], name_type));
+		DEBUG(0,("Didn't find %s#%02x\n", name, name_type));
 		return -1;
 	}
 
@@ -221,7 +229,9 @@ static int net_lookup_kdc(int argc, const char **argv)
 /* lookup hosts or IP addresses using internal samba lookup fns */
 int net_lookup(int argc, const char **argv)
 {
-	struct functable func[] = {
+	int i;
+
+	struct functable table[] = {
 		{"HOST", net_lookup_host},
 		{"LDAP", net_lookup_ldap},
 		{"DC", net_lookup_dc},
@@ -230,5 +240,19 @@ int net_lookup(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, net_lookup_usage);
+	if (argc < 1) {
+		d_printf("\nUsage: \n");
+		return net_lookup_usage(argc, argv);
+	}
+	for (i=0; table[i].funcname; i++) {
+		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+			return table[i].fn(argc-1, argv+1);
+	}
+
+	/* Default to lookup a hostname so 'net lookup foo#1b' can be 
+	   used instead of 'net lookup host foo#1b'.  The host syntax
+	   is a bit confusing as non #00 names can't really be 
+	   considered hosts as such. */
+
+	return net_lookup_host(argc, argv);
 }

@@ -20,6 +20,11 @@
 
 #include "includes.h"
 
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+
+
 static int gotalarm;
 
 /***************************************************************

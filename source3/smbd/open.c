@@ -23,6 +23,7 @@
 
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
+extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
 
 /****************************************************************************
@@ -226,8 +227,8 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
+	fsp->file_pid = global_smbpid;
 	fsp->size = psbuf->st_size;
-	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
 	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
@@ -626,6 +627,12 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 				DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 				
+				/* Ensure the reply for the open uses the correct sequence number. */
+				/* This isn't a real deferred packet as it's response will also increment
+				 * the sequence.
+				 */
+				srv_defer_sign_response(get_current_mid(), False);
+
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 				
@@ -1356,7 +1363,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
+	fsp->file_pid = global_smbpid;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -1419,7 +1426,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = (SMB_DEV_T)0;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
+	fsp->file_pid = global_smbpid;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;

@@ -204,13 +204,19 @@ struct table_node {
 	int	version;
 };
  
+#define SPL_ARCH_WIN40		"WIN40"
+#define SPL_ARCH_W32X86		"W32X86"
+#define SPL_ARCH_W32MIPS	"W32MIPS"
+#define SPL_ARCH_W32ALPHA	"W32ALPHA"
+#define SPL_ARCH_W32PPC		"W32PPC"
+
 static const struct table_node archi_table[]= {
 
-	{"Windows 4.0",          "WIN40",	0 },
-	{"Windows NT x86",       "W32X86",	2 },
-	{"Windows NT R4000",     "W32MIPS",	2 },
-	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
-	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
+	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
+	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
+	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
+	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
 	{NULL,                   "",		-1 }
 };
 
@@ -1755,6 +1761,11 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	architecture = get_short_archi(arch);
+	
+	/* Windows 4.0 (i.e. win9x) should always use a version of 0 */
+	
+	if ( strcmp( architecture, SPL_ARCH_WIN40 ) == 0 )
+		version = 0;
 
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
@@ -2015,7 +2026,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	if (info->servername[0]!='\0') {
 		trim_string(info->printername, info->servername, NULL);
-		trim_string(info->printername, "\\", NULL);
+		trim_char(info->printername, '\\', '\0');
 		info->servername[0]='\0';
 	}
 
@@ -2245,7 +2256,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 	int len = 0;
 	int extra_len = 0;
 	NT_DEVICEMODE devmode;
-
+	
 	ZERO_STRUCT(devmode);
 
 	len += tdb_unpack(buf+len, buflen-len, "p", nt_devmode);
@@ -2886,6 +2897,11 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const 
 	key_index = lookup_printerkey( &p2->data, key );
 	if ( key_index == -1 )
 		return WERR_OK;
+	
+	/* make sure the value exists so we can return the correct error code */
+	
+	if ( !regval_ctr_getvalue( &p2->data.keys[key_index].values, value ) )
+		return WERR_BADFILE;
 		
 	regval_ctr_delvalue( &p2->data.keys[key_index].values, value );
 	
@@ -2919,7 +2935,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 		return WERR_NOMEM;
 	
 	regval_ctr_addvalue( &p2->data.keys[key_index].values, value,
-		type, data, real_len );
+		type, (const char *)data, real_len );
 	
 	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], type=> [%d], size => [%d]\n",
 		key, value, type, real_len  ));
@@ -3012,7 +3028,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		
 		/* add the new value */
 		
-		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, data_p, size );
+		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, (const char *)data_p, size );
 
 		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
 
@@ -3195,6 +3211,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 	int 		len = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
+	char adevice[MAXDEVICENAME];
 		
 	ZERO_STRUCT(info);
 
@@ -3255,6 +3272,10 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
 	}
+	
+	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	fstrcpy(info.devmode->devicename, adevice);	
+
 
 	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 

@@ -157,6 +157,7 @@ struct winbindd_request {
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
+	fstring domain_name;	/* name of domain for which the request applies */
 
 	union {
 		fstring winsreq;     /* WINS request */

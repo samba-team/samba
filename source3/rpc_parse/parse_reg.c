@@ -40,7 +40,7 @@ static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
 		return 0;
 		
 	real_size = regval_size(val);
-	init_buffer2( buf2, (char*)regval_data_p(val), real_size );
+	init_buffer2( buf2, (unsigned char*)regval_data_p(val), real_size );
 
 	return real_size;
 }
