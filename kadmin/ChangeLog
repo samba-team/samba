@@ -1,5 +1,8 @@
 2001-08-10  Johan Danielsson  <joda@pdc.kth.se>
 
+	* load.c: remove unused etypes code, and add parsing of the
+	generation field
+
 	* ank.c: add a --use-defaults option to just use default values
 	without questions
 
