@@ -1739,6 +1739,52 @@ done:
 
 
 /****************************************************************************
+show any ACL on a file
+****************************************************************************/
+static int cmd_acl(void)
+{
+	pstring fname;
+	fstring buf;
+	int ret = 0;
+	TALLOC_CTX *mem_ctx;
+	struct smb_query_secdesc query;
+	NTSTATUS status;
+	int fnum;
+
+	pstrcpy(fname,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("acl <filename>\n");
+		return 1;
+	}
+	pstrcat(fname,buf);
+
+	fnum = cli_open(cli, fname, O_RDONLY, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("%s - %s\n", fname, cli_errstr(cli));
+		return -1;
+	}
+
+	mem_ctx = talloc_init(fname);
+
+	query.in.fnum = fnum;
+	query.in.secinfo_flags = 0x7;
+
+	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &query);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s - %s\n", fname, nt_errstr(status));
+		ret = 1;
+		goto done;
+	}
+
+	talloc_destroy(mem_ctx);
+
+done:
+	return ret;
+}
+
+
+/****************************************************************************
 ****************************************************************************/
 static int cmd_open(void)
 {
@@ -2198,6 +2244,7 @@ static struct
 {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
+  {"acl",cmd_acl,"<file> show file ACL",{COMPL_NONE,COMPL_NONE}},
   {"allinfo",cmd_allinfo,"<file> show all possible info about a file",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
@@ -2985,7 +3032,7 @@ static void remember_query_host(const char *arg,
 		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
 	}
 
-	//init_names();
+	/*init_names(); */
 
 	if (!tar_type && !*query_host && !*service && !message) {
 		poptPrintUsage(pc, stderr, 0);

@@ -776,6 +776,9 @@ extern int errno;
 
 #include "mutex.h"
 
+#include "libcli/rpc/librpc.h"
+#include "libcli/rpc/rpc_sec.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
