@@ -64,8 +64,8 @@ Set the machine password, i.e.@: create the local keytab:
 C:> ksetup /setmachpassword password
 @end example
 
-The password used in @kdb{ksetup /setmachpassword} must be the same
-as the password used in the @kdb{kadmin ank} command.
+The password used in @kbd{ksetup /setmachpassword} must be the same
+as the password used in the @kbd{kadmin ank} command.
 
 The workstation must now be rebooted.
 
@@ -246,7 +246,7 @@ Microsoft seems also to have forgotten to implement the checksum
 algorithms @samp{rsa-md4-des} and @samp{rsa-md5-des}. This can make Name
 mapping (@pxref{Create account mappings}) fail if a @samp{des-cbc-md5} key
 is used. To make the KDC return only @samp{des-cbc-crc} you must delete
-the @samp{des-cbc-md5} key from the kdc using the @kdb{kadmin
+the @samp{des-cbc-md5} key from the kdc using the @kbd{kadmin
 del_enctype} command.
 
 @example
