@@ -738,9 +738,6 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
-	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
-	setup_logging("winbindd", interactive);
-
 	charset_initialise(); /* For *&#^%'s sake don't remove this */
 
 	fault_setup((void (*)(void *))fault_quit );
@@ -792,6 +789,8 @@ int main(int argc, char **argv)
 			*p = 0;
 	}
 
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+	setup_logging("winbindd", interactive);
 	reopen_logs();
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
