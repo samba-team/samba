@@ -339,9 +339,6 @@ main(int argc, char **argv)
     if(interactive_flag)
 	mini_inetd (port);
 
-    if (k_hasafs())
-	k_setpag();
-
     /*
      * LOG_NDELAY sets up the logging connection immediately,
      * necessary for anonymous ftp's that chroot and can't do it later.
