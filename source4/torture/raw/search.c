@@ -74,16 +74,16 @@ static struct {
 	NTSTATUS status;
 	union smb_search_data data;
 } levels[] = {
-	{"SEARCH",              RAW_SEARCH_SEARCH, },
-	{"STANDARD",            RAW_SEARCH_STANDARD, },
-	{"EA_SIZE",             RAW_SEARCH_EA_SIZE, },
-	{"DIRECTORY_INFO",      RAW_SEARCH_DIRECTORY_INFO, },
-	{"FULL_DIRECTORY_INFO", RAW_SEARCH_FULL_DIRECTORY_INFO, },
-	{"NAME_INFO",           RAW_SEARCH_NAME_INFO, },
-	{"BOTH_DIRECTORY_INFO", RAW_SEARCH_BOTH_DIRECTORY_INFO, },
-	{"LEVEL_261",           RAW_SEARCH_261, },
-	{"LEVEL_262",           RAW_SEARCH_262, },
-	{"UNIX_INFO",           RAW_SEARCH_UNIX_INFO, CAP_UNIX}
+	{"SEARCH",                 RAW_SEARCH_SEARCH, },
+	{"STANDARD",               RAW_SEARCH_STANDARD, },
+	{"EA_SIZE",                RAW_SEARCH_EA_SIZE, },
+	{"DIRECTORY_INFO",         RAW_SEARCH_DIRECTORY_INFO, },
+	{"FULL_DIRECTORY_INFO",    RAW_SEARCH_FULL_DIRECTORY_INFO, },
+	{"NAME_INFO",              RAW_SEARCH_NAME_INFO, },
+	{"BOTH_DIRECTORY_INFO",    RAW_SEARCH_BOTH_DIRECTORY_INFO, },
+	{"ID_FULL_DIRECTORY_INFO", RAW_SEARCH_ID_FULL_DIRECTORY_INFO, },
+	{"ID_BOTH_DIRECTORY_INFO", RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, },
+	{"UNIX_INFO",              RAW_SEARCH_UNIX_INFO, CAP_UNIX}
 };
 
 /* find a level in the table by name */
@@ -109,7 +109,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = "\\torture_search.txt";
 	NTSTATUS status;
 	int i;
-	union smb_fileinfo all_info, alt_info, name_info;
+	union smb_fileinfo all_info, alt_info, name_info, internal_info;
 	union smb_search_data *s;
 
 	printf("Testing one file searches\n");
@@ -158,6 +158,15 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &alt_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_ALT_NAME_INFO failed - %s\n", nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	internal_info.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
+	internal_info.generic.in.fname = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &internal_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RAW_FILEINFO_INTERNAL_INFORMATION failed - %s\n", nt_errstr(status));
 		ret = False;
 		goto done;
 	}
@@ -254,8 +263,8 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      attrib, all_info, all_info, attrib);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, attrib, all_info, all_info, attrib);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, attrib, all_info, all_info, attrib);
-	CHECK_VAL("LEVEL_261",           level_261,           attrib, all_info, all_info, attrib);
-	CHECK_VAL("LEVEL_262",           level_262,           attrib, all_info, all_info, attrib);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           attrib, all_info, all_info, attrib);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           attrib, all_info, all_info, attrib);
 
 	CHECK_TIME("SEARCH",             search,              write_time, all_info, all_info, write_time);
 	CHECK_TIME("STANDARD",           standard,            write_time, all_info, all_info, write_time);
@@ -268,26 +277,26 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      write_time, all_info, all_info, write_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, write_time, all_info, all_info, write_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, write_time, all_info, all_info, write_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           write_time, all_info, all_info, write_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           write_time, all_info, all_info, write_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           write_time, all_info, all_info, write_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           write_time, all_info, all_info, write_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           create_time, all_info, all_info, create_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      access_time, all_info, all_info, access_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, access_time, all_info, all_info, access_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, access_time, all_info, all_info, access_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           access_time, all_info, all_info, access_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           access_time, all_info, all_info, access_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           access_time, all_info, all_info, access_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           access_time, all_info, all_info, access_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           create_time, all_info, all_info, create_time);
 
 	CHECK_VAL("SEARCH",              search,              size, all_info, all_info, size);
 	CHECK_VAL("STANDARD",            standard,            size, all_info, all_info, size);
@@ -295,22 +304,22 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      size, all_info, all_info, size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, size, all_info, all_info, size);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, size, all_info, all_info, size);
-	CHECK_VAL("LEVEL_261",           level_261,           size, all_info, all_info, size);
-	CHECK_VAL("LEVEL_262",           level_262,           size, all_info, all_info, size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           size, all_info, all_info, size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           size, all_info, all_info, size);
 
 	CHECK_VAL("STANDARD",            standard,            alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("EA_SIZE",             ea_size,             alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, alloc_size, all_info, all_info, alloc_size);
-	CHECK_VAL("LEVEL_261",           level_261,           alloc_size, all_info, all_info, alloc_size);
-	CHECK_VAL("LEVEL_262",           level_262,           alloc_size, all_info, all_info, alloc_size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           alloc_size, all_info, all_info, alloc_size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           alloc_size, all_info, all_info, alloc_size);
 
 	CHECK_VAL("EA_SIZE",             ea_size,             ea_size, all_info, all_info, ea_size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, ea_size, all_info, all_info, ea_size);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, ea_size, all_info, all_info, ea_size);
-	CHECK_VAL("LEVEL_261",           level_261,           ea_size, all_info, all_info, ea_size);
-	CHECK_VAL("LEVEL_262",           level_262,           ea_size, all_info, all_info, ea_size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           ea_size, all_info, all_info, ea_size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           ea_size, all_info, all_info, ea_size);
 
 	CHECK_STR("SEARCH", search, name, alt_info, alt_name_info, fname);
 	CHECK_WSTR("BOTH_DIRECTORY_INFO", both_directory_info, short_name, alt_info, alt_name_info, fname, STR_UNICODE);
@@ -321,8 +330,11 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("NAME_INFO",           name_info,           name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("LEVEL_261",           level_261,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("LEVEL_262",           level_262,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
+
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info, file_id, internal_info, internal_information, file_id);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info, file_id, internal_info, internal_information, file_id);
 
 done:
 	smb_raw_exit(cli->session);

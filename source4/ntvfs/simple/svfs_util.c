@@ -160,3 +160,14 @@ uint16 svfs_unix_to_dos_attrib(mode_t mode)
 	if (!(mode & S_IWUSR)) ret |= FILE_ATTRIBUTE_READONLY;
 	return ret;
 }
+
+/*
+  build a file_id from a stat struct
+*/
+large_t svfs_file_id(struct stat *st)
+{
+	large_t ret = st->st_ino;
+	ret <<= 32;
+	ret |= st->st_dev;
+	return ret;
+}

@@ -383,8 +383,7 @@ union smb_fileinfo {
 			uint8 unit_shift;
 			uint8 chunk_shift;
 			uint8 cluster_shift;
-			uint32 device;
-			uint32 inode;
+			large_t file_id;
 			uint32 access_flags; /* seen 0x001f01ff from w2k3 */
 			large_t position;
 			uint32 mode;
@@ -621,10 +620,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			/* REWRITE: these are very uncertain - we need
-			 * to look at this interface */
-			uint32 device;
-			uint32 inode;
+			large_t file_id;
 		} out;
 	} internal_information;
 
@@ -1685,8 +1681,8 @@ enum search_level {RAW_SEARCH_GENERIC                 = 0xF000,
 		   RAW_SEARCH_FULL_DIRECTORY_INFO     = SMB_FIND_FULL_DIRECTORY_INFO,
 		   RAW_SEARCH_NAME_INFO               = SMB_FIND_NAME_INFO,
 		   RAW_SEARCH_BOTH_DIRECTORY_INFO     = SMB_FIND_BOTH_DIRECTORY_INFO,
-		   RAW_SEARCH_261                     = SMB_FIND_261,
-		   RAW_SEARCH_262                     = SMB_FIND_262,
+		   RAW_SEARCH_ID_FULL_DIRECTORY_INFO  = SMB_FIND_ID_FULL_DIRECTORY_INFO,
+		   RAW_SEARCH_ID_BOTH_DIRECTORY_INFO  = SMB_FIND_ID_BOTH_DIRECTORY_INFO,
 		   RAW_SEARCH_UNIX_INFO               = SMB_FIND_UNIX_INFO};
 
 	
@@ -1851,7 +1847,7 @@ union smb_search_data {
 		WIRE_STRING name;
 	} both_directory_info;
 
-	/* RAW_SEARCH_261 interface */
+	/* RAW_SEARCH_ID_FULL_DIRECTORY_INFO interface */
 	struct {
 		uint32 file_index;
 		NTTIME create_time;
@@ -1862,11 +1858,11 @@ union smb_search_data {
 		large_t alloc_size;
 		uint32 attrib;
 		uint32 ea_size;
-		uint32 unknown[3];
+		large_t file_id;
 		WIRE_STRING name;
-	} level_261;
+	} id_full_directory_info;
 
-	/* RAW_SEARCH_262 interface */
+	/* RAW_SEARCH_ID_BOTH_DIRECTORY_INFO interface */
 	struct {
 		uint32 file_index;
 		NTTIME create_time;
@@ -1877,10 +1873,10 @@ union smb_search_data {
 		large_t alloc_size;
 		uint32  attrib;
 		uint32  ea_size;
-		uint32  unknown[2];
+		large_t file_id;
 		WIRE_STRING short_name;
 		WIRE_STRING name;
-	} level_262;
+	} id_both_directory_info;
 
 	/* RAW_SEARCH_UNIX_INFO interface */
 	struct {

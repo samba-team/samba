@@ -78,8 +78,8 @@ static struct {
 	{"FULL_DIRECTORY_INFO", RAW_SEARCH_FULL_DIRECTORY_INFO, },
 	{"NAME_INFO",           RAW_SEARCH_NAME_INFO, },
 	{"BOTH_DIRECTORY_INFO", RAW_SEARCH_BOTH_DIRECTORY_INFO, },
-	{"LEVEL_261",           RAW_SEARCH_261, },
-	{"LEVEL_262",           RAW_SEARCH_262, }
+	{"ID_FULL_DIRECTORY_INFO", RAW_SEARCH_ID_FULL_DIRECTORY_INFO, },
+	{"ID_BOTH_DIRECTORY_INFO", RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, }
 };
 
 /* find a level in the table by name */
@@ -246,8 +246,8 @@ BOOL torture_search(int dummy)
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      attrib, all_info, all_info, attrib);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, attrib, all_info, all_info, attrib);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, attrib, all_info, all_info, attrib);
-	CHECK_VAL("LEVEL_261",           level_261,           attrib, all_info, all_info, attrib);
-	CHECK_VAL("LEVEL_262",           level_262,           attrib, all_info, all_info, attrib);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           attrib, all_info, all_info, attrib);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           attrib, all_info, all_info, attrib);
 
 	CHECK_TIME("SEARCH",             search,              write_time, all_info, all_info, write_time);
 	CHECK_TIME("STANDARD",           standard,            write_time, all_info, all_info, write_time);
@@ -260,26 +260,26 @@ BOOL torture_search(int dummy)
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      write_time, all_info, all_info, write_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, write_time, all_info, all_info, write_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, write_time, all_info, all_info, write_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           write_time, all_info, all_info, write_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           write_time, all_info, all_info, write_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           write_time, all_info, all_info, write_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           write_time, all_info, all_info, write_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           create_time, all_info, all_info, create_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      access_time, all_info, all_info, access_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, access_time, all_info, all_info, access_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, access_time, all_info, all_info, access_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           access_time, all_info, all_info, access_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           access_time, all_info, all_info, access_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           access_time, all_info, all_info, access_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           access_time, all_info, all_info, access_time);
 
 	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, create_time, all_info, all_info, create_time);
 	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_261",           level_261,           create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("LEVEL_262",           level_262,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           create_time, all_info, all_info, create_time);
 
 	CHECK_VAL("SEARCH",              search,              size, all_info, all_info, size);
 	CHECK_VAL("STANDARD",            standard,            size, all_info, all_info, size);
@@ -287,21 +287,21 @@ BOOL torture_search(int dummy)
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      size, all_info, all_info, size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, size, all_info, all_info, size);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, size, all_info, all_info, size);
-	CHECK_VAL("LEVEL_261",           level_261,           size, all_info, all_info, size);
-	CHECK_VAL("LEVEL_262",           level_262,           size, all_info, all_info, size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           size, all_info, all_info, size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           size, all_info, all_info, size);
 
 	CHECK_VAL("STANDARD",            standard,            alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("EA_SIZE",             ea_size,             alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, alloc_size, all_info, all_info, alloc_size);
-	CHECK_VAL("LEVEL_261",           level_261,           alloc_size, all_info, all_info, alloc_size);
-	CHECK_VAL("LEVEL_262",           level_262,           alloc_size, all_info, all_info, alloc_size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           alloc_size, all_info, all_info, alloc_size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           alloc_size, all_info, all_info, alloc_size);
 
 	CHECK_VAL("EA_SIZE",             ea_size,             ea_size, all_info, all_info, ea_size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, ea_size, all_info, all_info, ea_size);
-	CHECK_VAL("LEVEL_261",           level_261,           ea_size, all_info, all_info, ea_size);
-	CHECK_VAL("LEVEL_262",           level_262,           ea_size, all_info, all_info, ea_size);
+	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           ea_size, all_info, all_info, ea_size);
+	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           ea_size, all_info, all_info, ea_size);
 
 	CHECK_STR("SEARCH", search, name, alt_info, alt_name_info, fname);
 	CHECK_WSTR("BOTH_DIRECTORY_INFO", both_directory_info, short_name, alt_info, alt_name_info, fname, STR_UNICODE);
@@ -312,8 +312,8 @@ BOOL torture_search(int dummy)
 	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("NAME_INFO",           name_info,           name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("LEVEL_261",           level_261,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("LEVEL_262",           level_262,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
 
 done:
 	cli_close(cli, fnum);

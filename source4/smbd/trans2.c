@@ -533,8 +533,7 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
 		trans2_setup_reply(req, trans, 2, 8, 0);
 		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, st->internal_information.out.device);
-		SIVAL(trans->out.data.data,  4, st->internal_information.out.inode);
+		SBVAL(trans->out.data.data,  0, st->internal_information.out.file_id);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_INFO:
@@ -987,49 +986,47 @@ static void find_fill_info(struct request_context *req,
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
-	case RAW_SEARCH_261:
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
 		trans2_grow_data(req, trans, ofs + 80);
 		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->level_261.file_index);
-		push_nttime(data,    8, &file->level_261.create_time);
-		push_nttime(data,   16, &file->level_261.access_time);
-		push_nttime(data,   24, &file->level_261.write_time);
-		push_nttime(data,   32, &file->level_261.change_time);
-		SBVAL(data,         40, file->level_261.size);
-		SBVAL(data,         48, file->level_261.alloc_size);
-		SIVAL(data,         56, file->level_261.attrib);
-		SIVAL(data,         64, file->level_261.ea_size);
-		SIVAL(data,         68, file->level_261.unknown[0]);
-		SIVAL(data,         72, file->level_261.unknown[1]);
-		SIVAL(data,         76, file->level_261.unknown[2]);
-		trans2_append_data_string(req, trans, &file->level_261.name, 
+		SIVAL(data,          4, file->id_full_directory_info.file_index);
+		push_nttime(data,    8, &file->id_full_directory_info.create_time);
+		push_nttime(data,   16, &file->id_full_directory_info.access_time);
+		push_nttime(data,   24, &file->id_full_directory_info.write_time);
+		push_nttime(data,   32, &file->id_full_directory_info.change_time);
+		SBVAL(data,         40, file->id_full_directory_info.size);
+		SBVAL(data,         48, file->id_full_directory_info.alloc_size);
+		SIVAL(data,         56, file->id_full_directory_info.attrib);
+		SIVAL(data,         64, file->id_full_directory_info.ea_size);
+		SIVAL(data,         68, 0); /* padding */
+		SBVAL(data,         72, file->id_full_directory_info.file_id);
+		trans2_append_data_string(req, trans, &file->id_full_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
-	case RAW_SEARCH_262:
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
 		trans2_grow_data(req, trans, ofs + 104);
 		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->level_262.file_index);
-		push_nttime(data,    8, &file->level_262.create_time);
-		push_nttime(data,   16, &file->level_262.access_time);
-		push_nttime(data,   24, &file->level_262.write_time);
-		push_nttime(data,   32, &file->level_262.change_time);
-		SBVAL(data,         40, file->level_262.size);
-		SBVAL(data,         48, file->level_262.alloc_size);
-		SIVAL(data,         56, file->level_262.attrib);
-		SIVAL(data,         64, file->level_262.ea_size);
+		SIVAL(data,          4, file->id_both_directory_info.file_index);
+		push_nttime(data,    8, &file->id_both_directory_info.create_time);
+		push_nttime(data,   16, &file->id_both_directory_info.access_time);
+		push_nttime(data,   24, &file->id_both_directory_info.write_time);
+		push_nttime(data,   32, &file->id_both_directory_info.change_time);
+		SBVAL(data,         40, file->id_both_directory_info.size);
+		SBVAL(data,         48, file->id_both_directory_info.alloc_size);
+		SIVAL(data,         56, file->id_both_directory_info.attrib);
+		SIVAL(data,         64, file->id_both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
 		memset(data+70,0,24);
 		trans2_push_data_string(req, trans, 
 					68 + ofs, 70 + ofs, 
-					&file->level_262.short_name, 
+					&file->id_both_directory_info.short_name, 
 					24, STR_UNICODE | STR_LEN8BIT);
-		SIVAL(data,         94, file->level_262.unknown[0]);
-		SIVAL(data,         98, file->level_262.unknown[1]);
+		SBVAL(data,         94, file->id_both_directory_info.file_id);
 		SSVAL(data,        102, 0); /* reserved? */
-		trans2_append_data_string(req, trans, &file->level_262.name, 
+		trans2_append_data_string(req, trans, &file->id_both_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);

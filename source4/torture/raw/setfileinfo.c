@@ -31,7 +31,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 	struct cli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
-	int fnum_saved, fnum2, fnum = -1;
+	int fnum_saved, d_fnum, fnum2, fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
 	char *path_fname;
@@ -478,6 +478,13 @@ BOOL torture_raw_sfileinfo(int dummy)
 	sfinfo.rename_information.in.new_name  = path_fname+strlen(BASEDIR)+1;
 	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname);
+
+	printf("Trying rename with a root fid\n");
+	d_fnum = create_directory_handle(cli->tree, BASEDIR);
+	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.root_fid = d_fnum;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
+	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
 #endif
 
 #if 0
@@ -491,6 +498,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 #endif
 
 done:
+	smb_raw_exit(cli->session);
 	cli_close(cli, fnum);
 	if (!cli_unlink(cli, fnum_fname)) {
 		printf("Failed to delete %s - %s\n", fnum_fname, cli_errstr(cli));
