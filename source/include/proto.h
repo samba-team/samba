@@ -253,7 +253,7 @@ int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
 BOOL is_vetoed_name(char *name);
 BOOL is_vetoed_path(char *name);
-char *lp_veto_files();
+char *lp_veto_files(void);
 
 /*The following definitions come from  locking.c  */
 
