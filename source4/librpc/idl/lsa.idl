@@ -106,8 +106,15 @@
 		uint32 unknown;
 	} lsa_AuditLogInfo;
 
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] uint32 settings[*];
+	} lsa_AuditSettings;
+
 	typedef struct {
 		uint32 auditing_mode;
+		lsa_AuditSettings *settings;
 	} lsa_AuditEventsInfo;
 
 	typedef union {
