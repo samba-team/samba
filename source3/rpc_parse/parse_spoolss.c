@@ -3691,11 +3691,22 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 		
 	if (il->dependentfiles_ptr)
-		smb_io_buffer5("", &(il->dependentfiles), ps, depth);
+		smb_io_buffer5("", &il->dependentfiles, ps, depth);
 
 	return True;
 }
 
+void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u)
+{
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *il = *q_u;
+
+	if (il == NULL)
+		return;
+
+	free_buffer5(&il->dependentfiles);
+
+	safe_free(q_u);
+}
 
 /*******************************************************************
 parse a SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure
@@ -3836,6 +3847,19 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	return True;
 }
 
+void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u)
+{
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *il = *q_u;
+
+	if (il == NULL)
+		return;
+
+	free_buffer5(&il->dependentfiles);
+	free_buffer5(&il->previousnames);
+
+	safe_free(q_u);
+}
+
 
 /*******************************************************************
  convert a buffer of UNICODE strings null terminated
@@ -3908,11 +3932,11 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 		
 	switch (il->level) {
 		case 3:
-			if(!spool_io_printer_driver_info_level_3("", &(il->info_3), ps, depth))
+			if(!spool_io_printer_driver_info_level_3("", &il->info_3, ps, depth))
 				return False;
 			break;		
 		case 6:
-			if(!spool_io_printer_driver_info_level_6("", &(il->info_6), ps, depth))
+			if(!spool_io_printer_driver_info_level_6("", &il->info_6, ps, depth))
 				return False;
 			break;		
 	default:
@@ -3920,6 +3944,21 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 	}
 
 	return True;
+}
+
+void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il)
+{
+	if (il->ptr==0)
+		return;
+
+	switch (il->level) {
+		case 3:
+			free_spool_printer_driver_info_level_3(&il->info_3);
+			break;
+		case 6:
+			free_spool_printer_driver_info_level_6(&il->info_6);
+			break;
+	}
 }
 
 /*******************************************************************
@@ -3946,6 +3985,15 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ Free the dynamic parts of a printer driver.
+********************************************************************/  
+
+void free_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u)
+{
+	free_spool_printer_driver_info_level(&q_u->info);
 }
 
 /*******************************************************************

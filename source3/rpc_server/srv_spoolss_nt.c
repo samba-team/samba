@@ -3917,14 +3917,12 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 
 #ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
 	if ((err = modify_driver_heirarchy(&driver, level)) != 0) {
-		safe_free(driver.info_3);
-		safe_free(driver.info_6);
+		free_a_printer_driver(driver, level);
 		return err;
 	}
 #endif
 
-	safe_free(driver.info_3);
-	safe_free(driver.info_6);
+	free_a_printer_driver(driver, level);
 
 	return NT_STATUS_NO_PROBLEMO;
 }
