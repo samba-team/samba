@@ -1008,52 +1008,6 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	return False;
 }
 
-
-/********************************************************
- resolve a name of format \\server_name or \\ipaddress
- into a name.  also, cut the \\ from the front for us.
-*********************************************************/
-
-BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-                                struct in_addr *ip)
-{
-        BOOL ret;
-        const char *sv_name = srv_name;
-
-        DEBUG(10,("resolve_srv_name: %s\n", srv_name));
-
-        if (srv_name == NULL || strequal("\\\\.", srv_name))
-        {
-                extern pstring global_myname;
-                fstrcpy(dest_host, global_myname);
-                ip = interpret_addr2("127.0.0.1");
-                return True;
-        }
-
-        if (strnequal("\\\\", srv_name, 2))
-        {
-                sv_name = &srv_name[2];
-        }
-
-        fstrcpy(dest_host, sv_name);
-        /* treat the '*' name specially - it is a magic name for the PDC */
-        if (strcmp(dest_host,"*") == 0) {
-                extern pstring global_myname;
-                ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
-        } else {
-                ret = resolve_name(dest_host, ip, 0x20);
-        }
-        
-        if (is_ipaddress(dest_host))
-        {
-                fstrcpy(dest_host, "*SMBSERVER");
-        }
-        
-        return ret;
-}
-
-
 /********************************************************
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
