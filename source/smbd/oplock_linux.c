@@ -31,18 +31,18 @@ static unsigned signals_received;
 static unsigned signals_processed;
 static int fd_pending; /* the fd of the current pending SIGIO */
 
-/* these can be removed when they are in libc */
-typedef struct __user_cap_header_struct {
-        uint32 version;
-        int pid;
-} *cap_user_header_t;
- 
-typedef struct __user_cap_data_struct {
-        uint32 effective;
-        uint32 permitted;
-        uint32 inheritable;
-} *cap_user_data_t;
 
+#ifndef F_SETLEASE
+#define F_SETLEASE	1024
+#endif
+
+#ifndef F_GETLEASE
+#define F_GETLEASE	1025
+#endif
+
+#ifndef CAP_LEASE
+#define CAP_LEASE 28
+#endif
 
 /****************************************************************************
 handle a SIGIO, incrementing the signals_received and blocking SIGIO
@@ -55,19 +55,37 @@ static void sigio_handler(int signal, siginfo_t *info, void *unused)
 }
 
 /****************************************************************************
-try to gain the CAP_LEASE capability
+try to gain a linux capability
 ****************************************************************************/
-static void set_lease_capability(void)
+static void set_capability(unsigned capability)
 {
-	cap_user_header_t header;
-	cap_user_data_t data;
-	if (capget(header, data) == -1) {
-		DEBUG(3,("Unable to get kernel capabilities\n"));
+#ifndef _LINUX_CAPABILITY_VERSION
+#define _LINUX_CAPABILITY_VERSION 0x19980330
+#endif
+	/* these can be removed when they are in glibc headers */
+	struct  {
+		uint32 version;
+		int pid;
+	} header;
+	struct {
+		uint32 effective;
+		uint32 permitted;
+		uint32 inheritable;
+	} data;
+
+	header.version = _LINUX_CAPABILITY_VERSION;
+	header.pid = 0;
+
+	if (capget(&header, &data) == -1) {
+		DEBUG(3,("Unable to get kernel capabilities (%s)\n", strerror(errno)));
 		return;
 	}
-	data->effective |= (1<<CAP_LEASE);
-	if (capset(header, data) == -1) {
-		DEBUG(3,("Unable to set CAP_LEASE capability\n"));
+
+	data.effective |= (1<<capability);
+
+	if (capset(&header, &data) == -1) {
+		DEBUG(3,("Unable to set %d capability (%s)\n", 
+			 capability, strerror(errno)));
 	}
 }
 
@@ -81,7 +99,7 @@ static int linux_setlease(int fd, int leasetype)
 	int ret;
 	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
-		set_lease_capability();
+		set_capability(CAP_LEASE);
 		ret = fcntl(fd, F_SETLEASE, leasetype);
 	}
 
