@@ -1271,7 +1271,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, const DOM_GID *gids,
-			 uint32 user_flgs, uchar *sess_key,
+			 uint32 user_flgs, uchar sess_key[16],
  			 const char *logon_srv, const char *logon_dom,
 			 const DOM_SID *dom_sid, const char *other_sids)
 {
@@ -1448,7 +1448,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!prs_uint32("user_flgs     ", ps, depth, &usr->user_flgs))     /* user flags */
 		return False;
 
-	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* unused user session key */
+	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* user session key */
 		return False;
 
 	if(!smb_io_unihdr("hdr_logon_srv", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */

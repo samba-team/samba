@@ -666,6 +666,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		pstring my_name;
 		fstring user_sid_string;
 		fstring group_sid_string;
+		uchar user_sess_key[16];
+		uchar netlogon_sess_key[16];
 		
 		sampw = server_info->sam_account;
 
@@ -697,6 +699,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			return status;
 		}
 
+		ZERO_STRUCT(netlogon_sess_key);
+		memcpy(netlogon_sess_key, p->dc.sess_key, 8);
+		memcpy(user_sess_key, server_info->session_key, sizeof(user_sess_key));
+		SamOEMhash(user_sess_key, netlogon_sess_key, 16);
+		ZERO_STRUCT(netlogon_sess_key);
+
 		init_net_user_info3(p->mem_ctx, usr_info, 
 				    user_rid,
 				    group_rid,
@@ -719,13 +727,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    num_gids,    /* uint32 num_groups */
 				    gids    , /* DOM_GID *gids */
 				    0x20    , /* uint32 user_flgs (?) */
-				    NULL, /* uchar sess_key[16] */
+				    user_sess_key,
 				    my_name     , /* char *logon_srv */
 				    pdb_get_domain(sampw),
 				    &domain_sid,     /* DOM_SID *dom_sid */  
 				    /* Should be users domain sid, not servers - for trusted domains */
 				  
 				    NULL); /* char *other_sids */
+		ZERO_STRUCT(user_sess_key);
 	}
 	free_server_info(&server_info);
 	return status;
