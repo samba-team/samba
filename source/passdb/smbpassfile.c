@@ -84,7 +84,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 {
   unsigned int mac_file_len;
   char *p;
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
   pstrcpy(mac_file, lp_tdb_passwd_file());
 #else
   pstrcpy(mac_file, lp_smb_passwd_file());

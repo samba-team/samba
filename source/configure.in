@@ -1746,13 +1746,12 @@ fi
 #################################################
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB password database)
-AC_ARG_WITH(tdbpwd,
+AC_ARG_WITH(tdbsam,
 [  --with-tdbsam           Include TDB password database (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDBPWD)
-    AC_MSG_ERROR([TDB password database not supported in this version.])
+    AC_DEFINE(WITH_TDBSAM)
     ;;
   *)
     AC_MSG_RESULT(no)
