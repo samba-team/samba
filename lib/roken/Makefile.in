@@ -33,15 +33,16 @@ LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = \
-	base64.c chown.c daemon.c err.c errx.c fchown.c get_window_size.c \
+	base64.c chown.c daemon.c err.c errx.c fchown.c flock.c \
+	get_window_size.c \
 	getcwd.c getdtablesize.c getarg.c getopt.c getusershell.c \
 	hstrerror.c inaddr2str.c inet_aton.c \
 	initgroups.c k_getpwnam.c k_getpwuid.c lstat.c \
-	memmove.c mini_inetd.c mkstemp.c putenv.c rcmd.c setegid.c \
+	memmove.c mini_inetd.c mkstemp.c putenv.c rcmd.c readv.c setegid.c \
 	setenv.c seteuid.c signal.c snprintf.c \
 	strcasecmp.c strdup.c strerror.c strftime.c \
-	strlwr.c strnlen.c strtok_r.c strupr.c tm2time.c \
-	unsetenv.c verify.c verr.c verrx.c vwarn.c \
+	strlwr.c strnlen.c strsep.c strtok_r.c strupr.c tm2time.c \
+	unsetenv.c verify.c verr.c verrx.c vsyslog.c vwarn.c \
 	vwarnx.c warn.c warnerr.c warnx.c
 
 OBJECTS = base64.o getarg.o k_getpwuid.o k_getpwnam.o signal.o tm2time.o \
