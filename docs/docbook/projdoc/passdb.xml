@@ -263,9 +263,9 @@ on LDAP architectures and Directories, please refer to the following sites.
 </itemizedlist>
 
 <para>
-Note that <ulink url="http://www.ora.com/">O'Reilly Publishing</ulink> is working on
-a guide to LDAP for System Administrators which has a planned release date of
-early summer, 2002.
+	<ulink url="http://www.ora.com/">O'Reilly Publishing</ulink> has published 
+	<ulink url="http://www.oreilly.com/catalog/ldapsa/">LDAP System Administration</ulink> 
+	written by Gerald Carter.
 </para>
 
 <para>
@@ -351,17 +351,13 @@ System Administration; Gerald Carter, O'Reilly; Chapter 6: Replacing NIS".
 <sect2>
 <title>Supported LDAP Servers</title>
 
-<!-- FIXME: This is outdated for 3.0 -->
-
 <para>
 The LDAP samdb code in 2.2.3 (and later) has been developed and tested
-using the OpenLDAP 2.0 server and client libraries. 
+using the OpenLDAP 2.0 and 2.1 server and client libraries. 
 The same code should be able to work with Netscape's Directory Server
 and client SDK. However, due to lack of testing so far, there are bound
-to be compile errors and bugs.  These should not be hard to fix.
-If you are so inclined, please be sure to forward all patches to
-<ulink url="mailto:samba-patches@samba.org">samba-patches@samba.org</ulink> and
-<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+to be compile errors and bugs.  These should not be hard to fix. Please submit 
+fixes via <link linkend="Bugs"/>.
 </para>
 
 </sect2>
@@ -376,17 +372,18 @@ Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
 </para>
 
 <para><programlisting>
-objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top AUXILIARY
-     DESC 'Samba Account'
-     MUST ( uid $ rid )
-     MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
-            logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
-            displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
-            description $ userWorkstations $ primaryGroupID $ domain ))
+objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
+        DESC 'Samba Auxilary Account'
+        MUST ( uid $ rid )
+        MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
+               logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
+               displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
+               description $ userWorkstations $ primaryGroupID $ domain ))
 </programlisting></para>
 
 <para>
-The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
+The <filename>samba.schema</filename> file has been formatted for 
+OpenLDAP 2.0/2.1.  The OID's are
 owned by the Samba Team and as such is legal to be openly published.
 If you translate the schema to be used with Netscape DS, please
 submit the modified schema file as a patch to <ulink
@@ -427,6 +424,8 @@ information in NIS while the network is transitioning to a full LDAP infrastruct
 <para>
 To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.
+The samba.schema file can be found in the directory <filename>examples/LDAP</filename>
+in the samba source distribution.
 </para>
 
 <para>
@@ -466,7 +465,7 @@ like in the following example, to speed up searches made on sambaAccount objectc
 ## required by OpenLDAP 2.0
 index objectclass   eq
 
-## support pb_getsampwnam()
+## support pdb_getsampwnam()
 index uid           pres,eq
 ## support pdb_getsambapwrid()
 index rid           eq
@@ -483,6 +482,11 @@ index   primaryGroupID  eq
 index   displayName     pres,eq
 
 </programlisting></para>
+
+<para>Remember to restart slapd after making these changes:</para>
+
+<para><prompt>root# </prompt><userinput>/etc/init.d/slapd restart</userinput></para>
+
 </sect3>
 
 
@@ -490,21 +494,22 @@ index   displayName     pres,eq
 <title>Configuring Samba</title>
 
 <para>
-The following parameters are available in smb.conf only with <parameter>--with-ldapsam</parameter>
-was included when compiling Samba.
+The following parameters are available in smb.conf only if your version of samba was built 
+with LDAP support. Samba automatically builds with LDAP support if the LDAP libraries are 
+found.
 </para>
 
 <itemizedlist>
-        <listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend [ldapsam|ldapsam_nua]:url</ulink></para></listitem>
+        <listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend = ldapsam:url</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPSSL">ldap ssl</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPADMINDN">ldap admin dn</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPSUFFIX">ldap suffix</ulink></para></listitem>
 	<listitem><para><ulink url="smb.conf.5.html#LDAPFILTER">ldap filter</ulink></para></listitem>
-	<listitem><para><ulink url="smb.conf.5.html#LDAPPORT">ldap port</ulink></para></listitem>
-        <listitem><para><ulink url="smb.conf.5.html#LDAPMACHINSUFFIX">ldap machine suffix</ulink></para></listitem>
-        <listitem><para><ulink url="smb.conf.5.html#LDAPUSERSUFFIX">ldap user suffix</ulink></para></listitem>
-        <listitem><para><ulink url="smb.conf.5.html#LDAPDELETEDN">ldap delete dn</ulink></para></listitem>
-
+	<listitem><para><ulink url="smb.conf.5.html#LDAPMACHINSUFFIX">ldap machine suffix</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPUSERSUFFIX">ldap user suffix</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPDELETEDN">ldap delete dn</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPPASSWDSYNC">ldap passwd sync</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPTRUSTIDS">ldap trust ids</ulink></para></listitem>
 </itemizedlist>
 
 <para>
@@ -535,7 +540,8 @@ use with an LDAP directory could appear as
      # ('off', 'start tls', or 'on' (default))
      ldap ssl = start tls
 
-     passdb backend ldapsam:ldap://ahab.samba.org
+	 # syntax: passdb backend = ldapsam:ldap://server-name[:port]
+     passdb backend = ldapsam:ldap://ahab.samba.org
 
      # smbpasswd -x delete the entire dn-entry
      ldap delete dn = no
@@ -545,12 +551,11 @@ use with an LDAP directory could appear as
      ldap user suffix = ou=People
      ldap machine suffix = ou=Systems
 
-     # define the port to use in the LDAP session (defaults to 636 when
-     # "ldap ssl = on")
-     ldap port = 389
-
      # specify the base DN to use when searching the directory
      ldap suffix = "ou=people,dc=samba,dc=org"
+
+	 # Trust unix account information in LDAP (see the smb.conf manpage for details)
+	 ldap trust ids = Yes
 
      # generally the default ldap search filter is ok
      # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
@@ -607,15 +612,14 @@ of sambaAccount entries in the directory.
 <para>
 These password hashes are clear text equivalents and can be used to impersonate
 the user without deriving the original clear text strings.  For more information
-on the details of LM/NT password hashes, refer to the <link
-linkend="passdb">User Database</link> of the Samba-HOWTO-Collection.
+on the details of LM/NT password hashes, refer to the first sections of this chapter.
 </para>
 
 <para>
 To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
 to require an encrypted session (<command>ldap ssl = on</command>) using
 the default port of 636
-when contacting the directory server.  When using an OpenLDAP 2.0 server, it
+when contacting the directory server.  When using an OpenLDAP server, it
 is possible to use the use the StartTLS LDAP extended  operation in the place of
 LDAPS.  In either case, you are strongly discouraged to disable this security
 (<command>ldap ssl = off</command>).
@@ -708,11 +712,13 @@ The sambaAccount objectclass is composed of the following attributes:
 	<listitem><para><constant>primaryGroupID</constant>: the relative identifier (RID) of the primary group
 	of the user.</para></listitem>
 
+	<listitem><para><constant>domain</constant>: domain the user is part of.</para></listitem>
+
 </itemizedlist>
 
 <para>
 The majority of these parameters are only used when Samba is acting as a PDC of
-a domain (refer to the <ulink url="Samba-PDC-HOWTO.html">Samba-PDC-HOWTO</ulink> for details on
+a domain (refer to <link linkend="samba-pdc"/> for details on
 how to configure Samba as a Primary Domain Controller). The following four attributes
 are only stored with the sambaAccount entry if the values are non-default values:
 </para>
@@ -798,6 +804,52 @@ ntPassword: 878D8014606CDA29677A44EFA1353FC7
 </programlisting></para>
 
 </sect2>
+
+<sect2>
+<title>Password synchronisation</title>
+
+<para>
+Since 3.0 Samba can update the non-samba (LDAP) password stored with an account. When
+using pam_ldap, this allows changing both unix and windows passwords at once.
+</para>
+
+<para>The <command>ldap passwd sync</command> options can have the following values:</para>
+
+<variablelist>
+	<varlistentry>
+		<term>yes</term>
+		<listitem><para>When the user changes his password, update
+				<constant>ntPassword</constant>, <constant>lmPassword</constant>
+				and the <constant>password</constant> fields.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>no</term>
+		<listitem><para>Only update <constant>ntPassword</constant> and <constant>lmPassword</constant>.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>only</term>
+		<listitem><para>Only update the LDAP password and let the LDAP server worry 
+				about the other fields.</para></listitem>
+	</varlistentry>
+</variablelist>
+
+<para>More information can be found in the <ulink url="smb.conf.5.html#LDAPPASSWDSYNC">smb.conf</ulink> manpage.
+</para>
+
+</sect2>
+
+<sect2>
+<title>ldap trust ids</title>
+
+<para>
+LDAP Performance can be approved by using the <command>ldap trust ids</command> parameter. 
+See the <ulink url="smb.conf.5.html#LDAPTRUSTIDS">smb.conf</ulink> manpage for details.
+</para>
+
+</sect2>
+
 </sect1>
 
 <sect1>
