@@ -198,7 +198,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
     /* Add the user to the db if they aren't already there. */
    if (!exist) {
-	retval = local_password_change( name, LOCAL_ADD_USER,
+	retval = local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
 	                                 msg_str, sizeof(msg_str) );
