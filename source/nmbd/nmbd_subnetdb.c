@@ -67,7 +67,7 @@ static void add_subnet(struct subnet_record *subrec)
  * ************************************************************************** **
  */
 static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
-  {
+{
   struct name_record *NR = (struct name_record *)Node;
 
   if( DEBUGLVL( 10 ) )
@@ -76,12 +76,12 @@ static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
 
     Debug1( "nmbd_subnetdb:namelist_entry_compare()\n" );
     Debug1( "%d == memcmp( \"%s\", \"%s\", %d )\n",
-            memcmp( Item, &(NR->name), sizeof(struct nmb_name) ),
+            memcmp( Item, &NR->name, sizeof(struct nmb_name) ),
             nmb_namestr(Iname), nmb_namestr(&NR->name), (int)sizeof(struct nmb_name) );
     }
 
   return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) ); 
-  } /* namelist_entry_compare */
+}
 
 
 /****************************************************************************
@@ -109,7 +109,7 @@ void close_subnet(struct subnet_record *subrec)
   Create a subnet entry.
   ****************************************************************************/
 
-static struct subnet_record *make_subnet(char *name, enum subnet_type type,
+static struct subnet_record *make_subnet(const char *name, enum subnet_type type,
 					 struct in_addr myip, struct in_addr bcast_ip, 
 					 struct in_addr mask_ip)
 {

@@ -94,7 +94,7 @@ struct server_record *find_server_in_workgroup(struct work_record *work, const c
   
   for (ret = work->serverlist; ret; ret = ret->next)
   {
-    if (strequal(ret->serv.name,name))
+    if (strequal_unix(ret->serv.name,name))
       return ret;
   }
   return NULL;
@@ -156,7 +156,7 @@ workgroup %s. This is a bug.\n", name, work->work_group));
  
   StrnCpy(servrec->serv.name,name,sizeof(servrec->serv.name)-1);
   StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
-  strupper(servrec->serv.name);
+  strupper_unix(servrec->serv.name);
   servrec->serv.type  = servertype;
 
   update_server_ttl(servrec, ttl);
@@ -264,7 +264,7 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
 {
   struct subnet_record *ssub;
 
-  if(strequal(lp_workgroup_dos(), work->work_group))
+  if(strequal_unix(lp_workgroup_unix(), work->work_group))
     return 0;
 
   /* This is a workgroup we have seen on a broadcast subnet. All
@@ -365,7 +365,7 @@ void write_browse_list(time_t t, BOOL force_write)
    * subnet.
    */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup_dos())) == NULL)
+  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup_unix())) == NULL)
   { 
     DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
              lp_workgroup_unix()));
@@ -385,22 +385,22 @@ void write_browse_list(time_t t, BOOL force_write)
    * once.
    */
 
-  for (i=0; my_netbios_names_dos(i); i++)
+  for (i=0; my_netbios_names_unix(i); i++)
   {
     stype = 0;
     for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
     {
-      if((work = find_workgroup_on_subnet( subrec, lp_workgroup_dos() )) == NULL)
+      if((work = find_workgroup_on_subnet( subrec, lp_workgroup_unix() )) == NULL)
         continue;
-      if((servrec = find_server_in_workgroup( work, my_netbios_names_dos(i))) == NULL)
+      if((servrec = find_server_in_workgroup( work, my_netbios_names_unix(i))) == NULL)
         continue;
 
       stype |= servrec->serv.type;
     }
 
     /* Output server details, plus what workgroup they're in. */
-    write_browse_list_entry(fp, my_netbios_names_dos(i), stype,
-        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), lp_workgroup_dos());
+    write_browse_list_entry(fp, my_netbios_names_unix(i), stype,
+        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), lp_workgroup_unix());
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 

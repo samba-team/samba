@@ -91,6 +91,7 @@ static char *smb_myname_unix;
 static char *smb_myworkgroup_dos;
 static char *smb_myworkgroup_unix;
 static char *smb_scope_dos;
+static char *smb_scope_unix;
 static int smb_num_netbios_names;
 static char **smb_my_netbios_names_dos;
 static char **smb_my_netbios_names_unix;
@@ -156,13 +157,22 @@ const char *global_scope_dos(void)
 	return smb_scope_dos;
 }
 
+const char *global_scope_unix(void)
+{
+	return smb_scope_unix;
+}
+
 BOOL set_global_scope_unix(const char *scope_unix)
 {
 	SAFE_FREE(smb_scope_dos);
+	SAFE_FREE(smb_scope_unix);
 	smb_scope_dos = strdup(unix_to_dos_static(scope_unix));
 	if (!smb_scope_dos)
 		return False;
 	strupper(smb_scope_dos);
+	smb_scope_unix = strdup(dos_to_unix_static(smb_scope_dos));
+	if (!smb_scope_unix || !smb_scope_dos)
+		return False;
 	return True;
 }
 
@@ -1536,16 +1546,16 @@ is the name specified one of my netbios names
 returns true is it is equal, false otherwise
 ********************************************************************/
 
-BOOL is_myname(const char *dos_s)
+BOOL is_myname(const char *s)
 {
 	int n;
 	BOOL ret = False;
 
-	for (n=0; my_netbios_names_dos(n); n++) {
-		if (strequal(my_netbios_names_dos(n), dos_s))
+	for (n=0; my_netbios_names_unix(n); n++) {
+		if (strequal_unix(my_netbios_names_unix(n), s))
 			ret=True;
 	}
-	DEBUG(8, ("is_myname(\"%s\") returns %d\n", dos_s, ret));
+	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
 	return(ret);
 }
 
@@ -1568,19 +1578,19 @@ const char* get_my_primary_ip (void)
 }
 
 
-BOOL is_myname_or_ipaddr(const char *dos_str)
+BOOL is_myname_or_ipaddr(const char *str)
 {
 	/* optimize for the common case */
-	if (strequal(dos_str, global_myname_dos())) 
+	if (strequal_unix(str, global_myname_unix())) 
 		return True;
 
 	/* maybe its an IP address? */
-	if (is_ipaddress(dos_str)) {
+	if (is_ipaddress(str)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
 		
-		ip = interpret_addr(dos_str);
+		ip = interpret_addr(str);
 		if ((ip==0) || (ip==0xffffffff))
 			return False;
 			
@@ -1592,7 +1602,7 @@ BOOL is_myname_or_ipaddr(const char *dos_str)
 	}	
 	
 	/* check for an alias */
-	if (is_myname(dos_str))
+	if (is_myname(str))
 		return True;
 	
 	/* no match */

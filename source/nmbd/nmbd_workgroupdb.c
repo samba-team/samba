@@ -59,6 +59,7 @@ static struct work_record *create_workgroup(const char *name, int ttl)
   memset((char *)work, '\0', sizeof(*work));
  
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
+  strupper_unix(work->work_group);
   work->serverlist = NULL;
   
   work->RunningElection = False;
@@ -81,7 +82,7 @@ static struct work_record *create_workgroup(const char *name, int ttl)
     struct work_record *w;
     for (w = subrec->workgrouplist; w && t == -1; w = w->next)
     {
-      if (strequal(w->work_group, work->work_group))
+      if (strequal_unix(w->work_group, work->work_group))
         t = w->token;
     }
   }
@@ -158,7 +159,7 @@ struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec,
   
   for (ret = subrec->workgrouplist; ret; ret = ret->next)
   {
-    if (!strcmp(ret->work_group,name))
+    if (strequal_unix(ret->work_group,name))
     {
       DEBUGADD(4, ("found.\n"));
       return(ret);
@@ -223,7 +224,7 @@ void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_reco
 {
   int i;
 
-  if(!strequal(lp_workgroup_dos(), work->work_group))
+  if(!strequal_unix(lp_workgroup_unix(), work->work_group))
     return;
 
   /* If this is a broadcast subnet then start elections on it
@@ -241,21 +242,21 @@ workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
   
   /* Register the WORKGROUP<0> and WORKGROUP<1e> names on the network. */
 
-  register_name(subrec,lp_workgroup_dos(),0x0,samba_nb_type|NB_GROUP,
+  register_name(subrec,lp_workgroup_unix(),0x0,samba_nb_type|NB_GROUP,
                 NULL,
                 fail_register,NULL);
      
-  register_name(subrec,lp_workgroup_dos(),0x1e,samba_nb_type|NB_GROUP,
+  register_name(subrec,lp_workgroup_unix(),0x1e,samba_nb_type|NB_GROUP,
                 NULL,
                 fail_register,NULL);
      
-  for( i = 0; my_netbios_names_dos(i); i++)
+  for( i = 0; my_netbios_names_unix(i); i++)
   {
-    const char *name = my_netbios_names_dos(i);
+    const char *name = my_netbios_names_unix(i);
     int stype = lp_default_server_announce() | (lp_local_master() ?
                         SV_TYPE_POTENTIAL_BROWSER : 0 );
    
-    if(!strequal(global_myname_dos(), name))
+    if(!strequal_unix(global_myname_unix(), name))
         stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|
                    SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    

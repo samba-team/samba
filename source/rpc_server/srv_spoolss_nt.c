@@ -4160,14 +4160,16 @@ static WERROR enum_all_printers_info_1_local(NEW_BUFFER *buffer, uint32 offered,
 
 static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
+	fstring unix_name;
 	char *s = name;
 	
 	DEBUG(4,("enum_all_printers_info_1_name\n"));	
 	
 	if ((name[0] == '\\') && (name[1] == '\\'))
 		s = name + 2;
-		
-	if (is_myname_or_ipaddr(s)) {
+
+	fstrcpy(unix_name, dos_to_unix_static(s));
+	if (is_myname_or_ipaddr(unix_name)) {
 		return enum_all_printers_info_1(PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
 	else
@@ -4235,6 +4237,7 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 
 static WERROR enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
+	fstring unix_name;
 	char *s = name;
 
 	DEBUG(4,("enum_all_printers_info_1_network\n"));	
@@ -4250,7 +4253,8 @@ static WERROR enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer,
 	if (name[0] == '\\' && name[1] == '\\')
 		 s = name + 2;
 
-	if (is_myname_or_ipaddr(s))
+	fstrcpy(unix_name, dos_to_unix_static(s));
+	if (is_myname_or_ipaddr(unix_name))
 		 return WERR_CAN_NOT_COMPLETE;
 
 	return enum_all_printers_info_1(PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
@@ -4352,6 +4356,7 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
+	fstring unix_name;
 	char *s = servername;
 
 	if (flags & PRINTER_ENUM_LOCAL) {
@@ -4361,7 +4366,8 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
 	if (flags & PRINTER_ENUM_NAME) {
 		if ((servername[0] == '\\') && (servername[1] == '\\'))
 			s = servername + 2;
-		if (is_myname_or_ipaddr(s))
+		fstrcpy(unix_name, dos_to_unix_static(s));
+		if (is_myname_or_ipaddr(unix_name))
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 		else
 			return WERR_INVALID_NAME;

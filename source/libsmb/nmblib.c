@@ -313,7 +313,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
  Useful for debugging messages.
 ******************************************************************/
 
-char *nmb_namestr(struct nmb_name *n)
+const char *nmb_namestr(const struct nmb_name *n)
 {
 	static int i=0;
 	static fstring ret[4];
@@ -330,6 +330,20 @@ char *nmb_namestr(struct nmb_name *n)
 
 	i = (i+1)%4;
 	return(p);
+}
+
+const char *nmb_name_name(const struct nmb_name *n)
+{
+	static fstring name;
+	fstrcpy(name, dos_to_unix_static(n->name));
+	return name;
+}
+
+const char *nmb_name_scope(const struct nmb_name *n)
+{
+	static fstring name;
+	fstrcpy(name, dos_to_unix_static(n->scope));
+	return name;
 }
 
 /*******************************************************************

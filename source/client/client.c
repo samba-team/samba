@@ -2644,11 +2644,7 @@ static int do_message_op(void)
 			message = True;
 			break;
 		case 'i':
-			{
-				extern pstring global_scope;
-				pstrcpy(global_scope,optarg);
-				strupper(global_scope);
-			}
+			set_global_scope_unix(optarg);
 			break;
 		case 'N':
 			got_pass = True;

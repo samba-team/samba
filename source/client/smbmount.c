@@ -674,7 +674,6 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opteq;
 	extern char *optarg;
 	int val;
-	extern pstring global_scope;
 	char *p;
 
 	if (argc < 2 || argv[1][0] == '-') {
@@ -755,7 +754,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "sockopt")) {
 				pstrcpy(user_socket_options,opteq+1);
 			} else if(!strcmp(opts, "scope")) {
-				pstrcpy(global_scope,opteq+1);
+				set_global_scope_unix(opteq+1);
 			} else {
 				slprintf(p, sizeof(pstring) - (p - options) - 1, "%s=%s,", opts, opteq+1);
 				p += strlen(p);

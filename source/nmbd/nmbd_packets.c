@@ -1080,19 +1080,18 @@ static void process_browse_packet(struct packet_struct *p, char *buf,int len)
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = CVAL(buf,0);
   struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
-  extern pstring global_scope;
 
   /* Drop the packet if it's a different NetBIOS scope, or
      the source is from one of our names. */
 
-  if (!strequal(dgram->dest_name.scope, global_scope))
+  if (!strequal(dgram->dest_name.scope, global_scope_dos()))
   {
     DEBUG(7,("process_browse_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), nmb_name_scope(&dgram->dest_name), global_scope_unix()));
     return;
   }
 
-  if (is_myname(dgram->source_name.name))
+  if (is_myname(nmb_name_name(&dgram->source_name)))
   {
     DEBUG(0,("process_browse_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
@@ -1193,19 +1192,18 @@ static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = SVAL(buf,0);
   struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
-  extern pstring global_scope;
 
   /* Drop the packet if it's a different NetBIOS scope, or
      the source is from one of our names. */
 
-  if (!strequal(dgram->dest_name.scope, global_scope))
+  if (!strequal(dgram->dest_name.scope, global_scope_dos()))
   {
     DEBUG(7,("process_lanman_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), nmb_name_scope(&dgram->dest_name), global_scope_unix()));
     return;
   }
 
-  if (is_myname(dgram->source_name.name))
+  if (is_myname(nmb_name_name(&dgram->source_name)))
   {
     DEBUG(0,("process_lanman_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));

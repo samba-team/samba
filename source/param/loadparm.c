@@ -70,7 +70,6 @@ BOOL bLoaded = False;
 
 extern int DEBUGLEVEL_CLASS[DBGC_LAST];
 extern pstring user_socket_options;
-pstring global_scope = "";
 
 
 #ifndef GLOBAL_NAME

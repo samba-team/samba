@@ -37,38 +37,35 @@
 
 ubi_dlNewList( lmb_browserlist );
 
-
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
 
-/* ************************************************************************** **
- * Remove and free a browser list entry.
- *
- *  Input:  browc - A pointer to the entry to be removed from the list and
- *                  freed.
- *  Output: none.
- *
- * ************************************************************************** **
- */
-static void remove_lmb_browser_entry( struct browse_cache_record *browc )
-  {
-  safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
-  } /* remove_lmb_browser_entry */
+/**************************************************************************
+ Remove and free a browser list entry.
 
-/* ************************************************************************** **
- * Update a browser death time.
- *
- *  Input:  browc - Pointer to the entry to be updated.
- *  Output: none.
- *
- * ************************************************************************** **
- */
+ Input:  browc - A pointer to the entry to be removed from the list and
+                 freed.
+ Output: none.
+***************************************************************************/
+
+static void remove_lmb_browser_entry( struct browse_cache_record *browc )
+{
+	safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
+}
+
+/**************************************************************************
+ Update a browser death time.
+
+ Input:  browc - Pointer to the entry to be updated.
+ Output: none.
+***************************************************************************/
+
 void update_browser_death_time( struct browse_cache_record *browc )
-  {
-  /* Allow the new lmb to miss an announce period before we remove it. */
-  browc->death_time = time(NULL) + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
-  } /* update_browser_death_time */
+{
+	/* Allow the new lmb to miss an announce period before we remove it. */
+	browc->death_time = time(NULL) + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
+}
 
 /* ************************************************************************** **
  * Create a browser entry and add it to the local master browser list.
@@ -84,7 +81,7 @@ void update_browser_death_time( struct browse_cache_record *browc )
 struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
                                                          char *browser_name, 
                                                          struct in_addr ip )
-  {
+{
   struct browse_cache_record *browc;
   time_t now = time( NULL );
 
@@ -109,8 +106,8 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
 
   StrnCpy(  browc->lmb_name, browser_name, sizeof(browc->lmb_name)-1 );
   StrnCpy(  browc->work_group, work_name, sizeof(browc->work_group)-1 );
-  strupper( browc->lmb_name );
-  strupper( browc->work_group );
+  strupper_unix( browc->lmb_name );
+  strupper_unix( browc->work_group );
   
   browc->ip = ip;
  
@@ -125,7 +122,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
     }
   
   return( browc );
-  } /* create_browser_in_lmb_cache */
+}
 
 /* ************************************************************************** **
  * Find a browser entry in the local master browser list.
@@ -137,17 +134,17 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
  * ************************************************************************** **
  */
 struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
-  {
+{
   struct browse_cache_record *browc;
 
   for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
        browc;
        browc = (struct browse_cache_record *)ubi_dlNext( browc ) )
-    if( strequal( browser_name, browc->lmb_name ) )
+    if( strequal_unix( browser_name, browc->lmb_name ) )
       break;
 
   return( browc );
-  } /* find_browser_in_lmb_cache */
+}
 
 /* ************************************************************************** **
  *  Expire timed out browsers in the browserlist.
@@ -159,7 +156,7 @@ struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
  * ************************************************************************** **
  */
 void expire_lmb_browsers( time_t t )
-  {
+{
   struct browse_cache_record *browc;
   struct browse_cache_record *nextbrowc;
 
@@ -179,4 +176,4 @@ void expire_lmb_browsers( time_t t )
       remove_lmb_browser_entry( browc );
       }
     }
-  } /* expire_lmb_browsers */
+}
