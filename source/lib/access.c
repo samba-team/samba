@@ -311,21 +311,21 @@ BOOL check_access(int sock, const char **allow_list, const char **deny_list)
 		if (only_ipaddrs_in_list(allow_list) && only_ipaddrs_in_list(deny_list)) {
 			only_ip = True;
 			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, "", get_socket_addr(sock));
+			ret = allow_access(deny_list,allow_list, "", get_peer_addr(sock));
 		} else {
 			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, get_socket_name(sock,True),
-					   get_socket_addr(sock));
+			ret = allow_access(deny_list,allow_list, get_peer_name(sock,True),
+					   get_peer_addr(sock));
 		}
 		
 		if (ret) {
 			DEBUG(2,("Allowed connection from %s (%s)\n",
-				 only_ip ? "" : get_socket_name(sock,True),
-				 get_socket_addr(sock)));
+				 only_ip ? "" : get_peer_name(sock,True),
+				 get_peer_addr(sock)));
 		} else {
 			DEBUG(0,("Denied connection from %s (%s)\n",
-				 only_ip ? "" : get_socket_name(sock,True),
-				 get_socket_addr(sock)));
+				 only_ip ? "" : get_peer_name(sock,True),
+				 get_peer_addr(sock)));
 		}
 	}
 

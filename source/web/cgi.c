@@ -578,7 +578,7 @@ return the hostname of the client
 char *cgi_remote_host(void)
 {
 	if (inetd_server) {
-		return get_socket_name(1,False);
+		return get_peer_name(1,False);
 	}
 	return getenv("REMOTE_HOST");
 }
@@ -589,7 +589,7 @@ return the hostname of the client
 char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
-		return get_socket_addr(1);
+		return get_peer_addr(1);
 	}
 	return getenv("REMOTE_ADDR");
 }

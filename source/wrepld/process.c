@@ -342,7 +342,7 @@ static void receive_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *
 		return;
 	}
 
-	fstrcpy(peer,get_socket_addr(q->fd));
+	fstrcpy(peer,get_peer_addr(q->fd));
 	addr=*interpret_addr2(peer);
 
 	get_our_last_id(&global_wins_table[0][0]);
@@ -842,7 +842,7 @@ void construct_reply(struct wins_packet_struct *p)
 		fstring peer;
 		struct in_addr addr;
 		int i;
-		fstrcpy(peer,get_socket_addr(p->fd));
+		fstrcpy(peer,get_peer_addr(p->fd));
 		addr=*interpret_addr2(peer);
 
 		for (i=1; i<partner_count; i++)
