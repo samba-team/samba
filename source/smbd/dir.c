@@ -595,6 +595,13 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
 {
 	ZERO_STRUCTP(pst);
+
+	if (!dptr->has_wild && (dptr->dir_hnd->offset == -1)) {
+		/* This is a singleton directory and we're already at the end. */
+		*poffset = -1;
+		return False;
+	}
+
 	while (SearchDir(dptr->dir_hnd, name, poffset) == True) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
 			return True;
