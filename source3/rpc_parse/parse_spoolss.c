@@ -5034,14 +5034,17 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	if(!prs_align(ps))
 		return False;
 
+	if (!prs_uint32("unknown   ", ps, depth, &il->unknown))
+		return False;
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("version", ps, depth, &il->version))
+	if(!prs_uint32("cversion   ", ps, depth, &il->version))
 		return False;
 
-	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
-		return False;	
+	if(!prs_uint32("name       ", ps, depth, &il->name_ptr))
+		return False;
+
 	/*
 	 * If name_ptr is NULL then the next 4 bytes are the name_ptr. A driver 
 	 * with a NULL name just isn't a driver For example: "HP LaserJet 4si"
@@ -5053,41 +5056,41 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 			return False;	
 	}
 	
-	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
+	if(!prs_uint32("environment", ps, depth, &il->environment_ptr))
 		return False;
-	if(!prs_uint32("driverpath_ptr", ps, depth, &il->driverpath_ptr))
+	if(!prs_uint32("driverpath ", ps, depth, &il->driverpath_ptr))
 		return False;
-	if(!prs_uint32("datafile_ptr", ps, depth, &il->datafile_ptr))
+	if(!prs_uint32("datafile   ", ps, depth, &il->datafile_ptr))
 		return False;
-	if(!prs_uint32("configfile_ptr", ps, depth, &il->configfile_ptr))
+	if(!prs_uint32("configfile ", ps, depth, &il->configfile_ptr))
 		return False;
-	if(!prs_uint32("helpfile_ptr", ps, depth, &il->helpfile_ptr))
+	if(!prs_uint32("helpfile   ", ps, depth, &il->helpfile_ptr))
 		return False;
-	if(!prs_uint32("monitorname_ptr", ps, depth, &il->monitorname_ptr))
+	if(!prs_uint32("monitorname", ps, depth, &il->monitorname_ptr))
 		return False;
-	if(!prs_uint32("defaultdatatype_ptr", ps, depth, &il->defaultdatatype_ptr))
+	if(!prs_uint32("defaultdatatype", ps, depth, &il->defaultdatatype_ptr))
 		return False;
-	if(!prs_uint32("dependentfiles_len", ps, depth, &il->dependentfiles_len))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_len))
 		return False;
-	if(!prs_uint32("dependentfiles_ptr", ps, depth, &il->dependentfiles_ptr))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_ptr))
 		return False;
-	if(!prs_uint32("previousnames_len", ps, depth, &il->previousnames_len))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_len))
 		return False;
-	if(!prs_uint32("previousnames_ptr", ps, depth, &il->previousnames_ptr))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_ptr))
 		return False;
-	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
+	if(!smb_io_time("driverdate    ", &il->driverdate, ps, depth))
 		return False;
-	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+	if(!prs_uint32("dummy4         ", ps, depth, &il->dummy4))
 		return False;
-	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
+	if(!prs_uint64("driverversion  ", ps, depth, &il->driverversion))
 		return False;
-	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
+	if(!prs_uint32("mfgname        ", ps, depth, &il->mfgname_ptr))
 		return False;
-	if(!prs_uint32("oemurl_ptr", ps, depth, &il->oemurl_ptr))
+	if(!prs_uint32("oemurl         ", ps, depth, &il->oemurl_ptr))
 		return False;
-	if(!prs_uint32("hardwareid_ptr", ps, depth, &il->hardwareid_ptr))
+	if(!prs_uint32("hardwareid     ", ps, depth, &il->hardwareid_ptr))
 		return False;
-	if(!prs_uint32("provider_ptr", ps, depth, &il->provider_ptr))
+	if(!prs_uint32("provider       ", ps, depth, &il->provider_ptr))
 		return False;
 
 	/* parse the structures in the packet */
