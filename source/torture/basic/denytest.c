@@ -1409,6 +1409,7 @@ BOOL torture_denytest1(int dummy)
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
+	struct timeval tv, tv_start;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 
 	if (!torture_open_connection(&cli1)) {
@@ -1427,6 +1428,8 @@ BOOL torture_denytest1(int dummy)
 	}
 
 	printf("testing %d entries\n", ARRAY_SIZE(denytable1));
+
+	GetTimeOfDay(&tv_start);
 
 	for (i=0; i<ARRAY_SIZE(denytable1); i++) {
 		enum deny_result res;
@@ -1461,7 +1464,12 @@ BOOL torture_denytest1(int dummy)
 		}
 
 		if (torture_showall || res != denytable1[i].result) {
-			printf("%s %8s %10s    %8s %10s    %s (correct=%s)\n",
+			long long tdif;
+			GetTimeOfDay(&tv);
+			tdif = usec_time_diff(&tv, &tv_start);
+			tdif /= 1000;
+			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
+			       tdif,
 			       fname,
 			       denystr(denytable1[i].deny1),
 			       openstr(denytable1[i].mode1),
@@ -1498,6 +1506,7 @@ BOOL torture_denytest2(int dummy)
 	int i;
 	BOOL correct = True;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
+	struct timeval tv, tv_start;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -1513,6 +1522,8 @@ BOOL torture_denytest2(int dummy)
 		cli_write(cli1->tree, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
 		cli_close(cli1->tree, fnum1);
 	}
+
+	GetTimeOfDay(&tv_start);
 
 	for (i=0; i<ARRAY_SIZE(denytable2); i++) {
 		enum deny_result res;
@@ -1547,7 +1558,12 @@ BOOL torture_denytest2(int dummy)
 		}
 
 		if (torture_showall || res != denytable2[i].result) {
-			printf("%s %8s %10s    %8s %10s    %s (correct=%s)\n",
+			long long tdif;
+			GetTimeOfDay(&tv);
+			tdif = usec_time_diff(&tv, &tv_start);
+			tdif /= 1000;
+			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
+				tdif,
 			       fname,
 			       denystr(denytable2[i].deny1),
 			       openstr(denytable2[i].mode1),

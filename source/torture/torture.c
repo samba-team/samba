@@ -1760,6 +1760,66 @@ static BOOL run_unlinktest(int dummy)
 /*
 test how many open files this server supports on the one socket
 */
+
+static BOOL run_deferopen(struct cli_state *cli, int dummy)
+{
+	char *fname = "\\defer_open_test.dat";
+	int retries=4;
+	int i = 0;
+	BOOL correct = True;
+
+	if (retries <= 0) {
+		printf("failed to connect\n");
+		return False;
+	}
+
+	printf("Testing deferred open requests.\n");
+
+	while (i < 4) {
+		int fnum = -1;
+		do {
+			fnum = cli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE,
+				NTCREATEX_DISP_OPEN_IF, 0, 0);
+			if (fnum != -1) {
+				break;
+			}
+		} while (NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
+
+		if (fnum == -1) {
+			fprintf(stderr,"Failed to open %s, error=%s\n", fname, cli_errstr(cli->tree));
+			return False;
+		}
+
+		printf("pid %u open %d\n", getpid(), i);
+
+		sleep(10);
+		i++;
+		if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
+			fprintf(stderr,"Failed to close %s, error=%s\n", fname, cli_errstr(cli->tree));
+			return False;
+		}
+		sleep(2);
+	}
+
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fname))) {
+		/* All until the last unlink will fail with sharing violation. */
+		if (!NT_STATUS_EQUAL(cli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
+			printf("unlink of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+			correct = False;
+		}
+	}
+
+	printf("deferred test finished\n");
+	if (!torture_close_connection(cli)) {
+		correct = False;
+	}
+	return correct;
+}
+
+/*
+test how many open files this server supports on the one socket
+*/
 static BOOL run_maxfidtest(struct cli_state *cli, int dummy)
 {
 	const char *template = "\\maxfid.%d.%d";
@@ -4089,6 +4149,7 @@ static struct {
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
+	{"DEFER_OPEN", run_deferopen, FLAG_MULTIPROC},
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
