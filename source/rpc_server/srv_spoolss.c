@@ -938,26 +938,18 @@ static BOOL api_spoolss_addprinterex(pipes_struct *p)
 	
 	r_u.status = _spoolss_addprinterex(p,&q_u.server_name,
 	                        q_u.level, &q_u.info,
-				q_u.unk0, q_u.unk1, q_u.unk2, q_u.unk3,
+				q_u.devmode_ctr.devmode, q_u.secdesc_ctr,
 				q_u.user_switch, &q_u.user_ctr,
 				&r_u.handle);
 				
 	if(!spoolss_io_r_addprinterex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterex: unable to marshall SPOOL_R_ADDPRINTEREX.\n"));
+		free_spoolss_q_addprinterex(&q_u);
 		return False;
 	}
 	
-	if (q_u.info.info_ptr!=0) {
-		switch (q_u.info.level) {
-			case 1:
-				safe_free(q_u.info.info_1);
-				break;
-			case 2:
-				safe_free(q_u.info.info_2);
-				break;
-		}
-	}
-		
+	free_spoolss_q_addprinterex(&q_u);
+
 	return True;
 }
 

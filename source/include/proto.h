@@ -3424,7 +3424,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 			   uint32 *needed, uint32 *returned);
 uint32 _spoolss_addprinterex( pipes_struct *p, const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
+				DEVICEMODE *devmode, SEC_DESC_BUF *secdesc_ctr,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
 uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,

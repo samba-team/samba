@@ -759,6 +759,8 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
 {
 	DEBUG(5,("make_spoolss_q_addprinterex\n"));
 
+	ZERO_STRUCTP(q_u);
+
 	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
 	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name));
 
@@ -780,7 +782,9 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
 			break;
 	}
 
+#if 0 /* JRATEST */
 	q_u->unk0 = q_u->unk1 = q_u->unk2 = q_u->unk3 = 0;
+#endif
 
 	q_u->user_switch=1;
 
@@ -805,33 +809,9 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
  ********************************************************************/
 void free_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u)
 {
-	switch (q_u->info.level)
-	{
-	case 1:
-		if (q_u->info.info_1 != NULL)
-		{
-			free(q_u->info.info_1);
-			q_u->info.info_1 = NULL;
-		}
-			break;
-	case 2:
-		if (q_u->info.info_2 != NULL)
-		{
-			free(q_u->info.info_2);
-			q_u->info.info_2 = NULL;
-		}
-		break;
-	case 3:
-		if (q_u->info.info_3 != NULL)
-		{
-			free(q_u->info.info_3);
-			q_u->info.info_3 = NULL;
-		}
-		break;
-	}
-
-	return;
-	
+	free_spool_printer_info_level(&q_u->info);
+	free_sec_desc_buf( &q_u->secdesc_ctr );
+	free_devmode( q_u->devmode_ctr.devmode );
 }
 	
 /*******************************************************************
@@ -885,7 +865,6 @@ BOOL make_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2,
 	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
 	init_unistr2_from_unistr(&inf->parameters, 	&info->parameters);
 	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
-	inf->secdesc 	= NULL;
 
 	*spool_info2 = inf;
 
@@ -4197,6 +4176,8 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 ********************************************************************/  
 BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth)
 {
+	uint32 ptr_sec_desc = 0;
+
 	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterex");
 	depth++;
 
@@ -4215,26 +4196,33 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 	
 	if(!spool_io_printer_info_level("", &q_u->info, ps, depth))
 		return False;
-	
-	/* the 4 unknown are all 0 */
 
-	/* 
-	 * en fait ils sont pas inconnu
-	 * par recoupement avec rpcSetPrinter
-	 * c'est le devicemode 
-	 * et le security descriptor.
-	 */
+	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
+		return False;
 	
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("unk0", ps, depth, &q_u->unk0))
-		return False;
-	if(!prs_uint32("unk1", ps, depth, &q_u->unk1))
-		return False;
-	if(!prs_uint32("unk2", ps, depth, &q_u->unk2))
-		return False;
-	if(!prs_uint32("unk3", ps, depth, &q_u->unk3))
-		return False;
+	switch (q_u->level) {
+		case 2:
+			ptr_sec_desc = q_u->info.info_2->secdesc_ptr;
+			break;
+		case 3:
+			ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			break;
+	}
+	if (ptr_sec_desc) {
+		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
+			return False;
+	} else {
+		uint32 dummy;
+
+		/* Parse a NULL security descriptor.  This should really
+		   happen inside the sec_io_desc_buf() function. */
+
+		prs_debug(ps, depth, "", "sec_io_desc_buf");
+		if (!prs_uint32("size", ps, depth + 1, &dummy))
+			return False;
+		if (!prs_uint32("ptr", ps, depth + 1, &dummy))
+			return False;
+	}
 
 	if(!prs_uint32("user_switch", ps, depth, &q_u->user_switch))
 		return False;
@@ -5746,11 +5734,7 @@ void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer)
 
 void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer)
 {
-	if (printer!=NULL) {
-		if (printer->secdesc != NULL)
-			free_sec_desc_buf(&printer->secdesc);
-		safe_free(printer);
-	}
+	safe_free(printer);
 }
 
 void free_spool_printer_info_3(SPOOL_PRINTER_INFO_LEVEL_3 *printer)

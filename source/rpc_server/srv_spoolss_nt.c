@@ -5518,7 +5518,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 ****************************************************************************/
 static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
+				DEVICEMODE *devmode, SEC_DESC_BUF *secdesc_ctr,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle)
 {
@@ -5614,7 +5614,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 ****************************************************************************/
 uint32 _spoolss_addprinterex( pipes_struct *p, const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
+				DEVICEMODE *devmode, SEC_DESC_BUF *secdesc_ctr,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle)
 {
@@ -5625,7 +5625,7 @@ uint32 _spoolss_addprinterex( pipes_struct *p, const UNISTR2 *uni_srv_name, uint
 			return ERROR_INVALID_LEVEL;
 		case 2:
 			return spoolss_addprinterex_level_2(p, uni_srv_name, info,
-							    unk0, unk1, unk2, unk3,
+							    devmode, secdesc_ctr,
 							    user_switch, user, handle);
 		default:
 			return ERROR_INVALID_LEVEL;
