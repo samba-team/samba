@@ -766,12 +766,12 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 	if (buf != NULL) {
 
 		*ptr = 1;
-		init_unistr2(str, buf);
+		init_unistr2(str, buf, strlen(buf)+1);
 
 	} else {
 
 		*ptr = 0;
-		init_unistr2(str, "");
+		init_unistr2(str, "", 0);
 
 	}
 }
@@ -881,34 +881,37 @@ BOOL smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *
 }
 
 /*******************************************************************
- Inits a UNISTR2 structure.  This function used to deliberately
- over-allocate to a minimum of 256 bytes. That is rather silly, and
- just hides potential bugs. If you need to overallocate then don't use
- this function!
+ Inits a UNISTR2 structure.
 ********************************************************************/
-void init_unistr2(UNISTR2 *str, const char *buf)
+
+void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 {
-	size_t len;
+	ZERO_STRUCTP(str);
 
-	if (!buf) {
-		/* this is incorrect, but is needed to cope with some 
-		   broken code that assumes this function will always 
-		   return a valid initialised UNISTR2 */
-		buf = "";
-	}
-
-	len = push_ucs2_talloc(get_talloc_ctx() , &str->buffer, buf);
-
-	if (len == -1) {
-		/* oops - we can't convert the string? */
-		smb_panic("failed to convert string in init_unistr2");
-	}
-
-	/* set up string lengths. Note that len is guaranteed to be a
-	 * multiple of 2 from push_ucs2 */
-	str->uni_max_len = len/2;
+	/* set up string lengths. */
+	str->uni_max_len = (uint32)len;
 	str->undoc       = 0;
-	str->uni_str_len = len/2;
+	str->uni_str_len = (uint32)len;
+
+	if (len < MAX_UNISTRLEN)
+		len = MAX_UNISTRLEN;
+	len *= sizeof(uint16);
+
+	str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
+	if ((str->buffer == NULL) && (len > 0))
+	{
+		smb_panic("init_unistr2: malloc fail\n");
+		return;
+	}
+
+	/*
+	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * jfm, 7/7/2001.
+	 */
+	if (buf==NULL)
+		return;
+
+	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
 }
 
 /** 
@@ -1189,14 +1192,14 @@ static void init_clnt_srv(DOM_CLNT_SRV *log, const char *logon_srv, const char *
 
 	if (logon_srv != NULL) {
 		log->undoc_buffer = 1;
-		init_unistr2(&log->uni_logon_srv, logon_srv);
+		init_unistr2(&log->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
 	} else {
 		log->undoc_buffer = 0;
 	}
 
 	if (comp_name != NULL) {
 		log->undoc_buffer2 = 1;
-		init_unistr2(&log->uni_comp_name, comp_name);
+		init_unistr2(&log->uni_comp_name, comp_name, strlen(comp_name)+1);
 	} else {
 		log->undoc_buffer2 = 0;
 	}
@@ -1250,12 +1253,12 @@ void init_log_info(DOM_LOG_INFO *log, const char *logon_srv, const char *acct_na
 
 	log->undoc_buffer = 1;
 
-	init_unistr2(&log->uni_logon_srv, logon_srv);
-	init_unistr2(&log->uni_acct_name, acct_name);
+	init_unistr2(&log->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
+	init_unistr2(&log->uni_acct_name, acct_name, strlen(acct_name)+1);
 
 	log->sec_chan = sec_chan;
 
-	init_unistr2(&log->uni_comp_name, comp_name);
+	init_unistr2(&log->uni_comp_name, comp_name, strlen(comp_name)+1);
 }
 
 /*******************************************************************
