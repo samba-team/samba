@@ -56,7 +56,7 @@ gssapi_krb5_encap_length (size_t data_len,
 			  size_t *total_len,
 			  const gss_OID mech)
 {
-    return _gssapi_encap_length(data_len + 2, len, total_len, mech);
+    _gssapi_encap_length(data_len + 2, len, total_len, mech);
 }
 
 u_char *
