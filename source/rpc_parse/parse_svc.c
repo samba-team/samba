@@ -31,7 +31,7 @@ extern int DEBUGLEVEL;
  make_svc_q_open_sc_man
  ********************************************************************/
 BOOL make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
-				char *server, char *database,
+				const char *server, const char *database,
 				uint32 des_access)  
 {
 	DEBUG(5,("make_svc_q_open_sc_man\n"));

@@ -481,7 +481,8 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
-BOOL resolve_srv_name(const char* srv_name, fstring dest_host, struct in_addr *ip);
+BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
+				struct in_addr *ip);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -2137,35 +2138,28 @@ BOOL do_srv_net_remote_tod(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 
-BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
-				char *srv_name, char *db_name,
+BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 				uint32 des_access,
 				POLICY_HND *hnd);
-BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *scm_hnd,
+BOOL svc_open_service( POLICY_HND *scm_hnd,
 				const char *srv_name,
 				uint32 des_access,
 				POLICY_HND *hnd);
-BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *hnd,
+BOOL svc_enum_svcs( POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
 				uint32 *buf_size, uint32 *resume_hnd,
 				uint32 *dos_error,
 				ENUM_SRVC_STATUS **svcs, uint32 *num_svcs);
-BOOL svc_stop_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_stop_service( POLICY_HND *hnd,
 				uint32 unknown);
-BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_start_service( POLICY_HND *hnd,
 				uint32 argc,
 				char **argv);
-BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 *buf_size);
-BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
-BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_close(POLICY_HND *hnd);
+BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				uint32 service_type, uint32 start_type,
 				uint32 unknown_0,
 				uint32 error_control,
@@ -3415,7 +3409,7 @@ BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 /*The following definitions come from  rpc_parse/parse_svc.c  */
 
 BOOL make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
-				char *server, char *database,
+				const char *server, const char *database,
 				uint32 des_access)  ;
 BOOL svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, int depth);
 BOOL make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
@@ -3693,12 +3687,11 @@ void cmd_time(struct client_info *info, int argc, char *argv[]);
 /*The following definitions come from  rpcclient/cmd_svcctl.c  */
 
 void svc_display_query_svc_cfg(const QUERY_SERVICE_CONFIG *cfg);
-BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *pol_scm,
+BOOL svc_query_service( POLICY_HND *pol_scm,
 				const char *svc_name,
 				SVC_QUERY_FN(svc_query_fn));
 void cmd_svc_info(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_svc_enum(struct client_info *info,
+BOOL msrpc_svc_enum(const char* srv_name,
 				ENUM_SRVC_STATUS **svcs,
 				uint32 *num_svcs,
 				SVC_INFO_FN(info_fn),
@@ -3852,7 +3845,6 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
-void rpcclient_init(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 

@@ -34,8 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a SVC Open Policy
 ****************************************************************************/
-BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
-				char *srv_name, char *db_name,
+BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 				uint32 des_access,
 				POLICY_HND *hnd)
 {
@@ -43,6 +42,14 @@ BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_OPEN_SC_MAN q_o;
 	BOOL valid_pol = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_init(srv_name, PIPE_SVCCTL, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -81,6 +88,9 @@ BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = True;
+			valid_pol = register_policy_hnd(hnd) &&
+			            set_policy_cli_state(hnd, cli, fnum,
+			                                 cli_state_free);
 		}
 	}
 
@@ -94,8 +104,7 @@ BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Open Service
 ****************************************************************************/
-BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *scm_hnd,
+BOOL svc_open_service( POLICY_HND *scm_hnd,
 				const char *srv_name,
 				uint32 des_access,
 				POLICY_HND *hnd)
@@ -104,6 +113,14 @@ BOOL svc_open_service(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_OPEN_SERVICE q_o;
 	BOOL valid_pol = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(scm_hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL || scm_hnd == NULL) return False;
 
@@ -141,7 +158,9 @@ BOOL svc_open_service(struct cli_state *cli, uint16 fnum,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = True;
+			valid_pol = register_policy_hnd(hnd) &&
+			            set_policy_cli_state(hnd, cli, fnum,
+			                                 NULL);
 		}
 	}
 
@@ -155,8 +174,7 @@ BOOL svc_open_service(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Enumerate Services
 ****************************************************************************/
-BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *hnd,
+BOOL svc_enum_svcs( POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
 				uint32 *buf_size, uint32 *resume_hnd,
 				uint32 *dos_error,
@@ -166,6 +184,14 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_ENUM_SVCS_STATUS q_o;
 	BOOL valid_pol = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL || buf_size == NULL || dos_error == NULL || num_svcs == NULL)
 	{
@@ -232,14 +258,21 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Stop Service 
 ****************************************************************************/
-BOOL svc_stop_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_stop_service( POLICY_HND *hnd,
 				uint32 unknown)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	SVC_Q_STOP_SERVICE q_c;
 	BOOL valid_cfg = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -290,8 +323,7 @@ BOOL svc_stop_service(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Start Service 
 ****************************************************************************/
-BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_start_service( POLICY_HND *hnd,
 				uint32 argc,
 				char **argv)
 {
@@ -299,6 +331,14 @@ BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_START_SERVICE q_c;
 	BOOL valid_cfg = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -349,8 +389,7 @@ BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Query Service Config
 ****************************************************************************/
-BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 *buf_size)
 {
@@ -358,6 +397,14 @@ BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_QUERY_SVC_CONFIG q_c;
 	BOOL valid_cfg = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL || buf_size == NULL) return False;
 
@@ -411,12 +458,20 @@ BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SVC Close
 ****************************************************************************/
-BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL svc_close(POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	SVC_Q_CLOSE q_c;
 	BOOL valid_close = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -472,6 +527,8 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		}
 	}
 
+	close_policy_hnd(hnd);
+
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
@@ -481,8 +538,7 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 /****************************************************************************
 do a SVC Change Service Config
 ****************************************************************************/
-BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
-				POLICY_HND *hnd,
+BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				uint32 service_type, uint32 start_type,
 				uint32 unknown_0,
 				uint32 error_control,
@@ -496,6 +552,14 @@ BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	SVC_Q_CHANGE_SVC_CONFIG q_c;
 	BOOL valid_cfg = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -547,5 +611,3 @@ BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
 
 	return valid_cfg;
 }
-
-
