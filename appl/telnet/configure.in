@@ -23,8 +23,12 @@ AC_PROG_CPP
 # If we're using gcc and the user hasn't specified CFLAGS, add -O to CFLAGS.
 test -n "$GCC" && test -n "$auto_cflags" && CFLAGS="$CFLAGS -O"
 
-AC_SUBST(CFLAGS)dnl
-AC_SUBST(LDFLAGS)dnl
+AC_CACHE_VAL(krb_cv_ld_flags,
+krb_cv_ld_flags="") dnl
+LD_FLAGS=${krb_cv_ld_flags}
+AC_SUBST(CFLAGS) dnl
+AC_SUBST(LDFLAGS) dnl
+AC_SUBST(LD_FLAGS) dnl
 
 AC_PROG_INSTALL
 

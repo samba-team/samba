@@ -786,7 +786,13 @@ echo "$ac_t""$ac_cv_c_cross" 1>&6
 cross_compiling=$ac_cv_c_cross
 
 
-
+if eval "test \"`echo '$''{'krb_cv_ld_flags'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  krb_cv_ld_flags=""
+fi
+ LD_FLAGS=${krb_cv_ld_flags}
+   
 for ac_hdr in sys/select.h paths.h bsd/bsd.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
@@ -795,12 +801,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 799 "configure"
+#line 805 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:804: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:810: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -840,7 +846,7 @@ if eval "test \"\$ac_cv_func_socket\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 844 "configure"
+#line 850 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -848,7 +854,7 @@ int t() {
 socket()
 ; return 0; }
 EOF
-if { (eval echo configure:852: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:858: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_socket=$ac_lib; else ac_cv_funclib_socket=yes; fi";break
 fi
@@ -918,7 +924,7 @@ if eval "test \"\$ac_cv_func_gethostbyname\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 922 "configure"
+#line 928 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -926,7 +932,7 @@ int t() {
 gethostbyname()
 ; return 0; }
 EOF
-if { (eval echo configure:930: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:936: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_gethostbyname=$ac_lib; else ac_cv_funclib_gethostbyname=yes; fi";break
 fi
@@ -988,7 +994,7 @@ if eval "test \"`echo '$''{'ac_cv_struct_ut_host'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 992 "configure"
+#line 998 "configure"
 #include "confdefs.h"
 
 #include <time.h>
@@ -1003,7 +1009,7 @@ p = ut.ut_host;
 
 ; return 0; }
 EOF
-if { (eval echo configure:1007: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1013: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_struct_ut_host=yes
 else
@@ -1031,7 +1037,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1035 "configure"
+#line 1041 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1053,7 +1059,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1057: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1063: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1088,7 +1094,7 @@ if test "$cross_compiling" = yes; then
   :
 else
 cat > conftest.$ac_ext <<EOF
-#line 1092 "configure"
+#line 1098 "configure"
 #include "confdefs.h"
 
 #include <errno.h>
@@ -1110,7 +1116,7 @@ int main()
 }
 
 EOF
-{ (eval echo configure:1114: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
+{ (eval echo configure:1120: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
 if test -s conftest && (./conftest; exit) 2>/dev/null; then
   ac_cv_func_getcwd_broken=yes
 else
@@ -1137,7 +1143,7 @@ if eval "test \"`echo '$''{'ac_cv_var___progname'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 1141 "configure"
+#line 1147 "configure"
 #include "confdefs.h"
 extern char *__progname;
 int main() { return 0; }
@@ -1145,7 +1151,7 @@ int t() {
 return strlen(__progname);
 ; return 0; }
 EOF
-if { (eval echo configure:1149: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1155: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   ac_cv_var___progname=yes
 else
@@ -1285,6 +1291,7 @@ s%@CC@%$CC%g
 s%@RANLIB@%$RANLIB%g
 s%@CPP@%$CPP%g
 s%@YACC@%$YACC%g
+s%@LD_FLAGS@%$LD_FLAGS%g
 
 CEOF
 EOF

@@ -10,6 +10,7 @@ CC 	= @CC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 
 INSTALL = @INSTALL@
@@ -35,7 +36,7 @@ install:
 
 
 ftp: $(ftp_OBJS) ../common/libcommon.a
-	$(CC) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
 
 clean cleandir:
 	rm -f *~ *.o core ftp \#*

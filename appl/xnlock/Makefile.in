@@ -10,6 +10,7 @@ CC = @CC@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = $(XINCS) @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 LIBS = $(XLIBS) @LIBS@
 INSTALL = @INSTALL@
 
@@ -69,6 +70,6 @@ dist: $(DISTFILES)
 
 
 xnlock: xnlock.o
-	$(CC) $(LDFLAGS) -o $@ xnlock.o -L../../lib/kafs -lkafs -L../../lib/krb -lkrb -L../../lib/des -ldes  $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o -L../../lib/kafs -lkafs -L../../lib/krb -lkrb -L../../lib/des -ldes  $(LIBS)
 
 $(OBJECTS): ../../config.h

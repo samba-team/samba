@@ -9,6 +9,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
@@ -40,7 +41,7 @@ all: $(PROGS)
 
 Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
-		
+
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
@@ -74,6 +75,6 @@ dist: $(DISTFILES)
 	done
 
 kpopper: $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
 
 $(OBJECTS): ../../config.h

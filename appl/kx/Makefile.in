@@ -7,6 +7,7 @@ CC = @CC@
 AR = ar
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
@@ -69,9 +70,9 @@ dist: $(DISTFILES)
 	done
 
 kx: $(OBJECTS_KX)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECTS_KX) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
 
 kxd: $(OBJECTS_KXD)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECTS_KXD) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
 
 $(OBJECTS): ../../config.h

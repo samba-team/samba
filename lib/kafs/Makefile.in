@@ -44,7 +44,7 @@ Wall:
 
 install: all
 	$(MKDIRHIER) $(libdir)
-	$(INSTALL_DATA) $(LIB) $(libdir)
+	$(INSTALL) -m 0555 $(LIB) $(libdir)
 
 uninstall:
 

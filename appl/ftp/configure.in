@@ -18,8 +18,12 @@ AC_PROG_YACC
 
 AC_C_CROSS
 
-AC_SUBST(CFLAGS)dnl
-AC_SUBST(LDFLAGS)dnl
+AC_CACHE_VAL(krb_cv_ld_flags,
+krb_cv_ld_flags="") dnl
+LD_FLAGS=${krb_cv_ld_flags}
+AC_SUBST(CFLAGS) dnl
+AC_SUBST(LDFLAGS) dnl
+AC_SUBST(LD_FLAGS) dnl
 
 AC_CHECK_HEADERS(sys/select.h paths.h bsd/bsd.h)
 

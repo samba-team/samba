@@ -11,6 +11,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
 MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
@@ -38,7 +39,7 @@ LIBDES		= @LIBDES@
 LIBKAFS		= @LIBKAFS@
 LIBCOM_ERR	= @LIBCOM_ERR@
 
-KLIB=$(KRBLIBPATH) $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBCOM_ERR) 
+KLIB=$(KRBLIBPATH) $(LIBKAFS) $(LIBKRB) $(LIBDES)
 
 
 all: telnetd
@@ -50,7 +51,7 @@ $(OBJECTS): ../config.h
 	@KRBINCPATH@ -I.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
-	$(CC) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
 
 install: all
 	$(MKDIRHIER) $(prefix)/libexec

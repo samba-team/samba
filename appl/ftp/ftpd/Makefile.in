@@ -11,6 +11,7 @@ YACC	= @YACC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 LIBS	= @LIBS@
 
 INSTALL = @INSTALL@
@@ -36,7 +37,7 @@ install:
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<
