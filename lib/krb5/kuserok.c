@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+/*
+ * Return TRUE iff `principal' is allowed to login as `luser'.
+ */
+
 krb5_boolean
 krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
@@ -48,31 +52,36 @@ krb5_kuserok (krb5_context context,
     char buf[BUFSIZ];
     struct passwd *pwd;
     FILE *f;
-    char *realm;
-    krb5_principal local_principal;
+    krb5_realm *realms, *r;
     krb5_error_code ret;
     krb5_boolean b;
 
-    ret = krb5_get_default_realm (context, &realm);
-    if (ret) {
-	free (realm);
-	return FALSE;
-    }
-
-    ret = krb5_build_principal (context,
-				&local_principal,
-				strlen(realm),
-				realm,
-				luser,
-				NULL);
-    free (realm);
+    ret = krb5_get_default_realms (context, &realms);
     if (ret)
 	return FALSE;
 
-    b = krb5_principal_compare (context, principal, local_principal);
-    krb5_free_principal (context, local_principal);
-    if (b)
-	return TRUE;
+    for (r = realms; *r != NULL; ++r) {
+	krb5_principal local_principal;
+
+	ret = krb5_build_principal (context,
+				    &local_principal,
+				    strlen(*r),
+				    *r,
+				    luser,
+				    NULL);
+	if (ret) {
+	    krb5_free_host_realm (context, realms);
+	    return FALSE;
+	}
+
+	b = krb5_principal_compare (context, principal, local_principal);
+	krb5_free_principal (context, local_principal);
+	if (b) {
+	    krb5_free_host_realm (context, realms);
+	    return TRUE;
+	}
+    }
+    krb5_free_host_realm (context, realms);
 
     pwd = getpwnam (luser);	/* XXX - Should use k_getpwnam? */
     if (pwd == NULL)
