@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -14,12 +14,7 @@
  *    notice, this list of conditions and the following disclaimer in the 
  *    documentation and/or other materials provided with the distribution. 
  *
- * 3. All advertising materials mentioning features or use of this software 
- *    must display the following acknowledgement: 
- *      This product includes software developed by Kungliga Tekniska 
- *      Högskolan and its contributors. 
- *
- * 4. Neither the name of the Institute nor the names of its contributors 
+ * 3. Neither the name of the Institute nor the names of its contributors 
  *    may be used to endorse or promote products derived from this software 
  *    without specific prior written permission. 
  *
@@ -82,16 +77,15 @@ open_socket(krb5_context context)
 
 static int help_flag;
 static int version_flag;
+static int print_dump;
 static char *database = HDB_DEFAULT_DB;
 static int from_stdin;
 
 struct getargs args[] = {
-#if 0
-    { "slave",   's',  arg_strings, &slaves, "slave server", "host" },
-#endif
     { "database", 'd', arg_string, &database, "database", "file" },
-    { "stdin",    'n', arg_flag, &from_stdin , "read from stdin" },
-    { "version",   0,  arg_flag, &version_flag, NULL, NULL },
+    { "stdin",    'n', arg_flag, &from_stdin, "read from stdin" },
+    { "print",	    0, arg_flag, &print_dump, "print dump to stdout" },
+    { "version",    0, arg_flag, &version_flag, NULL, NULL },
     { "help",    'h',  arg_flag, &help_flag, NULL, NULL}
 };
 
@@ -191,13 +185,15 @@ int main(int argc, char **argv)
 	if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
     }
     
-    asprintf(&tmp_db, "%s~", database);
-    ret = hdb_create(context, &db, tmp_db);
-    if(ret)
-	krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
-    ret = db->open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
-    if(ret)
-	krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
+    if(!print_dump) {
+	asprintf(&tmp_db, "%s~", database);
+	ret = hdb_create(context, &db, tmp_db);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
+	ret = db->open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
+    }
 
     nprincs = 0;
     while(1){
@@ -218,24 +214,30 @@ int main(int argc, char **argv)
 		data.length = 0;
 		send_priv(context, ac, &data, fd);
 	    }
-	    ret = db->rename(context, db, database);
-	    if(ret) krb5_err(context, 1, ret, "db_rename");
-	    ret = db->close(context, db);
-	    if(ret) krb5_err(context, 1, ret, "db_close");
+	    if(!print_dump) {
+		ret = db->rename(context, db, database);
+		if(ret) krb5_err(context, 1, ret, "db_rename");
+		ret = db->close(context, db);
+		if(ret) krb5_err(context, 1, ret, "db_close");
+	    }
 	    break;
 	}
 	ret = hdb_value2entry(context, &data, &entry);
 	if(ret) krb5_err(context, 1, ret, "hdb_value2entry");
-	ret = db->store(context, db, 0, &entry);
-	if(ret == HDB_ERR_EXISTS){
-	    char *s;
-	    krb5_unparse_name(context, entry.principal, &s);
-	    krb5_warnx(context, "Entry exists: %s", s);
-	    free(s);
-	} else if(ret) 
-	    krb5_err(context, 1, ret, "db_store");
-	else
-	    nprincs++;
+	if(print_dump)
+	    hdb_print_entry(context, db, &entry, stdout);
+	else {
+	    ret = db->store(context, db, 0, &entry);
+	    if(ret == HDB_ERR_EXISTS){
+		char *s;
+		krb5_unparse_name(context, entry.principal, &s);
+		krb5_warnx(context, "Entry exists: %s", s);
+		free(s);
+	    } else if(ret) 
+		krb5_err(context, 1, ret, "db_store");
+	    else
+		nprincs++;
+	}
 	hdb_free_entry(context, &entry);
     }
     krb5_log(context, fac, 0, "Received %d principals", nprincs);
