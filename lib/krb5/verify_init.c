@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,7 +79,7 @@ krb5_verify_init_creds(krb5_context context,
 {
     krb5_error_code ret;
     krb5_data req;
-    krb5_ccache local_ccache;
+    krb5_ccache local_ccache = NULL;
     krb5_keytab_entry entry;
     krb5_creds *new_creds = NULL;
     krb5_auth_context auth_context = NULL;
@@ -185,8 +185,10 @@ cleanup:
 	krb5_free_principal (context, server);
     if (ap_req_keytab == NULL && keytab)
 	krb5_kt_close (context, keytab);
-    if (ccache == NULL
-	|| (ret != 0 && *ccache == NULL))
+    if (local_ccache != NULL
+	&&
+	(ccache == NULL
+	 || (ret != 0 && *ccache == NULL)))
 	krb5_cc_destroy (context, local_ccache);
 
     if (ret == 0 && ccache != NULL && *ccache == NULL)
