@@ -256,7 +256,7 @@ interface drsuapi
 		hyper usn;
 	} drsuapi_DsReplicaMetaData;
 
-	typedef struct {
+	typedef [public] struct {
 		[range(0,1048576)] uint32 count;
 		[size_is(count)] drsuapi_DsReplicaMetaData meta_data[];
 	} drsuapi_DsReplicaMetaDataCtr;
@@ -288,15 +288,14 @@ interface drsuapi
 		[size_is(num_attributes)]  drsuapi_DsReplicaAttribute *attributes[];
 	} drsuapi_DsReplicaAttributeCtr;
 
-	typedef struct {
+	typedef [public] struct {
 		drsuapi_DsReplicaObjectIdentifier *identifier;
 		uint32 unknown1;
 		drsuapi_DsReplicaAttributeCtr attribute_ctr;
 	} drsuapi_DsReplicaObject;
 
-	typedef struct {
-	/* TODO: fix ndr_print for next_info! */
-		[print_option(linked_list_next)]  drsuapi_DsGetNCChangesInfo1 *next;
+	typedef [noprint] struct {
+		drsuapi_DsGetNCChangesInfo1 *next;
 		drsuapi_DsReplicaObject object;
 		uint32 unknown1;
 		GUID *guid;
