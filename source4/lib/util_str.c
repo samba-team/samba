@@ -651,10 +651,7 @@ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 **/
 static BOOL string_init(char **dest,const char *src)
 {
-	size_t l;
 	if (!src) src = "";
-
-	l = strlen(src);
 
 	(*dest) = strdup(src);
 	if ((*dest) == NULL) {

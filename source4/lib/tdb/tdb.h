@@ -127,7 +127,7 @@ int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
-void tdb_set_lock_alarm(sig_atomic_t *palarm);
+void tdb_set_lock_alarm(SIG_ATOMIC_T *palarm);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 

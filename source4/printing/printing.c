@@ -2030,7 +2030,7 @@ int print_queue_status(int snum,
 	   in hash order. */
 
 	qsort(tstruct.queue, tstruct.qcount, sizeof(print_queue_struct),
-	      QSORT_CAST(printjob_comp));
+	      QSORT_CAST printjob_comp);
 
 	*queue = tstruct.queue;
 	return tstruct.qcount;

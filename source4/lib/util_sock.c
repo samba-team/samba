@@ -439,7 +439,6 @@ static BOOL matchname(char *remotehost, struct in_addr addr)
 char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 {
 	char *name_buf;
-	char *addr_buf;
 	struct hostent *hp;
 	struct in_addr addr;
 	char *p;
@@ -457,8 +456,6 @@ char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 	name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
 	if (fd == -1) return name_buf;
 
-	addr_buf = talloc_strdup(mem_ctx, p);
-
 	addr = *interpret_addr2(mem_ctx, p);
 	
 	/* Look up the remote host name. */
@@ -473,7 +470,7 @@ char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 		}
 	}
 
-	alpha_strcpy(name_buf, name_buf, "_-.", sizeof(name_buf));
+	alpha_strcpy(name_buf, name_buf, "_-.", strlen(name_buf)+1);
 	if (strstr(name_buf,"..")) {
 		name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
 	}

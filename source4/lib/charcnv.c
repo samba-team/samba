@@ -151,7 +151,7 @@ ssize_t convert_string(charset_t from, charset_t to,
 	o_len=destlen;
 	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
-	    	const char *reason="unknown error";
+	    	const char *reason;
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";

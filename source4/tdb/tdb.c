@@ -166,9 +166,9 @@ struct list_struct {
  a blocking lock on SIGALRM.
 ***************************************************************/
 
-static sig_atomic_t *palarm_fired;
+static SIG_ATOMIC_T *palarm_fired;
 
-void tdb_set_lock_alarm(sig_atomic_t *palarm)
+void tdb_set_lock_alarm(SIG_ATOMIC_T *palarm)
 {
 	palarm_fired = palarm;
 }

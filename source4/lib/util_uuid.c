@@ -93,7 +93,6 @@ const char *uuid_string(TALLOC_CTX *mem_ctx, const GUID in)
 	char *out;
 
 	uuid_unpack(in, &uu);
-	if (!out) return NULL;
 	out = talloc_asprintf(mem_ctx, 
 		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 		 uu.time_low, uu.time_mid, uu.time_hi_and_version,

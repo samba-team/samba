@@ -206,7 +206,6 @@ struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
 	int wct = 14 + parms->in.setup_count;
 	struct cli_request *req; 
 	char *outdata,*outparam;
-	int data_sent, param_sent;
 	int i;
 	const int padding = 3;
 	
@@ -216,10 +215,8 @@ struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
 	}
 	
 	/* fill in SMB parameters */
-	data_sent = parms->in.data.length;
-	param_sent = parms->in.params.length;
 	outparam = req->out.data + padding;
-	outdata = outparam + param_sent;
+	outdata = outparam + parms->in.params.length;
 
 	/* make sure we don't leak data via the padding */
 	memset(req->out.data, 0, padding);

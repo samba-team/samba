@@ -22,7 +22,6 @@
 
 static fstring password;
 static fstring username;
-static int got_pass;
 static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
@@ -417,7 +416,6 @@ static void usage(void)
 			if (p) {
 				*p = 0;
 				fstrcpy(password, p+1);
-				got_pass = 1;
 			}
 			break;
 		case 's':

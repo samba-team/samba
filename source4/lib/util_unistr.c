@@ -383,10 +383,9 @@ wide strstr()
 const smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 {
 	const smb_ucs2_t *r;
-	size_t slen, inslen;
+	size_t inslen;
 
 	if (!s || !*s || !ins || !*ins) return NULL;
-	slen = strlen_w(s);
 	inslen = strlen_w(ins);
 	r = s;
 	while ((r = strchr_w(r, *ins))) {
@@ -663,10 +662,9 @@ const smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 const smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 {
 	const smb_ucs2_t *r;
-	size_t slen, inslen;
+	size_t inslen;
 
 	if (!s || !*s || !ins || !*ins) return NULL;
-	slen = strlen_w(s);
 	inslen = strlen(ins);
 	r = s;
 	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
