@@ -67,11 +67,11 @@ static char *randbuf(int len)
 	return buf;
 }
 
-static int cull_traverse(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
+static int cull_traverse(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 			 void *state)
 {
 	if (random() % CULL_PROB == 0) {
-		tdb_delete(db, key);
+		tdb_delete(tdb, key);
 	}
 	return 0;
 }
@@ -151,10 +151,10 @@ next:
 	free(s);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
                        void *state)
 {
-	tdb_delete(db, key);
+	tdb_delete(tdb, key);
 	return 0;
 }
 

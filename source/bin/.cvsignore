@@ -5,6 +5,7 @@ make_smbcodepage
 make_unicodemap
 nmbd
 nmblookup
+nsstest
 pdbedit
 rpcclient
 smbcacls
