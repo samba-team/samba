@@ -68,6 +68,10 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 	free(princ_name);
 	return -1;
     }
+
+    if (strcmp(context->default_realm, ent->principal->realm) != 0)
+        return -1;
+
     snprintf (buf, sizeof(buf), "%s %s ", name,
 	      (strlen(instance) != 0) ? instance : "*");
 
@@ -235,13 +239,13 @@ main(int argc, char **argv)
 					HPROP_PORT));
 	fd = STDIN_FILENO;
 	{
-	    int sa_len;
+	    int sin_len;
 	    struct sockaddr_storage ss;
 	    struct sockaddr *sa = (struct sockaddr *)&ss;
 	    char addr_name[256];
 
-	    sa_len = sizeof(ss);
-	    if(getpeername(fd, sa, &sa_len) < 0)
+	    sin_len = sizeof(ss);
+	    if(getpeername(fd, sa, &sin_len) < 0)
 		krb5_err(context, 1, errno, "getpeername");
 	    if (inet_ntop(sa->sa_family,
 			  socket_get_address (sa),
