@@ -186,6 +186,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
+	int max_fd = 0;
 	int i;
 	char *ports;
 
@@ -241,10 +242,15 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
 				unsigned port = atoi(tok);
-				if (port == 0) continue;
+				if (port == 0) {
+					continue;
+				}
 				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 				if(s == -1)
 					return False;
+
+				if (max_fd < s)
+					max_fd = s;
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE"); 
@@ -335,7 +341,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
+		num = sys_select(max_fd+1,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
