@@ -1093,8 +1093,12 @@ new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 				 * This logic case should never happen. Ensure this is the
 				 * case by forcing an abort.... Remove in production.
 				 */
+				pstring msg;
 
-				smb_panic("logic flaw in cases...\n");
+				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: ul_curr: start = %.0f, size = %.0f : \
+lock: start = %.0f, size = %.0f\n", (double)ul_curr->start, (double)ul_curr->size, (double)lock->start, (double)lock->size );
+
+				smb_panic(msg);
 			}
 		} /* end for ( ul_curr = ulhead; ul_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
