@@ -298,10 +298,10 @@ int vfswrap_chmod(connection_struct *conn, const char *path, mode_t mode)
 
 int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
 {
-    int result;
+	int result;
 	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
 	
-    START_PROFILE(syscall_fchmod);
+	START_PROFILE(syscall_fchmod);
 
 	/*
 	 * We need to do this due to the fact that the default POSIX ACL
@@ -319,9 +319,15 @@ int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
 		errno = saved_errno;
 	}
 
-    result = fchmod(fd, mode);
-    END_PROFILE(syscall_fchmod);
-    return result;
+#if defined(HAVE_FCHMOD)
+	result = fchmod(fd, mode);
+#else
+	result = -1;
+	errno = ENOSYS;
+#endif
+
+	END_PROFILE(syscall_fchmod);
+	return result;
 }
 
 int vfswrap_chown(connection_struct *conn, const char *path, uid_t uid, gid_t gid)
@@ -336,6 +342,7 @@ int vfswrap_chown(connection_struct *conn, const char *path, uid_t uid, gid_t gi
 
 int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
 {
+#ifdef HAVE_FCHOWN
     int result;
 
     START_PROFILE(syscall_fchown);
@@ -343,6 +350,10 @@ int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
     result = fchown(fd, uid, gid);
     END_PROFILE(syscall_fchown);
     return result;
+#else
+    errno = ENOSYS;
+    return -1;
+#endif
 }
 
 int vfswrap_chdir(connection_struct *conn, const char *path)
