@@ -3,7 +3,7 @@
    Version 3.0
    stat cache code
    Copyright (C) Andrew Tridgell 1992-2000
-   Copyright (C) Jeremy Allison 1999-200
+   Copyright (C) Jeremy Allison 1999-2000
    
    
    This program is free software; you can redistribute it and/or modify
