@@ -77,7 +77,7 @@ attached storage (NAS) device and a print server.
 
 <para>
 Finally, we start looking at more complex systems that will either integrate into existing
-Microsoft Windows networks, or replace them entirely. The examples provided covers domain
+Microsoft Windows networks, or replace them entirely. The examples provided cover domain
 member servers as well as Samba Domain Control (PDC/BDC) and finally describes in detail
 a large distributed network with branch offices in remote locations.
 </para>

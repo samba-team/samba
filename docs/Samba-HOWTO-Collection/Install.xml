@@ -121,7 +121,7 @@
 			<listitem><para>
 			<indexterm><primary>winbindd</primary></indexterm>
 			<indexterm><primary>starting samba</primary><secondary>winbindd</secondary></indexterm>
-			This daemon should be started when Samba is a member of a Windows NT4 or ADS Domain. IT is also needed when
+			This daemon should be started when Samba is a member of a Windows NT4 or ADS Domain. It is also needed when
 			Samba has trust relationships with another Domain. The <command>winbindd</command> daemon will check the
 			&smb.conf; file for the presence of the <parameter>idmap uid</parameter> and <parameter>idmap gid</parameter>
 			parameters. If they are not found <command>winbindd</command> will bail-out and refuse to start.
@@ -130,7 +130,7 @@
 	</variablelist>
 
 	<para>
-	When Samba has been packages by an operating system vendor the start-up process is typically a custom feature of its
+	When Samba has been packaged by an operating system vendor the start-up process is typically a custom feature of its
 	integration into the platform as a whole. Please refer to your operating system platform administration manuals for
 	specific information pertaining to correct management of Samba start-up.
 	</para>
