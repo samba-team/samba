@@ -2314,9 +2314,11 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		break;
 	case JOB_ACCESS_ADMINISTER:
 		required_access = PRINTER_ACE_MANAGE_DOCUMENTS;
+		break;
 	default:
 		DEBUG(0, ("invalid value passed to print_access_check()\n"));
-		return False;
+		result = False;
+		goto done;
 	}	
 
 	/* The ACE for Full Control in a printer security descriptor
