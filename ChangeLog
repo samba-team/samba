@@ -1,3 +1,8 @@
+2002-05-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/cache.c (krb5_cc_register): break out of loop when the
+	same type is found; spotted by Wynn Wilkes
+
 2002-05-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kerberos5.c: don't free encrypted padata until we're really
