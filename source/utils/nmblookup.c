@@ -81,6 +81,9 @@ static void usage(void)
   printf("\t-S                    lookup node status as well\n");
   printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
   printf("\t-A                    Do a node status on <name> as an IP Address\n");
+  printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
+  printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
+  printf("\t-h                    Print this help message.\n");
   printf("\n");
 }
 

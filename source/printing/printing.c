@@ -193,6 +193,11 @@ here is an example of lpq output under osf/1
 Warning: no daemon present
 Rank   Pri Owner      Job  Files                             Total Size
 1st    0   tridge     148  README                            8096 bytes
+
+
+<allan@umich.edu> June 30, 1998.
+Modified to handle file names with spaces, like the parse_lpq_lprng code
+further below.
 ****************************************************************************/
 static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 {
@@ -202,19 +207,21 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 #define	USERTOK 2
 #define	JOBTOK	3
 #define	FILETOK	4
-#define	TOTALTOK 5
+#define	TOTALTOK (count - 1)
 #define	NTOK	6
+#define	MAXTOK	128
 #else	/* OSF1 */
 #define	RANKTOK	0
 #define	USERTOK 1
 #define	JOBTOK	2
 #define	FILETOK	3
-#define	TOTALTOK 4
+#define	TOTALTOK (count - 1)
 #define	NTOK	5
+#define	MAXTOK	128
 #endif	/* OSF1 */
 
-  fstring tok[NTOK];
-  int count=0;
+  char *tok[MAXTOK];
+  int  count = 0;
 
 #ifdef	OSF1
   int length;
@@ -223,38 +230,19 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 	return(False);
 #endif	/* OSF1 */
 
-  /* handle the case of "(standard input)" as a filename */
-  string_sub(line,"standard input","STDIN");
-  string_sub(line,"(","\"");
-  string_sub(line,")","\"");
-  
-  for (count=0; 
-       count<NTOK && 
-	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
-       count++) ;
+  tok[0] = strtok(line," \t");
+  count++;
 
-  /* we must get NTOK tokens */
+  while (((tok[count] = strtok(NULL," \t")) != NULL) && (count < MAXTOK)) {
+    count++;
+  }
+
+  /* we must get at least NTOK tokens */
   if (count < NTOK)
     return(False);
 
   /* the Job and Total columns must be integer */
-  if (!isdigit((int)*tok[JOBTOK]) || !isdigit((int)*tok[TOTALTOK])) return(False);
-
-  /* if the fname contains a space then use STDIN */
-  if (strchr(tok[FILETOK],' '))
-    fstrcpy(tok[FILETOK],"STDIN");
-
-  /* only take the last part of the filename */
-  {
-    fstring tmp;
-    char *p = strrchr(tok[FILETOK],'/');
-    if (p)
-      {
-	fstrcpy(tmp,p+1);
-	fstrcpy(tok[FILETOK],tmp);
-      }
-  }
-	
+  if (!isdigit(*tok[JOBTOK]) || !isdigit(*tok[TOTALTOK])) return(False);
 
   buf->job = atoi(tok[JOBTOK]);
   buf->size = atoi(tok[TOTALTOK]);
@@ -262,6 +250,23 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   buf->time = time(NULL);
   StrnCpy(buf->user,tok[USERTOK],sizeof(buf->user)-1);
   StrnCpy(buf->file,tok[FILETOK],sizeof(buf->file)-1);
+
+  if ((FILETOK + 1) != TOTALTOK) {
+    int bufsize;
+    int i;
+
+    bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
+
+    for (i = (FILETOK + 1); i < TOTALTOK; i++) {
+      strncat(buf->file," ",bufsize);
+      strncat(buf->file,tok[i],bufsize - 1);
+      bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
+      if (bufsize <= 0) {
+        break;
+      }
+    }
+  }
+
 #ifdef PRIOTOK
   buf->priority = atoi(tok[PRIOTOK]);
 #else
@@ -274,19 +279,20 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 <magnus@hum.auc.dk>
 LPRng_time modifies the current date by inserting the hour and minute from
 the lpq output.  The lpq time looks like "23:15:07"
+
+<allan@umich.edu> June 30, 1998.
+Modified to work with the re-written parse_lpq_lprng routine.
 */
-static time_t LPRng_time(fstring tok[],int pos)
+static time_t LPRng_time(char *time_string)
 {
   time_t jobtime;
   struct tm *t;
-  fstring tmp_time;
 
   jobtime = time(NULL);         /* default case: take current time */
   t = localtime(&jobtime);
-  t->tm_hour = atoi(tok[pos]);
-  fstrcpy(tmp_time,tok[pos]);
-  t->tm_min = atoi(tmp_time+3);
-  t->tm_sec = atoi(tmp_time+6);
+  t->tm_hour = atoi(time_string);
+  t->tm_min = atoi(time_string+3);
+  t->tm_sec = atoi(time_string+6);
   jobtime = mktime(t);
 
   return jobtime;
@@ -294,162 +300,86 @@ static time_t LPRng_time(fstring tok[],int pos)
 
 
 /****************************************************************************
-  parse a lpq line
-  <magnus@hum.auc.dk>
-  Most of the code is directly reused from parse_lpq_bsd()
-
-here are two examples of lpq output under lprng (LPRng-2.3.0)
-
-Printer: humprn@hum-fak
-  Queue: 1 printable job
-  Server: pid 4840 active, Unspooler: pid 4841 active
-  Status: job 'cfA659hum-fak', closing device at Fri Jun 21 10:10:21 1996
- Rank  Owner           Class Job Files                           Size Time
-active magnus@hum-fak      A 659 /var/spool/smb/Notesblok-ikke-na4024 10:03:31
- 
-Printer: humprn@hum-fak (printing disabled)
-  Queue: 1 printable job
-  Warning: no server present
-  Status: finished operations at Fri Jun 21 10:10:32 1996
- Rank  Owner           Class Job Files                           Size Time
-1      magnus@hum-fak      A 387 /var/spool/smb/netbudget.xls    21230 10:50:53
-
-******************************************************************************
-
-NEW FOR LPRng-3.3.5 !
-
-<reinelt@eunet.at> 
-This will not happen anymore: with LPRng-3.3.5 there is always a blank between
-the filename and the size, and the format has changed:
-
-Printer: lj6@lizard  'HP LaserJet 6P'
- Queue: 2 printable jobs
- Server: pid 11941 active
- Unspooler: pid 11942 active
- Status: printed all 1818 bytes at 19:49:59
- Rank   Owner/ID                   Class Job  Files               Size Time
-active  root@lizard+937                A  937 (stdin)            1818 19:49:58
-2       root@lizard+969                A  969 junk.txt           2170 19:50:12
- 
+  parse a lprng lpq line
+  <allan@umich.edu> June 30, 1998.
+  Re-wrote this to handle file names with spaces, multiple file names on one
+  lpq line, etc;
 ****************************************************************************/
 static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 {
-#define        LPRNG_RANKTOK   0
-#define        LPRNG_USERTOK 1
-#define        LPRNG_PRIOTOK 2
-#define        LPRNG_JOBTOK    3
-#define        LPRNG_FILETOK   4
-#define        LPRNG_TOTALTOK 5
-#define LPRNG_TIMETOK 6
-#define        LPRNG_NTOK      7
+#define	LPRNG_RANKTOK	0
+#define	LPRNG_USERTOK	1
+#define	LPRNG_PRIOTOK	2
+#define	LPRNG_JOBTOK	3
+#define	LPRNG_FILETOK	4
+#define	LPRNG_TOTALTOK	(num_tok - 2)
+#define	LPRNG_TIMETOK	(num_tok - 1)
+#define	LPRNG_NTOK	7
+#define	LPRNG_MAXTOK	128 /* PFMA just to keep us from running away. */
 
-/****************************************************************************
-From lpd_status.c in LPRng source.
-0        1         2         3         4         5         6         7
-12345678901234567890123456789012345678901234567890123456789012345678901234 
-" Rank  Owner           Class Job Files                           Size Time"
-                        plp_snprintf( msg, sizeof(msg), "%-6s %-19s %c %03d %-32s",
-                                number, line, priority, cfp->number, error );
-                                plp_snprintf( msg + len, sizeof(msg)-len, "%4d",
-                                        cfp->jobsize );
-                                plp_snprintf( msg+len, sizeof(msg)-len, " %s",
-                                        Time_str( 1, cfp->statb.st_ctime ) );
-****************************************************************************/
-  /* The following define's are to be able to adjust the values if the
-LPRng source changes.  This is from version 2.3.0.  Magnus  */
-#define SPACE_W 1
-#define RANK_W 6
-#define OWNER_W 19
-#define CLASS_W 1
-#define JOB_W 3
-#define FILE_W 32
-/* The JOBSIZE_W is too small for big jobs, so time is pushed to the right */
-#define JOBSIZE_W 4
- 
-#define RANK_POS 0
-#define OWNER_POS RANK_POS+RANK_W+SPACE_W
-#define CLASS_POS OWNER_POS+OWNER_W+SPACE_W
-#define JOB_POS CLASS_POS+CLASS_W+SPACE_W
-#define FILE_POS JOB_POS+JOB_W+SPACE_W
-#define JOBSIZE_POS FILE_POS+FILE_W
+  char *tokarr[LPRNG_MAXTOK];
+  char *cptr;
+  int  num_tok = 0;
 
-  
-  fstring tok[LPRNG_NTOK];
-  int count=0;
-
-#ifdef OLD_LPRNG
-/* We only need this bugfix for older versions of lprng - current
-   information is that version 3.3.5 must not have this line
-   in order to work correctly.
-*/
-
-/* 
-Need to insert one space in front of the size, to be able to use
-next_token() unchanged.  I would have liked to be able to insert a
-space instead, to prevent losing that one char, but perl has spoiled
-me :-\  So I did it the easiest way.
-
-HINT: Use as short a path as possible for the samba spool directory.
-A long spool-path will just waste significant chars of the file name.
-*/
-
-  line[JOBSIZE_POS-1]=' ';
-#endif /* OLD_LPRNG */
-
-  /* handle the case of "(stdin)" as a filename */
-  string_sub(line,"stdin","STDIN");
-  string_sub(line,"(","\"");
-  string_sub(line,")","\"");
-  
-  for (count=0; 
-       count<LPRNG_NTOK && 
-	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
-       count++) ;
-
-  /* we must get LPRNG_NTOK tokens */
-  if (count < LPRNG_NTOK)
-    return(False);
-
-  /* the Job and Total columns must be integer */
-  if (!isdigit((int)*tok[LPRNG_JOBTOK]) || !isdigit((int)*tok[LPRNG_TOTALTOK])) return(False);
-
-  /* if the fname contains a space then use STDIN */
-  /* I do not understand how this would be possible. Magnus. */
-  if (strchr(tok[LPRNG_FILETOK],' '))
-    fstrcpy(tok[LPRNG_FILETOK],"STDIN");
-
-  /* only take the last part of the filename */
-  {
-    fstring tmp;
-    char *p = strrchr(tok[LPRNG_FILETOK],'/');
-    if (p)
-      {
-       fstrcpy(tmp,p+1);
-       fstrcpy(tok[LPRNG_FILETOK],tmp);
-      }
+  tokarr[0] = strtok(line," \t");
+  num_tok++;
+  while (((tokarr[num_tok] = strtok(NULL," \t")) != NULL)
+         && (num_tok < LPRNG_MAXTOK)) {
+    num_tok++;
   }
-       
 
-  buf->job = atoi(tok[LPRNG_JOBTOK]);
-  buf->size = atoi(tok[LPRNG_TOTALTOK]);
-  if (strequal(tok[LPRNG_RANKTOK],"active"))
+  /* We must get at least LPRNG_NTOK tokens. */
+  if (num_tok < LPRNG_NTOK) {
+    return(False);
+  }
+
+  if (!isdigit(*tokarr[LPRNG_JOBTOK]) || !isdigit(*tokarr[LPRNG_TOTALTOK])) {
+    return(False);
+  }
+
+  buf->job  = atoi(tokarr[LPRNG_JOBTOK]);
+  buf->size = atoi(tokarr[LPRNG_TOTALTOK]);
+
+  if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
     buf->status = LPQ_PRINTING;
-  else if (strequal(tok[LPRNG_RANKTOK],"hold"))
-    buf->status = LPQ_PAUSED;
-  else
+  } else if (isdigit(*tokarr[LPRNG_RANKTOK])) {
     buf->status = LPQ_QUEUED;
-  /*  buf->time = time(NULL); */
-  buf->time = LPRng_time(tok,LPRNG_TIMETOK);
-DEBUG(3,("Time reported for job %d is %s", buf->job, ctime(&buf->time)));
-  StrnCpy(buf->user,tok[LPRNG_USERTOK],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[LPRNG_FILETOK],sizeof(buf->file)-1);
-#ifdef LPRNG_PRIOTOK
-  /* Here I try to map the CLASS char to a number, but the number
-     is never shown in Print Manager under NT anyway... Magnus. */
-  buf->priority = atoi(tok[LPRNG_PRIOTOK]-('A'-1));
-#else
-  buf->priority = 1;
-#endif
+  } else {
+    buf->status = LPQ_PAUSED;
+  }
+
+  buf->priority = *tokarr[LPRNG_PRIOTOK] -'A';
+
+  buf->time = LPRng_time(tokarr[LPRNG_TIMETOK]);
+
+  StrnCpy(buf->user,tokarr[LPRNG_USERTOK],sizeof(buf->user)-1);
+
+  /* The '@hostname' prevents windows from displaying the printing icon
+   * for the current user on the taskbar.  Plop in a null.
+   */
+
+  if ((cptr = strchr(buf->user,'@')) != NULL) {
+    *cptr = '\0';
+  }
+
+  StrnCpy(buf->file,tokarr[LPRNG_FILETOK],sizeof(buf->file)-1);
+
+  if ((LPRNG_FILETOK + 1) != LPRNG_TOTALTOK) {
+    int bufsize;
+    int i;
+
+    bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
+
+    for (i = (LPRNG_FILETOK + 1); i < LPRNG_TOTALTOK; i++) {
+      strncat(buf->file," ",bufsize);
+      strncat(buf->file,tokarr[i],bufsize - 1);
+      bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
+      if (bufsize <= 0) {
+        break;
+      }
+    }
+  }
+
   return(True);
 }
 
