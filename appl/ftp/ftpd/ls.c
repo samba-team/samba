@@ -534,7 +534,8 @@ builtin_ls(FILE *out, const char *file)
 	    case 'C':
 		break;
 	    case 'd':
-	    flags |= LS_DIRS;
+		flags |= LS_DIRS;
+		break;
 	    case 'f':
 		flags = (flags & ~LS_SORT_MODE);
 		break;
