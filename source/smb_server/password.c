@@ -26,7 +26,7 @@ check if a uid has been validated, and return an pointer to the user_struct
 if it has. NULL if not. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-struct user_struct *get_valid_user_struct(struct server_context *smb, uint16_t vuid)
+struct user_struct *get_valid_user_struct(struct smbsrv_context *smb, uint16_t vuid)
 {
 	user_struct *usp;
 	int count=0;
@@ -49,7 +49,7 @@ struct user_struct *get_valid_user_struct(struct server_context *smb, uint16_t v
 /****************************************************************************
 invalidate a uid
 ****************************************************************************/
-void invalidate_vuid(struct server_context *smb, uint16_t vuid)
+void invalidate_vuid(struct smbsrv_context *smb, uint16_t vuid)
 {
 	user_struct *vuser = get_valid_user_struct(smb, vuid);
 
@@ -73,7 +73,7 @@ void invalidate_vuid(struct server_context *smb, uint16_t vuid)
 /****************************************************************************
 invalidate all vuid entries for this process
 ****************************************************************************/
-void invalidate_all_vuids(struct server_context *smb)
+void invalidate_all_vuids(struct smbsrv_context *smb)
 {
 	user_struct *usp, *next=NULL;
 
@@ -98,7 +98,7 @@ void invalidate_all_vuids(struct server_context *smb)
  *
  */
 
-int register_vuid(struct server_context *smb,
+int register_vuid(struct smbsrv_context *smb,
 		  struct auth_session_info *session_info,
 		  const char *smb_name)
 {

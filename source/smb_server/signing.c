@@ -54,7 +54,7 @@ static void calc_signature(uint8_t *buffer, size_t length,
 void req_sign_packet(struct request_context *req)
 {
 	/* check if we are doing signing on this connection */
-	if (req->smb->signing.signing_state != SMB_SIGNING_REQUIRED) {
+	if (req->smb_ctx->signing.signing_state != SMB_SIGNING_REQUIRED) {
 		return;
 	}
 
@@ -63,7 +63,7 @@ void req_sign_packet(struct request_context *req)
 	mark_packet_signed(req);
 
 	calc_signature(req->out.hdr, req->out.size - NBT_HDR_SIZE,
-		       &req->smb->signing.mac_key, 
+		       &req->smb_ctx->signing.mac_key, 
 		       &req->out.hdr[HDR_SS_FIELD]);
 }
 
@@ -72,15 +72,15 @@ void req_sign_packet(struct request_context *req)
   setup the signing key for a connection. Called after authentication succeeds
   in a session setup
 */
-void srv_setup_signing(struct server_context *smb,
+void srv_setup_signing(struct smbsrv_context *smb_ctx,
 		       DATA_BLOB *session_key,
 		       DATA_BLOB *session_response)
 {
-	smb->signing.mac_key = data_blob(NULL, 
+	smb_ctx->signing.mac_key = data_blob(NULL, 
 					 session_key->length + session_response->length);
-	memcpy(smb->signing.mac_key.data, session_key->data, session_key->length);
+	memcpy(smb_ctx->signing.mac_key.data, session_key->data, session_key->length);
 	if (session_response->length != 0) {
-		memcpy(&smb->signing.mac_key.data[session_key->length],
+		memcpy(&smb_ctx->signing.mac_key.data[session_key->length],
 		       session_response->data, 
 		       session_response->length);
 	}
@@ -92,12 +92,12 @@ void srv_setup_signing(struct server_context *smb,
 */
 static void req_signing_alloc_seq_num(struct request_context *req)
 {
-	req->seq_num = req->smb->signing.next_seq_num;
+	req->seq_num = req->smb_ctx->signing.next_seq_num;
 
 	/* TODO: we need to handle one-way requests like NTcancel, which 
 	   only increment the sequence number by 1 */
-	if (req->smb->signing.signing_state != SMB_SIGNING_OFF) {
-		req->smb->signing.next_seq_num += 2;
+	if (req->smb_ctx->signing.signing_state != SMB_SIGNING_OFF) {
+		req->smb_ctx->signing.next_seq_num += 2;
 	}
 }
 
@@ -108,12 +108,12 @@ BOOL req_signing_check_incoming(struct request_context *req)
 {
 	uint8_t client_md5_mac[8], signature[8];
 
-	switch (req->smb->signing.signing_state) {
+	switch (req->smb_ctx->signing.signing_state) {
 	case SMB_SIGNING_OFF:
 		return True;
 	case SMB_SIGNING_SUPPORTED:
 		if (req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES) {
-			req->smb->signing.signing_state = SMB_SIGNING_REQUIRED;
+			req->smb_ctx->signing.signing_state = SMB_SIGNING_REQUIRED;
 		}
 		return True;
 	case SMB_SIGNING_REQUIRED:
@@ -137,7 +137,7 @@ BOOL req_signing_check_incoming(struct request_context *req)
 	SBVAL(req->in.hdr, HDR_SS_FIELD, req->seq_num);
 
 	calc_signature(req->in.hdr, req->in.size - NBT_HDR_SIZE,
-		       &req->smb->signing.mac_key, 
+		       &req->smb_ctx->signing.mac_key, 
 		       signature);
 
 	if (memcmp(client_md5_mac, signature, 8) != 0) {
