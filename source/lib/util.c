@@ -3714,6 +3714,7 @@ connect_again:
   if (ret < 0) {
     DEBUG(1,("error connecting to %s:%d (%s)\n",
 	     inet_ntoa(*addr),port,strerror(errno)));
+    close(res);
     return -1;
   }
 
