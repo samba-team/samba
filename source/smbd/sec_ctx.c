@@ -109,6 +109,10 @@ static BOOL become_id(uid_t uid, gid_t gid)
 
 static void gain_root(void)
 {
+	if (non_root_mode()) {
+		return;
+	}
+
 	if (geteuid() != 0) {
 		set_effective_uid(0);
 
