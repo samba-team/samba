@@ -30,9 +30,13 @@
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-void msg_pool_usage(int msg_type, pid_t pid, void *buf, size_t len)
+void msg_pool_usage(int msg_type, pid_t src_pid, void *buf, size_t len)
 {
+	char *reply = "no memory usage info yet";
+	
 	DEBUG(2,("Got POOL_USAGE\n"));
+	message_send_pid(src_pid, MSG_POOL_USAGE,
+			 reply, strlen(reply)+1, True);
 }
 
 /**
