@@ -1233,4 +1233,118 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	return True;
 }
 
+/**********************************************************************
+**********************************************************************/
+
+BOOL pdb_get_free_ugid_range(uint32 *low, uint32 *high)
+{
+	uid_t u_low, u_high;
+	gid_t g_low, g_high;
+
+	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
+		return False;
+	}
+	
+	*low  = (u_low < g_low)   ? u_low  : g_low;
+	*high = (u_high < g_high) ? u_high : g_high;
+	
+	return True;
+}
+
+/******************************************************************
+ Get the the non-algorithmic RID range if idmap range are defined
+******************************************************************/
+
+BOOL pdb_get_free_rid_range(uint32 *low, uint32 *high)
+{
+	uint32 id_low, id_high;
+
+	if (!lp_enable_rid_algorithm()) {
+		*low = BASE_RID;
+		*high = (uint32)-1;
+	}
+
+	if (!pdb_get_free_ugid_range(&id_low, &id_high)) {
+		return False;
+	}
+
+	*low = fallback_pdb_uid_to_user_rid(id_low);
+	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
+		*high = (uint32)-1;
+	} else {
+		*high = fallback_pdb_uid_to_user_rid(id_high);
+	}
+
+	return True;
+}
+
+/**********************************************************************
+ Get the free RID base if idmap is configured, otherwise return 0
+**********************************************************************/
+
+uint32 pdb_get_free_rid_base(void)
+{
+	uint32 low, high;
+	if (pdb_get_free_rid_range(&low, &high)) {
+		return low;
+	}
+	return 0;
+}
+
+/**********************************************************************
+**********************************************************************/
+
+BOOL pdb_check_ugid_is_in_free_range(uint32 id)
+{
+	uint32 low, high;
+
+	if (!pdb_get_free_ugid_range(&low, &high)) {
+		return False;
+	}
+	if (id < low || id > high) {
+		return False;
+	}
+	return True;
+}
+
+/**********************************************************************
+**********************************************************************/
+
+BOOL pdb_check_rid_is_in_free_range(uint32 rid)
+{
+	uint32 low, high;
+
+	if (!pdb_get_free_rid_range(&low, &high)) {
+		return False;
+	}
+	if (rid < algorithmic_rid_base()) {
+		return True;
+	}
+
+	if (rid < low || rid > high) {
+		return False;
+	}
+
+	return True;
+}
+
+/**********************************************************************
+ if it is a foreign SID or if the SID is in the free range, return true
+**********************************************************************/
+
+BOOL pdb_check_sid_is_in_free_range(const DOM_SID *sid)
+{
+	if (sid_compare_domain(get_global_sam_sid(), sid) == 0) {
+	
+		uint32 rid;
+
+		if (sid_peek_rid(sid, &rid)) {
+			return pdb_check_rid_is_in_free_range(rid);
+		}
+
+		return False;
+	}
+
+	return True;
+}
 

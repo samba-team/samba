@@ -23,119 +23,8 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 
-/******************************************************************
- * Get the free RID base if idmap is configured, otherwise return 0
- ******************************************************************/
-
-uint32 idmap_get_free_rid_base(void)
-{
-	uint32 low, high;
-	if (idmap_get_free_rid_range(&low, &high)) {
-		return low;
-	}
-	return 0;
-}
-
-BOOL idmap_check_ugid_is_in_free_range(uint32 id)
-{
-	uint32 low, high;
-
-	if (!idmap_get_free_ugid_range(&low, &high)) {
-		return False;
-	}
-	if (id < low || id > high) {
-		return False;
-	}
-	return True;
-}
-
-BOOL idmap_check_rid_is_in_free_range(uint32 rid)
-{
-	uint32 low, high;
-
-	if (!idmap_get_free_rid_range(&low, &high)) {
-		return False;
-	}
-	if (rid < algorithmic_rid_base()) {
-		return True;
-	}
-
-	if (rid < low || rid > high) {
-		return False;
-	}
-
-	return True;
-}
-
-/* if it is a foreign SID or if the SID is in the free range, return true */
-
-BOOL idmap_check_sid_is_in_free_range(const DOM_SID *sid)
-{
-	if (sid_compare_domain(get_global_sam_sid(), sid) == 0) {
-	
-		uint32 rid;
-
-		if (sid_peek_rid(sid, &rid)) {
-			return idmap_check_rid_is_in_free_range(rid);
-		}
-
-		return False;
-	}
-
-	return True;
-}
-
-/******************************************************************
- * Get the the non-algorithmic RID range if idmap range are defined
- ******************************************************************/
-
-BOOL idmap_get_free_rid_range(uint32 *low, uint32 *high)
-{
-	uint32 id_low, id_high;
-
-	if (!lp_enable_rid_algorithm()) {
-		*low = BASE_RID;
-		*high = (uint32)-1;
-	}
-
-	if (!idmap_get_free_ugid_range(&id_low, &id_high)) {
-		return False;
-	}
-
-	*low = fallback_pdb_uid_to_user_rid(id_low);
-	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
-		*high = (uint32)-1;
-	} else {
-		*high = fallback_pdb_uid_to_user_rid(id_high);
-	}
-
-	return True;
-}
-
-BOOL idmap_get_free_ugid_range(uint32 *low, uint32 *high)
-{
-	uid_t u_low, u_high;
-	gid_t g_low, g_high;
-
-	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
-		return False;
-	}
-	if (u_low < g_low) {
-		*low = u_low;
-	} else {
-		*low = g_low;
-	}
-	if (u_high < g_high) {
-		*high = g_high;
-	} else {
-		*high = u_high;
-	}
-	return True;
-}
-
 /*****************************************************************
- check idmap if uid is in idmap range, otherwise falls back to
- the legacy algorithmic mapping.  Returns SID pointer.
+ Returns SID pointer.
 *****************************************************************/  
 
 NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
@@ -152,8 +41,6 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 }
 
 /*****************************************************************
- check idmap if gid is in idmap range, otherwise falls back to
- the legacy algorithmic mapping.
  Group mapping is used for gids that maps to Wellknown SIDs
  Returns SID pointer.
 *****************************************************************/  
