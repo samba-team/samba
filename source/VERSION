@@ -93,7 +93,7 @@ SAMBA_VERSION_TEST_RELEASE=
 # e.g. SAMBA_VERSION_IS_CVS_SNAPSHOT=yes               #
 #  ->  "CVS 3.0.0rc2"                                  #
 ########################################################
-SAMBA_VERSION_IS_CVS_SNAPSHOT=yes
+SAMBA_VERSION_IS_CVS_SNAPSHOT=
 
 ########################################################
 # This can be set by vendors if they want...           #
