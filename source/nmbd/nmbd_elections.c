@@ -348,8 +348,15 @@ BOOL check_elections(void)
     {
       run_any_election |= work->RunningElection;
 
-      /* Only start an election if we are in the potential browser state. */
-      if (work->needelection && !work->RunningElection && AM_POTENTIAL_MASTER_BROWSER(work))
+      /* 
+       * Start an election if we have any chance of winning.
+       * Note this is a change to the previous code, that would
+       * only run an election if nmbd was in the potential browser
+       * state. We need to run elections in any state if we're told
+       * to. JRA.
+       */
+
+      if (work->needelection && !work->RunningElection && lp_local_master())
       {
         /*
          * We can only run an election for a workgroup if we have
