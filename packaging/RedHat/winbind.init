@@ -20,16 +20,20 @@ fi
 [ ${NETWORKING} = "no" ] && exit 0
 
 # Check that smb.conf exists.
-[ -f /etc/samba/smb.conf ] || exit 0
+[ -f $CONFIG ] || exit 0
 
 RETVAL=0
+
+CONFIG=/usr/local/samba/lib/smb.conf
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/samba/sbin:/usr/local/samba/bin
+export PATH
 
 
 start() {
 	echo -n "Starting Winbind services: "
 	RETVAL=1
-	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
-		daemon winbindd
+	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
+		daemon winbindd 
 		RETVAL=$?
 	fi
 	echo
@@ -40,7 +44,7 @@ start() {
 stop() {
 	echo -n "Shutting down Winbind services: "
 	RETVAL=1
-	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
 		killproc winbindd
 		RETVAL=$?
 	fi
