@@ -9,7 +9,7 @@ krb5_cc_resolve(krb5_context context,
   krb5_ccache p;
   krb5_fcache *f;
 
-  if(strncpy(residual, "FILE:", 5)){
+  if(strncmp(residual, "FILE:", 5)){
     return -1;
   }
 
@@ -375,8 +375,7 @@ krb5_error_code
 krb5_cc_close(krb5_context context,
 	      krb5_ccache id)
 {
-  free(id->data.data);
-  free(id->data);
+  krb5_data_free (&id->data);
   free(id);
   return 0;
 }
@@ -387,10 +386,11 @@ krb5_cc_store_cred(krb5_context context,
 		   krb5_creds *creds)
 {
   int fd;
-  char *f;
+  krb5_fcache *f;
 
-  f = (char*)id->data.data;
-  fd = open(f, O_WRONLY | O_APPEND);
+  f = (krb5_fcache *)id->data.data;
+
+  fd = open(f->filename, O_WRONLY | O_APPEND);
   if(fd < 0)
     return errno;
   store_principal(fd, creds->client);
