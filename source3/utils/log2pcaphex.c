@@ -38,7 +38,6 @@ int hexformat = 0;
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <memory.h>
 #include <sys/time.h>
 #include <stdio.h>
 #include <fcntl.h>
