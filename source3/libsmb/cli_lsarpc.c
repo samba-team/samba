@@ -89,6 +89,64 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Open a LSA policy handle */
+
+uint32 cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                            BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_POL2 q;
+	LSA_R_OPEN_POL2 r;
+	LSA_SEC_QOS qos;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	if (sec_qos) {
+		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+                                 &qos);
+	} else {
+		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+                                 NULL);
+	}
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_pol2("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_pol2("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*pol = r.pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Close a LSA policy handle */
 
 uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
