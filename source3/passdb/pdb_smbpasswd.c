@@ -1302,7 +1302,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
-	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
+	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, True);
 	pdb_set_domain (sam_pass, lp_workgroup());
 	
 	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);

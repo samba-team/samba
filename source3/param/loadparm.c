@@ -199,6 +199,8 @@ typedef struct
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 #ifdef WITH_LDAP_SAM
+       char *szLdapMachineSuffix;
+       char *szLdapUserSuffix;
 	int ldap_port;
 	int ldap_ssl;
 	char *szLdapServer;
@@ -533,6 +535,9 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
+static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
+static BOOL handle_ldap_user_suffix ( char *pszParmValue, char **ptr );
+static BOOL handle_ldap_suffix ( char *pszParmValue, char **ptr );
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -970,9 +975,9 @@ static struct parm_struct parm_table[] = {
 #ifdef WITH_LDAP_SAM
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
-	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, 0},
-	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, 0}, 
-	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, 0},
+        {"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, 0},
+        {"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_machine_suffix, NULL, 0},
+        {"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_user_suffix, NULL, 0},
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
@@ -1315,16 +1320,16 @@ static void init_globals(void)
 	Globals.bUseMmap = True;
 #endif
 
+       string_set(&Globals.szLdapMachineSuffix, "");
+       string_set(&Globals.szLdapUserSuffix, "");
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
 #ifdef WITH_LDAP_SAM
-	string_set(&Globals.szLdapServer, "localhost");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_port = 636;
 	Globals.ldap_ssl = LDAP_SSL_ON;
 #endif /* WITH_LDAP_SAM */
 
@@ -1541,11 +1546,11 @@ FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 #ifdef WITH_LDAP_SAM
-FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
+FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
+FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 #endif /* WITH_LDAP_SAM */
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
@@ -2611,6 +2616,88 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 	return debug_parse_levels( pszParmValue );
 }
 
+/***************************************************************************
+ Handle the ldap machine suffix option
+***************************************************************************/
+static BOOL handle_ldap_machine_suffix( char *pszParmValue, char **ptr)
+{
+       pstring suffix;
+       
+       pstrcpy(suffix, pszParmValue);
+
+       if (! *Globals.szLdapSuffix ) {
+               string_set( ptr, suffix );
+               return True;
+       }
+
+       if (! strstr(suffix, Globals.szLdapSuffix) ) {
+               if ( *pszParmValue )
+                       pstrcat(suffix, ",");
+               pstrcat(suffix, Globals.szLdapSuffix);
+       }
+       string_set( ptr, suffix );
+       return True;
+}
+
+/***************************************************************************
+ Handle the ldap user suffix option
+***************************************************************************/
+static BOOL handle_ldap_user_suffix( char *pszParmValue, char **ptr)
+{
+       pstring suffix;
+       
+       pstrcpy(suffix, pszParmValue);
+
+       if (! *Globals.szLdapSuffix ) {
+               string_set( ptr, suffix );
+               return True;
+       }
+       
+       if (! strstr(suffix, Globals.szLdapSuffix) ) {
+               if ( *pszParmValue )
+                       pstrcat(suffix, ",");
+               pstrcat(suffix, Globals.szLdapSuffix);
+       }
+       string_set( ptr, suffix );
+       return True;
+}
+
+/***************************************************************************
+ Handle setting ldap suffix and determines whether ldap machine suffix needs
+ to be set as well
+***************************************************************************/
+static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
+{
+       pstring suffix;
+       pstring user_suffix;
+       pstring machine_suffix;
+               
+       pstrcpy(suffix, pszParmValue);
+
+       if (! *Globals.szLdapMachineSuffix )
+               string_set(&Globals.szLdapMachineSuffix, suffix);
+       if (! *Globals.szLdapUserSuffix ) 
+               string_set(&Globals.szLdapUserSuffix, suffix);
+       
+       if (! strstr(Globals.szLdapMachineSuffix, suffix)) {
+               pstrcpy(machine_suffix, Globals.szLdapMachineSuffix);
+               if ( *Globals.szLdapMachineSuffix )
+                       pstrcat(machine_suffix, ",");
+               pstrcat(machine_suffix, suffix);
+               string_set(&Globals.szLdapMachineSuffix, machine_suffix);       
+       }
+
+       if (! strstr(Globals.szLdapUserSuffix, suffix)) {
+               pstrcpy(user_suffix, Globals.szLdapUserSuffix);
+               if ( *Globals.szLdapUserSuffix )
+                       pstrcat(user_suffix, ",");
+               pstrcat(user_suffix, suffix);   
+               string_set(&Globals.szLdapUserSuffix, user_suffix);
+       } 
+
+       string_set(ptr, suffix); 
+       return True;
+}
 
 /***************************************************************************
 initialise a copymap
