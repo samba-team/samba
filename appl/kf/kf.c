@@ -43,15 +43,15 @@ krb5_context context;
 static int help_flag;
 static int version_flag;
 static char *port_str;
-char *service     = SERVICE;
-char *remote_name = NULL;
+const char *service     = SERVICE;
+const char *remote_name = NULL;
 int forwardable   = 0;
-char *ccache      = NULL;
+const char *ccache_name = NULL;
 
 static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to connect to", "port" },
     { "login", 'l',arg_string, &remote_name,"remote login name","login"},
-    { "ccache", 'c',arg_string, &ccache, "remote cred cache","ccache"},
+    { "ccache", 'c',arg_string, &ccache_name, "remote cred cache","ccache"},
     { "forwardable",'F',arg_flag,&forwardable,
        "Forward forwardable credentials", NULL },
     { "help", 'h', arg_flag, &help_flag },
@@ -131,7 +131,6 @@ proto (int sock, const char *hostname, const char *service)
     krb5_kdc_flags  flags;
     krb5_principal  principal;
     char ret_string[10];
-    char buf[1000];
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -205,22 +204,22 @@ proto (int sock, const char *hostname, const char *service)
     }
 
     krb5_data_zero(&data_send);
-    data_send.data   = remote_name;
+    data_send.data   = (void *)remote_name;
     data_send.length = strlen(remote_name) + 1;
     status = krb5_write_message(context, &sock, &data_send);
     if (status) {
-	krb5_warnx (context, status, "krb5_write_message");
+	krb5_warn (context, status, "krb5_write_message");
 	return 1;
     }
   
-    if (ccache == NULL)
-	ccache = "";
+    if (ccache_name == NULL)
+	ccache_name = "";
 
-    data_send.data   = ccache;
-    data_send.length = strlen(ccache)+1;
+    data_send.data   = (void *)ccache_name;
+    data_send.length = strlen(ccache_name)+1;
     status = krb5_write_message(context, &sock, &data_send);
     if (status) {
-	krb5_warnx (context, status, "krb5_write_message");
+	krb5_warn (context, status, "krb5_write_message");
 	return 1;
     }
 
