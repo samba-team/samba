@@ -1160,7 +1160,7 @@ startslave(char *host, int autologin, char *autoname)
 	strncpy(wtmp.ut_user,  "LOGIN", sizeof(wtmp.ut_user));
 	strncpy(wtmp.ut_host,  host, sizeof(wtmp.ut_host));
 	strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
-#ifdef _CRAY /* XXX */
+#ifdef HAVE_STRUCT_UTMP_UT_ID
 	strncpy(wtmp.ut_id, wtmp.ut_line + 3, sizeof(wtmp.ut_id));
 #endif
 
