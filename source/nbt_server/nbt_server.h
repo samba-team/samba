@@ -62,3 +62,10 @@ struct nbt_server {
 
 
 
+/* check a condition on an incoming packet */
+#define NBT_ASSERT_PACKET(packet, src_address, test) do { \
+	if (!(test)) { \
+		nbt_bad_packet(packet, src_address, #test); \
+		return; \
+	} \
+} while (0)
