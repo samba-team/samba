@@ -591,11 +591,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
   if (!conn->dirptr)
     return(False);
 
-  if (strequal(mask, "????????.???"))       
-    pstrcpy(mask, "*");                   
-
-
-  
   while (!found)
   {
     dname = ReadDirName(conn->dirptr);
