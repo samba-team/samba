@@ -1449,10 +1449,6 @@ struct passgrp_ops *ldap_initialise_password_grp(void);
 
 /*The following definitions come from  passdb/sampass.c  */
 
-void *startsamfilepwent(BOOL update);
-void endsamfilepwent(void *vp);
-SMB_BIG_UINT getsamfilepwpos(void *vp);
-BOOL setsamfilepwpos(void *vp, SMB_BIG_UINT tok);
 struct sam_passdb_ops *file_initialise_sam_password_db(void);
 
 /*The following definitions come from  passdb/sampassdb.c  */
@@ -1481,6 +1477,7 @@ struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
+struct smb_passwd *getsmbfilepwent(void *vp);
 struct smb_passdb_ops *file_initialise_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */

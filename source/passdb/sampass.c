@@ -32,7 +32,7 @@ extern DOM_SID global_sam_sid;
  to ensure no modification outside this module.
 ****************************************************************/
 
-void *startsamfilepwent(BOOL update)
+static void *startsamfilepwent(BOOL update)
 {
 	return startsmbpwent(update);
 }
@@ -41,7 +41,7 @@ void *startsamfilepwent(BOOL update)
  End enumeration of the smbpasswd list.
 ****************************************************************/
 
-void endsamfilepwent(void *vp)
+static void endsamfilepwent(void *vp)
 {
 	endsmbpwent(vp);
 }
@@ -51,7 +51,7 @@ void endsamfilepwent(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-SMB_BIG_UINT getsamfilepwpos(void *vp)
+static SMB_BIG_UINT getsamfilepwpos(void *vp)
 {
 	return getsmbpwpos(vp);
 }
@@ -61,7 +61,7 @@ SMB_BIG_UINT getsamfilepwpos(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-BOOL setsamfilepwpos(void *vp, SMB_BIG_UINT tok)
+static BOOL setsamfilepwpos(void *vp, SMB_BIG_UINT tok)
 {
 	return setsmbpwpos(vp, tok);
 }
@@ -88,7 +88,7 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	DEBUG(5,("getsamfile21pwent\n"));
 
-	user = pwdb_smb_to_sam(getsmbpwent(vp));
+	user = pwdb_smb_to_sam(getsmbfilepwent(vp));
 	if (user == NULL)
 	{
 		return NULL;
@@ -143,6 +143,72 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	return user;
 }
 
+/************************************************************************
+search sam db by uid.
+*************************************************************************/
+static struct sam_passwd *getsamfilepwuid(uid_t uid)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by uid: %x\n", (int)uid));
+
+	/* Open the smb password file - not for update. */
+	fp = startsam21pwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsamfile21pwent(fp)) != NULL && pwd->unix_uid != uid)
+	{
+	}
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by unix_uid: %x\n", (int)uid));
+	}
+
+	endsam21pwent(fp);
+
+	return pwd;
+}
+
+/************************************************************************
+search sam db by rid.
+*************************************************************************/
+static struct sam_passwd *getsamfilepwrid(uint32 user_rid)
+{
+	DOM_NAME_MAP gmep;
+	DOM_SID sid;
+	sid_copy(&sid, &global_sam_sid);
+	sid_append_rid(&sid, user_rid);
+
+	if (!lookupsmbpwsid(&sid, &gmep))
+	{
+		return NULL;
+	}
+
+	return getsamfilepwuid((uid_t)gmep.unix_id);
+}
+
+/************************************************************************
+search sam db by nt name.
+*************************************************************************/
+static struct sam_passwd *getsamfilepwntnam(const char *nt_name)
+{
+	DOM_NAME_MAP gmep;
+
+	if (!lookupsmbpwntnam(nt_name, &gmep))
+	{
+		return NULL;
+	}
+
+	return getsamfilepwuid((uid_t)gmep.unix_id);
+}
+
 /*
  * Stub functions - implemented in terms of others.
  */
@@ -172,25 +238,26 @@ static struct sam_disp_info *getsamfiledispent(void *vp)
 	return pwdb_sam_to_dispinfo(getsam21pwent(vp));
 }
 
-static struct sam_passdb_ops file_ops = {
-  startsamfilepwent,
-  endsamfilepwent,
-  getsamfilepwpos,
-  setsamfilepwpos,
-  iterate_getsam21pwntnam,
-  iterate_getsam21pwuid,
-  iterate_getsam21pwrid, 
-  getsamfile21pwent,
-  add_samfile21pwd_entry,
-  mod_samfile21pwd_entry,
-  getsamfiledispntnam,
-  getsamfiledisprid,
-  getsamfiledispent
+static struct sam_passdb_ops sam_file_ops =
+{
+	startsamfilepwent,
+	endsamfilepwent,
+	getsamfilepwpos,
+	setsamfilepwpos,
+	getsamfilepwntnam,
+	getsamfilepwuid,
+	getsamfilepwrid, 
+	getsamfile21pwent,
+	add_samfile21pwd_entry,
+	mod_samfile21pwd_entry,
+	getsamfiledispntnam,
+	getsamfiledisprid,
+	getsamfiledispent
 };
 
 struct sam_passdb_ops *file_initialise_sam_password_db(void)
 {    
-  return &file_ops;
+  return &sam_file_ops;
 }
 
 #else
