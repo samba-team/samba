@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -93,7 +93,7 @@ krb5_parse_name(krb5_context context,
     general_string realm;
     int ncomp;
 
-    char *p;
+    const char *p;
     char *q;
     char *s;
     char *start;
@@ -104,7 +104,7 @@ krb5_parse_name(krb5_context context,
   
     /* count number of component */
     ncomp = 1;
-    for(p = (char*)name; *p; p++){
+    for(p = name; *p; p++){
 	if(*p=='\\'){
 	    if(!p[1]) {
 		krb5_set_error_string (context,
@@ -122,7 +122,7 @@ krb5_parse_name(krb5_context context,
     }
   
     n = 0;
-    start = q = p = s = strdup(name);
+    p = start = q = s = strdup(name);
     if (start == NULL) {
 	free (comp);
 	krb5_set_error_string (context, "malloc: out of memory");
