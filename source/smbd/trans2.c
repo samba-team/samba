@@ -1832,387 +1832,387 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				      int bufsize, char **pparams, 
 				      char **ppdata, int total_data)
 {
-  char *params = *pparams;
-  char *pdata = *ppdata;
-  uint16 tran_call = SVAL(inbuf, smb_setup0);
-  uint16 info_level;
-  int mode=0;
-  SMB_OFF_T size=0;
-  struct utimbuf tvs;
-  SMB_STRUCT_STAT sbuf;
-  pstring fname1;
-  char *fname = NULL;
-  int fd = -1;
-  BOOL bad_path = False;
-  files_struct *fsp = NULL;
+	char *params = *pparams;
+	char *pdata = *ppdata;
+	uint16 tran_call = SVAL(inbuf, smb_setup0);
+	uint16 info_level;
+	int mode=0;
+	SMB_OFF_T size=0;
+	struct utimbuf tvs;
+	SMB_STRUCT_STAT sbuf;
+	pstring fname1;
+	char *fname = NULL;
+	int fd = -1;
+	BOOL bad_path = False;
+	files_struct *fsp = NULL;
 
-  if (tran_call == TRANSACT2_SETFILEINFO) {
-    fsp = file_fsp(params,0);
-    info_level = SVAL(params,2);    
+	if (tran_call == TRANSACT2_SETFILEINFO) {
+		fsp = file_fsp(params,0);
+		info_level = SVAL(params,2);    
 
-    if(fsp && (fsp->is_directory || fsp->stat_open)) {
-      /*
-       * This is actually a SETFILEINFO on a directory
-       * handle (returned from an NT SMB). NT5.0 seems
-       * to do this call. JRA.
-       */
-      fname = fsp->fsp_name;
-      unix_convert(fname,conn,0,&bad_path,&sbuf);
-      if (!check_name(fname,conn) || (!VALID_STAT(sbuf))) {
-        DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-        if((errno == ENOENT) && bad_path)
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-        return(UNIXERROR(ERRDOS,ERRbadpath));
-      }
-    } else if (fsp && fsp->print_file) {
-        /*
-         * Doing a DELETE_ON_CLOSE should cancel a print job.
-         */
-        if (((info_level == SMB_SET_FILE_DISPOSITION_INFO)||(info_level == SMB_FILE_DISPOSITION_INFORMATION)) &&
-						CVAL(pdata,0)) {
-          fsp->share_mode = FILE_DELETE_ON_CLOSE;
+		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+			/*
+			 * This is actually a SETFILEINFO on a directory
+			 * handle (returned from an NT SMB). NT5.0 seems
+			 * to do this call. JRA.
+			 */
+			fname = fsp->fsp_name;
+			unix_convert(fname,conn,0,&bad_path,&sbuf);
+			if (!check_name(fname,conn) || (!VALID_STAT(sbuf))) {
+				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+				if((errno == ENOENT) && bad_path) {
+					unix_ERR_class = ERRDOS;
+					unix_ERR_code = ERRbadpath;
+				}
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
+		} else if (fsp && fsp->print_file) {
+			/*
+			 * Doing a DELETE_ON_CLOSE should cancel a print job.
+			 */
+			if (((info_level == SMB_SET_FILE_DISPOSITION_INFO)||(info_level == SMB_FILE_DISPOSITION_INFORMATION)) &&
+					CVAL(pdata,0)) {
+				fsp->share_mode = FILE_DELETE_ON_CLOSE;
 
-          DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n",
-               fsp->fsp_name ));
+				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n",
+					fsp->fsp_name ));
 
-          SSVAL(params,0,0);
-          send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
-          return(-1);
-        }
-    } else {
-      /*
-       * Original code - this is an open file.
-       */
-      CHECK_FSP(fsp,conn);
+				SSVAL(params,0,0);
+				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+				return(-1);
+			}
+		} else {
+			/*
+			 * Original code - this is an open file.
+			 */
+			CHECK_FSP(fsp,conn);
 
-      fname = fsp->fsp_name;
-      fd = fsp->fd;
+			fname = fsp->fsp_name;
+			fd = fsp->fd;
 
-      if (vfs_fstat(fsp,fd,&sbuf) != 0) {
-        DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
-        return(UNIXERROR(ERRDOS,ERRbadfid));
-      }
-    }
-  } else {
-    /* set path info */
-    info_level = SVAL(params,0);    
-    fname = fname1;
-    pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path,&sbuf);
+			if (vfs_fstat(fsp,fd,&sbuf) != 0) {
+				DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+				return(UNIXERROR(ERRDOS,ERRbadfid));
+			}
+		}
+	} else {
+		/* set path info */
+		info_level = SVAL(params,0);    
+		fname = fname1;
+		pstrcpy(fname,&params[6]);
+		unix_convert(fname,conn,0,&bad_path,&sbuf);
 		if(!check_name(fname, conn)) {
 			if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      return(UNIXERROR(ERRDOS,ERRbadpath));
-    }
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadpath;
+			}
+			return(UNIXERROR(ERRDOS,ERRbadpath));
+		}
  
-    if(!VALID_STAT(sbuf)) {
-      DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
+		if(!VALID_STAT(sbuf)) {
+			DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
 			if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      return(UNIXERROR(ERRDOS,ERRbadpath));
-    }    
-  }
-
-  if (!CAN_WRITE(conn))
-		return ERROR_DOS(ERRSRV,ERRaccess);
-
-  DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
-	   tran_call,fname,info_level,total_data));
-
-  /* Realloc the parameter and data sizes */
-  params = Realloc(*pparams,2);
-	if(params == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
-  *pparams	= params;
-
-  SSVAL(params,0,0);
-
-  size = sbuf.st_size;
-  tvs.modtime = sbuf.st_mtime;
-  tvs.actime = sbuf.st_atime;
-  mode = dos_mode(conn,fname,&sbuf);
-
-  if (total_data > 4 && IVAL(pdata,0) == total_data) {
-    /* uggh, EAs for OS2 */
-    DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-		return ERROR_DOS(ERRDOS,ERReasnotsupported);
-  }
-
-	switch (info_level) {
-    case SMB_INFO_STANDARD:
-    case SMB_INFO_QUERY_EA_SIZE:
-    {
-      /* access time */
-      tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
-
-      /* write time */
-      tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
-
-      mode = SVAL(pdata,l1_attrFile);
-      size = IVAL(pdata,l1_cbFile);
-      break;
-    }
-
-    /* XXXX um, i don't think this is right.
-       it's also not in the cifs6.txt spec.
-     */
-    case SMB_INFO_QUERY_EAS_FROM_LIST:
-      tvs.actime = make_unix_date2(pdata+8);
-      tvs.modtime = make_unix_date2(pdata+12);
-      size = IVAL(pdata,16);
-      mode = IVAL(pdata,24);
-      break;
-
-    /* XXXX nor this.  not in cifs6.txt, either. */
-    case SMB_INFO_QUERY_ALL_EAS:
-      tvs.actime = make_unix_date2(pdata+8);
-      tvs.modtime = make_unix_date2(pdata+12);
-      size = IVAL(pdata,16);
-      mode = IVAL(pdata,24);
-      break;
-
-    case SMB_SET_FILE_BASIC_INFO:
-	case SMB_FILE_BASIC_INFORMATION:
-    {
-      /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-      time_t write_time;
-      time_t changed_time;
-
-      /* Ignore create time at offset pdata. */
-
-      /* access time */
-      tvs.actime = interpret_long_date(pdata+8);
-
-      write_time = interpret_long_date(pdata+16);
-      changed_time = interpret_long_date(pdata+24);
-
-      tvs.modtime = MIN(write_time, changed_time);
-
-      /* Prefer a defined time to an undefined one. */
-      if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
-       tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
-                      ? changed_time
-                      : write_time);
-
-      /* attributes */
-      mode = IVAL(pdata,32);
-      break;
-    }
-
-	case SMB_FILE_ALLOCATION_INFORMATION:
-    case SMB_SET_FILE_ALLOCATION_INFO:
-    {
-      int ret = -1;
-      SMB_OFF_T allocation_size = IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
-      allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-      if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-#endif /* LARGE_SMB_OFF_T */
-      DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
-                           fname, (double)allocation_size ));
-
-      if(allocation_size != sbuf.st_size) {
-        SMB_STRUCT_STAT new_sbuf;
- 
-        DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
-            fname, (double)allocation_size ));
- 
-        if (fd == -1) {
-          files_struct *new_fsp = NULL;
-          int access_mode = 0;
-          int action = 0;
- 
-          if(global_oplock_break) {
-            /* Queue this file modify as we are the process of an oplock break.  */
- 
-            DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-            DEBUGADD(2,( "in oplock break state.\n"));
- 
-            push_oplock_pending_smb_message(inbuf, length);
-            return -1;
-          }
- 
-          new_fsp = open_file_shared(conn, fname, &sbuf,
-                             SET_OPEN_MODE(DOS_OPEN_RDWR),
-                             (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-                             0, 0, &access_mode, &action);
- 
-          if (new_fsp == NULL)
-            return(UNIXERROR(ERRDOS,ERRbadpath));
-          ret = vfs_allocate_file_space(new_fsp, allocation_size);
-          if (vfs_fstat(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
-            DEBUG(3,("fstat of fnum %d failed (%s)\n",new_fsp->fnum, strerror(errno)));
-            ret = -1;
-          }
-          close_file(new_fsp,True);
-        } else {
-          ret = vfs_allocate_file_space(fsp, allocation_size);
-          if (vfs_fstat(fsp,fd,&new_sbuf) != 0) {
-            DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
-            ret = -1;
-          }
-        }
-        if (ret == -1)
-          return ERROR_NT(NT_STATUS_DISK_FULL);
-
-        /* Allocate can trucate size... */
-        size = new_sbuf.st_size;
-      }
-
-      break;
-    }
-
-	case SMB_FILE_END_OF_FILE_INFORMATION:
-    case SMB_SET_FILE_END_OF_FILE_INFO:
-    {
-      size = IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
-      size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-      if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-#endif /* LARGE_SMB_OFF_T */
-      DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
-      break;
-    }
-
-    case SMB_FILE_DISPOSITION_INFORMATION:
-    case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
-    {
-		BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
-		NTSTATUS status;
-
-		if (tran_call != TRANSACT2_SETFILEINFO)
-			return(ERROR_DOS(ERRDOS,ERRunknownlevel));
-
-		if (fsp == NULL)
-			return(UNIXERROR(ERRDOS,ERRbadfid));
-
-		status = set_delete_on_close_internal(fsp, delete_on_close);
-
-		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
-			return ERROR_NT(status);
-
-		break;
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadpath;
+			}
+			return(UNIXERROR(ERRDOS,ERRbadpath));
+		}    
 	}
 
-	default:
+	if (!CAN_WRITE(conn))
+		return ERROR_DOS(ERRSRV,ERRaccess);
+
+	DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
+		tran_call,fname,info_level,total_data));
+
+	/* Realloc the parameter and data sizes */
+	params = Realloc(*pparams,2);
+	if(params == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
+
+	SSVAL(params,0,0);
+
+	size = sbuf.st_size;
+	tvs.modtime = sbuf.st_mtime;
+	tvs.actime = sbuf.st_atime;
+	mode = dos_mode(conn,fname,&sbuf);
+
+	if (total_data > 4 && IVAL(pdata,0) == total_data) {
+		/* uggh, EAs for OS2 */
+		DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
+		return ERROR_DOS(ERRDOS,ERReasnotsupported);
+	}
+
+	switch (info_level) {
+		case SMB_INFO_STANDARD:
+		case SMB_INFO_QUERY_EA_SIZE:
+		{
+			/* access time */
+			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
+
+			/* write time */
+			tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
+
+			mode = SVAL(pdata,l1_attrFile);
+			size = IVAL(pdata,l1_cbFile);
+			break;
+		}
+
+		/* XXXX um, i don't think this is right.
+		it's also not in the cifs6.txt spec.
+		*/
+		case SMB_INFO_QUERY_EAS_FROM_LIST:
+			tvs.actime = make_unix_date2(pdata+8);
+			tvs.modtime = make_unix_date2(pdata+12);
+			size = IVAL(pdata,16);
+			mode = IVAL(pdata,24);
+			break;
+
+		/* XXXX nor this.  not in cifs6.txt, either. */
+		case SMB_INFO_QUERY_ALL_EAS:
+			tvs.actime = make_unix_date2(pdata+8);
+			tvs.modtime = make_unix_date2(pdata+12);
+			size = IVAL(pdata,16);
+			mode = IVAL(pdata,24);
+			break;
+
+		case SMB_SET_FILE_BASIC_INFO:
+		case SMB_FILE_BASIC_INFORMATION:
+		{
+			/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
+			time_t write_time;
+			time_t changed_time;
+
+			/* Ignore create time at offset pdata. */
+
+			/* access time */
+			tvs.actime = interpret_long_date(pdata+8);
+
+			write_time = interpret_long_date(pdata+16);
+			changed_time = interpret_long_date(pdata+24);
+
+			tvs.modtime = MIN(write_time, changed_time);
+
+			/* Prefer a defined time to an undefined one. */
+			if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+				tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
+							? changed_time
+							: write_time);
+
+			/* attributes */
+			mode = IVAL(pdata,32);
+			break;
+		}
+
+		case SMB_FILE_ALLOCATION_INFORMATION:
+		case SMB_SET_FILE_ALLOCATION_INFO:
+		{
+			int ret = -1;
+			SMB_OFF_T allocation_size = IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+			allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+#endif /* LARGE_SMB_OFF_T */
+			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
+				fname, (double)allocation_size ));
+
+			if(allocation_size != sbuf.st_size) {
+				SMB_STRUCT_STAT new_sbuf;
+ 
+				DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
+					fname, (double)allocation_size ));
+ 
+				if (fd == -1) {
+					files_struct *new_fsp = NULL;
+					int access_mode = 0;
+					int action = 0;
+ 
+					if(global_oplock_break) {
+						/* Queue this file modify as we are the process of an oplock break.  */
+ 
+						DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
+						DEBUGADD(2,( "in oplock break state.\n"));
+ 
+						push_oplock_pending_smb_message(inbuf, length);
+						return -1;
+					}          
+
+					new_fsp = open_file_shared(conn, fname, &sbuf,
+							SET_OPEN_MODE(DOS_OPEN_RDWR),
+							(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+							0, 0, &access_mode, &action);
+ 
+					if (new_fsp == NULL)
+						return(UNIXERROR(ERRDOS,ERRbadpath));
+					ret = vfs_allocate_file_space(new_fsp, allocation_size);
+					if (vfs_fstat(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
+						DEBUG(3,("fstat of fnum %d failed (%s)\n",new_fsp->fnum, strerror(errno)));
+						ret = -1;
+					}
+					close_file(new_fsp,True);
+				} else {
+					ret = vfs_allocate_file_space(fsp, allocation_size);
+					if (vfs_fstat(fsp,fd,&new_sbuf) != 0) {
+						DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+						ret = -1;
+					}
+				}
+				if (ret == -1)
+					return ERROR_NT(NT_STATUS_DISK_FULL);
+
+				/* Allocate can trucate size... */
+				size = new_sbuf.st_size;
+			}
+
+			break;
+		}
+
+		case SMB_FILE_END_OF_FILE_INFORMATION:
+		case SMB_SET_FILE_END_OF_FILE_INFO:
+		{
+			size = IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+#endif /* LARGE_SMB_OFF_T */
+			DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
+			break;
+		}
+
+		case SMB_FILE_DISPOSITION_INFORMATION:
+		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
+		{
+			BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
+			NTSTATUS status;
+
+			if (tran_call != TRANSACT2_SETFILEINFO)
+				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+
+			if (fsp == NULL)
+				return(UNIXERROR(ERRDOS,ERRbadfid));
+
+			status = set_delete_on_close_internal(fsp, delete_on_close);
+
+			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+				return ERROR_NT(status);
+
+			break;
+		}
+
+		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
-  }
+	}
 
-  /* get some defaults (no modifications) if any info is zero or -1. */
-  if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
-    tvs.actime = sbuf.st_atime;
+	/* get some defaults (no modifications) if any info is zero or -1. */
+	if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
+		tvs.actime = sbuf.st_atime;
 
-  if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
-    tvs.modtime = sbuf.st_mtime;
+	if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+		tvs.modtime = sbuf.st_mtime;
 
-  DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
-  DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
-  DEBUG(6,("size: %.0f ", (double)size));
-  DEBUG(6,("mode: %x\n"  , mode));
+	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
+	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
+	DEBUG(6,("size: %.0f ", (double)size));
+	DEBUG(6,("mode: %x\n"  , mode));
 
-  if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
-     (info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
-     (info_level == SMB_FILE_ALLOCATION_INFORMATION) ||
-     (info_level == SMB_FILE_END_OF_FILE_INFORMATION))) {
-    /*
-     * Only do this test if we are not explicitly
-     * changing the size of a file.
-     */
-    if (!size)
-      size = sbuf.st_size;
-  }
+	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
+			(info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
+			(info_level == SMB_FILE_ALLOCATION_INFORMATION) ||
+			(info_level == SMB_FILE_END_OF_FILE_INFORMATION))) {
+		/*
+		 * Only do this test if we are not explicitly
+		 * changing the size of a file.
+		 */
+		if (!size)
+			size = sbuf.st_size;
+	}
 
 	/*
 	 * Try and set the times, size and mode of this file -
 	 * if they are different from the current values
-   */
-  if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
-    if(fsp != NULL) {
-      /*
-       * This was a setfileinfo on an open file.
-       * NT does this a lot. It's actually pointless
-       * setting the time here, as it will be overwritten
-       * on the next write, so we save the request
-       * away and will set it on file code. JRA.
-       */
+	 */
 
-       if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-         DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n",
-            ctime(&tvs.modtime) ));
-         fsp->pending_modtime = tvs.modtime;
-       }
+	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
+		if(fsp != NULL) {
+			/*
+			 * This was a setfileinfo on an open file.
+			 * NT does this a lot. It's actually pointless
+			 * setting the time here, as it will be overwritten
+			 * on the next write, so we save the request
+			 * away and will set it on file code. JRA.
+			 */
 
-    } else {
+			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
+				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n",
+					ctime(&tvs.modtime) ));
+				fsp->pending_modtime = tvs.modtime;
+			}
 
-      DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
+		} else {
 
-      if(file_utime(conn, fname, &tvs)!=0)
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-  }
+			DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
 
-  /* check the mode isn't different, before changing it */
-  if ((mode != 0) && (mode != dos_mode(conn, fname, &sbuf))) {
+			if(file_utime(conn, fname, &tvs)!=0)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+	}
 
-    DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n",
-          fname, mode ));
+	/* check the mode isn't different, before changing it */
+	if ((mode != 0) && (mode != dos_mode(conn, fname, &sbuf))) {
 
-    if(file_chmod(conn, fname, mode, NULL)) {
-      DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-  }
+		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n",
+			fname, mode ));
 
-  if(size != sbuf.st_size) {
+		if(file_chmod(conn, fname, mode, NULL)) {
+			DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+	}
 
-    DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
-          fname, (double)size ));
+	if(size != sbuf.st_size) {
 
-    if (fd == -1) {
-      files_struct *new_fsp = NULL;
-      int access_mode = 0;
-      int action = 0;
+		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
+			fname, (double)size ));
 
-      if(global_oplock_break) {
-        /* Queue this file modify as we are the process of an oplock break.  */
+		if (fd == -1) {
+			files_struct *new_fsp = NULL;
+			int access_mode = 0;
+			int action = 0;
 
-        DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-        DEBUGADD(2,( "in oplock break state.\n"));
+			if(global_oplock_break) {
+				/* Queue this file modify as we are the process of an oplock break.  */
 
-        push_oplock_pending_smb_message(inbuf, length);
-        return -1;
-      }
+				DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
+				DEBUGADD(2,( "in oplock break state.\n"));
 
-      new_fsp = open_file_shared(conn, fname, &sbuf,
-                           SET_OPEN_MODE(DOS_OPEN_RDWR),
-                           (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-                           0, 0, &access_mode, &action);
+				push_oplock_pending_smb_message(inbuf, length);
+				return -1;
+			}
+
+			new_fsp = open_file_shared(conn, fname, &sbuf,
+					SET_OPEN_MODE(DOS_OPEN_RDWR),
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+					0, 0, &access_mode, &action);
 	
-      if (new_fsp == NULL)
-        return(UNIXERROR(ERRDOS,ERRbadpath));
-      vfs_set_filelen(new_fsp, size);
-      close_file(new_fsp,True);
-    } else {
-      vfs_set_filelen(fsp, size);
-    }
-  }
+			if (new_fsp == NULL)
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			vfs_set_filelen(new_fsp, size);
+			close_file(new_fsp,True);
+		} else {
+			vfs_set_filelen(fsp, size);
+		}
+	}
 
-  SSVAL(params,0,0);
+	SSVAL(params,0,0);
 
-  send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
   
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
