@@ -464,18 +464,26 @@ init_as_req (krb5_context context,
     if (ret)
 	goto fail;
 
-    a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
-    if (a->req_body.addresses == NULL) {
-	ret = ENOMEM;
-	goto fail;
-    }
+    /*
+     * This means no addresses
+     */
 
-    if (addrs)
-	ret = krb5_copy_addresses(context, addrs, a->req_body.addresses);
-    else
-	ret = krb5_get_all_client_addrs (context, a->req_body.addresses);
-    if (ret)
-	return ret;
+    if (addrs && addrs->len == 0) {
+	a->req_body.addresses = NULL;
+    } else {
+	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
+	if (a->req_body.addresses == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+
+	if (addrs)
+	    ret = krb5_copy_addresses(context, addrs, a->req_body.addresses);
+	else
+	    ret = krb5_get_all_client_addrs (context, a->req_body.addresses);
+	if (ret)
+	    return ret;
+    }
 
     a->req_body.enc_authorization_data = NULL;
     a->req_body.additional_tickets = NULL;
