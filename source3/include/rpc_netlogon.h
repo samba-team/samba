@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Jean François Micouleau 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,17 +26,18 @@
 
 
 /* NETLOGON pipe */
-#define NET_SAMLOGON           0x02
-#define NET_SAMLOGOFF          0x03
-#define NET_REQCHAL            0x04
-#define NET_AUTH               0x05
-#define NET_SRVPWSET           0x06
-#define NET_SAM_DELTAS         0x07
-#define NET_LOGON_CTRL         0x0c
-#define NET_AUTH2              0x0f
-#define NET_LOGON_CTRL2        0x0e
-#define NET_SAM_SYNC           0x10
-#define NET_TRUST_DOM_LIST     0x13
+#define NET_SAMLOGON		0x02
+#define NET_SAMLOGOFF		0x03
+#define NET_REQCHAL		0x04
+#define NET_AUTH		0x05
+#define NET_SRVPWSET		0x06
+#define NET_SAM_DELTAS		0x07
+#define NET_LOGON_CTRL		0x0c
+#define NET_AUTH2		0x0f
+#define NET_LOGON_CTRL2		0x0e
+#define NET_SAM_SYNC		0x10
+#define NET_TRUST_DOM_LIST	0x13
+#define NET_AUTH3		0x1a
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
@@ -369,6 +371,23 @@ typedef struct net_r_auth2_info
 	NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 	NTSTATUS status; /* return code */
 } NET_R_AUTH_2;
+
+/* NET_Q_AUTH_3 */
+typedef struct net_q_auth3_info
+{
+    DOM_LOG_INFO clnt_id;	/* client identification info */
+    DOM_CHAL clnt_chal;		/* client-calculated credentials */
+    NEG_FLAGS clnt_flgs;	/* usually 0x6007 ffff */
+} NET_Q_AUTH_3;
+
+/* NET_R_AUTH_3 */
+typedef struct net_r_auth3_info
+{
+	DOM_CHAL srv_chal;	/* server-calculated credentials */
+	NEG_FLAGS srv_flgs;	/* usually 0x6007 ffff */
+	uint32 unknown;		/* 0x0000045b */
+	NTSTATUS status;	/* return code */
+} NET_R_AUTH_3;
 
 
 /* NET_Q_SRV_PWSET */
