@@ -2001,6 +2001,7 @@ if test x$FOUND_KRB5 = x"no"; then
 # see if this box has the SuSE location for the heimdal kerberos implementation
 AC_MSG_CHECKING(for /usr/include/heimdal)
 if test -d /usr/include/heimdal; then
+    LIBS="$LIBS -lkrb5"
     CFLAGS="$CFLAGS -I/usr/include/heimdal"
     CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
     AC_MSG_RESULT(yes)
@@ -2015,6 +2016,7 @@ if test x$FOUND_KRB5 = x"no"; then
 # see if this box has the RedHat location for kerberos
 AC_MSG_CHECKING(for /usr/kerberos)
 if test -d /usr/kerberos; then
+    LIBS="$LIBS -lkrb5"
     LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
     CFLAGS="$CFLAGS -I/usr/kerberos/include"
     CPPFLAGS="$CPPFLAGS -I/usr/kerberos/include"
@@ -2041,6 +2043,10 @@ fi
   # Heimdal checks.
   AC_CHECK_LIB(crypto, des_set_key, [LIBS="$LIBS -lcrypto"])
   AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1 -lroken"])
+  # Heimdal checks. On static Heimdal gssapi must be linked before krb5.
+  AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi -lkrb5 -lasn1";
+	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
+
   AC_CHECK_LIB(krb5, krb5_set_real_time, [AC_DEFINE(HAVE_KRB5_SET_REAL_TIME,1,[Whether krb5_set_real_time is available])])
   AC_CHECK_LIB(krb5, krb5_set_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_set_default_in_tkt_etypes, is available])])
   AC_CHECK_LIB(krb5, krb5_set_default_tgs_ktypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES,1,[Whether krb5_set_default_tgs_ktypes is available])])
@@ -2069,6 +2075,14 @@ if test x"$samba_cv_HAVE_ADDR_TYPE_IN_KRB5_ADDRESS" = x"yes"; then
     AC_DEFINE(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS,1,[Whether the krb5_address struct has a addr_type property])
 fi
 
+AC_CACHE_CHECK([for enc_part2 in krb5_ticket],samba_cv_HAVE_KRB5_TKT_ENC_PART2,[
+AC_TRY_COMPILE([#include <krb5.h>],
+[krb5_ticket tkt; tkt.enc_part2->authorization_data[0]->contents = NULL;],
+samba_cv_HAVE_KRB5_TKT_ENC_PART2=yes,samba_cv_HAVE_KRB5_TKT_ENC_PART2=no)])
+if test x"$samba_cv_HAVE_KRB5_TKT_ENC_PART2" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_TKT_ENC_PART2,1,[Whether the krb5_ticket struct has a enc_part2 property])
+fi
+
   ########################################################
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
@@ -2078,9 +2092,6 @@ fi
   ########################################################
   # now see if we can find the gssapi libs in standard paths
   AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
-	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
-  # Heimdal checks.
-  AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi";
 	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 fi
 

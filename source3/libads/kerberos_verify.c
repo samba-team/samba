@@ -114,10 +114,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	if (tkt->enc_part2) {
-		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
-				       tkt->enc_part2->authorization_data[0]->length);
-	}
+	get_auth_data_from_tkt(auth_data, tkt);
 
 #if 0
 	if (tkt->enc_part2) {
@@ -127,7 +124,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	}
 #endif
 
-	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client, principal))) {
+	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt), principal))) {
 		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;

@@ -118,6 +118,28 @@
 }
 #endif
 
+ void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt)
+{
+#if defined(HAVE_KRB5_TKT_ENC_PART2)
+	if (tkt->enc_part2)
+		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
+			tkt->enc_part2->authorization_data[0]->length);
+#else
+	if (tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
+		*auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
+			tkt->ticket.authorization_data->val->ad_data.length);
+#endif
+}
+
+ krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt)
+{
+#if defined(HAVE_KRB5_TKT_ENC_PART2)
+	return tkt->enc_part2->client;
+#else
+	return tkt->client;
+#endif
+}
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */

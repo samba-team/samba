@@ -1227,6 +1227,9 @@ int create_kerberos_key_from_string(krb5_context context,
 				krb5_data *password,
 				krb5_keyblock *key);
 
+void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
+krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
+
 #endif /* HAVE_KRB5 */
 
 #endif /* _INCLUDES_H */
