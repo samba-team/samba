@@ -2731,6 +2731,41 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, DOM_SID *sid)
 }
 
 /*******************************************************************
+ The GROUPSID field in the SAM_ACCOUNT changed. Try to tell unix.
+ ********************************************************************/
+static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
+{
+	struct group *grp;
+	gid_t gid;
+
+	if (!NT_STATUS_IS_OK(sid_to_gid(pdb_get_group_sid(sampass),
+					&gid))) {
+		DEBUG(2,("Could not get gid for primary group of "
+			 "user %s\n", pdb_get_username(sampass)));
+		return False;
+	}
+
+	grp = getgrgid(gid);
+
+	if (grp == NULL) {
+		DEBUG(2,("Could not find primary group %d for "
+			 "user %s\n", gid, pdb_get_username(sampass)));
+		return False;
+	}
+
+	if (smb_set_primary_group(grp->gr_name,
+				  pdb_get_username(sampass)) != 0) {
+		DEBUG(2,("Could not set primary group for user %s to "
+			 "%s\n",
+			 pdb_get_username(sampass), grp->gr_name));
+		return False;
+	}
+
+	return True;
+}
+	
+
+/*******************************************************************
  set_user_info_21
  ********************************************************************/
 
@@ -2759,6 +2794,9 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *sid)
 	 * id21.  I don't know if they need to be set.    --jerry
 	 */
  
+	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
+		set_unix_primary_group(pwd);
+
 	/* write the change out */
 	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
@@ -2826,6 +2864,9 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
  
 	ZERO_STRUCT(plaintext_buf);
  
+	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
+		set_unix_primary_group(pwd);
+
 	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
