@@ -2,7 +2,7 @@ Summary: SMB client and server
 Name: samba
 %define	version 1.9.17
 Version: %{version}
-Release: 3
+Release: 4
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-%{version}.tar.gz
@@ -86,7 +86,7 @@ install -m644 docs/smbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/nmbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 examples/simple/smb.conf $RPM_BUILD_ROOT/etc/smb.conf.sampl
 install -m644 examples/redhat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 examples/redhat/smbprint $RPM_BUILD_ROOT/usr/bin
+install -m755 examples/redhat/smbprint $RPM_BUILD_ROOT/usr/bin
 install -m755 examples/redhat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m644 examples/redhat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 examples/redhat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
