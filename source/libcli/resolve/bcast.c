@@ -122,7 +122,7 @@ struct smbcli_composite *resolve_name_bcast_send(struct nbt_name *name,
 
 	c->state = SMBCLI_REQUEST_SEND;
 	c->private = state;
-	c->event_ctx = state->nbtsock->event_ctx;
+	c->event_ctx = talloc_reference(c, state->nbtsock->event_ctx);
 
 	return c;
 
