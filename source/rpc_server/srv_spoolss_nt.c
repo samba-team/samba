@@ -2307,7 +2307,17 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-		SIVAL(*data, 0, 3);
+
+		/* Windows NT 4.0 seems to not allow uploading of drivers
+		   to a server that reports 0x3 as the MajorVersion.
+		   need to investigate more how Win2k gets around this .
+		   -- jerry */
+
+		if ( RA_WINNT == get_remote_arch() )
+			SIVAL(*data, 0, 2);
+		else
+			SIVAL(*data, 0, 3);
+		
 		*needed = 0x4;
 		return WERR_OK;
 	}
