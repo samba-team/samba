@@ -249,7 +249,7 @@ check_ldap(kadm5_ad_context *context, int ret)
  *
  */
 
-void static
+static void
 laddattr(char ***al, int *attrlen, char *attr)
 {
     char **a;
