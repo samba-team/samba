@@ -495,7 +495,7 @@ static BOOL wbinfo_auth_crap(char *username)
         
         SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt((uchar *)pass, request.data.auth_crap.chal,
+        SMBNTencrypt((uchar *)unix_to_dos_static(pass), request.data.auth_crap.chal,
                      (uchar *)request.data.auth_crap.nt_resp);
 
         request.data.auth_crap.lm_resp_len = 24;
@@ -773,7 +773,6 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
-	codepage_initialise(lp_client_code_page());
 	charset_initialise();
 
 	if (!lp_load(CONFIGFILE, True, False, False)) {
@@ -781,6 +780,8 @@ int main(int argc, char **argv)
 			CONFIGFILE, strerror(errno));
 		exit(1);
 	}
+
+	codepage_initialise(lp_client_code_page());
 
 	load_interfaces();
 
