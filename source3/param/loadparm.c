@@ -1977,9 +1977,9 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 /***************************************************************************
 add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
-BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
+BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 {
-	char *comment = "From Printcap";
+	const char *comment = "From Printcap";
 	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
