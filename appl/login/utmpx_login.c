@@ -1,6 +1,6 @@
 /* Author: Wietse Venema <wietse@wzv.win.tue.nl> */
 
-#include "bsd_locl.h"
+#include "login_locl.h"
 
 RCSID("$Id$");
 

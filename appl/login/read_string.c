@@ -86,7 +86,8 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
     while(intr_flag == 0){
 	c = getc(tty);
 	if(c == EOF){
-	    ret = 1;
+	    if(!ferror(tty))
+		ret = 1;
 	    break;
 	}
 	if(c == '\n')
@@ -110,7 +111,13 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
     for(i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
 	sigaction(i, &sigs[i], NULL);
     
-    return of || intr_flag || ret;
+    if(ret)
+	return -3;
+    if(intr_flag)
+	return -2;
+    if(of)
+	return -1;
+    return 0;
 }
 
 

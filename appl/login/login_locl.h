@@ -55,10 +55,31 @@
 #include <pwd.h>
 #include <roken.h>
 #include <getarg.h>
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+#ifdef HAVE_UTMP_H
+#include <utmp.h>
+#endif
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#endif
 #ifdef KRB5
 #include <krb5.h>
 #endif
 
+#ifndef _PATH_WTMP
+#ifdef WTMP_FILE
+#define _PATH_WTMP WTMP_FILE
+#else
+#define _PATH_WTMP "/var/adm/wtmp"
+#endif
+#endif
+
 int read_string(const char*, char*, size_t, int);
+
+char *clean_ttyname (char*);
+char *make_id (char*);
+
 
 #endif /* __LOGIN_LOCL_H__ */

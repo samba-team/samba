@@ -72,6 +72,14 @@ add_env(const char *var, const char *value)
 }
 
 void
+copy_env(void)
+{
+    char **p;
+    for(p = environ; *p; p++)
+	extend_env(*p);
+}
+
+void
 exec_shell(const char *shell, int fallback)
 {
     char *sh;
@@ -93,11 +101,61 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
+int f_flag;
+int p_flag;
+int r_flag;
+int version_flag;
+int help_flag;
+char *remote_host;
+
+struct getargs args[] = {
+#if 0
+    { NULL, 'a' },
+    { NULL, 'd' },
+#endif
+    { NULL, 'f', arg_flag,	&f_flag,	"pre-authenticated" },
+    { NULL, 'h', arg_string,	&remote_host,	"remote host", "hostname" },
+    { NULL, 'p', arg_flag,	&p_flag,	"don't purge environment" },
+#if 0
+    { NULL, 'r', arg_flag,	&r_flag,	"rlogin protocol" },
+#endif
+    { "version", 0,  arg_flag,	&version_flag },
+    { "help",	 'h',  arg_flag,&help_flag, }
+};
+
+int nargs = sizeof(args) / sizeof(args[0]);
+
+void
+update_utmp(const char *username, const char *hostname)
+{
+    char *tty, *ttyn, ttname[32];
+    ttyn = ttyname(STDIN_FILENO);
+    if(ttyn == NULL){
+	snprintf(ttname, sizeof(ttname), "%s??", _PATH_TTY);
+	ttyn = ttname;
+    }
+    if((tty = strrchr(ttyn, '/')))
+	tty++;
+    else
+	tty = ttyn;
+    
+    /*
+     * Update the utmp files, both BSD and SYSV style.
+     */
+    if (utmpx_login(tty, username, hostname) != 0 && !f_flag) {
+	printf("No utmpx entry.  You must exec \"login\" from the "
+	       "lowest level shell.\n");
+	exit(1);
+    }
+    utmp_login(ttyn, username, hostname);
+}
+
 void
 do_login(struct passwd *pwd)
 {
     int rootlogin = (pwd->pw_uid == 0);
-    update_utmp();
+
+    update_utmp(pwd->pw_name, remote_host ? remote_host : "");
 #ifdef HAVE_SETLOGIN
     if(setlogin(pwd->pw_name)){
 	warn("setlogin(%s)", pwd->pw_name);
@@ -135,6 +193,7 @@ do_login(struct passwd *pwd)
     exec_shell(pwd->pw_shell, rootlogin);
 }
 
+#ifdef KRB5
 int
 krb5_verify(struct passwd *pwd, const char *password)
 {
@@ -185,6 +244,7 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_free_context(context);
     return ret;
 }
+#endif
 
 int
 check_password(struct passwd *pwd, const char *password)
@@ -209,33 +269,10 @@ check_password(struct passwd *pwd, const char *password)
     return 1;
 }
 
-int f_flag;
-int p_flag;
-int r_flag;
-int version_flag;
-int help_flag;
-char *remote_host;
-
-struct getargs args[] = {
-#if 0
-    { NULL, 'a' },
-    { NULL, 'd' },
-#endif
-    { "authenticated", 'f', arg_flag, &f_flag, "don't authenticate" },
-    { "host", 'h', arg_string, &remote_host, "remote host", "hostname" },
-    { "preserve-environment", 'p', arg_flag, &p_flag, 
-      "don't purge environment" },
-    { NULL, 'r', arg_flag, &r_flag, "foo" },
-    { "version", 0,  arg_flag,		&version_flag,	"print version" },
-    { "help",	 0,  arg_flag,		&help_flag,	NULL }
-};
-
-int nargs = sizeof(args) / sizeof(args[0]);
-
 void
 usage(int status)
 {
-    arg_printusage(args, nargs, "");
+    arg_printusage(args, nargs, "[username]");
     exit(status);
 }
 
@@ -254,9 +291,6 @@ main(int argc, char **argv)
 
     openlog("login", LOG_ODELAY, LOG_AUTH);
 
-    if (geteuid() != 0)
-	err(1, "only root may use login, use su");
-
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
 	usage (1);
@@ -266,8 +300,17 @@ main(int argc, char **argv)
     if(help_flag)
 	usage(0);
     if (version_flag)
-	errx(0, "(%s-%s)", PACKAGE, VERSION);
+	errx(0, "%s version %s", PACKAGE, VERSION);
 	
+    if (geteuid() != 0)
+	err(1, "only root may use login, use su");
+
+    /* Default tty settings. */
+    stty_default();
+
+    if(p_flag)
+	copy_env();
+
     if(*argv){
 	if(strchr(*argv, '=') == NULL && strcmp(*argv, "-") != 0){
 	    strncpy(username, *argv, sizeof(username));
@@ -278,12 +321,20 @@ main(int argc, char **argv)
     for(try = 0; try < max_tries; try++){
 	struct passwd *pwd;
 	char password[128];
+	int ret;
 	if(ask){
-	    read_string("login: ", username, sizeof(username), 1);
 	    f_flag = r_flag = 0;
+	    ret = read_string("login: ", username, sizeof(username), 1);
+	    if(ret == -3)
+		exit(0);
+	    if(ret == -2)
+		continue;
 	}
-	if(f_flag == 0)
-	    read_string("Password: ", password, sizeof(password), 0);
+	if(f_flag == 0){
+	    ret = read_string("Password: ", password, sizeof(password), 0);
+	    if(ret == -3 || ret == -2)
+		continue;
+	}
 	pwd = getpwnam(username);
 	if(pwd == NULL){
 	    fprintf(stderr, "Login incorrect.\n");
