@@ -285,7 +285,7 @@ void free_sec_desc(SEC_DESC *t)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
+BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 {
 #if 0
 	uint32 off_owner_sid;

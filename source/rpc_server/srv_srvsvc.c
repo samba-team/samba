@@ -158,7 +158,6 @@ static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-
 	r_n.sess_level = q_n.sess_level;
 
 	r_n.status = _srv_net_sess_enum( &q_n.uni_srv_name,
@@ -175,28 +174,27 @@ static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_share_enum(rpcsrv_struct *p, prs_struct *data,
+				   prs_struct *rdata )
 {
-        SRV_Q_NET_SHARE_ENUM q_n;
+	SRV_Q_NET_SHARE_ENUM q_n;
 	SRV_R_NET_SHARE_ENUM r_n;
-        SRV_SHARE_INFO_CTR ctr;
+	SRV_SHARE_INFO_CTR ctr;
 
-        BOOL ret;
+	BOOL ret;
 
 	ZERO_STRUCT(q_n);
 	ZERO_STRUCT(r_n);
 	ZERO_STRUCT(ctr);
 
-        q_n.ctr = &ctr;
+	q_n.ctr = &ctr;
 	r_n.ctr = &ctr;
 
-        /* grab the net server get enum */
-        if (!srv_io_q_net_share_enum("", &q_n, data, 0))
+	/* grab the net server get enum */
+	if (!srv_io_q_net_share_enum("", &q_n, data, 0))
 	{
 		return False;
 	}
-
 
 	r_n.share_level = q_n.share_level;
 
@@ -212,6 +210,27 @@ static BOOL api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 	ret = srv_io_r_net_share_enum("", &r_n, rdata, 0);
 	srv_free_srv_share_ctr(&ctr);
 	return ret;
+}
+
+/*******************************************************************
+********************************************************************/
+static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
+				       prs_struct *rdata )
+{
+	SRV_Q_NET_SHARE_GET_INFO q_n;
+	/* SRV_R_NET_SHARE_GET_INFO r_n; */
+
+	ZERO_STRUCT(q_n);
+	/* ZERO_STRUCT(r_n); */
+
+	/* grab the request */
+	if (!srv_io_q_net_share_get_info("", &q_n, data, 0))
+	{
+		return False;
+	}
+
+	/* Don't know yet, how to answer, next */
+	return False;
 }
 
 /*******************************************************************
@@ -250,14 +269,15 @@ static BOOL api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 ********************************************************************/
 static const struct api_struct api_srv_cmds[] =
 {
-	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum    },
-	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum    },
-	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum   },
-	{ "SRV_NETSHAREENUM2"   , SRV_NETSHAREENUM2   , api_srv_net_share_enum   },
-	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum    },
-	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info },
-	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod   },
-	{ NULL                  , 0                   , NULL                     }
+	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum     },
+	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum     },
+	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum    },
+	{ "SRV_NETSHAREENUM2"   , SRV_NETSHAREENUM2   , api_srv_net_share_enum    },
+	{ "SRV_NETSHAREGETINFO" , SRV_NETSHAREGETINFO , api_srv_net_share_get_info},
+	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum     },
+	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info  },
+	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod    },
+	{ NULL                  , 0                   , NULL                      }
 };
 
 /*******************************************************************

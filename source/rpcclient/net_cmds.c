@@ -69,6 +69,12 @@ static const struct command_set net_commands[] =
 		{NULL, NULL}
 	},
 	{
+		"srvshareinfo",
+		cmd_srv_share_get_info,
+		"SHARE [1|2|502]\tGet info for share",
+		{NULL, NULL}
+	},
+	{
 		"srvtransports",
 		cmd_srv_enum_tprt,
 		"List transports on a server",

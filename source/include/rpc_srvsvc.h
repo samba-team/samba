@@ -30,11 +30,13 @@
 #define SRV_NETFILEENUM      0x09
 #define SRV_NETSESSENUM      0x0c
 #define SRV_NETSHAREENUM     0x0f
-#define SRV_NETSHAREENUM2    0x24
+#define SRV_NETSHAREGETINFO  0x10
+#define SRV_NETSHAREDEL      0x12
 #define SRV_NETTRANSPORTENUM 0x1a
 #define SRV_NET_SRV_GET_INFO 0x15
 #define SRV_NET_SRV_SET_INFO 0x16
 #define	SRV_NET_REMOTE_TOD   0x1c
+#define SRV_NETSHAREENUM2    0x24
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
 typedef struct ptr_sess_info0
@@ -388,6 +390,36 @@ typedef struct str_share_info2
 
 } SH_INFO_2_STR;
 
+
+typedef struct _sh_info_502_hdr
+{
+	SH_INFO_2   info2_hdr;
+	uint32      sd_size; /* how useless... */
+	uint32      sd_ptr;  /* for sd? */
+} SH_INFO_502_HDR;
+
+typedef struct _sh_info_502_data
+{
+	SH_INFO_2_STR info2_str;
+
+	uint32        sd_size2;
+	SEC_DESC      sd; /* security descriptor */
+} SH_INFO_502_DATA;
+
+/* SHARE_INFO_502 (level 502 share info) */
+typedef struct _share_info_502
+{
+	SH_INFO_502_HDR  info502_hdr;
+	SH_INFO_502_DATA info502_data;
+} SHARE_INFO_502;
+
+
+typedef union _share_info_ctr
+{
+	SHARE_INFO_502 info502;
+} SHARE_INFO_CTR;
+
+
 /* SRV_SHARE_INFO_2 */
 typedef struct share_info_2_info
 {
@@ -430,7 +462,6 @@ typedef struct q_net_share_enum_info
 
 } SRV_Q_NET_SHARE_ENUM;
 
-
 /* SRV_R_NET_SHARE_ENUM */
 typedef struct r_net_share_enum_info
 {
@@ -443,6 +474,28 @@ typedef struct r_net_share_enum_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SHARE_ENUM;
+
+
+/* SRV_Q_NET_SHARE_GET_INFO */
+typedef struct q_net_share_get_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	UNISTR2 share_name;
+	uint32  info_level;
+} SRV_Q_NET_SHARE_GET_INFO;
+
+/* SRV_R_NET_SHARE_GET_INFO */
+typedef struct r_net_share_get_info
+{
+	uint32 info_level;
+	uint32 info_ptr;
+	SHARE_INFO_CTR info;
+
+	uint32 status;
+} SRV_R_NET_SHARE_GET_INFO;
+
 
 /* FILE_INFO_3 (level 3 file info strings) */
 typedef struct file_info3_info

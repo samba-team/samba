@@ -749,6 +749,7 @@ int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 				SEC_ACL *sacl, SEC_ACL *dacl);
 void free_sec_desc(SEC_DESC *t);
+BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
 BOOL make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
 void free_sec_desc_buf(SEC_DESC_BUF *buf);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
@@ -922,6 +923,18 @@ BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 				ENUM_HND *hnd);
 BOOL srv_io_q_net_share_enum(char *desc,  SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_enum(char *desc,  SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
+BOOL make_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
+				   const UNISTR2 *srv_name,
+				   const UNISTR2 *share_name,
+				   uint32 info_level);
+BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n,
+				 prs_struct *ps, int depth);
+BOOL make_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
+				   uint32 info_level,
+				   SHARE_INFO_CTR *ctr,
+				   uint32 status);
+BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n,
+				 prs_struct *ps, int depth);
 BOOL make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
 BOOL make_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
 BOOL make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);

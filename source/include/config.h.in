@@ -155,6 +155,11 @@
 
 #undef WITH_NT5LDAP
 
+#undef USE_SETEUID
+#undef USE_SETRESUID
+#undef USE_SETREUID
+#undef USE_SETUIDX
+
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
 

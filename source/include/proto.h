@@ -1177,11 +1177,12 @@ void exit_server(char *reason);
 
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
-BOOL get_user_creds(int c, vuser_key *uk);
-void close_srv_auth_array(rpcsrv_struct *l);
-void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
-BOOL msrpcd_init(int c, rpcsrv_struct **l);
-void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name);
+BOOL get_user_creds(int c, vuser_key * uk);
+void close_srv_auth_array(rpcsrv_struct * l);
+void add_srv_auth_fn(rpcsrv_struct * l, srv_auth_fns * fn);
+BOOL msrpcd_init(int c, rpcsrv_struct ** l);
+void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
+		    const char *name);
 
 /*The following definitions come from  netlogond/creds_db.c  */
 
@@ -2467,6 +2468,9 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
+BOOL srv_net_srv_share_get_info(const char *srv_name,
+				const char *share_name,
+				uint32 info_level);
 BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -2551,7 +2555,7 @@ BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
-BOOL modify_trust_password(const char *domain, const char *remote_machine,
+BOOL modify_trust_password(const char *domain, const char *srv_name,
 			   const uchar orig_trust_passwd_hash[16],
 			   const uchar new_trust_passwd_hash[16],
 			   uint16 sec_chan);
@@ -3210,6 +3214,7 @@ int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 				SEC_ACL *sacl, SEC_ACL *dacl);
 void free_sec_desc(SEC_DESC *t);
+BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
 BOOL make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
 void free_sec_desc_buf(SEC_DESC_BUF *buf);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
@@ -3420,6 +3425,7 @@ BOOL msrpc_srv_enum_tprt( const char* dest_srv,
 void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[]);
+void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[]);
 void cmd_time(struct client_info *info, int argc, char *argv[]);

@@ -364,6 +364,60 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 }
 
 /****************************************************************************
+do a share get info
+****************************************************************************/
+BOOL srv_net_srv_share_get_info(const char *srv_name,
+				const char *share_name,
+				uint32 info_level)
+{
+	prs_struct data; 
+	prs_struct rdata;
+	SRV_Q_NET_SHARE_GET_INFO q_o;
+	struct cli_connection *con = NULL;
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_share_name;
+	BOOL valid_result = False;
+
+	if (srv_name == NULL || share_name == NULL) return False;
+
+	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
+	{
+		return False;
+	}
+
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
+
+	DEBUG(4, ("SRV Get Share Info, share:%s, level %d\n",
+		  share_name, info_level));
+				
+	make_unistr2(&uni_srv_name,   srv_name,   strlen(srv_name) + 1);
+	make_unistr2(&uni_share_name, share_name, strlen(share_name) + 1);
+
+	/* store the parameters */
+	make_srv_q_net_share_get_info(&q_o, &uni_srv_name, &uni_share_name,
+				      info_level);
+
+	/* turn parameters into data stream */
+	if (srv_io_q_net_share_get_info("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETSHAREGETINFO, &data, &rdata))
+	{
+		SRV_R_NET_SHARE_GET_INFO r_o;
+
+		srv_io_r_net_share_get_info("", &r_o, &rdata, 0);
+
+		valid_result = False;
+	}
+
+	prs_free_data(&data   );
+	prs_free_data(&rdata  );
+	
+	cli_connection_unlink(con);
+
+	return valid_result;
+}
+
+/****************************************************************************
 do a server net file enum
 ****************************************************************************/
 BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,

@@ -261,6 +261,53 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 }
 
 /****************************************************************************
+share get info
+****************************************************************************/
+void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
+{
+	fstring dest_srv;
+	const char *share_name;
+	uint32 info_level = 502;
+
+	BOOL res = True;
+
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (argc < 2)
+	{
+		report(out_hnd, "srvshareinfo SHARE [502|1|2]\n");
+		return;
+	}
+
+	share_name = argv[1];
+
+	if (argc > 2)
+	{
+		info_level = (uint32)strtol(argv[2], (char**)NULL, 10);
+	}
+
+	DEBUG(4,
+	      ("cmd_srv_share_get_info: server:%s, share:%s, info level:%d\n",
+	       dest_srv, share_name, (int)info_level));
+
+	/* enumerate shares_files on server */
+	res = res
+		? srv_net_srv_share_get_info(dest_srv, share_name, info_level)
+		: False;
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_share_get_info: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_share_get_info: query failed\n"));
+	}
+}
+
+/****************************************************************************
 server enum sessions
 ****************************************************************************/
 void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])

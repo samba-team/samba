@@ -2561,6 +2561,7 @@ int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 				SEC_ACL *sacl, SEC_ACL *dacl);
 void free_sec_desc(SEC_DESC *t);
+BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
 BOOL make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
 void free_sec_desc_buf(SEC_DESC_BUF *buf);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
