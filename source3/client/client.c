@@ -217,7 +217,7 @@ static int do_dskattr(void)
 	struct cli_state *targetcli;
 	pstring targetpath;
 
-	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
 		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
 	}
 
@@ -277,7 +277,7 @@ static int do_cd(char *newdir)
 	pstrcat(cur_dir,"\\");
 	dos_clean_name(cur_dir);
 	
-	if ( !cli_resolve_path( cli, dname, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
 		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
 		pstrcpy(cur_dir,saved_dir);
 		goto out;
@@ -582,7 +582,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			
 			/* check for dfs */
 			
-			if ( !cli_resolve_path( cli, head, &targetcli, targetpath ) ) {
+			if ( !cli_resolve_path( "", cli, head, &targetcli, targetpath ) ) {
 				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
 				remove_do_list_queue_head();
 				continue;
@@ -609,7 +609,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	} else {
 		/* check for dfs */
 			
-		if ( cli_resolve_path( cli, mask, &targetcli, targetpath ) ) {
+		if ( cli_resolve_path( "", cli, mask, &targetcli, targetpath ) ) {
 			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) 
 				d_printf("%s listing %s\n", cli_errstr(targetcli), targetpath);
 		}
@@ -722,7 +722,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 		strlower_m(lname);
 	}
 
-	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, rname, &targetcli, targetname ) ) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1018,7 +1018,7 @@ static BOOL do_mkdir(char *name)
 	struct cli_state *targetcli;
 	pstring targetname;
 	
-	if ( !cli_resolve_path( cli, name, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, name, &targetcli, targetname ) ) {
 		d_printf("mkdir %s: %s\n", name, cli_errstr(cli));
 		return False;
 	}
@@ -1143,7 +1143,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	struct cli_state *targetcli;
 	pstring targetname;
 	
-	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, rname, &targetcli, targetname ) ) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1655,7 +1655,7 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
 		d_printf("open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1685,7 +1685,7 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
 		d_printf("rmdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1721,7 +1721,7 @@ static int cmd_link(void)
 	pstrcat(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if ( !cli_resolve_path( cli, oldname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, oldname, &targetcli, targetname ) ) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
@@ -1796,7 +1796,7 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("chmod %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -1944,7 +1944,7 @@ static int cmd_getfacl(void)
 
 	pstrcat(src,name);
 	
-	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2109,7 +2109,7 @@ static int cmd_stat(void)
 	pstrcat(src,name);
 
 	
-	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2185,7 +2185,7 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("chown %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2257,7 +2257,7 @@ static int cmd_hardlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("hardlink %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2669,7 +2669,7 @@ static int cmd_show_connect( void )
 	struct cli_state *targetcli;
 	pstring targetpath;
 	
-	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
 		d_printf("showconnect %s: %s\n", cur_dir, cli_errstr(cli));
 		return 1;
 	}
