@@ -62,7 +62,7 @@ static void usage(void)
 **********************************************************/
 int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege)
 {
-	uint32 se_priv[PRIV_ALL_INDEX];
+	PRIVILEGE_SET se_priv;
 	gid_t gid;
 	DOM_SID sid;
 	fstring string_sid;
@@ -85,11 +85,11 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	else
 		fstrcpy(comment, ntcomment);
 
-	init_privilege(se_priv);
+	init_privilege(&se_priv);
 	if (privilege!=NULL)
-		convert_priv_from_text(se_priv, privilege);
+		convert_priv_from_text(&se_priv, privilege);
 
-	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv))
+	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv, PR_ACCESS_FROM_NETWORK))
 		return -1;
 
 	return 0;
@@ -103,7 +103,7 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 	DOM_SID sid;
 	GROUP_MAP map;
 	gid_t gid;
-	uint32 se_priv[PRIV_ALL_INDEX];
+	PRIVILEGE_SET se_priv;
 
 	string_to_sid(&sid, sid_string);
 
@@ -140,12 +140,8 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 		fstrcpy(map.comment, groupdesc);
 
 	/* Change the privilege if new one */
-	if (privilege!=NULL) {
-		int i;
-		convert_priv_from_text(se_priv, privilege);
-		for(i=0; i<PRIV_ALL_INDEX; i++)
-			map.privileges[i]=se_priv[i];
-	}
+	if (privilege!=NULL)
+		convert_priv_from_text(&map.priv_set, privilege);
 
 	if (!add_mapping_entry(&map, TDB_REPLACE)) {
 		printf("Count not update group database\n");
@@ -190,7 +186,8 @@ int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
 	for (i=0; i<entries; i++) {
 		decode_sid_name_use(group_type, (map[i]).sid_name_use);
 		sid_to_string(string_sid, &map[i].sid);
-		convert_priv_to_text(map[i].privileges, priv_text);
+		convert_priv_to_text(&(map[i].priv_set), priv_text);
+		free_privilege(&(map[i].priv_set));
 		
 		if (!long_list)
 			printf("%s (%s) -> %s\n", map[i].nt_name, string_sid, gidtoname(map[i].gid));

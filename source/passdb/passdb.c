@@ -551,6 +551,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 		/* check if it's a mapped group */
 		if (get_group_map_from_sid(local_sid, &map)) {
+			free_privilege(&map.priv_set);
 			if (map.gid!=-1) {
 				DEBUG(5,("local_local_rid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 				fstrcpy(name, map.nt_name);
@@ -636,6 +637,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 		
 		/* check if it's a mapped group */
 		if (get_group_map_from_ntname(user, &map)) {
+			free_privilege(&map.priv_set);
 			if (map.gid!=-1) {
 				/* yes it's a mapped group to a valid unix group */
 				sid_copy(&local_sid, &map.sid);

@@ -33,13 +33,21 @@
 #define ENUM_ONLY_MAPPED True
 #define ENUM_ALL_MAPPED False
 
+#define PR_NONE                0x0000
+#define PR_LOG_ON_LOCALLY      0x0001
+#define PR_ACCESS_FROM_NETWORK 0x0002
+#define PR_LOG_ON_BATCH_JOB    0x0004
+#define PR_LOG_ON_SERVICE      0x0010
+
+
 typedef struct _GROUP_MAP {
 	gid_t gid;
 	DOM_SID sid;
 	enum SID_NAME_USE sid_name_use;
 	fstring nt_name;
 	fstring comment;
-	uint32 privileges[PRIV_ALL_INDEX];
+	uint32 systemaccount;
+	PRIVILEGE_SET priv_set;
 } GROUP_MAP;
 
 typedef struct _PRIVS {
