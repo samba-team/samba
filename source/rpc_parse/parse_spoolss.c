@@ -192,6 +192,10 @@ static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_
 reads or writes an NOTIFY OPTION TYPE structure.
 ********************************************************************/  
 
+/* NOTIFY_OPTION_TYPE and NOTIFY_OPTION_TYPE_DATA are really one
+   structure.  The _TYPE structure is really the deferred referrants (i.e
+   the notify fields array) of the _TYPE structure. -tpot */
+
 static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_notify_option_type");
@@ -5590,10 +5594,10 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 
 	switch (q_u->type)
 	{
-		case 0x1:
-		case 0x3:
-		case 0x4:
-		case 0x7:
+		case REG_SZ:
+		case REG_BINARY:
+		case REG_DWORD:
+		case REG_MULTI_SZ:
             if (q_u->max_len) {
                 if (UNMARSHALLING(ps))
     				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
