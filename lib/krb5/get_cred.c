@@ -558,10 +558,13 @@ get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 		krb5_creds *out_creds)
 {
     krb5_error_code ret;
-    krb5_addresses addresses;
+    krb5_addresses addresses, *addr = &addresses;
     
     krb5_get_all_client_addrs(context, &addresses);
-    ret = get_cred_kdc(context, id, flags, &addresses, 
+    /* XXX this sucks. */
+    if(addresses.len == 0)
+	addrs = NULL;
+    ret = get_cred_kdc(context, id, flags, addrs, 
 		       in_creds, krbtgt, out_creds);
     krb5_free_addresses(context, &addresses);
     return ret;
