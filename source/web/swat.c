@@ -337,7 +337,7 @@ static int save_reload(int snum)
 
 	lp_killunused(NULL);
 
-	if (!lp_load(servicesf,False,False,False)) {
+	if (!load_config(False)) {
                 printf("Can't reload %s\n", servicesf);
                 return 0;
         }
@@ -392,9 +392,10 @@ static void commit_parameters(int snum)
 /****************************************************************************
   load the smb.conf file into loadparm.
 ****************************************************************************/
-static BOOL load_config(void)
+static BOOL load_config(BOOL save_def)
 {
-	return lp_load(servicesf,False,True,False);
+	lp_resetnumservices();
+	return lp_load(servicesf,False,save_def,False);
 }
 
 /****************************************************************************
@@ -533,7 +534,9 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, share);
+		iNumNonAutoPrintServices = lp_numservices();
 		save_reload(0);
 		snum = lp_servicenumber(share);
 	}
@@ -840,7 +843,9 @@ static void printers_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, share);
+		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
 		save_reload(0);
@@ -925,7 +930,7 @@ static void printers_page(void)
 	}
 
 	charset_initialise();
-	load_config();
+	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
 

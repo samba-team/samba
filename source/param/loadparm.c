@@ -2529,6 +2529,14 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 
 
 /***************************************************************************
+reset the max number of services
+***************************************************************************/
+void lp_resetnumservices(void)
+{
+  iNumServices = 0;
+}
+
+/***************************************************************************
 return the max number of services
 ***************************************************************************/
 int lp_numservices(void)
