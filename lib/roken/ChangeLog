@@ -1,3 +1,9 @@
+2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.h.in: declare ether_addr and sockaddr_dl for AIX
+
+	* rtbl.{c,h}: simple table functions
+
 2000-07-08  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (AM_INIT_AUTOMAKE): bump version to 10

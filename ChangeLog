@@ -16,6 +16,8 @@
 
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kuser/klist.c: use rtbl to format cred listing, add -f and -s
+
 	* lib/krb5/crypto.c: fix type in des3-cbc-none
 
 	* lib/hdb/mkey.c: add key usage
