@@ -152,15 +152,10 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
                    occur in Universal groups on a Windows 2000 native mode
                    server. */
 
-		if (name_types[i] != SID_NAME_USER) {
-			DEBUG(3, ("name %s isn't a domain user\n", the_name));
-			continue;
-		}
+		/* make sure to allow machine accounts */
 
-		/* Don't bother with machine accounts */
-		
-		if (the_name[strlen(the_name) - 1] == '$') {
-			DEBUG(10, ("%s is machine account\n", the_name));
+		if (name_types[i] != SID_NAME_USER && name_types[i] != SID_NAME_COMPUTER) {
+			DEBUG(3, ("name %s isn't a domain user\n", the_name));
 			continue;
 		}
 

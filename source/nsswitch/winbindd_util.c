@@ -201,7 +201,7 @@ void add_trusted_domains( struct winbindd_domain *domain )
 		return;
 	}
 
-	DEBUG(1, ("scanning trusted domain list\n"));
+	DEBUG(5, ("scanning trusted domain list\n"));
 
 	if (!(mem_ctx = talloc_init("init_domain_list")))
 		return;
@@ -365,10 +365,6 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
         TALLOC_CTX *mem_ctx;
-	/* Don't bother with machine accounts */
-
-	if (name[strlen(name) - 1] == '$')
-		return False;
 
 	mem_ctx = talloc_init("lookup_sid_by_name for %s\n", name);
 	if (!mem_ctx) 
