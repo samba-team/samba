@@ -365,6 +365,10 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 	int len;
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
 	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
 	*s = malloc(len+1);
 	if (! *s) {
 		data->has_error = True;
@@ -383,6 +387,10 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
 	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
 	*blob = data_blob(NULL, len);
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);
