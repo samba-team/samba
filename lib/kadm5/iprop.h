@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,6 +42,7 @@
 #define __IPROP_H__
 
 #include "kadm5_locl.h"
+#include <getarg.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
