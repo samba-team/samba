@@ -101,24 +101,28 @@ ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.
 
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 
-htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
+htmlman: $(HTMLDIR) $(MANPAGES_HTML) $(HTMLDIR)/CSS
 
-html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
+html-single: $(HTMLDIR) $(HTMLDIR)/CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
 	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
-html: howto-html guide-html dev-html
+html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel
 	
-howto-html: $(HTMLDIR) $(HTMLDIR)/howto CSS Samba-HOWTO-Collection.xml
+$(HTMLDIR)/howto: $(HTMLDIR) $(HTMLDIR)/howto/CSS Samba-HOWTO-Collection.xml
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/howto/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
+	-mkdir $(HTMLDIR)/howto/images
+	cp -R $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/howto/images
 
-dev-html: $(HTMLDIR) $(HTMLDIR)/devel CSS $(HTMLDIR)/Samba-Developers-Guide.xml
+$(HTMLDIR)/devel: $(HTMLDIR) $(HTMLDIR)/devel/CSS Samba-Developers-Guide.xml
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/devel/" xslt/html-chunk.xsl Samba-Developers-Guide.xml
 
-sg-html: $(HTMLDIR) $(HTMLDIR)/guide CSS Samba-Guide.xml
-	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/guide" xslt/html-chunk.xsl Samba-Guide.xml
+$(HTMLDIR)/guide: $(HTMLDIR) $(HTMLDIR)/guide/CSS Samba-Guide.xml
+	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/guide/" xslt/html-chunk.xsl Samba-Guide.xml
+	-mkdir $(HTMLDIR)/guide/images
+	cp -R $(GUIDEDOC_IMAGES_PNG) $(HTMLDIR)/guide/images
 
 manpages: $(MANDIR) $(MANPAGES)
 
@@ -203,26 +207,16 @@ xslt/figures/%.pdf: xslt/figures/%.eps
 
 $(HTMLDIR):
 	mkdir $(HTMLDIR)
-	mkdir $(HTMLDIR)/images
-
-$(HTMLDIR)/guide:
-	mkdir $(HTMLDIR)/guide
-	mkdir $(HTMLDIR)/guide/images
-	cp -R $(GUIDEDOC_IMAGES_PNG) $(HTMLDIR)/guide/images
-
-$(HTMLDIR)/devel:
-	mkdir $(HTMLDIR)/devel
-
-$(HTMLDIR)/howto:
 	mkdir $(HTMLDIR)/howto
-	mkdir $(HTMLDIR)/howto/images
-	cp -R $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/howto/images
+	mkdir $(HTMLDIR)/guide
+	mkdir $(HTMLDIR)/devel
+	mkdir $(HTMLDIR)/images
 
 $(PLUCKERDIR):
 	mkdir $(PLUCKERDIR)
 
-CSS: $(HTMLDIR) xslt/html/samba.css
-	cp xslt/html/samba.css $(HTMLDIR)/
+%/CSS: xslt/html/samba.css
+	cp $< $@
 
 $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
