@@ -18,7 +18,6 @@
 		</affiliation>
 	</author>
 	&author.jelmer;
-	&author.jht;
 	</authorgroup>
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
@@ -331,7 +330,7 @@ for providing the HOWTO for this section.
 <para>
 This HOWTO describes how to get winbind services up and running 
 to control access and authenticate users on your Linux box using 
-the winbind services which come with SAMBA 2.2.2.
+the winbind services which come with SAMBA 3.0.
 </para>
 
 <sect2>
@@ -471,7 +470,7 @@ It will also build the winbindd executable and libraries.
 
 <sect3>
 <title>Configure <filename>nsswitch.conf</filename> and the 
-winbind libraries</title>
+winbind libraries on Linux and Solaris</title>
 
 <para>
 The libraries needed to run the <command>winbindd</command> daemon 
@@ -492,9 +491,9 @@ I also found it necessary to make the following symbolic link:
 
 <para>And, in the case of Sun solaris:</para>
 <para>
-<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</command>
-<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</command>
-<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</command>
+<prompt>root#</prompt> <userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</userinput>
+<prompt>root#</prompt> <userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</userinput>
+<prompt>root#</prompt> <userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</userinput>
 </para>
 
 <para>
@@ -528,6 +527,34 @@ and echos back a check to you.
 
 </sect3>
 
+<sect3>
+<title>NSS Winbind on AIX</title>
+
+<para>(This section is only for those running AIX)</para>
+
+<para>
+The winbind AIX identification module gets built as libnss_winbind.so in the
+nsswitch directory of the samba source.  This file can be copied to
+/usr/lib/security, and the AIX naming convention would indicate that it
+should be named WINBIND.  A stanza like the following:
+</para>
+
+<para><programlisting>
+WINBIND:
+        program = /usr/lib/security/WINBIND
+        options = authonly
+<programlisting></para>
+
+<para>can then be added to <filename>/usr/lib/security/methods.cfg</filename>. 
+This module only supports identification, but there have been success reports
+using the standard winbind pam module for authentication.  Use caution
+configuring loadable authentication modules as it is possible to make
+it impossible to logon to the system.  More information about the AIX
+authentication module API can be found at
+<link url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/kernextc/sec_load_mod.htm"/> and more information on administering the 
+modules at <link url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixbman/baseadmn/iandaadmin.htm"/>.
+</para>
+</sect3>
 
 <sect3>
 <title>Configure smb.conf</title>
