@@ -3331,6 +3331,8 @@ void cmd_sam_query_group(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
 void cmd_sam_query_dispinfo(struct client_info *info);
 void cmd_sam_query_dominfo(struct client_info *info);
+void cmd_sam_query_aliasmem(struct client_info *info);
+void cmd_sam_query_alias(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 void cmd_sam_enum_groups(struct client_info *info);
 
