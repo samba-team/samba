@@ -29,6 +29,128 @@
 extern DOM_SID domain_sid;
 
 /****************************************************************************
+convert a security permissions into a string
+****************************************************************************/
+char *get_sec_mask_str(uint32 type)
+{
+	static fstring typestr="";
+	int i;
+
+	typestr[0] = 0;
+
+	if (type & GENERIC_ALL_ACCESS)
+		fstrcat(typestr, "Generic all access ");
+	if (type & GENERIC_EXECUTE_ACCESS)
+		fstrcat(typestr, "Generic execute access ");
+	if (type & GENERIC_WRITE_ACCESS)
+		fstrcat(typestr, "Generic write access ");
+	if (type & GENERIC_READ_ACCESS)
+		fstrcat(typestr, "Generic read access ");
+	if (type & MAXIMUM_ALLOWED_ACCESS)
+		fstrcat(typestr, "MAXIMUM_ALLOWED_ACCESS ");
+	if (type & SYSTEM_SECURITY_ACCESS)
+		fstrcat(typestr, "SYSTEM_SECURITY_ACCESS ");
+	if (type & SYNCHRONIZE_ACCESS)
+		fstrcat(typestr, "SYNCHRONIZE_ACCESS ");
+	if (type & WRITE_OWNER_ACCESS)
+		fstrcat(typestr, "WRITE_OWNER_ACCESS ");
+	if (type & WRITE_DAC_ACCESS)
+		fstrcat(typestr, "WRITE_DAC_ACCESS ");
+	if (type & READ_CONTROL_ACCESS)
+		fstrcat(typestr, "READ_CONTROL_ACCESS ");
+	if (type & DELETE_ACCESS)
+		fstrcat(typestr, "DELETE_ACCESS ");
+
+	printf("Specific bits: 0x%x\n", type&SPECIFIC_RIGHTS_MASK);
+
+	return typestr;
+}
+
+/****************************************************************************
+ display sec_access structure
+ ****************************************************************************/
+void display_sec_access(SEC_ACCESS *info)
+{
+	printf("\t\tPermissions: 0x%x: %s\n", info->mask, get_sec_mask_str(info->mask));
+}
+
+/****************************************************************************
+ display sec_ace structure
+ ****************************************************************************/
+void display_sec_ace(SEC_ACE *ace)
+{
+	fstring sid_str;
+
+	printf("\tACE\n\t\ttype: ");
+	switch (ace->type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			printf("ACCESS ALLOWED");
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+			printf("ACCESS DENIED");
+			break;
+		case SEC_ACE_TYPE_SYSTEM_AUDIT:
+			printf("SYSTEM AUDIT");
+			break;
+		case SEC_ACE_TYPE_SYSTEM_ALARM:
+			printf("SYSTEM ALARM");
+			break;
+		default:
+			printf("????");
+			break;
+	}
+	printf(" (%d) flags: %d\n", ace->type, ace->flags);
+	display_sec_access(&ace->info);
+	sid_to_string(sid_str, &ace->trustee);
+	printf("\t\tSID: %s\n\n", sid_str);
+}
+
+/****************************************************************************
+ display sec_acl structure
+ ****************************************************************************/
+void display_sec_acl(SEC_ACL *sec_acl)
+{
+	int i;
+
+	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
+			 sec_acl->num_aces, sec_acl->revision); 
+	printf("\t---\n");
+
+	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
+		for (i = 0; i < sec_acl->num_aces; i++)
+			display_sec_ace(&sec_acl->ace[i]);
+				
+}
+
+/****************************************************************************
+ display sec_desc structure
+ ****************************************************************************/
+void display_sec_desc(SEC_DESC *sec)
+{
+	fstring sid_str;
+
+	if (sec->off_sacl != 0) {
+		printf("S-ACL\n");
+		display_sec_acl(sec->sacl);
+	}
+
+	if (sec->off_dacl != 0) {
+		printf("D-ACL\n");
+		display_sec_acl(sec->dacl);
+	}
+
+	if (sec->off_owner_sid != 0) {
+		sid_to_string(sid_str, sec->owner_sid);
+		printf("\tOwner SID:\t%s\n", sid_str);
+	}
+
+	if (sec->off_grp_sid != 0) {
+		sid_to_string(sid_str, sec->grp_sid);
+		printf("\tParent SID:\t%s\n", sid_str);
+	}
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -784,9 +906,14 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	uint32 num_rids, num_names, *name_types, *rids;
 	char **names;
 	int i;
+	DOM_SID global_sid_Builtin;
 
-	if (argc < 2) {
-		printf("Usage: %s name1 [name2 [name3] [...]]\n", argv[0]);
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	if (argc < 3) {
+		printf("Usage: %s  domain|builtin name1 [name2 [name3] [...]]\n", argv[0]);
+		printf("check on the domain SID: S-1-5-21-x-y-z\n");
+		printf("or check on the builtin SID: S-1-5-32\n");
 		return NT_STATUS_OK;
 	}
 
@@ -799,9 +926,16 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 		goto done;
 	}
 
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -809,11 +943,11 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 
 	/* Look up names */
 
-	num_names = argc - 1;
+	num_names = argc - 2;
 	names = (char **)talloc(mem_ctx, sizeof(char *) * num_names);
 
-	for (i = 0; i < argc - 1; i++)
-		names[i] = argv[i + 1];
+	for (i = 0; i < argc - 2; i++)
+		names[i] = argv[i + 2];
 
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 				       flags, num_names, names,
@@ -962,6 +1096,64 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 	return result;
 }
 
+/**********************************************************************
+ * Query user security object 
+ */
+static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli, 
+                                    TALLOC_CTX *mem_ctx,
+                                    int argc, char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 info_level = 4;
+	fstring server;
+	uint32 user_rid;
+	TALLOC_CTX *ctx = NULL;
+	SEC_DESC_BUF *sec_desc_buf=NULL;
+
+	ctx=talloc_init();
+	
+	if (argc != 2) {
+		printf("Usage: %s rid\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	sscanf(argv[1], "%i", &user_rid);
+
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (server);
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+				    MAXIMUM_ALLOWED_ACCESS,
+				    user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_query_sec_obj(cli, mem_ctx, &user_pol, info_level, ctx, &sec_desc_buf);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	display_sec_desc(sec_desc_buf->sec);
+	
+done:
+	talloc_destroy(ctx);
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -981,6 +1173,7 @@ struct cmd_set samr_commands[] = {
 	{ "samlookupnames",     cmd_samr_lookup_names,          PIPE_SAMR,	"Look up names",           "" },
 	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
 	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
+	{ "querysecobj",        cmd_samr_query_sec_obj,         PIPE_SAMR,	"Query security object",   "" },
 
 	{ NULL }
 };
