@@ -290,9 +290,9 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
-	    (access_mask & SA_RIGHT_FILE_WRITE_DATA)) {
+	    (access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
 		flags = O_RDWR;
-	} else if (access_mask & SA_RIGHT_FILE_WRITE_DATA) {
+	} else if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
 		flags = O_WRONLY;
 	} else {
 		flags = O_RDONLY;
@@ -491,9 +491,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
-	    (access_mask & SA_RIGHT_FILE_WRITE_DATA)) {
+	    (access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
 		flags |= O_RDWR;
-	} else if (access_mask & SA_RIGHT_FILE_WRITE_DATA) {
+	} else if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
 		flags |= O_WRONLY;
 	} else {
 		flags |= O_RDONLY;
