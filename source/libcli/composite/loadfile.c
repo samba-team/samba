@@ -170,9 +170,6 @@ static NTSTATUS loadfile_close(struct smbcli_composite *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	c->state = SMBCLI_REQUEST_DONE;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
 
 	return NT_STATUS_OK;
 }
@@ -185,30 +182,30 @@ static void loadfile_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
 	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
-	NTSTATUS status;
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
 	switch (state->stage) {
 	case LOADFILE_OPEN:
-		status = loadfile_open(c, state->io);
+		c->status = loadfile_open(c, state->io);
 		break;
 
 	case LOADFILE_READ:
-		status = loadfile_read(c, state->io);
+		c->status = loadfile_read(c, state->io);
 		break;
 
 	case LOADFILE_CLOSE:
-		status = loadfile_close(c, state->io);
+		c->status = loadfile_close(c, state->io);
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		c->status = status;
+	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
-		if (c->async.fn) {
-			c->async.fn(c);
-		}
+	}
+
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
 	}
 }
 

@@ -171,9 +171,6 @@ static NTSTATUS savefile_close(struct smbcli_composite *c,
 	}
 	
 	c->state = SMBCLI_REQUEST_DONE;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
 
 	return NT_STATUS_OK;
 }
@@ -186,30 +183,30 @@ static void savefile_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
 	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
-	NTSTATUS status;
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
 	switch (state->stage) {
 	case SAVEFILE_OPEN:
-		status = savefile_open(c, state->io);
+		c->status = savefile_open(c, state->io);
 		break;
 
 	case SAVEFILE_WRITE:
-		status = savefile_write(c, state->io);
+		c->status = savefile_write(c, state->io);
 		break;
 
 	case SAVEFILE_CLOSE:
-		status = savefile_close(c, state->io);
+		c->status = savefile_close(c, state->io);
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		c->status = status;
+	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
-		if (c->async.fn) {
-			c->async.fn(c);
-		}
+	}
+
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
 	}
 }
 
