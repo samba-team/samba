@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release TNG-alpha 14 Apr 2000
+!== Printing.txt for Samba release TNG-alpha 20 Apr 2000
 !==
 Contributor:	Unknown <samba-bugs@samba.org>
 Date:		Unknown
