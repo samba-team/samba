@@ -455,7 +455,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS include/proto.h include/build_env.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
+all : SHOWFLAGS include/proto.h include/wrepld_proto.h include/build_env.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -808,11 +808,6 @@ winbindd_proto:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
-wrepld_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
-	  $(WREPL_OBJ1)
-
 delheaders:
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h
 	@/bin/rm -f include/proto.h include/build_env.h
@@ -831,9 +826,15 @@ include/build_env.h:
 	@echo rebuilding include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
-headers: delheaders include/proto.h include/build_env.h .headers.stamp
+include/wrepld_proto.h:
+	@echo rebuilding include/wrepld_proto.h
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
+	  $(WREPL_OBJ1)
 
-proto: headers winbindd_proto wrepld_proto
+headers: delheaders include/proto.h include/build_env.h include/wrepld_proto.h .headers.stamp
+
+proto: headers winbindd_proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
