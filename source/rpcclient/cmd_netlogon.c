@@ -57,10 +57,24 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstring domain;
 	char *p;
 
+	fstring wks_name;
 	fstring srv_name;
+
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+
+	fstrcpy(wks_name, "\\\\");
+	if (strequal(srv_name, "\\\\.") &&
+	    strequal(info->dest_host, info->myhostname))
+	{
+		fstrcat(wks_name, ".");
+	}
+	else
+	{
+		fstrcat(wks_name, info->dest_host);
+	}
+	strupper(wks_name);
 
 	fstrcpy(domain, usr_creds->ntc.domain);
 
@@ -132,7 +146,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	res = res ? msrpc_lsa_query_trust_passwd(trust_passwd) : False;
+	res = res ? msrpc_lsa_query_trust_passwd(wks_name, trust_passwd, "$MACHINE.ACC") : False;
 
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 	                               trust_acct, 
@@ -184,12 +198,27 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	uchar trust_passwd[16];
 	fstring inter_dom_acct;
+	fstring trust_sec_name;
 	fstring domain;
 
+	fstring wks_name;
 	fstring srv_name;
+
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+
+	fstrcpy(wks_name, "\\\\");
+	if (strequal(srv_name, "\\\\.") &&
+	    strequal(info->dest_host, info->myhostname))
+	{
+		fstrcat(wks_name, ".");
+	}
+	else
+	{
+		fstrcat(wks_name, info->dest_host);
+	}
+	strupper(wks_name);
 
 	fstrcpy(domain, usr_creds->ntc.domain);
 
@@ -208,11 +237,15 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5,("do_nt_login_test: domain %s\n", nt_trust_dom));
 
+	fstrcpy(trust_sec_name, "G$$");
+	fstrcat(trust_sec_name, nt_trust_dom);
+	strupper(inter_dom_acct);
+
 	fstrcpy(inter_dom_acct, nt_trust_dom);
 	fstrcat(inter_dom_acct, "$");
 
-	res = res ? trust_get_passwd(trust_passwd, usr_creds->ntc.domain, nt_trust_dom) : False;
-
+	res = res ? msrpc_lsa_query_trust_passwd(wks_name, trust_sec_name,
+	                                  trust_passwd) : False;
 	res = res ? cli_nt_setup_creds(srv_name, domain,
 	                               info->myhostname, inter_dom_acct,
 	                               trust_passwd, 
@@ -233,13 +266,27 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
 	uint32 num;
 	uchar trust_passwd[16];
-	fstring srv_name;
 	fstring trust_acct;
 	fstring domain;
+
+	fstring wks_name;
+	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+
+	fstrcpy(wks_name, "\\\\");
+	if (strequal(srv_name, "\\\\.") &&
+	    strequal(info->dest_host, info->myhostname))
+	{
+		fstrcat(wks_name, ".");
+	}
+	else
+	{
+		fstrcat(wks_name, info->dest_host);
+	}
+	strupper(wks_name);
 
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
@@ -251,7 +298,8 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 		fstrcpy(domain, info->dom.level3_dom);
 	}
 
-	if (!msrpc_lsa_query_trust_passwd(trust_passwd))
+	if (!msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
+	                                  trust_passwd))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;

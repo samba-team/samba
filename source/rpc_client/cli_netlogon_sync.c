@@ -53,7 +53,8 @@ BOOL synchronise_passdb(void)
 	fstrcpy(trust_acct, global_myname);
 	fstrcat(trust_acct, "$");
 
-	if (!trust_get_passwd(trust_passwd, lp_workgroup(), global_myname))
+	if (!msrpc_lsa_query_trust_passwd("\\\\.", "$MACHINE.ACC",
+	                                  trust_passwd))
 	{
 		return False;
 	}

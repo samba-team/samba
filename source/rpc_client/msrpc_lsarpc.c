@@ -290,15 +290,14 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 /****************************************************************************
 ****************************************************************************/
-BOOL msrpc_lsa_query_trust_passwd(uchar trust_passwd[16])
+BOOL msrpc_lsa_query_trust_passwd(const char* srv_name,
+				const char* secret_name,
+				uchar trust_passwd[16])
 {
 	STRING2 secret;
 	NTTIME last_update;
-	fstring srv_name;
 
-	fstrcpy(srv_name, "\\\\.");
-
-	if (!msrpc_lsa_query_secret(srv_name, "$MACHINE.ACC", &secret,
+	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
 	                           &last_update))
 	{
 		return False;
