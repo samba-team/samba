@@ -139,5 +139,3 @@ extern des_cblock iv;
 
 ssize_t do_read (int fd, void *buf, size_t sz);
 ssize_t do_write (int fd, void *buf, size_t sz);
-ssize_t net_read (int fd, void *buf, size_t len);
-ssize_t net_write (int fd, const void *buf, size_t len);

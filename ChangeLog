@@ -1,3 +1,29 @@
+1999-05-10  Assar Westerlund  <assar@sics.se>
+
+	* acconfig.h (KRB_PUT_INT): if we don't have KRB4 use four
+	arguments :-)
+
+	* appl/test/uu_server.c (setsockopt): cast to get rid of a warning
+	
+	* appl/test/tcp_server.c (setsockopt): cast to get rid of a
+	warning
+
+	* appl/test/tcp_client.c (proto): call krb5_sendauth with ccache
+	== NULL
+
+	* appl/test/gssapi_server.c (setsockopt): cast to get rid of a
+	warning
+
+	* lib/krb5/sendauth.c (krb5_sendauth): handle ccache == NULL by
+	setting the default ccache.
+
+	* configure.in (getsockopt, setsockopt): test for
+	(AM_INIT_AUTOMAKE): bump version to 0.1g
+
+	* appl/Makefile.am (SUBDIRS): add kx
+	
+	* lib/hdb/convert_db.c (main): handle the case of no master key
+	
 1999-05-09  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1f
