@@ -163,8 +163,6 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	}
 
 	domain->last_seq_check = time(NULL);
-
-	DEBUG(0,("seq number now %d\n", domain->sequence_number));
 }
 
 /*
