@@ -954,7 +954,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		if (q.query_secdesc.out.sd->dacl == NULL ||
-		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
 		    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
 		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 				   sd_orig->owner_sid)) {
@@ -999,7 +999,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		if (q.query_secdesc.out.sd->dacl == NULL ||
-		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
 		    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
 		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 				   sd_orig->owner_sid)) {
