@@ -31,18 +31,20 @@ static int pytdbpack_calc_reqd_len(char *format_str,
 				   PyObject *val_seq);
 
 static PyObject *pytdbpack_unpack_item(char,
-				      char **pbuf,
-				      int *plen);
-static int
-pytdbpack_calc_item_len(char format_ch,
-			PyObject *val_obj);
+				       char **pbuf,
+				       int *plen);
 
 static PyObject *pytdbpack_pack_data(const char *format_str,
 				     PyObject *val_seq,
 				     unsigned char *buf);
 
 
-	
+
+
+static PyObject *pytdbpack_bad_type(char ch,
+				    const char *expected,
+				    PyObject *val_obj);
+
 static const char * pytdbpack_docstring =
 "Convert between Python values and Samba binary encodings.
 
@@ -76,7 +78,8 @@ tdbpack format strings:
           value of the Python object is used.
     
     'B': 4-byte LE length, followed by that many bytes of binary data.
-         Corresponds to a Python byte string of the appropriate length.
+         Corresponds to a Python integer giving the length, followed by a byte
+         string of the appropriate length.
 
     '$': Special flag indicating that the preceding format code should be
          repeated while data remains.  This is only supported for unpacking.
@@ -253,7 +256,7 @@ pytdbpack_unpack(PyObject *self,
 		last_format = format;
 	}
 
-	/* put leftovers in box for lunch tomorrow */
+	/* save leftovers for next time */
 	rest_string = PyString_FromStringAndSize(ppacked, packed_len);
 	if (!rest_string)
 		goto failed;
@@ -302,8 +305,6 @@ pytdbpack_calc_reqd_len(char *format_str,
 
 	for (p = format_str, val_i = 0; *p; p++, val_i++) {
 		char ch = *p;
-		PyObject *val_obj;
-		int item_len;
 
 		if (val_i >= val_len) {
 			PyErr_Format(PyExc_IndexError,
@@ -313,15 +314,57 @@ pytdbpack_calc_reqd_len(char *format_str,
 		}
 
 		/* borrow a reference to the item */
-		val_obj = PySequence_GetItem(val_seq, val_i);
-		if (!val_obj)
-			return -1;
+		if (ch == 'd' || ch == 'p') 
+			len += 4;
+		else if (ch == 'w')
+			len += 2;
+		else if (ch == 'f' || ch == 'P') {
+			/* nul-terminated 8-bit string */
+			int item_len;
+			PyObject *str_obj;
 
-		item_len = pytdbpack_calc_item_len(ch, val_obj);
-		if (item_len == -1)
-			return -1;
-		else
+			str_obj = PySequence_GetItem(val_seq, val_i);
+			if (!str_obj)
+				return -1;
+
+			item_len = PyString_Size(str_obj);
+			if (item_len == -1) {
+				pytdbpack_bad_type(ch, "String", str_obj);
+				return -1;
+			}
+			
 			len += item_len;
+		}
+		else if (ch == 'B') {
+			/* length-preceded byte buffer: n bytes, plus a preceding
+			 * word */
+			PyObject *len_obj;
+			long len_val;
+
+			len_obj = PySequence_GetItem(val_seq, val_i);
+			val_i++; /* skip over buffer */
+
+			if (!PyNumber_Check(len_obj)) {
+				pytdbpack_bad_type(ch, "Number", len_obj);
+				return -1;
+			}
+
+			len_val = PyInt_AsLong(len_obj);
+			if (len_val < 0) {
+				PyErr_Format(PyExc_ValueError,
+					     "%s: format 'B' requires positive integer", __FUNCTION__);
+				return -1;
+			}
+
+			len += 4 + len_val;
+		}
+		else {	
+			PyErr_Format(PyExc_ValueError,
+				     "%s: format character '%c' is not supported",
+				     __FUNCTION__, ch);
+		
+			return -1;
+		}
 	}
 
 	return len;
@@ -340,56 +383,6 @@ static PyObject *pytdbpack_bad_type(char ch,
 		     ch, expected, PyString_AS_STRING(r));
 	Py_DECREF(r);
 	return val_obj;
-}
-
-
-/*
- * Calculate the number of bytes required to pack a single value.  While doing
- * this, also conduct some initial checks that the argument types are
- * reasonable.
- *
- * Returns -1 on exception.
- */
-static int
-pytdbpack_calc_item_len(char ch,
-			PyObject *val_obj)
-{
-	if (ch == 'd' || ch == 'w') {
-		if (!PyInt_Check(val_obj)) {
-			pytdbpack_bad_type(ch, "Int", val_obj);
-			return -1;
-		}
-		if (ch == 'w')
-			return 2;
-		else 
-			return 4;
-	} else if (ch == 'p') {
-		return 4;
-	}
-	else if (ch == 'f' || ch == 'P' || ch == 'B') {
-		/* nul-terminated 8-bit string */
-		if (!PyString_Check(val_obj)) {
-			pytdbpack_bad_type(ch, "String", val_obj);
-			return -1;
-		}
-		
-		if (ch == 'B') {
-			/* byte buffer; just use Python string's length, plus
-			   a preceding word */
-			return 4 + PyString_GET_SIZE(val_obj);
-		}
-		else {
-			/* one nul character */
-			return 1 + PyString_GET_SIZE(val_obj);
-		}		
-	}
-	else {	
-		PyErr_Format(PyExc_ValueError,
-			     "tdbpack: format character '%c' is not supported",
-			     ch);
-		
-		return -1;
-	}
 }
 
 
@@ -566,63 +559,6 @@ static PyObject *pytdbpack_unpack_item(char ch,
 
 
 
-/*
-  Pack a single item VAL_OBJ, encoded using format CH, into a buffer at *PBUF,
-  and advance the pointer.  Buffer length has been pre-calculated so we are
-  sure that there is enough space.
-
-*/
-static PyObject *
-pytdbpack_pack_item(char ch,
-		    PyObject *val_obj,
-		    unsigned char **pbuf)
-{
-	if (ch == 'w') {
-		unsigned long val_long = PyInt_AsLong(val_obj);
-		(*pbuf)[0] = val_long & 0xff;
-		(*pbuf)[1] = (val_long >> 8) & 0xff;
-		(*pbuf) += 2;
-	}
-	else if (ch == 'd') {
-		/* 4-byte LE number */
-		pack_int32(PyInt_AsLong(val_obj), pbuf);
-	}
-	else if (ch == 'p') {
-		/* "Pointer" value -- in the subset of DCERPC used by Samba,
-		   this is really just an "exists" or "does not exist"
-		   flag. */
-		pack_int32(PyObject_IsTrue(val_obj), pbuf);
-	}
-	else if (ch == 'f' || ch == 'P') {
-		int size;
-		char *sval;
-
-		size = PyString_GET_SIZE(val_obj);
-		sval = PyString_AS_STRING(val_obj);
-		pack_bytes(size+1, sval, pbuf); /* include nul */
-	}
-	else if (ch == 'B') {
-		int size;
-		char *sval;
-
-		size = PyString_GET_SIZE(val_obj);
-		pack_int32(size, pbuf);
-		sval = PyString_AS_STRING(val_obj);
-		pack_bytes(size, sval, pbuf); /* do not include nul */
-	}
-	else {
-		/* this ought to be caught while calculating the length, but
-		   just in case. */
-		PyErr_Format(PyExc_ValueError,
-			     "%s: format character '%c' is not supported",
-			     __FUNCTION__, ch);
-		
-		return NULL;
-	}
-		
-	return Py_None;
-}
-
 
 /*
   Pack data according to FORMAT_STR from the elements of VAL_SEQ into
@@ -639,7 +575,7 @@ pytdbpack_pack_item(char ch,
 PyObject *
 pytdbpack_pack_data(const char *format_str,
 		    PyObject *val_seq,
-		    unsigned char *packed_buf)
+		    unsigned char *packed)
 {
 	int i;
 
@@ -648,18 +584,64 @@ pytdbpack_pack_data(const char *format_str,
 		PyObject *val_obj;
 
 		/* borrow a reference to the item */
-		val_obj = PySequence_Fast_GET_ITEM(val_seq, i);
+		val_obj = PySequence_GetItem(val_seq, i);
 		if (!val_obj)
 			return NULL;
 
-		if (!pytdbpack_pack_item(ch, val_obj, &packed_buf))
-			return NULL;
-	}
+		if (ch == 'w') {
+			unsigned long val_long = PyInt_AsLong(val_obj);
+			(packed)[0] = val_long & 0xff;
+			(packed)[1] = (val_long >> 8) & 0xff;
+			(packed) += 2;
+		}
+		else if (ch == 'd') {
+			/* 4-byte LE number */
+			pack_int32(PyInt_AsLong(val_obj), &packed);
+		}
+		else if (ch == 'p') {
+			/* "Pointer" value -- in the subset of DCERPC used by Samba,
+			   this is really just an "exists" or "does not exist"
+			   flag. */
+			pack_int32(PyObject_IsTrue(val_obj), &packed);
+		}
+		else if (ch == 'f' || ch == 'P') {
+			int size;
+			char *sval;
 
+			size = PyString_GET_SIZE(val_obj);
+			sval = PyString_AS_STRING(val_obj);
+			pack_bytes(size+1, sval, &packed); /* include nul */
+		}
+		else if (ch == 'B') {
+			long size;
+			char *sval;
+
+			size = PyInt_AsLong(val_obj);
+			pack_int32(size, &packed);
+
+			val_obj = PySequence_GetItem(val_seq, ++i);
+			if (!val_obj)
+				return NULL;
+			
+			sval = PyString_AsString(val_obj);
+			if (!sval)
+				return NULL;
+			
+			pack_bytes(size, sval, &packed); /* do not include nul */
+		}
+		else {
+			/* this ought to be caught while calculating the length, but
+			   just in case. */
+			PyErr_Format(PyExc_ValueError,
+				     "%s: format character '%c' is not supported",
+				     __FUNCTION__, ch);
+		
+			return NULL;
+		}
+	}
+		
 	return Py_None;
 }
-
-
 
 
 
