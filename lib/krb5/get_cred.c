@@ -223,7 +223,8 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
      * Send and receive
      */
 
-    ret = krb5_sendto_kdc (context, &enc, &krbtgt->server->realm, &resp);
+    ret = krb5_sendto_kdc (context, &enc, 
+			   &krbtgt->server->name.name_string.val[1], &resp);
     if(ret)
 	goto out;
 
@@ -249,6 +250,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 				   NULL,
 				   &krbtgt->addresses,
 				   nonce,
+				   TRUE,
 				   NULL,
 				   NULL);
 	krb5_free_kdc_rep(context, &rep);
@@ -257,7 +259,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     }else if(krb5_rd_error(context, &resp, &error) == 0){
 	ret = error.error_code;
 	free_KRB_ERROR(&error);
-    }else if(((char*)resp.data)[0] == 4)
+    }else if(resp.data && ((char*)resp.data)[0] == 4)
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
     else
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
@@ -388,14 +390,14 @@ krb5_get_credentials(krb5_context context,
 	while(strcmp(tgt_inst, server_realm)){
 	    krb5_free_principal(context, tmp_creds.server);
 	    ret = krb5_make_principal(context, &tmp_creds.server, 
-				      server_realm, "krbtgt", tgt_inst, NULL);
+				      tgt_inst, "krbtgt", server_realm, NULL);
 	    if(ret) return ret;
 	    ret = krb5_free_creds_contents(context, tgt);
 	    if(ret) return ret;
 	    free(tgt);
 	    ret = krb5_get_credentials(context, 0, ccache, &tmp_creds, &tgt);
 	    if(ret) return ret;
-	    tgt_inst = tgt->server->name.name_string.val[2];
+	    tgt_inst = tgt->server->name.name_string.val[1];
 	}
 	
 
