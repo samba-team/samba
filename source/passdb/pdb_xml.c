@@ -498,7 +498,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	}
 
 	xmlNewChild(user, data->ns, "acct_ctrl", iota(pdb_get_acct_ctrl(u)));
-	xmlNewChild(user, data->ns, "unknown_3", iota(pdb_get_unknown3(u)));
+	xmlNewChild(user, data->ns, "unknown_3", iota(pdb_get_unknown_3(u)));
 
 	if (pdb_get_logon_divs(u))
 		xmlNewChild(user, data->ns, "logon_divs",
@@ -508,8 +508,8 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 		xmlNewChild(user, data->ns, "hours_len",
 					iota(pdb_get_hours_len(u)));
 
-	xmlNewChild(user, data->ns, "unknown_5", iota(pdb_get_unknown5(u)));
-	xmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown6(u)));
+	xmlNewChild(user, data->ns, "unknown_5", iota(pdb_get_unknown_5(u)));
+	xmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown_6(u)));
 	xmlSaveFile(data->location, data->doc);
 
 	return NT_STATUS_OK;
