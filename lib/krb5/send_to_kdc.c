@@ -96,7 +96,6 @@ krb5_sendto_kdc (krb5_context context,
      port = krb5_getportbyname ("kerberos", "udp", htons(88));
      fd = socket (AF_INET, SOCK_DGRAM, 0);
      if (fd < 0) {
-	  krb5_free_krbhst (context, hostlist);
 	  return errno;
      }
 
