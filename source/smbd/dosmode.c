@@ -78,22 +78,11 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
 int dos_mode(connection_struct *conn,char *path,struct stat *sbuf)
 {
   int result = 0;
-  extern struct current_user current_user;
 
   DEBUG(8,("dos_mode: %s\n", path));
 
-  if (CAN_WRITE(conn) && !lp_alternate_permissions(SNUM(conn))) {
-    if (!((sbuf->st_mode & S_IWOTH) ||
-	  conn->admin_user ||
-	  ((sbuf->st_mode & S_IWUSR) && current_user.uid==sbuf->st_uid) ||
-	  ((sbuf->st_mode & S_IWGRP) && 
-	   in_group(sbuf->st_gid,current_user.gid,
-		    current_user.ngroups,current_user.groups))))
+  if ((sbuf->st_mode & S_IWUSR) == 0)
       result |= aRONLY;
-  } else {
-    if ((sbuf->st_mode & S_IWUSR) == 0)
-      result |= aRONLY;
-  }
 
   if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
     result |= aARCH;
