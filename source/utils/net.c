@@ -1243,8 +1243,6 @@ int main(int argc,char *argv[])
 
   dbf = x_stdout;
 
-  setbuffer(stdout, NULL, 0);
-
   pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 		      POPT_CONTEXT_KEEP_FIRST);
 
