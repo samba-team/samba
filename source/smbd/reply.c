@@ -893,10 +893,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* if the username exists as a domain/username pair on the unix system then use 
      that */
-  if (!getpwnam(user)) {
+  if (!sys_getpwnam(user)) {
 	  pstring user2;
 	  slprintf(user2,sizeof(user2),"%s%s%s", dos_to_unix(domain,False), lp_winbind_separator(), user);
-	  if (getpwnam(user2)) {
+	  if (sys_getpwnam(user2)) {
 		  DEBUG(3,("Using unix username %s\n", user2));
 		  pstrcpy(user, user2);
 	  }
