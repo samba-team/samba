@@ -251,6 +251,15 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     False);
+		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL)) {
+			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", pwd->pw_name));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST)) {
+			DEBUG(1, ("Failed to set 'trusted workstation account' flags for user %s.\n", pwd->pw_name));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 	return NT_STATUS_OK;
 }
