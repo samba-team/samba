@@ -94,16 +94,17 @@ void endsampwent(void *vp)
 struct smb_passwd *getsampwent(void *vp)
 {
 #ifdef USE_NISPLUS_DB
-  return pdb_sam_to_smb(getnisppwent(vp);
+	return pdb_sam_to_smb(getnisp21pwent(vp));
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-  return pdb_sam_to_smb(getldap21pwent(vp));
+	return pdb_sam_to_smb(getldap21pwent(vp));
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
-  return getsmbpwent(vp);
+	return getsmbpwent(vp);
 #endif /* USE_SMBPASS_DB */
+	return NULL;
 }
 
 /*************************************************************************
@@ -190,7 +191,7 @@ BOOL setsampwpos(void *vp, unsigned long tok)
 BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 {
 #ifdef USE_NISPLUS_DB
-  return add_nisppwd_entry(newpwd);
+  return add_nisp21pwd_entry(pdb_smb_to_sam(newpwd));
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
@@ -231,7 +232,7 @@ BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
 {
 #ifdef USE_NISPLUS_DB
-  return mod_nisppwd_entry(pwd, override);
+  return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
@@ -294,7 +295,7 @@ static struct smb_passwd *_getsampwnam(char *name)
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("getsampwnam: unable to open sam password database.\n"));
+		DEBUG(0, ("_getsampwnam: unable to open sam password database.\n"));
 		return NULL;
 	}
 
@@ -302,7 +303,7 @@ static struct smb_passwd *_getsampwnam(char *name)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("getsampwnam: found by name: %s\n", name));
+		DEBUG(10, ("_getsampwnam: found by name: %s\n", name));
 	}
 
 	endsampwent(fp);
@@ -364,7 +365,7 @@ struct sam_passwd *getsam21pwnam(char *name)
 struct smb_passwd *getsampwnam(char *name)
 {
 #ifdef USE_NISPLUS_DB
-	return pdb_sam_to_smb(_getsampwnam(name));
+	return pdb_sam_to_smb(_getsam21pwnam(name));
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
@@ -445,11 +446,11 @@ static struct sam_passwd *_getsam21pwrid(uint32 rid)
 struct smb_passwd *getsampwuid(uid_t smb_userid)
 {
 #ifdef USE_NISPLUS_DB
-	return pdb_sam_to_smb(_getsampwuid(smb_userid));
+	return pdb_sam_to_smb(_getsam21pwrid(pdb_uid_to_user_rid(smb_userid)));
 #endif /* USE_NISPLUS_DB */
 
 #ifdef USE_LDAP_DB
-	return pdb_sam_to_smb(_getsam21pwuid(smb_userid));
+	return pdb_sam_to_smb(_getsam21pwrid(pdb_uid_to_user_rid(smb_userid)));
 #endif /* USE_LDAP_DB */
 
 #ifdef USE_SMBPASS_DB
