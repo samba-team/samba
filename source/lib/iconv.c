@@ -62,7 +62,16 @@ size_t smb_iconv(smb_iconv_t cd,
 
 #ifdef HAVE_NATIVE_ICONV
 	if (cd->cd) {
-		return iconv(cd->cd, inbuf, inbytesleft, outbuf, outbytesleft);
+		size_t ret;
+		ret = iconv(cd->cd, inbuf, inbytesleft, outbuf, outbytesleft);
+
+		/* if there was an error then reset the internal state,
+		   this ensures that we don't have a shift state remaining for
+		   character sets like SJIS */
+		if (ret == (size_t)-1) {
+			iconv(cd->cd, NULL, NULL, NULL, NULL);
+		}
+		return ret;
 	}
 #endif
 
