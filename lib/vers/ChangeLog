@@ -1,0 +1,4 @@
+2000-07-08  Assar Westerlund  <assar@sics.se>
+
+	* make-print-version.c (heimdal_version, krb4_version): const-ize,
+	based on thorpej@netbsd.org's change to NetBSD
