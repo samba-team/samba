@@ -25,10 +25,6 @@
 
 #include <nsswitch.h>
 
-#ifndef _HAVE_TYPEDEF_NSS_STATUS
-#define _HAVE_TYPEDEF_NSS_STATUS
-typedef nss_status_t NSS_STATUS;
-
 #define NSS_STATUS_SUCCESS     NSS_SUCCESS
 #define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
 #define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
@@ -48,6 +44,8 @@ typedef enum {
 	NSS_TRYAGAIN
 } nss_status_t;
  
+typedef nss_status_t NSS_STATUS;
+
 struct nss_backend;
  
 typedef nss_status_t (*nss_backend_op_t)(struct nss_backend *, void *args);
