@@ -288,6 +288,7 @@ BOOL send_smb(int fd,char *buffer);
 int name_extract(char *buf,int ofs,char *name);
 int name_len( char *s );
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
+void msleep(int t);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
 BOOL string_init(char **dest,char *src);
 void string_free(char **s);
@@ -382,12 +383,15 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+BOOL cli_getattrE(struct cli_state *cli, int fd, 
+		  int *attr, uint32 *size, 
+		  time_t *c_time, time_t *a_time, time_t *m_time);
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		int *attr, uint32 *size, time_t *t);
+		uint32 *attr, size_t *size, time_t *t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   uint32 *size, int *mode);
+		   size_t *size, uint32 *mode);
 BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
 		    time_t *w_time, uint32 *size);
@@ -403,7 +407,7 @@ BOOL cli_session_request(struct cli_state *cli,
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
