@@ -374,7 +374,7 @@ rsa-md4-des-k		INTEGER ::= 6
 rsa-md5			INTEGER ::= 7
 rsa-md5-des		INTEGER ::= 8
 rsa-md5-des3		INTEGER ::= 9
-hmac-sha1-des3		INTEGER ::= 10 -- should this be 12?
+hmac-sha1-des3		INTEGER ::= 12
 
 -- transited encodings
 
