@@ -53,11 +53,6 @@
 
 #include <config.h>
 
-static const char *error_message(long foo)
-{
-  abort();
-}
-
 RCSID("$Id$");
 
 #ifdef	KRB5
@@ -273,15 +268,17 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 			NULL, NULL, NULL, &ticket);
 
 	if (r) {
-	    char errbuf[128];
-
+	    char *errbuf;
 	errout:
+
 	    authdat = 0;
-	    strcpy(errbuf, "Read req failed: ");
-	    strcat(errbuf, error_message(r));
+	    asprintf(&errbuf,
+		     "Read req failed: %s",
+		     krb5_get_err_text(context, r));
 	    Data(ap, KRB_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
 		printf("%s\r\n", errbuf);
+	    free (errbuf);
 	    return;
 	}
 	{
@@ -324,7 +321,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    }
 	    Data(ap, KRB_RESPONSE, outbuf.data, outbuf.length);
 	}
-	if (krb5_unparse_name(context, ticket->enc_part2.client, &name))
+	if (krb5_unparse_name(context, ticket->client, &name))
 	    name = 0;
 	Data(ap, KRB_ACCEPT, name, name ? -1 : 0);
 	if (auth_debug_mode) {
@@ -366,13 +363,17 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	inbuf.length = cnt;
 	if (r = rd_and_store_for_creds(&inbuf, authdat->ticket,
 				       UserNameRequested)) {
-	    char errbuf[128];
+	    char *errbuf;
 
-	    strcpy(errbuf, "Read forwarded creds failed: ");
-	    strcat(errbuf, error_message(r));
+
+	    asprintf(&errbuf,
+		     "Read forwarded creds failed: %s",
+		     krb5_get_err_text (context, r));
 	    Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
-		printf("Could not read forwarded credentials\r\n");
+		printf("Could not read forwarded credentials: %s\r\n",
+		       errbuf);
+	    free (errbuf);
 	}
 	else
 	    Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
@@ -437,7 +438,7 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 
 	    if (r = krb5_rd_rep(context, auth_context, &inbuf, &reply)) {
 		printf("[ Mutual authentication failed: %s ]\r\n",
-		       error_message(r));
+		       krb5_get_err_text (context, r));
 		auth_send_retry();
 		return;
 	    }
@@ -498,7 +499,7 @@ kerberos5_status(Authenticator *ap, char *name, int level)
 
     if (UserNameRequested &&
 	krb5_kuserok(context,
-		     ticket->enc_part2.client,
+		     ticket->client,
 		     UserNameRequested))
 	{
 	    strcpy(name, UserNameRequested);
@@ -598,7 +599,7 @@ kerberos5_forward(Authenticator *ap)
 				    &local_creds->server)) {
 	if (auth_debug_mode)
 	    printf("Kerberos V5: could not build server name - %s\r\n",
-		   error_message(r));
+		   krb5_get_err_text(context, r));
 	krb5_free_creds(local_creds);
 	return;
     }
@@ -606,7 +607,7 @@ kerberos5_forward(Authenticator *ap)
     if (r = krb5_cc_default(&ccache)) {
 	if (auth_debug_mode)
 	    printf("Kerberos V5: could not get default ccache - %s\r\n",
-		   error_message(r));
+		   krb5_get_err_text(context, r));
 	krb5_free_creds(local_creds);
 	return;
     }
@@ -614,7 +615,7 @@ kerberos5_forward(Authenticator *ap)
     if (r = krb5_cc_get_principal(ccache, &local_creds->client)) {
 	if (auth_debug_mode)
 	    printf("Kerberos V5: could not get default principal - %s\r\n",
-		   error_message(r));
+		   krb5_get_err_text(context, r));
 	krb5_free_creds(local_creds);
 	return;
     }
@@ -623,7 +624,7 @@ kerberos5_forward(Authenticator *ap)
     if (r = krb5_get_credentials(KRB5_GC_CACHED, ccache, local_creds)) {
 	if (auth_debug_mode)
 	    printf("Kerberos V5: could not obtain credentials - %s\r\n",
-		   error_message(r));
+		   krb5_get_err_text(context, r));
 	krb5_free_creds(local_creds);
 	return;
     }
@@ -637,7 +638,7 @@ kerberos5_forward(Authenticator *ap)
 			  &forw_creds)) {
 	if (auth_debug_mode)
 	    printf("Kerberos V5: error getting forwarded creds - %s\r\n",
-		   error_message(r));
+		   krb5_get_err_text(context, r));
 	krb5_free_creds(local_creds);
 	return;
     }
