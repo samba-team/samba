@@ -123,10 +123,8 @@ statement	: INDEX NUMBER
 		    ec->next = NULL;
 		    ec->number = number;
 		    if(prefix && *prefix != '\0') {
-			ec->name = malloc(strlen(prefix) + strlen($2) + 1);
-			strcpy(ec->name, prefix);
-				strcat(ec->name, $2);
-				free($2);
+			asprintf (&ec->name, "%s%s", ec->name, $2);
+			free($2);
 		    } else
 			ec->name = $2;
 		    ec->string = $4;
