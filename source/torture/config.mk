@@ -138,7 +138,8 @@ ADD_OBJ_FILES = \
 		lib/talloc/testsuite.o \
 		torture/local/messaging.o \
 		torture/local/binding_string.o \
-		torture/local/idtree.o
+		torture/local/idtree.o \
+		torture/local/socket.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING
