@@ -62,7 +62,6 @@ libroken_la_SOURCES =		\
 	strcollect.c		\
 	timeval.c		\
 	tm2time.c		\
-	timeval.c		\
 	verify.c		\
 	warnerr.c		\
 	xdbm.h
