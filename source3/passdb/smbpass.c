@@ -990,6 +990,7 @@ static struct passdb_ops file_ops = {
   setsmbfilepwpos,
   iterate_getsmbpwnam,          /* In passdb.c */
   iterate_getsmbpwuid,          /* In passdb.c */
+  iterate_getsmbpwrid,          /* In passdb.c */
   getsmbfilepwent,
   add_smbfilepwd_entry,
   mod_smbfilepwd_entry,

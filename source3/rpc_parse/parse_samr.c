@@ -133,6 +133,67 @@ void samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+void make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol)
+{
+	if (q_u == NULL) return;
+
+	DEBUG(5,("samr_make_q_unknown_2c\n"));
+
+	memcpy(&q_u->user_pol, user_pol, sizeof(q_u->user_pol));
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_unknown_2c");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth); 
+	prs_align(ps);
+}
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
+void make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status)
+{
+	if (q_u == NULL) return;
+
+	DEBUG(5,("samr_make_r_unknown_2c\n"));
+
+	q_u->unknown_0 = 0x00160000;
+	q_u->unknown_1 = 0x00000000;
+	q_u->status    = status;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_unknown_2c");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("unknown_0", ps, depth, &(r_u->unknown_0));
+	prs_uint32("unknown_1", ps, depth, &(r_u->unknown_1));
+	prs_uint32("status   ", ps, depth, &(r_u->status   ));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				POLICY_HND *user_pol, uint16 switch_value)
 {
@@ -196,6 +257,139 @@ void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	prs_align(ps);
 }
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
+void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
+{
+	int len_domain = strlen(domain);
+	int len_server = strlen(server);
+
+	if (u_2 == NULL) return;
+
+	u_2->unknown_0 = 0x00000000;
+	u_2->unknown_1 = 0x80000000;
+	u_2->unknown_2 = 0x00000000;
+
+	u_2->ptr_0 = 1;
+	make_uni_hdr(&(u_2->hdr_domain), len_domain, len_domain, 1);
+	make_uni_hdr(&(u_2->hdr_server), len_server, len_server, 1);
+
+	u_2->unknown_4 = 0x10000000;
+	u_2->unknown_5 = 0x00000000;
+	
+	u_2->unknown_6  = 0x00000001;
+	u_2->unknown_7  = 0x00000003;
+	u_2->unknown_8  = 0x00000001;
+	u_2->unknown_9  = 0x00000008;
+	u_2->unknown_10 = 0x00000003;
+
+	memset(u_2->padding, 0, sizeof(u_2->padding)); /* 16 bytes zeros */
+
+	make_unistr2(&u_2->uni_domain, domain, len_domain);
+	make_unistr2(&u_2->uni_server, server, len_server);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth)
+{
+	if (u_2 == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info2");
+	depth++;
+
+	prs_uint32("unknown_0", ps, depth, &u_2->unknown_0); /* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_2->unknown_1); /* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_2->unknown_2); /* 0x0000 0000 */
+
+	prs_uint32("ptr_0", ps, depth, &u_2->ptr_0);     /* pointer to unknown structure */
+	smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth); /* domain name unicode header */
+	smb_io_unihdr("hdr_server", &u_2->hdr_server, ps, depth); /* server name unicode header */
+
+	/* put all the data in here, at the moment, including what the above
+	   pointer is referring to
+	 */
+
+	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4 ); /* 0x0000 0099 or 0x1000 0000 */
+	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5 ); /* 0x0000 0000 */
+	
+	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6 ); /* 0x0000 0001 */
+	prs_uint32("unknown_7 ", ps, depth, &u_2->unknown_7 ); /* 0x0000 0003 */
+	prs_uint32("unknown_8 ", ps, depth, &u_2->unknown_8 ); /* 0x0000 0001 */
+	prs_uint32("unknown_9 ", ps, depth, &u_2->unknown_9 ); /* 0x0000 0008 */
+	prs_uint32("unknown_10", ps, depth, &u_2->unknown_10); /* 0x0000 0003 */
+
+	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding)); /* 16 bytes zeros */
+
+	smb_io_unistr2( "uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth); /* domain name unicode string */
+	smb_io_unistr2( "uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth); /* server name unicode string */
+
+	prs_align(ps);
+
+}
+
+/*******************************************************************
+makes a SAMR_R_UNKNOWN_8 structure.
+********************************************************************/
+void make_samr_r_unknown_8(SAMR_R_UNKNOWN_8 *r_u, 
+				uint16 switch_value, SAM_UNK_CTR *ctr,
+				uint32 status)
+{
+	if (r_u == NULL || ctr == NULL) return;
+
+	DEBUG(5,("make_samr_r_unknown_8\n"));
+
+	r_u->ptr_0 = 0;
+	r_u->switch_value = 0;
+	r_u->status = status; /* return status */
+
+	if (status == 0)
+	{
+		r_u->switch_value = switch_value;
+		r_u->ptr_0 = 1;
+		r_u->ctr = ctr;
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_unknown_8(char *desc, SAMR_R_UNKNOWN_8 *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_unknown_8");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_0       ", ps, depth, &(r_u->ptr_0));
+	prs_uint16("switch_value", ps, depth, &(r_u->switch_value));
+	prs_align(ps);
+
+	if (r_u->ptr_0 != 0 && r_u->ctr != NULL)
+	{
+		switch (r_u->switch_value)
+		{
+			case 0x02:
+			{
+				sam_io_unk_info2("unk_inf2", &r_u->ctr->info.inf2, ps, depth);
+				break;
+			}
+			default:
+			{
+				DEBUG(3,("samr_io_r_unknown_8: unknown switch level 0x%x\n",
+				          r_u->switch_value));
+				return;
+			}
+		}
+	}
+}
+
+
 /*******************************************************************
  makes a DOM_SID3 structure.
 
@@ -2011,6 +2205,131 @@ static void sam_io_logon_hrs(char *desc,  LOGON_HRS *hrs, prs_struct *ps, int de
 	prs_uint8s (False, "hours", ps, depth, hrs->hours, hrs->len);
 }
 
+/*******************************************************************
+makes a SAM_USER_INFO_10 structure.
+********************************************************************/
+void make_sam_user_info10(SAM_USER_INFO_10 *usr,
+				uint32 acb_info)
+{
+	if (usr == NULL) return;
+
+	DEBUG(5,("make_sam_user_info10\n"));
+
+	usr->acb_info = acb_info;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_user_info10(char *desc,  SAM_USER_INFO_10 *usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_user_info10");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("acb_info", ps, depth, &(usr->acb_info));
+}
+
+/*******************************************************************
+makes a SAM_USER_INFO_11 structure.
+********************************************************************/
+void make_sam_user_info11(SAM_USER_INFO_11 *usr,
+				NTTIME *expiry,
+				char *mach_acct,
+				uint32 rid_user,
+				uint32 rid_group,
+				uint16 acct_ctrl)
+				
+{
+	int len_mach_acct;
+	if (usr == NULL || expiry == NULL || mach_acct == NULL) return;
+
+	DEBUG(5,("make_sam_user_info11\n"));
+
+	len_mach_acct = strlen(mach_acct);
+
+	memcpy(&(usr->expiry),expiry, sizeof(usr->expiry)); /* expiry time or something? */
+	bzero(usr->padding_1, sizeof(usr->padding_1)); /* 0 - padding 24 bytes */
+
+	make_uni_hdr(&(usr->hdr_mach_acct), len_mach_acct, len_mach_acct, 4);  /* unicode header for machine account */
+	usr->padding_2 = 0;               /* 0 - padding 4 bytes */
+
+	usr->ptr_1        = 1;            /* pointer */
+	bzero(usr->padding_3, sizeof(usr->padding_3)); /* 0 - padding 32 bytes */
+	usr->padding_4    = 0;            /* 0 - padding 4 bytes */
+
+	usr->ptr_2        = 1;            /* pointer */
+	usr->padding_5    = 0;            /* 0 - padding 4 bytes */
+
+	usr->ptr_3        = 1;          /* pointer */
+	bzero(usr->padding_6, sizeof(usr->padding_6)); /* 0 - padding 32 bytes */
+
+	usr->rid_user     = rid_user; 
+	usr->rid_group    = rid_group;
+
+	usr->acct_ctrl    = acct_ctrl;
+	usr->unknown_3    = 0x0000;
+
+	usr->unknown_4    = 0x003f;       /* 0x003f      - 16 bit unknown */
+	usr->unknown_5    = 0x003c;       /* 0x003c      - 16 bit unknown */
+
+	bzero(usr->padding_7, sizeof(usr->padding_7)); /* 0 - padding 16 bytes */
+	usr->padding_8    = 0;            /* 0 - padding 4 bytes */
+	
+	make_unistr2(&(usr->uni_mach_acct), mach_acct, len_mach_acct);  /* unicode string for machine account */
+
+	bzero(usr->padding_9, sizeof(usr->padding_9)); /* 0 - padding 48 bytes */
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_unknown_24");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint8s (False, "padding_0", ps, depth, usr->padding_0, sizeof(usr->padding_0)); 
+
+	smb_io_time("time", &(usr->expiry), ps, depth); 
+
+	prs_uint8s (False, "padding_1", ps, depth, usr->padding_1, sizeof(usr->padding_1));
+
+	smb_io_unihdr ("unihdr", &(usr->hdr_mach_acct), ps, depth); 
+	prs_uint32(        "padding_2", ps, depth, &(usr->padding_2));
+
+	prs_uint32(        "ptr_1    ", ps, depth, &(usr->ptr_1    ));
+	prs_uint8s (False, "padding_3", ps, depth, usr->padding_3, sizeof(usr->padding_3));
+	prs_uint32(        "padding_4", ps, depth, &(usr->padding_4));
+
+	prs_uint32(        "ptr_2    ", ps, depth, &(usr->ptr_2    ));
+	prs_uint32(        "padding_5", ps, depth, &(usr->padding_5));
+
+	prs_uint32(        "ptr_3    ", ps, depth, &(usr->ptr_3    ));
+	prs_uint8s (False, "padding_6", ps, depth, usr->padding_6, sizeof(usr->padding_6));
+
+	prs_uint32(        "rid_user ", ps, depth, &(usr->rid_user ));
+	prs_uint32(        "rid_group", ps, depth, &(usr->rid_group));
+	prs_uint16(        "acct_ctrl", ps, depth, &(usr->acct_ctrl));
+	prs_uint16(        "unknown_3", ps, depth, &(usr->unknown_3));
+	prs_uint16(        "unknown_4", ps, depth, &(usr->unknown_4));
+	prs_uint16(        "unknown_5", ps, depth, &(usr->unknown_5));
+
+	prs_uint8s (False, "padding_7", ps, depth, usr->padding_7, sizeof(usr->padding_7));
+	prs_uint32(        "padding_8", ps, depth, &(usr->padding_8));
+	
+	smb_io_unistr2("unistr2", &(usr->uni_mach_acct), True, ps, depth); 
+	prs_align(ps);
+
+	prs_uint8s (False, "padding_9", ps, depth, usr->padding_9, sizeof(usr->padding_9));
+}
 /*************************************************************************
  make_sam_user_info21
 
@@ -2262,7 +2581,6 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 	{
 		switch (r_u->switch_value)
 		{
-/*
 			case 0x10:
 			{
 				if (r_u->info.id10 != NULL)
@@ -2272,10 +2590,11 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 				else
 				{
 					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return NULL;
+					return;
 				}
 				break;
 			}
+/*
 			case 0x11:
 			{
 				if (r_u->info.id11 != NULL)
@@ -2285,7 +2604,7 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 				else
 				{
 					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
-					return NULL;
+					return;
 				}
 				break;
 			}

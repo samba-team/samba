@@ -667,6 +667,7 @@ struct passdb_ops {
    */
   struct smb_passwd *(*getsmbpwnam)(char *);
   struct smb_passwd *(*getsmbpwuid)(uid_t);
+  struct smb_passwd *(*getsmbpwrid)(uint32);
   struct smb_passwd *(*getsmbpwent)(void *);
 
   /*
