@@ -128,7 +128,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	}
 
 	/* Guess at how the KDC is salting keys for this principal. */
-	kerberos_derive_salting_principal(context, NULL, enctypes, princ_s);
+	kerberos_derive_salting_principal(princ_s);
 
 	ret = krb5_parse_name(context, princ_s, &princ);
 	if (ret) {
