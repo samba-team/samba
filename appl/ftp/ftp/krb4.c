@@ -449,7 +449,7 @@ int krb4_read_msg(char *s, int priv)
 	ret = krb_rd_priv(buf, len, schedule, &key, 
 			  &hisctladdr, &myctladdr, &m);
     else
-	ret = krb_rd_safe(buf, len, &key, &myctladdr, &hisctladdr, &m);
+	ret = krb_rd_safe(buf, len, &key, &hisctladdr, &myctladdr, &m);
     if(ret){
       fprintf(stderr, "%s\n", krb_get_err_text(ret));
       return -1;
