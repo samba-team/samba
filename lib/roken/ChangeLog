@@ -1,3 +1,8 @@
+1999-11-09  Assar Westerlund  <assar@sics.se>
+
+	* strftime.c (strftime): correct %E and %O handling.  do something
+ 	reasonable with "...%"
+
 1999-11-07  Assar Westerlund  <assar@sics.se>
 
 	* parse_bytes-test.c: new file
