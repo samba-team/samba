@@ -81,6 +81,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 	uint32 *types;
 	int num_names, i;
 	fstring name, domain;
+	const char *name2, *domain2;
 
 	if (argc == 1) {
 		printf("Usage: %s [name1 [name2 [...]]]\n", argv[0]);
@@ -98,8 +99,11 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 
 	split_domain_name(argv[1], domain, name);
 
+	name2 = talloc_strdup(mem_ctx, name);
+	domain2 = talloc_strdup(mem_ctx, domain);
+
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      (const char**)&domain, (const char**)&name, &sids, 
+				      &domain2, &name2, &sids, 
 				      &types, &num_names);
 
 	if (!NT_STATUS_IS_OK(result))
