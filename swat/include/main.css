@@ -38,26 +38,26 @@
 #nav img {
 	margin:3px 0 0 -4px;
 }
-.controls {
+#controls {
 	background-color:#FFF;
 	border-left:25px solid #7B7C80;
 	border-right:25px solid #7B7C80;
 	background-color:#FFF;
 	padding:20px;
 }
-.controls p {
+#controls p {
 	position:relative;
 	left:25px;
 	width:500px;
 }
-.controls ul {
+#controls ul {
 	position:relative;
 	left:35px;
 	list-style-type:none;
 	line-height:20px;
 	width:400px;
 }
-.controls li {
+#controls li {
 	background:url(/swat/images/arrow.png) top left no-repeat;
 	margin-bottom:20px;
 	padding-left:28px;
