@@ -162,6 +162,7 @@ recv_krb5_auth (int s, u_char *buf,
     status = krb5_verify_checksum (context,
 				   cksum_data.data,
 				   cksum_data.length,
+				   NULL,
 				   authenticator->cksum);
     if (status)
 	syslog_and_die ("krb5_verify_checksum: %s",
