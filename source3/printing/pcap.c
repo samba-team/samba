@@ -244,7 +244,10 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 Scan printcap file pszPrintcapname for a printer called pszPrintername. 
 Return True if found, else False. Returns False on error, too, after logging 
 the error at level 0. For generality, the printcap name may be passed - if
-passed as NULL, the configuration will be queried for the name.
+passed as NULL, the configuration will be queried for the name. pszPrintername
+must be in DOS codepage.
+The xxx_printername_ok functions need fixing to understand they are being
+given a DOS codepage. FIXME !! JRA.
 ***************************************************************************/
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 {
@@ -293,6 +296,8 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
       if (*line == '#' || *line == 0)
 	continue;
 
+      unix_to_dos(line,True);
+
       /* now we have a real printer line - cut it off at the first : */      
       p = strchr(line,':');
       if (p) *p = 0;
@@ -322,7 +327,9 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 
 /***************************************************************************
 run a function on each printer name in the printcap file. The function is 
-passed the primary name and the comment (if possible)
+passed the primary name and the comment (if possible). Note the fn() takes
+strings in DOS codepage. This means the xxx_printer_fn() calls must be fixed
+to return DOS codepage. FIXME !! JRA.
 ***************************************************************************/
 void pcap_printer_fn(void (*fn)(char *, char *))
 {
@@ -376,6 +383,8 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       p = strchr(line,':');
       if (p) *p = 0;
       
+      unix_to_dos(line,True);
+
       /* now find the most likely printer name and comment 
        this is pure guesswork, but it's better than nothing */
       *name = 0;

@@ -41,13 +41,16 @@ static void add_auto_printers(void)
 {
 	char *p;
 	int printers;
-	char *str = lp_auto_services();
+	char *str = strdup(lp_auto_services());
 
 	if (!str) return;
 
 	printers = lp_servicenumber(PRINTERS_NAME);
 
-	if (printers < 0) return;
+	if (printers < 0) {
+		free(str);
+		return;
+	}
 	
 	for (p=strtok(str,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
 		if (lp_servicenumber(p) >= 0) continue;
@@ -56,6 +59,8 @@ static void add_auto_printers(void)
 			lp_add_printer(p,printers);
 		}
 	}
+
+	free(str);
 }
 
 /***************************************************************************

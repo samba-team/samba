@@ -164,7 +164,6 @@ static int print_run_command(int snum,char *command,
 	va_end(ap);
   
 	p = PRINTERNAME(snum);
-	if (!p || !*p) p = SERVICE(snum);
   
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
