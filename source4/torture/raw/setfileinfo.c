@@ -419,6 +419,10 @@ BOOL torture_raw_sfileinfo(int dummy)
 	sfinfo.rename_information.in.new_name  = path_fname_new+strlen(BASEDIR)+1;
 	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OBJECT_NAME_COLLISION);
 
+	sfinfo.rename_information.in.new_name  = fnum_fname_new;
+	sfinfo.rename_information.in.overwrite = 1;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_NOT_SUPPORTED);
+
 	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.overwrite = 1;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
