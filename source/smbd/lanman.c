@@ -41,8 +41,8 @@
 extern int DEBUGLEVEL;
 
 extern fstring local_machine;
-extern fstring global_myworkgroup;
 extern fstring global_sam_name;
+extern fstring global_myworkgroup;
 
 #define NERR_Success 0
 #define NERR_badpass 86
@@ -499,34 +499,56 @@ static void fill_printjob_info(connection_struct * conn, int snum, int uLevel,
 	}
 }
 
-
+/********************************************************************
+ Respond to the DosPrintQInfo command with a level of 52
+ This is used to get printer driver information for Win9x clients
+ ********************************************************************/
 static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 				struct pack_desc* desc,
 				int count, print_queue_struct* queue,
 			     print_status_struct * status)
 {
-		int i, ok = 0;
-		pstring tok, driver, datafile, langmon, helpfile, datatype;
+	int i;
+	BOOL ok = False;
+	pstring tok, driver, datafile, langmon, helpfile, datatype;
 	char *p;
 	char **lines, *line;
+	BOOL in_tdb = False;
 
-	lines = file_lines_load(lp_driverfile(), NULL);
-	if (!lines) {
-		DEBUG(3, ("fill_printq_info: Can't open %s - %s\n",
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 * 
+	 * we need to lookup the driver name prior to making the call
+	 * to get_a_printer_driver_9x_compatible() and not rely on the
+	 * 'print driver' parameter --jerry
+	 */
+
+	{
+		/* didn't find driver in tdb */
+
+
+		lines = file_lines_load(lp_driverfile(), NULL);
+		if (!lines)
+		{
+			DEBUG(3, ("fill_printq_info: Can't open %s - %s\n",
 			  lp_driverfile(), strerror(errno)));
 			desc->errcode = NERR_notsupported;
 			return;
 		}
 
-	/* lookup the long printer driver name in the file
-	   description */
-	for (i=0;lines[i] && !ok;i++) {
-		p = lines[i];
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok;i++)
+		{
+			p = lines[i];
 			if (next_token(&p, tok, ":", sizeof(tok)) &&
 			    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
+			    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 				ok = 1;
 		}
+	}
+
 	line = strdup(p);
 	p = line;
 	file_lines_free(lines);
@@ -535,25 +557,31 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
 		/* data file name */
 	if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
-		/*
+	/*
 	 * for the next tokens - which may be empty - I have
 	 * to check for empty tokens first because the
 	 * next_token function will skip all empty token
 	 * fields */
-	if (ok) {
-			/* help file */
-		if (*p == ':') {
-				*helpfile = '\0';
-				p++;
-		} else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
+	if (ok)
+	{
+		/* help file */
+		if (*p == ':')
+		{
+			*helpfile = '\0';
+			p++;
 		}
+		else if (!next_token(&p,helpfile,":",sizeof(helpfile)))
+			ok = 0;
+	}
 
 	if (ok) {
-			/* language monitor */
-		if (*p == ':') {
-				*langmon = '\0';
-				p++;
-		} else if (!next_token(&p,langmon,":",sizeof(langmon)))
+		/* language monitor */
+		if (*p == ':')
+		{
+			*langmon = '\0';
+			p++;
+		}
+		else if (!next_token(&p,langmon,":",sizeof(langmon)))
 			ok = 0;
 		}
 
@@ -563,11 +591,23 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 
 	if (ok) {
 			PACKI(desc, "W", 0x0400);	/* don't know */
+		if (in_tdb)
+		{
+		}
+		else
+		{
 			PACKS(desc, "z", lp_printerdriver(snum));	/* long printer name */
+		}
 			PACKS(desc, "z", driver);	/* Driverfile Name */
 			PACKS(desc, "z", datafile);	/* Datafile name */
 			PACKS(desc, "z", langmon);	/* language monitor */
+		if (in_tdb)
+		{
+		}
+		else
+		{
 			PACKS(desc, "z", lp_driverlocation(snum));	/* share to retrieve files */
+		}
 			PACKS(desc, "z", datatype);	/* default data type */
 			PACKS(desc, "z", helpfile);	/* helpfile name */
 			PACKS(desc, "z", driver);	/* driver name */
@@ -577,7 +617,8 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 			DEBUG(3, ("Data Type:%s:\n", datatype));
 			DEBUG(3, ("Help File:%s:\n", helpfile));
 			PACKI(desc, "N", count);	/* number of files to copy */
-		for (i=0;i<count;i++) {
+		for (i=0;i<count;i++)
+		{
 			/* no need to check return value here
 			 * - it was already tested in
 			 * get_printerdrivernumber */
@@ -674,37 +715,56 @@ static void fill_printq_info(connection_struct * conn, int snum, int uLevel,
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-	int i = 0, ok = 0;
+	int i = 0;
+	BOOL ok = False;
 	pstring tok;
 	char *p;
 	char **lines, *line;
 
-	lines = file_lines_load(lp_driverfile(), NULL);
-	if (!lines) {
-		DEBUG(3, ("get_printerdrivernumber: Can't open %s - %s\n",
-			  lp_driverfile(), strerror(errno)));
-		return (0);
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 *
+	 * we need to lookup the driver name prior to making the call
+	 * to get_a_printer_driver_9x_compatible() and not rely on the
+	 * 'print driver' parameter --jerry
+	 */
+	
+	{
+		/* didn't find driver in tdb */
+
+		lines = file_lines_load(lp_driverfile(), NULL);
+		if (!lines)
+		{
+			DEBUG(3, ("get_printerdrivernumber: Can't open %s - %s\n",
+				  lp_driverfile(), strerror(errno)));
+			return (0);
+		}
+
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok; i++)
+		{
+			p = lines[i];
+			if (next_token(&p, tok, ":", sizeof(tok)) &&
+			    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
+				ok = True;
+		}
 	}
 
-	/* lookup the long printer driver name in the file description */
-	for (i=0;lines[i] && !ok; i++) {
-		p = lines[i];
-		if (next_token(&p, tok, ":", sizeof(tok)) &&
-		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
-			ok = 1;
-	}
 	line = strdup(p);
 	p = line;
 	file_lines_free(lines);
 
-	if (ok) {
+	if (ok)
+	{
 		/* skip 5 fields */
 		i = 5;
 		while (*p && i) {
 			if (*p++ == ':') i--;
 		}
 		if (!*p || i)
-			return (0);
+			goto err;
 
 		/* count the number of files */
 		while (next_token(&p, tok, ",", sizeof(tok)))
@@ -713,6 +773,11 @@ static int get_printerdrivernumber(int snum)
 	free(line);
 
 	return (i);
+
+  err:
+
+	DEBUG(3,("Can't determine number of printer driver files\n"));
+	return (0);
 }
 
 static BOOL api_DosPrintQGetInfo(connection_struct * conn,
@@ -787,6 +852,27 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 		desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
   } else if(uLevel == 0) {
+#if 0
+	/*
+	 * This is a *disgusting* hack.
+	 * This is *so* bad that even I'm embarrassed (and I
+	 * have no shame). Here's the deal :
+ 	 * Until we get the correct SPOOLSS code into smbd
+ 	 * then when we're running with NT SMB support then
+ 	 * NT makes this call with a level of zero, and then
+ 	 * immediately follows it with an open request to
+ 	 * the \\SRVSVC pipe. If we allow that open to
+ 	 * succeed then NT barfs when it cannot open the
+ 	 * \\SPOOLSS pipe immediately after and continually
+ 	 * whines saying "Printer name is invalid" forever
+ 	 * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
+ 	 * to fail, then NT downgrades to using the downlevel code
+ 	 * and everything works as well as before. I hate
+ 	 * myself for adding this code.... JRA.
+ 	 */
+
+	fail_next_srvsvc_open();
+#endif
 	}
 
 	*rdata_len = desc.usedlen;
@@ -804,10 +890,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 	return (True);
 }
 
-
 /****************************************************************************
-  view list of all print jobs on all queues
+ View list of all print jobs on all queues.
   ****************************************************************************/
+
 static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param, char* data,
  			      int mdrcnt, int mprcnt,
  			      char **rdata, char** rparam,
@@ -1604,8 +1690,9 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
 *****************************************************************************/
 
 static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+				char *param, char *data,
+				int mdrcnt, int mprcnt,
+				char **rdata, char **rparam,
 				int *rdata_len, int *rparam_len)
 {
 	char *p = skip_string(param + 2, 2);
@@ -1665,6 +1752,7 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 			SSVAL(*rparam, 0, NERR_Success);
 		}
 	}
+
   memset((char *)pass1,'\0',sizeof(fstring));
   memset((char *)pass2,'\0',sizeof(fstring));	 
 	ZERO_STRUCT(pwbuf);
@@ -1754,16 +1842,19 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	errcode = NERR_notsupported;
 
 	switch (function) {
-					case 81:	/* delete */
-		if (print_job_delete(jobid)) errcode = NERR_Success;
-						break;
-					case 82:	/* pause */
-		if (print_job_pause(jobid)) errcode = NERR_Success;
+	case 81:	/* delete */
+		if (print_job_delete(jobid))
+			errcode = NERR_Success;
 			break;
-					case 83:	/* resume */
-		if (print_job_resume(jobid)) errcode = NERR_Success;
-				break;
-			}
+	case 82:	/* pause */
+		if (print_job_pause(jobid))
+			errcode = NERR_Success;
+			break;
+	case 83:	/* resume */
+		if (print_job_resume(jobid))
+			errcode = NERR_Success;
+			break;
+	}
 
       out:
 	SSVAL(*rparam, 0, errcode);
@@ -3168,8 +3259,10 @@ struct
 /****************************************************************************
  Handle remote api calls
   ****************************************************************************/
+
 int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
-	      char *params, int tdscnt, int tpscnt, int mdrcnt, int mprcnt)
+	      char *params,
+	      int tdscnt, int tpscnt, int mdrcnt, int mprcnt)
 {
 	int api_command;
 	prs_struct rdata_buf;
