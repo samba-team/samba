@@ -36,13 +36,13 @@ pop_write_addr(POP *p, struct sockaddr *addr)
     strftime(ts, sizeof(ts), "%Y%m%d%H%M%S", localtime(&t));
     if(inet_ntop (addr->sa_family, socket_get_address(addr), 
 		  as, sizeof(as)) == NULL) {
-        pop_log(p, POP_FAILURE, "failed to print address");
+        pop_log(p, POP_PRIORITY, "failed to print address");
 	return;
     }
     
     f = fopen(addr_log, "a");
     if(f == NULL) {
-        pop_log(p, POP_FAILURE, "failed to open address log (%s)", addr_log);
+        pop_log(p, POP_PRIORITY, "failed to open address log (%s)", addr_log);
 	return;
     }
     fprintf(f, "%s %s\n", as, ts);
@@ -83,7 +83,7 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
     if (auth != KSUCCESS) {
         pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
                 krb_get_err_text(auth));
-        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
+        pop_log(p, POP_PRIORITY, "%s: (%s.%s@%s) %s", p->client, 
                 p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		krb_get_err_text(auth));
         exit (1);
@@ -129,13 +129,13 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 
 	ret = krb5_unparse_name(p->context, ticket->server, &server);
 	if(ret) {
-	    pop_log(p, POP_FAILURE, "krb5_unparse_name: %s", 
+	    pop_log(p, POP_PRIORITY, "krb5_unparse_name: %s", 
 		    krb5_get_err_text(p->context, ret));
 	    exit(1);
 	}
 	/* does this make sense? */
 	if(strncmp(server, "pop/", 4) != 0) {
-	    pop_log(p, POP_FAILURE, 
+	    pop_log(p, POP_PRIORITY,
 		    "Got ticket for service `%s'", server);
 	    exit(1);
 	} else if(p->debug)

@@ -159,7 +159,7 @@ auth_krb4(POP *p)
     }
 
     if (kuserok(&p->kdata, p->user)) {
-	pop_log(p, POP_FAILURE,
+	pop_log(p, POP_PRIORITY,
 		"%s: (%s.%s@%s) tried to retrieve mail for %s.",
 		p->client, p->kdata.pname, p->kdata.pinst,
 		p->kdata.prealm, p->user);
