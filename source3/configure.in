@@ -551,7 +551,7 @@ AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
+AC_CHECK_HEADERS(sys/acl.h sys/xattr.h sys/cdefs.h glob.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -3246,7 +3246,34 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 		;;
-        *)
+	*linux*)
+		AC_CHECK_LIB(attr,getxattr,[ACLLIBS="$ACLLIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+		acl_LIBS=$LIBS
+		LIBS="$LIBS -lacl"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
+samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
+		LIBS=$acl_LIBS])
+			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+				AC_MSG_RESULT(Using posix ACLs)
+				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+				acl_LIBS=$LIBS
+				LIBS="$LIBS -lacl"
+				AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
+samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
+				LIBS=$acl_LIBS])
+				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+				fi
+			fi
+            ;;
+         *)
 		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
