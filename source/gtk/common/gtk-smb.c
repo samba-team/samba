@@ -47,7 +47,7 @@ void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status)
 static void on_browse_activate  (GtkButton     *button,  gpointer         user_data)
 {
 	GtkRpcBindingDialog *rbd = user_data;
-	GtkWidget *shd = gtk_select_host_dialog_new(TRUE);
+	GtkWidget *shd = gtk_select_host_dialog_new(rbd->sam_pipe, TRUE);
 	if(gtk_dialog_run(GTK_DIALOG(shd)) == GTK_RESPONSE_ACCEPT) {
 		gtk_entry_set_text(GTK_ENTRY(rbd->entry_host), gtk_select_host_dialog_get_host(GTK_SELECT_HOST_DIALOG(shd)));
 	}
@@ -138,13 +138,16 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_widget_show (gtk_rpc_binding_dialog->entry_host);
 	gtk_box_pack_start (GTK_BOX (hbox1), gtk_rpc_binding_dialog->entry_host, TRUE, TRUE, 0);
 
- 	btn_browse = gtk_button_new_with_label ("Browse");
-  	gtk_widget_show (btn_browse);
-  	gtk_box_pack_start (GTK_BOX (hbox1), btn_browse, TRUE, TRUE, 0);
+	if(gtk_rpc_binding_dialog->sam_pipe)
+	{
+		btn_browse = gtk_button_new_with_label ("Browse");
+		gtk_widget_show (btn_browse);
+		gtk_box_pack_start (GTK_BOX (hbox1), btn_browse, TRUE, TRUE, 0);
 
-    g_signal_connect ((gpointer) btn_browse, "pressed",
-               G_CALLBACK (on_browse_activate),
-               gtk_rpc_binding_dialog);
+		g_signal_connect ((gpointer) btn_browse, "pressed",
+						  G_CALLBACK (on_browse_activate),
+						  gtk_rpc_binding_dialog);
+	}
 
 	label2 = gtk_label_new ("Host");
 	gtk_widget_show (label2);
@@ -278,9 +281,11 @@ GType gtk_rpc_binding_dialog_get_type (void)
   return mytype;
 }
 
-GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials)
+GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe)
 {
-	return GTK_WIDGET ( gtk_type_new (gtk_rpc_binding_dialog_get_type ()));
+	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( gtk_type_new (gtk_rpc_binding_dialog_get_type ()));
+	d->sam_pipe = sam_pipe;
+	return GTK_WIDGET(d);
 }
 
 const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d)

@@ -40,6 +40,7 @@ struct _GtkRpcBindingDialog
 	GtkWidget *entry_password;
 	GtkWidget *krb5_chk_button;
 	TALLOC_CTX *mem_ctx;
+	struct sam_pipe *sam_pipe;
 };
 
 typedef struct _GtkRpcBindingDialogClass GtkRpcBindingDialogClass;

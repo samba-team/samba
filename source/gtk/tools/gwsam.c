@@ -27,6 +27,7 @@ struct dcerpc_pipe *sam_pipe = NULL;
 struct policy_handle domain_handle;
 GtkWidget *mainwin;
 GtkWidget *seldomain;
+GtkWidget *mnu_disconnect;
 
 void update_grouplist(void)
 {
@@ -112,7 +113,7 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	TALLOC_CTX *mem_ctx;
 	gint result;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 	case GTK_RESPONSE_ACCEPT:
@@ -137,16 +138,25 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 
 	mem_ctx = talloc_init("connect");                                                                                                 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &r);
-	talloc_destroy(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
+		talloc_destroy(mem_ctx);
 		return;
 	}
 
 	gtk_widget_set_sensitive (seldomain, TRUE);
+	gtk_widget_set_sensitive (mnu_disconnect, TRUE);
+	gtk_window_set_title (GTK_WINDOW (mainwin), talloc_asprintf(mem_ctx, "User Manager - Connected to %s", gtk_rpc_binding_dialog_get_host(d)));
 	gtk_widget_destroy(GTK_WIDGET(d));
+	talloc_destroy(mem_ctx);
+}
+
+void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
+{
+	gtk_widget_set_sensitive (mnu_disconnect, FALSE);
+	gtk_window_set_title (GTK_WINDOW (mainwin), "User Manager");
 }
 
 void
@@ -265,6 +275,11 @@ create_mainwindow (void)
 	gtk_widget_show (mnu_connect);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), mnu_connect);
 
+	mnu_disconnect = gtk_menu_item_new_with_mnemonic ("_Disconnect");
+	gtk_widget_show (mnu_disconnect);
+	gtk_widget_set_sensitive (mnu_disconnect, FALSE);
+	gtk_container_add (GTK_CONTAINER (menuitem1_menu), mnu_disconnect);
+
 	seldomain = gtk_menu_item_new_with_mnemonic("_Select Domain");
 	gtk_widget_show(seldomain);
 	gtk_widget_set_sensitive (seldomain, FALSE);
@@ -377,6 +392,9 @@ create_mainwindow (void)
 					  NULL);
 	g_signal_connect ((gpointer) mnu_connect, "activate",
 					  G_CALLBACK (on_connect_activate),
+					  NULL);
+	g_signal_connect ((gpointer) mnu_disconnect, "activate",
+					  G_CALLBACK (on_disconnect_activate),
 					  NULL);
 	g_signal_connect ((gpointer) quit, "activate",
 					  G_CALLBACK (on_quit_activate),

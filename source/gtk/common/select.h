@@ -45,9 +45,9 @@ struct _GtkSelectDomainDialogClass
 	GtkDialogClass parent_class;
 };
 
-#define GTK_SELECT_DOMAIN_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_rpc_binding_dialog_get_type (), GtkSelectDomainDialog)
-#define GTK_SELECT_DOMAIN_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_rpc_binding_dialog_class_get_type (), GtkSelectDomainDialogClass)
-#define IS_GTK_SELECT_DOMAIN_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_rpc_binding_dialog_get_type ())
+#define GTK_SELECT_DOMAIN_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_select_domain_dialog_get_type (), GtkSelectDomainDialog)
+#define GTK_SELECT_DOMAIN_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_select_domain_dialog_class_get_type (), GtkSelectDomainDialogClass)
+#define IS_GTK_SELECT_DOMAIN_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_select_domain_dialog_get_type ())
 
 typedef struct _GtkSelectHostDialog GtkSelectHostDialog;
 
@@ -68,9 +68,9 @@ struct _GtkSelectHostDialogClass
 	GtkDialogClass parent_class;
 };
 
-#define GTK_SELECT_HOST_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_rpc_binding_dialog_get_type (), GtkSelectHostDialog)
-#define GTK_SELECT_HOST_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_rpc_binding_dialog_class_get_type (), GtkSelectHostDialogClass)
-#define IS_GTK_SELECT_HOST_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_rpc_binding_dialog_get_type ())
+#define GTK_SELECT_HOST_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_select_host_dialog_get_type (), GtkSelectHostDialog)
+#define GTK_SELECT_HOST_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_select_host_dialog_class_get_type (), GtkSelectHostDialogClass)
+#define IS_GTK_SELECT_HOST_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_select_host_dialog_get_type ())
 
 #endif
 

@@ -86,7 +86,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	NTSTATUS status;
 	gint result;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
     result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 		case GTK_RESPONSE_ACCEPT:
