@@ -658,6 +658,7 @@ out_free:
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
+	static int		opt_port = 0;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -666,6 +667,7 @@ out_free:
 		POPT_AUTOHELP
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
+		{"port", 'p', POPT_ARG_INT,   &opt_port, 'p', "Specify port number", "PORT"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -739,7 +741,7 @@ out_free:
 	}
 	
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					opt_ipaddr ? &server_ip : NULL, 0,
+					opt_ipaddr ? &server_ip : NULL, opt_port,
 					"IPC$", "IPC",  
 					cmdline_auth_info.username, 
 					lp_workgroup(),
