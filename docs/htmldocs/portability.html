@@ -9,9 +9,12 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
 REL="PREVIOUS"
-TITLE="Group mapping HOWTO"
-HREF="groupmapping.html"><LINK
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
 REL="NEXT"
 TITLE="Samba and other CIFS clients"
 HREF="other-clients.html"></HEAD
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="groupmapping.html"
+HREF="appendixes.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -71,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="PORTABILITY"
 ></A
->Chapter 21. Portability</H1
+>Chapter 24. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -81,9 +84,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3011"
+NAME="AEN3198"
 ></A
->21.1. HPUX</H1
+>24.1. HPUX</H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
 hysterical reasons).  There are two group files, /etc/group and
@@ -101,15 +104,19 @@ to initgroups() be run as users not in any groups with GIDs outside the
 allowed range.</P
 ><P
 >This is documented in the HP manual pages under setgroups(2) and passwd(4).</P
+><P
+>On HPUX you must use gcc or the HP Ansi compiler. The free compiler
+that comes with HP-UX is not Ansi compliant and cannot compile
+Samba.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3016"
+NAME="AEN3204"
 ></A
->21.2. SCO Unix</H1
+>24.2. SCO Unix</H1
 ><P
 > 
 If you run an old version of  SCO Unix then you may need to get important 
@@ -124,9 +131,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3020"
+NAME="AEN3208"
 ></A
->21.3. DNIX</H1
+>24.3. DNIX</H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX
@@ -231,9 +238,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3049"
+NAME="AEN3237"
 ></A
->21.4. RedHat Linux Rembrandt-II</H1
+>24.4. RedHat Linux Rembrandt-II</H1
 ><P
 >By default RedHat Rembrandt-II during installation adds an
 entry to /etc/hosts as follows:
@@ -267,7 +274,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="groupmapping.html"
+HREF="appendixes.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -295,12 +302,16 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Group mapping HOWTO</TD
+>Appendixes</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="appendixes.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"

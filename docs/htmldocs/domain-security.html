@@ -2,19 +2,22 @@
 <HTML
 ><HEAD
 ><TITLE
->security = domain in Samba 2.x</TITLE
+>Samba as a NT4 domain member</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Type of installation"
+HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="Security levels"
-HREF="securitylevels.html"><LINK
+TITLE="Samba as a ADS domain member"
+HREF="ads.html"><LINK
 REL="NEXT"
-TITLE="Unified Logons between Windows NT and UNIX using Winbind"
-HREF="winbind.html"></HEAD
+TITLE="Optional configuration"
+HREF="optional.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="securitylevels.html"
+HREF="ads.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="winbind.html"
+HREF="optional.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="DOMAIN-SECURITY"
 ></A
->Chapter 9. security = domain in Samba 2.x</H1
+>Chapter 10. Samba as a NT4 domain member</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1133"
+NAME="AEN1286"
 ></A
->9.1. Joining an NT Domain with Samba 2.2</H1
+>10.1. Joining an NT Domain with Samba 2.2</H1
 ><P
 >Assume you have a Samba 2.x server with a NetBIOS name of 
 	<TT
@@ -308,12 +311,12 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1197"
+NAME="AEN1350"
 ></A
->9.2. Samba and Windows 2000 Domains</H1
+>10.2. Samba and Windows 2000 Domains</H1
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
-a Windows 2000 Domain.  Samba 2.2 is able to act as a member server of a Windows
+a Windows 2000 Domain.  Samba 3.0 is able to act as a member server of a Windows
 2000 domain operating in mixed or native mode.</P
 ><P
 >There is much confusion between the circumstances that require a "mixed" mode
@@ -333,9 +336,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1202"
+NAME="AEN1355"
 ></A
->9.3. Why is this better than security = server?</H1
+>10.3. Why is this better than security = server?</H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
 	having to create local Unix users to represent the users attaching 
@@ -435,7 +438,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="securitylevels.html"
+HREF="ads.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -453,7 +456,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="winbind.html"
+HREF="optional.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -463,17 +466,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Security levels</TD
+>Samba as a ADS domain member</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="type.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Unified Logons between Windows NT and UNIX using Winbind</TD
+>Optional configuration</TD
 ></TR
 ></TABLE
 ></DIV

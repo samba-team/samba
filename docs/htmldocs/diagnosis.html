@@ -9,9 +9,12 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
 REL="PREVIOUS"
-TITLE="Samba and other CIFS clients"
-HREF="other-clients.html"></HEAD
+TITLE="Reporting Bugs"
+HREF="bugreport.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -39,7 +42,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="other-clients.html"
+HREF="bugreport.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -64,47 +67,44 @@ CLASS="CHAPTER"
 ><A
 NAME="DIAGNOSIS"
 ></A
->Chapter 23. Diagnosing your samba server</H1
+>Chapter 27. Diagnosing your samba server</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3184"
+NAME="AEN3437"
 ></A
->23.1. Introduction</H1
+>27.1. Introduction</H1
 ><P
 >This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
 is if it fails any one of these steps. If it passes all these tests
 then it is probably working fine.</P
 ><P
->You should do ALL the tests, in the order shown. I have tried to
+>You should do ALL the tests, in the order shown. We have tried to
 carefully choose them so later tests only use capabilities verified in
 the earlier tests.</P
 ><P
->If you send me an email saying "it doesn't work" and you have not
-followed this test procedure then you should not be surprised if I
-ignore your email.</P
+>If you send one of the samba mailing lists  an email saying "it doesn't work"
+and you have not followed this test procedure then you should not be surprised
+your email is ignored.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3189"
+NAME="AEN3442"
 ></A
->23.2. Assumptions</H1
+>27.2. Assumptions</H1
 ><P
->In all of the tests I assume you have a Samba server called BIGSERVER
-and a PC called ACLIENT both in workgroup TESTGROUP. I also assume the
-PC is running windows for workgroups with a recent copy of the
-microsoft tcp/ip stack. Alternatively, your PC may be running Windows
-95 or Windows NT (Workstation or Server).</P
+>In all of the tests it is assumed you have a Samba server called 
+BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.</P
 ><P
 >The procedure is similar for other types of clients.</P
 ><P
->I also assume you know the name of an available share in your
+>It is also assumed you know the name of an available share in your
 smb.conf. I will assume this share is called "tmp". You can add a
 "tmp" share like by adding the following to smb.conf:</P
 ><P
@@ -116,7 +116,7 @@ CLASS="PROGRAMLISTING"
  read only = yes&#13;</PRE
 ></P
 ><P
->THESE TESTS ASSUME VERSION 2.0.6 OR LATER OF THE SAMBA SUITE. SOME
+>THESE TESTS ASSUME VERSION 3.0.0 OR LATER OF THE SAMBA SUITE. SOME
 COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS</P
 ><P
 >Please pay attention to the error messages you receive. If any error message
@@ -133,17 +133,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3199"
+NAME="AEN3452"
 ></A
->23.3. Tests</H1
+>27.3. Tests</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3201"
+NAME="AEN3454"
 ></A
->23.3.1. Test 1</H2
+>27.3.1. Test 1</H2
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -151,7 +151,7 @@ configuration file is faulty.</P
 ><P
 >Note:	Your smb.conf file may be located in: <TT
 CLASS="FILENAME"
->/etc</TT
+>/etc/samba</TT
 >
 	Or in:   <TT
 CLASS="FILENAME"
@@ -163,9 +163,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3207"
+NAME="AEN3460"
 ></A
->23.3.2. Test 2</H2
+>27.3.2. Test 2</H2
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -189,9 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3213"
+NAME="AEN3466"
 ></A
->23.3.3. Test 3</H2
+>27.3.3. Test 3</H2
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -260,9 +260,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3228"
+NAME="AEN3481"
 ></A
->23.3.4. Test 4</H2
+>27.3.4. Test 4</H2
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -281,9 +281,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3233"
+NAME="AEN3486"
 ></A
->23.3.5. Test 5</H2
+>27.3.5. Test 5</H2
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -302,9 +302,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3239"
+NAME="AEN3492"
 ></A
->23.3.6. Test 6</H2
+>27.3.6. Test 6</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -336,9 +336,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3247"
+NAME="AEN3500"
 ></A
->23.3.7. Test 7</H2
+>27.3.7. Test 7</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -425,9 +425,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3273"
+NAME="AEN3526"
 ></A
->23.3.8. Test 8</H2
+>27.3.8. Test 8</H2
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -485,9 +485,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3290"
+NAME="AEN3543"
 ></A
->23.3.9. Test 9</H2
+>27.3.9. Test 9</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -519,9 +519,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3298"
+NAME="AEN3551"
 ></A
->23.3.10. Test 10</H2
+>27.3.10. Test 10</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -545,9 +545,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3304"
+NAME="AEN3557"
 ></A
->23.3.11. Test 11</H2
+>27.3.11. Test 11</H2
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -573,9 +573,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3309"
+NAME="AEN3562"
 ></A
->23.4. Still having troubles?</H1
+>27.4. Still having troubles?</H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
 sniff the problem. The official samba mailing list can be reached at
@@ -611,7 +611,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="other-clients.html"
+HREF="bugreport.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -635,12 +635,16 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Samba and other CIFS clients</TD
+>Reporting Bugs</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="appendixes.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"

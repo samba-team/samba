@@ -40,6 +40,15 @@
 
 	<variablelist>
 		<varlistentry>
+		<term>-r</term>
+		<listitem><para>Controls whether <command>findsmb</command> takes
+		bugs in Windows95 into account when trying to find a Netbios name
+		registered of the remote machine. This option is disabled by default
+		because it is specific to Windows 95 and Windows 95 machines only. 
+		If set, <ulink url="nmblookup.1.html"><command>nmblookup</command></ulink>
+		will be called with <constant>-B<constant> option.</para></listitem>
+		</varlistentry>
+		<varlistentry>
 		<term>subnet broadcast address</term>
 		<listitem><para>Without this option, <command>findsmb
 		</command> will probe the subnet of the machine where 
@@ -66,15 +75,17 @@
 	not show any information about the operating system or server 
 	version.</para>
 
-	<para>The command must be run on a system without <ulink
+	<para>The command with <constant>-r</constant> option
+	must be run on a system without <ulink
 	url="nmbd.8.html"><command>nmbd</command></ulink> running. 
 	If <command>nmbd</command> is running on the system, you will 
 	only  get the IP address and the DNS name of the machine. To 
 	get proper responses  from Windows 95 and Windows 98 machines, 
-	the command must be run as root. </para>
+	the command must be run as root and with <constant>-r</constant>
+	option on a machine without <command>nmbd</command> running.</para>
 
-	<para>For example, running <command>findsmb</command> on a machine 
-	without <command>nmbd</command> running would yield output similar
+	<para>For example, running <command>findsmb</command> without 
+	<constant>-r</constant> option set would yield output similar
 	to the following</para>
 
 	<screen><computeroutput>

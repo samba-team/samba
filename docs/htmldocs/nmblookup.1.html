@@ -38,12 +38,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmblookup</B
->  [-M] [-R] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] {name}</P
+>  [-M] [-R] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] [-f] {name}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN24"
+NAME="AEN25"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -66,7 +66,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN30"
+NAME="AEN31"
 ></A
 ><H2
 >OPTIONS</H2
@@ -286,6 +286,15 @@ CLASS="EMPHASIS"
 > pair that is the normal output.</P
 ></DD
 ><DT
+>-f</DT
+><DD
+><P
+>		Show which flags apply to the name that has been looked up. Possible 
+		answers are zero or more of: Response, Authoritative, 
+		Truncated, Recursion_Desired, Recursion_Available, Broadcast.
+		</P
+></DD
+><DT
 >name</DT
 ><DD
 ><P
@@ -302,7 +311,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN110"
+NAME="AEN115"
 ></A
 ><H2
 >EXAMPLES</H2
@@ -339,18 +348,18 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN122"
+NAME="AEN127"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN125"
+NAME="AEN130"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -377,7 +386,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN132"
+NAME="AEN137"
 ></A
 ><H2
 >AUTHOR</H2

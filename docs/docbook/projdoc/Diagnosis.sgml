@@ -14,7 +14,7 @@
 			<address><email>jelmer@samba.org</email></address>
 		</affiliation>
 	</author>
-	<pubdate>$Id: Diagnosis.sgml,v 1.1.2.3 2002/11/22 00:32:23 tpot Exp $</pubdate>
+	<pubdate>Wed Jan 15</pubdate>
 </chapterinfo>
 
 <title>Diagnosing your samba server</title>
