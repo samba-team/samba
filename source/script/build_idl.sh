@@ -5,7 +5,7 @@ FULLBUILD=$1
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
 if [ ! -f build/pidl/idl.pm -o build/pidl/idl.yp -nt build/pidl/idl.pm ]; then
-    if `which yapp`; then
+    if which yapp; then
 	echo Rebuilding IDL parser
 	( cd build/pidl && make ) || exit 1;
     else 
