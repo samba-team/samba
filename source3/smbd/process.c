@@ -1114,6 +1114,9 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   /* become root again if waiting */
   change_to_root_user();
 
+  /* run all registered idle events */
+  smb_run_idle_events(t);
+
   /* check if we need to reload services */
   check_reload(t);
 
@@ -1276,6 +1279,10 @@ void smbd_process(void)
 		/* free up temporary memory */
 		lp_talloc_free();
 		main_loop_talloc_free();
+
+		/* run all registered idle events */
+		smb_run_idle_events(time(NULL));
+
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {

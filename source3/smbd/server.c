@@ -567,6 +567,9 @@ void exit_server(const char *reason)
 
 	print_notify_send_messages(3); /* 3 second timeout. */
 
+	/* run all registered exit events */
+	smb_run_exit_events();
+
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");
 

@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    module loading system
 
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Jelmer Vernooij 2002-2003
+   Copyright (C) Stefan (metze) Metzmacher 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -150,3 +151,111 @@ void module_path_get_name(const char *path, pstring name)
 		}
 	}
 }
+
+
+/***************************************************************************
+ * This Function registers a idle event
+ *
+ * the registered funtions are run periodically
+ * and maybe shutdown idle connections (e.g. to an LDAP server)
+ ***************************************************************************/
+static smb_idle_event_struct *smb_idle_event_list = NULL;
+NTSTATUS smb_register_idle_event(smb_idle_event_struct *idle_event)
+{
+	smb_idle_event_struct *tmp_event = smb_idle_event_list;
+
+	if (!idle_event) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	idle_event->last_run = 0;
+
+	DLIST_ADD(smb_idle_event_list,idle_event);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb_unregister_idle_event(smb_idle_event_struct *idle_event)
+{
+	if (!idle_event) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DLIST_REMOVE(smb_idle_event_list,idle_event);
+
+	return NT_STATUS_OK;
+}
+
+void smb_run_idle_events(time_t now)
+{
+	smb_idle_event_struct *tmp_event = smb_idle_event_list;
+
+	while (tmp_event) {
+		time_t interval;
+
+		if (tmp_event->fn) {
+			if (tmp_event->interval >= SMB_IDLE_EVENT_MIN_INTERVAL) {
+				interval = tmp_event->interval;
+			} else {
+				interval = SMB_IDLE_EVENT_DEFAULT_INTERVAL;
+			}
+			if (now >(tmp_event->last_run+interval)) {
+				tmp_event->fn(&tmp_event,now);
+				tmp_event->last_run = now;
+			}
+		}
+
+		tmp_event = tmp_event->next;
+	}
+
+	return;
+}
+
+/***************************************************************************
+ * This Function registers a exit event
+ *
+ * the registered funtions are run on exit()
+ * and maybe shutdown idle connections (e.g. to an LDAP server)
+ ***************************************************************************/
+static smb_exit_event_struct *smb_exit_event_list = NULL;
+NTSTATUS smb_register_exit_event(smb_exit_event_struct *exit_event)
+{
+	smb_exit_event_struct *tmp_event = smb_exit_event_list;
+
+	if (!exit_event) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DLIST_ADD(smb_exit_event_list,exit_event);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb_unregister_exit_event(smb_exit_event_struct *exit_event)
+{
+	if (!exit_event) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DLIST_REMOVE(smb_exit_event_list,exit_event);
+
+	return NT_STATUS_OK;
+}
+
+void smb_run_exit_events(void)
+{
+	smb_exit_event_struct *tmp_event = smb_exit_event_list;
+
+	while (tmp_event) {
+		if (tmp_event->fn) {
+			tmp_event->fn(&tmp_event);
+		}
+		tmp_event = tmp_event->next;
+	}
+
+	/* run exit_events only once */
+	smb_exit_event_list = NULL;
+
+	return;
+}
+
