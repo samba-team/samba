@@ -22,10 +22,8 @@ krb5_mk_req_extended(krb5_context context,
 	  return r;
   }
 
-  (*auth_context)->key.keytype = in_creds->session.keytype;
-  krb5_data_copy (&(*auth_context)->key.keyvalue,
-		  in_creds->session.keyvalue.data,
-		  in_creds->session.keyvalue.length);
+  copy_EncryptionKey(&in_creds->session,
+		     &(*auth_context)->key);
 
   if (in_data) {
 
@@ -33,6 +31,7 @@ krb5_mk_req_extended(krb5_context context,
 				(*auth_context)->cksumtype,
 				in_data->data,
 				in_data->length,
+				&(*auth_context)->key,
 				&c);
       c_opt = &c;
   } else {
