@@ -442,10 +442,10 @@ struct cli_state {
 
 typedef struct
 {
-  int size;
+  SMB_OFF_T size;
   int mode;
-  int uid;
-  int gid;
+  uid_t uid;
+  gid_t gid;
   /* these times are normally kept in GMT */
   time_t mtime;
   time_t atime;
@@ -559,12 +559,12 @@ typedef struct files_struct
 	int fnum;
 	connection_struct *conn;
 	file_fd_struct *fd_ptr;
-	int pos;
-	uint32 size;
+	SMB_OFF_T pos;
+	SMB_OFF_T size;
 	int mode;
 	int vuid;
 	char *mmap_ptr;
-	uint32 mmap_size;
+	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
 	struct timeval open_time;
 	BOOL open;

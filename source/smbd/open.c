@@ -472,7 +472,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   {
     if(sbuf == 0) {
       /* Do the fstat */
-      if(fstat(fd_ptr->fd, &statbuf) == -1) {
+      if(sys_fstat(fd_ptr->fd, &statbuf) == -1) {
         /* Error - backout !! */
         DEBUG(3,("Error doing fstat on fd %d, file %s (%s)\n",
                  fd_ptr->fd, fname,strerror(errno)));
@@ -576,7 +576,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
       unix_ERR_code = ERRlock;
     }
     else
-      ftruncate(fsp->fd_ptr->fd,0); 
+      sys_ftruncate(fsp->fd_ptr->fd,0); 
   }
 }
 

@@ -27,11 +27,11 @@ extern int DEBUGLEVEL;
 
 /* variables used by the read prediction module */
 static int rp_fd = -1;
-static int rp_offset = 0;
+static SMB_OFF_T rp_offset = 0;
 static int rp_length = 0;
 static int rp_alloced = 0;
 static int rp_predict_fd = -1;
-static int rp_predict_offset = 0;
+static SMB_OFF_T rp_predict_offset = 0;
 static int rp_predict_length = 0;
 static int rp_timeout = 5;
 static time_t rp_time = 0;
@@ -42,7 +42,7 @@ extern time_t smb_last_time;
 /****************************************************************************
 handle read prediction on a file
 ****************************************************************************/
-int read_predict(int fd,int offset,char *buf,char **ptr,int num)
+int read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,int num)
 {
   int ret = 0;
   int possible = rp_length - (offset - rp_offset);
@@ -70,7 +70,7 @@ int read_predict(int fd,int offset,char *buf,char **ptr,int num)
 
     /* Find the end of the file - ensure we don't
        read predict beyond it. */
-    if(fstat(fd,&rp_stat) < 0)
+    if(sys_fstat(fd,&rp_stat) < 0)
     {
       DEBUG(0,("read-prediction failed on fstat. Error was %s\n", strerror(errno)));
       predict_skip = True;
@@ -134,7 +134,7 @@ void do_read_prediction(void)
 	}
     }
 
-  if (lseek(rp_fd,rp_offset,SEEK_SET) != rp_offset) {
+  if (sys_lseek(rp_fd,rp_offset,SEEK_SET) != rp_offset) {
     rp_fd = -1;
     rp_predict_fd = -1;
     return;

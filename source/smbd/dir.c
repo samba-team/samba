@@ -418,7 +418,8 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int di
 /****************************************************************************
   get a directory entry
 ****************************************************************************/
-BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend)
+BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
+                   SMB_OFF_T *size,int *mode,time_t *date,BOOL check_descend)
 {
   char *dname;
   BOOL found = False;

@@ -258,7 +258,7 @@ static void check_log_size( void )
   if( !dbf || maxlog <= 0 )
     return;
 
-  if( fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
+  if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
     {
     (void)fclose( dbf );
     dbf = NULL;

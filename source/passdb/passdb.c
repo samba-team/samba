@@ -930,7 +930,7 @@ BOOL pdb_generate_machine_sid(void)
 	 * Check if the file contains data.
 	 */
 	
-	if(fstat( fd, &st) < 0) {
+	if(sys_fstat( fd, &st) < 0) {
 		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);
@@ -1002,7 +1002,7 @@ BOOL pdb_generate_machine_sid(void)
 	 * use their data.
 	 */
 	
-	if(fstat( fd, &st) < 0) {
+	if(sys_fstat( fd, &st) < 0) {
 		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);

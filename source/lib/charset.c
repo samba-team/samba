@@ -189,7 +189,7 @@ static codepage_p load_client_codepage( int client_codepage )
   pstring codepage_file_name;
   unsigned char buf[8];
   FILE *fp = NULL;
-  unsigned int size;
+  SMB_OFF_T size;
   codepage_p cp_p = NULL;
   SMB_STRUCT_STAT st;
 
@@ -221,7 +221,7 @@ static codepage_p load_client_codepage( int client_codepage )
      plus zero or more bytes of data. Note that the data cannot be more
      than 4 * MAXCODEPAGELINES bytes.
    */
-  size = (unsigned int)st.st_size;
+  size = st.st_size;
 
   if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES))
   {
@@ -270,11 +270,10 @@ Needed %hu, got %hu.\n",
   }
 
   /* Check the length is correct. */
-  if(IVAL(buf,CODEPAGE_LENGTH_OFFSET) != 
-                 (unsigned int)(size - CODEPAGE_HEADER_SIZE))
+  if(IVAL(buf,CODEPAGE_LENGTH_OFFSET) != (size - CODEPAGE_HEADER_SIZE))
   {
     DEBUG(0,("load_client_codepage: filename %s has incorrect size headers. \
-Needed %u, got %u.\n", codepage_file_name, size - CODEPAGE_HEADER_SIZE, 
+Needed %u, got %u.\n", codepage_file_name, (uint32)(size - CODEPAGE_HEADER_SIZE), 
                IVAL(buf,CODEPAGE_LENGTH_OFFSET)));
     goto clean_and_exit;
   }

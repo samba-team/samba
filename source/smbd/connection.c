@@ -88,7 +88,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	bzero((void *)&crec,sizeof(crec));
   
 	/* remove our mark */
-	if (lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
+	if (sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
 	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
 		DEBUG(2,("Couldn't update lock file %s (%s)\n",fname,strerror(errno)));
 		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
@@ -159,14 +159,14 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	/* find a free spot */
 	for (i=0;i<max_connections;i++) {
 		if (i>=total_recs || 
-		    lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
+		    sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
 		    read(fd,&crec,sizeof(crec)) != sizeof(crec)) {
 			if (foundi < 0) foundi = i;
 			break;
 		}
 		
 		if (Clear && crec.pid && !process_exists(crec.pid)) {
-			lseek(fd,i*sizeof(crec),SEEK_SET);
+			sys_lseek(fd,i*sizeof(crec),SEEK_SET);
 			bzero((void *)&crec,sizeof(crec));
 			write(fd, &crec,sizeof(crec));
 			if (foundi < 0) foundi = i;
@@ -206,7 +206,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	StrnCpy(crec.addr,client_addr(Client),sizeof(crec.addr)-1);
 	
 	/* make our mark */
-	if (lseek(fd,foundi*sizeof(crec),SEEK_SET) != foundi*sizeof(crec) ||
+	if (sys_lseek(fd,foundi*sizeof(crec),SEEK_SET) != foundi*sizeof(crec) ||
 	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
 		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));

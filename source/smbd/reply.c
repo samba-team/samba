@@ -809,7 +809,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_STRUCT_STAT sbuf;
   BOOL ok = False;
   int mode=0;
-  uint32 size=0;
+  SMB_OFF_T size=0;
   time_t mtime=0;
   BOOL bad_path = False;
  
@@ -860,7 +860,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     put_dos_date3(outbuf,smb_vwv1,mtime & ~1);
   else
     put_dos_date3(outbuf,smb_vwv1,mtime);
-  SIVAL(outbuf,smb_vwv3,size);
+  SIVAL(outbuf,smb_vwv3,(uint32)size);
 
   if (Protocol >= PROTOCOL_NT1) {
     char *p = strrchr(fname,'/');
@@ -870,7 +870,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
   }
   
-  DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, size ) );
+  DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
   
   return(outsize);
 }
@@ -953,7 +953,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   pstring mask;
   pstring directory;
   pstring fname;
-  int size,mode;
+  SMB_OFF_T size;
+  int mode;
   time_t date;
   int dirtype;
   int outsize = 0;
@@ -1244,7 +1245,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   int outsize = 0;
   int fmode=0;
   int share_mode;
-  int size = 0;
+  SMB_OFF_T size = 0;
   time_t mtime=0;
   int unixmode;
   int rmode=0;
@@ -1289,7 +1290,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1311,7 +1312,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
   else
     put_dos_date3(outbuf,smb_vwv2,mtime);
-  SIVAL(outbuf,smb_vwv4,size);
+  SIVAL(outbuf,smb_vwv4,(uint32)size);
   SSVAL(outbuf,smb_vwv6,rmode);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -1344,7 +1345,8 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 #endif
   int smb_ofun = SVAL(inbuf,smb_vwv8);
   int unixmode;
-  int size=0,fmode=0,mtime=0,rmode=0;
+  SMB_OFF_T size=0;
+  int fmode=0,mtime=0,rmode=0;
   SMB_STRUCT_STAT sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
@@ -1390,7 +1392,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1436,7 +1438,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
   else
     put_dos_date3(outbuf,smb_vwv4,mtime);
-  SIVAL(outbuf,smb_vwv6,size);
+  SIVAL(outbuf,smb_vwv6,(uint32)size);
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,smb_action);
 
@@ -1767,7 +1769,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   int nread = 0;
   uint32 startpos;
   char *header = outbuf;
-  int ret=0;
+  SMB_OFF_T ret=0;
   int fd;
   char *fname;
   files_struct *fsp;
@@ -1781,7 +1783,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   if(global_oplock_break)
   {
     _smb_setlen(header,0);
-    transfer_file(0,Client,0,header,4,0);
+    transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
     DEBUG(5,("readbraw - oplock break finished\n"));
     return -1;
   }
@@ -1799,7 +1801,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
 	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",fsp->fnum));
 	  _smb_setlen(header,0);
-	  transfer_file(0,Client,0,header,4,0);
+	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
 	  return(-1);
   } else {
 	  fd = fsp->fd_ptr->fd;
@@ -1809,12 +1811,12 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
   if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
   {
-    int size = fsp->size;
+    SMB_OFF_T size = fsp->size;
     int sizeneeded = startpos + maxcount;
 	    
     if (size < sizeneeded) {
       SMB_STRUCT_STAT st;
-      if (fstat(fsp->fd_ptr->fd,&st) == 0)
+      if (sys_fstat(fsp->fd_ptr->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
         fsp->size = size;
@@ -1843,7 +1845,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     if ((nread-predict) > 0)
       seek_file(fsp,startpos + predict);
     
-    ret = transfer_file(fd,Client,nread-predict,header,4+predict,
+    ret = transfer_file(fd,Client,(SMB_OFF_T)(nread-predict),header,4+predict,
 			startpos+predict);
   }
 
@@ -2081,7 +2083,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 	     tcount,nwritten,numtowrite));
   }
 
-  nwritten = transfer_file(Client,fsp->fd_ptr->fd,numtowrite,NULL,0,
+  nwritten = transfer_file(Client,fsp->fd_ptr->fd,(SMB_OFF_T)numtowrite,NULL,0,
 			   startpos+nwritten);
   total_written += nwritten;
   
@@ -2193,7 +2195,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0)
-    nwritten = set_filelen(fsp->fd_ptr->fd, startpos);
+    nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
   else
     nwritten = write_file(fsp,data,numtowrite);
   
@@ -2280,7 +2282,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   uint32 startpos;
-  int32 res= -1;
+  SMB_OFF_T res= -1;
   int mode,umode;
   int outsize = 0;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -2292,19 +2294,19 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   startpos = IVAL(inbuf,smb_vwv2);
 
   switch (mode & 3) 
-    {
+  {
     case 0: umode = SEEK_SET; break;
     case 1: umode = SEEK_CUR; break;
     case 2: umode = SEEK_END; break;
     default:
       umode = SEEK_SET; break;
-    }
+  }
 
-  res = lseek(fsp->fd_ptr->fd,startpos,umode);
+  res = sys_lseek(fsp->fd_ptr->fd,(SMB_OFF_T)startpos,umode);
   fsp->pos = res;
   
   outsize = set_message(outbuf,2,0,True);
-  SIVALS(outbuf,smb_vwv0,res);
+  SIVALS(outbuf,smb_vwv0,(uint32)res);
   
   DEBUG(3,("lseek fnum=%d ofs=%d mode=%d\n",
 	   fsp->fnum, startpos, mode));
@@ -3330,7 +3332,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if ((ofun&3) == 1) {
-    lseek(fsp2->fd_ptr->fd,0,SEEK_END);
+    sys_lseek(fsp2->fd_ptr->fd,0,SEEK_END);
   }
   
   if (st.st_size)
@@ -3951,7 +3953,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   CHECK_ERROR(fsp);
 
   /* Do an fstat on this file */
-  if(fstat(fsp->fd_ptr->fd, &sbuf))
+  if(sys_fstat(fsp->fd_ptr->fd, &sbuf))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   mode = dos_mode(conn,fsp->fsp_name,&sbuf);
@@ -3969,7 +3971,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
     }
   else
     {
-      SIVAL(outbuf,smb_vwv6,sbuf.st_size);
+      SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
       SIVAL(outbuf,smb_vwv8,ROUNDUP(sbuf.st_size,1024));
     }
   SSVAL(outbuf,smb_vwv10, mode);

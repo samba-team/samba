@@ -188,7 +188,7 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
        * the open and the lock call. Back out and try again.
        */
 
-      if(stat(fname, &dummy_stat)!=0)
+      if(sys_stat(fname, &dummy_stat)!=0)
       {
         DEBUG(2,("lock_share_entry: Re-issuing open on %s to fix race. Error was %s\n",
                 fname, strerror(errno)));
@@ -232,7 +232,7 @@ static BOOL slow_unlock_share_entry(connection_struct *conn,
   share_name(conn, dev, inode, fname);
 
   /* get the share mode file size */
-  if(fstat((int)token, &sb) != 0)
+  if(sys_fstat((int)token, &sb) != 0)
   {
     DEBUG(0,("ERROR: unlock_share_entry: Failed to do stat on share file %s (%s)\n",
               fname, strerror(errno)));
@@ -269,12 +269,12 @@ static int read_share_file(connection_struct *conn, int fd, char *fname, char **
 {
   SMB_STRUCT_STAT sb;
   char *buf;
-  int size;
+  SMB_OFF_T size;
 
   *out = 0;
   *p_new_file = False;
 
-  if(fstat(fd, &sb) != 0)
+  if(sys_fstat(fd, &sb) != 0)
   {
     DEBUG(0,("ERROR: read_share_file: Failed to do stat on share file %s (%s)\n",
                   fname, strerror(errno)));
@@ -288,14 +288,14 @@ static int read_share_file(connection_struct *conn, int fd, char *fname, char **
   }
 
   /* Allocate space for the file */
-  if((buf = (char *)malloc(sb.st_size)) == NULL)
+  if((buf = (char *)malloc((size_t)sb.st_size)) == NULL)
   {
     DEBUG(0,("read_share_file: malloc for file size %d fail !\n", 
 	     (int)sb.st_size));
     return -1;
   }
   
-  if(lseek(fd, 0, SEEK_SET) != 0)
+  if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
   {
     DEBUG(0,("ERROR: read_share_file: Failed to reset position to 0 \
 for share file %s (%s)\n", fname, strerror(errno)));
@@ -304,7 +304,7 @@ for share file %s (%s)\n", fname, strerror(errno)));
     return -1;
   }
   
-  if (read(fd,buf,sb.st_size) != sb.st_size)
+  if (read(fd,buf,(size_t)sb.st_size) != (size_t)sb.st_size)
   {
     DEBUG(0,("ERROR: read_share_file: Failed to read share file %s (%s)\n",
                fname, strerror(errno)));
@@ -472,7 +472,7 @@ it left a share mode entry with mode 0x%X in share file %s\n",
 
   if(num_entries_copied != num_entries)
   {
-    if(lseek(fd, 0, SEEK_SET) != 0)
+    if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
     {
       DEBUG(0,("ERROR: get_share_modes: lseek failed to reset to \
 position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
@@ -510,7 +510,7 @@ mode file %s (%s)\n", fname, strerror(errno)));
       return 0;
     }
     /* Now truncate the file at this point. */
-    if(ftruncate(fd, newsize)!= 0)
+    if(sys_ftruncate(fd, (SMB_OFF_T)newsize)!= 0)
     {
       DEBUG(0,("ERROR: get_share_modes: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
@@ -642,7 +642,7 @@ for share file %s\n", num_entries, fname));
   }
 
   /* Re-write the file - and truncate it at the correct point. */
-  if(lseek(fd, 0, SEEK_SET) != 0)
+  if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
   {
     DEBUG(0,("ERROR: del_share_mode: lseek failed to reset to \
 position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
@@ -662,7 +662,7 @@ mode file %s (%s)\n", fname, strerror(errno)));
   }
 
   /* Now truncate the file at this point. */
-  if(ftruncate(fd, newsize) != 0)
+  if(sys_ftruncate(fd, (SMB_OFF_T)newsize) != 0)
   {
     DEBUG(0,("ERROR: del_share_mode: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
@@ -689,7 +689,7 @@ static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16
   share_name(fsp->conn, fsp->fd_ptr->dev,
                        fsp->fd_ptr->inode, fname);
 
-  if(fstat(fd, &sb) != 0)
+  if(sys_fstat(fd, &sb) != 0)
   {
     DEBUG(0,("ERROR: set_share_mode: Failed to do stat on share file %s\n",
                   fname));
@@ -699,17 +699,17 @@ static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16
   /* Sanity check for file contents (if it's not a new share file). */
   if(sb.st_size != 0)
   {
-    int size = sb.st_size;
+    SMB_OFF_T size = sb.st_size;
 
     /* Allocate space for the file plus one extra entry */
-    if((buf = (char *)malloc(sb.st_size + SMF_ENTRY_LENGTH)) == NULL)
+    if((buf = (char *)malloc((size_t)(sb.st_size + SMF_ENTRY_LENGTH))) == NULL)
     {
       DEBUG(0,("set_share_mode: malloc for file size %d fail !\n", 
 	       (int)(sb.st_size + SMF_ENTRY_LENGTH)));
       return False;
     }
  
-    if(lseek(fd, 0, SEEK_SET) != 0)
+    if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
     {
       DEBUG(0,("ERROR: set_share_mode: Failed to reset position \
 to 0 for share file %s (%s)\n", fname, strerror(errno)));
@@ -718,7 +718,7 @@ to 0 for share file %s (%s)\n", fname, strerror(errno)));
       return False;
     }
 
-    if (read(fd,buf,sb.st_size) != sb.st_size)
+    if (read(fd,buf,(size_t)sb.st_size) != (size_t)sb.st_size)
     {
       DEBUG(0,("ERROR: set_share_mode: Failed to read share file %s (%s)\n",
                   fname, strerror(errno)));
@@ -781,7 +781,7 @@ deleting it.\n", fname));
 
   SIVAL(buf,SMF_NUM_ENTRIES_OFFSET,num_entries);
 
-  if(lseek(fd, 0, SEEK_SET) != 0)
+  if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
   {
     DEBUG(0,("ERROR: set_share_mode: (1) Failed to reset position to \
 0 for share file %s (%s)\n", fname, strerror(errno)));
@@ -803,7 +803,7 @@ deleting it (%s).\n",fname, strerror(errno)));
 
   /* Now truncate the file at this point - just for safety. */
 
-  if(ftruncate(fd, header_size + (SMF_ENTRY_LENGTH*num_entries))!= 0)
+  if(sys_ftruncate(fd, (SMB_OFF_T)(header_size + (SMF_ENTRY_LENGTH*num_entries)))!= 0)
   {
     DEBUG(0,("ERROR: set_share_mode: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entries), 
@@ -916,7 +916,7 @@ from the share file %s\n", i, num_entries, fname));
   }
 
   /* Re-write the file - and truncate it at the correct point. */
-  if(lseek(fd, 0, SEEK_SET) != 0)
+  if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
   {
     DEBUG(0,("ERROR: remove_share_oplock: lseek failed to reset to \
 position 0 for share mode file %s (%s)\n", fname, strerror(errno)));

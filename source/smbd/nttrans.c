@@ -415,7 +415,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	int oplock_request = 0;
 	int unixmode, pnum = -1;
 	int fmode=0,mtime=0,rmode=0;
-	off_t file_len = 0;
+	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
 	BOOL bad_path = False;
@@ -602,7 +602,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+		if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -660,12 +660,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 12;
-#if OFF_T_IS_64_BITS
+#ifdef LARGE_SMB_OFF_T
 	SIVAL(p,0, file_len & 0xFFFFFFFF);
 	SIVAL(p,4, file_len >> 32);
-#else /* OFF_T_IS_64_BITS */
+#else /* LARGE_SMB_OFF_T */
 	SIVAL(p,0,file_len);
-#endif /* OFF_T_IS_64_BITS */
+#endif /* LARGE_SMB_OFF_T */
 	p += 12;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 	
@@ -809,7 +809,7 @@ static int call_nt_transact_create(connection_struct *conn,
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       } 
   
-      if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         close_file(fsp,False);
 
         restore_case_semantics(file_attributes);

@@ -566,7 +566,7 @@ BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 /*******************************************************************
 returns the size in bytes of the named file
 ********************************************************************/
-uint32 file_size(char *file_name)
+SMB_OFF_T file_size(char *file_name)
 {
   SMB_STRUCT_STAT buf;
   buf.st_size = 0;
@@ -1218,15 +1218,15 @@ struct
 {
   SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
   SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-  char *text;
+  char *text; /* The pathname in DOS format. */
   BOOL valid;
 } ino_list[MAX_GETWDCACHE];
 
 BOOL use_getwd_cache=True;
 
 /*******************************************************************
-  return the absolute current directory path
-  Note that this path is returned in UNIX format, not DOS
+  return the absolute current directory path - given a UNIX pathname.
+  Note that this path is returned in DOS format, not UNIX
   format.
 ********************************************************************/
 char *GetWd(char *str)
@@ -1239,7 +1239,7 @@ char *GetWd(char *str)
   *s = 0;
 
   if (!use_getwd_cache)
-    return(sys_getwd(str));
+    return(dos_getwd(str));
 
   /* init the cache */
   if (!getwd_cache_init)
@@ -1255,10 +1255,10 @@ char *GetWd(char *str)
   /*  Get the inode of the current directory, if this doesn't work we're
       in trouble :-) */
 
-  if (stat(".",&st) == -1) 
+  if (dos_stat(".",&st) == -1) 
   {
     DEBUG(0,("Very strange, couldn't stat \".\"\n"));
-    return(sys_getwd(str));
+    return(dos_getwd(str));
   }
 
 
@@ -1275,7 +1275,7 @@ char *GetWd(char *str)
       if (st.st_ino == ino_list[i].inode &&
           st.st_dev == ino_list[i].dev)
       {
-        if (stat(ino_list[i].text,&st2) == 0)
+        if (dos_stat(ino_list[i].text,&st2) == 0)
         {
           if (st.st_ino == st2.st_ino &&
               st.st_dev == st2.st_dev &&
@@ -1302,7 +1302,7 @@ char *GetWd(char *str)
       The very slow getcwd, which spawns a process on some systems, or the
       not quite so bad getwd. */
 
-  if (!sys_getwd(s))
+  if (!dos_getwd(s))
   {
     DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
     return (NULL);
@@ -1692,7 +1692,7 @@ int count_chars(char *s,char c)
 /****************************************************************************
   make a dir struct
 ****************************************************************************/
-void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode,time_t date)
+void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
   char *p;
   pstring mask2;
@@ -1717,7 +1717,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode
   CVAL(buf,21) = mode;
   put_dos_date(buf,22,date);
   SSVAL(buf,26,size & 0xFFFF);
-  SSVAL(buf,28,size >> 16);
+  SSVAL(buf,28,(size >> 16)&0xFFFF);
   StrnCpy(buf+30,fname,12);
   if (!case_sensitive)
     strupper(buf+30);
@@ -2054,14 +2054,18 @@ int write_data(int fd,char *buffer,int N)
 /****************************************************************************
 transfer some data between two fd's
 ****************************************************************************/
-int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align)
 {
   static char *buf=NULL;  
   static int size=0;
   char *buf1,*abuf;
-  int total = 0;
+  SMB_OFF_T total = 0;
 
-  DEBUG(4,("transfer_file %d  (head=%d) called\n",n,headlen));
+#ifdef LARGE_SMB_OFF_T
+  DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+#else /* LARGE_SMB_OFF_T */
+  DEBUG(4,("transfer_file n=%d  (head=%d) called\n",n,headlen));
+#endif /* LARGE_SMB_OFF_T */
 
   if (size == 0) {
     size = lp_readsize();
@@ -2084,46 +2088,46 @@ int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
     n += headlen;
 
   while (n > 0)
-    {
-      int s = MIN(n,size);
-      int ret,ret2=0;
+  {
+    int s = (int)MIN(n,(SMB_OFF_T)size);
+    int ret,ret2=0;
 
-      ret = 0;
+    ret = 0;
 
-      if (header && (headlen >= MIN(s,1024))) {
-	buf1 = header;
-	s = headlen;
-	ret = headlen;
-	headlen = 0;
-	header = NULL;
-      } else {
-	buf1 = abuf;
-      }
-
-      if (header && headlen > 0)
-	{
-	  ret = MIN(headlen,size);
-	  memcpy(buf1,header,ret);
-	  headlen -= ret;
-	  header += ret;
-	  if (headlen <= 0) header = NULL;
-	}
-
-      if (s > ret)
-	ret += read(infd,buf1+ret,s-ret);
-
-      if (ret > 0)
-	{
-	  ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
-	  if (ret2 > 0) total += ret2;
-	  /* if we can't write then dump excess data */
-	  if (ret2 != ret)
-	    transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
-	}
-      if (ret <= 0 || ret2 != ret)
-	return(total);
-      n -= ret;
+    if (header && (headlen >= MIN(s,1024))) {
+      buf1 = header;
+      s = headlen;
+      ret = headlen;
+      headlen = 0;
+      header = NULL;
+    } else {
+      buf1 = abuf;
     }
+
+    if (header && headlen > 0)
+    {
+      ret = MIN(headlen,size);
+      memcpy(buf1,header,ret);
+      headlen -= ret;
+      header += ret;
+      if (headlen <= 0) header = NULL;
+    }
+
+    if (s > ret)
+      ret += read(infd,buf1+ret,s-ret);
+
+    if (ret > 0)
+    {
+      ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
+      if (ret2 > 0) total += ret2;
+      /* if we can't write then dump excess data */
+      if (ret2 != ret)
+        transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
+    }
+    if (ret <= 0 || ret2 != ret)
+      return(total);
+    n -= ret;
+  }
   return(total);
 }
 
@@ -3261,18 +3265,18 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 set the length of a file from a filedescriptor.
 Returns 0 on success, -1 on failure.
 ****************************************************************************/
-int set_filelen(int fd, long len)
+int set_filelen(int fd, SMB_OFF_T len)
 {
 /* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
    extend a file with ftruncate. Provide alternate implementation
    for this */
 
 #ifdef HAVE_FTRUNCATE_EXTEND
-  return ftruncate(fd, len);
+  return sys_ftruncate(fd, len);
 #else
   SMB_STRUCT_STAT st;
   char c = 0;
-  long currpos = lseek(fd, 0L, SEEK_CUR);
+  SMB_OFF_T currpos = sys_lseek(fd, (SMB_OFF_T)0, SEEK_CUR);
 
   if(currpos < 0)
     return -1;
@@ -3280,7 +3284,7 @@ int set_filelen(int fd, long len)
      the requested size (call ftruncate),
      or shorter, in which case seek to len - 1 and write 1
      byte of zero */
-  if(fstat(fd, &st)<0)
+  if(sys_fstat(fd, &st)<0)
     return -1;
 
 #ifdef S_ISFIFO
@@ -3290,14 +3294,14 @@ int set_filelen(int fd, long len)
   if(st.st_size == len)
     return 0;
   if(st.st_size > len)
-    return ftruncate(fd, len);
+    return sys_ftruncate(fd, len);
 
-  if(lseek(fd, len-1, SEEK_SET) != len -1)
+  if(sys_lseek(fd, len-1, SEEK_SET) != len -1)
     return -1;
   if(write(fd, &c, 1)!=1)
     return -1;
   /* Seek to where we were */
-  lseek(fd, currpos, SEEK_SET);
+  sys_lseek(fd, currpos, SEEK_SET);
   return 0;
 #endif
 }

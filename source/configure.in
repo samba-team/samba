@@ -160,14 +160,21 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
-AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate)
-AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2)
+AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64)
+AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 
 echo $ac_n "checking for long long ... $ac_c"
 AC_TRY_RUN([#include <stdio.h>
 main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
 echo yes;AC_DEFINE(HAVE_LONGLONG), 
+echo no)
+
+echo $ac_n "checking for 64 bit off_t ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+#include <sys/stat.h>
+main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
+echo yes;AC_DEFINE(SIZEOF_OFF_T,8)
 echo no)
 
 echo $ac_n "checking for off64_t ... $ac_c"
