@@ -42,44 +42,83 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
+extern DOM_SID global_machine_sid;
 
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
  */
 
-rid_name builtin_alias_rids[] = 
-{
-	{ BUILTIN_ALIAS_RID_ADMINS       , "Administrators" },
-	{ BUILTIN_ALIAS_RID_USERS        , "Users" },
-	{ BUILTIN_ALIAS_RID_GUESTS       , "Guests" },
-	{ BUILTIN_ALIAS_RID_POWER_USERS  , "Power Users" },
-
-	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS  , "Account Operators" },
-	{ BUILTIN_ALIAS_RID_SYSTEM_OPS   , "System Operators" },
-	{ BUILTIN_ALIAS_RID_PRINT_OPS    , "Print Operators" },
-	{ BUILTIN_ALIAS_RID_BACKUP_OPS   , "Backup Operators" },
-	{ BUILTIN_ALIAS_RID_REPLICATOR   , "Replicator" },
-	{ 0                             , NULL }
+rid_name builtin_alias_rids[] =
+{  
+    { BUILTIN_ALIAS_RID_ADMINS       , "Administrators" },
+    { BUILTIN_ALIAS_RID_USERS        , "Users" },
+    { BUILTIN_ALIAS_RID_GUESTS       , "Guests" },
+    { BUILTIN_ALIAS_RID_POWER_USERS  , "Power Users" },
+   
+    { BUILTIN_ALIAS_RID_ACCOUNT_OPS  , "Account Operators" },
+    { BUILTIN_ALIAS_RID_SYSTEM_OPS   , "System Operators" },
+    { BUILTIN_ALIAS_RID_PRINT_OPS    , "Print Operators" },
+    { BUILTIN_ALIAS_RID_BACKUP_OPS   , "Backup Operators" },
+    { BUILTIN_ALIAS_RID_REPLICATOR   , "Replicator" },
+    { 0                             , NULL }
 };
 
 /* array lookup of well-known Domain RID users. */
-rid_name domain_user_rids[] = 
-{
-	{ DOMAIN_USER_RID_ADMIN         , "Administrator" },
-	{ DOMAIN_USER_RID_GUEST         , "Guest" },
-	{ 0                             , NULL }
+rid_name domain_user_rids[] =
+{  
+    { DOMAIN_USER_RID_ADMIN         , "Administrator" },
+    { DOMAIN_USER_RID_GUEST         , "Guest" },
+    { 0                             , NULL }
 };
 
 /* array lookup of well-known Domain RID groups. */
-rid_name domain_group_rids[] = 
-{
-	{ DOMAIN_GROUP_RID_ADMINS       , "Domain Admins" },
-	{ DOMAIN_GROUP_RID_USERS        , "Domain Users" },
-	{ DOMAIN_GROUP_RID_GUESTS       , "Domain Guests" },
-	{ 0                             , NULL }
+rid_name domain_group_rids[] =
+{  
+    { DOMAIN_GROUP_RID_ADMINS       , "Domain Admins" },
+    { DOMAIN_GROUP_RID_USERS        , "Domain Users" },
+    { DOMAIN_GROUP_RID_GUESTS       , "Domain Guests" },
+    { 0                             , NULL }
 };
 
+/**************************************************************************
+ Check if a name matches any of the well known SID values.
+***************************************************************************/
+
+BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid)
+{
+  rid_name *rnp;
+  int i;
+
+  for( i = 0; builtin_alias_rids[i].name != NULL; i++) {
+    rnp = &builtin_alias_rids[i];
+    if(strequal(rnp->name, windows_name)) {
+      string_to_sid( psid, "S-1-5-32" );
+      psid->sub_auths[psid->num_auths++] = rnp->rid;
+      return True;
+    }
+  }
+
+  for( i = 0; domain_user_rids[i].name != NULL; i++ ) {
+    rnp = &domain_user_rids[i];
+    if(strequal(rnp->name, windows_name)) {
+      *psid = global_machine_sid;
+      psid->sub_auths[psid->num_auths++] = rnp->rid;
+      return True;
+    }
+  }
+
+  for( i = 0; domain_group_rids[i].name != NULL; i++ ) {
+    rnp = &domain_group_rids[i];
+    if(strequal(rnp->name, windows_name)) {
+      *psid = global_machine_sid;
+      psid->sub_auths[psid->num_auths++] = rnp->rid;
+      return True;
+    }
+  }
+
+  return False;
+}
 
 int make_dom_gids(char *gids_str, DOM_GID **ppgids)
 {

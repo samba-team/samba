@@ -21,7 +21,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern DOM_SID global_machine_sid;
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
@@ -228,7 +227,70 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 }
 
 /****************************************************************************
-check if a user is in a user list
+check if a user is in a netgroup user list
+****************************************************************************/
+static BOOL user_in_netgroup_list(char *user,char *ngname)
+{
+#ifdef NETGROUP
+  static char *mydomain = NULL;
+  if (mydomain == NULL)
+    yp_get_default_domain(&mydomain);
+
+  if(mydomain == NULL)
+  {
+    DEBUG(5,("Unable to get default yp domain\n"));
+  }
+  else
+  {
+    DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+          user, mydomain, ngname));
+    DEBUG(5,("innetgr is %s\n",
+          innetgr(ngname, NULL, user, mydomain)
+          ? "TRUE" : "FALSE"));
+
+    if (innetgr(ngname, NULL, user, mydomain))
+      return (True);
+  }
+#endif /* NETGROUP */
+  return False;
+}
+
+/****************************************************************************
+check if a user is in a UNIX user list
+****************************************************************************/
+static BOOL user_in_group_list(char *user,char *gname)
+{
+#if HAVE_GETGRNAM 
+  struct group *gptr;
+  char **member;  
+  struct passwd *pass = Get_Pwnam(user,False);
+
+  if (pass)
+  { 
+    gptr = getgrgid(pass->pw_gid);
+    if (gptr && strequal(gptr->gr_name,gname))
+      return(True); 
+  } 
+
+  gptr = (struct group *)getgrnam(gname);
+
+  if (gptr)
+  {
+    member = gptr->gr_mem;
+    while (member && *member)
+    {
+      if (strequal(*member,user))
+        return(True);
+      member++;
+    }
+  }
+#endif /* HAVE_GETGRNAM */
+  return False;
+}	      
+
+/****************************************************************************
+check if a user is in a user list - can check combinations of UNIX
+and netgroup lists.
 ****************************************************************************/
 BOOL user_in_list(char *user,char *list)
 {
@@ -236,65 +298,72 @@ BOOL user_in_list(char *user,char *list)
   char *p=list;
 
   while (next_token(&p,tok,LIST_SEP))
+  {
+    /*
+     * Check raw username.
+     */
+    if (strequal(user,tok))
+      return(True);
+
+    /*
+     * Now check to see if any combination
+     * of UNIX and netgroups has been specified.
+     */
+
+    if(*tok == '@')
     {
-      if (strequal(user,tok))
-	return(True);
-
-#ifdef NETGROUP
-      if (*tok == '@')
-	{
-	  static char *mydomain = NULL;
-	  if (mydomain == 0)
-	    yp_get_default_domain(&mydomain);
-
-	  if(mydomain == 0)
-	    {
-              DEBUG(5,("Unable to get default yp domain\n"));
-            }
-          else
-	    {
-	  
-  	      DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		   user, mydomain, &tok[1]));
-	      DEBUG(5,("innetgr is %s\n",
-		   innetgr(&tok[1], (char *) 0, user, mydomain)
-		   ? "TRUE" : "FALSE"));
-	  
-  	      if (innetgr(&tok[1], (char *)0, user, mydomain))
-	        return (True);
-            }
-	}
-#endif
-
-
-#if HAVE_GETGRNAM 
-      if (*tok == '@')
-	{
-          struct group *gptr;
-          char **member;  
-	  struct passwd *pass = Get_Pwnam(user,False);
-
-	  if (pass) { 
-	    gptr = getgrgid(pass->pw_gid);
-	    if (gptr && strequal(gptr->gr_name,&tok[1]))
-	      return(True); 
-	  } 
-
-	  gptr = (struct group *)getgrnam(&tok[1]);
-
-	  if (gptr)
-	    {
-	      member = gptr->gr_mem;
-	      while (member && *member)
-		{
-		  if (strequal(*member,user))
-		    return(True);
-		  member++;
-		}
-	    }
-	}	      
-#endif
+      /*
+       * Old behaviour. Check netgroup list
+       * followed by UNIX list.
+       */
+      if(user_in_netgroup_list(user,&tok[1]))
+        return True;
+      if(user_in_group_list(user,&tok[1]))
+        return True;
     }
+    else if (*tok == '+')
+    {
+      if(tok[1] == '&')
+      {
+        /*
+         * Search UNIX list followed by netgroup.
+         */
+        if(user_in_group_list(user,&tok[2]))
+          return True;
+        if(user_in_netgroup_list(user,&tok[2]))
+          return True;
+      }
+      else
+      {
+        /*
+         * Just search UNIX list.
+         */
+        if(user_in_group_list(user,&tok[1]))
+          return True;
+      }
+    }
+    else if (*tok == '&')
+    {
+      if(tok[1] == '&')
+      {
+        /*
+         * Search netgroup list followed by UNIX list.
+         */
+        if(user_in_netgroup_list(user,&tok[2]))
+          return True;
+        if(user_in_group_list(user,&tok[2]))
+          return True;
+      }
+      else
+      {
+        /*
+         * Just search netgroup list.
+         */
+        if(user_in_netgroup_list(user,&tok[1]))
+          return True;
+      }
+    }
+  }
   return(False);
 }
 
@@ -352,157 +421,3 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
   }
   return(NULL);
 }
-
-#if 0 
-/* JRATEST - under construction. */
-/**************************************************************************
- Groupname map functionality. The code loads a groupname map file and
- (currently) loads it into a linked list. This is slow and memory
- hungry, but can be changed into a more efficient storage format
- if the demands on it become excessive.
-***************************************************************************/
-
-typedef struct groupname_map {
-   ubi_slNode next;
-
-   char *windows_name;
-   DOM_SID windows_sid;
-   char *unix_name;
-   gid_t unix_gid;
-} groupname_map_entry;
-
-static ubi_slList groupname_map_list;
-
-/**************************************************************************
- Delete all the entries in the groupname map list.
-***************************************************************************/
-
-static void delete_groupname_map_list(void)
-{
-  groupname_map_entry *gmep;
-
-  while((gmep = (groupname_map_entry *)ubi_slRemHead( groupname_map_list )) != NULL) {
-    if(gmep->windows_name)
-      free(gmep->windows_name);
-    if(gmep->unix_name)
-      free(gmep->unix_name);
-    free((char *)gmep);
-  }
-}
-
-/**************************************************************************
- Load a groupname map file. Sets last accessed timestamp.
-***************************************************************************/
-
-void load_groupname_map(void)
-{
-  static time_t groupmap_file_last_modified = (time_t)0;
-  static BOOL initialized = False;
-  char *groupname_map_file = lp_groupname_map();
-  struct stat st;
-  FILE *fp;
-  char *s;
-  pstring buf;
-
-  if(!initialized) {
-    ubi_slInsert( &groupname_map_list );
-    initialized = True;
-  }
-
-  if (!*groupname_map_file)
-    return;
-
-  if(stat(groupname_map_file, &st) != 0) {
-    DEBUG(0, ("load_groupname_map: Unable to stat file %s. Error was %s\n",
-               groupname_map_file, strerror(errno) ));
-    return;
-  }
-
-  /*
-   * Check if file has changed.
-   */
-  if( st.st_mtime <= groupmap_file_last_modified)
-    return;
-
-  groupmap_file_last_modified = st.st_mtime;
-
-  /*
-   * Load the file.
-   */
-
-  fp = fopen(groupname_map_file,"r");
-  if (!fp) {
-    DEBUG(0,("load_groupname_map: can't open groupname map %s. Error was %s\n",
-          mapfile, strerror(errno)));
-    return;
-  }
-
-  /*
-   * Throw away any previous list.
-   */
-  delete_groupname_map_list();
-
-  DEBUG(4,("load_groupname_map: Scanning groupname map %s\n",groupname_map_file));
-
-  while((s=fgets_slash(buf,sizeof(buf),fp))!=NULL) {
-    pstring unixname;
-    pstring windows_name;
-    struct group *gptr;
-    DOM_SID tmp_sid;
-
-    DEBUG(10,("load_groupname_map: Read line |%s|\n", s);
-
-    if (!*s || strchr("#;",*s))
-      continue;
-
-    if(!next_token(&s,unixname, "\t\n\r="))
-      continue;
-
-    if(!next_token(&s,windows_name, "\t\n\r="))
-      continue;
-
-    trim_string(unixname, " ", " ");
-    trim_string(windows_name, " ", " ");
-
-    if (!*dosname)
-      continue;
-
-    if(!*unixname)
-      continue;
-
-    /*
-     * Attempt to get the unix gid_t for this name.
-     */
-
-    DEBUG(5,("load_groupname_map: Attempting to find unix group %s.\n",
-          unixname ));
-
-    if((gptr = (struct group *)getgrnam(unixname)) == NULL) {
-      DEBUG(0,("load_groupname_map: getgrnam for group %s failed.\
-Error was %s.\n", unixname, strerror(errno) ));
-      continue;
-    }
-
-    /*
-     * Now map to an NT SID.
-     */
-
-    if(!lookup_wellknown_sid_from_name(windows_name, &tmp_sid)) {
-      /*
-       * It's not a well known name, convert the UNIX gid_t
-       * to a rid within this domain SID.
-       */
-      tmp_sid = global_machine_sid;
-      tmp_sid.sub_auths[tmp_sid.num_auths++] = 
-                    pdb_gid_to_group_rid((gid_t)gptr->gr_gid);
-    }
-
-    /*
-     * Create the list entry and add it onto the list.
-     */
-
-  }
-
-  fclose(fp);
-}
-#endif /* JRATEST */

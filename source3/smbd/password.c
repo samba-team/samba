@@ -961,7 +961,7 @@ Hence we make a direct return to avoid a second chance!!!
 #endif
 
 #ifdef HPUX_10_TRUSTED
-  return(bigcrypt(password,this_salt,this_crypted));
+  return(strcmp(bigcrypt(password,this_salt),this_crypted) == 0);
 #endif
 
 #ifdef NO_CRYPT
