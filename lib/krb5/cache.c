@@ -41,7 +41,9 @@
 RCSID("$Id$");
 
 krb5_error_code
-krb5_cc_register(krb5_context context, const krb5_cc_ops *ops, int override)
+krb5_cc_register(krb5_context context, 
+		 const krb5_cc_ops *ops, 
+		 krb5_boolean override)
 {
     int i;
     if(context->cc_ops == NULL){
