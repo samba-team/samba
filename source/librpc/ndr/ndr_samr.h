@@ -53,24 +53,27 @@ struct samr_Shutdown {
 
 };
 
-struct samr_LookupDomain {
-	struct {
-	} in;
-
-	struct {
-		NTSTATUS result;
-	} out;
-
-};
-
 struct samr_Name {
 	uint16 name_len;
 	uint16 name_size;
 	const char *name;
 };
 
+struct samr_LookupDomain {
+	struct {
+		struct policy_handle *handle;
+		struct samr_Name *domain;
+	} in;
+
+	struct {
+		struct dom_sid2 *sid;
+		NTSTATUS result;
+	} out;
+
+};
+
 struct samr_SamEntry {
-	uint32 rid;
+	uint32 idx;
 	struct samr_Name name;
 };
 
@@ -645,7 +648,7 @@ struct samr_CONNECT3 {
 
 };
 
-struct samr_CONNECT4 {
+struct samr_Connect4 {
 	struct {
 		const char *system_name;
 		uint32 unknown;

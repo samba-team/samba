@@ -21,6 +21,28 @@
 
 #include "includes.h"
 
+static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle, struct samr_Name *domain)
+{
+	NTSTATUS status;
+	struct samr_LookupDomain r;
+
+	printf("Testing LookupDomain(%s)\n", domain->name);
+
+	r.in.handle = handle;
+	r.in.domain = domain;
+
+	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	NDR_PRINT_DEBUG(dom_sid2, r.out.sid);
+
+	return True;	
+}
+
 
 static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle)
@@ -28,7 +50,8 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomains r;
 	uint32 resume_handle = 0;
-	uint32 num_entries;
+	uint32 num_entries=0;
+	int i;
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
@@ -44,6 +67,12 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	NDR_PRINT_DEBUG(samr_SamArray, r.out.sam);
 
+	if (r.out.sam) {
+		for (i=0;i<r.out.sam->count;i++) {
+			test_LookupDomain(p, mem_ctx, handle, &r.out.sam->entries[i].name);
+		}
+	}
+
 	return True;
 }
 
@@ -53,6 +82,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_Connect r;
+	struct samr_Connect4 r4;
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -61,6 +91,17 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	r4.in.system_name = "win2003";
+	r4.in.unknown = 0;
+	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r4.out.handle = handle;
+
+	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Connect4 failed - %s\n", nt_errstr(status));
 		return False;
 	}
 

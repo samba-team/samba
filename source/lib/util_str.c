@@ -1066,6 +1066,26 @@ void strupper_m(char *s)
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
 }
 
+
+/**
+   work out the number of multibyte chars in a string
+**/
+size_t strlen_m(const char *s)
+{
+	size_t count = 0;
+
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		s++;
+		count++;
+	}
+
+	if (!*s)
+		return;
+
+	push_ucs2(NULL,tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	return count + strlen_w(tmpbuf);
+}
+
 /**
  Convert a string to upper case.
 **/

@@ -25,8 +25,8 @@
 	/* Function: 0x02 */
 
 	typedef struct {
-		uint16 name_len;
-		uint16 name_size;
+		[value(2*strlen_m(r->name))] uint16 name_len;
+		[value(2*strlen_m(r->name))] uint16 name_size;
 		unistr_noterm *name;
 	} lsa_Name;
 

@@ -20,8 +20,8 @@ static NTSTATUS ndr_push_lsa_Name(struct ndr_push *ndr, int ndr_flags, struct ls
 {
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_uint16(ndr, r->name_len));
-	NDR_CHECK(ndr_push_uint16(ndr, r->name_size));
+	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
+	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
 	NDR_CHECK(ndr_push_ptr(ndr, r->name));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;

@@ -871,12 +871,12 @@ NTSTATUS dcerpc_samr_CONNECT3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_CONNECT4(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_CONNECT4 *r)
+NTSTATUS dcerpc_samr_Connect4(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_Connect4 *r)
 {
 	NTSTATUS status;
 	status = dcerpc_ndr_request(p, DCERPC_SAMR_CONNECT4, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_CONNECT4,
-				    (ndr_pull_fn_t) ndr_pull_samr_CONNECT4,
+				    (ndr_push_fn_t) ndr_push_samr_Connect4,
+				    (ndr_pull_fn_t) ndr_pull_samr_Connect4,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
