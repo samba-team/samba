@@ -119,7 +119,7 @@ static struct smbcli_state *connect_one(char *share, int snum)
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
 
 	do {
-		status = smbcli_full_connection(&c, myname,
+		status = smbcli_full_connection(NULL, &c, myname,
 					     server, NULL,  
 					     share, "?????", 
 					     servers[snum].username, lp_workgroup(), 

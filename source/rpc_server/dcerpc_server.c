@@ -269,6 +269,29 @@ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 
 
 /*
+  destroy a link to an endpoint
+*/
+static int dcesrv_endpoint_destructor(void *ptr)
+{
+	struct dcesrv_connection *p = ptr;
+	if (p->iface) {
+		p->iface->unbind(p, p->iface);
+	}
+
+	/* destroy any handles */
+	while (p->handles) {
+		dcesrv_handle_destroy(p, p->handles);
+	}
+
+	if (p->auth_state.gensec_security) {
+		gensec_end(&p->auth_state.gensec_security);
+	}
+
+	return 0;
+}
+
+
+/*
   connect to a dcerpc endpoint
 */
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
@@ -293,6 +316,8 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->auth_state.session_info = NULL;
 	(*p)->auth_state.session_key = dcesrv_generic_session_key;
 	(*p)->srv_conn = NULL;
+
+	talloc_set_destructor(*p, dcesrv_endpoint_destructor);
 
 	return NT_STATUS_OK;
 }
@@ -331,27 +356,6 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
-
-/*
-  disconnect a link to an endpoint
-*/
-void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
-{
-	if (p->iface) {
-		p->iface->unbind(p, p->iface);
-	}
-
-	/* destroy any handles */
-	while (p->handles) {
-		dcesrv_handle_destroy(p, p->handles);
-	}
-
-	if (p->auth_state.gensec_security) {
-		gensec_end(&p->auth_state.gensec_security);
-	}
-
-	talloc_free(p);
-}
 
 static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
 {

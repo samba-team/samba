@@ -173,9 +173,10 @@ static struct smbcli_state *connect_one(char *share)
 
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
 
-	nt_status = smbcli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
-					username, lp_workgroup(), password, 0,
-					NULL);
+	nt_status = smbcli_full_connection(NULL, 
+					   &c, myname, server_n, NULL, 0, share, "?????", 
+					   username, lp_workgroup(), password, 0,
+					   NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));

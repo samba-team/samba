@@ -173,7 +173,6 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("logoff the new vuid\n");
 	status = smb_raw_ulogoff(session);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_free(session);
 
 	printf("the new vuid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
@@ -186,9 +185,8 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	/* close down the new tree, which will also close the session
-	   as the reference count will be 0 */
 	talloc_free(tree);
+	talloc_free(session);
 	
 done:
 	return ret;
