@@ -530,8 +530,8 @@ main(int argc, char **argv)
 	    snprintf(ttname, sizeof(ttname), "%s??", _PATH_TTY);
 	    ttyn = ttname;
 	}
-	if((tty = strrchr(ttyn, '/')))
-	    tty++;
+	if (strncmp (ttyn, _PATH_DEV, strlen(_PATH_DEV)) == 0)
+	    tty = ttyn + strlen(_PATH_DEV);
 	else
 	    tty = ttyn;
     
