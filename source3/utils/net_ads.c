@@ -219,7 +219,7 @@ static BOOL usergrp_display(char *field, void **values, void *data_area)
 	if (!field) { /* must be end of record */
 		if (!strchr_m(disp_fields[0], '$')) {
 			if (disp_fields[1])
-				d_printf("%-21.21s %-50.50s\n", 
+				d_printf("%-21.21s %s\n", 
 				       disp_fields[0], disp_fields[1]);
 			else
 				d_printf("%s\n", disp_fields[0]);
