@@ -41,12 +41,14 @@
 RCSID("$Id$");
 
 struct cpw_entry_data {
-    int random;
+    int random_key;
+    int random_password;
     char *password;
 };
 
 static struct getargs args[] = {
     { "random-key",	'r',	arg_flag,	NULL, "set random key" },
+    { "random-password", 0,	arg_flag,	NULL, "set random password" },
     { "password",	'p',	arg_string,	NULL, "princial's password" },
 };
 
@@ -59,43 +61,79 @@ usage(void)
 }
 
 static int
+set_random_key (krb5_principal principal)
+{
+    krb5_error_code ret;
+    int i;
+    krb5_keyblock *keys;
+    int num_keys;
+
+    ret = kadm5_randkey_principal(kadm_handle, principal, &keys, &num_keys);
+    if(ret)
+	return ret;
+    for(i = 0; i < num_keys; i++)
+	krb5_free_keyblock_contents(context, &keys[i]);
+    free(keys);
+    return 0;
+}
+
+static int
+set_random_password (krb5_principal principal)
+{
+    krb5_error_code ret;
+    char pw[128];
+
+    random_password (pw, sizeof(pw));
+    ret = kadm5_chpass_principal(kadm_handle, principal, pw);
+    if (ret == 0) {
+	char *princ_name;
+
+	krb5_unparse_name(context, principal, &princ_name);
+
+	printf ("%s's password set to `%s'\n", princ_name, pw);
+	free (princ_name);
+    }
+    memset (pw, 0, sizeof(pw));
+    return ret;
+}
+
+static int
+set_password (krb5_principal principal, char *password)
+{
+    krb5_error_code ret = 0;
+    char *pw, pwbuf[128];
+
+    if(pw == NULL) {
+	char *princ_name;
+	char *prompt;
+
+	krb5_unparse_name(context, principal, &princ_name);
+	asprintf(&prompt, "%s's Password: ", princ_name);
+	free (princ_name);
+	ret = des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 1);
+	free (prompt);
+	if(ret){
+	    return 0; /* XXX error code? */
+	}
+	pw = pwbuf;
+    }
+    if(ret == 0)
+	ret = kadm5_chpass_principal(kadm_handle, principal, pw);
+    memset(pwbuf, 0, sizeof(pwbuf));
+    return ret;
+}
+
+static int
 do_cpw_entry(krb5_principal principal, void *data)
 {
-    char *pw, pwbuf[128];
     struct cpw_entry_data *e = data;
-    krb5_error_code ret = 0;
     
-    pw = e->password;
-    if(e->random == 0){
-	if(pw == NULL){
-	    char *princ_name;
-	    char *prompt;
-
-	    krb5_unparse_name(context, principal, &princ_name);
-	    asprintf(&prompt, "%s's Password: ", princ_name);
-	    free (princ_name);
-	    ret = des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 1);
-	    free (prompt);
-	    if(ret){
-		return 0; /* XXX error code? */
-	    }
-	    pw = pwbuf;
-	}		
-	if(ret == 0)
-	    ret = kadm5_chpass_principal(kadm_handle, principal, pw);
-	memset(pwbuf, 0, sizeof(pwbuf));
-    }else{
-	int i;
-	krb5_keyblock *keys;
-	int num_keys;
-	ret = kadm5_randkey_principal(kadm_handle, principal, &keys, &num_keys);
-	if(ret)
-	    return ret;
-	for(i = 0; i < num_keys; i++)
-	    krb5_free_keyblock_contents(context, &keys[i]);
-	free(keys);
-    }
-    return ret;
+    if (e->random_key)
+	return set_random_key (principal);
+    else if (e->random_password)
+	return set_random_password (principal);
+    else
+	return set_password (principal, e->password);
 }
 
 int
@@ -105,16 +143,34 @@ cpw_entry(int argc, char **argv)
     int i;
     int optind = 0;
     struct cpw_entry_data data;
+    int num;
 
-    data.random = 0;
-    data.password = NULL;
+    data.random_key      = 0;
+    data.random_password = 0;
+    data.password        = NULL;
 
-    args[0].value = &data.random;
-    args[1].value = &data.password;
+    args[0].value = &data.random_key;
+    args[1].value = &data.random_password;
+    args[2].value = &data.password;
     if(getarg(args, num_args, argc, argv, &optind)){
 	usage();
 	return 0;
     }
+
+    num = 0;
+    if (data.random_key)
+	++num;
+    if (data.random_password)
+	++num;
+    if (data.password)
+	++num;
+
+    if (num > 1) {
+	printf ("give only one of "
+		"--random-key, --random-password, --password\n");
+	return 0;
+    }
+	
     argc -= optind;
     argv += optind;
 
