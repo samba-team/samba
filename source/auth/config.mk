@@ -19,6 +19,16 @@ INIT_OBJ_FILES = \
 #######################
 
 #######################
+# Start MODULE auth_winbind
+[MODULE::auth_winbind]
+INIT_OBJ_FILES = \
+		auth/auth_winbind.o
+REQUIRED_SUBSYSTEMS = \
+		LIB_WINBIND_CLIENT
+# End MODULE auth_builtin
+#######################
+
+#######################
 # Start SUBSYSTEM AUTH
 [SUBSYSTEM::AUTH]
 INIT_OBJ_FILES = \

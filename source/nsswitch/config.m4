@@ -1,0 +1,2 @@
+SMB_SUBSYSTEM_MK(LIB_WINBIND_CLIENT,nsswitch/config.mk)
+
