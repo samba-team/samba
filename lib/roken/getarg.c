@@ -80,7 +80,6 @@ mandoc_template(struct getargs *args,
 		const char *extra_string)
 {
     int i;
-    size_t max_len = 0;
     char timestr[64], cmd[64];
     const char *p;
     time_t t;
