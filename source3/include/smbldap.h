@@ -120,7 +120,10 @@ void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval);
 BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				   const char *attribute, pstring value);
+				   const char *attribute, char *value,
+				   int max_len);
+BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+				 const char *attribute, pstring value);
 
 /**
  * Struct to keep the state for all the ldap stuff 
