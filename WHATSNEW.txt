@@ -1,8 +1,19 @@
-              WHATS NEW IN Samba 2.2.1:  10th July 2001
-              =========================================
+              WHATS NEW IN Samba 2.2.1a:  11th July 2001
+              ==========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
+
+This is a minor bugfix release for 2.2.1, *NOT* security related.
+
+1). 2.2.1 had a bug where using smbpasswd -m to add a Windows NT or
+Windows2000 machine into a Samba hosted PDC would fail due to our
+stricter user name checking. We were disallowing user names
+containing '$', which is needed when using smbpasswd to add a
+machine into a domain. Automatically adding machines (using the
+native Windows tools) into a Samba domain worked correctly.
+
+2.2.1a fixes this single problem.
 
 New/Changed parameters in 2.2.1
 -------------------------------
