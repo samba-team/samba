@@ -431,6 +431,18 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			goto again_dir;
 	}
 
+	if( DEBUGLVL( 10 )) {
+		dbgtext("unpack_canon_ace: File ACL:\n");
+		for (i = 0, current_ace = file_ace; current_ace; current_ace = current_ace->next, i++ ) {
+			print_canon_ace( current_ace, i);
+		}
+
+		dbgtext("unpack_canon_ace: Directory ACL:\n");
+		for (i = 0, current_ace = dir_ace; current_ace; current_ace = current_ace->next, i++ ) {
+			print_canon_ace( current_ace, i);
+		}
+	}
+
 	*ppfile_ace = file_ace;
 	*ppdir_ace = dir_ace;
 	return True;
@@ -914,7 +926,7 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
  Attempt to apply an ACL to a file or directory.
 ****************************************************************************/
 
-static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace)
+static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace, BOOL *pacl_set_support)
 {
 	BOOL ret = False;
 	SMB_ACL_T the_acl = sys_acl_init((int)count_canon_ace_list(the_ace) + 1);
@@ -933,6 +945,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		DEBUG(0,("set_canon_ace_list: Unable to init %s ACL. (%s)\n",
 			default_ace ? "default" : "file", strerror(errno) ));
 #endif
+		*pacl_set_support = False;
 		return False;
 	}
 
@@ -949,6 +962,13 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				i, strerror(errno) ));
 			goto done;
 		}
+
+		/*
+		 * Ok - we now know the ACL calls should be working, don't
+		 * allow fallback to chmod.
+		 */
+
+		*pacl_set_support = True;
 
 		/*
 		 * Initialise the entry from the canon_ace.
@@ -1041,7 +1061,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 */
 
 	if (sys_acl_valid(the_acl) == -1) {
-		DEBUG(0,("set_canon_ace_list: ACL is invalid for set (%s).\n", strerror(errno) ));
+		DEBUG(0,("set_canon_ace_list: ACL type (%s) is invalid for set (%s).\n",
+				the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
+				strerror(errno) ));
 		goto done;
 	}
 
@@ -1325,17 +1347,31 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
 
 		BOOL acl_set_support = False;
+		BOOL ret = False;
 
 		/*
 		 * Try using the POSIX ACL set first. All back to chmod if
 		 * we have no ACL support on this filesystem.
 		 */
 
-		if (acl_perms && file_ace_list && set_canon_ace_list(fsp, file_ace_list, False))
-			acl_set_support = True;
+		if (acl_perms && file_ace_list) {
+			ret = set_canon_ace_list(fsp, file_ace_list, False, &acl_set_support);
+			if (acl_set_support && ret == False) {
+				DEBUG(3,("set_nt_acl: failed to set file acl on file %s (%s).\n", fsp->fsp_name, strerror(errno) ));
+				free_canon_ace_list(file_ace_list);
+				free_canon_ace_list(dir_ace_list); 
+				return False;
+			}
+		}
 
-		if (acl_perms && acl_set_support && fsp->is_directory && dir_ace_list)
-			set_canon_ace_list(fsp, dir_ace_list, True);
+		if (acl_perms && acl_set_support && fsp->is_directory && dir_ace_list) {
+			if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
+				DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
+				free_canon_ace_list(file_ace_list);
+				free_canon_ace_list(dir_ace_list); 
+				return False;
+			}
+		}
 
 		/*
 		 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
@@ -1348,7 +1384,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			file_ace_list = NULL;
 			dir_ace_list = NULL;
 
-			DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
+			DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
 				fsp->fsp_name, (unsigned int)perms ));
 
 			if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), perms) == -1) {
