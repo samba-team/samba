@@ -1874,7 +1874,7 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk);
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				const char* val_name,
-				uint32 *type, BUFFER2 *buf);
+				uint32 *type, BUFFER2 *buffer);
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
@@ -1933,6 +1933,10 @@ BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				const POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid);
+BOOL set_samr_set_userinfo2(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 user_rid, void *usr);
 BOOL set_samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
@@ -1940,7 +1944,7 @@ BOOL set_samr_set_userinfo(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, SAM_USER_INFO_21 *usr);
+				uint32 user_rid, void *usr);
 BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
@@ -2056,6 +2060,9 @@ BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum,
 BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint16 switch_value, GROUP_INFO_CTR* ctr);
+BOOL samr_set_userinfo2(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol, uint16 switch_value,
+				void* usr);
 BOOL samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
@@ -2942,6 +2949,14 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u);
 BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
 BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
+BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
+				POLICY_HND *hnd,
+				uint16 switch_value, void *info);
+BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth);
+void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
+BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,
+				uint32 status);
+BOOL samr_io_r_set_userinfo2(char *desc,  SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				const char *srv_name, uint32 unknown_0);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
@@ -3492,6 +3507,7 @@ void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_groupmem(struct client_info *info);
 void cmd_sam_query_group(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_set_userinfo2(struct client_info *info);
 void cmd_sam_set_userinfo(struct client_info *info);
 void cmd_sam_query_dispinfo(struct client_info *info);
 void cmd_sam_query_dominfo(struct client_info *info);

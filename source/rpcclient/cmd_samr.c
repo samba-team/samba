@@ -2573,6 +2573,162 @@ void cmd_sam_query_user(struct client_info *info)
 /****************************************************************************
 experimental SAM user set.
 ****************************************************************************/
+void cmd_sam_set_userinfo2(struct client_info *info)
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring sid_str;
+	DOM_SID sid;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 argc = 0;
+	char **argv = NULL;
+	uint32 cp_argc = 0;
+	char **cp_argv = NULL;
+	extern int optind;
+	int opt;
+	BOOL set_acb_bits = False;
+
+	fstring user_name;
+	fstring tmp;
+
+	char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+	SAM_USER_INFO_16 usr16;
+	uint16 acb_set = 0x0;
+
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
+
+	if (sid.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	/* create arguments array */
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		add_chars_to_array(&argc, &argv, tmp);
+	}
+
+	cp_argc = argc;
+	cp_argv = argv;
+
+	if (cp_argc < 2)
+	{
+		report(out_hnd, "samuserset2 <name> [-s <acb_bits>]\n");
+		return;
+	}
+
+	safe_strcpy(user_name, cp_argv[0], sizeof(user_name));
+
+	cp_argc--;
+	cp_argv++;
+
+	optind = -1;
+	while ((opt = getopt(cp_argc, cp_argv,"s:")) != EOF)
+	{
+		switch (opt)
+		{
+			case 's':
+			{
+				set_acb_bits = True;
+				acb_set = get_number(optarg);
+				break;
+			}
+		}
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_to_string(sid_str, &sid);
+
+	report(out_hnd, "SAM Set User Info: %s\n", user_name);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum,
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum,
+	            &sam_pol, 0x02000000, &sid,
+	            &pol_dom) : False;
+
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+					&pol_dom, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
+
+	/* send set user info */
+	if (res1 && num_rids == 1 && get_samr_query_userinfo(smb_cli, fnum,
+						    &pol_dom,
+						    0x10, rid[0],
+	                                            (void*)&usr16))
+	{
+		void *usr = NULL;
+		uint32 switch_value = 0;
+
+		if (set_acb_bits)
+		{
+			usr16.acb_info |= acb_set;
+		}
+
+		if (True)
+		{
+			SAM_USER_INFO_16 *p = malloc(sizeof(SAM_USER_INFO_16));
+			p->acb_info = usr16.acb_info;
+
+			usr = (void*)p;
+			switch_value = 16;
+		}
+		
+		if (usr != NULL)
+		{
+			res1 = set_samr_set_userinfo2(smb_cli, fnum,
+					    &pol_dom,
+					    switch_value, rid[0], usr);
+		}
+	}
+	res = res ? samr_close(smb_cli, fnum,
+	            &sam_pol) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &pol_dom) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res1)
+	{
+		report(out_hnd, "Set User Info: OK\n");
+		DEBUG(5,("cmd_sam_query_user: succeeded\n"));
+	}
+	else
+	{
+		report(out_hnd, "Set User Info: Failed\n");
+		DEBUG(5,("cmd_sam_query_user: failed\n"));
+	}
+
+	free_char_array(argc, argv);
+}
+
+/****************************************************************************
+experimental SAM user set.
+****************************************************************************/
 void cmd_sam_set_userinfo(struct client_info *info)
 {
 	uint16 fnum;
