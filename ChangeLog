@@ -1,3 +1,11 @@
+Sun Oct 26 04:51:02 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/asn1/der_get.c (der_get_length, fix_dce): Special-case
+ 	indefinite encoding.
+
+	* lib/asn1/gen_glue.c (generate_units): Check for empty
+ 	member-list.
+
 Sat Oct 25 07:24:57 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/error/compile_et.awk: Allow specifying table-base.
