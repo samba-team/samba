@@ -291,7 +291,6 @@ static WERROR rpc_get_subkey_by_index(REG_KEY *parent, int n, REG_KEY **subkey)
 	r.in.class = &classname;
 	tm.low = tm.high = 0x7fffffff;
 	r.in.last_changed_time = &tm;
-	r.out.result.v = 0;
 
 	r.in.enum_index = n;
 	r.in.unknown = r.out.unknown = 0x0414;
