@@ -140,7 +140,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		len = strlen(dest)*2 + 2;
 	} else {
 		int i, c;
-		if (dest_len < src_len) src_len = dest_len;
+		if (dest_len*2 < src_len) src_len = 2*dest_len;
 		for (i=0; i < src_len; i += 2) {
 			c = SVAL(src, i);
 			*dest++ = c;
