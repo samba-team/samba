@@ -1,3 +1,9 @@
+2003-09-03  Love Hörquist Åstrand <lha@it.su.se>
+
+	* otpprint.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* otp.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
 2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
 
 	* otp.c: remove \n from errx, from NetBSD

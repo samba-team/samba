@@ -1,3 +1,7 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* libtelnet/enc_des.c: use new DES_ api
+	
 2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/telnet.1: replace <,> with \*[Lt],\*[Gt]
