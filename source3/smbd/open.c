@@ -30,7 +30,7 @@ extern BOOL global_client_failed_oplock_break;
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
-static int fd_open(struct connection_struct *conn, char *fname, 
+static int fd_open(struct connection_struct *conn, const char *fname, 
 		   int flags, mode_t mode)
 {
 	int fd;
@@ -40,13 +40,6 @@ static int fd_open(struct connection_struct *conn, char *fname,
 #endif
 
 	fd = SMB_VFS_OPEN(conn,fname,flags,mode);
-
-	/* Fix for files ending in '.' */
-	if((fd == -1) && (errno == ENOENT) &&
-	   (strchr_m(fname,'.')==NULL)) {
-		pstrcat(fname,".");
-		fd = SMB_VFS_OPEN(conn,fname,flags,mode);
-	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
 		flags, (int)mode, fd, (fd == -1) ? strerror(errno) : "" ));
@@ -70,7 +63,7 @@ int fd_close(struct connection_struct *conn, files_struct *fsp)
  Check a filename for the pipe string.
 ****************************************************************************/
 
-static void check_for_pipe(char *fname)
+static void check_for_pipe(const char *fname)
 {
 	/* special case of pipe opens */
 	char s[10];
@@ -89,18 +82,15 @@ static void check_for_pipe(char *fname)
 ****************************************************************************/
 
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
-		      const char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
+		      const char *fname,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
 	extern struct current_user current_user;
-	pstring fname;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 
 	fsp->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
 	errno = EPERM;
-
-	pstrcpy(fname,fname1);
 
 	/* Check permissions */
 
