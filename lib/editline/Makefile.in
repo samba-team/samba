@@ -9,6 +9,7 @@ VPATH = @srcdir@
 
 CC = @CC@
 AR = ar
+LN_S = @LN_S@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
@@ -31,6 +32,8 @@ LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
 LIB_DEPS = -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
@@ -47,6 +50,7 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	@install_symlink_command@
 
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/$(LIB)
@@ -82,6 +86,7 @@ $(LIBNAME).a: $(OBJECTS)
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
+	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
 

@@ -10,6 +10,7 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
+LN_S = @LN_S@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
@@ -30,6 +31,8 @@ EXECSUFFIX=@EXECSUFFIX@
 PICFLAGS = @PICFLAGS@
  
 LIB_DEPS = -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 PROGS = destest$(EXECSUFFIX) \
 	mdtest$(EXECSUFFIX) \
@@ -78,6 +81,7 @@ des_enc.o: des_enc.c
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	@install_symlink_command@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS2INSTALL); do \
 	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
@@ -121,6 +125,7 @@ $(LIBNAME).a: $(LIBOBJ)
 $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
 	$(LDSHARED) -o $@ $(LIBOBJ) $(LIB_DEPS)
+	@build_symlink_command@
 
 # To make psoriaris make happy we have to mention these files in some
 # rule, so we might as well put them here.

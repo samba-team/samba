@@ -10,6 +10,7 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
+LN_S = @LN_S@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LIBS = @LIBS@
@@ -26,6 +27,8 @@ libdir = @libdir@
 PICFLAGS = @PICFLAGS@
  
 LIB_DEPS = $(LIB_DBM) -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 LIBNAME = $(LIBPREFIX)otp
 LIBEXT = @LIBEXT@
@@ -62,6 +65,7 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	@install_symlink_command@
 
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/$(LIB)
@@ -94,6 +98,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
+	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
 

@@ -10,6 +10,7 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
+LN_S = @LN_S@
 DEFS = @DEFS@ -DLIBDIR='"$(libdir)"' @AFS_EXTRA_DEFS@
 CFLAGS = @CFLAGS@
 
@@ -24,6 +25,8 @@ libdir = @libdir@
 PICFLAGS = @PICFLAGS@
  
 LIB_DEPS = -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 LIBNAME = $(LIBPREFIX)kafs
 LIBEXT = @LIBEXT@
@@ -51,6 +54,7 @@ install: all
 	@for i in $(LIB); do \
 	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
 	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
+	@install_symlink_command@
 
 uninstall:
 	@for i in $(LIB); do \
@@ -88,6 +92,7 @@ $(LIBNAME).a: $(OBJECTS)
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
+	@build_symlink_command@
 
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead

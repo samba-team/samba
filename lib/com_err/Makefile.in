@@ -32,6 +32,8 @@ includedir = @includedir@
 PICFLAGS = @PICFLAGS@
  
 LIB_DEPS = -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 LIBNAME = $(LIBPREFIX)com_err
 LIBEXT = @LIBEXT@
@@ -67,6 +69,7 @@ install: all
 	@for i in $(lib_LIBRARIES); do \
 	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
 	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
+	@install_symlink_command@
 
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	@for i in $(bin_PROGRAMS); do \
@@ -115,7 +118,7 @@ $(LIBNAME).a: $(OBJECTS)
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS) $(LDOBJ)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LDOBJ) $(LIB_DEPS)
-
+	@build_symlink_command@
 
 COBJ = compile_et.o parse.o lex.o
 

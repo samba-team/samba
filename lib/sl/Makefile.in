@@ -12,6 +12,7 @@ top_builddir=../..
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
+LN_S = @LN_S@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 YACC = @YACC@
@@ -28,6 +29,8 @@ bindir = @bindir@
 includedir = @includedir@
 
 LIB_DEPS = @LIB_readline@ -lc
+build_symlink_command   = @build_symlink_command@
+install_symlink_command = @install_symlink_command@
 
 PICFLAGS = @PICFLAGS@
 EXECSUFFIX = @EXECSUFFIX@
@@ -65,6 +68,7 @@ install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL) -m 555 $(sl_LIB) $(DESTDIR)$(libdir)/$(sl_LIB)
 	$(INSTALL) -m 555 $(sl_LIB) $(DESTDIR)$(libdir)/$(ss_LIB)
+	@install_symlink_command@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0555 $(PROGS) $(DESTDIR)$(bindir)/$(PROGS)
 
@@ -97,6 +101,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
+	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
 
