@@ -129,9 +129,27 @@
 	/* Function: 0x0c                                */
 	NTSTATUS lsa_CreateTrustDom ();
 
+
 	/******************/
 	/* Function: 0x0d */
-	NTSTATUS lsa_EnumTrustDom ();
+
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_TrustInformation;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TrustInformation *domains;
+		uint32 max_count;
+	} lsa_RefDomainList;
+
+	NTSTATUS lsa_EnumTrustDom (
+		[in,ref]     policy_handle *handle,
+		[in,out,ref] uint32 *resume_handle,
+		[in]         uint32 num_entries,
+		[out]        lsa_RefDomainList *domains
+		);
 
 
 	/******************/
@@ -147,17 +165,6 @@
 		uint32 count;
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
-
-	typedef struct {
-		lsa_Name name;
-		dom_sid2 *sid;
-	} lsa_TrustInformation;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] lsa_TrustInformation *domains;
-		uint32 max_count;
-	} lsa_RefDomainList;
 
 	NTSTATUS lsa_LookupNames (
 		[in,ref]     policy_handle *handle,
