@@ -296,7 +296,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 
 make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smbspool
  
-make LOGFILEBASE=/var/log/samba.d libsmbclient
+make LOGFILEBASE=/var/log/samba.d bin/libsmbclient.so
 
 
 %Install
