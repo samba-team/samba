@@ -379,14 +379,16 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	}
 
 	if (!conn->cli) {
-		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
+		DEBUG(0, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
+		smb_panic("connection_ok: conn->cli was null!");
 		return False;
 	}
 
 	if (!conn->cli->initialised) {
-		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
+		DEBUG(0, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
+		smb_panic("connection_ok: conn->cli->initialised is False!");
 		return False;
 	}
 
