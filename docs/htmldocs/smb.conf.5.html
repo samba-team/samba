@@ -204,6 +204,7 @@ would look like this:
 
  	[printers]
  		path = /usr/spool/public
+ 		writeable = no
  		guest ok = yes
  		printable = yes 
 
@@ -400,6 +401,8 @@ password.
 <p><br>Here is a list of all global parameters. See the section of each
 parameter for details.  Note that some are synonyms.
 <p><br><ul>
+<p><br><li > <a href="smb.conf.5.html#adduserscript"><strong>add user script</strong></a>
+<p><br><li > <a href="smb.conf.5.html#allowtrusteddomains"><strong>allow trusted domains</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceas"><strong>announce as</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceversion"><strong>announce version</strong></a>
 <p><br><li > <a href="smb.conf.5.html#autoservices"><strong>auto services</strong></a>
@@ -411,22 +414,24 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#codingsystem"><strong>coding system</strong></a>
 <p><br><li > <a href="smb.conf.5.html#configfile"><strong>config file</strong></a>
 <p><br><li > <a href="smb.conf.5.html#deadtime"><strong>deadtime</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debughirestimestamp"><strong>debug hires timestamp</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debugpid"><strong>debug pid</strong></a>
 <p><br><li > <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debuguid"><strong>debug uid</strong></a>
 <p><br><li > <a href="smb.conf.5.html#debuglevel"><strong>debuglevel</strong></a>
 <p><br><li > <a href="smb.conf.5.html#default"><strong>default</strong></a>
 <p><br><li > <a href="smb.conf.5.html#defaultservice"><strong>default service</strong></a>
+<p><br><li > <a href="smb.conf.5.html#deleteuserscript"><strong>delete user script</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dfreecommand"><strong>dfree command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dnsproxy"><strong>dns proxy</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainadmingroup"><strong>domain admin group</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainadminusers"><strong>domain admin users</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domaincontroller"><strong>domain controller</strong></a>
-<p><br><li > <a href="smb.conf.5.html#domaingroupmap"><strong>domain group map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domaingroups"><strong>domain groups</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainguestgroup"><strong>domain guest group</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainguestusers"><strong>domain guest users</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainlogons"><strong>domain logons</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainmaster"><strong>domain master</strong></a>
-<p><br><li > <a href="smb.conf.5.html#domainusermap"><strong>domain user map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#encryptpasswords"><strong>encrypt passwords</strong></a>
 <p><br><li > <a href="smb.conf.5.html#getwdcache"><strong>getwd cache</strong></a>
 <p><br><li > <a href="smb.conf.5.html#homedirmap"><strong>homedir map</strong></a>
@@ -434,15 +439,15 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#interfaces"><strong>interfaces</strong></a>
 <p><br><li > <a href="smb.conf.5.html#keepalive"><strong>keepalive</strong></a>
 <p><br><li > <a href="smb.conf.5.html#kerneloplocks"><strong>kernel oplocks</strong></a>
-<p><br><li > <a href="smb.conf.5.html#ldapbindas"><strong>ldap bind as</strong></a>
-<p><br><li > <a href="smb.conf.5.html#ldappasswdfile"><strong>ldap passwd file</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ldapfilter"><strong>ldap filter</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapport"><strong>ldap port</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ldaproot"><strong>ldap root</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ldaprootpasswd"><strong>ldap root passwd</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapserver"><strong>ldap server</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapsuffix"><strong>ldap suffix</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lmannounce"><strong>lm announce</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lminterval"><strong>lm interval</strong></a>
 <p><br><li > <a href="smb.conf.5.html#loadprinters"><strong>load printers</strong></a>
-<p><br><li > <a href="smb.conf.5.html#localgroupmap"><strong>local group map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#localmaster"><strong>local master</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lockdir"><strong>lock dir</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lockdirectory"><strong>lock directory</strong></a>
@@ -455,6 +460,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#lpqcachetime"><strong>lpq cache time</strong></a>
 <p><br><li > <a href="smb.conf.5.html#machinepasswordtimeout"><strong>machine password timeout</strong></a>
 <p><br><li > <a href="smb.conf.5.html#mangledstack"><strong>mangled stack</strong></a>
+<p><br><li > <a href="smb.conf.5.html#maptoguest"><strong>map to guest</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxdisksize"><strong>max disk size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxlogsize"><strong>max log size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxmux"><strong>max mux</strong></a>
@@ -464,15 +470,18 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#maxwinsttl"><strong>max wins ttl</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxxmit"><strong>max xmit</strong></a>
 <p><br><li > <a href="smb.conf.5.html#messagecommand"><strong>message command</strong></a>
+<p><br><li > <a href="smb.conf.5.html#minpasswdlength"><strong>min passwd length</strong></a>
 <p><br><li > <a href="smb.conf.5.html#minwinsttl"><strong>min wins ttl</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nameresolveorder"><strong>name resolve order</strong></a>
 <p><br><li > <a href="smb.conf.5.html#netbiosaliases"><strong>netbios aliases</strong></a>
 <p><br><li > <a href="smb.conf.5.html#netbiosname"><strong>netbios name</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nishomedir"><strong>nis homedir</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ntaclsupport"><strong>nt acl support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ntpipesupport"><strong>nt pipe support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ntsmbsupport"><strong>nt smb support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nullpasswords"><strong>null passwords</strong></a>
 <p><br><li > <a href="smb.conf.5.html#olelockingcompatibility"><strong>ole locking compatibility</strong></a>
+<p><br><li > <a href="smb.conf.5.html#oplockbreakwaittime"><strong>oplock break wait time</strong></a>
 <p><br><li > <a href="smb.conf.5.html#oslevel"><strong>os level</strong></a>
 <p><br><li > <a href="smb.conf.5.html#packetsize"><strong>packet size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#panicaction"><strong>panic action</strong></a>
@@ -494,6 +503,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#readsize"><strong>read size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#remoteannounce"><strong>remote announce</strong></a>
 <p><br><li > <a href="smb.conf.5.html#remotebrowsesync"><strong>remote browse sync</strong></a>
+<p><br><li > <a href="smb.conf.5.html#restrictanonymous"><strong>restrict anonymous</strong></a>
 <p><br><li > <a href="smb.conf.5.html#root"><strong>root</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootdir"><strong>root dir</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootdirectory"><strong>root directory</strong></a>
@@ -535,6 +545,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a>
+<p><br><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><br><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
@@ -565,6 +576,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#directory"><strong>directory</strong></a>
 <p><br><li > <a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a>
 <p><br><li > <a href="smb.conf.5.html#directorymode"><strong>directory mode</strong></a>
+<p><br><li > <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security mask</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dontdescend"><strong>dont descend</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dosfiletimeresolution"><strong>dos filetime resolution</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dosfiletimes"><strong>dos filetimes</strong></a>
@@ -574,7 +586,9 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#followsymlinks"><strong>follow symlinks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcecreatemode"><strong>force create mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcedirectorymode"><strong>force directory mode</strong></a>
+<p><br><li > <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcegroup"><strong>force group</strong></a>
+<p><br><li > <a href="smb.conf.5.html#forcesecuritymode"><strong>force security mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forceuser"><strong>force user</strong></a>
 <p><br><li > <a href="smb.conf.5.html#fstype"><strong>fstype</strong></a>
 <p><br><li > <a href="smb.conf.5.html#group"><strong>group</strong></a>
@@ -587,6 +601,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#hostsdeny"><strong>hosts deny</strong></a>
 <p><br><li > <a href="smb.conf.5.html#include"><strong>include</strong></a>
 <p><br><li > <a href="smb.conf.5.html#invalidusers"><strong>invalid users</strong></a>
+<p><br><li > <a href="smb.conf.5.html#level2oplocks"><strong>level2 oplocks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#locking"><strong>locking</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lppausecommand"><strong>lppause command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lpqcommand"><strong>lpq command</strong></a>
@@ -595,22 +610,24 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#magicoutput"><strong>magic output</strong></a>
 <p><br><li > <a href="smb.conf.5.html#magicscript"><strong>magic script</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglecase"><strong>mangle case</strong></a>
+<p><br><li > <a href="smb.conf.5.html#manglelocks"><strong>mangle locks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#mangledmap"><strong>mangled map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglednames"><strong>mangled names</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglingchar"><strong>mangling char</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maparchive"><strong>map archive</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maphidden"><strong>map hidden</strong></a>
 <p><br><li > <a href="smb.conf.5.html#mapsystem"><strong>map system</strong></a>
-<p><br><li > <a href="smb.conf.5.html#maptoguest"><strong>map to guest</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxconnections"><strong>max connections</strong></a>
 <p><br><li > <a href="smb.conf.5.html#minprintspace"><strong>min print space</strong></a>
 <p><br><li > <a href="smb.conf.5.html#onlyguest"><strong>only guest</strong></a>
 <p><br><li > <a href="smb.conf.5.html#onlyuser"><strong>only user</strong></a>
 <p><br><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
+<p><br><li > <a href="smb.conf.5.html#oplockcontentionlimit"><strong>oplock contention limit</strong></a>
 <p><br><li > <a href="smb.conf.5.html#path"><strong>path</strong></a>
 <p><br><li > <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#postscript"><strong>postscript</strong></a>
 <p><br><li > <a href="smb.conf.5.html#preexec"><strong>preexec</strong></a>
+<p><br><li > <a href="smb.conf.5.html#preexecclose"><strong>preexec close</strong></a>
 <p><br><li > <a href="smb.conf.5.html#preservecase"><strong>preserve case</strong></a>
 <p><br><li > <a href="smb.conf.5.html#printcommand"><strong>print command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#printok"><strong>print ok</strong></a>
@@ -628,6 +645,8 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#revalidate"><strong>revalidate</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
+<p><br><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
+<p><br><li > <a href="smb.conf.5.html#rootpreexecclose"><strong>root preexec close</strong></a>
 <p><br><li > <a href="smb.conf.5.html#setdirectory"><strong>set directory</strong></a>
 <p><br><li > <a href="smb.conf.5.html#sharemodes"><strong>share modes</strong></a>
 <p><br><li > <a href="smb.conf.5.html#shortpreservecase"><strong>short preserve case</strong></a>
@@ -652,6 +671,46 @@ parameter for details. Note that some are synonyms.
 <h2>EXPLANATION OF EACH PARAMETER</h2>
     
 <p><br><ul>
+<p><br><a name="adduserscript"></a>
+<li><strong><strong>add user script (G)</strong></strong>
+<p><br>This is the full pathname to a script that will be run <em>AS ROOT</em> by
+<a href="smbd.8.html"><strong>smbd (8)</strong></a> under special circumstances decribed
+below.
+<p><br>Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows <a href="smbd.8.html"><strong>smbd</strong></a> to create
+the required UNIX users <em>ON DEMAND</em> when a user accesses the Samba
+server.
+<p><br>In order to use this option, <a href="smbd.8.html"><strong>smbd</strong></a> must be set to
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> or
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a> and <strong>"add user script"</strong>
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of <strong>%u</strong>, which expands into the UNIX user name to
+create.
+<p><br>When the Windows user attempts to access the Samba server, at
+<em>"login"</em>(session setup in the SMB protocol) time,
+<a href="smbd.8.html"><strong>smbd</strong></a> contacts the <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a> and attempts to authenticate the given user
+with the given password. If the authentication succeeds then
+<a href="smbd.8.html"><strong>smbd</strong></a> attempts to find a UNIX user in the UNIX
+password database to map the Windows user into. If this lookup fails,
+and <strong>"add user script"</strong> is set then <a href="smbd.8.html"><strong>smbd</strong></a> will
+call the specified script <em>AS ROOT</em>, expanding any <strong>%u</strong> argument
+to be the user name to create.
+<p><br>If this script successfully creates the user then
+<a href="smbd.8.html"><strong>smbd</strong></a> will continue on as though the UNIX user
+already existed. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts.
+<p><br>See also <a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a>,
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>, <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a>, <a href="smb.conf.5.html#deleteuserscript"><strong>delete user
+script</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	add user script = &lt;empty string&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	add user script = /usr/local/samba/bin/add_user %u</code>
 <p><br><a name="adminusers"></a>
 <li><strong><strong>admin users (S)</strong></strong>
 <p><br>This is a list of users who will be granted administrative privileges
@@ -666,46 +725,25 @@ file permissions.
 <code>	admin users = jason</code>
 <p><br><a name="allowhosts"></a>
 <li><strong><strong>allow hosts (S)</strong></strong>
-<p><br>A synonym for this parameter is <a href="smb.conf.5.html#hostsallow"><strong>'hosts allow'</strong></a>
-<p><br>This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service.
-<p><br>If specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section then it will
-apply to all services, regardless of whether the individual service
-has a different setting.
-<p><br>You can specify the hosts by name or IP number. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like <code>"allow hosts = 150.203.5."</code>. The full syntax of the list is
-described in the man page <strong>hosts_access (5)</strong>. Note that this man
-page may not be present on your system, so a brief description will
-be given here also.
-<p><br><em>NOTE:</em> IF you wish to allow the <a href="smbpasswd.html.8"><strong>smbpasswd
-(8)</strong></a> program to be run by local users to change
-their Samba passwords using the local <a href="smbd.8.html"><strong>smbd (8)</strong></a>
-daemon, then you <em>MUST</em> ensure that the localhost is listed in your
-<strong>allow hosts</strong> list, as <a href="smbpasswd.html.8"><strong>smbpasswd (8)</strong></a> runs
-in client-server mode and is seen by the local
-<a href="smbd.8.html"><strong>smbd</strong></a> process as just another client.
-<p><br>You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups. The <em>EXCEPT</em> keyword can also
-be used to limit a wildcard list. The following examples may provide
-some help:
-<p><br><strong>Example 1</strong>: allow localhost and all IPs in 150.203.*.* except one
-<p><br><code>	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66</code>
-<p><br><strong>Example 2</strong>: allow localhost and hosts that match the given network/netmask
-<p><br><code>	hosts allow = localhost, 150.203.15.0/255.255.255.0</code>
-<p><br><strong>Example 3</strong>: allow a localhost plus a couple of hosts
-<p><br><code>	hosts allow = localhost, lapland, arvidsjaur</code>
-<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-<p><br><code> 	hosts allow = @foonet, localhost</code>
-<code> 	hosts deny = pirate</code>
-<p><br>Note that access still requires suitable user-level passwords.
-<p><br>See <a href="testparm.1.html"><strong>testparm (1)</strong></a> for a way of testing your
-host access to see if it does what you expect.
+<p><br>Synonym for <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a>.
+<p><br><a name="allowtrusteddomains"></a>
+<li><strong><strong>allow trusted domains (G)</strong></strong>
+<p><br>This option only takes effect when the <a href="smb.conf.5.html#security"><strong>security</strong></a>
+option is set to <strong>server</strong> or <strong>domain</strong>.  If it is set to no,
+then attempts to connect to a resource from a domain or workgroup other than
+the one which smbd is running in will fail, even if that domain
+is trusted by the remote server doing the authentication.
+<p><br>This is useful if you only want your Samba server to serve resources
+to users in the domain it is a member of. As an example, suppose that there are
+two domains DOMA and DOMB.  DOMB is trusted by DOMA, which contains
+the Samba server.  Under normal circumstances, a user with an account
+in DOMB can then access the resources of a UNIX account with the same
+account name on the Samba server even if they do not have an account
+in DOMA.  This can make implementing a security boundary difficult.
 <p><br><strong>Default:</strong>
-<code>	none (i.e., all hosts permitted access)</code>
+<code>     allow trusted domains = Yes</code>
 <p><br><strong>Example:</strong>
-<code>	allow hosts = 150.203.5. localhost myhost.mynet.edu.au</code>
+<code>     allow trusted domains = No</code>
 <p><br><a name="alternatepermissions"></a>
 <li><strong><strong>alternate permissions (S)</strong></strong>
 <p><br>This is a deprecated parameter. It no longer has any effect in Samba2.0.
@@ -717,13 +755,14 @@ regardless if the owner of the file is the currently logged on user or not.
 <li><strong><strong>announce as (G)</strong></strong>
 <p><br>This specifies what type of server <a href="nmbd.8.html"><strong>nmbd</strong></a> will
 announce itself as, to a network neighborhood browse list. By default
-this is set to Windows NT. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly.
+this is set to Windows NT. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly.
 <p><br><strong>Default:</strong>
-<code>	announce as = NT</code>
+<code>	announce as = NT Server</code>
 <p><br><strong>Example</strong>
 <code>	announce as = Win95</code>
 <p><br><a name="announceversion"></a>
@@ -787,11 +826,15 @@ will serve to packets coming in those interfaces.  Note that you
 should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces.
-<p><br>In addition, to change a users SMB password, the
-<a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> by default connects to the
-<em>"localhost" - 127.0.0.1</em> address as an SMB client to issue the
-password change request. If <strong>"bind interfaces only"</strong> is set then
-unless the network address <em>127.0.0.1</em> is added to the
+<p><br>If <strong>"bind interfaces only"</strong> is set then unless the network address
+<em>127.0.0.1</em> is added to the <a href="smb.conf.5.html#interfaces"><strong>'interfaces'</strong></a> parameter
+list <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> and
+<a href="swat.8.html"><strong>swat</strong></a> may not work as expected due to the
+reasons covered below.
+<p><br>To change a users SMB password, the <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a>
+by default connects to the <em>"localhost" - 127.0.0.1</em> address as an SMB
+client to issue the password change request. If <strong>"bind interfaces only"</strong>
+is set then unless the network address <em>127.0.0.1</em> is added to the
 <a href="smb.conf.5.html#interfaces"><strong>'interfaces'</strong></a> parameter list then
 <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> will fail to connect in it's
 default mode. <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> can be forced to
@@ -799,6 +842,13 @@ use the primary IP interface of the local host by using its
 <a href="smbpasswd.8.html#minusr"><strong>"-r remote machine"</strong></a> parameter, with
 <strong>"remote machine"</strong> set to the IP name of the primary interface
 of the local host.
+<p><br>The <a href="swat.8.html"><strong>swat</strong></a> status page tries to connect with
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a> at the address 
+<em>127.0.0.1</em> to determine if they are running.  Not adding <em>127.0.0.1</em>  will cause
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a> to always show
+"not running" even if they really are.  This can prevent
+<a href="swat.8.html"><strong>swat</strong></a> from starting/stopping/restarting
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	bind interfaces only = False</code>
 <p><br><strong>Example:</strong>
@@ -839,10 +889,10 @@ shares in a net view and in the browse list.
 <p><br><strong>Example:</strong>
 <code>	browseable = No</code>
 <p><br><a name="casesensitive"></a>
-<li><strong><strong>case sensitive (S)</strong></strong>
+<li><strong><strong>case sensitive (G)</strong></strong>
 <p><br>See the discussion in the section <a href="smb.conf.5.html#NAMEMANGLING"><strong>NAME MANGLING</strong></a>.
 <p><br><a name="casesignames"></a>
-<li><strong><strong>casesignames (S)</strong></strong>
+<li><strong><strong>casesignames (G)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#casesensitive"><strong>"case sensitive"</strong></a>.
 <p><br><a name="changenotifytimeout"></a>
 <li><strong><strong>change notify timeout (G)</strong></strong>
@@ -877,7 +927,12 @@ in order for the conversion to the UNIX character set to be done
 correctly. 
 <p><br><li > <strong>ISO8859-5</strong> Russian Cyrillic UNIX character set. The parameter
 <a href="smb.conf.5.html#clientcodepage"><strong>client code page</strong></a> <em>MUST</em> be set to code
-page 866 if the <strong>character set</strong> parameter is set to ISO8859-2
+page 866 if the <strong>character set</strong> parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly. 
+<p><br><li > <strong>ISO8859-7</strong> Greek UNIX character set. The parameter
+<a href="smb.conf.5.html#clientcodepage"><strong>client code page</strong></a> <em>MUST</em> be set to code
+page 737 if the <strong>character set</strong> parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly. 
 <p><br><li > <strong>KOI8-R</strong> Alternate mapping for Russian Cyrillic UNIX
@@ -1048,6 +1103,17 @@ performed.
 <code>	deadtime = 0</code>
 <p><br><strong>Example:</strong>
 <code>	deadtime = 15</code>
+<p><br><a name="debughirestimestamp"></a>
+<li><strong><strong>debug hires timestamp (G)</strong></strong>
+<p><br>Sometimes the timestamps in the log messages are needed with a
+resolution of higher that seconds, this boolean parameter adds
+microsecond resolution to the timestamp message header when turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code> debug hires timestamp = No</code>
+<p><br><strong>Example:</strong>
+<code> debug hires timestamp = Yes</code>
 <p><br><a name="debugtimestamp"></a>
 <li><strong><strong>debug timestamp (G)</strong></strong>
 <p><br>Samba2.0 debug log messages are timestamped by default. If you are
@@ -1058,6 +1124,29 @@ off.
 <code>	debug timestamp = Yes</code>
 <p><br><strong>Example:</strong>
 <code>	debug timestamp = No</code>
+<p><br><a name="debugpid"></a>
+<li><strong><strong>debug pid (G)</strong></strong>
+<p><br>When using only one log file for more then one forked smbd-process
+there may be hard to follow which process outputs which message.
+This boolean parameter is adds the process-id to the timestamp message
+headers in the logfile when turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code>	debug pid = No</code>
+<p><br><strong>Example:</strong>
+<code>	debug pid = Yes</code>
+<p><br><a name="debuguid"></a>
+<li><strong><strong>debug uid (G)</strong></strong>
+<p><br>Samba is sometimes run as root and sometime run as the connected
+user, this boolean parameter inserts the current euid, egid, uid
+and gid to the timestamp message headers in the log file if turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code>	debug uid = No</code>
+<p><br><strong>Example:</strong>
+<code>	debug uid = Yes</code>
 <p><br><a name="debuglevel"></a>
 <li><strong><strong>debug level (G)</strong></strong>
 <p><br>The value of the parameter (an integer) allows the debug level
@@ -1101,6 +1190,51 @@ interesting things.
 
 </pre>
 
+<p><br><a name="deleteuserscript"></a>
+<li><strong><strong>delete user script (G)</strong></strong>
+<p><br>This is the full pathname to a script that will be run <em>AS ROOT</em> by
+<a href="smbd.8.html"><strong>smbd (8)</strong></a> under special circumstances decribed
+below.
+<p><br>Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows <a href="smbd.8.html"><strong>smbd</strong></a> to delete
+the required UNIX users <em>ON DEMAND</em> when a user accesses the Samba
+server and the Windows NT user no longer exists.
+<p><br>In order to use this option, <a href="smbd.8.html"><strong>smbd</strong></a> must be set to
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a> and <strong>"delete user
+script"</strong> must be set to a full pathname for a script that will delete
+a UNIX user given one argument of <strong>%u</strong>, which expands into the UNIX
+user name to delete. <em>NOTE</em> that this is different to the
+<a href="smb.conf.5.html#adduserscript"><strong>add user script</strong></a> which will work with the
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> option as well as
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>. The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists. In the
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> mode a missing user
+is treated the same as an invalid password logon attempt. Deleting
+the user in this circumstance would not be a good idea.
+<p><br>When the Windows user attempts to access the Samba server, at
+<em>"login"</em>(session setup in the SMB protocol) time,
+<a href="smbd.8.html"><strong>smbd</strong></a> contacts the <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a> and attempts to authenticate the given user
+with the given password. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+<a href="smbd.8.html"><strong>smbd</strong></a> attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account. If this lookup succeeds,
+and <strong>"delete user script"</strong> is set then <a href="smbd.8.html"><strong>smbd</strong></a> will
+call the specified script <em>AS ROOT</em>, expanding any <strong>%u</strong> argument
+to be the user name to delete.
+<p><br>This script should delete the given UNIX username. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts.
+<p><br>See also <a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>,
+<a href="smb.conf.5.html#passwordserver"><strong>password server</strong></a>, <a href="smb.conf.5.html#adduserscript"><strong>add user
+script</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	delete user script = &lt;empty string&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	delete user script = /usr/local/samba/bin/del_user %u</code>
 <p><br><a name="deletereadonly"></a>
 <li><strong><strong>delete readonly (S)</strong></strong>
 <p><br>This parameter allows readonly files to be deleted.  This is not
@@ -1135,14 +1269,7 @@ as the user has permissions to do so).
 <code>	delete veto files = True</code>
 <p><br><a name="denyhosts"></a>
 <li><strong><strong>deny hosts (S)</strong></strong>
-<p><br>The opposite of <a href="smb.conf.5.html#allowhosts"><strong>'allow hosts'</strong></a> - hosts listed
-here are <em>NOT</em> permitted access to services unless the specific
-services have their own lists to override this one. Where the lists
-conflict, the <a href="smb.conf.5.html#allowhosts"><strong>'allow'</strong></a> list takes precedence.
-<p><br><strong>Default:</strong>
-<code>	none (i.e., no hosts specifically excluded)</code>
-<p><br><strong>Example:</strong>
-<code>	deny hosts = 150.203.4. badhost.mynet.edu.au</code>
+<p><br>Synonym for <a href="smb.conf.5.html#hostsdeny"><strong>hosts deny</strong></a>.
 <p><br><a name="dfreecommand"></a>
 <li><strong><strong>dfree command (G)</strong></strong>
 <p><br>The dfree command setting should only be used on systems where a
@@ -1209,7 +1336,8 @@ bits are added).
 <p><br>See the <a href="smb.conf.5.html#forcedirectorymode"><strong>"force directory mode"</strong></a> parameter
 to cause particular mode bits to always be set on created directories.
 <p><br>See also the <a href="smb.conf.5.html#createmode"><strong>"create mode"</strong></a> parameter for masking
-mode bits on created files.
+mode bits on created files, and the <a href="smb.conf.5.html#directorysecuritymask"><strong>"directory security mask"</strong></a>
+parameter.
 <p><br><strong>Default:</strong>
 <code>	directory mask = 0755</code>
 <p><br><strong>Example:</strong>
@@ -1217,6 +1345,31 @@ mode bits on created files.
 <p><br><a name="directorymode"></a>
 <li><strong><strong>directory mode (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a>.
+<p><br><a name="directorysecuritymask"></a>
+<li><strong><strong>directory security mask (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a> parameter. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#securitymask"><strong>security
+mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security mode</strong></a>
+parameters.
+<p><br><strong>Default:</strong>
+<code>	directory security mask = &lt;same as directory mask&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	directory security mask = 0777</code>
 <p><br><a name="dnsproxy"></a>
 <li><strong><strong>dns proxy (G)</strong></strong>
 <p><br>Specifies that <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
@@ -1235,7 +1388,7 @@ DNS name lookup requests, as doing a name lookup is a blocking action.
 <p><br><a name="domainadmingroup"></a>
 <strong>domain admin group (G)</strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
-Samba NT Domain Controller Code.  It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
@@ -1243,7 +1396,7 @@ mailing list <strong>Samba-ntdom</strong> available by sending email to
 <p><br><a name="domainadminusers"></a> 
 <li><strong><strong>domain admin users (G)</strong></strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
@@ -1253,70 +1406,10 @@ mailing list <strong>Samba-ntdom</strong> available by sending email to
 <p><br>This is a <strong>DEPRECATED</strong> parameter. It is currently not used within
 the Samba source and should be removed from all current smb.conf
 files. It is left behind for compatibility reasons.
-<p><br><a name="domaingroupmap"></a>
-<li><strong><strong>domain group map (G)</strong></strong>
-<p><br>This option allows you to specify a file containing unique mappings
-of individual NT Domain Group names (in any domain) to UNIX group
-names.  This allows NT domain groups to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-<p><br>This option is used in conjunction with <a href="smb.conf.5.html#localgroupmap"><strong>'local group map'</strong></a>
-and <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-<p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
-or a <code>';'</code> then it is ignored.  Each line should contain a single UNIX
-group name on the left then a single NT Domain Group name on the right,
-separated by a tabstop or <code>'='</code>.  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-<p><br><code>  UNIXgroupname	\\DOMAIN_NAME\\DomainGroupName </code>
-<p><br>or:
-<p><br><code>  UNIXgroupname	DomainGroupName </code>
-<p><br>In the case where Samba is either an <strong>EXPERIMENTAL</strong> Domain Controller
-or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>,
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
-<p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are assumed to
-be either Local or Domain Groups, depending on the role of the Samba Server.
-<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
-will present <em>ALL</em> such unspecified UNIX groups as its own NT Domain
-Groups, with the same name.
-<p><br>In the case where Samba is member of a domain using
-<a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
-its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
-as if it was an NT Domain Group.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
-a local Workstation.
-<p><br>This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
-<p><br>Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group <em>REQUIRES</em> the following:
-<p><br><ul>
-<p><br><li > that the UNIX group exists on the UNIX server.
-<p><br><li > that the NT Domain Group exists in the specified NT Domain
-<p><br><li > that the UNIX Server knows about the specified Domain; 
-<p><br><li > that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.
-<p><br></ul>
-<p><br>Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
 <p><br><a name="domaingroups"></a>
 <li><strong><strong>domain groups (G)</strong></strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
@@ -1324,7 +1417,7 @@ mailing list <strong>Samba-ntdom</strong> available by sending email to
 <p><br><a name="domainguestgroup"></a>
 <li><strong><strong>domain guest group (G)</strong></strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
@@ -1332,7 +1425,7 @@ mailing list <strong>Samba-ntdom</strong> available by sending email to
 <p><br><a name="domainguestusers"></a>
 <li><strong><strong>domain guest users (G)</strong></strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
@@ -1372,72 +1465,8 @@ if this parameter is set and <a href="nmbd.8.html"><strong>nmbd</strong></a> cla
 special name for a <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a> before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
-<p><br>By default ("auto") Samba will attempt to become the domain master
-browser only if it is the Primary Domain Controller.
 <p><br><strong>Default:</strong>
-<code>	domain master = auto</code>
-<p><br><strong>Example:</strong>
 <code>	domain master = no</code>
-<p><br><a name="domainusermap"></a>
-<li><strong><strong>domain user map (G)</strong></strong>
-<p><br>This option allows you to specify a file containing unique mappings
-of individual NT Domain User names (in any domain) to UNIX user
-names.  This allows NT domain users to be presented correctly to
-NT systems, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-<p><br>This option is used in conjunction with <a href="smb.conf.5.html#localgroupmap"><strong>'local group map'</strong></a>
-and <a href="smb.conf.5.html#domaingroupmap"><strong>'domain group map'</strong></a>.  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-<p><br>This option, which provides (and maintains) a one-to-one link between
-UNIX and NT users, is <em>DIFFERENT</em> from <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>, which does <em>NOT</em> maintain a distinction between the
-name(s) it can map to and the name it maps.
-<p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
-or a <code>';'</code> then the line is ignored.  Each line should contain a single UNIX
-user name on the left then a single NT Domain User name on the right,
-separated by a tabstop or <code>'='</code>.  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-<p><br><code>  UNIXusername	\\DOMAIN_NAME\\DomainUserName </code>
-<p><br>or:
-<p><br><code>  UNIXusername	DomainUserName </code>
-<p><br>In the case where Samba is either an <strong>EXPERIMENTAL</strong> Domain Controller
-or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>,
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
-<p><br>Any UNIX users that are <em>NOT</em> specified in this map file are assumed
-to be either Domain or Workstation Users, depending on the role of the
-Samba Server.
-<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
-will present <em>ALL</em> such unspecified UNIX users as its own NT Domain
-Users, with the same name.
-<p><br>In the case where Samba is a member of a domain using
-<a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
-its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
-as if it was an NT Domain User.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX users which also are not NT Domain
-Users are treated as Local Users in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Users,
-which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
-a local Workstation.
-<p><br>This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
-<p><br>Note that adding an entry to map an arbitrary NT User in an arbitrary
-Domain to an arbitrary UNIX user <em>REQUIRES</em> the following:
-<p><br><ul>
-<p><br><li > that the UNIX user exists on the UNIX server.
-<p><br><li > that the NT Domain User exists in the specified NT Domain.
-<p><br><li > that the UNIX Server knows about the specified Domain.
-<p><br></ul>
-<p><br>Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
 <p><br><a name="dontdescend"></a>
 <li><strong><strong>dont descend (S)</strong></strong>
 <p><br>There are certain directories on some systems (e.g., the <code>/proc</code> tree
@@ -1599,6 +1628,31 @@ details on masking mode bits on created directories.
 <p><br>would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
+<p><br><a name="forcedirectorysecuritymode"></a>
+<li><strong><strong>force directory security mode (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be 'on'.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#forcedirectorymode"><strong>force directory mode</strong></a> parameter. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+<p><br>See also the <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security mask</strong></a>,
+<a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security
+mode</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code>	force directory security mode = &lt;same as force directory mode&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	force directory security mode = 0</code>
 <p><br><a name="forcegroup"></a>
 <li><strong><strong>force group (S)</strong></strong>
 <p><br>This specifies a UNIX group name that will be assigned as the default
@@ -1608,10 +1662,51 @@ use the named group for their permissions checking. Thus, by assigning
 permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files.
+<p><br>In Samba 2.0.5 and above this parameter has extended functionality in the following
+way. If the group name listed here has a '+' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group. This gives a finer granularity of ownership
+assignment. For example, the setting <code>force group = +sys</code> means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share. All
+other users will retain their ordinary primary group.
+<p><br>If the <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a> parameter is also set the
+group specified in <strong>force group</strong> will override the primary group
+set in <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced group</code>
 <p><br><strong>Example:</strong>
 <code>	force group = agroup</code>
+<p><br><a name="forcesecuritymode"></a>
+<li><strong><strong>force security mode (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#forcecreatemode"><strong>force create mode</strong></a> parameter. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security
+mask</strong></a>, <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
+parameters.
+<p><br><strong>Default:</strong>
+<code>	force security mode = &lt;same as force create mode&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	force security mode = 0</code>
 <p><br><a name="forceuser"></a>
 <li><strong><strong>force user (S)</strong></strong>
 <p><br>This specifies a UNIX user name that will be assigned as the default
@@ -1623,6 +1718,11 @@ clients still need to connect as a valid user and supply a valid
 password. Once connected, all file operations will be performed as the
 <code>"forced user"</code>, no matter what username the client connected as.
 <p><br>This can be very useful.
+<p><br>In Samba 2.0.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity. Prior to 2.0.5 the primary group was left as the
+primary group of the connecting user (this was a bug).
+<p><br>See also <a href="smb.conf.5.html#forcegroup"><strong>"force group"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced user</code>
 <p><br><strong>Example:</strong>
@@ -1728,7 +1828,7 @@ files"</strong></a> and <a href="smb.conf.5.html#casesensitive"><strong>"case se
 <p><br><strong>Example</strong>
 <code>	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/</code>
 <p><br>The above example is based on files that the Macintosh SMB client
-(DAVE) available from <a href="www.thursby.com"><strong>Thursby</strong></a> creates for
+(DAVE) available from <a href="http://www.thursby.com"><strong>Thursby</strong></a> creates for
 internal use, and also still hides all files beginning with a dot.
 <p><br><a name="homedirmap"></a>
 <li><strong><strong>homedir map (G)</strong></strong>
@@ -1751,16 +1851,57 @@ logons</strong></a>.
 <code>	homedir map = amd.homedir</code>
 <p><br><a name="hostsallow"></a>
 <li><strong><strong>hosts allow (S)</strong></strong>
-<p><br>Synonym for <a href="smb.conf.5.html#allowhosts"><strong>allow hosts</strong></a>.
+<p><br>A synonym for this parameter is <a href="smb.conf.5.html#allowhosts"><strong>'allow hosts'</strong></a>
+<p><br>This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service.
+<p><br>If specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section then it will
+apply to all services, regardless of whether the individual service
+has a different setting.
+<p><br>You can specify the hosts by name or IP number. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like <code>"allow hosts = 150.203.5."</code>. The full syntax of the list is
+described in the man page <strong>hosts_access (5)</strong>. Note that this man
+page may not be present on your system, so a brief description will
+be given here also.
+<p><br>Note that the localhost address 127.0.0.1 will always be allowed
+access unless specifically denied by a "hosts deny" option.
+<p><br>You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups. The <em>EXCEPT</em> keyword can also
+be used to limit a wildcard list. The following examples may provide
+some help:
+<p><br><strong>Example 1</strong>: allow all IPs in 150.203.*.* except one
+<p><br><code>	hosts allow = 150.203. EXCEPT 150.203.6.66</code>
+<p><br><strong>Example 2</strong>: allow hosts that match the given network/netmask
+<p><br><code>	hosts allow = 150.203.15.0/255.255.255.0</code>
+<p><br><strong>Example 3</strong>: allow a couple of hosts
+<p><br><code>	hosts allow = lapland, arvidsjaur</code>
+<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet", but 
+deny access from one particular host
+<p><br><code> 	hosts allow = @foonet</code>
+<p><br><code> 	hosts deny = pirate</code>
+<p><br>Note that access still requires suitable user-level passwords.
+<p><br>See <a href="testparm.1.html"><strong>testparm (1)</strong></a> for a way of testing your
+host access to see if it does what you expect.
+<p><br><strong>Default:</strong>
+<code>	none (i.e., all hosts permitted access)</code>
+<p><br><strong>Example:</strong>
+<code>	allow hosts = 150.203.5. myhost.mynet.edu.au</code>
 <p><br><a name="hostsdeny"></a>
 <li><strong><strong>hosts deny (S)</strong></strong>
-<p><br>Synonym for <a href="smb.conf.5.html#denyhosts"><strong>denyhosts</strong></a>.
+<p><br>The opposite of <a href="smb.conf.5.html#hostsallow"><strong>'hosts allow'</strong></a> - hosts listed
+here are <em>NOT</em> permitted access to services unless the specific
+services have their own lists to override this one. Where the lists
+conflict, the <a href="smb.conf.5.html#hostsallow"><strong>'allow'</strong></a> list takes precedence.
+<p><br><strong>Default:</strong>
+<code>	none (i.e., no hosts specifically excluded)</code>
+<p><br><strong>Example:</strong>
+<code>	hosts deny = 150.203.4. badhost.mynet.edu.au</code>
 <p><br><a name="hostsequiv"></a>
 <li><strong><strong>hosts equiv (G)</strong></strong>
 <p><br>If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password.
-<p><br>This is not be confused with <a href="smb.conf.5.html#allowhosts"><strong>allow hosts</strong></a> which
+<p><br>This is not be confused with <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a> which
 is about hosts access to services and is more useful for guest
 services. <strong>hosts equiv</strong> may be useful for NT clients which will not
 supply passwords to samba.
@@ -1782,20 +1923,32 @@ is included literally, as though typed in place.
 <a href="smb.conf.5.html#percentP"><strong>%P</strong></a> and <a href="smb.conf.5.html#percentS"><strong>%S</strong></a>.
 <p><br><a name="interfaces"></a>
 <li><strong><strong>interfaces (G)</strong></strong>
-<p><br>This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces.
-<p><br>The option takes a list of ip/netmask pairs. The netmask may either be
-a bitmask, or a bitlength.
+<p><br>This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127.0.0.1 that are
+broadcast capable.
+<p><br>The option takes a list of interface strings. Each string can be in
+any of the following forms:
+<p><br><ul>
+<li > a network interface name (such as eth0). This may include
+     shell-like wildcards so eth* will match any interface starting
+     with the substring "eth"
+if() a IP address. In this case the netmask is determined
+     from the list of interfaces obtained from the kernel
+if() a IP/mask pair. 
+if() a broadcast/mask pair. 
+</ul>
+<p><br>The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form.
+<p><br>The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms.
 <p><br>For example, the following line:
-<p><br><code>interfaces = 192.168.2.10/24 192.168.3.10/24</code>
-<p><br>would configure two network interfaces with IP addresses 192.168.2.10
-and 192.168.3.10. The netmasks of both interfaces would be set to
-255.255.255.0.
-<p><br>You could produce an equivalent result by using:
-<p><br><code>interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0</code>
-<p><br>if you prefer that format.
-<p><br>If this option is not set then Samba will attempt to find a primary
-interface, but won't attempt to configure more than one interface.
+<p><br><code>interfaces = eth0 192.168.2.10/24 192.168.3.10/255.255.255.0</code>
+<p><br>would configure three network interfaces corresponding to the eth0
+device and IP addresses 192.168.2.10 and 192.168.3.10. The netmasks of
+the latter two interfaces would be set to 255.255.255.0.
 <p><br>See also <a href="smb.conf.5.html#bindinterfacesonly"><strong>"bind interfaces only"</strong></a>.
 <p><br><a name="invalidusers"></a>
 <li><strong><strong>invalid users (S)</strong></strong>
@@ -1833,9 +1986,9 @@ has the SO_KEEPALIVE attribute set on it (see <a href="smb.conf.5.html#socketopt
 options"</strong></a>). Basically you should only use this option
 if you strike difficulties.
 <p><br><strong>Default:</strong>
-<code>	keep alive = 0</code>
+<code>	keepalive = 0</code>
 <p><br><strong>Example:</strong>
-<code>	keep alive = 60</code>
+<code>	keepalive = 60</code>
 <p><br><a name="kerneloplocks"></a>
 <li><strong><strong>kernel oplocks (G)</strong></strong>
 <p><br>For UNIXs that support kernel based <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
@@ -1849,42 +2002,57 @@ data consistency between SMB/CIFS, NFS and local file access (and is a
 <p><br>This parameter defaults to <em>"On"</em> on systems that have the support,
 and <em>"off"</em> on systems that don't. You should never need to touch
 this parameter.
-<p><br><a name="ldapbindas"></a>
-<li><strong><strong>ldap bind as (G)</strong></strong>
+<p><br>See also the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> and <a href="smb.conf.5.html#level2oplocks"><strong>"level2 oplocks"</strong></a>
+parameters.
+<p><br><a name="ldapfilter"></a>
+<li><strong><strong>ldap filter (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the <strong>--with-ldap</strong>
-option.
-<p><br>This parameter specifies the entity to bind to an LDAP directory as.
-Usually it should be safe to use the LDAP root account; for larger
-installations it may be preferable to restrict Samba's access. See also
-<a href="smb.conf.5.html#ldappasswdfile"><strong>ldap passwd file</strong></a>.
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the <strong>--with-ldap</strong> option.
+<p><br>This parameter specifies an LDAP search filter used to search for a
+user name in the LDAP database. It must contain the string
+<a href="smb.conf.5.html#percentU"><strong>%u</strong></a> which will be replaced with the user being
+searched for.
 <p><br><strong>Default:</strong>
-<code>	none (bind anonymously)</code>
-<p><br><strong>Example:</strong>
-<code>	ldap bind as = "uid=root, dc=mydomain, dc=org"</code>
-<p><br><a name="ldappasswdfile"></a>
-<li><strong><strong>ldap passwd file (G)</strong></strong>
-<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the <strong>--with-ldap</strong>
-option.
-<p><br>This parameter specifies a file containing the password with which
-Samba should bind to an LDAP server. For obvious security reasons
-this file must be set to mode 700 or less.
-<p><br><strong>Default:</strong>
-<code>	none (bind anonymously)</code>
-<p><br><strong>Example:</strong>
-<code>	ldap passwd file = /usr/local/samba/private/ldappasswd</code>
+<code>	empty string.</code>
 <p><br><a name="ldapport"></a>
 <li><strong><strong>ldap port (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the <strong>--with-ldap</strong>
-option.
-<p><br>This parameter specifies the TCP port number of the LDAP server.
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the <strong>--with-ldap</strong> option.
+<p><br>This parameter specifies the TCP port number to use to contact
+the LDAP server on.
 <p><br><strong>Default:</strong>
 <code>	ldap port = 389.</code>
+<p><br><a name="ldaproot"></a>
+<li><strong><strong>ldap root (G)</strong></strong>
+<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the <strong>--with-ldap</strong> option.
+<p><br>This parameter specifies the entity to bind to the LDAP server
+as (essentially the LDAP username) in order to be able to perform
+queries and modifications on the LDAP database.
+<p><br>See also <a href="smb.conf.5.html#ldaprootpasswd"><strong>ldap root passwd</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	empty string (no user defined)</code>
+<p><br><a name="ldaprootpasswd"></a>
+<li><strong><strong>ldap root passwd (G)</strong></strong>
+<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the <strong>--with-ldap</strong> option.
+<p><br>This parameter specifies the password for the entity to bind to the
+LDAP server as (the password for this LDAP username) in order to be
+able to perform queries and modifications on the LDAP database.
+<p><br><em>BUGS:</em> This parameter should <em>NOT</em> be a readable parameter
+in the <strong>smb.conf</strong> file and will be removed once a correct
+storage place is found.
+<p><br>See also <a href="smb.conf.5.html#ldaproot"><strong>ldap root</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	empty string.</code>
 <p><br><a name="ldapserver"></a>
 <li><strong><strong>ldap server (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
@@ -1892,8 +2060,7 @@ password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the <strong>--with-ldap</strong> option.
 <p><br>This parameter specifies the DNS name of the LDAP server to use
-when storing and retrieving information about Samba users and
-groups.
+for SMB/CIFS authentication purposes.
 <p><br><strong>Default:</strong>
 <code>	ldap server = localhost</code>
 <p><br><a name="ldapsuffix"></a>
@@ -1902,13 +2069,42 @@ groups.
 password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies the node of the LDAP tree beneath which
-Samba should store its information. This parameter MUST be provided
-when using LDAP with Samba.
+<p><br>This parameter specifies the <code>"dn"</code> or LDAP <em>"distinguished name"</em>
+that tells <a href="smbd.8.html"><strong>smbd</strong></a> to start from when searching
+for an entry in the LDAP password database.
 <p><br><strong>Default:</strong>
-<code>	none</code>
+<code>	empty string.</code>
+<p><br><a name="level2oplocks"></a>
+<li><strong><strong>level2 oplocks (S)</strong></strong>
+<p><br>This parameter (new in Samba 2.0.5) controls whether Samba supports
+level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release.
+<p><br>Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks). This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application .EXE files).
+<p><br>Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches.
+<p><br>It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-).
+<p><br>For more discussions on level2 oplocks see the CIFS spec.
+<p><br>Currently, if <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> are supported
+then level2 oplocks are not granted (even if this parameter is set
+to <code>"true"</code>). Note also, the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> parameter must
+be set to "true" on this share in order for this parameter to have any
+effect.
+<p><br>See also the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> and <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code> level2 oplocks = False</code>
 <p><br><strong>Example:</strong>
-<code>	ldap suffix = "dc=mydomain, dc=org"</code>
+<code> level2 oplocks = True</code>
 <p><br><a name="lmannounce"></a>
 <li><strong><strong>lm announce (G)</strong></strong>
 <p><br>This parameter determines if <a href="nmbd.8.html"><strong>nmbd</strong></a> will produce
@@ -1949,66 +2145,6 @@ will be loaded for browsing by default. See the
 <code>	load printers = yes</code>
 <p><br><strong>Example:</strong>
 <code>	load printers = no</code>
-<p><br><a name="localgroupmap"></a>
-<li><strong><strong>local group map (G)</strong></strong>
-<p><br>This option allows you to specify a file containing unique mappings
-of individual NT Local Group names (in any domain) to UNIX group
-names.  This allows NT Local groups (aliases) to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-<p><br>This option is used in conjunction with <a href="smb.conf.5.html#domaingroupmap"><strong>'domain group map'</strong></a>
-and <a href="smb.conf.5.html#domainusermap"><strong>'domain name map'</strong></a>.  The use of these three
-options is trivial and often unnecessary in the case where Samba
-is not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-<p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
-or a <code>';'</code> then it is ignored.  Each line should contain a single UNIX
-group name on the left then a single NT Local Group name on the right,
-separated by a tabstop or <code>'='</code>.  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-<p><br><code>  UNIXgroupname	\\DOMAIN_NAME\\LocalGroupName </code>
-<p><br>or:
-<p><br><code>  UNIXgroupname	LocalGroupName </code>
-<p><br>In the case where Samba is either an <strong>EXPERIMENTAL</strong> Domain Controller
-or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>,
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
-<p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are treated
-as either Local or Domain Groups depending on the role of the Samba Server.
-<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
-will present <em>ALL</em> unspecified UNIX groups as its own NT Domain
-Groups, with the same name, and <em>NOT</em> as Local Groups.
-<p><br>In the case where Samba is member of a domain using
-<a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
-its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
-as if it was an NT Domain Group.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
-a local Workstation.
-<p><br>This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
-<p><br>Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group <em>REQUIRES</em> the following:
-<p><br><ul>
-<p><br><li > that the UNIX group exists on the UNIX server.
-<p><br><li > that the NT Domain Group exists in the specified NT Domain
-<p><br><li > that the UNIX Server knows about the specified Domain; 
-<p><br><li > that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.
-<p><br></ul>
-<p><br>Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
 <p><br><a name="localmaster"></a>
 <li><strong><strong>local master (G)</strong></strong>
 <p><br>This option allows <a href="nmbd.8.html"><strong>nmbd</strong></a> to try and become a
@@ -2308,6 +2444,11 @@ end.
 <p><br><a name="manglecase"></a>
 <li><strong><strong>mangle case (S)</strong></strong>
 <p><br>See the section on <a href="smb.conf.5.html#NAMEMANGLING"><strong>"NAME MANGLING"</strong></a>.
+<p><br><a name="manglelocks"></a>
+<li><strong><strong>mangle locks (S)</strong></strong>
+<p><br>This option is was introduced with Samba 2.0.4 and above and has been
+removed in Samba 2.0.6 as Samba now dynamically configures such things
+on 32 bit systems.
 <p><br><a name="mangledmap"></a>
 <li><strong><strong>mangled map (S)</strong></strong>
 <p><br>This is for those who want to directly map UNIX file names which can
@@ -2529,7 +2670,7 @@ never need to set this parameter.
 <p><br><strong>Default:</strong>
 <code>	max mux = 50</code>
 <p><br><a name="maxopenfiles"></a>
-<li><strong><strong>maxopenfiles (G)</strong></strong>
+<li><strong><strong>max open files (G)</strong></strong>
 <p><br>This parameter limits the maximum number of open files that one
 <a href="smbd.8.html"><strong>smbd</strong></a> file serving process may have open for
 a client at any one time. The default for this parameter is set
@@ -2620,6 +2761,15 @@ job.
 <code>	min print space = 0</code>
 <p><br><strong>Example:</strong>
 <code>	min print space = 2000</code>
+<p><br><a name="minpasswdlength"></a>
+<li><strong><strong>min passwd length (G)</strong></strong>
+<p><br>This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing.
+<p><br>See also <a href="smb.conf.5.html#unixpasswordsync"><strong>"unix password sync"</strong></a>,
+<a href="smb.conf.5.html#passwdprogram"><strong>"passwd program"</strong></a> and <a href="smb.conf.5.html#passwdchatdebug"><strong>"passwd chat
+debug"</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	min passwd length = 5</code>
 <p><br><a name="minwinsttl"></a>
 <li><strong><strong>min wins ttl (G)</strong></strong>
 <p><br>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
@@ -2639,10 +2789,15 @@ resolution options.
 names to be resolved as follows :
 <p><br><ul>
 <p><br><li > <strong>lmhosts</strong> : Lookup an IP address in the Samba lmhosts file.
+If the line in lmhosts has no name type attached to the NetBIOS
+name (see the <a href="lmhosts.5.html"><strong>lmhosts (5)</strong></a> for details) then
+any name type matches for lookup.
 <p><br><li > <strong>host</strong> : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the <em>/etc/nsswitch.conf</em> file).
+Note that this method is only used if the NetBIOS name type being
+queried is the 0x20 (server) name type, otherwise it is ignored.
 <p><br><li > <strong>wins</strong> : Query a name with the IP address listed in the
 <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a> parameter. If no WINS server has
 been specified this method will be ignored.
@@ -2709,6 +2864,14 @@ system and the Samba server with this option must also be a
 <code>	nis homedir = false</code>
 <p><br><strong>Example:</strong>
 <code>	nis homedir = true</code>
+<p><br><a name="ntaclsupport"></a>
+<li><strong><strong>nt acl support (G)</strong></strong>
+<p><br>This boolean parameter controls whether <a href="smbd.8.html"><strong>smbd</strong></a>
+will attempt to map UNIX permissions into Windows NT access control lists.
+<p><br><strong>Default:</strong>
+<code>	nt acl support = yes</code>
+<p><br><strong>Example:</strong>
+<code>	nt acl support = no</code>
 <p><br><a name="ntpipesupport"></a>
 <li><strong><strong>nt pipe support (G)</strong></strong>
 <p><br>This boolean parameter controls whether <a href="smbd.8.html"><strong>smbd</strong></a>
@@ -2787,21 +2950,47 @@ by the underlying operating system. This allows data synchronization between
 all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process. See the <a href="smb.conf.5.html#kerneloplocks"><strong>kernel oplocks</strong></a> parameter
 for details.
+<p><br>See also the <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> and
+<a href="smb.conf.5.html#level2oplocks"><strong>"level2 oplocks"</strong></a> parameters.
 <p><br><strong>Default:</strong>
 <code>	oplocks = True</code>
 <p><br><strong>Example:</strong>
 <code>	oplocks = False</code>
+<p><br><a name="oplockbreakwaittime"></a>
+<li><strong><strong>oplock break wait time (G)</strong></strong>
+<p><br>This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients.
+<p><br><em>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE</em>.
+<p><br><strong>Default:</strong>
+<code>	oplock break wait time = 10</code>
+<p><br><a name="oplockcontentionlimit"></a>
+<li><strong><strong>oplock contention limit (S)</strong></strong>
+<p><br>This is a <em>very</em> advanced <a href="smbd.8.html"><strong>smbd</strong></a> tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file.
+<p><br>In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit. This causes <a href="smbd.8.html"><strong>smbd</strong></a> to
+behave in a similar way to Windows NT.
+<p><br><em>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE</em>.
+<p><br><strong>Default:</strong>
+<code> oplock contention limit = 2</code>
 <p><br><a name="oslevel"></a>
 <li><strong><strong>os level (G)</strong></strong>
 <p><br>This integer value controls what level Samba advertises itself as for
 browse elections. The value of this parameter determines whether
 <a href="nmbd.8.html"><strong>nmbd</strong></a> has a chance of becoming a local master
 browser for the <a href="smb.conf.5.html#workgroup"><strong>WORKGROUP</strong></a> in the local broadcast
-area. Setting this to zero will cause <a href="nmbd.8.html"><strong>nmbd</strong></a> to
-always lose elections to Windows machines. See BROWSING.txt in the
-Samba docs/ directory for details.
+area. The default is zero, which means <a href="nmbd.8.html"><strong>nmbd</strong></a> will
+lose elections to Windows machines. See BROWSING.txt in the Samba
+docs/ directory for details.
 <p><br><strong>Default:</strong>
-<code>	os level = 32</code>
+<code>	os level = 20</code>
 <p><br><strong>Example:</strong>
 <code>	os level = 65    ; This will win against any NT Server</code>
 <p><br><a name="packetsize"></a>
@@ -2958,13 +3147,18 @@ better restrict them with hosts allow!
 <p><br>If the <a href="smb.conf.5.html#security"><strong>"security"</strong></a> parameter is set to
 <strong>"domain"</strong>, then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-<a href="smb.conf.5.html#workgroup"><strong>Domain</strong></a>, as the Samba server is cryptographicly
+<a href="smb.conf.5.html#workgroup"><strong>Domain</strong></a> or the character <code>*</code>, as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on. The advantage of using
 <a href="smb.conf.5.html#securityequaldomain"><strong>"security=domain"</strong></a> is that if you list
 several hosts in the <strong>"password server"</strong> option then
 <a href="smbd.8.html"><strong>smbd</strong></a> will try each in turn till it finds one
 that responds. This is useful in case your primary server goes down.
+<p><br>If the <strong>"password server"</strong> option is set to the character <code>*</code>,
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name <code>WORKGROUP&lt;1C&gt;</code>
+and then contacting each server returned in the list of IP addresses
+from the <a href="smb.conf.5.html#nameresolveorder"><strong>name resolution</strong></a> source.
 <p><br>If the <a href="smb.conf.5.html#security"><strong>"security"</strong></a> parameter is set to
 <a href="smb.conf.5.html#securityequalserver"><strong>"server"</strong></a>, then there are different
 restrictions that <a href="smb.conf.5.html#securityequaldomain"><strong>"security=domain"</strong></a>
@@ -2989,6 +3183,8 @@ workstation.
 <code>	password server = &lt;empty string&gt;</code>
 <p><br><strong>Example:</strong>
 <code>	password server = NT-PDC, NT-BDC1, NT-BDC2</code>
+<p><br><strong>Example:</strong>
+<code>	password server = *</code>
 <p><br><a name="path"></a>
 <li><strong><strong>path (S)</strong></strong>
 <p><br>This parameter specifies a directory to which the user of the service
@@ -3047,11 +3243,19 @@ time they log in. Maybe a message of the day? Here is an example:
 </pre>
 
 <p><br>Of course, this could get annoying after a while :-)
-<p><br>See also <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#preexecclose"><strong>preexec close</strong></a> and <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	none (no command executed)</code>
 <p><br><strong>Example:</strong>
 <code>        preexec = echo \"%u connected to %S from %m (%I)\" &gt;&gt; /tmp/log</code>
+<p><br><a name="preexecclose"></a>
+<li><strong><strong>preexec close (S)</strong></strong>
+<p><br>This boolean option controls whether a non-zero return code from
+<a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a> should close the service being connected to.
+<p><br><strong>Default:</strong>
+<code> 	preexec close = no</code>
+<p><br><strong>Example:</strong>
+<code> 	preexec close = yes</code>
 <p><br><a name="preferredmaster"></a>
 <li><strong><strong>preferred master (G)</strong></strong>
 <p><br>This boolean parameter controls if <a href="nmbd.8.html"><strong>nmbd</strong></a> is a
@@ -3061,8 +3265,7 @@ force an election, and it will have a slight advantage in winning the
 election.  It is recommended that this parameter is used in
 conjunction with <a href="smb.conf.5.html#domainmaster"><strong>"domain master = yes"</strong></a>, so
 that <a href="nmbd.8.html"><strong>nmbd</strong></a> can guarantee becoming a domain
-master. Indeed the default ("auto") enables "preferred master" if
-Samba is configured as the domain master browser.
+master.
 <p><br>Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
 browsers on the same subnet, they will each periodically and
@@ -3071,7 +3274,7 @@ result in unnecessary broadcast traffic and reduced browsing
 capabilities.
 <p><br>See also <a href="smb.conf.5.html#oslevel"><strong>os level</strong></a>.
 <p><br><strong>Default:</strong>
-<code> 	preferred master = auto</code>
+<code> 	preferred master = no</code>
 <p><br><strong>Example:</strong>
 <code> 	preferred master = yes</code>
 <p><br><a name="preferedmaster"></a>
@@ -3239,7 +3442,7 @@ in the docs/ directory, PRINTER_DRIVER.txt.
 find the printer driver files for the automatic installation of
 drivers for Windows 95 machines. If Samba is set up to serve printer
 drivers to Windows 95 machines, this should be set to
-<p><br><code>\\MACHINE\PRINTER$</code>
+<p><br><code>\\MACHINE\aPRINTER$</code>
 <p><br>Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
 is a share you set up for serving printer driver files. For more
 details on setting this up see the documentation file in the docs/
@@ -3391,13 +3594,13 @@ all the data has been read from disk.
 <p><br>This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other.
-<p><br>The default value is 2048, but very little experimentation has been
+<p><br>The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily.
 <p><br><strong>Default:</strong>
-<code>	read size = 2048</code>
+<code>	read size = 16384</code>
 <p><br><strong>Example:</strong>
 <code>	read size = 8192</code>
 <p><br><a name="remoteannounce"></a>
@@ -3450,6 +3653,32 @@ master on it's segment.
 <code>	remote browse sync = &lt;empty string&gt;</code>
 <p><br><strong>Example:</strong>
 <code>	remote browse sync = 192.168.2.255 192.168.4.255</code>
+<p><br><a name="restrictanonymous"></a>
+<li><strong><strong>restrict anonymous (G)</strong></strong>
+<p><br>This is a boolean parameter.  If it is true, then anonymous access
+to the server will be restricted, namely in the case where the server
+is expecting the client to send a username, but it doesn't.  Setting
+it to true will force these anonymous connections to be denied, and
+the client will be required to always supply a username and password
+when connecting. Use of this parameter is only recommened for homogenous 
+NT client environments.
+<p><br>This parameter makes the use of macro expansions that rely
+on the username (%U, %G, etc) consistant.  NT 4.0 likes to use
+anonymous connections when refreshing the share list, and this
+is a way to work around that.
+<p><br>When restrict anonymous is true, all anonymous connections are denied
+no matter what they are for.  This can effect the ability of a machine
+to access the samba Primary Domain Controller to revalidate it's machine
+account after someone else has logged on the client interactively.  The
+NT client will display a message saying that the machine's account in 
+the domain doesn't exist or the password is bad.  The best way to deal 
+with this is to reboot NT client machines between interactive logons, 
+using "Shutdown and Restart", rather than "Close all programs and logon 
+as a different user".
+<p><br><strong>Default:</strong>
+<code>     restrict anonymous = false</code>
+<p><br><strong>Example:</strong>
+<code>     restrict anonymous = true</code>
 <p><br><a name="revalidate"></a>
 <li><strong><strong>revalidate (S)</strong></strong>
 <p><br>Note that this option only works with
@@ -3506,7 +3735,13 @@ filesystems (such as cdroms) after a connection is closed.
 <p><br>This is the same as the <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a> parameter except
 that the command is run as root. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized.
-<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>
+and <a href="smb.conf.5.html#rootpreexecclose"><strong>"root preexec close"</strong></a>.
+<p><br><a name="rootpreexecclose"></a>
+<li><strong><strong>root preexec close (S)</strong></strong>
+<p><br>This is the same as the <a href="smb.conf.5.html#preexecclose"><strong>"preexec close"</strong></a> parameter
+except that the command is run as root.
+<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>, <a href="smb.conf.5.html#preexecclose"><strong>"preexec close"</strong></a>.
 <p><br><a name="security"></a>
 <li><strong><strong>security (G)</strong></strong>
 <p><br>This option affects how clients respond to Samba and is one of the most
@@ -3662,7 +3897,7 @@ level security without allowing the server to automatically map unknown
 users into the <a href="smb.conf.5.html#guestaccount"><strong>"guest account"</strong></a>. See the
 <a href="smb.conf.5.html#maptoguest"><strong>"map to guest"</strong></a> parameter for details on
 doing this.
-<p><br>e,(BUG:) There is currently a bug in the implementation of
+<p><br><em>BUG:</em> There is currently a bug in the implementation of
 <strong>"security=domain</strong> with respect to multi-byte character
 set usernames. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -3678,6 +3913,31 @@ and the <a href="smb.conf.5.html#encryptpasswords"><strong>"encrypted passwords"
 <code> 	security = USER</code>
 <p><br><strong>Example:</strong>
 <code> 	security = DOMAIN</code>
+<p><br><a name="securitymask"></a>
+<li><strong><strong>security mask (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#createmask"><strong>create mask</strong></a> parameter. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security
+mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security
+mode</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code>	security mask = &lt;same as create mask&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	security mask = 0777</code>
 <p><br><a name="serverstring"></a>
 <li><strong><strong>server string (G)</strong></strong>
 <p><br>This controls what string will show up in the printer comment box in
@@ -3726,12 +3986,14 @@ increase this parameter. Signs that this parameter is set too low are
 users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like <code>"ERROR
 smb_shm_alloc : alloc of XX bytes failed"</code>.
+<p><br>If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0.8 until the OS accepts it.
 <p><br><strong>Default:</strong>
 <code>	shared mem size = 1048576</code>
 <p><br><strong>Example:</strong>
 <code>	shared mem size = 5242880 ; Set to 5mb for a large number of files.</code>
 <p><br><a name="shortpreservecase"></a>
-<li><strong><strong>short preserve case (S)</strong></strong>
+<li><strong><strong>short preserve case (G)</strong></strong>
 <p><br>This boolean parameter controls if new files which conform to 8.3
 syntax, that is all in upper case and of suitable length, are created
 upper case, or if they are forced to be the <code>"default"</code> case. This
@@ -4100,9 +4362,11 @@ set to <code>"yes"</code> in order for this parameter to have any affect.
 <p><br>This parameter maps how Samba debug messages are logged onto the
 system syslog logging levels. Samba debug level zero maps onto syslog
 LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
-to LOG_NOTICE, debug level three maps onto LOG_INFO.  The parameter
-sets the threshold for doing the mapping, all Samba debug messages
-above this threshold are mapped to syslog LOG_DEBUG messages.
+onto LOG_NOTICE, debug level three maps onto LOG_INFO. All higher 
+levels are mapped to LOG_DEBUG.
+<p><br>This paramter sets the threshold for sending messages to syslog. 
+Only messages with debug level less than this value will be sent 
+to syslog.
 <p><br><strong>Default:</strong>
 <code>	syslog = 1</code>
 <p><br><a name="syslogonly"></a>
@@ -4283,15 +4547,6 @@ purposes. The most common is to map usernames that users use on DOS or
 Windows machines to those that the UNIX box uses. The other is to map
 multiple users to a single username so that they can more easily share
 files.
-<p><br>The use of this option, therefore, relates to UNIX usernames
-and not Windows (specifically NT Domain) usernames.  In other words,
-once a name has been mapped using this option, the Samba server uses
-the mapped name for internal <em>AND</em> external purposes.
-<p><br>This option is <em>DIFFERENT</em> from the <a href="smb.conf.5.html#domainusermap"><strong>"domain user map"</strong></a> 
-parameter, which maintains a one-to-one mapping between UNIX usernames
-and NT Domain Usernames: more specifically, the Samba server maintains
-a link between <em>BOTH</em> usernames, presenting the NT username to the
-external NT world, and using the UNIX username internally.
 <p><br>The map file is parsed line by line. Each line should contain a single
 UNIX username on the left then a <code>'='</code> followed by a list of
 usernames on the right. The list of usernames on the right may contain
@@ -4493,6 +4748,9 @@ may be followed by the server. Links that point to areas within the
 directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
 tree being exported.
+<p><br>Note that setting this parameter can have a negative effect on your
+server performance due to the extra system calls that Samba has to
+do in order to perform the link checks.
 <p><br><strong>Default:</strong>
 <code> 	wide links = yes</code>
 <p><br><strong>Example:</strong>
@@ -4509,7 +4767,7 @@ need to set this to <code>"yes"</code> for some older clients.
 <p><br>This specifies the IP address (or DNS name: IP address for preference)
 of the WINS server that <a href="nmbd.8.html"><strong>nmbd</strong></a> should register with.
 If you have a WINS server on your network then you should set this to
-the WINS server's IP.
+the WINS server's IP.        
 <p><br>You should point this at your WINS server if you have a
 multi-subnetted network.
 <p><br><em>NOTE</em>. You need to set up Samba to point to a WINS server if you
@@ -4520,6 +4778,32 @@ Samba source distribution.
 <code>	wins server = </code>
 <p><br><strong>Example:</strong>
 <code>	wins server = 192.9.200.1</code>
+<p><br><a name="winshook"></a>
+<li><strong><strong>wins hook (G)</strong></strong>
+<p><br>When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+<p><br>The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+<p><br>wins_hook operation name nametype ttl IP_list
+<p><br>The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+<p><br>The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+<p><br>The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+<p><br>The fourth argument is the TTL (time to live) for the name in seconds.
+<p><br>The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+<p><br>An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 <p><br><a name="winssupport"></a>
 <li><strong><strong>wins support (G)</strong></strong>
 <p><br>This boolean controls if the <a href="nmbd.8.html"><strong>nmbd</strong></a> process in
@@ -4543,7 +4827,6 @@ setting.
 <p><br><a name="writable"></a>
 <li><strong><strong>writable (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> for people who can't spell :-).
-Pronounced "ritter-bull".
 <p><br><a name="writelist"></a>
 <li><strong><strong>write list (S)</strong></strong>
 <p><br>This is a list of users that are given read-write access to a
@@ -4587,6 +4870,7 @@ permitting), but only via spooling operations.
 
 </pre>
 
+<p><br></ul>
 <p><br><a name="WARNINGS"></a>
 <h2>WARNINGS</h2>
     

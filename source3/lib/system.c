@@ -60,7 +60,7 @@ static int pollfd(int fd)
   return(r);
 }
 
-int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval)
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
   fd_set fds2;
   int counter=0;
@@ -90,7 +90,7 @@ int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval)
 }
 
 #else /* !NO_SELECT */
-int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
 #ifdef USE_POLL
   struct pollfd pfd[256];
@@ -131,8 +131,7 @@ int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
   do {
     if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
     errno = 0;
-    selrtn = select(maxfd,SELECT_CAST r_fds,SELECT_CAST w_fds,
-                    NULL,tval?&t2:NULL);
+    selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
   } while (selrtn<0 && errno == EINTR);
 
   return(selrtn);
@@ -141,16 +140,54 @@ int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
 #endif /* NO_SELECT */
 
 /*******************************************************************
+ A wrapper for usleep in case we don't have one.
+********************************************************************/
+
+int sys_usleep(long usecs)
+{
+#ifndef HAVE_USLEEP
+  struct timeval tval;
+#endif
+
+  /*
+   * We need this braindamage as the glibc usleep
+   * is not SPEC1170 complient... grumble... JRA.
+   */
+
+  if(usecs < 0 || usecs > 1000000) {
+    errno = EINVAL;
+    return -1;
+  }
+
+#if HAVE_USLEEP
+  usleep(usecs);
+  return 0;
+#else /* HAVE_USLEEP */
+  /*
+   * Fake it with select...
+   */
+  tval.tv_sec = 0;
+  tval.tv_usec = usecs/1000;
+  select(0,NULL,NULL,NULL,&tval);
+  return 0;
+#endif /* HAVE_USLEEP */
+}
+
+/*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-  return stat64(fname, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
+	ret = stat64(fname, sbuf);
 #else
-  return stat(fname, sbuf);
+	ret = stat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -159,11 +196,15 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-  return fstat64(fd, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
+	ret = fstat64(fd, sbuf);
 #else
-  return fstat(fd, sbuf);
+	ret = fstat(fd, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -172,11 +213,15 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-  return lstat64(fname, sbuf);
+	int ret;
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
+	ret = lstat64(fname, sbuf);
 #else
-  return lstat(fname, sbuf);
+	ret = lstat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -185,7 +230,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_ftruncate(int fd, SMB_OFF_T offset)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
   return ftruncate64(fd, offset);
 #else
   return ftruncate(fd, offset);
@@ -198,7 +243,7 @@ int sys_ftruncate(int fd, SMB_OFF_T offset)
 
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 {
-#if defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
   return lseek64(fd, offset, whence);
 #else
   return lseek(fd, offset, whence);
@@ -211,8 +256,10 @@ SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
   return fseek64(fp, offset, whence);
+#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEKO64)
+  return fseeko64(fp, offset, whence);
 #else
   return fseek(fp, offset, whence);
 #endif
@@ -224,8 +271,10 @@ int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 
 SMB_OFF_T sys_ftell(FILE *fp)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
   return (SMB_OFF_T)ftell64(fp);
+#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
+  return (SMB_OFF_T)ftello64(fp);
 #else
   return (SMB_OFF_T)ftell(fp);
 #endif
@@ -237,7 +286,7 @@ SMB_OFF_T sys_ftell(FILE *fp)
 
 int sys_creat(const char *path, mode_t mode)
 {
-#if defined(HAVE_CREAT64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CREAT64)
   return creat64(path, mode);
 #else
   /*
@@ -254,7 +303,7 @@ int sys_creat(const char *path, mode_t mode)
 
 int sys_open(const char *path, int oflag, mode_t mode)
 {
-#if defined(HAVE_OPEN64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPEN64)
   return open64(path, oflag, mode);
 #else
   return open(path, oflag, mode);
@@ -267,12 +316,14 @@ int sys_open(const char *path, int oflag, mode_t mode)
 
 FILE *sys_fopen(const char *path, const char *type)
 {
-#if defined(HAVE_FOPEN64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FOPEN64)
   return fopen64(path, type);
 #else
   return fopen(path, type);
 #endif
 }
+
+#if defined(HAVE_MMAP)
 
 /*******************************************************************
  An mmap() wrapper that will deal with 64 bit filesizes.
@@ -280,10 +331,25 @@ FILE *sys_fopen(const char *path, const char *type)
 
 void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset)
 {
-#if defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
   return mmap64(addr, len, prot, flags, fd, offset);
 #else
   return mmap(addr, len, prot, flags, fd, offset);
+#endif
+}
+
+#endif /* HAVE_MMAP */
+
+/*******************************************************************
+ A readdir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
+  return readdir64(dirp);
+#else
+  return readdir(dirp);
 #endif
 }
 
@@ -305,18 +371,19 @@ system wrapper for getwd
 ********************************************************************/
 char *sys_getwd(char *s)
 {
-	char *wd;
+    char *wd;
 #ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, sizeof (pstring));
+    wd = (char *)getcwd(s, sizeof (pstring));
 #else
-	wd = (char *)getwd(s);
+    wd = (char *)getwd(s);
 #endif
-	return wd;
+    return wd;
 }
 
 /*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
+
 int sys_chown(const char *fname,uid_t uid,gid_t gid)
 {
 #ifndef HAVE_CHOWN
@@ -413,8 +480,11 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
@@ -447,8 +517,11 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
@@ -516,7 +589,8 @@ int sys_getgroups(int setlen, gid_t *gidset)
     return -1;
   } 
 
-  if (setlen == 0) setlen = 1;
+  if (setlen == 0)
+    setlen = 1;
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -538,6 +612,62 @@ int sys_getgroups(int setlen, gid_t *gidset)
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
+#ifdef HAVE_SETGROUPS
+
+/**************************************************************************
+ Wrapper for setgroups. Deals with broken (int) case. Automatically used
+ if we have broken getgroups.
+****************************************************************************/
+
+int sys_setgroups(int setlen, gid_t *gidset)
+{
+#if !defined(HAVE_BROKEN_GETGROUPS)
+  return setgroups(setlen, gidset);
+#else
+
+  GID_T *group_list;
+  int i ; 
+
+  if (setlen == 0)
+    return 0 ;
+
+#ifdef NGROUPS_MAX
+  if (setlen > NGROUPS_MAX) {
+    errno = EINVAL; 
+    return -1;   
+  }
+#endif
+
+  /*
+   * Broken case. We need to allocate a
+   * GID_T array of size setlen.
+   */
+
+  if (setlen == 0)
+    setlen = 1;
+
+  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+    DEBUG(0,("sys_setgroups: Malloc fail.\n"));
+    return -1;    
+  }
+ 
+  for(i = 0; i < setlen; i++) 
+    group_list[i] = (GID_T) gidset[i]; 
+
+  if(setgroups(setlen, group_list) != 0) {
+    int saved_errno = errno;
+    free((char *)group_list);
+    errno = saved_errno;
+    return -1;
+  }
+ 
+  free((char *)group_list);
+  return 0 ;
+#endif /* HAVE_BROKEN_GETGROUPS */
+}
+
+#endif /* HAVE_SETGROUPS */
+
 /*
  * We only wrap pw_name and pw_passwd for now as these
  * are the only potentially modified fields.
@@ -547,7 +677,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
  Helper function for getpwnam/getpwuid wrappers.
 ****************************************************************************/
 
-struct passwd *copy_passwd_struct(struct passwd *pass)
+static struct passwd *setup_pwret(struct passwd *pass)
 {
 	static pstring pw_name;
 	static pstring pw_passwd;
@@ -558,25 +688,16 @@ struct passwd *copy_passwd_struct(struct passwd *pass)
 		return NULL;
 	}
 
-	if (pass == &pw_ret)
-	{
-		/* catch silly error where buffer was already copied */
-		DEBUG(0,("copy_passwd_struct: can't copy internal buffer!\n"));
-		return NULL;
-	}
-
 	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
 
 	if (pass->pw_name)
 	{
-		pw_name[0] = '\0';
 		pw_ret.pw_name = pw_name;
 		pstrcpy(pw_ret.pw_name, pass->pw_name);
 	}
 
 	if (pass->pw_passwd)
 	{
-		pw_passwd[0] = '\0';
 		pw_ret.pw_passwd = pw_passwd;
 		pstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
 	}
@@ -590,7 +711,7 @@ struct passwd *copy_passwd_struct(struct passwd *pass)
 
 struct passwd *sys_getpwnam(const char *name)
 {
-	return copy_passwd_struct(getpwnam(name));
+	return setup_pwret(getpwnam(name));
 }
 
 /**************************************************************************
@@ -599,5 +720,5 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	return copy_passwd_struct(getpwuid(uid));
+	return setup_pwret(getpwuid(uid));
 }

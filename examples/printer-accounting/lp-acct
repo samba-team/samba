@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 #
-# $Source: /data/src/mirror/cvs/samba/examples/printer-accounting/lp-acct,v $
-# $Id: lp-acct,v 1.1 1996/07/23 03:30:56 samba-bugs Exp $
-#
 # 0 == stdin  == docuement
 # 1 == stdout == printer
 # 2 == stderr == logging

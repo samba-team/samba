@@ -90,23 +90,15 @@ END {
 
 {
   gotstart = 0;
-  if( $0 ~ /^connection_struct|^LOCAL_GRP|^DOMAIN_GRP|^pipes_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^pid_t|^ino_t|^off_t/ ) {
+  if( $0 ~ /^connection_struct|^pipes_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^pid_t|^ino_t|^off_t/ ) {
     gotstart = 1;
   }
 
-  if( $0 ~ /^JOB_INFO_1|^JOB_INFO_2/ ) {
+  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID/ ) {
     gotstart = 1;
   }
 
-  if( $0 ~ /^PRINTER_INFO_1|^PRINTER_INFO_2/ ) {
-    gotstart = 1;
-  }
-
-  if( $0 ~ /^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^DOM_SID|^SEC_DESC/ ) {
-    gotstart = 1;
-  }
-
-  if( $0 ~ /^const|^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|dbg_Token/ ) {
+  if( $0 ~ /^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ ) {
     gotstart = 1;
   }
   if(!gotstart) {

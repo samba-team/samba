@@ -34,7 +34,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	struct connect_record crec;
 	pstring fname;
 	int fd;
-	int mypid = getpid();
+	pid_t mypid = getpid();
 	int i;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
@@ -42,7 +42,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	if (max_connections <= 0)
 		return(True);
 
-	bzero(&crec,sizeof(crec));
+	memset((char *)&crec,'\0',sizeof(crec));
 
 	pstrcpy(fname,lp_lockdir());
 	trim_string(fname,"","/");
@@ -85,7 +85,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 		return(False);
 	}
 
-	bzero((void *)&crec,sizeof(crec));
+	memset((void *)&crec,'\0',sizeof(crec));
   
 	/* remove our mark */
 	if (sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
@@ -154,7 +154,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		return False;
 	}
 
-	total_recs = file_size(fname) / sizeof(crec);
+	total_recs = get_file_size(fname) / sizeof(crec);
 			
 	/* find a free spot */
 	for (i=0;i<max_connections;i++) {
@@ -168,10 +168,10 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		if (Clear && crec.pid && !process_exists(crec.pid)) {
 			if(sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec)) {
               DEBUG(0,("claim_connection: ERROR: sys_lseek failed to seek \
-to %d\n", i*sizeof(crec) ));
+to %d\n", (int)(i*sizeof(crec)) ));
               continue;
             }
-			bzero((void *)&crec,sizeof(crec));
+			memset((void *)&crec,'\0',sizeof(crec));
 			write(fd, &crec,sizeof(crec));
 			if (foundi < 0) foundi = i;
 			continue;
@@ -192,7 +192,7 @@ to %d\n", i*sizeof(crec) ));
 	}      
 	
 	/* fill in the crec */
-	bzero((void *)&crec,sizeof(crec));
+	memset((void *)&crec,'\0',sizeof(crec));
 	crec.magic = 0x280267;
 	crec.pid = getpid();
 	if (conn) {

@@ -35,12 +35,12 @@ pstring cd_path = "";
 static pstring service;
 static pstring desthost;
 extern pstring global_myname;
-extern pstring myhostname;
 static pstring password;
 static pstring username;
 static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
+static int io_bufsize = 65520;
 extern struct in_addr ipzero;
 extern pstring scope;
 
@@ -149,18 +149,16 @@ static int readfile(char *b, int size, int n, FILE *f)
 		return(fread(b,size,n,f));
   
 	i = 0;
-	while (i < n) {
+	while (i < (n - 1) && (i < BUFFER_SIZE)) {
 		if ((c = getc(f)) == EOF) {
 			break;
 		}
       
 		if (c == '\n') { /* change all LFs to CR/LF */
 			b[i++] = '\r';
-			n++;
 		}
       
-		if(i < n)
-			b[i++] = c;
+		b[i++] = c;
 	}
   
 	return(i);
@@ -327,7 +325,7 @@ static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-		DEBUG(0,("  %-30s%7.7s%8.0f  %s",
+		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
 			 CNV_LANG(finfo->name),
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
@@ -349,8 +347,126 @@ static void do_du(file_info *finfo)
 
 static BOOL do_list_recurse;
 static BOOL do_list_dirs;
-static int do_list_attr;
+static char *do_list_queue = 0;
+static long do_list_queue_size = 0;
+static long do_list_queue_start = 0;
+static long do_list_queue_end = 0;
 static void (*do_list_fn)(file_info *);
+
+/****************************************************************************
+functions for do_list_queue
+  ****************************************************************************/
+
+/*
+ * The do_list_queue is a NUL-separated list of strings stored in a
+ * char*.  Since this is a FIFO, we keep track of the beginning and
+ * ending locations of the data in the queue.  When we overflow, we
+ * double the size of the char*.  When the start of the data passes
+ * the midpoint, we move everything back.  This is logically more
+ * complex than a linked list, but easier from a memory management
+ * angle.  In any memory error condition, do_list_queue is reset.
+ * Functions check to ensure that do_list_queue is non-NULL before
+ * accessing it.
+ */
+static void reset_do_list_queue(void)
+{
+	if (do_list_queue)
+	{
+		free(do_list_queue);
+	}
+	do_list_queue = 0;
+	do_list_queue_size = 0;
+	do_list_queue_start = 0;
+	do_list_queue_end = 0;
+}
+
+static void init_do_list_queue(void)
+{
+	reset_do_list_queue();
+	do_list_queue_size = 1024;
+	do_list_queue = malloc(do_list_queue_size);
+	if (do_list_queue == 0) { 
+		DEBUG(0,("malloc fail for size %d\n",
+			 (int)do_list_queue_size));
+		reset_do_list_queue();
+	} else {
+		memset(do_list_queue, 0, do_list_queue_size);
+	}
+}
+
+static void adjust_do_list_queue(void)
+{
+	/*
+	 * If the starting point of the queue is more than half way through,
+	 * move everything toward the beginning.
+	 */
+	if (do_list_queue && (do_list_queue_start == do_list_queue_end))
+	{
+		DEBUG(4,("do_list_queue is empty\n"));
+		do_list_queue_start = do_list_queue_end = 0;
+		*do_list_queue = '\0';
+	}
+	else if (do_list_queue_start > (do_list_queue_size / 2))
+	{
+		DEBUG(4,("sliding do_list_queue backward\n"));
+		memmove(do_list_queue,
+			do_list_queue + do_list_queue_start,
+			do_list_queue_end - do_list_queue_start);
+		do_list_queue_end -= do_list_queue_start;
+		do_list_queue_start = 0;
+	}
+	   
+}
+
+static void add_to_do_list_queue(const char* entry)
+{
+	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
+	while (new_end > do_list_queue_size)
+	{
+		do_list_queue_size *= 2;
+		DEBUG(4,("enlarging do_list_queue to %d\n",
+			 (int)do_list_queue_size));
+		do_list_queue = Realloc(do_list_queue, do_list_queue_size);
+		if (! do_list_queue) {
+			DEBUG(0,("failure enlarging do_list_queue to %d bytes\n",
+				 (int)do_list_queue_size));
+			reset_do_list_queue();
+		}
+		else
+		{
+			memset(do_list_queue + do_list_queue_size / 2,
+			       0, do_list_queue_size / 2);
+		}
+	}
+	if (do_list_queue)
+	{
+		pstrcpy(do_list_queue + do_list_queue_end, entry);
+		do_list_queue_end = new_end;
+		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
+			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
+	}
+}
+
+static char *do_list_queue_head(void)
+{
+	return do_list_queue + do_list_queue_start;
+}
+
+static void remove_do_list_queue_head(void)
+{
+	if (do_list_queue_end > do_list_queue_start)
+	{
+		do_list_queue_start += strlen(do_list_queue_head()) + 1;
+		adjust_do_list_queue();
+		DEBUG(4,("removed head of do_list_queue (start=%d, end=%d)\n",
+			 (int)do_list_queue_start, (int)do_list_queue_end));
+	}
+}
+
+static int do_list_queue_empty(void)
+{
+	return (! (do_list_queue && *do_list_queue));
+}
 
 /****************************************************************************
 a helper for do_list
@@ -372,11 +488,8 @@ static void do_list_helper(file_info *f, const char *mask)
 			if (!p) return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
-			if (do_list_fn == display_finfo) {
-				DEBUG(0,("\n%s\n",CNV_LANG(mask2)));
-			}
 			pstrcat(mask2,"\\*");
-			do_list(mask2, do_list_attr, do_list_fn, True, True);
+			add_to_do_list_queue(mask2);
 		}
 		return;
 	}
@@ -392,12 +505,68 @@ a wrapper around cli_list that adds recursion
   ****************************************************************************/
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
+	static int in_do_list = 0;
+
+	if (in_do_list && rec)
+	{
+		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
+		exit(1);
+	}
+
+	in_do_list = 1;
+
 	do_list_recurse = rec;
 	do_list_dirs = dirs;
 	do_list_fn = fn;
-	do_list_attr = attribute;
 
-	cli_list(cli, mask, attribute, do_list_helper);
+	if (rec)
+	{
+		init_do_list_queue();
+		add_to_do_list_queue(mask);
+		
+		while (! do_list_queue_empty())
+		{
+			/*
+			 * Need to copy head so that it doesn't become
+			 * invalid inside the call to cli_list.  This
+			 * would happen if the list were expanded
+			 * during the call.
+			 * Fix from E. Jay Berkenbilt (ejb@ql.org)
+			 */
+			pstring head;
+			pstrcpy(head, do_list_queue_head());
+			cli_list(cli, head, attribute, do_list_helper);
+			remove_do_list_queue_head();
+			if ((! do_list_queue_empty()) && (fn == display_finfo))
+			{
+				char* next_file = do_list_queue_head();
+				char* save_ch = 0;
+				if ((strlen(next_file) >= 2) &&
+				    (next_file[strlen(next_file) - 1] == '*') &&
+				    (next_file[strlen(next_file) - 2] == '\\'))
+				{
+					save_ch = next_file +
+						strlen(next_file) - 2;
+					*save_ch = '\0';
+				}
+				DEBUG(0,("\n%s\n",CNV_LANG(next_file)));
+				if (save_ch)
+				{
+					*save_ch = '\\';
+				}
+			}
+		}
+	}
+	else
+	{
+		if (cli_list(cli, mask, attribute, do_list_helper) == -1)
+		{
+			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
+		}
+	}
+
+	in_do_list = 0;
+	reset_do_list_queue();
 }
 
 /****************************************************************************
@@ -476,7 +645,7 @@ static void do_get(char *rname,char *lname)
 	BOOL newhandle = False;
 	char *data;
 	struct timeval tp_start;
-	int read_size = 65520;
+	int read_size = io_bufsize;
 	uint16 attr;
 	size_t size;
 	off_t nread = 0;
@@ -517,7 +686,11 @@ static void do_get(char *rname,char *lname)
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
 		 lname, (double)size, lname));
 
-	data = (char *)malloc(read_size);
+	if(!(data = (char *)malloc(read_size))) { 
+		DEBUG(0,("malloc fail for size %d\n", read_size));
+		cli_close(cli, fnum);
+		return;
+	}
 
 	while (1) {
 		int n = cli_read(cli, fnum, data, nread, read_size);
@@ -531,6 +704,13 @@ static void do_get(char *rname,char *lname)
       
 		nread += n;
 	}
+
+	if (nread < size) {
+		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
+               CNV_LANG(rname), (long)nread));
+	}
+
+	free(data);
 	
 	if (!cli_close(cli, fnum)) {
 		DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
@@ -743,7 +923,7 @@ static BOOL do_mkdir(char *name)
 
 
 /****************************************************************************
-make a directory of name "name"
+ Exit client.
 ****************************************************************************/
 static void cmd_quit(void)
 {
@@ -801,7 +981,7 @@ static void do_put(char *rname,char *lname)
 	FILE *f;
 	int nread=0;
 	char *buf=NULL;
-	int maxwrite=65520;
+	int maxwrite=io_bufsize;
 	
 	struct timeval tp_start;
 	GetTimeOfDay(&tp_start);
@@ -1151,6 +1331,24 @@ static void cmd_del(void)
 	do_list(mask, attribute,do_del,False,False);
 }
 
+/****************************************************************************
+****************************************************************************/
+static void cmd_open(void)
+{
+	pstring mask;
+	fstring buf;
+	
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("del <filename>\n"));
+		return;
+	}
+	pstrcat(mask,buf);
+
+	cli_open(cli, mask, O_RDWR, DENY_ALL);
+}
+
 
 /****************************************************************************
 remove a directory
@@ -1332,6 +1530,7 @@ list a share name
 static void browse_fn(const char *name, uint32 m, const char *comment)
 {
         fstring typestr;
+
         *typestr=0;
 
         switch (m)
@@ -1375,18 +1574,40 @@ try and browse available connections on a host
 ****************************************************************************/
 static BOOL list_servers(char *wk_grp)
 {
+	if (!cli->server_domain) return False;
+
         printf("\n\tServer               Comment\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn);
 
         printf("\n\tWorkgroup            Master\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_DOMAIN_ENUM, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn);
 	return True;
 }
 
+#if defined(HAVE_LIBREADLINE)
+#  if defined(HAVE_READLINE_HISTORY_H) || defined(HAVE_HISTORY_H)
+/****************************************************************************
+history
+****************************************************************************/
+static void cmd_history(void)
+{
+	HIST_ENTRY **hlist;
+	register int i;
+
+	hlist = history_list ();	/* Get pointer to history list */
+	
+	if (hlist)			/* If list not empty */
+	{
+		for (i = 0; hlist[i]; i++)	/* then display it */
+			DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+}
+#  endif 
+#endif
 
 /* Some constants for completing filename arguments */
 
@@ -1417,6 +1638,7 @@ struct
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
   {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
@@ -1442,6 +1664,9 @@ struct
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+#ifdef HAVE_LIBREADLINE
+  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+#endif
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
@@ -1499,6 +1724,7 @@ static void cmd_help(void)
 	}
 }
 
+#ifndef HAVE_LIBREADLINE
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
@@ -1514,7 +1740,7 @@ static void wait_keyboard(void)
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,NULL, &timeout);
+		sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
       
 		if (FD_ISSET(fileno(stdin),&fds))
 			return;
@@ -1529,6 +1755,7 @@ static void wait_keyboard(void)
 		cli_chkpath(cli, "\\");
 	}  
 }
+#endif
 
 /****************************************************************************
 process a -c command string
@@ -1571,223 +1798,58 @@ static void process_command_string(char *cmd)
 	}
 }	
 
-#ifdef HAVE_LIBREADLINE
-
-/****************************************************************************
-GNU readline completion functions
-****************************************************************************/
-
-/* Argh.  This is where it gets ugly.  We really need to be able to
-   pass back from the do_list() iterator function. */
-
-static int compl_state;
-static char *compl_text;
-static pstring result;
-
-/* Iterator function for do_list() */
-
-static void complete_process_file(file_info *f)
-{
-    /* Do we have a partial match? */
-    
-    if ((compl_state >= 0) && (strncmp(compl_text, f->name, 
-				       strlen(compl_text)) == 0)) {
-	
-	/* Return filename if we have made enough matches */
-	
-	if (compl_state == 0) {
-	    pstrcpy(result, f->name);
-	    compl_state = -1;
-	    
-	    return;
-	}
-	compl_state--;
-    }
-}
-
-/* Complete a remote file */
-
-static char *complete_remote_file(char *text, int state)
-{
-    int attribute = aDIR | aSYSTEM | aHIDDEN;
-    pstring mask;
-    
-    /* Create dir mask */
-    
-    pstrcpy(mask, cur_dir);
-    pstrcat(mask, "*");
-    
-    /* Initialise static vars for filename match */
-    
-    compl_text = text;
-    compl_state = state;
-    result[0] = '\0';
-    
-    /* Iterate over all files in directory */
-    
-    do_list(mask, attribute, complete_process_file, False, True);
-    
-    /* Return matched filename */
-    
-    if (result[0] != '\0') {
-	return strdup(result);      /* Readline will dispose of strings */
-    } else {
-	return NULL;
-    }
-}
-
-/* Complete a smbclient command */
-
-static char *complete_cmd(char *text, int state)
-{
-    static int cmd_index;
-    char *name;
-    
-    /* Initialise */
-    
-    if (state == 0) {
-	cmd_index = 0;
-    }
-    
-    /* Return the next name which partially matches the list of commands */
-    
-    while (strlen(name = commands[cmd_index++].name) > 0) {
-	if (strncmp(name, text, strlen(text)) == 0) {
-	    return strdup(name);
-	}
-    }
-    
-    return NULL;
-}
-
-/* Main completion function for smbclient.  Work out which word we are
-   trying to complete and call the appropriate helper function -
-   complete_cmd() if we are completing smbclient commands,
-   comlete_remote_file() if we are completing a file on the remote end,
-   filename_completion_function() builtin to GNU readline for local 
-   files. */
-
-static char **completion_fn(char *text, int start, int end)
-{
-  int i, num_words, cmd_index;
-  char lastch = ' ';
-
-  /* If we are at the start of a word, we are completing a smbclient
-     command. */
-
-  if (start == 0) {
-    return completion_matches(text, complete_cmd);
-  }
-
-  /* Count # of words in command */
-
-  num_words = 0;
-  for (i = 0; i <= end; i++) {
-    if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
-      num_words++;
-    lastch = rl_line_buffer[i];
-  }
-
-  if (rl_line_buffer[end] == ' ')
-    num_words++;
-
-  /* Work out which command we are completing for */
-
-  for (cmd_index = 0; strcmp(commands[cmd_index].name, "") != 0; 
-       cmd_index++) {
-
-    /* Check each command in array */
-
-    if (strncmp(rl_line_buffer, commands[cmd_index].name,
-                strlen(commands[cmd_index].name)) == 0) {
-
-      /* Call appropriate completion function */
-
-      if ((num_words == 2) || (num_words == 3)) {
-        switch (commands[cmd_index].compl_args[num_words - 2]) {
-
-        case COMPL_REMOTE:
-          return completion_matches(text, complete_remote_file);
-          break;
-
-        case COMPL_LOCAL:
-          return completion_matches(text, filename_completion_function);
-          break;
-
-        default:
-            /* An invalid completion type */
-            break;
-        }
-      }
-
-      /* We're either completing an argument > 3 or found an invalid
-         completion type.  Either way do nothing about it. */
-
-      break;
-    }
-  }
- 
-  return NULL;
-}
-
-/* To avoid filename completion being activated when no valid
-   completions are found, we assign this stub completion function
-   to the rl_completion_entry_function variable. */
-
-static char *complete_cmd_null(char *text, int state)
-{
-    return NULL;
-}
-
-#endif /* HAVE_LIBREADLINE */
-
 /****************************************************************************
 process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
 	pstring line;
-#ifdef HAVE_LIBREADLINE
-	pstring promptline;
-#endif
 	char *ptr;
 
+#ifdef HAVE_LIBREADLINE
+/* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
+#ifdef PROMPTSIZE
+#undef PROMPTSIZE
+#endif
+#define PROMPTSIZE 2048
+	char prompt_str[PROMPTSIZE];	/* This holds the buffer "smb: \dir1\> " */
+	
+        char *temp;			/* Gets the buffer from readline() */
+	temp = (char *)NULL;
+#endif
 	while (!feof(stdin)) {
 		fstring tok;
 		int i;
+#ifdef HAVE_LIBREADLINE
+		if ( temp != (char *)NULL )
+		{
+			free( temp );	/* Free memory allocated every time by readline() */
+			temp = (char *)NULL;
+		}
 
-#ifndef HAVE_LIBREADLINE
+		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", CNV_LANG(cur_dir) );
 
+		temp = readline( prompt_str );		/* We read the line here */
+
+		if ( !temp )
+			break;		/* EOF occured */
+
+		if ( *temp )		/* If non-empty line, save to history */
+			add_history (temp);
+	
+		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
+#else 
 		/* display a prompt */
 		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
 		dbgflush( );
-
+		
 		wait_keyboard();
 		
 		/* and get a response */
 		if (!fgets(line,1000,stdin))
 			break;
-
-#else /* !HAVE_LIBREADLINE */
-
-		/* Read input using GNU Readline */
-		
-		slprintf(promptline, sizeof(promptline) - 1, "smb: %s> ", 
-			 CNV_LANG(cur_dir));
-
-		if (!readline(promptline))
-		    break;
-		
-		/* Copy read line to samba buffer */
-		
-		pstrcpy(line, rl_line_buffer);
-		pstrcat(line, "\n");
-		
-		/* Add line to history */
-		
-		if (strlen(line) > 0)
-		    add_history(line);		
 #endif
+
 		/* input language code to internal one */
 		CNV_INPUT (line);
 		
@@ -1815,22 +1877,15 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(char *server, char *share, int smb_port)
+struct cli_state *do_connect(char *server, char *share)
 {
-	struct cli_state *smb_cli;
-	struct nmb_name called, calling, stupid_smbserver_called;
+	struct cli_state *c;
+	struct nmb_name called, calling;
 	char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 
-	if ((smb_cli=cli_initialise(NULL)) == NULL)
-	{
-		DEBUG(1,("cli_initialise failed\n"));
-		return NULL;
-	}
-
-	if (*share == '\\')
-	{
+	if (*share == '\\') {
 		server = share+2;
 		share = strchr(server,'\\');
 		if (!share) return NULL;
@@ -1844,52 +1899,86 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, name_type, "");
-	make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
 
-	fstrcpy(smb_cli->usr.user_name, username);
-	fstrcpy(smb_cli->usr.domain, workgroup);
-
+ again:
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
 
-	if (cli_set_port(smb_cli, smb_port) == 0)
-	{
+	/* have to open a new connection */
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
+	    !cli_connect(c, server_n, &ip)) {
+		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
 
-	/* set the password cache info */
-	if (got_pass)
-	{
-		if (password[0] == 0)
-		{
-			pwd_set_nullpwd(&(smb_cli->usr.pwd));
+	if (!cli_session_request(c, &calling, &called)) {
+		char *p;
+		DEBUG(0,("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c)));
+		cli_shutdown(c);
+		if ((p=strchr(called.name, '.'))) {
+			*p = 0;
+			goto again;
 		}
-		else
-		{
-			/* generate 16 byte hashes */
-			pwd_make_lm_nt_16(&(smb_cli->usr.pwd), password);
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			goto again;
 		}
-	}
-	else 
-	{
-		pwd_read(&(smb_cli->usr.pwd), "Password:", True);
-	}
-
-	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
-
-	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
-
-	if (!cli_establish_connection(smb_cli, server, &ip, &calling, &called,
-	                              share, "?????", False, True) &&
-	    !cli_establish_connection(smb_cli, server, &ip,
-	                              &calling, &stupid_smbserver_called,
-	                              share, "?????", False, True))
-	{
 		return NULL;
 	}
-		
-	return smb_cli;
+
+	DEBUG(4,(" session request ok\n"));
+
+	if (!cli_negprot(c)) {
+		DEBUG(0,("protocol negotiation failed\n"));
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	if (!got_pass) {
+		char *pass = getpass("Password: ");
+		if (pass) {
+			pstrcpy(password, pass);
+		}
+	}
+
+	if (!cli_session_setup(c, username, 
+			       password, strlen(password),
+			       password, strlen(password),
+			       workgroup)) {
+		/* if a password was not supplied then try again with a null username */
+		if (password[0] || !username[0] || 
+		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
+			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+			return NULL;
+		}
+		DEBUG(0,("Anonymous login successful\n"));
+	}
+
+	/*
+	 * These next two lines are needed to emulate
+	 * old client behaviour for people who have
+	 * scripts based on client output.
+	 * QUESTION ? Do we want to have a 'client compatibility
+	 * mode to turn these on/off ? JRA.
+	 */
+
+	if (*c->server_domain || *c->server_os || *c->server_type)
+		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			c->server_domain,c->server_os,c->server_type));
+	
+	DEBUG(4,(" session setup ok\n"));
+
+	if (!cli_send_tconX(c, share, "?????",
+			    password, strlen(password)+1)) {
+		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	DEBUG(4,(" tconx ok\n"));
+
+	return c;
 }
 
 
@@ -1898,7 +1987,7 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 ****************************************************************************/
 static BOOL process(char *base_directory)
 {
-	cli = do_connect(desthost, service, port);
+	cli = do_connect(desthost, service);
 	if (!cli) {
 		return(False);
 	}
@@ -1920,11 +2009,10 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  DEBUG(0,("Usage: %s service <password> ", pname));
+  DEBUG(0,("Usage: %s service <password> [options]", pname));
 
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
-  DEBUG(0,("\t-B IP addr            broadcast IP address to use\n"));
   DEBUG(0,("\t-O socket_options     socket options to use\n"));
   DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
   DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
@@ -1946,6 +2034,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
+  DEBUG(0,("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n"));
   DEBUG(0,("\n"));
 }
 
@@ -2013,9 +2102,9 @@ static void get_password_file(void)
 /****************************************************************************
 handle a -L query
 ****************************************************************************/
-static int do_host_query(char *query_host, int smb_port)
+static int do_host_query(char *query_host)
 {
-	cli = do_connect(query_host, "IPC$", smb_port);
+	cli = do_connect(query_host, "IPC$");
 	if (!cli)
 		return 1;
 
@@ -2031,10 +2120,10 @@ static int do_host_query(char *query_host, int smb_port)
 /****************************************************************************
 handle a tar operation
 ****************************************************************************/
-static int do_tar_op(int smb_port, char *base_directory)
+static int do_tar_op(char *base_directory)
 {
 	int ret;
-	cli = do_connect(desthost, service, smb_port);
+	cli = do_connect(desthost, service);
 	if (!cli)
 		return 1;
 
@@ -2096,7 +2185,6 @@ static int do_message_op(void)
 	extern int optind;
 	pstring query_host;
 	BOOL message = False;
-	BOOL explicit_user = False;
 	extern char tar_type;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
@@ -2116,14 +2204,38 @@ static int do_message_op(void)
 
 	DEBUGLEVEL = 2;
 
+#ifdef HAVE_LIBREADLINE
+	/* Allow conditional parsing of the ~/.inputrc file. */
+	rl_readline_name = "smbclient";
+#endif    
 	setup_logging(pname,True);
+
+	/*
+	 * If the -E option is given, be careful not to clobber stdout
+	 * before processing the options.  28.Feb.99, richard@hacom.nl.
+	 * Also pre-parse the -s option to get the service file name.
+	 */
+
+	for (opt = 1; opt < argc; opt++) {
+		if (strcmp(argv[opt], "-E") == 0)
+			dbf = stderr;
+		else if(strncmp(argv[opt], "-s", 2) == 0) {
+			if(argv[opt][2] != '\0')
+				pstrcpy(servicesf, &argv[opt][2]);
+			else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				pstrcpy(servicesf, argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
+	}
 
 	TimeInit();
 	charset_initialise();
-
-	if(!get_myname(myhostname,NULL)) {
-		DEBUG(0,("Failed to get my hostname.\n"));
-	}
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -2132,8 +2244,6 @@ static int do_message_op(void)
 	}
 	
 	codepage_initialise(lp_client_code_page());
-
-	interpret_coding_system(term_code);
 
 #ifdef WITH_SSL
 	sslutil_init(0);
@@ -2209,13 +2319,10 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
-			break;
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
 			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -2270,7 +2377,6 @@ static int do_message_op(void)
 		case 'U':
 			{
 				char *lp;
-				explicit_user = True;
 				pstrcpy(username,optarg);
 				if ((lp=strchr(username,'%'))) {
 					*lp = 0;
@@ -2281,9 +2387,10 @@ static int do_message_op(void)
 			}
 			break;
 		case 'L':
-			pstrcpy(query_host,optarg);
-			if(!explicit_user)
-				*username = '\0';
+			p = optarg;
+			while(*p == '\\' || *p == '/')
+				p++;
+			pstrcpy(query_host,p);
 			break;
 		case 't':
 			pstrcpy(term_code, optarg);
@@ -2307,40 +2414,32 @@ static int do_message_op(void)
 			cmdstr = optarg;
 			got_pass = True;
 			break;
+		case 'b':
+			io_bufsize = MAX(1, atoi(optarg));
+			break;
 		default:
 			usage(pname);
 			exit(1);
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);  
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
+
+	if (*term_code)
+		interpret_coding_system(term_code);
 
 	if (!tar_type && !*query_host && !*service && !message) {
 		usage(pname);
 		exit(1);
 	}
 
-#ifdef HAVE_LIBREADLINE
-
-	/* Initialise GNU Readline */
-	
-	rl_readline_name = "smbclient";
-	rl_attempted_completion_function = completion_fn;
-	rl_completion_entry_function = (Function *)complete_cmd_null;
-	
-	/* Initialise history list */
-	
-	using_history();
-
-#endif /* HAVE_LIBREADLINE */
-
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
 	if (tar_type) {
-		return do_tar_op(port, base_directory);
+		return do_tar_op(base_directory);
 	}
 
 	if ((p=strchr(query_host,'#'))) {
@@ -2350,7 +2449,7 @@ static int do_message_op(void)
 	}
   
 	if (*query_host) {
-		return do_host_query(query_host, port);
+		return do_host_query(query_host);
 	}
 
 	if (message) {
@@ -2358,10 +2457,8 @@ static int do_message_op(void)
 	}
 
 	if (!process(base_directory)) {
-		close_sockets();
 		return(1);
 	}
-	close_sockets();
 
 	return(0);
 }

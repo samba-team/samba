@@ -61,7 +61,6 @@ extern fstring global_myworkgroup;
 
 extern int Client;
 extern int smb_read_error;
-extern uint32 global_client_caps;
 
 static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
@@ -82,7 +81,7 @@ static int CopyExpanded(connection_struct *conn,
 	if (!src || !dst || !n || !(*dst)) return(0);
 
 	StrnCpy(buf,src,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	StrnCpy(*dst,buf,*n);
 	l = strlen(*dst) + 1;
@@ -95,7 +94,7 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 {
   int l;
   if (!src || !dst || !n || !(*dst)) return(0);
-  StrnCpy(*dst,src,*n);
+  StrnCpy(*dst,src,*n-1);
   l = strlen(*dst) + 1;
   (*dst) += l;
   (*n) -= l;
@@ -107,7 +106,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 	pstring buf;
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	return strlen(buf) + 1;
 }
@@ -117,7 +116,7 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 	static pstring buf;
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	return &buf[0];
 }
@@ -139,70 +138,69 @@ static BOOL prefix_ok(char *str,char *prefix)
  cause of some of the ipc problems being experienced.  lkcl26dec97
 
  ******************************************************************/
+
 static void copy_trans_params_and_data(char *outbuf, int align,
-				struct mem_buf *rparam, struct mem_buf *rdata,
-				int param_offset, int data_offset,
-				int param_len, int data_len)
+				char *rparam, int param_offset, int param_len,
+				char *rdata, int data_offset, int data_len)
 {
 	char *copy_into = smb_buf(outbuf)+1;
+
+	if(param_len < 0)
+		param_len = 0;
+
+	if(data_len < 0)
+		data_len = 0;
 
 	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
 			param_offset, param_offset + param_len,
 			data_offset , data_offset  + data_len));
 
-	if (param_len) mem_buf_copy(copy_into, rparam, param_offset, param_len);
+	if (param_len)
+		memcpy(copy_into, &rparam[param_offset], param_len);
+
 	copy_into += param_len + align;
-	if (data_len ) mem_buf_copy(copy_into, rdata , data_offset , data_len);
+
+	if (data_len )
+		memcpy(copy_into, &rdata[data_offset], data_len);
 }
 
 /****************************************************************************
-  send a trans reply
-  ****************************************************************************/
+ Send a trans reply.
+ ****************************************************************************/
+
 static void send_trans_reply(char *outbuf,
-				struct mem_buf *rdata,
-				struct mem_buf *rparam,
-				uint16 *setup, int lsetup, int max_data_ret)
+				char *rparam, int rparam_len,
+				char *rdata, int rdata_len,
+				BOOL buffer_too_large)
 {
-	int i;
 	int this_ldata,this_lparam;
-	int tot_data=0,tot_param=0;
+	int tot_data_sent = 0;
+	int tot_param_sent = 0;
 	int align;
 
-	int ldata  = rdata  ? mem_buf_len(rdata ) : 0;
-	int lparam = rparam ? mem_buf_len(rparam) : 0;
-
-	BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
+	int ldata  = rdata  ? rdata_len : 0;
+	int lparam = rparam ? rparam_len : 0;
 
 	if (buffer_too_large)
-	{
-		DEBUG(5,("send_trans_reply: buffer %d too large %d\n", ldata, max_data_ret));
-		ldata = max_data_ret;
-	}
+		DEBUG(5,("send_trans_reply: buffer %d too large\n", ldata ));
 
-	this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
-	this_ldata  = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
+	this_lparam = MIN(lparam,max_send - 500); /* hack */
+	this_ldata  = MIN(ldata,max_send - (500+this_lparam));
 
 	align = ((this_lparam)%4);
 
-	set_message(outbuf,10+lsetup,1+align+this_ldata+this_lparam,True);
+	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
 
 	if (buffer_too_large)
 	{
-		if (global_client_caps & CAP_STATUS32)
-		{
-			/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-			SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-			SIVAL(outbuf, smb_rcls, 0x80000005); /* STATUS_BUFFER_OVERFLOW */
-		} else {
-			SCVAL(outbuf, smb_rcls, ERRDOS);
-			SSVAL(outbuf, smb_err, ERRmoredata);
-		}
+		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
+		SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_ACCESS_VIOLATION);
 	}
 
 	copy_trans_params_and_data(outbuf, align,
-	                           rparam     , rdata,
-	                           tot_param  , tot_data,
-	                           this_lparam, this_ldata);
+								rparam, tot_param_sent, this_lparam,
+								rdata, tot_data_sent, this_ldata);
 
 	SSVAL(outbuf,smb_vwv0,lparam);
 	SSVAL(outbuf,smb_vwv1,ldata);
@@ -212,46 +210,46 @@ static void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv6,this_ldata);
 	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
 	SSVAL(outbuf,smb_vwv8,0);
-	SSVAL(outbuf,smb_vwv9,lsetup);
-
-	for (i=0;i<lsetup;i++)
-	{
-		SSVAL(outbuf,smb_vwv10+i*SIZEOFWORD,setup[i]);
-	}
+	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
 	send_smb(Client,outbuf);
 
-	tot_data = this_ldata;
-	tot_param = this_lparam;
+	tot_data_sent = this_ldata;
+	tot_param_sent = this_lparam;
 
-	while (tot_data < ldata || tot_param < lparam)
+	while (tot_data_sent < ldata || tot_param_sent < lparam)
 	{
-		this_lparam = MIN(lparam-tot_param, max_send - 500); /* hack */
-		this_ldata  = MIN(ldata -tot_data , max_send - (500+this_lparam));
+		this_lparam = MIN(lparam-tot_param_sent, max_send - 500); /* hack */
+		this_ldata  = MIN(ldata -tot_data_sent, max_send - (500+this_lparam));
+
+		if(this_lparam < 0)
+			this_lparam = 0;
+
+		if(this_ldata < 0)
+			this_ldata = 0;
 
 		align = (this_lparam%4);
 
 		set_message(outbuf,10,1+this_ldata+this_lparam+align,False);
 
 		copy_trans_params_and_data(outbuf, align,
-		                           rparam     , rdata,
-		                           tot_param  , tot_data,
-		                           this_lparam, this_ldata);
+									rparam, tot_param_sent, this_lparam,
+									rdata, tot_data_sent, this_ldata);
 
 		SSVAL(outbuf,smb_vwv3,this_lparam);
 		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-		SSVAL(outbuf,smb_vwv5,tot_param);
+		SSVAL(outbuf,smb_vwv5,tot_param_sent);
 		SSVAL(outbuf,smb_vwv6,this_ldata);
 		SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
-		SSVAL(outbuf,smb_vwv8,tot_data);
+		SSVAL(outbuf,smb_vwv8,tot_data_sent);
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
 		send_smb(Client,outbuf);
 
-		tot_data  += this_ldata;
-		tot_param += this_lparam;
+		tot_data_sent  += this_ldata;
+		tot_param_sent += this_lparam;
 	}
 }
 
@@ -378,7 +376,10 @@ va_dcl
 #endif
   stringneeded = -1;
 
-  if (!p->curpos) return(0);
+  if (!p->curpos) {
+    va_end(args);
+    return(0);
+  }
 
   switch( *p->curpos++ ) {
   case 'W':			/* word (2 byte) */
@@ -400,7 +401,7 @@ va_dcl
     needed = get_counter(&p->curpos);
     {
       char *s = va_arg(args,char*);
-      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed);
+      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed-1);
     }
     break;
   case 'z':			/* offset to zero terminated string (4 byte) */
@@ -656,7 +657,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       return;
     }
 
-    bzero(p, 8192*sizeof(char));
+    memset(p, '\0',8192*sizeof(char));
     q=p;
 
     /* lookup the long printer driver name in the file description */
@@ -809,8 +810,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   print_queue_struct *queue=NULL;
   print_status_struct status;
   
-  bzero(&status,sizeof(status));
-  bzero(&desc,sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
  
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -823,7 +824,20 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
  
   /* check it's a supported varient */
   if (!prefix_ok(str1,"zWrLh")) return False;
-  if (!check_printq_info(&desc,uLevel,str2,str3)) return False;
+  if (!check_printq_info(&desc,uLevel,str2,str3)) {
+    /*
+     * Patch from Scott Moomaw <scott@bridgewater.edu>
+     * to return the 'invalid info level' error if an
+     * unknown level was requested.
+     */
+    *rdata_len = 0;
+    *rparam_len = 6;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVAL(*rparam,2,0);
+    SSVAL(*rparam,4,0);
+    return(True);
+  }
  
   snum = lp_servicenumber(QueueName);
   if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
@@ -908,13 +922,26 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   int* subcntarr = NULL;
   int queuecnt, subcnt=0, succnt=0;
  
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
   if (!prefix_ok(param_format,"WrLeh")) return False;
-  if (!check_printq_info(&desc,uLevel,output_format1,output_format2))
-    return False;
+  if (!check_printq_info(&desc,uLevel,output_format1,output_format2)) {
+    /*
+     * Patch from Scott Moomaw <scott@bridgewater.edu>
+     * to return the 'invalid info level' error if an
+     * unknown level was requested.
+     */
+    *rdata_len = 0;
+    *rparam_len = 6;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVAL(*rparam,2,0);
+    SSVAL(*rparam,4,0);
+    return(True);
+  }
+
   queuecnt = 0;
   for (i = 0; i < services; i++)
     if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
@@ -1057,7 +1084,7 @@ static int get_server_info(uint32 servertype,
       (*servers) = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
       if (!(*servers)) return(0);
-      bzero((char *)((*servers)+count),sizeof(**servers)*(alloced-count));
+      memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
     
@@ -1297,7 +1324,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
 
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
-  bzero(*rdata,*rdata_len);
+  memset(*rdata,'\0',*rdata_len);
   
   p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
   p = *rdata;
@@ -1355,7 +1382,6 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *pa
   if (!prefix_ok(str1,"zWrLeh")) return False;
   
   *rdata_len = 0;
-  *rdata = NULL;
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1650,6 +1676,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   p = skip_string(p,1);
 
+  memset(pass1,'\0',sizeof(pass1));
+  memset(pass2,'\0',sizeof(pass2));
   memcpy(pass1,p,16);
   memcpy(pass2,p+16,16);
 
@@ -1680,7 +1708,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    * Older versions of Windows seem to do this.
    */
 
-  if (password_ok(user, pass1,strlen(pass1),NULL, NULL) &&
+  if (password_ok(user, pass1,strlen(pass1),NULL) &&
       chgpasswd(user,pass1,pass2,False))
   {
     SSVAL(*rparam,0,NERR_Success);
@@ -1703,8 +1731,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     }
   }
 
-  bzero(pass1,sizeof(fstring));
-  bzero(pass2,sizeof(fstring));	 
+  memset((char *)pass1,'\0',sizeof(fstring));
+  memset((char *)pass2,'\0',sizeof(fstring));	 
 	 
   return(True);
 }
@@ -2005,7 +2033,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 				    !become_service(fconn,True))
 					break;
 	      
-				if (conn->vfs_ops.rename(dos_to_unix(fsp->fsp_name,False),name) == 0) {
+				if (dos_rename(fsp->fsp_name,name) == 0) {
 					string_set(&fsp->fsp_name,name);
 				}
 				break;
@@ -2091,7 +2119,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      pstrcpy(comment,lp_serverstring());
+      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,global_myworkgroup))>0) {
 	for (i=0;i<count;i++)
@@ -2450,7 +2478,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_path());
+		pstrcpy(p2, lp_logon_home());
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2486,12 +2514,15 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_path());
+		pstrcpy(p2,lp_logon_home());
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
-		SIVAL(p,54,0);		/* script_path */
+		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
+		pstrcpy(p2,lp_logon_script());
+		standard_sub( conn, p2 );             
+		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
 			SIVAL(p,60,0);		/* auth_flags */
@@ -2590,12 +2621,11 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
-  char* logon_script;
 
   uLevel = SVAL(p,0);
   name = p + 2;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   DEBUG(3,("WWkstaUserLogon uLevel=%d name=%s\n",uLevel,name));
 
@@ -2636,9 +2666,12 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script();
-    standard_sub( conn, logon_script );
-    PACKS(&desc,"z", logon_script);		/* script path */
+    {
+      pstring logon_script;
+      pstrcpy(logon_script,lp_logon_script());
+      standard_sub( conn, logon_script );
+      PACKS(&desc,"z", logon_script);		/* script path */
+    }
 /* End of JHT mods */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */
@@ -2706,8 +2739,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
   uLevel = SVAL(p,2);
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
   DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
@@ -2767,8 +2800,8 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   print_queue_struct *queue=NULL;
   print_status_struct status;
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2880,7 +2913,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   struct pack_desc desc;
   int snum;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2939,7 +2972,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
   struct pack_desc desc;
   int services = lp_numservices();
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -2994,7 +3027,7 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3038,7 +3071,7 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3083,7 +3116,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3094,7 +3127,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   if (uLevel != 0 || strcmp(str2,"B9") != 0) return False;
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   desc.format = str2;
@@ -3117,35 +3150,48 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
-static void api_rpc_trans_reply(char *outbuf,
-				pipes_struct *p)
-{
-	send_trans_reply(outbuf, p->rsmb_pdu.data, NULL, NULL, 0, p->file_offset);
+/****************************************************************************
+ Start the first part of an RPC reply which began with an SMBtrans request.
+****************************************************************************/
 
-	if (mem_buf_len(p->rsmb_pdu.data) <= p->file_offset)
-	{
-		/* all of data was sent: no need to wait for SMBreadX calls */
-		mem_free_data(p->rsmb_pdu.data);
+static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
+{
+	char *rdata = malloc(p->max_trans_reply);
+	int data_len;
+
+	if(rdata == NULL) {
+		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
+		return False;
 	}
+
+	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
+		free(rdata);
+		return False;
+	}
+
+	send_trans_reply(outbuf, NULL, 0, rdata, data_len, (int)prs_offset(&p->rdata) > data_len);
+
+	free(rdata);
+	return True;
 }
 
 /****************************************************************************
  WaitNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
+
+static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 priority;
 
-	if (!param) return False;
+	if (!param || param_len < 2)
+		return False;
 
-	priority = param[0] + (param[1] << 8);
+	priority = SVAL(param,0);
 	DEBUG(4,("WaitNamedPipeHandleState priority %x\n", priority));
 
-	if (wait_rpc_pipe_hnd_state(p, priority))
-	{
+	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
-
+		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -3155,20 +3201,20 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
 /****************************************************************************
  SetNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
+
+static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 id;
 
-	if (!param) return False;
+	if (!param || param_len < 2)
+		return False;
 
-	id = param[0] + (param[1] << 8);
+	id = SVAL(param,0);
 	DEBUG(4,("SetNamedPipeHandleState to code %x\n", id));
 
-	if (set_rpc_pipe_hnd_state(p, id))
-	{
+	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
-
+		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -3176,111 +3222,93 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
 
 
 /****************************************************************************
- when no reply is generated, indicate unsupported.
+ When no reply is generated, indicate unsupported.
  ****************************************************************************/
+
 static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 {
-	struct mem_buf rparam;
-
-	mem_init(&rparam, 0);
-	mem_alloc_data(&rparam, 4);
-
-	rparam.offset.start = 0;
-	rparam.offset.end   = 4;
+	char rparam[4];
 
 	/* unsupported */
-	SSVAL(rparam.data,0,NERR_notsupported);
-	SSVAL(rparam.data,2,0); /* converter word */
+	SSVAL(rparam,0,NERR_notsupported);
+	SSVAL(rparam,2,0); /* converter word */
 
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(outbuf, NULL, &rparam, NULL, 0, max_rdata_len);
+	send_trans_reply(outbuf, rparam, 4, NULL, 0, False);
 
-	mem_free_data(&rparam);
-
-	return(-1);
+	return -1;
 }
 
 /****************************************************************************
-  handle remote api calls delivered to a named pipe already opened.
-  ****************************************************************************/
+ Handle remote api calls delivered to a named pipe already opened.
+ ****************************************************************************/
+
 static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		 	uint16 *setup,char *data,char *params,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
-	BOOL reply    = False;
-
-	uint16 pnum;
-	uint16 subcommand;
+	BOOL reply = False;
 	pipes_struct *p = NULL;
+	int pnum;
+	int subcommand;
 
 	DEBUG(5,("api_fd_reply\n"));
 
 	/* First find out the name of this file. */
-	if (suwcnt != 2)
-	{
+	if (suwcnt != 2) {
 		DEBUG(0,("Unexpected named pipe transaction.\n"));
 		return(-1);
 	}
 
 	/* Get the file handle and hence the file name. */
-	pnum = setup[1];
-	subcommand = setup[0];
-	p = get_rpc_pipe(pnum);
+	/* 
+	 * NB. The setup array has already been transformed
+	 * via SVAL and so is in gost byte order.
+	 */
+	pnum = ((int)setup[1]) & 0xFFFF;
+	subcommand = ((int)setup[0]) & 0xFFFF;
 
-	if (p != NULL)
-	{
-		DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)",
-				  subcommand, p->name, pnum));
-
-		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->file_offset          = mdrcnt;
-		p->prev_pdu_file_offset = 0;
-
-                DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
-                           p, p->file_offset));
-
-		switch (subcommand)
-		{
-			case 0x26:
-			{
-				reply = rpc_to_smb(p, data, tdscnt);
-				if (reply)
-				{
-					api_rpc_trans_reply(outbuf, p);
-				}
-				break;
-			}
-			case 0x53:
-			{
-				/* Wait Named Pipe Handle state */
-				reply = api_WNPHS(outbuf, p, params);
-				break;
-			}
-			case 0x01:
-			{
-				/* Set Named Pipe Handle state */
-				reply = api_SNPHS(outbuf, p, params);
-				break;
-			}
-		}
-	}
-	else
-	{
+	if(!(p = get_rpc_pipe(pnum))) {
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
+		return api_no_reply(outbuf, mdrcnt);
+	}
+
+	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)", subcommand, p->name, pnum));
+
+	/* record maximum data length that can be transmitted in an SMBtrans */
+	p->max_trans_reply = mdrcnt;
+
+	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
+
+	switch (subcommand) {
+	case 0x26:
+		/* dce/rpc command */
+		reply = rpc_command(p, data, tdscnt);
+		if (reply)
+			reply = api_rpc_trans_reply(outbuf, p);
+		break;
+	case 0x53:
+		/* Wait Named Pipe Handle state */
+		reply = api_WNPHS(outbuf, p, params, tpscnt);
+		break;
+	case 0x01:
+		/* Set Named Pipe Handle state */
+		reply = api_SNPHS(outbuf, p, params, tpscnt);
+		break;
 	}
 
 	if (!reply)
-	{
 		return api_no_reply(outbuf, mdrcnt);
-	}
+
 	return -1;
 }
 
 /****************************************************************************
-  the buffer was too small
-  ****************************************************************************/
+ The buffer was too small
+ ****************************************************************************/
+
 static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
@@ -3300,8 +3328,9 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *
 
 
 /****************************************************************************
-  the request is not supported
-  ****************************************************************************/
+ The request is not supported
+ ****************************************************************************/
+
 static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
@@ -3364,14 +3393,13 @@ struct
 
 
 /****************************************************************************
-  handle remote api calls
-  ****************************************************************************/
+ Handle remote api calls
+ ****************************************************************************/
+
 static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
   int api_command;
-  struct mem_buf rdata_buf;
-  struct mem_buf rparam_buf;
   char *rdata = NULL;
   char *rparam = NULL;
   int rdata_len = 0;
@@ -3379,7 +3407,10 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
   BOOL reply=False;
   int i;
 
-  SMB_ASSERT(params != 0);
+  if (!params) {
+	  DEBUG(0,("ERROR: NULL params in api_reply()\n"));
+	  return 0;
+  }
 
   api_command = SVAL(params,0);
 
@@ -3389,15 +3420,20 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 	   skip_string(params+2,1),
 	   tdscnt,tpscnt,mdrcnt,mprcnt));
 
-  for (i=0;api_commands[i].name;i++)
-    if (api_commands[i].id == api_command && api_commands[i].fn)
-      {
+  for (i=0;api_commands[i].name;i++) {
+    if (api_commands[i].id == api_command && api_commands[i].fn) {
         DEBUG(3,("Doing %s\n",api_commands[i].name));
         break;
-      }
+    }
+  }
 
-  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
-  rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
+  rdata = (char *)malloc(1024);
+  if (rdata)
+    memset(rdata,'\0',1024);
+
+  rparam = (char *)malloc(1024);
+  if (rparam)
+    memset(rparam,'\0',1024);
 
   if(!rdata || !rparam) {
     DEBUG(0,("api_reply: malloc fail !\n"));
@@ -3409,29 +3445,24 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 
 
   if (rdata_len > mdrcnt ||
-      rparam_len > mprcnt)
-    {
+      rparam_len > mprcnt) {
       reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
-    }
-	    
+  }
 
   /* if we get False back then it's actually unsupported */
   if (!reply)
     api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
-      
-  mem_create(&rdata_buf , rdata , 0, rdata_len , 0, False);
-  mem_create(&rparam_buf, rparam, 0, rparam_len, 0, False);
+  send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  /* now send the reply */
-  send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);
-
-  if (rdata ) free(rdata);
-  if (rparam) free(rparam);
+  if (rdata )
+    free(rdata);
+  if (rparam)
+    free(rparam);
   
-  return(-1);
+  return -1;
 }
 
 /****************************************************************************
@@ -3445,9 +3476,7 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
 	if (strequal(name,"LANMAN"))
-	{
 		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
 
 	if (strequal(name,"WKSSVC") ||
 	    strequal(name,"SRVSVC") ||
@@ -3460,26 +3489,23 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 	}
 
 	if (strlen(name) < 1)
-	{
 		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
 
 	if (setup)
-	{
 		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
-	}
 
 	return 0;
 }
 
 
 /****************************************************************************
-  reply to a SMBtrans
-  ****************************************************************************/
+ Reply to a SMBtrans.
+ ****************************************************************************/
+
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
-        int name_offset = 0;
+	int name_offset = 0;
 	char *data=NULL,*params=NULL;
 	uint16 *setup=NULL;
 	int outsize = 0;
@@ -3497,7 +3523,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	int dsoff = SVAL(inbuf,smb_vwv12);
 	int suwcnt = CVAL(inbuf,smb_vwv13);
 
-	bzero(name, sizeof(name));
+	memset(name, '\0',sizeof(name));
 	fstrcpy(name,smb_buf(inbuf));
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
@@ -3523,7 +3549,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (suwcnt) {
 		int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
-          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", suwcnt * sizeof(uint16)));
+          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
 		  return(ERROR(ERRDOS,ERRnomem));
         } 
 		for (i=0;i<suwcnt;i++)
@@ -3546,16 +3572,19 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
       
 		ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
-		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret) {
+		if ((ret && (CVAL(inbuf, smb_com) != SMBtranss)) || !ret) {
 			if(ret) {
 				DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
 			} else {
 				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
 					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
-			if (params) free(params);
-			if (data) free(data);
-			if (setup) free(setup);
+			if (params)
+				free(params);
+			if (data)
+				free(data);
+			if (setup)
+				free(setup);
 			return(ERROR(ERRSRV,ERRerror));
 		}
 
@@ -3589,14 +3618,13 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",
 		 name,tdscnt,tpscnt,suwcnt));
 	
-        /*
-         * WinCE wierdness....
-         */
+	/*
+	 * WinCE wierdness....
+	 */
 
-        if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine,
-                                strlen(local_machine)) == 0)) {
-          name_offset = strlen(local_machine)+1;
-        }
+	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
+			(name[strlen(local_machine)+1] == '\\'))
+		name_offset = strlen(local_machine)+1;
 
 	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5,("calling named_pipe\n"));
@@ -3609,9 +3637,12 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	
-	if (data) free(data);
-	if (params) free(params);
-	if (setup) free(setup);
+	if (data)
+		free(data);
+	if (params)
+		free(params);
+	if (setup)
+		free(setup);
 	
 	if (close_on_completion)
 		close_cnum(conn,vuid);

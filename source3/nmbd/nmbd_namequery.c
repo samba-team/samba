@@ -193,7 +193,7 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
     struct res_rec rrec;
     int i;
 
-    bzero((char *)&rrec, sizeof(struct res_rec));
+    memset((char *)&rrec, '\0', sizeof(struct res_rec));
 
     /* Fake up the needed res_rec just in case it's used. */
     rrec.rr_name = nmbname;

@@ -36,6 +36,8 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	struct cli_state cli;
 	struct in_addr ip;
 
+	*err_str = '\0';
+
 	if(!resolve_name( remote_machine, &ip, 0x20)) {
 		slprintf(err_str, err_str_len-1, "unable to find an IP address for machine %s.\n",
 			remote_machine );
@@ -75,7 +77,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 	 */
 
-	if (!cli_session_setup(&cli, global_myname, "", "", 0, "", 0, "")) {
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
 			remote_machine, cli_errstr(&cli) );
 		cli_shutdown(&cli);

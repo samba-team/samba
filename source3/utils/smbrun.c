@@ -48,35 +48,17 @@ It takes 3 arguments as uid,gid,command and runs command after
 becoming a non-root user */
  int main(int argc,char *argv[])
 {
-  int uid,gid;
+  uid_t uid;
+  gid_t gid;
 
   close_fds();
 
   if (argc != 4) exit(2);
 
-  uid = atoi(argv[1]);
-  gid = atoi(argv[2]);
+  uid = (uid_t)atoi(argv[1]);
+  gid = (gid_t)atoi(argv[2]);
 
-  /* first become root - we may need to do this in order to lose
-     our privilages! */
-#ifdef HAVE_SETRESUID
-  setresgid(0,0,0);
-  setresuid(0,0,0);
-#else      
-  setuid(0);
-  seteuid(0);
-#endif
-
-#ifdef HAVE_SETRESUID
-  setresgid(gid,gid,gid);
-  setresuid(uid,uid,uid);      
-#else
-  setgid(gid);
-  setegid(gid);
-  setuid(uid);
-  seteuid(uid);
-#endif
-
+  become_user_permanently( uid, gid);
 
   /* paranoia :-) */
   if (getuid() != uid)

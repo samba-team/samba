@@ -19,15 +19,12 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBGROUP_DB
+#ifdef USE_SMBPASS_DB
 
 static int gp_file_lock_depth = 0;
 extern int DEBUGLEVEL;
 
 static char s_readbuf[1024];
-
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
 /***************************************************************
  Start to enumerate the grppasswd list. Returns a void pointer
@@ -36,7 +33,7 @@ extern fstring global_sam_name;
 
 static void *startgrpfilepwent(BOOL update)
 {
-	return startfileent(lp_smb_group_file(),
+	return startfilepwent(lp_smb_group_file(),
 	                      s_readbuf, sizeof(s_readbuf),
 	                      &gp_file_lock_depth, update);
 }
@@ -47,7 +44,7 @@ static void *startgrpfilepwent(BOOL update)
 
 static void endgrpfilepwent(void *vp)
 {
-	endfileent(vp, &gp_file_lock_depth);
+	endfilepwent(vp, &gp_file_lock_depth);
 }
 
 /*************************************************************************
@@ -68,6 +65,51 @@ static BOOL setgrpfilepwpos(void *vp, SMB_BIG_UINT tok)
 	return setfilepwpos(vp, tok);
 }
 
+static BOOL make_group_line(char *p, int max_len,
+				DOMAIN_GRP *grp,
+				DOMAIN_GRP_MEMBER **mem, int *num_mem)
+{
+	int i;
+	int len;
+	len = slprintf(p, max_len-1, "%s:%s:%d:", grp->name, grp->comment, grp->rid);
+
+	if (len == -1)
+	{
+		DEBUG(0,("make_group_line: cannot create entry\n"));
+		return False;
+	}
+
+	p += len;
+	max_len -= len;
+
+	if (mem == NULL || num_mem == NULL)
+	{
+		return True;
+	}
+
+	for (i = 0; i < (*num_mem); i++)
+	{
+		len = strlen((*mem)[i].name);
+		p = safe_strcpy(p, (*mem)[i].name, max_len); 
+
+		if (p == NULL)
+		{
+			DEBUG(0, ("make_group_line: out of space for groups!\n"));
+			return False;
+		}
+
+		max_len -= len;
+
+		if (i != (*num_mem)-1)
+		{
+			*p = ',';
+			p++;
+			max_len--;
+		}
+	}
+
+	return True;
+}
 
 /*************************************************************************
  Routine to return the next entry in the smbdomaingroup list.
@@ -86,36 +128,11 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 
 	while (next_token(&p, name, ",", sizeof(fstring)))
 	{
-		DOM_SID sid;
-		uint8 type;
-		BOOL found = False;
-
-		if (isdigit(name))
-		{
-			uint32 rid = get_number(name);
-			sid_copy(&sid, &global_sam_sid);
-			sid_append_rid(&sid, rid);
-			
-			found = lookup_sid(&sid, name, &type) == 0x0;
-		}
-		else
-		{
-			found = lookup_name(name, &sid, &type) == 0x0;
-		}
-
-		if (!found)
-		{
-			DEBUG(0,("group database: could not resolve name %s in domain %s\n",
-			          name, global_sam_name));
-			continue;
-		}
-
 		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(DOMAIN_GRP_MEMBER));
 		if ((*members) == NULL)
 		{
 			return NULL;
 		}
-
 		fstrcpy((*members)[(*num_mem)].name, name);
 		(*members)[(*num_mem)].attr = 0x07;
 		(*num_mem)++;
@@ -130,19 +147,19 @@ static DOMAIN_GRP *getgrpfilepwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 {
 	/* Static buffers we will return. */
 	static DOMAIN_GRP gp_buf;
-	DOM_NAME_MAP gmep;
 
 	int gidval;
 
 	pstring linebuf;
 	char  *p;
+	size_t            linebuf_len;
 
 	gpdb_init_grp(&gp_buf);
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
+	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
 	{
 		/* get group name */
 
@@ -197,22 +214,7 @@ static DOMAIN_GRP *getgrpfilepwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 
 		/* ok, set up the static data structure and return it */
 
-		if (!lookupsmbgrpgid((gid_t)gidval, &gmep))
-		{
-			continue;
-		}
-		if (gmep.type != SID_NAME_DOM_GRP &&
-		    gmep.type != SID_NAME_WKN_GRP))
-		{
-			continue;
-		}
-
-		sid_split_rid(&gmep.sid, &gp_buf.rid);
-		if (!sid_equal(&gmep.sid, &global_sam_sid))
-		{
-			continue;
-		}
-
+		gp_buf.rid     = pwdb_gid_to_group_rid((gid_t)gidval);
 		gp_buf.attr    = 0x07;
 
 		make_group_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
@@ -237,7 +239,11 @@ static BOOL add_grpfilegrp_entry(DOMAIN_GRP *newgrp)
 
 /************************************************************************
  Routine to search the grppasswd file for an entry matching the groupname.
- and then modify its group entry. 
+ and then modify its group entry. We can't use the startgrppwent()/
+ getgrppwent()/endgrppwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out group or NO PASS
 ************************************************************************/
 
 static BOOL mod_grpfilegrp_entry(DOMAIN_GRP* grp)
@@ -254,7 +260,7 @@ static struct groupdb_ops file_ops =
 	getgrpfilepwpos,
 	setgrpfilepwpos,
 
-	iterate_getgroupntnam,          /* In groupdb.c */
+	iterate_getgroupnam,          /* In groupdb.c */
 	iterate_getgroupgid,          /* In groupdb.c */
 	iterate_getgrouprid,          /* In groupdb.c */
 	getgrpfilepwent,
@@ -262,7 +268,7 @@ static struct groupdb_ops file_ops =
 	add_grpfilegrp_entry,
 	mod_grpfilegrp_entry,
 
-	iterate_getusergroupntnam      /* in groupdb.c */
+	iterate_getusergroupsnam      /* in groupdb.c */
 };
 
 struct groupdb_ops *file_initialise_group_db(void)

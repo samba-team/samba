@@ -4,6 +4,7 @@
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Jeremy Allison  1999.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,85 +25,76 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
+extern fstring global_myworkgroup;
+extern pstring global_myname;
 
 /****************************************************************************
 Initialize domain session credentials.
 ****************************************************************************/
 
-uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
-				const char* trust_acct,
-				unsigned char trust_pwd[16],
-				uint16 sec_chan)
+BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 {
-	DOM_CHAL clnt_chal;
-	DOM_CHAL srv_chal;
-	uint32 ret;
-	UTIME zerotime;
-	uint8 sess_key[16];
-	DOM_CRED clnt_cred;
+  DOM_CHAL clnt_chal;
+  DOM_CHAL srv_chal;
 
-	/******************* Request Challenge ********************/
+  UTIME zerotime;
 
-	generate_random_buffer( clnt_chal.data, 8, False);
+  /******************* Request Challenge ********************/
 
-	/* send a client challenge; receive a server challenge */
-	ret = cli_net_req_chal(srv_name, myhostname, &clnt_chal, &srv_chal);
-	if (ret != 0)
-	{
-		DEBUG(1,("cli_nt_setup_creds: request challenge failed\n"));
-		return ret;
-	}
+  generate_random_buffer( clnt_chal.data, 8, False);
+	
+  /* send a client challenge; receive a server challenge */
+  if (!cli_net_req_chal(cli, &clnt_chal, &srv_chal))
+  {
+    DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
+    return False;
+  }
 
-	/**************** Long-term Session key **************/
+  /**************** Long-term Session key **************/
 
-	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, (char *)trust_pwd, sess_key);
-	bzero(sess_key+8, 8);
+  /* calculate the session key */
+  cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, cli->sess_key);
+  memset((char *)cli->sess_key+8, '\0', 8);
 
-	/******************* Authenticate 2 ********************/
+  /******************* Authenticate 2 ********************/
 
-	/* calculate auth-2 credentials */
-	zerotime.time = 0;
-	cred_create(sess_key, &clnt_chal, zerotime, &clnt_cred.challenge);
+  /* calculate auth-2 credentials */
+  zerotime.time = 0;
+  cred_create(cli->sess_key, &clnt_chal, zerotime, &(cli->clnt_cred.challenge));
 
-	if (!cli_con_set_creds(srv_name, sess_key, &clnt_cred))
-	{
-		return NT_STATUS_ACCESS_DENIED | 0xC0000000;
-	}
+  /*  
+   * Send client auth-2 challenge.
+   * Receive an auth-2 challenge response and check it.
+   */
 
-	/*  
-	 * Send client auth-2 challenge.
-	 * Receive an auth-2 challenge response and check it.
-	 */
+  if (!cli_net_auth2(cli, SEC_CHAN_WKSTA, 0x000001ff, &srv_chal))
+  {
+    DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
+    return False;
+  }
 
-	ret = cli_net_auth2(srv_name, trust_acct, myhostname,
-	                    sec_chan, 0x000001ff, &srv_chal);
-	if (ret != 0x0)
-	{
-		DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed.  status: %x\n", ret));
-	}
-
-	return ret;
+  return True;
 }
 
 /****************************************************************************
  Set machine password.
  ****************************************************************************/
 
-BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
-				const char* trust_acct,
-				unsigned char *new_hashof_trust_pwd,
-				uint16 sec_chan)
+BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
 {
+  unsigned char processed_new_pwd[16];
+
   DEBUG(5,("cli_nt_srv_pwset: %d\n", __LINE__));
 
 #ifdef DEBUG_PASSWORD
-  dump_data(6, new_hashof_trust_pwd, 16);
+  dump_data(6, (char *)new_hashof_mach_pwd, 16);
 #endif
 
+  /* Process the new password. */
+  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 1);
+
   /* send client srv_pwset challenge */
-  return cli_net_srv_pwset(srv_name, myhostname, trust_acct,
-	                   new_hashof_trust_pwd, sec_chan);
+  return cli_net_srv_pwset(cli, processed_new_pwd);
 }
 
 /****************************************************************************
@@ -111,59 +103,51 @@ NT login - interactive.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
-				const char *domain, const char *username, 
-				uint32 luid_low, char *password,
-				NET_ID_INFO_CTR *ctr,
-				NET_USER_INFO_3 *user_info3)
+BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+                              uint32 smb_userid_low, char *password,
+                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-	uchar lm_owf_user_pwd[16];
-	uchar nt_owf_user_pwd[16];
-	BOOL ret;
-	uint8 sess_key[16];
+  uchar lm_owf_user_pwd[16];
+  uchar nt_owf_user_pwd[16];
+  BOOL ret;
 
-	DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
+  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-	nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
+  nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
 #ifdef DEBUG_PASSWORD
 
-	DEBUG(100,("nt owf of user password: "));
-	dump_data(100, lm_owf_user_pwd, 16);
+  DEBUG(100,("nt owf of user password: "));
+  dump_data(100, (char *)lm_owf_user_pwd, 16);
 
-	DEBUG(100,("nt owf of user password: "));
-	dump_data(100, nt_owf_user_pwd, 16);
+  DEBUG(100,("nt owf of user password: "));
+  dump_data(100, (char *)nt_owf_user_pwd, 16);
 
 #endif
 
-	if (!cli_get_sesskey_srv(srv_name, sess_key))
-	{
-		DEBUG(1,("could not obtain session key for %s\n", srv_name));
-		return False;
-	}
+  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-	/* indicate an "interactive" login */
-	ctr->switch_value = INTERACTIVE_LOGON_TYPE;
+  /* indicate an "interactive" login */
+  ctr->switch_value = INTERACTIVE_LOGON_TYPE;
 
-	/* Create the structure needed for SAM logon. */
-	make_id_info1(&ctr->auth.id1, domain, 0, 
-	                            luid_low, 0,
-	                            username, myhostname,
-	                            (char *)sess_key,
-	                            lm_owf_user_pwd, nt_owf_user_pwd);
+  /* Create the structure needed for SAM logon. */
+  init_id_info1(&ctr->auth.id1, domain, 0, 
+                smb_userid_low, 0,
+                username, cli->clnt_name_slash,
+                (char *)cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 
-	/* Ensure we overwrite all the plaintext password
-	equivalents. */
-	memset(lm_owf_user_pwd, '\0', sizeof(lm_owf_user_pwd));
-	memset(nt_owf_user_pwd, '\0', sizeof(nt_owf_user_pwd));
+  /* Ensure we overwrite all the plaintext password
+     equivalents. */
+  memset(lm_owf_user_pwd, '\0', sizeof(lm_owf_user_pwd));
+  memset(nt_owf_user_pwd, '\0', sizeof(nt_owf_user_pwd));
 
-	/* Send client sam-logon request - update credentials on success. */
-	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);
+  /* Send client sam-logon request - update credentials on success. */
+  ret = cli_net_sam_logon(cli, ctr, user_info3);
 
-	memset(ctr->auth.id1.lm_owf.data, '\0', sizeof(lm_owf_user_pwd));
-	memset(ctr->auth.id1.nt_owf.data, '\0', sizeof(nt_owf_user_pwd));
+  memset(ctr->auth.id1.lm_owf.data, '\0', sizeof(lm_owf_user_pwd));
+  memset(ctr->auth.id1.nt_owf.data, '\0', sizeof(nt_owf_user_pwd));
 
-	return ret;
+  return ret;
 }
 
 /****************************************************************************
@@ -172,98 +156,33 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
-				const char *domain, const char *username, 
-				uint32 luid_low, char lm_chal[8],
-				char lm_chal_resp[24],
-				char nt_chal_resp[24],
-				NET_ID_INFO_CTR *ctr,
-				NET_USER_INFO_3 *user_info3)
+BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
+                          uint32 smb_userid_low, char lm_chal[8], char lm_chal_resp[24],
+                          char nt_chal_resp[24],
+                          NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-	uint8 sess_key[16];
-	BOOL ret;
-	DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
+  DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
 
-	if (!cli_get_sesskey_srv(srv_name, sess_key))
-	{
-		DEBUG(1,("could not obtain session key for %s\n", srv_name));
-		return False;
-	}
+  /* indicate a "network" login */
+  ctr->switch_value = NET_LOGON_TYPE;
 
-	/* indicate a "network" login */
-	ctr->switch_value = NET_LOGON_TYPE;
+  /* Create the structure needed for SAM logon. */
+  init_id_info2(&ctr->auth.id2, domain, 0, 
+                smb_userid_low, 0,
+                username, cli->clnt_name_slash,
+                (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
 
-	/* Create the structure needed for SAM logon. */
-	make_id_info2(&ctr->auth.id2, domain, 0, 
-		luid_low, 0,
-		username, myhostname,
-		(uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
-
-	/* Send client sam-logon request - update credentials on success. */
-	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("cli sess key:"));
-	dump_data(100, sess_key, 8);
-	DEBUG(100,("enc user sess key:"));
-	dump_data(100, user_info3->user_sess_key, 16);
-#endif
-
-	SamOEMhash(user_info3->user_sess_key, sess_key, False);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("dec user sess key:"));
-	dump_data(100, user_info3->user_sess_key, 16);
-#endif
-	return ret;
+  /* Send client sam-logon request - update credentials on success. */
+  return cli_net_sam_logon(cli, ctr, user_info3);
 }
 
 /****************************************************************************
 NT Logoff.
 ****************************************************************************/
-BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
-				NET_ID_INFO_CTR *ctr)
+BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 {
   DEBUG(5,("cli_nt_logoff: %d\n", __LINE__));
 
   /* Send client sam-logoff request - update credentials on success. */
-  return cli_net_sam_logoff(srv_name, myhostname, ctr);
+  return cli_net_sam_logoff(cli, ctr);
 }
-
-/****************************************************************************
-NT SAM database sync
-****************************************************************************/
-BOOL net_sam_sync(const char* srv_name, const char* myhostname,
-				const char* trust_acct,
-				uchar trust_passwd[16],
-				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
-				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
-				uint32 *num_deltas)
-{
-	BOOL res = True;
-
-	*num_deltas = 0;
-
-	DEBUG(5,("Attempting SAM sync with PDC: %s\n",
-		srv_name));
-
-	res = res ? cli_nt_setup_creds( srv_name, myhostname,
-	                               trust_acct, 
-	                               trust_passwd, SEC_CHAN_BDC) == 0x0 : False;
-
-	memset(trust_passwd, 0, 16);
-
-	res = res ? cli_net_sam_sync(srv_name, myhostname,
-	                             0, num_deltas, hdr_deltas, deltas) : False;
-
-	if (!res)
-	{
-		DEBUG(5, ("SAM synchronisation FAILED\n"));
-		return False;
-	}
-
-	DEBUG(5, ("SAM synchronisation returned %d entries\n", *num_deltas));
-
-	return True;
-}
-

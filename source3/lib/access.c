@@ -38,11 +38,13 @@ static int masked_match(char *tok, char *slash, char *s)
 }
 
 /* string_match - match string against token */
-static int string_match(char *tok,char *s)
+static int string_match(char *tok,char *s, char *invalid_char)
 {
-	int     tok_len;
-	int     str_len;
+	size_t     tok_len;
+	size_t     str_len;
 	char   *cut;
+
+	*invalid_char = '\0';
 
 	/* Return True if a token has the magic value "ALL". Return
 	 * FAIL if the token is "FAIL". If the token starts with a "."
@@ -108,6 +110,10 @@ static int string_match(char *tok,char *s)
 	} else if ((cut = strchr(tok, '/')) != 0) {	/* netnumber/netmask */
 		if (isdigit((int)s[0]) && masked_match(tok, cut, s))
 			return (True);
+	} else if (strchr(tok, '*') != 0) {
+		*invalid_char = '*';
+	} else if (strchr(tok, '?') != 0) {
+		*invalid_char = '?';
 	}
 	return (False);
 }
@@ -118,15 +124,26 @@ static int client_match(char *tok,char *item)
 {
     char **client = (char **)item;
     int     match;
+	char invalid_char = '\0';
 
     /*
      * Try to match the address first. If that fails, try to match the host
      * name if available.
      */
 
-    if ((match = string_match(tok, client[1])) == 0)
-	if (client[0][0] != 0)
-	    match = string_match(tok, client[0]);
+    if ((match = string_match(tok, client[1], &invalid_char)) == 0) {
+		if(invalid_char)
+			DEBUG(0,("client_match: address match failing due to invalid character '%c' found in \
+token '%s' in an allow/deny hosts line.\n", invalid_char, tok ));
+
+		if (client[0][0] != 0)
+			match = string_match(tok, client[0], &invalid_char);
+
+		if(invalid_char)
+			DEBUG(0,("client_match: address match failing due to invalid character '%c' found in \
+token '%s' in an allow/deny hosts line.\n", invalid_char, tok ));
+	}
+
     return (match);
 }
 
@@ -183,6 +200,15 @@ BOOL allow_access(char *deny_list,char *allow_list,
 
 	client[0] = cname;
 	client[1] = caddr;  
+
+	/* if it is loopback then always allow unless specifically denied */
+	if (strcmp(caddr, "127.0.0.1") == 0) {
+		if (deny_list && 
+		    list_match(deny_list,(char *)client,client_match)) {
+			return False;
+		}
+		return True;
+	}
 
 	/* if theres no deny list and no allow list then allow access */
 	if ((!deny_list || *deny_list == 0) && 

@@ -211,18 +211,16 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   for(i = blr->lock_num; i >= 0; i--) {
     int dummy1;
     uint32 dummy2;
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(i));
-      offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    BOOL err;
+
+    count = get_lock_count( data, i, large_file_format, &err);
+    offset = get_lock_offset( data, i, large_file_format, &err);
+
+    /*
+     * We know err cannot be set as if it was the lock
+     * request would never have been queued. JRA.
+     */
+
     do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
   }
 
@@ -313,7 +311,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   SSVAL(smb_buf(outbuf),1,nread);
 
   DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
-        fsp->fsp_name, fsp->fnum, numtoread, nread ) );
+        fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );
 
   send_blocking_reply(outbuf,outsize);
   return True;
@@ -401,18 +399,15 @@ static BOOL process_lockingX(blocking_lock_record *blr)
    */
 
   for(; blr->lock_num < num_locks; blr->lock_num++) {
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
-      offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(blr->lock_num))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(blr->lock_num)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(blr->lock_num))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(blr->lock_num)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    BOOL err;
+
+    count = get_lock_count( data, blr->lock_num, large_file_format, &err);
+    offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
+
+    /*
+     * We know err cannot be set as if it was the lock
+     * request would never have been queued. JRA.
+     */
     errno = 0;
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
@@ -524,6 +519,16 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
     prev = blr;
     blr = (blocking_lock_record *)ubi_slNext(blr);
   }
+}
+
+/****************************************************************************
+ Return True if the blocking lock queue has entries.
+*****************************************************************************/
+
+BOOL blocking_locks_pending(void)
+{
+  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
+  return (blr == NULL ? False : True);
 }
 
 /****************************************************************************

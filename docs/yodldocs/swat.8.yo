@@ -3,7 +3,7 @@ mailto(samba-bugs@samba.org)
 manpage(swat htmlcommand((8)))(8)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
-manpagename(swat)(swat - Samba Web Administration Tool)
+manpagename(swat)(Samba Web Administration Tool)
 
 label(SYNOPSIS)
 manpagesynopsis()

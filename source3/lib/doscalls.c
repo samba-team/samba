@@ -52,23 +52,18 @@ int dos_open(char *fname,int flags,mode_t mode)
 }
 
 /*******************************************************************
- Opendir() wrapper that calls dos_to_unix.  Should use the 
- vfs_ops->opendir() function instead.
+ Opendir() wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#if 0
 DIR *dos_opendir(char *dname)
 {
   return(opendir(dos_to_unix(dname,False)));
 }
-#endif
 
 /*******************************************************************
- Readdirname() wrapper that calls unix_to_dos.  Should use the 
- vfs_readdirname() function instead.
+ Readdirname() wrapper that calls unix_to_dos.
 ********************************************************************/
 
-#if 0
 char *dos_readdirname(DIR *p)
 {
   char *dname = readdirname(p);
@@ -79,7 +74,15 @@ char *dos_readdirname(DIR *p)
   unix_to_dos(dname, True);
   return(dname);
 }
-#endif
+
+/*******************************************************************
+ A chown() wrapper that calls dos_to_unix.
+********************************************************************/
+
+int dos_chown(char *fname, uid_t uid, gid_t gid)
+{
+  return(sys_chown(dos_to_unix(fname,False),uid,gid));
+}
 
 /*******************************************************************
  A stat() wrapper that calls dos_to_unix.
@@ -100,14 +103,18 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
- Mkdir() that calls dos_to_unix.  Don't use this call unless you
- really want to access a file on disk.  Use the vfs_ops.mkdir() 
- function instead.
+ Mkdir() that calls dos_to_unix.
+ Cope with UNIXes that don't allow high order mode bits on mkdir.
+ Patch from gcarter@lanier.com.
 ********************************************************************/
 
 int dos_mkdir(char *dname,mode_t mode)
 {
-  return(mkdir(dos_to_unix(dname,False),mode));
+  int ret = mkdir(dos_to_unix(dname,False),mode);
+  if(!ret)
+    return(dos_chmod(dname,mode));
+  else
+    return ret;
 }
 
 /*******************************************************************
@@ -151,7 +158,7 @@ int dos_utime(char *fname,struct utimbuf *times)
  <warrenb@hpcvscdp.cv.hp.com>
 **********************************************************/
 
-int copy_reg(char *source, const char *dest)
+static int copy_reg(char *source, const char *dest)
 {
   SMB_STRUCT_STAT source_stats;
   int ifd;
@@ -243,11 +250,19 @@ int copy_reg(char *source, const char *dest)
 
 int dos_rename(char *from, char *to)
 {
+    int rcode;  
     pstring zfrom, zto;
 
     pstrcpy (zfrom, dos_to_unix (from, False));
     pstrcpy (zto, dos_to_unix (to, False));
-    return file_rename(zfrom, zto);
+    rcode = rename (zfrom, zto);
+
+    if (errno == EXDEV) 
+    {
+      /* Rename across filesystems needed. */
+      rcode = copy_reg (zfrom, zto);        
+    }
+    return rcode;
 }
 
 /*******************************************************************
@@ -274,15 +289,13 @@ char *dos_getwd(char *unix_path)
 }
 
 /*******************************************************************
- Check if a DOS file exists.  Use vfs_file_exist function instead.
+ Check if a DOS file exists.
 ********************************************************************/
 
-#if 0
 BOOL dos_file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
   return file_exist(dos_to_unix(fname, False), sbuf);
 }
-#endif
 
 /*******************************************************************
  Check if a DOS directory exists.
@@ -308,7 +321,7 @@ time_t dos_file_modtime(char *fname)
 
 SMB_OFF_T dos_file_size(char *file_name)
 {
-  return file_size(dos_to_unix(file_name, False));
+  return get_file_size(dos_to_unix(file_name, False));
 }
 
 /*******************************************************************
@@ -404,7 +417,7 @@ char *dos_GetWd(char *path)
 
   if (sys_stat(".",&st) == -1)
   {
-    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
+    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
     return(dos_getwd(path));
   }
 

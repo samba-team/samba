@@ -8,7 +8,7 @@ manpagename(smbclient)(ftp-like client to access SMB/CIFS resources on servers)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
+bf(smbclient) link(servicename)(servicename) [link(-s smb.conf)(minuss)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-b buffersize)(minusb)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -71,9 +71,6 @@ Samba configuration file, smb.conf. This file controls all aspects of
 the Samba setup on the machine and smbclient also needs to read this
 file.
 
-label(minusB)
-dit(bf(-B IP addr)) The IP address to use when sending a broadcast packet.
-
 label(minusO)
 dit(bf(-O socket options)) TCP socket options to set on the client
 socket. See the url(socket options)(smb.conf.5.html#socketoptions)
@@ -107,8 +104,7 @@ it() bf(bcast) : Do a broadcast on each of the known local interfaces
 listed in the url(bf(interfaces))(smb.conf.5.html#interfaces) parameter
 in the smb.conf file. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
-subnet. To specify a particular broadcast address the link(bf(-B))(minusB) option 
-may be used.
+subnet. 
 
 endit()
 
@@ -286,7 +282,7 @@ nothing before or nothing after the percent symbol will cause an empty
 username or an empty password to be used, respectively.
 
 The password may also be specified by setting up an environment
-variable called tt(PASSWORD) that contains the users password. Note
+variable called tt(PASSWD) that contains the users password. Note
 that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing.
@@ -296,7 +292,7 @@ on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 
 Be cautious about including passwords in scripts or in the
-tt(PASSWORD) environment variable. Also, on many systems the command
+tt(PASSWD) environment variable. Also, on many systems the command
 line of a running process may be seen via the tt(ps) command to be
 safe always allow smbclient to prompt for a password and type it in
 directly.
@@ -327,6 +323,12 @@ bf(smbclient) always attempts to connect at the maximum
 protocols level the server supports. This parameter is
 preserved for backwards compatibility, but any string
 following the bf(-m) will be ignored.
+
+label(minusb)
+dit(bf(-b buffersize)) This option changes the transmit/send buffer
+size when getting or putting a file from/to the server. The default
+is 65520 bytes. Setting this value smaller (to 1200 bytes) has been
+observed to speed up file transfers to and from a Win9x server.
 
 label(minusW)
 dit(bf(-W WORKGROUP)) Override the default workgroup specified in the
@@ -683,7 +685,7 @@ The variable bf(USER) may contain the username of the person using the
 client.  This information is used only if the protocol level is high
 enough to support session-level passwords.
 
-The variable bf(PASSWORD) may contain the password of the person using
+The variable bf(PASSWD) may contain the password of the person using
 the client.  This information is used only if the protocol level is
 high enough to support session-level passwords.
 

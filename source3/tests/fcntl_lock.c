@@ -1,5 +1,9 @@
 /* test whether fcntl locking works on this system */
 
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -33,7 +37,8 @@ static int sys_waitpid(pid_t pid,int *status,int options)
 int main(int argc, char *argv[])
 {
 	struct flock lock;
-	int fd, pid, ret, status=1;
+	int fd, ret, status=1;
+	pid_t pid;
 
 	if (!(pid=fork())) {
 		sleep(2);
@@ -74,6 +79,16 @@ int main(int argc, char *argv[])
 	sys_waitpid(pid, &status, 0);
 
 	unlink(DATA);
+
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+    if(WIFEXITED(status)) {
+        status = WEXITSTATUS(status);
+    } else {
+        status = 1;
+    }
+#else /* defined(WIFEXITED) && defined(WEXITSTATUS) */
+	status = (status == 0) ? 0 : 1;
+#endif /* defined(WIFEXITED) && defined(WEXITSTATUS) */
 
 	exit(status);
 }

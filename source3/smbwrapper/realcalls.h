@@ -58,8 +58,6 @@
 #elif HAVE___OPEN64
 #define real_open64(fn,flags,mode)    	(__open64(fn,flags,mode))
 #define NO_OPEN64_ALIAS
-#else
-#error No open64() wrapper
 #endif
 
 #ifdef HAVE__FORK
@@ -68,8 +66,6 @@
 #define real_fork()            	(__fork())
 #elif SYS_fork
 #define real_fork()		(syscall(SYS_fork))
-#else
-#error No fork() wrapper
 #endif
 
 #ifdef HAVE__OPENDIR
@@ -78,8 +74,6 @@
 #define real_opendir(fn)		(syscall(SYS_opendir,(fn)))
 #elif HAVE___OPENDIR
 #define real_opendir(fn)            	(__opendir(fn))
-#else
-#error No opendir() wrapper
 #endif
 
 #ifdef HAVE__READDIR
@@ -88,8 +82,6 @@
 #define real_readdir(d)            	(__readdir(d))
 #elif SYS_readdir
 #define real_readdir(d)		(syscall(SYS_readdir,(d)))
-#else
-#error No readdir() wrapper
 #endif
 
 #ifdef HAVE__CLOSEDIR
@@ -98,8 +90,6 @@
 #define real_closedir(d)		(syscall(SYS_closedir,(d)))
 #elif HAVE___CLOSEDIR
 #define real_closedir(d)            	(__closedir(d))
-#else
-#error No closedir() wrapper
 #endif
 
 #ifdef HAVE__SEEKDIR
@@ -110,7 +100,6 @@
 #define real_seekdir(d,l)            	(__seekdir(d,l))
 #else
 #define NO_SEEKDIR_WRAPPER
-#error No seekdir() wrapper
 #endif
 
 #ifdef HAVE__TELLDIR
@@ -119,8 +108,6 @@
 #define real_telldir(d)		(syscall(SYS_telldir,(d)))
 #elif HAVE___TELLDIR
 #define real_telldir(d)            	(__telldir(d))
-#else
-#error No telldir() wrapper
 #endif
 
 #ifdef HAVE__DUP
@@ -129,8 +116,6 @@
 #define real_dup(d)		(syscall(SYS_dup,(d)))
 #elif HAVE___DUP
 #define real_dup(d)            	(__dup(d))
-#else
-#error No dup() wrapper
 #endif
 
 #ifdef HAVE__DUP2
@@ -139,8 +124,6 @@
 #define real_dup2(d1,d2)		(syscall(SYS_dup2,(d1),(d2)))
 #elif HAVE___DUP2
 #define real_dup2(d1,d2)            	(__dup2(d1,d2))
-#else
-#error No dup2() wrapper
 #endif
 
 #ifdef HAVE__GETCWD
@@ -149,8 +132,6 @@
 #define real_getcwd(b,s)		((char *)syscall(SYS_getcwd,(b),(s)))
 #elif HAVE___GETCWD
 #define real_getcwd(b,s)            	((char *)__getcwd(b,s))
-#else
-#error No getcwd() wrapper
 #endif
 
 #ifdef HAVE__STAT
@@ -159,8 +140,6 @@
 #define real_stat(fn,st)		(syscall(SYS_stat,(fn),(st)))
 #elif HAVE___STAT
 #define real_stat(fn,st)            	(__stat(fn,st))
-#else
-#error No stat() wrapper
 #endif
 
 #ifdef HAVE__LSTAT
@@ -169,8 +148,6 @@
 #define real_lstat(fn,st)		(syscall(SYS_lstat,(fn),(st)))
 #elif HAVE___LSTAT
 #define real_lstat(fn,st)            	(__lstat(fn,st))
-#else
-#error No lstat() wrapper
 #endif
 
 #ifdef HAVE__FSTAT
@@ -179,8 +156,6 @@
 #define real_fstat(fd,st)		(syscall(SYS_fstat,(fd),(st)))
 #elif HAVE___FSTAT
 #define real_fstat(fd,st)            	(__fstat(fd,st))
-#else
-#error No fstat() wrapper
 #endif
 
 #if defined(HAVE_SYS_ACL_H) && defined(HAVE__ACL)
@@ -208,32 +183,24 @@
 #define real_stat64(fn,st)            	(_stat64(fn,st))
 #elif HAVE___STAT64
 #define real_stat64(fn,st)            	(__stat64(fn,st))
-#else
-#error No stat64() wrapper
 #endif
 
 #ifdef HAVE__LSTAT64
 #define real_lstat64(fn,st)            	(_lstat64(fn,st))
 #elif HAVE___LSTAT64
 #define real_lstat64(fn,st)            	(__lstat64(fn,st))
-#else
-#error No lstat64() wrapper
 #endif
 
 #ifdef HAVE__FSTAT64
 #define real_fstat64(fd,st)            	(_fstat64(fd,st))
 #elif HAVE___FSTAT64
 #define real_fstat64(fd,st)            	(__fstat64(fd,st))
-#else
-#error No fstat64() wrapper
 #endif
 
 #ifdef HAVE__READDIR64
 #define real_readdir64(d)            	(_readdir64(d))
 #elif HAVE___READDIR64
 #define real_readdir64(d)            	(__readdir64(d))
-#else
-#error No readdir64() wrapper
 #endif
 
 #ifdef HAVE__LLSEEK
@@ -242,8 +209,6 @@
 #define real_llseek(fd,ofs,whence)            	(__llseek(fd,ofs,whence))
 #elif HAVE___SYS_LLSEEK
 #define real_llseek(fd,ofs,whence)            	(__sys_llseek(fd,ofs,whence))
-#else
-#error No llseek() wrapper
 #endif
 
 
@@ -251,32 +216,24 @@
 #define real_pread(fd,buf,size,ofs)            	(_pread(fd,buf,size,ofs))
 #elif HAVE___PREAD
 #define real_pread(fd,buf,size,ofs)            	(__pread(fd,buf,size,ofs))
-#else
-#error No pread() wrapper
 #endif
 
 #ifdef HAVE__PREAD64
 #define real_pread64(fd,buf,size,ofs)            	(_pread64(fd,buf,size,ofs))
 #elif HAVE___PREAD64
 #define real_pread64(fd,buf,size,ofs)            	(__pread64(fd,buf,size,ofs))
-#else
-#error No pread64() wrapper
 #endif
 
 #ifdef HAVE__PWRITE
 #define real_pwrite(fd,buf,size,ofs)            	(_pwrite(fd,buf,size,ofs))
 #elif HAVE___PWRITE
 #define real_pwrite(fd,buf,size,ofs)            	(__pwrite(fd,buf,size,ofs))
-#else
-#error No pwrite() wrapper
 #endif
 
 #ifdef HAVE__PWRITE64
 #define real_pwrite64(fd,buf,size,ofs)            	(_pwrite64(fd,buf,size,ofs))
 #elif HAVE___PWRITE64
 #define real_pwrite64(fd,buf,size,ofs)            	(__pwrite64(fd,buf,size,ofs))
-#else
-#error No pwrite64() wrapper
 #endif
 
 

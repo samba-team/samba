@@ -24,8 +24,6 @@
 #ifndef _RPCCLIENT_H
 #define _RPCCLIENT_H
 
-#define report fprintf
-
 struct tar_client_info
 {
     int blocksize;
@@ -59,7 +57,13 @@ struct nt_client_info
     NET_ID_INFO_CTR ctr;
     NET_USER_INFO_3 user_info3;
 
+    /************** \PIPE\winreg stuff ********************/
+
+    POLICY_HND reg_pol_connect;
+
     /************** \PIPE\lsarpc stuff ********************/
+
+    POLICY_HND lsa_info_pol;
 
     /* domain member */
     DOM_SID level3_sid;
@@ -69,34 +73,52 @@ struct nt_client_info
     fstring level3_dom;
     fstring level5_dom;
 
+    /************** \PIPE\samr stuff  ********************/
+
+    POLICY_HND samr_pol_connect;
+    POLICY_HND samr_pol_open_domain;
+    POLICY_HND samr_pol_open_user;
+
+    struct acct_info *sam;
+    int num_sam_entries;
 };
 
 struct client_info
 {
     struct in_addr dest_ip;
     fstring dest_host;
+    fstring query_host;
+    uint8 name_type;
 
     fstring myhostname;
     fstring mach_acct;
 
+    pstring cur_dir;
+    pstring base_dir;
+    pstring file_sel;
+
+    fstring service;
+    fstring share;
+    fstring svc_type;
+
+    time_t newer_than;
+    int archive_level;
+    int dir_total;
+    int put_total_time_ms;
+    int put_total_size;
+    int get_total_time_ms;
+    int get_total_size;
+    int print_mode;
+    BOOL translation;
+    BOOL recurse_dir;
+    BOOL prompt;
+    BOOL lowercase;
+    BOOL abort_mget;
+
     struct tar_client_info tar;
     struct nt_client_info dom;
-
-	BOOL reuse;
 };
 
 enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
-
-/****************************************************************************
- This defines the commands supported by this client
- ****************************************************************************/
-struct command_set
-{
-	char *name;
-	void (*fn)(struct client_info*, int, char*[]);
-	char *description;
-	char compl_args[2];
-
-};
 
 #endif /* _RPCCLIENT_H */

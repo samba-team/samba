@@ -46,7 +46,7 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
   DEBUG(2,("send_election_dgram: Sending election packet for workgroup %s on subnet %s\n",
 	workgroup_name, subrec->subnet_name ));
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_Election; /* Election opcode. */
   p++;
@@ -134,6 +134,9 @@ void check_master_browser_exists(time_t t)
   static time_t lastrun=0;
   struct subnet_record *subrec;
   char *workgroup_name = global_myworkgroup;
+
+  if (!lastrun)
+    lastrun = t;
 
   if (t < (lastrun + (CHECK_TIME_MST_BROWSE * 60)))
     return;

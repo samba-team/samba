@@ -50,7 +50,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
        can always create a file in a read-only directory. */
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
     /* Apply directory mask */
-    result &= lp_dir_mode(SNUM(conn));
+    result &= lp_dir_mask(SNUM(conn));
     /* Add in force bits */
     result |= lp_force_dir_mode(SNUM(conn));
   } else { 
@@ -64,7 +64,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
       result |= S_IXOTH;  
  
     /* Apply mode mask */
-    result &= lp_create_mode(SNUM(conn));
+    result &= lp_create_mask(SNUM(conn));
     /* Add in force bits */
     result |= lp_force_create_mode(SNUM(conn));
   }
@@ -148,7 +148,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
   if (!st) {
     st = &st1;
-    if (conn->vfs_ops.stat(dos_to_unix(fname,False),st)) return(-1);
+    if (dos_stat(fname,st)) return(-1);
   }
 
   if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
@@ -179,14 +179,12 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
   }
 
   /* if we previously had any w bits set then leave them alone 
-   if the new mode is not rdonly */
-  if (!IS_DOS_READONLY(dosmode) &&
-      (tmp = st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH))) {
-    unixmode &= ~(S_IWUSR|S_IWGRP|S_IWOTH);
-    unixmode |= tmp;
+   whilst adding in the new w bits, if the new mode is not rdonly */
+  if (!IS_DOS_READONLY(dosmode)) {
+    unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
   }
 
-  return(conn->vfs_ops.chmod(fname,unixmode));
+  return(dos_chmod(fname,unixmode));
 }
 
 
@@ -202,7 +200,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 
   errno = 0;
 
-  if(conn->vfs_ops.utime(dos_to_unix(fname, False), times) == 0)
+  if(dos_utime(fname, times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -217,7 +215,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
      (as DOS does).
    */
 
-  if(conn->vfs_ops.stat(dos_to_unix(fname,False),&sb) != 0)
+  if(dos_stat(fname,&sb) != 0)
     return -1;
 
   /* Check if we have write access. */
@@ -230,7 +228,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root(False);
-		  ret = conn->vfs_ops.utime(dos_to_unix(fname, False), times);
+		  ret = dos_utime(fname, times);
 		  unbecome_root(False);
 	  }
   }
@@ -251,9 +249,8 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 
   if (file_utime(conn, fname, &times)) {
     DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+    return False;
   }
   
   return(True);
 } 
-
-

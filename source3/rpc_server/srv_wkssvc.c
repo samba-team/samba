@@ -46,7 +46,7 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 	pstrcpy (domain , lp_workgroup());
 	strupper(domain);
 
-	make_wks_info_100(inf,
+	init_wks_info_100(inf,
 	                  0x000001f4, /* platform id info */
 	                  lp_major_announce_version(),
 	                  lp_minor_announce_version(),
@@ -69,7 +69,7 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 	DEBUG(5,("wks_query_info: %d\n", __LINE__));
 
 	create_wks_info_100(&wks100);
-	make_wks_r_query_info(&r_u, q_u->switch_value, &wks100, status);
+	init_wks_r_query_info(&r_u, q_u->switch_value, &wks100, status);
 
 	/* store the response in the SMB stream */
 	wks_io_r_query_info("", &r_u, rdata, 0);
@@ -80,7 +80,7 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_wks_query_info( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	WKS_Q_QUERY_INFO q_u;
@@ -90,6 +90,8 @@ static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	wks_reply_query_info(&q_u, rdata, 0x0);
+
+	return True;
 }
 
 
@@ -105,7 +107,7 @@ struct api_struct api_wks_cmds[] =
 /*******************************************************************
  receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds, data);
 }

@@ -24,7 +24,7 @@
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><br><strong>smbclient</strong> <a href="smbclient.1.html#servicename">servicename</a> [<a href="smbclient.1.html#password">password</a>] [<a href="smbclient.1.html#minuss">-s smb.conf</a>] [<a href="smbclient.1.html#minusB">-B IP addr</a>] [<a href="smbclient.1.html#minusO">-O socket options</a>][<a href="smbclient.1.html#minusR">-R name resolve order</a>] [<a href="smbclient.1.html#minusM">-M NetBIOS name</a>] [<a href="smbclient.1.html#minusi">-i scope</a>] [<a href="smbclient.1.html#minusN">-N</a>] [<a href="smbclient.1.html#minusn">-n NetBIOS name</a>] [<a href="smbclient.1.html#minusd">-d debuglevel</a>] [<a href="smbclient.1.html#minusP">-P</a>] [<a href="smbclient.1.html#minusp">-p port</a>] [<a href="smbclient.1.html#minusl">-l log basename</a>] [<a href="smbclient.1.html#minush">-h</a>] [<a href="smbclient.1.html#minusI">-I dest IP</a>] [<a href="smbclient.1.html#minusE">-E</a>] [<a href="smbclient.1.html#minusU">-U username</a>] [<a href="smbclient.1.html#minusL">-L NetBIOS name</a>] [<a href="smbclient.1.html#minust">-t terminal code</a>] [<a href="smbclient.1.html#minusm">-m max protocol</a>] [<a href="smbclient.1.html#minusW">-W workgroup</a>] [<a href="smbclient.1.html#minusT">-T&lt;c|x&gt;IXFqgbNan</a>] [<a href="smbclient.1.html#minusD">-D directory</a>] [<a href="smbclient.1.html#minusc">-c command string</a>]
+<p><br><strong>smbclient</strong> <a href="smbclient.1.html#servicename">servicename</a> [<a href="smbclient.1.html#minuss">-s smb.conf</a>] [<a href="smbclient.1.html#minusO">-O socket options</a>][<a href="smbclient.1.html#minusR">-R name resolve order</a>] [<a href="smbclient.1.html#minusM">-M NetBIOS name</a>] [<a href="smbclient.1.html#minusi">-i scope</a>] [<a href="smbclient.1.html#minusN">-N</a>] [<a href="smbclient.1.html#minusn">-n NetBIOS name</a>] [<a href="smbclient.1.html#minusd">-d debuglevel</a>] [<a href="smbclient.1.html#minusP">-P</a>] [<a href="smbclient.1.html#minusp">-p port</a>] [<a href="smbclient.1.html#minusl">-l log basename</a>] [<a href="smbclient.1.html#minush">-h</a>] [<a href="smbclient.1.html#minusI">-I dest IP</a>] [<a href="smbclient.1.html#minusE">-E</a>] [<a href="smbclient.1.html#minusU">-U username</a>] [<a href="smbclient.1.html#minusL">-L NetBIOS name</a>] [<a href="smbclient.1.html#minust">-t terminal code</a>] [<a href="smbclient.1.html#minusm">-m max protocol</a>] [<a href="smbclient.1.html#minusb">-b buffersize</a>] [<a href="smbclient.1.html#minusW">-W workgroup</a>] [<a href="smbclient.1.html#minusT">-T&lt;c|x&gt;IXFqgbNan</a>] [<a href="smbclient.1.html#minusD">-D directory</a>] [<a href="smbclient.1.html#minusc">-c command string</a>]
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -74,8 +74,6 @@ rejected by these servers.
 Samba configuration file, smb.conf. This file controls all aspects of
 the Samba setup on the machine and smbclient also needs to read this
 file.
-<p><br><a name="minusB"></a>
-<li><strong><strong>-B IP addr</strong></strong> The IP address to use when sending a broadcast packet.
 <p><br><a name="minusO"></a>
 <li><strong><strong>-O socket options</strong></strong> TCP socket options to set on the client
 socket. See the <a href="smb.conf.5.html#socketoptions">socket options</a>
@@ -102,8 +100,7 @@ no WINS server has been specified this method will be ignored.
 listed in the <a href="smb.conf.5.html#interfaces"><strong>interfaces</strong></a> parameter
 in the smb.conf file. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
-subnet. To specify a particular broadcast address the <a href="smbclient.1.html#minusB"><strong>-B</strong></a> option 
-may be used.
+subnet. 
 <p><br></ul>
 <p><br>If this parameter is not set then the name resolve order defined
 in the <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file parameter 
@@ -238,7 +235,7 @@ then the password as part of username will take precedence. Putting
 nothing before or nothing after the percent symbol will cause an empty
 username or an empty password to be used, respectively.
 <p><br>The password may also be specified by setting up an environment
-variable called <code>PASSWORD</code> that contains the users password. Note
+variable called <code>PASSWD</code> that contains the users password. Note
 that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing.
@@ -246,7 +243,7 @@ the command line of a process listing.
 on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 <p><br>Be cautious about including passwords in scripts or in the
-<code>PASSWORD</code> environment variable. Also, on many systems the command
+<code>PASSWD</code> environment variable. Also, on many systems the command
 line of a running process may be seen via the <code>ps</code> command to be
 safe always allow smbclient to prompt for a password and type it in
 directly.
@@ -273,6 +270,11 @@ Samba source code for the complete list.
 protocols level the server supports. This parameter is
 preserved for backwards compatibility, but any string
 following the <strong>-m</strong> will be ignored.
+<p><br><a name="minusb"></a>
+<li><strong><strong>-b buffersize</strong></strong> This option changes the transmit/send buffer
+size when getting or putting a file from/to the server. The default
+is 65520 bytes. Setting this value smaller (to 1200 bytes) has been
+observed to speed up file transfers to and from a Win9x server.
 <p><br><a name="minusW"></a>
 <li><strong><strong>-W WORKGROUP</strong></strong> Override the default workgroup specified in the
 <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a> parameter of the
@@ -535,7 +537,7 @@ LANMAN2 protocol or above.
 <p><br>The variable <strong>USER</strong> may contain the username of the person using the
 client.  This information is used only if the protocol level is high
 enough to support session-level passwords.
-<p><br>The variable <strong>PASSWORD</strong> may contain the password of the person using
+<p><br>The variable <strong>PASSWD</strong> may contain the password of the person using
 the client.  This information is used only if the protocol level is
 high enough to support session-level passwords.
 <p><br><a name="INSTALLATION"></a>

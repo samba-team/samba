@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _BYTEORDER_H
+#define _BYTEORDER_H
+
 /*
    This file implements macros for machine independent short and 
    int manipulation
@@ -80,9 +83,12 @@ SSVALS(buf,pos,val) - signed version of SSVAL()
 SIVALS(buf,pos,val) - signed version of SIVAL()
 
 RSVAL(buf,pos) - like SVAL() but for NMB byte ordering
+RSVALS(buf,pos) - like SVALS() but for NMB byte ordering
 RIVAL(buf,pos) - like IVAL() but for NMB byte ordering
+RIVALS(buf,pos) - like IVALS() but for NMB byte ordering
 RSSVAL(buf,pos,val) - like SSVAL() but for NMB ordering
 RSIVAL(buf,pos,val) - like SIVAL() but for NMB ordering
+RSIVALS(buf,pos,val) - like SIVALS() but for NMB ordering
 
 it also defines lots of intermediate macros, just ignore those :-)
 
@@ -91,28 +97,28 @@ it also defines lots of intermediate macros, just ignore those :-)
 /* some switch macros that do both store and read to and from SMB buffers */
 
 #define RW_PCVAL(read,inbuf,outbuf,len) \
-                if (read) { PCVAL (inbuf,0,outbuf,len) } \
-                else      { PSCVAL(inbuf,0,outbuf,len) }
+	{ if (read) { PCVAL (inbuf,0,outbuf,len); } \
+	else      { PSCVAL(inbuf,0,outbuf,len); } }
 
-#define RW_PIVAL(read,inbuf,outbuf,len) \
-                if (read) { PIVAL (inbuf,0,outbuf,len) } \
-                else      { PSIVAL(inbuf,0,outbuf,len) }
+#define RW_PIVAL(read,big_endian,inbuf,outbuf,len) \
+	{ if (read) { if (big_endian) { RPIVAL(inbuf,0,outbuf,len); } else { PIVAL(inbuf,0,outbuf,len); } } \
+	else      { if (big_endian) { RPSIVAL(inbuf,0,outbuf,len); } else { PSIVAL(inbuf,0,outbuf,len); } } }
 
-#define RW_PSVAL(read,inbuf,outbuf,len) \
-                if (read) { PSVAL (inbuf,0,outbuf,len) } \
-                else      { PSSVAL(inbuf,0,outbuf,len) }
+#define RW_PSVAL(read,big_endian,inbuf,outbuf,len) \
+	{ if (read) { if (big_endian) { RPSVAL(inbuf,0,outbuf,len); } else { PSVAL(inbuf,0,outbuf,len); } } \
+	else      { if (big_endian) { RPSSVAL(inbuf,0,outbuf,len); } else { PSSVAL(inbuf,0,outbuf,len); } } }
 
 #define RW_CVAL(read, inbuf, outbuf, offset) \
-                if (read) (outbuf) = CVAL (inbuf,offset); \
-                else                 SCVAL(inbuf,offset,outbuf);
+	{ if (read) { (outbuf) = CVAL (inbuf,offset); } \
+	else      { SCVAL(inbuf,offset,outbuf); } }
 
-#define RW_IVAL(read, inbuf, outbuf, offset) \
-                if (read) (outbuf)= IVAL (inbuf,offset); \
-                else                SIVAL(inbuf,offset,outbuf);
+#define RW_IVAL(read, big_endian, inbuf, outbuf, offset) \
+	{ if (read) { (outbuf) = ((big_endian) ? RIVAL(inbuf,offset) : IVAL (inbuf,offset)); } \
+	else      { if (big_endian) { RSIVAL(inbuf,offset,outbuf); } else { SIVAL(inbuf,offset,outbuf); } } }
 
-#define RW_SVAL(read, inbuf, outbuf, offset) \
-                if (read) (outbuf)= SVAL (inbuf,offset); \
-                else                SSVAL(inbuf,offset,outbuf);
+#define RW_SVAL(read, big_endian, inbuf, outbuf, offset) \
+	{ if (read) { (outbuf) = ((big_endian) ? RSVAL(inbuf,offset) : SVAL (inbuf,offset)); } \
+	else      { if (big_endian) { RSSVAL(inbuf,offset,outbuf); } else { SSVAL(inbuf,offset,outbuf); } } }
 
 #undef CAREFUL_ALIGNMENT
 
@@ -144,7 +150,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32)(val)))
 
-#else
+#else /* CAREFUL_ALIGNMENT */
 
 /* this handles things for architectures like the 386 that can handle
    alignment errors */
@@ -154,32 +160,26 @@ it also defines lots of intermediate macros, just ignore those :-)
 */
 
 /* get single value from an SMB buffer */
-#define SVAL(buf,pos) (*(const uint16 *)((const char *)(buf) + (pos)))
-#define IVAL(buf,pos) (*(const uint32 *)((const char *)(buf) + (pos)))
-#define SVALS(buf,pos) (*(const int16 *)((const char *)(buf) + (pos)))
-#define IVALS(buf,pos) (*(const int32 *)((const char *)(buf) + (pos)))
-
-#define SVALMOD(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
-#define IVALMOD(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
-#define SVALMODS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
-#define IVALMODS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
+#define SVAL(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
+#define IVAL(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
+#define SVALS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
+#define IVALS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
 
 /* store single value in an SMB buffer */
-#define SSVAL(buf,pos,val) SVALMOD(buf,pos)=((uint16)(val))
-#define SIVAL(buf,pos,val) IVALMOD(buf,pos)=((uint32)(val))
-#define SSVALS(buf,pos,val) SVALMODS(buf,pos)=((int16)(val))
-#define SIVALS(buf,pos,val) IVALMODS(buf,pos)=((int32)(val))
+#define SSVAL(buf,pos,val) SVAL(buf,pos)=((uint16)(val))
+#define SIVAL(buf,pos,val) IVAL(buf,pos)=((uint32)(val))
+#define SSVALS(buf,pos,val) SVALS(buf,pos)=((int16)(val))
+#define SIVALS(buf,pos,val) IVALS(buf,pos)=((int32)(val))
 
-#endif
-
+#endif /* CAREFUL_ALIGNMENT */
 
 /* macros for reading / writing arrays */
 
 #define SMBMACRO(macro,buf,pos,val,len,size) \
-{ uint32 l; for (l = 0; l < (uint32)(len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
+{ int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
 
 #define SSMBMACRO(macro,buf,pos,val,len,size) \
-{ uint32 l; for (l = 0; l < (uint32)(len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
+{ int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
 
 /* reads multiple data from an SMB buffer */
 #define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,val,len,1)
@@ -203,46 +203,63 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
 
 #define RSVAL(buf,pos) SREV(SVAL(buf,pos))
+#define RSVALS(buf,pos) SREV(SVALS(buf,pos))
 #define RIVAL(buf,pos) IREV(IVAL(buf,pos))
+#define RIVALS(buf,pos) IREV(IVALS(buf,pos))
 #define RSSVAL(buf,pos,val) SSVAL(buf,pos,SREV(val))
+#define RSSVALS(buf,pos,val) SSVALS(buf,pos,SREV(val))
 #define RSIVAL(buf,pos,val) SIVAL(buf,pos,IREV(val))
+#define RSIVALS(buf,pos,val) SIVALS(buf,pos,IREV(val))
+
+/* reads multiple data from an SMB buffer (big-endian) */
+#define RPSVAL(buf,pos,val,len) SMBMACRO(RSVAL,buf,pos,val,len,2)
+#define RPIVAL(buf,pos,val,len) SMBMACRO(RIVAL,buf,pos,val,len,4)
+#define RPSVALS(buf,pos,val,len) SMBMACRO(RSVALS,buf,pos,val,len,2)
+#define RPIVALS(buf,pos,val,len) SMBMACRO(RIVALS,buf,pos,val,len,4)
+
+/* stores multiple data in an SMB buffer (big-endian) */
+#define RPSSVAL(buf,pos,val,len) SSMBMACRO(RSSVAL,buf,pos,val,len,2)
+#define RPSIVAL(buf,pos,val,len) SSMBMACRO(RSIVAL,buf,pos,val,len,4)
+#define RPSSVALS(buf,pos,val,len) SSMBMACRO(RSSVALS,buf,pos,val,len,2)
+#define RPSIVALS(buf,pos,val,len) SSMBMACRO(RSIVALS,buf,pos,val,len,4)
 
 #define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
-	RW_PCVAL(read,inbuf,outbuf,len) \
-	DEBUG(10,("%s%04x %s: ", \
+	{ RW_PCVAL(read,inbuf,outbuf,len) \
+	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(10, (unsigned char*)(outbuf), (len)); else \
-	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%02x ", (outbuf)[idx])); } } \
-	DEBUG(10,("\n"));
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
+	DEBUG(5,("\n")); } 
 
-#define DBG_RW_PSVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
-	RW_PSVAL(read,inbuf,outbuf,len) \
-	DEBUG(10,("%s%04x %s: ", \
+#define DBG_RW_PSVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
+	{ RW_PSVAL(read,big_endian,inbuf,outbuf,len) \
+	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(10, (unsigned char*)(outbuf), 2*(len)); else \
-	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%04x ", (outbuf)[idx])); } } \
-	DEBUG(10,("\n"));
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
+	DEBUG(5,("\n")); }
 
-#define DBG_RW_PIVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
-	RW_PIVAL(read,inbuf,outbuf,len) \
-	DEBUG(10,("%s%04x %s: ", \
+#define DBG_RW_PIVAL(charmode,string,depth,base,read,big_endian,inbuf,outbuf,len) \
+	{ RW_PIVAL(read,big_endian,inbuf,outbuf,len) \
+	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(10, (unsigned char*)(outbuf), 4*(len)); else \
-	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%08x ", (outbuf)[idx])); } } \
-	DEBUG(10,("\n"));
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
+	DEBUG(5,("\n")); }
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
-	RW_CVAL(read,inbuf,outbuf,0) \
-	DEBUG(10,("%s%04x %s: %02x\n", \
-             tab_depth(depth), base, string, outbuf));
+	{ RW_CVAL(read,inbuf,outbuf,0) \
+	DEBUG(5,("%s%04x %s: %02x\n", \
+             tab_depth(depth), base, string, outbuf)); }
 
-#define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
-	RW_SVAL(read,inbuf,outbuf,0) \
-	DEBUG(10,("%s%04x %s: %04x\n", \
-             tab_depth(depth), base, string, outbuf));
+#define DBG_RW_SVAL(string,depth,base,read,big_endian,inbuf,outbuf) \
+	{ RW_SVAL(read,big_endian,inbuf,outbuf,0) \
+	DEBUG(5,("%s%04x %s: %04x\n", \
+             tab_depth(depth), base, string, outbuf)); }
 
-#define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
-	RW_IVAL(read,inbuf,outbuf,0) \
-	DEBUG(10,("%s%04x %s: %08x\n", \
-             tab_depth(depth), base, string, outbuf));
+#define DBG_RW_IVAL(string,depth,base,read,big_endian,inbuf,outbuf) \
+	{ RW_IVAL(read,big_endian,inbuf,outbuf,0) \
+	DEBUG(5,("%s%04x %s: %08x\n", \
+             tab_depth(depth), base, string, outbuf)); }
 
+#endif /* _BYTEORDER_H */

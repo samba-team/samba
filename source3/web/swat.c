@@ -31,6 +31,8 @@
 static pstring servicesf = CONFIGFILE;
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;
+static BOOL have_read_access = False;
+static int iNumNonAutoPrintServices = 0;
 
 /*
  * Password Management Globals
@@ -215,9 +217,10 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_OCTAL:
-		printf("<input type=text size=8 name=\"parm_%s\" value=0%o>", make_parm_name(parm->label), *(int *)ptr);
-		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'0%o\'\">",
-			make_parm_name(parm->label),(int)(parm->def.ivalue));
+		printf("<input type=text size=8 name=\"parm_%s\" value=%s>", make_parm_name(parm->label), octal_string(*(int *)ptr));
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
+		       make_parm_name(parm->label),
+		       octal_string((int)(parm->def.ivalue)));
 		break;
 
 	case P_ENUM:
@@ -252,9 +255,17 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			continue;
 		}
 		if (parm->flags & FLAG_HIDE) continue;
+		if (snum >= 0) {
+			if (printers & !(parm->flags & FLAG_PRINT)) continue;
+			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
+		}
 		if (!advanced) {
-			if (!printers && !(parm->flags & FLAG_BASIC)) {
+			if (!(parm->flags & FLAG_BASIC)) {
 				void *ptr = parm->ptr;
+
+				if (parm->class == P_LOCAL && snum >= 0) {
+					ptr = lp_local_ptr(snum, ptr);
+				}
 
 				switch (parm->type) {
 				case P_CHAR:
@@ -300,21 +311,30 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 }
 
 /****************************************************************************
+  load the smb.conf file into loadparm.
+****************************************************************************/
+static BOOL load_config(BOOL save_def)
+{
+	lp_resetnumservices();
+	return lp_load(servicesf,False,save_def,False);
+}
+
+/****************************************************************************
   write a config file 
 ****************************************************************************/
 static void write_config(FILE *f, BOOL show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
-	fprintf(f, "# Date: %s\n\n", timestring());
+	fprintf(f, "# Date: %s\n\n", timestring(False));
 	
-	lp_dump(f, show_defaults);	
+	lp_dump(f, show_defaults, iNumNonAutoPrintServices);	
 }
 
 /****************************************************************************
   save and reoad the smb.conf config file 
 ****************************************************************************/
-static int save_reload(void)
+static int save_reload(int snum)
 {
 	FILE *f;
 
@@ -325,14 +345,18 @@ static int save_reload(void)
 	}
 
 	write_config(f, False);
+	if (snum)
+		lp_dump_one(f, False, snum);
 	fclose(f);
 
 	lp_killunused(NULL);
 
-	if (!lp_load(servicesf,False,False,False)) {
+	if (!load_config(False)) {
                 printf("Can't reload %s\n", servicesf);
                 return 0;
         }
+	iNumNonAutoPrintServices = lp_numservices();
+	load_printers();
 
 	return 1;
 }
@@ -380,14 +404,6 @@ static void commit_parameters(int snum)
 }
 
 /****************************************************************************
-  load the smb.conf file into loadparm.
-****************************************************************************/
-static BOOL load_config(void)
-{
-	return lp_load(servicesf,False,True,False);
-}
-
-/****************************************************************************
   spit out the html for a link with an image 
 ****************************************************************************/
 static void image_link(char *name,char *hlink, char *src)
@@ -402,13 +418,22 @@ static void image_link(char *name,char *hlink, char *src)
 ****************************************************************************/
 static void show_main_buttons(void)
 {
-	image_link("Home", "", "images/home.gif");
+	char *p;
+	
+	if ((p = cgi_user_name()) && strcmp(p, "root")) {
+		printf("Logged in as <b>%s</b><p>\n", p);
+	}
 
-	image_link("Globals", "globals", "images/globals.gif");
-	image_link("Shares", "shares", "images/shares.gif");
-	image_link("Printers", "printers", "images/printers.gif");
-	image_link("Status", "status", "images/status.gif");
-	image_link("View Config", "viewconfig","images/viewconfig.gif");
+	image_link("Home", "", "images/home.gif");
+	if (have_write_access) {
+		image_link("Globals", "globals", "images/globals.gif");
+		image_link("Shares", "shares", "images/shares.gif");
+		image_link("Printers", "printers", "images/printers.gif");
+	}
+	if (have_read_access) {
+		image_link("Status", "status", "images/status.gif");
+		image_link("View Config", "viewconfig","images/viewconfig.gif");
+	}
 	image_link("Password Management", "passwd", "images/passwd.gif");
 
 	printf("<HR>\n");
@@ -462,7 +487,7 @@ static void globals_page(void)
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBALS_SNUM);
-		save_reload();
+		save_reload(0);
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
@@ -511,26 +536,29 @@ static void shares_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
-		save_reload();
+		save_reload(0);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload();
+		save_reload(0);
 		share = NULL;
 		snum = -1;
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, share);
-		save_reload();
+		iNumNonAutoPrintServices = lp_numservices();
+		save_reload(0);
 		snum = lp_servicenumber(share);
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<table>\n");
-	printf("<tr><td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
+	printf("<tr>\n");
+	printf("<td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
 	printf("<td><select name=share>\n");
 	if (snum < 0)
 		printf("<option value=\" \"> \n");
@@ -542,10 +570,18 @@ static void shares_page(void)
 			       s, s);
 		}
 	}
-	printf("</select></td></tr><p>");
-
-	printf("<tr><td><input type=submit name=createshare value=\"Create Share\"></td>\n");
-	printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+	printf("</select></td>\n");
+	if (have_write_access) {
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Share\"></td>\n");
+	}
+	printf("</tr>\n");
+	printf("</table>");
+	printf("<table>");
+	if (have_write_access) {
+		printf("<tr>\n");
+		printf("<td><input type=submit name=createshare value=\"Create Share\"></td>\n");
+		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+	}
 	printf("</table>");
 
 
@@ -554,7 +590,7 @@ static void shares_page(void)
 			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
 
-		printf("<input type=submit name=\"Delete\" value=\"Delete Share\">\n");
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
@@ -584,8 +620,6 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 			    BOOL add_user, BOOL enable_user, BOOL disable_user)
 {
 	BOOL ret = False;
-	uint16 acb_info = 0;
-	uint16 acb_mask = 0;
 	pstring err_str;
 	pstring msg_str;
 
@@ -602,28 +636,14 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if (!pwdb_initialise(False))
-	{
+	if(!initialize_password_db()) {
 		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
 	
-	if (enable_user)
-	{
-		acb_mask |= ACB_DISABLED;
-		acb_info &= ~ACB_DISABLED;
-	}
-
-	if (disable_user)
-	{
-		acb_mask |= ACB_DISABLED;
-		acb_info |= ACB_DISABLED;
-	}
-
-	ret = local_password_change(user_name, add_user,
-	                            acb_info, acb_mask,
-				    new_passwd, err_str, sizeof(err_str),
-	                            msg_str, sizeof(msg_str));
+	ret = local_password_change(user_name, False, add_user, enable_user, 
+				     disable_user, False, new_passwd, err_str, sizeof(err_str),
+					 msg_str, sizeof(msg_str));
 
 	if(*msg_str)
 		printf("%s\n<p>", msg_str);
@@ -787,7 +807,7 @@ static void passwd_page(void)
 	printf("<tr><td> Re-type New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
 	printf("<tr><td> Remote Machine : </td>\n");
-	printf("<td><input type=password size=30 name=%s></td></tr>\n",RHOST);
+	printf("<td><input type=text size=30 name=%s></td></tr>\n",RHOST);
 
 	printf("</table>");
 
@@ -826,26 +846,37 @@ static void printers_page(void)
 
 	printf("<H2>Printer Parameters</H2>\n");
 
+	printf("<H3>Important Note:</H3>\n");
+	printf("Printer names marked with [*] in the Choose Printer drop-down box ");
+	printf("are autoloaded printers from ");
+	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");
+	printf("Attempting to delete these printers from SWAT will have no effect.\n");
+
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
 		advanced = 1;
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
-		save_reload();
+		if (snum >= iNumNonAutoPrintServices)
+		    save_reload(snum);
+		else
+		    save_reload(0);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload();
+		save_reload(0);
 		share = NULL;
 		snum = -1;
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, share);
+		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
-		save_reload();
+		save_reload(0);
 		snum = lp_servicenumber(share);
 	}
 
@@ -859,23 +890,36 @@ static void printers_page(void)
 	for (i=0;i<lp_numservices();i++) {
 		s = lp_servicename(i);
 		if (s && (*s) && strcmp(s,"IPC$") && lp_print_ok(i)) {
+                    if (i >= iNumNonAutoPrintServices)
+                        printf("<option %s value=\"%s\">[*]%s\n",
+                               (share && strcmp(share,s)==0)?"SELECTED":"",
+                               s, s);
+                    else
 			printf("<option %s value=\"%s\">%s\n", 
 			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       s, s);
 		}
 	}
-	printf("</select></td></tr><p>");
+	printf("</select></td>");
+	if (have_write_access) {
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Printer\"></td>\n");
+	}
+	printf("</tr>");
+	printf("</table>\n");
 
-	printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
-	printf("<td><input type=text size=30 name=newshare></td></tr>\n");
-	printf("</table>");
+	if (have_write_access) {
+		printf("<table>\n");
+		printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
+		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+		printf("</table>");
+	}
 
 
 	if (snum >= 0) {
 		if (have_write_access) {
 			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
-		printf("<input type=submit name=\"Delete\" value=\"Delete Printer\">\n");
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
@@ -908,12 +952,21 @@ static void printers_page(void)
 	int opt;
 	char *page;
 
+	fault_setup(NULL);
+
+#if defined(HAVE_SET_AUTH_PARAMETERS)
+	set_auth_parameters(argc, argv);
+#endif /* HAVE_SET_AUTH_PARAMETERS */
+
 	/* just in case it goes wild ... */
 	alarm(300);
 
 	dbf = sys_fopen("/dev/null", "w");
-
 	if (!dbf) dbf = stderr;
+
+	/* we don't want stderr screwing us up */
+	close(2);
+	open("/dev/null", O_WRONLY);
 
 	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
 		switch (opt) {
@@ -927,7 +980,9 @@ static void printers_page(void)
 	}
 
 	charset_initialise();
-	load_config();
+	load_config(True);
+	iNumNonAutoPrintServices = lp_numservices();
+	load_printers();
 
 	cgi_setup(SWATDIR, !demo_mode);
 
@@ -935,24 +990,34 @@ static void printers_page(void)
 	
 	cgi_load_variables(NULL);
 
+	if (!file_exist(servicesf, NULL)) {
+		have_read_access = True;
+		have_write_access = True;
+	} else {
+		/* check if the authenticated user has write access - if not then
+		   don't show write options */
+		have_write_access = (access(servicesf,W_OK) == 0);
+
+		/* if the user doesn't have read access to smb.conf then
+		   don't let them view it */
+		have_read_access = (access(servicesf,R_OK) == 0);
+	}
+
+
 	show_main_buttons();
 
 	page = cgi_pathinfo();
 
-	/* check if the authenticated user has write access - if not then
-	   don't show write options */
-	have_write_access = (access(servicesf,W_OK) == 0);
-
 	/* Root gets full functionality */
-	if (strcmp(page, "globals")==0) {
+	if (have_read_access && strcmp(page, "globals")==0) {
 		globals_page();
-	} else if (strcmp(page,"shares")==0) {
+	} else if (have_read_access && strcmp(page,"shares")==0) {
 		shares_page();
-	} else if (strcmp(page,"printers")==0) {
+	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
-	} else if (strcmp(page,"status")==0) {
+	} else if (have_read_access && strcmp(page,"status")==0) {
 		status_page();
-	} else if (strcmp(page,"viewconfig")==0) {
+	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
 		viewconfig_page();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();

@@ -207,7 +207,7 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
           sizeof(struct packet_struct *)];
   struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
-  bzero(ud, sizeof(ud));
+  memset(ud, '\0', sizeof(ud));
  
   userdata->copy_fn = wins_proxy_userdata_copy_fn;
   userdata->free_fn = wins_proxy_userdata_free_fn;

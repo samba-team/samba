@@ -43,26 +43,9 @@ int workgroup_count = 0; /* unique index key: one for each workgroup */
 
 static void add_workgroup(struct subnet_record *subrec, struct work_record *work)
 {
-  struct work_record *w2;
-
-  work->subnet = subrec;
-
-  if (!subrec->workgrouplist)
-  {
-    subrec->workgrouplist = work;
-    work->prev = NULL;
-    work->next = NULL;
-    return;
-  }
-  
-  for (w2 = subrec->workgrouplist; w2->next; w2 = w2->next)
-    ;
-  
-  w2->next = work;
-  work->next = NULL;
-  work->prev = w2;
-
-  subrec->work_changed = True;
+	work->subnet = subrec;
+	DLIST_ADD(subrec->workgrouplist, work);
+	subrec->work_changed = True;
 }
 
 /****************************************************************************
@@ -80,7 +63,7 @@ static struct work_record *create_workgroup(char *name, int ttl)
     DEBUG(0,("create_workgroup: malloc fail !\n"));
     return NULL;
   }
-  bzero((char *)work, sizeof(*work));
+  memset((char *)work, '\0', sizeof(*work));
  
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
   work->serverlist = NULL;
@@ -254,7 +237,8 @@ void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_reco
      if we are so configured. */
 
   if ((subrec != unicast_subnet) && (subrec != remote_broadcast_subnet) &&
-      (subrec != wins_server_subnet) && lp_preferred_master())
+      (subrec != wins_server_subnet) && lp_preferred_master() &&
+      lp_local_master())
   {
     DEBUG(3, ("initiate_myworkgroup_startup: preferred master startup for \
 workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
@@ -283,7 +267,8 @@ workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
                    SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    
     create_server_on_workgroup(work,name,stype|SV_TYPE_LOCAL_LIST_ONLY,
-                PERMANENT_TTL, lp_serverstring());
+			       PERMANENT_TTL, 
+			       string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
     DEBUG(3,("initiate_myworkgroup_startup: Added server name entry %s \
 on subnet %s\n", name, subrec->subnet_name));
   }

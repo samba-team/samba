@@ -146,8 +146,7 @@ static void smbw_printjob_add(struct print_job_info *job)
 	finfo.mtime = job->t;
 	finfo.atime = job->t;
 	finfo.ctime = job->t;
-	finfo.uid   = (uid_t)-1;
-	nametouid(job->user, &finfo.uid);
+	finfo.uid = nametouid(job->user);
 	finfo.mode = aRONLY;
 	finfo.size = job->size;
 
@@ -198,7 +197,7 @@ int smbw_dir_open(const char *fname)
 	cur_dir = dir;
 
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
-	string_sub(mask,"\\\\","\\");
+	all_string_sub(mask,"\\\\","\\",0);
 
 	if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));

@@ -14,6 +14,7 @@
 
 doclean=""
 SGI_ABI=-n32
+ISA=-mips3
 CC=cc
 
 if [ ! -f ../../source/Makefile ]; then
@@ -25,6 +26,7 @@ if [ "$1" = "clean" ]; then
   shift
 elif [ "$1" = "5" ]; then
   SGI_ABI=-32
+  ISA=""
   shift
 fi
 
@@ -35,10 +37,11 @@ if [ "$1" = "clean" ]; then
   shift
 elif [ "$1" = "5" ]; then
   SGI_ABI=-32
+  ISA=""
   shift
 fi
 
-export SGI_ABI CC
+export SGI_ABI ISA CC
 
 if [ "$doclean" = "clean" ]; then
   cd ../../source
@@ -64,11 +67,6 @@ fi
 cd ../../source
 if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
-  chmod +x configure
-  chmod +x configure.developer
-  chmod +x config.guess
-  chmod +x config.status
-  chmod +x config.sub
   ./configure --prefix=/usr/samba --mandir=/usr/share/catman --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then

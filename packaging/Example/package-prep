@@ -7,7 +7,7 @@ tar xvf skeleton.tar
 ( cd /usr/local;
 	mv man man.orig;
 	mv samba samba.orig;
-	DIRNOW=`pwd1`;
+	NOWDIR=`pwd`;
 		ln -sf $NOWDIR/usr/local/man man;
 		ln -sf $NOWDIR/usr/local/samba samba; )
 
@@ -32,9 +32,8 @@ tar cvf install.tar usr var
 
 # Clean up original sources preserving all configured files
 #        Note: This will allow installers to check build options
-cd samba-X.X.X/source/bin
-rm -f *
-cd ..
+cd samba-X.X.X/source
+rm -f ../source/bin/*
 make clean
 cd ../..
 tar cvf samba-X.X.X.tar samba-X.X.X

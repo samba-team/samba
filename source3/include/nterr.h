@@ -1,12 +1,3 @@
-/* Win32 Status codes. */
-
-#define STATUS_BUFFER_OVERFLOW (5)
-#define STATUS_MORE_ENTRIES (0x105)
-#define ERROR_INVALID_HANDLE		  (6)
-#define ERROR_INVALID_PARAMETER		 (87)
-#define ERROR_INSUFFICIENT_BUFFER	(122)
-
-
 /* these are the NT error codes less than 1000. They are here for when
    we start supporting NT error codes in Samba. They were extracted
    using a loop in smbclient then printing a netmon sniff to a file */
@@ -16,6 +7,7 @@
 #define NT_STATUS_INVALID_INFO_CLASS (3)
 #define NT_STATUS_INFO_LENGTH_MISMATCH (4)
 #define NT_STATUS_ACCESS_VIOLATION (5)
+#define STATUS_BUFFER_OVERFLOW (5)
 #define NT_STATUS_IN_PAGE_ERROR (6)
 #define NT_STATUS_PAGEFILE_QUOTA (7)
 #define NT_STATUS_INVALID_HANDLE (8)
@@ -513,4 +505,3 @@
 #define NT_STATUS_QUOTA_LIST_INCONSISTENT (614)
 #define NT_STATUS_FILE_IS_OFFLINE (615)
 #define NT_STATUS_NOTIFY_ENUM_DIR (0x10C)
-#define NT_STATUS_NO_SUCH_JOB (0xEDE) /* scheduler */

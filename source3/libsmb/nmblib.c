@@ -179,27 +179,34 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   unsigned char *ubuf = (unsigned char *)inbuf;
   int ret = 0;
   BOOL got_pointer=False;
+  int loop_count=0;
 
-  if (length - offset < 2) return(0);  
+  if (length - offset < 2)
+    return(0);  
 
   /* handle initial name pointers */
-  if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret)) return(0);
+  if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret))
+    return(0);
   
   m = ubuf[offset];
 
-  if (!m) return(0);
-  if ((m & 0xC0) || offset+m+2 > length) return(0);
+  if (!m)
+    return(0);
+  if ((m & 0xC0) || offset+m+2 > length)
+    return(0);
 
-  bzero((char *)name,sizeof(*name));
+  memset((char *)name,'\0',sizeof(*name));
 
   /* the "compressed" part */
-  if (!got_pointer) ret += m + 2;
+  if (!got_pointer)
+    ret += m + 2;
   offset++;
-  while (m) {
+  while (m > 0) {
     unsigned char c1,c2;
     c1 = ubuf[offset++]-'A';
     c2 = ubuf[offset++]-'A';
-    if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1)) return(0);
+    if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1))
+      return(0);
     name->name[n++] = (c1<<4) | c2;
     m -= 2;
   }
@@ -213,21 +220,38 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
     /* remove trailing spaces */
     name->name[15] = 0;
     n = 14;
-    while (n && name->name[n]==' ') name->name[n--] = 0;  
+    while (n && name->name[n]==' ')
+      name->name[n--] = 0;  
   }
 
   /* now the domain parts (if any) */
   n = 0;
   while (ubuf[offset]) {
     /* we can have pointers within the domain part as well */
-    if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret)) return(0);
+    if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret))
+      return(0);
 
     m = ubuf[offset];
-    if (!got_pointer) ret += m+1;
-    if (n) name->scope[n++] = '.';
-    if (m+2+offset>length || n+m+1>sizeof(name->scope)) return(0);
+    /*
+     * Don't allow null domain parts.
+     */
+    if (!m)
+      return(0);
+    if (!got_pointer)
+      ret += m+1;
+    if (n)
+      name->scope[n++] = '.';
+    if (m+2+offset>length || n+m+1>sizeof(name->scope))
+      return(0);
     offset++;
-    while (m--) name->scope[n++] = (char)ubuf[offset++];
+    while (m--)
+      name->scope[n++] = (char)ubuf[offset++];
+
+    /*
+     * Watch for malicious loops.
+     */
+    if (loop_count++ == 10)
+      return 0;
   }
   name->scope[n++] = 0;  
 
@@ -251,7 +275,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 
   if (strcmp(name->name,"*") == 0) {
     /* special case for wildcard name */
-    bzero(buf1,20);
+    memset(buf1,'\0',20);
     buf1[0] = '*';
     buf1[15] = name->name_type;
   } else {
@@ -287,7 +311,6 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   return(ret);
 }
 
-
 /*******************************************************************
   useful for debugging messages
   ******************************************************************/
@@ -297,21 +320,13 @@ char *nmb_namestr(struct nmb_name *n)
   static fstring ret[4];
   char *p = ret[i];
 
-  nmb_safe_namestr(n, p, sizeof(fstring));
+  if (!n->scope[0])
+    slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
+  else
+    slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
 
   i = (i+1)%4;
   return(p);
-}
-
-/*******************************************************************
-  useful for debugging messages
-  ******************************************************************/
-void nmb_safe_namestr(struct nmb_name *n, char *str, size_t len)
-{
-  if (!n->scope[0])
-    slprintf(str, len-1, "%s<%02x>",n->name,n->name_type);
-  else
-    slprintf(str, len-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
 }
 
 /*******************************************************************
@@ -324,13 +339,14 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
   *recs = (struct res_rec *)malloc(sizeof(**recs)*count);
   if (!*recs) return(False);
 
-  bzero(*recs,sizeof(**recs)*count);
+  memset((char *)*recs,'\0',sizeof(**recs)*count);
 
   for (i=0;i<count;i++) {
     int l = parse_nmb_name(inbuf,*offset,length,&(*recs)[i].rr_name);
     (*offset) += l;
     if (!l || (*offset)+10 > length) {
       free(*recs);
+      *recs = NULL;
       return(False);
     }
     (*recs)[i].rr_type = RSVAL(inbuf,(*offset));
@@ -341,6 +357,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
     if ((*recs)[i].rdlength>sizeof((*recs)[i].rdata) || 
 	(*offset)+(*recs)[i].rdlength > length) {
       free(*recs);
+      *recs = NULL;
       return(False);
     }
     memcpy((*recs)[i].rdata,inbuf+(*offset),(*recs)[i].rdlength);
@@ -405,7 +422,7 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
   int offset;
   int flags;
 
-  bzero((char *)dgram,sizeof(*dgram));
+  memset((char *)dgram,'\0',sizeof(*dgram));
 
   if (length < 14) return(False);
 
@@ -447,7 +464,7 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 {
   int nm_flags,offset;
 
-  bzero((char *)nmb,sizeof(*nmb));
+  memset((char *)nmb,'\0',sizeof(*nmb));
 
   if (length < 12) return(False);
 
@@ -563,12 +580,18 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 
 free_and_exit:
 
-  if(copy_nmb->answers)
+  if(copy_nmb->answers) {
     free((char *)copy_nmb->answers);
-  if(copy_nmb->nsrecs)
+    copy_nmb->answers = NULL;
+  }
+  if(copy_nmb->nsrecs) {
     free((char *)copy_nmb->nsrecs);
-  if(copy_nmb->additional)
+    copy_nmb->nsrecs = NULL;
+  }
+  if(copy_nmb->additional) {
     free((char *)copy_nmb->additional);
+    copy_nmb->additional = NULL;
+  }
   free((char *)pkt_copy);
 
   DEBUG(0,("copy_nmb_packet: malloc fail in resource records.\n"));
@@ -617,9 +640,18 @@ struct packet_struct *copy_packet(struct packet_struct *packet)
   ******************************************************************/
 static void free_nmb_packet(struct nmb_packet *nmb)
 {  
-  if (nmb->answers) free(nmb->answers);
-  if (nmb->nsrecs) free(nmb->nsrecs);
-  if (nmb->additional) free(nmb->additional);
+  if (nmb->answers) {
+    free(nmb->answers);
+    nmb->answers = NULL;
+  }
+  if (nmb->nsrecs) {
+    free(nmb->nsrecs);
+    nmb->nsrecs = NULL;
+  }
+  if (nmb->additional) {
+    free(nmb->additional);
+    nmb->additional = NULL;
+  }
 }
 
 /*******************************************************************
@@ -641,6 +673,7 @@ void free_packet(struct packet_struct *packet)
     free_nmb_packet(&packet->packet.nmb);
   else if (packet->packet_type == DGRAM_PACKET)
     free_dgram_packet(&packet->packet.dgram);
+  ZERO_STRUCTPN(packet);
   free(packet);
 }
 
@@ -651,46 +684,14 @@ void free_packet(struct packet_struct *packet)
 struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 {
   extern struct in_addr lastip;
-	struct nmb_state con;
   extern int lastport;
   struct packet_struct *packet;
   char buf[MAX_DGRAM_SIZE];
   int length;
   BOOL ok=False;
   
-	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
-	{
-		uint16 trn_id = 0;
-		if (!read_nmb_sock(fd, &con))
-		{
-			return False;
-		}
-		if (write(fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
-		{
-			return False;
-		}
-	}
-	
-	length = read_udp_socket(fd,buf,sizeof(buf));
-	
-	dump_data(100, buf, length);
-
-	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
-	{
-		uint16 trn_id = 0;
-		if (write(fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
-		{
-			return False;
-		}
-	}
-	
+  length = read_udp_socket(fd,buf,sizeof(buf));
   if (length < MIN_DGRAM_SIZE) return(NULL);
-
-	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
-	{
-		lastip = con.ip;
-		lastport = con.port;
-	}
 
   packet = (struct packet_struct *)malloc(sizeof(*packet));
   if (!packet) return(NULL);
@@ -706,19 +707,17 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   switch (packet_type) 
     {
     case NMB_PACKET:
-    case NMB_SOCK_PACKET:
       ok = parse_nmb(buf,length,&packet->packet.nmb);
       break;
 
     case DGRAM_PACKET:
-    case DGRAM_SOCK_PACKET:
       ok = parse_dgram(buf,length,&packet->packet.dgram);
       break;
     }
   if (!ok) {
     DEBUG(10,("read_packet: discarding packet id = %d\n", 
                  packet->packet.nmb.header.name_trn_id));
-    free(packet);
+    free_packet(packet);
     return(NULL);
   }
 
@@ -740,7 +739,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   struct sockaddr_in sock_out;
 
   /* set the address and port */
-  bzero((char *)&sock_out,sizeof(sock_out));
+  memset((char *)&sock_out,'\0',sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)&ip);
   sock_out.sin_port = htons( port );
   sock_out.sin_family = AF_INET;
@@ -776,7 +775,7 @@ static int build_dgram(char *buf,struct packet_struct *p)
 
   /* put in the header */
   ubuf[0] = dgram->header.msg_type;
-  ubuf[1] = (((unsigned int)dgram->header.flags.node_type)<<2);
+  ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
   if (dgram->header.flags.more) ubuf[1] |= 1;
   if (dgram->header.flags.first) ubuf[1] |= 2;
   RSSVAL(ubuf,2,dgram->header.dgm_id);
@@ -909,82 +908,23 @@ BOOL send_packet(struct packet_struct *p)
   char buf[1024];
   int len=0;
 
-	DEBUG(100,("send_packet: %d %d\n", p->fd, p->packet_type));
-
-  bzero(buf,sizeof(buf));
+  memset(buf,'\0',sizeof(buf));
 
   switch (p->packet_type) 
     {
     case NMB_PACKET:
-    case NMB_SOCK_PACKET:
       len = build_nmb(buf,p);
       debug_nmb_packet(p);
       break;
 
     case DGRAM_PACKET:
-    case DGRAM_SOCK_PACKET:
       len = build_dgram(buf,p);
       break;
     }
 
   if (!len) return(False);
 
-  switch (p->packet_type) 
-    {
-    case DGRAM_PACKET:
-    case NMB_PACKET:
-	  return(send_udp(p->fd,buf,len,p->ip,p->port));
-      break;
-
-    case NMB_SOCK_PACKET:
-    case DGRAM_SOCK_PACKET:
-	{
-		fstring qbuf;
-		struct nmb_state nmb;
-		int qlen;
-		uint16 trn_id;
-		char *q = qbuf + 4;
-
-		nmb.ip = p->ip;
-		nmb.port = p->port;
-
-		SSVAL(q, 0, 0);
-		q += 2;
-		SSVAL(q, 0, 0);
-		q += 2;
-		memcpy(q, &nmb, sizeof(nmb));
-		q += sizeof(nmb);
-
-		qlen = PTR_DIFF(q, qbuf);
-		SIVAL(qbuf, 0, qlen);
-
-		dump_data(100, qbuf, qlen);
-
-		  if (write(p->fd,qbuf,qlen) != qlen)
-		{
-			DEBUG(0,("send_packet: write hdr failed\n"));
-			return False;
-		}
-		if (read(p->fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
-		{
-			DEBUG(0,("send_packet: 1st ack failed\n"));
-			return False;
-		}
-	  	if (write(p->fd,buf,len) != len)
-		{
-			DEBUG(0,("send_packet: write packet failed\n"));
-			return False;
-		}
-		if (read(p->fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
-		{
-			DEBUG(0,("send_packet: 2nd ack failed\n"));
-			return False;
-		}
-		return True;
-	}
-    }
-
-	return False;
+  return(send_udp(p->fd,buf,len,p->ip,p->port));
 }
 
 /****************************************************************************
@@ -1001,8 +941,7 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
   timeout.tv_sec = t/1000;
   timeout.tv_usec = 1000*(t%1000);
 
-	DEBUG(100,("receive_packet: %d %d\n", fd, type));
-  sys_select(fd+1,&fds,NULL, &timeout);
+  sys_select(fd+1,&fds,&timeout);
 
   if (FD_ISSET(fd,&fds)) 
     return(read_packet(fd,type));
@@ -1054,77 +993,4 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 	putip(sort_ip, (char *)&ip);
 
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
-}
-
-BOOL read_nmb_sock(int c, struct nmb_state *con)
-{
-	fstring buf;
-	char *p = buf;
-	int rl;
-	uint32 len;
-	uint16 version;
-	uint16 command;
-
-	ZERO_STRUCTP(con);
-
-	rl = read(c, &buf, sizeof(len));
-
-	if (rl < 0)
-	{
-		DEBUG(0,("read_nmb_sock: error\n"));
-		return False;
-	}
-	if (rl != sizeof(len))
-	{
-		DEBUG(0,("Unable to read length\n"));
-		dump_data(0, buf, sizeof(len));
-		return False;
-	}
-
-	len = IVAL(buf, 0);
-
-	if (len > sizeof(buf))
-	{
-		DEBUG(0,("length %d too long\n", len));
-		return False;
-	}
-
-	rl = read(c, buf, len);
-
-	if (rl < 0)
-	{
-		DEBUG(0,("Unable to read from connection\n"));
-		return False;
-	}
-	
-#ifdef DEBUG_PASSWORD
-	dump_data(100, buf, rl);
-#endif
-	version = SVAL(p, 0);
-	p += 2;
-	command = SVAL(p, 0);
-	p += 2;
-
-	memcpy(con, p, sizeof(*con));
-	p += sizeof(*con);
-
-	DEBUG(10,("read_nmb_sock: ip %s port: %d\n",
-	           inet_ntoa(con->ip), con->port));
-
-	if (PTR_DIFF(p, buf) != rl)
-	{
-		DEBUG(0,("Buffer size %d %d!\n",
-			PTR_DIFF(p, buf), rl));
-		return False;
-	}
-
-	return True;
-}
-
-int get_nmb_sock(void)
-{
-	fstring path;
-	slprintf(path, sizeof(path)-1, "/tmp/.nmb/agent");
-
-	return open_pipe_sock(path);
 }

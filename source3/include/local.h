@@ -32,7 +32,15 @@
 /* max number of directories open at once */
 /* note that with the new directory code this no longer requires a
    file handle per directory, but large numbers do use more memory */
-#define MAX_OPEN_DIRECTORIES 64
+#define MAX_OPEN_DIRECTORIES 256
+
+/* max number of directory handles */
+/* As this now uses the bitmap code this can be
+   quite large. */
+#define MAX_DIRECTORY_HANDLES 2048
+
+/* maximum number of file caches per smbd */
+#define MAX_WRITE_CACHES 10
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
@@ -98,12 +106,6 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
-/* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
-   when smbd starts? */
-#ifndef PRIME_NMBD
-#define PRIME_NMBD 1
-#endif
-
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER
@@ -121,16 +123,18 @@
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */
 #define DEFAULT_SMBD_TIMEOUT (60*60*24*7)
-#define SMBD_RELOAD_CHECK (60)
+#define SMBD_RELOAD_CHECK (180)
 #define IDLE_CLOSED_TIMEOUT (60)
 #define DPTR_IDLE_TIMEOUT (120)
-#define SMBD_SELECT_LOOP (10)
+#define SMBD_SELECT_TIMEOUT (60)
+#define SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS (10)
 #define NMBD_SELECT_LOOP (10)
 #define BROWSE_INTERVAL (60)
 #define REGISTRATION_INTERVAL (10*60)
 #define NMBD_INETD_TIMEOUT (120)
 #define NMBD_MAX_TTL (24*60*60)
 #define LPQ_LOCK_TIMEOUT (5)
+#define NMBD_INTERFACES_RELOAD (120)
 
 /* the following are in milliseconds */
 #define LOCK_RETRY_TIMEOUT (100)
@@ -146,17 +150,9 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* how long to wait for a socket connect to happen */
-#define LONG_CONNECT_TIMEOUT 30
-#define SHORT_CONNECT_TIMEOUT 5
-
-/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
-   given the socket IO pattern that Samba uses*/
-#ifdef TCP_NODELAY
-#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
-#else
-#define DEFAULT_SOCKET_OPTIONS ""
-#endif
+/* how long (in miliseconds) to wait for a socket connect to happen */
+#define LONG_CONNECT_TIMEOUT 30000
+#define SHORT_CONNECT_TIMEOUT 5000
 
 /* the default netbios keepalive timeout */
 #define DEFAULT_KEEPALIVE 300
@@ -169,10 +165,6 @@
 
 #define OPLOCK_BREAK_TIMEOUT 30
 
-/* how many times do we try to resend the oplock break request - useful
-   for buggy MS clients */
-#define OPLOCK_BREAK_RESENDS 3
-
 /* Timout (in seconds) to add to the oplock break timeout
    to wait for the smbd to smbd message to return. */
 
@@ -184,5 +176,14 @@
 
 /* name of directory that netatalk uses to store macintosh resource forks */
 #define APPLEDOUBLE ".AppleDouble/"
+
+/*
+ * Default passwd chat script.
+ */
+
+#define DEFAULT_PASSWD_CHAT "*new*password* %n\\n *new*password* %n\\n *changed*"
+
+/* Minimum length of allowed password when changing UNIX password. */
+#define MINPASSWDLENGTH 5
 
 #endif

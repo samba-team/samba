@@ -23,7 +23,7 @@
 
 extern int DEBUGLEVEL;
 
-extern time_t smb_last_time;
+extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -49,7 +49,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 		return(False);
 	}
 
-	conn->lastused = smb_last_time;
+	conn->lastused = smb_last_time.tv_sec;
 
 	snum = SNUM(conn);
   
@@ -84,24 +84,23 @@ int find_service(char *service)
 {
    int iService;
 
-   string_sub(service,"\\","/");
+   all_string_sub(service,"\\","/",0);
 
    iService = lp_servicenumber(service);
 
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_unixhome_dir(service);
-	pstring home_dir;
+      char *phome_dir = get_user_home_dir(service);
 
-      if(phome_dir == NULL)
+      if(!phome_dir)
       {
         /*
          * Try mapping the servicename, it may
          * be a Windows to unix mapped user name.
          */
         if(map_username(service))
-          phome_dir = get_unixhome_dir(service);
+          phome_dir = get_user_home_dir(service);
       }
 
       DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -110,10 +109,9 @@ int find_service(char *service)
       if (phome_dir)
       {   
         int iHomeService;
-	pstrcpy(home_dir, phome_dir);
         if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
         {
-          lp_add_home(service,iHomeService,home_dir);
+          lp_add_home(service,iHomeService,phome_dir);
           iService = lp_servicenumber(service);
         }
       }
@@ -144,11 +142,6 @@ int find_service(char *service)
       }
    }
 
-   /* Check for default vfs service?  Unsure whether to implement this */
-   if (iService < 0)
-   {
-   }
-
    /* just possibly it's a default service? */
    if (iService < 0) 
    {
@@ -168,7 +161,7 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         string_sub(service,"_","/");
+         all_string_sub(service,"_","/",0);
          iService = lp_add_service(service,iService);
        }
      }
@@ -194,11 +187,12 @@ int find_service(char *service)
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
-	const struct passwd *pass = NULL;
+	struct passwd *pass = NULL;
 	BOOL guest = False;
 	BOOL force = False;
 	extern int Client;
 	connection_struct *conn;
+	int ret;
 
 	strlower(service);
 
@@ -218,21 +212,31 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	if (strequal(service,HOMES_NAME)) {
-		if (*user && Get_Pwnam(user,True))
-			return(make_connection(user,user,password,
+		if (*user && Get_Pwnam(user,True)) {
+			fstring dos_username;
+			fstrcpy(dos_username, user);
+			unix_to_dos(dos_username, True);
+			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
+		}
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
-				pstrcpy(user,validated_username(vuid));
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,validated_username(vuid));
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
 			/* Security = share. Try with sesssetup_user
 			 * as the username.  */
 			if(*sesssetup_user) {
-				pstrcpy(user,sesssetup_user);
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,sesssetup_user);
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}
 	}
@@ -300,13 +304,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	{
 		pstring list;
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 
 		if (user_in_list(user,list))
 			conn->read_only = True;
 		
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 		
 		if (user_in_list(user,list))
 			conn->read_only = False;    
@@ -333,6 +337,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
+	safe_strcpy(conn->client_address, client_addr(Client), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;
@@ -345,57 +350,25 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->veto_oplock_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
-
-	/* Initialise VFS function pointers */
-
-	if (*lp_vfsobj(SNUM(conn))) {
-
-#ifdef HAVE_LIBDL
-
-	    /* Loadable object file */
-
-	    if (!vfs_init_custom(conn)) {
-		return NULL;
-	    }
-#else
-	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
-	    conn_free(conn);
-	    return NULL;
-#endif
-
-	} else {
-
-	    /* Normal share - initialise with disk access functions */
-
-	    vfs_init_default(conn);
-	}
-
-#ifdef HAVE_GETGRNAM 
-	if (*lp_force_group(snum)) {
-		struct group *gptr;
-		pstring gname;
-		
-		StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
-		/* default service may be a group name 		*/
-		string_sub(gname,"%S",service);
-		gptr = (struct group *)getgrnam(gname);
-		
-		if (gptr) {
-			conn->gid = gptr->gr_gid;
-			DEBUG(3,("Forced group %s\n",gname));
-		} else {
-			DEBUG(1,("Couldn't find group %s\n",gname));
-		}
-	}
-#endif
+	
+	/*
+	 * If force user is true, then store the
+	 * given userid and also the primary groupid
+	 * of the user we're forcing.
+	 */
 	
 	if (*lp_force_user(snum)) {
-		const struct passwd *pass2;
-		fstring fuser;
-		fstrcpy(fuser,lp_force_user(snum));
-		pass2 = (const struct passwd *)Get_Pwnam(fuser,True);
+		struct passwd *pass2;
+		pstring fuser;
+		pstrcpy(fuser,lp_force_user(snum));
+
+		/* Allow %S to be used by force user. */
+		pstring_sub(fuser,"%S",service);
+
+		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
+			conn->gid = pass2->pw_gid;
 			string_set(&conn->user,fuser);
 			fstrcpy(user,fuser);
 			conn->force_user = True;
@@ -404,6 +377,56 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			DEBUG(1,("Couldn't find user %s\n",fuser));
 		}
 	}
+
+#ifdef HAVE_GETGRNAM 
+	/*
+	 * If force group is true, then override
+	 * any groupid stored for the connecting user.
+	 */
+	
+	if (*lp_force_group(snum)) {
+		struct group *gptr;
+		pstring gname;
+		pstring tmp_gname;
+		BOOL user_must_be_member = False;
+		
+		StrnCpy(tmp_gname,lp_force_group(snum),sizeof(pstring)-1);
+
+		if (tmp_gname[0] == '+') {
+			user_must_be_member = True;
+			StrnCpy(gname,&tmp_gname[1],sizeof(pstring)-2);
+		} else {
+			StrnCpy(gname,tmp_gname,sizeof(pstring)-1);
+		}
+		/* default service may be a group name 		*/
+		pstring_sub(gname,"%S",service);
+		gptr = (struct group *)getgrnam(gname);
+		
+		if (gptr) {
+			/*
+			 * If the user has been forced and the forced group starts
+			 * with a '+', then we only set the group to be the forced
+			 * group if the forced user is a member of that group.
+			 * Otherwise, the meaning of the '+' would be ignored.
+			 */
+			if (conn->force_user && user_must_be_member) {
+				int i;
+				for (i = 0; gptr->gr_mem[i] != NULL; i++) {
+					if (strcmp(user,gptr->gr_mem[i]) == 0) {
+						conn->gid = gptr->gr_gid;
+						DEBUG(3,("Forced group %s for member %s\n",gname,user));
+						break;
+					}
+				}
+			} else {
+				conn->gid = gptr->gr_gid;
+				DEBUG(3,("Forced group %s\n",gname));
+			}
+		} else {
+			DEBUG(1,("Couldn't find group %s\n",gname));
+		}
+	}
+#endif /* HAVE_GETGRNAM */
 
 	{
 		pstring s;
@@ -420,7 +443,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!IS_IPC(conn)) {
 		/* Find all the groups this uid is in and
 		   store them. Used by become_user() */
-		get_unixgroups(conn->user,conn->uid,conn->gid,
+		setup_groups(conn->user,conn->uid,conn->gid,
 			     &conn->ngroups,&conn->groups);
 		
 		/* check number of connections */
@@ -445,7 +468,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub(conn,cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
 	}
 	
 	if (!become_user(conn, conn->vuid)) {
@@ -499,7 +528,26 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub(conn,cmd);
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
+	}
+
+	/*
+	 * Print out the 'connected as' stuff here as we need
+	 * to know the effective uid and gid we will be using.
+	 */
+
+	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
+		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
+		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "as user %s ", user );
+		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
+		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 	
 	/* we've finished with the sensitive stuff */
@@ -512,61 +560,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
 	}
 	
-	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		extern int Client;
-		
-		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)));
-		dbgtext( "as user %s ", user );
-		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
-		dbgtext( "(pid %d)\n", (int)getpid() );
-	}
-
-	/* Invoke make connection hook */
-
-	if (conn->vfs_ops.connect) {
-	    struct vfs_connection_struct *vconn;
-
-	    vconn = (struct vfs_connection_struct *)
-		malloc(sizeof(struct vfs_connection_struct));
-
-	    if (vconn == NULL) {
-		DEBUG(0, ("No memory to create vfs_connection_struct"));
-		return NULL;
-	    }
-
-	    ZERO_STRUCTP(vconn);
-
-	    /* Copy across relevant data from connection struct */
-
-	    vconn->printer = conn->printer;
-	    vconn->ipc = conn->ipc;
-	    vconn->read_only = conn->read_only;
-	    vconn->admin_user = conn->admin_user;
-
-	    pstrcpy(vconn->dirpath, conn->dirpath);
-	    pstrcpy(vconn->connectpath, conn->connectpath);
-	    pstrcpy(vconn->origpath, conn->origpath);
-
-	    pstrcpy(vconn->service, service);
-	    pstrcpy(vconn->user, conn->user);
-
-	    vconn->uid = conn->uid;
-	    vconn->gid = conn->gid;
-	    vconn->ngroups = conn->ngroups;
-	    vconn->groups = (gid_t *)malloc(conn->ngroups * sizeof(gid_t));
-	    if (vconn->groups != NULL) {
-		memcpy(vconn->groups, conn->groups, 
-		       conn->ngroups * sizeof(gid_t));
-	    }
-
-	    /* Call connect hook */
-	    
-	    if (conn->vfs_ops.connect(vconn, service, user) < 0) {
-		return NULL;
-	    }
-	}
-	
 	return(conn);
 }
 
@@ -576,30 +569,13 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	extern int Client;
 	DirCacheFlush(SNUM(conn));
 
 	unbecome_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,client_addr(Client),
+				 remote_machine,conn->client_address,
 				 lp_servicename(SNUM(conn))));
-
-	if (conn->vfs_ops.disconnect != NULL) {
-
-	    /* Call disconnect hook */
-	    
-	    conn->vfs_ops.disconnect();
-	    
-	    /* Free vfs_connection_struct */
-	    
-	    if (conn->vfs_conn != NULL) {
-		if (conn->vfs_conn->groups != NULL) {
-		    free(conn->vfs_conn->groups);
-		}
-		free(conn->vfs_conn);
-	    }
-	}
 
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
@@ -632,5 +608,3 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	
 	conn_free(conn);
 }
-
-

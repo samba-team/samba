@@ -37,12 +37,12 @@ static int rp_timeout = 5;
 static time_t rp_time = 0;
 static char *rp_buffer = NULL;
 static BOOL predict_skip=False;
-extern time_t smb_last_time;
+extern struct timeval smb_last_time;
 
 /****************************************************************************
 handle read prediction on a file
 ****************************************************************************/
-ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num)
+ssize_t read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num)
 {
   ssize_t ret = 0;
   ssize_t possible = rp_length - (offset - rp_offset);
@@ -53,7 +53,7 @@ ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char *
   if (fd == rp_fd && 
       offset >= rp_offset && 
       possible>0 &&
-      smb_last_time-rp_time < rp_timeout)
+      smb_last_time.tv_secs - rp_time < rp_timeout)
   {
     ret = possible;
     if (buf)
@@ -70,7 +70,7 @@ ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char *
 
     /* Find the end of the file - ensure we don't
        read predict beyond it. */
-    if(fsp->conn->vfs_ops.fstat(fd,&rp_stat) < 0)
+    if(sys_fstat(fd,&rp_stat) < 0)
     {
       DEBUG(0,("read-prediction failed on fstat. Error was %s\n", strerror(errno)));
       predict_skip = True;
@@ -95,7 +95,7 @@ ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char *
 /****************************************************************************
 pre-read some data
 ****************************************************************************/
-void do_read_prediction(connection_struct *conn)
+void do_read_prediction(void)
 {
   static size_t readsize = 0;
 
@@ -134,13 +134,13 @@ void do_read_prediction(connection_struct *conn)
 	}
     }
 
-  if (conn->vfs_ops.lseek(rp_fd,rp_offset,SEEK_SET) != rp_offset) {
+  if (sys_lseek(rp_fd,rp_offset,SEEK_SET) != rp_offset) {
     rp_fd = -1;
     rp_predict_fd = -1;
     return;
   }
 
-  rp_length = conn->vfs_ops.read(rp_fd,rp_buffer,rp_predict_length);
+  rp_length = read(rp_fd,rp_buffer,rp_predict_length);
   rp_time = time(NULL);
   if (rp_length < 0)
     rp_length = 0;

@@ -26,7 +26,6 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern fstring remote_machine;
-extern pstring global_myname;
 extern BOOL use_mangled_map;
 
 static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
@@ -97,7 +96,12 @@ static int global_stat_cache_hits;
 
 void print_stat_cache_statistics(void)
 {
-  double eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
+  double eff;
+
+  if(global_stat_cache_lookups == 0)
+    return;
+
+  eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
 
   DEBUG(0,("stat cache stats: lookups = %d, hits = %d, misses = %d, \
 stat cache was %f%% effective.\n", global_stat_cache_lookups,
@@ -230,9 +234,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
  Return True if we translated (and did a scuccessful stat on) the entire name.
 *****************************************************************************/
 
-static BOOL stat_cache_lookup(struct connection_struct *conn, char *name, 
-			      char *dirpath, char **start, 
-			      SMB_STRUCT_STAT *pst)
+static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
@@ -285,7 +287,7 @@ static BOOL stat_cache_lookup(struct connection_struct *conn, char *name,
    * and then promote it to the top.
    */
 
-  if(conn->vfs_ops.stat(longest_hit->translated_name, pst) != 0) {
+  if(dos_stat( longest_hit->translated_name, pst) != 0) {
     /*
      * Discard this entry.
      */
@@ -310,35 +312,6 @@ static BOOL stat_cache_lookup(struct connection_struct *conn, char *name,
 }
 
 /****************************************************************************
- this routine converts from the dos and dfs namespace to the unix namespace.
-****************************************************************************/
-BOOL unix_dfs_convert(char *name,connection_struct *conn,
-				char *saved_last_component, 
-				BOOL *bad_path, SMB_STRUCT_STAT *pst)
-{
-	pstring local_path;
-
-	DEBUG(10,("unix_dfs_convert: %s\n", name));
-
-	if (name != NULL &&
-	    under_dfs(conn, name, local_path, sizeof(local_path)))
-	{
-		DEBUG(10,("%s is in dfs map.\n", name));
-
-		/* check for our own name */
-		if (StrCaseCmp(global_myname, name+1) > 0)
-		{
-			return False;
-		}
-
-		pstrcpy(name, local_path);
-
-		DEBUG(10,("removed name: %s\n", name));
-	}
-	return unix_convert(name, conn, saved_last_component, bad_path, pst);
-}
-
-/****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format
 changes etc.
@@ -359,15 +332,14 @@ used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
 ****************************************************************************/
-BOOL unix_convert(char *name,connection_struct *conn,
-				char *saved_last_component, 
-				BOOL *bad_path, SMB_STRUCT_STAT *pst)
+
+BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
+                  BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
   SMB_STRUCT_STAT st;
   char *start, *end;
   pstring dirpath;
   pstring orig_path;
-  int saved_errno;
   BOOL component_was_mangled = False;
   BOOL name_has_wildcard = False;
 #if 0
@@ -443,7 +415,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
 
       for (s=name2 ; *s ; s++)
         if (!issafe(*s)) *s = '_';
-      pstrcpy(name,(char *)mktemp(name2));	  
+      pstrcpy(name,(char *)smbd_mktemp(name2));	  
     }      
     return(True);
   }
@@ -463,7 +435,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
 
   pstrcpy(orig_path, name);
 
-  if(stat_cache_lookup(conn, name, dirpath, &start, &st)) {
+  if(stat_cache_lookup( name, dirpath, &start, &st)) {
     if(pst)
       *pst = st;
     return True;
@@ -473,15 +445,13 @@ BOOL unix_convert(char *name,connection_struct *conn,
    * stat the name - if it exists then we are all done!
    */
 
-  if (conn->vfs_ops.stat(name,&st) == 0) {
+  if (dos_stat(name,&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
     if(pst)
       *pst = st;
     return(True);
   }
-
-  saved_errno = errno;
 
   DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
         name, dirpath, start));
@@ -492,7 +462,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
    */
 
   if (case_sensitive && !is_mangled(name) && 
-      !lp_strip_dot() && !use_mangled_map && (saved_errno != ENOENT))
+      !lp_strip_dot() && !use_mangled_map)
     return(False);
 
   if(strchr(start,'?') || strchr(start,'*'))
@@ -541,8 +511,7 @@ BOOL unix_convert(char *name,connection_struct *conn,
       /* 
        * Check if the name exists up to this point.
        */
-
-      if (conn->vfs_ops.stat(name, &st) == 0) {
+      if (dos_stat(name, &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
          * the last part of the path for it to be OK.
@@ -694,7 +663,7 @@ BOOL check_name(char *name,connection_struct *conn)
   if (!lp_symlinks(SNUM(conn)))
     {
       SMB_STRUCT_STAT statbuf;
-      if ( (conn->vfs_ops.lstat(dos_to_unix(name,False),&statbuf) != -1) &&
+      if ( (dos_lstat(name,&statbuf) != -1) &&
           (S_ISLNK(statbuf.st_mode)) )
         {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
@@ -758,7 +727,8 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
 	continue;
 
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,SNUM(conn))) continue;
+      if (!name_map_mangle(name2,False,True,SNUM(conn)))
+        continue;
 
       if ((mangled && mangled_equal(name,name2))
 	  || fname_equal(name, name2))

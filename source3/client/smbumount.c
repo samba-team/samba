@@ -23,20 +23,24 @@
 #undef SMB_IOC_GETMOUNTUID
 #define	SMB_IOC_GETMOUNTUID		_IOR('u', 1, __kernel_uid_t)
 
-static char *progname;
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW     0400000
+#endif
 
 static void
 usage(void)
 {
-        printf("usage: %s mount-point\n", progname);
+        printf("usage: smbumount mountpoint\n");
 }
 
 static int
 umount_ok(const char *mount_point)
 {
-        int fid = open(mount_point, O_RDONLY, 0);
+	/* we set O_NOFOLLOW to prevent users playing games with symlinks to
+	   umount filesystems they don't own */
+        int fid = open(mount_point, O_RDONLY|O_NOFOLLOW, 0);
         __kernel_uid_t mount_uid;
-
+	
         if (fid == -1) {
                 fprintf(stderr, "Could not open %s: %s\n",
                         mount_point, strerror(errno));
@@ -49,7 +53,7 @@ umount_ok(const char *mount_point)
                 return -1;
         }
 
-        if (   (getuid() != 0)
+        if ((getuid() != 0)
             && (mount_uid != getuid())) {
                 fprintf(stderr, "You are not allowed to umount %s\n",
                         mount_point);
@@ -63,15 +67,14 @@ umount_ok(const char *mount_point)
 /* Make a canonical pathname from PATH.  Returns a freshly malloced string.
    It is up the *caller* to ensure that the PATH is sensible.  i.e.
    canonicalize ("/dev/fd0/.") returns "/dev/fd0" even though ``/dev/fd0/.''
-   is not a legal pathname for ``/dev/fd0.''  Anything we cannot parse
+   is not a legal pathname for ``/dev/fd0''  Anything we cannot parse
    we return unmodified.   */
-char *
+static char *
 canonicalize (char *path)
 {
 	char *canonical = malloc (PATH_MAX + 1);
 
-	if (strlen(path) > PATH_MAX)
-	{
+	if (strlen(path) > PATH_MAX) {
 		fprintf(stderr, "Mount point string too long\n");
 		return NULL;
 	}
@@ -91,14 +94,10 @@ int
 main(int argc, char *argv[])
 {
         int fd;
-
         char* mount_point;
-
         struct mntent *mnt;
         FILE* mtab;
         FILE* new_mtab;
-
-        progname = argv[0];
 
         if (argc != 2) {
                 usage();
@@ -106,7 +105,7 @@ main(int argc, char *argv[])
         }
 
         if (geteuid() != 0) {
-                fprintf(stderr, "%s must be installed suid root\n", progname);
+                fprintf(stderr, "smbumount must be installed suid root\n");
                 exit(1);
         }
 

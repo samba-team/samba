@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell 1994-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,49 +33,50 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
+extern struct cli_state *smb_cli;
+
 extern FILE* out_hnd;
 
 
 /****************************************************************************
 server get info query
 ****************************************************************************/
-BOOL net_srv_get_info(struct client_info *info,
-		uint32 info_level,
-		SRV_INFO_CTR *ctr)
+void cmd_srv_query_info(struct client_info *info)
 {
 	fstring dest_srv;
+	fstring tmp;
+	SRV_INFO_CTR ctr;
+	uint32 info_level = 101;
 
 	BOOL res = True;
+
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	DEBUG(4,("net_srv_get_info: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
-
-	/* send info level: receive requested info.  hopefully. */
-	res = res ? srv_net_srv_get_info(dest_srv, info_level, ctr) : False;
-
-	return res;
-}
-
-/****************************************************************************
-server get info query
-****************************************************************************/
-void cmd_srv_query_info(struct client_info *info, int argc, char *argv[])
-{
-	uint32 info_level = 101;
-	SRV_INFO_CTR ctr;
-
-	bzero(&ctr, sizeof(ctr));
-
-	if (argc > 1)
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
-	if (net_srv_get_info(info, info_level, &ctr))
+	DEBUG(4,("cmd_srv_query_info: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
+
+	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
+
+	/* send info level: receive requested info.  hopefully. */
+	res = res ? do_srv_net_srv_get_info(smb_cli,
+				dest_srv, info_level, &ctr) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res)
 	{
 		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
 
@@ -90,82 +91,20 @@ void cmd_srv_query_info(struct client_info *info, int argc, char *argv[])
 }
 
 /****************************************************************************
-server enum transports
-****************************************************************************/
-BOOL msrpc_srv_enum_tprt( const char* dest_srv,
-				uint32 info_level,
-				SRV_TPRT_INFO_CTR *ctr,
-				TPRT_INFO_FN(tprt_fn))
-{
-	BOOL res = True;
-	BOOL res1 = True;
-
-	ENUM_HND hnd;
-
-	hnd.ptr_hnd = 1;
-	hnd.handle = 0;
-
-	/* enumerate transports on server */
-	res1 = res ? srv_net_srv_tprt_enum(dest_srv, 
-	            info_level, ctr, 0xffffffff, &hnd) : False;
-
-	tprt_fn(ctr);
-
-	free_srv_tprt_ctr(ctr);
-
-	return res1;
-}
-
-static void srv_display_tprt_ctr(const SRV_TPRT_INFO_CTR *ctr)
-{
-	display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , ctr);
-	display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
-	display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
-}
-
-/****************************************************************************
-server enum transports
-****************************************************************************/
-void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[])
-{
-	fstring dest_srv;
-	SRV_TPRT_INFO_CTR ctr;
-	uint32 info_level = 0;
-
-	bzero(&ctr, sizeof(ctr));
-
-	fstrcpy(dest_srv, "\\\\");
-	fstrcat(dest_srv, info->dest_host);
-	strupper(dest_srv);
-
-	if (argc > 1)
-	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
-	}
-
-	DEBUG(4,("cmd_srv_enum_tprt: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
-
-	/* enumerate transports on server */
-	msrpc_srv_enum_tprt(dest_srv, 
-	            info_level, &ctr, 
-	            srv_display_tprt_ctr);
-}
-
-/****************************************************************************
 server enum connections
 ****************************************************************************/
-void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
+void cmd_srv_enum_conn(struct client_info *info)
 {
 	fstring dest_srv;
 	fstring qual_srv;
+	fstring tmp;
 	SRV_CONN_INFO_CTR ctr;
 	ENUM_HND hnd;
 	uint32 info_level = 0;
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(qual_srv, "\\\\");
 	fstrcat(qual_srv, info->myhostname);
@@ -175,19 +114,25 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (argc > 1)
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_conn: server:%s info level: %d\n",
 				dest_srv, (int)info_level));
 
+	DEBUG(5, ("cmd_srv_enum_conn: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
+
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate connections on server */
-	res = res ? srv_net_srv_conn_enum(dest_srv, qual_srv,
+	res = res ? do_srv_net_srv_conn_enum(smb_cli,
+				dest_srv, qual_srv,
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
 	if (res)
@@ -196,6 +141,9 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 		display_srv_conn_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
 		display_srv_conn_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -210,42 +158,51 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 server enum shares
 ****************************************************************************/
-void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
+void cmd_srv_enum_shares(struct client_info *info)
 {
 	fstring dest_srv;
-	SRV_SHARE_INFO_CTR ctr;
+	fstring tmp;
+	SRV_R_NET_SHARE_ENUM r_o;
 	ENUM_HND hnd;
 	uint32 info_level = 1;
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
-
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (argc > 1)
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_shares: server:%s info level: %d\n",
 				dest_srv, (int)info_level));
 
+	DEBUG(5, ("cmd_srv_enum_shares: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
+
 	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
-	res = res ? srv_net_srv_share_enum(dest_srv, 
-	            info_level, &ctr, 0xffffffff, &hnd) : False;
+	res = res ? do_srv_net_srv_share_enum(smb_cli,
+				dest_srv, 
+	            info_level, &r_o, 0xffffffff, &hnd) : False;
 
 	if (res)
 	{
-		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
-		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &r_o.ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &r_o.ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &r_o.ctr);
+		free_srv_r_net_share_enum(&r_o);
 	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -260,42 +217,44 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 server enum sessions
 ****************************************************************************/
-void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
+void cmd_srv_enum_sess(struct client_info *info)
 {
 	fstring dest_srv;
+	fstring tmp;
 	SRV_SESS_INFO_CTR ctr;
 	ENUM_HND hnd;
 	uint32 info_level = 0;
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (argc > 1)
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_sess: server:%s info level: %d\n",
 				dest_srv, (int)info_level));
 
+	DEBUG(5, ("cmd_srv_enum_sess: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
+
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate sessions on server */
-	res = res ? srv_net_srv_sess_enum(dest_srv, NULL, NULL,
-	                         info_level, &ctr, 0x1000, &hnd) : False;
+	res = res ? do_srv_net_srv_sess_enum(smb_cli,
+				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
-	if (res)
-	{
-		display_srv_sess_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
-		display_srv_sess_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_sess_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
-	}
+	/* close the session */
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -310,35 +269,42 @@ void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 server enum files
 ****************************************************************************/
-void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
+void cmd_srv_enum_files(struct client_info *info)
 {
 	fstring dest_srv;
+	fstring tmp;
 	SRV_FILE_INFO_CTR ctr;
 	ENUM_HND hnd;
 	uint32 info_level = 3;
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (argc > 1)
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_files: server:%s info level: %d\n",
 				dest_srv, (int)info_level));
 
+	DEBUG(5, ("cmd_srv_enum_files: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
+
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate files on server */
-	res = res ? srv_net_srv_file_enum(dest_srv, NULL, 0,
-	                info_level, &ctr, 0x1000, &hnd) : False;
+	res = res ? do_srv_net_srv_file_enum(smb_cli,
+				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
+
 
 	if (res)
 	{
@@ -347,39 +313,8 @@ void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 		display_srv_file_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 
-	if (res)
-	{
-		DEBUG(5,("cmd_srv_enum_files: query succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5,("cmd_srv_enum_files: query failed\n"));
-	}
-}
-
-/****************************************************************************
-display remote time
-****************************************************************************/
-void cmd_time(struct client_info *info, int argc, char *argv[])
-{
-	fstring dest_srv;
-	TIME_OF_DAY_INFO tod;
-	BOOL res = True;
-
-	fstrcpy(dest_srv, "\\\\");
-	fstrcat(dest_srv, info->dest_host);
-	strupper(dest_srv);
-
-	DEBUG(4,("cmd_time: server:%s\n", dest_srv));
-
-	/* enumerate files on server */
-	res = res ? srv_net_remote_tod(dest_srv, &tod) : False;
-
-	if (res)
-	{
-		fprintf(out_hnd, "\tRemote Time:\t%s\n\n",
-			http_timestring(tod.elapsedt));
-	}
+	/* close the session */
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -390,3 +325,4 @@ void cmd_time(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_srv_enum_files: query failed\n"));
 	}
 }
+

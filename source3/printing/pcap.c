@@ -9,6 +9,8 @@
    Re-written again by Andrew Tridgell
 
    Modified for SVID support by Norm Jacobs, 1997
+
+   Modified for CUPS support by Michael Sweet, 1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +56,9 @@
  *
  *  Modified to call SVID/XPG4 support if printcap name is set to "lpstat"
  *  in smb.conf under Solaris.
+ *
+ *  Modified to call CUPS support if printcap name is set to "cups"
+ *  in smb.conf.
  */
 
 #include "includes.h"
@@ -69,7 +74,7 @@ extern int DEBUGLEVEL;
     ****************************************** */
 static int strlocate(char *xpLine,char *xpS)
 {
-	int iS,iL,i,iRet;
+	int iS,iL,iRet;
 	char *p;
 	iS = strlen(xpS);
 	iL = strlen(xpLine);
@@ -91,9 +96,9 @@ static int strlocate(char *xpLine,char *xpS)
 /* ******************************************************************* */
 /* *    Scan qconfig and search all virtual printer (device printer) * */
 /* ******************************************************************* */
-static void ScanQconfig_fn(char *psz,void (*fn)())
+static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 {
-	int iLg,iEtat;
+	int iEtat;
 	FILE *pfile;
 	char *line,*p;
 	pstring name,comment;
@@ -262,6 +267,11 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	return(False);
       }
 
+#ifdef HAVE_LIBCUPS
+    if (strequal(psz, "cups"))
+       return (cups_printername_ok(pszPrintername));
+#endif /* HAVE_LIBCUPS */
+
 #ifdef SYSV
     if (strequal(psz, "lpstat"))
        return (sysv_printername_ok(pszPrintername));
@@ -328,6 +338,13 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       DEBUG(0,( "No printcap file name configured!\n"));
       return;
     }
+
+#ifdef HAVE_LIBCUPS
+    if (strequal(psz, "cups")) {
+      cups_printer_fn(fn);
+      return;
+    }
+#endif /* HAVE_LIBCUPS */
 
 #ifdef SYSV
     if (strequal(psz, "lpstat")) {

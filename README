@@ -1,9 +1,12 @@
-This is version 2.1.0alphaX of Samba, the free SMB and CIFS client and
+This is version 2.0.X of Samba, the free SMB and CIFS client and
 server for unix and other operating systems. Samba is maintained by
 the Samba Team, who support the original author, Andrew Tridgell.
 
 >>>> Please read THE WHOLE of this file as it gives important information
 >>>> about the configuration and use of Samba.
+
+NOTE: Installation instructions may be found in 
+      docs/textdocs/UNIX_INSTALL.txt
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
@@ -136,14 +139,7 @@ available on the web page.
 
 If you would like to help with the documentation (and we _need_ help!)
 then have a look at the mailing list samba-docs, archived at
-http://samba.org/listproc/samba-docs.
-
-
-FTP SITE
---------
-
-Please use a mirror site! The list of mirrors is in docs/MIRRORS.txt.
-The master ftp site is samba.org in the directory pub/samba.
+http://lists.samba.org/
 
 
 MAILING LIST
@@ -161,7 +157,7 @@ body of "subscribe samba-announce Your Name". All announcements also
 go to the samba list.
 
 For details of other Samba mailing lists and for access to archives, see
-http://samba.org/listproc.
+http://lists.samba.org/
 
 
 NEWS GROUP
@@ -185,7 +181,4 @@ http://samba.org/samba/
 As well as general information and documentation, this also has searchable 
 archives of the mailing list and a user survey that shows who else is using
 this package. Have you registered with the survey yet? :-)
-
-It is maintained by Paul Blackman (thanks Paul!). You can contact him
-as ictinus@samba.org.
 

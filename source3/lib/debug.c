@@ -75,7 +75,6 @@
  *  debugf        - Debug file name.
  *  append_log    - If True, then the output file will be opened in append
  *                  mode.
- *  timestamp_log - 
  *  DEBUGLEVEL    - System-wide debug message limit.  Messages with message-
  *                  levels higher than DEBUGLEVEL will not be processed.
  */
@@ -83,7 +82,6 @@
 FILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
-BOOL    timestamp_log = True;
 int     DEBUGLEVEL = 1;
 
 
@@ -114,51 +112,40 @@ static int     debug_count    = 0;
 static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
-static int     format_pos     = 0;
+static size_t     format_pos     = 0;
 
 
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
 
-/* ************************************************************************** **
- * tells us if interactive logging was requested
- * ************************************************************************** **
- */
-BOOL dbg_interactive(void)
-{
-	return stdout_logging;
-}
-
-#if defined(SIGUSR2) && !defined(MEM_MAN)
+#if defined(SIGUSR2)
 /* ************************************************************************** **
  * catch a sigusr2 - decrease the debug log level.
  * ************************************************************************** **
  */
 void sig_usr2( int sig )
   {
-  BlockSignals( True, SIGUSR2 );
-
   DEBUGLEVEL--;
   if( DEBUGLEVEL < 0 )
     DEBUGLEVEL = 0;
 
   DEBUG( 0, ( "Got SIGUSR2; set debug level to %d.\n", DEBUGLEVEL ) );
 
-  BlockSignals( False, SIGUSR2 );
+#if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+#endif
 
   } /* sig_usr2 */
 #endif /* SIGUSR2 */
 
-#if defined(SIGUSR1) && !defined(MEM_MAN)
+#if defined(SIGUSR1)
 /* ************************************************************************** **
  * catch a sigusr1 - increase the debug log level. 
  * ************************************************************************** **
  */
 void sig_usr1( int sig )
   {
-  BlockSignals( True, SIGUSR1 );
 
   DEBUGLEVEL++;
 
@@ -167,8 +154,9 @@ void sig_usr1( int sig )
 
   DEBUG( 0, ( "Got SIGUSR1; set debug level to %d.\n", DEBUGLEVEL ) );
 
-  BlockSignals( False, SIGUSR1 );
+#if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+#endif
 
   } /* sig_usr1 */
 #endif /* SIGUSR1 */
@@ -260,11 +248,11 @@ void force_check_log_size( void )
  * ************************************************************************** **
  */
 static void check_log_size( void )
-  {
+{
   int         maxlog;
   SMB_STRUCT_STAT st;
 
-  if( debug_count++ < 100 || getuid() != 0 )
+  if( debug_count++ < 100 || geteuid() != 0 )
     return;
 
   maxlog = lp_max_log_size() * 1024;
@@ -276,7 +264,7 @@ static void check_log_size( void )
     (void)fclose( dbf );
     dbf = NULL;
     reopen_logs();
-    if( dbf && file_size( debugf ) > maxlog )
+    if( dbf && get_file_size( debugf ) > maxlog )
       {
       pstring name;
 
@@ -287,8 +275,23 @@ static void check_log_size( void )
       reopen_logs();
       }
     }
+  /*
+   * Here's where we need to panic if dbf == NULL..
+   */
+  if(dbf == NULL) {
+    dbf = sys_fopen( "/dev/console", "w" );
+    if(dbf) {
+      DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
+            debugf ));
+    } else {
+      /*
+       * We cannot continue without a debug file handle.
+       */
+      abort();
+    }
+  }
   debug_count = 0;
-  } /* check_log_size */
+} /* check_log_size */
 
 /* ************************************************************************** **
  * Write an debug message on the debugfile.
@@ -382,6 +385,8 @@ va_dcl
     }
 #endif
   
+  check_log_size();
+
 #ifdef WITH_SYSLOG
   if( !lp_syslog_only() )
 #endif
@@ -396,8 +401,6 @@ va_dcl
     va_end( ap );
     (void)fflush( dbf );
     }
-
-  check_log_size();
 
   errno = old_errno;
 
@@ -439,8 +442,8 @@ static void bufr_print( void )
  */
 static void format_debug_text( char *msg )
   {
-  int i;
-  BOOL timestamp = (timestamp_log && !stdout_logging && (lp_timestamp_logs() || 
+  size_t i;
+  BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || 
 					!(lp_loaded())));
 
   for( i = 0; msg[i]; i++ )
@@ -510,10 +513,13 @@ void dbgflush( void )
  *
  * ************************************************************************** **
  */
+
 BOOL dbghdr( int level, char *file, char *func, int line )
-  {
-  if( format_pos )
-    {
+{
+  /* Ensure we don't lose any real errno value. */
+  int old_errno = errno;
+
+  if( format_pos ) {
     /* This is a fudge.  If there is stuff sitting in the format_bufr, then
      * the *right* thing to do is to call
      *   format_debug_text( "\n" );
@@ -524,7 +530,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
      * that a new header is *not* desired.
      */
     return( True );
-    }
+  }
 
 #ifdef WITH_SYSLOG
   /* Set syslog_level. */
@@ -538,15 +544,32 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   /* Print the header if timestamps are turned on.  If parameters are
    * not yet loaded, then default to timestamps on.
    */
-  if( timestamp_log && (lp_timestamp_logs() || !(lp_loaded()) ))
-    {
-    /* Print it all out at once to prevent split syslog output. */
-    (void)Debug1( "[%s, %d] %s:%s(%d)\n",
-                  timestring(), level, file, func, line );
-    }
+  if( lp_timestamp_logs() || !(lp_loaded()) ) {
+    char header_str[200];
 
+	header_str[0] = '\0';
+
+	if( lp_debug_pid())
+	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
+
+	if( lp_debug_uid()) {
+      size_t hs_len = strlen(header_str);
+	  slprintf(header_str + hs_len,
+               sizeof(header_str) - 1 - hs_len,
+			   ", effective(%u, %u), real(%u, %u)",
+               (unsigned int)geteuid(), (unsigned int)getegid(),
+			   (unsigned int)getuid(), (unsigned int)getgid()); 
+	}
+  
+    /* Print it all out at once to prevent split syslog output. */
+    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+                  timestring(lp_debug_hires_timestamp()), level,
+				  header_str, file, func, line );
+  }
+
+  errno = old_errno;
   return( True );
-  } /* dbghdr */
+}
 
 /* ************************************************************************** **
  * Add text to the body of the "current" debug message via the format buffer.
@@ -595,164 +618,5 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   } /* dbgtext */
 
 #endif
-
-dbg_Token dbg_char2token( dbg_Token *state, int c )
-  /* ************************************************************************ **
-   * Parse input one character at a time.
-   *
-   *  Input:  state - A pointer to a token variable.  This is used to
-   *                  maintain the parser state between calls.  For
-   *                  each input stream, you should set up a separate
-   *                  state variable and initialize it to dbg_null.
-   *                  Pass a pointer to it into this function with each
-   *                  character in the input stream.  See dbg_test()
-   *                  for an example.
-   *          c     - The "current" character in the input stream.
-   *
-   *  Output: A token.
-   *          The token value will change when delimiters are found,
-   *          which indicate a transition between syntactical objects.
-   *          Possible return values are:
-   *
-   *          dbg_null        - The input character was an end-of-line.
-   *                            This resets the parser to its initial state
-   *                            in preparation for parsing the next line.
-   *          dbg_eof         - Same as dbg_null, except that the character
-   *                            was an end-of-file.
-   *          dbg_ignore      - Returned for whitespace and delimiters.
-   *                            These lexical tokens are only of interest
-   *                            to the parser.
-   *          dbg_header      - Indicates the start of a header line.  The
-   *                            input character was '[' and was the first on
-   *                            the line.
-   *          dbg_timestamp   - Indicates that the input character was part
-   *                            of a header timestamp.
-   *          dbg_level       - Indicates that the input character was part
-   *                            of the debug-level value in the header.
-   *          dbg_sourcefile  - Indicates that the input character was part
-   *                            of the sourcefile name in the header.
-   *          dbg_function    - Indicates that the input character was part
-   *                            of the function name in the header.
-   *          dbg_lineno      - Indicates that the input character was part
-   *                            of the DEBUG call line number in the header.
-   *          dbg_message     - Indicates that the input character was part
-   *                            of the DEBUG message text.
-   *
-   * ************************************************************************ **
-   */
-  {
-  /* The terminating characters that we see will greatly depend upon
-   * how they are read.  For example, if gets() is used instead of
-   * fgets(), then we will not see newline characters.  A lot also
-   * depends on the calling function, which may handle terminators
-   * itself.
-   *
-   * '\n', '\0', and EOF are all considered line terminators.  The
-   * dbg_eof token is sent back if an EOF is encountered.
-   *
-   * Warning:  only allow the '\0' character to be sent if you are
-   *           using gets() to read whole lines (thus replacing '\n'
-   *           with '\0').  Sending '\0' at the wrong time will mess
-   *           up the parsing.
-   */
-  switch( c )
-    {
-    case EOF:
-      *state = dbg_null;   /* Set state to null (initial state) so */
-      return( dbg_eof );   /* that we can restart with new input.  */
-    case '\n':
-    case '\0':
-      *state = dbg_null;   /* A newline or eoln resets to the null state. */
-      return( dbg_null );
-    }
-
-  /* When within the body of the message, only a line terminator
-   * can cause a change of state.  We've already checked for line
-   * terminators, so if the current state is dbg_msgtxt, simply
-   * return that as our current token.
-   */
-  if( dbg_message == *state )
-    return( dbg_message );
-
-  /* If we are at the start of a new line, and the input character 
-   * is an opening bracket, then the line is a header line, otherwise
-   * it's a message body line.
-   */
-  if( dbg_null == *state )
-    {
-    if( '[' == c )
-      {
-      *state = dbg_timestamp;
-      return( dbg_header );
-      }
-    *state = dbg_message;
-    return( dbg_message );
-    }
-
-  /* We've taken care of terminators, text blocks and new lines.
-   * The remaining possibilities are all within the header line
-   * itself.
-   */
-
-  /* Within the header line, whitespace can be ignored *except*
-   * within the timestamp.
-   */
-  if( isspace( c ) )
-    {
-    /* Fudge.  The timestamp may contain space characters. */
-    if( (' ' == c) && (dbg_timestamp == *state) )
-      return( dbg_timestamp );
-    /* Otherwise, ignore whitespace. */
-    return( dbg_ignore );
-    }
-
-  /* Okay, at this point we know we're somewhere in the header.
-   * Valid header *states* are: dbg_timestamp, dbg_level,
-   * dbg_sourcefile, dbg_function, and dbg_lineno.
-   */
-  switch( c )
-    {
-    case ',':
-      if( dbg_timestamp == *state )
-        {
-        *state = dbg_level;
-        return( dbg_ignore );
-        }
-      break;
-    case ']':
-      if( dbg_level == *state )
-        {
-        *state = dbg_sourcefile;
-        return( dbg_ignore );
-        }
-      break;
-    case ':':
-      if( dbg_sourcefile == *state )
-        {
-        *state = dbg_function;
-        return( dbg_ignore );
-        }
-      break;
-    case '(':
-      if( dbg_function == *state )
-        {
-        *state = dbg_lineno;
-        return( dbg_ignore );
-        }
-      break;
-    case ')':
-      if( dbg_lineno == *state )
-        {
-        *state = dbg_null;
-        return( dbg_ignore );
-        }
-      break;
-    }
-
-  /* If the previous block did not result in a state change, then
-   * return the current state as the current token.
-   */
-  return( *state );
-  } /* dbg_char2token */
 
 /* ************************************************************************** */

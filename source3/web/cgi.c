@@ -333,7 +333,7 @@ handle a http authentication line
 static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
-	const struct passwd *pass = NULL;
+	struct passwd *pass = NULL;
 	BOOL ret = False;
 
 	if (strncasecmp(line,"Basic ", 6)) {
@@ -386,20 +386,7 @@ static BOOL cgi_handle_authorization(char *line)
 			 * We have not authenticated as root,
 			 * become the user *permanently*.
 			 */
-			if(!become_user_permanently(pass->pw_uid, pass->pw_gid)) {
-				/*
-				 * Always give the same error so a cracker
-				 * cannot tell why we fail.
-				 */
-				cgi_setup_error("401 Bad Authorization", "",
-	                "username/password must be supplied");
-		        return False;
-			}
-
-			/*
-			 * On exit from here we are the authenticated
-			 * user - no way back.
-			 */
+			become_user_permanently(pass->pw_uid, pass->pw_gid);
 		}
 
 		/* Save the users name */
@@ -571,9 +558,9 @@ void cgi_setup(char *rootdir, int auth_required)
 		*p = 0;
 	}
 
-	string_sub(url, "/swat/", "");
+	string_sub(url, "/swat/", "", 0);
 
-	if (strstr(url,"..")==0 && file_exist(url, NULL)) {
+	if (url[0] != '/' && strstr(url,"..")==0 && file_exist(url, NULL)) {
 		cgi_download(url);
 	}
 

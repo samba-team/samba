@@ -74,10 +74,16 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	/* Strip \PIPE\ off the name. */
 	pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
 
+	/*
+	 * Hack for NT printers... JRA.
+	 */
+    if(should_fail_next_srvsvc_open(fname))
+      return(ERROR(ERRSRV,ERRaccess));
+
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
 	/* can be opened and add it in after the open. */
 	DEBUG(3,("Known pipe %s opening.\n",fname));
-	smb_ofun |= 0x10;		/* Add Create it not exists flag */
+	smb_ofun |= FILE_CREATE_IF_NOT_EXIST;
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
 	if (!p) return(ERROR(ERRSRV,ERRnofids));
@@ -105,45 +111,37 @@ int reply_open_pipe_and_X(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a write 
-
-  This code is basically stolen from reply_write with some
-  wrinkles to handle pipes.
+  reply to a write on a pipe
 ****************************************************************************/
-int reply_pipe_write(char *inbuf,char *outbuf,int length,int bufsize)
+int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	size_t numtowrite = SVAL(inbuf,smb_vwv1);
-	int nwritten = -1;
+	int nwritten;
+	int outsize;
 	char *data;
-	size_t outsize;
 
-	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+	if (!p)
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	data = smb_buf(inbuf) + 3;
 
 	if (numtowrite == 0)
-	{
 		nwritten = 0;
-	}
 	else
-	{
-		nwritten = write_pipe(p, data, numtowrite);
-	}
+		nwritten = write_to_pipe(p, data, numtowrite);
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
-	{
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
-	}
   
 	outsize = set_message(outbuf,1,0,True);
 
 	SSVAL(outbuf,smb_vwv0,nwritten);
-
+  
 	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n",
 		 p->pnum, nwritten));
 
-	return outsize;
+	return(outsize);
 }
 
 /****************************************************************************
@@ -160,23 +158,18 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	int smb_doff = SVAL(inbuf, smb_vwv11);
 	char *data;
 
-	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+	if (!p)
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	data = smb_base(inbuf) + smb_doff;
 
 	if (numtowrite == 0)
-	{
 		nwritten = 0;
-	}
 	else
-	{
-		nwritten = write_pipe(p, data, numtowrite);
-	}
+		nwritten = write_to_pipe(p, data, numtowrite);
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
-	{
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
-	}
   
 	set_message(outbuf,6,0,True);
 
@@ -197,18 +190,24 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
-	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
+	/* we don't use the offset given to use for pipe reads. This
+           is deliberate, instead we always return the next lump of
+           data on the pipe */
+#if 0
+	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
+#endif
 
-	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+	if (!p)
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_pipe(p, data, smb_offs, smb_maxcnt);
+	nread = read_from_pipe(p, data, smb_maxcnt);
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -231,12 +230,13 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	int outsize = set_message(outbuf,0,0,True);
 
-	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+	if (!p)
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
-	if (!close_rpc_pipe_hnd(p, conn)) return(ERROR(ERRDOS,ERRbadfid));
+	if (!close_rpc_pipe_hnd(p, conn))
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	return(outsize);
 }
-

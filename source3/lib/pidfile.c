@@ -39,7 +39,7 @@ pid_t pidfile_pid(char *name)
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
-	fd = open(pidFile, O_NONBLOCK | O_RDWR);
+	fd = sys_open(pidFile, O_NONBLOCK | O_RDWR, 0644);
 	if (fd == -1) {
 		return 0;
 	}
@@ -52,7 +52,7 @@ pid_t pidfile_pid(char *name)
 
 	ret = atoi(pidstr);
 	
-	if (!process_exists(ret)) {
+	if (!process_exists((pid_t)ret)) {
 		goto ok;
 	}
 
@@ -76,14 +76,14 @@ void pidfile_create(char *name)
 	int     fd;
 	char    buf[20];
 	pstring pidFile;
-	int pid;
+	pid_t pid;
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {
 		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
-			 name, pidFile, pid));
+			 name, pidFile, (int)pid));
 		exit(1);
 	}
 
@@ -109,4 +109,3 @@ void pidfile_create(char *name)
 	}
 	/* Leave pid file open & locked for the duration... */
 }
-

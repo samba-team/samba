@@ -1,5 +1,5 @@
 !==
-!== security_level.txt for Samba release 2.1.0prealpha 981204
+!== security_level.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:	Andrew Tridgell
 Updated:	June 27, 1997
@@ -59,16 +59,16 @@ maintain multiple authentication contexts in this way (WinDD is an
 example of an application that does this)
 
 
-Ok, now for share level security. In share level security (the default
-with samba) the client authenticates itself separately for each
-share. It will send a password along with each "tree connection"
-(share mount). It does not explicitly send a username with this
-operation. The client is expecting a password to be associated with
-each share, independent of the user. This means that samba has to work
-out what username the client probably wants to use. It is never
-explicitly sent the username. Some commercial SMB servers such as NT actually
-associate passwords directly with shares in share level security, but
-samba always uses the unix authentication scheme where it is a
+Ok, now for share level security. In share level security the client
+authenticates itself separately for each share. It will send a
+password along with each "tree connection" (share mount). It does not
+explicitly send a username with this operation. The client is
+expecting a password to be associated with each share, independent of
+the user. This means that samba has to work out what username the
+client probably wants to use. It is never explicitly sent the
+username. Some commercial SMB servers such as NT actually associate
+passwords directly with shares in share level security, but samba
+always uses the unix authentication scheme where it is a
 username/password that is authenticated, not a "share/password".
 
 Many clients send a "session setup" even if the server is in share

@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBGROUP_DB
+#ifdef USE_SMBPASS_DB
 
 static int grp_file_lock_depth = 0;
 extern int DEBUGLEVEL;
@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 static void *startsmbfilegrpent(BOOL update)
 {
 	static char s_readbuf[1024];
-	return startfileent(lp_smb_passgrp_file(), s_readbuf, sizeof(s_readbuf),
+	return startfilepwent(lp_smb_passgrp_file(), s_readbuf, sizeof(s_readbuf),
 	                      &grp_file_lock_depth, update);
 }
 
@@ -42,7 +42,7 @@ static void *startsmbfilegrpent(BOOL update)
 
 static void endsmbfilegrpent(void *vp)
 {
-	endfileent(vp, &grp_file_lock_depth);
+	endfilepwent(vp, &grp_file_lock_depth);
 }
 
 /*************************************************************************
@@ -77,8 +77,9 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 	static pstring  user_name;
 	struct passwd *pwfile;
 	pstring		linebuf;
-	char  *p;
+	unsigned char  *p;
 	int            uidval;
+	size_t            linebuf_len;
 
 	if (vp == NULL)
 	{
@@ -91,12 +92,12 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 	/*
 	 * Scan the file, a line at a time.
 	 */
-	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
+	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
 	{
 		/*
 		 * The line we have should be of the form :-
 		 * 
-		 * username:uid:aliasrid1,aliasrid2..:domainrid1,domainrid2..:
+		 * username:uid:domainrid1,domainrid2..:aliasrid1,aliasrid2..:
 		 */
 
 		/*
@@ -104,12 +105,6 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		 * length here - if this ever changes....
 		 */
 		p = strncpyn(user_name, linebuf, sizeof(user_name), ':');
-
-		if (p == NULL)
-		{
-			DEBUG(0,("getsmbfilegrpent: no ':' separator found\n"));
-			continue;
-		}
 
 		/* Go past ':' */
 		p++;
@@ -119,28 +114,12 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		p = Atoic((char *) p, &uidval, ":");
 
 		pw_buf.smb_name = user_name;
-		pw_buf.unix_uid = uidval;
+		pw_buf.smb_userid = uidval;
 
 		/*
-		 * Now get a list of alias RIDs
-		 */
-
-		/* Skip the ':' */
-		p++;
-
-		if (als_rids != NULL && num_alss != NULL)
-		{
-			int i;
-			p = get_numlist(p, als_rids, num_alss);
-			if (p == NULL)
-			{
-				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
-				return NULL;
-			}
-		}
-
-		/*
-		 * Now get a list of group RIDs
+		 * Now get the password value - this should be 32 hex digits
+		 * which are the ascii representations of a 16 byte string.
+		 * Get two at a time and put them into the password.
 		 */
 
 		/* Skip the ':' */
@@ -154,6 +133,28 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 			{
 				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
 				return NULL;
+			}
+			for (i = 0; i < (*num_grps); i++)
+			{
+				(*grp_rids)[i] = pwdb_gid_to_group_rid((*grp_rids)[i]);
+			}
+		}
+
+		/* Skip the ':' */
+		p++;
+
+		if (als_rids != NULL && num_alss != NULL)
+		{
+			int i;
+			p = get_numlist(p, als_rids, num_alss);
+			if (p == NULL)
+			{
+				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
+				return NULL;
+			}
+			for (i = 0; i < (*num_alss); i++)
+			{
+				(*als_rids)[i] = pwdb_gid_to_alias_rid((*als_rids)[i]);
 			}
 		}
 
@@ -191,5 +192,5 @@ struct passgrp_ops *file_initialise_password_grp(void)
 
 #else
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
- void smbpassgroup_dummy_function(void) { } /* stop some compilers complaining */
+ void smbpass_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

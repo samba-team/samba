@@ -38,77 +38,33 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
+extern pstring global_myname;
 extern fstring global_myworkgroup;
-extern fstring global_myname;
 extern int Client;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
-
+unsigned int smb_echo_count = 0;
 
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
 ****************************************************************************/
+
 static void overflow_attack(int len)
 {
-        if( DEBUGLVL( 0 ) )
-          {
-	  dbgtext( "ERROR: Invalid password length %d.\n", len );
-	  dbgtext( "Your machine may be under attack by someone " );
-          dbgtext( "attempting to exploit an old bug.\n" );
-	  dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
-          }
+	if( DEBUGLVL( 0 ) ) {
+		dbgtext( "ERROR: Invalid password length %d.\n", len );
+		dbgtext( "Your machine may be under attack by someone " );
+		dbgtext( "attempting to exploit an old bug.\n" );
+		dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
+	}
 	exit_server("possible attack");
 }
 
 
 /****************************************************************************
-  does _both_ nt->unix and unix->unix username remappings.
-****************************************************************************/
-static void map_nt_and_unix_username(const char *domain, char *user)
-{
-	DOM_NAME_MAP gmep;
-	fstring nt_username;
-
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-   
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
-	{
-		memset(nt_username, 0, sizeof(nt_username));
-		if (domain != NULL)
-		{
-			slprintf(nt_username, sizeof(nt_username)-1, "%s\\%s",
-				 domain, user);
-		}
-		else
-		{
-			fstrcpy(nt_username, user);
-		}
-
-		if (lookupsmbpwntnam(nt_username, &gmep))
-		{
-			fstrcpy(user, gmep.unix_name);
-		}
-	}
-
-	/*
-	 * Pass the user through the unix -> unix user mapping
-	 * function.
-	 */
-
-	(void)map_username(user);
-
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam( user, True);
-}
-
-/****************************************************************************
   reply to an special message 
 ****************************************************************************/
+
 int reply_special(char *inbuf,char *outbuf)
 {
 	int outsize = 4;
@@ -122,13 +78,10 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	*name1 = *name2 = 0;
 	
-	bzero(outbuf,smb_size);
+	memset(outbuf,'\0',smb_size);
 
 	smb_setlen(outbuf,0);
 	
-	DEBUG(20,("NBT message\n"));
-	dump_data(20, inbuf, smb_len(inbuf));
-
 	switch (msg_type) {
 	case 0x81: /* session request */
 		CVAL(outbuf,0) = 0x82;
@@ -202,11 +155,11 @@ int reply_special(char *inbuf,char *outbuf)
 /*******************************************************************
 work out what error to give to a failed connection
 ********************************************************************/
+
 static int connection_error(char *inbuf,char *outbuf,int ecode)
 {
-	if (ecode == ERRnoipc) {
+	if (ecode == ERRnoipc)
 		return(ERROR(ERRDOS,ERRnoipc));
-	}
 
 	return(ERROR(ERRSRV,ecode));
 }
@@ -247,15 +200,14 @@ static void parse_connect(char *p,char *service,char *user,
     }
 }
 
-
-
-
 /****************************************************************************
-  reply to a tcon
+ Reply to a tcon.
 ****************************************************************************/
+
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
+	BOOL doencrypt = SMBENCRYPT();
 	pstring service;
 	pstring user;
 	pstring password;
@@ -269,7 +221,25 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
-	map_nt_and_unix_username(global_myworkgroup, user);
+    /*
+     * Ensure the user and password names are in UNIX codepage format.
+     */
+
+    dos_to_unix(user,True);
+	if (!doencrypt)
+    	dos_to_unix(password,True);
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+   
+	(void)map_username(user);
+
+	/*
+	 * Do any UNIX username case mangling.
+	 */
+	(void)Get_Pwnam( user, True);
 
 	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
   
@@ -288,16 +258,17 @@ int reply_tcon(connection_struct *conn,
 	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a tcon and X
+ Reply to a tcon and X.
 ****************************************************************************/
+
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pstring service;
 	pstring user;
 	pstring password;
 	pstring devicename;
+	BOOL doencrypt = SMBENCRYPT();
 	int ecode = -1;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
@@ -314,7 +285,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (passlen > MAX_PASS_LEN) {
 		overflow_attack(passlen);
 	}
-  
+ 
 	memcpy(password,smb_buf(inbuf),passlen);
 	password[passlen]=0;    
 	path = smb_buf(inbuf) + passlen;
@@ -339,8 +310,26 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	map_nt_and_unix_username(global_myworkgroup, user);
+    /*
+     * Ensure the user and password names are in UNIX codepage format.
+     */
 
+    dos_to_unix(user,True);
+	if (!doencrypt)
+		dos_to_unix(password,True);
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+	
+	(void)map_username(user);
+	
+	/*
+	 * Do any UNIX username case mangling.
+	 */
+	(void)Get_Pwnam(user, True);
+	
 	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn)
@@ -397,14 +386,39 @@ int reply_unknown(char *inbuf,char *outbuf)
 int reply_ioctl(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	DEBUG(3,("ignoring ioctl\n"));
-#if 0
-	/* we just say it succeeds and hope its all OK. 
-	   some day it would be nice to interpret them individually */
-	return set_message(outbuf,1,0,True); 
-#else
-	return(ERROR(ERRSRV,ERRnosupport));
-#endif
+	uint16 device     = SVAL(inbuf,smb_vwv1);
+	uint16 function   = SVAL(inbuf,smb_vwv2);
+	uint32 ioctl_code = (device << 16) + function;
+	int replysize, outsize;
+	char *p;
+
+	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
+
+	switch (ioctl_code)
+	{
+	    case IOCTL_QUERY_JOB_INFO:
+		replysize = 32;
+		break;
+	    default:
+		return(ERROR(ERRSRV,ERRnosupport));
+	}
+
+	outsize = set_message(outbuf,8,replysize+1,True);
+	SSVAL(outbuf,smb_vwv1,replysize); /* Total data bytes returned */
+	SSVAL(outbuf,smb_vwv5,replysize); /* Data bytes this buffer */
+	SSVAL(outbuf,smb_vwv6,52);        /* Offset to data */
+	p = smb_buf(outbuf) + 1;          /* Allow for alignment */
+
+	switch (ioctl_code)
+	{
+	    case IOCTL_QUERY_JOB_INFO:
+		SSVAL(p,0,1);                            /* Job number */
+		StrnCpy(p+2, global_myname, 15);         /* Our NetBIOS name */
+		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+		break;
+	}
+
+	return outsize;
 }
 
 /****************************************************************************
@@ -415,7 +429,6 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
                                 char *smb_nt_passwd, int smb_nt_passlen)
 {
   struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
-	uchar last_chal[8];
   if (lp_security() == SEC_USER)
   {
     smb_trust_acct = getsmbpwnam(user);
@@ -442,10 +455,8 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
     }
-	if (!last_challenge(last_chal) ||
-            !smb_password_ok(smb_trust_acct, last_chal, NULL, NULL,
-	(unsigned char *)smb_passwd, smb_passlen,
-	(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
+
+    if (!smb_password_ok(smb_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd))
     {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -480,19 +491,154 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 }
 
 /****************************************************************************
+ Create a UNIX user on demand.
+****************************************************************************/
+
+static int smb_create_user(char *unix_user)
+{
+  pstring add_script;
+  int ret;
+
+  pstrcpy(add_script, lp_adduser_script());
+  pstring_sub(add_script, "%u", unix_user);
+  ret = smbrun(add_script,NULL,False);
+  DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+  return ret;
+}
+
+/****************************************************************************
+ Delete a UNIX user on demand.
+****************************************************************************/
+
+static int smb_delete_user(char *unix_user)
+{
+  pstring del_script;
+  int ret;
+
+  pstrcpy(del_script, lp_deluser_script());
+  pstring_sub(del_script, "%u", unix_user);
+  ret = smbrun(del_script,NULL,False);
+  DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+  return ret;
+}
+
+/****************************************************************************
+ Check user is in correct domain if required
+****************************************************************************/
+
+static BOOL check_domain_match(char *user, char *domain) 
+{
+  /*
+   * If we aren't serving to trusted domains, we must make sure that
+   * the validation request comes from an account in the same domain
+   * as the Samba server
+   */
+
+  if (!lp_allow_trusted_domains() &&
+      !strequal(lp_workgroup(), domain) ) {
+      DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
+      return False;
+  } else {
+      return True;
+  }
+}
+
+/****************************************************************************
  Check for a valid username and password in security=server mode.
 ****************************************************************************/
 
-static BOOL check_server_security(char *orig_user, char *domain, 
+static BOOL check_server_security(char *orig_user, char *domain, char *unix_user,
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
+  BOOL ret = False;
+
   if(lp_security() != SEC_SERVER)
     return False;
 
-  return server_validate(orig_user, domain, 
+  if (!check_domain_match(orig_user, domain))
+     return False;
+
+  ret = server_validate(orig_user, domain, 
                             smb_apasswd, smb_apasslen, 
                             smb_ntpasswd, smb_ntpasslen);
+  if(ret) {
+    /*
+     * User validated ok against Domain controller.
+     * If the admin wants us to try and create a UNIX
+     * user on the fly, do so.
+     * Note that we can never delete users when in server
+     * level security as we never know if it was a failure
+     * due to a bad password, or the user really doesn't exist.
+     */
+    if(lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+      smb_create_user(unix_user);
+    }
+  }
+
+  return ret;
+}
+
+/****************************************************************************
+ Check for a valid username and password in security=domain mode.
+****************************************************************************/
+
+static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user, 
+                                  char *smb_apasswd, int smb_apasslen,
+                                  char *smb_ntpasswd, int smb_ntpasslen)
+{
+  BOOL ret = False;
+  BOOL user_exists = True;
+
+  if(lp_security() != SEC_DOMAIN)
+    return False;
+
+  if (!check_domain_match(orig_user, domain))
+     return False;
+
+  ret = domain_client_validate(orig_user, domain,
+                                smb_apasswd, smb_apasslen,
+                                smb_ntpasswd, smb_ntpasslen,
+                                &user_exists);
+
+  if(ret) {
+    /*
+     * User validated ok against Domain controller.
+     * If the admin wants us to try and create a UNIX
+     * user on the fly, do so.
+     */
+    if(user_exists && lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+      smb_create_user(unix_user);
+    }
+  } else {
+    /*
+     * User failed to validate ok against Domain controller.
+     * If the failure was "user doesn't exist" and admin 
+     * wants us to try and delete that UNIX user on the fly,
+     * do so.
+     */
+    if(!user_exists && lp_deluser_script() && Get_Pwnam(unix_user,True)) {
+      smb_delete_user(unix_user);
+    }
+  }
+
+  return ret;
+}
+
+/****************************************************************************
+ Return a bad password error configured for the correct client type.
+****************************************************************************/       
+
+static int bad_password_error(char *inbuf,char *outbuf)
+{
+  enum remote_arch_types ra_type = get_remote_arch();
+
+  if(ra_type == RA_WINNT && (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
+    SSVAL(outbuf,smb_flg2,FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0,0xc0000000|NT_STATUS_LOGON_FAILURE));
+  }
+
+  return(ERROR(ERRSRV,ERRbadpw));
 }
 
 /****************************************************************************
@@ -502,9 +648,8 @@ reply to a session setup command
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 sess_vuid;
-  uchar user_sess_key[16];
-  int gid;
-  int uid;
+  gid_t gid;
+  uid_t uid;
   int   smb_bufsize;    
   int   smb_apasslen = 0;   
   pstring smb_apasswd;
@@ -517,63 +662,55 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
-	uchar last_chal[8];
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
   
   smb_bufsize = SVAL(inbuf,smb_vwv2);
 
-  if (Protocol < PROTOCOL_NT1)
-  {
+  if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     if (smb_apasslen > MAX_PASS_LEN)
-    {
-	    overflow_attack(smb_apasslen);
-    }
+      overflow_attack(smb_apasslen);
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
-
+    /*
+     * Incoming user is in DOS codepage format. Convert
+     * to UNIX.
+     */
+    dos_to_unix(user,True);
+  
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
-	    smb_apasslen = strlen(smb_apasswd);
+      smb_apasslen = strlen(smb_apasswd);
     }
-
-	if (lp_server_ntlmv2() == True)
-	{
-		DEBUG(1,("NTLMv2-only accepted with NT LANMAN 1.0 and above.\n\
-user %s attempted down-level SMB connection\n", user));
-		return(ERROR(ERRSRV,ERRbadpw));
-	}
-  }
-  else
-  {
+  } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
     enum remote_arch_types ra_type = get_remote_arch();
     char *p = smb_buf(inbuf);    
 
-    global_client_caps = IVAL(inbuf,smb_vwv11);
+    if(global_client_caps == 0)
+      global_client_caps = IVAL(inbuf,smb_vwv11);
 
     /* client_caps is used as final determination if client is NT or Win95. 
        This is needed to return the correct error codes in some
        circumstances.
      */
     
-    if(ra_type == RA_WINNT || ra_type == RA_WIN95)
-    {
+    if(ra_type == RA_WINNT || ra_type == RA_WIN95) {
       if(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))
         set_remote_arch( RA_WINNT);
       else
         set_remote_arch( RA_WIN95);
     }
 
-    if (passlen1 != 24 && passlen2 <= 24)
+    if (passlen1 != 24 && passlen2 != 24)
       doencrypt = False;
 
     if (passlen1 > MAX_PASS_LEN) {
-	    overflow_attack(passlen1);
+      overflow_attack(passlen1);
     }
 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
@@ -590,18 +727,33 @@ user %s attempted down-level SMB connection\n", user));
 
           if passlen1>0 and passlen2>0 then maybe its a NT box and its
           setting passlen2 to some random value which really stuffs
-          things up. we need to fix that one.
+          things up. we need to fix that one.  */
 
-          LKCLXXXX: the random value can be random 16 bit.  old test
-          used to have ... && passlen <= 24) which of course fails
-          most of the time.
-        */
-
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 1)
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 && passlen2 != 1)
         passlen2 = 0;
     }
 
-    if (doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
+    if (lp_restrict_anonymous()) {
+      /* there seems to be no reason behind the differences in MS clients formatting
+       * various info like the domain, NativeOS, and NativeLanMan fields. Win95
+       * in particular seems to have an extra null byte between the username and the
+       * domain, or the password length calculation is wrong, which throws off the
+       * string extraction routines below.  This makes the value of domain be the
+       * empty string, which fails the restrict anonymous check further down.
+       * This compensates for that, and allows browsing to work in mixed NT and
+       * win95 environments even when restrict anonymous is true. AAB
+       */
+      dump_data(100, p, 0x70);
+      DEBUG(9, ("passlen1=%d, passlen2=%d\n", passlen1, passlen2));
+      if (ra_type == RA_WIN95 && !passlen1 && !passlen2 && p[0] == 0 && p[1] == 0) {
+        DEBUG(0, ("restrict anonymous parameter used in a win95 environment!\n"));
+        DEBUG(0, ("client is win95 and broken passlen1 offset -- attempting fix\n"));
+        DEBUG(0, ("if win95 cilents are having difficulty browsing, you will be unable to use restrict anonymous\n"));
+        passlen1 = 1;
+      }
+    }
+
+    if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
@@ -609,54 +761,77 @@ user %s attempted down-level SMB connection\n", user));
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
       smb_ntpasswd[smb_ntpasslen] = 0;
+
+      /*
+       * Ensure the plaintext passwords are in UNIX format.
+       */
+      if(!doencrypt) {
+        dos_to_unix(smb_apasswd,True);
+        dos_to_unix(smb_ntpasswd,True);
+      }
+
     } else {
       /* we use the first password that they gave */
       smb_apasslen = passlen1;
       StrnCpy(smb_apasswd,p,smb_apasslen);      
+      /*
+       * Ensure the plaintext password is in UNIX format.
+       */
+      dos_to_unix(smb_apasswd,True);
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
 
       /* wfwg sometimes uses a space instead of a null */
       if (strequal(smb_apasswd," ")) {
-	smb_apasslen = 0;
-	*smb_apasswd = 0;
+        smb_apasslen = 0;
+        *smb_apasswd = 0;
       }
     }
     
-    if (passlen2 == 0 && smb_apasslen == 0 && ra_type == RA_WIN95)
-    {
-      /* work-around for win95 NULL sessions, where NULL password is
-         actually put in the data stream before the domain name etc */
-      p++;
-    }
-    else
-    {
-	    p += passlen1 + passlen2;
-    }
-
-    fstrcpy(user,p); p = skip_string(p,1);
+    p += passlen1 + passlen2;
+    fstrcpy(user,p);
+    p = skip_string(p,1);
+    /*
+     * Incoming user is in DOS codepage format. Convert
+     * to UNIX.
+     */
+    dos_to_unix(user,True);
     domain = p;
 
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     domain, skip_string(p,1), skip_string(p,2)));
+	     domain,skip_string(p,1),skip_string(p,2)));
   }
+
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
-  {
+
+  if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24)) {
     return session_trust_account(conn, inbuf, outbuf, user, 
                                  smb_apasswd, smb_apasslen,
                                  smb_ntpasswd, smb_ntpasslen);
   }
 
+  if (done_sesssetup && lp_restrict_anonymous()) {
+    /* tests show that even if browsing is done over already validated connections
+     * without a username and password the domain is still provided, which it
+     * wouldn't be if it was a purely anonymous connection.  So, in order to
+     * restrict anonymous, we only deny connections that have no session
+     * information.  If a domain has been provided, then it's not a purely
+     * anonymous connection. AAB
+     */
+    if (!*user && !*smb_apasswd && !*domain) {
+      DEBUG(0, ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
+      return(ERROR(ERRDOS,ERRnoaccess));
+    }
+  }
+
   /* If no username is sent use the guest account */
-  if (!*user)
-  {
+  if (!*user) {
     pstrcpy(user,lp_guestaccount(-1));
     /* If no user and no password then set guest flag. */
     if( *smb_apasswd == 0)
@@ -664,6 +839,7 @@ user %s attempted down-level SMB connection\n", user));
   }
 
   strlower(user);
+
   /*
    * In share level security, only overwrite sesssetup_use if
    * it's a non null-session share. Helps keep %U and %G
@@ -672,6 +848,7 @@ user %s attempted down-level SMB connection\n", user));
 
   if((lp_security() != SEC_SHARE) || (*user && !guest))
     pstrcpy(sesssetup_user,user);
+
   reload_services(True);
 
   /*
@@ -682,7 +859,17 @@ user %s attempted down-level SMB connection\n", user));
 
   pstrcpy( orig_user, user);
 
-  map_nt_and_unix_username(domain, user);
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+   
+  (void)map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
 
   add_session_user(user);
 
@@ -699,14 +886,12 @@ user %s attempted down-level SMB connection\n", user));
    */
 
   if (!guest && 
-      !check_server_security(orig_user, domain,
+			  !check_server_security(orig_user, domain, user,
+									 smb_apasswd, smb_apasslen,
+									 smb_ntpasswd, smb_ntpasslen) &&
+			  !check_domain_security(orig_user, domain, user,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen) &&
-      !last_challenge(last_chal) &&
-      !check_domain_security(orig_user, domain,
-                             last_chal,
-                             smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen, user_sess_key) &&
       !check_hosts_equiv(user)
      )
   {
@@ -721,25 +906,31 @@ user %s attempted down-level SMB connection\n", user));
      * 128 length unicode.
       */
 
-    if (smb_ntpasslen)
+    if(smb_ntpasslen)
     {
-      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL,user_sess_key))
-        DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
+      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
+        DEBUG(2,("NT Password did not match for user '%s' ! Defaulting to Lanman\n", user));
       else
         valid_nt_password = True;
     } 
 
-    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL,user_sess_key))
+    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
     {
       if (lp_security() >= SEC_USER) 
       {
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
-          return(ERROR(ERRSRV,ERRbadpw));
+        {
+          DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
+          return bad_password_error(inbuf,outbuf);
+        }
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-         if (Get_Pwnam(user,True))
-            return(ERROR(ERRSRV,ERRbadpw));
+          if (Get_Pwnam(user,True))
+          {
+            DEBUG(1,("Rejecting user '%s': bad password\n", user));
+            return bad_password_error(inbuf,outbuf);
+          }
         }
 
         /*
@@ -765,14 +956,11 @@ user %s attempted down-level SMB connection\n", user));
       lp_servicenumber(user) < 0)      
   {
     int homes = lp_servicenumber(HOMES_NAME);
-    char *home = get_unixhome_dir(user);
+    char *home = get_user_home_dir(user);
     if (homes >= 0 && home)
-	{
-		pstring home_dir;
-		fstrcpy(home_dir, home);
-		lp_add_home(user,homes,home_dir);
-	}
+      lp_add_home(user,homes,home);
   }
+
 
   /* it's ok - setup a reply */
   if (Protocol < PROTOCOL_NT1) {
@@ -793,10 +981,10 @@ user %s attempted down-level SMB connection\n", user));
      user we should become.
      */
   {
-    const struct passwd *pw = Get_Pwnam(user,False);
+    struct passwd *pw = Get_Pwnam(user,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
-      return(ERROR(ERRSRV,ERRbadpw));
+      return bad_password_error(inbuf,outbuf);
     }
     gid = pw->pw_gid;
     uid = pw->pw_uid;
@@ -807,7 +995,7 @@ user %s attempted down-level SMB connection\n", user));
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest,user_sess_key);
+  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
@@ -836,14 +1024,10 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_STRUCT_STAT st;
  
   pstrcpy(name,smb_buf(inbuf) + 1);
-  if (!unix_dfs_convert(name,conn,0,&bad_path,&st))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(name,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
- 
+
   if (check_name(name,conn)) {
     if(VALID_STAT(st))
       ok = S_ISDIR(st.st_mode);
@@ -900,7 +1084,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  
+
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
@@ -913,14 +1097,10 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
   else
   {
-    if (!unix_dfs_convert(fname,conn,0,&bad_path,&sbuf))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+    unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (check_name(fname,conn))
     {
-      if (VALID_STAT(sbuf) || conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf) == 0)
+      if (VALID_STAT(sbuf) || dos_stat(fname,&sbuf) == 0)
       {
         mode = dos_mode(conn,fname,&sbuf);
         size = sbuf.st_size;
@@ -982,11 +1162,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  if (!unix_dfs_convert(fname,conn,0,&bad_path,&st))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(fname,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
@@ -1025,7 +1201,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   int outsize = 0;
   SMB_BIG_UINT dfree,dsize,bsize;
   
-  conn->vfs_ops.disk_free(".",&bsize,&dfree,&dsize);
+  sys_disk_free(".",True,&bsize,&dfree,&dsize);
   
   outsize = set_message(outbuf,5,0,True);
   
@@ -1084,74 +1260,70 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   /* dirtype &= ~aDIR; */
   
-  DEBUG(5,("path=%s status_len=%d\n",path,status_len));
+  DEBUG(5,("reply_search: path=%s status_len=%d\n",path,status_len));
 
   
   if (status_len == 0)
-    {
-      pstring dir2;
-
-      pstrcpy(directory,smb_buf(inbuf)+1);
-      pstrcpy(dir2,smb_buf(inbuf)+1);
-      if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
   {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
-      unix_format(dir2);
+    pstring dir2;
 
-      if (!check_name(directory,conn))
-        can_open = False;
+    pstrcpy(directory,smb_buf(inbuf)+1);
+    pstrcpy(dir2,smb_buf(inbuf)+1);
+    unix_convert(directory,conn,0,&bad_path,NULL);
+    unix_format(dir2);
 
-      p = strrchr(dir2,'/');
-      if (p == NULL) 
-      {
-        pstrcpy(mask,dir2);
-        *dir2 = 0;
-      }
-      else
-      {
-        *p = 0;
-        pstrcpy(mask,p+1);
-      }
+    if (!check_name(directory,conn))
+      can_open = False;
 
-      p = strrchr(directory,'/');
-      if (!p) 
-        *directory = 0;
-      else
-        *p = 0;
-
-      if (strlen(directory) == 0)
-        pstrcpy(directory,"./");
-      bzero(status,21);
-      CVAL(status,0) = dirtype;
-    }
-  else
+    p = strrchr(dir2,'/');
+    if (p == NULL) 
     {
-      memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
-      memcpy(mask,status+1,11);
-      mask[11] = 0;
-      dirtype = CVAL(status,0) & 0x1F;
-      conn->dirptr = dptr_fetch(status+12,&dptr_num);      
-      if (!conn->dirptr)
-	goto SearchEmpty;
-      string_set(&conn->dirpath,dptr_path(dptr_num));
-      if (!case_sensitive)
-	strnorm(mask);
+      pstrcpy(mask,dir2);
+      *dir2 = 0;
     }
+    else
+    {
+      *p = 0;
+      pstrcpy(mask,p+1);
+    }
+
+    p = strrchr(directory,'/');
+    if (!p) 
+      *directory = 0;
+    else
+      *p = 0;
+
+    if (strlen(directory) == 0)
+      pstrcpy(directory,"./");
+    memset((char *)status,'\0',21);
+    CVAL(status,0) = dirtype;
+  }
+  else
+  {
+    memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
+    memcpy(mask,status+1,11);
+    mask[11] = 0;
+    dirtype = CVAL(status,0) & 0x1F;
+    conn->dirptr = dptr_fetch(status+12,&dptr_num);      
+    if (!conn->dirptr)
+      goto SearchEmpty;
+    string_set(&conn->dirpath,dptr_path(dptr_num));
+    if (!case_sensitive)
+      strnorm(mask);
+  }
 
   /* turn strings of spaces into a . */  
   {
     trim_string(mask,NULL," ");
     if ((p = strrchr(mask,' ')))
-      {
-	fstring ext;
-	fstrcpy(ext,p+1);
-	*p = 0;
-	trim_string(mask,NULL," ");
-	pstrcat(mask,".");
-	pstrcat(mask,ext);
-      }
+    {
+      fstring ext;
+      fstrcpy(ext,p+1);
+      *p = 0;
+      trim_string(mask,NULL," ");
+      pstrcat(mask,".");
+      pstrcat(mask,ext);
+    }
   }
 
   /* Convert the formatted mask. (This code lives in trans2.c) */
@@ -1179,104 +1351,104 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
 
   if (!strchr(mask,'.') && strlen(mask)>8)
-    {
-      fstring tmp;
-      fstrcpy(tmp,&mask[8]);
-      mask[8] = '.';
-      mask[9] = 0;
-      pstrcat(mask,tmp);
-    }
+  {
+    fstring tmp;
+    fstrcpy(tmp,&mask[8]);
+    mask[8] = '.';
+    mask[9] = 0;
+    pstrcat(mask,tmp);
+  }
 
   DEBUG(5,("mask=%s directory=%s\n",mask,directory));
   
   if (can_open)
+  {
+    p = smb_buf(outbuf) + 3;
+      
+    ok = True;
+     
+    if (status_len == 0)
     {
-      p = smb_buf(outbuf) + 3;
-      
-      ok = True;
-      
-      if (status_len == 0)
-	{
-	  dptr_num = dptr_create(conn,directory,expect_close,SVAL(inbuf,smb_pid));
-	  if (dptr_num < 0)
+      dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid));
+      if (dptr_num < 0)
+      {
+        if(dptr_num == -2)
         {
-          if(dptr_num == -2)
+          if((errno == ENOENT) && bad_path)
           {
-            if((errno == ENOENT) && bad_path)
-            {
-              unix_ERR_class = ERRDOS;
-              unix_ERR_code = ERRbadpath;
-            }
-            return (UNIXERROR(ERRDOS,ERRnofids));
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadpath;
           }
-          return(ERROR(ERRDOS,ERRnofids));
+          return (UNIXERROR(ERRDOS,ERRnofids));
         }
-	}
-
-      DEBUG(4,("dptr_num is %d\n",dptr_num));
-
-      if (ok)
-	{
-	  if ((dirtype&0x1F) == aVOLID)
-	    {	  
-	      memcpy(p,status,21);
-	      make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
-	      dptr_fill(p+12,dptr_num);
-	      if (dptr_zero(p+12) && (status_len==0))
-		numentries = 1;
-	      else
-		numentries = 0;
-	      p += DIR_STRUCT_SIZE;
-	    }
-	  else 
-	    {
-	      DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		       conn->dirpath,lp_dontdescend(SNUM(conn))));
-	      if (in_list(conn->dirpath,
-			  lp_dontdescend(SNUM(conn)),True))
-		check_descend = True;
-
-	      for (i=numentries;(i<maxentries) && !finished;i++)
-		{
-		  finished = 
-		    !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
-		  if (!finished)
-		    {
-		      memcpy(p,status,21);
-		      make_dir_struct(p,mask,fname,size,mode,date);
-		      dptr_fill(p+12,dptr_num);
-		      numentries++;
-		    }
-		  p += DIR_STRUCT_SIZE;
-		}
-	    }
-	}
+        return(ERROR(ERRDOS,ERRnofids));
+      }
     }
 
+    DEBUG(4,("dptr_num is %d\n",dptr_num));
 
- SearchEmpty:
+    if (ok)
+    {
+      if ((dirtype&0x1F) == aVOLID)
+      {	  
+        memcpy(p,status,21);
+        make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
+        dptr_fill(p+12,dptr_num);
+        if (dptr_zero(p+12) && (status_len==0))
+          numentries = 1;
+        else
+          numentries = 0;
+        p += DIR_STRUCT_SIZE;
+      }
+      else 
+      {
+        DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
+              conn->dirpath,lp_dontdescend(SNUM(conn))));
+        if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True))
+          check_descend = True;
+
+        for (i=numentries;(i<maxentries) && !finished;i++)
+        {
+          finished = 
+            !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
+          if (!finished)
+          {
+            memcpy(p,status,21);
+            make_dir_struct(p,mask,fname,size,mode,date);
+            dptr_fill(p+12,dptr_num);
+            numentries++;
+          }
+          p += DIR_STRUCT_SIZE;
+        }
+      }
+	} /* if (ok ) */
+  }
+
+
+  SearchEmpty:
 
   if (numentries == 0 || !ok)
-    {
-      CVAL(outbuf,smb_rcls) = ERRDOS;
-      SSVAL(outbuf,smb_err,ERRnofiles);
-    }
+  {
+    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SSVAL(outbuf,smb_err,ERRnofiles);
+    dptr_close(&dptr_num);
+  }
 
   /* If we were called as SMBffirst with smb_search_id == NULL
      and no entries were found then return error and close dirptr 
      (X/Open spec) */
 
   if(ok && expect_close && numentries == 0 && status_len == 0)
-    {
-      CVAL(outbuf,smb_rcls) = ERRDOS;
-      SSVAL(outbuf,smb_err,ERRnofiles);
-      /* Also close the dptr - we know it's gone */
-      dptr_close(dptr_num);
-    }
+  {
+    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SSVAL(outbuf,smb_err,ERRnofiles);
+    /* Also close the dptr - we know it's gone */
+    dptr_close(&dptr_num);
+  }
 
   /* If we were called as SMBfunique, then we can close the dirptr now ! */
   if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique)
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
 
   SSVAL(outbuf,smb_vwv0,numentries);
   SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
@@ -1295,8 +1467,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
   DEBUG( 4, ( "%s mask=%s path=%s dtype=%d nument=%d of %d\n",
-	smb_fn_name(CVAL(inbuf,smb_com)), 
-	mask, directory, dirtype, numentries, maxentries ) );
+        smb_fn_name(CVAL(inbuf,smb_com)), 
+        mask, directory, dirtype, numentries, maxentries ) );
 
   return(outsize);
 }
@@ -1311,7 +1483,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   int status_len;
   char *path;
   char status[21];
-  int dptr_num= -1;
+  int dptr_num= -2;
 
   outsize = set_message(outbuf,1,0,True);
   path = smb_buf(inbuf) + 1;
@@ -1325,7 +1497,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   if(dptr_fetch(status+12,&dptr_num)) {
     /*  Close the dptr - we know it's gone */
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
   }
 
   SSVAL(outbuf,smb_vwv0,0);
@@ -1358,11 +1530,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   share_mode = SVAL(inbuf,smb_vwv0);
 
   pstrcpy(fname,smb_buf(inbuf)+1);
-  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
   if (!fsp)
@@ -1381,9 +1549,8 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
   unixmode = unix_mode(conn,aARCH);
       
-  open_file_shared(fsp, conn, fname, share_mode,
-		   (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
-		   unixmode, oplock_request, &rmode, NULL);
+  open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+                   unixmode, oplock_request,&rmode,NULL);
 
   if (!fsp->open)
   {
@@ -1396,7 +1563,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1425,7 +1592,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
     
-  if(fsp->granted_oplock)
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
@@ -1459,19 +1626,13 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   files_struct *fsp;
 
   /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(conn) && lp_nt_pipe_support() && lp_security() != SEC_SHARE)
-  {
+  if (IS_IPC(conn) && lp_nt_pipe_support())
     return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
-  }
 
   /* XXXX we need to handle passed times, sattr and flags */
 
   pstrcpy(fname,smb_buf(inbuf));
-  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
   if (!fsp)
@@ -1490,8 +1651,8 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   unixmode = unix_mode(conn,smb_attr | aARCH);
       
-  open_file_shared(fsp, conn, fname, smb_mode, smb_ofun, unixmode,
-		   oplock_request, &rmode, &smb_action);
+  open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
+	               oplock_request, &rmode,&smb_action);
       
   if (!fsp->open)
   {
@@ -1504,7 +1665,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1526,7 +1687,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
-  if(ex_oplock_request && fsp->granted_oplock) {
+  if(ex_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
@@ -1539,7 +1700,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(core_oplock_request && fsp->granted_oplock) {
+  if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
@@ -1605,11 +1766,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
-  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(fname,conn,0,&bad_path,NULL);
 
   if (createmode & aVOLID)
     {
@@ -1636,18 +1793,17 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if(com == SMBmknew)
   {
     /* We should fail if file exists. */
-    ofun = 0x10;
+    ofun = FILE_CREATE_IF_NOT_EXIST;
   }
   else
   {
     /* SMBcreate - Create if file doesn't exist, truncate if it does. */
-    ofun = 0x12;
+    ofun = FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE;
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fsp, conn, fname,
-		  SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-		  ofun, unixmode, oplock_request, NULL, NULL);
+  open_file_shared(fsp,conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+                   ofun, unixmode, oplock_request, NULL, NULL);
   
   if (!fsp->open)
   {
@@ -1667,7 +1823,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
  
-  if(fsp->granted_oplock)
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
  
   DEBUG( 2, ( "new file %s\n", fname ) );
@@ -1695,11 +1851,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
   pstrcat(fname,"/TMXXXXXX");
-  if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(fname,conn,0,&bad_path,NULL);
   
   unixmode = unix_mode(conn,createmode);
   
@@ -1718,14 +1870,12 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  pstrcpy(fname2,(char *)mktemp(fname));
+  pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fsp,conn,fname2,
-		   SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB),
-		   (FILE_CREATE_IF_NOT_EXIST | FILE_EXISTS_FAIL), 
-		   unixmode, oplock_request, NULL, NULL);
+  open_file_shared(fsp,conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
 
   if (!fsp->open)
   {
@@ -1747,7 +1897,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
-  if(fsp->granted_oplock)
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
@@ -1768,7 +1918,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (dos_lstat(fname,&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -1781,8 +1931,9 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 }
 
 /****************************************************************************
-  reply to a unlink
+ Reply to a unlink
 ****************************************************************************/
+
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
@@ -1796,6 +1947,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL has_wild;
   BOOL exists=False;
   BOOL bad_path = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -1805,11 +1957,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  if (!unix_dfs_convert(name,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  rc = unix_convert(name,conn,0,&bad_path,NULL);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -1821,7 +1969,16 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -1829,10 +1986,10 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !conn->vfs_ops.unlink(directory))
+    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
       count++;
     if (!count)
-      exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);    
+      exists = dos_file_exist(directory,NULL);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -1862,7 +2019,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!conn->vfs_ops.unlink(fname)) count++;
+	    if (!dos_unlink(fname)) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -1892,6 +2049,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 /****************************************************************************
    reply to a readbraw (core+ protocol)
 ****************************************************************************/
+
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
   size_t maxcount,mincount;
@@ -1917,13 +2075,45 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
   fsp = file_fsp(inbuf,smb_vwv0);
 
+  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
+	  /*
+	   * fsp could be NULL here so use the value from the packet. JRA.
+	   */
+	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
+	  _smb_setlen(header,0);
+	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+	  return(-1);
+  }
+
+  CHECK_FSP(fsp,conn);
+
+  flush_write_cache(fsp, READRAW_FLUSH);
+
   startpos = IVAL(inbuf,smb_vwv1);
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 10) {
     /*
      * This is a large offset (64 bit) read.
      */
+#ifdef LARGE_SMB_OFF_T
+
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv8)) << 32);
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv8) != 0) {
+      DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
+      _smb_setlen(header,0);
+      transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+      return(-1);
+    }
+
+#endif /* LARGE_SMB_OFF_T */
+
     if(startpos < 0) {
       DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n",
             (double)startpos ));
@@ -1932,20 +2122,12 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	  return(-1);
     }      
   }
-#endif /* LARGE_SMB_OFF_T */
   maxcount = (SVAL(inbuf,smb_vwv3) & 0xFFFF);
   mincount = (SVAL(inbuf,smb_vwv4) & 0xFFFF);
 
   /* ensure we don't overrun the packet size */
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
-
-  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
-	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",fsp->fnum));
-	  _smb_setlen(header,0);
-	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
-	  return(-1);
-  }
 
   if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
   {
@@ -1955,7 +2137,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     if (size < sizeneeded)
     {
       SMB_STRUCT_STAT st;
-      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&st) == 0)
+      if (sys_fstat(fsp->fd_ptr->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
         fsp->size = size;
@@ -1969,7 +2151,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   
   DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n",
 	      fsp->fnum, (double)startpos,
-	      maxcount, mincount, nread ) );
+	      (int)maxcount, (int)mincount, (int)nread ) );
   
 #if UNSAFE_READRAW
   {
@@ -1979,11 +2161,11 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 #if USE_READ_PREDICTION
     if (!fsp->can_write)
-      predict = read_predict(fsp, fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
+      predict = read_predict(fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
 #endif /* USE_READ_PREDICTION */
 
     if ((nread-predict) > 0) {
-      if(conn->vfs_ops.seek(fsp,startpos + predict) == -1) {
+      if(seek_file(fsp,startpos + predict) == -1) {
         DEBUG(0,("reply_readbraw: ERROR: seek_file failed.\n"));
         ret = 0;
         seek_fail = True;
@@ -1991,7 +2173,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     }
 
     if(!seek_fail)
-      ret = (ssize_t)vfs_transfer_file(-1, fsp->fd_ptr->fd, Client, NULL,
+      ret = (ssize_t)transfer_file(fsp->fd_ptr->fd,Client,
                                    (SMB_OFF_T)(nread-predict),header,4+predict, 
                                    startpos+predict);
   }
@@ -2037,8 +2219,15 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   outsize = set_message(outbuf,5,3,True);
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
-  
-  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
+ 
+  /*
+   * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
+   * protocol request that predates the read/write lock concept. 
+   * Thus instead of asking for a read lock here we need to ask
+   * for a write lock. JRA.
+   */
+
+  if(!do_lock( fsp, conn, numtoread, startpos, F_WRLCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2062,7 +2251,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   SSVAL(smb_buf(outbuf),1,nread);
 
   DEBUG( 3, ( "lockread fnum=%d num=%d nread=%d\n",
-            fsp->fnum, numtoread, nread ) );
+            fsp->fnum, (int)numtoread, (int)nread ) );
 
   return(outsize);
 }
@@ -2071,7 +2260,8 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 /****************************************************************************
   reply to a read
 ****************************************************************************/
-int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   size_t numtoread;
   ssize_t nread = 0;
@@ -2094,9 +2284,8 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (is_locked(fsp,conn,numtoread,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));	
 
-  if (numtoread > 0) {
+  if (numtoread > 0)
     nread = read_file(fsp,data,startpos,numtoread);
-  }
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2108,7 +2297,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   SSVAL(smb_buf(outbuf),1,nread);
   
   DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
-            fsp->fnum, numtoread, nread ) );
+            fsp->fnum, (int)numtoread, (int)nread ) );
 
   return(outsize);
 }
@@ -2137,28 +2326,42 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
 
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 12) {
+#ifdef LARGE_SMB_OFF_T
     /*
      * This is a large offset (64 bit) read.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv10)) << 32);
-  }
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv10) != 0) {
+      DEBUG(0,("reply_read_and_X - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv10) ));
+      return(ERROR(ERRDOS,ERRbadaccess));
+    }
+
 #endif /* LARGE_SMB_OFF_T */
+
+  }
 
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
   nread = read_file(fsp,data,startpos,smb_maxcnt);
-
+  
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   SSVAL(outbuf,smb_vwv5,nread);
   SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
   SSVAL(smb_buf(outbuf),-2,nread);
-
+  
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
-	      fsp->fnum, smb_mincnt, smb_maxcnt, nread ) );
+	      fsp->fnum, (int)smb_mincnt, (int)smb_maxcnt, (int)nread ) );
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2166,7 +2369,8 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 /****************************************************************************
   reply to a writebraw (core+ or LANMAN1.0 protocol)
 ****************************************************************************/
-int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   ssize_t nwritten=0;
   ssize_t total_written=0;
@@ -2203,16 +2407,11 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if (seek_file(fsp,startpos) == -1) {
-    DEBUG(0,("couldn't seek to %.0f in writebraw\n",(double)startpos));
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
   if (numtowrite>0)
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
-	   fsp->fnum, (double)startpos, numtowrite, nwritten, write_through));
+	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
 
   if (nwritten < numtowrite) 
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -2237,12 +2436,11 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 
   if (tcount > nwritten+numtowrite) {
     DEBUG(3,("Client overestimated the write %d %d %d\n",
-	     tcount,nwritten,numtowrite));
+	     (int)tcount,(int)nwritten,(int)numtowrite));
   }
 
-  nwritten = vfs_transfer_file(Client, NULL, -1, fsp,
-			       (SMB_OFF_T)numtowrite,NULL,0, 
-			       startpos+nwritten);
+  nwritten = transfer_file(Client,fsp->fd_ptr->fd,(SMB_OFF_T)numtowrite,NULL,0,
+			   startpos+nwritten);
   total_written += nwritten;
   
   /* Set up outbuf to return the correct return */
@@ -2255,12 +2453,11 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
     SSVAL(outbuf,smb_err,ERRdiskfull);      
   }
 
-  if ((lp_syncalways(SNUM(conn)) || write_through) && 
-      lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if (lp_syncalways(SNUM(conn)) || write_through)
+    sync_file(conn,fsp);
 
   DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
-	   fsp->fnum, (double)startpos, numtowrite, total_written));
+	   fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
 
   /* we won't return a status if write through is not selected - this 
      follows what WfWg does */
@@ -2273,7 +2470,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 /****************************************************************************
   reply to a writeunlock (core+)
 ****************************************************************************/
-int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   ssize_t nwritten = -1;
   size_t numtowrite;
@@ -2295,19 +2493,16 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* The special X/Open SMB protocol handling of
      zero length writes is *NOT* done for
      this call */
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
-  if (lp_syncalways(SNUM(conn)) && lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if (lp_syncalways(SNUM(conn)))
+    sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2320,7 +2515,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   SSVAL(outbuf,smb_vwv0,nwritten);
   
   DEBUG( 3, ( "writeunlock fnum=%d num=%d wrote=%d\n",
-	      fsp->fnum, numtowrite, nwritten ) );
+	      fsp->fnum, (int)numtowrite, (int)nwritten ) );
 
   return(outsize);
 }
@@ -2328,7 +2523,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
 /****************************************************************************
   reply to a write
 ****************************************************************************/
-int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
+int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize)
 {
   size_t numtowrite;
   ssize_t nwritten = -1;
@@ -2337,9 +2532,9 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   int outsize = 0;
 
-	  /* If it's an IPC, pass off the pipe handler. */
-	  if (IS_IPC(conn))
-	    return reply_pipe_write(inbuf,outbuf,dum_size,dum_buffsize);
+  /* If it's an IPC, pass off the pipe handler. */
+  if (IS_IPC(conn))
+    return reply_pipe_write(inbuf,outbuf,size,dum_buffsize);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2352,19 +2547,17 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
-  if(numtowrite == 0)
-    nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
-  else
-    nwritten = write_file(fsp,data,numtowrite);
+  if(numtowrite == 0) {
+    if((nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos)) >= 0)
+      set_filelen_write_cache(fsp, startpos); 
+  } else
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
-  if (lp_syncalways(SNUM(conn)) && lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if (lp_syncalways(SNUM(conn)))
+    sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2379,7 +2572,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   }
   
   DEBUG(3,("write fnum=%d num=%d wrote=%d\n",
-	   fsp->fnum, numtowrite, nwritten));
+	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
   return(outsize);
 }
@@ -2408,21 +2601,31 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
   data = smb_base(inbuf) + smb_doff;
 
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 14) {
+#ifdef LARGE_SMB_OFF_T
     /*
      * This is a large offset (64 bit) write.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv12)) << 32);
-  }
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv12) != 0) {
+      DEBUG(0,("reply_write_and_X - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv12) ));
+      return(ERROR(ERRDOS,ERRbadaccess));
+    }
+
 #endif /* LARGE_SMB_OFF_T */
+  }
 
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
   /* X/Open SMB protocol says that, unlike SMBwrite
      if the length is zero then NO truncation is
      done, just a write of zero. To truncate a file,
@@ -2430,7 +2633,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2445,11 +2648,10 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   }
 
   DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
-	   fsp->fnum, numtowrite, nwritten));
+	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
-  if ((lp_syncalways(SNUM(conn)) || write_through) &&
-      lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if (lp_syncalways(SNUM(conn)) || write_through)
+    sync_file(conn,fsp);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2458,7 +2660,8 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 /****************************************************************************
   reply to a lseek
 ****************************************************************************/
-int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   SMB_OFF_T startpos;
   SMB_OFF_T res= -1;
@@ -2469,11 +2672,12 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
-  mode = SVAL(inbuf,smb_vwv1) & 3;
-  startpos = IVAL(inbuf,smb_vwv2);
+  flush_write_cache(fsp, SEEK_FLUSH);
 
-  switch (mode & 3) 
-  {
+  mode = SVAL(inbuf,smb_vwv1) & 3;
+  startpos = IVALS(inbuf,smb_vwv2);
+
+  switch (mode) {
     case 0: umode = SEEK_SET; break;
     case 1: umode = SEEK_CUR; break;
     case 2: umode = SEEK_END; break;
@@ -2481,16 +2685,48 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       umode = SEEK_SET; break;
   }
 
-  if((res = conn->vfs_ops.lseek(fsp->fd_ptr->fd,startpos,umode)) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  if((res = sys_lseek(fsp->fd_ptr->fd,startpos,umode)) == -1) {
+    /*
+     * Check for the special case where a seek before the start
+     * of the file sets the offset to zero. Added in the CIFS spec,
+     * section 4.2.7.
+     */
+
+    if(errno == EINVAL) {
+      SMB_OFF_T current_pos = startpos;
+
+      if(umode == SEEK_CUR) {
+
+        if((current_pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+        current_pos += startpos;
+
+      } else if (umode == SEEK_END) {
+
+        SMB_STRUCT_STAT sbuf;
+
+        if(sys_fstat( fsp->fd_ptr->fd, &sbuf) == -1)
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+        current_pos += sbuf.st_size;
+      }
+ 
+      if(current_pos < 0)
+        res = sys_lseek(fsp->fd_ptr->fd,0,SEEK_SET);
+    }
+
+    if(res == -1)
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   fsp->pos = res;
   
   outsize = set_message(outbuf,2,0,True);
-  SIVALS(outbuf,smb_vwv0,res);
+  SIVAL(outbuf,smb_vwv0,res);
   
-  DEBUG(3,("lseek fnum=%d ofs=%.0f mode=%d\n",
-	   fsp->fnum, (double)startpos, mode));
+  DEBUG(3,("lseek fnum=%d ofs=%.0f newpos = %.0f mode=%d\n",
+	   fsp->fnum, (double)startpos, (double)res, mode));
 
   return(outsize);
 }
@@ -2498,7 +2734,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 /****************************************************************************
   reply to a flush
 ****************************************************************************/
-int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -2511,7 +2748,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if (!fsp) {
 	  file_sync_all(conn);
   } else {
-	  conn->vfs_ops.sync(fsp->fd_ptr->fd);
+	  sync_file(conn,fsp);
   }
 
   DEBUG(3,("flush\n"));
@@ -2535,8 +2772,8 @@ int reply_exit(connection_struct *conn,
 /****************************************************************************
  Reply to a close - has to deal with closing a directory opened by NT SMB's.
 ****************************************************************************/
-int reply_close(connection_struct *conn,
-		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
+                int dum_buffsize)
 {
 	int outsize = 0;
 	time_t mtime;
@@ -2546,9 +2783,8 @@ int reply_close(connection_struct *conn,
 	outsize = set_message(outbuf,0,0,True);
 
 	/* If it's an IPC, pass off to the pipe handler. */
-	if (IS_IPC(conn)) {
+	if (IS_IPC(conn))
 		return reply_pipe_close(conn, inbuf,outbuf);
-	}
 
 	fsp = file_fsp(inbuf,smb_vwv0);
 
@@ -2556,25 +2792,26 @@ int reply_close(connection_struct *conn,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-    if(!fsp || !fsp->open || (fsp->conn != conn))
-      return(ERROR(ERRDOS,ERRbadfid));
+	if(!fsp || !fsp->open || (fsp->conn != conn))
+		return(ERROR(ERRDOS,ERRbadfid));
 
 	if(HAS_CACHED_ERROR(fsp)) {
 		eclass = fsp->wbmpx_ptr->wr_errclass;
 		err = fsp->wbmpx_ptr->wr_error;
 	}
 
-	if(fsp->is_directory) {
+	if(fsp->is_directory || fsp->stat_open) {
 		/*
-		 * Special case - close NT SMB directory
+		 * Special case - close NT SMB directory or stat file
 		 * handle.
 		 */
-		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
-		close_directory(fsp);
+		DEBUG(3,("close %s fnum=%d\n", fsp->is_directory ? "directory" : "stat file open", fsp->fnum));
+		close_file(fsp,True);
 	} else {
 		/*
 		 * Close ordinary file.
 		 */
+		int close_err;
 
 		/*
 		 * If there was a modify time outstanding,
@@ -2592,10 +2829,19 @@ int reply_close(connection_struct *conn,
 		set_filetime(conn, fsp->fsp_name,mtime);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fd_ptr->fd, fsp->fnum,
+			 fsp->fd_ptr ? fsp->fd_ptr->fd : -1, fsp->fnum,
 			 conn->num_files_open));
-  
-		close_file(fsp,True);
+ 
+		/*
+		 * close_file() returns the unix errno if an error
+		 * was detected on close - normally this is due to
+		 * a disk full error. If not then it was probably an I/O error.
+		 */
+ 
+		if((close_err = close_file(fsp,True)) != 0) {
+			errno = close_err;
+			return (UNIXERROR(ERRHRD,ERRgeneral));
+		}
 	}  
 
 	/* We have a cached error */
@@ -2609,12 +2855,14 @@ int reply_close(connection_struct *conn,
 /****************************************************************************
   reply to a writeclose (Core+ protocol)
 ****************************************************************************/
+
 int reply_writeclose(connection_struct *conn,
-		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+		     char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	int outsize = 0;
+	int close_err = 0;
 	SMB_OFF_T startpos;
 	char *data;
 	time_t mtime;
@@ -2631,23 +2879,25 @@ int reply_writeclose(connection_struct *conn,
   
 	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
 		return(ERROR(ERRDOS,ERRlock));
-      
-	if(seek_file(fsp,startpos) == -1)
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-      
-	nwritten = write_file(fsp,data,numtowrite);
+          
+	nwritten = write_file(fsp,data,startpos,numtowrite);
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
-	close_file(fsp,True);
+	close_err = close_file(fsp,True);
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
-		 fsp->fnum, numtowrite, nwritten,
+		 fsp->fnum, (int)numtowrite, (int)nwritten,
 		 conn->num_files_open));
   
 	if (nwritten <= 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+ 
+	if(close_err != 0) {
+		errno = close_err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
+ 
 	outsize = set_message(outbuf,1,0,True);
   
 	SSVAL(outbuf,smb_vwv0,nwritten);
@@ -2696,7 +2946,8 @@ int reply_lock(connection_struct *conn,
 /****************************************************************************
   reply to a unlock
 ****************************************************************************/
-int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
   SMB_OFF_T count,offset;
@@ -2775,6 +3026,8 @@ int reply_echo(connection_struct *conn,
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
 
+	smb_echo_count++;
+
 	return -1;
 }
 
@@ -2815,7 +3068,7 @@ int reply_printopen(connection_struct *conn,
 	if (!fsp)
 		return(ERROR(ERRSRV,ERRnofids));
 	
-	pstrcpy(fname2,(char *)mktemp(fname));
+	pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
 	if (!check_name(fname2,conn)) {
 		file_free(fsp);
@@ -2852,6 +3105,7 @@ int reply_printclose(connection_struct *conn,
 {
 	int outsize = set_message(outbuf,0,0,True);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	int close_err = 0;
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
@@ -2862,7 +3116,12 @@ int reply_printclose(connection_struct *conn,
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
 		 fsp->fd_ptr->fd,fsp->fnum));
   
-	close_file(fsp,True);
+	close_err = close_file(fsp,True);
+
+	if(close_err != 0) {
+		errno = close_err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
 
 	return(outsize);
 }
@@ -2955,7 +3214,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   numtowrite = SVAL(smb_buf(inbuf),1);
   data = smb_buf(inbuf) + 3;
   
-  if (write_file(fsp,data,numtowrite) != numtowrite)
+  if (write_file(fsp,data,-1,numtowrite) != numtowrite)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
@@ -2974,15 +3233,10 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
  
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  if (!unix_dfs_convert(directory,conn,0,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
-			      unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
   
   if (ret < 0)
   {
@@ -3005,11 +3259,12 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 Static function used by reply_rmdir to delete an entire directory
 tree recursively.
 ****************************************************************************/
-static BOOL recursive_rmdir(connection_struct *conn, char *directory)
+
+static BOOL recursive_rmdir(char *directory)
 {
   char *dname = NULL;
   BOOL ret = False;
-  void *dirptr = OpenDir(conn, directory, False);
+  void *dirptr = OpenDir(NULL, directory, False);
 
   if(dirptr == NULL)
     return True;
@@ -3033,7 +3288,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(conn->vfs_ops.lstat(fullname, &st) != 0)
+    if(dos_lstat(fullname, &st) != 0)
     {
       ret = True;
       break;
@@ -3041,18 +3296,18 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 
     if(st.st_mode & S_IFDIR)
     {
-      if(recursive_rmdir(conn, fullname)!=0)
+      if(recursive_rmdir(fullname)!=0)
       {
         ret = True;
         break;
       }
-      if(conn->vfs_ops.rmdir(dos_to_unix(fullname,False)) != 0)
+      if(dos_rmdir(fullname) != 0)
       {
         ret = True;
         break;
       }
     }
-    else if(conn->vfs_ops.unlink(dos_to_unix(fullname,False)) != 0)
+    else if(dos_unlink(fullname) != 0)
     {
       ret = True;
       break;
@@ -3063,8 +3318,97 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 }
 
 /****************************************************************************
-  reply to a rmdir
+ The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
+
+BOOL rmdir_internals(connection_struct *conn, char *directory)
+{
+  BOOL ok;
+
+  ok = (dos_rmdir(directory) == 0);
+  if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn)))
+  {
+    /* 
+     * Check to see if the only thing in this directory are
+     * vetoed files/directories. If so then delete them and
+     * retry. If we fail to delete any of them (and we *don't*
+     * do a recursive delete) then fail the rmdir.
+     */
+    BOOL all_veto_files = True;
+    char *dname;
+    void *dirptr = OpenDir(conn, directory, False);
+
+    if(dirptr != NULL)
+    {
+      int dirpos = TellDir(dirptr);
+      while ((dname = ReadDirName(dirptr)))
+      {
+        if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+          continue;
+        if(!IS_VETO_PATH(conn, dname))
+        {
+          all_veto_files = False;
+          break;
+        }
+      }
+      if(all_veto_files)
+      {
+        SeekDir(dirptr,dirpos);
+        while ((dname = ReadDirName(dirptr)))
+        {
+          pstring fullname;
+          SMB_STRUCT_STAT st;
+
+          if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+            continue;
+
+          /* Construct the full name. */
+          if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
+          {
+            errno = ENOMEM;
+            break;
+          }
+          pstrcpy(fullname, directory);
+          pstrcat(fullname, "/");
+          pstrcat(fullname, dname);
+                     
+          if(dos_lstat(fullname, &st) != 0)
+            break;
+          if(st.st_mode & S_IFDIR)
+          {
+            if(lp_recursive_veto_delete(SNUM(conn)))
+            {
+              if(recursive_rmdir(fullname) != 0)
+                break;
+            }
+            if(dos_rmdir(fullname) != 0)
+              break;
+          }
+          else if(dos_unlink(fullname) != 0)
+            break;
+        }
+        CloseDir(dirptr);
+        /* Retry the rmdir */
+        ok = (dos_rmdir(directory) == 0);
+      }
+      else
+        CloseDir(dirptr);
+    }
+    else
+      errno = ENOTEMPTY;
+  }
+          
+  if (!ok)
+    DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n",
+          directory,strerror(errno)));
+
+  return ok;
+}
+
+/****************************************************************************
+ Reply to a rmdir.
+****************************************************************************/
+
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring directory;
@@ -3073,92 +3417,13 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  if (!unix_dfs_convert(directory,conn, NULL,&bad_path,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  unix_convert(directory,conn, NULL,&bad_path,NULL);
   
   if (check_name(directory,conn))
-    {
-
-      dptr_closepath(directory,SVAL(inbuf,smb_pid));
-      ok = (conn->vfs_ops.rmdir(dos_to_unix(directory,False)) == 0);
-      if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
-        {
-          /* Check to see if the only thing in this directory are
-             vetoed files/directories. If so then delete them and
-             retry. If we fail to delete any of them (and we *don't*
-             do a recursive delete) then fail the rmdir. */
-          BOOL all_veto_files = True;
-          char *dname;
-          void *dirptr = OpenDir(conn, directory, False);
-
-          if(dirptr != NULL)
-            {
-              int dirpos = TellDir(dirptr);
-	          while ((dname = ReadDirName(dirptr)))
-	            {
-                  if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-                    continue;
-                  if(!IS_VETO_PATH(conn, dname))
-                    {
-                      all_veto_files = False;
-                      break;
-                    }
-                }
-              if(all_veto_files)
-                {
-                  SeekDir(dirptr,dirpos);
-                  while ((dname = ReadDirName(dirptr)))
-                    {
-                      pstring fullname;
-                      SMB_STRUCT_STAT st;
-
-                      if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-                        continue;
-
-                      /* Construct the full name. */
-                      if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
-                        {
-                          errno = ENOMEM;
-                          break;
-                        }
-                      pstrcpy(fullname, directory);
-                      pstrcat(fullname, "/");
-                      pstrcat(fullname, dname);
-                      
-                      if(conn->vfs_ops.lstat(fullname, &st) != 0)
-                        break;
-                      if(st.st_mode & S_IFDIR)
-                      {
-                        if(lp_recursive_veto_delete(SNUM(conn)))
-                        {
-			  DEBUG(0, ("ERROR: recursive_rmdir()\n"));
-                          if(recursive_rmdir(conn, fullname) != 0)
-                            break;
-                        }
-                        if(conn->vfs_ops.rmdir(dos_to_unix(fullname,False)) != 0)
-                          break;
-                      }
-                      else if(conn->vfs_ops.unlink(dos_to_unix(fullname,False)) != 0)
-                        break;
-                    }
-                  CloseDir(dirptr);
-                  /* Retry the rmdir */
-                  ok = (conn->vfs_ops.rmdir(dos_to_unix(directory,False)) == 0);
-                }
-              else
-                CloseDir(dirptr);
-            }
-          else
-            errno = ENOTEMPTY;
-         }
-          
-      if (!ok)
-        DEBUG(3,("couldn't remove directory %s : %s\n",
-		 directory,strerror(errno)));
-    }
+  {
+    dptr_closepath(directory,SVAL(inbuf,smb_pid));
+    ok = rmdir_internals(conn, directory);
+  }
   
   if (!ok)
   {
@@ -3251,7 +3516,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (dos_lstat(fname,&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);
@@ -3275,23 +3540,16 @@ int rename_internals(connection_struct *conn,
 	int count=0;
 	int error = ERRnoaccess;
 	BOOL exists=False;
+	BOOL rc = True;
 
 	*directory = *mask = 0;
 
-	if (!unix_dfs_convert(name,conn,0,&bad_path1,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
-	if (!unix_dfs_convert(newname,conn,newname_last_component,&bad_path2,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+	rc = unix_convert(name,conn,0,&bad_path1,NULL);
+	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
 
 	/*
 	 * Split the old name into directory and last component
-	 * strings. Note that if (!unix_dfs_convert may have stripped off a 
+	 * strings. Note that unix_convert may have stripped off a 
 	 * leading ./ from both name and newname if the rename is 
 	 * at the root of the share. We need to make sure either both
 	 * name and newname contain a / character or neither of them do
@@ -3309,7 +3567,16 @@ int rename_internals(connection_struct *conn,
 		*p = '/'; /* Replace needed for exceptional test below. */
 	}
 
-	if (is_mangled(mask))
+	/*
+	 * We should only check the mangled cache
+	 * here if unix_convert failed. This means
+	 * that the path in 'mask' doesn't exist
+	 * on the file system and so we need to look
+	 * for a possible mangle. This patch from
+	 * Tine Smukavec <valentin.smukavec@hermes.si>.
+	 */
+
+	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
 
 	has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3379,23 +3646,21 @@ int rename_internals(connection_struct *conn,
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(dos_to_unix(directory,False),
-						 newname))
+			   !dos_rename(directory,newname))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
-			    !vfs_file_exist(conn,dos_to_unix(newname,False),NULL) &&
-			    !conn->vfs_ops.rename(dos_to_unix(directory,False),
-						  newname))
+			    !dos_file_exist(newname,NULL) &&
+			    !dos_rename(directory,newname))
 				count++;
 		}
 
 		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
 		
-		if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
-		if (!count && exists && vfs_file_exist(conn,dos_to_unix(newname,False),NULL)) {
+		if (!count) exists = dos_file_exist(directory,NULL);
+		if (!count && exists && dos_file_exist(newname,NULL)) {
 			exists = True;
 			error = ERRrename;
 		}
@@ -3436,13 +3701,13 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!replace_if_exists && vfs_file_exist(conn,dos_to_unix(destname,False),NULL)) {
-					DEBUG(6,("file_exist %s\n", destname));
+				if (!replace_if_exists && dos_file_exist(destname,NULL)) {
+					DEBUG(6,("dos_file_exist %s\n", destname));
 					error = 183;
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),destname))
+				if (!dos_rename(fname,destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -3492,14 +3757,16 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
   ******************************************************************/
 
 static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
-		      int count,BOOL target_is_directory)
+		      int count,BOOL target_is_directory, int *err_ret)
 {
   int Access,action;
   SMB_STRUCT_STAT st;
-  int ret=-1;
+  SMB_OFF_T ret=-1;
   files_struct *fsp1,*fsp2;
   pstring dest;
   
+  *err_ret = 0;
+
   pstrcpy(dest,dest1);
   if (target_is_directory) {
     char *p = strrchr(src,'/');
@@ -3511,16 +3778,15 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!vfs_file_exist(conn,dos_to_unix(src,False),&st))
+  if (!dos_file_exist(src,&st))
     return(False);
 
   fsp1 = file_new();
-  if (!fsp1) 
+  if (!fsp1)
     return(False);
 
-  open_file_shared(fsp1, conn, src,
-      SET_DENY_MODE(DENY_NONE) | SET_OPEN_MODE(DOS_OPEN_RDONLY),
-      (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN), 0, 0, &Access, &action);
+  open_file_shared(fsp1,conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
 
   if (!fsp1->open) {
 	  file_free(fsp1);
@@ -3535,9 +3801,8 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	  close_file(fsp1,False);
 	  return(False);
   }
-  open_file_shared(fsp2, conn, dest,
-      SET_DENY_MODE(DENY_NONE) | SET_OPEN_MODE(DOS_OPEN_WRONLY),
-      ofun, st.st_mode, 0, &Access, &action);
+  open_file_shared(fsp2,conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+		   ofun,st.st_mode,0,&Access,&action);
 
   if (!fsp2->open) {
     close_file(fsp1,False);
@@ -3546,7 +3811,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if ((ofun&3) == 1) {
-    if(conn->vfs_ops.lseek(fsp2->fd_ptr->fd,0,SEEK_END) == -1) {
+    if(sys_lseek(fsp2->fd_ptr->fd,0,SEEK_END) == -1) {
       DEBUG(0,("copy_file: error - sys_lseek returned error %s\n",
                strerror(errno) ));
       /*
@@ -3558,12 +3823,19 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
   
   if (st.st_size)
-    ret = vfs_transfer_file(-1, fsp1, -1, fsp2, st.st_size, NULL, 0, 0);
+    ret = transfer_file(fsp1->fd_ptr->fd,
+                        fsp2->fd_ptr->fd,st.st_size,NULL,0,0);
 
   close_file(fsp1,False);
-  close_file(fsp2,False);
+  /*
+   * As we are opening fsp1 read-only we only expect
+   * an error on close on fsp2 if we are out of space.
+   * Thus we don't look at the error return from the
+   * close of fsp1.
+   */
+  *err_ret = close_file(fsp2,False);
 
-  return(ret == st.st_size);
+  return(ret == (SMB_OFF_T)st.st_size);
 }
 
 
@@ -3580,6 +3852,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   char *p;
   int count=0;
   int error = ERRnoaccess;
+  int err = 0;
   BOOL has_wild;
   BOOL exists=False;
   int tid2 = SVAL(inbuf,smb_vwv0);
@@ -3588,6 +3861,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL target_is_directory=False;
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -3602,16 +3876,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  if (!unix_dfs_convert(name,conn,0,&bad_path1,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
-  if (!unix_dfs_convert(newname,conn,0,&bad_path2,NULL))
-  {
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-  }
+  rc = unix_convert(name,conn,0,&bad_path1,NULL);
+  unix_convert(newname,conn,0,&bad_path2,NULL);
 
   target_is_directory = dos_directory_exist(newname,NULL);
 
@@ -3639,7 +3905,16 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3649,8 +3924,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     pstrcat(directory,mask);
     if (resolve_wildcards(directory,newname) && 
 	copy_file(directory,newname,conn,ofun,
-		  count,target_is_directory)) count++;
-    if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
+		  count,target_is_directory,&err)) count++;
+    if(!count && err) {
+		errno = err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
+    if (!count) exists = dos_file_exist(directory,NULL);
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -3659,33 +3938,38 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     if (check_name(directory,conn))
       dirptr = OpenDir(conn, directory, True);
 
-    if (dirptr)
-      {
+    if (dirptr) {
 	error = ERRbadfile;
 
 	if (strequal(mask,"????????.???"))
 	  pstrcpy(mask,"*");
 
-	while ((dname = ReadDirName(dirptr)))
-	  {
+	while ((dname = ReadDirName(dirptr))) {
 	    pstring fname;
 	    pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
+	    if(!mask_match(fname, mask, case_sensitive, False))
+			continue;
 
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    pstrcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
-		copy_file(directory,newname,conn,ofun,
-			  count,target_is_directory)) count++;
+		copy_file(fname,destname,conn,ofun,
+			  count,target_is_directory,&err)) count++;
 	    DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 	  }
 	CloseDir(dirptr);
-      }
+    }
   }
   
   if (count == 0) {
+    if(err) {
+      /* Error on close... */
+      errno = err;
+      return(UNIXERROR(ERRHRD,ERRgeneral));
+    }
+
     if (exists)
       return(ERROR(ERRDOS,error));
     else
@@ -3743,8 +4027,148 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 }
 
 /****************************************************************************
+ Get a lock count, dealing with large count requests.
+****************************************************************************/
+
+SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+{
+  SMB_OFF_T count = 0;
+
+  *err = False;
+
+  if(!large_file_format) {
+    count = (SMB_OFF_T)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
+  } else {
+
+#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
+    count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+    /*
+     * NT4.x seems to be broken in that it sends large file
+     * lockingX calls even if the CAP_LARGE_FILES was *not*
+     * negotiated. For boxes without large file locks truncate the
+     * lock count by dropping the top 32 bits.
+     */
+
+    if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0) {
+      DEBUG(3,("get_lock_count: truncating lock count (high)0x%x (low)0x%x to just low count.\n",
+            (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
+            (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
+      SIVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset),0);
+    }
+
+    if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0) {
+      /*
+       * Before we error out, see if we can sensibly map the top bits
+       * down to the lower bits - or lose the top bits if they are all 1's.
+       * It seems that NT has this horrible bug where it will send 64 bit
+       * lock requests even if told not to. JRA.
+       */
+
+      if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
+        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset));
+      else if (IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
+        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+      else {
+
+        DEBUG(0,("get_lock_count: Error : a large file count (%x << 32 | %x) was sent and we don't \
+support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
+            (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
+
+        *err = True;
+        return (SMB_OFF_T)-1;
+      }
+    }
+    else
+      count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+
+#endif /* LARGE_SMB_OFF_T */
+  }
+  return count;
+}
+
+/****************************************************************************
+ Get a lock offset, dealing with large offset requests.
+****************************************************************************/
+
+SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+{
+  SMB_OFF_T offset = 0;
+
+  *err = False;
+
+  if(!large_file_format) {
+    offset = (SMB_OFF_T)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
+  } else {
+
+#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
+    offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+    /*
+     * NT4.x seems to be broken in that it sends large file
+     * lockingX calls even if the CAP_LARGE_FILES was *not*
+     * negotiated. For boxes without large file locks mangle the
+     * lock offset by mapping the top 32 bits onto the lower 32.
+     */
+      
+    if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0) {
+      uint32 low = IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+      uint32 high = IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
+      uint32 new_low = 0;
+
+      if((new_low = map_lock_offset(high, low)) == 0) {
+        *err = True;
+        return (SMB_OFF_T)-1;
+      }
+
+      DEBUG(3,("get_lock_offset: truncating lock offset (high)0x%x (low)0x%x to offset 0x%x.\n",
+            (unsigned int)high, (unsigned int)low, (unsigned int)new_low ));
+      SIVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset),0);
+      SIVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset),new_low);
+    }
+
+    if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0){
+      /*
+       * Before we error out, see if we can sensibly map the top bits
+       * down to the lower bits - or lose the top bits if they are all 1's.
+       * It seems that NT has this horrible bug where it will send 64 bit
+       * lock requests even if told not to. JRA.
+       */
+
+      if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
+        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
+      else if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
+        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+      else {
+
+        DEBUG(0,("get_lock_count: Error : a large file offset (%x << 32 | %x) was sent and we don't \
+support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)),
+            (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) ));
+
+        *err = True;
+        return (SMB_OFF_T)-1;
+      }
+    }
+    else
+      offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+
+#endif /* LARGE_SMB_OFF_T */
+  }
+  return offset;
+}
+
+/****************************************************************************
   reply to a lockingX request
 ****************************************************************************/
+
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
@@ -3761,6 +4185,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+  BOOL err1, err2;
+
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
@@ -3771,35 +4197,28 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
    */
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
-    int token;
-    SMB_DEV_T dev = fsp->fd_ptr->dev;
-    SMB_INO_T inode = fsp->fd_ptr->inode;
-
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fsp->fnum));
+
     /*
-     * Make sure we have granted an oplock on this file.
+     * Make sure we have granted an exclusive or batch oplock on this file.
      */
-    if(!fsp->granted_oplock)
+
+    if(!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file.\n", fsp->fnum));
-      return ERROR(ERRDOS,ERRlock);
+no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
+
+      /* if this is a pure oplock break request then don't send a reply */
+      if (num_locks == 0 && num_ulocks == 0)
+        return -1;
+      else
+        return ERROR(ERRDOS,ERRlock);
     }
 
-    /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock(token, fsp)==False) {
-
-	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
-
-	    unlock_share_entry(fsp->conn, dev, inode, token);
-    } else {
-	    unlock_share_entry(fsp->conn, dev, inode, token);
-
-	    /* Clear the granted flag and return. */
-	    fsp->granted_oplock = False;
+    if (remove_oplock(fsp) == False) {
+      DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
+            fsp->fsp_name ));
     }
 
     /* if this is a pure oplock break request then don't send a reply */
@@ -3817,18 +4236,14 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(i));
-      offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    count = get_lock_count( data, i, large_file_format, &err1);
+    offset = get_lock_offset( data, i, large_file_format, &err2);
+
+    /*
+     * There is no error code marked "stupid client bug".... :-).
+     */
+    if(err1 || err2)
+      return ERROR(ERRDOS,ERRnoaccess);
 
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
@@ -3847,18 +4262,14 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(i)); 
-      offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    count = get_lock_count( data, i, large_file_format, &err1);
+    offset = get_lock_offset( data, i, large_file_format, &err2);
+
+    /*
+     * There is no error code marked "stupid client bug".... :-).
+     */
+    if(err1 || err2)
+      return ERROR(ERRDOS,ERRnoaccess);
  
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
@@ -3882,19 +4293,15 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      all of the previous locks (X/Open spec). */
   if(i != num_locks && num_locks != 0) {
     for(; i >= 0; i--) {
-      if(!large_file_format) {
-        count = IVAL(data,SMB_LKLEN_OFFSET(i));  
-        offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-      }
-#ifdef LARGE_SMB_OFF_T
-      else {
-        count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-        offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-                 ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-      }
-#endif /* LARGE_SMB_OFF_T */
+      count = get_lock_count( data, i, large_file_format, &err1);
+      offset = get_lock_offset( data, i, large_file_format, &err2);
 
+      /*
+       * There is no error code marked "stupid client bug".... :-).
+       */
+      if(err1 || err2)
+        return ERROR(ERRDOS,ERRnoaccess);
+ 
       do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
     }
     return ERROR(eclass,ecode);
@@ -3980,7 +4387,8 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 /****************************************************************************
   reply to a SMBwritebmpx (write block multiplex primary) request
 ****************************************************************************/
-int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   size_t numtowrite;
   ssize_t nwritten = -1;
@@ -4011,14 +4419,10 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
-  nwritten = write_file(fsp,data,numtowrite);
-
-  if((lp_syncalways(SNUM(conn)) || write_through) &&
-     lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if(lp_syncalways(SNUM(conn)) || write_through)
+    sync_file(conn,fsp);
   
   if(nwritten < (ssize_t)numtowrite)
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -4056,7 +4460,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   SSVALS(outbuf,smb_vwv0,-1); /* We don't support smb_remaining */
   
   DEBUG( 3, ( "writebmpx fnum=%d num=%d wrote=%d\n",
-	    fsp->fnum, numtowrite, nwritten ) );
+	    fsp->fnum, (int)numtowrite, (int)nwritten ) );
 
   if (write_through && tcount==nwritten) {
     /* we need to send both a primary and a secondary response */
@@ -4116,23 +4520,10 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   if(wbms->wr_discard)
     return -1; /* Just discard the packet */
 
-  if(seek_file(fsp,startpos) == -1)
-  {
-    if(write_through)
-    {
-      /* We are returning an error - we can delete the aux struct */
-      if (wbms) free((char *)wbms);
-      fsp->wbmpx_ptr = NULL;
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-    return(CACHE_ERROR(wbms,ERRDOS,ERRnoaccess));
-  } 
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
-  nwritten = write_file(fsp,data,numtowrite);
-
-  if((lp_syncalways(SNUM(conn)) || write_through) &&
-     lp_strict_sync(SNUM(conn)))
-    conn->vfs_ops.sync(fsp->fd_ptr->fd);
+  if(lp_syncalways(SNUM(conn)) || write_through)
+    sync_file(conn,fsp);
   
   if (nwritten < (ssize_t)numtowrite)
   {
@@ -4172,7 +4563,8 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 /****************************************************************************
   reply to a SMBsetattrE
 ****************************************************************************/
-int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   struct utimbuf unix_times;
   int outsize = 0;
@@ -4224,7 +4616,8 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 /****************************************************************************
   reply to a SMBgetattrE
 ****************************************************************************/
-int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   SMB_STRUCT_STAT sbuf;
   int outsize = 0;
@@ -4237,7 +4630,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   CHECK_ERROR(fsp);
 
   /* Do an fstat on this file */
-  if(fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd, &sbuf))
+  if(sys_fstat(fsp->fd_ptr->fd, &sbuf))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   mode = dos_mode(conn,fsp->fsp_name,&sbuf);

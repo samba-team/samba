@@ -32,7 +32,7 @@ extern pstring global_myname;
 extern fstring global_myworkgroup;
 
 /* This is our local master browser list database. */
-extern struct ubi_dlList lmb_browserlist[];
+extern ubi_dlList lmb_browserlist[];
 
 /****************************************************************************
 As a domain master browser, do a sync with a local master browser.
@@ -128,7 +128,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
     return;
   }
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_MasterAnnouncement;
   p++;
@@ -324,7 +324,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
     putip((char *)&work->dmb_addr, &ipzero);
 
   /* Now initiate the node status request. */
-  bzero((char *)&nmbname, sizeof(nmbname));
+  memset((char *)&nmbname, '\0',sizeof(nmbname));
   nmbname.name[0] = '*';
 
   /* Put the workgroup name into the userdata so we know
@@ -549,7 +549,7 @@ static void find_all_domain_master_names_query_success(struct subnet_record *sub
   for(i = 0; i < rrec->rdlength / 6; i++)
   {
     /* Initiate the node status requests. */
-    bzero((char *)&nmbname, sizeof(nmbname));
+    memset((char *)&nmbname, '\0', sizeof(nmbname));
     nmbname.name[0] = '*';
 
     putip((char *)&send_ip, (char *)&rrec->rdata[(i*6) + 2]);

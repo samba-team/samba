@@ -23,11 +23,33 @@
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
+#ifdef BROKEN_NISPLUS_INCLUDE_FILES
+/*
+ * The following lines are needed due to buggy include files
+ * in Solaris 2.6 which define GROUP in both /usr/include/sys/acl.h and
+ * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
+ * Also GROUP_OBJ is defined as 0x4 in /usr/include/sys/acl.h and as
+ * an enum in /usr/include/rpcsvc/nis.h.
+ */
+
+#if defined(GROUP)
+#undef GROUP
+#endif
+
+#if defined(GROUP_OBJ)
+#undef GROUP_OBJ
+#endif
+
+#endif /* BROKEN_NISPLUS_INCLUDE_FILES */
+
 #include <rpcsvc/nis.h>
-#else
+
+#else /* !WITH_NISPLUS_HOME */
+
 #include "rpcsvc/ypclnt.h"
-#endif
-#endif
+
+#endif /* WITH_NISPLUS_HOME */
+#endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
 #ifdef WITH_SSL
 #include <ssl.h>
@@ -71,8 +93,7 @@ fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
-pstring myhostname="";
-pstring user_socket_options="";   
+pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
 pstring sesssetup_user="";
 pstring samlogon_user="";
@@ -85,23 +106,7 @@ char **my_netbios_names;
 
 static char *filename_dos(char *path,char *buf);
 
-char *daynames[] = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
-char *daynames_short[] = {"M", "Tu", "W", "Th", "F", "Sa", "Su"};
 
-/*************************************************************
- initialise password databases, domain names, domain sid.
-**************************************************************/
-BOOL init_myworkgroup(void)
-{
-	fstrcpy(global_myworkgroup, lp_workgroup());
-
-	if (strequal(global_myworkgroup,"*"))
-	{
-		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
-		return False;
-	}
-	return True;
-}
 
 /****************************************************************************
   find a suitable temporary directory. The result should be copied immediately
@@ -135,39 +140,19 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 
 
 /****************************************************************************
-gets either a hex number (0xNNN) or decimal integer (NNN).
-****************************************************************************/
-uint32 get_number(const char *tmp)
-{
-	if (strnequal(tmp, "0x", 2))
-	{
-		return strtoul(tmp, (char**)NULL, 16);
-	}
-	else
-	{
-		return strtoul(tmp, (char**)NULL, 10);
-	}
-}
-
-/****************************************************************************
 like atoi but gets the value up to the separater character
 ****************************************************************************/
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit(*p))
+	if (!isdigit((int)*p))
 	{
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
 
-	(*n) = (int)get_number(p);
+	(*n) = atoi(p);
 
-	if (strnequal(p, "0x", 2))
-	{
-		p += 2;
-	}
-
-	while ((*p) && isdigit(*p))
+	while ((*p) && isdigit((int)*p))
 	{
 		p++;
 	}
@@ -179,19 +164,6 @@ char *Atoic(char *p, int *n, char *c)
 	}
 
 	return p;
-}
-
-uint32 *add_num_to_list(uint32 **num, int *count, int val)
-{
-	(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
-	if ((*num) == NULL)
-	{
-		return NULL;
-	}
-	(*num)[(*count)] = val;
-	(*count)++;
-
-	return (*num);
 }
 
 /*************************************************************************
@@ -211,10 +183,13 @@ char *get_numlist(char *p, uint32 **num, int *count)
 
 	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
 	{
-		if (add_num_to_list(num, count, val) == NULL)
+		(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
+		if ((*num) == NULL)
 		{
 			return NULL;
 		}
+		(*num)[(*count)] = val;
+		(*count)++;
 		p++;
 	}
 
@@ -357,7 +332,7 @@ int name_mangle( char *In, char *Out, char name_type )
       case '.':
         p[0] = len;
         p   += (len + 1);
-        len  = 0;
+        len  = -1;
         break;
       default:
         p[len+1] = scope[i];
@@ -380,21 +355,6 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
     return(False);
 
   return(S_ISREG(sbuf->st_mode));
-}
-
-/*******************************************************************
-  rename a unix file
-********************************************************************/
-int file_rename(char *from, char *to)
-{
-	int rcode = rename (from, to);
-
-	if (errno == EXDEV) 
-	{
-		/* Rename across filesystems needed. */
-		rcode = copy_reg (from, to);        
-	}
-	return rcode;
 }
 
 /*******************************************************************
@@ -432,7 +392,7 @@ BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 /*******************************************************************
 returns the size in bytes of the named file
 ********************************************************************/
-SMB_OFF_T file_size(char *file_name)
+SMB_OFF_T get_file_size(char *file_name)
 {
   SMB_STRUCT_STAT buf;
   buf.st_size = 0;
@@ -459,6 +419,8 @@ char *attrib_string(uint16 mode)
 
   return(attrstr);
 }
+
+
 
 /****************************************************************************
   make a file into unix format
@@ -558,7 +520,7 @@ void smb_setlen(char *buf,int len)
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
   if (zero)
-    bzero(buf + smb_size,num_words*2 + num_bytes);
+    memset(buf + smb_size,'\0',num_words*2 + num_bytes);
   CVAL(buf,smb_wct) = num_words;
   SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
   smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
@@ -605,8 +567,6 @@ int smb_offset(char *p,char *buf)
   return(PTR_DIFF(p,buf+4) + chain_size);
 }
 
-
-
 /*******************************************************************
 reduce a file name, removing .. elements.
 ********************************************************************/
@@ -617,7 +577,7 @@ void dos_clean_name(char *s)
   DEBUG(3,("dos_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  string_sub(s, "\\\\", "\\");
+  all_string_sub(s, "\\\\", "\\", 0);
 
   while ((p = strstr(s,"\\..\\")) != NULL)
     {
@@ -635,7 +595,7 @@ void dos_clean_name(char *s)
 
   trim_string(s,NULL,"\\..");
 
-  string_sub(s, "\\.\\", "\\");
+  all_string_sub(s, "\\.\\", "\\", 0);
 }
 
 /*******************************************************************
@@ -648,7 +608,7 @@ void unix_clean_name(char *s)
   DEBUG(3,("unix_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  string_sub(s, "//","/");
+  all_string_sub(s, "//","/", 0);
 
   /* Remove leading ./ characters */
   if(strncmp(s, "./", 2) == 0) {
@@ -676,7 +636,7 @@ void unix_clean_name(char *s)
 
 /*******************************************************************
 reduce a file name, removing .. elements and checking that 
-it is below dir in the heirachy. This uses GetWd() and so must be run
+it is below dir in the heirachy. This uses dos_GetWd() and so must be run
 on the system that has the referenced file system.
 
 widelinks are allowed if widelinks is true
@@ -697,25 +657,25 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   *dir2 = *wd = *base_name = *newname = 0;
 
   if (widelinks)
+  {
+    unix_clean_name(s);
+    /* can't have a leading .. */
+    if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
     {
-      unix_clean_name(s);
-      /* can't have a leading .. */
-      if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
-	{
-	  DEBUG(3,("Illegal file name? (%s)\n",s));
-	  return(False);
-	}
-
-      if (strlen(s) == 0)
-        pstrcpy(s,"./");
-
-      return(True);
+      DEBUG(3,("Illegal file name? (%s)\n",s));
+      return(False);
     }
+
+    if (strlen(s) == 0)
+      pstrcpy(s,"./");
+
+    return(True);
+  }
   
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
   /* remove any double slashes */
-  string_sub(s,"//","/");
+  all_string_sub(s,"//","/",0);
 
   pstrcpy(base_name,s);
   p = strrchr(base_name,'/');
@@ -724,53 +684,52 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
     return(True);
 
   if (!dos_GetWd(wd))
-    {
-      DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
-      return(False);
-    }
+  {
+    DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
+    return(False);
+  }
 
   if (dos_ChDir(dir) != 0)
-    {
-      DEBUG(0,("couldn't chdir to %s\n",dir));
-      return(False);
-    }
+  {
+    DEBUG(0,("couldn't chdir to %s\n",dir));
+    return(False);
+  }
 
   if (!dos_GetWd(dir2))
-    {
-      DEBUG(0,("couldn't getwd for %s\n",dir));
-      dos_ChDir(wd);
-      return(False);
-    }
-
-
-    if (p && (p != base_name))
-      {
-	*p = 0;
-	if (strcmp(p+1,".")==0)
-	  p[1]=0;
-	if (strcmp(p+1,"..")==0)
-	  *p = '/';
-      }
-
-  if (dos_ChDir(base_name) != 0)
-    {
-      dos_ChDir(wd);
-      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
-      return(False);
-    }
-
-  if (!dos_GetWd(newname))
-    {
-      dos_ChDir(wd);
-      DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
-      return(False);
-    }
+  {
+    DEBUG(0,("couldn't getwd for %s\n",dir));
+    dos_ChDir(wd);
+    return(False);
+  }
 
   if (p && (p != base_name))
-    {
-      pstrcat(newname,"/");
-      pstrcat(newname,p+1);
-    }
+  {
+    *p = 0;
+    if (strcmp(p+1,".")==0)
+      p[1]=0;
+    if (strcmp(p+1,"..")==0)
+      *p = '/';
+  }
+
+  if (dos_ChDir(base_name) != 0)
+  {
+    dos_ChDir(wd);
+    DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
+    return(False);
+  }
+
+  if (!dos_GetWd(newname))
+  {
+    dos_ChDir(wd);
+    DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
+    return(False);
+  }
+
+  if (p && (p != base_name))
+  {
+    pstrcat(newname,"/");
+    pstrcat(newname,p+1);
+  }
 
   {
     size_t l = strlen(dir2);    
@@ -778,19 +737,19 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
       l--;
 
     if (strncmp(newname,dir2,l) != 0)
-      {
-	dos_ChDir(wd);
-	DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
-	return(False);
-      }
+    {
+      dos_ChDir(wd);
+      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
+      return(False);
+    }
 
     if (relative)
-      {
-	if (newname[l] == '/')
-	  pstrcpy(s,newname + l + 1);
-	else
-	  pstrcpy(s,newname+l);
-      }
+    {
+      if (newname[l] == '/')
+        pstrcpy(s,newname + l + 1);
+      else
+        pstrcpy(s,newname+l);
+    }
     else
       pstrcpy(s,newname);
   }
@@ -918,7 +877,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
   else
     memcpy(buf+1,mask2,MIN(strlen(mask2),11));
 
-  bzero(buf+21,DIR_STRUCT_SIZE-21);
+  memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
   CVAL(buf,21) = mode;
   put_dos_date(buf,22,date);
   SSVAL(buf,26,size & 0xFFFF);
@@ -1083,11 +1042,7 @@ static char *name_ptr(char *buf,int ofs)
 
   if ((c & 0xC0) == 0xC0)
     {
-      uint16 l;
-      char p[2];
-      memcpy(p,buf+ofs,2);
-      p[0] &= ~0xC0;
-      l = RSVAL(p,0);
+      uint16 l = RSVAL(buf, ofs) & 0x3FFF;
       DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
       return(buf + l);
     }
@@ -1148,7 +1103,7 @@ void msleep(int t)
  
     FD_ZERO(&fds);
     errno = 0;
-    sys_select(0,&fds,NULL, &tval);
+    sys_select(0,&fds,&tval);
 
     GetTimeOfDay(&t2);
     tdiff = TvalDiff(&t1,&t2);
@@ -1161,7 +1116,8 @@ void msleep(int t)
 * Does the actual matching. This is the 'original code' 
 * used by the unix matcher.
 *********************************************************/
-static BOOL unix_do_match(char *str, char *regexp, int case_sig)
+
+BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
 
@@ -1226,7 +1182,7 @@ static BOOL unix_do_match(char *str, char *regexp, int case_sig)
 * This is the 'original code' used by the unix matcher.
 *********************************************************/
 
-static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
+static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 {
   char *p;
   pstring p1, p2;
@@ -1286,9 +1242,14 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 * Recursive routine that is called by mask_match.
 * Does the actual matching. Returns True if matched,
 * False if failed. This is the 'new' NT style matcher.
+* The win9x_semantics parameter is needed as Win9x matching
+* is *actually different*. In Win9x, trailing '?' characters
+* will only match the *exact* number of characters. Under
+* DOS and NT they match any number. This makes no
+* sense.....
 *********************************************************/
 
-BOOL do_match(char *str, char *regexp, int case_sig)
+static BOOL do_match(char *str, char *regexp, int case_sig, BOOL win9x_semantics)
 {
   char *p;
 
@@ -1312,7 +1273,7 @@ BOOL do_match(char *str, char *regexp, int case_sig)
         while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str))))
           str++;
         str--; /* We've eaten the match char after the '*' */
-        if(do_match(str,p,case_sig)) {
+        if(do_match(str,p,case_sig,win9x_semantics)) {
           return True;
         }
         if(!*str) {
@@ -1345,10 +1306,12 @@ BOOL do_match(char *str, char *regexp, int case_sig)
     return(True);
   }
   
-  if (!*str && *p == '?') {
-    while (*p == '?')
-      p++;
-    return(!*p);
+  if (!win9x_semantics) {
+    if (!*str && *p == '?') {
+      while (*p == '?')
+        p++;
+      return(!*p);
+    }
   }
 
   if(!*str && (*p == '*' && p[1] == '\0')) {
@@ -1358,6 +1321,15 @@ BOOL do_match(char *str, char *regexp, int case_sig)
   return False;
 }
 
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* Case can be significant or not.
+**********************************************************/
+
+BOOL exact_match(char *str, char *regexp, BOOL case_sig)
+{
+  return ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0);
+}
 
 /*********************************************************
 * Routine to match a given string with a regexp - uses
@@ -1367,17 +1339,36 @@ BOOL do_match(char *str, char *regexp, int case_sig)
 * This is the new 'NT style' matcher.
 *********************************************************/
 
-BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
+BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 {
   char *p;
   pstring t_pattern, t_filename, te_pattern, te_filename;
   fstring ebase,eext,sbase,sext;
-
   BOOL matched = False;
+  BOOL win9x_semantics = (get_remote_arch() == RA_WIN95) && trans2;
+
+  /* special case - if it is exactly the same then it always matches! */
+  if(exact_match(str, regexp, case_sig))
+    return True;
 
   /* Make local copies of str and regexp */
   pstrcpy(t_pattern,regexp);
   pstrcpy(t_filename,str);
+
+  if(trans2) {
+
+    /* a special case for 16 bit apps */
+    if (strequal(t_pattern,"????????.???"))
+      pstrcpy(t_pattern,"*");
+
+#if 0
+    /*
+     * Handle broken clients that send us old 8.3 format.
+     */
+    pstring_sub(t_pattern,"????????","*");
+    pstring_sub(t_pattern,".???",".*");
+#endif
+  }
 
 #if 0
   /* 
@@ -1394,8 +1385,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 #endif
 
   /* Remove any *? and ** as they are meaningless */
-  string_sub(t_pattern, "*?", "*");
-  string_sub(t_pattern, "**", "*");
+  pstring_sub(t_pattern, "*?", "*");
+  pstring_sub(t_pattern, "**", "*");
 
   if (strequal(t_pattern,"*"))
     return(True);
@@ -1416,7 +1407,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
     /*
      * Remove multiple "*." patterns.
      */
-    string_sub(te_pattern, "*.*.", "*.");
+    pstring_sub(te_pattern, "*.*.", "*.");
     num_regexp_components = count_chars(te_pattern, '.');
     num_path_components = count_chars(te_filename, '.');
 
@@ -1424,7 +1415,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
      * Check for special 'hack' case of "DIR a*z". - needs to match a.b.c...z
      */
     if(num_regexp_components == 0)
-      matched = do_match( te_filename, te_pattern, case_sig);
+      matched = do_match( te_filename, te_pattern, case_sig, win9x_semantics);
     else {
       for( cp1 = te_pattern, cp2 = te_filename; cp1;) {
         fp = strchr(cp2, '.');
@@ -1434,13 +1425,23 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         if(rp)
           *rp = '\0';
 
-        if(cp1[strlen(cp1)-1] == '*')
+        if(cp1[0] && cp1[strlen(cp1)-1] == '*')
           last_wcard_was_star = True;
         else
           last_wcard_was_star = False;
 
-        if(!do_match(cp2, cp1, case_sig))
+        if(!do_match(cp2, cp1, case_sig, win9x_semantics))
           break;
+
+        /*
+         * Ugly ! Special case for Win9x *only*. If filename is XXXX and pattern extension
+         * is '*' or all '?' then disallow match.
+         */
+
+        if (win9x_semantics) {
+          if (*cp2 == '\0' && str_is_all(cp1, '?'))
+            break;
+        }
 
         cp1 = rp ? rp + 1 : NULL;
         cp2 = fp ? fp + 1 : "";
@@ -1454,7 +1455,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
             if(fp)
               *fp = '\0';
 
-            if((cp1 != NULL) && do_match( cp2, cp1, case_sig)) {
+            if((cp1 != NULL) && do_match( cp2, cp1, case_sig, win9x_semantics)) {
               cp2 = fp ? fp + 1 : "";
               break;
             }
@@ -1475,19 +1476,21 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
      */
     if (strequal (t_filename, ".")) {
       /*
-       *  Patterns:  *.*  *. ?. ?  are valid
-       *
+       *  Patterns:  *.*  *. ?. ? ????????.??? are valid.
+       * 
        */
       if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
-         strequal(t_pattern, "?.") || strequal(t_pattern, "?"))
+         strequal(t_pattern, "????????.???") ||
+         strequal(t_pattern, "?.") || strequal(t_pattern, "?")) 
         matched = True;
     } else if (strequal (t_filename, "..")) {
       /*
-       *  Patterns:  *.*  *. ?. ? *.? are valid
+       *  Patterns:  *.*  *. ?. ? *.? ????????.??? are valid.
        *
        */
       if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
          strequal(t_pattern, "?.") || strequal(t_pattern, "?") ||
+         strequal(t_pattern, "????????.???") ||
          strequal(t_pattern, "*.?") || strequal(t_pattern, "?.*"))
         matched = True;
     } else {
@@ -1531,12 +1534,12 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sbase, t_filename);
         fstrcpy (sext, p + 1);
         if (*eext) {
-          matched = do_match(sbase, ebase, case_sig)
-                    && do_match(sext, eext, case_sig);
+          matched = do_match(sbase, ebase, case_sig, False)
+                    && do_match(sext, eext, case_sig, False);
         } else {
           /* pattern has no extension */
           /* Really: match complete filename with pattern ??? means exactly 3 chars */
-          matched = do_match(str, ebase, case_sig);
+          matched = do_match(str, ebase, case_sig, False);
         }
       } else {
         /* 
@@ -1546,10 +1549,11 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sext, "");
         if (*eext) {
           /* pattern has extension */
-          matched = do_match(sbase, ebase, case_sig)
-                    && do_match(sext, eext, case_sig);
+          matched = do_match(sbase, ebase, case_sig, False)
+                    && do_match(sext, eext, case_sig, False);
+
         } else {
-          matched = do_match(sbase, ebase, case_sig);
+          matched = do_match(sbase, ebase, case_sig, False);
 #ifdef EMULATE_WEIRD_W95_MATCHING
           /*
            * Even Microsoft has some problems
@@ -1560,7 +1564,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
           if (!matched) {
             /* a? matches aa and a in w95 */
             fstrcat (sbase, ".");
-            matched = do_match(sbase, ebase, case_sig);
+            matched = do_match(sbase, ebase, case_sig, False);
           }
 #endif
         }
@@ -1617,12 +1621,11 @@ BOOL yesno(char *p)
   return(False);
 }
 
-
-
 /****************************************************************************
 set the length of a file from a filedescriptor.
 Returns 0 on success, -1 on failure.
 ****************************************************************************/
+
 int set_filelen(int fd, SMB_OFF_T len)
 {
 /* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
@@ -1646,7 +1649,8 @@ int set_filelen(int fd, SMB_OFF_T len)
     return -1;
 
 #ifdef S_ISFIFO
-  if (S_ISFIFO(st.st_mode)) return 0;
+  if (S_ISFIFO(st.st_mode))
+    return 0;
 #endif
 
   if(st.st_size == len)
@@ -1720,7 +1724,7 @@ void *Realloc(void *p,size_t size)
 #endif
 
   if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",size));
+    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
   return(ret);
 }
@@ -1729,40 +1733,30 @@ void *Realloc(void *p,size_t size)
 /****************************************************************************
 get my own name and IP
 ****************************************************************************/
-BOOL get_myname(char *my_name,struct in_addr *ip)
+BOOL get_myname(char *my_name)
 {
-  struct hostent *hp;
-  pstring hostname;
+	pstring hostname;
 
-  *hostname = 0;
+	*hostname = 0;
 
-  /* get my host name */
-  if (gethostname(hostname, MAXHOSTNAMELEN) == -1) 
-    {
-      DEBUG(0,("gethostname failed\n"));
-      return False;
-    } 
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
 
-  /* get host info */
-  if ((hp = Get_Hostbyname(hostname)) == 0) 
-    {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",hostname));
-      return False;
-    }
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
 
-  if (my_name)
-    {
-      /* split off any parts after an initial . */
-      char *p = strchr(hostname,'.');
-      if (p) *p = 0;
-
-      fstrcpy(my_name,hostname);
-    }
-
-  if (ip)
-    putip((char *)ip,(char *)hp->h_addr);
-
-  return(True);
+	if (my_name) {
+		/* split off any parts after an initial . */
+		char *p = strchr(hostname,'.');
+		if (p) *p = 0;
+		
+		fstrcpy(my_name,hostname);
+	}
+	
+	return(True);
 }
 
 
@@ -1771,10 +1765,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2)
 {
-  uint32 a1,a2;
-  a1 = ntohl(ip1.s_addr);
-  a2 = ntohl(ip2.s_addr);
-  return(a1 == a2);
+	return ip1.s_addr == ip2.s_addr;
 }
 
 
@@ -1801,26 +1792,39 @@ int interpret_protocol(char *str,int def)
   return(def);
 }
 
+/****************************************************************************
+ Return true if a string could be a pure IP address.
+****************************************************************************/
+
+BOOL is_ipaddress(const char *str)
+{
+  BOOL pure_address = True;
+  int i;
+  
+  for (i=0; pure_address && str[i]; i++)
+    if (!(isdigit((int)str[i]) || str[i] == '.'))
+      pure_address = False;
+
+  /* Check that a pure number is not misinterpreted as an IP */
+  pure_address = pure_address && (strchr(str, '.') != NULL);
+
+  return pure_address;
+}
 
 /****************************************************************************
 interpret an internet address or name into an IP address in 4 byte form
 ****************************************************************************/
+
 uint32 interpret_addr(char *str)
 {
   struct hostent *hp;
   uint32 res;
-  int i;
-  BOOL pure_address = True;
 
   if (strcmp(str,"0.0.0.0") == 0) return(0);
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
 
-  for (i=0; pure_address && str[i]; i++)
-    if (!(isdigit((int)str[i]) || str[i] == '.')) 
-      pure_address = False;
-
   /* if it's in the form of an IP address then get the lib to interpret it */
-  if (pure_address) {
+  if (is_ipaddress(str)) {
     res = inet_addr(str);
   } else {
     /* otherwise assume it's a network name of some sort and use 
@@ -1872,7 +1876,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
   int     i;
   
   if ((hp = Get_Hostbyname(remotehost)) == 0) {
-    DEBUG(0,("Get_Hostbyname(%s): lookup failure", remotehost));
+    DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
     return False;
   } 
 
@@ -1886,7 +1890,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
   
   if (strcasecmp(remotehost, hp->h_name)
       && strcasecmp(remotehost, "localhost")) {
-    DEBUG(0,("host name/name mismatch: %s != %s",
+    DEBUG(0,("host name/name mismatch: %s != %s\n",
 	     remotehost, hp->h_name));
     return False;
   }
@@ -1903,7 +1907,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
    * it, but that could be dangerous, too.
    */
   
-  DEBUG(0,("host name/address mismatch: %s != %s",
+  DEBUG(0,("host name/address mismatch: %s != %s\n",
 	   inet_ntoa(addr), hp->h_name));
   return False;
 }
@@ -1981,7 +1985,7 @@ static char *automount_lookup(char *user_name)
            DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
  
            pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
-           string_sub(last_value, "&", user_name);
+           pstring_sub(last_value, "&", user_name);
            fstrcpy(last_key, user_name);
         }
       }
@@ -2091,8 +2095,8 @@ static char *automount_path(char *user_name)
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	/* pstrcpy() copes with get_unixhome_dir() returning NULL */
-	pstrcpy(server_path, get_unixhome_dir(user_name));
+	/* pstrcpy() copes with get_user_home_dir() returning NULL */
+	pstrcpy(server_path, get_user_home_dir(user_name));
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -2115,92 +2119,114 @@ static char *automount_path(char *user_name)
 	return server_path;
 }
 
+/*******************************************************************
+ Given a pointer to a %$(NAME) expand it as an environment variable.
+ Return the number of characters by which the pointer should be advanced.
+ Based on code by Branko Cibej <branko.cibej@hermes.si>
+ When this is called p points at the '%' character.
+********************************************************************/
+
+static size_t expand_env_var(char *p, int len)
+{
+	fstring envname;
+	char *envval;
+	char *q, *r;
+	int copylen;
+
+	if (p[1] != '$')
+		return 1;
+
+	if (p[2] != '(')
+		return 2;
+
+	/*
+	 * Look for the terminating ')'.
+	 */
+
+	if ((q = strchr(p,')')) == NULL) {
+		DEBUG(0,("expand_env_var: Unterminated environment variable [%s]\n", p));
+		return 2;
+	}
+
+	/*
+	 * Extract the name from within the %$(NAME) string.
+	 */
+
+	r = p+3;
+	copylen = MIN((q-r),(sizeof(envname)-1));
+	strncpy(envname,r,copylen);
+	envname[copylen] = '\0';
+
+	if ((envval = getenv(envname)) == NULL) {
+		DEBUG(0,("expand_env_var: Environment variable [%s] not set\n", envname));
+		return 2;
+	}
+
+	/*
+	 * Copy the full %$(NAME) into envname so it
+	 * can be replaced.
+	 */
+
+	copylen = MIN((q+1-p),(sizeof(envname)-1));
+	strncpy(envname,p,copylen);
+	envname[copylen] = '\0';
+	string_sub(p,envname,envval,len);
+	return 0; /* Allow the environment contents to be parsed. */
+}
 
 /*******************************************************************
-sub strings with useful parameters
-Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
-Paul Rippin <pr3245@nopc.eurostat.cec.be>
+ Substitute strings with useful parameters.
+ Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
+ Paul Rippin <pr3245@nopc.eurostat.cec.be>.
 ********************************************************************/
+
 void standard_sub_basic(char *str)
 {
 	char *s, *p;
 	char pidstr[10];
-	const struct passwd *pass;
+	struct passwd *pass;
 	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
+		int l = sizeof(pstring) - (int)(p-str);
+
+		if (l < 0) {
+			DEBUG(0,("ERROR: string overflow by %d in standard_sub_basic(%.50s)\n", 
+				 -l, str));
+			
+			return;
+		}
+
 		switch (*(p+1))
 		{
 			case 'G' :
 			{
-				if ((pass = Get_Pwnam(username,False))!=NULL)
-				{
-					string_sub(p,"%G",gidtoname(pass->pw_gid));
-				}
-				else
-				{
+				if ((pass = Get_Pwnam(username,False))!=NULL) {
+					string_sub(p,"%G",gidtoname(pass->pw_gid),l);
+				} else {
 					p += 2;
 				}
 				break;
 			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
-			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name(Client)); break;
-			case 'R' : string_sub(p,"%R", remote_proto); break;
-			case 'T' : string_sub(p,"%T", timestring()); break;
-			case 'U' : string_sub(p,"%U", username); break;
-			case 'a' : string_sub(p,"%a", remote_arch); break;
+			case 'N' : string_sub(p,"%N", automount_server(username),l); break;
+			case 'I' : string_sub(p,"%I", client_addr(Client),l); break;
+			case 'L' : string_sub(p,"%L", local_machine,l); break;
+			case 'M' : string_sub(p,"%M", client_name(Client),l); break;
+			case 'R' : string_sub(p,"%R", remote_proto,l); break;
+			case 'T' : string_sub(p,"%T", timestring(False),l); break;
+			case 'U' : string_sub(p,"%U", username,l); break;
+			case 'a' : string_sub(p,"%a", remote_arch,l); break;
 			case 'd' :
 			{
 				slprintf(pidstr,sizeof(pidstr) - 1, "%d",(int)getpid());
-				string_sub(p,"%d", pidstr);
+				string_sub(p,"%d", pidstr,l);
 				break;
 			}
-			case 'h' : string_sub(p,"%h", myhostname); break;
-			case 'm' : string_sub(p,"%m", remote_machine); break;
-			case 'v' : string_sub(p,"%v", VERSION); break;
-			case '$' : /* Expand environment variables */
-			{
-				/* Contributed by Branko Cibej <branko.cibej@hermes.si> */
-				fstring envname;
-				char *envval;
-				char *q, *r;
-				int copylen;
-
-				if (*(p+2) != '(')
-				{
-					p+=2;
-					break;
-				}
-				if ((q = strchr(p,')')) == NULL)
-				{
-					DEBUG(0,("standard_sub_basic: Unterminated environment \
-					variable [%s]\n", p));
-					p+=2;
-					break;
-				}
-
-				r = p+3;
-				copylen = MIN((q-r),(sizeof(envname)-1));
-				strncpy(envname,r,copylen);
-				envname[copylen] = '\0';
-
-				if ((envval = getenv(envname)) == NULL)
-				{
-					DEBUG(0,("standard_sub_basic: Environment variable [%s] not set\n",
-					envname));
-					p+=2;
-					break;
-				}
-
-				copylen = MIN((q+1-p),(sizeof(envname)-1));
-				strncpy(envname,p,copylen);
-				envname[copylen] = '\0';
-				string_sub(p,envname,envval);
-				break;
-			}
+			case 'h' : string_sub(p,"%h", myhostname(),l); break;
+			case 'm' : string_sub(p,"%m", remote_machine,l); break;
+			case 'v' : string_sub(p,"%v", VERSION,l); break;
+			case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
 			case '\0': p++; break; /* don't run off end if last character is % */
 			default  : p+=2; break;
 		}
@@ -2210,24 +2236,42 @@ void standard_sub_basic(char *str)
 
 
 /****************************************************************************
-do some standard substitutions in a string
+ Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub(connection_struct *conn,char *str)
 {
 	char *p, *s, *home;
 
-	for (s=str; (p=strchr(s, '%'));s=p)
-	{
-		switch (*(p+1))
-		{
-			case 'H': 
-				if ((home = get_unixhome_dir(conn->user)) != NULL) {
-					string_sub(p,"%H",home);
-				} else {
-					p += 2;
-				}
-				break;
-				
+	for (s=str; (p=strchr(s, '%'));s=p) {
+		int l = sizeof(pstring) - (int)(p-str);
+
+		switch (*(p+1)) {
+		case 'H': 
+			if ((home = get_user_home_dir(conn->user))) {
+				string_sub(p,"%H",home,l);
+			} else {
+				p += 2;
+			}
+			break;
+			
+		case 'P': 
+			string_sub(p,"%P",conn->connectpath,l); 
+			break;
+			
+		case 'S': 
+			string_sub(p,"%S",
+				   lp_servicename(SNUM(conn)),l); 
+			break;
+			
+		case 'g': 
+			string_sub(p,"%g",
+				   gidtoname(conn->gid),l); 
+			break;
+		case 'u': 
+			string_sub(p,"%u",conn->user,l); 
+			break;
+			
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
 			 * server name) in standard_sub_basic as it is
 			 * a feature for logon servers, hence uses the
@@ -2235,14 +2279,17 @@ void standard_sub(connection_struct *conn,char *str)
 			 * here as it is used instead of the default
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
-			case 'p': string_sub(p,"%p", automount_path(lp_servicename(SNUM(conn)))); break;
-			case 'P': string_sub(p,"%P",conn->connectpath); break; 
-			case 'S': string_sub(p,"%S", lp_servicename(SNUM(conn))); break; 
-			case 'g': string_sub(p,"%g", gidtoname(conn->gid)); break;
-			case 'u': string_sub(p,"%u", conn->user); break;
-				
-			case '\0': p++; break; /* don't run off the end of the string */ 
-			default  : p+=2; break;
+		case 'p': 
+			string_sub(p,"%p",
+				   automount_path(lp_servicename(SNUM(conn))),l); 
+			break;
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string 
+				*/
+			
+		default: p+=2; 
+			break;
 		}
 	}
 	
@@ -2331,131 +2378,24 @@ struct hostent *Get_Hostbyname(const char *name)
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(int pid)
+BOOL process_exists(pid_t pid)
 {
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
 
-/****************************************************************************
-Setup the groups a user belongs to.
-****************************************************************************/
-int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
+/*******************************************************************
+turn a uid into a user name
+********************************************************************/
+char *uidtoname(uid_t uid)
 {
-	int i,ngroups;
-	gid_t grp = 0;
-	gid_t *groups = NULL;
-
-	if (-1 == initgroups(user,gid))
-	{
-		if (getuid() == 0)
-		{
-			DEBUG(0,("Unable to initgroups!\n"));
-			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
-			{
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		return -1;
-	}
-
-	ngroups = sys_getgroups(0,&grp);
-	if (ngroups <= 0)
-	{
-		ngroups = 32;
-	}
-
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
-	{
-		DEBUG(0,("get_unixgroups malloc fail !\n"));
-		return -1;
-	}
-
-	ngroups = sys_getgroups(ngroups,groups);
-
-	(*p_ngroups) = ngroups;
-	(*p_groups) = groups;
-
-	DEBUG( 3, ( "%s is in %d groups: ", user, ngroups ) );
-	for (i = 0; i < ngroups; i++ )
-	{
-		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
-	}
-	DEBUG( 3, ( "\n" ) );
-
-	return 0;
+  static char name[40];
+  struct passwd *pass = sys_getpwuid(uid);
+  if (pass) return(pass->pw_name);
+  slprintf(name, sizeof(name) - 1, "%d",(int)uid);
+  return(name);
 }
 
-/****************************************************************************
-get all unix groups.  copying group members is hideous on memory, so it's
-NOT done here.  however, names of unix groups _are_ string-allocated so
-free_unix_grps() must be called.
-****************************************************************************/
-BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
-{
-	struct group *grp;
-
-	DEBUG(10,("get_unix_grps\n"));
-
-	if (p_ngroups == NULL || p_groups == NULL)
-	{
-		return False;
-	}
-
-	(*p_ngroups) = 0;
-	(*p_groups) = NULL;
-
-	setgrent();
-
-	while ((grp = getgrent()) != NULL)
-	{
-		struct group *copy_grp;
-		
-		(*p_groups) = (struct group*)Realloc((*p_groups), (size_t)((*p_ngroups)+1) * sizeof(struct group));
-		if ((*p_groups) == NULL)
-		{
-			(*p_ngroups) = 0;
-			endgrent();
-			
-			return False;
-		}
-
-		copy_grp = &(*p_groups)[*p_ngroups];
-		memcpy(copy_grp, grp, sizeof(*grp));
-		copy_grp->gr_name = strdup(copy_grp->gr_name);
-		copy_grp->gr_mem  = NULL;
-
-		(*p_ngroups)++;
-	}
-
-	endgrent();
-
-	DEBUG(10,("get_unix_grps: %d groups\n", (*p_ngroups)));
-	return True;
-}
-
-/****************************************************************************
-free memory associated with unix groups.
-****************************************************************************/
-void free_unix_grps(int ngroups, struct group *p_groups)
-{
-	int i;
-
-	if (p_groups == NULL)
-	{
-		return;
-	}
-
-	for (i = 0; i < ngroups; i++)
-	{
-		if (p_groups[i].gr_name != NULL)
-		{
-			free(p_groups[i].gr_name);
-		}
-	}
-
-	free(p_groups);
-}
 
 /*******************************************************************
 turn a gid into a group name
@@ -2471,48 +2411,37 @@ char *gidtoname(gid_t gid)
 }
 
 /*******************************************************************
-turn a group name into a gid
+turn a user name into a uid
 ********************************************************************/
-
-BOOL nametogid(const char *name, gid_t *gid)
+uid_t nametouid(const char *name)
 {
-	struct group *grp = getgrnam(name);
-	if (grp)
-	{
-		*gid = grp->gr_gid;
-		return True;
-	}
-	else if (isdigit(name[0]))
-	{
-		*gid = (gid_t)get_number(name);
-		return True;
-	}
-	else
-	{
-		return False;
-	}
+	struct passwd *pass;
+	char *p;
+	uid_t u;
+
+	u = strtol(name, &p, 0);
+	if (p != name) return u;
+
+	pass = sys_getpwnam(name);
+	if (pass) return(pass->pw_uid);
+	return (uid_t)-1;
 }
 
 /*******************************************************************
-turn a user name into a uid
+turn a group name into a gid
 ********************************************************************/
-BOOL nametouid(const char *name, uid_t *uid)
+gid_t nametogid(const char *name)
 {
-	const struct passwd *pass = Get_Pwnam(name, False);
-	if (pass)
-	{
-		*uid = pass->pw_uid;
-		return True;
-	}
-	else if (isdigit(name[0]))
-	{
-		*uid = (uid_t)get_number(name);
-		return True;
-	}
-	else
-	{
-		return False;
-	}
+	struct group *grp;
+	char *p;
+	gid_t g;
+
+	g = strtol(name, &p, 0);
+	if (p != name) return g;
+
+	grp = getgrnam(name);
+	if (grp) return(grp->gr_gid);
+	return (gid_t)-1;
 }
 
 /*******************************************************************
@@ -2535,12 +2464,12 @@ a readdir wrapper which just returns the file name
 ********************************************************************/
 char *readdirname(DIR *p)
 {
-	struct dirent *ptr;
+	SMB_STRUCT_DIRENT *ptr;
 	char *dname;
 
 	if (!p) return(NULL);
   
-	ptr = (struct dirent *)readdir(p);
+	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
 	if (!ptr) return(NULL);
 
 	dname = ptr->d_name;
@@ -2731,13 +2660,55 @@ void free_namearray(name_compare_entry *name_array)
 }
 
 /****************************************************************************
+ Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
+****************************************************************************/
+
+uint32 map_lock_offset(uint32 high, uint32 low)
+{
+  unsigned int i;
+  uint32 mask = 0;
+  uint32 highcopy = high;
+
+  /*
+   * Try and find out how many significant bits there are in high.
+   */
+
+  for(i = 0; highcopy; i++)
+    highcopy >>= 1;
+
+  /*
+   * We use 31 bits not 32 here as POSIX
+   * lock offsets may not be negative.
+   */
+
+  mask = (~0) << (31 - i);
+
+  if(low & mask)
+    return 0; /* Fail. */
+
+  high <<= (31 - i);
+
+  return (high|low);
+}
+
+/****************************************************************************
 routine to do file locking
 ****************************************************************************/
+
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 #if HAVE_FCNTL_LOCK
   SMB_STRUCT_FLOCK lock;
   int ret;
+#if defined(LARGE_SMB_OFF_T)
+  /*
+   * In the 64 bit locking case we store the original
+   * values in case we have to map to a 32 bit lock on
+   * a filesystem that doesn't support 64 bit locks.
+   */
+  SMB_OFF_T orig_offset = offset;
+  SMB_OFF_T orig_count = count;
+#endif /* LARGE_SMB_OFF_T */
 
   if(lp_ole_locking_compat()) {
     SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
@@ -2794,7 +2765,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     }
     /* 32 bit NFS file system, retry with smaller offset */
     errno = 0;
-    lock.l_len = count & 0xffffffff;
+    lock.l_len = count & 0x7fffffff;
     ret = fcntl(fd,op,&lock);
   }
 
@@ -2826,8 +2797,38 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     /* perhaps it doesn't support this sort of locking?? */
     if (errno == EINVAL)
     {
+
+#if defined(LARGE_SMB_OFF_T)
+      {
+        /*
+         * Ok - if we get here then we have a 64 bit lock request
+         * that has returned EINVAL. Try and map to 31 bits for offset
+         * and length and try again. This may happen if a filesystem
+         * doesn't support 64 bit offsets (efs/ufs) although the underlying
+         * OS does.
+         */
+        uint32 off_low = (orig_offset & 0xFFFFFFFF);
+        uint32 off_high = ((orig_offset >> 32) & 0xFFFFFFFF);
+
+        lock.l_len = (orig_count & 0x7FFFFFFF);
+        lock.l_start = (SMB_OFF_T)map_lock_offset(off_high, off_low);
+        ret = fcntl(fd,op,&lock);
+        if (ret == -1)
+        {
+          if (errno == EINVAL)
+          {
+            DEBUG(3,("locking not supported? returning True\n"));
+            return(True);
+          }
+          return False;
+        }
+        DEBUG(3,("64 -> 32 bit modified lock call successful\n"));
+        return True;
+      }
+#else /* LARGE_SMB_OFF_T */
       DEBUG(3,("locking not supported? returning True\n"));
       return(True);
+#endif /* LARGE_SMB_OFF_T */
     }
 
     return(False);
@@ -2879,6 +2880,9 @@ void set_remote_arch(enum remote_arch_types type)
   case RA_WINNT:
     fstrcpy(remote_arch, "WinNT");
     return;
+  case RA_WIN2K:
+    fstrcpy(remote_arch, "Win2K");
+    return;
   case RA_SAMBA:
     fstrcpy(remote_arch,"Samba");
     return;
@@ -2899,30 +2903,18 @@ enum remote_arch_types get_remote_arch(void)
 
 
 /*******************************************************************
- align a pointer to a multiple of 4 bytes.  
- ********************************************************************/
-char *align4(char *q, char *base)
-{
-	int mod = PTR_DIFF(q, base) & 3;
-	if (mod != 0)
-	{
-		q += mod;
-	}
-	return q;
-}
-/*******************************************************************
 align a pointer to a multiple of 2 bytes
 ********************************************************************/
 char *align2(char *q, char *base)
 {
-	if (PTR_DIFF(q, base) & 1)
+	if ((q - base) & 1)
 	{
 		q++;
 	}
 	return q;
 }
 
-void out_ascii(FILE *f, const unsigned char *buf,int len)
+void out_ascii(FILE *f, unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -2931,36 +2923,9 @@ void out_ascii(FILE *f, const unsigned char *buf,int len)
 	}
 }
 
-void out_struct(FILE *f, const char *buf1,int len, int per_line)
+void out_data(FILE *f,char *buf1,int len, int per_line)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
-	int i;
-
-	if (len<=0)
-	{
-		return;
-	}
-
-	fprintf(f, "{\n\t");
-	for (i=0;i<len;)
-	{
-		fprintf(f, "0x%02X",(int)buf[i]);
-		i++;
-		if (i != len)
-		{
-			fprintf(f, ", ");
-		}
-		if (i%per_line == 0 && i != len)
-		{      
-			fprintf(f, "\n\t");
-		}
-	}
-	fprintf(f, "\n};\n");    
-}
-
-void out_data(FILE *f, const char *buf1,int len, int per_line)
-{
-	const unsigned char *buf = (const unsigned char *)buf1;
+	unsigned char *buf = (unsigned char *)buf1;
 	int i=0;
 	if (len<=0)
 	{
@@ -2999,55 +2964,44 @@ void out_data(FILE *f, const char *buf1,int len, int per_line)
 	}
 }
 
-void print_asc(int level, unsigned char const *buf,int len)
+void print_asc(int level, unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
-	{
-		DEBUGADD(level,("%c", isprint(buf[i])?buf[i]:'.'));
-	}
+		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const char *buf1, int len)
+void dump_data(int level,char *buf1,int len)
 {
-	unsigned char const *buf = (unsigned char const *)buf1;
-	int i=0;
-	if (len<0) return;
-	if (len == 0)
-	{
-		DEBUG(level,("\n"));
-		return;
-	}
+  unsigned char *buf = (unsigned char *)buf1;
+  int i=0;
+  if (len<=0) return;
 
-	DEBUG(level,("[%03X] ",i));
-	for (i=0;i<len;)
-	{
-		DEBUGADD(level,("%02X ",(int)buf[i]));
-		i++;
-		if (i%8 == 0) DEBUGADD(level,(" "));
-		if (i%16 == 0)
-		{      
-			print_asc(level,&buf[i-16],8); DEBUGADD(level,(" "));
-			print_asc(level,&buf[i-8],8); DEBUGADD(level,("\n"));
-			if (i<len) DEBUGADD(level,("[%03X] ",i));
-		}
-	}
+  DEBUG(level,("[%03X] ",i));
+  for (i=0;i<len;) {
+    DEBUG(level,("%02X ",(int)buf[i]));
+    i++;
+    if (i%8 == 0) DEBUG(level,(" "));
+    if (i%16 == 0) {      
+      print_asc(level,&buf[i-16],8); DEBUG(level,(" "));
+      print_asc(level,&buf[i-8],8); DEBUG(level,("\n"));
+      if (i<len) DEBUG(level,("[%03X] ",i));
+    }
+  }
+  if (i%16) {
+    int n;
 
-	if (i%16 != 0) /* finish off a non-16-char-length row */
-	{
-		int n;
+    n = 16 - (i%16);
+    DEBUG(level,(" "));
+    if (n>8) DEBUG(level,(" "));
+    while (n--) DEBUG(level,("   "));
 
-		n = 16 - (i%16);
-		DEBUGADD(level,(" "));
-		if (n>8) DEBUGADD(level,(" "));
-		while (n--) DEBUGADD(level,("   "));
-
-		n = MIN(8,i%16);
-		print_asc(level,&buf[i-(i%16)],n); DEBUGADD(level,(" "));
-		n = (i%16) - n;
-		if (n>0) print_asc(level,&buf[i-n],n); 
-		DEBUGADD(level,("\n"));    
-	}
+    n = MIN(8,i%16);
+    print_asc(level,&buf[i-(i%16)],n); DEBUG(level,(" "));
+    n = (i%16) - n;
+    if (n>0) print_asc(level,&buf[i-n],n); 
+    DEBUG(level,("\n"));    
+  }
 }
 
 char *tab_depth(int depth)
@@ -3102,16 +3056,50 @@ int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
-	getrlimit(RLIMIT_NOFILE, &rlp);
-	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+	int saved_current_limit;
+
+	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: getrlimit (1) for RLIMIT_NOFILE failed with error %s\n",
+			strerror(errno) ));
+		/* just guess... */
+		return requested_max;
+	}
+
+	/* 
+     * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
 	 * account for the extra fd we need 
 	 * as well as the log files and standard
-	 * handles etc.  */
-	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
-	setrlimit(RLIMIT_NOFILE, &rlp);
-	getrlimit(RLIMIT_NOFILE, &rlp);
+	 * handles etc. Save the limit we want to set in case
+	 * we are running on an OS that doesn't support this limit (AIX)
+	 * which always returns RLIM_INFINITY for rlp.rlim_max.
+	 */
+
+	saved_current_limit = rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
+
+	if(setrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n", 
+			(int)rlp.rlim_cur, strerror(errno) ));
+		/* just guess... */
+		return saved_current_limit;
+	}
+
+	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: getrlimit (2) for RLIMIT_NOFILE failed with error %s\n",
+			strerror(errno) ));
+		/* just guess... */
+		return saved_current_limit;
+    }
+
+#if defined(RLIM_INFINITY)
+	if(rlp.rlim_cur == RLIM_INFINITY)
+		return saved_current_limit;
+#endif
+
+    if((int)rlp.rlim_cur > saved_current_limit)
+		return saved_current_limit;
+
 	return rlp.rlim_cur;
-#else
+#else /* !defined(HAVE_GETRLIMIT) || !defined(RLIMIT_NOFILE) */
 	/*
 	 * No way to know - just guess...
 	 */
@@ -3131,11 +3119,11 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name)
 /*****************************************************************
  splits out the start of the key (HKLM or HKU) and the rest of the key
  *****************************************************************/  
-BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
+BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 {
 	pstring tmp;
 
-	if (!next_token((char**)(&full_keyname), tmp, "\\", sizeof(tmp)))
+	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
 	{
 		return False;
 	}
@@ -3144,15 +3132,7 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 
 	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
 
-	if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
-	{
-		(*reg_type) = HKEY_CLASSES_ROOT;
-	}
-	else if (strequal(tmp, "HKCU") || strequal(tmp, "HKEY_CURRENT_USER"))
-	{
-		(*reg_type) = HKEY_CURRENT_USER;
-	}
-	else if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
+	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
 	{
 		(*reg_type) = HKEY_LOCAL_MACHINE;
 	}
@@ -3180,326 +3160,56 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 	return True;
 }
 
-/****************************************************************************
-  become the specified uid - permanently !
-****************************************************************************/
-BOOL become_user_permanently(uid_t uid, gid_t gid)
+
+/*****************************************************************
+like mktemp() but make sure that no % characters are used
+% characters are bad for us because of the macro subs
+ *****************************************************************/  
+char *smbd_mktemp(char *template)
 {
-	/* now completely lose our privilages. This is a fairly paranoid
-	   way of doing it, but it does work on all systems that I know of */
+	char *p = mktemp(template);
+	char *p2;
+	SMB_STRUCT_STAT st;
 
-#ifdef HAVE_SETRESUID
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-	setresgid(0,0,0);
-	setresuid(0,0,0);
+	if (!p) return NULL;
 
-	/*
-	 * Now ensure we change all our gids.
-	 */
-	setresgid(gid,gid,gid);
-	
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-	setresuid(uid,uid,uid);
-#else
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-	setuid(0);
-	seteuid(0);
-	
-	/*
-	 * Now ensure we change all our gids.
-	 */
-	setgid(gid);
-	setegid(gid);
-	
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-	setuid(uid);
-	seteuid(uid);
-#endif
-	
-	if (getuid() != uid || geteuid() != uid ||
-	    getgid() != gid || getegid() != gid) {
-		/* We failed to lose our privilages. */
-		return False;
-	}
-	
-	return(True);
-}
-
-char *get_trusted_serverlist(const char* domain)
-{
-	pstring tmp;
-	static char *server_list = NULL;
-	static pstring srv_list;
-	char *trusted_list = lp_trusted_domains();
-
-	if (strequal(lp_workgroup(), domain))
-	{
-		DEBUG(10,("local domain server list: %s\n", server_list));
-		pstrcpy(srv_list, lp_passwordserver());
-		return srv_list;
-	}
-
-	if (!next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
-	{
-		return NULL;
-	}
-
-	do
-	{
-		fstring trust_dom;
-		split_at_first_component(tmp, trust_dom, '=', srv_list);
-
-		if (strequal(domain, trust_dom))
-		{
-			return srv_list;
-			DEBUG(10,("trusted: %s\n", server_list));
+	while ((p2=strchr(p,'%'))) {
+		p2[0] = 'A';
+		while (sys_stat(p,&st) == 0 && p2[0] < 'Z') {
+			/* damn, it exists */
+			p2[0]++;
 		}
-
-	} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
-
-	return NULL;
-}
-
-/**********************************************************
- Encode the account control bits into a string.
- length = length of string to encode into (including terminating
- null). length *MUST BE MORE THAN 2* !
- **********************************************************/
-
-char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
-{
-	static fstring acct_str;
-	size_t i = 0;
-
-	acct_str[i++] = '[';
-
-	if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
-	if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
-	if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
-	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
-	if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
-	if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
-	if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
-	if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
-	if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
-	if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
-	if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
-	if (acct_ctrl & ACB_PWLOCK   ) acct_str[i++] = 'P';
-
-	for ( ; i < length - 2 ; i++ )
-	{
-		acct_str[i] = ' ';
-	}
-
-	i = length - 2;
-	acct_str[i++] = ']';
-	acct_str[i++] = '\0';
-
-	return acct_str;
-}     
-
-/**********************************************************
- Decode the account control bits from a string.
-
- this function breaks coding standards minimum line width of 80 chars.
- reason: vertical line-up code clarity - all case statements fit into
- 15 lines, which is more important.
- **********************************************************/
-
-uint16 pwdb_decode_acct_ctrl(const char *p)
-{
-	uint16 acct_ctrl = 0;
-	BOOL finished = False;
-
-	/*
-	 * Check if the account type bits have been encoded after the
-	 * NT password (in the form [NDHTUWSLXI]).
-	 */
-
-	if (*p != '[') return 0;
-
-	for (p++; *p && !finished; p++)
-	{
-		switch (*p)
-		{
-			case 'N': { acct_ctrl |= ACB_PWNOTREQ ; break; /* 'N'o password. */ }
-			case 'D': { acct_ctrl |= ACB_DISABLED ; break; /* 'D'isabled. */ }
-			case 'H': { acct_ctrl |= ACB_HOMDIRREQ; break; /* 'H'omedir required. */ }
-			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ } 
-			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ } 
-			case 'M': { acct_ctrl |= ACB_MNS      ; break; /* 'M'NS logon user account. What is this ? */ } 
-			case 'W': { acct_ctrl |= ACB_WSTRUST  ; break; /* 'W'orkstation account. */ } 
-			case 'S': { acct_ctrl |= ACB_SVRTRUST ; break; /* 'S'erver account. */ } 
-			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
-			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
-			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
-			case 'P': { acct_ctrl |= ACB_PWLOCK   ; break; /* 'P'assword cannot be changed remotely */ } 
-			case ' ': { break; }
-			case ':':
-			case '\n':
-			case '\0': 
-			case ']':
-			default:  { finished = True; }
+		if (p2[0] == 'Z') {
+			/* oh well ... better return something */
+			p2[0] = '%';
+			return p;
 		}
 	}
 
-	return acct_ctrl;
+	return p;
 }
 
-/*******************************************************************
- gets password-database-format time from a string.
- ********************************************************************/
 
-static time_t get_time_from_string(const char *p)
+/*****************************************************************
+like strdup but for memory
+ *****************************************************************/  
+void *memdup(void *p, size_t size)
 {
-	int i;
+	void *p2;
+	p2 = malloc(size);
+	if (!p2) return NULL;
+	memcpy(p2, p, size);
+	return p2;
+}
 
-	for (i = 0; i < 8; i++)
-	{
-		if (p[i] == '\0' || !isxdigit((int)(p[i]&0xFF)))
-		{
-			break;
-		}
+/*****************************************************************
+get local hostname and cache result
+ *****************************************************************/  
+char *myhostname(void)
+{
+	static pstring ret;
+	if (ret[0] == 0) {
+		get_myname(ret);
 	}
-	if (i == 8)
-	{
-		/*
-		 * p points at 8 characters of hex digits - 
-		 * read into a time_t as the seconds since
-		 * 1970 that the password was last changed.
-		 */
-		return (time_t)strtol(p, NULL, 16);
-	}
-	return (time_t)-1;
-}
-
-/*******************************************************************
- gets password last set time
- ********************************************************************/
-
-time_t pwdb_get_last_set_time(const char *p)
-{
-	if (*p && !StrnCaseCmp(p, "LCT-", 4))
-	{
-		return get_time_from_string(p + 4);
-	}
-	return (time_t)-1;
-}
-
-
-/*******************************************************************
- sets password-database-format time in a string.
- ********************************************************************/
-static void set_time_in_string(char *p, int max_len, char *type, time_t t)
-{
-	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
-}
-
-/*******************************************************************
- sets logon time
- ********************************************************************/
-void pwdb_set_logon_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LNT", t);
-}
-
-/*******************************************************************
- sets logoff time
- ********************************************************************/
-void pwdb_set_logoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LOT", t);
-}
-
-/*******************************************************************
- sets kickoff time
- ********************************************************************/
-void pwdb_set_kickoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "KOT", t);
-}
-
-/*******************************************************************
- sets password can change time
- ********************************************************************/
-void pwdb_set_can_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "CCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pwdb_set_must_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "MCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pwdb_set_last_set_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LCT", t);
-}
-
-
-/*************************************************************
- Routine to set 32 hex password characters from a 16 byte array.
-**************************************************************/
-void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl)
-{
-	if (pwd != NULL)
-	{
-		int i;
-		for (i = 0; i < 16; i++)
-		{
-			slprintf(&p[i*2], 33, "%02X", pwd[i]);
-		}
-	}
-	else
-	{
-		if (IS_BITS_SET_ALL(acct_ctrl, ACB_PWNOTREQ))
-		{
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
-		else
-		{
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
-	}
-}
-
-/*************************************************************
- Routine to get the 32 hex characters and turn them
- into a 16 byte array.
-**************************************************************/
-BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
-{
-	if (strnequal(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32))
-	{
-		if (acct_ctrl != NULL)
-		{
-			*acct_ctrl |= ACB_PWNOTREQ;
-		}
-		pwd[0] = 0;
-		return True;
-	}
-	else if (strnequal(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32))
-	{
-		pwd[0] = 0;
-		return True;
-	}
-	else
-	{
-		return strhex_to_str(pwd, 32, p) == 16;
-	}
+	return ret;
 }

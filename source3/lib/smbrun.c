@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 
 /****************************************************************************
 This is a utility function of smbrun(). It must be called only from
-the child as it may leave the caller in a privilaged state.
+the child as it may leave the caller in a privileged state.
 ****************************************************************************/
 static BOOL setup_stdout_file(char *outfile,BOOL shared)
 {  
@@ -40,14 +40,9 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
   close(1);
 
   if (shared) {
-	  /* become root - unprivilaged users can't delete these files */
-#ifdef HAVE_SETRESUID
-	  setresgid(0,0,0);
-	  setresuid(0,0,0);
-#else      
-	  setuid(0);
-	  seteuid(0);
-#endif
+	/* become root - unprivileged users can't delete these files */
+	gain_root_privilege();
+	gain_root_group_privilege();
   }
 
   if(sys_stat(outfile, &st) == 0) {
@@ -85,9 +80,10 @@ if shared is not set then open the file with O_EXCL set
 ****************************************************************************/
 int smbrun(char *cmd,char *outfile,BOOL shared)
 {
-	int fd,pid;
-	int uid = current_user.uid;
-	int gid = current_user.gid;
+	int fd;
+	pid_t pid;
+	uid_t uid = current_user.uid;
+	gid_t gid = current_user.gid;
 
     /*
      * Lose any kernel oplock capabilities we may have.
@@ -110,7 +106,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	}
 
 	slprintf(syscmd,sizeof(syscmd)-1,"%s %d %d \"(%s 2>&1) > %s\"",
-		 path,uid,gid,cmd,
+		 path,(int)uid,(int)gid,cmd,
 		 outfile?outfile:"/dev/null");
 	
 	DEBUG(5,("smbrun - running %s ",syscmd));
@@ -120,17 +116,52 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 #else
 	/* in this newer method we will exec /bin/sh with the correct
 	   arguments, after first setting stdout to point at the file */
-	
-	if ((pid=fork())) {
+
+	/*
+	 * We need to temporarily stop CatchChild from eating
+	 * SIGCLD signals as it also eats the exit status code. JRA.
+	 */
+
+	CatchChildLeaveStatus();
+                                   	
+	if ((pid=fork()) < 0) {
+		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
+		CatchChild(); 
+		return errno;
+    }
+
+	if (pid) {
+		/*
+		 * Parent.
+		 */
 		int status=0;
+		pid_t wpid;
+
+		
 		/* the parent just waits for the child to exit */
-		if (sys_waitpid(pid,&status,0) != pid) {
-			DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
+		while((wpid = sys_waitpid(pid,&status,0)) < 0) {
+			if(errno == EINTR) {
+				errno = 0;
+				continue;
+			}
+			break;
+		}
+
+		CatchChild(); 
+
+		if (wpid != pid) {
+			DEBUG(2,("waitpid(%d) : %s\n",(int)pid,strerror(errno)));
 			return -1;
 		}
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+		if (WIFEXITED(status)) {
+			return WEXITSTATUS(status);
+		}
+#endif
 		return status;
 	}
 	
+	CatchChild(); 
 	
 	/* we are in the child. we exec /bin/sh to do the work for us. we
 	   don't directly exec the command we want because it may be a
@@ -141,25 +172,14 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 		exit(80);
 	}
 	
-	/* now completely lose our privilages. This is a fairly paranoid
+	/* now completely lose our privileges. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
-#ifdef HAVE_SETRESUID
-	setresgid(0,0,0);
-	setresuid(0,0,0);
-	setresgid(gid,gid,gid);
-	setresuid(uid,uid,uid);      
-#else      
-	setuid(0);
-	seteuid(0);
-	setgid(gid);
-	setegid(gid);
-	setuid(uid);
-	seteuid(uid);
-#endif
-	
+
+	become_user_permanently(uid, gid);
+
 	if (getuid() != uid || geteuid() != uid ||
 	    getgid() != gid || getegid() != gid) {
-		/* we failed to lose our privilages - do not execute
+		/* we failed to lose our privileges - do not execute
                    the command */
 		exit(81); /* we can't print stuff at this stage,
 			     instead use exit codes for debugging */

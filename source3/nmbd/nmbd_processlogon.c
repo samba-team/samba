@@ -50,6 +50,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint32 domainsidsize;
   char *getdc;
   char *uniuser; /* Unicode user name. */
+  pstring ascuser;
   char *unicomp; /* Unicode computer name. */
 
   memset(outbuf, 0, sizeof(outbuf));
@@ -117,7 +118,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       q = align2(unicomp, buf);
 
-      q = skip_unibuf(q, buf+len-q);
+      q = skip_unicode_string(q, 1);
 
       ntversion = IVAL(q, 0);
       q += 4;
@@ -134,19 +135,17 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       fstrcpy(reply_name,my_name);
       fstrcpy(q, reply_name);
+
       q = skip_string(q, 1); /* PDC name */
 
-      /* PDC and domain name */
-#if 0
-      if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0)
-#endif
-      {
+      if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
 
-        q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q-2);
-        q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q-2);
+        dos_PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
+        q = skip_unicode_string(q, 1); 
 
-	ntversion = 0x01;
+        dos_PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
+        q = skip_unicode_string(q, 1); 
 
         SIVAL(q, 0, ntversion);
         q += 4;
@@ -166,10 +165,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                   outbuf,PTR_DIFF(q,outbuf),
-                  my_name,
-                  0x0,
-                    dgram->source_name.name,
-                    dgram->source_name.name_type,
+                  dgram->dest_name.name,
+                  dgram->dest_name.name_type,
+                  dgram->source_name.name,
+                  dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
       return;
     }
@@ -180,20 +179,13 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       q += 2;
       unicomp = q;
-      uniuser = skip_unibuf(unicomp, buf+len-q);
-      getdc = skip_unibuf(uniuser, buf+len-q);
+      uniuser = skip_unicode_string(unicomp,1);
+      getdc = skip_unicode_string(uniuser,1);
       q = skip_string(getdc,1);
-      q += 4; /* skip Account Control Bits */
+      q += 4;
       domainsidsize = IVAL(q, 0);
       q += 4;
-
-	if (domainsidsize != 0)
-	{
-		q += domainsidsize;
-		q += 2;
-		q = align4(q, buf);
-	}
-
+      q += domainsidsize + 3;
       ntversion = IVAL(q, 0);
       q += 4;
       lmnttoken = SVAL(q, 0);
@@ -201,7 +193,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       lm20token = SVAL(q, 0);
       q += 2;
 
-      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %x\n", domainsidsize, ntversion));
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
       /*
        * we respond regadless of whether the machine is in our password 
@@ -209,43 +201,28 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
+      pstrcpy(ascuser, dos_unistr(uniuser));
+      DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
+
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
-	ntversion = 0x01;
-	lmnttoken = 0xffff;
-	lm20token = 0xffff;
-
-      if (DEBUGLVL(3))
-	{
-	      fstring ascuser;
-	      fstring asccomp;
-
-	      unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser)-1);
-	      unibuf_to_ascii(asccomp, unicomp, sizeof(asccomp)-1);
-
-	      DEBUGADD(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-			  asccomp,inet_ntoa(p->ip), ascuser, reply_name,
-			  global_myworkgroup, SAMLOGON_R, lmnttoken));
-      }
+      DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */
 
       q = outbuf;
-	if (uniuser[0] == 0)
-	{
-		SSVAL(q, 0, SAMLOGON_UNK_R); /* user unknown */
-	}
-	else
-	{
-		SSVAL(q, 0, SAMLOGON_R);
-	}
+      SSVAL(q, 0, SAMLOGON_R);
       q += 2;
 
-      /* Logon server, trust account, domain */
-      q = ascii_to_unibuf(q, reply_name, outbuf+sizeof(outbuf)-q-2);
-      q = uni_strncpy(q, uniuser, outbuf+sizeof(outbuf)-q-2);
-      q = ascii_to_unibuf(q, lp_workgroup(), outbuf+sizeof(outbuf)-q-2);
+      dos_PutUniCode(q, reply_name,sizeof(pstring));
+      q = skip_unicode_string(q, 1);
+      unistrcpy(q, uniuser);
+      q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
+      dos_PutUniCode(q, lp_workgroup(),sizeof(pstring));
+      q = skip_unicode_string(q, 1); /* Domain name. */
 
       SIVAL(q, 0, ntversion);
       q += 4;
@@ -258,10 +235,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                    outbuf,PTR_DIFF(q,outbuf),
-                  my_name,
-                  0x0,
-                    dgram->source_name.name,
-                    dgram->source_name.name_type,
+                   dgram->dest_name.name,
+                   dgram->dest_name.name_type,
+                   dgram->source_name.name,
+                   dgram->source_name.name_type,
                    p->ip, *iface_ip(p->ip), p->port);  
       break;
     }

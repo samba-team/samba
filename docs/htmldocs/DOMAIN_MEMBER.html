@@ -13,7 +13,7 @@
 
 <h1>Joining an NT Domain with Samba 2.0</h1>
 <h2>Jeremy Allison, Samba Team</h2>
-<h2>11th November 1998</h2>
+<h2>7th October 1999</h2>
 
     
  
@@ -23,7 +23,8 @@
 <p><br>In order for a Samba-2 server to join an NT domain, you must first add
 the NetBIOS name of the Samba server to the NT domain on the PDC using
 Server Manager for Domains.  This creates the machine account in the
-domain (PDC) SAM.
+domain (PDC) SAM. Note that you should add the Samba server as a "Windows
+NT Workstation or Server", <em>NOT</em> as a Primary or backup domain controller.
 <p><br>Assume you have a Samba-2 server with a NetBIOS name of <code>SERV1</code> and are
 joining an NT domain called <code>DOM</code>, which has a PDC with a NetBIOS name
 of <code>DOMPDC</code> and two backup domain controllers with NetBIOS names <code>DOMBDC1</code>
@@ -63,6 +64,9 @@ use domain security.
 <p><br>line in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section to read: 
 <p><br><code>workgroup = DOM</code>
 <p><br>as this is the name of the domain we are joining. 
+<p><br>You must also have the parameter <a href="smb.conf.5.html#encryptpasswords"><strong>"encrypt passwords"</strong></a>
+set to <code>"yes"</code> in order for your users to authenticate to the
+NT PDC.
 <p><br>Finally, add (or modify) a:
 <p><br><a href="smb.conf.5.html#passwordserver"><strong>"password server ="</strong></a>
 <p><br>line in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section to read: 
@@ -72,18 +76,13 @@ to contact in order to authenticate users. Samba will try to contact
 each of these servers in order, so you may want to rearrange this list
 in order to spread out the authentication load among domain
 controllers.
-<p><br>Currently, Samba requires that a defined list of domain controllers be
-listed in this parameter in order to authenticate with domain-level
-security. NT does not use this method, and will either broadcast or
-use a WINS database in order to find domain controllers to
+<p><br>Alternatively, if you want smbd to automatically determine the
+list of Domain controllers to use for authentication, you may set this line to be :
+<p><br><code>password server = *</code>
+<p><br>This method, which is new in Samba 2.0.6 and above, allows Samba
+to use exactly the same mechanism that NT does. This method either broadcasts or
+uses a WINS database in order to find domain controllers to
 authenticate against.
-<p><br>Originally, I considered this idea for Samba, but dropped it because
-it seemed so insecure.  However several Samba-2 alpha users have
-requested that this feature be added to make Samba more NT-like, so
-I'll probably add a special name of <code>'*'</code> (which means: act like NT
-when looking for domain controllers) in a future release of the
-code. At present, however, you need to know where your domain
-controllers are.
 <p><br>Finally, restart your Samba daemons and get ready for clients to begin
 using domain security!
 <p><br><center>Why is this better than security = server? </center>

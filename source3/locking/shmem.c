@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-#ifdef HAVE_SHARED_MMAP
+#ifdef USE_SHARED_MMAP
 
 
 extern int DEBUGLEVEL;

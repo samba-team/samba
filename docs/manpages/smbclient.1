@@ -5,7 +5,7 @@ smbclient \- ftp-like client to access SMB/CIFS resources on servers
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbclient\fP servicename [password] [-s smb\&.conf] [-B IP addr] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
+\fBsmbclient\fP servicename [-s smb\&.conf] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -65,9 +65,6 @@ Samba configuration file, smb\&.conf\&. This file controls all aspects of
 the Samba setup on the machine and smbclient also needs to read this
 file\&.
 .IP 
-.IP "\fB-B IP addr\fP" 
-The IP address to use when sending a broadcast packet\&.
-.IP 
 .IP "\fB-O socket options\fP" 
 TCP socket options to set on the client
 socket\&. See the socket options
@@ -104,8 +101,7 @@ no WINS server has been specified this method will be ignored\&.
 listed in the \fBinterfaces\fP parameter
 in the smb\&.conf file\&. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
-subnet\&. To specify a particular broadcast address the \fB-B\fP option 
-may be used\&.
+subnet\&. 
 .IP 
 .IP 
 If this parameter is not set then the name resolve order defined
@@ -284,7 +280,7 @@ nothing before or nothing after the percent symbol will cause an empty
 username or an empty password to be used, respectively\&.
 .IP 
 The password may also be specified by setting up an environment
-variable called \f(CWPASSWORD\fP that contains the users password\&. Note
+variable called \f(CWPASSWD\fP that contains the users password\&. Note
 that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing\&.
@@ -294,7 +290,7 @@ on an uppercase password\&. Lowercase or mixed case passwords may be
 rejected by these servers\&.
 .IP 
 Be cautious about including passwords in scripts or in the
-\f(CWPASSWORD\fP environment variable\&. Also, on many systems the command
+\f(CWPASSWD\fP environment variable\&. Also, on many systems the command
 line of a running process may be seen via the \f(CWps\fP command to be
 safe always allow smbclient to prompt for a password and type it in
 directly\&.
@@ -325,6 +321,12 @@ With the new code in Samba2\&.0,
 protocols level the server supports\&. This parameter is
 preserved for backwards compatibility, but any string
 following the \fB-m\fP will be ignored\&.
+.IP 
+.IP "\fB-b buffersize\fP" 
+This option changes the transmit/send buffer
+size when getting or putting a file from/to the server\&. The default
+is 65520 bytes\&. Setting this value smaller (to 1200 bytes) has been
+observed to speed up file transfers to and from a Win9x server\&.
 .IP 
 .IP "\fB-W WORKGROUP\fP" 
 Override the default workgroup specified in the
@@ -717,7 +719,7 @@ The variable \fBUSER\fP may contain the username of the person using the
 client\&.  This information is used only if the protocol level is high
 enough to support session-level passwords\&.
 .PP 
-The variable \fBPASSWORD\fP may contain the password of the person using
+The variable \fBPASSWD\fP may contain the password of the person using
 the client\&.  This information is used only if the protocol level is
 high enough to support session-level passwords\&.
 .PP 

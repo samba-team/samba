@@ -21,8 +21,14 @@ fi
 done
 
 for p in $*; do
- echo Creating codepage file $CODEPAGEDIR/codepage.$p
- $BINDIR/make_smbcodepage c $p ${srcdir}/codepages/codepage_def.$p $CODEPAGEDIR/codepage.$p
+ if [ -f ${srcdir}/codepages/codepage_def.$p ]; then
+   echo Creating codepage file $CODEPAGEDIR/codepage.$p
+   $BINDIR/make_smbcodepage c $p ${srcdir}/codepages/codepage_def.$p $CODEPAGEDIR/codepage.$p
+ fi
+ if [ -f ${srcdir}/codepages/CP${p}.TXT ]; then
+   echo Creating unicode map $CODEPAGEDIR/unicode_map.$p
+   $BINDIR/make_unicodemap $p ${srcdir}/codepages/CP${p}.TXT $CODEPAGEDIR/unicode_map.$p
+ fi
 done
 
 
