@@ -62,23 +62,20 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 #define DCESRV_INTERFACE_WINREG_BIND winreg_bind
 #define DCESRV_INTERFACE_WINREG_UNBIND winreg_unbind
 
-#define func_winreg_OpenHive(k,n) static NTSTATUS winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
+#define func_winreg_OpenHive(k,n) static WERROR winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
 { \
 	/*struct _privatedata *data = dce_call->conn->private;*/ \
 	/*REG_KEY *root = reg_get_root(data->registry);*/ \
 	REG_KEY *k /*= reg_open_key(root, n)*/; \
-\
 	if(!k) { \
-		r->out.result = WERR_BADFILE; \
+		return WERR_BADFILE; \
 	} else { \
 		struct dcesrv_handle *h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); \
+		DCESRV_CHECK_HANDLE(h); \
 		h->data = k; \
 		r->out.handle = &h->wire_handle; \
 	} \
-\
-	r->out.result = WERR_OK; \
-\
-	return NT_STATUS_OK; \
+	return WERR_OK; \
 }
 
 func_winreg_OpenHive(HKCR,"\\HKEY_CLASSES_ROOT")
@@ -94,33 +91,31 @@ func_winreg_OpenHive(HKPN,"\\HKEY_PN")
 /* 
   winreg_CloseKey 
 */
-static NTSTATUS winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CloseKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
-	if(!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+
+	DCESRV_CHECK_HANDLE(h);
 
 	reg_key_free((REG_KEY *)h->data);
 	dcesrv_handle_destroy(dce_call->conn, h);
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 
 /* 
   winreg_CreateKey 
 */
-static NTSTATUS winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CreateKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	WERROR error;
 	REG_KEY *parent;
-	if(!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+
+	DCESRV_CHECK_HANDLE(h);
 
 	parent = h->data;
 	error = reg_key_add_name_recursive(parent, r->in.key.name);
@@ -131,283 +126,282 @@ static NTSTATUS winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		else dcesrv_handle_destroy(dce_call->conn, newh);
 	}
 
-	r->out.result = error;
-
-	return NT_STATUS_OK;
+	return error;
 }
 
 
 /* 
   winreg_DeleteKey 
 */
-static NTSTATUS winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	REG_KEY *parent, *key;
-	if(!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	WERROR result;
+
+	DCESRV_CHECK_HANDLE(h);
 
 	parent = h->data;
-	r->out.result = reg_open_key(parent, r->in.key.name, &key);
-	if(W_ERROR_IS_OK(r->out.result)) {
-		r->out.result = reg_key_del(key);
+	result = reg_open_key(parent, r->in.key.name, &key);
+
+	if (W_ERROR_IS_OK(result)) {
+		return reg_key_del(key);
 	}
-	return NT_STATUS_OK;
+
+	return result;
 }
 
 
 /* 
   winreg_DeleteValue 
 */
-static NTSTATUS winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteValue *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_EnumKey 
 */
-static NTSTATUS winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	REG_KEY *key;
-	if(!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+
+	DCESRV_CHECK_HANDLE(h);
 
 	key = h->data;
 	
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_EnumValue 
 */
-static NTSTATUS winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumValue *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_FlushKey 
 */
-static NTSTATUS winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_FlushKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_GetKeySecurity 
 */
-static NTSTATUS winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_GetKeySecurity *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_LoadKey 
 */
-static NTSTATUS winreg_LoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_LoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_LoadKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_NotifyChangeKeyValue 
 */
-static NTSTATUS winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_NotifyChangeKeyValue *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_OpenKey 
 */
-static NTSTATUS winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	REG_KEY *k, *subkey;
-	if(!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	WERROR result;
+
+	DCESRV_CHECK_HANDLE(h);
 
 	k = h->data;
 
 
-	r->out.result = reg_open_key(k, r->in.keyname.name, &subkey);
-	if(W_ERROR_IS_OK(r->out.result)) {
+	result = reg_open_key(k, r->in.keyname.name, &subkey);
+	if (W_ERROR_IS_OK(result)) {
 		h->data = subkey; 
 		r->out.handle = &h->wire_handle; 
 	}
 	
-	return NT_STATUS_OK;
+	return result;
 }
 
 
 /* 
   winreg_QueryInfoKey 
 */
-static NTSTATUS winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryInfoKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_QueryValue 
 */
-static NTSTATUS winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryValue *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_ReplaceKey 
 */
-static NTSTATUS winreg_ReplaceKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_ReplaceKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_ReplaceKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_RestoreKey 
 */
-static NTSTATUS winreg_RestoreKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_RestoreKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_RestoreKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_SaveKey 
 */
-static NTSTATUS winreg_SaveKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_SaveKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SaveKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_SetKeySecurity 
 */
-static NTSTATUS winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SetKeySecurity *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_SetValue 
 */
-static NTSTATUS winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SetValue *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_UnLoadKey 
 */
-static NTSTATUS winreg_UnLoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_UnLoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_UnLoadKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_InitiateSystemShutdown 
 */
-static NTSTATUS winreg_InitiateSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_InitiateSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_InitiateSystemShutdown *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_AbortSystemShutdown 
 */
-static NTSTATUS winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_AbortSystemShutdown *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_GetVersion 
 */
-static NTSTATUS winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_GetVersion *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_QueryMultipleValues 
 */
-static NTSTATUS winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryMultipleValues *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_InitiateSystemShutdownEx 
 */
-static NTSTATUS winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_InitiateSystemShutdownEx *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_SaveKeyEx 
 */
-static NTSTATUS winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SaveKeyEx *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 
 /* 
   winreg_QueryMultipleValues2 
 */
-static NTSTATUS winreg_QueryMultipleValues2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR winreg_QueryMultipleValues2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryMultipleValues2 *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return WERR_NOT_SUPPORTED;
 }
 
 

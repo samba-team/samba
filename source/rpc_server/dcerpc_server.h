@@ -77,6 +77,9 @@ struct dcesrv_call_state {
 		struct dcesrv_call_reply *next, *prev;
 		DATA_BLOB data;
 	} *replies;
+
+	/* this is used by the boilerplate code to generate DCERPC faults */
+	uint32 fault_code;
 };
 
 #define DCESRV_HANDLE_ANY 255
