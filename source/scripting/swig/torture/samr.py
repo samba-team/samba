@@ -15,8 +15,8 @@ def test_Connect(pipe):
     s = {}
     s['handle'] = result['connect_handle']
 
-    dcerpc.samr_Close(pipe, s)
-
+    handle = result['connect_handle']
+  
     print 'testing samr_Connect2'
 
     r = {}
@@ -69,9 +69,16 @@ def test_Connect(pipe):
     r['info']['info1']['unknown1'] = 0
     r['info']['info1']['unknown2'] = 0
 
-    result = dcerpc.samr_Connect5(pipe, r)
+    try:
+        result = dcerpc.samr_Connect5(pipe, r)
+        s = {}
+        s['handle'] = result['connect_handle']
+        dcerpc.samr_Close(pipe, s)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != dcerpc.NT_STATUS_NET_WRITE_FAULT:
+            raise
 
-    return result['connect_handle']
+    return handle
     
 def test_QuerySecurity(pipe, handle):
 
