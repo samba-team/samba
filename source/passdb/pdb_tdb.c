@@ -689,7 +689,7 @@ BOOL pdb_delete_sam_account(char *sname)
 
 	rid = pdb_get_user_rid(sam_pass);
 
-	pdb_free_sam (sam_pass);
+	pdb_free_sam (&sam_pass);
 	
 	/* it's outaa here!  8^) */
 	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS) {
@@ -732,7 +732,6 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	pstring		tdbfile;
 	fstring		name;
 	BOOL		ret = True;
-	int		newtdb = FALSE;
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
