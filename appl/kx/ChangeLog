@@ -1,4 +1,11 @@
-2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* rxterm.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	* rxtelnet.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	* kxd.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	* kx.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	
+2003-02-25  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* krb4.c: remove \n from warnx, from NetBSD
 	
