@@ -6807,12 +6807,10 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
         unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
 
-
-	*out_size=in_size;
-
 	/* in case of problem, return some default values */
 	*needed=0;
 	*type=0;
+	*out_size=0;
 
 		
 	if (!Printer) {
@@ -6846,7 +6844,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
 		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
-			type, data, needed, *out_size);
+			type, data, needed, in_size);
 		
 	}
 	 
