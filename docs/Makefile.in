@@ -67,7 +67,7 @@ MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES
 HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
 GUIDEDOC_IMAGES_PNG = $(wildcard $(IMAGEGUIDEDIR)/*.png)
 HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
-HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
 
 help: 
@@ -167,7 +167,7 @@ clean:
 	rm -f Samba-HOWTO-Collection.*
 	rm -f Samba-Developers-Guide.*
 	rm -f Samba-Guide.*
-	rm -f $(IMAGEPROJDIR)/*.eps $(MANPAGEDIR)/smb.conf.5.xml
+	rm -f $(IMAGEPROJDIR)/*.eps
 
 # Text files
 $(TXTDIR):
@@ -278,23 +278,16 @@ $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html
 	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 # Manpages
-$(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
+$(MANPAGEDIR)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
+
+$(SMBDOTCONF)/parameters.all.xml:
 	@cd $(SMBDOTCONFDOC) && /bin/sh generate-file-list.sh >parameters.all.xml
 
-$(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	$(XSLTPROC) --xinclude --param smb.context "'G'" \
-	--output parameters.global.xml \
-	$(SMBDOTCONFDOC)/generate-context.xsl $(SMBDOTCONFDOC)/parameters.all.xml
+$(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml
+	$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
-$(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	$(XSLTPROC) --xinclude \
-	--param smb.context "'S'" \
-	--output parameters.service.xml \
-	$(SMBDOTCONFDOC)/generate-context.xsl $(SMBDOTCONFDOC)/parameters.all.xml
-
-smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
- 		$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
-	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+$(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml
+	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(MANDIR): 
 	mkdir $(MANDIR)
@@ -305,10 +298,14 @@ $(MANDIR)/%: %.xml
 $(PEARSONDIR):
 	mkdir $@
 
-$(PEARSONDIR)/%.xml: %.xml
+$(PEARSONDIR)/%.xml: %.xml $(PEARSONDIR)
 	$(XSLTPROC) --xinclude --output $@ xslt/pearson.xsl $<
 
-pearson: $(PEARSONDIR) $(PEARSONDIR)/Samba-HOWTO-Collection.xml
+$(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
+	$(XMLLINT) --valid --noout --htmlout $< 2> $@
+
+pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
+pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
 
 $(VALIDATEDIR):
 	mkdir $@
@@ -316,7 +313,7 @@ $(VALIDATEDIR):
 $(VALIDATEDIR)/%.report.html: %.xml
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
-verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html $(PEARSONDIR)/Samba-HOWTO-Collection.xml
+verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 
 # Find undocumented parameters
 
