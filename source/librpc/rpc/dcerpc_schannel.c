@@ -436,14 +436,16 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 	status = gensec_set_username(p->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set schannel username to %s: %s\n", username, nt_errstr(status)));
-		gensec_end(&p->security_state.generic_state);
+		talloc_free(p->security_state.generic_state);
+		p->security_state.generic_state = NULL;
 		return status;
 	}
 	
 	status = gensec_set_domain(p->security_state.generic_state, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set schannel domain to %s: %s\n", domain, nt_errstr(status)));
-		gensec_end(&p->security_state.generic_state);
+		talloc_free(p->security_state.generic_state);
+		p->security_state.generic_state = NULL;
 		return status;
 	}
 	
@@ -451,7 +453,8 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start SCHANNEL GENSEC backend: %s\n", nt_errstr(status)));
-		gensec_end(&p->security_state.generic_state);
+		talloc_free(p->security_state.generic_state);
+		p->security_state.generic_state = NULL;
 		return status;
 	}
 
@@ -463,7 +466,8 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to bind to pipe with SCHANNEL: %s\n", nt_errstr(status)));
-		gensec_end(&p->security_state.generic_state);
+		talloc_free(p->security_state.generic_state);
+		p->security_state.generic_state = NULL;
 		return status;
 	}
 

@@ -287,7 +287,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		status = nt_status_squash(status);
 		if (smb_sess->gensec_ctx && 
 		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			gensec_end(&smb_sess->gensec_ctx);
+			talloc_free(smb_sess->gensec_ctx);
+			smb_sess->gensec_ctx = NULL;
 		}
 	}
 
