@@ -83,7 +83,7 @@
 		<para>
 		<screen>
 		&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput>
-		<screen>
+		</screen>
 		</para>
 		
 		<para>
@@ -152,7 +152,7 @@
 
 </sect1>
 
-<scet1>
+<sect1>
 <title>Common Errors</title>
 
 <para>
