@@ -702,10 +702,16 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
                     &rparam, &rprcnt,                   /* return params, return size */
                     &rdata, &rdrcnt                     /* return data, return size */
                    )) {
-		int res = SVAL(rparam,0);
-		int converter=SVAL(rparam,2);
+		int res = -1;
+		int converter = 0;
 		int i;
 			
+		if (rparam != NULL)
+		{
+			res = SVAL(rparam,0);
+			converter=SVAL(rparam,2);
+		}
+
 		if (res == 0 || res == ERRmoredata) {
 			count=SVAL(rparam,4);
 			p = rdata;
