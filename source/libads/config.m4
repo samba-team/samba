@@ -128,6 +128,7 @@ AC_ARG_WITH(krb5,
 
 if test x$with_krb5_support != x"no"; then
 	FOUND_KRB5=no
+	FOUND_KRB5_VIA_CONFIG=no
 
 	#################################################
 	# check for krb5-config from recent MIT and Heimdal kerberos 5
@@ -144,6 +145,7 @@ if test x$with_krb5_support != x"no"; then
 			CFLAGS=$ac_save_CFLAGS;export CFLAGS
 			LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
 			FOUND_KRB5=yes
+			FOUND_KRB5_VIA_CONFIG=yes
 			AC_MSG_RESULT(yes. Found $KRB5CONFIG)
 		else 
 			AC_MSG_RESULT(no. Fallback to specified directory)
@@ -165,6 +167,7 @@ if test x$with_krb5_support != x"no"; then
 			CFLAGS=$ac_save_CFLAGS;export CFLAGS
 			LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
 			FOUND_KRB5=yes
+			FOUND_KRB5_VIA_CONFIG=yes
 			AC_MSG_RESULT(yes. Found $KRB5CONFIG)
 		else
 			AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
@@ -288,8 +291,12 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
 
 	# Heimdal checks.
-	AC_CHECK_LIB_EXT(asn1, KRB5_LIBS, copy_Authenticator)
-	AC_CHECK_LIB_EXT(roken, KRB5_LIBS, roken_getaddrinfo_hostspec)
+	# But only if we didn't have a krb5-config to tell us this already
+	if x"$FOUND_KRB5_VIA_CONFIG" != x"yes"; then
+		AC_CHECK_LIB_EXT(crypto, KRB5_LIBS, des_set_key)
+		AC_CHECK_LIB_EXT(asn1, KRB5_LIBS, copy_Authenticator)
+		AC_CHECK_LIB_EXT(roken, KRB5_LIBS, roken_getaddrinfo_hostspec)
+	fi
 
 	# Heimdal checks. On static Heimdal gssapi must be linked before krb5.
 	AC_CHECK_LIB_EXT(gssapi, KRB5_LIBS, gss_display_status,[],[],
