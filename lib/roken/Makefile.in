@@ -42,6 +42,7 @@ SOURCES = \
 	daemon.c \
 	emalloc.c \
 	erealloc.c \
+	estrdup.c \
 	err.c \
 	errx.c \
 	fchown.c \
@@ -113,6 +114,7 @@ OBJECTS = \
 	concat.o \
 	emalloc.o \
 	erealloc.o \
+	estrdup.o \
 	get_window_size.o \
 	getarg.o \
 	inaddr2str.o \

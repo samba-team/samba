@@ -17,6 +17,7 @@ libroken_la_SOURCES =		\
 	concat.c		\
 	emalloc.c		\
 	erealloc.c		\
+	estrdup.c		\
 	get_window_size.c	\
 	getarg.c		\
 	inaddr2str.c		\
