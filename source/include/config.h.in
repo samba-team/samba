@@ -61,6 +61,8 @@
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
 #undef WORDS_BIGENDIAN
 
+#undef NEEDS_KRB4_DEFINE_WORK_AROUND
+#undef RENEWABLE_AFS_TICKET
 #undef HAVE_BROKEN_READDIR
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
@@ -148,7 +150,6 @@
 #undef HAVE_INT32_FROM_RPC_RPC_H
 #undef HAVE_UINT32_FROM_RPC_RPC_H
 #undef KRB4_AUTH
-#undef RENEWABLE_AFS_TICKET
 #undef SEEKDIR_RETURNS_VOID
 #undef HAVE_DIRENT_D_OFF
 #undef HAVE_GETSPNAM
@@ -674,6 +675,15 @@
 /* Define if you have the <net/route.h> header file.  */
 #undef HAVE_NET_ROUTE_H
 
+/* Define if you have the <netinet/in_ip.h> header file.  */
+#undef HAVE_NETINET_IN_IP_H
+
+/* Define if you have the <netinet/in_systm.h> header file.  */
+#undef HAVE_NETINET_IN_SYSTM_H
+
+/* Define if you have the <netinet/ip.h> header file.  */
+#undef HAVE_NETINET_IP_H
+
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
@@ -856,6 +866,3 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
-
-/* Work around for a inconsistency in the KTH-KRB and Solaris 2.6. */
-#undef NEEDS_KRB4_DEFINE_WORK_AROUND
