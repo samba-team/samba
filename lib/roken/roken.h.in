@@ -193,7 +193,7 @@ char *strerror(int eno);
 #endif
 
 #if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
-/* This is a fatal error under Psoriasis */
+/* This causes a fatal error under Psoriasis */
 #if !(defined(SunOS) && (SunOS >= 5))
 char *hstrerror(int herr);
 #endif
