@@ -45,7 +45,6 @@ static void cli_use_free(struct cli_use *cli)
 {
 	cli_ulogoff(cli->cli);
 	cli_shutdown(cli->cli);
-	memset(cli->cli, 0, sizeof(*cli->cli));
 	free(cli->cli);
 
 	free(cli);
@@ -148,7 +147,6 @@ create a new client state from user credentials
 ****************************************************************************/
 static struct cli_use *cli_use_get(const char* srv_name,
 				const struct user_credentials *usr_creds)
-
 {
 	struct cli_use *cli = (struct cli_use*)malloc(sizeof(*cli));
 
@@ -170,8 +168,6 @@ static struct cli_use *cli_use_get(const char* srv_name,
 	cli_init_creds(cli->cli, usr_creds);
 
 	cli->cli->use_ntlmv2 = lp_client_ntlmv2();
-
-	add_cli_to_array(&num_clis, &clis, cli);
 
 	return cli;
 }
@@ -203,13 +199,14 @@ struct cli_state *cli_net_use_addlist(char* servers,
 
 	if (!cli_connect_serverlist(cli->cli, servers))
 	{
-		DEBUG(0,("cli_use_init: connection failed\n"));
+		DEBUG(0,("cli_net_use_addlist: connection failed\n"));
 		cli_use_free(cli);
 		return NULL;
 	}
 
 	cli->cli->ntlmssp_cli_flgs = 0x0;
 
+	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
 
 	return cli->cli;
@@ -264,13 +261,14 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	                          "IPC$", "IPC",
 	                          False, True))
 	{
-		DEBUG(0,("cli_use_init: connection failed\n"));
+		DEBUG(0,("cli_net_use_add: connection failed\n"));
 		cli_use_free(cli);
 		return NULL;
 	}
 
 	cli->cli->ntlmssp_cli_flgs = 0x0;
 
+	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
 
 	return cli->cli;
@@ -286,6 +284,11 @@ BOOL cli_net_use_del(const char* srv_name,
 {
 	int i;
 	const char *sv_name = srv_name;
+
+	DEBUG(10,("cli_net_use_del: %s. force close: %s\n",
+	           srv_name, BOOLSTR(force_close)));
+	dbgflush();
+
 	if (strnequal("\\\\", sv_name, 2))
 	{
 		sv_name = &sv_name[2];
@@ -315,6 +318,11 @@ BOOL cli_net_use_del(const char* srv_name,
 		{
 			/* decrement number of users */
 			clis[i]->num_users--;
+
+			DEBUG(10,("idx: %i num_users now: %d\n",
+				   i, clis[i]->num_users));
+			dbgflush();
+
 			if (force_close || clis[i]->num_users == 0)
 			{
 				cli_use_free(clis[i]);
