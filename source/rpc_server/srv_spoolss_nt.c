@@ -6634,8 +6634,8 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	if (found==False) {
 		safe_free(queue);
 		safe_free(info_1);
-		/* I shoud reply something else ... I can't find the good one */
-		return ERRsuccess;
+		/* NT treats not found as bad param... yet another bad choice */
+		return ERRinvalidparam;
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
@@ -6686,8 +6686,8 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	if (found==False) {
 		safe_free(queue);
 		safe_free(info_2);
-		/* I shoud reply something else ... I can't find the good one */
-		return ERRsuccess;
+		/* NT treats not found as bad param... yet another bad choice */
+		return ERRinvalidparam;
 	}
 	
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0) {
