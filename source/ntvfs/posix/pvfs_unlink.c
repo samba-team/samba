@@ -89,9 +89,11 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	status = pvfs_xattr_unlink_hook(pvfs, name->full_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (name->st.st_nlink == 1) {
+		status = pvfs_xattr_unlink_hook(pvfs, name->full_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* finally try the actual unlink */
