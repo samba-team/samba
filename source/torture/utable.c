@@ -24,7 +24,7 @@
 
 BOOL torture_utable(int dummy)
 {
-	static struct cli_state cli;
+	struct cli_state *cli;
 	fstring fname, alt_name;
 	int fnum;
 	smb_ucs2_t c2;
@@ -40,8 +40,8 @@ BOOL torture_utable(int dummy)
 
 	memset(valid, 0, sizeof(valid));
 
-	cli_mkdir(&cli, "\\utable");
-	cli_unlink(&cli, "\\utable\\*");
+	cli_mkdir(cli, "\\utable");
+	cli_unlink(cli, "\\utable\\*");
 
 	for (c=1; c < 0x10000; c++) {
 		char *p;
@@ -55,13 +55,13 @@ BOOL torture_utable(int dummy)
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
-		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+		fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 				DENY_NONE);
 		if (fnum == -1) continue;
 
 		chars_allowed++;
 
-		cli_qpathinfo_alt_name(&cli, fname, alt_name);
+		cli_qpathinfo_alt_name(cli, fname, alt_name);
 
 		if (strncmp(alt_name, "X_A_L", 5) != 0) {
 			alt_allowed++;
@@ -69,8 +69,8 @@ BOOL torture_utable(int dummy)
 			d_printf("fname=[%s] alt_name=[%s]\n", fname, alt_name);
 		}
 
-		cli_close(&cli, fnum);
-		cli_unlink(&cli, fname);
+		cli_close(cli, fnum);
+		cli_unlink(cli, fname);
 
 		if (c % 100 == 0) {
 			printf("%d (%d/%d)\r", c, chars_allowed, alt_allowed);
@@ -78,7 +78,7 @@ BOOL torture_utable(int dummy)
 	}
 	printf("%d (%d/%d)\n", c, chars_allowed, alt_allowed);
 
-	cli_rmdir(&cli, "\\utable");
+	cli_rmdir(cli, "\\utable");
 
 	d_printf("%d chars allowed   %d alt chars allowed\n", chars_allowed, alt_allowed);
 
@@ -115,7 +115,7 @@ static char *form_name(int c)
 
 BOOL torture_casetable(int dummy)
 {
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	char *fname;
 	int fnum;
 	int c, i;
@@ -129,8 +129,8 @@ BOOL torture_casetable(int dummy)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	cli_mkdir(&cli, "\\utable");
-	cli_unlink(&cli, "\\utable\\*");
+	cli_mkdir(cli, "\\utable");
+	cli_unlink(cli, "\\utable\\*");
 
 	for (c=1; c < 0x10000; c++) {
 		size_t size;
@@ -140,7 +140,7 @@ BOOL torture_casetable(int dummy)
 		printf("%04x\n", c);
 
 		fname = form_name(c);
-		fnum = cli_nt_create_full(&cli, fname, 
+		fnum = cli_nt_create_full(cli, fname, 
 					  GENERIC_ALL_ACCESS, 
 					  FILE_ATTRIBUTE_NORMAL,
 					  FILE_SHARE_NONE,
@@ -150,7 +150,7 @@ BOOL torture_casetable(int dummy)
 
 		size = 0;
 
-		if (!cli_qfileinfo(&cli, fnum, NULL, &size, 
+		if (!cli_qfileinfo(cli, fnum, NULL, &size, 
 				   NULL, NULL, NULL, NULL, NULL)) continue;
 
 		if (size > 0) {
@@ -160,11 +160,11 @@ BOOL torture_casetable(int dummy)
 			if (size/sizeof(int) >= MAX_EQUIVALENCE) {
 				printf("too many chars match?? size=%d c=0x%04x\n",
 				       size, c);
-				cli_close(&cli, fnum);
+				cli_close(cli, fnum);
 				return False;
 			}
 
-			cli_read(&cli, fnum, (char *)c2, 0, size);
+			cli_read(cli, fnum, (char *)c2, 0, size);
 			printf("%04x: ", c);
 			equiv[c][0] = c;
 			for (i=0; i<size/sizeof(int); i++) {
@@ -175,12 +175,12 @@ BOOL torture_casetable(int dummy)
 			fflush(stdout);
 		}
 
-		cli_write(&cli, fnum, 0, (char *)&c, size, sizeof(c));
-		cli_close(&cli, fnum);
+		cli_write(cli, fnum, 0, (char *)&c, size, sizeof(c));
+		cli_close(cli, fnum);
 	}
 
-	cli_unlink(&cli, "\\utable\\*");
-	cli_rmdir(&cli, "\\utable");
+	cli_unlink(cli, "\\utable\\*");
+	cli_rmdir(cli, "\\utable");
 
 	return True;
 }
