@@ -408,7 +408,7 @@
 		<listitem><para>the name of your NIS home directory server.  
 		This is obtained from your NIS auto.map entry.  If you have 
 		not compiled Samba with the <emphasis>--with-automount</emphasis> 
-		option then this value will be the same as %.</para>
+		option then this value will be the same as %L.</para>
 		</listitem>
 		</varlistentry>
 		
