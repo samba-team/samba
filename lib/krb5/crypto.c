@@ -865,7 +865,7 @@ rc2_schedule(krb5_context context,
  *
  */
 
-extern struct salt_type AES_salt[];
+static struct salt_type AES_salt[];
 
 #endif /* ENABLE_AES */
 
@@ -2550,7 +2550,7 @@ ARCFOUR_subencrypt(krb5_context context,
 		   struct key_data *key,
 		   void *data,
 		   size_t len,
-		   int usage,
+		   unsigned usage,
 		   void *ivec)
 {
     struct checksum_type *c = _find_checksum (CKSUMTYPE_RSA_MD5);
@@ -2613,7 +2613,7 @@ ARCFOUR_subdecrypt(krb5_context context,
 		   struct key_data *key,
 		   void *data,
 		   size_t len,
-		   int usage,
+		   unsigned usage,
 		   void *ivec)
 {
     struct checksum_type *c = _find_checksum (CKSUMTYPE_RSA_MD5);
@@ -2717,13 +2717,15 @@ ARCFOUR_encrypt(krb5_context context,
 		void *ivec)
 {
     krb5_error_code ret;
-    if((ret = usage2arcfour (context, &usage)) != 0)
+    unsigned keyusage = usage;
+
+    if((ret = usage2arcfour (context, &keyusage)) != 0)
 	return ret;
 
     if (encrypt)
-	return ARCFOUR_subencrypt (context, key, data, len, usage, ivec);
+	return ARCFOUR_subencrypt (context, key, data, len, keyusage, ivec);
     else
-	return ARCFOUR_subdecrypt (context, key, data, len, usage, ivec);
+	return ARCFOUR_subdecrypt (context, key, data, len, keyusage, ivec);
 }
 
 
