@@ -615,29 +615,38 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 	}
 }
 
+
+/*******************************************************************
+return True if the filename is one of the special executable types
+********************************************************************/
+static BOOL is_executable(char *fname)
+{
+	if ((fname = strrchr(fname,'.'))) {
+		if (strequal(fname,".com") ||
+		    strequal(fname,".dll") ||
+		    strequal(fname,".exe") ||
+		    strequal(fname,".sym")) {
+			return True;
+		}
+	}
+	return False;
+}
+
 enum {AFAIL,AREAD,AWRITE,AALL};
 
 /*******************************************************************
 reproduce the share mode access table
+this is horrendoously complex, and really can't be justified on any
+rational grounds except that this is _exactly_ what NT does. See
+the DENY1 and DENY2 tests in smbtorture for a comprehensive set of
+test routines.
 ********************************************************************/
 static int access_table(int new_deny,int old_deny,int old_mode,
-			pid_t share_pid,char *fname)
+			BOOL same_pid, BOOL isexe)
 {
-	  pid_t pid = getpid();
-	  BOOL isexe = False;
-	  
-	  if ((fname = strrchr(fname,'.'))) {
-		  if (strequal(fname,".com") ||
-		      strequal(fname,".dll") ||
-		      strequal(fname,".exe") ||
-		      strequal(fname,".sym")) {
-			  isexe = True;
-		  }
-	  }
-
 	  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
-	  if (share_pid == pid) {
+	  if (same_pid) {
 		  if (isexe && old_mode == O_RDONLY && 
 		      old_deny == DENY_DOS && new_deny == DENY_READ) {
 			  return AFAIL;
@@ -687,7 +696,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 			  if (old_deny == DENY_WRITE) return AREAD;
 		  }
 		  /* it isn't a exe, dll, sym or com file */
-		  if (old_deny == new_deny && share_pid == pid) 
+		  if (old_deny == new_deny && same_pid)
 			  return(AALL);    
 
 		  if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
@@ -717,6 +726,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 	  return(AFAIL);      
 }
 
+
 /****************************************************************************
 check if we can open a file with a share mode
 ****************************************************************************/
@@ -744,7 +754,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 
   {
     int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-				      share->pid,fname);
+				      (share->pid == getpid()),is_executable(fname));
 
     if ((access_allowed == AFAIL) ||
         (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
