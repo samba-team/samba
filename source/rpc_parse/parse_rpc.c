@@ -147,6 +147,15 @@ interface/version dce/rpc pipe identification
         }, 0x01                             \
 }
 
+#define SYNT_SHUTDOWN_V1                    \
+{                                           \
+        {                                   \
+                0x894de0c0, 0x0d55, 0x11d3, \
+                { 0xa3, 0x22, 0x00, 0xc0,   \
+                  0x4f, 0xa3, 0x21, 0xa1 }  \
+        }, 0x01                             \
+}
+
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
@@ -165,6 +174,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1       , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
 	{ PIPE_NETDFS  , SYNT_NETDFS_V3        , PIPE_NETDFS   , TRANS_SYNT_V2 },
 	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
+	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 
