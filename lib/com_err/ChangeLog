@@ -1,3 +1,9 @@
+Sun Sep 27 02:23:59 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* com_err.c (error_message): try to pass code to strerror, to see
+ 	if it might be an errno code (this if broken, but some MIT code
+ 	seems to expect this behaviour)
+
 Sat Sep 26 17:42:39 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* compile_et.c: <foo_err.h> -> "foo_err.h"
