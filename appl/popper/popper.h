@@ -332,8 +332,6 @@ __attribute__ ((format (printf, 3, 4)))
 #endif
 ;
 
-void pop_sendline(POP*, char*);
-
 int pop_maildir_info (POP*);
 int pop_maildir_open (POP*, MsgInfoList*);
 int pop_maildir_update (POP*);
