@@ -37,6 +37,8 @@
 #define True (1)
 #define Auto (2)
 
+enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, SMB_SIGNING_REQUIRED};
+
 #ifndef _BOOL
 typedef int BOOL;
 #define _BOOL       /* So we don't typedef BOOL again in vfs.h */

@@ -211,6 +211,7 @@ typedef struct
 	BOOL bLanmanAuth;
 	BOOL bNTLMAuth;
 	BOOL bUseSpnego;
+	BOOL server_signing;
 	BOOL bClientLanManAuth;
 	BOOL bClientNTLMv2Auth;
 	BOOL bHostMSDfs;
@@ -487,6 +488,27 @@ static const struct enum_list enum_csc_policy[] = {
 	{-1, NULL}
 };
 
+/* SMB signing types. */
+static const struct enum_list enum_smb_signing_vals[] = {
+	{SMB_SIGNING_OFF, "No"},
+	{SMB_SIGNING_OFF, "False"},
+	{SMB_SIGNING_OFF, "0"},
+	{SMB_SIGNING_OFF, "Off"},
+	{SMB_SIGNING_OFF, "disabled"},
+	{SMB_SIGNING_SUPPORTED, "Yes"},
+	{SMB_SIGNING_SUPPORTED, "True"},
+	{SMB_SIGNING_SUPPORTED, "1"},
+	{SMB_SIGNING_SUPPORTED, "On"},
+	{SMB_SIGNING_SUPPORTED, "enabled"},
+	{SMB_SIGNING_SUPPORTED, "auto"},
+	{SMB_SIGNING_REQUIRED, "required"},
+	{SMB_SIGNING_REQUIRED, "mandatory"},
+	{SMB_SIGNING_REQUIRED, "force"},
+	{SMB_SIGNING_REQUIRED, "forced"},
+	{SMB_SIGNING_REQUIRED, "enforced"},
+	{-1, NULL}
+};
+
 /* 
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
@@ -631,6 +653,7 @@ static struct parm_struct parm_table[] = {
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
+	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"rpc big endian", P_BOOL, P_GLOBAL, &Globals.bRpcBigEndian, NULL, NULL, FLAG_DEVELOPER},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
@@ -1083,6 +1106,8 @@ static void init_globals(void)
 
 	Globals.bUseSpnego = True;
 
+	Globals.server_signing = False;
+
 	string_set(&Globals.smb_ports, SMB_PORTS);
 }
 
@@ -1352,6 +1377,7 @@ FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
+FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
 
 /* local prototypes */
 

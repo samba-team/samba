@@ -114,6 +114,9 @@ struct request_context {
 	/* how far through the chain of SMB commands have we gone? */
 	unsigned chain_count;
 
+	/* the sequence number for signing */
+	large_t seq_num;
+
 	/* the async structure allows backend functions to delay
 	   replying to requests. To use this, the front end must set
 	   async.send_fn to a function to be called by the backend
@@ -329,6 +332,13 @@ struct timers_context {
 	time_t last_smb_conf_reload;
 };
 
+
+struct signing_context {
+	DATA_BLOB mac_key;
+	large_t next_seq_num;
+	enum smb_signing_state signing_state;
+};
+
 #include "smbd/process_model.h"
 
 /* smb context structure. This should contain all the state
@@ -354,6 +364,8 @@ struct server_context {
 	struct timers_context timers;
 
 	struct dcesrv_context dcesrv;
+
+	struct signing_context signing;
 
 	/* the pid of the process handling this session */
 	pid_t pid;
