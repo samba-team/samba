@@ -206,7 +206,7 @@ main(int argc, char **argv)
     krb5_init_context(&context);
 
     while((e = getarg(args, num_args, argc, argv, &optind)))
-	warnx("error at argument `%s'", argv[optind]);
+	errx(1, "error at argument `%s'", argv[optind]);
 
     if (help_flag)
 	usage (0);
