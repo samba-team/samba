@@ -547,9 +547,11 @@
 #if defined(HAVE_LONGLONG)
 #define SMB_BIG_UINT unsigned long long
 #define SMB_BIG_INT long long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #else
 #define SMB_BIG_UINT unsigned long
 #define SMB_BIG_INT long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #endif
 
 #ifndef MIN
