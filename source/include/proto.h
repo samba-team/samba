@@ -2428,9 +2428,6 @@ void cli_nt_session_close(struct cli_state *cli);
 BOOL spoolss_disconnect_from_client( struct cli_state *cli);
 BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
 BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, WERROR *status, POLICY_HND *handle);
-BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
-			     char* printername, uint32 change_low, uint32 change_high, 
-			     WERROR *status);
 BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, 
 				     WERROR *status);
 
