@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a server net tprt enum
 ****************************************************************************/
-BOOL do_srv_net_srv_tprt_enum(
+BOOL srv_net_srv_tprt_enum(
 			const char *srv_name, 
 			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -119,7 +119,7 @@ BOOL do_srv_net_srv_tprt_enum(
 /****************************************************************************
 do a server net conn enum
 ****************************************************************************/
-BOOL do_srv_net_srv_conn_enum( char *srv_name, char *qual_name,
+BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -203,7 +203,7 @@ BOOL do_srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 /****************************************************************************
 do a server net sess enum
 ****************************************************************************/
-BOOL do_srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
+BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -287,7 +287,7 @@ BOOL do_srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 /****************************************************************************
 do a server net share enum
 ****************************************************************************/
-BOOL do_srv_net_srv_share_enum( char *srv_name, 
+BOOL srv_net_srv_share_enum( char *srv_name, 
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -373,7 +373,7 @@ BOOL do_srv_net_srv_share_enum( char *srv_name,
 /****************************************************************************
 do a server net file enum
 ****************************************************************************/
-BOOL do_srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
+BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -459,7 +459,7 @@ BOOL do_srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 /****************************************************************************
 do a server get info 
 ****************************************************************************/
-BOOL do_srv_net_srv_get_info( char *srv_name, uint32 switch_value,
+BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 				SRV_INFO_CTR *ctr)
 {
 	prs_struct data; 
@@ -533,7 +533,7 @@ BOOL do_srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 /****************************************************************************
 get server time
 ****************************************************************************/
-BOOL do_srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
+BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
 {
 	prs_struct data; 
 	prs_struct rdata;

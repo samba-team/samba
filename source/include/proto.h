@@ -801,6 +801,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
+BOOL is_ip_address(const char *name);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 				struct in_addr *ip);
@@ -2081,30 +2082,30 @@ BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
-BOOL do_srv_net_srv_tprt_enum(
+BOOL srv_net_srv_tprt_enum(
 			const char *srv_name, 
 			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_conn_enum( char *srv_name, char *qual_name,
+BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
+BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_share_enum( char *srv_name, 
+BOOL srv_net_srv_share_enum( char *srv_name, 
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
+BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_get_info( char *srv_name, uint32 switch_value,
+BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 				SRV_INFO_CTR *ctr);
-BOOL do_srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod);
+BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod);
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 

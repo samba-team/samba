@@ -55,7 +55,7 @@ BOOL net_srv_get_info(struct client_info *info,
 				dest_srv, (int)info_level));
 
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_srv_net_srv_get_info(dest_srv, info_level, ctr) : False;
+	res = res ? srv_net_srv_get_info(dest_srv, info_level, ctr) : False;
 
 	return res;
 }
@@ -106,7 +106,7 @@ BOOL msrpc_srv_enum_tprt( const char* dest_srv,
 	hnd.handle = 0;
 
 	/* enumerate transports on server */
-	res1 = res ? do_srv_net_srv_tprt_enum(dest_srv, 
+	res1 = res ? srv_net_srv_tprt_enum(dest_srv, 
 	            info_level, ctr, 0xffffffff, &hnd) : False;
 
 	tprt_fn(ctr);
@@ -187,7 +187,7 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 	hnd.handle = 0;
 
 	/* enumerate connections on server */
-	res = res ? do_srv_net_srv_conn_enum(dest_srv, qual_srv,
+	res = res ? srv_net_srv_conn_enum(dest_srv, qual_srv,
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
 	if (res)
@@ -237,7 +237,7 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
-	res = res ? do_srv_net_srv_share_enum(dest_srv, 
+	res = res ? srv_net_srv_share_enum(dest_srv, 
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
 	if (res)
@@ -287,7 +287,7 @@ void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
 	hnd.handle = 0;
 
 	/* enumerate sessions on server */
-	res = res ? do_srv_net_srv_sess_enum(dest_srv, NULL, NULL,
+	res = res ? srv_net_srv_sess_enum(dest_srv, NULL, NULL,
 	                         info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
@@ -337,7 +337,7 @@ void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 	hnd.handle = 0;
 
 	/* enumerate files on server */
-	res = res ? do_srv_net_srv_file_enum(dest_srv, NULL, 0,
+	res = res ? srv_net_srv_file_enum(dest_srv, NULL, 0,
 	                info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
@@ -373,7 +373,7 @@ void cmd_time(struct client_info *info, int argc, char *argv[])
 	DEBUG(4,("cmd_time: server:%s\n", dest_srv));
 
 	/* enumerate files on server */
-	res = res ? do_srv_net_remote_tod(dest_srv, &tod) : False;
+	res = res ? srv_net_remote_tod(dest_srv, &tod) : False;
 
 	if (res)
 	{
