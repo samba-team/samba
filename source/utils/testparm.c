@@ -146,10 +146,24 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
+static void usage(char *pname)
+{
+	printf("Usage: %s [-sh] [-L servername] [configfilename] [hostname hostIP]\n", pname);
+	printf("\t-s                  Suppress prompt for enter\n");
+	printf("\t-h                  Print usage\n");
+	printf("\t-L servername       Set %%L macro to servername\n");
+	printf("\tconfigfilename      Configuration file to test\n");
+	printf("\thostname hostIP.    Hostname and Host IP address to test\n");
+	printf("\t                    against \"host allow\" and \"host deny\"\n");
+	printf("\n");
+}
+
+
 int main(int argc, char *argv[])
 {
   extern char *optarg;
   extern int optind;
+  extern fstring local_machine;
   pstring configfile;
   int opt;
   int s;
@@ -162,10 +176,22 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"s")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
+      break;
+    case 'L':
+      fstrcpy(local_machine,optarg);
+      break;
+    case 'h':
+      usage(argv[0]);
+      exit(0);
+      break;
+    default:
+      printf("Incorrect program usage\n");
+      usage(argv[0]);
+      exit(1);
       break;
     }
   }
@@ -196,74 +222,78 @@ int main(int argc, char *argv[])
 
   ret = do_global_checks();
 
-  for (s=0;s<1000;s++)
+  for (s=0;s<1000;s++) {
     if (VALID_SNUM(s))
       if (strlen(lp_servicename(s)) > 8) {
-	printf("WARNING: You have some share names that are longer than 8 chars\n");
-	printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
-	break;
+        printf("WARNING: You have some share names that are longer than 8 chars\n");
+        printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
+        break;
+      }
+  }
+
+  for (s=0;s<1000;s++) {
+    if (VALID_SNUM(s)) {
+      char *deny_list = lp_hostsdeny(s);
+      char *allow_list = lp_hostsallow(s);
+      if(deny_list) {
+        char *hasstar = strchr(deny_list, '*');
+        char *hasquery = strchr(deny_list, '?');
+        if(hasstar || hasquery) {
+          printf("Invalid character %c in hosts deny list %s for service %s.\n",
+                 hasstar ? *hasstar : *hasquery, deny_list, lp_servicename(s) );
+        }
       }
 
-	for (s=0;s<1000;s++) {
-		if (VALID_SNUM(s)) {
-			char *deny_list = lp_hostsdeny(s);
-			char *allow_list = lp_hostsallow(s);
-			if(deny_list) {
-				char *hasstar = strchr(deny_list, '*');
-				char *hasquery = strchr(deny_list, '?');
-				if(hasstar || hasquery) {
-					printf("Invalid character %c in hosts deny list %s for service %s.\n",
-							hasstar ? *hasstar : *hasquery, deny_list, lp_servicename(s) );
-				}
-			}
+      if(allow_list) {
+        char *hasstar = strchr(allow_list, '*');
+        char *hasquery = strchr(allow_list, '?');
+        if(hasstar || hasquery) {
+          printf("Invalid character %c in hosts allow list %s for service %s.\n",
+                 hasstar ? *hasstar : *hasquery, allow_list, lp_servicename(s) );
+        }
+      }
 
-			if(allow_list) {
-				char *hasstar = strchr(allow_list, '*');
-				char *hasquery = strchr(allow_list, '?');
-				if(hasstar || hasquery) {
-					printf("Invalid character %c in hosts allow list %s for service %s.\n",
-							hasstar ? *hasstar : *hasquery, allow_list, lp_servicename(s) );
-				}
-			}
-		}
-	}
+      if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
+        printf("Invalid combination of parameters for service %s. \
+Level II oplocks can only be set if oplocks are also set.\n",
+               lp_servicename(s) );
+      }
+    }
+  }
 
   if (argc < 3) {
-      if (!silent_mode) {
-	printf("Press enter to see a dump of your service definitions\n");
-	fflush(stdout);
-	getc(stdin);
-      }
-      lp_dump(stdout,True, lp_numservices());
+    if (!silent_mode) {
+      printf("Press enter to see a dump of your service definitions\n");
+      fflush(stdout);
+      getc(stdin);
+    }
+    lp_dump(stdout,True, lp_numservices());
   }
   
   if (argc >= 3) {
-      char *cname=NULL;
-      char *caddr=NULL;
+    char *cname;
+    char *caddr;
       
-      if (argc == 3) {
-	cname = argv[optind];
-	caddr = argv[optind+1];
-      } else if (argc == 4) {
-	cname = argv[optind+1];
-	caddr = argv[optind+2];
-      }
-
-      /* this is totally ugly, a real `quick' hack */
-      for (s=0;s<1000;s++)
-	if (VALID_SNUM(s)) {		 
-	    if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr)) {
-		printf("Allow connection from %s (%s) to %s\n",
-		       cname,caddr,lp_servicename(s));
-	      }
-	    else
-	      {
-		printf("Deny connection from %s (%s) to %s\n",
-		       cname,caddr,lp_servicename(s));
-	      }
-	  }
+    if (argc == 3) {
+      cname = argv[optind];
+      caddr = argv[optind+1];
+    } else if (argc == 4) {
+      cname = argv[optind+1];
+      caddr = argv[optind+2];
     }
+
+    /* this is totally ugly, a real `quick' hack */
+    for (s=0;s<1000;s++) {
+      if (VALID_SNUM(s)) {		 
+        if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr)) {
+          printf("Allow connection from %s (%s) to %s\n",
+                 cname,caddr,lp_servicename(s));
+        } else {
+          printf("Deny connection from %s (%s) to %s\n",
+                 cname,caddr,lp_servicename(s));
+        }
+      }
+    }
+  }
   return(ret);
 }
-
-
