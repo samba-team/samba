@@ -1016,6 +1016,17 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
            coalescing with `allocated' block before it's updated. */
 	if (flag != TDB_INSERT) tdb_delete(tdb, key);
 
+	/* Copy key+value *before* allocating free space in case malloc
+	   fails and we are left with a dead spot in the tdb. */
+
+	if (!(p = (char *)malloc(key.dsize + dbuf.dsize))) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
+
+	memcpy(p, key.dptr, key.dsize);
+	memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
+
 	/* now we're into insert / modify / replace of a record which
 	 * we know could not be optimised by an in-place store (for
 	 * various reasons).  */
@@ -1030,18 +1041,12 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.full_hash = hash;
 	rec.magic = TDB_MAGIC;
 
-	if (!(p = (char *)malloc(key.dsize + dbuf.dsize))) {
-		tdb->ecode = TDB_ERR_OOM;
-		goto fail;
-	}
-
-	memcpy(p, key.dptr, key.dsize);
-	memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 	/* write out and point the top of the hash chain at it */
 	if (rec_write(tdb, rec_ptr, &rec) == -1
 	    || tdb_write(tdb, rec_ptr+sizeof(rec), p, key.dsize+dbuf.dsize)==-1
 	    || ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1) {
 	fail:
+		/* Need to tdb_unallocate() here */
 		ret = -1;
 	}
  out:
