@@ -217,7 +217,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 	if (count != 0) {
 		ret = False;
 		printf("%d levels failed\n", count);
-		if (count > 32) {
+		if (count > 35) {
 			printf("too many level failures - giving up\n");
 			goto done;
 		}
@@ -502,15 +502,15 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 #define NAME_CHECK(sname, stype, tfield, flags) do { \
 	s1 = fnum_find(sname); \
-	if ((s1 && strcmp(s1->stype.out.tfield.s, correct_name) != 0) || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags)) { \
+	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags))) { \
 		printf("(%d) handle %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
-	if ((s1 && strcmp(s1->stype.out.tfield.s, correct_name)) != 0 || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags)) { \
+	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
@@ -668,9 +668,11 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, file_id);
 	NAME_PATH_CHECK("POSITION_INFORMATION", position_information, position);
-	printf("fnum pos = %.0f, fname pos = %.0f\n",
-		(double)s2->position_information.out.position,
-		(double)s1->position_information.out.position );
+	if (s1 && s2) {
+		printf("fnum pos = %.0f, fname pos = %.0f\n",
+		       (double)s2->position_information.out.position,
+		       (double)s1->position_information.out.position );
+	}
 	NAME_PATH_CHECK("MODE_INFORMATION", mode_information, mode);
 	NAME_PATH_CHECK("ALIGNMENT_INFORMATION", alignment_information, alignment_requirement);
 	NAME_PATH_CHECK("ATTRIBUTE_TAG_INFORMATION", attribute_tag_information, attrib);
