@@ -68,6 +68,15 @@ __icheckhost(u_int32_t raddr, const char *lhost)
 	return (0);
 }
 
+#ifndef HAVE_INNETGR
+static int
+innetgr(const char *netgroup, const char *machine, 
+	const char *user, const char *domain)
+{
+    return 0;
+}
+#endif
+
 /*
  * Returns 0 if ok, -1 if not ok.
  */
