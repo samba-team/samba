@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<chapter id="rights">
+<chapterinfo>
+        &author.jerry;
+        &author.jht;
+</chapterinfo>
+
+<title>User Rights and Privileges</title>
+
+<para>
+The administration of Windows user, group and machine accounts in the Samba
+domain controlled network necessitates interfacing between the MS Windows
+networking environment and the UNIX operating system environment. The right
+(permission) to add machines to the Windows security domain can be assigned
+(set) to non-administrative users both in Windows NT4 domains as well as in
+Active Directory domains.
+</para>
+
+<para>
+The addition of Windows NT4/2kX/XPPro machines to the domain necessitates the
+creation of a machine account for each machine added. The machine account is
+a necessity that is used to validate that the machine can be trusted to permit
+user logons.
+</para>
+
+<para>
+Machine accounts are analogous to user accounts, and thus in implementing them
+on a UNIX machine that is hosting Samba (i.e.: On which Samba is running) it is
+necessary to create a special type of user account. Machine accounts differ from
+a normal user account in that the account name (login ID) is terminated with a $
+sign. An additional difference is that this type of account should not ever be able
+to log into the UNIX environment as a system user and therefore is set to have a
+shell of <command>/bin/false</command> and a home directory of 
+<command>/dev/null.</command>
+</para>
+
+<para>
+The creation of UNIX system accounts has traditionally been the sole right of
+the system administrator, better known as the <constant>root</constant> account.
+It is possible in the UNIX environment to create multiple users who have the
+same UID. Any UNIX user who has a UID=0 is inherently the same as the
+<constant>root</constant> account.
+</para>
+
+<para>
+All versions of Samba call system interface scripts that permit CIFS function
+calls that are used to manage users, groups and machine accounts to be affected
+in the UNIX environment. All versions of Samba up to and including version 3.0.10
+required the use of a Windows Administrator account that unambiguously maps to
+the UNIX <constant>root</constant> account to permit the execution of these
+interface scripts. The reuqirement to do this has understandably met with some
+disdain and consternation among Samba administrators, particularly where it became
+necessary to permit people who should not posses <constant>root</constant> level
+access to the UNIX host system.
+</para>
+
+<sect1>
+<title>Rights Management Capabilities</title>
+
+<para>
+Samba 3.0.11 introduces support for the Windows privilege model.  This model
+allows certain rights to be assigned to a user or group SID.  In order to enable
+this feature, <smbconfoption><name>enable privileges</name><value>yes</value></smbconfoption>
+must be defined in the <smbconfsection>global</smbconfsection> section of the &smb.conf; file.
+</para>
+
+<para>
+Currently, the following rights are supported in Samba 3:
+<screen>
+SeAddUsersPrivilege        Add users and groups to the domain
+SeDiskOperatorPrivilege    Manage disk shares
+SeMachineAccountPrivilege  Add machines to domain
+SePrintOperatorPrivilege   Manage printers
+SeRemoteShutdownPrivilege  Force shutdown from a remote system
+</screen>
+The remainder of this chapter explains how to manage and use
+these privileges on Samba servers.
+</para>
+
+<sect2>
+<title>Using the <quote>net rpc rights</quote> Utility</title>
+
+<para>
+There are two primary means of managing the rights assigned to users and groups
+on a Samba server.  The <command>NT4 User Manager for Domains</command> may be
+used from any Windows NT4, 2000 or XP Professional domain member client to
+connect to a Samba domain controller and view/modify the rights assignments.
+This application, however, appears to have bugs when run on a client running
+Windows 2000 or later, therefore Samba provides a command line utility for
+performing the necessary administrative actions.
+</para>
+
+<para>
+The <command>net rpc rights</command> utility in Samba 3.0.11 has 3 new subcommands:
+</para>
+
+<variablelist>
+	<varlistentry><term>list [name|accounts]</term>
+		<listitem><para>
+		When called with no arguments, <command>net rpc list</command>
+		will simply list the available rights on the server.  When passed
+		a specific user or group name, the tool lists the privileges
+		currently assigned to the specified account.  When invoked using
+		the special string <constant>accounts</constant>,
+		<command>net rpc rights list</command> will return a list of all
+		privileged accounts on the server and the assigned rights.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>grant &lt;user&gt; &lt;right [right ...]&gt;</term>
+		<listitem><para>
+		When called with no arguments, This function is used to assign
+		a list of rights to a specified user or group.  For example,
+		to grant the members of the Domain Admins group on a Samba DC
+		the capability to add client machines to the domain, one would run:
+<screen>
+&rootprompt; net -S server -U domadmin rpc rights grant \
+	 'DOMAIN\Domain Admins' SeMachineAccountPrivilege
+</screen>
+		More than one privilege can be assigned by specifying a
+		list of rights separated by spaces. The parameter 'Domain\Domain Admins'
+		must be quoted with single ticks or using double-quotes to prevent
+		the back-slash and the space from being interpreted by the system shell.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>revoke &lt;user&gt; &lt;right [right ...]&gt;</term>
+		<listitem><para>
+		This command is similar in format to <command>net rpc rights grant</command>.  It's
+		effect is to remove an assigned right (or list of rights) from a user or group.
+		</para></listitem>
+	</varlistentry>
+
+</variablelist>
+
+<note><para>
+You must be connected as a member of the Domain Admins group to be able to
+grant or revoke privileges assigned to an account.  This capability is
+inherent to the Domain Admins group and is not configurable.
+</para></note>
+
+<para>
+By default, no privileges are initially assigned to any
+account.  The reason for this is that certain actions will
+be performed as root once smbd determines that a user has
+the necessary rights.  For example, when joining a client to
+a Windows domain, the 'add machine script' must be executed
+with superuser rights in most cases.  For this reason, you
+should be very careful about handing out privileges to
+accounts.
+</para>
+
+<para>
+Access as the root user (UID=0) bypasses all privilege checks.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Description of Privileges</title>
+
+<para>
+The privileges that have been implemented in Samba-3.0.11 are shown below.
+It is possible, and likely, that additional privileges may be implemented in
+later releases of Samba. It is also likely that any privileges currently implemented
+but not used may be removed from future releases, thus it is important that
+the successful as well as unsuccessful use of these facilities should be reported
+on the Samba mailing lists.
+</para>
+
+<variablelist>
+	<varlistentry><term>SeAddUsersPrivilege</term>
+		<listitem><para>
+		This right determines whether or not smbd will allow the
+		user to create new user or group accounts via such tools
+		as <command>net rpc user add</command> or 
+		<command>NT4 User Manager for Domains.</command>
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>SeDiskOperatorPrivilege</term>
+		<listitem><para>
+		Accounts which posses this right will be able to execute
+		scripts defined by the <command>add/delete/change</command>
+		share command in &smb.conf; file as root.  Such users will
+		also be able to modify the ACL associated with file shares
+		on the Samba server.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>SeMachineAccountPrivilege</term>
+		<listitem><para>
+		Controls whether or not the user is able join client
+		machines to a Samba controlled domain.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>SePrintOperatorPrivilege</term>
+		<listitem><para>
+		This privilege operates identically to the
+		<smbconfoption><name>printer admin</name></smbconfoption>
+		option in the &smb.conf; file (see section 5 man page for &smb.conf;)
+		except that it is a global right (not on a per printer basis). 
+		Eventually the smb.conf option will be deprecated and administrative
+		rights to printers will be controlled exclusively by this right and
+		the security descriptor associated with the printer object in the
+		<filename>ntprinters.tdb</filename> file.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>SeRemoteShutdownPrivilege</term>
+		<listitem><para>
+		Samba provides two hooks for shutting down or rebooting
+		the server and for aborting a previously issued shutdown
+		command.  Since this is an operation normally limited by
+		the operating system to the root user, an account must possess this
+		right to be able to execute either of these hooks to have any effect.
+		</para></listitem>
+	</varlistentry>
+
+</variablelist>
+
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>The Administrator Domain SID</title>
+
+<para>
+Please note that when configured as a DC, it is now required
+that an account in the server's passdb backend be set to the
+domain SID of the default Administrator account.  To obtain the
+domain SID on a Samba DC, run the following command:
+
+<screen>
+&rootprompt; net getlocalsid
+SID for domain FOO is: S-1-5-21-4294955119-3368514841-2087710299
+</screen>
+You may assign the Domain Administrator rid to an account using the <command>pdbedit</command>
+command as shown here:
+<screen>
+&rootprompt; pdbedit -U S-1-5-21-4294955119-3368514841-2087710299-500 -u root -r
+</screen>
+</para>
+
+</sect1>
+
+</chapter>
