@@ -166,45 +166,59 @@ int
 login(char *host)
 {
 	char tmp[80];
+	char defaultpass[128];
 	char *user, *pass, *acct;
 	int n, aflag = 0;
 
+	char *myname = NULL;
+	struct passwd *pw = getpwuid(getuid());
+	if (pw != NULL)
+	    myname = pw->pw_name;
+
 	user = pass = acct = 0;
+	
 
 	if(do_klogin(host))
 	    printf("\n*** Using plaintext user and password ***\n\n");
-	else
+	else{
 	    printf("Kerberos login successful.\n\n");
+	}
 
 	if (ruserpass(host, &user, &pass, &acct) < 0) {
 		code = -1;
 		return (0);
 	}
 	while (user == NULL) {
-		char *myname = NULL;
-		struct passwd *pp = getpwuid(getuid());
-
-		if (pp != NULL)
-		        myname = pp->pw_name;
-		if (myname)
-			printf("Name (%s:%s): ", host, myname);
-		else
-			printf("Name (%s): ", host);
-		(void) fgets(tmp, sizeof(tmp) - 1, stdin);
-		tmp[strlen(tmp) - 1] = '\0';
-		if (*tmp == '\0')
-			user = myname;
-		else
-			user = tmp;
+	    if (myname)
+		printf("Name (%s:%s): ", host, myname);
+	    else
+		printf("Name (%s): ", host);
+	    fgets(tmp, sizeof(tmp) - 1, stdin);
+	    tmp[strlen(tmp) - 1] = '\0';
+	    if (*tmp == '\0')
+		user = myname;
+	    else
+		user = tmp;
 	}
 	strcpy(username, user);
 	n = command("USER %s", user);
 	if (n == CONTINUE) {
 	    if(auth_complete)
-		pass = user;
+		pass = myname;
 	    else if (pass == NULL) {
-	        des_read_pw_string (tmp, sizeof(tmp), "Password:", 0);
-		pass = tmp;
+		char prompt[128];
+		if(myname && 
+		   (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))){
+		    sprintf(defaultpass, "%s@%s", myname, mydomain+1);
+		    sprintf(prompt, "Password (%s): ", defaultpass);
+		}else{
+		    strcpy(defaultpass, "");
+		    sprintf(prompt, "Password: ");
+		}
+		pass = defaultpass;
+	        des_read_pw_string (tmp, sizeof(tmp), prompt, 0);
+		if(tmp[0])
+		    pass = tmp;
 	    }
 	    n = command("PASS %s", pass);
 	}
@@ -229,6 +243,7 @@ login(char *host)
 			break;
 		}
 	}
+	sec_set_protection_level();
 	return (1);
 }
 
