@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -39,7 +38,6 @@
  */
 
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
