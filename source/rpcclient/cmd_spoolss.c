@@ -126,53 +126,56 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 /****************************************************************************
 printer info level 0 display function
 ****************************************************************************/
-static void display_print_info_0(PRINTER_INFO_0 *i1)
+static void display_print_info_0(PRINTER_INFO_0 *i0)
 {
-	fstring 	name;
-	fstring 	servername;
+	fstring 	name = "";
+	fstring 	servername = "";
 
-	rpcstr_pull(name, i1->printername.buffer, sizeof(name), 0, STR_TERMINATE);
-	rpcstr_pull(servername, i1->servername.buffer, sizeof(servername), 0,STR_TERMINATE);
+	if (i0->printername.buffer)
+		rpcstr_pull(name, i0->printername.buffer, sizeof(name), 0, STR_TERMINATE);
+
+	if (i0->servername.buffer)
+		rpcstr_pull(servername, i0->servername.buffer, sizeof(servername), 0,STR_TERMINATE);
   
 	printf("\tprintername:[%s]\n", name);
 	printf("\tservername:[%s]\n", servername);
-	printf("\tcjobs:[0x%x]\n", i1->cjobs);
-	printf("\ttotal_jobs:[0x%x]\n", i1->total_jobs);
+	printf("\tcjobs:[0x%x]\n", i0->cjobs);
+	printf("\ttotal_jobs:[0x%x]\n", i0->total_jobs);
 	
-	printf("\t:date: [%d]-[%d]-[%d] (%d)\n", i1->year, i1->month, 
-	       i1->day, i1->dayofweek);
-	printf("\t:time: [%d]-[%d]-[%d]-[%d]\n", i1->hour, i1->minute, 
-	       i1->second, i1->milliseconds);
+	printf("\t:date: [%d]-[%d]-[%d] (%d)\n", i0->year, i0->month, 
+	       i0->day, i0->dayofweek);
+	printf("\t:time: [%d]-[%d]-[%d]-[%d]\n", i0->hour, i0->minute, 
+	       i0->second, i0->milliseconds);
 	
-	printf("\tglobal_counter:[0x%x]\n", i1->global_counter);
-	printf("\ttotal_pages:[0x%x]\n", i1->total_pages);
+	printf("\tglobal_counter:[0x%x]\n", i0->global_counter);
+	printf("\ttotal_pages:[0x%x]\n", i0->total_pages);
 	
-	printf("\tmajorversion:[0x%x]\n", i1->major_version);
-	printf("\tbuildversion:[0x%x]\n", i1->build_version);
+	printf("\tmajorversion:[0x%x]\n", i0->major_version);
+	printf("\tbuildversion:[0x%x]\n", i0->build_version);
 	
-	printf("\tunknown7:[0x%x]\n", i1->unknown7);
-	printf("\tunknown8:[0x%x]\n", i1->unknown8);
-	printf("\tunknown9:[0x%x]\n", i1->unknown9);
-	printf("\tsession_counter:[0x%x]\n", i1->session_counter);
-	printf("\tunknown11:[0x%x]\n", i1->unknown11);
-	printf("\tprinter_errors:[0x%x]\n", i1->printer_errors);
-	printf("\tunknown13:[0x%x]\n", i1->unknown13);
-	printf("\tunknown14:[0x%x]\n", i1->unknown14);
-	printf("\tunknown15:[0x%x]\n", i1->unknown15);
-	printf("\tunknown16:[0x%x]\n", i1->unknown16);
-	printf("\tchange_id:[0x%x]\n", i1->change_id);
-	printf("\tunknown18:[0x%x]\n", i1->unknown18);
-	printf("\tstatus:[0x%x]\n", i1->status);
-	printf("\tunknown20:[0x%x]\n", i1->unknown20);
-	printf("\tc_setprinter:[0x%x]\n", i1->c_setprinter);
-	printf("\tunknown22:[0x%x]\n", i1->unknown22);
-	printf("\tunknown23:[0x%x]\n", i1->unknown23);
-	printf("\tunknown24:[0x%x]\n", i1->unknown24);
-	printf("\tunknown25:[0x%x]\n", i1->unknown25);
-	printf("\tunknown26:[0x%x]\n", i1->unknown26);
-	printf("\tunknown27:[0x%x]\n", i1->unknown27);
-	printf("\tunknown28:[0x%x]\n", i1->unknown28);
-	printf("\tunknown29:[0x%x]\n", i1->unknown29);
+	printf("\tunknown7:[0x%x]\n", i0->unknown7);
+	printf("\tunknown8:[0x%x]\n", i0->unknown8);
+	printf("\tunknown9:[0x%x]\n", i0->unknown9);
+	printf("\tsession_counter:[0x%x]\n", i0->session_counter);
+	printf("\tunknown11:[0x%x]\n", i0->unknown11);
+	printf("\tprinter_errors:[0x%x]\n", i0->printer_errors);
+	printf("\tunknown13:[0x%x]\n", i0->unknown13);
+	printf("\tunknown14:[0x%x]\n", i0->unknown14);
+	printf("\tunknown15:[0x%x]\n", i0->unknown15);
+	printf("\tunknown16:[0x%x]\n", i0->unknown16);
+	printf("\tchange_id:[0x%x]\n", i0->change_id);
+	printf("\tunknown18:[0x%x]\n", i0->unknown18);
+	printf("\tstatus:[0x%x]\n", i0->status);
+	printf("\tunknown20:[0x%x]\n", i0->unknown20);
+	printf("\tc_setprinter:[0x%x]\n", i0->c_setprinter);
+	printf("\tunknown22:[0x%x]\n", i0->unknown22);
+	printf("\tunknown23:[0x%x]\n", i0->unknown23);
+	printf("\tunknown24:[0x%x]\n", i0->unknown24);
+	printf("\tunknown25:[0x%x]\n", i0->unknown25);
+	printf("\tunknown26:[0x%x]\n", i0->unknown26);
+	printf("\tunknown27:[0x%x]\n", i0->unknown27);
+	printf("\tunknown28:[0x%x]\n", i0->unknown28);
+	printf("\tunknown29:[0x%x]\n", i0->unknown29);
 }
 
 /****************************************************************************
@@ -180,11 +183,9 @@ printer info level 1 display function
 ****************************************************************************/
 static void display_print_info_1(PRINTER_INFO_1 *i1)
 {
-	fstring desc;
-	fstring name;
-	fstring comm;
-
-	desc[0] = name[0] = comm[0] = 0;
+	fstring desc = "";
+	fstring name = "";
+	fstring comm = "";
 
 	if (i1->description.buffer)
 		rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, 
@@ -209,29 +210,50 @@ printer info level 2 display function
 ****************************************************************************/
 static void display_print_info_2(PRINTER_INFO_2 *i2)
 {
-	fstring servername;
-	fstring printername;
-	fstring sharename;
-	fstring portname;
-	fstring drivername;
-	fstring comment;
-	fstring location;
-	fstring sepfile;
-	fstring printprocessor;
-	fstring datatype;
-	fstring parameters;
+	fstring servername = "";
+	fstring printername = "";
+	fstring sharename = "";
+	fstring portname = "";
+	fstring drivername = "";
+	fstring comment = "";
+	fstring location = "";
+	fstring sepfile = "";
+	fstring printprocessor = "";
+	fstring datatype = "";
+	fstring parameters = "";
 	
-	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
-	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
-	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
-	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
-	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
-	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
-	rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
-	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
-	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
-	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
-	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
+	if (i2->servername.buffer)
+		rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
+
+	if (i2->printername.buffer)
+		rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
+
+	if (i2->sharename.buffer)
+		rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
+
+	if (i2->portname.buffer)
+		rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
+
+	if (i2->drivername.buffer)
+		rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
+
+	if (i2->comment.buffer)
+		rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
+
+	if (i2->location.buffer)
+		rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
+
+	if (i2->sepfile.buffer)
+		rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
+
+	if (i2->printprocessor.buffer) 
+		rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
+
+	if (i2->datatype.buffer)
+		rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
+
+	if (i2->parameters.buffer)
+		rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
 	printf("\tprintername:[%s]\n", printername);
