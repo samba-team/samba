@@ -97,7 +97,7 @@ q = (tbl[q & 0x0F] << 4) | (tbl[q >> 4])
  */
 
 static void
-xor (des_cblock *key, unsigned char *b)
+xor (des_cblock *key, const unsigned char *b)
 {
     unsigned char *a = (unsigned char*)key;
     a[0] ^= b[0];
@@ -115,7 +115,7 @@ xor (des_cblock *key, unsigned char *b)
  */
 
 static void
-init (unsigned char *a, unsigned char *b)
+init (unsigned char *a, const unsigned char *b)
 {
      a[0] = b[0] << 1;
      a[1] = b[1] << 1;
@@ -128,25 +128,26 @@ init (unsigned char *a, unsigned char *b)
 }
 
 static void
-DES_string_to_key(const unsigned char *str, size_t len, des_cblock *key)
+DES_string_to_key(const char *str, size_t len, des_cblock *key)
 {
-    int odd, i;
+    /* could use des_string_to_key here, but then `str' must be zero
+       terminated, and the final weak-key check has to be added */
+    int even, i;
     des_key_schedule sched;
 
     memset (key, 0, sizeof(des_cblock));
 
-    odd = 1;
+    even = 0;
     for (i = 0; i < len; i += 8) {
 	unsigned char tmp[8];
 
-	init (tmp, (unsigned char*)&str[i]);
+	init (tmp, (const unsigned char*)(str + i));
 
-	if (odd == 0) {
-	    odd = 1;
+	if (even) {
 	    reverse (tmp);
 	    init (tmp, tmp);
-	} else
-	    odd = 0;
+	}
+	even = !even;
 	xor (key, tmp);
     }
     des_set_odd_parity (key);
@@ -157,40 +158,29 @@ DES_string_to_key(const unsigned char *str, size_t len, des_cblock *key)
 	xor (key, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
 }
 
-static int
-gcd(int a, int b)
-{
-    do{
-	int r = a % b;
-	a = b;
-	b = r;
-    }while(b);
-    return a;
-}
-
-
 static void
 rr13(unsigned char *buf, size_t len)
 {
-    unsigned char *tmp = malloc(len);
     int i;
-    for(i = 0; i < len; i++){
-	int x = (buf[i] << 8) | buf[(i + 1) % len];
-	x >>= 5;
-	tmp[(i + 2) % len] = x & 0xff;
-    }
-    memcpy(buf, tmp, len);
-    free(tmp);
+    /* assert(len >= 3); */
+    unsigned a = buf[0], b = buf[len-1];
+#define F(A, B) ((((A) << 3) | ((B) >> 5)) & 0xff)
+    buf[0] = F(buf[len-2], buf[len-1]);
+    for(i = len - 3; i >= 1; i--)
+	buf[i + 2] = F(buf[i], buf[i+1]);
+    buf[2] = F(a, buf[1]);
+    buf[1] = F(b, a);
+#undef F
 }
 
-/* XXX what's this function supposed to do anyway? */
+/* Add `b' to `a', both beeing one's complement numbers. */
 static void
 add1(unsigned char *a, unsigned char *b, size_t len)
 {
     int i;
     int carry = 0;
     for(i = len - 1; i >= 0; i--){
-	int x = a[i] + b[i];
+	int x = a[i] + b[i] + carry;
 	carry = x > 0xff;
 	a[i] = x & 0xff;
     }
@@ -201,27 +191,36 @@ add1(unsigned char *a, unsigned char *b, size_t len)
     }
 }
 
+/* key should point to a buffer of at least size (24) bytes */
 static void
-fold(const unsigned char *str, size_t len, unsigned char *out)
+fold(const unsigned char *str, size_t len, unsigned char *key)
 {
     const int size = 24;
-    unsigned char key[24];
-    int num = 0;
-    int i;
-    int lcm = size * len / gcd(size, len);
-    unsigned char *tmp = malloc(lcm);
+    /* if len < size we need at most N * len bytes, ie < 2 * size;
+       if len > size we need at most 2 * len */
+    size_t maxlen = 2 * max(size, len);
+    size_t l = 0;
+    unsigned char *tmp = malloc(maxlen);
     unsigned char *buf = malloc(len);
+    
     memcpy(buf, str, len);
-    for(; num < lcm; num += len){
-	memcpy(tmp + num, buf, len);
+    memset(key, 0, size);
+    do {
+	memcpy(tmp + l, buf, len);
+	l += len;
 	rr13(buf, len);
-    }
+	while(l >= size) {
+	    add1(key, tmp, size);
+	    l -= size;
+	    if(l == 0)
+		break;
+	    memmove(tmp, tmp + size, l);
+	}
+    } while(l != 0);
+    memset(buf, 0, len);
     free(buf);
-    memset(key, 0, sizeof(key));
-    for(i = 0; i < lcm; i += size)
-	add1(key, tmp + i, size);
+    memset(tmp, 0, maxlen);
     free(tmp);
-    memcpy(out, key, size);
 }
 
 static void
@@ -355,10 +354,9 @@ get_str(const void *pw, size_t pw_len, const void *salt, size_t salt_len,
     char *p;
     size_t len = pw_len + salt_len;
     len = (len + 7) & ~7;
-    p = malloc(len);
+    p = calloc(len, 1);
     if(p == NULL)
 	return NULL;
-    memset (p, 0, len);
     memcpy(p, pw, pw_len);
     memcpy(p + pw_len, salt, salt_len);
     *ret_len = len;
@@ -396,7 +394,8 @@ string_to_key_internal (const unsigned char *str,
 	s = get_str(str, str_len, salt->data, salt->length, &len);
 	if(s == NULL)
 	    return ENOMEM;
-	DES3_string_to_key(s, len, keys);
+	/* only des should pad to 8 */
+	DES3_string_to_key(s, str_len + salt->length, keys);
 	ret = krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
 	memset(keys, 0, sizeof(keys));
 	break;
