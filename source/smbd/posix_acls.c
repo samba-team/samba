@@ -245,7 +245,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	SAFE_FREE(pai_buf);
 
 	DEBUG(10,("store_inheritance_attribute:%s for file %s\n", protected ? " (protected)" : "", fsp->fsp_name));
-	if (ret == -1 && errno != ENOSYS)
+	if (ret == -1 && !no_acl_syscall_error(errno))
 		DEBUG(1,("store_inheritance_attribute: Error %s\n", strerror(errno) ));
 }
 
@@ -2243,7 +2243,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 	if (the_acl == NULL) {
 
-		if (errno != ENOSYS) {
+		if (!no_acl_syscall_error(errno)) {
 			/*
 			 * Only print this error message if we have some kind of ACL
 			 * support that's not working. Otherwise we would always get this.
@@ -2408,13 +2408,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
 			 */
-			if (errno == ENOSYS)
+			if (no_acl_syscall_error(errno)) {
 				*pacl_set_support = False;
-
-#ifdef ENOTSUP
-			if (errno == ENOTSUP)
-				*pacl_set_support = False;
-#endif
+			}
 
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
@@ -2427,13 +2423,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
 			 */
-			if (errno == ENOSYS)
+			if (no_acl_syscall_error(errno)) {
 				*pacl_set_support = False;
-
-#ifdef ENOTSUP
-			if (errno == ENOTSUP)
-				*pacl_set_support = False;
-#endif
+			}
 
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
