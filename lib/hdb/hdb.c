@@ -40,97 +40,94 @@
 
 RCSID("$Id$");
 
-void
+int
 hdb_principal2key(krb5_context context, krb5_principal p, krb5_data *key)
 {
-    krb5_storage *sp;
-    krb5_principal new;
+    Principal new;
+    size_t len;
+    unsigned char *buf;
+    int ret;
 
-    krb5_copy_principal(context, p, &new);
-    new->name.name_type = 0;
-    sp = krb5_storage_emem();
-    krb5_store_principal(sp, new);
-    krb5_storage_to_data(sp, key);
-    krb5_storage_free(sp);
-    krb5_free_principal(context, new);
+    ret = copy_Principal(p, &new);
+    if(ret)
+	goto out;
+    new.name.name_type = 0;
+    len = length_Principal(&new);
+    buf  = malloc(len);
+    if(buf == NULL){
+	ret = ENOMEM;
+	goto out;
+    }
+    ret = encode_Principal(buf + len - 1, len, &new, &len);
+    if(ret){
+	free(buf);
+	goto out;
+    }
+    key->data = buf;
+    key->length = len;
+out:
+    free_Principal(&new);
+    return ret;
 }
 
-void
-hdb_key2principal(krb5_context context, krb5_data *key, krb5_principal *p)
+int
+hdb_key2principal(krb5_context context, krb5_data *key, krb5_principal p)
 {
-    krb5_storage *sp;
-    sp = krb5_storage_from_mem(key->data, key->length);
-    krb5_ret_principal(sp, p);
-    krb5_storage_free(sp);
+    size_t len;
+    return decode_Principal(key->data, key->length, p, &len);
 }
 
-void
+int
 hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
 {
-    krb5_storage *sp;
-    sp = krb5_storage_emem();
-    krb5_store_int32(sp, ent->kvno);
-    krb5_store_keyblock(sp, ent->keyblock);
-    krb5_store_int32(sp, ent->max_life);
-    krb5_store_int32(sp, ent->max_renew);
-    krb5_store_int32(sp, ent->last_change);
-    krb5_store_principal(sp, ent->changed_by);
-    krb5_store_int32(sp, ent->expires);
-    krb5_store_int32(sp, ent->flags.i);
-    krb5_storage_to_data(sp, value);
-    krb5_storage_free(sp);
+    unsigned char *buf;
+    size_t len;
+    int ret;
+    len = length_hdb_entry(ent);
+    buf = malloc(len);
+    if(buf == NULL)
+	return ENOMEM;
+    ret = encode_hdb_entry(buf + len - 1, len, ent, &len);
+    if(ret){
+	free(buf);
+	return ret;
+    }
+    value->data = buf;
+    value->length = len;
+    return 0;
 }
 
-void
+int
 hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 {
-    /* XXX must check return values */
-    krb5_storage *sp;
-    int32_t tmp;
-    sp = krb5_storage_from_mem(value->data, value->length);
-    krb5_ret_int32(sp, &tmp);
-    ent->kvno = tmp;
-    krb5_ret_keyblock(sp, &ent->keyblock);
-    krb5_ret_int32(sp, &tmp);
-    ent->max_life = tmp;
-    krb5_ret_int32(sp, &tmp);
-    ent->max_renew = tmp;
-    krb5_ret_int32(sp, &tmp);
-    ent->last_change = tmp;
-    krb5_ret_principal(sp, &ent->changed_by);
-    krb5_ret_int32(sp, &tmp);
-    ent->expires = tmp;
-    krb5_ret_int32(sp, &tmp);
-    ent->flags.i = tmp;
-    krb5_storage_free(sp);
+    size_t len;
+    return decode_hdb_entry(value->data, value->length, ent, &len);
 }
-
-
 
 krb5_error_code
 hdb_etype2key(krb5_context context, 
 	      hdb_entry *e, 
 	      krb5_enctype etype, 
-	      krb5_keyblock **key)
+	      Key **key)
 {
     krb5_keytype keytype;
     krb5_error_code ret;
+    int i;
     ret = krb5_etype2keytype(context, etype, &keytype);
     if(ret)
 	return ret;
-    if(keytype == e->keyblock.keytype){
-	*key = &e->keyblock;
-	return 0;
-    }
-    return KRB5_PROG_ETYPE_NOSUPP;
+    for(i = 0; i < e->keys.len; i++)
+	if(e->keys.val[i].key.keytype == keytype){
+	    *key = &e->keys.val[i];
+	    return 0;
+	}
+    return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
 void
 hdb_free_entry(krb5_context context, hdb_entry *ent)
 {
-    krb5_free_principal(context, ent->principal);
-    krb5_free_keyblock(context, &ent->keyblock);
-    krb5_free_principal(context, ent->changed_by);
+    free_hdb_entry(ent);
 }
 	       
 
