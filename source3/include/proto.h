@@ -945,7 +945,7 @@ void make_sam_info(DOM_SAM_INFO *sam,
 				DOM_ID_INFO_1 *id1);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
-void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 frag,
 				uint32 call_id, int data_len);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
 void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version);

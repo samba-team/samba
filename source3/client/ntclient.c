@@ -140,7 +140,7 @@ static BOOL do_rpc_bind(uint16 fnum)
 	data_len = PTR_DIFF(p, data);
 
 	/* create the request RPC_HDR */
-	make_rpc_hdr(&hdr, RPC_BIND, call_id, PTR_DIFF(p, data + 0x10));
+	make_rpc_hdr(&hdr, RPC_BIND, 0x0, call_id, PTR_DIFF(p, data + 0x10));
 
 	/* stream the header into data */
 	p = smb_io_rpc_hdr(False, &hdr, data, data, 4, 0);

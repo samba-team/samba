@@ -794,7 +794,7 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 /*******************************************************************
 creates an RPC_HDR structure.
 ********************************************************************/
-void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 frag,
 				uint32 call_id, int data_len)
 {
 	if (hdr == NULL) return;
@@ -802,7 +802,7 @@ void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
 	hdr->major        = 5;               /* RPC version 5 */
 	hdr->minor        = 0;               /* minor version 0 */
 	hdr->pkt_type     = pkt_type;        /* RPC packet type */
-	hdr->frag         = 3;               /* first frag + last frag */
+	hdr->frag         = frag;            /* first frag + last frag */
 	hdr->pack_type    = 0x10;            /* packed data representation */
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = 0;               /* authentication length */
@@ -1104,7 +1104,8 @@ void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
 {
 	if (hdr == NULL) return;
 
-	make_rpc_hdr(&(hdr->hdr), pkt_type, call_id, data_len);
+	/* frag is FIRST_FRAG | LAST_FRAG.  lkclXXXX must define these */
+	make_rpc_hdr(&(hdr->hdr), pkt_type, 0x03, call_id, data_len);
 
 	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
 	hdr->context_id   = 0;               /* presentation context identifier */
