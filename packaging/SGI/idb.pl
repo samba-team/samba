@@ -180,7 +180,7 @@ print IDB "d 0755 root sys usr/samba/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib/codepages $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while (@codepage) {
   $nextpage = shift @codepage;
-  print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
 
