@@ -440,6 +440,10 @@
 	} srvsvc_NetShareInfo502;
 
 	typedef struct {
+		uint32 dfs_flags;
+	} srvsvc_NetShareInfo1005;
+
+	typedef struct {
 		uint32 count;
 		[size_is(count)] srvsvc_NetShareInfo502 *array;
 	} srvsvc_NetShareCtr502;
@@ -450,6 +454,7 @@
 		[case(2)] srvsvc_NetShareInfo2 *info2;
 		[case(501)] srvsvc_NetShareInfo501 *info501;
 		[case(502)] srvsvc_NetShareInfo502 *info502;
+		[case(1005)] srvsvc_NetShareInfo1005 *info1005;
 		[default] ;
 	} srvsvc_NetShareInfo;
 
@@ -486,7 +491,7 @@
 	/* Function: 0x10 */
 	WERROR srvsvc_NetShareGetInfo(
 		[in]   unistr *server_unc,
-		[in]   unistr *share_name,
+		[in]   unistr share_name,
 		[in]   uint32 level,
 		[out,switch_is(level)] srvsvc_NetShareInfo info
 		);
