@@ -135,10 +135,10 @@ static void	 ack (char *);
 static void	 myoob (int);
 static int	 checkuser (char *, char *);
 static int	 checkaccess (char *);
-static FILE	*dataconn (char *, off_t, char *);
+static FILE	*dataconn (const char *, off_t, const char *);
 static void	 dolog (struct sockaddr *);
 static void	 end_login (void);
-static FILE	*getdatasock (char *);
+static FILE	*getdatasock (const char *);
 static char	*gunique (char *);
 static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
@@ -949,7 +949,7 @@ pass(char *passwd)
 }
 
 void
-retrieve(char *cmd, char *name)
+retrieve(const char *cmd, char *name)
 {
 	FILE *fin = NULL, *dout;
 	struct stat st;
@@ -1172,7 +1172,7 @@ done:
 }
 
 static FILE *
-getdatasock(char *mode)
+getdatasock(const char *mode)
 {
 	int s, t, tries;
 
@@ -1211,7 +1211,7 @@ bad:
 }
 
 static FILE *
-dataconn(char *name, off_t size, char *mode)
+dataconn(const char *name, off_t size, const char *mode)
 {
 	char sizebuf[32];
 	FILE *file;
@@ -2081,7 +2081,7 @@ gunique(char *local)
  * Format and send reply containing system error number.
  */
 void
-perror_reply(int code, char *string)
+perror_reply(int code, const char *string)
 {
 	reply(code, "%s: %s.", string, strerror(errno));
 }
@@ -2092,7 +2092,7 @@ static char *onefile[] = {
 };
 
 void
-list_file(const char *file)
+list_file(char *file)
 {
     if(use_builtin_ls) {
 	FILE *dout;
