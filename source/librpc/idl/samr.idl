@@ -756,7 +756,7 @@
 	typedef struct {
 		[value(strlen_m(r->name))] uint16 name_len;
 		[value(strlen_m(r->name))] uint16 name_size;
-		ascstr *name;
+		ascstr_noterm *name;
 	} samr_AsciiName;	
 
 	typedef struct {
@@ -930,23 +930,60 @@
 
 	/************************/
 	/* Function    0x33     */
-	NTSTATUS samr_QUERY_DISPINFO3();
+
+	/*
+	  another duplicate. There must be a reason ....
+	*/
+	NTSTATUS samr_QueryDisplayInfo3(
+		[in,ref]    policy_handle *handle,
+		[in]        uint16 level,
+		[in]        uint32 start_idx,
+		[in]        uint32 max_entries,
+		[in]        uint32 buf_size,
+		[out]       uint32 total_size,
+		[out]       uint32 returned_size,
+		[out,switch_is(level)] samr_DispInfo info
+		);
 
 	/************************/
 	/* Function    0x34     */
-	NTSTATUS samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS();
+	NTSTATUS samr_AddMultipleMembersToAlias(
+		[in,ref]    policy_handle *handle,
+		[in,ref]    lsa_SidArray *sids
+		);
 
 	/************************/
 	/* Function    0x35     */
-	NTSTATUS samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS();
+	NTSTATUS samr_RemoveMultipleMembersFromAlias(
+		[in,ref]    policy_handle *handle,
+		[in,ref]    lsa_SidArray *sids
+		);
 
 	/************************/
 	/* Function    0x36     */
-	NTSTATUS samr_OEM_CHANGE_PASSWORD_USER2();
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 data[516];
+	} samr_CryptPassword;
+
+	NTSTATUS samr_OemChangePasswordUser2(
+		[in]              samr_AsciiName *server,
+		[in,ref]          samr_AsciiName *account,
+		[in]              samr_CryptPassword *password,
+		[in]              samr_Hash *hash
+		);
 
 	/************************/
 	/* Function    0x37     */
-	NTSTATUS samr_UNICODE_CHANGE_PASSWORD_USER2();
+	NTSTATUS samr_ChangePasswordUser2(
+		[in]              samr_Name *server,
+		[in,ref]          samr_Name *account,
+		[in]              samr_CryptPassword *nt_password,
+		[in]              samr_Hash *nt_verifier,
+		[in]              bool8 lm_change,
+		[in]              samr_CryptPassword *lm_password,
+		[in]              samr_Hash *lm_verifier
+		);
 
 	/************************/
 	/* Function    0x38     */
