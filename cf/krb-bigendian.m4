@@ -29,7 +29,7 @@ if test "$krb_cv_c_bigendian_compile" = "no"; then
   fi
   AC_TRY_COMPILE([
 #include <sys/types.h>
-#include <siys/param.h>],[
+#include <sys/param.h>],[
 #if BYTE_ORDER != BIG_ENDIAN
   not big endian
 #endif], krb_cv_c_bigendian=yes, krb_cv_c_bigendian=no)
