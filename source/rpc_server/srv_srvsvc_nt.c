@@ -3,6 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Jeremy Allison					2001.
+ *  Copyright (C) Nigel Williams					2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,32 +30,53 @@
 extern pstring global_myname;
 
 /*******************************************************************
+ Utility function to get the 'type' of a share from an snum.
+ ********************************************************************/
+static uint32 get_share_type(int snum) 
+{
+	char *net_name = lp_servicename(snum);
+	int len_net_name = strlen(net_name);
+	
+	/* work out the share type */
+	uint32 type = STYPE_DISKTREE;
+
+	if (lp_print_ok(snum))
+		type = STYPE_PRINTQ;
+	if (strequal(lp_fstype(snum), "IPC"))
+		type = STYPE_IPC;
+	if (net_name[len_net_name] == '$')
+		type |= STYPE_HIDDEN;
+
+	return type;
+}
+	
+/*******************************************************************
+ Fill in a share info level 0 structure.
+ ********************************************************************/
+
+static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0, int snum)
+{
+	pstring net_name;
+
+	pstrcpy(net_name, lp_servicename(snum));
+
+	init_srv_share_info0(&sh0->info_0, net_name);
+	init_srv_share_info0_str(&sh0->info_0_str, net_name);
+}
+
+/*******************************************************************
  Fill in a share info level 1 structure.
  ********************************************************************/
 
 static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int snum)
 {
-	int len_net_name;
-	pstring net_name;
 	pstring remark;
-	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
+	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
 	standard_sub_conn(p->conn, remark,sizeof(remark));
-	len_net_name = strlen(net_name);
 
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-		
-	if (lp_print_ok(snum))
-		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
-		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
-		type |= STYPE_HIDDEN;
-
-	init_srv_share_info1(&sh1->info_1, net_name, type, remark);
+	init_srv_share_info1(&sh1->info_1, net_name, get_share_type(snum), remark);
 	init_srv_share_info1_str(&sh1->info_1_str, net_name, remark);
 }
 
@@ -64,14 +86,11 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 
 static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int snum)
 {
-	int len_net_name;
-	pstring net_name;
 	pstring remark;
 	pstring path;
 	pstring passwd;
-	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
+	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
 	standard_sub_conn(p->conn, remark,sizeof(remark));
 	pstrcpy(path, "C:");
@@ -85,19 +104,8 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 	string_replace(path, '/', '\\');
 
 	pstrcpy(passwd, "");
-	len_net_name = strlen(net_name);
 
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-		
-	if (lp_print_ok(snum))
-		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
-		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
-		type |= STYPE_HIDDEN;
-
-	init_srv_share_info2(&sh2->info_2, net_name, type, remark, 0, 0xffffffff, 1, path, passwd);
+	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd);
 	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
@@ -251,7 +259,7 @@ static BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC
 
 	/* Free malloc'ed memory */
  
- out:
+out:
  
 	prs_mem_free(&ps);
 	if (mem_ctx)
@@ -337,7 +345,7 @@ BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, u
 
 	ret = se_access_check(psd, token, desired_access, &granted, &status);
 
-  out:
+out:
 
 	talloc_destroy(mem_ctx);
 
@@ -351,27 +359,15 @@ BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, u
 static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
 {
 	int len_net_name;
-	pstring net_name;
 	pstring remark;
-	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
+	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
 	standard_sub_conn(p->conn, remark, sizeof(remark));
 
 	len_net_name = strlen(net_name);
 
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-
-	if (lp_print_ok(snum))
-		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
-		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
-		type |= STYPE_HIDDEN;
-	
-	init_srv_share_info501(&sh501->info_501, net_name, type, remark, (lp_csc_policy(snum) << 4));
+	init_srv_share_info501(&sh501->info_501, net_name, get_share_type(snum), remark, (lp_csc_policy(snum) << 4));
 	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
 }
 
@@ -386,7 +382,6 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 	pstring remark;
 	pstring path;
 	pstring passwd;
-	uint32 type;
 	SEC_DESC *sd;
 	size_t sd_size;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -410,39 +405,86 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-		
-	if (lp_print_ok(snum))
-		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name))
-		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
-		type |= STYPE_HIDDEN;
-
 	sd = get_share_security(ctx, snum, &sd_size);
 
-	init_srv_share_info502(&sh502->info_502, net_name, type, remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
-	init_srv_share_info502_str(&sh502->info_502_str, &sh502->info_502, net_name, remark, path, passwd, sd, sd_size);
+	init_srv_share_info502(&sh502->info_502, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
+	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
+}
+
+/***************************************************************************
+ Fill in a share info level 1004 structure.
+ ***************************************************************************/
+
+static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh1004, int snum)
+{
+        pstring remark;
+
+	pstrcpy(remark, lp_comment(snum));
+	standard_sub_conn(p->conn, remark, sizeof(remark));
+
+	ZERO_STRUCTP(sh1004);
+  
+	init_srv_share_info1004(&sh1004->info_1004, remark);
+	init_srv_share_info1004_str(&sh1004->info_1004_str, remark);
 }
 
 /***************************************************************************
  Fill in a share info level 1005 structure.
  ***************************************************************************/
 
-static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
+static void init_srv_share_info_1005(pipes_struct *p, SRV_SHARE_INFO_1005* sh1005, int snum)
 {
 	sh1005->dfs_root_flag = 0;
 
 	if(lp_host_msdfs() && lp_msdfs_root(snum))
 		sh1005->dfs_root_flag = 3;
 }
+/***************************************************************************
+ Fill in a share info level 1006 structure.
+ ***************************************************************************/
+
+static void init_srv_share_info_1006(pipes_struct *p, SRV_SHARE_INFO_1006* sh1006, int snum)
+{
+	sh1006->max_uses = -1;
+}
+
+/***************************************************************************
+ Fill in a share info level 1007 structure.
+ ***************************************************************************/
+
+static void init_srv_share_info_1007(pipes_struct *p, SRV_SHARE_INFO_1007* sh1007, int snum)
+{
+        pstring alternate_directory_name = "";
+	uint32 flags = 0;
+
+	ZERO_STRUCTP(sh1007);
+  
+	init_srv_share_info1007(&sh1007->info_1007, flags, alternate_directory_name);
+	init_srv_share_info1007_str(&sh1007->info_1007_str, alternate_directory_name);
+}
+
+/*******************************************************************
+ Fill in a share info level 1501 structure.
+ ********************************************************************/
+
+static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh1501, int snum)
+{
+	SEC_DESC *sd;
+	size_t sd_size;
+	TALLOC_CTX *ctx = p->mem_ctx;
+
+	ZERO_STRUCTP(sh1501);
+
+	sd = get_share_security(ctx, snum, &sd_size);
+
+	sh1501->sdb = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
+}
 
 /*******************************************************************
  True if it ends in '$'.
  ********************************************************************/
 
-static BOOL is_admin_share(int snum)
+static BOOL is_hidden_share(int snum)
 {
 	pstring net_name;
 
@@ -471,7 +513,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	/* Count the number of entries. */
 	for (snum = 0; snum < num_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) )
+		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) )
 			num_entries++;
 	}
 
@@ -483,6 +525,24 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		return True;
 
 	switch (info_level) {
+	case 0:
+	{
+		SRV_SHARE_INFO_0 *info0;
+		int i = 0;
+
+		info0 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_0));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_0(p, &info0[i++], snum);
+			}
+		}
+
+		ctr->share.info0 = info0;
+		break;
+
+	}
+
 	case 1:
 	{
 		SRV_SHARE_INFO_1 *info1;
@@ -491,7 +551,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		info1 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
 				init_srv_share_info_1(p, &info1[i++], snum);
 			}
 		}
@@ -508,7 +568,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		info2 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_2));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
 				init_srv_share_info_2(p, &info2[i++], snum);
 			}
 		}
@@ -525,7 +585,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		info501 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_501));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
 				init_srv_share_info_501(p, &info501[i++], snum);
 			}
 		}
@@ -542,7 +602,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		info502 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_502));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
 				init_srv_share_info_502(p, &info502[i++], snum);
 			}
 		}
@@ -551,6 +611,92 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		break;
 	}
 
+	/* here for completeness but not currently used with enum (1004 - 1501)*/
+	
+	case 1004:
+	{
+		SRV_SHARE_INFO_1004 *info1004;
+		int i = 0;
+
+		info1004 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1004));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_1004(p, &info1004[i++], snum);
+			}
+		}
+
+		ctr->share.info1004 = info1004;
+		break;
+	}
+
+	case 1005:
+	{
+		SRV_SHARE_INFO_1005 *info1005;
+		int i = 0;
+
+		info1005 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1005));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_1005(p, &info1005[i++], snum);
+			}
+		}
+
+		ctr->share.info1005 = info1005;
+		break;
+	}
+
+	case 1006:
+	{
+		SRV_SHARE_INFO_1006 *info1006;
+		int i = 0;
+
+		info1006 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1006));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_1006(p, &info1006[i++], snum);
+			}
+		}
+
+		ctr->share.info1006 = info1006;
+		break;
+	}
+
+	case 1007:
+	{
+		SRV_SHARE_INFO_1007 *info1007;
+		int i = 0;
+
+		info1007 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1007));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_1007(p, &info1007[i++], snum);
+			}
+		}
+
+		ctr->share.info1007 = info1007;
+		break;
+	}
+
+	case 1501:
+	{
+		SRV_SHARE_INFO_1501 *info1501;
+		int i = 0;
+
+		info1501 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1501));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+				init_srv_share_info_1501(p, &info1501[i++], snum);
+			}
+		}
+
+		ctr->share.info1501 = info1501;
+		break;
+	}
 	default:
 		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n", info_level));
 		return False;
@@ -596,6 +742,9 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 
 	if (snum >= 0) {
 		switch (info_level) {
+		case 0:
+			init_srv_share_info_0(p, &r_n->info.share.info0, snum);
+			break;
 		case 1:
 			init_srv_share_info_1(p, &r_n->info.share.info1, snum);
 			break;
@@ -608,8 +757,24 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 		case 502:
 			init_srv_share_info_502(p, &r_n->info.share.info502, snum);
 			break;
+
+			/* here for completeness */
+		case 1004:
+			init_srv_share_info_1004(p, &r_n->info.share.info1004, snum);
+			break;
 		case 1005:
-			init_srv_share_info_1005(&r_n->info.share.info1005, snum);
+			init_srv_share_info_1005(p, &r_n->info.share.info1005, snum);
+			break;
+
+			/* here for completeness 1006 - 1501 */
+		case 1006:
+			init_srv_share_info_1006(p, &r_n->info.share.info1006, snum);
+			break;
+		case 1007:
+			init_srv_share_info_1007(p, &r_n->info.share.info1007, snum);
+			break;
+		case 1501:
+			init_srv_share_info_1501(p, &r_n->info.share.info1501, snum);
 			break;
 		default:
 			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
@@ -955,7 +1120,8 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 ********************************************************************/
 
 static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
+				     int switch_value, uint32 *resume_hnd, 
+				     uint32 *total_entries)  
 {
 	WERROR status = WERR_OK;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1206,8 +1372,8 @@ WERROR _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET
 
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p, r_u,
-				q_u->ctr.info_level,
-				get_enum_hnd(&q_u->enum_hnd), False);
+				  q_u->ctr.info_level,
+				  get_enum_hnd(&q_u->enum_hnd), False);
 
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
@@ -1295,7 +1461,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
-	r_u->switch_value = 0;
+	r_u->parm_error = 0;
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
 		return WERR_ACCESS_DENIED;
@@ -1312,28 +1478,47 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	get_current_user(&user,p);
 
-	if (user.uid != 0)
+	if (user.uid != sec_initial_uid())
 		return WERR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
 	case 1:
-		/* Not enough info in a level 1 to do anything. */
-		return WERR_ACCESS_DENIED;
-	case 2:
-		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		fstrcpy(pathname, lp_pathname(snum));
+		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(comment));
 		type = q_u->info.share.info2.info_2.type;
 		psd = NULL;
 		break;
+	case 2:
+		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(comment));
+		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(pathname));
+		type = q_u->info.share.info2.info_2.type;
+		psd = NULL;
+		break;
+#if 0
+		/* not supported on set but here for completeness */
+	case 501:
+		unistr2_to_ascii(comment, &q_u->info.share.info501.info_501_str.uni_remark, sizeof(comment));
+		type = q_u->info.share.info501.info_501.type;
+		psd = NULL;
+		break;
+#endif
 	case 502:
-		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
-		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
+		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(comment));
+		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(pathname));
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
 		break;
+	case 1004:
+		fstrcpy(pathname, lp_pathname(snum));
+		unistr2_to_ascii(comment, &q_u->info.share.info1004.info_1004_str.uni_remark, sizeof(comment));
+		type = STYPE_DISKTREE;
+		break;
 	case 1005:
+	case 1006:
+	case 1007:
 		return WERR_ACCESS_DENIED;
+		break;
 	case 1501:
 		fstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
@@ -1422,12 +1607,12 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	r_u->switch_value = 0;
+	r_u->parm_error = 0;
 
 	get_current_user(&user,p);
 
-	if (user.uid != 0) {
-		DEBUG(10,("_srv_net_share_add: uid != 0. Access denied.\n"));
+	if (user.uid != sec_initial_uid()) {
+		DEBUG(10,("_srv_net_share_add: uid != sec_initial_uid(). Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -1437,6 +1622,9 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	}
 
 	switch (q_u->info_level) {
+	case 0:
+		/* No path. Not enough info in a level 0 to do anything. */
+		return WERR_ACCESS_DENIED;
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
 		return WERR_ACCESS_DENIED;
@@ -1446,6 +1634,9 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
 		break;
+	case 501:
+		/* No path. Not enough info in a level 501 to do anything. */
+		return WERR_ACCESS_DENIED;
 	case 502:
 		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
@@ -1454,7 +1645,16 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
 		break;
+
+		/* none of the following contain share names.  NetShareAdd does not have a separate parameter for the share name */ 
+
+	case 1004:
 	case 1005:
+	case 1006:
+	case 1007:
+		return WERR_ACCESS_DENIED;
+		break;
+	case 1501:
 		/* DFS only level. */
 		return WERR_ACCESS_DENIED;
 	default:
@@ -1544,7 +1744,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	get_current_user(&user,p);
 
-	if (user.uid != 0)
+	if (user.uid != sec_initial_uid())
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
@@ -1568,6 +1768,13 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	lp_killservice(snum);
 
 	return WERR_OK;
+}
+
+WERROR _srv_net_share_del_sticky(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
+{
+	DEBUG(5,("_srv_net_share_del_stick: %d\n", __LINE__));
+
+	return _srv_net_share_del(p, q_u, r_u);
 }
 
 /*******************************************************************
@@ -1703,7 +1910,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	close_cnum(conn, user.vuid);
 	return r_u->status;
 
-  error_exit:
+error_exit:
 
 	if(fsp) {
 		close_file(fsp, True);
@@ -1799,7 +2006,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	close_cnum(conn, user.vuid);
 	return r_u->status;
 
-  error_exit:
+error_exit:
 
 	if(fsp) {
 		close_file(fsp, True);
@@ -1864,6 +2071,7 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 {
 	uint32 i;
 	const char *disk_name;
+	TALLOC_CTX *ctx = p->mem_ctx;
 	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
 
 	r_u->status=WERR_OK;
@@ -1871,6 +2079,18 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 	r_u->total_entries = init_server_disk_enum(&resume);
 
 	r_u->disk_enum_ctr.unknown = 0; 
+
+	{
+		DISK_INFO *dinfo;
+
+		int dinfo_size = MAX_SERVER_DISK_ENTRIES * sizeof(*dinfo);
+	  
+		if(!(dinfo =  talloc(ctx, dinfo_size))) {
+
+		}
+
+		r_u->disk_enum_ctr.disk_info = dinfo;
+	}
 
 	r_u->disk_enum_ctr.disk_info_ptr = r_u->disk_enum_ctr.disk_info ? 1 : 0;
 
@@ -1885,7 +2105,7 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);    
 	}
 
-	/*add a terminating null string.  Is this there if there is more data to come?*/
+	/* add a terminating null string.  Is this there if there is more data to come? */
 
 	r_u->disk_enum_ctr.entries_read++;
 
