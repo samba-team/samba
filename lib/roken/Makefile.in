@@ -93,11 +93,11 @@ SOURCES = \
 	snprintf.c \
 	socket.c \
 	strcasecmp.c \
-	strcat_truncate.c \
-	strcpy_truncate.c \
 	strdup.c \
 	strerror.c \
 	strftime.c \
+	strlcat.c \
+	strlcpy.c \
 	strlwr.c \
 	strncasecmp.c \
 	strndup.c \
@@ -143,8 +143,6 @@ OBJECTS = \
 	print_version.o \
 	resolve.o \
 	roken_gethostby.o \
-	strcat_truncate.o \
-	strcpy_truncate.o \
 	signal.o \
 	simple_exec.o \
 	snprintf.o \

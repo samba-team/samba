@@ -45,8 +45,6 @@ libroken_la_SOURCES =		\
 	simple_exec.c		\
 	snprintf.c		\
 	socket.c		\
-	strcat_truncate.c	\
-	strcpy_truncate.c	\
 	tm2time.c		\
 	verify.c		\
 	warnerr.c		\
@@ -98,6 +96,8 @@ EXTRA_libroken_la_SOURCES =	\
 	strdup.c		\
 	strerror.c		\
 	strftime.c		\
+	strlcat.c		\
+	strlcpy.c		\
 	strlwr.c		\
 	strncasecmp.c		\
 	strndup.c		\
