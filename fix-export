@@ -12,14 +12,14 @@ echo "* Har du uppdaterat versionsnummret? Detta är version $ver. *"
 echo "*                                                           *"
 echo "*************************************************************"
 
-sh aux/make-aclocal acinclude.m4.in
+sh cf/make-aclocal acinclude.m4.in
 
 aclocal
 autoconf
 autoheader
 automake
 (cd doc; makeinfo heimdal.texi)
-(cd lib/krb5; perl ../../aux/make-proto.pl `perl -e '
+(cd lib/krb5; perl ../../cf/make-proto.pl `perl -e '
 	do { 
 		$_ = <>; 
 	} until(/libkrb5_a_SOURCES/); 
