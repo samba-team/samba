@@ -1279,7 +1279,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
 
-  E_old_pw_hash( new_pw_hash, old_pw_hash, &data[516]);
+  E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
 
   data_len = 532;
    

@@ -248,6 +248,7 @@ int main(int argc, char **argv)
   int             pwfd;
   char            ascii_p16[66];
   char            c;
+  int             ch;
   int             ret, i, err, writelen;
   int             lockfd = -1;
   char           *pfile = SMB_PASSWD_FILE;
@@ -290,8 +291,8 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((c = getopt(argc, argv, "ahr:")) != EOF) {
-    switch(c) {
+  while ((ch = getopt(argc, argv, "ahr:")) != EOF) {
+    switch(ch) {
     case 'a':
       add_user = True;
       break;

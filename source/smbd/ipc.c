@@ -1618,7 +1618,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   fstrcpy(user,p);
   p = skip_string(p,1);
 
-  if(check_oem_password( user, data, &smbpw, new_passwd, sizeof(new_passwd)) == False) {
+  if(check_oem_password( user, data, &smbpw, new_passwd, (int)sizeof(new_passwd)) == False) {
     return True;
   }
 
