@@ -1139,8 +1139,8 @@ pk_initialize(const char *user_id, const char *x509_anchors)
 						  NULL);
     f = fopen(mapping_file, "r");
     if (f == NULL) {
-	krb5_warn(context, ret, "PKINIT: failed to load mappings file %s",
-		  mapping_file);
+	krb5_warnx(context, "PKINIT: failed to load mappings file %s",
+		   mapping_file);
 	return 0;
     }
 
@@ -1157,7 +1157,8 @@ pk_initialize(const char *user_id, const char *x509_anchors)
 
 	subject_name = strchr(p, ':');
 	if (subject_name == NULL) {
-	    krb5_warnx(context, "line %lu missing \":\" :%s\n",
+	    krb5_warnx(context, "pkinit mapping file line %lu "
+		       "missing \":\" :%s",
 		       lineno, buf);
 	    continue;
 	}
