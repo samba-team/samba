@@ -366,6 +366,74 @@ int reply_ioctl(char *inbuf,char *outbuf)
 #endif
 }
 
+/****************************************************************************
+ always return an error: it's just a matter of which one...
+ ****************************************************************************/
+static int session_trust_account(char *inbuf, char *outbuf, char *user,
+                                char *smb_passwd, int smb_passlen,
+                                char *smb_nt_passwd, int smb_nt_passlen)
+{
+        struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
+        if (lp_security() == SEC_USER)
+        {
+                smb_trust_acct = get_smbpwd_entry(user, 0);
+        }
+        else
+        {
+                DEBUG(3,("Trust account %s only supported with security = user\n", user));
+                SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+        }
+
+        if (smb_trust_acct == NULL)
+        {
+                /* lkclXXXX: workstation entry doesn't exist */
+                DEBUG(4,("Trust account %s user doesn't exist\n",user));
+                SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                return(ERROR(0, 0xc0000000|NT_STATUS_NO_SUCH_USER));
+        }
+        else
+        {
+                if ((smb_passlen != 24) || (smb_nt_passlen != 24))
+                {
+                        DEBUG(4,("Trust account %s - password length wrong.\n", user));
+                        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                        return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+                }
+
+                if (!smb_password_ok(smb_trust_acct, smb_passwd, smb_nt_passwd))
+                {
+                        DEBUG(4,("Trust Account %s - password failed\n", user));
+                        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                        return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+                }
+
+                if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
+                {
+                        DEBUG(4,("Domain trust account %s denied by server\n",user));
+                        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                        return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT));
+                }
+
+                if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
+                {
+                        DEBUG(4,("Server trust account %s denied by server\n",user));
+                        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                        return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT));
+                }
+                if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
+                {
+                        DEBUG(4,("Wksta trust account %s denied by server\n", user));
+                        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+                        return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT));
+                }
+        }
+
+        /* don't know what to do: indicate logon failure */
+        SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+        return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+}
+
 
 /****************************************************************************
 reply to a session setup command
@@ -386,7 +454,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL valid_nt_password = False;
   pstring user;
   BOOL guest=False;
-  BOOL computer_id=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
@@ -496,47 +563,12 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if (user[strlen(user) - 1] == '$')
+  if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
   {
-#ifdef NTDOMAIN
-    struct smb_passwd *smb_pass; /* To check if machine account exists */
-/* 
-   PAXX: Ack. We don't want to do this. The workstation trust account
-   with a $ on the end should exist in the local password database
-   or be mapped to something generic, but not modified. For NT
-   domain support we must reject this used in certain circumstances
-   with a code to indicate to the client that it is an invalid use
-   of a workstation trust account. NTWKS needs this error to join
-   a domain. This may be the source of future bugs if we cannot
-   be sure whether to reject this or not.
-*/
-   /* non-null user name indicates search by username not by smb userid */
-   smb_pass = get_smbpwd_entry(user, 0);
-
-   if (!smb_pass)
-   {
-     /* lkclXXXX: if workstation entry doesn't exist, indicate logon failure */
-     DEBUG(4,("Workstation trust account %s doesn't exist.",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* decimal 109 NT error, 0xc000 */
-   }
-   else
-   {
-     /* PAXX: This is the NO LOGON workstation trust account stuff */
-     /* lkclXXXX: if the workstation *does* exist, indicate failure differently! */
-     DEBUG(4,("No Workstation trust account %s",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, 0xc000)); /* decimal 409 NT error, 0xc000 */
-   }
-
-   computer_id = True;
-#else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
-    user[strlen(user) - 1] = '\0';
-#endif
+    return session_trust_account(inbuf, outbuf, user, 
+                                 smb_apasswd, smb_apasslen,
+                                 smb_ntpasswd, smb_ntpasslen);
   }
-
 
   /* If no username is sent use the guest account */
   if (!*user)
@@ -583,7 +615,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	} 
       if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
 	{
-	  if (!computer_id && lp_security() >= SEC_USER) {
+	  if (lp_security() >= SEC_USER) {
 #if (GUEST_SESSSETUP == 0)
 	    return(ERROR(ERRSRV,ERRbadpw));
 #endif
@@ -643,7 +675,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     uid = pw->pw_uid;
   }
 
-  if (guest && !computer_id)
+  if (guest)
     SSVAL(outbuf,smb_vwv2,1);
 
   /* register the name and uid as being validated, so further connections

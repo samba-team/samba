@@ -3955,7 +3955,7 @@ reply for the nt protocol
 int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS;
 /*
   other valid capabilities which we may support at some time...
                      CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
@@ -5190,10 +5190,8 @@ static void init_structs(void )
   /* for RPC pipes */
   init_rpc_pipe_hnd();
 
-#ifdef NTDOMAIN
   /* for LSA handles */
   init_lsa_policy_hnd();
-#endif
 
   init_dptrs();
 }

@@ -4848,4 +4848,29 @@ char *tab_depth(int depth)
 	return spaces;
 }
 
+/*****************************************************************
+ Convert a domain SID to an ascii string. (non-reentrant).
+*****************************************************************/
 
+/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+char *dom_sid_to_string(DOM_SID *sid)
+{
+  static pstring sidstr;
+  char subauth[16];
+  int i;
+  uint32 ia = (sid->id_auth[5]) +
+              (sid->id_auth[4] << 8 ) +
+              (sid->id_auth[3] << 16) +
+              (sid->id_auth[2] << 24);
+
+  sprintf(sidstr, "S-%d-%d", sid->sid_rev_num, ia);
+
+  for (i = 0; i < sid->num_auths; i++)
+  {
+    sprintf(subauth, "-%d", sid->sub_auths[i]);
+    strcat(sidstr, subauth);
+  }
+
+  DEBUG(7,("dom_sid_to_string returning %s\n", sidstr));
+  return sidstr;
+}

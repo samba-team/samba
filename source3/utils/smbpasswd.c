@@ -400,7 +400,7 @@ static void usage(char *name)
   chmod(pfile, 0600);
 
   /* Lock the smbpasswd file for write. */
-  if ((lockfd = pw_file_lock(pfile, F_WRLCK, 5)) < 0) {
+  if ((lockfd = pw_file_lock(fileno(fp), F_WRLCK, 5)) < 0) {
     err = errno;
     fprintf(stderr, "%s: Failed to lock password file %s.\n",
 	    argv[0], pfile);
