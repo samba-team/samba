@@ -378,6 +378,22 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 	}
 
+	r.in.credential = NULL;
+
+	for (i=2;i<=3;i++) {
+
+		r.in.validation_level = i;
+
+		printf("Testing SamLogon with validation level %d\n", i);
+
+		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("LogonSamLogon expected INVALID_PARAMETER, got: %s\n", nt_errstr(status));
+			ret = False;
+		}
+
+	}
+
 	return ret;
 }
 

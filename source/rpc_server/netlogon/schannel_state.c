@@ -61,7 +61,8 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	struct ldb_wrap *ldb;
 	struct ldb_message *msg;
 	struct ldb_val val, seed;
-	char *s = NULL;
+	char *s;
+	char *f;
 	time_t expiry = time(NULL) + SCHANNEL_CREDENTIALS_EXPIRY;
 	int ret;
 
@@ -73,6 +74,13 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	s = talloc_asprintf(mem_ctx, "%u", (unsigned int)expiry);
 
 	if (s == NULL) {
+		talloc_free(ldb);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	f = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->negotiate_flags);
+
+	if (f == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -99,6 +107,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_value(ldb->ldb, msg, "sessionKey", &val);
 	ldb_msg_add_value(ldb->ldb, msg, "seed", &seed);
 	ldb_msg_add_string(ldb->ldb, msg, "expiry", s);
+	ldb_msg_add_string(ldb->ldb, msg, "negotiateFlags", f);
 
 	ldb_delete(ldb->ldb, msg->dn);
 
@@ -179,6 +188,8 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	memcpy((*creds)->seed.data, val->data, 8);
+
+	(*creds)->negotiate_flags = ldb_msg_find_int(res[0], "negotiateFlags", 0);
 
 	talloc_free(ldb);
 
