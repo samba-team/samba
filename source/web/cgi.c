@@ -77,7 +77,7 @@ static void unescape(char *buf)
 			
 		*p = (c1<<4) | c2;
 
-		memcpy(p+1, p+3, strlen(p+3)+1);
+		memmove(p+1, p+3, strlen(p+3)+1);
 		p++;
 	}
 }
