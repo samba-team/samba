@@ -54,6 +54,8 @@ kauth(int argc, char **argv)
     char passwd[100];
     int tmp;
 	
+    int save;
+
     if(argc > 2){
 	printf("usage: %s [principal]\n", argv[0]);
 	code = -1;
@@ -67,9 +69,11 @@ kauth(int argc, char **argv)
     overbose = verbose;
     verbose = 0;
 
+    save = set_command_prot(prot_private);
     ret = command("SITE KAUTH %s", name);
     if(ret != CONTINUE){
 	verbose = overbose;
+	set_command_prot(save);
 	code = -1;
 	return;
     }
@@ -77,6 +81,7 @@ kauth(int argc, char **argv)
     p = strstr(reply_string, "T=");
     if(!p){
 	printf("Bad reply from server.\n");
+	set_command_prot(save);
 	code = -1;
 	return;
     }
@@ -84,6 +89,7 @@ kauth(int argc, char **argv)
     tmp = base64_decode(p, &tkt.dat);
     if(tmp < 0){
 	printf("Failed to decode base64 in reply.\n");
+	set_command_prot(save);
 	code = -1;
 	return;
     }
@@ -94,6 +100,7 @@ kauth(int argc, char **argv)
     if(!p){
 	printf("Bad reply from server.\n");
 	verbose = overbose;
+	set_command_prot(save);
 	code = -1;
 	return;
     }
@@ -124,17 +131,14 @@ kauth(int argc, char **argv)
     memset(passwd, 0, sizeof(passwd));
     if(base64_encode(tktcopy.dat, tktcopy.length, &p) < 0) {
 	printf("Out of memory base64-encoding.\n");
+	set_command_prot(save);
 	code = -1;
 	return;
     }
     memset (tktcopy.dat, 0, tktcopy.length);
-    {
-	int save;
-	save = set_command_prot(prot_private);
-	ret = command("SITE KAUTH %s %s", name, p);
-	free(p);
-	set_command_prot(save);
-    }
+    ret = command("SITE KAUTH %s %s", name, p);
+    free(p);
+    set_command_prot(save);
     if(ret != COMPLETE){
 	code = -1;
 	return;
