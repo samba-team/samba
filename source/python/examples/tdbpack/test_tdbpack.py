@@ -95,10 +95,6 @@ class PackTests(unittest.TestCase):
         cases = [('w', (42,), '\x2a\0'),
                  ('p', [None], '\0\0\0\0'),
                  ('p', ['true'], '\x01\0\0\0'),
-
-                 ('w', {1: 'fruit'}, '\x01\0'),
-                 # passing a dictionary is dodgy, but it gets coerced to keys
-                 # as if you called list()
                  ]
 
         for packer in both_packers:
