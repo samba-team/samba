@@ -154,6 +154,7 @@ static BOOL check_domain_match(const char *user, const char *domain)
 
 static NTSTATUS check_ntlm_password(struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
+				    TALLOC_CTX *out_mem_ctx, 
 				    struct auth_serversupplied_info **server_info)
 {
 	/* if all the modules say 'not for me' this is reasonable */
@@ -220,6 +221,9 @@ static NTSTATUS check_ntlm_password(struct auth_context *auth_context,
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
 				  auth_method->name, user_info->smb_name.str));
+			
+			/* Give the server info to the client to hold onto */
+			talloc_reference(out_mem_ctx, *server_info);
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
 				  auth_method->name, user_info->smb_name.str, nt_errstr(nt_status)));

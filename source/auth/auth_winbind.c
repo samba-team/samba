@@ -26,6 +26,25 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, struct netr_SamInfo3 *info3)
+{
+	size_t len = response->length - sizeof(struct winbindd_response);
+	if (len > 4) {
+		NTSTATUS status;
+		DATA_BLOB blob;
+		blob.length = len - 4;
+		blob.data = ((char *)response->extra_data) + 4;
+		
+		status = ndr_pull_struct_blob(&blob, mem_ctx, info3,
+					      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
+
+		return status;
+	} else {
+		DEBUG(2, ("get_info3_from_ndr: No info3 struct found!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+}
+
 /* Authenticate a user with a challenge/response */
 
 static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
@@ -38,6 +57,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	struct winbindd_response response;
         NSS_STATUS result;
 	NTSTATUS nt_status;
+	struct netr_SamInfo3 info3;
 
 	if (!user_info) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -53,9 +73,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-#if 0
-	request.data.auth_crap.flags = WINBIND_PAM_INFO3_NDR;
-#endif
+	request.flags = WBFLAG_PAM_INFO3_NDR;
 	fstrcpy(request.data.auth_crap.user, 
 		user_info->smb_name.str);
 	fstrcpy(request.data.auth_crap.domain, 
@@ -79,22 +97,31 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
-#if 0
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
 				nt_status = 
 					make_server_info_info3(mem_ctx, 
 							       user_info->internal_username.str, 
-							       user_info->smb_name.str, 
-							       user_info->domain.str, 
 							       server_info, 
 							       &info3); 
 			}
 		}
-#endif
+		SAFE_FREE(response.extra_data);
+	} else if (result == NSS_STATUS_SUCCESS && !response.extra_data) {
+		DEBUG(0, ("Winbindd authenticated the user [%s]\\[%s], "
+			  "but did not include the required info3 reply!\n", 
+			  user_info->smb_name.str, user_info->domain.str));
+		nt_status = NT_STATUS_INSUFFICIENT_LOGON_INFO;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = NT_STATUS_UNSUCCESSFUL;
+		DEBUG(1, ("Winbindd authentication for [%s]\\[%s] failed, "
+			  "but no error code is available!\n", 
+			  user_info->smb_name.str, user_info->domain.str));
+		nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
         return nt_status;
