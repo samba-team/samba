@@ -137,19 +137,11 @@ schedule the job 'soon'
 ****************************************************************************/
 static BOOL at_soon(char *dest_srv, uint32 *hours, uint32 *minutes, uint32 *seconds)
 {
-	uint16 nt_pipe_fnum;
 	TIME_OF_DAY_INFO tod;
 	BOOL res = True;
 
-	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
-
 	/* enumerate files on server */
-	res = res ? do_srv_net_remote_tod(smb_cli, nt_pipe_fnum,
-					  dest_srv, &tod) : False;
-
-	/* Close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? srv_net_remote_tod(dest_srv, &tod) : False;
 
 	if (res)
 	{
