@@ -103,4 +103,13 @@ krb5_verify_checksum (krb5_context context,
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
 
+int
+extract_ticket(krb5_context context, 
+	       krb5_kdc_rep *rep, 
+	       krb5_creds *creds,		
+	       krb5_keyblock *key,
+	       krb5_const_pointer keyseed,
+	       krb5_decrypt_proc decrypt_proc,
+	       krb5_const_pointer decryptarg);
+
 #endif /* __KRB5_LOCL_H__ */
