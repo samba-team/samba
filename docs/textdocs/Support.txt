@@ -28,7 +28,7 @@ These are currently:
 Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
-    AMERICA - CENTRAL & SOUTH                     3
+    AMERICA - CENTRAL & SOUTH                     4
     AMERICA - USA                                35
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
@@ -79,6 +79,25 @@ Johannesburg, South Africa  mailto:evan@sr.co.za  (Pty)Ltd
 AMERICA - CENTRAL & SOUTH
 =========================
 
+
+------------------------------------------------------------------------------
+ARGENTINA - SOUTH AMERICA
+
+Buenos Aires - Argentina
+
+Guillermo Sansovic
+Email: gui@usa.net
+Arkham Software
+Rivadavia 923 Piso 8
+1002 Buenos Aires
+Argentina
+
+Tel: + 54 1 345-0645
+ 
+At Arkham Software we have been working with Unix systems since 1986. We do
+intranets, software development and system integration. Our experience ith
+Samba dates from 1995.
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 CHILE - SOUTH AMERICA
