@@ -4727,6 +4727,7 @@ int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
 int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val);
+int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int32 change_val);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,

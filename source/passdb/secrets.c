@@ -198,8 +198,8 @@ void reset_globals_after_fork(void)
 	 */
 
 	if (tdb) {
-		uint32 initial_val = sys_getpid();
-		tdb_change_int_atomic(tdb, "INFO/random_seed", (int *)&initial_val, 1);
+		int32 initial_val = sys_getpid();
+		tdb_change_int32_atomic(tdb, "INFO/random_seed", (int *)&initial_val, 1);
 		set_rand_reseed_data((unsigned char *)&initial_val, sizeof(initial_val));
 	}
 

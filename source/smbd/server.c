@@ -431,11 +431,11 @@ update the current smbd process count
 
 static void decrement_smbd_process_count(void)
 {
-	int total_smbds;
+	int32 total_smbds;
 
 	if (lp_max_smbd_processes()) {
 		total_smbds = 0;
-		tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
+		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
 
