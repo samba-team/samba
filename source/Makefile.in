@@ -23,6 +23,7 @@ PYTHON=@PYTHON@
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
 PRINTLIBS=@PRINTLIBS@
+AUTHLIBS=@AUTHLIBS@
 
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
@@ -609,7 +610,8 @@ bin/.dummy:
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
+	  $(AUTHLIBS) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -621,7 +623,8 @@ bin/wrepld: $(WREPL_OBJ) bin/.dummy
 
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
+	  $(AUTHLIBS) $(LIBS) 
 
 bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
