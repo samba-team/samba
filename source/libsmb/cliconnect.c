@@ -429,6 +429,12 @@ BOOL cli_negprot(struct cli_state *cli)
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
+		/* work out if they sent us a workgroup */
+		if (smb_buflen(cli->inbuf) > 8) {
+			clistr_pull(cli, cli->server_domain, 
+				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
+				    smb_buflen(cli->inbuf)-8, STR_CONVERT|STR_UNICODE|STR_NOALIGN);
+		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);

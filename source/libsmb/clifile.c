@@ -243,7 +243,7 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 
 	p = smb_buf(cli->outbuf);
 	/* this alignment and termination is critical for netapp filers. Don't change */
-	p += clistr_align(cli->outbuf, p);
+	p += clistr_align(cli, p, STR_CONVERT);
 	len = clistr_push(cli, p, fname, -1, STR_CONVERT);
 	p += len;
 	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
@@ -786,7 +786,7 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,1,strlen(path)+2,True);
+	set_message(cli->outbuf,1,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBctemp;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -797,6 +797,8 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
 	p += clistr_push(cli, p, path, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {

@@ -177,6 +177,7 @@ static int reply_nt1(char *outbuf)
   struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
+  char *p;
 
   if (lp_security() == SEC_SERVER) {
 	  cli = server_cryptkey();
@@ -215,18 +216,10 @@ static int reply_nt1(char *outbuf)
   if (lp_security() >= SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
 
-  /* decide where (if) to put the encryption challenge, and
-     follow it with the OEM'd domain name
-   */
-  data_len = crypt_len + strlen(global_myworkgroup) + 1;
-
-  set_message(outbuf,17,data_len,True);
-  pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
+  set_message(outbuf,17,0,True);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
-  if (doencrypt) 
-	  memcpy(smb_buf(outbuf), cryptkey, 8);
 
   Protocol = PROTOCOL_NT1;
 
@@ -239,6 +232,13 @@ static int reply_nt1(char *outbuf)
   put_long_date(outbuf+smb_vwv11+1,t);
   SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
   SSVAL(outbuf,smb_vwv17,data_len); /* length of challenge+domain strings */
+
+  p = smb_buf(outbuf);
+  if (doencrypt) memcpy(p, cryptkey, 8);
+  p += 8;
+  p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
+		   STR_UNICODE|STR_CONVERT|STR_TERMINATE|STR_NOALIGN);
+  set_message_end(outbuf, p);
 
   return (smb_len(outbuf)+4);
 }

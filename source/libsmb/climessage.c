@@ -71,7 +71,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 	char *p;
 
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,1,len+3,True);
+	set_message(cli->outbuf,1,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendtxt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -79,9 +79,12 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 	SSVAL(cli->outbuf,smb_vwv0,grp);
 	
 	p = smb_buf(cli->outbuf);
-	*p = 1;
-	SSVAL(p,1,len);
-	memcpy(p+3,msg,len);
+	*p++ = 1;
+	SSVAL(p,0,len); p += 2;
+	memcpy(p,msg,len);
+	p += len;
+
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 
 	if (!cli_receive_smb(cli)) {

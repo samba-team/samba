@@ -23,7 +23,20 @@
 
 #include "includes.h"
 
-#define UNICODE_FLAG(buf) (SVAL(buf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
+#define UNICODE_FLAG(buf, flags) (!(flags & STR_ASCII) && \
+                                  ((flags & STR_UNICODE || \
+                                   (SVAL(buf, smb_flg2) & FLAGS2_UNICODE_STRINGS))))
+
+/****************************************************************************
+return an alignment of either 0 or 1
+if unicode is not negotiated then return 0
+otherwise return 1 if offset is off
+****************************************************************************/
+static int srvstr_align(void *inbuf, int offset, int flags)
+{
+	if ((flags & STR_NOALIGN) || !UNICODE_FLAG(inbuf, flags)) return 0;
+	return offset & 1;
+}
 
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
@@ -35,6 +48,8 @@ flags can have:
   STR_CONVERT   means convert from unix to dos codepage
   STR_UPPER     means uppercase in the destination
   STR_ASCII     use ascii even with unicode servers
+  STR_UNICODE   means to force as unicode
+  STR_NOALIGN   means don't do alignment
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
@@ -47,14 +62,14 @@ int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int fla
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && srvstr_align(outbuf, PTR_DIFF(dest, outbuf))) {
+	if (srvstr_align(outbuf, PTR_DIFF(dest, outbuf), flags)) {
 		*(char *)dest = 0;
 		dest = (void *)((char *)dest + 1);
 		dest_len--;
 		len++;
 	}
 
-	if ((flags & STR_ASCII) || !UNICODE_FLAG(outbuf)) {
+	if (!UNICODE_FLAG(outbuf, flags)) {
 		/* the client doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -85,6 +100,7 @@ flags can have:
   STR_CONVERT   means convert from dos to unix codepage
   STR_TERMINATE means the string in src is null terminated
   STR_UNICODE   means to force as unicode
+  STR_NOALIGN   means don't do alignment
 if STR_TERMINATE is set then src_len is ignored
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
@@ -97,12 +113,12 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && srvstr_align(inbuf, PTR_DIFF(src, inbuf))) {
+	if (srvstr_align(inbuf, PTR_DIFF(src, inbuf), flags)) {
 		src = (void *)((char *)src + 1);
 		if (src_len > 0) src_len--;
 	}
 
-	if ((flags & STR_ASCII) || (!(flags & STR_UNICODE) && !UNICODE_FLAG(inbuf))) {
+	if (!UNICODE_FLAG(inbuf, flags)) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -133,18 +149,6 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 	if (flags & STR_CONVERT) dos_to_unix(dest,True);
 	return len;
 }
-
-/****************************************************************************
-return an alignment of either 0 or 1
-if unicode is not negotiated then return 0
-otherwise return 1 if offset is off
-****************************************************************************/
-int srvstr_align(void *inbuf, int offset)
-{
-	if (!UNICODE_FLAG(inbuf)) return 0;
-	return offset & 1;
-}
-
 
 /****************************************************************************
 these are useful for replacing all those StrnCpy() ops for copying data
