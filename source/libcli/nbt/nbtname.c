@@ -63,7 +63,7 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 			/* its a reserved length field */
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
-		if (*offset + len + 2 >= ndr->data_size) {
+		if (*offset + len + 2 > ndr->data_size) {
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
 		*component = (uint8_t*)talloc_strndup(ndr, &ndr->data[1 + *offset], len);
@@ -308,6 +308,17 @@ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name 
 	return ndr_push_struct_blob(blob, mem_ctx, name, 
 				    (ndr_push_flags_fn_t)ndr_push_nbt_name);
 }
+
+
+/*
+  pull a nbt name from a blob
+*/
+NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name)
+{
+	return ndr_pull_struct_blob(blob, mem_ctx, name, 
+				    (ndr_pull_flags_fn_t)ndr_pull_nbt_name);
+}
+
 
 /*
   choose a name to use when calling a server in a NBT session request.

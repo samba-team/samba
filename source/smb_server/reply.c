@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
+#include "libcli/nbt/libnbt.h"
 
 
 /* useful way of catching wct errors with file and line number */
@@ -2370,6 +2371,41 @@ void reply_sendtxt(struct smbsrv_request *req)
 }
 
 
+/*
+  parse the called/calling names from session request
+*/
+static NTSTATUS parse_session_request(struct smbsrv_request *req)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+	
+	blob.data = req->in.buffer + 4;
+	blob.length = ascii_len_n(blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
+	if (blob.length == 0) return NT_STATUS_BAD_NETWORK_NAME;
+
+	req->smb_conn->negotiate.called_name  = talloc(req->smb_conn, struct nbt_name);
+	req->smb_conn->negotiate.calling_name = talloc(req->smb_conn, struct nbt_name);
+	if (req->smb_conn->negotiate.called_name == NULL ||
+	    req->smb_conn->negotiate.calling_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = nbt_name_from_blob(req, &blob, req->smb_conn->negotiate.called_name);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	blob.data += blob.length;
+	blob.length = ascii_len_n(blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
+	if (blob.length == 0) return NT_STATUS_BAD_NETWORK_NAME;
+
+	status = nbt_name_from_blob(req, &blob, req->smb_conn->negotiate.calling_name);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	req->smb_conn->negotiate.done_nbt_session = True;
+
+	return NT_STATUS_OK;
+}	
+
+
 
 /****************************************************************************
  Reply to a special message - a SMB packet with non zero NBT message type
@@ -2378,7 +2414,7 @@ void reply_special(struct smbsrv_request *req)
 {
 	uint8_t msg_type;
 	uint8_t *buf = talloc_zero_array(req, uint8_t, 4);
-	
+
 	msg_type = CVAL(req->in.buffer,0);
 
 	SIVAL(buf, 0, 0);
@@ -2392,13 +2428,11 @@ void reply_special(struct smbsrv_request *req)
 		
 		SCVAL(buf,0,0x82);
 		SCVAL(buf,3,0);
-		
-		DEBUG(0,("REWRITE: not parsing netbios names in NBT session request!\n"));
-		/* TODO: store the name for the session setup 'remote
-		   machine' code, as well as smbstatus */
 
-		req->smb_conn->negotiate.done_nbt_session = True;
-		
+		/* we don't check the status - samba always accepts session
+		   requests for any name */
+		parse_session_request(req);
+
 		req->out.buffer = buf;
 		req->out.size = 4;
 		req_send_reply_nosign(req);

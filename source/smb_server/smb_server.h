@@ -197,6 +197,10 @@ struct smbsrv_connection {
 	
 		/* the timezone we sent to the client */
 		int zone_offset;
+
+		/* NBT names only set when done_nbt_session is true */
+		struct nbt_name *called_name;
+		struct nbt_name *calling_name;
 	} negotiate;
 
 	/* the context associated with open tree connects on a smb socket */
