@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -159,9 +159,9 @@ kinit_get_default_principal (krb5_context context,
 
 #endif /* !KRB4 */
 
-int forwardable_flag	= 0;
-int proxiable_flag	= 0;
-int renewable_flag	= 0;
+int forwardable_flag	= -1;
+int proxiable_flag	= -1;
+int renewable_flag	= -1;
 int renew_flag		= 0;
 int validate_flag	= 0;
 int version_flag	= 0;
@@ -346,10 +346,13 @@ main (int argc, char **argv)
     if (ret)
 	errx(1, "krb5_init_context failed: %d", ret);
   
-    forwardable_flag = krb5_config_get_bool (context, NULL,
-					     "libdefaults",
-					     "forwardable",
-					     NULL);
+    /* XXX no way to figure out if set without explict test */
+    if(krb5_config_get_string(context, NULL, "libdefaults", 
+			      "forwardable", NULL))
+	forwardable_flag = krb5_config_get_bool (context, NULL,
+						 "libdefaults",
+						 "forwardable",
+						 NULL);
 
 #ifdef KRB4
     get_v4_tgt = krb5_config_get_bool_default (context, NULL,
@@ -368,6 +371,22 @@ main (int argc, char **argv)
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc > 1)
+	usage (1);
+
+    if (argv[0]) {
+	ret = krb5_parse_name (context, argv[0], &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name");
+    } else {
+	ret = kinit_get_default_principal (context, &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_get_default_principal");
     }
 
     if(fcache_version)
@@ -395,9 +414,15 @@ main (int argc, char **argv)
 
     krb5_get_init_creds_opt_init (&opt);
     
-    krb5_get_init_creds_opt_set_forwardable (&opt, forwardable_flag);
-    krb5_get_init_creds_opt_set_proxiable (&opt, proxiable_flag);
-    krb5_get_init_creds_opt_set_anonymous (&opt, anonymous_flag);
+    krb5_get_init_creds_opt_set_default_flags(context, "kinit", 
+					      /* XXX */principal->realm, &opt);
+
+    if(forwardable_flag != -1)
+	krb5_get_init_creds_opt_set_forwardable (&opt, forwardable_flag);
+    if(proxiable_flag != -1)
+	krb5_get_init_creds_opt_set_proxiable (&opt, proxiable_flag);
+    if(anonymous_flag != -1)
+	krb5_get_init_creds_opt_set_anonymous (&opt, anonymous_flag);
 
     if (!addrs_flag) {
 	no_addrs.len = 0;
@@ -441,22 +466,6 @@ main (int argc, char **argv)
 	}
 	krb5_get_init_creds_opt_set_etype_list(&opt, enctype, 
 					       etype_str.num_strings);
-    }
-
-    argc -= optind;
-    argv += optind;
-
-    if (argc > 1)
-	usage (1);
-
-    if (argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
-    } else {
-	ret = kinit_get_default_principal (context, &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_get_default_principal");
     }
 
 #ifdef KRB4
