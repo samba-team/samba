@@ -1943,7 +1943,7 @@ void DirCacheFlush(int snum);
 
 /*The following definitions come from  smbd/files.c  */
 
-files_struct *find_free_file(void );
+files_struct *file_new(void );
 file_fd_struct *fd_get_already_open(struct stat *sbuf);
 file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);

@@ -494,17 +494,19 @@ typedef struct
  * file descriptor and process.
  */
 
-typedef struct
+typedef struct file_fd_struct
 {
-  uint16 ref_count;
-  uint16 uid_cache_count;
-  uid_t uid_users_cache[10];
-  uint32 dev;
-  uint32 inode;
-  int fd;
-  int fd_readonly;
-  int fd_writeonly;
-  int real_open_flags;
+	struct file_fd_struct *next, *prev;
+	uint16 ref_count;
+	uint16 uid_cache_count;
+	uid_t uid_users_cache[10];
+	uint32 dev;
+	uint32 inode;
+	int fd;
+	int fdnum;
+	int fd_readonly;
+	int fd_writeonly;
+	int real_open_flags;
 } file_fd_struct;
 
 /*
@@ -573,8 +575,9 @@ struct current_user
 	GID_T *groups;
 };
 
-typedef struct
+typedef struct files_struct
 {
+	struct files_struct *next, *prev;
 	int fnum;
 	connection_struct *conn;
 	file_fd_struct *fd_ptr;
@@ -852,6 +855,10 @@ struct parm_struct
 	} def;
 };
 
+struct bitmap {
+	uint32 *b;
+	int n;
+};
 
 #define FLAG_BASIC 1 /* fundamental options */
 #define FLAG_HIDE  2 /* options that should be hidden in SWAT */

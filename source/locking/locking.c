@@ -494,7 +494,6 @@ int get_share_modes(connection_struct *conn,
 /*******************************************************************
  Del the share mode of a file.
 ********************************************************************/
-
 void del_share_mode(int token, files_struct *fsp)
 {
 	share_ops->del_entry(token, fsp);
@@ -503,7 +502,6 @@ void del_share_mode(int token, files_struct *fsp)
 /*******************************************************************
  Set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
-
 BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type)
 {
 	return share_ops->set_entry(token, fsp, port, op_type);
