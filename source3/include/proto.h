@@ -740,7 +740,7 @@ uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
 				   char *datatype, uint32 access_required,
 				   char *station, char *username,
 				   POLICY_HND *pol);
-uint32 cli_spoolss_closeprinter(struct cli_state *cli, POLICY_HND *pol);
+uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol);
 uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 				 uint32 level, int *returned, 
 				 PRINTER_INFO_CTR *ctr);
