@@ -21,6 +21,21 @@
 
 #include "includes.h"
 
+/* We don't want to have NULL function pointers lying around.  Someone
+   is sure to try and execute them.  These stubs are used to prevent
+   this possibility. */
+
+int vfswrap_dummy_connect(struct vfs_connection_struct *conn, char *service,
+			  char *user)
+{
+    /* Do nothing */
+}
+
+void vfswrap_dummy_disconnect(void)
+{
+    /* Do nothing a bit more */
+}
+
 /* Disk operations */
 
 SMB_BIG_UINT vfswrap_disk_free(char *path, SMB_BIG_UINT *bsize, 
@@ -124,9 +139,9 @@ int vfswrap_rename(char *old, char *new)
     return result;
 }
 
-void vfswrap_sync_file(struct connection_struct *conn, files_struct *fsp)
+void vfswrap_sync_file(int fd)
 {
-    sys_sync_file(conn, fsp);
+    sys_sync_file(fd);
 }
 
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)
