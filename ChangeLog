@@ -1,3 +1,13 @@
+Sat Mar  8 08:16:28 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_cred.c: use krb5_create_checksum
+
+	* lib/krb5/checksum.c: new file
+
+	* lib/krb5/store.c: no more arithmetic with void*
+
+	* lib/krb5/cache.c: now seems to work again
+
 Sat Mar  8 06:58:09 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/Makefile.am: Add asn1_glue.c and error/*.c to libkrb5.
