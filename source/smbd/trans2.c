@@ -2872,6 +2872,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			if (!ea_list || (total_ea_len > data_size)) {
 				talloc_destroy(ea_ctx);
 				data_size = 4;
+				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
@@ -2896,6 +2897,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			if (!ea_list || (total_ea_len > data_size)) {
 				talloc_destroy(ea_ctx);
 				data_size = 4;
+				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
