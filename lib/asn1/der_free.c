@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,16 +39,19 @@ void
 free_general_string (heim_general_string *str)
 {
     free(*str);
+    *str = NULL;
 }
 
 void
 free_octet_string (heim_octet_string *k)
 {
     free(k->data);
+    k->data = NULL;
 }
 
 void
 free_oid (heim_oid *k)
 {
     free(k->components);
+    k->components = NULL;
 }

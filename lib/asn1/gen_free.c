@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -82,7 +82,8 @@ free_type (const char *name, const Type *t)
 	  if(m->optional)
 	      fprintf(codefile, 
 		      "free(%s);\n"
-		      "}\n",s);
+		      "%s = NULL;\n"
+		      "}\n", s, s);
 	  if (tag == -1)
 	      tag = m->val;
 	  free (s);
@@ -100,7 +101,8 @@ free_type (const char *name, const Type *t)
 	      "}\n",
 	      name);
       fprintf(codefile,
-	      "free((%s)->val);\n", name);
+	      "free((%s)->val);\n"
+	      "(%s)->val = NULL;\n", name, name);
       free(n);
       break;
   }
