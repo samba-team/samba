@@ -641,7 +641,7 @@ smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_winbind.so nsswitch/pam_winbind.so
+nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_winbind.@SHLIBEXT@ nsswitch/pam_winbind.@SHLIBEXT@
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
