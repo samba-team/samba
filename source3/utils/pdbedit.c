@@ -70,24 +70,48 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 {
 	uid_t uid;
 	gid_t gid;
+	time_t tmp;
 
 	/* TODO: chaeck if entry is a user or a workstation */
 	if (!sam_pwent) return -1;
 	
 	if (verbosity) {
-		printf ("username:       %s\n",  pdb_get_username(sam_pwent));
+		printf ("Unix/NT username:     %s/%s\n",  pdb_get_username(sam_pwent),pdb_get_nt_username(sam_pwent));
 		if (IS_SAM_UNIX_USER(sam_pwent)) {
 			uid = pdb_get_uid(sam_pwent);
 			gid = pdb_get_gid(sam_pwent);
-			printf ("user ID/Group:  %d/%d\n", uid, gid);
+			printf ("user ID/Group:        %d/%d\n", uid, gid);
 		}
-		printf ("user RID/GRID:  %u/%u\n", (unsigned int)pdb_get_user_rid(sam_pwent),
+		printf ("user RID/GRID:        %u/%u\n", (unsigned int)pdb_get_user_rid(sam_pwent),
 			(unsigned int)pdb_get_group_rid(sam_pwent));
-		printf ("Full Name:      %s\n", pdb_get_fullname(sam_pwent));
-		printf ("Home Directory: %s\n", pdb_get_homedir(sam_pwent));
-		printf ("HomeDir Drive:  %s\n", pdb_get_dirdrive(sam_pwent));
-		printf ("Logon Script:   %s\n", pdb_get_logon_script(sam_pwent));
-		printf ("Profile Path:   %s\n", pdb_get_profile_path(sam_pwent));
+		printf ("Full Name:            %s\n", pdb_get_fullname(sam_pwent));
+		printf ("Home Directory:       %s\n", pdb_get_homedir(sam_pwent));
+		printf ("HomeDir Drive:        %s\n", pdb_get_dirdrive(sam_pwent));
+		printf ("Logon Script:         %s\n", pdb_get_logon_script(sam_pwent));
+		printf ("Profile Path:         %s\n", pdb_get_profile_path(sam_pwent));
+		printf ("Domain:               %s\n", pdb_get_domain(sam_pwent));
+		printf ("Account desc:         %s\n", pdb_get_acct_desc(sam_pwent));
+		printf ("Workstations:         %s\n", pdb_get_workstations(sam_pwent));
+		printf ("Munged dial:          %s\n", pdb_get_munged_dial(sam_pwent));
+		
+		tmp = pdb_get_logon_time(sam_pwent);
+		printf ("Logon time:           %s\n", tmp ? http_timestring(tmp) : "0");
+		
+		tmp = pdb_get_logoff_time(sam_pwent);
+		printf ("Logoff time:          %s\n", tmp ? http_timestring(tmp) : "0");
+		
+		tmp = pdb_get_kickoff_time(sam_pwent);
+		printf ("Kickoff time:         %s\n", tmp ? http_timestring(tmp) : "0");
+		
+		tmp = pdb_get_pass_last_set_time(sam_pwent);
+		printf ("Password last set:    %s\n", tmp ? http_timestring(tmp) : "0");
+		
+		tmp = pdb_get_pass_can_change_time(sam_pwent);
+		printf ("Password can change:  %s\n", tmp ? http_timestring(tmp) : "0");
+		
+		tmp = pdb_get_pass_must_change_time(sam_pwent);
+		printf ("Password must change: %s\n", tmp ? http_timestring(tmp) : "0");
+		
 	} else if (smbpwdstyle) {
 		if (IS_SAM_UNIX_USER(sam_pwent)) {
 			char lm_passwd[33];
