@@ -16,6 +16,7 @@
 * Incremental propagation::     
 * Salting::
 * Cross realm::
+* Setting up DNS::
 @end menu
 
 A
@@ -508,7 +509,7 @@ the cell appended to the password.
 
 @end itemize
 
-@node Cross realm, , Salting, Setting up a realm
+@node Cross realm, Setting up DNS , Salting, Setting up a realm
 @section Cross realm
 @cindex Cross realm
 
@@ -572,3 +573,44 @@ May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE
 
 @end cartouche
 @end example
+
+@node Setting up DNS, , Cross realm, Setting up a realm
+@section Setting up DNS
+@cindex Setting up DNS
+
+If there is information about where to find the KDC or kadmind for a
+realm in the @file{krb5.conf} for a realm, that information will be
+preferred and DNS will not be queried.
+
+Heimdal will try to use DNS to find the KDCs for a realm. First it
+will try to find @code{SRV} resource record (RR) for the realm. If no
+SRV RRs are found, it will fall back to looking for a @code{A} RR for
+a machine named kerberos.REALM, and then kerberos-1.REALM, etc
+
+Adding this information to DNS makes the client have less
+configuration (in the common case, no configuration) and allows the
+system administrator to change the number of KDCs and on what machines
+they are running without caring about clients.
+
+The backside of using DNS that the client might be fooled to use the
+wrong server if someone fakes DNS replies/data, but storing the IP
+addresses of the KDC on all the clients makes it very hard to change
+the infrastructure.
+
+Example of the configuration for the realm @code{EXAMPLE.COM},
+
+@example
+
+$ORIGIN example.com.
+_kerberos._tcp          SRV     10 1 88 kerberos.example.com.
+_kerberos._udp          SRV     10 1 88 kerberos.example.com.
+_kerberos._tcp          SRV     10 1 88 kerberos-1.example.com.
+_kerberos._udp          SRV     10 1 88 kerberos-1.example.com.
+_kpasswd._udp           SRV     10 1 464 kerberos.example.com.
+_kerberos-adm._tcp	SRV	10 1 749 kerberos.example.com.
+
+@end example
+
+More information about DNS SRV resource records can be found in
+RFC-2782 (A DNS RR for specifying the location of services (DNS SRV)).
+
