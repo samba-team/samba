@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: mediaobject.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $												
 |														
 |   PURPOSE: Manage Imageobject related tags.
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="mediaobject" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: mediaobject.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -50,31 +53,22 @@
     </xsl:template>
 
 
-    <xsl:template match="mediaobject">
-		<xsl:if test="local-name(preceding-sibling::*[1])!='mediaobject'">
-			<xsl:text>&#10;</xsl:text>
-		</xsl:if>
-		<xsl:call-template name="mediacontent"/>
+    <xsl:template match="mediaobject|inlinemediaobject">
+	<xsl:if test="local-name(.)='mediaobject' and position()=1">
 		<xsl:text>&#10;</xsl:text>
-	</xsl:template>
-
-    <xsl:template match="inlinemediaobject">
-		<xsl:call-template name="mediacontent"/>
-	</xsl:template>
-
-    <xsl:template name="mediacontent">
+	</xsl:if>
 	<xsl:choose>
 		<xsl:when test="count(imageobject)&lt;1">
 			<xsl:apply-templates select="textobject[1]"/>
 		</xsl:when>
-		<xsl:when test="$use.role.for.mediaobject='1' and $preferred.mediaobject.role!='' and count(imageobject[@role='$preferred.mediaobject.role'])!=0">
-			<xsl:apply-templates select="imageobject[@role=$preferred.mediaobject.role]"/>
+		<xsl:when test="$use.role.for.mediaobject='1' and $preferred.mediaobject.role!='' and count(imageobject/imagedata[@role='latex'])!=0">
+			<xsl:apply-templates select="imageobject/imagedata[@role=$preferred.mediaobject.role]"/>
 		</xsl:when>
-		<xsl:when test="$use.role.for.mediaobject='1' and count(imageobject[@role='latex'])!=0">
-			<xsl:apply-templates select="imageobject[@role='latex']"/>
+		<xsl:when test="$use.role.for.mediaobject='1' and count(imageobject/imagedata[@role='latex'])!=0">
+			<xsl:apply-templates select="imageobject/imagedata[@role='latex']"/>
 		</xsl:when>
-		<xsl:when test="$use.role.for.mediaobject='1' and count(imageobject[@role='tex'])!=0">
-			<xsl:apply-templates select="imageobject[@role='tex']"/>
+		<xsl:when test="$use.role.for.mediaobject='1' and count(imageobject/imagedata[@role='tex'])!=0">
+			<xsl:apply-templates select="imageobject/imagedata[@role='tex']"/>
 		</xsl:when>
 		<xsl:when test="$latex.graphics.formats!='' and count(imageobject/imagedata[@format!=''])!=0">
 			<!-- this is not really the right method: formats to the left of $latex.graphics.formats
@@ -168,16 +162,12 @@
 	</xsl:if>
 	<xsl:text>{\includegraphics[</xsl:text>
 	<xsl:choose>
-	    <xsl:when test="@scale"> 
-		<xsl:text>scale=</xsl:text>
-		<xsl:value-of select="number(@scale) div 100"/>
-	    </xsl:when>
-		<xsl:when test="$width!='' and @scalefit='1'">
+		<xsl:when test="$width!='' and (@scalefit='1' or count(@scale)&lt;1)">
 		<xsl:text>width=</xsl:text><xsl:value-of select="normalize-space($width)"/>
 		</xsl:when>
-		<xsl:when test="@depth!='' and @scalefit='1'">
-		<xsl:text>height=</xsl:text><xsl:value-of select="normalize-space(@depth)"/>
-		</xsl:when>
+	    <xsl:when test="@scale"> 
+		<xsl:text>scale=.</xsl:text><xsl:value-of select="normalize-space(@scale)"/>
+	    </xsl:when>
 	</xsl:choose>
 	<xsl:choose>
 	    <xsl:when test="@format = 'PRN'"><xsl:text>,angle=270</xsl:text></xsl:when>
@@ -191,7 +181,8 @@
 		<xsl:value-of select="$filename"/>
 	    </xsl:otherwise>
 	</xsl:choose>
-	<xsl:text>}}}</xsl:text>
+	<xsl:text>}}}&#10;</xsl:text>
+	<!-- xsl:text>}}}\quad&#10;</xsl:text -->
     </xsl:template>
 
 

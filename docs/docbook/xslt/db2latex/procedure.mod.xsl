@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: procedure.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="procedure" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: procedure.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -41,7 +44,7 @@
 
 
 <!--############################################################################# -->
-<doc:template match="procedure" xmlns="">
+<doc:template match="step" xmlns="">
 <refpurpose>Procedure XSL Template.</refpurpose>
 <refdescription>
 <para></para>
@@ -78,7 +81,7 @@
 </xsl:template>
 
 <xsl:template match="procedure/title" mode="procedure.title">
-	<xsl:text>&#10;&#10;{</xsl:text>
+	<xsl:text>{</xsl:text>
 	<xsl:value-of select="$latex.procedure.title.style"/>
 	<xsl:text>{</xsl:text>
 	<xsl:choose>
@@ -109,24 +112,20 @@
     <xsl:template match="step">
 	<xsl:choose>
 	    <xsl:when test="title">
-			<xsl:text>&#10;\item{{</xsl:text>
-			<xsl:value-of select="$latex.step.title.style"/> <!-- by default \sc -->
-			<xsl:text>{</xsl:text>
-			<xsl:apply-templates select="title"/>
-			<xsl:text>}}&#10;</xsl:text>
+		<xsl:text>\item{{</xsl:text>
+		<xsl:value-of select="$latex.step.title.style"/>
+		<xsl:text>{</xsl:text>
+		<xsl:apply-templates select="title"/><xsl:text>} &#10;</xsl:text>
 	    </xsl:when>
 	    <xsl:otherwise>
-			<xsl:text>&#10;\item{</xsl:text>
+		<xsl:text>\item{{</xsl:text>
 	    </xsl:otherwise>
 	</xsl:choose>
-	 <xsl:apply-templates select="*[not(self::title)]"/>
-	<xsl:text>}&#10;</xsl:text>
+	<xsl:apply-templates/>
+	<xsl:text>}}&#10;</xsl:text>
     </xsl:template>
-
-<!-- step/title, just apply templates ########################################### -->
-    <xsl:template match="step/title"> 
-		<xsl:apply-templates/>
-	</xsl:template>
+<!-- Empty step/title ########################################################## -->
+    <xsl:template match="step/title"> </xsl:template>
 
 
 

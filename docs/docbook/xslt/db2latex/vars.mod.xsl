@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: vars.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $		
 |- #############################################################################
+|	$Author: jelmer $
 |
 |   PURPOSE: User and stylesheets XSL variables 
 + ############################################################################## -->
@@ -13,6 +15,7 @@
     <doc:reference id="vars" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: vars.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 		<author><surname>Casellas</surname><firstname>Ramon</firstname></author>
@@ -40,6 +43,7 @@
     <!--############################################################################# 
     |  COMMON VARIABLES
     |- #############################################################################
+    |	$Author: jelmer $
     |
     + ############################################################################## -->
     <xsl:variable name="default-classsynopsis-language">java</xsl:variable>
@@ -176,6 +180,7 @@
     <!--############################################################################# 
     | 	LaTeX VARIABLES
     |- #############################################################################
+    |	$Author: jelmer $
     |
     |   PURPOSE: User and stylesheets XSL variables 
     + ############################################################################## -->
@@ -192,52 +197,6 @@
 	</refdescription>
 	</doc:param>
 	<xsl:param name="latex.override"></xsl:param>
-
-	<doc:param name="latex.entities" xmlns="">
-	<refpurpose> Control Unicode character handling. </refpurpose>
-	<refdescription>
-		<para>
-		Normally, XSLT processors will convert SGML character entities into
-		Unicode characters and DB2LaTeX doesn't have much chance to do anything
-		toward converting them to LaTeX equivalents. We do not yet know how we
-		can solve this problem best.
-		</para>
-		<para>
-		Proposed values: 'catcode', 'unicode', 'extension'.
-		Currently only 'catcode' is supported. All other values will
-		cause no special handling except for certain mappings in MathML.
-		In future, perhaps the 'unicode' LaTeX package could be of assistance.
-		'Extension' could be an XSLT extension that handles the characters
-		using a mapping table.
-		</para>
-	</refdescription>
-	</doc:param>
-	<xsl:param name="latex.entities"></xsl:param>
-
-	<doc:param name="latex.alt.is.latex" xmlns="">
-	<refpurpose> Control the escaping of <sgmltag class="element">alt</sgmltag> text </refpurpose>
-	<refdescription>
-		<para>
-		Text within <sgmltag class="element">alt</sgmltag> elements is assumed to
-		be valid LaTeX and is passed through unescaped by default. If this is not
-		appropriate for your document, set this variable to something other than
-		'1'.
-		</para>
-	</refdescription>
-	</doc:param>
-	<xsl:param name="latex.alt.is.latex">1</xsl:param>
-
-	<doc:param name="latex.alt.is.preferred" xmlns="">
-	<refpurpose> Control the use of <sgmltag class="element">alt</sgmltag> text </refpurpose>
-	<refdescription>
-		<para>
-		By default, DB2LaTeX assumes that <sgmltag class="element">alt</sgmltag>
-		text should be typeset in preference to any 
-		<sgmltag class="element">mediaobject</sgmltag>s.
-		</para>
-	</refdescription>
-	</doc:param>
-	<xsl:param name="latex.alt.is.preferred">1</xsl:param>
 
 	<!--
 	<doc:variable name="latex.figure.position" xmlns="">
@@ -437,9 +396,6 @@
 	<refpurpose> LaTeX location for admonition graphics </refpurpose>
 	<refdescription>
 		<para>The file path that will be passed to LaTeX in order to find admonition graphics.</para>
-		<para>An empty value suppresses the use of admonition graphics.</para>
-		<para>If your figures are in <quote>the current directory</quote> then use a value of
-		<quote>.</quote> (i.e. the full stop or period on its own) to signify this.</para>
 	</refdescription>
 	</doc:param>
 	<xsl:param name="latex.admonition.path">figures</xsl:param>
@@ -513,18 +469,6 @@
 	<xsl:variable name="latex.dont.label">0</xsl:variable>
 	<xsl:variable name="latex.dont.hypertarget">0</xsl:variable>
 	-->
-
-	<doc:param name="latex.use.ucs" xmlns="">
-		<refpurpose> Choose whether to use the <productname>unicode</productname> LaTeX package</refpurpose>
-		<refdescription><para>See the <productname>unicode</productname> documentation for details.</para></refdescription>
-	</doc:param>
-	<xsl:param name="latex.use.ucs">0</xsl:param>
-
-	<doc:param name="latex.ucs.options" xmlns="">
-		<refpurpose>Select the optional parameter(s) for the <productname>unicode</productname> LaTeX package</refpurpose>
-		<refdescription><para>See the <productname>unicode</productname> documentation for details.</para></refdescription>
-	</doc:param>
-	<xsl:param name="latex.ucs.options"></xsl:param>
 
 	<doc:param name="latex.babel.language" xmlns="">
 		<refpurpose>Select the optional parameter for the <productname>babel</productname> LaTeX package</refpurpose>
@@ -649,7 +593,7 @@
 		</para>
 	</refdescription>
 	</doc:param>
-	<xsl:variable name="latex.hyperref.param.pdftex">pdfstartview=FitH</xsl:variable>
+	<xsl:variable name="latex.hyperref.param.pdftex"></xsl:variable>
 
 	<doc:param name="latex.hyperref.param.dvips" xmlns="">
 	<refpurpose> DB2LaTeX hyperref options for dvips output</refpurpose>
@@ -676,21 +620,7 @@
 		that command will precede the title and it will be typeset accordingly.</para>
 	</refdescription>
     </doc:param>
-    <xsl:variable name="latex.step.title.style">\bf</xsl:variable>
-
-    <doc:param name="latex.book.article.title.style" xmlns="">
-	<refpurpose> Control the style of article titles within books </refpurpose>
-	<refdescription>
-	</refdescription>
-    </doc:param>
-    <xsl:variable name="latex.book.article.title.style">\Large\textbf</xsl:variable>
-
-    <doc:param name="latex.article.title.style" xmlns="">
-	<refpurpose> Control the style of article titles </refpurpose>
-	<refdescription>
-	</refdescription>
-    </doc:param>
-    <xsl:variable name="latex.article.title.style">\textbf</xsl:variable>
+    <xsl:variable name="latex.step.title.style">\sc</xsl:variable>
 
     <doc:param name="latex.pagestyle" xmlns="">
 	<refpurpose> Override DB2LaTeX's choice of LaTeX page numbering style </refpurpose>
@@ -854,6 +784,7 @@
     <!--############################################################################# 
     | 	XSL VARIABLES FOR ARTICLES	
     |- #############################################################################
+    |	$Author: jelmer $
     |
     + ############################################################################## -->
 
@@ -880,16 +811,29 @@
 
 
     <doc:param name="latex.article.varsets" xmlns="">
-	<refpurpose> Controls what is output after the LaTeX preamble. </refpurpose>
+	<refpurpose> Controls what is output after the LaTeX preamble. Basically the <literal>\maketitle</literal>
+	</refpurpose>
 	<refdescription>
-	    <para>Default values decrease edge margins and allow a large quantity of figures to be set on each page. </para>
+	    <para>Default Values</para>
+	    <screen><![CDATA[
+		\setlength{\textwidth}{16.5cm}
+		\setlength{\textheight}{22.2cm}
+		\setlength{\hoffset}{-2cm}
+		\setlength{\voffset}{-.9in}
+		\renewcommand\floatpagefraction{.9}
+		\renewcommand\topfraction{.9}
+		\renewcommand\bottomfraction{.9}
+		\renewcommand\textfraction{.1}
+		]]></screen>
 	</refdescription>
     </doc:param>
 
     <xsl:variable name="latex.article.varsets">
 	<xsl:text>
-		\usepackage{anysize}
-		\marginsize{2cm}{2cm}{2cm}{2cm}
+	    \setlength{\textwidth}{16.5cm}
+	    \setlength{\textheight}{22.2cm}
+	    \setlength{\hoffset}{-2cm}
+	    \setlength{\voffset}{-.9in}
 	    \renewcommand\floatpagefraction{.9}
 	    \renewcommand\topfraction{.9}
 	    \renewcommand\bottomfraction{.9}
@@ -900,20 +844,19 @@
 
 
 
-    <doc:param name="latex.maketitle" xmlns="">
-	<refpurpose> The <literal>\maketitle</literal> for books and articles. </refpurpose>
+    <doc:param name="latex.article.maketitle" xmlns="">
+	<refpurpose> Controls what is output after the LaTeX preamble. Basically the <literal>\maketitle</literal>
+	</refpurpose>
 	<refdescription>
-		<para>Some users may wish to override or eliminate <literal>\maketitle</literal>.</para>
-		<note><para>Does not apply to <sgmltag class="element">article</sgmltag>s within <sgmltag class="element">book</sgmltag>s.</para></note>
-		<para>By default, uses LaTeX <literal>\maketitle</literal> with the 'empty' pagestyle
-		for the first page. The page style of subsequent pages is determined by
-		<xref linkend="template.generate.latex.pagestyle"/>.</para>
+	    <para>Default Values</para>
+	    <screen><![CDATA[
+		\maketitle
+		]]></screen>
 	</refdescription>
     </doc:param>
-    <xsl:variable name="latex.maketitle">
-	<xsl:text>{\maketitle</xsl:text>
-	<xsl:call-template name="generate.latex.pagestyle"/>
-	<xsl:text>\thispagestyle{empty}}&#10;</xsl:text>
+    <xsl:variable name="latex.article.maketitle">
+	<xsl:text>&#10;</xsl:text>
+	<xsl:text>\maketitle&#10;</xsl:text>
     </xsl:variable>
 
 

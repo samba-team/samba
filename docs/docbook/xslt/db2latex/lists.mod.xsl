@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: lists.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="lists" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: lists.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -47,14 +50,15 @@
 
     <xsl:template match="itemizedlist">
 	<xsl:if test="title"> <xsl:apply-templates select="title"/></xsl:if>
-	<xsl:text>&#10;\begin{itemize}&#10;</xsl:text>
+	<xsl:text>\begin{itemize}&#10;</xsl:text>
 	<xsl:apply-templates select="listitem"/>
-	<xsl:text>&#10;\end{itemize}&#10;</xsl:text>
+	<xsl:text>\end{itemize}&#10;</xsl:text>
     </xsl:template>
 
 
     <xsl:template match="orderedlist">
-	<xsl:variable name="numeration">
+	<!-- PARAM numeration : -->
+	<xsl:param name="numeration">
 	    <xsl:choose>
 		<xsl:when test="@numeration">
 		    <xsl:value-of select="@numeration"/>
@@ -63,9 +67,9 @@
 		    <xsl:value-of select="arabic"/>
 		</xsl:otherwise>
 	    </xsl:choose>
-	</xsl:variable>
+	</xsl:param>
 	<xsl:if test="title"> <xsl:apply-templates select="title"/></xsl:if>
-	<xsl:text>&#10;\begin{enumerate}</xsl:text>
+	<xsl:text>\begin{enumerate}</xsl:text>
 	<xsl:if test="@numeration">
 	    <xsl:choose>
 		<xsl:when test="@numeration='arabic'"> 	<xsl:text>[1]</xsl:text>&#10;</xsl:when>
@@ -82,32 +86,24 @@
 
 
     <xsl:template match="variablelist">
-	<xsl:if test="title"> 
-		<xsl:apply-templates select="title"/>
-	</xsl:if>
+	<xsl:if test="title"> <xsl:apply-templates select="title"/></xsl:if>
 	<xsl:text>&#10;\noindent&#10;</xsl:text> 
-	<xsl:text>&#10;\begin{description}&#10;</xsl:text> 
+	\begin{description}
 	<xsl:apply-templates select="varlistentry"/>
-	<xsl:text>&#10;\end{description}&#10;</xsl:text> 
+	\end{description}
     </xsl:template>
 
 
     <xsl:template match="listitem">
-	<xsl:text>&#10;%--- Item&#10;</xsl:text>
-	<xsl:text>\item </xsl:text>
-	<xsl:apply-templates/>
-	<xsl:text>&#10;</xsl:text>
+	\item <xsl:apply-templates/><xsl:text>&#10;</xsl:text>
     </xsl:template>
 
 
     <xsl:template match="varlistentry">
-	<xsl:variable name="id"> 
-		<xsl:call-template name="label.id"/>
-	</xsl:variable>
-	<xsl:text>\item[</xsl:text><xsl:apply-templates select="term"/><xsl:text>]\mbox{} % mbox is a trick to induce different typesetting decisions</xsl:text>
+	<xsl:variable name="id"> <xsl:call-template name="label.id"/> </xsl:variable>
+	<xsl:text>\item[</xsl:text><xsl:apply-templates select="term"/><xsl:text>] </xsl:text>
 	<xsl:apply-templates select="listitem"/>
     </xsl:template>
-
 
     <xsl:template match="varlistentry/term">
 	<xsl:apply-templates/><xsl:text>, </xsl:text>
@@ -210,7 +206,7 @@
 		    <xsl:apply-templates select="$members[position()=$cell]"/>
 		    <xsl:text> </xsl:text> 
 		    <xsl:if test="$curcol &lt; $cols">
-			<xsl:call-template name="generate.latex.cell.separator"/>
+			<xsl:text>&amp; </xsl:text> 
 		    </xsl:if>
 		</xsl:when>
 	    </xsl:choose>
@@ -296,7 +292,7 @@
 		    <xsl:apply-templates select="$members[position()=$cell]"/>
 		    <xsl:text> </xsl:text> 
 		    <xsl:if test="$curcol &lt; $cols">
-			<xsl:call-template name="generate.latex.cell.separator"/>
+			<xsl:text>&amp; </xsl:text> 
 		    </xsl:if>
 		</xsl:when>
 		<xsl:otherwise>

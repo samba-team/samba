@@ -21,9 +21,6 @@
 <gentext key="glossary"                 text="Glossar"/>
 <gentext key="important"                text="WICHTIG"/>
 <gentext key="isbn"                     text="ISBN"/>
-<gentext key="keyword"                  text="Stichwort"/>
-<gentext key="keywords"    		text="Stichw&#x00F6;rter"/>
-<gentext key="keywordset"  		text="Stichw&#x00F6;rter"/>
 <gentext key="important"                text="Wichtig"/>
 <gentext key="index"                    text="Stichwortverzeichnis"/>
 <gentext key="legalnotice"              text="Rechtlicher Hinweis"/>

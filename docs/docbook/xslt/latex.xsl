@@ -3,7 +3,7 @@
 <xsl:import href="db2latex/docbook.xsl"/>
 
 <xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
-<xsl:variable name="l10n.gentext.default.language">en</xsl:variable>
+<xsl:param name="l10n.gentext.default.language">en</xsl:param>
 <xsl:variable name="latex.documentclass">sambadoc</xsl:variable>
 <xsl:variable name="latex.documentclass.common">english,final,titlepage,parskip,<xsl:value-of select="$papersize"/>,<xsl:value-of select="$fontsize"/>pt</xsl:variable>
 <xsl:variable name="latex.documentclass.book"></xsl:variable>

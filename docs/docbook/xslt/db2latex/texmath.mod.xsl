@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: texmath.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,6 +20,7 @@
     <doc:reference id="texmath" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: texmath.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -37,26 +40,21 @@
 	</partintro>
     </doc:reference>
 
-    <xsl:template match="alt">
+
+    <xsl:template match="alt[@role='tex' or @role='latex']">
 	<xsl:choose>
-		<xsl:when test="ancestor::inlineequation and (@role='tex' or @role='latex' or $latex.alt.is.latex='1')">
+		<xsl:when test="ancestor::inlineequation|ancestor::equation|ancestor::informalequation">
 			<xsl:text>\ensuremath{</xsl:text>
 			<xsl:value-of select="."/>
 			<xsl:text>}</xsl:text>
 		</xsl:when>
-		<xsl:when test="ancestor::equation|ancestor::informalequation and (@role='tex' or @role='latex' or $latex.alt.is.latex='1')">
-			<xsl:text>\begin{displaymath}</xsl:text>
-			<xsl:call-template name="label.id"/>
-			<xsl:value-of select="."/>
-			<xsl:text>\end{displaymath}&#10;</xsl:text>
-		</xsl:when>
-		<xsl:when test="$latex.alt.is.latex='1'">
-			<xsl:value-of select="."/>
-		</xsl:when>
 		<xsl:otherwise>
-			<xsl:apply-templates/>
+			<xsl:value-of select="."/>
 		</xsl:otherwise>
 	</xsl:choose>
+    </xsl:template>
+
+    <xsl:template match="alt">
     </xsl:template>
 
     <xsl:template match="latex|tex">
@@ -95,17 +93,8 @@
 		<xsl:when test="$tex">
 			<xsl:apply-templates select="$tex"/>
 		</xsl:when>
-		<xsl:when test="alt and $latex.alt.is.preferred='1'">
-			<xsl:apply-templates select="alt"/>
-		</xsl:when>
-		<xsl:when test="inlinemediaobject">
-			<xsl:apply-templates select="inlinemediaobject"/>
-		</xsl:when>
-		<xsl:when test="alt">
-			<xsl:apply-templates select="alt"/>
-		</xsl:when>
 		<xsl:otherwise>
-			<xsl:apply-templates select="graphic"/>
+			<xsl:apply-templates select="*[not(self::graphic)]"/>
 		</xsl:otherwise>
 	</xsl:choose>
 	</xsl:template>

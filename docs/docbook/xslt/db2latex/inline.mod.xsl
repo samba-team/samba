@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: inline.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -15,6 +17,7 @@
     <doc:reference id="inline" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: inline.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -49,11 +52,11 @@
 	<xsl:param name="content">
 	    <xsl:apply-templates/>
 	</xsl:param>
-	<xsl:text>{\texttt{</xsl:text>
+	<xsl:text>{\texttt</xsl:text>
 	<xsl:if test="$latex.hyphenation.tttricks='1'"><xsl:value-of select="$hyphenation" /></xsl:if>
 	<xsl:text>{</xsl:text>
 	<xsl:copy-of select="$content"/>
-	<xsl:text>}}}</xsl:text>
+	<xsl:text>}}</xsl:text>
     </xsl:template>
 
     <xsl:template name="inline.boldseq">
@@ -79,11 +82,11 @@
 	<xsl:param name="content">
 	    <xsl:apply-templates/>
 	</xsl:param>
-	<xsl:text>{\texttt\bfseries{</xsl:text>
+	<xsl:text>{\texttt\bfseries</xsl:text>
 	<xsl:if test="$latex.hyphenation.tttricks='1'"><xsl:value-of select="$hyphenation" /></xsl:if>
 	<xsl:text>{</xsl:text>
 	<xsl:copy-of select="$content"/>
-	<xsl:text>}}}</xsl:text>
+	<xsl:text>}}</xsl:text>
     </xsl:template>
 
     <xsl:template name="inline.italicmonoseq">
@@ -91,11 +94,11 @@
 	<xsl:param name="content">
 	    <xsl:apply-templates/>
 	</xsl:param>
-	<xsl:text>{\texttt\itshape{</xsl:text>
+	<xsl:text>{\texttt\itshape</xsl:text>
 	<xsl:if test="$latex.hyphenation.tttricks='1'"><xsl:value-of select="$hyphenation" /></xsl:if>
 	<xsl:text>{</xsl:text>
 	<xsl:copy-of select="$content"/>
-	<xsl:text>}}}</xsl:text>
+	<xsl:text>}}</xsl:text>
     </xsl:template>
 
     <xsl:template name="inline.superscriptseq">

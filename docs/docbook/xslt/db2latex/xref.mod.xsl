@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: xref.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE: Manage XREFs
 + ############################################################################## -->
@@ -17,6 +19,7 @@
 <doc:reference id="xref" xmlns="">
 <referenceinfo> 
 <releaseinfo role="meta">
+$Id: xref.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 </releaseinfo>
 <authorgroup>
 <author> <surname>Casellas</surname><firstname>Ramon</firstname> </author>
@@ -137,12 +140,31 @@
 
 	    <!-- This is a link with content ... -->
 		<xsl:when test="local-name(.)='link' and .!=''">
-		<xsl:call-template name="generate.hyperlink">
-			<xsl:with-param name="target" select="$target"/>
-			<xsl:with-param name="text"><xsl:apply-templates/></xsl:with-param>
-		</xsl:call-template>
+		<xsl:choose>
+		<xsl:when test="$latex.use.hyperref=1">
+			<xsl:text>\hyperlink{</xsl:text><xsl:value-of select="$target/@id"/><xsl:text>}{</xsl:text>
+			<xsl:apply-templates/>
+			<xsl:text>}</xsl:text>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:apply-templates/>
+		</xsl:otherwise>
+		</xsl:choose>
 		</xsl:when>
 		
+	    <!-- If an xreflabel has been specified for the target ... -->
+	    <xsl:when test="local-name(.)='xref' and $target/@xreflabel">
+		<xsl:if test="$latex.use.hyperref=1">
+		    <xsl:text>\hyperlink{</xsl:text><xsl:value-of select="$target/@id"/><xsl:text>}</xsl:text>
+		</xsl:if>
+		<xsl:text>{[</xsl:text>
+		<xsl:call-template name="xref.xreflabel">
+		    <xsl:with-param name="target" select="$target"/>
+		</xsl:call-template>
+		<xsl:text>]}</xsl:text>
+	    </xsl:when>
+
+	    <!-- If an xreflabel has not been specified for the target ... -->
 	    <xsl:otherwise>
 		<xsl:choose>
 		    <xsl:when test="@endterm">
@@ -158,31 +180,29 @@
 				<xsl:text>[NONEXISTENT ID]</xsl:text>
 			    </xsl:when>
 			    <xsl:otherwise>
-				<xsl:call-template name="generate.hyperlink">
-					<xsl:with-param name="target" select="$target"/>
-					<xsl:with-param name="text"><xsl:apply-templates select="$etarget" mode="xref.text"/></xsl:with-param>
-				</xsl:call-template>
+				<xsl:choose>
+				<xsl:when test="$latex.use.hyperref=1">
+				    <xsl:text>\hyperlink{</xsl:text><xsl:value-of select="$target/@id"/><xsl:text>}</xsl:text>
+				    <xsl:text>{</xsl:text> <xsl:apply-templates select="$etarget" mode="xref.text"/><xsl:text>}</xsl:text>
+				</xsl:when>
+				<xsl:otherwise>
+				    <xsl:apply-templates select="$etarget" mode="xref.text"/>
+				</xsl:otherwise>
+				</xsl:choose>
 			    </xsl:otherwise>
 			</xsl:choose>
 		    </xsl:when>
-			<!-- If an xreflabel has been specified for the target ... -->
-			<xsl:when test="local-name(.)='xref' and $target/@xreflabel">
-			<xsl:call-template name="generate.hyperlink">
-				<xsl:with-param name="target" select="$target"/>
-				<xsl:with-param name="text">
-					<xsl:text>{[</xsl:text>
-					<xsl:call-template name="xref.xreflabel">
-						<xsl:with-param name="target" select="$target"/>
-					</xsl:call-template>
-					<xsl:text>]}</xsl:text>
-				</xsl:with-param>
-			</xsl:call-template>
-			</xsl:when>
 		    <xsl:otherwise>
-				<xsl:call-template name="generate.hyperlink">
-					<xsl:with-param name="target" select="$target"/>
-					<xsl:with-param name="text"><xsl:apply-templates select="$target" mode="xref-to"/></xsl:with-param>
-				</xsl:call-template>
+			<xsl:choose>
+			<xsl:when test="$latex.use.hyperref=1">
+			    <xsl:text>\hyperlink{</xsl:text><xsl:value-of select="$target/@id"/><xsl:text>}{</xsl:text>
+			    <xsl:apply-templates select="$target" mode="xref-to"/>
+				<xsl:text>}</xsl:text>
+			</xsl:when>
+			<xsl:otherwise>
+			    <xsl:apply-templates select="$target" mode="xref-to"/>
+			</xsl:otherwise>
+			</xsl:choose>
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:otherwise>
@@ -199,50 +219,6 @@
 		</xsl:call-template>
 	</xsl:if>
     </xsl:template>
-
-	<doc:template name="generate.hyperlink" xmlns="">
-	<refpurpose> Choose hyperlink syntax </refpurpose>
-	<refdescription>
-		<para>Will use hyperref, if it is available. Otherwise, just outputs
-		unlinked text. If the destination is a citation, a backreference is
-		emitted (even though it is technically a hyperlink, not a citation).
-		If the 'text' arises from an @endterm, then the 'optional argument'
-		syntax of <literal>\cite</literal> is used.</para>
-	</refdescription>
-	</doc:template>
-	<xsl:template name="generate.hyperlink">
-		<xsl:param name="target"/>
-		<xsl:param name="text"/>
-		<xsl:variable name="element" select="local-name($target)"/>
-		<xsl:variable name="citation" select="$element='biblioentry' or $element='bibliomixed'"/>
-		<xsl:choose>
-			<xsl:when test="$citation and @endterm!=''">
-				<xsl:text>\docbooktolatexcite</xsl:text>
-				<xsl:text>{</xsl:text>
-				<xsl:value-of select="$target/@id"/>
-				<xsl:text>}{</xsl:text>
-				<xsl:call-template name="scape-optionalarg">
-					<xsl:with-param name="string" select="$text"/>
-				</xsl:call-template>
-				<xsl:text>}</xsl:text>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:if test="$latex.use.hyperref=1">
-					<xsl:text>\hyperlink{</xsl:text>
-					<xsl:value-of select="$target/@id"/>
-					<xsl:text>}</xsl:text>
-				</xsl:if>
-				<xsl:text>{</xsl:text>
-				<xsl:if test="$citation">
-					<xsl:text>\docbooktolatexbackcite{</xsl:text>
-					<xsl:value-of select="$target/@id"/>
-					<xsl:text>}</xsl:text>
-				</xsl:if>
-				<xsl:value-of select="$text"/>
-				<xsl:text>}</xsl:text>
-			</xsl:otherwise>
-		</xsl:choose>
-	</xsl:template>
 
 	<doc:template name="xref.p.subst" xmlns="">
 		<refpurpose>Insert page number into xrefs</refpurpose>
@@ -528,9 +504,8 @@
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text>\href{</xsl:text>
-				<xsl:call-template name="scape-href">
-					<xsl:with-param name="string" select="$url"/>
-				</xsl:call-template>
+				<!-- Unparsed URL. No char is escaped. -->
+				<xsl:value-of select="$url"/>
 			<xsl:text>}</xsl:text>
 			<xsl:text>{</xsl:text>
 				<xsl:apply-templates/>
@@ -611,9 +586,7 @@
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:text>\href{</xsl:text>
-				<xsl:call-template name="scape-href">
-					<xsl:with-param name="string" select="$url"/>
-				</xsl:call-template>
+				<xsl:value-of select="$url"/>
 				<xsl:text>}{\texttt{</xsl:text>
 				<xsl:call-template name="generate.string.url">
 					<xsl:with-param name="hyphenation" select="$hyphenation"/>

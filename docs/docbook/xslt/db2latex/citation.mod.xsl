@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: citation.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -16,6 +18,7 @@
     <doc:reference id="citation" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: citation.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -53,9 +56,9 @@
 
     <xsl:template match="citation">
 	<!-- todo: biblio-citation-check -->
-	<xsl:text>\docbooktolatexcite{</xsl:text>
-		<xsl:value-of select="."/>
-	<xsl:text>}{}</xsl:text>
+	<xsl:text>\cite{</xsl:text>
+		<xsl:apply-templates/>
+	<xsl:text>}</xsl:text>
     </xsl:template>
 
 </xsl:stylesheet>
