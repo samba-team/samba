@@ -1217,8 +1217,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    len = srvstr_push(outbuf, pdata+18, vname, -1, STR_TERMINATE|STR_CONVERT);
 	    SIVAL(pdata,12,len);
 	    data_len = 18+len;
-	    DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
-		     (int)strlen(vname),vname));
+	    DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n", 
+		     (int)strlen(vname),vname, lp_servicename(snum)));
 	    break;
     case SMB_QUERY_FS_SIZE_INFO:
     {
@@ -2187,8 +2187,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
     return(ERROR(ERRDOS,ERRbadfile));
     
-  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | 
-	FLAGS2_DFS_PATHNAMES);
+  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
   send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
 
   return(-1);
