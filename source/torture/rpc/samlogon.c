@@ -220,7 +220,11 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		/* we cannot check the session key, if the logon failed... */
 		return status;
 	}
-		
+
+	if (!base) {
+		printf("No user info returned from 'successful' SamLogon*() call!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* find and decyrpt the session keys, return in parameters above */
 	if (validation_level == 6) {
@@ -1043,11 +1047,12 @@ BOOL torture_rpc_samlogon(void)
 	int i;
 	
 	unsigned int credential_flags[] = {
-		0, 
 		NETLOGON_NEG_AUTH2_FLAGS,
 		NETLOGON_NEG_ARCFOUR,
 		NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT,
-		NETLOGON_NEG_AUTH2_ADS_FLAGS};
+		NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+		0 /* yes, this is a valid flag, causes the use of DES */ 
+	};
 
 	struct creds_CredentialState *creds;
 
