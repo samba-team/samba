@@ -21,6 +21,10 @@
 
 #include "includes.h"
 
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#include "rpcsvc/ypclnt.h"
+#endif
+
 extern int DEBUGLEVEL;
 extern int Protocol;
 
@@ -138,6 +142,17 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 {
   user_struct *vuser;
 
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+  int nis_error;        /* returned by yp all functions */
+  char *nis_result;     /* yp_match inits this */
+  int nis_result_len;  /* and set this */
+  char *nis_domain;     /* yp_get_default_domain inits this */
+  char *nis_map = (char *)lp_nis_home_map_name();
+  int home_server_len;
+#endif
+  struct passwd *pwfile; /* for getting real name from passwd file */
+  int real_name_len;
+
   int i;
   for(i = 0; i < num_validated_users; i++) {
     vuser = &validated_users[i];
@@ -176,6 +191,46 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 	       &vuser->user_groups);
 
   DEBUG(3,("uid %d registered to name %s\n",uid,name));
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+  vuser->home_share = NULL;
+  DEBUG(3, ("Setting default HOMESHR to: \\\\logon server\\HOMES\n"));
+  vuser->home_share = Realloc(vuser->home_share, 32);
+  strcpy(vuser->home_share,"\\\\%L\\HOMES");
+
+  if (nis_error = yp_get_default_domain(&nis_domain))
+    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+  DEBUG(3, ("NIS Domain: %s\n", nis_domain));
+
+  if (nis_error = yp_match(nis_domain, nis_map, vuser->name, strlen(vuser->name),
+                        &nis_result, &nis_result_len))
+    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+  if (!nis_error && lp_nis_home_map()) {
+    home_server_len = strcspn(nis_result,":");
+    DEBUG(3, ("NIS lookup succeeded\n\tHome server length: %d\n",home_server_len));
+    vuser->home_share = (char *)Realloc(vuser->home_share, home_server_len+12);
+    DEBUG(3, ("\tAllocated %d bytes for HOMESHR\n",home_server_len+12 ));
+    strcpy(vuser->home_share,"\\\\");
+    strncat(vuser->home_share, nis_result, home_server_len);
+    strcat(vuser->home_share,"\\homes");
+    DEBUG(2,("\tUser = %s\n\tUID = %d\n\tNIS result = %s\n\tHOMESHR = %s\n",
+           vuser->name, vuser->uid, nis_result, vuser->home_share));
+  }
+#endif
+
+  vuser->real_name = NULL;
+  DEBUG(3, ("Clearing default real name\n"));
+  vuser->real_name = Realloc(vuser->real_name, 15);
+  strcpy(vuser->real_name, "<Full Name>\0");
+  if (lp_unix_realname()) {
+    pwfile=getpwnam(vuser->name);
+    DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
+    real_name_len = strcspn(pwfile->pw_gecos, ",");
+    DEBUG(3, ("Real name length: %d\n", real_name_len));
+    vuser->real_name = (char *)Realloc(vuser->real_name, real_name_len+1);
+    strncpy(vuser->real_name, pwfile->pw_gecos, real_name_len);
+    vuser->real_name[real_name_len]='\0';
+  }
 
   return (uint16)((num_validated_users - 1) + VUID_OFFSET);
 }

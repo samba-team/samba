@@ -1947,6 +1947,7 @@ There is no auxiliary data in the response.
 #define AF_OP_SERVER    2
 #define AF_OP_ACCOUNTS  3
 
+
 static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -1959,10 +1960,17 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	int uLevel = SVAL(p,0);
 	char *p2;
 
-	*rparam_len = 6;
-	*rparam = REALLOC(*rparam,*rparam_len);
+    /* get NIS home of a previously validated user - simeon */
+    user_struct *vuser = get_valid_user_struct(vuid);
+    DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
+  #if (defined(NETGROUP) && defined(AUTOMOUNT))
+    DEBUG(3,("  HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
+  #endif
 
-	/* check it's a supported varient */
+    *rparam_len = 6;
+    *rparam = REALLOC(*rparam,*rparam_len);
+  
+	/* check it's a supported variant */
 	if (strcmp(str1,"zWrLh") != 0) return False;
 	switch( uLevel )
 	{
@@ -2005,12 +2013,10 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
         /* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-#if 0
-		strcpy(p2,"FullName");
-#endif
-		strcpy(p2,UserName); /* suggest copying the user name, for now... */
+        strcpy(p2,vuser->real_name);	/* simeon */
 		p2 = skip_string(p2,1);
 	}
+
 	if (uLevel == 11) /* modelled after NTAS 3.51 reply */
 	{         
 		SSVAL(p,usri11_priv,Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
@@ -2023,7 +2029,11 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		}
 		else
 		{
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+            strcpy(p2, vuser->home_share);
+#else
 			strcpy(p2,"\\\\%L\\%U");
+#endif
 		}
 		standard_sub_basic(p2);
 		p2 = skip_string(p2,1);
@@ -2067,7 +2077,11 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		}
 		else
 		{
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+            strcpy(p2, vuser->home_share);
+#else
 			strcpy(p2,"\\\\%L\\%U");
+#endif
 		}
 		standard_sub_basic(p2);
 		p2 = skip_string(p2,1);
@@ -2079,7 +2093,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		{
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-			strcpy(p2,"<Full Name>");
+   			strcpy(p2,vuser->real_name);	/* simeon */
 			p2 = skip_string(p2,1);
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
@@ -3066,5 +3080,3 @@ int reply_trans(char *inbuf,char *outbuf)
 
   return(outsize);
 }
-
-
