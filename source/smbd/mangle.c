@@ -648,9 +648,9 @@ BOOL check_mangled_cache( char *s )
 
   DEBUG( 3, ("Found %s on mangled stack ", s) );
 
-  (void)strcpy( s, found_name );
+  (void)pstrcpy( s, found_name );
   if( ext_start )
-    (void)strcat( s, ext_start );
+    (void)pstrcat( s, ext_start );
 
   DEBUG( 3, ("as %s\n", s) );
 
@@ -830,7 +830,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
  *
  * ************************************************************************** **
  */
-void mangle_name_83( char *s )
+void mangle_name_83( char *s, int s_len )
   {
   int csum = str_checksum(s);
   char *p;
@@ -863,7 +863,7 @@ void mangle_name_83( char *s )
   if( p )
     {
     if( p == s )
-      strcpy( extension, "___" );
+      safe_strcpy( extension, "___", 3 );
     else
       {
       *p++ = 0;
@@ -933,13 +933,13 @@ void mangle_name_83( char *s )
 
   csum = csum % (36*36);
 
-  (void)sprintf( s, "%s%c%c%c",
+  (void)slprintf( s, s_len - 1, "%s%c%c%c",
                  base, magic_char, base36( csum/36 ), base36( csum ) );
 
   if( *extension )
     {
-    (void)strcat( s, "." );
-    (void)strcat( s, extension );
+    (void)pstrcat( s, "." );
+    (void)pstrcat( s, extension );
     }
 
   DEBUG( 5, ( "%s\n", s ) );
@@ -996,7 +996,7 @@ BOOL name_map_mangle( char *OutName, BOOL need83, int snum )
 
     /* mangle it into 8.3 */
     tmp = strdup( OutName );
-    mangle_name_83( OutName );
+    mangle_name_83( OutName, strlen(tmp) );
     if( tmp )
       {
       cache_mangled_name( OutName, tmp );  

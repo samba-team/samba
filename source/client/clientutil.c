@@ -320,7 +320,7 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
   int len = 4;
   /* send a session request (RFC 8002) */
 
-  strcpy(dest,desthost);
+  fstrcpy(dest,desthost);
   p = strchr(dest,'.');
   if (p) *p = 0;
 
@@ -454,11 +454,11 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   if (strstr(service,"IPC$")) connect_as_ipc = True;
 #endif
 
-  strcpy(dev,"A:");
+  pstrcpy(dev,"A:");
   if (connect_as_printer)
-    strcpy(dev,"LPT1:");
+    pstrcpy(dev,"LPT1:");
   if (connect_as_ipc)
-    strcpy(dev,"IPC");
+    pstrcpy(dev,"IPC");
 
 
   if (start_session && !cli_send_session_request(inbuf,outbuf))
@@ -490,7 +490,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 	 numprots++)
       {
 	*p++ = 2;
-	strcpy(p,prots[numprots].name);
+	pstrcpy(p,prots[numprots].name);
 	p += strlen(p) + 1;
       }
   }
@@ -593,7 +593,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
     {
       fstring pword;
       int passlen = strlen(pass)+1;
-      strcpy(pword,pass);      
+      fstrcpy(pword,pass);      
 
       if (doencrypt && *pass) {
 	DEBUG(3,("Using encrypted passwords\n"));
@@ -602,7 +602,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
       }
 
       /* if in share level security then don't send a password now */
-      if (!(opt.sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
+      if (!(opt.sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
 
       /* send a session setup command */
       bzero(outbuf,smb_size);
@@ -621,7 +621,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 	p = smb_buf(outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	strcpy(p,username);
+	pstrcpy(p,username);
       } else {
 	if (!doencrypt) passlen--;
 	/* for Win95 */
@@ -638,10 +638,10 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 	SSVAL(outbuf,smb_vwv8,0);
 	p = smb_buf(outbuf);
 	memcpy(p,pword,passlen); p += SVAL(outbuf,smb_vwv7);
-	strcpy(p,username);p = skip_string(p,1);
-	strcpy(p,workgroup);p = skip_string(p,1);
-	strcpy(p,"Unix");p = skip_string(p,1);
-	strcpy(p,"Samba");p = skip_string(p,1);
+	pstrcpy(p,username);p = skip_string(p,1);
+	pstrcpy(p,workgroup);p = skip_string(p,1);
+	pstrcpy(p,"Unix");p = skip_string(p,1);
+	pstrcpy(p,"Samba");p = skip_string(p,1);
 	set_message(outbuf,13,PTR_DIFF(p,smb_buf(outbuf)),False);
       }
 
@@ -717,7 +717,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   {
     int passlen = strlen(pass)+1;
     fstring pword;
-    strcpy(pword,pass);
+    fstrcpy(pword,pass);
 
     if (doencrypt && *pass) {
       passlen=24;
@@ -726,7 +726,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 
     /* if in user level security then don't send a password now */
     if ((opt.sec_mode & 1)) {
-      strcpy(pword, ""); passlen=1; 
+      fstrcpy(pword, ""); passlen=1; 
     }
 
     if (Protocol <= PROTOCOL_COREPLUS) {
@@ -736,13 +736,13 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 
       p = smb_buf(outbuf);
       *p++ = 0x04;
-      strcpy(p, service);
+      pstrcpy(p, service);
       p = skip_string(p,1);
       *p++ = 0x04;
       memcpy(p,pword,passlen);
       p += passlen;
       *p++ = 0x04;
-      strcpy(p, dev);
+      pstrcpy(p, dev);
     }
     else {
       set_message(outbuf,4,2 + strlen(service) + passlen + strlen(dev),True);
@@ -755,9 +755,9 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
       p = smb_buf(outbuf);
       memcpy(p,pword,passlen);
       p += passlen;
-      strcpy(p,service);
+      pstrcpy(p,service);
       p = skip_string(p,1);
-      strcpy(p,dev);
+      pstrcpy(p,dev);
     }
   }
 
@@ -771,7 +771,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
       Protocol >= PROTOCOL_LANMAN1)
     {
       DEBUG(2,("first SMBtconX failed, trying again. %s\n",smb_errstr(inbuf)));
-      strcpy(pass,"");
+      pstrcpy(pass,"");
       goto again2;
     }  
 
@@ -873,13 +873,13 @@ BOOL cli_open_sockets(int port )
     }
   else
     {
-      strcpy(service2,service);
+      pstrcpy(service2,service);
       host = strtok(service2,"\\/");
       if (!host) {
 	DEBUG(0,("Badly formed host name\n"));
 	return(False);
       }
-      strcpy(desthost,host);
+      pstrcpy(desthost,host);
     }
 
   if (!(*global_myname)) {

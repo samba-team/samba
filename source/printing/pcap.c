@@ -123,7 +123,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)())
 				p = strtok(line,":");
 				if (strcmp(p,"bsh")!=0)
 				  {
-				    strcpy(name,p);
+				    pstrcpy(name,p);
 				    iEtat = 1;
 				    continue;
 				  }
@@ -182,7 +182,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	      free(pName);
 	      return(False);
 	}
-	sprintf(pName,"%s:",pszPrintername);
+	slprintf(pName, iLg + 9, "%s:",pszPrintername);
 	iLg = strlen(pName);
 	/*DEBUG(3,( " Looking for entry %s\n",pName));*/
 	iEtat = 0;
@@ -295,7 +295,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	  if (strequal(p,pszPrintername))
 	    {
 	      /* normalise the case */
-	      strcpy(pszPrintername,p);
+	      pstrcpy(pszPrintername,p);
 	      free(line);
 	      fclose(pfile);
 	      return(True);	      

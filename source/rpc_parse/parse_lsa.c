@@ -416,14 +416,14 @@ void lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, prs_struct *ps, int depth)
 	for (i = 0; i < sen->num_entries; i++)
 	{	
 		fstring temp;
-		sprintf(temp, "ptr_sid[%d]", i);
+		slprintf(temp, sizeof(temp) - 1, "ptr_sid[%d]", i);
 		prs_uint32(temp, ps, depth, &(sen->ptr_sid[i])); /* domain SID pointers to be looked up. */
 	}
 
 	for (i = 0; i < sen->num_entries; i++)
 	{
 		fstring temp;
-		sprintf(temp, "sid[%d]", i);
+		slprintf(temp, sizeof(temp) - 1, "sid[%d]", i);
 		smb_io_dom_sid2(temp, &(sen->sid[i]), ps, depth); /* domain SIDs to be looked up. */
 	}
 }
@@ -470,7 +470,7 @@ void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, in
 	for (i = 0; i < trn->num_entries; i++)
 	{	
 		fstring temp;
-		sprintf(temp, "ptr_name[%d] ", i);
+		slprintf(temp, sizeof(temp) - 1, "ptr_name[%d] ", i);
 		prs_uint32(temp, ps, depth, &(trn->ptr_name[i])); /* pointer to translated name */
 	}
 
@@ -479,7 +479,7 @@ void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, in
 		if (trn->ptr_name[i] != 0)
 		{
 			fstring temp;
-			sprintf(temp, "name[%d] ", i);
+			slprintf(temp, sizeof(temp) - 1, "name[%d] ", i);
 			lsa_io_trans_name(temp, &(trn->name[i2]), ps, depth); /* translated name */
 			i2++;
 		}

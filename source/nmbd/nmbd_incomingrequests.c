@@ -362,7 +362,7 @@ subnet %s - name not found.\n", namestr(&nmb->question.question_name),
       {
         /* Start with the name. */
         bzero(buf,18);
-        sprintf(buf,"%-15.15s",namerec->name.name);
+        slprintf(buf, 17, "%-15.15s",namerec->name.name);
         strupper(buf);
         
         /* Put the name type and netbios flags in the buffer. */

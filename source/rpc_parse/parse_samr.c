@@ -1492,7 +1492,7 @@ void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, i
 
 	for (i = 0; i < q_u->num_sids2; i++)
 	{
-		sprintf(tmp, "ptr[%02d]", i);
+		slprintf(tmp, sizeof(tmp) - 1, "ptr[%02d]", i);
 		prs_uint32(tmp, ps, depth, &(q_u->ptr_sid[i]));
 	}
 
@@ -1500,7 +1500,7 @@ void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, i
 	{
 		if (q_u->ptr_sid[i] != 0)
 		{
-			sprintf(tmp, "sid[%02d]", i);
+			slprintf(tmp, sizeof(tmp)-1, "sid[%02d]", i);
 			smb_io_dom_sid2(tmp, &(q_u->sid[i]), ps, depth); 
 		}
 	}
@@ -1564,7 +1564,7 @@ void samr_io_r_lookup_ids(char *desc,  SAMR_R_LOOKUP_IDS *r_u, prs_struct *ps, i
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			sprintf(tmp, "rid[%02d]", i);
+			slprintf(tmp, sizeof(tmp)-1, "rid[%02d]", i);
 			prs_uint32(tmp, ps, depth, &(r_u->rid[i]));
 		}
 	}
@@ -1723,7 +1723,7 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 
 	for (i = 0; i < q_u->num_gids2; i++)
 	{
-		sprintf(tmp, "gid[%02d]  ", i);
+		slprintf(tmp, sizeof(tmp) - 1, "gid[%02d]  ", i);
 		prs_uint32(tmp, ps, depth, &(q_u->gid[i]));
 	}
 
@@ -1797,12 +1797,12 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 	{
 		for (i = 0; i < r_u->num_aliases2; i++)
 		{
-			sprintf(tmp, "als_hdr[%02d]  ", i);
+			slprintf(tmp, sizeof(tmp) - 1, "als_hdr[%02d]  ", i);
 			smb_io_unihdr ("", &(r_u->hdr_als_name[i]), ps, depth); 
 		}
 		for (i = 0; i < r_u->num_aliases2; i++)
 		{
-			sprintf(tmp, "als_str[%02d]  ", i);
+			slprintf(tmp, sizeof(tmp) - 1, "als_str[%02d]  ", i);
 			smb_io_unistr2("", &(r_u->uni_als_name[i]), r_u->hdr_als_name[i].buffer, ps, depth); 
 		}
 	}
@@ -1817,7 +1817,7 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 	{
 		for (i = 0; i < r_u->num_als_usrs2; i++)
 		{
-			sprintf(tmp, "als_usrs[%02d]  ", i);
+			slprintf(tmp, sizeof(tmp) - 1, "als_usrs[%02d]  ", i);
 			prs_uint32(tmp, ps, depth, &(r_u->num_als_usrs[i]));
 		}
 	}

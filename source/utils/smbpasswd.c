@@ -345,7 +345,7 @@ int main(int argc, char **argv)
       if(is_root) {
         disable_user = True;
         got_new_pass = True;
-        strcpy(new_passwd, "XXXXXX");
+        fstrcpy(new_passwd, "XXXXXX");
       } else
         usage(prog_name, is_root);
       break;
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
       if(is_root) {
         set_no_password = True;
         got_new_pass = True;
-        strcpy(new_passwd, "NO PASSWORD");
+        fstrcpy(new_passwd, "NO PASSWORD");
       } else
         usage(prog_name, is_root);
     case 'r':

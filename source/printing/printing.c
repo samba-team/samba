@@ -81,8 +81,8 @@ static char *build_print_command(int cnum, char *command, char *syscmd, char *fi
     if (iOffset==0 || syscmd[iOffset-1] != '/') {
       StrnCpy(filename,Connections[cnum].connectpath,sizeof(filename)-1);
       trim_string(filename,"","/");
-      strcat(filename,"/");
-      strcat(filename,filename1);
+      pstrcat(filename,"/");
+      pstrcat(filename,filename1);
     }
     else
       pstrcpy(filename,filename1);
@@ -146,7 +146,7 @@ static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 /*******************************************************************
 process time fields
 ********************************************************************/
-static time_t EntryTime(string tok[], int ptr, int count, int minimum)
+static time_t EntryTime(fstring tok[], int ptr, int count, int minimum)
 {
   time_t jobtime,jobtime1;
 
@@ -223,7 +223,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 #define	NTOK	5
 #endif	/* OSF1 */
 
-  string tok[NTOK];
+  fstring tok[NTOK];
   int count=0;
 
 #ifdef	OSF1
@@ -249,15 +249,15 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 
   /* if the fname contains a space then use STDIN */
   if (strchr(tok[FILETOK],' '))
-    strcpy(tok[FILETOK],"STDIN");
+    fstrcpy(tok[FILETOK],"STDIN");
 
   /* only take the last part of the filename */
   {
-    string tmp;
+    fstring tmp;
     char *p = strrchr(tok[FILETOK],'/');
     if (p)
       {
-	strcpy(tmp,p+1);
+	fstrcpy(tmp,p+1);
 	fstrcpy(tok[FILETOK],tmp);
       }
   }
@@ -282,7 +282,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 LPRng_time modifies the current date by inserting the hour and minute from
 the lpq output.  The lpq time looks like "23:15:07"
 */
-static time_t LPRng_time(string tok[],int pos)
+static time_t LPRng_time(fstring tok[],int pos)
 {
   time_t jobtime;
   struct tm *t;
@@ -381,7 +381,7 @@ LPRng source changes.  This is from version 2.3.0.  Magnus  */
 #define JOBSIZE_POS FILE_POS+FILE_W
 
   
-  string tok[LPRNG_NTOK];
+  fstring tok[LPRNG_NTOK];
   int count=0;
 
 #ifdef OLD_LPRNG
@@ -420,11 +420,11 @@ A long spool-path will just waste significant chars of the file name.
   /* if the fname contains a space then use STDIN */
   /* I do not understand how this would be possible. Magnus. */
   if (strchr(tok[LPRNG_FILETOK],' '))
-    strcpy(tok[LPRNG_FILETOK],"STDIN");
+    fstrcpy(tok[LPRNG_FILETOK],"STDIN");
 
   /* only take the last part of the filename */
   {
-    string tmp;
+    fstring tmp;
     char *p = strrchr(tok[LPRNG_FILETOK],'/');
     if (p)
       {
@@ -473,7 +473,7 @@ lazer   lazer RUNNING   537 6297doc.A          kvintus@IE    0 10  2445   1   1
 ********************************************************************/
 static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[11];
+  fstring tok[11];
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
@@ -493,11 +493,11 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
           buf->size = atoi(tok[4]) * 1024;
           /* if the fname contains a space then use STDIN */
           if (strchr(tok[2],' '))
-            strcpy(tok[2],"STDIN");
+            fstrcpy(tok[2],"STDIN");
 
           /* only take the last part of the filename */
           {
-            string tmp;
+            fstring tmp;
             char *p = strrchr(tok[2],'/');
             if (p)
               {
@@ -527,11 +527,11 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       buf->size = atoi(tok[8]) * 1024;
       /* if the fname contains a space then use STDIN */
       if (strchr(tok[4],' '))
-        strcpy(tok[4],"STDIN");
+        fstrcpy(tok[4],"STDIN");
 
       /* only take the last part of the filename */
       {
-        string tmp;
+        fstring tmp;
         char *p = strrchr(tok[4],'/');
         if (p)
           {
@@ -568,7 +568,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
 {
   /* must read two lines to process, therefore keep some values static */
   static BOOL header_line_ok=False, base_prio_reset=False;
-  static string jobuser;
+  static fstring jobuser;
   static int jobid;
   static int jobprio;
   static time_t jobtime;
@@ -579,7 +579,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
  
   int count;
   char TAB = '\011';  
-  string tok[12];
+  fstring tok[12];
 
   /* If a line begins with a horizontal TAB, it is a subline type */
   
@@ -604,7 +604,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     
     /* if the fname contains a space then use STDIN */
     if (strchr(tok[0],' '))
-      strcpy(tok[0],"STDIN");
+      fstrcpy(tok[0],"STDIN");
     
     buf->size = atoi(tok[1]);
     StrnCpy(buf->file,tok[0],sizeof(buf->file)-1);
@@ -674,7 +674,7 @@ dcslw-897               tridge            4712   Dec 20 10:30:30 being held
 ****************************************************************************/
 static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[9];
+  fstring tok[9];
   int count=0;
   char *p;
 
@@ -694,7 +694,7 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   /* if the user contains a ! then trim the first part of it */  
   if ((p=strchr(tok[2],'!')))
     {
-      string tmp;
+      fstring tmp;
       fstrcpy(tmp,p+1);
       fstrcpy(tok[2],tmp);
     }
@@ -727,7 +727,7 @@ Printer: txt        (ready)
 ****************************************************************************/
 static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[7];
+  fstring tok[7];
   int count=0;
 
   DEBUG(0,("antes [%s]\n", line));
@@ -756,7 +756,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 
   /* only take the last part of the filename */
   {
-    string tmp;
+    fstring tmp;
     char *p = strrchr(tok[6],'/');
     if (p)
       {
@@ -792,7 +792,7 @@ Local  Printer 'lp2' (fjall):
 ****************************************************************************/
 static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[11];
+  fstring tok[11];
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
@@ -816,11 +816,11 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 
   /* if the fname contains a space then use STDIN */
   if (strchr(tok[6],' '))
-    strcpy(tok[6],"STDIN");
+    fstrcpy(tok[6],"STDIN");
 
   /* only take the last part of the filename */
   {
-    string tmp;
+    fstring tmp;
     char *p = strrchr(tok[6],'/');
     if (p)
       {
@@ -862,7 +862,7 @@ Total:      21268 bytes in queue
 ****************************************************************************/
 static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[10];
+  fstring tok[10];
   int count=0;
 
   /* mung all the ":"s to spaces*/
@@ -1081,7 +1081,7 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
   }
 
   if (status) {
-    strcpy(status->message,"");
+    fstrcpy(status->message,"");
     status->status = LPSTAT_OK;
   }
       
@@ -1142,7 +1142,7 @@ void del_printqueue(int cnum,int snum,int jobid)
       return;
     }
     
-  sprintf(jobstr,"%d",jobid);
+  slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
@@ -1180,7 +1180,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
       return;
     }
     
-  sprintf(jobstr,"%d",jobid);
+  slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);

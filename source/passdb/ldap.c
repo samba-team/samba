@@ -114,7 +114,7 @@ BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **r
 	   in the filter expression, replace %u with the real name
 	   so in ldap filter, %u MUST exist :-)
 	*/	
-	strcpy(filter,lp_ldap_filter());
+	pstrcpy(filter,lp_ldap_filter());
 	string_sub(filter,"%u",user);
 	
 	if ( !ldap_search_one_user(ldap_struct, filter, result) )
@@ -152,7 +152,7 @@ void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute
 	
 	if ( (valeurs=ldap_get_values(ldap_struct, entry, attribute)) != NULL) 
 	{
-		strcpy(value, valeurs[0]);
+		pstrcpy(value, valeurs[0]);
 		ldap_value_free(valeurs);
 		DEBUG(3,("get_single_attribute:	[%s]=[%s]\n", attribute, value));	
 	}
@@ -451,7 +451,7 @@ void *startldappwent(BOOL update)
 	int scope = LDAP_SCOPE_ONELEVEL;
 	int rc;
 
-	char filter[256];
+	pstring filter;
 
 	if (!ldap_open_connection(&ldap_ent.ldap_struct)) /* open a connection to the server */
 		return NULL;
@@ -464,17 +464,17 @@ void *startldappwent(BOOL update)
 	{
 		case 1:
 		{
-			strcpy(filter, "objectclass=sambaAccount");
+			pstrcpy(filter, "objectclass=sambaAccount");
 			break;
 		}
 		case 2:
 		{
-			strcpy(filter, "objectclass=sambaMachine");
+			pstrcpy(filter, "objectclass=sambaMachine");
 			break;
 		}
 		default:
 		{
-			strcpy(filter, "(|(objectclass=sambaMachine)(objectclass=sambaAccount))");
+			pstrcpy(filter, "(|(objectclass=sambaMachine)(objectclass=sambaAccount))");
 			break;
 		}
 	}

@@ -116,7 +116,7 @@ Load or create the WINS database.
 
 BOOL initialise_wins(void)
 {
-  fstring fname;
+  pstring fname;
   time_t time_now = time(NULL);
   FILE *fp;
   pstring line;
@@ -131,10 +131,10 @@ BOOL initialise_wins(void)
   start_async_dns();
 #endif
 
-  fstrcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
-  strcat(fname,"/");
-  strcat(fname,WINS_LIST);
+  pstrcat(fname,"/");
+  pstrcat(fname,WINS_LIST);
 
   if((fp = fopen(fname,"r")) == NULL)
   {
@@ -1515,7 +1515,7 @@ void initiate_wins_processing(time_t t)
 void wins_write_database(void)
 {
   struct name_record *namerec;
-  fstring fname, fnamenew;
+  pstring fname, fnamenew;
    
   FILE *fp;
    
@@ -1524,10 +1524,10 @@ void wins_write_database(void)
 
   fstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
-  strcat(fname,"/");
-  strcat(fname,WINS_LIST);
-  fstrcpy(fnamenew,fname);
-  strcat(fnamenew,".");
+  pstrcat(fname,"/");
+  pstrcat(fname,WINS_LIST);
+  pstrcpy(fnamenew,fname);
+  pstrcat(fnamenew,".");
 
   if((fp = fopen(fnamenew,"w")) == NULL)
   {

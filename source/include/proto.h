@@ -1170,7 +1170,7 @@ BOOL is_8_3( char *fname, BOOL check_case );
 int str_checksum( char *s );
 void reset_mangled_cache( void );
 BOOL check_mangled_cache( char *s );
-void mangle_name_83( char *s );
+void mangle_name_83( char *s, int s_len );
 BOOL name_map_mangle( char *OutName, BOOL need83, int snum );
 
 /*The following definitions come from  md4.c  */
@@ -2054,7 +2054,9 @@ char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);
 void fstrcpy(char *dest, char *src);
-void pstrcpy(char *dest, char *src);
+void fstrcat(char *dest, char *src);
+char *safe_strcpy(char *dest, char *src, int maxlength);
+char *safe_strcat(char *dest, char *src, int maxlength);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);

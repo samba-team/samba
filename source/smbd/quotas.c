@@ -138,7 +138,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   struct stat sbuf;
   dev_t devno ;
   static dev_t devno_cached = 0 ;
-  static char name[MNTMAXSTR] ;
+  static pstring name;
   struct q_request request ;
   struct qf_header header ;
   static int quota_default = 0 ;
@@ -172,7 +172,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
       
     }
     
-    strcpy(name,mnt->mnt_dir) ;
+    pstrcpy(name,mnt->mnt_dir) ;
     endmntent(fd) ;
     
     if ( ! found )
@@ -249,10 +249,10 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   struct quotctl command;
   int file;
   struct mnttab mnt;
-  static char name[MNT_LINE_MAX] ;
+  static pstring name;
 #else
   struct mntent *mnt;
-  static char name[MNTMAXSTR] ;
+  static pstring name;
 #endif
   FILE *fd;
   struct stat sbuf;
@@ -283,8 +283,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
       }
     }
     
-    strcpy(name,mnt.mnt_mountp) ;
-    strcat(name,"/quotas") ;
+    pstrcpy(name,mnt.mnt_mountp) ;
+    pstrcat(name,"/quotas") ;
     fclose(fd) ;
 #else
     if ((fd = setmntent(MOUNTED, "r")) == NULL)
@@ -302,7 +302,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
       }
     }
     
-    strcpy(name,mnt->mnt_fsname) ;
+    pstrcpy(name,mnt->mnt_fsname) ;
     endmntent(fd) ;
 #endif
     

@@ -338,10 +338,10 @@ void write_browse_list(time_t t, BOOL force_write)
     
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
-  strcat(fname,"/");
-  strcat(fname,SERVER_LIST);
+  pstrcat(fname,"/");
+  pstrcat(fname,SERVER_LIST);
   pstrcpy(fnamenew,fname);
-  strcat(fnamenew,".");
+  pstrcat(fnamenew,".");
  
   fp = fopen(fnamenew,"w");
  

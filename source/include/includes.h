@@ -332,6 +332,10 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
 #define USE_SIGPROCMASK
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
+#define HAVE_VSNPRINTF
 #endif
 
 
@@ -547,6 +551,7 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETTIMEOFDAY
 #define HAVE_PATHCONF
 #define HAVE_GETGRNAM 1
+#define HAVE_VSNPRINTF
 #define QSORT_CAST (int (*)(const void *, const void *))
 #if !defined(O_SYNC)
 #if defined(O_FSYNC)
@@ -624,6 +629,7 @@ char *mktemp(char *); /* No standard include */
 #define USE_SETRES
 #define USE_SYSV_IPC
 #define NO_SEMUN
+#define HAVE_VALLOC
 #define DEFAULT_PRINTING PRINT_HPUX
 /* Ken Weiss <krweiss@ucdavis.edu> tells us that SIGCLD_IGNORE is
    not good for HPUX */
@@ -1353,12 +1359,29 @@ extern int errno;
 #define strncasecmp(s1,s2,n) StrnCaseCmp(s1,s2,n)
 #endif
 
-#ifndef strcpy
-#define strcpy(dest,src) StrCpy(dest,src)
-#endif
+#ifdef strcpy
+#undef strcpy
+#endif /* strcpy */
+#define strcpy(dest,src) __ERROR__XX__NEVER_USE_STRCPY___;
+
+#ifdef strcat
+#undef strcat
+#endif /* strcat */
+#define strcat(dest,src) __ERROR__XX__NEVER_USE_STRCAT___;
+
+#ifdef sprintf
+#undef sprintf
+#endif /* sprintf */
+#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__>;
+
+#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
 #if MEM_MAN
 #include "mem_man/mem_man.h"
-#endif
+#endif /* MEM_MAN */
+
 
 #endif

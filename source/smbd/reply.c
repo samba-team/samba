@@ -308,7 +308,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (Protocol < PROTOCOL_NT1)
   {
     set_message(outbuf,2,strlen(devicename)+1,True);
-    strcpy(smb_buf(outbuf),devicename);
+    pstrcpy(smb_buf(outbuf),devicename);
   }
   else
   {
@@ -318,8 +318,8 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     set_message(outbuf,3,3,True);
 
     p = smb_buf(outbuf);
-    strcpy(p,devicename); p = skip_string(p,1); /* device name */
-    strcpy(p,fsname); p = skip_string(p,1); /* filesystem type e.g NTFS */
+    pstrcpy(p,devicename); p = skip_string(p,1); /* device name */
+    pstrcpy(p,fsname); p = skip_string(p,1); /* filesystem type e.g NTFS */
 
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
 
@@ -578,7 +578,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* If no username is sent use the guest account */
   if (!*user)
     {
-      strcpy(user,lp_guestaccount(-1));
+      pstrcpy(user,lp_guestaccount(-1));
       /* If no user and no password then set guest flag. */
       if( *smb_apasswd == 0)
         guest = True;
@@ -593,7 +593,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    */
 
   if((lp_security() != SEC_SHARE) || *user)
-    strcpy(sesssetup_user,user);
+    pstrcpy(sesssetup_user,user);
 
   reload_services(True);
 
@@ -641,7 +641,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 #endif
 	  }
  	  if (*smb_apasswd || !Get_Pwnam(user,True))
-	    strcpy(user,lp_guestaccount(-1));
+	    pstrcpy(user,lp_guestaccount(-1));
 	  DEBUG(3,("Registered username %s for guest access\n",user));
 	  guest = True;
 	}
@@ -649,7 +649,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (!Get_Pwnam(user,True)) {
     DEBUG(3,("No such user %s - using guest account\n",user));
-    strcpy(user,lp_guestaccount(-1));
+    pstrcpy(user,lp_guestaccount(-1));
     guest = True;
   }
 
@@ -670,9 +670,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     char *p;
     set_message(outbuf,3,3,True);
     p = smb_buf(outbuf);
-    strcpy(p,"Unix"); p = skip_string(p,1);
-    strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,global_myworkgroup); p = skip_string(p,1);
+    pstrcpy(p,"Unix"); p = skip_string(p,1);
+    pstrcpy(p,"Samba "); pstrcat(p,VERSION); p = skip_string(p,1);
+    pstrcpy(p,global_myworkgroup); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }
@@ -984,7 +984,7 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
       p = strrchr(dir2,'/');
       if (p == NULL) 
       {
-        strcpy(mask,dir2);
+        pstrcpy(mask,dir2);
         *dir2 = 0;
       }
       else
@@ -1000,7 +1000,7 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
         *p = 0;
 
       if (strlen(directory) == 0)
-        strcpy(directory,"./");
+        pstrcpy(directory,"./");
       bzero(status,21);
       CVAL(status,0) = dirtype;
     }
@@ -1027,8 +1027,8 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	fstrcpy(ext,p+1);
 	*p = 0;
 	trim_string(mask,NULL," ");
-	strcat(mask,".");
-	strcat(mask,ext);
+	pstrcat(mask,".");
+	pstrcat(mask,ext);
       }
   }
 
@@ -1049,7 +1049,7 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
       fstrcpy(tmp,&mask[8]);
       mask[8] = '.';
       mask[9] = 0;
-      strcat(mask,tmp);
+      pstrcat(mask,tmp);
     }
 
   DEBUG(5,("mask=%s directory=%s\n",mask,directory));
@@ -1566,7 +1566,7 @@ int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
-  strcat(fname,"/TMXXXXXX");
+  pstrcat(fname,"/TMXXXXXX");
   unix_convert(fname,cnum,0,&bad_path);
   
   unixmode = unix_mode(cnum,createmode);
@@ -1586,7 +1586,7 @@ int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  strcpy(fname2,(char *)mktemp(fname));
+  pstrcpy(fname2,(char *)mktemp(fname));
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
@@ -1609,7 +1609,7 @@ int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   outsize = set_message(outbuf,1,2 + strlen(fname2),True);
   SSVAL(outbuf,smb_vwv0,fnum);
   CVAL(smb_buf(outbuf),0) = 4;
-  strcpy(smb_buf(outbuf) + 1,fname2);
+  pstrcpy(smb_buf(outbuf) + 1,fname2);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
@@ -1678,12 +1678,12 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   p = strrchr(name,'/');
   if (!p) {
-    strcpy(directory,"./");
-    strcpy(mask,name);
+    pstrcpy(directory,"./");
+    pstrcpy(mask,name);
   } else {
     *p = 0;
-    strcpy(directory,name);
-    strcpy(mask,p+1);
+    pstrcpy(directory,name);
+    pstrcpy(mask,p+1);
   }
 
   if (is_mangled(mask))
@@ -1692,8 +1692,8 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
   if (!has_wild) {
-    strcat(directory,"/");
-    strcat(directory,mask);
+    pstrcat(directory,"/");
+    pstrcat(directory,mask);
     if (can_delete(directory,cnum,dirtype) && !sys_unlink(directory)) count++;
     if (!count) exists = file_exist(directory,NULL);    
   } else {
@@ -1713,7 +1713,7 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	error = ERRbadfile;
 
 	if (strequal(mask,"????????.???"))
-	  strcpy(mask,"*");
+	  pstrcpy(mask,"*");
 
 	while ((dname = ReadDirName(dirptr)))
 	  {
@@ -2636,7 +2636,7 @@ int reply_printopen(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
-  strcpy(fname2,(char *)mktemp(fname));
+  pstrcpy(fname2,(char *)mktemp(fname));
 
   if (!check_name(fname2,cnum)) {
 	  Files[fnum].reserved = False;
@@ -2877,9 +2877,9 @@ static BOOL recursive_rmdir(char *directory)
       ret = True;
       break;
     }
-    strcpy(fullname, directory);
-    strcat(fullname, "/");
-    strcat(fullname, dname);
+    pstrcpy(fullname, directory);
+    pstrcat(fullname, "/");
+    pstrcat(fullname, dname);
 
     if(sys_lstat(fullname, &st) != 0)
     {
@@ -2971,8 +2971,8 @@ int reply_rmdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
                           break;
                         }
                       pstrcpy(fullname, directory);
-                      strcat(fullname, "/");
-                      strcat(fullname, dname);
+                      pstrcat(fullname, "/");
+                      pstrcat(fullname, dname);
                       
                       if(sys_lstat(fullname, &st) != 0)
                         break;
@@ -3078,10 +3078,10 @@ static BOOL resolve_wildcards(char *name1,char *name2)
     if (*p) p++;
   }
 
-  strcpy(name2,root2);
+  pstrcpy(name2,root2);
   if (ext2[0]) {
-    strcat(name2,".");
-    strcat(name2,ext2);
+    pstrcat(name2,".");
+    pstrcat(name2,ext2);
   }
 
   return(True);
@@ -3144,12 +3144,12 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   p = strrchr(name,'/');
   if (!p) {
-    strcpy(directory,".");
-    strcpy(mask,name);
+    pstrcpy(directory,".");
+    pstrcpy(mask,name);
   } else {
     *p = 0;
-    strcpy(directory,name);
-    strcpy(mask,p+1);
+    pstrcpy(directory,name);
+    pstrcpy(mask,p+1);
     *p = '/'; /* Replace needed for exceptional test below. */
   }
 
@@ -3162,16 +3162,16 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     BOOL is_short_name = is_8_3(name, True);
 
     /* Add a terminating '/' to the directory name. */
-    strcat(directory,"/");
-    strcat(directory,mask);
+    pstrcat(directory,"/");
+    pstrcat(directory,mask);
 
     /* Ensure newname contains a '/' also */
     if(strrchr(newname,'/') == 0) {
       pstring tmpstr;
 
-      strcpy(tmpstr, "./");
-      strcat(tmpstr, newname);
-      strcpy(newname, tmpstr);
+      pstrcpy(tmpstr, "./");
+      pstrcat(tmpstr, newname);
+      pstrcpy(newname, tmpstr);
     }
   
     DEBUG(3,("reply_mv : case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
@@ -3197,7 +3197,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
        * character above.
        */
       p = strrchr(newname,'/');
-      strcpy(newname_modified_last_component,p+1);
+      pstrcpy(newname_modified_last_component,p+1);
 
       if(strcsequal(newname_modified_last_component, 
 		    newname_last_component) == False) {
@@ -3205,7 +3205,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	 * Replace the modified last component with
 	 * the original.
 	 */
-        strcpy(p+1, newname_last_component);
+        pstrcpy(p+1, newname_last_component);
       }
     }
 
@@ -3235,7 +3235,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	error = ERRbadfile;
 
 	if (strequal(mask,"????????.???"))
-	  strcpy(mask,"*");
+	  pstrcpy(mask,"*");
 
 	while ((dname = ReadDirName(dirptr)))
 	  {
@@ -3309,8 +3309,8 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
       p++;
     else
       p = src;
-    strcat(dest,"/");
-    strcat(dest,p);
+    pstrcat(dest,"/");
+    pstrcat(dest,p);
   }
 
   if (!file_exist(src,&st)) return(False);
@@ -3415,12 +3415,12 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   p = strrchr(name,'/');
   if (!p) {
-    strcpy(directory,"./");
-    strcpy(mask,name);
+    pstrcpy(directory,"./");
+    pstrcpy(mask,name);
   } else {
     *p = 0;
-    strcpy(directory,name);
-    strcpy(mask,p+1);
+    pstrcpy(directory,name);
+    pstrcpy(mask,p+1);
   }
 
   if (is_mangled(mask))
@@ -3429,8 +3429,8 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
   if (!has_wild) {
-    strcat(directory,"/");
-    strcat(directory,mask);
+    pstrcat(directory,"/");
+    pstrcat(directory,mask);
     if (resolve_wildcards(directory,newname) && 
 	copy_file(directory,newname,cnum,ofun,
 		  count,target_is_directory)) count++;
@@ -3448,7 +3448,7 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	error = ERRbadfile;
 
 	if (strequal(mask,"????????.???"))
-	  strcpy(mask,"*");
+	  pstrcpy(mask,"*");
 
 	while ((dname = ReadDirName(dirptr)))
 	  {
@@ -3459,7 +3459,7 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-	    strcpy(destname,newname);
+	    pstrcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
 		copy_file(directory,newname,cnum,ofun,
 			  count,target_is_directory)) count++;

@@ -349,8 +349,8 @@ void add_session_user(char *user)
 	DEBUG(1,("Too many session users??\n"));
       else
 	{
-	  strcat(session_users," ");
-	  strcat(session_users,suser);
+	  pstrcat(session_users," ");
+	  pstrcat(session_users,suser);
 	}
     }
 }
@@ -364,7 +364,7 @@ static struct spwd *getspnam(char *username) /* fake shadow password routine */
 {
        FILE *f;
        char line[1024];
-       static char pw[20];
+       static fstring pw;
        static struct spwd static_spwd;
 
        static_spwd.sp_pwdp=0;
@@ -380,7 +380,7 @@ static struct spwd *getspnam(char *username) /* fake shadow password routine */
                                *q=0;
                                if (q-p+1>20)
                                        break;
-                               strcpy(pw, p);
+                               fstrcpy(pw, p);
                                static_spwd.sp_pwdp=pw;
                        }
                        break;
@@ -415,7 +415,7 @@ static char *osf1_bigcrypt(char *password,char *salt1)
   for (i=0; i<parts;i++)
     {
       p1 = crypt(p2,salt);
-      strcat(result,p1+2);
+      strncat(result,p1+2,AUTH_MAX_PASSWD_LENGTH-strlen(p1+2)-1);
       StrnCpy(salt,&result[2+i*AUTH_CIPHERTEXT_SEG_CHARS],2);
       p2 += AUTH_CLEARTEXT_SEG_CHARS;
     }
@@ -809,9 +809,9 @@ static BOOL krb4_auth(char *this_user,char *password)
   char tkfile[MAXPATHLEN];
   
   if (krb_get_lrealm(realm, 1) != KSUCCESS)
-    (void) strncpy(realm, KRB_REALM, sizeof (realm));
+    (void) safe_strcpy(realm, KRB_REALM, sizeof (realm) - 1);
   
-  (void) sprintf(tkfile, "/tmp/samba_tkt_%d", getpid());
+  (void) slprintf(tkfile, sizeof(tkfile) - 1, "/tmp/samba_tkt_%d", getpid());
   
   krb_set_tkt_string(tkfile);
   if (krb_verify_user(this_user, "", realm,
@@ -1217,8 +1217,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     mypasswd = getprpwnam (user);
     if ( mypasswd )
       { 
-  	strcpy(pass->pw_name,mypasswd->ufld.fd_name);
-  	strcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
+  	fstrcpy(pass->pw_name,mypasswd->ufld.fd_name);
+  	fstrcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
       }
     else
       {
@@ -1233,20 +1233,20 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     AUTHORIZATION *ap = getauthuid( pass->pw_uid );
     if (ap)
       {
-	strcpy( pass->pw_passwd, ap->a_password );
+	fstrcpy( pass->pw_passwd, ap->a_password );
 	endauthent();
       }
   }
 #endif
 
   /* extract relevant info */
-  strcpy(this_user,pass->pw_name);  
-  strcpy(this_salt,pass->pw_passwd);
+  fstrcpy(this_user,pass->pw_name);  
+  fstrcpy(this_salt,pass->pw_passwd);
 #ifdef HPUX
   /* The crypt on HPUX won't work with more than 2 salt characters. */
   this_salt[2] = 0;
 #endif /* HPUX */
-  strcpy(this_crypted,pass->pw_passwd);
+  fstrcpy(this_crypted,pass->pw_passwd);
  
   if (!*this_crypted) {
     if (!lp_null_passwords()) {
@@ -1295,7 +1295,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       update_protected_database(user,False);
 
       /* restore it */
-      strcpy(password,pass2);
+      fstrcpy(password,pass2);
 
       return(False);
     }
@@ -1314,7 +1314,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   update_protected_database(user,False);
   
   /* restore it */
-  strcpy(password,pass2);
+  fstrcpy(password,pass2);
   
   return(False);
 }
@@ -1384,7 +1384,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	while (member && *member)
 	  {
 	    static fstring name;
-	    strcpy(name,*member);
+	    fstrcpy(name,*member);
 	    if (user_ok(name,snum) &&
 		password_ok(name,password,pwlen,NULL))
 	      return(&name[0]);
@@ -1400,7 +1400,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
 	      if (password_ok(NULL, password, pwlen, pwd)) {
-		strcpy(tm, pwd->pw_name);
+		fstrcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
 	      }
@@ -1460,7 +1460,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
 	    password_ok(vuser->name, password, pwlen, NULL)) {
-	  strcpy(user, vuser->name);
+	  fstrcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
 	  ok = True;
@@ -1480,12 +1480,12 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	       auser = strtok(NULL,LIST_SEP))
 	    {
 	      fstring user2;
-	      strcpy(user2,auser);
+	      fstrcpy(user2,auser);
 	      if (!user_ok(user2,snum)) continue;
 		  
 	      if (password_ok(user2,password, pwlen, NULL)) {
 		ok = True;
-		strcpy(user,user2);
+		fstrcpy(user,user2);
 		DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
 	      }
 	    }
@@ -1496,7 +1496,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       if (!ok && !lp_revalidate(snum) &&
 	  (vuser != 0) && !vuser->guest &&
 	  user_ok(vuser->name,snum)) {
-	strcpy(user,vuser->name);
+	fstrcpy(user,vuser->name);
 	*guest = False;
 	DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
 	ok = True;
@@ -1526,19 +1526,19 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		if (auser)
 		  {
 		    ok = True;
-		    strcpy(user,auser);
+		    fstrcpy(user,auser);
 		    DEBUG(3,("ACCEPTED: group username and given password ok\n"));
 		  }
 	      }
 	    else
 	      {
 		fstring user2;
-		strcpy(user2,auser);
+		fstrcpy(user2,auser);
 		if (user_ok(user2,snum) && 
 		    password_ok(user2,password,pwlen,NULL))
 		  {
 		    ok = True;
-		    strcpy(user,user2);
+		    fstrcpy(user,user2);
 		    DEBUG(3,("ACCEPTED: user list username and given password ok\n"));
 		  }
 	      }
@@ -1553,7 +1553,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
       if (Get_Pwnam(guestname,True))
 	{
-	  strcpy(user,guestname);
+	  fstrcpy(user,guestname);
 	  ok = True;
 	  DEBUG(3,("ACCEPTED: guest account and guest ok\n"));
 	}

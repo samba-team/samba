@@ -62,7 +62,7 @@ static int findpty(char **slave)
 #if defined(SVR4) || defined(SUNOS5)
   extern char *ptsname();
 #else /* defined(SVR4) || defined(SUNOS5) */
-  static char line[12];
+  static fstring line;
   void *dirp;
   char *dpname;
 #endif /* defined(SVR4) || defined(SUNOS5) */
@@ -75,7 +75,7 @@ static int findpty(char **slave)
     return (master);
   }
 #else /* defined(SVR4) || defined(SUNOS5) */
-  strcpy( line, "/dev/ptyXX" );
+  fstrcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(-1, "/dev", True);
   if (!dirp) return(-1);

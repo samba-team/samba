@@ -758,7 +758,7 @@ struct shmem_ops *smb_shm_open(int ronly)
 	}
 	trim_string(file_name,"","/");
 	if (!*file_name) return(False);
-	strcat(file_name, "/SHARE_MEM_FILE");
+	pstrcat(file_name, "/SHARE_MEM_FILE");
    
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
 
@@ -799,8 +799,8 @@ struct shmem_ops *smb_shm_open(int ronly)
       */
 
    /* construct processreg file name */
-   strcpy(smb_shm_processreg_name, file_name);
-   strcat(smb_shm_processreg_name, ".processes");
+   pstrcpy(smb_shm_processreg_name, file_name);
+   pstrcat(smb_shm_processreg_name, ".processes");
 
    if (!read_only && 
        !smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))

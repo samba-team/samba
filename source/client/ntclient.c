@@ -217,7 +217,7 @@ BOOL client_do_nt_login(char *desthost, char *myhostname,
 	strlower(mach_pwd);
 
 	fstrcpy(mach_pwd , myhostname);
-	strcat(mach_acct, "$");
+	fstrcat(mach_acct, "$");
 
 	SIVAL(clnt_chal.data, 0, 0x11111111);
 	SIVAL(clnt_chal.data, 4, 0x22222222);

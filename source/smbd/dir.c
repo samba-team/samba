@@ -469,10 +469,10 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	  *path = 0;
 	  pstrcpy(path,Connections[cnum].dirpath);
           if(needslash)
-  	    strcat(path,"/");
+  	    pstrcat(path,"/");
 	  pstrcpy(pathreal,path);
-	  strcat(path,fname);
-	  strcat(pathreal,dname);
+	  pstrcat(path,fname);
+	  pstrcat(pathreal,dname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("Couldn't stat 1 [%s]\n",path));
@@ -552,7 +552,7 @@ void *OpenDir(int cnum, char *name, BOOL use_veto)
       dirp->mallocsize = s;
       dirp->current = dirp->data;
     }
-    strcpy(dirp->data+used,n);
+    pstrcpy(dirp->data+used,n);
     used += l;
     dirp->numentries++;
   }
@@ -671,9 +671,9 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
     return;             /* so just return as if nothing happened. */
 
   /* Set pointers correctly and load values. */
-  entry->path  = strcpy( (char *)&entry[1],       path);
-  entry->name  = strcpy( &(entry->path[pathlen]), name);
-  entry->dname = strcpy( &(entry->name[namelen]), dname);
+  entry->path  = pstrcpy( (char *)&entry[1],       path);
+  entry->name  = pstrcpy( &(entry->path[pathlen]), name);
+  entry->dname = pstrcpy( &(entry->name[namelen]), dname);
   entry->snum  = snum;
 
   /* Add the new entry to the linked list. */

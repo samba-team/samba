@@ -190,7 +190,7 @@ void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
 	for (i = 0; i < 6; i++)
 	{
 		fstring tmp;
-		sprintf(tmp, "id_auth[%d] ", i);
+		slprintf(tmp, sizeof(tmp) - 1, "id_auth[%d] ", i);
 		prs_uint8 (tmp, ps, depth, &(sid->id_auth[i]));
 	}
 

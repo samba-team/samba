@@ -196,7 +196,7 @@ int main(int argc,char *argv[])
 
       if(lookup_by_ip)
       {
-        strcpy(lookup,"*");
+        fstrcpy(lookup,"*");
         ip = *interpret_addr2(argv[i]);
         printf("Looking up status of %s\n",inet_ntoa(ip));
         name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
@@ -206,7 +206,7 @@ int main(int argc,char *argv[])
 
       if (find_master) {
 	if (*lookup == '-') {
-	  strcpy(lookup,"\01\02__MSBROWSE__\02");
+	  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
 	  lookup_type = 1;
 	} else {
 	  lookup_type = 0x1d;

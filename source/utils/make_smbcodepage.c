@@ -64,7 +64,7 @@ void read_line( char **buf, char *line_buf, int size)
 
 int clean_data( char **buf, uint32 *size)
 {
-  char linebuf[512];
+  pstring linebuf;
   char *p = *buf;
   int num_lines = 0;
   char *newbuf = (char *)malloc( *size + 1);
@@ -94,7 +94,7 @@ int clean_data( char **buf, uint32 *size)
     if(*cp == '\0')
       continue;
 
-    strcpy(newbuf_p, cp);
+    pstrcpy(newbuf_p, cp);
     num_lines++;
     newbuf_p += (strlen(newbuf_p) + 1);
   }

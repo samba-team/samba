@@ -51,15 +51,15 @@ static void _interpret_node_status(char *p, char *master,char *rname)
       type = CVAL(p,15);
       p += 16;
 
-      strcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
-      if ((p[0] & 0x60) == 0x00) strcat(flags,"B ");
-      if ((p[0] & 0x60) == 0x20) strcat(flags,"P ");
-      if ((p[0] & 0x60) == 0x40) strcat(flags,"M ");
-      if ((p[0] & 0x60) == 0x60) strcat(flags,"H ");
-      if (p[0] & 0x10) strcat(flags,"<DEREGISTERING> ");
-      if (p[0] & 0x08) strcat(flags,"<CONFLICT> ");
-      if (p[0] & 0x04) strcat(flags,"<ACTIVE> ");
-      if (p[0] & 0x02) strcat(flags,"<PERMANENT> ");
+      fstrcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
+      if ((p[0] & 0x60) == 0x00) fstrcat(flags,"B ");
+      if ((p[0] & 0x60) == 0x20) fstrcat(flags,"P ");
+      if ((p[0] & 0x60) == 0x40) fstrcat(flags,"M ");
+      if ((p[0] & 0x60) == 0x60) fstrcat(flags,"H ");
+      if (p[0] & 0x10) fstrcat(flags,"<DEREGISTERING> ");
+      if (p[0] & 0x08) fstrcat(flags,"<CONFLICT> ");
+      if (p[0] & 0x04) fstrcat(flags,"<ACTIVE> ");
+      if (p[0] & 0x02) fstrcat(flags,"<PERMANENT> ");
 
       if (master && !*master && type == 0x1d) {
 	StrnCpy(master,qname,15);
@@ -341,9 +341,9 @@ BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr
     if (*line == '#')
       continue;
 
-    strcpy(ip,"");
-    strcpy(name,"");
-    strcpy(flags,"");
+    pstrcpy(ip,"");
+    pstrcpy(name,"");
+    pstrcpy(flags,"");
 
     ptr = line;
 
