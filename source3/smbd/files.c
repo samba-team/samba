@@ -143,6 +143,22 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
+ Close all open files for a pid.
+****************************************************************************/
+
+void file_close_pid(uint16 smbpid)
+{
+	files_struct *fsp, *next;
+	
+	for (fsp=Files;fsp;fsp=next) {
+		next = fsp->next;
+		if (fsp->file_pid == smbpid) {
+			close_file(fsp,False); 
+		}
+	}
+}
+
+/****************************************************************************
  Initialise file structures.
 ****************************************************************************/
 
