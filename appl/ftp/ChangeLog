@@ -1,3 +1,8 @@
+2000-05-18  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (args): should use `debug'.  From Onno van der
+	Linden <onno@simplex.nl>.
+
 2000-04-25  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (login): re-structure code so that we prompt for
