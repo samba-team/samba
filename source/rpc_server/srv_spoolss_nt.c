@@ -1091,7 +1091,12 @@ WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter_internal(p, handle);          /* print job was not closed */
 
-	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
+	/* clear the returned printer handle.  Observed behavior 
+	   from Win2k server.  Don't think this really matters.
+	   Previous code just copied the value of the closed
+	   handle.    --jerry */
+
+	memset(&r_u->handle, 0x0, sizeof(r_u->handle));
 
 	if (!close_printer_handle(p, handle))
 		return WERR_BADFID;	
@@ -3542,6 +3547,12 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	case 3:		
 		return getprinter_level_3(snum, buffer, offered, needed);
 #if 0 	/* JERRY */
+
+	/* commented these out until I've had time to gain
+	   my confidence back.  Commented out after a series of BSOD on
+	   win2k clients althought I cannot say for sure that tehse were
+	   the cause  --jerry 22/01/2002 */
+
 	case 4:		
 		return getprinter_level_4(snum, buffer, offered, needed);
 	case 5:		
@@ -3746,10 +3757,38 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
 	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
+
+if 0	/* JERRY */
+
+	/* 
+	 * I put this code in during testing.  Helpful when commenting out the 
+	 * support for DRIVER_INFO_6 in regards to win2k.  Not needed in general
+	 * as win2k always queries the driver using an infor level of 6.
+	 * I've left it in (but ifdef'd out) because I'll probably
+	 * use it in experimentation again in the future.   --jerry 22/01/2002
+	 */
+
 	if (!W_ERROR_IS_OK(status)) {
-		free_a_printer(&printer,2);
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+		/*
+		 * Is this a W2k client ?
+		 */
+		if (version == 3) {
+			/* Yes - try again with a WinNT driver. */
+			version = 2;
+			status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
+			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
+		}
+#endif
+
+		if (!W_ERROR_IS_OK(status)) {
+			free_a_printer(&printer,2);
+			return WERR_UNKNOWN_PRINTER_DRIVER;
+		}
+		
+#if 0	/* JERRY */
 	}
+#endif
+	
 
 	fill_printer_driver_info_3(info, driver, servername);
 
