@@ -388,12 +388,12 @@ certain LDAP queries when 'passdb backend = ldapsam://...' has been
 specified.
 
   * ldap suffix         - used to search for user and computer accounts
-  * ldap user suffix     - used to store user accounts
+  * ldap user suffix    - used to store user accounts
   * ldap machine suffix - used to store machine trust accounts
   * ldap group suffix   - location of posixGroup/sambaGroupMapping entries
   * ldap idmap suffix   - location of sambaIdmapEntry objects
 
-In an 'ldap suffix' is defined, it will be appended to all of the 
+If an 'ldap suffix' is defined, it will be appended to all of the 
 remaining sub-suffix parameters.  In this case, the order of the suffix
 listings in smb.conf is important.  Always place the 'ldap suffix' first
 in the list.  
@@ -433,7 +433,7 @@ Known Issues
   as the trusted domain to a Windows NT 4.0 domain, there are no known 
   issues.
 
-* The smbldap perl script for managing user entries in an LDAP 
+* The smbldap perl scripts for managing user entries in an LDAP 
   directory have not be updated to function with the Samba 3.0
   schema changes.  This (or an equivalent solution) work is planned
   to be completed prior to the stable 3.0.0 release.
