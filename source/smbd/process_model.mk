@@ -24,8 +24,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = process_model_thread_init 
 INIT_OBJ_FILES = \
 		smbd/process_thread.o
-REQUIRED_LIBRARIES = \
-		PTHREAD
+REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 # End MODULE process_model_thread
 ################################################
 

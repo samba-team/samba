@@ -3,8 +3,8 @@
 [MODULE::libldb_ldap]
 INIT_OBJ_FILES = \
 		lib/ldb/ldb_ldap/ldb_ldap.o
-REQUIRED_LIBRARIES = \
-		LDAP
+REQUIRED_SUBSYSTEMS = \
+		EXT_LIB_LDAP
 # End MODULE libldb_tdb
 ################################################
 
