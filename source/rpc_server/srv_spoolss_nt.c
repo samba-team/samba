@@ -176,9 +176,17 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
  Disconnect from the client
 ****************************************************************************/
 
-static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
+static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 {
 	WERROR result;
+
+	/* 
+	 * Tell the specific printing tdb we no longer want messages for this printer
+	 * by deregistering our PID.
+	 */
+
+	if (!print_notify_deregister_pid(snum))
+		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
 
 	/* weird if the test succeds !!! */
 	if (smb_connections==0) {
@@ -217,7 +225,8 @@ static void free_printer_entry(void *ptr)
 	Printer_entry *Printer = (Printer_entry *)ptr;
 
 	if (Printer->notify.client_connected==True)
-		srv_spoolss_replycloseprinter(&Printer->notify.client_hnd);
+		srv_spoolss_replycloseprinter(print_queue_snum(Printer->dev.handlename),
+				&Printer->notify.client_hnd);
 
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
@@ -2305,7 +2314,7 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_machine)
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *remote_machine)
 {
 	ZERO_STRUCTP(the_cli);
 	if(cli_initialise(the_cli) == NULL) {
@@ -2397,7 +2406,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
  Connect to the client.
 ****************************************************************************/
 
-static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
+static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
 {
 	WERROR result;
 
@@ -2419,6 +2428,14 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		 * notify messages. */
 		register_message_flags( True, FLAG_MSG_PRINTING );
 	}
+
+	/* 
+	 * Tell the specific printing tdb we want messages for this printer
+	 * by registering our PID.
+	 */
+
+	if (!print_notify_register_pid(snum))
+		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", printer ));
 
 	smb_connections++;
 
@@ -2450,6 +2467,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	uint32 options = q_u->options;
 	UNISTR2 *localmachine = &q_u->localmachine;
 	uint32 printerlocal = q_u->printerlocal;
+	int snum;
 	SPOOL_NOTIFY_OPTION *option = q_u->option;
 
 	/* store the notify value in the printer struct */
@@ -2460,6 +2478,9 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 		DEBUG(2,("_spoolss_rffpcnex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
 
 	Printer->notify.flags=flags;
 	Printer->notify.options=options;
@@ -2475,7 +2496,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 
 	/* Connect to the client machine and send a ReplyOpenPrinter */
 
-	if(!srv_spoolss_replyopenprinter(Printer->notify.localmachine,
+	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
 					&Printer->notify.client_hnd))
 		return WERR_SERVER_UNAVAILABLE;
@@ -5862,7 +5883,7 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-
+	int snum;
 	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
@@ -5870,8 +5891,11 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 		return WERR_BADFID;
 	}
 
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
 	if (Printer->notify.client_connected==True)
-		srv_spoolss_replycloseprinter(&Printer->notify.client_hnd);
+		srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
 
 	Printer->notify.flags=0;
 	Printer->notify.options=0;

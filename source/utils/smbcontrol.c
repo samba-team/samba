@@ -333,7 +333,9 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 
 		/* Send a notification message to a printer */
+		/* NB. None of these currently work due to changes in the printing notify mechanisms. */
 
+#if 0
 	case MSG_PRINTER_NOTIFY2: {
 		char *cmd;
 
@@ -435,6 +437,8 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 		break;
 	}
+#endif
+
 	}
 		
 		return (True);

@@ -1442,7 +1442,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	}
 
 	memcpy(p, key.dptr, key.dsize);
-	memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
+	if (dbuf.dsize)
+		memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 
 	/* now we're into insert / modify / replace of a record which
 	 * we know could not be optimised by an in-place store (for

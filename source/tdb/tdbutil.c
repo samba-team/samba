@@ -217,17 +217,14 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 value)
  on failure.
 ****************************************************************************/
 
-int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
+int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, TDB_DATA data, int flags)
 {
-    TDB_DATA key, data;
+    TDB_DATA key;
 
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
 
-    data.dptr = buffer;
-    data.dsize = len;
-
-    return tdb_store(tdb, key, data, TDB_REPLACE);
+    return tdb_store(tdb, key, data, flags);
 }
 
 /****************************************************************************
@@ -243,6 +240,20 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
     key.dsize = strlen(keystr) + 1;
 
     return tdb_fetch(tdb, key);
+}
+
+/****************************************************************************
+ Delete an entry using a null terminated string key. 
+****************************************************************************/
+
+int tdb_delete_by_string(TDB_CONTEXT *tdb, char *keystr)
+{
+    TDB_DATA key;
+
+    key.dptr = keystr;
+    key.dsize = strlen(keystr) + 1;
+
+    return tdb_delete(tdb, key);
 }
 
 /****************************************************************************

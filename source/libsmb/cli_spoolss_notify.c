@@ -37,7 +37,7 @@
    notifications are performed. */
 
 WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				      char *printer, uint32 printerlocal, uint32 type, 
+				      const char *printer, uint32 printerlocal, uint32 type, 
 				      POLICY_HND *handle)
 {
 	prs_struct qbuf, rbuf;

@@ -459,7 +459,8 @@ void exit_server(char *reason)
 	extern char *last_inbuf;
 
 
-	if (!firsttime) exit(0);
+	if (!firsttime)
+		exit(0);
 	firsttime = 0;
 
 	change_to_root_user();
