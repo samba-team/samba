@@ -144,7 +144,7 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_auth3;
 
-	typedef enum {
+	typedef [enum8bit] enum {
 		DCERPC_PKT_REQUEST     =  0,
 		DCERPC_PKT_PING        =  1,
 		DCERPC_PKT_RESPONSE    =  2,
@@ -195,14 +195,14 @@ interface dcerpc
 	const uint8 DCERPC_DREP_LE  = 0x10;
 
 	typedef [public] struct {
-		uint8 rpc_vers;		/* RPC version */
-		uint8 rpc_vers_minor;	/* Minor version */
-		uint8 ptype;		/* Packet type */
-		uint8 pfc_flags;	/* Fragmentation flags */
-		uint8 drep[4];		/* NDR data representation */
-		uint16 frag_length;	/* Total length of fragment */
-		uint16 auth_length;	/* authenticator length */
-		uint32 call_id;		/* Call identifier */
+		uint8 rpc_vers;	        /* RPC version */
+		uint8 rpc_vers_minor;   /* Minor version */
+		dcerpc_pkt_type ptype;  /* Packet type */
+		uint8 pfc_flags;        /* Fragmentation flags */
+		uint8 drep[4];	        /* NDR data representation */
+		uint16 frag_length;     /* Total length of fragment */
+		uint16 auth_length;     /* authenticator length */
+		uint32 call_id;	        /* Call identifier */
 		[switch_is(ptype)] dcerpc_payload u;
 	} dcerpc_packet;
 }
