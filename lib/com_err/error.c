@@ -16,3 +16,13 @@ com_right(struct error_table *list, long code)
     }
     return NULL;
 }
+
+void
+free_error_table(struct error_table *et)
+{
+    while(et){
+	struct error_table *p = et;
+	et = et->next;
+	free(p);
+    }
+}

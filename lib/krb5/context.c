@@ -34,7 +34,7 @@ krb5_free_context(krb5_context context)
   free(context->etypes);
   free(context->default_realm);
   krb5_config_file_free (context->cf);
-  destroy_hdb_error_table (context->et_list);
+  free_error_table (context->et_list);
   for(i = 0; i < context->num_ops; ++i)
     free(context->cc_ops[i].prefix);
   free(context->cc_ops);
