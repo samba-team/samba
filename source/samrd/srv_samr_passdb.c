@@ -1653,7 +1653,7 @@ static BOOL get_user_info_12(SAM_USER_INFO_12 *id12, uint32 user_rid)
 		return False;
 	}
 
-	make_sam_user_info12(id12,
+	make_sam_user_info12(id12, sam_pass->acct_ctrl,
 	                     sam_pass->smb_passwd,
 	                     sam_pass->smb_nt_passwd);
 

@@ -673,6 +673,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	struct dcinfo dc;
 	const UNISTR2 *uni_samusr;
 	SAM_USERINFO_CTR ctr;
+	uint16 acb_info;
 
 	ZERO_STRUCT(dc);
 
@@ -703,6 +704,45 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
 	                                   NULL, NULL, False);
 	unbecome_root(True);
+
+	acb_info = ctr.info.id12->acb_info;
+
+	if (IS_BITS_SET_SOME(acb_info, ACB_NORMAL|ACB_DISABLED|ACB_PWNOTREQ))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	switch (clnt_id->login.sec_chan)
+	{
+		case SEC_CHAN_DOMAIN:
+		{
+			if (!IS_BITS_SET_ALL(acb_info, ACB_DOMTRUST))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+		case SEC_CHAN_BDC:
+		{
+			if (!IS_BITS_SET_ALL(acb_info, ACB_SVRTRUST))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+		case SEC_CHAN_WKSTA:
+		{
+			if (!IS_BITS_SET_ALL(acb_info, ACB_WSTRUST))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+		default:
+		{
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{

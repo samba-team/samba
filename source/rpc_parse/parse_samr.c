@@ -4514,6 +4514,7 @@ static BOOL sam_io_logon_hrs(char *desc,  LOGON_HRS *hrs, prs_struct *ps, int de
 makes a SAM_USER_INFO_12 structure.
 ********************************************************************/
 BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
+				uint16 acb_info,
 				const uint8 lm_pwd[16],
 				const uint8 nt_pwd[16])
 
@@ -4521,6 +4522,8 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
 	if (usr == NULL) return False;
 
 	DEBUG(5,("make_sam_user_info12\n"));
+
+	usr->acb_info = acb_info;
 
 	if (lm_pwd == NULL)
 	{
@@ -4550,13 +4553,16 @@ BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int de
 {
 	if (u == NULL) return False;
 
-	DEBUG(10,("possible security breach!\n"));
+	DEBUG(0,("possible security breach!\n"));
 
 	return False;
 #if 0
 	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
 	depth++;
 
+	prs_align(ps);
+
+	prs_uint16("acb_info", ps, depth, &u->acb_info);
 	prs_align(ps);
 
 	prs_uint8s(False, "lm_pwd", ps, depth, u->lm_pwd, sizeof(u->lm_pwd));
@@ -5363,6 +5369,96 @@ BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int 
 	}
 
 	return True;
+}
+
+/*******************************************************************
+makes a SAM_USERINFO_CTR structure.
+********************************************************************/
+uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR *ctr,
+				uint16 switch_value,
+				const SAM_USER_INFO_21 *usr)
+{
+	if (ctr == NULL || usr == NULL) return NT_STATUS_INVALID_PARAMETER;
+
+	DEBUG(5,("make_samr_userinfo_ctr\n"));
+
+	ctr->switch_value  = switch_value;
+	ctr->info.id = NULL;
+
+	switch (switch_value)
+	{
+		case 0x10:
+		{
+			ctr->info.id = (SAM_USER_INFO_10*)Realloc(NULL,
+					 sizeof(*ctr->info.id10));
+			if (ctr->info.id == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			make_sam_user_info10(ctr->info.id10, usr->acb_info); 
+			break;
+		}
+#if 0
+/* whoops - got this wrong.  i think.  or don't understand what's happening. */
+		case 0x11:
+		{
+			NTTIME expire;
+			info = (void*)&id11;
+			
+			expire.low  = 0xffffffff;
+			expire.high = 0x7fffffff;
+
+			ctr->info.id = (SAM_USER_INFO_11*)Realloc(NULL,
+					 sizeof(*ctr->info.id11));
+			make_sam_user_info11(ctr->info.id11, &expire,
+					     "BROOKFIELDS$", /* name */
+					     0x03ef, /* user rid */
+					     0x201, /* group rid */
+					     0x0080); /* acb info */
+
+			break;
+		}
+#endif
+		case 0x12:
+		{
+			ctr->info.id = (SAM_USER_INFO_12*)Realloc(NULL,
+					 sizeof(*ctr->info.id12));
+			if (ctr->info.id == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			if (IS_BITS_SET_ALL(usr->acb_info, ACB_DISABLED))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			make_sam_user_info12(ctr->info.id12,
+			                     usr->acb_info,
+			                     usr->lm_pwd, usr->nt_pwd); 
+			break;
+		}
+		case 21:
+		{
+			SAM_USER_INFO_21 *cusr;
+			cusr = (SAM_USER_INFO_21*)Realloc(NULL,
+					 sizeof(*cusr));
+			ctr->info.id = cusr;
+			if (ctr->info.id == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			memcpy(cusr, usr, sizeof(*usr));
+			memset(cusr->lm_pwd, 0, sizeof(cusr->lm_pwd));
+			memset(cusr->nt_pwd, 0, sizeof(cusr->nt_pwd));
+			break;
+		}
+		default:
+		{
+			DEBUG(4,("make_samr_userinfo_ctr: unsupported info\n"));
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+	}
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************

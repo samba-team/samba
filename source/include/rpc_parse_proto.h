@@ -521,6 +521,7 @@ BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 BOOL samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
 BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
+				uint16 acb_info,
 				const uint8 lm_pwd[16],
 				const uint8 nt_pwd[16]);
 BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int depth);
@@ -664,6 +665,9 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 *usr,
 	uint32 unknown_5,
 	uint32 unknown_6);
 BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int depth);
+uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR *ctr,
+				uint16 switch_value,
+				const SAM_USER_INFO_21 *usr);
 BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr, const uchar *sess_key,
 				uint16 switch_value, void *info);
 BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, int depth);
