@@ -3371,7 +3371,7 @@ static void cmd_help(char *dum_in, char *dum_out)
       }
 }
 
-
+#ifdef 0
 
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
@@ -3406,7 +3406,7 @@ static void wait_keyboard(char *buffer)
       chkpath("\\",False);
     }  
 }
-
+#endif
 #ifdef HAVE_LIBREADLINE
 
 /****************************************************************************
@@ -3837,7 +3837,7 @@ static void usage(char *pname)
 
   if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
     int fd = -1;
-    BOOL close_it;
+    BOOL close_it = False;
     pstring spec;
     char pass[128];
 

@@ -173,7 +173,7 @@ int main(int argc, char **argv)
   extern int optind;
   extern int DEBUGLEVEL;
   int             real_uid;
-  struct passwd  *pwd;
+  struct passwd  *pwd = NULL;
   fstring         old_passwd;
   fstring         new_passwd;
   uchar           new_p16[16];
