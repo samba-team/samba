@@ -339,8 +339,11 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 			info_level, &num_printers, &ctr);
 
 	if (W_ERROR_IS_OK(result)) {
-		if (!num_printers)
-			printf ("No Printers printers returned.\n");
+
+		if (!num_printers) {
+			printf ("No printers returned.\n");
+			goto done;
+		}
 	
 		for (i = 0; i < num_printers; i++) {
 			switch(info_level) {
