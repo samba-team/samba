@@ -225,7 +225,7 @@ static BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC
 
 	prs_init(&ps, (uint32)sec_desc_size(psd), mem_ctx, MARSHALL);
  
-    if (!sec_io_desc("nt_printing_setsec", &psd, &ps, 1)) {
+    if (!sec_io_desc("share_security", &psd, &ps, 1)) {
         goto out;
     }
  
@@ -310,6 +310,7 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	NT_USER_TOKEN *token = NULL;
 	user_struct *vuser = get_valid_user_struct(vuid);
 	BOOL ret = True;
+	BOOL is_root = False;
 
 	mem_ctx = talloc_init();
 	if (mem_ctx == NULL)
@@ -320,12 +321,24 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	if (!psd)
 		goto out;
 
-	if (vuser)
+	if (vuser) {
 		token = vuser->nt_user_token;
-	else
+		if (vuser->uid == (uid_t)0)
+			is_root = True;
+	} else {
 		token = conn->nt_user_token;
+		if (conn->uid == (uid_t)0)
+			is_root = True;
+	}
 
-	ret = se_access_check(psd, token, desired_access, &granted, &status);
+	/*
+	 * Root gets a free pass.
+	 */
+
+	if (is_root)
+		ret = True;
+	else
+		ret = se_access_check(psd, token, desired_access, &granted, &status);
 
   out:
 
