@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -195,6 +195,7 @@ parse_ports(const char *str)
 struct descr {
     int s;
     int type;
+    int port;
     unsigned char *buf;
     size_t size;
     size_t len;
@@ -264,6 +265,7 @@ init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
     }
 #endif
     d->type = type;
+    d->port = port;
 
     if(bind(d->s, sa, sa_size) < 0){
 	char a_str[256];
@@ -342,6 +344,20 @@ init_sockets(struct descr **desc)
     reinit_descrs (d, num);
     *desc = d;
     return num;
+}
+
+/*
+ *
+ */
+
+static const char *
+descr_type(struct descr *d)
+{
+    if (d->type == SOCK_DGRAM)
+	return "udp";
+    else if (d->type == SOCK_STREAM)
+	return "tcp";
+    return "unknown";
 }
 
 /*
@@ -706,7 +722,9 @@ handle_tcp(struct descr *d, int index, int min_free)
 	return;
     } else if (n == 0) {
 	krb5_warnx(context, "connection closed before end of data after %d "
-		   "bytes from %s", d[index].len, d[index].addr_string);
+		   "bytes from %s to %s/%d", d[index].len, 
+		   d[index].addr_string, descr_type(d + index), 
+		   ntohs(d[index].port));
 	clear_descr (d + index);
 	return;
     }
@@ -725,7 +743,10 @@ handle_tcp(struct descr *d, int index, int min_free)
 	if (ret < 0)
 	    clear_descr (d + index);
     } else if (d[index].len > 4) {
-	kdc_log (0, "TCP data of strange type from %s", d[index].addr_string);
+	kdc_log (0, "TCP data of strange type from %s to %s/%d",
+		 d[index].addr_string, descr_type(d + index), 
+		 ntohs(d[index].port));
+	clear_descr(d + index);
 	return;
     }
     if (ret < 0)
