@@ -82,6 +82,7 @@ main(int argc, char **argv)
 {
     unsigned char data[MAXSIZE];
     struct testcase *t;
+    int ret = 0;
 
     for (t = tests; t->str; ++t) {
 	int i;
@@ -92,11 +93,12 @@ main(int argc, char **argv)
 	    printf ("should be: ");
 	    for (i = 0; i < t->n; ++i)
 		printf ("%02x", t->res[i]);
-	    printf ("\nresult ws: ");
+	    printf ("\nresult was: ");
 	    for (i = 0; i < t->n; ++i)
 		printf ("%02x", t->res[i]);
 	    printf ("\n");
+	    ret = 1;
 	}
     }
-    return 0;
+    return ret;
 }
