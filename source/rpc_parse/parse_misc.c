@@ -563,7 +563,7 @@ void smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, i
 /*******************************************************************
 creates a UNISTR2 structure.
 ********************************************************************/
-void make_unistr2(UNISTR2 *str, char *buf, int len)
+void make_unistr2(UNISTR2 *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
@@ -573,7 +573,7 @@ void make_unistr2(UNISTR2 *str, char *buf, int len)
 	str->uni_str_len = len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	struni2((char *)(str->buffer), buf);
+	struni2((char*)(str->buffer), buf);
 }
 
 /*******************************************************************
