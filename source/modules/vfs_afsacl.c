@@ -37,6 +37,8 @@ extern DOM_SID global_sid_Builtin_Backup_Operators;
 extern DOM_SID global_sid_Authenticated_Users;
 extern DOM_SID global_sid_NULL;
 
+static char space_replacement = '%';
+
 extern int afs_syscall(int, char *, int, char *, int);
 
 struct afs_ace {
@@ -260,10 +262,12 @@ static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 	for (aces = nplus+nminus; aces > 0; aces--)
 	{
 
-		const char *name;
+		const char *namep;
+		fstring name;
 		uint32 rights;
+		char *space;
 
-		name = p;
+		namep = p;
 
 		if ((p = strchr(p, '\t')) == NULL)
 			return False;
@@ -276,6 +280,11 @@ static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 		if ((p = strchr(p, '\n')) == NULL)
 			return False;
 		p += 1;
+
+		fstrcpy(name, namep);
+
+		while ((space = strchr_m(name, space_replacement)) != NULL)
+			*space = ' ';
 
 		add_afs_ace(acl, nplus>0, name, rights);
 
@@ -709,6 +718,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 		fstring dom_name;
 		fstring name;
 		enum SID_NAME_USE name_type;
+		char *p;
 
 		if (ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED) {
 			/* First cut: Only positive ACEs */
@@ -762,6 +772,9 @@ static BOOL nt_to_afs_acl(const char *filename,
 				strlower_m(name);
 			}
 		}
+
+		while ((p = strchr_m(name, ' ')) != NULL)
+			*p = space_replacement;
 
 		add_afs_ace(afs_acl, True, name,
 			    nt_to_afs_rights(filename, ace));
@@ -982,9 +995,26 @@ BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
+static int afsacl_connect(vfs_handle_struct *handle, 
+			  connection_struct *conn, 
+			  const char *service, 
+			  const char *user)
+{
+	char *spc;
+
+	spc = lp_parm_const_string(SNUM(handle->conn), "afsacl", "space", "%");
+
+	if (spc != NULL)
+		space_replacement = spc[0];
+	
+	return SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple afsacl_ops[] = {	
+	{SMB_VFS_OP(afsacl_connect), SMB_VFS_OP_CONNECT,
+	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(afsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(afsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
