@@ -1270,6 +1270,7 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	struct lsa_info *info=NULL;
 	char **rights = NULL;
 	int num_rights = 0;
+	int i;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1277,7 +1278,14 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	r_u->status = privilege_enum_account_rights(&q_u->sid.sid, &num_rights, &rights);
+
 	init_r_enum_acct_rights(r_u, num_rights, rights);
+
+	for (i=0;i<num_rights;i++) {
+		free(rights[i]);
+	}
+	safe_free(rights);
 
 	return r_u->status;
 }
@@ -1304,9 +1312,11 @@ NTSTATUS _lsa_enum_acct_with_right(pipes_struct *p,
 
 	DEBUG(5,("lsa_enum_acct_with_right on right %s\n", right));
 
-	/* no backend db yet .... */
+	r_u->status = privilege_enum_account_with_right(right, &count, &sids);
 
 	init_r_enum_acct_with_right(r_u, count, sids);
+
+	safe_free(sids);
 
 	return r_u->status;
 }
@@ -1325,13 +1335,22 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* no backend yet - just print them */
-
 	DEBUG(5,("_lsa_add_acct_rights to %s (%d rights)\n", 
 		 sid_string_static(&q_u->sid.sid), q_u->rights.count));
 
 	for (i=0;i<q_u->rights.count;i++) {
 		DEBUG(5,("\t%s\n", unistr2_static(&q_u->rights.strings[i].string)));
+	}
+
+
+	for (i=0;i<q_u->rights.count;i++) {
+		r_u->status = privilege_add_account_right(unistr2_static(&q_u->rights.strings[i].string),
+							  &q_u->sid.sid);
+		if (!NT_STATUS_IS_OK(r_u->status)) {
+			DEBUG(2,("Failed to add right '%s'\n", 
+				 unistr2_static(&q_u->rights.strings[i].string)));
+			break;
+		}
 	}
 
 	init_r_add_acct_rights(r_u);
@@ -1355,8 +1374,6 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 		return NT_STATUS_INVALID_HANDLE;
 
 
-	/* no backend yet - just print them */
-
 	DEBUG(5,("_lsa_remove_acct_rights from %s all=%d (%d rights)\n", 
 		 sid_string_static(&q_u->sid.sid),
 		 q_u->removeall,
@@ -1364,6 +1381,16 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 
 	for (i=0;i<q_u->rights.count;i++) {
 		DEBUG(5,("\t%s\n", unistr2_static(&q_u->rights.strings[i].string)));
+	}
+
+	for (i=0;i<q_u->rights.count;i++) {
+		r_u->status = privilege_remove_account_right(unistr2_static(&q_u->rights.strings[i].string),
+							     &q_u->sid.sid);
+		if (!NT_STATUS_IS_OK(r_u->status)) {
+			DEBUG(2,("Failed to remove right '%s'\n", 
+				 unistr2_static(&q_u->rights.strings[i].string)));
+			break;
+		}
 	}
 
 	init_r_remove_acct_rights(r_u);
