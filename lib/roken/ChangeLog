@@ -1,3 +1,19 @@
+2005-03-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* daemon.c fnmatch.c fnmatch.hin getcap.c getopt.c getusershell.c
+	glob.c glob.hin iruserok.c unvis.c vis.hin:
+	
+	In 1997, the University of California, Berkeley issued a statement
+	retroactively relicensing all code held under their copyright from
+	a 4-clause 'traditional' BSD license to a new 3-clause 'revised'
+	BSD license, which removed the advertising clause.
+
+	From NetBSD, via Joel Baker, and Alistair G. Crooks
+	
+	* getaddrinfo-test.c: remove stray ( in output
+	
+	* vis.c: Update new revision from NetBSD (copyright update)
+
 2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: bump version to 17:0:1
