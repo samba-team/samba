@@ -558,7 +558,6 @@ retry:
 	return(True);
 }
 
-
 /****************************************************************************
 open the client sockets
 ****************************************************************************/
@@ -580,8 +579,15 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 
         if (cli->port == 0) cli->port = 139;  /* Set to default */
 
-	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-				  cli->port, cli->timeout);
+#ifdef SMB_REGRESSION_TEST
+	if (getenv("LIBSMB_PROG")) {
+		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
+	} else 
+#endif
+	{
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+					  cli->port, cli->timeout);
+	}
 	if (cli->fd == -1)
 		return False;
 
