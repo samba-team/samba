@@ -1705,7 +1705,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 {
 	TDB_CONTEXT *tdb;
 	struct stat st;
-	int rev = 0, locked;
+	int rev = 0, locked = 0;
 	unsigned char *vp;
 	u32 vertest;
 
@@ -1763,8 +1763,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	/* we need to zero database if we are the only one with it open */
-	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
-	    && (tdb_flags & TDB_CLEAR_IF_FIRST)) {
+	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
+		(locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
 			TDB_LOG((tdb, 0, "tdb_open_ex: "
@@ -1837,10 +1837,19 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 				 name, strerror(errno)));
 			goto fail;
 		}
+
 	}
-	/* leave this lock in place to indicate it's in use */
-	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
-		goto fail;
+
+	/* We always need to do this if the CLEAR_IF_FIRST flag is set, even if
+	   we didn't get the initial exclusive lock as we need to let all other
+	   users know we're using it. */
+
+	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
+		/* leave this lock in place to indicate it's in use */
+		if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+			goto fail;
+	}
+
 
  internal:
 	/* Internal (memory-only) databases skip all the code above to
@@ -2018,12 +2027,14 @@ void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , cons
 }
 
 
-/* reopen a tdb - this is used after a fork to ensure that we have an independent
+/* reopen a tdb - this can be used after a fork to ensure that we have an independent
    seek pointer from our parent and to re-establish locks */
 int tdb_reopen(TDB_CONTEXT *tdb)
 {
 	struct stat st;
 
+	if (tdb->flags & TDB_INTERNAL)
+		return 0; /* Nothing to do. */
 	if (tdb_munmap(tdb) != 0) {
 		TDB_LOG((tdb, 0, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -2044,7 +2055,7 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		goto fail;
 	}
 	tdb_mmap(tdb);
-	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1) {
+	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
 		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
 	}
@@ -2062,7 +2073,10 @@ int tdb_reopen_all(void)
 	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
-		if (tdb_reopen(tdb) != 0) return -1;
+		/* Ensure no clear-if-first. */
+		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+		if (tdb_reopen(tdb) != 0)
+			return -1;
 	}
 
 	return 0;
