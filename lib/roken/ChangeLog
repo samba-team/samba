@@ -1,3 +1,7 @@
+2003-10-04   Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* strptime.c: let t and n match zero or more whitespaces
+	
 2003-08-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ndbm_wrap.c: patch for working with DB4 on heimdal-discuss
