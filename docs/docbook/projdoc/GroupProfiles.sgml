@@ -61,27 +61,35 @@ Unfortunately, the Resource Kit info is Win NT4/2K version specific.
 Here is a quick guide:
 </para>
 
-1. On your NT4 Domain Controller, right click on 'My Computer', then
+<itemizedlist>
+
+<listitem><para>
+On your NT4 Domain Controller, right click on 'My Computer', then
 select the tab labelled 'User Profiles'.
+</para></listitem>
 
-2. Select a user profile you want to migrate and click on it.
+<listitem><para>
+Select a user profile you want to migrate and click on it.
+</para>
 
-<note>I am using the term "migrate" lossely. You can copy a profile to
+<note><para>I am using the term &quot;migrate&quot; lossely. You can copy a profile to
 create a group profile. You can give the user 'Everyone' rights to the
 profile you copy this to. That is what you need to do, since your samba
-domain is not a member of a trust relationship with your NT4 PDC.</note>
+domain is not a member of a trust relationship with your NT4 PDC.</para></note>
+</listitem>
 
-3. Click the 'Copy To' button.
+<listitem><para>Click the 'Copy To' button.</para></listitem>
 
-4. In the box labelled 'Copy Profile to' add your new path, eg:
-c:\temp\foobar
+<listitem><para>In the box labelled 'Copy Profile to' add your new path, eg:
+<filename>c:\temp\foobar</filename></para></listitem>
 
-5. Click on the button labelled 'Change' in the "Permitted to use" box.
+<listitem><para>Click on the button labelled 'Change' in the "Permitted to use" box.</para></listitem>
 
-6. Click on the group 'Everyone' and then click OK. This closes the
-'chose user' box.
+<listitem><para>Click on the group 'Everyone' and then click OK. This closes the
+'chose user' box.</para></listitem>
 
-7. Now click OK.
+<listitem><para>Now click OK.</para></listitem>
+</itemizedlist>
 
 <para>
 Follow the above for every profile you need to migrate.
@@ -158,82 +166,119 @@ You must first convert the profile from a local profile to a domain
 profile on the MS Windows workstation as follows:
 </para>
 
-1. Log on as the LOCAL workstation administrator.
+<itemizedlist>
+<listitem><para>
+Log on as the LOCAL workstation administrator.
+</para></listitem>
 
-2. Right click on the 'My Computer' Icon, select 'Properties'
+<listitem><para>
+Right click on the 'My Computer' Icon, select 'Properties'
+</para></listitem>
 
-3. Click on the 'User Profiles' tab
+<listitem><para>
+Click on the 'User Profiles' tab
+</para></listitem>
 
-4. Select the profile you wish to convert (click on it once)
+<listitem><para>
+Select the profile you wish to convert (click on it once)
+</para></listitem>
 
-5. Click on the button 'Copy To'
+<listitem><para>
+Click on the button 'Copy To'
+</para></listitem>
 
-6. In the "Permitted to use" box, click on the 'Change' button.
+<listitem><para>
+In the "Permitted to use" box, click on the 'Change' button.
+</para></listitem>
 
-7. Click on the 'Look in" area that lists the machine name, when you click
+<listitem><para>
+Click on the 'Look in" area that lists the machine name, when you click
 here it will open up a selection box. Click on the domain to which the
 profile must be accessible.
+</para>
 
-<note>You will need to log on if a logon box opens up. Eg: In the connect
-as: MIDEARTH\root, password: mypassword.</note>
+<note><para>You will need to log on if a logon box opens up. Eg: In the connect
+as: MIDEARTH\root, password: mypassword.</para></note>
+</listitem>
 
-8. To make the profile capable of being used by anyone select 'Everyone'
+<listitem><para>
+To make the profile capable of being used by anyone select 'Everyone'
+</para></listitem>
 
-9. Click OK. The Selection box will close.
+<listitem><para>
+Click OK. The Selection box will close.
+</para></listitem>
 
-10. Now click on the 'Ok' button to create the profile in the path you
+<listitem><para>
+Now click on the 'Ok' button to create the profile in the path you
 nominated.
+</para></listitem>
+</itemizedlist>
 
+<para>
 Done. You now have a profile that can be editted using the samba-3.0.0
 profiles tool.
+</para>
 
 <note>
+<para>
 Under NT/2K the use of mandotory profiles forces the use of MS Exchange
 storage of mail data. That keeps desktop profiles usable.
+</para>
 </note>
 
 <note>
+<itemizedlist>
+<listitem><para>
 This is a security check new to Windows XP (or maybe only
 Windows XP service pack 1).  It can be disabled via a group policy in
-Active Directory.  The policy is:
+Active Directory.  The policy is:</para>
 
-"Computer Configuration\Administrative Templates\System\User
-Profiles\Do not check for user ownership of Roaming Profile Folders"
+<para>"Computer Configuration\Administrative Templates\System\User
+Profiles\Do not check for user ownership of Roaming Profile Folders"</para>
 
-...and it should be set to "Enabled".
+<para>...and it should be set to "Enabled".
 Does the new version of samba have an Active Directory analogue?  If so,
 then you may be able to set the policy through this.
+</para>
 
+<para>
 If you cannot set group policies in samba, then you may be able to set
 the policy locally on each machine.  If you want to try this, then do
 the following (N.B. I don't know for sure that this will work in the
 same way as a domain group policy):
+</para>
 
+</listitem>
+
+<listitem><para>
 On the XP workstation log in with an Administrator account.
+</para></listitem>
 
-Click: "Start", "Run"
-Type: "mmc"
-Click: "OK"
+<listitem><para>Click: "Start", "Run"</para></listitem>
+<listitem><para>Type: "mmc"</para></listitem>
+<listitem><para>Click: "OK"</para></listitem>
 
-A Microsoft Management Console should appear.
-Click: File, "Add/Remove Snap-in...", "Add"
-Double-Click: "Group Policy"
-Click: "Finish", "Close"
-Click: "OK"
+<listitem><para>A Microsoft Management Console should appear.</para></listitem>
+<listitem><para>Click: File, "Add/Remove Snap-in...", "Add"</para></listitem>
+<listitem><para>Double-Click: "Group Policy"</para></listitem>
+<listitem><para>Click: "Finish", "Close"</para></listitem>
+<listitem><para>Click: "OK"</para></listitem>
 
-In the "Console Root" window:
-Expand: "Local Computer Policy", "Computer Configuration",
-"Administrative Templates", "System", "User Profiles"
-Double-Click: "Do not check for user ownership of Roaming Profile
-Folders"
-Select: "Enabled"
-Click: OK"
+<listitem><para>In the "Console Root" window:</para></listitem>
+<listitem><para>Expand: "Local Computer Policy", "Computer Configuration",</para></listitem>
+<listitem><para>"Administrative Templates", "System", "User Profiles"</para></listitem>
+<listitem><para>Double-Click: "Do not check for user ownership of Roaming Profile</para></listitem>
+<listitem><para>Folders"</para></listitem>
+<listitem><para>Select: "Enabled"</para></listitem>
+<listitem><para>Click: OK"</para></listitem>
 
-Close the whole console.  You do not need to save the settings (this
+<listitem><para>Close the whole console.  You do not need to save the settings (this
 refers to the console settings rather than the policies you have
-changed).
+changed).</para></listitem>
 
-Reboot.
+<listitem><para>Reboot</para></listitem>
+</itemizedlist>
 </note>
 
 </sect1>
