@@ -9,7 +9,7 @@
 		</affiliation>
 	</author>
 	&author.jerry;
-	<pubdate>May 32, 2003</pubdate>
+	<pubdate>May 31, 2003</pubdate>
 </chapterinfo>
 
 <title>Classical Printing Support</title>
@@ -24,7 +24,7 @@ consisting of Windows workstations.
 </para>
 
 <para>
-A Samba-3.0 print service may be run on a Standalone or a Domain
+A Samba print service may be run on a Standalone or a Domain
 member server, side by side with file serving functions, or on a
 dedicated print server. It can be made as tight or as loosely secured
 as needs dictate. Configurations may be simple or complex.  Available
@@ -50,7 +50,7 @@ implemented by the more traditional UNIX (BSD- and System V-style)
 printing systems. Many things apply to CUPS, the newer Common UNIX
 Printing System, too; so if you use CUPS, you might be tempted to jump
 to the next chapter -- but you will certainly miss a few things if you
-do so. Better read this chapter too.
+do so. Better to read this chapter too.
 </para>
 
 <note>
@@ -70,15 +70,15 @@ again.
 
 <para>
 Samba's printing support always relies on the installed print
-subsystem of the Unix OS it runs on. Samba is a "middleman". It takes
+subsystem of the UNIX OS it runs on. Samba is a "middleman". It takes
 printfiles from Windows (or other SMB) clients and passes them to the
 real printing system for further processing. Therefore it needs to
-"talk" to two sides: to the Windows print clients and to the Unix
+"talk" to two sides: to the Windows print clients and to the UNIX
 printing system. Hence we must differentiate between the various
 client OS types each of which behave differently, as well as the
 various UNIX print subsystems, which themselves have different
 features and are accessed differently. This part of the Samba HOWTO
-Collection deals with the "traditional" way of Unix printing first;
+Collection deals with the "traditional" way of UNIX printing first;
 the next chapter covers in great detail the more modern
 <emphasis>Common UNIX Printing System</emphasis>
 (CUPS).
@@ -98,7 +98,7 @@ stages:
 </para>
 
 <orderedlist>
-<listitem><para>Windows opens a connection to the printershare</para></listitem>
+<listitem><para>Windows opens a connection to the printer share</para></listitem>
 
 <listitem><para>Samba must authenticate the user</para></listitem>
 
@@ -110,7 +110,7 @@ into Samba's spooling area</para></listitem>
 <listitem><para>Samba invokes the print command to hand the file over
 to the UNIX print subsystem's spooling area</para></listitem>
 
-<listitem><para>The Unix print subsystem processes the print
+<listitem><para>The UNIX print subsystem processes the print
 job</para></listitem>
 
 <listitem><para>The printfile may need to be explicitly deleted
@@ -134,8 +134,8 @@ Service Level ("<emphasis>S</emphasis>") parameters.
 <variablelist>
 <varlistentry><term>Service Level Parameters</term>
 <listitem><para>These <emphasis>may</emphasis> go into the
-<parameter>[global]</parameter> section of
-. In this case they define the default
+<smbconfsection>[global]</smbconfsection> section of &smb.conf;.
+In this case they define the default
 behaviour of all individual or service level shares (provided those
 don't have a different setting defined for the same parameter, thus
 overriding the global default).</para></listitem>
@@ -153,47 +153,40 @@ this (if you run it) and tell you so.</para></listitem>
 <title>Parameters Recommended for Use</title>
 
 <para>The following &smb.conf; parameters directly
-related to printing are used in Samba-3. See also the
+related to printing are used in Samba. See also the
 &smb.conf; man page for detailed explanations:
 </para>
 
-<formalpara>
-	<title>List of printing related parameters in Samba-3</title>
-<para>
-<itemizedlist><title>Global level parameters:</title>
-<listitem><para><parameter>addprinter command (G)</parameter></para></listitem>
-<listitem><para><parameter>deleteprinter command (G)</parameter></para></listitem>
-<listitem><para><parameter>disable spoolss (G)</parameter></para></listitem>
-<listitem><para><parameter>enumports command (G)</parameter></para></listitem>
-<listitem><para><parameter>load printers (G)</parameter></para></listitem>
-<listitem><para><parameter>lpq cache time (G)</parameter></para></listitem>
-<listitem><para><parameter>os2 driver map (G)</parameter></para></listitem>
-<listitem><para><parameter>printcap name (G), printcap (G)</parameter></para></listitem>
-<listitem><para><parameter>show add printer wizard (G)</parameter></para></listitem>
-<listitem><para><parameter>total print jobs (G)</parameter></para></listitem>
-<listitem><para><parameter>use client driver (G)</parameter></para></listitem>
-</itemizedlist>
-
-<itemizedlist><title>Service level parameters:</title>
-<listitem><para><parameter>hosts allow (S)</parameter></para></listitem>
-<listitem><para><parameter>hosts deny (S)</parameter></para></listitem>
-<listitem><para><parameter>lppause command (S)</parameter></para></listitem>
-<listitem><para><parameter>lpq command (S)</parameter></para></listitem>
-<listitem><para><parameter>lpresume command (S)</parameter></para></listitem>
-<listitem><para><parameter>lprm command (S)</parameter></para></listitem>
-<listitem><para><parameter>max print jobs (S)</parameter></para></listitem>
-<listitem><para><parameter>min print space (S)</parameter></para></listitem>
-<listitem><para><parameter>print command (S)</parameter></para></listitem>
-<listitem><para><parameter>printable (S), print ok (S)</parameter></para></listitem>
-<listitem><para><parameter>printer name (S), printer (S)</parameter></para></listitem>
-<listitem><para><parameter>printer admin (S)</parameter></para></listitem>
-<listitem><para><parameter>printing = [cups|bsd|lprng...] (S)</parameter></para></listitem>
-<listitem><para><parameter>queuepause command (S)</parameter></para></listitem>
-<listitem><para><parameter>queueresume command (S)</parameter></para></listitem>
-<listitem><para><parameter>total print jobs (S)</parameter></para></listitem>
-</itemizedlist>
+<para>Global level parameters: <smbconfoption><name>addprinter command</name></smbconfoption>, 
+<smbconfoption><name>deleteprinter command</name></smbconfoption>,
+<smbconfoption><name>disable spoolss</name></smbconfoption>,
+<smbconfoption><name>enumports command</name></smbconfoption>,
+<smbconfoption><name>load printers</name></smbconfoption>,
+<smbconfoption><name>lpq cache time</name></smbconfoption>,
+<smbconfoption><name>os2 driver map</name></smbconfoption>,
+<smbconfoption><name>printcap name</name></smbconfoption>, <smbconfoption><name>printcap</name></smbconfoption>,
+<smbconfoption><name>show add printer wizard</name></smbconfoption>,
+<smbconfoption><name>total print jobs</name></smbconfoption>,
+<smbconfoption><name>use client driver</name></smbconfoption>.
 </para>
-</formalpara>
+
+<para>Service level parameters: <smbconfoption><name>hosts allow</name></smbconfoption>,
+<smbconfoption><name>hosts deny</name></smbconfoption>,
+<smbconfoption><name>lppause command</name></smbconfoption>,
+<smbconfoption><name>lpq command</name></smbconfoption>,
+<smbconfoption><name>lpresume command</name></smbconfoption>,
+<smbconfoption><name>lprm command</name></smbconfoption>,
+<smbconfoption><name>max print jobs</name></smbconfoption>,
+<smbconfoption><name>min print space</name></smbconfoption>,
+<smbconfoption><name>print command</name></smbconfoption>,
+<smbconfoption><name>printable</name></smbconfoption>, <smbconfoption><name>print ok </name></smbconfoption>,
+<smbconfoption><name>printer name</name></smbconfoption>, <smbconfoption><name>printer</name></smbconfoption>,
+<smbconfoption><name>printer admin</name></smbconfoption>,
+<smbconfoption><name>printing</name><value>[cups|bsd|lprng...]</value></smbconfoption>,
+<smbconfoption><name>queuepause command</name></smbconfoption>,
+<smbconfoption><name>queueresume command</name></smbconfoption>,
+<smbconfoption><name>total print jobs</name></smbconfoption>.
+</para>
 
 <para>
 Samba's printing support implements the Microsoft Remote Procedure
@@ -204,110 +197,43 @@ follow further beneath.
 </para>
 </sect2>
 
-<sect2>
-<title>Parameters for Backwards Compatibility</title>
-
-<para>
-Two new parameters that were added in Samba 2.2.2, are still present
-in Samba-3.0. Both of these options are described in the
-&smb.conf; man page and are disabled by
-default. <emphasis>Use them with caution!</emphasis>
-</para>
-
-<variablelist>
-<varlistentry><term><parameter>disable spoolss(G)</parameter></term>
-<listitem><para> This is
-provided for better support of Samba 2.0.x backwards capability. It
-will disable Samba's support for MS-RPC printing and yield identical
-printing behaviour to Samba 2.0.x.</para></listitem>
-</varlistentry>
-
-<varlistentry><term><parameter>use client driver (G)</parameter></term>
-<listitem><para> was provided
-for using local printer drivers on Windows NT/2000 clients. It does
-not apply to Windows 95/98/ME clients.</para></listitem>
-</varlistentry>
-</variablelist>
-
-<formalpara>
-<title>Parameters "for backward compatibility only", use with caution</title>
-
-<para>
-<itemizedlist>
-<listitem><para><parameter>disable spoolss (G)</parameter></para></listitem>
-
-<listitem><para><parameter>use client driver (S)</parameter></para></listitem>
-</itemizedlist>
-</para>
-</formalpara>
-
-</sect2>
-
-<sect2>
-<title>Parameters no longer in use</title>
-
-<para>
-Samba users upgrading from 2.2.x to 3.0 need to be aware that some
-previously available settings are no longer supported (as was
-announced some time ago). Here is a list of them:
-</para>
-
-<formalpara>
-<title>"old" parameters, removed in Samba-3</title>
-
-<para>
-The following &smb.conf; parameters have been
-deprecated already in Samba 2.2 and are now completely removed from
-Samba-3.  You cannot use them in new 3.0 installations:
-
-<itemizedlist>
-<listitem><para><parameter>printer driver file (G)</parameter></para></listitem>
-<listitem><para><parameter>total print jobs (G)</parameter></para></listitem>
-<listitem><para><parameter>postscript (S)</parameter></para></listitem>
-<listitem><para><parameter>printer driver (S)</parameter></para></listitem>
-<listitem><para><parameter>printer driver location (S)</parameter></para></listitem>
-</itemizedlist>
-</para>
-
-</formalpara>
-
-</sect2>
 </sect1>
 
 <sect1>
-<title>A simple Configuration to Print with Samba-3</title>
+<title>A simple Configuration to Print</title>
 
 <para>
 Here is a very simple example configuration for print related settings
-in the  file. If you compare it with your
-own system's , you probably find some
+in the  file. If you compare it with your own system's , you probably find some
 additional parameters included there (as pre-configured by your OS
 vendor). Further below is a discussion and explanation of the
 parameters. Note, that this example doesn't use many parameters.
 However, in many environments these are enough to provide a valid
- which enables all clients to print.
+&smb.conf; file which enables all clients to print.
 </para>
 
-<para><programlisting>
- [global]
-         printing = bsd
-         load printers = yes
+<para><smbconfexample>
+		<title>Simple configuration with BSD printing</title>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>printing</name><value>bsd</value></smbconfoption>
+<smbconfoption><name>load printers</name><value>yes</value></smbconfoption>
 
- [printers]
-         path = /var/spool/samba
-         printable = yes
-         public = yes
-         writable = no
-</programlisting></para>
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>public</name><value>yes</value></smbconfoption>
+<smbconfoption><name>writable</name><value>no</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
-This is only an example configuration. Many settings, if not
-explicitly set to a specific value, are used and set by Samba
-implicitly to its own default, because these have been compiled in.
-To see all settings, let root use the <command>testparm</command>
-utility. <command>testparm</command> also gives warnings if you have
-mis-configured certain things. Its complete output is easily 340 lines
-and more. You may want to pipe it through a pager program.
+This is only an example configuration. Samba assigns default values to all
+configuration parameters. On the whole the defaults are conservative and
+sensible. When a parameter is specified in the &smb.conf; file this overwrites
+the default value.  The <command>testparm</command> utility when run as root
+is capable of reporting all setting, both default as well as &smb.conf; file
+settings. <command>Testparm</command> gives warnings for all mis-configured
+settings. The complete output is easily 340 lines and more, so you may want
+to pipe it through a pager program.
 </para>
 
 <para>
@@ -380,7 +306,7 @@ default behaviour. <emphasis>Don't forget about this point: it may
 be important in your future dealings with Samba.</emphasis>
 </para>
 
-<note><para> testparm in Samba-3.0 behaves differently from 2.2.x: used
+<note><para> testparm in samba 3 behaves differently from 2.2.x: used
 without the "-v" switch it only shows you the settings actually
 written into ! To see the complete
 configuration used, add the "-v" parameter to testparm.</para></note>
@@ -394,15 +320,15 @@ configuration used, add the "-v" parameter to testparm.</para></note>
 Should you need to troubleshoot at any stage, please always come back
 to this point first and verify if "testparm" shows the parameters you
 expect! To give you an example from personal experience as a warning,
-try to just "comment out" the <parameter>load printers</parameter>"
+try to just "comment out" the <smbconfoption><name>load printers</name></smbconfoption>"
 parameter. If your 2.2.x system behaves like mine, you'll see this:
 </para>
 
 <para><screen>
 &rootprompt;grep "load printers" /etc/samba/smb.conf
  #      load printers = Yes
-        # This setting is commented ooouuuuut!!
-
+ # This setting is commented ooouuuuut!!
+ 
 &rootprompt;testparm -v /etc/samba/smb.conf | egrep "(load printers)"
         load printers = Yes
 
@@ -429,7 +355,7 @@ any more... at least not by this ;-)
 
 <para>
 Only when setting the parameter explicitly to
-"<parameter>load printers = No</parameter>"
+"<smbconfoption><name>load printers</name><value>No</value></smbconfoption>"
 would Samba recognize my intentions. So my strong advice is:
 </para>
 
@@ -472,7 +398,7 @@ would be, if you used this minimalistic file as your real
 </para>
 
 <para><screen>
-&rootprompt;<userinput> testparm -v /etc/samba/smb.conf-minimal | egrep "(print|lpq|spool|driver|ports|[)"</userinput>
+&rootprompt;<userinput>testparm -v smb.conf-minimal | egrep "(print|lpq|spool|driver|ports|[)"</userinput>
  Processing section "[printers]"
  WARNING: [printers] service MUST be printable!
  No path in service printers - using /tmp
@@ -507,7 +433,7 @@ testparm issued 2 warnings:
 
 <itemizedlist>
 <listitem><para>because we didn't specify the
-<parameter>[printers]</parameter> section as printable,
+<smbconfsection>[printers]</smbconfsection> section as printable,
 and</para></listitem>
 
 <listitem><para>because we didn't tell it which spool directory to
@@ -516,8 +442,8 @@ use.</para></listitem>
 </itemizedlist>
 
 <para>
-However, this was not fatal, and Samba-3.0 will default to values that
-will work here. But, please!, don't rely on this and don't use this
+However, this was not fatal, and samba will default to values that
+will work here. Please, don't rely on this and don't use this
 example! This was only meant to make you careful to design and specify
 your setup to be what you really want it to be. The outcome on your
 system may vary for some parameters, since you may have a Samba built
@@ -531,9 +457,10 @@ in a parameter value is retained verbatim.</quote> This means that a
 line consisting of, for example,
 </para>
 
-<para><screen>
-printing = lprng     #This defines LPRng as the printing system"
-</screen></para>
+<para><smbconfblock>
+<smbconfcomment>This defines LPRng as the printing system"</smbconfcomment>
+<smbconfoption><name>printing</name><value>lprng</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 will regard the whole of the string after the "="
@@ -544,61 +471,52 @@ that will be ignored, and a default value used instead.]
 </sect1>
 
 <sect1>
-<title>Extended Sample Configuration to Print with Samba-3</title>
+<title>Extended Sample Configuration to Print</title>
 
 <para>
-Here we show a more verbose example configuration for print related
-settings in an . Below is a discussion
+	In <link linkend="extbsdpr">the extended BSD configuration example</link> we show a more verbose example configuration for print related
+	settings in BSD-printing style environment . Below is a discussion
 and explanation of the various parameters. We chose to use BSD-style
 printing here, because we guess it is still the most commonly used
 system on legacy Linux installations (new installs now predominantly
 have CUPS, which is discussed entirely in the next chapter of this
 document). Note, that this example explicitly names many parameters
-which don't need to be stated because they are set by default. You
-might be able to do with a leaner .</para>
+which don't need to be specified because they are set by default. You
+might be able to do with a leaner &smb.conf; file.</para>
 
-<tip><para>
-if you read access it with the Samba Web Administration Tool (SWAT),
-and then write it to disk again, it will be optimized in a way such
-that it doesn't contain any superfluous parameters and comments. SWAT
-organizes the file for best performance. Remember that each smbd
-re-reads the Samba configuration once a minute, and that each
-connection spawns an smbd process of its own, so it is not a bad idea
-to optimize the  in environments with
-hundreds or thousands of clients.</para></tip>
+<para><smbconfexample id="extbsdpr">
+		<title>Extended configuration with BSD printing</title>
+		<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>printing</name><value>bsd</value></smbconfoption>
+<smbconfoption><name>load printers</name><value>yes</value></smbconfoption>
+<smbconfoption><name>show add printer wizard</name><value>yes</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>/etc/printcap</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>@ntadmin, root</value></smbconfoption>
+<smbconfoption><name>total print jobs</name><value>100</value></smbconfoption>
+<smbconfoption><name>lpq cache time</name><value>20</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>no</value></smbconfoption>
 
-<para><programlisting>
- [global]
-         printing = bsd
-         load printers = yes
-         show add printer wizard = yes
-         printcap name = /etc/printcap
-         printer admin = @ntadmin, root
-         total print jobs = 100
-         lpq cache time = 20
-         use client driver = no
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>no</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
+<smbconfoption><name>public</name><value>yes</value></smbconfoption>
+<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
+<smbconfoption><name>writable</name><value>no       </value></smbconfoption>
 
- [printers]
-         comment = All Printers
-         printable = yes
-         path = /var/spool/samba
-         browseable = no
-         guest ok = yes
-         public = yes
-         read only = yes
-         writable = no       
-
- [my_printer_name]
-         comment = Printer with Restricted Access
-         path = /var/spool/samba_my_printer
-         printer admin = kurt
-         browseable = yes
-         printable = yes
-         writeable = no
-         hosts allow = 0.0.0.0
-         hosts deny = turbo_xp, 10.160.50.23, 10.160.51.60
-         guest ok = no
-</programlisting></para>
+<smbconfsection>[my_printer_name]</smbconfsection>
+<smbconfoption><name>comment</name><value>Printer with Restricted Access</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba_my_printer</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>kurt</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>writeable</name><value>no</value></smbconfoption>
+<smbconfoption><name>hosts allow</name><value>0.0.0.0</value></smbconfoption>
+<smbconfoption><name>hosts deny</name><value>turbo_xp, 10.160.50.23, 10.160.51.60</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
 This <emphasis>also</emphasis> is only an example configuration. You
@@ -624,13 +542,13 @@ Following is a discussion of the settings from above shown example.
 <title>The [global] Section</title>
 
 <para>
-The <parameter>[global]</parameter> section is one of 4 special
-sections (along with [<parameter>[homes]</parameter>,
-<parameter>[printers]</parameter> and
-<parameter>[print$]</parameter>...) It contains all parameters which
+The <smbconfsection>[global]</smbconfsection> section is one of 4 special
+sections (along with [<smbconfsection>[homes]</smbconfsection>,
+<smbconfsection>[printers]</smbconfsection> and
+<smbconfsection>[print$]</smbconfsection>...) It contains all parameters which
 apply to the server as a whole. It is the place for parameters which
-have only a "global" meaning (G). It may also contain service level
-parameters (S) which then define default settings for all other
+have only a "global" meaning. It may also contain service level
+parameters which then define default settings for all other
 sections and shares. This way you can simplify the configuration and
 avoid setting the same value repeatedly. (Within each individual
 section or share you may however override these globally set "share
@@ -638,35 +556,34 @@ level" settings and specify other values).
 </para>
 
 <variablelist>
-<varlistentry><term><parameter>printing = bsd</parameter></term>
+<varlistentry><term><smbconfoption><name>printing</name><value>bsd</value></smbconfoption></term>
 <listitem><para> this causes Samba to use default print commands
 applicable for the BSD (a.k.a. RFC 1179 style or LPR/LPD) printing
 system. In general, the "printing" parameter informs Samba about the
 print subsystem it should expect. Samba supports CUPS, LPD, LPRNG,
 SYSV, HPUX, AIX, QNX and PLP. Each of these systems defaults to a
-different <parameter>print command</parameter> (and other queue control
+different <smbconfoption><name>print command</name></smbconfoption> (and other queue control
 commands).</para>
-<caution><para>The <parameter>printing</parameter> parameter is
+<caution><para>The <smbconfoption><name>printing</name></smbconfoption> parameter is
 normally a service level parameter. Since it is included here in the
-<parameter>[global]</parameter> section, it will take effect for all
-printer shares that are not defined differently. Samba-3.0 no longer
+<smbconfsection>[global]</smbconfsection> section, it will take effect for all
+printer shares that are not defined differently. Samba 3 no longer
 supports the SOFTQ printing system.</para></caution>
 </listitem></varlistentry>
 
-<varlistentry><term><parameter>load printers = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>load printers</name><value>yes</value></smbconfoption></term>
 <listitem><para> this tells Samba to create automatically all
 available printer shares. "Available" printer shares are discovered by
 scanning the printcap file. All created printer shares are also loaded
 for browsing. If you use this parameter, you do not need to specify
 separate shares for each printer. Each automatically created printer
 share will clone the configuration options found in the
-<parameter>[printers]</parameter> section. (A <parameter>load printers
+<smbconfsection>[printers]</smbconfsection> section. (A <parameter>load printers
 = no</parameter> setting will allow you to specify each UNIX printer
 you want to share separately, leaving out some you don't want to be
 publicly visible and available).  </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>show add printer wizard =
-yes</parameter></term> <listitem><para> this setting is normally
+<varlistentry><term><smbconfoption><name>show add printer wizard</name><value>yes</value></smbconfoption> </term><listitem><para> this setting is normally
 enabled by default (even if the parameter is not written into the
 ). It makes the <guiicon>Add Printer Wizard</guiicon> icon
 show up in the <guiicon>Printers</guiicon> folder of the Samba host's
@@ -674,12 +591,12 @@ share listing (as shown in <guiicon>Network Neighbourhood</guiicon> or
 by the <command>net view</command> command). To disable it, you need to
 explicitly set it to <constant>no</constant> (commenting it out
 will not suffice!). The Add Printer Wizard lets you upload printer
-drivers to the <parameter>[print$]</parameter> share and associate it
+drivers to the <smbconfsection>[print$]</smbconfsection> share and associate it
 with a printer (if the respective queue exists there before the
 action), or exchange a printer's driver against any other previously
 uploaded driver.  </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>total print jobs = 100</parameter></term>
+<varlistentry><term><smbconfoption><name>total print jobs</name><value>100</value></smbconfoption></term>
 <listitem><para> this setting sets the upper limit to 100 print jobs
 being active on the Samba server at any one time. Should a client
 submit a job which exceeds this number, a <quote>no more space
@@ -688,7 +605,7 @@ Samba to the client. A setting of "0" (the default) means there is
 <emphasis>no</emphasis> limit at all!
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>printcap name = /etc/printcap</parameter></term>
+<varlistentry><term><smbconfoption><name>printcap name</name><value>/etc/printcap</value></smbconfoption></term>
 
 <listitem><para> this tells Samba where to look for a list of
 available printer names. (If you use CUPS, make sure that a printcap
@@ -696,27 +613,27 @@ file is written: this is controlled by the "Printcap" directive of
 <filename>cupsd.conf</filename>).
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>printer admin = @ntadmin</parameter></term>
+<varlistentry><term><smbconfoption><name>printer admin</name><value>@ntadmin</value></smbconfoption></term>
 <listitem><para> members of the ntadmin group should be able to add
 drivers and set printer properties ("ntadmin" is only an example name,
 it needs to be a valid UNIX group name); root is implicitly always a
-<parameter>printer admin</parameter>. The "@" sign precedes group names in
+<smbconfoption><name>printer admin</name></smbconfoption>. The "@" sign precedes group names in
 . A printer admin can do anything to
 printers via the remote administration interfaces offered by MS-RPC
-(see below).  Note that the <parameter>printer admin</parameter>
+(see below).  Note that the <smbconfoption><name>printer admin</name></smbconfoption>
 parameter is normally a share level parameter, so you may associate
 different groups to different printer shares in larger installations,
-if you use the <parameter>printer admin</parameter> parameter on the
+if you use the <smbconfoption><name>printer admin</name></smbconfoption> parameter on the
 share levels).
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>lpq cache time = 20</parameter></term>
+<varlistentry><term><smbconfoption><name>lpq cache time</name><value>20</value></smbconfoption></term>
 <listitem><para> this controls the cache time for the results of the
 lpq command. It prevents the lpq command being called too often and
 reduces load on a heavily used print server.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>use client driver = no</parameter></term>
+<varlistentry><term><smbconfoption><name>use client driver</name><value>no</value></smbconfoption></term>
 <listitem><para> if set to <constant>yes</constant>, this setting only 
 takes effect for Win NT/2k/XP clients (and not for Win 95/98/ME). Its
 default value is <constant>No</constant> (or <constant>False</constant>).
@@ -742,28 +659,28 @@ section as a general convenience shortcut to share all printers with
 minimal configuration. It is also a container for settings which
 should apply as default to all printers. (For more details see the
 &smb.conf; man page.) Settings inside this
-container must be share level parameters (S).
+container must be share level parameters.
 </para>
 
 <variablelist>
-<varlistentry><term><parameter>comment = All printers</parameter></term>
-<listitem><para> the <parameter>comment</parameter> is shown next to
+<varlistentry><term><smbconfoption><name>comment</name><value>All printers</value></smbconfoption></term>
+<listitem><para> the <smbconfoption><name>comment</name></smbconfoption> is shown next to
 the share if a client queries the server, either via <guiicon>Network
 Neighbourhood</guiicon> or with the <command>net view</command> command to list
 available shares.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>printable = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>printable</name><value>yes</value></smbconfoption></term>
 <listitem><para> please note well, that the
-<parameter>[printers]</parameter> service <emphasis>must</emphasis> be
+<smbconfsection>[printers]</smbconfsection> service <emphasis>must</emphasis> be
 declared as printable. If you specify otherwise, smbd will refuse to
 load  at startup. This parameter allows
 connected clients to open, write to and submit spool files into the
-directory specified with the <parameter>path</parameter> parameter for
+directory specified with the <smbconfoption><name>path</name></smbconfoption> parameter for
 this service. It is used by Samba to differentiate printer shares from
 file shares.  </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>path = /var/spool/samba</parameter></term>
+<varlistentry><term><smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption></term>
 <listitem><para>this must point to a directory used by Samba to spool
 incoming print files. <emphasis>It must not be the same as the spool
 directory specified in the configuration of your UNIX print
@@ -771,21 +688,21 @@ subsystem!</emphasis> The path would typically point to a directory
 which is world writeable, with the "sticky" bit set to it.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>browseable = no</parameter></term>
+<varlistentry><term><smbconfoption><name>browseable</name><value>no</value></smbconfoption></term>
 <listitem><para> this is always set to <constant>no</constant> if
-<parameter>printable = yes</parameter>. It makes the 
-<parameter>[printer]</parameter> share itself invisible in the
+<smbconfoption><name>printable</name><value>yes</value></smbconfoption>. It makes the 
+<smbconfsection>[printer]</smbconfsection> share itself invisible in the
 list of available shares in a <command>net view</command> command or
 in the Explorer browse list. (Note that you will of course see the
 individual printers).
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>guest ok = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>guest ok</name><value>yes</value></smbconfoption></term>
 
 <listitem><para>
 if set to <constant>yes</constant>, then no password is required to
 connect to the printers service. Access will be granted with the
-privileges of the <parameter>guest account</parameter>. On many systems the
+privileges of the <smbconfoption><name>guest account</name></smbconfoption>. On many systems the
 guest account will map to a user named "nobody". This user is in the UNIX
 passwd file with an empty password, but with no valid UNIX login.
 (Note: on some systems the guest account might not have the
@@ -798,9 +715,8 @@ command like
 
 </listitem></varlistentry>
 
-<varlistentry><term><parameter>public = yes</parameter></term>
-<listitem><para> this is a synonym for <parameter>guest ok =
-yes</parameter>. Since we have <parameter>guest ok = yes</parameter>,
+<varlistentry><term><smbconfoption><name>public</name><value>yes</value></smbconfoption></term>
+	<listitem><para> this is a synonym for <smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>. Since we have <smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>,
 it really doesn't need to be here! (This leads to the interesting
 question: <quote>What, if I by accident have to contradictory settings
 for the same share?</quote> The answer is: the last one encountered by
@@ -811,7 +727,7 @@ account" parameter with different usernames, and then run testparm to
 see which one is actually used by Samba.)
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>read only = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>read only</name><value>yes</value></smbconfoption></term>
 <listitem><para>this normally (for other types of shares) prevents
 users creating or modifying files in the service's directory. However,
 in a "printable" service, it is <emphasis>always</emphasis> allowed to
@@ -819,9 +735,9 @@ write to the directory (if user privileges allow the connection), but
 only via print spooling operations. "Normal" write operations are not
 allowed.  </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>writeable = no</parameter></term>
+<varlistentry><term><smbconfoption><name>writeable</name><value>no</value></smbconfoption></term>
 <listitem><para>
-synonym for <parameter>read only = yes</parameter>
+synonym for <smbconfoption><name>read only</name><value>yes</value></smbconfoption>
 </para></listitem></varlistentry>
 </variablelist>
 </sect2>
@@ -831,7 +747,7 @@ synonym for <parameter>read only = yes</parameter>
 
 <para>
 If a section appears in the , which is
-tagged as <parameter>printable = yes</parameter>, Samba presents it as
+tagged as <smbconfoption><name>printable</name><value>yes</value></smbconfoption>, Samba presents it as
 a printer share to its clients. Note, that Win95/98/ME clients may
 have problems with connecting or loading printer drivers if the share
 name has more than 8 characters! Also be very careful if you give a
@@ -843,54 +759,53 @@ the same name!
 </para>
 
 <variablelist>
-<varlistentry><term><parameter>comment = Printer with Restricted Access</parameter></term>
+<varlistentry><term><smbconfoption><name>comment</name><value>Printer with Restricted Access</value></smbconfoption></term>
 <listitem><para> the comment says it all.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>path = /var/spool/samba_my_printer</parameter></term>
+<varlistentry><term><smbconfoption><name>path</name><value>/var/spool/samba_my_printer</value></smbconfoption></term>
 <listitem><para> here we set the spooling area for this printer to
 another directory than the default. It is not a requirement to set it
 differently, but the option is available.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>printer admin = kurt</parameter></term>
+<varlistentry><term><smbconfoption><name>printer admin</name><value>kurt</value></smbconfoption></term>
 <listitem><para> the printer admin definition is different for this
 explicitly defined printer share from the general
-<parameter>[printers]</parameter> share. It is not a requirement; we
+<smbconfsection>[printers]</smbconfsection> share. It is not a requirement; we
 did it to show that it is possible if you want it.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>browseable = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>browseable</name><value>yes</value></smbconfoption></term>
 <listitem><para> we also made this printer browseable (so that the
 clients may conveniently find it when browsing the <guiicon>Network
 Neighbourhood</guiicon>).
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>printable = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>printable</name><value>yes</value></smbconfoption></term>
 <listitem><para>see explanation in last subsection.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>writeable = no</parameter></term>
+<varlistentry><term><smbconfoption><name>writeable</name><value>no</value></smbconfoption></term>
 <listitem><para>see explanation in last subsection.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>hosts allow = 10.160.50.,10.160.51.</parameter></term>
+<varlistentry><term><smbconfoption><name>hosts allow</name><value>10.160.50.,10.160.51.</value></smbconfoption></term>
 <listitem><para>here we exercise a certain degree of access control
-by using the <parameter>hosts allow</parameter> and <parameter>hosts deny</parameter> parameters. Note, that
+by using the <smbconfoption><name>hosts allow</name></smbconfoption> and <smbconfoption><name>hosts deny</name></smbconfoption> parameters. Note, that
 this is not by any means a safe bet. It is not a way to secure your
 printers. This line accepts all clients from a certain subnet in a
 first evaluation of access control
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>hosts deny = turbo_xp,10.160.50.23,10.160.51.60
-</parameter></term>
+<varlistentry><term><smbconfoption><name>hosts deny</name><value>turbo_xp,10.160.50.23,10.160.51.60</value></smbconfoption></term>
 <listitem><para>all listed hosts are not allowed here (even if they
 belong to the "allowed subnets"). As you can see, you could name IP
 addresses as well as NetBIOS hostnames
 here.
 </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>guest ok = no</parameter></term>
+<varlistentry><term><smbconfoption><name>guest ok</name><value>no</value></smbconfoption></term>
 <listitem><para>this printer is not open for the guest account!
 </para></listitem></varlistentry>
 
@@ -902,11 +817,11 @@ here.
 
 <para>
 In each section defining a printer (or in the
-<parameter>[printers]</parameter> section), a <parameter>print
+<smbconfsection>[printers]</smbconfsection> section), a <parameter>print
 command</parameter> parameter may be defined. It sets a command to
 process the files which have been placed into the Samba print spool
 directory for that printer. (That spool directory was, if you
-remember, set up with the <parameter>path</parameter>
+remember, set up with the <smbconfoption><name>path</name></smbconfoption>
 parameter). Typically, this command will submit the spool file to the
 Samba host's print subsystem, using the suitable system print
 command. But there is no requirement that this needs to be the
@@ -922,14 +837,14 @@ shortage of free space.
 </sect2>
 
 <sect2>
-<title>Default Print Commands for various Unix Print Subsystems</title>
+<title>Default Print Commands for various UNIX Print Subsystems</title>
 
 <para>
 You learned earlier on, that Samba in most cases uses its built-in
 settings for many parameters if it can not find an explicitly stated
 one in its configuration file. The same is true for the
-<parameter>print command</parameter>. The default print command varies
-depending on the <parameter>printing =...</parameter> parameter
+<smbconfoption><name>print command</name></smbconfoption>. The default print command varies
+depending on the <smbconfoption><name>printing</name></smbconfoption> parameter
 setting. In the commands listed below, you will notice some parameters
 of the form <emphasis>%X</emphasis> where <emphasis>X</emphasis> is
 <emphasis>p, s, J</emphasis> etc. These letters stand for
@@ -948,63 +863,63 @@ the special case of CUPS, which is discussed in the next chapter):
 </thead>
 <tbody>
 <row>
-<entry><parameter>printing = bsd|aix|lprng|plp</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>bsd|aix|lprng|plp</value></smbconfoption></entry>
 <entry>print command is <command>lpr -r -P%p %s</command></entry>
 </row>
 <row>
-<entry><parameter>printing = sysv|hpux</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>sysv|hpux</value></smbconfoption></entry>
 <entry>print command is <command>lp -c -P%p %s; rm %s</command></entry>
 </row>
 <row>
-<entry> <parameter>printing = qnx</parameter></entry>
+<entry> <smbconfoption><name>printing</name><value>qnx</value></smbconfoption></entry>
 <entry>print command is <command>lp -r -P%p -s %s</command></entry>
 </row>
 <row>
-<entry><parameter>printing = bsd|aix|lprng|plp</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>bsd|aix|lprng|plp</value></smbconfoption></entry>
 <entry>lpq command is <command>lpq -P%p</command></entry>
 </row>
 <row>
-<entry><parameter>printing = sysv|hpux</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>sysv|hpux</value></smbconfoption></entry>
 <entry>lpq command is <command>lpstat -o%p</command></entry>
 </row>
 <row>
-<entry><parameter>printing = qnx</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>qnx</value></smbconfoption></entry>
 <entry>lpq command is <command>lpq -P%p</command></entry>
 </row>
 <row>
-<entry><parameter>printing = bsd|aix|lprng|plp</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>bsd|aix|lprng|plp</value></smbconfoption></entry>
 <entry>lprm command is <command>lprm -P%p %j</command></entry>
 </row>
 <row>
-<entry><parameter>printing = sysv|hpux</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>sysv|hpux</value></smbconfoption></entry>
 <entry>lprm command is <command>cancel %p-%j</command></entry>
 </row>
 <row>
-<entry><parameter>printing = qnx</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>qnx</value></smbconfoption></entry>
 <entry>lprm command is <command>cancel %p-%j</command></entry>
 </row>
 <row>
-<entry><parameter>printing = bsd|aix|lprng|plp</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>bsd|aix|lprng|plp</value></smbconfoption></entry>
 <entry>lppause command is <command>lp -i %p-%j -H hold</command></entry>
 </row>
 <row>
-<entry><parameter>printing = sysv|hpux</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>sysv|hpux</value></smbconfoption></entry>
 <entry>lppause command   (...is empty)</entry>
 </row>
 <row>
-<entry><parameter>printing = qnx</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>qnx</value></smbconfoption></entry>
 <entry>lppause command   (...is empty)</entry>
 </row>
 <row>
-<entry><parameter>printing = bsd|aix|lprng|plp</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>bsd|aix|lprng|plp</value></smbconfoption></entry>
 <entry>lpresume command is <command>lp -i %p-%j -H resume</command></entry>
 </row>
 <row>
-<entry><parameter>printing = sysv|hpux</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>sysv|hpux</value></smbconfoption></entry>
 <entry>lpresume command   (...is empty)</entry>
 </row>
 <row>
-<entry><parameter>printing = qnx</parameter></entry>
+<entry><smbconfoption><name>printing</name><value>qnx</value></smbconfoption></entry>
 <entry>lpresume command   (...is empty)</entry>
 </row>
 </tbody>
@@ -1016,7 +931,7 @@ We excluded the special CUPS case here, because it is discussed in the
 next chapter. Just a short summary. For <parameter>printing =
 CUPS</parameter>: If SAMBA is compiled against libcups, it uses the
 CUPS API to submit jobs, etc. (It is a good idea also to set
-<parameter>printcap = cups</parameter> in case your
+<smbconfoption><name>printcap</name><value>cups</value></smbconfoption> in case your
 <filename>cupsd.conf</filename> is set to write its autogenerated
 printcap file to an unusual place). Otherwise Samba maps to the System
 V printing commands with the -oraw option for printing, i.e. it uses
@@ -1050,7 +965,7 @@ way you want them to work and not rely on any built-in defaults.
 
 <para>
 After a print job has finished spooling to a service, the
-<parameter>print command</parameter> will be used by Samba via a
+<smbconfoption><name>print command</name></smbconfoption> will be used by Samba via a
 <emphasis>system()</emphasis> call to process the spool file.  Usually
 the command specified will submit the spool file to the host's
 printing subsystem. But there is no requirement at all that this must
@@ -1102,7 +1017,7 @@ command. In this case the job is sent to the default printer.
 </para>
 
 <para>
-If specified in the <parameter>[global]</parameter> section, the print
+If specified in the <smbconfsection>[global]</smbconfsection> section, the print
 command given will be used for any printable service that does not
 have its own print command specified. If there is neither a specified
 print command for a printable service nor a global print command,
@@ -1115,7 +1030,7 @@ hard disk.
 Note that printing may fail on some UNIXes from the "nobody"
 account. If this happens, create an alternative guest account and
 supply it with the privilege to print. Set up this guest account in
-the <parameter>[global]</parameter> section with the <parameter>guest
+the <smbconfsection>[global]</smbconfsection> section with the <parameter>guest
 account</parameter> parameter.
 </para>
 
@@ -1126,28 +1041,26 @@ expand the included environment variables as usual. (The syntax to
 include a UNIX environment variable <parameter>$variable</parameter>
 in  or in the Samba print command is
 <parameter>%$variable</parameter>.) To give you a working
-<parameter>print command</parameter> example, the following will log a
+<smbconfoption><name>print command</name></smbconfoption> example, the following will log a
 print job to <filename>/tmp/print.log</filename>, print the file, then
 remove it. Note that ';' is the usual separator for commands in shell
 scripts:
 </para>
 
-<para><programlisting>
-<![CDATA[
- print command = echo Printing %s >> /tmp/print.log; lpr -P %p %s; rm %s
-]]>
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>print command</name><value>echo Printing %s &gt;&gt; /tmp/print.log; lpr -P %p %s; rm %s</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 You may have to vary your own command considerably from this example
 depending on how you normally print files on your system.  The default
-for the <parameter>print command</parameter> parameter varies depending on the setting of
-the <parameter>printing</parameter> parameter. Another example is:
+for the <smbconfoption><name>print command</name></smbconfoption> parameter varies depending on the setting of
+the <smbconfoption><name>printing</name></smbconfoption> parameter. Another example is:
 </para>
 
-<para><programlisting>
- print command = /usr/local/samba/bin/myprintscript %p %s
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>print command</name><value>/usr/local/samba/bin/myprintscript %p %s</value></smbconfoption>
+</smbconfblock></para>
 </sect2>
 </sect1>
 
@@ -1176,15 +1089,11 @@ The additional functionality provided by the new SPOOLSS support includes:
 
 <listitem><para>Uploading of printer drivers via the Windows NT
 <emphasis>Add Printer Wizard</emphasis> (APW) or the
-<emphasis>Imprints</emphasis> tool set (refer to <ulink
-url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net</ulink>);
+<ulink url="http://imprints.sourceforge.net/">Imprints</ulink> tool set.
 </para></listitem>
 
 <listitem><para>Support for the native MS-RPC printing calls such as
-StartDocPrinter, EnumJobs(), etc... (See the MSDN documentation
-at <ulink
-url="http://msdn.microsoft.com/">http://msdn.microsoft.com/</ulink>
-for more information on the Win32 printing API);</para></listitem>
+		StartDocPrinter, EnumJobs(), etc... (See the <ulink url="http://msdn.microsoft.com/">MSDN documentation</ulink> for more information on the Win32 printing API);</para></listitem>
 
 <listitem><para>Support for NT <emphasis>Access Control
 Lists</emphasis> (ACL) on printer objects;</para></listitem>
@@ -1197,7 +1106,7 @@ files).</para></listitem>
 </itemizedlist>
 
 <para>
-One other benefit of an update is this: Samba-3 is able to publish
+One other benefit of an update is this: Samba 3 is able to publish
 all its printers in Active Directory (or LDAP)!
 </para>
 
@@ -1238,12 +1147,12 @@ possess a valid driver for the printer. This was fixed in Samba
 
 <para>
 But it is a new <emphasis>option</emphasis> to install the printer
-drivers into the <parameter>[print$]</parameter> share of the Samba
+drivers into the <smbconfsection>[print$]</smbconfsection> share of the Samba
 server, and a big convenience too. Then <emphasis>all</emphasis>
 clients (including 95/98/ME) get the driver installed when they first
 connect to this printer share. The <emphasis>uploading</emphasis> or
 <emphasis>depositing</emphasis> of the driver into this
-<parameter>[print$]</parameter> share, and the following binding of
+<smbconfsection>[print$]</smbconfsection> share, and the following binding of
 this driver to an existing Samba printer share can be achieved by
 different means:
 </para>
@@ -1271,17 +1180,17 @@ does not use these uploaded drivers in any way to process spooled
 files</emphasis>. Drivers are utilized entirely by the clients, who
 download and install them via the "Point'n'Print" mechanism supported
 by Samba. The clients use these drivers to generate print files in the
-format the printer (or the Unix print system) requires. Print files
-received by Samba are handed over to the Unix printing system, which
+format the printer (or the UNIX print system) requires. Print files
+received by Samba are handed over to the UNIX printing system, which
 is responsible for all further processing, if needed.
 </para>
 </sect2>
 
 <sect2>
-<title>The [printer$] Section is removed from Samba-3</title>
+<title>The [printer$] Section is removed from Samba 3</title>
 
 <formalpara><title>
-<parameter>[print$]</parameter> vs. <parameter>[printer$]</parameter>
+<smbconfsection>[print$]</smbconfsection> vs. <smbconfsection>[printer$]</smbconfsection>
 </title>
 
 <para>
@@ -1289,7 +1198,7 @@ Versions of Samba prior to 2.2 made it possible to use a share
 named <emphasis>[printer$]</emphasis>. This name was taken from the
 same named service created by Windows 9x clients when a printer was
 shared by them. Windows 9x printer servers always have a
-<parameter>[printer$]</parameter> service which provides read-only
+<smbconfsection>[printer$]</smbconfsection> service which provides read-only
 access (with no password required) in order to support printer driver
 downloads.  However, Samba's initial implementation allowed for a
 parameter named <parameter>printer driver location</parameter> to be
@@ -1298,16 +1207,16 @@ files associated with that printer. Another parameter named
 <parameter>printer driver</parameter> provided a means of defining the
 printer driver name to be sent to the client.  These parameters,
 including the <parameter>printer driver file</parameter> parameter,
-are now removed and can not be used in installations of Samba-3.0.
-Now the share name <parameter>[print$]</parameter> is used for the
+are now removed and can not be used in installations of samba-3.
+Now the share name <smbconfsection>[print$]</smbconfsection> is used for the
 location of downloadable printer drivers. It is taken from the
-<parameter>[print$]</parameter> service created by Windows NT PCs when
+<smbconfsection>[print$]</smbconfsection> service created by Windows NT PCs when
 a printer is shared by them. Windows NT print servers always have a
-<parameter>[print$]</parameter> service which provides read-write
+<smbconfsection>[print$]</smbconfsection> service which provides read-write
 access (in the context of its ACLs) in order to support printer driver
 down- and uploads.  Don't fear -- this does not mean Windows 9x
 clients are thrown aside now. They can use Samba's
-<parameter>[print$]</parameter> share support just fine.
+<smbconfsection>[print$]</smbconfsection> share support just fine.
 </para></formalpara>
 </sect2>
 
@@ -1317,7 +1226,7 @@ clients are thrown aside now. They can use Samba's
 <para>
 In order to support the up- and downloading of printer driver files,
 you must first configure a file share named
-<parameter>[print$]</parameter>. The "public" name of this share is
+<smbconfsection>[print$]</smbconfsection>. The "public" name of this share is
 hard coded in Samba's internals (because it is hard coded in the MS
 Windows clients too). It cannot be renamed since Windows clients are
 programmed to search for a service of exactly this name if they want
@@ -1327,33 +1236,33 @@ to retrieve printer driver files.
 <para>
 You should modify the server's  file to
 add the global parameters and create the
-<parameter>[print$]</parameter> file share (of course, some of the
+<smbconfsection>[print$]</smbconfsection> file share (of course, some of the
 parameter values, such as 'path' are arbitrary and should be replaced
 with appropriate values for your site):
 </para>
 
-<para><screen>
- [global]
-      ; members of the ntadmin group should be able to add drivers and set
-      ; printer properties. root is implicitly always a 'printer admin'.
-      printer admin = @ntadmin
-      [....]
+<para><smbconfexample>
+		<title>[print\$] example</title>
+		<smbconfsection>[global]</smbconfsection>
+		<smbconfcomment>members of the ntadmin group should be able to add drivers and set</smbconfcomment>
+		<smbconfcomment>printer properties. root is implicitly always a 'printer admin'.</smbconfcomment>
+		<smbconfoption><name>printer admin</name><value>@ntadmin</value></smbconfoption>
+		<member>...</member>
+		<smbconfsection>[printers]</smbconfsection>
+		<member>...</member>
 
- [printers]
-      [....]
-
- [print$]
-      comment = Printer Driver Download Area
-      path = /etc/samba/drivers
-      browseable = yes
-      guest ok = yes
-      read only = yes
-      write list = @ntadmin, root
-</screen></para>
+		<smbconfsection>[print$]</smbconfsection>
+<smbconfoption><name>comment</name><value>Printer Driver Download Area</value></smbconfoption>
+<smbconfoption><name>path</name><value>/etc/samba/drivers</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
+<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
+<smbconfoption><name>write list</name><value>@ntadmin, root</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
 Of course, you also need to ensure that the directory named by the
-<parameter>path</parameter> parameter exists on the Unix file system.
+<smbconfoption><name>path</name></smbconfoption> parameter exists on the UNIX file system.
 </para>
 
 </sect2>
@@ -1362,33 +1271,33 @@ Of course, you also need to ensure that the directory named by the
 <title>Parameters in the [print$] Section</title>
 
 <para>
-<parameter>[print$]</parameter> is a special section in
+<smbconfsection>[print$]</smbconfsection> is a special section in
 . It contains settings relevant to
 potential printer driver download and local installation by clients.
 </para>
 
 <variablelist>
-<varlistentry><term><parameter>comment = Printer Driver
-Download Area</parameter></term>
+	<varlistentry><term><smbconfoption><name>comment</name><value>Printer Driver
+					Download Area</value></smbconfoption></term>
 <listitem><para> the comment appears next to the share name if it is
 listed in a share list (usually Windows clients won't see it often but
 it will also appear up in a <command>smbclient -L sambaserver
 </command> output). </para></listitem></varlistentry>
 
-<varlistentry><term><parameter>path = /etc/samba/printers</parameter></term>
+<varlistentry><term><smbconfoption><name>path</name><value>/etc/samba/printers</value></smbconfoption></term>
 <listitem><para> this is the path to the location of the Windows
 driver file deposit from the UNIX point of
 view.</para></listitem></varlistentry>
 
-<varlistentry><term><parameter>browseable = no</parameter></term>
-<listitem><para> this makes the <parameter>[print$]</parameter> share
+<varlistentry><term><smbconfoption><name>browseable</name><value>no</value></smbconfoption></term>
+<listitem><para> this makes the <smbconfsection>[print$]</smbconfsection> share
 "invisible" in Network Neighbourhood to clients. However, you can
 still "mount" it from any client using the <command>net use
 g:\\sambaserver\print$</command> command in a "DOS box" or the
 "Connect network drive" menu from Windows
 Explorer.</para></listitem></varlistentry>
 
-<varlistentry><term><parameter>guest ok = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>guest ok</name><value>yes</value></smbconfoption></term>
 <listitem><para>this gives read only access to this share for all
 guest users. Access may be used to download and install printer
 drivers on clients. The requirement for <parameter>guest ok =
@@ -1404,19 +1313,19 @@ validated by the Domain Controller in order to logon to the Windows NT
 session), then guest access is not necessary. Of course, in a
 workgroup environment where you just want to be able to print without
 worrying about silly accounts and security, then configure the share
-for guest access. You'll probably want to add <parameter>map to guest
-= Bad User</parameter> in the <parameter>[global]</parameter> section
+for guest access. You'll probably want to add <smbconfoption><name>map to guest</name><value>Bad User</value></smbconfoption> in the
+<smbconfsection>[global]</smbconfsection> section
 as well. Make sure you understand what this parameter does before
 using it.
 </para></note> </listitem></varlistentry>
 
-<varlistentry><term><parameter>read only = yes</parameter></term>
+<varlistentry><term><smbconfoption><name>read only</name><value>yes</value></smbconfoption></term>
 <listitem><para>as we don't want everybody to upload driver files (or
 even change driver settings) we tagged this share as not
 writeable.</para></listitem></varlistentry>
 
-<varlistentry><term><parameter>write list = @ntadmin,root</parameter></term>
-<listitem><para>since the <parameter>[print$]</parameter> was made
+<varlistentry><term><smbconfoption><name>write list</name><value>@ntadmin,root</value></smbconfoption></term>
+<listitem><para>since the <smbconfsection>[print$]</smbconfsection> was made
 read only by the previous setting, we need to create a "write list"
 also. UNIX groups (denoted with a leading "@" character) and users
 listed here are allowed write access (as an exception to the general
@@ -1425,7 +1334,7 @@ share.  Normally you will want to only name administrative level user
 accounts in this setting. Check the file system permissions to make
 sure these accounts can copy files to the share. If this is a non-root
 account, then the account should also be mentioned in the global
-<parameter>printer admin </parameter> parameter.  See the
+<smbconfoption><name>printer admin </name></smbconfoption> parameter.  See the
  man page for more information on
 configuring file shares.  </para></listitem></varlistentry>
 
@@ -1439,18 +1348,18 @@ configuring file shares.  </para></listitem></varlistentry>
 <para>
 In order for a Windows NT print server to support the downloading of
 driver files by multiple client architectures, you must create several
-subdirectories within the <parameter>[print$]</parameter> service
-(i.e. the Unix directory named by the <parameter>path</parameter>
+subdirectories within the <smbconfsection>[print$]</smbconfsection> service
+(i.e. the UNIX directory named by the <smbconfoption><name>path</name></smbconfoption>
 parameter). These correspond to each of the supported client
 architectures. Samba follows this model as well. Just like the name of
-the <parameter>[print$]</parameter> share itself, the subdirectories
+the <smbconfsection>[print$]</smbconfsection> share itself, the subdirectories
 *must* be exactly the names listed below (you may leave out the
 subdirectories of architectures you don't want to support).
 </para>
 
 <para>
 Therefore, create a directory tree below the
-<parameter>[print$]</parameter> share for each architecture you wish
+<smbconfsection>[print$]</smbconfsection> share for each architecture you wish
 to support.
 </para>
 
@@ -1483,13 +1392,13 @@ named in the <emphasis>printer admin</emphasis>list.</para></listitem>
 <para>
 Of course, the connected account must still possess access to add
 files to the subdirectories beneath
-<parameter>[print$]</parameter>. Remember that all file shares are set
+<smbconfsection>[print$]</smbconfsection>. Remember that all file shares are set
 to 'read only' by default.
 </para>
 </important>
 
 <para>
-Once you have created the required <parameter>[print$]</parameter>
+Once you have created the required <smbconfsection>[print$]</smbconfsection>
 service and associated subdirectories, go to a Windows NT 4.0/2k/XP
 client workstation. Open <guiicon>Network Neighbourhood</guiicon> or 
 <guiicon>My Network Places</guiicon> and browse for the Samba host.
@@ -1504,7 +1413,7 @@ that matches the printer shares defined on your Samba host.
 <title>Installing Drivers into [print$]</title>
 
 <para>
-You have successfully created the <parameter>[print$]</parameter>
+You have successfully created the <smbconfsection>[print$]</smbconfsection>
 share in ?  And Samba has re-read its
 configuration? Good. But you are not yet ready to take off. The
 <emphasis>driver files</emphasis> need to be present in this share,
@@ -1512,7 +1421,7 @@ too! So far it is still an empty share. Unfortunately, it is not enough
 to just copy the driver files over. They need to be <emphasis>set
 up</emphasis> too.  And that is a bit tricky, to say the least. We
 will now discuss two alternative ways to install the drivers into
-<parameter>[print$]</parameter>:
+<smbconfsection>[print$]</smbconfsection>:
 </para>
 
 <itemizedlist>
@@ -1539,8 +1448,8 @@ entrance to this realm seems a little bit weird at first).
 <para>
 The initial listing of printers in the Samba host's
 <guiicon>Printers</guiicon> folder accessed from a client's Explorer
-will have no real printer driver assigned to them. By default, in
-Samba-3 (as in 2.2.1 and later) this driver name is set to a NULL
+will have no real printer driver assigned to them. By default
+this driver name is set to a NULL
 string. This must be changed now. The local <emphasis>Add Printer
 Wizard</emphasis>, run from NT/2000/XP clients, will help us in this
 task.
@@ -1585,7 +1494,7 @@ Once the APW is started, the procedure is exactly the same as the one
 you are familiar with in Windows (we assume here that you are
 familiar with the printer driver installations procedure on Windows
 NT). Make sure your connection is in fact setup as a user with
-<parameter>printer admin</parameter> privileges (if in doubt, use
+<smbconfoption><name>printer admin</name></smbconfoption> privileges (if in doubt, use
 <command>smbstatus</command> to check for this). If you wish to
 install printer drivers for client operating systems other than
 <application>Windows NT x86</application>, you will need to use the
@@ -1594,7 +1503,7 @@ install printer drivers for client operating systems other than
 
 <para>
 Assuming you have connected with an administrative (or root) account
-(as named by the <parameter>printer admin</parameter> parameter),
+(as named by the <smbconfoption><name>printer admin</name></smbconfoption> parameter),
 you will also be able to modify other printer properties such as ACLs
 and default device settings using this dialog. For the default device
 settings, please consider the advice given further below.
@@ -1607,7 +1516,7 @@ settings, please consider the advice given further below.
 
 <para>
 The second way to install printer drivers into
-<parameter>[print$]</parameter> and set them up in a valid way can be
+<smbconfsection>[print$]</smbconfsection> and set them up in a valid way can be
 done from the UNIX command line.  This involves four distinct steps:
 </para>
 
@@ -1616,7 +1525,7 @@ done from the UNIX command line.  This involves four distinct steps:
 and collecting the files together;</para></listitem>
 
 <listitem><para>deposit the driver files into the
-<parameter>[print$]</parameter> share's correct subdirectories
+<smbconfsection>[print$]</smbconfsection> share's correct subdirectories
 (possibly by using <command>smbclient</command>);</para></listitem>
 
 <listitem><para>running the <command>rpcclient</command>
@@ -1692,35 +1601,35 @@ different spaces in between words:
 </para>
 
 <para><screen>
-&rootprompt;<userinput>rpcclient -U'Danka%xxxx' -c 'getdriver "Heidelberg Digimaster 9110 (PS)" 3' TURBO_XP</userinput>
-  cmd = getdriver "Heidelberg Digimaster 9110 (PS)" 3
+&rootprompt;<userinput>rpcclient -U'Danka%xxxx' -c \
+	'getdriver "Heidelberg Digimaster 9110 (PS)" 3' TURBO_XP</userinput>
+cmd = getdriver "Heidelberg Digimaster 9110 (PS)" 3
 
-  [Windows NT x86]
-  Printer Driver Info 3:
-          Version: [2]
-          Driver Name: [Heidelberg Digimaster 9110 (PS)]
-          Architecture: [Windows NT x86]
-          Driver Path: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01_de.DLL]
-          Datafile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.ppd]
-          Configfile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01U_de.DLL]
-          Helpfile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01U_de.HLP]
+[Windows NT x86]
+Printer Driver Info 3:
+  Version: [2]
+  Driver Name: [Heidelberg Digimaster 9110 (PS)]
+  Architecture: [Windows NT x86]
+  Driver Path: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01_de.DLL]
+  Datafile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.ppd]
+  Configfile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01U_de.DLL]
+  Helpfile: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01U_de.HLP]
   
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.DLL]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.INI]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1KMMin.DLL]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.dat]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.cat]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.def]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.hre]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.vnd]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.hlp]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de_reg.HLP]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01Aux.dll]
-          Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01_de.NTF]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.DLL]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.INI]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1KMMin.DLL]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.dat]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.cat]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.def]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.hre]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.vnd]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de.hlp]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\Hddm91c1_de_reg.HLP]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01Aux.dll]
+  Dependentfiles: [C:\WINNT\System32\spool\DRIVERS\W32X86\2\HDNIS01_de.NTF]
   
-          Monitorname: []
-          Defaultdatatype: []
-
+  Monitorname: []
+  Defaultdatatype: []
 </screen></para>
 
 <para>
@@ -1738,7 +1647,7 @@ can also host the Win9x drivers, even if itself runs on Windows NT,
 </para>
 
 <para>
-Since the <parameter>[print$]</parameter> share is usually accessible
+Since the <smbconfsection>[print$]</smbconfsection> share is usually accessible
 through the <guiicon>Network Neighbourhood</guiicon>, you can also use the UNC notation
 from Windows Explorer to poke at it. The Win9x driver files will end
 up in subdirectory "0" of the "WIN40" directory. The full path to
@@ -1763,7 +1672,7 @@ this. These type of drivers install into the "3" subdirectory.
 <para>
 Now we need to collect all the driver files we identified. in our
 previous step. Where do we get them from? Well, why not retrieve them
-from the very PC and the same <parameter>[print$]</parameter> share
+from the very PC and the same <smbconfsection>[print$]</smbconfsection> share
 which we investigated in our last step to identify the files? We can
 use <command>smbclient</command> to do this. We will use the paths and
 names which were leaked to us by <command>getdriver</command>. The
@@ -1774,15 +1683,15 @@ listing is edited to include linebreaks for readability:
 &rootprompt;<userinput>smbclient //TURBO_XP/print\$ -U'Danka%xxxx'	\ 
 	-c 'cd W32X86/2;mget HD*_de.*             \
 	hd*ppd Hd*_de.* Hddm*dll HDN*Aux.DLL'</userinput>
-  added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
-  Got a positive name query response from 10.160.50.8 ( 10.160.50.8 )
-  Domain=[DEVELOPMENT] OS=[Windows 5.1] Server=[Windows 2000 LAN Manager]
-  <prompt>Get file Hddm91c1_de.ABD? </prompt><userinput>n</userinput>
-  <prompt>Get file Hddm91c1_de.def? </prompt><userinput>y</userinput>
-  getting file \W32X86\2\Hddm91c1_de.def of size 428 as Hddm91c1_de.def (22.0 kb/s) (average 22.0 kb/s)
-  <prompt>Get file Hddm91c1_de.DLL? </prompt><userinput>y</userinput>
-  getting file \W32X86\2\Hddm91c1_de.DLL of size 876544 as Hddm91c1_de.DLL (737.3 kb/s) (average 737.3 kb/s)
-  [...]
+added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
+Got a positive name query response from 10.160.50.8 ( 10.160.50.8 )
+Domain=[DEVELOPMENT] OS=[Windows 5.1] Server=[Windows 2000 LAN Manager]
+<prompt>Get file Hddm91c1_de.ABD? </prompt><userinput>n</userinput>
+<prompt>Get file Hddm91c1_de.def? </prompt><userinput>y</userinput>
+getting file \W32X86\2\Hddm91c1_de.def of size 428 as Hddm91c1_de.def
+<prompt>Get file Hddm91c1_de.DLL? </prompt><userinput>y</userinput>
+getting file \W32X86\2\Hddm91c1_de.DLL of size 876544 as Hddm91c1_de.DLL
+[...]
 
 </screen></para>
 
@@ -1800,7 +1709,7 @@ architecture should you need to support Win95/98/XP clients.  Remember, the
 files for these architectures are in the WIN40/0/ subdir. Once we are
 complete, we can run <command>smbclient ...  put</command> to store
 the collected files on the Samba server's
-<parameter>[print$]</parameter> share.
+<smbconfsection>[print$]</smbconfsection> share.
 </para>
 </sect3>
 
@@ -1809,11 +1718,11 @@ the collected files on the Samba server's
 
 <para>
 So, now we are going to put the driver files into the
-<parameter>[print$]</parameter> share. Remember, the UNIX path to this
+<smbconfsection>[print$]</smbconfsection> share. Remember, the UNIX path to this
 share has been defined previously in your
 . You also have created subdirectories
 for the different Windows client types you want to support. Supposing
-your <parameter>[print$]</parameter> share maps to the UNIX path
+your <smbconfsection>[print$]</smbconfsection> share maps to the UNIX path
 <filename>/etc/samba/drivers/</filename>, your driver files should now
 go here:
 </para>
@@ -1834,11 +1743,12 @@ network. We specify the same files and paths as were leaked to us by
 running <command>getdriver</command> against the original
 <emphasis>Windows</emphasis> install. However, now we are going to
 store the files into a <emphasis>Samba/UNIX</emphasis> print server's
-<parameter>[print$]</parameter> share...
+<smbconfsection>[print$]</smbconfsection> share...
 </para>
 
 <para><screen>
-&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -U'root%xxxx' -c 'cd W32X86; put HDNIS01_de.DLL; \
+		&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -U'root%xxxx' -c \
+ 'cd W32X86; put HDNIS01_de.DLL; \
   put Hddm91c1_de.ppd; put HDNIS01U_de.DLL;        \
   put HDNIS01U_de.HLP; put Hddm91c1_de.DLL;        \
   put Hddm91c1_de.INI; put Hddm91c1KMMin.DLL;      \
@@ -1847,26 +1757,25 @@ store the files into a <emphasis>Samba/UNIX</emphasis> print server's
   put Hddm91c1_de.vnd; put Hddm91c1_de.hlp;        \
   put Hddm91c1_de_reg.HLP; put HDNIS01Aux.dll;     \
   put HDNIS01_de.NTF'</userinput>
- added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
- Got a positive name query response from 10.160.51.162 ( 10.160.51.162 )
- Domain=[CUPS-PRINT] OS=[Unix] Server=[Samba 2.2.7a]
- putting file HDNIS01_de.DLL as \W32X86\HDNIS01_de.DLL (4465.5 kb/s) (average 4465.5 kb/s)
- putting file Hddm91c1_de.ppd as \W32X86\Hddm91c1_de.ppd (12876.8 kb/s) (average 4638.9 kb/s)
- putting file HDNIS01U_de.DLL as \W32X86\HDNIS01U_de.DLL (20249.8 kb/s) (average 5828.3 kb/s)
- putting file HDNIS01U_de.HLP as \W32X86\HDNIS01U_de.HLP (9652.8 kb/s) (average 5899.8 kb/s)
- putting file Hddm91c1_de.DLL as \W32X86\Hddm91c1_de.DLL (23777.7 kb/s) (average 10400.6 kb/s)
- putting file Hddm91c1_de.INI as \W32X86\Hddm91c1_de.INI (98.6 kb/s) (average 10329.0 kb/s)
- putting file Hddm91c1KMMin.DLL as \W32X86\Hddm91c1KMMin.DLL (22931.5 kb/s) (average 10501.7 kb/s)
- putting file Hddm91c1_de.dat as \W32X86\Hddm91c1_de.dat (2462.8 kb/s) (average 10393.0 kb/s)
- putting file Hddm91c1_de.dat as \W32X86\Hddm91c1_de.dat (4925.3 kb/s) (average 10356.3 kb/s)
- putting file Hddm91c1_de.def as \W32X86\Hddm91c1_de.def (417.9 kb/s) (average 10290.1 kb/s)
- putting file Hddm91c1_de.hre as \W32X86\Hddm91c1_de.hre (22571.3 kb/s) (average 11338.5 kb/s)
- putting file Hddm91c1_de.vnd as \W32X86\Hddm91c1_de.vnd (3384.6 kb/s) (average 10754.3 kb/s)
- putting file Hddm91c1_de.hlp as \W32X86\Hddm91c1_de.hlp (18406.8 kb/s) (average 10839.8 kb/s)
- putting file Hddm91c1_de_reg.HLP as \W32X86\Hddm91c1_de_reg.HLP (20278.3 kb/s) (average 11386.3 kb/s)
- putting file HDNIS01Aux.dll as \W32X86\HDNIS01Aux.dll (14994.6 kb/s) (average 11405.2 kb/s)
- putting file HDNIS01_de.NTF as \W32X86\HDNIS01_de.NTF (23390.2 kb/s) (average 13170.8 kb/s)
-
+added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
+Got a positive name query response from 10.160.51.162 ( 10.160.51.162 )
+Domain=[CUPS-PRINT] OS=[UNIX] Server=[Samba 2.2.7a]
+putting file HDNIS01_de.DLL as \W32X86\HDNIS01_de.DLL
+putting file Hddm91c1_de.ppd as \W32X86\Hddm91c1_de.ppd
+putting file HDNIS01U_de.DLL as \W32X86\HDNIS01U_de.DLL
+putting file HDNIS01U_de.HLP as \W32X86\HDNIS01U_de.HLP
+putting file Hddm91c1_de.DLL as \W32X86\Hddm91c1_de.DLL
+putting file Hddm91c1_de.INI as \W32X86\Hddm91c1_de.INI
+putting file Hddm91c1KMMin.DLL as \W32X86\Hddm91c1KMMin.DLL
+putting file Hddm91c1_de.dat as \W32X86\Hddm91c1_de.dat
+putting file Hddm91c1_de.dat as \W32X86\Hddm91c1_de.dat
+putting file Hddm91c1_de.def as \W32X86\Hddm91c1_de.def
+putting file Hddm91c1_de.hre as \W32X86\Hddm91c1_de.hre
+putting file Hddm91c1_de.vnd as \W32X86\Hddm91c1_de.vnd
+putting file Hddm91c1_de.hlp as \W32X86\Hddm91c1_de.hlp
+putting file Hddm91c1_de_reg.HLP as \W32X86\Hddm91c1_de_reg.HLP
+putting file HDNIS01Aux.dll as \W32X86\HDNIS01Aux.dll
+putting file HDNIS01_de.NTF as \W32X86\HDNIS01_de.NTF
 </screen></para>
 
 <para>
@@ -1893,42 +1802,42 @@ also and do this through a standard UNIX shell access too):
 </para>
 
 <para><screen>
-&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -U 'root%xxxx' -c 'cd W32X86; pwd; dir; cd 2; pwd; dir'</userinput>
+&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -U 'root%xxxx' \
+	-c 'cd W32X86; pwd; dir; cd 2; pwd; dir'</userinput>
  added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
- Got a positive name query response from 10.160.51.162 ( 10.160.51.162 )
- Domain=[CUPS-PRINT] OS=[Unix] Server=[Samba 2.2.7a]
+Got a positive name query response from 10.160.51.162 ( 10.160.51.162 )
+Domain=[CUPS-PRINT] OS=[UNIX] Server=[Samba 2.2.7a]
 
-  Current directory is \\SAMBA-CUPS\print$\W32X86\
-  .                                   D        0  Sun May  4 03:56:35 2003
-  ..                                  D        0  Thu Apr 10 23:47:40 2003
-  2                                   D        0  Sun May  4 03:56:18 2003
-  HDNIS01Aux.dll                      A    15356  Sun May  4 03:58:59 2003
-  Hddm91c1KMMin.DLL                   A    46966  Sun May  4 03:58:59 2003
-  HDNIS01_de.DLL                      A   434400  Sun May  4 03:58:59 2003
-  HDNIS01_de.NTF                      A   790404  Sun May  4 03:56:35 2003
-  Hddm91c1_de.DLL                     A   876544  Sun May  4 03:58:59 2003
-  Hddm91c1_de.INI                     A      101  Sun May  4 03:58:59 2003
-  Hddm91c1_de.dat                     A     5044  Sun May  4 03:58:59 2003
-  Hddm91c1_de.def                     A      428  Sun May  4 03:58:59 2003
-  Hddm91c1_de.hlp                     A    37699  Sun May  4 03:58:59 2003
-  Hddm91c1_de.hre                     A   323584  Sun May  4 03:58:59 2003
-  Hddm91c1_de.ppd                     A    26373  Sun May  4 03:58:59 2003
-  Hddm91c1_de.vnd                     A    45056  Sun May  4 03:58:59 2003
-  HDNIS01U_de.DLL                     A   165888  Sun May  4 03:58:59 2003
-  HDNIS01U_de.HLP                     A    19770  Sun May  4 03:58:59 2003
-  Hddm91c1_de_reg.HLP                 A   228417  Sun May  4 03:58:59 2003
-                40976 blocks of size 262144. 709 blocks available
+Current directory is \\SAMBA-CUPS\print$\W32X86\
+.                                   D        0  Sun May  4 03:56:35 2003
+..                                  D        0  Thu Apr 10 23:47:40 2003
+2                                   D        0  Sun May  4 03:56:18 2003
+HDNIS01Aux.dll                      A    15356  Sun May  4 03:58:59 2003
+Hddm91c1KMMin.DLL                   A    46966  Sun May  4 03:58:59 2003
+HDNIS01_de.DLL                      A   434400  Sun May  4 03:58:59 2003
+HDNIS01_de.NTF                      A   790404  Sun May  4 03:56:35 2003
+Hddm91c1_de.DLL                     A   876544  Sun May  4 03:58:59 2003
+Hddm91c1_de.INI                     A      101  Sun May  4 03:58:59 2003
+Hddm91c1_de.dat                     A     5044  Sun May  4 03:58:59 2003
+Hddm91c1_de.def                     A      428  Sun May  4 03:58:59 2003
+Hddm91c1_de.hlp                     A    37699  Sun May  4 03:58:59 2003
+Hddm91c1_de.hre                     A   323584  Sun May  4 03:58:59 2003
+Hddm91c1_de.ppd                     A    26373  Sun May  4 03:58:59 2003
+Hddm91c1_de.vnd                     A    45056  Sun May  4 03:58:59 2003
+HDNIS01U_de.DLL                     A   165888  Sun May  4 03:58:59 2003
+HDNIS01U_de.HLP                     A    19770  Sun May  4 03:58:59 2003
+Hddm91c1_de_reg.HLP                 A   228417  Sun May  4 03:58:59 2003
+              40976 blocks of size 262144. 709 blocks available
 
-  Current directory is \\SAMBA-CUPS\print$\W32X86\2\
-  .                                   D        0  Sun May  4 03:56:18 2003
-  ..                                  D        0  Sun May  4 03:56:35 2003
-  ADOBEPS5.DLL                        A   434400  Sat May  3 23:18:45 2003
-  laserjet4.ppd                       A     9639  Thu Apr 24 01:05:32 2003
-  ADOBEPSU.DLL                        A   109568  Sat May  3 23:18:45 2003
-  ADOBEPSU.HLP                        A    18082  Sat May  3 23:18:45 2003
-  PDFcreator2.PPD                     A    15746  Sun Apr 20 22:24:07 2003
-                40976 blocks of size 262144. 709 blocks available
-
+Current directory is \\SAMBA-CUPS\print$\W32X86\2\
+.                                   D        0  Sun May  4 03:56:18 2003
+..                                  D        0  Sun May  4 03:56:35 2003
+ADOBEPS5.DLL                        A   434400  Sat May  3 23:18:45 2003
+laserjet4.ppd                       A     9639  Thu Apr 24 01:05:32 2003
+ADOBEPSU.DLL                        A   109568  Sat May  3 23:18:45 2003
+ADOBEPSU.HLP                        A    18082  Sat May  3 23:18:45 2003
+PDFcreator2.PPD                     A    15746  Sun Apr 20 22:24:07 2003
+              40976 blocks of size 262144. 709 blocks available
 </screen></para>
 
 <para>
@@ -1952,7 +1861,7 @@ driver files belong.
 
 <para>
 So, next you must tell Samba about the special category of the files
-you just uploaded into the <parameter>[print$]</parameter> share. This
+you just uploaded into the <smbconfsection>[print$]</smbconfsection> share. This
 is done by the <command>adddriver</command> command. It will
 prompt Samba to register the driver files into its internal TDB
 database files. The following command and its output has been edited,
@@ -1960,21 +1869,23 @@ again, for readability:
 </para>
 
 <para><screen>
-&rootprompt;<userinput>rpcclient -Uroot%xxxx -c 'adddriver "Windows NT x86" "dm9110:HDNIS01_de.DLL: \
-  Hddm91c1_de.ppd:HDNIS01U_de.DLL:HDNIS01U_de.HLP:   \
-  NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI,          \
-  Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,   \
-  Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL, \
-  HDNIS01Aux.dll,HDNIS01_de.NTF,                     \
-  Hddm91c1_de_reg.HLP' SAMBA-CUPS</userinput>
+		&rootprompt;<userinput>rpcclient -Uroot%xxxx -c 'adddriver "Windows NT x86" \
+"dm9110:HDNIS01_de.DLL: \
+Hddm91c1_de.ppd:HDNIS01U_de.DLL:HDNIS01U_de.HLP:   \
+ NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI,          \
+ Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,   \
+ Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL, \
+ HDNIS01Aux.dll,HDNIS01_de.NTF,                     \
+ Hddm91c1_de_reg.HLP' SAMBA-CUPS</userinput>
 
- cmd = adddriver "Windows NT x86" "dm9110:HDNIS01_de.DLL:Hddm91c1_de.ppd:HDNIS01U_de.DLL:    \
-  HDNIS01U_de.HLP:NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI, \
-  Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,          \
-  Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL,        \
-  HDNIS01Aux.dll,HDNIS01_de.NTF,Hddm91c1_de_reg.HLP"
+cmd = adddriver "Windows NT x86" \
+"dm9110:HDNIS01_de.DLL:Hddm91c1_de.ppd:HDNIS01U_de.DLL:    \
+ HDNIS01U_de.HLP:NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI, \
+ Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,          \
+ Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL,        \
+ HDNIS01Aux.dll,HDNIS01_de.NTF,Hddm91c1_de_reg.HLP"
 
- Printer Driver dm9110 successfully installed.
+Printer Driver dm9110 successfully installed.
 
 </screen></para>
 
@@ -2005,9 +1916,9 @@ subdirectory. You can check this again with
 </para>
 
 <para><screen>
-&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -Uroot%xxxx -c 'cd W32X86;dir;pwd;cd 2;dir;pwd'</userinput>
+&rootprompt;<userinput>smbclient //SAMBA-CUPS/print\$ -Uroot%xx -c 'cd W32X86;dir;pwd;cd 2;dir;pwd'</userinput>
  added interface ip=10.160.51.162 bcast=10.160.51.255 nmask=255.255.252.0
- Domain=[CUPS-PRINT] OS=[Unix] Server=[Samba 2.2.7a]
+ Domain=[CUPS-PRINT] OS=[UNIX] Server=[Samba 2.2.7a]
 
   Current directory is \\SAMBA-CUPS\print$\W32X86\
   .                                   D        0  Sun May  4 04:32:48 2003
@@ -2101,7 +2012,7 @@ host and "xxxx" represents the actual Samba password assigned to root:
 <para>
 You will see a listing of all drivers Samba knows about. Your new one
 should be amongst them. But it is only listed under the <parameter>[Windows NT
-x86]</parameter> heading, not under <parameter>[Windows 4.0]</parameter>,
+x86]</parameter> heading, not under <smbconfsection>[Windows 4.0]</smbconfsection>,
 since we didn't install that part. Or did *you*? -- You will see a listing of
 all drivers Samba knows about. Your new one should be amongst them. In our
 example it is named <emphasis>dm9110</emphasis>.  Note that the 3rd column
@@ -2125,13 +2036,13 @@ with a different driver name, it will work the same:
 
 <para><screen>
 &rootprompt;<userinput>rpcclient -Uroot%xxxx                                        \
-      -c 'adddriver "Windows NT x86"                     \
-      "myphantasydrivername:HDNIS01_de.DLL:              \
-      Hddm91c1_de.ppd:HDNIS01U_de.DLL:HDNIS01U_de.HLP:   \
-      NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI,          \
-      Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,   \
-      Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL, \
-      HDNIS01Aux.dll,HDNIS01_de.NTF,Hddm91c1_de_reg.HLP' SAMBA-CUPS
+  -c 'adddriver "Windows NT x86"                     \
+  "myphantasydrivername:HDNIS01_de.DLL:              \
+  Hddm91c1_de.ppd:HDNIS01U_de.DLL:HDNIS01U_de.HLP:   \
+  NULL:RAW:Hddm91c1_de.DLL,Hddm91c1_de.INI,          \
+  Hddm91c1_de.dat,Hddm91c1_de.def,Hddm91c1_de.hre,   \
+  Hddm91c1_de.vnd,Hddm91c1_de.hlp,Hddm91c1KMMin.DLL, \
+  HDNIS01Aux.dll,HDNIS01_de.NTF,Hddm91c1_de_reg.HLP' SAMBA-CUPS
   </userinput>
 
  cmd = adddriver "Windows NT x86" 
@@ -2151,7 +2062,7 @@ you are responsible yourself that you associate drivers to queues
 which make sense to the target printer). Note, that you can't run the
 <command>rpcclient</command> <command>adddriver</command> command
 repeatedly. Each run "consumes" the files you had put into the
-<parameter>[print$]</parameter> share by moving them into the
+<smbconfsection>[print$]</smbconfsection> share by moving them into the
 respective subdirectories. So you <emphasis>must</emphasis> precede an
 <command>smbclient ... put</command> command before each
 <command>rpcclient ...  adddriver</command>" command.
@@ -2159,7 +2070,7 @@ respective subdirectories. So you <emphasis>must</emphasis> precede an
 </sect3>
 
 <sect3>
-<title>La Grande Finale: Running <command>rpcclient</command> with
+<title>Running <command>rpcclient</command> with
 <command>setdriver</command></title>
 
 <para>
@@ -2207,8 +2118,7 @@ signal to all running smbd processes to work around this:
 </sect1>
 
 <sect1>
-<title>"The Proof of the Pudding lies in the Eating" (Client Driver Install
-Procedure)</title>
+<title>Client Driver Install Procedure</title>
 
 <para>
 A famous philosopher said once: <quote>The Proof of the Pudding lies
@@ -2227,7 +2137,7 @@ all further clients are easy to setup and shouldn't need further
 attention. What follows is a description for the recommended first
 procedure. You work now from a client workstation. First you should
 guarantee that your connection is not unwittingly mapped to
-<parameter>bad user</parameter> "nobody". In a DOS box type:
+<emphasis>bad user</emphasis> "nobody". In a DOS box type:
 </para>
 
 <para><userinput>net use \\<replaceable>SAMBA-SERVER</replaceable>\print$ /user:root</userinput></para>
@@ -2330,13 +2240,13 @@ This can be achieved by accessing the drivers remotely from an NT (or
 
 <para>
 Be aware, that a valid Device Mode can only be initiated by a
-<parameter>printer admin</parameter>, or root (the reason should be
+<smbconfoption><name>printer admin</name></smbconfoption>, or root (the reason should be
 obvious). Device Modes can only correctly be set by executing the
 printer driver program itself. Since Samba can not execute this Win32
 platform driver code, it sets this field initially to NULL (which is
 not a valid setting for clients to use). Fortunately, most drivers
 generate themselves the Printer Driver Data that is needed, when they
-are uploaded to the <parameter>[print$]</parameter> share with the
+are uploaded to the <smbconfsection>[print$]</smbconfsection> share with the
 help of the APW or rpcclient.
 </para>
 
@@ -2447,10 +2357,10 @@ or in the <guimenuitem>Run command...</guimenuitem> field from the
 
 <para>
 After you installed the driver on the Samba server (in its
-<parameter>[print$]</parameter> share, you should always make sure
+<smbconfsection>[print$]</smbconfsection> share, you should always make sure
 that your first client installation completes correctly. Make it a habit for
 yourself to build that the very first connection from a client as
-<parameter>printer admin</parameter>. This is to make sure that:
+<smbconfoption><name>printer admin</name></smbconfoption>. This is to make sure that:
 </para>
 
 <itemizedlist>
@@ -2477,7 +2387,10 @@ To connect as root to a Samba printer, try this command from a Windows
 2K/XP DOS box command prompt:
 </para>
 
-<para><userinput>runas /netonly /user:root "rundll32 printui.dll,PrintUIEntry /p /t3 /n \\<replaceable>SAMBA-SERVER</replaceable>\<replaceable>printername</replaceable>"</userinput>
+<para><screen>
+&dosprompt;<userinput>runas /netonly /user:root "rundll32 printui.dll,PrintUIEntry /p /t3 /n 
+	\\<replaceable>SAMBA-SERVER</replaceable>\<replaceable>printername</replaceable>"</userinput>
+</screen>
 </para>
 
 <para>
@@ -2485,7 +2398,7 @@ You will be prompted for root's Samba-password; type it, wait a few
 seconds, click on <guibutton>Printing Defaults...</guibutton> and
 proceed to set the job options as should be used as defaults by all
 clients. Alternatively, instead of root you can name one other member
-of the <parameter>printer admins</parameter> from the setting.
+of the <smbconfoption><name>printer admin</name></smbconfoption> from the setting.
 </para>
 
 <para>
@@ -2609,7 +2522,7 @@ either. However, only the last one, which you arrived at with steps
 C.1.-6. will permanently save any settings which will then become the
 defaults for new users. If you want all clients to have the same
 defaults, you need to conduct these steps as administrator
-(<parameter>printer admin</parameter> in )
+(<smbconfoption><name>printer admin</name></smbconfoption> in )
 <emphasis>before</emphasis> a client downloads the driver (the clients
 can later set their own <emphasis>per-user defaults</emphasis> by
 following the procedures <emphasis>A.</emphasis>
@@ -2673,7 +2586,7 @@ clicking orgy alone, you need to think about a non-interactive script.
 If more than one printer is using the same driver, the
 <command>rpcclient setdriver</command> command can be used to set the
 driver associated with an installed queue. If the driver is uploaded
-to <parameter>[print$]</parameter> once and registered with the
+to <smbconfsection>[print$]</smbconfsection> once and registered with the
 printing TDBs, it can be used by multiple print queues. In this case
 you just need to repeat the <command>setprinter</command> subcommand
 of <command>rpcclient</command> for every queue (without the need to
@@ -2715,7 +2628,8 @@ following is an example of how this could be accomplished:
 </screen>
 
 <screen>
-&rootprompt;<userinput>rpcclient <replaceable>SAMBA-CUPS</replaceable> -U root%<replaceable>secret</replaceable> -c 'setdriver <replaceable>dm9110</replaceable> "<replaceable>Heidelberg Digimaster 9110 (PS)</replaceable>"'</userinput>
+&rootprompt;<userinput>rpcclient <replaceable>SAMBA-CUPS</replaceable> -U root%<replaceable>secret</replaceable> -c \
+  'setdriver <replaceable>dm9110</replaceable> "<replaceable>Heidelberg Digimaster 9110 (PS)</replaceable>"'</userinput>
  cmd = setdriver dm9110 Heidelberg Digimaster 9110 (PPD)
  Successfully set dm9110 to driver Heidelberg Digimaster 9110 (PS).
 </screen>
@@ -2725,7 +2639,8 @@ following is an example of how this could be accomplished:
  cmd = enumprinters
    flags:[0x800000]
    name:[\\SAMBA-CUPS\dm9110]
-   description:[\\SAMBA-CUPS\dm9110,Heidelberg Digimaster 9110 (PS),110ppm HiVolume DANKA Stuttgart]
+   description:[\\SAMBA-CUPS\dm9110,Heidelberg Digimaster 9110 (PS),\
+     110ppm HiVolume DANKA Stuttgart]
    comment:[110ppm HiVolume DANKA Stuttgart]
  [....]
 </screen>
@@ -2741,7 +2656,8 @@ following is an example of how this could be accomplished:
  cmd = enumprinters
    flags:[0x800000]
    name:[\\SAMBA-CUPS\dm9110]
-   description:[\\SAMBA-CUPS\dm9110,myphantasydrivername,110ppm HiVolume DANKA Stuttgart]
+   description:[\\SAMBA-CUPS\dm9110,myphantasydrivername,\
+     110ppm HiVolume DANKA Stuttgart]
    comment:[110ppm HiVolume DANKA Stuttgart]
  [....]
 </screen></para>
@@ -2771,7 +2687,7 @@ if:
 <itemizedlist>
 <listitem><para>...the connected user is able to successfully execute
 an <command>OpenPrinterEx(\\server)</command> with administrative
-privileges (i.e. root or <parameter>printer admin</parameter>).
+privileges (i.e. root or <smbconfoption><name>printer admin</name></smbconfoption>).
 </para>
 
 <tip><para> Try this from a Windows 2K/XP DOS box command prompt:
@@ -2786,7 +2702,7 @@ and click on <guibutton>Printing Preferences...</guibutton>
 </para></tip></listitem>
 
 <listitem><para>... contains the setting
-<parameter>show add printer wizard = yes</parameter> (the
+<smbconfoption><name>show add printer wizard</name><value>yes</value></smbconfoption> (the
 default).</para></listitem>
 </itemizedlist>
 
@@ -2796,7 +2712,7 @@ The APW can do various things:
 
 <itemizedlist>
 <listitem><para>upload a new driver to the Samba
-<parameter>[print$]</parameter> share;</para></listitem>
+<smbconfsection>[print$]</smbconfsection> share;</para></listitem>
 
 <listitem><para>associate an uploaded driver with an existing (but
 still "driverless") print queue;</para></listitem>
@@ -2805,8 +2721,8 @@ still "driverless") print queue;</para></listitem>
 print queue with one that has been uploaded before;</para></listitem>
 
 <listitem><para>add an entirely new printer to the Samba host (only in
-conjunction with a working <parameter>add printer command</parameter>;
-a corresponding <parameter>delete printer command</parameter> for
+conjunction with a working <smbconfoption><name>add printer command</name></smbconfoption>;
+a corresponding <smbconfoption><name>delete printer command</name></smbconfoption> for
 removing entries from the <guiicon>Printers...</guiicon> folder
 may be provided too)</para></listitem>
 </itemizedlist>
@@ -2814,9 +2730,9 @@ may be provided too)</para></listitem>
 <para>
 The last one (add a new printer) requires more effort than the
 previous ones. In order to use the APW to successfully add a printer
-to a Samba server, the <parameter>add printer command</parameter> must
+to a Samba server, the <smbconfoption><name>add printer command</name></smbconfoption> must
 have a defined value. The program hook must successfully add the
-printer to the Unix print system (i.e. to
+printer to the UNIX print system (i.e. to
 <filename>/etc/printcap</filename>,
 <filename>/etc/cups/printers.conf</filename> or other appropriate
 files) and to  if necessary.
@@ -2828,10 +2744,8 @@ exist, smbd will execute the <parameter>add printer
 command</parameter> and reparse to the 
 to attempt to locate the new printer share. If the share is still not
 defined, an error of <errorname>Access Denied</errorname> is
-returned to the client.  Note that the <parameter>add printer
-command</parameter> is executed under the context of the connected
-user, not necessarily a root account. A <parameter>map to guest = bad
-user</parameter> may have connected you unwittingly under the wrong
+returned to the client.  Note that the <smbconfoption><name>add printer command</name></smbconfoption> is executed under the context of the connected
+user, not necessarily a root account. A <smbconfoption><name>map to guest</name><value>bad user</value></smbconfoption> may have connected you unwittingly under the wrong
 privilege; you should check it by using the
 <command>smbstatus</command> command.
 </para>
@@ -3068,7 +2982,7 @@ multiple ports as a form of load balancing or fail over.
 If you require that multiple ports be defined for some reason or
 another (<quote>My users and my Boss should not know that they are
 working with Samba</quote>),  possesses a
-<parameter>enumports command</parameter> which can be used to define
+<smbconfoption><name>enumports command</name></smbconfoption> which can be used to define
 an external program that generates a listing of ports on a system.
 </para>
 </sect2>
@@ -3094,7 +3008,7 @@ Settings" in the CUPS Printing part of this document.
 The Imprints tool set provides a UNIX equivalent of the
 Windows NT Add Printer Wizard. For complete information, please
 refer to the Imprints web site
-at<ulink url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink>
+at <ulink noescape="1" url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink>
 as well as the documentation included with the imprints source
 distribution. This section will only provide a brief introduction
 to the features of Imprints.
@@ -3298,14 +3212,6 @@ Here is a list of the used commandline parameters:
 </varlistentry>
 </variablelist>
 
-<para>
-I have tested this with a Samba 2.2.7a and a Samba-3alpha24
-installation and Windows XP Professional clients. Note that this
-specific command set works with network print queues (installing
-local print queues requires different parameters, but this is of no
-interest here).
-</para>
-
 <itemizedlist>
 <listitem><para>Line 1 deletes a possibly existing previous network
 printer <emphasis>infotec2105-IPDS</emphasis> (which had used native
@@ -3338,7 +3244,7 @@ on "sambacupsserver", and if the printer drivers have successfully been
 uploaded (via <command>APW</command> ,
 <command>smbclient/rpcclient</command> or
 <command>cupsaddsmb</command>) into the
-<parameter>[print$]</parameter> driver repository of Samba. Also, some
+<smbconfsection>[print$]</smbconfsection> driver repository of Samba. Also, some
 Samba versions prior to version 3.0 required a re-start of smbd after
 the printer install and the driver upload, otherwise the script (or
 any other client driver download) would fail.
@@ -3392,7 +3298,7 @@ create a new printer on Samba and the UNIX print subsystem!
 </sect1>
 
 <sect1>
-<title>Migration of "Classical" printing to Samba-3</title>
+<title>Migration of "Classical" printing to Samba</title>
 
 <para>
 The basic "NT-style" printer driver management has not changed
@@ -3408,9 +3314,9 @@ possible scenarios for migration:
 
 <itemizedlist>
 <listitem><para>You need to study and apply the new Windows NT printer
-and driver support. Previously used parameters "<parameter>printer
-driver file</parameter>", " <parameter>printer driver</parameter>" and
-"<parameter>printer driver location</parameter>" are no longer
+and driver support. Previously used parameters <parameter>printer
+driver file</parameter>, <parameter>printer driver</parameter> and
+<parameter>printer driver location</parameter> are no longer
 supported.</para></listitem>
 
 <listitem><para>If you want to take advantage of WinNT printer driver
@@ -3418,19 +3324,18 @@ support you also need to migrate the Win9x/ME drivers to the new
 setup.</para></listitem>
 
 <listitem><para>An existing <filename>printers.def</filename> file
-(the one specified in the now removed parameter <parameter>printer
-driver file = ...</parameter>) will work no longer with Samba-3.0. In
+		(the one specified in the now removed parameter <parameter>printer driver file</parameter>) will work no longer with samba 3. In
 3.0, smbd attempts to locate a Win9x/ME driver files for the printer
-in <parameter>[print$]</parameter> and additional settings in the TDB
+in <smbconfsection>[print$]</smbconfsection> and additional settings in the TDB
 and only there; if it fails it will <emphasis>not</emphasis> (as 2.2.x
 used to do) drop down to using a <filename>printers.def</filename>
 (and all associated parameters). The make_printerdef tool is removed
 and there is no backwards compatibility for this.</para></listitem>
 
 <listitem><para>You need to install a Windows 9x driver into the
-<parameter>[print$]</parameter> share for a printer on your Samba
+<smbconfsection>[print$]</smbconfsection> share for a printer on your Samba
 host. The driver files will be stored in the "WIN40/0" subdirectory of
-<parameter>[print$]</parameter>, and some other settings and info go
+<smbconfsection>[print$]</smbconfsection>, and some other settings and info go
 into the printing-related TDBs.</para></listitem>
 
 <listitem><para>If you want to migrate an existing
@@ -3441,7 +3346,7 @@ rpcclient. See the Imprints installation client at:
 </para>
 
 <para>
-<ulink url="http://imprints.sourceforge.net/"><emphasis>http://imprints.sourceforge.net/</emphasis></ulink>
+	<ulink noescape="1" url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink>
 </para>
 
 <para>
@@ -3459,18 +3364,13 @@ We will publish an update to this section shortly.
 </sect1>
 
 <sect1>
-<title>Common Errors and Problems</title>
-
-<para>
-Here are a few typical errors and problems people have
-encountered. You can avoid them. Read on.
-</para>
+<title>Common Errors</title>
 
 <sect2>
 <title>I give my root password but I don't get access</title>
 
 <para>
-Don't confuse the root password which is valid for the Unix system
+Don't confuse the root password which is valid for the UNIX system
 (and in most cases stored in the form of a one-way hash in a file
 named <filename>/etc/shadow</filename>) with the password used to
 authenticate against Samba!. Samba doesn't know the UNIX password; for
@@ -3484,7 +3384,7 @@ for root must be created first. This is often done with the
 <title>My printjobs get spooled into the spooling directory, but then get lost</title>
 
 <para>
-Don't use the existing Unix print system spool directory for the Samba
+Don't use the existing UNIX print system spool directory for the Samba
 spool directory. It may seem convenient and a saving of space, but it
 only leads to problems. The two <emphasis>must</emphasis> be separate.
 </para>

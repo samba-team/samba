@@ -27,23 +27,21 @@
 	</para>
 
 	<para>
-	For information about DFS, refer to
-	<ulink url="http://www.microsoft.com/NTServer/nts/downloads/winfeatures/NTSDistrFile/AdminGuide.asp">
-	Microsoft documentation at http://www.microsoft.com/NTServer/nts/downloads/winfeatures/NTSDistrFile/AdminGuide.asp</ulink>.
+	For information about DFS, refer to the 
+<ulink url="http://www.microsoft.com/NTServer/nts/downloads/winfeatures/NTSDistrFile/AdminGuide.asp">Microsoft documentation</ulink>.
 	</para>
 
 	<para>
-	This document explains how to host a DFS tree on a Unix machine (for DFS-aware
+	This document explains how to host a DFS tree on a UNIX machine (for DFS-aware
 	clients to browse) using Samba.
 	</para>
 
 	<para>
-	To enable SMB-based DFS for Samba, configure it with the <parameter>--with-msdfs</parameter>
+		To enable SMB-based DFS for Samba, configure it with the <option>--with-msdfs</option>
 	option. Once built, a Samba server can be made a DFS server by setting the global 
-	boolean <ulink url="smb.conf.5.html#HOSTMSDFS"><parameter> host msdfs</parameter></ulink>
-	parameter in the <filename>smb.conf </filename> file. You designate a share as a DFS
-	root using the share level boolean <ulink url="smb.conf.5.html#MSDFSROOT"><parameter>
-	msdfs root</parameter></ulink> parameter. A DFS root directory on Samba hosts DFS
+	boolean <smbconfoption><name>host msdfs</name></smbconfoption>
+	parameter in the &smb.conf; file. You designate a share as a DFS
+	root using the share level boolean <smbconfoption><name>msdfs root</name></smbconfoption> parameter. A DFS root directory on Samba hosts DFS
 	links in the form of symbolic links that point to other servers. For example, a symbolic link
 	<filename>junction-&gt;msdfs:storage1\share1</filename> in the share directory acts
 	as the DFS junction. When DFS-aware clients attempt to access the junction link,
@@ -58,28 +56,28 @@
 	Here's an example of setting up a DFS tree on a Samba server.
 	</para>
 
-	<para><programlisting>
-# The smb.conf file:
-[global]
-	netbios name = SMOKEY
-	host msdfs   = yes
+	<para><smbconfexample>
+			<title>smb.conf with DFS configured</title>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
+<smbconfoption><name>host msdfs  </name><value>yes</value></smbconfoption>
 
-[dfs]
-	path = /export/dfsroot
-	msdfs root = yes
-	</programlisting></para>
+<smbconfsection>[dfs]</smbconfsection>
+<smbconfoption><name>path</name><value>/export/dfsroot</value></smbconfoption>
+<smbconfoption><name>msdfs root</name><value>yes</value></smbconfoption>
+	</smbconfexample></para>
 
 
-	<para>In the /export/dfsroot directory we set up our dfs links to 
+	<para>In the /export/dfsroot directory we set up our DFS links to 
 	other servers on the network.</para>
 
-	<screen>
-	&rootprompt;<userinput>cd /export/dfsroot</userinput>
-	&rootprompt;<userinput>chown root /export/dfsroot</userinput>
-	&rootprompt;<userinput>chmod 755 /export/dfsroot</userinput>
-	&rootprompt;<userinput>ln -s msdfs:storageA\\shareA linka</userinput>
-	&rootprompt;<userinput>ln -s msdfs:serverB\\share,serverC\\share linkb</userinput>
-	</screen>
+<screen>
+&rootprompt;<userinput>cd /export/dfsroot</userinput>
+&rootprompt;<userinput>chown root /export/dfsroot</userinput>
+&rootprompt;<userinput>chmod 755 /export/dfsroot</userinput>
+&rootprompt;<userinput>ln -s msdfs:storageA\\shareA linka</userinput>
+&rootprompt;<userinput>ln -s msdfs:serverB\\share,serverC\\share linkb</userinput>
+</screen>
 
 	<para>You should set up the permissions and ownership of 
 	the directory acting as the DFS root such that only designated 
@@ -99,9 +97,9 @@
 <title>Common Errors</title>
 	<itemizedlist>
 		<listitem><para>Windows clients need to be rebooted 
-		if a previously mounted non-dfs share is made a dfs 
+		if a previously mounted non-dfs share is made a DFS 
 		root or vice versa. A better way is to introduce a 
-		new share and make it the dfs root.</para>
+		new share and make it the DFS root.</para>
 		</listitem>
 		
 		<listitem><para>Currently there's a restriction that msdfs 

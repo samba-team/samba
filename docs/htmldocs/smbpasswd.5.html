@@ -19,8 +19,8 @@
 		Note that this password hash is regarded as weak as it is
 		vulnerable to dictionary attacks and if two users choose the 
 		same password this entry will be identical (i.e. the password 
-		is not &quot;salted&quot; as the UNIX password is). If the user has a 
-		null password this field will contain the characters &quot;NO PASSWORD&quot; 
+		is not "salted" as the UNIX password is). If the user has a 
+		null password this field will contain the characters "NO PASSWORD" 
 		as the start of the hex string. If the hex string is equal to 
 		32 'X' characters then the user's account is marked as 
 		<tt class="constant">disabled</tt> and the user will not be able to 
@@ -43,7 +43,7 @@
 		password and uses a much higher quality hashing algorithm. 
 		However, it is still the case that if two users choose the same 
 		password this entry will be identical (i.e. the password is 
-		not &quot;salted&quot; as the UNIX password is). </p><p><span class="emphasis"><em>WARNING !!</em></span>. Note that, due to 
+		not "salted" as the UNIX password is). </p><p><span class="emphasis"><em>WARNING !!</em></span>. Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
 		be able to impersonate the user on the network. For this
@@ -59,20 +59,21 @@
 		13 characters in length (including the '[' and ']' characters).
 		The contents of this field may be any of the following characters:
 		</p><div class="itemizedlist"><ul type="disc"><li><p><span class="emphasis"><em>U</em></span> - This means 
-			this is a &quot;User&quot; account, i.e. an ordinary user. Only User 
+			this is a "User" account, i.e. an ordinary user. Only User 
 			and Workstation Trust accounts are currently supported 
 			in the smbpasswd file. </p></li><li><p><span class="emphasis"><em>N</em></span> - This means the
 			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
 			will only allow users to log on with no password if the <i class="parameter"><tt>
-			null passwords</tt></i> parameter is set in the <a href="smb.conf.5.html#NULLPASSWORDS" target="_top"><a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a></a> config file. </p></li><li><p><span class="emphasis"><em>D</em></span> - This means the account 
+			null passwords</tt></i> parameter is set in the 
+			<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> config file. </p></li><li><p><span class="emphasis"><em>D</em></span> - This means the account 
 			is disabled and no SMB/CIFS logins  will be allowed for this user. </p></li><li><p><span class="emphasis"><em>W</em></span> - This means this account 
-			is a &quot;Workstation Trust&quot; account. This kind of account is used 
+			is a "Workstation Trust" account. This kind of account is used 
 			in the Samba PDC code stream to allow Windows NT Workstations 
 			and Servers to join a Domain hosted by a Samba PDC. </p></li></ul></div><p>Other flags may be added as the code is extended in future.
 		The rest of this field space is filled in with spaces. </p></dd><dt><span class="term">Last Change Time</span></dt><dd><p>This field consists of the time the account was 
 		last modified. It consists of the characters 'LCT-' (standing for 
-		&quot;Last Change Time&quot;) followed by a numeric encoding of the UNIX time 
+		"Last Change Time") followed by a numeric encoding of the UNIX time 
 		in seconds since the epoch (1970) that the last change was made. 
 		</p></dd></dl></div><p>All other colon separated fields are ignored at this time.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
 	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.8.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(8)</span></a>, <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>, and

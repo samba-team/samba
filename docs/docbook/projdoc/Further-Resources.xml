@@ -1,7 +1,6 @@
 <chapter id="Further-Resources">
 <chapterinfo>
 	&author.jelmer;
-	&author.dlechnyr;
 	<pubdate>May 1, 2003</pubdate>
 </chapterinfo>
 
@@ -141,6 +140,13 @@
 	</ulink>
 	</para></listitem>
 
+	<listitem><para>
+			<ulink url="http://www2.sphaero.org/docs/#W2K">
+				<emphasis>W2K Samba deploy HOWTO</emphasis>
+				by Arnaud Loonstra
+	</ulink>
+	</para></listitem>
+
 </itemizedlist>
 
 </sect1>
@@ -168,11 +174,6 @@
 	</para></listitem>
 
 </itemizedlist>
-</sect1>
-
-<sect1>
-	<title>Books</title>
-
 </sect1>
 
 </chapter>

@@ -1,34 +1,8 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
-
-<!-- This one is only used by shutdown (RPC) -->
-<!ENTITY net.arg.shutdown '
-<varlistentry>
-<term>-r</term>
-<listitem><para>
-Reboot after shutdown.
-</para></listitem>
-</varlistentry>
-
-<varlistentry>
-<term>-f</term>
-<listitem><para>
-Force shutting down all applications.
-</para></listitem>
-</varlistentry>
-
-<varlistentry>
-<term>-t timeout</term>
-<listitem><para>
-Timeout before system will be shut down. An interactive 
-user of the system can use this time to cancel the shutdown.
-</para></listitem>
-</varlistentry>'>
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-
 <refentry id="net.8">
 
 <refmeta>
@@ -158,6 +132,20 @@ user of the system can use this time to cancel the shutdown.
 <title>COMMANDS</title>
 
 <refsect2>
+<title>CHANGESECRETPW</title>
+
+<para>This command allows the Samba machine account password to be set from an external application
+to a machine account password that has already been stored in Active Directory. DO NOT USE this command
+unless you know exactly what you are doing. The use of this command requires that the force flag (-f)
+be used also. There will be NO command prompt. Whatever information is piped into stdin, either by
+typing at the command line or otherwise, will be stored as the literal machine password. Do NOT use
+this without care and attention as it will overwrite a legitimate machine password without warning.
+YOU HAVE BEEN WARNED.
+</para>
+
+</refsect2>
+
+<refsect2>
 	<title>TIME</title>
 
 	<para>The <command>NET TIME</command> command allows you to view the time on a remote server
@@ -175,7 +163,7 @@ displays the time on the remote server.
 <refsect3>
 <title>TIME SYSTEM</title>
 
-<para> Displays the time on the remote server in a format ready for <command>/bin/date</command></para>
+<para>Displays the time on the remote server in a format ready for <command>/bin/date</command></para>
 
 </refsect3>
 
@@ -754,7 +742,28 @@ Interdomain account must already be created on the remote PDC.
 <para>Shut down the remote server.</para>
 
 <variablelist>
-&net.arg.shutdown;
+<varlistentry>
+<term>-r</term>
+<listitem><para>
+Reboot after shutdown.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>-f</term>
+<listitem><para>
+Force shutting down all applications.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>-t timeout</term>
+<listitem><para>
+Timeout before system will be shut down. An interactive 
+user of the system can use this time to cancel the shutdown.
+</para></listitem>
+</varlistentry>'>
+
 <varlistentry>
 <term>-C message</term>
 <listitem><para>Display the specified message on the screen to 

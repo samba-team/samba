@@ -70,12 +70,12 @@ Port on the target server to connect to (usually 139 or 445)\&. Defaults to tryi
 
 .TP
 -n <primary NetBIOS name>
-This option allows you to override the NetBIOS name that Samba uses for itself\&. This is identical to setting the \fINetBIOS name\fR parameter in the \fBsmb.conf\fR(5) file\&. However, a command line setting will take precedence over settings in \fBsmb.conf\fR(5)\&.
+This option allows you to override the NetBIOS name that Samba uses for itself\&. This is identical to setting the \fInetbios name\fR parameter in the \fIsmb\&.conf\fR file\&. However, a command line setting will take precedence over settings in \fIsmb\&.conf\fR\&.
 
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -104,10 +104,15 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .SH "COMMANDS"
+
+.SS "CHANGESECRETPW"
+
+.PP
+This command allows the Samba machine account password to be set from an external application to a machine account password that has already been stored in Active Directory\&. DO NOT USE this command unless you know exactly what you are doing\&. The use of this command requires that the force flag (-f) be used also\&. There will be NO command prompt\&. Whatever information is piped into stdin, either by typing at the command line or otherwise, will be stored as the literal machine password\&. Do NOT use this without care and attention as it will overwrite a legitimate machine password without warning\&. YOU HAVE BEEN WARNED\&.
 
 .SS "TIME"
 

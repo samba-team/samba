@@ -136,13 +136,14 @@ for each module and SMB_SUBSYSTEM() for each subsystem.
 
 <para><programlisting>
 SMB_MODULE(<replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>, <replaceable>object files</replaceable>, <replaceable>plugin name</replaceable>, <replaceable>subsystem name</replaceable>, <replaceable>static_action</replaceable>, <replaceable>shared_action</replaceable>)
-SMB_SUBSYSTEM(<replaceable>subsystem</replaceable>)
+SMB_SUBSYSTEM(<replaceable>subsystem</replaceable>,<replaceable>depfile</replaceable>)
 </programlisting></para>
 
-<para>Also, make sure to add the correct directives to 
-<filename>Makefile.in</filename>. <replaceable>@SUBSYSTEM_STATIC@</replaceable>
-will be replaced with a list of objects files of the modules that need to 
-be linked in statically. <replaceable>@SUBSYSTEM_MODULES@</replaceable> will 
+<para>The depfile for a certain subsystem is the file that calls the 
+initialisation functions for the statically built in modules.</para>
+
+<para>
+<replaceable>@SUBSYSTEM_MODULES@</replaceable> in Makefile.in will 
 be replaced with the names of the plugins to build.
 </para>
 
@@ -150,6 +151,13 @@ be replaced with the names of the plugins to build.
 be changed by ./configure are rebuilded in the 'modules_clean' make target. 
 Practically, this means all c files that contain <command>static_init_subsystem;</command> calls need to be rebuilded.
 </para>
+
+<note>
+<para>
+There currently also is a configure.in command called SMB_MODULE_PROVIVES().
+This is used for modules that register multiple things. It should not 
+be used as probing will most likely disappear in the future.</para>
+</note>
 
 </sect2>
 </sect1>

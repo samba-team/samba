@@ -49,8 +49,8 @@ Samba may be secured from connections that originate from outside the local netw
 done using <emphasis>host based protection</emphasis> (using samba's implementation of a technology
 known as "tcpwrappers", or it may be done be using <emphasis>interface based exclusion</emphasis>
 so that &smbd; will bind only to specifically permitted interfaces. It is also
-possible to set specific share or resource based exclusions, eg: on the <parameter>IPC$</parameter>
-auto-share. The <parameter>IPC$</parameter> share is used for browsing purposes as well as to establish
+possible to set specific share or resource based exclusions, eg: on the <smbconfsection>[IPC$]</smbconfsection>
+auto-share. The <smbconfsection>[IPC$]</smbconfsection> share is used for browsing purposes as well as to establish
 TCP/IP connections.
 </para>
 
@@ -85,16 +85,16 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para>
-	One of the simplest fixes in this case is to use the <parameter>hosts allow</parameter> and
-	<parameter>hosts deny</parameter> options in the Samba &smb.conf; configuration file to only
+	One of the simplest fixes in this case is to use the <smbconfoption><name>hosts allow</name></smbconfoption> and
+	<smbconfoption><name>hosts deny</name></smbconfoption> options in the Samba &smb.conf; configuration file to only
 	allow access to your server from a specific range of hosts. An example
 	might be:
 	</para>
 
-	<para><programlisting>
-		hosts allow = 127.0.0.1 192.168.2.0/24 192.168.3.0/24
-		hosts deny = 0.0.0.0/0
-	</programlisting></para>
+	<para><smbconfblock>
+<smbconfoption><name>hosts allow</name><value>127.0.0.1 192.168.2.0/24 192.168.3.0/24</value></smbconfoption>
+<smbconfoption><name>hosts deny</name><value>0.0.0.0/0</value></smbconfoption>
+	</smbconfblock></para>
 
 	<para>
 	The above will only allow SMB connections from 'localhost' (your own
@@ -111,12 +111,12 @@ before someone will find yet another vulnerability.
 
 	<para>
 	If you want to restrict access to your server to valid users only then the following
-	method may be of use. In the &smb.conf; <parameter>[globals]</parameter> section put:
+	method may be of use. In the &smb.conf; <smbconfsection>[global]</smbconfsection> section put:
 	</para>
 
-	<para><programlisting>
-		valid users = @smbusers, jacko
-	</programlisting></para>
+	<para><smbconfblock>
+<smbconfoption><name>valid users</name><value>@smbusers, jacko</value></smbconfoption>
+	</smbconfblock></para>
 
 	<para>
 	What this does is, it restricts all server access to either the user <emphasis>jacko</emphasis>
@@ -140,10 +140,10 @@ before someone will find yet another vulnerability.
 	You can change this behaviour using options like the following:
 	</para>
 
-	<para><programlisting>
-		interfaces = eth* lo
-		bind interfaces only = yes
-	</programlisting></para>
+	<para><smbconfblock>
+<smbconfoption><name>interfaces</name><value>eth* lo</value></smbconfoption>
+<smbconfoption><name>bind interfaces only</name><value>yes</value></smbconfoption>
+	</smbconfblock></para>
 
 	<para>
 	This tells Samba to only listen for connections on interfaces with a
@@ -209,11 +209,11 @@ before someone will find yet another vulnerability.
 	To do that you could use:
 	</para>
 
-	<para><programlisting>
-[ipc$]
-	hosts allow = 192.168.115.0/24 127.0.0.1
-	hosts deny = 0.0.0.0/0
-	</programlisting></para>
+	<para><smbconfblock>
+<smbconfsection>[ipc$]</smbconfsection>
+<smbconfoption><name>hosts allow</name><value>192.168.115.0/24 127.0.0.1</value></smbconfoption>
+<smbconfoption><name>hosts deny</name><value>0.0.0.0/0</value></smbconfoption>
+	</smbconfblock></para>
 
 	<para>
 	this would tell Samba that IPC$ connections are not allowed from
@@ -245,23 +245,30 @@ before someone will find yet another vulnerability.
 	To configure NTLMv2 authentication the following registry keys are worth knowing about:
 	</para>
 
-	<!-- FIXME -->
 	<para>
-	<screen>
+		<screen>
 		[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
 		"lmcompatibilitylevel"=dword:00000003
+		</screen>
+	</para>
 
+	<para>
 		0x3 - Send NTLMv2 response only. Clients will use NTLMv2 authentication,
 		use NTLMv2 session security if the server supports it. Domain
 		controllers accept LM, NTLM and NTLMv2 authentication.
+	</para>
 
+	<para>
+		<screen>
 		[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0]
 		"NtlmMinClientSec"=dword:00080000
+		</screen>
+	</para>
 
+	<para>
 		0x80000 - NTLMv2 session security. If either NtlmMinClientSec or
 		NtlmMinServerSec is set to 0x80000, the connection will fail if NTLMv2
 		session security is not negotiated.
-	</screen>
 	</para>
 	</sect2>
 </sect1>
@@ -270,10 +277,10 @@ before someone will find yet another vulnerability.
 <title>Upgrading Samba</title>
 
 <para>
-Please check regularly on <ulink url="http://www.samba.org/">http://www.samba.org/</ulink> for updates and
+Please check regularly on <ulink noescape="1" url="http://www.samba.org/">http://www.samba.org/</ulink> for updates and
 important announcements.  Occasionally security releases are made and 
 it is highly recommended to upgrade Samba when a security vulnerability
-is discovered.
+is discovered. Check with your OS vendor for OS specific upgrades.
 </para>
 
 </sect1>
@@ -346,21 +353,21 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para>
 	Samba does allow the setup you require when you have set the
-	<parameter>only user = yes</parameter> option on the share, is that you have not set the
+	<smbconfoption><name>only user</name><value>yes</value></smbconfoption> option on the share, is that you have not set the
 	valid users list for the share.
 	</para>
 
 	<para>
 	Note that only user works in conjunction with the users= list,
 	so to get the behavior you require, add the line :
-	<programlisting>
-	users = %S
-	</programlisting>
+	<smbconfblock>
+<smbconfoption><name>users</name><value>%S</value></smbconfoption>
+</smbconfblock>
 	this is equivalent to:
-	<programlisting>
-	valid users = %S
-	</programlisting>
-	to the definition of the <parameter>[homes]</parameter> share, as recommended in
+	<smbconfblock>
+<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+	</smbconfblock>
+	to the definition of the <smbconfsection>[homes]</smbconfsection> share, as recommended in
 	the &smb.conf; man page.
 	</para>
 	</sect2>

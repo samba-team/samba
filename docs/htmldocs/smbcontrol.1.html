@@ -5,8 +5,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-i</span></dt><dd><p>Run interactively. Individual commands 
 		of the form destination message-type parameters can be entered 
@@ -58,7 +57,9 @@ compile time.</p></dd><dt><span class="term">-i</span></dt><dd><p>Run interactiv
 	talloc(pool) memory usage by the specified daemon/process. Available 
 	for both smbd and nmbd.</p></dd><dt><span class="term">drvupgrade</span></dt><dd><p>Force clients of printers using specified driver 
 	to update their local version of the driver. Can only be 
-	sent to smbd.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	sent to smbd.</p></dd><dt><span class="term">reload-config</span></dt><dd><p>Force daemon to reload smb.conf configuration file. Can be sent
+	to <tt class="constant">smbd</tt>, <tt class="constant">nmbd</tt>, or <tt class="constant">winbindd</tt>.
+	</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
 	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a> and <a href="smbd.8.html"><span class="citerefentry"><span class="refentrytitle">smbd</span>(8)</span></a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 

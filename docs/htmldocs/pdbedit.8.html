@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>pdbedit</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="pdbedit.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>pdbedit &#8212; manage the SAM database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">pdbedit</tt>  [-L] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-g] [-d debuglevel] [-s configfile] [-P account-policy] [-C value]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The pdbedit program is used to manage the users accounts
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>pdbedit</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="pdbedit.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>pdbedit &#8212; manage the SAM database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">pdbedit</tt>  [-L] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-r] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-g] [-d debuglevel] [-s configfile] [-P account-policy] [-C value] [-c account-control]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The pdbedit program is used to manage the users accounts
 	stored in the sam database and can only be run by root.</p><p>The pdbedit tool uses the passdb modular interface and is
 	independent from the kind of users database used (currently there
 	are smbpasswd, ldap, nis+ and tdb based and more can be added
@@ -31,7 +31,7 @@ Home Directory: \\BERSERKER\samba
 HomeDir Drive:  
 Logon Script:   
 Profile Path:   \\BERSERKER\profile
-</pre></dd><dt><span class="term">-w</span></dt><dd><p>This option sets the &quot;smbpasswd&quot; listing format.
+</pre></dd><dt><span class="term">-w</span></dt><dd><p>This option sets the "smbpasswd" listing format.
 		It will make pdbedit list the users in the database, printing
 		out the account fields in a format compatible with the
 		<tt class="filename">smbpasswd</tt> file format. (see the
@@ -44,18 +44,18 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX  
 		operations and <span class="emphasis"><em>optional</em></span> in list
 		operations.</p></dd><dt><span class="term">-f fullname</span></dt><dd><p>This option can be used while adding or
 		modifing a user account. It will specify the user's full
-		name. </p><p>Example: <b class="command">-f &quot;Simo Sorce&quot;</b></p></dd><dt><span class="term">-h homedir</span></dt><dd><p>This option can be used while adding or
+		name. </p><p>Example: <b class="command">-f "Simo Sorce"</b></p></dd><dt><span class="term">-h homedir</span></dt><dd><p>This option can be used while adding or
 		modifing a user account. It will specify the user's home
-		directory network path.</p><p>Example: <b class="command">-h &quot;\\\\BERSERKER\\sorce&quot;</b>
+		directory network path.</p><p>Example: <b class="command">-h "\\\\BERSERKER\\sorce"</b>
 		</p></dd><dt><span class="term">-D drive</span></dt><dd><p>This option can be used while adding or
 		modifing a user account. It will specify the windows drive
-		letter to be used to map the home directory.</p><p>Example: <b class="command">-d &quot;H:&quot;</b>
+		letter to be used to map the home directory.</p><p>Example: <b class="command">-d "H:"</b>
 		</p></dd><dt><span class="term">-S script</span></dt><dd><p>This option can be used while adding or
 		modifing a user account. It will specify the user's logon
-		script path.</p><p>Example: <b class="command">-s &quot;\\\\BERSERKER\\netlogon\\sorce.bat&quot;</b>
+		script path.</p><p>Example: <b class="command">-s "\\\\BERSERKER\\netlogon\\sorce.bat"</b>
 		</p></dd><dt><span class="term">-p profile</span></dt><dd><p>This option can be used while adding or
 		modifing a user account. It will specify the user's profile
-		directory.</p><p>Example: <b class="command">-p &quot;\\\\BERSERKER\\netlogon&quot;</b>
+		directory.</p><p>Example: <b class="command">-p "\\\\BERSERKER\\netlogon"</b>
 		</p></dd><dt><span class="term">-G SID|rid</span></dt><dd><p>
 		This option can be used while adding or modifying a user account. It 
 		will specify the users' new primary group SID (Security Identifier) or 
@@ -65,7 +65,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX  
 		rid. </p><p>Example: <b class="command">-U S-1-5-21-2447931902-1787058256-3961074038-5004</b></p></dd><dt><span class="term">-c account-control</span></dt><dd><p>This option can be used while adding or modifying a user
 		account. It will specify the users' account control property. Possible
 		flags that can be set are: N, D, H, L, X.				
-		</p><p>Example: <b class="command">-c &quot;[X          ]&quot;</b></p></dd><dt><span class="term">-a</span></dt><dd><p>This option is used to add a user into the
+		</p><p>Example: <b class="command">-c "[X          ]"</b></p></dd><dt><span class="term">-a</span></dt><dd><p>This option is used to add a user into the
 		database. This command needs a user name specified with
 		the -u switch. When adding a new user, pdbedit will also
 		ask for the password to be used.</p><p>Example: <b class="command">pdbedit -a -u sorce</b>
@@ -94,12 +94,12 @@ retype new password
 		applies to the group mapping instead of the user database.</p><p>This option will ease migration from one passdb backend to
 		another and will ease backing up.</p></dd><dt><span class="term">-b passdb-backend</span></dt><dd><p>Use a different default passdb backend. </p><p>Example: <b class="command">pdbedit -b xml:/root/pdb-backup.xml -l</b></p></dd><dt><span class="term">-P account-policy</span></dt><dd><p>Display an account policy</p><p>Valid policies are: minimum password age, reset count minutes, disconnect time,
 		user must logon to change password, password history, lockout duration, min password length,
-		maximum password age and bad lockout attempt.</p><p>Example: <b class="command">pdbedit -P &quot;bad lockout attempt&quot;</b></p><pre class="programlisting">
+		maximum password age and bad lockout attempt.</p><p>Example: <b class="command">pdbedit -P "bad lockout attempt"</b></p><pre class="programlisting">
 account policy value for bad lockout attempt is 0
 </pre></dd><dt><span class="term">-C account-policy-value</span></dt><dd><p>Sets an account policy to a specified value. 
 		This option may only be used in conjunction
 		with the <i class="parameter"><tt>-P</tt></i> option.
-		</p><p>Example: <b class="command">pdbedit -P &quot;bad lockout attempt&quot; -C 3</b></p><pre class="programlisting">
+		</p><p>Example: <b class="command">pdbedit -P "bad lockout attempt" -C 3</b></p><pre class="programlisting">
 account policy value for bad lockout attempt was 0
 account policy value for bad lockout attempt is now 3
 </pre></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
@@ -109,8 +109,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -124,10 +123,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+override the <a class="indexterm" name="id2800732"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>NOTES</h2><p>This command may be used only by root.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
 	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.5.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(5)</span></a>, <a href="samba.7.html"><span class="citerefentry"><span class="refentrytitle">samba</span>(7)</span></a></p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 

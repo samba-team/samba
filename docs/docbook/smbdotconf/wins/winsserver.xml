@@ -21,7 +21,7 @@
 	to a WINS server if you have multiple subnets and wish cross-subnet 
 	browsing to work correctly.</para></note>
 
- 	<para>See the documentation file <ulink url="improved-browsing.html">Browsing</ulink> in the samba howto collection.</para>
+	<para>See the <link linkend="NetworkBrowsing"/>.</para>
  
  	<para>Default: <emphasis>not enabled</emphasis></para>
 

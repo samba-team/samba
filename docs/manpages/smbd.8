@@ -76,7 +76,7 @@ Prints the version number for \fBsmbd\fR\&.
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -90,7 +90,7 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .TP
@@ -134,7 +134,7 @@ This parameter is not normally specified except in the above situation\&.
 
 .TP
 \fI/etc/inetd\&.conf\fR
-If the server is to be run by the \fBinetd\fR meta-daemon, this file must contain suitable startup information for the meta-daemon\&. See the "How to Install and Test SAMBA" document for details\&.
+If the server is to be run by the \fBinetd\fR meta-daemon, this file must contain suitable startup information for the meta-daemon\&.
 
 
 .TP
@@ -142,12 +142,12 @@ If the server is to be run by the \fBinetd\fR meta-daemon, this file must contai
 or whatever initialization script your system uses)\&.
 
 
-If running the server as a daemon at startup, this file will need to contain an appropriate startup sequence for the server\&. See the "How to Install and Test SAMBA" document for details\&.
+If running the server as a daemon at startup, this file will need to contain an appropriate startup sequence for the server\&.
 
 
 .TP
 \fI/etc/services\fR
-If running the server via the meta-daemon \fBinetd\fR, this file must contain a mapping of service name (e\&.g\&., netbios-ssn) to service port (e\&.g\&., 139) and protocol type (e\&.g\&., tcp)\&. See the "How to Install and Test SAMBA" document for details\&.
+If running the server via the meta-daemon \fBinetd\fR, this file must contain a mapping of service name (e\&.g\&., netbios-ssn) to service port (e\&.g\&., 139) and protocol type (e\&.g\&., tcp)\&.
 
 
 .TP
@@ -173,7 +173,7 @@ If no printer name is specified to printable services, most systems will use the
 .SH "PAM INTERACTION"
 
 .PP
-Samba uses PAM for authentication (when presented with a plaintext password), for account checking (is this account disabled?) and for session management\&. The degree too which samba supports PAM is restricted by the limitations of the SMB protocol and the \fIobey pam restricions\fR  \fBsmb.conf\fR(5) paramater\&. When this is set, the following restrictions apply:
+Samba uses PAM for authentication (when presented with a plaintext password), for account checking (is this account disabled?) and for session management\&. The degree too which samba supports PAM is restricted by the limitations of the SMB protocol and the \fIobey pam restrictions\fR  \fBsmb.conf\fR(5) paramater\&. When this is set, the following restrictions apply:
 
 .TP 3
 \(bu

@@ -25,9 +25,8 @@ origin.
 
 <para>
 Of all the effort that has been brought to bear on providing native language support
-for all computer users, the efforts of the Openi18n organisation is deserving of
-special mention. For more information about Openi18n please refer to: 
-<link url="http://www.openi18n.org/">http://www.openi18n.org/</link>.
+for all computer users, the efforts of the <ulink url="http://www.openi18n.org/">Openi18n organisation</ulink> is deserving of
+special mention.
 </para>
 
 <para>
@@ -62,17 +61,16 @@ store one character).
 </para>
 
 <para>
-A standardised multibyte charset is unicode, info is available at 
-<ulink url="http://www.unicode.org/">www.unicode.org</ulink>. 
-A big advantage of using a multibyte charset is that you only need one; no 
-need to make sure two computers use the same charset when they are 
+	A standardised multibyte charset is <ulink url="http://www.unicode.org/">unicode</ulink>.
+A big advantage of using a multibyte charset is that you only need one; there 
+is no need to make sure two computers use the same charset when they are 
 communicating.
 </para>
 
-<para>Old windows clients used to use single-byte charsets, named 
+<para>Old windows clients use single-byte charsets, named 
 'codepages' by Microsoft. However, there is no support for 
 negotiating the charset to be used in the smb protocol. Thus, you 
-have to make sure you are using the same charset when talking to an old client.
+have to make sure you are using the same charset when talking to an older client.
 Newer clients (Windows NT, 2K, XP) talk unicode over the wire.
 </para>
 </sect1>
@@ -87,23 +85,23 @@ samba knows of three kinds of character sets:
 
 <variablelist>
 	<varlistentry>
-		<term><parameter>unix charset</parameter></term>
+		<term><smbconfoption><name>unix charset</name></smbconfoption></term>
 		<listitem><para>
 		This is the charset used internally by your operating system. 
-		The default is <constant>ASCII</constant>, which is fine for most 
-		systems.
+		The default is <constant>UTF-8</constant>, which is fine for most 
+		systems. The default in previous samba releases was <constant>ASCII</constant>. 
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term><parameter>display charset</parameter></term>
+		<term><smbconfoption><name>display charset</name></smbconfoption></term>
 		<listitem><para>This is the charset samba will use to print messages
 		on your screen. It should generally be the same as the <command>unix charset</command>.
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term><parameter>dos charset</parameter></term>
+		<term><smbconfoption><name>dos charset</name></smbconfoption></term>
 		<listitem><para>This is the charset samba uses when communicating with 
 		DOS and Windows 9x clients. It will talk unicode to all newer clients.
 		The default depends on the charsets you have installed on your system.
@@ -122,14 +120,10 @@ samba knows of three kinds of character sets:
 characters in filenames are usually not correct in the unix charset but only 
 for the local charset used by the DOS/Windows clients.</para>
 
-<para>The following script from Steve Langasek converts all 
-filenames from CP850 to the iso8859-15 charset.</para>
-
-<para>
-<prompt>#</prompt><userinput>find <replaceable>/path/to/share</replaceable> -type f -exec bash -c 'CP="{}"; ISO=`echo -n "$CP" | iconv -f cp850 \
-  -t iso8859-15`; if [ "$CP" != "$ISO" ]; then mv "$CP" "$ISO"; fi' \;
-</userinput>
+<para>Bjoern Jacke has written a utility named <ulink url="http://j3e.de/linux/convmv/">convm</ulink> that can convert whole directory 
+	structures to different charsets with one single command. 
 </para>
+
 </sect1>
 
 <sect1>
@@ -140,29 +134,41 @@ points of attention when setting it up:</para>
 
 <itemizedlist>
 
-<listitem><para>You should set <parameter>mangling method =
-hash</parameter></para></listitem>
+	<listitem><para>You should set <smbconfoption><name>mangling method</name><value>hash</value></smbconfoption></para></listitem>
 
 <listitem><para>There are various iconv() implementations around and not
 all of  them work equally well. glibc2's iconv() has a critical problem
 in CP932.  libiconv-1.8 works with CP932 but still has some problems and
 does not  work with EUC-JP.</para></listitem>
 
-<listitem><para>You should set <parameter>dos charset = CP932</parameter>, not
+<listitem><para>You should set <smbconfoption><name>dos charset</name><value>CP932</value></smbconfoption>, not
 Shift_JIS, SJIS...</para></listitem>
 
-<listitem><para>Currently only <parameter>unix charset = CP932</parameter>
+<listitem><para>Currently only <smbconfoption><name>unix charset</name><value>CP932</value></smbconfoption>
 will work (but still has some problems...) because of iconv() issues.
-<parameter>unix charset = EUC-JP</parameter> doesn't work well because of
+<smbconfoption><name>unix charset</name><value>EUC-JP</value></smbconfoption> doesn't work well because of
 iconv() issues.</para></listitem>
 
-<listitem><para>Currently Samba 3.0 does not support <parameter>unix charset
-= UTF8-MAC/CAP/HEX/JIS*</parameter></para></listitem>
+<listitem><para>Currently Samba 3.0 does not support <smbconfoption><name>unix charset</name><value>UTF8-MAC/CAP/HEX/JIS*</value></smbconfoption></para></listitem>
 
 </itemizedlist>
 
-<para>More information (in Japanese) is available at: <ulink url="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html">http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html</ulink>.</para>
+<para>More information (in Japanese) is available at: <ulink noescape="1" url="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html">http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html</ulink>.</para>
 
+</sect1>
+
+<sect1>
+	<title>Common errors</title>
+
+	<sect2>
+		<title>CP850.so can't be found</title>
+
+		<para><quote>Samba is complaining about a missing <filename>CP850.so</filename> file</quote>.</para>
+
+		<para>CP850 is the default <smbconfoption><name>dos charset</name></smbconfoption>. The <smbconfoption><name>dos charset</name></smbconfoption> is used to convert data to the codepage used by your dos clients. If you don't have any dos clients, you can safely ignore this message. </para>
+
+		<para>CP850 should be supported by your local iconv implementation. Make sure you have all the required packages installed. If you compiled samba from source, make sure configure found iconv.</para>
+	</sect2>
 </sect1>
 
 </chapter>

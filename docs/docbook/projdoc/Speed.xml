@@ -63,7 +63,7 @@ line with the <option>-O</option> option, or in the &smb.conf; file.
 </para>
 
 <para>
-The <parameter>socket options</parameter> section of the &smb.conf; manual page describes how
+The <smbconfoption><name>socket options</name></smbconfoption> section of the &smb.conf; manual page describes how
 to set these and gives recommendations.
 </para>
 
@@ -76,7 +76,7 @@ much. The correct settings are very dependent on your local network.
 <para>
 The socket option TCP_NODELAY is the one that seems to make the
 biggest single difference for most networks. Many people report that
-adding <parameter>socket options = TCP_NODELAY</parameter> doubles the read 
+adding <smbconfoption><name>socket options</name><value>TCP_NODELAY</value></smbconfoption> doubles the read 
 performance of a Samba drive. The best explanation I have seen for this is
 that the Microsoft TCP/IP stack is slow in sending tcp ACKs.
 </para>
@@ -87,7 +87,7 @@ that the Microsoft TCP/IP stack is slow in sending tcp ACKs.
 <title>Read size</title>
 
 <para>
-The option <parameter>read size</parameter> affects the overlap of disk
+The option <smbconfoption><name>read size</name></smbconfoption> affects the overlap of disk
 reads/writes with network reads/writes. If the amount of data being
 transferred in several of the SMB commands (currently SMBwrite, SMBwriteX and
 SMBreadbraw) is larger than this value then the server begins writing
@@ -115,9 +115,9 @@ pointless and will cause you to allocate memory unnecessarily.
 <title>Max xmit</title>
 
 <para>
-At startup the client and server negotiate a <parameter>maximum transmit</parameter> size,
+	At startup the client and server negotiate a <parameter>maximum transmit</parameter> size,
 which limits the size of nearly all SMB commands. You can set the
-maximum size that Samba will negotiate using the <parameter>max xmit = </parameter> option
+maximum size that Samba will negotiate using the <smbconfoption><name>max xmit</name></smbconfoption> option
 in &smb.conf;. Note that this is the maximum size of SMB requests that 
 Samba will accept, but not the maximum size that the *client* will accept.
 The client maximum receive size is sent to Samba by the client and Samba
@@ -140,7 +140,7 @@ In most cases the default is the best option.
 <title>Log level</title>
 
 <para>
-If you set the log level (also known as <parameter>debug level</parameter>) higher than 2
+If you set the log level (also known as <smbconfoption><name>debug level</name></smbconfoption>) higher than 2
 then you may suffer a large drop in performance. This is because the
 server flushes the log file after each operation, which can be very
 expensive. 
@@ -151,20 +151,20 @@ expensive.
 <title>Read raw</title>
 
 <para>
-The <parameter>read raw</parameter> operation is designed to be an optimised, low-latency
+The <smbconfoption><name>read raw</name></smbconfoption> operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
-however. and Samba makes support for <parameter>read raw</parameter> optional, with it
+however. and Samba makes support for <smbconfoption><name>read raw</name></smbconfoption> optional, with it
 being enabled by default.
 </para>
 
 <para>
-In some cases clients don't handle <parameter>read raw</parameter> very well and actually
+In some cases clients don't handle <smbconfoption><name>read raw</name></smbconfoption> very well and actually
 get lower performance using it than they get using the conventional
 read operations. 
 </para>
 
 <para>
-So you might like to try <parameter>read raw = no</parameter> and see what happens on your
+So you might like to try <smbconfoption><name>read raw</name><value>no</value></smbconfoption> and see what happens on your
 network. It might lower, raise or not affect your performance. Only
 testing can really tell.
 </para>
@@ -175,14 +175,14 @@ testing can really tell.
 <title>Write raw</title>
 
 <para>
-The <parameter>write raw</parameter> operation is designed to be an optimised, low-latency
+The <smbconfoption><name>write raw</name></smbconfoption> operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
-however. and Samba makes support for <parameter>write raw</parameter> optional, with it
+however. and Samba makes support for <smbconfoption><name>write raw</name></smbconfoption> optional, with it
 being enabled by default.
 </para>
 
 <para>
-Some machines may find <parameter>write raw</parameter> slower than normal write, in which
+Some machines may find <smbconfoption><name>write raw</name></smbconfoption> slower than normal write, in which
 case you may wish to change this option.
 </para>
 
@@ -193,7 +193,7 @@ case you may wish to change this option.
 
 <para>
 Slow logins are almost always due to the password checking time. Using
-the lowest practical <parameter>password level</parameter> will improve things. 
+the lowest practical <smbconfoption><name>password level</name></smbconfoption> will improve things. 
 </para>
 
 </sect1>

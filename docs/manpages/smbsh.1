@@ -19,7 +19,7 @@
 ..
 .TH "SMBSH" 1 "" "" ""
 .SH NAME
-smbsh \- Allows access to Windows NT filesystem using UNIX commands
+smbsh \- Allows access to remote SMB shares using UNIX commands
 .SH "SYNOPSIS"
 
 .nf
@@ -54,7 +54,7 @@ This option allows the user to set the directory prefix for SMB access\&. The de
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -68,7 +68,7 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .TP
@@ -87,10 +87,10 @@ The options are: "lmhosts", "host", "wins" and "bcast"\&. They cause names to be
 
 \fBbcast\fR: Do a broadcast on each of the known local interfaces listed in the \fIinterfaces\fR parameter\&. This is the least reliable of the name resolution methods as it depends on the target host being on a locally connected subnet\&.
 
-If this parameter is not set then the name resolve order defined in the \fBsmb.conf\fR(5) file parameter (\fIname resolve order\fR) will be used\&.
+If this parameter is not set then the name resolve order defined in the \fIsmb\&.conf\fR file parameter (\fIname resolve order\fR) will be used\&.
 
 
-The default order is lmhosts, host, wins, bcast\&. Without this parameter or any entry in the \fIname resolve order \fR parameter of the \fBsmb.conf\fR(5) file, the name resolution methods will be attempted in this order\&.
+The default order is lmhosts, host, wins, bcast\&. Without this parameter or any entry in the \fIname resolve order\fR parameter of the \fIsmb\&.conf\fR file, the name resolution methods will be attempted in this order\&.
 
 
 .TP

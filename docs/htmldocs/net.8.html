@@ -24,16 +24,15 @@
 		Defaults to trying 445 first, then 139.
 		</p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i class="parameter"><tt>NetBIOS
-name</tt></i></a> parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  However, a command
+to setting the <a class="indexterm" name="id2796900"></a><a href="#"><i class="parameter"><tt>netbios name</tt></i></a> parameter in the <tt class="filename">smb.conf</tt> file. 
+However, a command
 line setting will take precedence over settings in
-<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+<tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-S server</span></dt><dd><p>
 		Name of target server. You should specify either 
@@ -54,12 +53,18 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>TIME</h3><p>The <b class="command">NET TIME</b> command allows you to view the time on a remote server
+override the <a class="indexterm" name="id2797170"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>CHANGESECRETPW</h3><p>This command allows the Samba machine account password to be set from an external application
+to a machine account password that has already been stored in Active Directory. DO NOT USE this command
+unless you know exactly what you are doing. The use of this command requires that the force flag (-f)
+be used also. There will be NO command prompt. Whatever information is piped into stdin, either by
+typing at the command line or otherwise, will be stored as the literal machine password. Do NOT use
+this without care and attention as it will overwrite a legitimate machine password without warning.
+YOU HAVE BEEN WARNED.
+</p></div><div class="refsect2" lang="en"><h3>TIME</h3><p>The <b class="command">NET TIME</b> command allows you to view the time on a remote server
 	or synchronise the time on the local server with the time on the remote server.</p><div class="refsect3" lang="en"><h4>TIME</h4><p>Without any options, the <b class="command">NET TIME</b> command 
 displays the time on the remote server.
-</p></div><div class="refsect3" lang="en"><h4>TIME SYSTEM</h4><p> Displays the time on the remote server in a format ready for <b class="command">/bin/date</b></p></div><div class="refsect3" lang="en"><h4>TIME SET</h4><p>Tries to set the date and time of the local server to that on 
+</p></div><div class="refsect3" lang="en"><h4>TIME SYSTEM</h4><p>Displays the time on the remote server in a format ready for <b class="command">/bin/date</b></p></div><div class="refsect3" lang="en"><h4>TIME SET</h4><p>Tries to set the date and time of the local server to that on 
 the remote server using <b class="command">/bin/date</b>. </p></div><div class="refsect3" lang="en"><h4>TIME ZONE</h4><p>Displays the timezone in hours from GMT on the remote computer.</p></div></div><div class="refsect2" lang="en"><h3>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [options]</h3><p>
 Join a domain.  If the account already exists on the server, and 
 [TYPE] is MEMBER, the machine will attempt to join automatically. 
@@ -104,8 +109,8 @@ can be controlled using 'NET CACHE'.</p><p>All the timeout parameters support th
 List all current items in the cache.
 </p></div><div class="refsect3" lang="en"><h4>CACHE FLUSH</h4><p>Remove all the current items from the cache.</p></div></div><div class="refsect2" lang="en"><h3>GETLOCALSID [DOMAIN]</h3><p>Print the SID of the specified domain, or if the parameter is
 omitted, the SID of the domain the local server is in.</p></div><div class="refsect2" lang="en"><h3>SETLOCALSID S-1-5-21-x-y-z</h3><p>Sets domain sid for the local server to the specified SID.</p></div><div class="refsect2" lang="en"><h3>GROUPMAP</h3><p>Manage the mappings between Windows group SIDs and UNIX groups.
-Parameters take the for &quot;parameter=value&quot;.  Common options include:</p><div class="itemizedlist"><ul type="disc"><li><p>unixgroup - Name of the UNIX group</p></li><li><p>ntgroup - Name of the Windows NT group (must be
-  resolvable to a SID</p></li><li><p>rid - Unsigned 32-bit integer</p></li><li><p>sid - Full SID in the form of &quot;S-1-...&quot;</p></li><li><p>type - Type of the group; either 'domain', 'local',
+Parameters take the for "parameter=value".  Common options include:</p><div class="itemizedlist"><ul type="disc"><li><p>unixgroup - Name of the UNIX group</p></li><li><p>ntgroup - Name of the Windows NT group (must be
+  resolvable to a SID</p></li><li><p>rid - Unsigned 32-bit integer</p></li><li><p>sid - Full SID in the form of "S-1-..."</p></li><li><p>type - Type of the group; either 'domain', 'local',
   or 'builtin'</p></li><li><p>comment - Freeform text description of the group</p></li></ul></div><div class="refsect3" lang="en"><h4>GROUPMAP ADD</h4><p>Add a new group mapping entry</p><p>net groupmap add {rid=int|sid=string} unixgroup=string [type={domain|local|builtin}] [ntgroup=string] [comment=string]</p></div><div class="refsect3" lang="en"><h4>GROUPMAP DELETE</h4><p>Delete a group mapping entry</p><p>net groupmap delete {ntgroup=string|sid=SID}</p></div><div class="refsect3" lang="en"><h4>GROUPMAP MODIFY</h4><p>Update en existing group entry</p><p>net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] [comment=string] [type={domain|local}</p></div><div class="refsect3" lang="en"><h4>GROUPMAP LIST</h4><p>List existing group mapping entries</p><p>net groupmap list [verbose] [ntgroup=string] [sid=SID]</p></div></div><div class="refsect2" lang="en"><h3>MAXRID</h3><p>Prints out the highest RID currently in use on the local
 server (by the active 'passdb backend').
 </p></div><div class="refsect2" lang="en"><h3>RPC INFO</h3><p>Print information about the domain of the remote server,
@@ -131,7 +136,7 @@ local server. Can only be run an a BDC.
 </p></div><div class="refsect2" lang="en"><h3>GETSID</h3><p>Fetch domain SID and store it in the local <tt class="filename">secrets.tdb</tt>. </p></div><div class="refsect2" lang="en"><h3>ADS LEAVE</h3><p>Make the remote host leave the domain it is part of. </p></div><div class="refsect2" lang="en"><h3>ADS STATUS</h3><p>Print out status of machine account of the local machine in ADS.
 Prints out quite some debug info. Aimed at developers, regular 
 users should use <b class="command">NET ADS TESTJOIN</b>.</p></div><div class="refsect2" lang="en"><h3>ADS PRINTER</h3><div class="refsect3" lang="en"><h4>ADS PRINTER INFO [<i class="replaceable"><tt>PRINTER</tt></i>] [<i class="replaceable"><tt>SERVER</tt></i>]</h4><p>
-Lookup info for <i class="replaceable"><tt>PRINTER</tt></i> on <i class="replaceable"><tt>SERVER</tt></i>. The printer name defaults to &quot;*&quot;, the 
+Lookup info for <i class="replaceable"><tt>PRINTER</tt></i> on <i class="replaceable"><tt>SERVER</tt></i>. The printer name defaults to "*", the 
 server name defaults to the local host.</p></div><div class="refsect3" lang="en"><h4>ADS PRINTER PUBLISH <i class="replaceable"><tt>PRINTER</tt></i></h4><p>Publish specified printer using ADS.</p></div><div class="refsect3" lang="en"><h4>ADS PRINTER REMOVE <i class="replaceable"><tt>PRINTER</tt></i></h4><p>Remove specified printer from ADS directory.</p></div></div><div class="refsect2" lang="en"><h3>ADS SEARCH <i class="replaceable"><tt>EXPRESSION</tt></i> <i class="replaceable"><tt>ATTRIBUTES...</tt></i></h3><p>Perform a raw LDAP search on a ADS server and dump the results. The 
 expression is a standard LDAP search expression, and the 
 attributes are a list of LDAP fields to show in the results.</p><p>Example: <b class="userinput"><tt>net ads search '(objectCategory=group)' sAMAccountName</tt></b>

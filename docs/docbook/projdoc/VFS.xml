@@ -33,18 +33,19 @@ on different systems.  They currently have been tested against GNU/Linux and IRI
 
 <para>
 To use the VFS modules, create a share similar to the one below.  The
-important parameter is the <command>vfs objects</command> parameter where
+important parameter is the <smbconfoption><name>vfs objects</name></smbconfoption> parameter where
 you can list one or more VFS modules by name. For example, to log all access 
 to files and put deleted files in a recycle bin:
 
-<programlisting>
-[audit]
-        comment = Audited /data directory
-        path = /data
-        vfs objects = audit recycle
-        writeable = yes
-        browseable = yes
-</programlisting>
+<smbconfexample>
+	<title>smb.conf with VFS modules</title>
+	<smbconfsection>[audit]</smbconfsection>
+<smbconfoption><name>comment</name><value>Audited /data directory</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data</value></smbconfoption>
+<smbconfoption><name>vfs objects</name><value>audit recycle</value></smbconfoption>
+<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+	</smbconfexample>
 </para>
 
 <para>
@@ -62,17 +63,18 @@ directory in the root directory of the samba installation (usually
 Some modules can be used twice for the same share.
 This can be done using a configuration similar to the one below.
 
-<programlisting>
-[test]
-        comment = VFS TEST
-        path = /data
-        writeable = yes
-        browseable = yes
-        vfs objects = example:example1 example example:test
-		example1: parameter = 1
-		example:  parameter = 5
-		test:	  parameter = 7
-</programlisting>
+<smbconfexample>
+	<title>smb.conf with multiple VFS modules</title>
+<smbconfsection>[test]</smbconfsection>
+<smbconfoption><name>comment</name><value>VFS TEST</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data</value></smbconfoption>
+<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+<smbconfoption><name>vfs objects</name><value>example:example1 example example:test</value></smbconfoption>
+<smbconfoption><name>example1: parameter</name><value>1</value></smbconfoption>
+<smbconfoption><name>example:  parameter</name><value>5</value></smbconfoption>
+<smbconfoption><name>test:	  parameter</name><value>7</value></smbconfoption>
+</smbconfexample>
 </para>
 
 </sect1>
@@ -86,12 +88,12 @@ This can be done using a configuration similar to the one below.
 		<para>
 		A simple module to audit file access to the syslog
 		facility.  The following operations are logged:
-		<simplelist>
-		<member>share</member>
-		<member>connect/disconnect</member>
-		<member>directory opens/create/remove</member>
-		<member>file open/close/rename/unlink/chmod</member>
-		</simplelist>
+		<itemizedlist>
+		<listitem><para>share</para></listitem>
+		<listitem><para>connect/disconnect</para></listitem>
+		<listitem><para>directory opens/create/remove</para></listitem>
+		<listitem><para>file open/close/rename/unlink/chmod</para></listitem>
+		</itemizedlist>
 		</para>
 
 	</sect2>
@@ -107,7 +109,7 @@ This can be done using a configuration similar to the one below.
 
 		<para>
 		The logging information that will be written to the smbd log file is controlled by
-		the <parameter>log level</parameter> parameter in <filename>smb.conf</filename>. The
+		the <smbconfoption><name>log level</name></smbconfoption> parameter in &smb.conf;. The
 		following information will be recorded:
 		</para>
 
@@ -144,49 +146,65 @@ This can be done using a configuration similar to the one below.
 		<para>
 		A recycle-bin like module. When used any unlink call
 		will be intercepted and files moved to the recycle
-		directory instead of being deleted.
+		directory instead of being deleted. This gives the same 
+		effect as the "Recycle Bin" on Windows computers.
 		</para>
 		
 		<para>Supported options:
 		<variablelist>
 			<varlistentry>
 			<term>recycle:repository</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Relative path of the directory where deleted files should be moved to</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:keeptree</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Specifies whether the directory structure should 
+					be kept or if the files in the directory that is being 
+					deleted should be kept seperately in the recycle bin.
+			</para></listitem>
 			</varlistentry>
 			
 			<varlistentry>
 			<term>recycle:versions</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>If this option is set, two files 
+					with the same name that are deleted will both 
+					be kept in the recycle bin. Newer deleted versions 
+					of a file will be called "Copy #x of <replaceable>filename</replaceable>".</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:touch</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Specifies whether a file's access 
+					date should be touched when the file is moved to 
+			the recycle bin.</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:maxsize</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Files that are larger than the number 
+					of bytes specified by this parameter will 
+					not be put into the recycle bin.</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:exclude</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>List of files that should not 
+					be put into the recycle bin when deleted, but deleted 
+					in the regular way.</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:exclude_dir</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Contains a list of directories. When files from 
+					these directories are deleted, they are not put into the 
+					recycle bin, but deleted in the regular way. 
+			</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:noversions</term>
-			<listitem><para>FIXME</para></listitem>
+			<listitem><para>Opposite of <parameter>recycle:versions</parameter>. If both options are specified, this one takes precedence.</para></listitem>
 			</varlistentry>
 		</variablelist>
 		</para>
@@ -202,10 +220,10 @@ This can be done using a configuration similar to the one below.
 		</para>
 
 		<para>Advantages compared to the old netatalk module:
-		<simplelist>
-		<member>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</member>
-		<member>if a share in &smb.conf; doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</member>
-		</simplelist>
+		<itemizedlist>
+		<listitem><para>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</para></listitem>
+		<listitem><para>if a share in &smb.conf; doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</para></listitem>
+		</itemizedlist>
 		</para>
 
 	</sect2>
@@ -231,7 +249,7 @@ should be implied due to its presence here.
 	<title>DatabaseFS</title>
 
 		<para>
-		URL: <ulink url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
+		URL: <ulink noescape="1" url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
 		</para>
 
 		<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer</ulink>.</para>
@@ -258,7 +276,7 @@ should be implied due to its presence here.
 	<sect2>
 	<title>vscan</title>
 
-		<para>URL: <ulink url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
+	<para>URL: <ulink noescape="1" url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
 
 		<para>
 		samba-vscan is a proof-of-concept module for Samba, which
@@ -271,12 +289,4 @@ should be implied due to its presence here.
 	</sect2>
 </sect1>
 
-<sect1>
-<title>Common Errors</title>
-
-<para>
-There must be some gotchas we should record here! Jelmer???
-</para>
-
-</sect1>
 </chapter>

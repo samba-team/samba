@@ -40,7 +40,7 @@ and only non-default settings will be written to the file.
 
 <para>
 SWAT should be installed to run via the network super daemon. Depending on which system
-your Unix/Linux system has you will have either an <command>inetd</command> or
+your UNIX/Linux system has you will have either an <command>inetd</command> or
 <command>xinetd</command> based system.
 </para>
 
@@ -132,11 +132,11 @@ Modifications to the swat setup are as following:
 	<step><para>
 	generate certificate and private key
 
-	<screen>
+<screen>
 &rootprompt;<userinput>/usr/bin/openssl req -new -x509 -days 365 -nodes -config \
- 	/usr/share/doc/packages/stunnel/stunnel.cnf \
+	/usr/share/doc/packages/stunnel/stunnel.cnf \
 	-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem</userinput>
-	</screen></para></step>
+</screen></para></step>
 
 	<step><para>
 	remove swat-entry from [x]inetd 
@@ -145,14 +145,14 @@ Modifications to the swat setup are as following:
 	<step><para>
 	start stunnel
 
-	<screen>
+<screen>
 &rootprompt;<userinput>stunnel -p /etc/stunnel/stunnel.pem -d 901 \
 	 -l /usr/local/samba/bin/swat swat </userinput>
-	</screen></para></step>
+</screen></para></step>
 </procedure>
 
 <para>
-afterwords simply contact to swat by using the URL <ulink url="https://myhost:901">https://myhost:901</ulink>, accept the certificate
+afterwords simply contact to swat by using the URL <ulink noescape="1" url="https://myhost:901">https://myhost:901</ulink>, accept the certificate
 and the SSL connection is up.
 </para>
 
@@ -171,8 +171,7 @@ document) as well as the O'Reilly book "Using Samba".
 Administrators who wish to validate their samba configuration may obtain useful information
 from the man pages for the diagnostic utilities. These are available from the SWAT home page
 also. One diagnostic tool that is NOT mentioned on this page, but that is particularly
-useful is <command>ethereal</command>, available from <ulink url="http://www.ethereal.com">
-http://www.ethereal.com</ulink>.
+useful is <ulink url="http://www.ethereal.com/"><command>ethereal</command></ulink>.
 </para>
 
 <warning><para>
@@ -211,8 +210,8 @@ in smb.conf. There are three levels of exposure of the parameters:
 
 <para>
 To switch to other than <emphasis>Basic</emphasis> editing ability click on either the
-<emphasis>Advanced</emphasis> or the <emphasis>Developer</emphasis> dial, then click the
-<guibutton>Commit Changes</guibutton> button.
+<emphasis>Advanced</emphasis> or the <emphasis>Developer</emphasis> button. You may also
+do this by clicking on the radio button, then click the <guibutton>Commit Changes</guibutton> button.
 </para>
 
 <para>

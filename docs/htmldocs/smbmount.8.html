@@ -1,14 +1,14 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbmount</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbmount.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbmount &#8212; mount an smbfs filesystem</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbmount</tt>  {service} {mount-point} [-o options]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p><b class="command">smbmount</b> mounts a Linux SMB filesystem. It 
 	is usually invoked as <b class="command">mount.smbfs</b> by
 	the <a href="mount.8.html"><span class="citerefentry"><span class="refentrytitle">mount</span>(8)</span></a> command when using the 
-	&quot;-t smbfs&quot; option. This command only works in Linux, and the kernel must
+	"-t smbfs" option. This command only works in Linux, and the kernel must
 	support the smbfs filesystem. </p><p>Options to <b class="command">smbmount</b> are specified as a comma-separated
 	list of key=value pairs. It is possible to send options other
 	than those listed here, assuming that smbfs supports them. If
 	you get mount failures, check your kernel log for errors on
 	unknown options.</p><p><b class="command">smbmount</b> is a daemon. After mounting it keeps running until
 	the mounted smbfs is umounted. It will log things that happen
-	when in daemon mode using the &quot;machine name&quot; smbmount, so
+	when in daemon mode using the "machine name" smbmount, so
 	typically this output will end up in <tt class="filename">log.smbmount</tt>. The <b class="command">
 	smbmount</b> process may also be called mount.smbfs.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p> <b class="command">smbmount</b> 
 	calls <a href="smbmnt.8.html"><span class="citerefentry"><span class="refentrytitle">smbmnt</span>(8)</span></a> to do the actual mount. You 
@@ -16,8 +16,8 @@
 	that it can be found. </p></div></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">username=&lt;arg&gt;</span></dt><dd><p>specifies the username to connect as. If
 		this is not given, then the environment variable <tt class="envar">
 		USER</tt> is used. This option can also take the
-		form &quot;user%password&quot; or &quot;user/workgroup&quot; or
-		&quot;user/workgroup%password&quot; to allow the password and workgroup
+		form "user%password" or "user/workgroup" or
+		"user/workgroup%password" to allow the password and workgroup
 		to be specified as part of the username.</p></dd><dt><span class="term">password=&lt;arg&gt;</span></dt><dd><p>specifies the SMB password. If this
 		option is not given then the environment variable
 		<tt class="envar">PASSWD</tt> is used. If it can find

@@ -23,7 +23,7 @@ winbindd \- Name Service Switch daemon for resolving names from NT servers
 .SH "SYNOPSIS"
 
 .nf
-\fBwinbindd\fR [-F] [-S] [-i] [-B] [-d <debug level>] [-s <smb config file>] [-n]
+\fBwinbindd\fR [-F] [-S] [-i] [-Y] [-d <debug level>] [-s <smb config file>] [-n]
 .fi
 
 .SH "DESCRIPTION"
@@ -89,7 +89,7 @@ Prints the version number for \fBsmbd\fR\&.
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -103,7 +103,7 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .TP
@@ -127,8 +127,8 @@ Disable caching\&. This means winbindd will always have to wait for a response f
 
 
 .TP
--B
-Dual daemon mode\&. This means winbindd will run as 2 threads\&. The first will answer all requests from the cache, thus making responses to clients faster\&. The other will update the cache for the query that the first has just responded\&. Advantage of this is that responses stay accurate and are faster\&.
+-Y
+Single daemon mode\&. This means winbindd will run as a single process (the mode of operation in Samba 2\&.2)\&. Winbindd's default behavior is to launch a child process that is responsible for updating expired cache entries\&.
 
 
 .SH "NAME AND ID RESOLUTION"
@@ -153,11 +153,11 @@ Configuration of the \fBwinbindd\fR daemon is done through configuration paramet
 
 .TP
 \(bu
-\fIwinbind uid\fR
+\fIidmap uid\fR
 
 .TP
 \(bu
-\fIwinbind gid\fR
+\fIidmap gid\fR
 
 .TP
 \(bu
@@ -240,8 +240,8 @@ Finally, setup a \fBsmb.conf\fR(5) containing directives like the following:
         winbind cache time = 10
         template shell = /bin/bash
         template homedir = /home/%D/%U
-        winbind uid = 10000-20000
-        winbind gid = 10000-20000
+        idmap uid = 10000-20000
+        idmap gid = 10000-20000
         workgroup = DOMAIN
         security = domain
         password server = *
@@ -279,8 +279,8 @@ Reload the \fBsmb.conf\fR(5) file and apply any parameter changes to the running
 
 
 .TP
-SIGUSR1
-The SIGUSR1 signal will cause \fB winbindd\fR to write status information to the winbind log file including information about the number of user and group ids allocated by \fBwinbindd\fR\&.
+SIGUSR2
+The SIGUSR2 signal will cause \fB winbindd\fR to write status information to the winbind log file including information about the number of user and group ids allocated by \fBwinbindd\fR\&.
 
 
 Log files are stored in the filename specified by the log file parameter\&.

@@ -3,16 +3,14 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para>This boolean parameter is only available 
-	if Samba has been configured and compiled with the <command moreinfo="none">
-	--with-msdfs</command> option. If set to <constant>yes</constant>, 
-	Samba will act as a Dfs server, and  allow Dfs-aware clients 
-	to browse Dfs trees hosted on the server.</para>
+        <para>If set to <constant>yes</constant>, Samba will act as a Dfs
+	server, and allow Dfs-aware clients to browse Dfs trees hosted
+	on the server.</para>
 
 	<para>See also the <link linkend="MSDFSROOT"><parameter moreinfo="none">
 	msdfs root</parameter></link> share  level  parameter.  For
 	more  information  on  setting  up a Dfs tree on Samba,
-	refer to <ulink url="msdfs_setup.html">msdfs_setup.html</ulink>.
+	refer to <link linkend="msdfs"/>.
 	</para>
 		
 	<para>Default: <command moreinfo="none">host msdfs = no</command></para>

@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="winbindd.8">
 
@@ -207,24 +206,24 @@ group:          files winbind
 	[global] section of smb.conf. </para>
 
 	<itemizedlist>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDSEPARATOR">
-		<parameter>winbind separator</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDUID">
-		<parameter>winbind uid</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDGID">
-		<parameter>winbind gid</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDCACHETIME">
-		<parameter>winbind cache time</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDENUMUSERS">
-		<parameter>winbind enum users</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDENUMGROUPS">
-		<parameter>winbind enum groups</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#TEMPLATEHOMEDIR">
-		<parameter>template homedir</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#TEMPLATESHELL">
-		<parameter>template shell</parameter></ulink></para></listitem>
-		<listitem><para><ulink url="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN">
-		<parameter>winbind use default domain</parameter></ulink></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>winbind separator</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>idmap uid</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>idmap gid</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>winbind cache time</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>winbind enum users</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>winbind enum groups</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>template homedir</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>template shell</name></smbconfoption></para></listitem>
+		<listitem><para>
+		<smbconfoption><name>winbind use default domain</name></smbconfoption></para></listitem>
 	</itemizedlist>
 </refsect1>
 
@@ -287,8 +286,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
         winbind cache time = 10
         template shell = /bin/bash
         template homedir = /home/%D/%U
-        winbind uid = 10000-20000
-        winbind gid = 10000-20000
+        idmap uid = 10000-20000
+        idmap gid = 10000-20000
         workgroup = DOMAIN
         security = domain
         password server = *
@@ -350,8 +349,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		</varlistentry>
 
 		<varlistentry>
-		<term>SIGUSR1</term>
-		<listitem><para>The SIGUSR1 signal will cause <command>
+		<term>SIGUSR2</term>
+		<listitem><para>The SIGUSR2 signal will cause <command>
 		winbindd</command> to write status information to the winbind 
 		log file including information about the number of user and 
 		group ids allocated by <command>winbindd</command>.</para>

@@ -1,6 +1,6 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 25. PAM based Distributed Authentication</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="ProfileMgmt.html" title="Chapter 24. Desktop Profile Management"><link rel="next" href="integrate-ms-networks.html" title="Chapter 26. Integrating MS Windows networks with Samba"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 25. PAM based Distributed Authentication</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ProfileMgmt.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="integrate-ms-networks.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="pam"></a>Chapter 25. PAM based Distributed Authentication</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Stephen</span> <span class="surname">Langasek</span></h3><div class="affiliation"><div class="address"><p><tt class="email">&lt;<a href="mailto:vorlon@netexpress.net">vorlon@netexpress.net</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">May 31, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="pam.html#id2995804">Features and Benefits</a></dt><dt><a href="pam.html#id2996071">Technical Discussion</a></dt><dd><dl><dt><a href="pam.html#id2996089">PAM Configuration Syntax</a></dt><dt><a href="pam.html#id2996760">Example System Configurations</a></dt><dt><a href="pam.html#id2997062">smb.conf PAM Configuration</a></dt><dt><a href="pam.html#id2997119">Remote CIFS Authentication using winbindd.so</a></dt><dt><a href="pam.html#id2997203">Password Synchronization using pam_smbpass.so</a></dt></dl></dd><dt><a href="pam.html#id2997570">Common Errors</a></dt><dd><dl><dt><a href="pam.html#id2997583">pam_winbind problem</a></dt></dl></dd></dl></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 25. PAM based Distributed Authentication</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="ProfileMgmt.html" title="Chapter 24. Desktop Profile Management"><link rel="next" href="integrate-ms-networks.html" title="Chapter 26. Integrating MS Windows networks with Samba"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 25. PAM based Distributed Authentication</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ProfileMgmt.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="integrate-ms-networks.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="pam"></a>Chapter 25. PAM based Distributed Authentication</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Stephen</span> <span class="surname">Langasek</span></h3><div class="affiliation"><div class="address"><p><tt class="email">&lt;<a href="mailto:vorlon@netexpress.net">vorlon@netexpress.net</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">May 31, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="pam.html#id2949695">Features and Benefits</a></dt><dt><a href="pam.html#id2949942">Technical Discussion</a></dt><dd><dl><dt><a href="pam.html#id2949960">PAM Configuration Syntax</a></dt><dt><a href="pam.html#id2950624">Example System Configurations</a></dt><dt><a href="pam.html#id2950929">smb.conf PAM Configuration</a></dt><dt><a href="pam.html#id2951007">Remote CIFS Authentication using winbindd.so</a></dt><dt><a href="pam.html#id2951091">Password Synchronization using pam_smbpass.so</a></dt></dl></dd><dt><a href="pam.html#id2951474">Common Errors</a></dt><dd><dl><dt><a href="pam.html#id2951487">pam_winbind problem</a></dt><dt><a href="pam.html#id2951576">Winbind is not resolving users and groups</a></dt></dl></dd></dl></div><p>
 This chapter you should help you to deploy winbind based authentication on any PAM enabled
-Unix/Linux system. Winbind can be used to enable user level application access authentication
+UNIX/Linux system. Winbind can be used to enable user level application access authentication
 from any MS Windows NT Domain, MS Windows 200x Active Directory based domain, or any Samba
 based domain environment. It will also help you to configure PAM based local host access
 controls that are appropriate to your Samba configuration.
@@ -8,9 +8,9 @@ controls that are appropriate to your Samba configuration.
 In addition to knowing how to configure winbind into PAM, you will learn generic PAM management
 possibilities and in particular how to deploy tools like pam_smbpass.so to your advantage.
 </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
-The use of Winbind require more than PAM configuration alone. Please refer to <a href="winbind.html" title="Chapter 21. Integrated Logon Support using Winbind">the Winbind chapter</a>.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2995804"></a>Features and Benefits</h2></div></div><div></div></div><p>
-A number of Unix systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
+The use of Winbind require more than PAM configuration alone. Please refer to <a href="winbind.html" title="Chapter 21. Winbind: Use of Domain Accounts">the Winbind chapter</a>.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2949695"></a>Features and Benefits</h2></div></div><div></div></div><p>
+A number of UNIX systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
 now utilize the Pluggable Authentication Modules (PAM) facility to provide all authentication, 
 authorization and resource control services. Prior to the introduction of PAM, a decision
 to use an alternative to the system password database (<tt class="filename">/etc/passwd</tt>) 
@@ -23,38 +23,38 @@ authentication/authorization infrastructure.  PAM is configured either through o
 <tt class="filename">/etc/pam.conf</tt> (Solaris), or by editing individual files that are
 located in <tt class="filename">/etc/pam.d</tt>.
 </p><p>
-On PAM enabled Unix/Linux systems it is an easy matter to configure the system to use any
+On PAM enabled UNIX/Linux systems it is an easy matter to configure the system to use any
 authentication backend, so long as the appropriate dynamically loadable library modules
 are available for it. The backend may be local to the system, or may be centralised on a
 remote server.
 </p><p>
 PAM support modules are available for:
-</p><div class="variablelist"><dl><dt><span class="term"><tt class="filename">/etc/passwd</tt></span></dt><dd><p>-</p><p>
-		There are several PAM modules that interact with this standard Unix user
+</p><div class="variablelist"><dl><dt><span class="term"><tt class="filename">/etc/passwd</tt>:</span></dt><dd><p>
+		There are several PAM modules that interact with this standard UNIX user
 		database. The most common are called: pam_unix.so, pam_unix2.so, pam_pwdb.so
 		and pam_userdb.so.
-		</p></dd><dt><span class="term">Kerberos</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">Kerberos:</span></dt><dd><p>
 		The pam_krb5.so module allows the use of any Kerberos compliant server.
 		This tool is used to access MIT Kerberos, Heimdal Kerberos, and potentially
 		Microsoft Active Directory (if enabled).
-		</p></dd><dt><span class="term">LDAP</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">LDAP:</span></dt><dd><p>
 		The pam_ldap.so module allows the use of any LDAP v2 or v3 compatible backend
 		server. Commonly used LDAP backend servers include: OpenLDAP v2.0 and v2.1,
 		Sun ONE iDentity server, Novell eDirectory server, Microsoft Active Directory.
-		</p></dd><dt><span class="term">NetWare Bindery</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">NetWare Bindery:</span></dt><dd><p>
 		The pam_ncp_auth.so module allows authentication off any bindery enabled
 		NetWare Core Protocol based server.
-		</p></dd><dt><span class="term">SMB Password</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">SMB Password:</span></dt><dd><p>
 		This module, called pam_smbpass.so, will allow user authentication off
 		the passdb backend that is configured in the Samba <tt class="filename">smb.conf</tt> file.
-		</p></dd><dt><span class="term">SMB Server</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">SMB Server:</span></dt><dd><p>
 		The pam_smb_auth.so module is the original MS Windows networking authentication
 		tool. This module has been somewhat outdated by the Winbind module.
-		</p></dd><dt><span class="term">Winbind</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">Winbind:</span></dt><dd><p>
 		The pam_winbind.so module allows Samba to obtain authentication from any
 		MS Windows Domain Controller. It can just as easily be used to authenticate
 		users for access to any PAM enabled application.
-		</p></dd><dt><span class="term">RADIUS</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">RADIUS:</span></dt><dd><p>
 		There is a PAM RADIUS (Remote Access Dial-In User Service) authentication
 		module. In most cases the administrator will need to locate the source code
 		for this tool and compile and install it themselves. RADIUS protocols are
@@ -67,12 +67,12 @@ of distributed samba domain controllers that can provide wide are network bandwi
 efficient authentication services for PAM capable systems. In effect, this allows the
 deployment of centrally managed and maintained distributed authentication from a single
 user account database.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2996071"></a>Technical Discussion</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2949942"></a>Technical Discussion</h2></div></div><div></div></div><p>
 PAM is designed to provide the system administrator with a great deal of flexibility in
 configuration of the privilege granting applications of their system. The local
 configuration of system security controlled by PAM is contained in one of two places:
 either the single system file, /etc/pam.conf; or the /etc/pam.d/ directory.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2996089"></a>PAM Configuration Syntax</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2949960"></a>PAM Configuration Syntax</h3></div></div><div></div></div><p>
 In this section we discuss the correct syntax of and generic options respected by entries to these files.
 PAM specific tokens in the configuration file are case insensitive. The module paths, however, are case
 sensitive since they indicate a file's name and reflect the case dependence of typical file-systems.
@@ -87,32 +87,31 @@ default location then it is not necessary to specify the path. In the case of
 Linux, the default location is <tt class="filename">/lib/security</tt>. If the module
 is located outside the default then the path must be specified as:
 </p><p>
-</p><pre class="screen">
+</p><pre class="programlisting">
 auth  required  /other_path/pam_strange_module.so
 </pre><p>
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2996146"></a>Anatomy of <tt class="filename">/etc/pam.d</tt> Entries</h4></div></div><div></div></div><p>
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2950018"></a>Anatomy of <tt class="filename">/etc/pam.d</tt> Entries</h4></div></div><div></div></div><p>
 The remaining information in this subsection was taken from the documentation of the Linux-PAM
 project. For more information on PAM, see 
-<a href="http://ftp.kernel.org/pub/linux/libs/pam/" target="_top">
-http://ftp.kernel.org/pub/linux/libs/pam</a> The Official Linux-PAM home page.
+<a href="http://ftp.kernel.org/pub/linux/libs/pam/" target="_top">The Official Linux-PAM home page</a>
 </p><p>
 A general configuration line of the /etc/pam.conf file has the following form:
 </p><p>
-</p><pre class="screen">
+</p><pre class="programlisting">
 service-name   module-type   control-flag   module-path   args
 </pre><p>
 </p><p>
 Below, we explain the meaning of each of these tokens. The second (and more recently adopted)
 way of configuring Linux-PAM is via the contents of the <tt class="filename">/etc/pam.d/</tt> directory.
 Once we have explained the meaning of the above tokens, we will describe this method.
-</p><div class="variablelist"><dl><dt><span class="term">service-name</span></dt><dd><p>-</p><p>
+</p><div class="variablelist"><dl><dt><span class="term">service-name:</span></dt><dd><p>
 		The name of the service associated with this entry. Frequently the service name is the conventional
 		name of the given application. For example, `ftpd', `rlogind' and `su', etc. .
 		</p><p>
 		There is a special service-name, reserved for defining a default authentication mechanism. It has
 		the name `OTHER' and may be specified in either lower or upper case characters. Note, when there
 		is a module specified for a named service, the `OTHER' entries are ignored.
-		</p></dd><dt><span class="term">module-type</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">module-type:</span></dt><dd><p>
 		One of (currently) four types of module. The four types are as follows:
 		</p><div class="itemizedlist"><ul type="disc"><li><p>
 			<span class="emphasis"><em>auth:</em></span> this module type provides two aspects of authenticating the user.
@@ -134,7 +133,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 			<span class="emphasis"><em>password:</em></span> this last module type is required for updating the authentication
 			token associated with the user. Typically, there is one module for each `challenge/response'
 			based authentication (auth) module-type.
-			</p></li></ul></div></dd><dt><span class="term">control-flag</span></dt><dd><p>-</p><p>
+			</p></li></ul></div></dd><dt><span class="term">control-flag:</span></dt><dd><p>
 		The control-flag is used to indicate how the PAM library will react to the success or failure of the
 		module it is associated with. Since modules can be stacked (modules of the same type execute in series,
 		one after another), the control-flags determine the relative importance of each module. The application
@@ -178,9 +177,9 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		The more elaborate (newer) syntax is much more specific and gives the administrator a great deal of control
 		over how the user is authenticated. This form of the control flag is delimited with square brackets and
 		consists of a series of value=action tokens:
-		</p><pre class="screen">
-		[value1=action1 value2=action2 ...]
-		</pre><p>
+		</p><pre class="programlisting">
+[value1=action1 value2=action2 ...]
+</pre><p>
 		Here, value1 is one of the following return values: success; open_err; symbol_err; service_err;
 		system_err; buf_err; perm_denied; auth_err; cred_insufficient; authinfo_unavail; user_unknown; maxtries;
 		new_authtok_reqd; acct_expired; session_err; cred_unavail; cred_expired; cred_err; no_module_data; conv_err;
@@ -235,7 +234,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		<span class="emphasis"><em>[ ... value=action ... ]</em></span> control syntax, it is possible for an application to be configured
 		to support binary prompts with compliant clients, but to gracefully fall over into an alternative authentication
 		mode for older, legacy, applications.
-		</p></dd><dt><span class="term">module-path</span></dt><dd><p>-</p><p>
+		</p></dd><dt><span class="term">module-path:</span></dt><dd><p>
 		The path-name of the dynamically loadable object file; the pluggable module itself. If the first character of the
 		module path is `/', it is assumed to be a complete path. If this is not the case, the given module path is appended
 		to the default module path: <tt class="filename">/lib/security</tt> (but see the notes above).
@@ -246,7 +245,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		to syslog(3). For a list of generic options see the next section.
 		</p><p>
 		Note, if you wish to include spaces in an argument, you should surround that argument with square brackets. For example:
-		</p><pre class="screen">
+		</p><pre class="programlisting">
 squid auth required pam_mysql.so user=passwd_query passwd=mada \
         db=eminence [query=select user_name from internet_service where \
                      user_name='%u' and password=PASSWORD('%p') and \
@@ -254,19 +253,19 @@ squid auth required pam_mysql.so user=passwd_query passwd=mada \
 </pre><p>
 		Note, when using this convention, you can include `[' characters inside the string, and if you wish to include a `]'
 		character inside the string that will survive the argument parsing, you should use `\['. In other words:
-		</p><pre class="screen">
+		</p><pre class="programlisting">
 [..[..\]..]    --&gt;   ..[..]..
 </pre><p>
 		Any line in (one of) the configuration file(s), that is not formatted correctly, will generally tend (erring on the
 		side of caution) to make the authentication process fail. A corresponding error is written to the system log files
 		with a call to syslog(3). 
-		</p></dd></dl></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2996760"></a>Example System Configurations</h3></div></div><div></div></div><p>
+		</p></dd></dl></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950624"></a>Example System Configurations</h3></div></div><div></div></div><p>
 The following is an example <tt class="filename">/etc/pam.d/login</tt> configuration file. 
 This example had all options been uncommented is probably not usable 
 as it stacks many conditions before allowing successful completion 
 of the login process. Essentially all conditions can be disabled 
 by commenting them out except the calls to <tt class="filename">pam_pwdb.so</tt>.
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2996790"></a>PAM: original login config</h4></div></div><div></div></div><pre class="screen">
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2950655"></a>PAM: original login config</h4></div></div><div></div></div><pre class="programlisting">
 #%PAM-1.0
 # The PAM configuration file for the `login' service
 #
@@ -281,10 +280,10 @@ session      required    pam_pwdb.so
 # session    optional    pam_lastlog.so
 # password   required    pam_cracklib.so retry=3
 password     required    pam_pwdb.so shadow md5
-</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2996817"></a>PAM: login using pam_smbpass</h4></div></div><div></div></div><p>
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2950683"></a>PAM: login using pam_smbpass</h4></div></div><div></div></div><p>
 PAM allows use of replaceable modules. Those available on a sample system include:
 </p><p><tt class="prompt">$</tt><b class="userinput"><tt>/bin/ls /lib/security</tt></b>
-</p><pre class="screen">
+</p><pre class="programlisting">
 pam_access.so    pam_ftp.so          pam_limits.so     
 pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 pam_cracklib.so  pam_group.so        pam_listfile.so   
@@ -308,7 +307,7 @@ hashes. This database is stored in either
 <tt class="filename">/usr/local/samba/private/smbpasswd</tt>, 
 <tt class="filename">/etc/samba/smbpasswd</tt>, or in 
 <tt class="filename">/etc/samba.d/smbpasswd</tt>, depending on the 
-Samba implementation for your Unix/Linux system. The 
+Samba implementation for your UNIX/Linux system. The 
 <tt class="filename">pam_smbpass.so</tt> module is provided by 
 Samba version 2.2.1 or later. It can be compiled by specifying the 
 <tt class="option">--with-pam_smbpass</tt> options when running Samba's
@@ -316,7 +315,7 @@ Samba version 2.2.1 or later. It can be compiled by specifying the
 on the <tt class="filename">pam_smbpass</tt> module, see the documentation
 in the <tt class="filename">source/pam_smbpass</tt> directory of the Samba 
 source distribution.
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # The PAM configuration file for the `login' service
 #
@@ -327,7 +326,7 @@ password    required    pam_smbpass.so nodelay
 </pre><p>
 The following is the PAM configuration file for a particular 
 Linux system. The default condition uses <tt class="filename">pam_pwdb.so</tt>.
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # The PAM configuration file for the `samba' service
 #
@@ -341,7 +340,7 @@ smbpasswd database even for basic samba authentication. Such a
 decision could also be made for the passwd program and would 
 thus allow the smbpasswd passwords to be changed using the passwd 
 program.
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # The PAM configuration file for the `samba' service
 #
@@ -360,24 +359,24 @@ authentication to be configured in a single central file. The
 on the basis that it allows for easier administration. As with all issues in 
 life though, every decision makes trade-offs, so you may want examine the 
 PAM documentation for further helpful information.
-</p></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2997062"></a>smb.conf PAM Configuration</h3></div></div><div></div></div><p>
-There is an option in smb.conf called <a href="smb.conf.5.html#OBEYPAMRESTRICTIONS" target="_top">obey pam restrictions</a>. 
+</p></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2950929"></a>smb.conf PAM Configuration</h3></div></div><div></div></div><p>
+	There is an option in smb.conf called <a class="indexterm" name="id2950938"></a><i class="parameter"><tt>obey pam restrictions</tt></i>.
 The following is from the on-line help for this option in SWAT;
 </p><p>
-When Samba-3 is configured to enable PAM support (i.e. 
+When Samba is configured to enable PAM support (i.e. 
 <tt class="option">--with-pam</tt>), this parameter will 
 control whether or not Samba should obey PAM's account 
 and session management directives. The default behavior 
 is to use PAM for clear text authentication only and to 
 ignore any account or session management. Note that Samba always 
 ignores PAM for authentication in the case of 
-<a href="smb.conf.5.html#ENCRYPTPASSWORDS" target="_top">encrypt passwords = yes</a>. 
+<a class="indexterm" name="id2950969"></a><i class="parameter"><tt>encrypt passwords</tt></i> = yes. 
 The reason is that PAM modules cannot support the challenge/response 
 authentication mechanism needed in the presence of SMB 
 password encryption. 
-</p><p>Default: <i class="parameter"><tt>obey pam restrictions = no</tt></i></p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2997119"></a>Remote CIFS Authentication using winbindd.so</h3></div></div><div></div></div><p>
+</p><p>Default: <a class="indexterm" name="id2950990"></a><i class="parameter"><tt>obey pam restrictions</tt></i> = no</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2951007"></a>Remote CIFS Authentication using winbindd.so</h3></div></div><div></div></div><p>
 All operating systems depend on the provision of users credentials acceptable to the platform.
-Unix requires the provision of a user identifier (UID) as well as a group identifier (GID).
+UNIX requires the provision of a user identifier (UID) as well as a group identifier (GID).
 These are both simple integer type numbers that are obtained from a password backend such
 as <tt class="filename">/etc/passwd</tt>.
 </p><p>
@@ -401,7 +400,7 @@ Microsoft Active Directory Service (ADS) in so far as reduction of wide area net
 The rid to unix id database is the only location where the user and group  mappings are 
 stored by winbindd.  If this file is deleted or corrupted, there is no way for winbindd
 to determine which user and group ids correspond to Windows NT user and group rids.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2997203"></a>Password Synchronization using pam_smbpass.so</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2951091"></a>Password Synchronization using pam_smbpass.so</h3></div></div><div></div></div><p>
 pam_smbpass is a PAM module which can be used on conforming systems to
 keep the smbpasswd (Samba password) database in sync with the unix
 password file. PAM (Pluggable Authentication Modules) is an API supported
@@ -414,24 +413,23 @@ concerned about the presence of suid root binaries on your system, it is
 recommended that you use pam_winbind instead.
 </p><p>
 Options recognized by this module are as follows:
-</p><div class="table"><a name="id2997236"></a><p class="title"><b>Table 25.1. Options recognized by pam_smbpass</b></p><table summary="Options recognized by pam_smbpass" border="1"><colgroup><col><col></colgroup><tbody><tr><td align="left">debug</td><td align="left">log more debugging info</td></tr><tr><td align="left">audit</td><td align="left">like debug, but also logs unknown usernames</td></tr><tr><td align="left">use_first_pass</td><td align="left">don't prompt the user for passwords; take them from PAM_ items instead</td></tr><tr><td align="left">try_first_pass</td><td align="left">try to get the password from a previous PAM module, fall back to prompting the user</td></tr><tr><td align="left">use_authtok</td><td align="left">like try_first_pass, but *fail* if the new PAM_AUTHTOK has not been previously set. (intended for stacking password modules only)</td></tr><tr><td align="left">not_set_pass</td><td align="left">don't make passwords used by this module available to other modules.</td></tr><tr><td align="left">nodelay</td><td align="left">don't insert ~1 second delays on authentication failure.</td></tr><tr><td align="left">nullok</td><td align="left">null passwords are allowed.</td></tr><tr><td align="left">nonull</td><td align="left">null passwords are not allowed. Used to override the Samba configuration.</td></tr><tr><td align="left">migrate</td><td align="left">only meaningful in an &quot;auth&quot; context; used to update smbpasswd file with a password used for successful authentication.</td></tr><tr><td align="left">smbconf=<i class="replaceable"><tt>file</tt></i></td><td align="left">specify an alternate path to the <tt class="filename">smb.conf</tt> file.</td></tr></tbody></table></div><p>
+</p><div class="table"><a name="id2951123"></a><p class="title"><b>Table 25.1. Options recognized by pam_smbpass</b></p><table summary="Options recognized by pam_smbpass" border="1"><colgroup><col align="left"><col align="justify"></colgroup><tbody><tr><td align="left">debug</td><td align="justify">log more debugging info</td></tr><tr><td align="left">audit</td><td align="justify">like debug, but also logs unknown usernames</td></tr><tr><td align="left">use_first_pass</td><td align="justify">don't prompt the user for passwords; take them from PAM_ items instead</td></tr><tr><td align="left">try_first_pass</td><td align="justify">try to get the password from a previous PAM module, fall back to prompting the user</td></tr><tr><td align="left">use_authtok</td><td align="justify">like try_first_pass, but *fail* if the new PAM_AUTHTOK has not been previously set. (intended for stacking password modules only)</td></tr><tr><td align="left">not_set_pass</td><td align="justify">don't make passwords used by this module available to other modules.</td></tr><tr><td align="left">nodelay</td><td align="justify">don't insert ~1 second delays on authentication failure.</td></tr><tr><td align="left">nullok</td><td align="justify">null passwords are allowed.</td></tr><tr><td align="left">nonull</td><td align="justify">null passwords are not allowed. Used to override the Samba configuration.</td></tr><tr><td align="left">migrate</td><td align="justify">only meaningful in an &quot;auth&quot; context; used to update smbpasswd file with a password used for successful authentication.</td></tr><tr><td align="left">smbconf=<i class="replaceable"><tt>file</tt></i></td><td align="justify">specify an alternate path to the <tt class="filename">smb.conf</tt> file.</td></tr></tbody></table></div><p>
 </p><p>
-Thanks go to the following people:
-</p><table class="simplelist" border="0" summary="Simple list"><tr><td><a href="mailto:morgan@transmeta.com" target="_top">Andrew Morgan</a>, for providing the Linux-PAM
-	framework, without which none of this would have happened</td></tr><tr><td><a href="gafton@redhat.com" target="_top">Christian Gafton</a> and Andrew Morgan again, for the
-	pam_pwdb module upon which pam_smbpass was originally based</td></tr><tr><td><a href="lkcl@switchboard.net" target="_top">Luke Leighton</a> for being receptive to the idea,
+</p><div class="itemizedlist"><ul type="disc"><li><p><a href="mailto:morgan@transmeta.com" target="_top">Andrew Morgan</a>, for providing the Linux-PAM
+			framework, without which none of this would have happened</p></li><li><p><a href="mailto:gafton@redhat.com" target="_top">Christian Gafton</a> and Andrew Morgan again, for the
+		pam_pwdb module upon which pam_smbpass was originally based</p></li><li><p><a href="mailto:lkcl@switchboard.net" target="_top">Luke Leighton</a> for being receptive to the idea,
 	and for the occasional good-natured complaint about the project's status
-	that keep me working on it :)</td></tr></table><p>.
+	that keep me working on it :)</p></li></ul></div><p>.
 </p><p>
 The following are examples of the use of pam_smbpass.so in the format of Linux
 <tt class="filename">/etc/pam.d/</tt> files structure. Those wishing to implement this
 tool on other platforms will need to adapt this appropriately.
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2997436"></a>Password Synchronisation Configuration</h4></div></div><div></div></div><p>
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2951339"></a>Password Synchronisation Configuration</h4></div></div><div></div></div><p>
 A sample PAM configuration that shows the use of pam_smbpass to make
 sure private/smbpasswd is kept in sync when /etc/passwd (/etc/shadow)
 is changed.  Useful when an expired password might be changed by an
 application (such as ssh).
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # password-sync
 #
@@ -442,13 +440,13 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so nullok use_authtok try_first_pass
 session    required     pam_unix.so
-</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2997469"></a>Password Migration Configuration</h4></div></div><div></div></div><p>
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2951372"></a>Password Migration Configuration</h4></div></div><div></div></div><p>
 A sample PAM configuration that shows the use of pam_smbpass to migrate
 from plaintext to encrypted passwords for Samba.  Unlike other methods,
 this can be used for users who have never connected to Samba shares:
 password migration takes place when users ftp in, login using ssh, pop
 their mail, etc.
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # password-migration
 #
@@ -461,11 +459,11 @@ password   requisite   pam_cracklib.so retry=3
 password   requisite   pam_unix.so shadow md5 use_authtok try_first_pass
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 session    required    pam_unix.so
-</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2997504"></a>Mature Password Configuration</h4></div></div><div></div></div><p>
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2951407"></a>Mature Password Configuration</h4></div></div><div></div></div><p>
 A sample PAM configuration for a 'mature' smbpasswd installation.
 private/smbpasswd is fully populated, and we consider it an error if
-the smbpasswd doesn't exist or doesn't match the Unix password.
-</p><pre class="screen">
+the smbpasswd doesn't exist or doesn't match the UNIX password.
+</p><pre class="programlisting">
 #%PAM-1.0
 # password-mature
 #
@@ -476,11 +474,11 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so use_authtok use_first_pass
 session    required     pam_unix.so
-</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2997536"></a>Kerberos Password Integration Configuration</h4></div></div><div></div></div><p>
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2951440"></a>Kerberos Password Integration Configuration</h4></div></div><div></div></div><p>
 A sample PAM configuration that shows pam_smbpass used together with
 pam_krb5.  This could be useful on a Samba PDC that is also a member of
 a Kerberos realm.
-</p><pre class="screen">
+</p><pre class="programlisting">
 #%PAM-1.0
 # kdc-pdc
 #
@@ -492,13 +490,15 @@ password   requisite   pam_cracklib.so retry=3
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 password   required    pam_krb5.so use_authtok try_first_pass
 session    required    pam_krb5.so
-</pre></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2997570"></a>Common Errors</h2></div></div><div></div></div><p>
+</pre></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2951474"></a>Common Errors</h2></div></div><div></div></div><p>
 PAM can be a very fickle and sensitive to configuration glitches. Here we look at a few cases from
 the Samba mailing list.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2997583"></a>pam_winbind problem</h3></div></div><div></div></div><p>
-	I have the following PAM configuration:
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2951487"></a>pam_winbind problem</h3></div></div><div></div></div><p>
+		&#8220;<span class="quote">
+			I have the following PAM configuration:
+		</span>&#8221;
 	</p><p>
-</p><pre class="screen">
+</p><pre class="programlisting">
 auth required /lib/security/pam_securetty.so
 auth sufficient /lib/security/pam_winbind.so
 auth sufficient /lib/security/pam_unix.so use_first_pass nullok
@@ -508,15 +508,58 @@ account required /lib/security/pam_stack.so service=system-auth
 account required /lib/security/pam_winbind.so
 password required /lib/security/pam_stack.so service=system-auth
 </pre><p>
-</p><p>
+	</p><p>
+		&#8220;<span class="quote">
 	When I open a new console with [ctrl][alt][F1], then I cant log in with my user &quot;pitie&quot;.
 	I've tried with user &quot;scienceu+pitie&quot; also.
+</span>&#8221;
 	</p><p>
-	Answer: The problem may lie with your inclusion of <i class="parameter"><tt>pam_stack.so
+		The problem may lie with your inclusion of <i class="parameter"><tt>pam_stack.so
 	service=system-auth</tt></i>. That file often contains a lot of stuff that may
 	duplicate what you're already doing. Try commenting out the pam_stack lines
 	for auth and account and see if things work. If they do, look at
 	<tt class="filename">/etc/pam.d/system-auth</tt> and copy only what you need from it into your
 	<tt class="filename">/etc/pam.d/login</tt> file.  Alternatively, if you want all services to use
 	winbind, you can put the winbind-specific stuff in <tt class="filename">/etc/pam.d/system-auth</tt>.
-	</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ProfileMgmt.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="integrate-ms-networks.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 24. Desktop Profile Management </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 26. Integrating MS Windows networks with Samba</td></tr></table></div></body></html>
+	</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2951576"></a>Winbind is not resolving users and groups</h3></div></div><div></div></div><p>
+		&#8220;<span class="quote">
+	My smb.conf file is correctly configured. I have specified 
+	<a class="indexterm" name="id2951590"></a><i class="parameter"><tt>idmap uid</tt></i> = 12000, 
+	and <a class="indexterm" name="id2951604"></a><i class="parameter"><tt>idmap gid</tt></i> = 3000-3500
+	and <b class="command">winbind</b> is running. When I do the following it all works fine.
+</span>&#8221;
+	</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>wbinfo -u</tt></b>
+MIDEARTH+maryo
+MIDEARTH+jackb
+MIDEARTH+ameds
+...
+MIDEARTH+root
+
+<tt class="prompt">root# </tt><b class="userinput"><tt>wbinfo -g</tt></b>
+MIDEARTH+Domain Users
+MIDEARTH+Domain Admins
+MIDEARTH+Domain Guests
+...
+MIDEARTH+Accounts
+
+<tt class="prompt">root# </tt><b class="userinput"><tt>getent passwd</tt></b>
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/bin/bash
+...
+maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
+</pre><p>
+	&#8220;<span class="quote">
+	But the following command just fails:
+</span>&#8221;
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>chown 'maryo' a_file</tt></b>
+chown: `maryo': invalid user
+</pre><p>
+&#8220;<span class="quote">
+This is driving me nuts! What can be wrong?
+</span>&#8221;
+	</p><p>
+	Your system is likely running <b class="command">nscd</b>, the name service
+	caching daemon. Shut it down, do NOT restart it! You will find your problem resolved.
+	</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ProfileMgmt.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="integrate-ms-networks.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 24. Desktop Profile Management </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 26. Integrating MS Windows networks with Samba</td></tr></table></div></body></html>

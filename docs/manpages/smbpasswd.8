@@ -197,7 +197,7 @@ This specifies the username for all of the \fBroot only\fR options to operate on
 Since \fBsmbpasswd\fR works in client-server mode communicating with a local smbd for a non-root user then the smbd daemon must be running for this to work\&. A common problem is to add a restriction to the hosts that may access the \fB smbd\fR running on the local machine by specifying either \fIallow hosts\fR or \fIdeny hosts\fR entry in the \fBsmb.conf\fR(5) file and neglecting to allow "localhost" access to the smbd\&.
 
 .PP
-In addition, the smbpasswd command is only useful if Samba has been set up to use encrypted passwords\&. See the document "LanMan and NT Password Encryption in Samba" in the docs directory for details on how to do this\&.
+In addition, the smbpasswd command is only useful if Samba has been set up to use encrypted passwords\&.
 
 .SH "VERSION"
 

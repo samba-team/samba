@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbclient.1">
 
@@ -218,23 +217,6 @@
 		when making connections to the server. The standard (well-known)
 		TCP port number for an SMB/CIFS server is 139, which is the 
 		default. </para></listitem>
-		</varlistentry>
-		
-		
-		<varlistentry>
-		<term>-l logfilename</term>
-		<listitem><para>If specified, <replaceable>logfilename</replaceable> specifies a base filename 
-		into which operational data from the running client will be 
-		logged. </para>
-
-		<para>The default base name is specified at compile time.</para>
-
-		<para>The base name is used to generate actual log file names.
-		For example, if the name specified was "log", the debug file 
-		would be <filename>log.client</filename>.</para>
-		
-		<para>The log file generated is never removed by the client. 		
-		</para></listitem>
 		</varlistentry>
 		
 		

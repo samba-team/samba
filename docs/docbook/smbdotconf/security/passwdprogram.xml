@@ -17,9 +17,8 @@
     <para><emphasis>Note</emphasis> that if the <parameter moreinfo="none">unix 
     password sync</parameter> parameter is set to <constant>yes
     </constant> then this program is called <emphasis>AS ROOT</emphasis> 
-    before the SMB password in the <ulink url="smbpasswd.5.html"><citerefentry>
-    <refentrytitle>smbpasswd</refentrytitle><manvolnum>5</manvolnum></citerefentry>
-    </ulink> file is changed. If this UNIX password change fails, then 
+    before the SMB password in the smbpasswd
+    file is changed. If this UNIX password change fails, then 
     <command moreinfo="none">smbd</command> will fail to change the SMB password also 
     (this is by design).</para>
 
