@@ -281,7 +281,7 @@ static void run_netbench(void)
 	cli_sockopt(&cli, sockops);
 
 	for (i=0;i<numops;i++) {
-		slprintf(fname, sizeof(fname) - 1, "\\nb%d.doc", pid);
+		slprintf(fname, sizeof(fname) - 1, "\\nb%d%d.doc", i, pid);
 
 		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
@@ -305,8 +305,12 @@ static void run_netbench(void)
 			size += s;
 		}
 		cli_close(&cli, fnum);
-		cli_unlink(&cli, fname);
 		printf("."); fflush(stdout);
+	}
+
+	for (i=0;i<numops;i++) {
+		slprintf(fname, sizeof(fname) - 1, "\\nb%d%d.doc", i, pid);
+		cli_unlink(&cli, fname);
 	}
 
 	close_connection(&cli);
