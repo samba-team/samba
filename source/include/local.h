@@ -137,6 +137,7 @@
 #define NMBD_INETD_TIMEOUT (120)
 #define NMBD_MAX_TTL (24*60*60)
 #define LPQ_LOCK_TIMEOUT (5)
+#define NMBD_INTERFACES_RELOAD (120)
 
 /* the following are in milliseconds */
 #define LOCK_RETRY_TIMEOUT (100)

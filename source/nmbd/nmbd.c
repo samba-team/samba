@@ -189,11 +189,15 @@ static void expire_names_and_servers(time_t t)
 /************************************************************************** **
 reload the list of network interfaces
  ************************************************************************** */
-static void reload_interfaces(void)
+static void reload_interfaces(time_t t)
 {
+	static time_t lastt;
 	int n;
 	struct subnet_record *subrec;
 	extern BOOL rescan_listen_set;
+
+	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return;
+	lastt = t;
 
 	if (!interfaces_changed()) return;
 
@@ -210,6 +214,8 @@ static void reload_interfaces(void)
 		}
 		if (!subrec) {
 			/* it wasn't found! add it */
+			DEBUG(2,("Found new interface %s\n", 
+				 inet_ntoa(iface->ip)));
 			subrec = make_normal_subnet(iface);
 			if (subrec) register_my_workgroup_one_subnet(subrec);
 		}
@@ -229,6 +235,8 @@ static void reload_interfaces(void)
 			 instead we just wear the memory leak and
 			 remove it from the list of interfaces without
 			 freeing it */
+			DEBUG(2,("Deleting dead interface %s\n", 
+				 inet_ntoa(subrec->myip)));
 			close_subnet(subrec);
 		}
 	}
@@ -457,10 +465,12 @@ static void process(void)
     if(reload_after_sighup) {
 	    reload_services( True );
 	    reopen_logs();
-	    reload_interfaces();
+	    reload_interfaces(0);
 	    reload_after_sighup = False;
     }
 
+    /* check for new network interfaces */
+    reload_interfaces(t);
   }
 } /* process */
 
