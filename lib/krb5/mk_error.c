@@ -51,8 +51,11 @@ krb5_mk_error(krb5_context context,
 	      krb5_data *reply)
 {
     KRB_ERROR msg;
-    unsigned char buf[1024];
+    u_char *buf;
+    size_t buf_size;
     int32_t sec, usec;
+    size_t len;
+    krb5_error_code ret = 0;
 
     krb5_us_timeofday (context, &sec, &usec);
 
@@ -85,10 +88,42 @@ krb5_mk_error(krb5_context context,
 	msg.crealm = &client->realm;
 	msg.cname = &client->name;
     }
-    encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg, &reply->length);
-    reply->data = malloc(reply->length);
-    if (reply->data == NULL)
+
+    buf_size = 1024;
+    buf = malloc (buf_size);
+    if (buf == NULL)
 	return ENOMEM;
-    memcpy(reply->data, buf + sizeof(buf) - reply->length, reply->length);
-    return 0;
+
+    do {
+	ret = encode_KRB_ERROR(buf + buf_size - 1,
+			       buf_size,
+			       &msg,
+			       &len);
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+		buf = tmp;
+	    } else {
+		goto out;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
+    reply->length = len;
+    reply->data = malloc(len);
+    if (reply->data == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    memcpy (reply->data, buf + buf_size - len, len);
+out:
+    free (buf);
+    return ret;
 }
