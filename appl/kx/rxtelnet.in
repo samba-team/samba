@@ -10,6 +10,7 @@ telnet_args=$*
 bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
+export PATH
 set -- `kx $host`
 if test $# -ne 3; then
   exit 1
