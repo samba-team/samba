@@ -493,7 +493,7 @@ BOOL pass_check_smb(char *user, char *domain,
 	}
 	else
 	{
-		pass = smb_getpwnam(user,domain,True);
+		pass = smb_getpwnam(user,True);
 	}
 
 	if (pass == NULL)

@@ -323,7 +323,7 @@ static int fill_grent(struct group *result,
 /* Rewind "file pointer" to start of ntdom password database */
 
 enum nss_status
-_nss_ntdom_setpwent(void)
+_nss_winbind_setpwent(void)
 {
 	return generic_request(WINBINDD_SETPWENT, NULL, NULL);
 }
@@ -331,7 +331,7 @@ _nss_ntdom_setpwent(void)
 /* Close ntdom password database "file pointer" */
 
 enum nss_status
-_nss_ntdom_endpwent(void)
+_nss_winbind_endpwent(void)
 {
 	return generic_request(WINBINDD_ENDPWENT, NULL, NULL);
 }
@@ -339,7 +339,7 @@ _nss_ntdom_endpwent(void)
 /* Fetch the next password entry from ntdom password database */
 
 enum nss_status
-_nss_ntdom_getpwent_r(struct passwd *result, char *buffer, 
+_nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
@@ -354,7 +354,7 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
 /* Return passwd struct from uid */
 
 enum nss_status
-_nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
+_nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
@@ -372,7 +372,7 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 /* Return passwd struct from username */
 
 enum nss_status
-_nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
+_nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
@@ -395,7 +395,7 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 /* Rewind "file pointer" to start of ntdom group database */
 
 enum nss_status
-_nss_ntdom_setgrent(void)
+_nss_winbind_setgrent(void)
 {
 	return generic_request(WINBINDD_SETGRENT, NULL, NULL);
 }
@@ -403,7 +403,7 @@ _nss_ntdom_setgrent(void)
 /* Close "file pointer" for ntdom group database */
 
 enum nss_status
-_nss_ntdom_endgrent(void)
+_nss_winbind_endgrent(void)
 {
 	return generic_request(WINBINDD_ENDGRENT, NULL, NULL);
 }
@@ -413,7 +413,7 @@ _nss_ntdom_endgrent(void)
 /* Get next entry from ntdom group database */
 
 enum nss_status
-_nss_ntdom_getgrent_r(struct group *result,
+_nss_winbind_getgrent_r(struct group *result,
                       char *buffer, size_t buflen, int *errnop)
 {
 	enum nss_status ret;
@@ -428,7 +428,7 @@ _nss_ntdom_getgrent_r(struct group *result,
 /* Return group struct from group name */
 
 enum nss_status
-_nss_ntdom_getgrnam_r(const char *name,
+_nss_winbind_getgrnam_r(const char *name,
                       struct group *result, char *buffer,
                       size_t buflen, int *errnop)
 {
@@ -448,7 +448,7 @@ _nss_ntdom_getgrnam_r(const char *name,
 /* Return group struct from gid */
 
 enum nss_status
-_nss_ntdom_getgrgid_r(gid_t gid,
+_nss_winbind_getgrgid_r(gid_t gid,
                       struct group *result, char *buffer,
                       size_t buflen, int *errnop)
 {

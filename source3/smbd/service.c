@@ -295,7 +295,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	/* find out some info about the user */
-	pass = smb_getpwnam(user,validated_domain(vuid),True);
+	pass = smb_getpwnam(user,True);
 
 	if (pass == NULL) {
 		DEBUG(0,( "Couldn't find account %s\n",user));

@@ -290,7 +290,7 @@ char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
-struct passwd *smb_getpwnam(char *user, char *domain, BOOL allow_change);
+struct passwd *smb_getpwnam(char *user, BOOL allow_change);
 int smb_initgroups(char *user, char *domain, gid_t group);
 
 /*The following definitions come from  lib/util.c  */
