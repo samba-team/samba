@@ -1654,211 +1654,204 @@ static int read_inclusion_file(char *filename)
 /****************************************************************************
 Parse tar arguments. Sets tar_type, tar_excl, etc.
 ***************************************************************************/
+
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 {
-  char tar_clipfl='\0';
+	char tar_clipfl='\0';
 
-  /* Reset back to defaults - could be from interactive version 
-   * reset mode and archive mode left as they are though
-   */
-  tar_type='\0';
-  tar_excl=True;
-  dry_run=False;
+	/* Reset back to defaults - could be from interactive version 
+	 * reset mode and archive mode left as they are though
+	 */
+	tar_type='\0';
+	tar_excl=True;
+	dry_run=False;
 
-  while (*Optarg) 
-    switch(*Optarg++) {
-    case 'c':
-      tar_type='c';
-      break;
-    case 'x':
-      if (tar_type=='c') {
-	printf("Tar must be followed by only one of c or x.\n");
-	return 0;
-      }
-      tar_type='x';
-      break;
-    case 'b':
-      if (Optind>=argc || !(blocksize=atoi(argv[Optind]))) {
-	DEBUG(0,("Option b must be followed by valid blocksize\n"));
-	return 0;
-      } else {
-	Optind++;
-      }
-      break;
-    case 'g':
-      tar_inc=True;
-      break;
-    case 'N':
-      if (Optind>=argc) {
-	DEBUG(0,("Option N must be followed by valid file name\n"));
-	return 0;
-      } else {
-	SMB_STRUCT_STAT stbuf;
-	extern time_t newer_than;
+	while (*Optarg) {
+		switch(*Optarg++) {
+			case 'c':
+				tar_type='c';
+				break;
+			case 'x':
+				if (tar_type=='c') {
+					printf("Tar must be followed by only one of c or x.\n");
+					return 0;
+				}
+				tar_type='x';
+				break;
+			case 'b':
+				if (Optind>=argc || !(blocksize=atoi(argv[Optind]))) {
+					DEBUG(0,("Option b must be followed by valid blocksize\n"));
+					return 0;
+				} else {
+					Optind++;
+				}
+				break;
+			case 'g':
+				tar_inc=True;
+				break;
+			case 'N':
+				if (Optind>=argc) {
+					DEBUG(0,("Option N must be followed by valid file name\n"));
+					return 0;
+				} else {
+					SMB_STRUCT_STAT stbuf;
+					extern time_t newer_than;
 	
-	if (sys_stat(argv[Optind], &stbuf) == 0) {
-	  newer_than = stbuf.st_mtime;
-	  DEBUG(1,("Getting files newer than %s",
-		   asctime(LocalTime(&newer_than))));
-	  Optind++;
-	} else {
-	  DEBUG(0,("Error setting newer-than time\n"));
-	  return 0;
+					if (sys_stat(argv[Optind], &stbuf) == 0) {
+						newer_than = stbuf.st_mtime;
+						DEBUG(1,("Getting files newer than %s",
+							asctime(LocalTime(&newer_than))));
+						Optind++;
+					} else {
+						DEBUG(0,("Error setting newer-than time\n"));
+						return 0;
+					}
+				}
+				break;
+			case 'a':
+				tar_reset=True;
+				break;
+			case 'q':
+				tar_noisy=False;
+				break;
+			case 'I':
+				if (tar_clipfl) {
+					DEBUG(0,("Only one of I,X,F must be specified\n"));
+					return 0;
+				}
+				tar_clipfl='I';
+				break;
+			case 'X':
+				if (tar_clipfl) {
+					DEBUG(0,("Only one of I,X,F must be specified\n"));
+					return 0;
+				}
+				tar_clipfl='X';
+				break;
+			case 'F':
+				if (tar_clipfl) {
+					DEBUG(0,("Only one of I,X,F must be specified\n"));
+					return 0;
+				}
+				tar_clipfl='F';
+				break;
+			case 'r':
+				DEBUG(0, ("tar_re_search set\n"));
+				tar_re_search = True;
+				break;
+			case 'n':
+				if (tar_type == 'c') {
+					DEBUG(0, ("dry_run set\n"));
+					dry_run = True;
+				} else {
+					DEBUG(0, ("n is only meaningful when creating a tar-file\n"));
+					return 0;
+				}
+				break;
+			default:
+				DEBUG(0,("Unknown tar option\n"));
+				return 0;
+		}
 	}
-      }
-      break;
-    case 'a':
-      tar_reset=True;
-      break;
-    case 'q':
-      tar_noisy=False;
-      break;
-    case 'I':
-      if (tar_clipfl) {
-	DEBUG(0,("Only one of I,X,F must be specified\n"));
-	return 0;
-      }
-      tar_clipfl='I';
-      break;
-    case 'X':
-      if (tar_clipfl) {
-	DEBUG(0,("Only one of I,X,F must be specified\n"));
-	return 0;
-      }
-      tar_clipfl='X';
-      break;
-    case 'F':
-      if (tar_clipfl) {
-	DEBUG(0,("Only one of I,X,F must be specified\n"));
-	return 0;
-      }
-      tar_clipfl='F';
-      break;
-    case 'r':
-      DEBUG(0, ("tar_re_search set\n"));
-      tar_re_search = True;
-      break;
-    case 'n':
-      if (tar_type == 'c') {
-	DEBUG(0, ("dry_run set\n"));
-	dry_run = True;
-      } else {
-	DEBUG(0, ("n is only meaningful when creating a tar-file\n"));
-	return 0;
-      }
-      break;
-    default:
-      DEBUG(0,("Unknown tar option\n"));
-      return 0;
-    }
 
-  if (!tar_type) {
-    printf("Option T must be followed by one of c or x.\n");
-    return 0;
-  }
+	if (!tar_type) {
+		printf("Option T must be followed by one of c or x.\n");
+		return 0;
+	}
 
-  /* tar_excl is true if cliplist lists files to be included.
-   * Both 'I' and 'F' mean include. */
-  tar_excl=tar_clipfl!='X';
+	/* tar_excl is true if cliplist lists files to be included.
+	 * Both 'I' and 'F' mean include. */
+	tar_excl=tar_clipfl!='X';
 
-  if (tar_clipfl=='F') {
-    if (argc-Optind-1 != 1) {
-      DEBUG(0,("Option F must be followed by exactly one filename.\n"));
-      return 0;
-    }
-    if (! read_inclusion_file(argv[Optind+1])) {
-      return 0;
-    }
-  } else if (Optind+1<argc && !tar_re_search) { /* For backwards compatibility */
-    char *tmpstr;
-    char **tmplist;
-    int clipcount;
+	if (tar_clipfl=='F') {
+		if (argc-Optind-1 != 1) {
+			DEBUG(0,("Option F must be followed by exactly one filename.\n"));
+			return 0;
+		}
+		if (! read_inclusion_file(argv[Optind+1])) {
+			return 0;
+		}
+	} else if (Optind+1<argc && !tar_re_search) { /* For backwards compatibility */
+		char *tmpstr;
+		char **tmplist;
+		int clipcount;
 
-    cliplist=argv+Optind+1;
-    clipn=argc-Optind-1;
-    clipcount = clipn;
+		cliplist=argv+Optind+1;
+		clipn=argc-Optind-1;
+		clipcount = clipn;
 
-    if ((tmplist=malloc(clipn*sizeof(char *))) == NULL) {
-      DEBUG(0, ("Could not allocate space to process cliplist, count = %i\n", 
-               clipn)
-           );
-      return 0;
-    }
+		if ((tmplist=malloc(clipn*sizeof(char *))) == NULL) {
+			DEBUG(0, ("Could not allocate space to process cliplist, count = %i\n", clipn));
+			return 0;
+		}
 
-    for (clipcount = 0; clipcount < clipn; clipcount++) {
+		for (clipcount = 0; clipcount < clipn; clipcount++) {
 
-      DEBUG(5, ("Processing an item, %s\n", cliplist[clipcount]));
+			DEBUG(5, ("Processing an item, %s\n", cliplist[clipcount]));
 
-      if ((tmpstr = (char *)malloc(strlen(cliplist[clipcount])+1)) == NULL) {
-        DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n",
-                 clipcount)
-             );
-        return 0;
-      }
-      unfixtarname(tmpstr, cliplist[clipcount], strlen(cliplist[clipcount]) + 1, True);
-      tmplist[clipcount] = tmpstr;
-      DEBUG(5, ("Processed an item, %s\n", tmpstr));
+			if ((tmpstr = (char *)malloc(strlen(cliplist[clipcount])+1)) == NULL) {
+				DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n", clipcount));
+				return 0;
+			}
 
-      DEBUG(5, ("Cliplist is: %s\n", cliplist[0]));
-    }
-    cliplist = tmplist;
-    must_free_cliplist = True;
-  }
+			unfixtarname(tmpstr, cliplist[clipcount], strlen(cliplist[clipcount]) + 1, True);
+			tmplist[clipcount] = tmpstr;
+			DEBUG(5, ("Processed an item, %s\n", tmpstr));
 
-  if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
+			DEBUG(5, ("Cliplist is: %s\n", cliplist[0]));
+		}
+
+		cliplist = tmplist;
+		must_free_cliplist = True;
+	}
+
+	if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
 #ifdef HAVE_REGEX_H
-    int errcode;
+		int errcode;
 
-    if ((preg = (regex_t *)malloc(65536)) == NULL) {
+		if ((preg = (regex_t *)malloc(65536)) == NULL) {
 
-      DEBUG(0, ("Could not allocate buffer for regular expression search\n"));
-      return;
+			DEBUG(0, ("Could not allocate buffer for regular expression search\n"));
+			return;
+		}
 
-    }
+		if (errcode = regcomp(preg, argv[Optind + 1], REG_EXTENDED)) {
+			char errstr[1024];
+			size_t errlen;
 
-    if (errcode = regcomp(preg, argv[Optind + 1], REG_EXTENDED)) {
-      char errstr[1024];
-      size_t errlen;
-
-      errlen = regerror(errcode, preg, errstr, sizeof(errstr) - 1);
-      
-      DEBUG(0, ("Could not compile pattern buffer for re search: %s\n%s\n", argv[Optind + 1], errstr));
-      return;
-
-    }
+			errlen = regerror(errcode, preg, errstr, sizeof(errstr) - 1);
+			DEBUG(0, ("Could not compile pattern buffer for re search: %s\n%s\n", argv[Optind + 1], errstr));
+			return;
+		}
 #endif
 
-    clipn=argc-Optind-1;
-    cliplist=argv+Optind+1;
-
-  }
-
-  if (Optind>=argc || !strcmp(argv[Optind], "-")) {
-    /* Sets tar handle to either 0 or 1, as appropriate */
-    tarhandle=(tar_type=='c');
-    /*
-     * Make sure that dbf points to stderr if we are using stdout for 
-     * tar output
-    */
-    if (tarhandle == 1) 
-      dbf = x_stderr;
-  } else {
-    if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
-      {
-	if (!dry_run) {
-	  DEBUG(0,("Output is /dev/null, assuming dry_run\n"));
-	  dry_run = True;
+		clipn=argc-Optind-1;
+		cliplist=argv+Optind+1;
 	}
-	tarhandle=-1;
-      } else
-    if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
-	|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0))
-      {
-	DEBUG(0,("Error opening local file %s - %s\n",
-		 argv[Optind], strerror(errno)));
-	return(0);
-      }
-  }
 
-  return 1;
+	if (Optind>=argc || !strcmp(argv[Optind], "-")) {
+		/* Sets tar handle to either 0 or 1, as appropriate */
+		tarhandle=(tar_type=='c');
+		/*
+		 * Make sure that dbf points to stderr if we are using stdout for 
+		 * tar output
+		 */
+		if (tarhandle == 1)  {
+			dbf = x_stderr;
+		}
+	} else {
+		if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0)) {
+			if (!dry_run) {
+				DEBUG(0,("Output is /dev/null, assuming dry_run\n"));
+				dry_run = True;
+			}
+			tarhandle=-1;
+		} else if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
+					|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0)) {
+			DEBUG(0,("Error opening local file %s - %s\n", argv[Optind], strerror(errno)));
+			return(0);
+		}
+	}
+
+	return 1;
 }
