@@ -540,7 +540,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),
 				  strerror(errno)));
 			desc->errcode=NERR_notsupported;
-			return;
+			goto done;
 		} 
 
 		/* lookup the long printer driver name in the file description */
@@ -651,14 +651,16 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		  	  SERVICE(snum),count));
 
 	        desc->errcode=NERR_Success;
-		file_lines_free(lines);
-		return;
+		goto done;
 	}
 
   err:
 
 	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
 	desc->errcode=NERR_notsupported;
+
+ done:
+	safe_free(info);
 	file_lines_free(lines);	
 }
 
@@ -741,7 +743,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-	int i;
+	int i, result = 0;
 	BOOL ok = False;
 	pstring tok;
 	char *p;
@@ -777,7 +779,7 @@ static int get_printerdrivernumber(int snum)
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
-			return 0;
+			goto done;
 		} 
 
 		/* lookup the long printer driver name in the file description */
@@ -800,22 +802,24 @@ static int get_printerdrivernumber(int snum)
 		while (*p && i) {
 			if (*p++ == ':') i--;
 		}
-		if (!*p || i)
-			goto err;
+		if (!*p || i) {
+			DEBUG(3,("Can't determine number of printer driver files\n"));
+			goto done;
+		}
 		
 		/* count the number of files */
 		while (next_token(&p,tok,",",sizeof(tok)))
 			i++;
 	
-		file_lines_free(lines);
-		return(i);
+		result = i;
 	}
 
-  err:
+ done:
 
-	DEBUG(3,("Can't determine number of printer driver files\n"));
+	safe_free(info);
 	file_lines_free(lines);
-	return (0);
+
+	return result;
 }
 
 static BOOL api_DosPrintQGetInfo(connection_struct *conn,
