@@ -35,6 +35,117 @@
 
 RCSID("$Id$");
 
+#ifdef KRB4
+static des_cblock mkey4;
+static des_key_schedule msched4;
+
+static char *
+time2str(time_t t)
+{
+    static char buf[128];
+    strftime(buf, sizeof(buf), "%Y%m%d%H%M", gmtime(&t));
+    return buf;
+}
+
+static int 
+dump_krb4(krb5_context context, hdb_entry *ent, int fd) {
+  char name[ANAME_SZ];  
+  char instance[INST_SZ];
+  char realm[REALM_SZ];
+  char buf[1024]="";
+  char *p;
+  int i;
+  int ret;
+  char *princ_name;
+  Event *modifier;
+  
+  ret = krb5_524_conv_principal(context, ent->principal,
+  		name, instance, realm);
+  if (ret) {
+    krb5_unparse_name(context, ent->principal, &princ_name);
+    krb5_warn(context, ret, "%s", princ_name);
+    free(princ_name);
+    return -1;
+  }
+  strcat(buf, name);
+  strcat(buf, " ");
+  strcat(buf, (strlen(instance) != 0) ? instance : "*");
+  strcat(buf, " ");
+
+  if (ent->max_life) { 
+    asprintf(&p, "%d", krb_time_to_life(0, *ent->max_life));
+    strcat(buf, p);
+    free(p);
+  }
+  else 
+    strcat(buf, "255"); 
+  strcat(buf, " ");
+
+  i = 0;
+  while (i < ent->keys.len && ((ent->keys.val)+i)->key.keytype != KEYTYPE_DES) {
+    i++;
+  }
+  if (i == ent->keys.len) {
+       krb5_warnx(context, "No DES key for %s.%s", name, instance);
+       return -1;
+  }
+
+  if (ent->keys.val[i].mkvno)
+    asprintf(&p, "%d ", *ent->keys.val[i].mkvno);
+  else
+    asprintf(&p, "%d ", 1);
+  strcat(buf, p);
+  free(p);
+
+  asprintf(&p, "%d ", ent->kvno);
+  strcat(buf, p);
+  free(p);
+
+  asprintf(&p, "%d ", 0); /* Attributes are always 0*/  
+  strcat(buf, p);
+  free(p);
+
+  { 
+  u_int32_t *key = ((ent->keys.val)+i)->key.keyvalue.data;
+  kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 1);
+  asprintf(&p, "%x %x ", (int)htonl(*key), (int)htonl(*(key+1)));
+  strcat(buf, p);
+  free(p);
+
+  }
+ 
+  if (ent->pw_end == NULL)
+    strcat(buf, time2str(60*60*24*365*50)); /* passwd will never expire */
+  else
+    strcat(buf, time2str(*ent->pw_end));
+  strcat(buf, " ");
+
+  if (ent->modified_by == NULL) 
+     modifier = &ent->created_by;
+  else  
+     modifier = ent->modified_by;
+    
+  ret = krb5_524_conv_principal(context, modifier->principal,
+                    name, instance, realm);
+  if (ret) { 
+    krb5_unparse_name(context, modifier->principal, &princ_name);
+    krb5_warn(context, ret, "%s", princ_name);
+    free(princ_name);
+    return -1;
+  } 
+  asprintf(&p, "%s %s %s\n", time2str(modifier->time), 
+              (strlen(name) != 0) ? name : "*", 
+              (strlen(instance) != 0) ? instance : "*");
+  strcat(buf, p);
+  free(p);
+
+  ret = write(fd, buf, strlen(buf));
+  if (ret == -1)
+    krb5_warnx(context, "write");
+  return 0;
+}
+#endif /* KRB4 */
+
 static int
 open_socket(krb5_context context)
 {
@@ -80,11 +191,17 @@ static int version_flag;
 static int print_dump;
 static char *database = HDB_DEFAULT_DB;
 static int from_stdin;
+#ifdef KRB4
+static int v4dump;
+#endif
 
 struct getargs args[] = {
     { "database", 'd', arg_string, &database, "database", "file" },
     { "stdin",    'n', arg_flag, &from_stdin, "read from stdin" },
     { "print",	    0, arg_flag, &print_dump, "print dump to stdout" },
+#ifdef KRB4
+    { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
+#endif
     { "version",    0, arg_flag, &version_flag, NULL, NULL },
     { "help",    'h',  arg_flag, &help_flag, NULL, NULL}
 };
@@ -99,7 +216,8 @@ usage(int ret)
 }
 
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
@@ -115,6 +233,10 @@ int main(int argc, char **argv)
     char *tmp_db;
     krb5_log_facility *fac;
     int nprincs;
+#ifdef KRB4
+    int e;
+    int fd_out;
+#endif
 
     set_progname(argv[0]);
 
@@ -125,9 +247,14 @@ int main(int argc, char **argv)
     if(ret)
 	;
     krb5_set_warn_dest(context, fac);
-    
+  
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
+#ifdef KRB4
+    if (v4dump && database == HDB_DEFAULT_DB)
+       database = "/var/kerberos/524_dump";
+#endif /* KRB4 */
+    
     if(help_flag)
 	usage(0);
     if(version_flag) {
@@ -187,13 +314,30 @@ int main(int argc, char **argv)
     
     if(!print_dump) {
 	asprintf(&tmp_db, "%s~", database);
-	ret = hdb_create(context, &db, tmp_db);
-	if(ret)
-	    krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
-	ret = db->open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
-	if(ret)
-	    krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
+#ifdef KRB4
+	if (v4dump) {
+	    fd_out = open(tmp_db, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	    if (fd_out == -1)
+		krb5_errx(context, 1, "%s", strerror(errno));
+	}
+	else
+#endif /* KRB4 */
+	{
+	    ret = hdb_create(context, &db, tmp_db);
+	    if(ret)
+		krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
+	    ret = db->open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
+	    if(ret)
+		krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
+	}
     }
+
+#ifdef KRB4
+    if (v4dump) {
+      e = kdb_get_master_key(0, &mkey4, msched4);
+      if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
+    }
+#endif /* KRB4 */
 
     nprincs = 0;
     while(1){
@@ -215,28 +359,49 @@ int main(int argc, char **argv)
 		send_priv(context, ac, &data, fd);
 	    }
 	    if(!print_dump) {
-		ret = db->rename(context, db, database);
-		if(ret) krb5_err(context, 1, ret, "db_rename");
-		ret = db->close(context, db);
-		if(ret) krb5_err(context, 1, ret, "db_close");
+#ifdef KRB4
+		if (v4dump) {
+		    ret = rename(tmp_db, database);
+		    if (ret)
+			krb5_errx(context, 1, "rename");
+		    ret = close(fd_out);
+		    if (ret)
+			krb5_errx(context, 1, "close");
+		} else
+#endif /* KRB4 */
+		{
+		    ret = db->rename(context, db, database);
+		    if(ret) krb5_err(context, 1, ret, "db_rename");
+		    ret = db->close(context, db);
+		    if(ret) krb5_err(context, 1, ret, "db_close");
+		}
+		break;
 	    }
-	    break;
 	}
 	ret = hdb_value2entry(context, &data, &entry);
 	if(ret) krb5_err(context, 1, ret, "hdb_value2entry");
 	if(print_dump)
 	    hdb_print_entry(context, db, &entry, stdout);
 	else {
-	    ret = db->store(context, db, 0, &entry);
-	    if(ret == HDB_ERR_EXISTS){
-		char *s;
-		krb5_unparse_name(context, entry.principal, &s);
-		krb5_warnx(context, "Entry exists: %s", s);
-		free(s);
-	    } else if(ret) 
-		krb5_err(context, 1, ret, "db_store");
+#ifdef KRB4
+	    if (v4dump) {
+		ret = dump_krb4(context, &entry, fd_out);
+		if(!ret) nprincs++;
+	    }
 	    else
-		nprincs++;
+#endif /* KRB4 */
+	    {
+		ret = db->store(context, db, 0, &entry);
+		if(ret == HDB_ERR_EXISTS){
+		    char *s;
+		    krb5_unparse_name(context, entry.principal, &s);
+		    krb5_warnx(context, "Entry exists: %s", s);
+		    free(s);
+		} else if(ret) 
+		    krb5_err(context, 1, ret, "db_store");
+		else
+		    nprincs++;
+	    }
 	}
 	hdb_free_entry(context, &entry);
     }
