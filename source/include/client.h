@@ -92,6 +92,8 @@ struct cli_state {
   char *inbuf;
   int bufsize;
   int initialised;
+  int win95;
+  uint32 capabilities;
   /*
    * Only used in NT domain calls.
    */
