@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999, 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -420,6 +420,35 @@ krb5_config_vget_string (krb5_context context,
 			 va_list args)
 {
     return krb5_config_vget (context, c, krb5_config_string, args);
+}
+
+const char *
+krb5_config_vget_string_default (krb5_context context,
+				 krb5_config_section *c,
+				 const char *default,
+				 va_list args)
+{
+    const char *ret;
+
+    ret = krb5_config_vget_string (context, c, args);
+    if (ret == NULL)
+	ret = default;
+    return ret;
+}
+
+const char *
+krb5_config_get_string_default (krb5_context context,
+				krb5_config_section *c,
+				const char *default,
+				...)
+{
+    const char *ret;
+    va_list args;
+
+    va_start(args, default);
+    ret = krb5_config_vget_string_default (context, c, default, args);
+    va_end(args);
+    return ret;
 }
 
 char **
