@@ -64,7 +64,6 @@ pop_init(POP *p,int argcount,char **argmessage)
     int                     c;
     int                     len;
     int                     options = 0;
-    int                     sp = 0;             /*  Socket pointer */
     char                *   trace_file_name = "/tmp/popper-trace";
     int			    inetd = 0;
     int			    portnum = 0;
@@ -161,7 +160,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 
     /*  Get the address and socket of the client to whom I am speaking */
     len = sizeof(cs);
-    if (getpeername(sp,(struct sockaddr *)&cs,&len) < 0){
+    if (getpeername(STDIN_FILENO, (struct sockaddr *)&cs, &len) < 0){
         pop_log(p,POP_PRIORITY,
             "Unable to obtain socket and address of client, err = %d",errno);
         exit (1);
@@ -220,14 +219,14 @@ pop_init(POP *p,int argcount,char **argmessage)
     }
 
     /*  Create input file stream for TCP/IP communication */
-    if ((p->input = fdopen(sp,"r")) == NULL){
+    if ((p->input = fdopen(STDIN_FILENO,"r")) == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to open communication stream for input, err = %d",errno);
         exit (1);
     }
 
     /*  Create output file stream for TCP/IP communication */
-    if ((p->output = fdopen(sp,"w")) == NULL){
+    if ((p->output = fdopen(STDOUT_FILENO,"w")) == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to open communication stream for output, err = %d",errno);
         exit (1);
