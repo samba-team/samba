@@ -134,17 +134,16 @@ static BOOL reg_match_one(char *pattern, char *file)
 	return ms_fnmatch(pattern, file)==0;
 }
 
-static char *reg_test(char *pattern, char *file, char *short_name)
+static char *reg_test(char *pattern, char *long_name, char *short_name)
 {
 	static fstring ret;
 	fstrcpy(ret, "---");
 
 	pattern = 1+strrchr(pattern,'\\');
-	// file = 1+strrchr(file,'\\');
 
 	if (reg_match_one(pattern, ".")) ret[0] = '+';
 	if (reg_match_one(pattern, "..")) ret[1] = '+';
-	if (reg_match_one(pattern, file) || 
+	if (reg_match_one(pattern, long_name) || 
 	    (*short_name && reg_match_one(pattern, short_name))) ret[2] = '+';
 	return ret;
 }
@@ -261,10 +260,14 @@ void listfn(file_info *f, const char *s, void *state)
 	finfo = f;
 }
 
-static void get_short_name(struct cli_state *cli, 
-			   char *name, pstring long_name, fstring short_name)
+static void get_real_name(struct cli_state *cli, 
+			  pstring long_name, fstring short_name)
 {
-	cli_list(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
+	if (max_protocol <= PROTOCOL_LANMAN1) {
+		cli_list_new(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
+	} else {
+		cli_list_new(cli, "\\masktest\\*", aHIDDEN | aDIR, listfn, NULL);
+	}
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
@@ -296,20 +299,16 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	resultp = res1;
 	fstrcpy(short_name, "");
 	finfo = NULL;
-	if (old_list) {
-		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn, NULL);
-	} else {
-		get_short_name(cli, file, long_name, short_name);
-		finfo = NULL;
-		fstrcpy(res1, "---");
-		cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
-	}
+	get_real_name(cli, long_name, short_name);
+	finfo = NULL;
+	fstrcpy(res1, "---");
+	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 
 	res2 = reg_test(mask, long_name, short_name);
 
 	if (showall || strcmp(res1, res2)) {
-		DEBUG(0,("%s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
-			 res1, res2, count, mask, file, short_name));
+		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
+			 res1, res2, count, mask, file, long_name, short_name));
 	}
 
 	cli_unlink(cli, file);
