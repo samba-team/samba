@@ -54,6 +54,10 @@ struct ndr_push {
 	TALLOC_CTX *mem_ctx;
 };
 
+struct ndr_push_save {
+	uint32 offset;
+};
+
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 
@@ -90,4 +94,6 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 
 /* now pull in the individual parsers */
 #include "libcli/ndr/ndr_sec.h"
+#include "libcli/ndr/ndr_misc.h"
 #include "libcli/ndr/ndr_echo.h"
+#include "libcli/ndr/ndr_lsa.h"

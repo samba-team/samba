@@ -135,65 +135,23 @@ BOOL torture_close_connection(struct cli_state *c)
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, const char *pipe_name)
 {
         struct cli_state *cli;
-        int fnum;
         NTSTATUS status;
-	char *name = NULL;
-	union smb_open open_parms;
-	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli)) {
                 return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	asprintf(&name, "\\%s", pipe_name);
-	if (!name) {
-		return NT_STATUS_NO_MEMORY;
+        if (!(*p = dcerpc_pipe_init(cli->tree))) {
+                return NT_STATUS_NO_MEMORY;
 	}
-
-	open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	open_parms.ntcreatex.in.flags = 0;
-	open_parms.ntcreatex.in.root_fid = 0;
-	open_parms.ntcreatex.in.access_mask = 
-		STD_RIGHT_READ_CONTROL_ACCESS | 
-		SA_RIGHT_FILE_WRITE_ATTRIBUTES | 
-		SA_RIGHT_FILE_WRITE_EA | 
-		GENERIC_RIGHTS_FILE_READ |
-		GENERIC_RIGHTS_FILE_WRITE;
-	open_parms.ntcreatex.in.file_attr = 0;
-	open_parms.ntcreatex.in.alloc_size = 0;
-	open_parms.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ |
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-	open_parms.ntcreatex.in.create_options = 0;
-	open_parms.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
-	open_parms.ntcreatex.in.security_flags = 0;
-	open_parms.ntcreatex.in.fname = name;
-
-	mem_ctx = talloc_init("torture_rpc_connection");
-	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
-	free(name);
-	talloc_destroy(mem_ctx);
-
+ 
+	status = dcerpc_pipe_open_smb(*p, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
                 printf("Open of pipe %s failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
                 return status;
         }
  
-        if (!(*p = dcerpc_pipe_init(cli->tree))) {
-                return NT_STATUS_NO_MEMORY;
-	}
- 
-	(*p)->fnum = open_parms.ntcreatex.out.fnum;
- 
-	status = cli_dcerpc_bind_byname(*p, pipe_name);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_close(cli, fnum);
-		dcerpc_pipe_close(*p);
-	}
-
         return status;
 }
 

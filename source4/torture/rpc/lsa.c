@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    test suite for lsa rpc operations
-   Copyright (C) Tim Potter 2003
+
    Copyright (C) Andrew Tridgell 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -21,38 +21,40 @@
 
 #include "includes.h"
 
-/* form a lsa open request */
-static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos, uint32 des_access)
+static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
 {
-	prs_struct qbuf;
-	LSA_Q_OPEN_POL q;
-	LSA_SEC_QOS qos;
+	struct lsa_ObjectAttribute attr;
+	struct policy_handle handle;
+	struct lsa_QosInfo qos;
+	NTSTATUS status;
 
-	ZERO_STRUCT(q);
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
 
-	/* Initialise parse structures */
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
 
-	/* Initialise input parameters */
-	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol(&q, '\\', 0, des_access, &qos);
-	} else {
-		init_q_open_pol(&q, '\\', 0, des_access, NULL);
+	status = dcerpc_lsa_OpenPolicy(p, 
+				       "\\",
+				       &attr,
+				       SEC_RIGHTS_MAXIMUM_ALLOWED,
+				       &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPolicy failed - %s\n", nt_errstr(status));
+		return False;
 	}
 
-	if (lsa_io_q_open_pol("", &q, &qbuf, 0))
-		return data_blob_talloc(
-			mem_ctx, prs_data_p(&qbuf), prs_offset(&qbuf));
-
-	return data_blob(NULL, 0);
+	return True;
 }
 
 BOOL torture_rpc_lsa(int dummy)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	DATA_BLOB request, response;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
@@ -62,13 +64,7 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
-	request = blob_lsa_open_policy_req(mem_ctx, True, 
-					   SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-	status = cli_dcerpc_request(p, LSA_OPENPOLICY, mem_ctx, &request, &response);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Failed to LSA_OPENPOLICY - %s\n", nt_errstr(status));
-	}
+	test_OpenPolicy(p);
 
         torture_rpc_close(p);
 

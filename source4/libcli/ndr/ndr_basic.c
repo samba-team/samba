@@ -36,21 +36,6 @@
 } while(0)
 
 /*
-  parse a GUID
-*/
-NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
-{
-	int i;
-	NDR_PULL_NEED_BYTES(ndr, GUID_SIZE);
-	for (i=0;i<GUID_SIZE;i++) {
-		guid->info[i] = CVAL(ndr->data, ndr->offset + i);
-	}
-	ndr->offset += i;
-	return NT_STATUS_OK;
-}
-
-
-/*
   parse a u8
 */
 NTSTATUS ndr_pull_u8(struct ndr_pull *ndr, uint8 *v)
@@ -96,17 +81,40 @@ NTSTATUS ndr_pull_u32(struct ndr_pull *ndr, uint32 *v)
 }
 
 /*
+  pull a NTSTATUS
+*/
+NTSTATUS ndr_pull_status(struct ndr_pull *ndr, NTSTATUS *status)
+{
+	uint32 v;
+	NDR_CHECK(ndr_pull_u32(ndr, &v));
+	*status = NT_STATUS(v);
+	return NT_STATUS_OK;
+}
+
+/*
   parse a set of bytes
 */
-NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char **data, uint32 n)
+NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
 {
 	NDR_PULL_NEED_BYTES(ndr, n);
-	NDR_ALLOC_N(ndr, *data, n);
-	memcpy(*data, ndr->data + ndr->offset, n);
+	memcpy(data, ndr->data + ndr->offset, n);
 	ndr->offset += n;
 	return NT_STATUS_OK;
 }
 
+/*
+  parse a GUID
+*/
+NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
+{
+	int i;
+	NDR_PULL_NEED_BYTES(ndr, GUID_SIZE);
+	for (i=0;i<GUID_SIZE;i++) {
+		guid->info[i] = CVAL(ndr->data, ndr->offset + i);
+	}
+	ndr->offset += i;
+	return NT_STATUS_OK;
+}
 
 
 #define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, ndr->offset+(n)))
@@ -161,3 +169,55 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 	ndr->offset += n;
 	return NT_STATUS_OK;
 }
+
+
+/*
+  this is used when a packet has a 4 byte length field. We remember the start position
+  and come back to it later to fill in the size
+*/
+NTSTATUS ndr_push_length4_start(struct ndr_push *ndr, struct ndr_push_save *save)
+{
+	save->offset = ndr->offset;
+	return ndr_push_u32(ndr, 0);
+}
+
+NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
+{
+	uint32 offset = ndr->offset;
+	ndr->offset = save->offset;
+	NDR_CHECK(ndr_push_u32(ndr, offset - save->offset));
+	ndr->offset = offset;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a 1 if a pointer is non-NULL, otherwise 0
+*/
+NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
+{
+	return ndr_push_u32(ndr, p?1:0);
+}
+
+/*
+  push a comformant, variable ucs2 string onto the wire from a C string
+*/
+NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
+{
+	smb_ucs2_t *ws;
+	ssize_t len;
+	int i;
+	len = push_ucs2_talloc(ndr->mem_ctx, &ws, s);
+	if (len == -1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	NDR_CHECK(ndr_push_u32(ndr, len));
+	NDR_CHECK(ndr_push_u32(ndr, 0));
+	NDR_CHECK(ndr_push_u32(ndr, len-2));
+	NDR_PUSH_NEED_BYTES(ndr, len);
+	for (i=0;i<len;i+=2) {
+		SSVAL(ndr->data, ndr->offset + i, ws[i]);
+	}
+	ndr->offset += i;
+	return NT_STATUS_OK;
+}
+

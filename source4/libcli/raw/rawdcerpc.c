@@ -22,6 +22,68 @@
 
 #include "includes.h"
 
+
+/* 
+   open a rpc connection to a named pipe 
+*/
+NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p, const char *pipe_name)
+{
+        NTSTATUS status;
+	char *name = NULL;
+	union smb_open io;
+	TALLOC_CTX *mem_ctx;
+
+	asprintf(&name, "\\%s", pipe_name);
+	if (!name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = 
+		STD_RIGHT_READ_CONTROL_ACCESS | 
+		SA_RIGHT_FILE_WRITE_ATTRIBUTES | 
+		SA_RIGHT_FILE_WRITE_EA | 
+		GENERIC_RIGHTS_FILE_READ |
+		GENERIC_RIGHTS_FILE_WRITE;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = name;
+
+	mem_ctx = talloc_init("torture_rpc_connection");
+	status = smb_raw_open(p->tree, mem_ctx, &io);
+	free(name);
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+ 
+	p->fnum = io.ntcreatex.out.fnum;
+
+	/* bind to the pipe, using the pipe_name as the key */
+	status = dcerpc_bind_byname(p, pipe_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		union smb_close c;
+		c.close.level = RAW_CLOSE_CLOSE;
+		c.close.in.fnum = p->fnum;
+		c.close.in.write_time = 0;
+		smb_raw_close(p->tree, &c);
+	}
+
+        return status;
+}
+
+
 struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blob)
 {
 	struct smb_trans2 trans;
