@@ -97,22 +97,30 @@ process_request(unsigned char *buf,
 		struct sockaddr *addr)
 {
     KDC_REQ req;
-    krb5_error_code err;
+#ifdef KRB4
+    Ticket ticket;
+#endif
+    krb5_error_code ret;
     size_t i;
 
     gettimeofday(&now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	err = as_rep(&req, reply, from);
+	ret = as_rep(&req, reply, from);
 	free_AS_REQ(&req);
-	return err;
+	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	err = tgs_rep(&req, reply, from);
+	ret = tgs_rep(&req, reply, from);
 	free_TGS_REQ(&req);
-	return err;
+	return ret;
     }
 #ifdef KRB4
     else if(maybe_version4(buf, len))
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
+    else if(decode_Ticket(buf, len, &ticket, &i) == 0){
+	ret = do_524(&ticket, reply, from);
+	free_Ticket(&ticket);
+	return ret;
+    }
 #endif
 			  
     return -1;
