@@ -11,14 +11,23 @@ destroy the current ticket file
 .Nm
 .Op Fl c Ar cachefile
 .Op Fl -cache= Ns Ar cachefile
+.Op Fl -no-unlog
+.Op Fl -no-delete-v4
+.Op Fl -version
+.Op Fl -help
 .Sh DESCRIPTION
 .Nm
 remove the current set of tickets.
 .Pp
+Supported options:
 .Bl -tag -width Ds
 .It Fl c Ar cachefile
 .It Fl cache= Ns Ar cachefile
 The cache file to remove.
+.It Fl -no-unlog
+Do not remove AFS tokens.
+.It Fl -no-delete-v4
+Do not remove v4 tickets.
 .El
 .Sh SEE ALSO
 .Xr kinit 1 ,

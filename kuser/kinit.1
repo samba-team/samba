@@ -37,6 +37,10 @@ acquire initial tickets
 .Op Fl -use-keytab
 .Op Fl v
 .Op Fl -validate
+.Op Fl e
+.Op Fl -enctypes= Ns Ar enctypes
+.Op Fl -fcache-version= Ns Ar version
+.Op Fl -noaddresses
 .Op Fl -version
 .Op Fl -help
 .Op Ar principal
@@ -115,6 +119,20 @@ but with the default keytab name (normally
 .Fl -validate
 .Xc
 Try to validate an invalid ticket.
+.It Xo
+.Fl e ,
+.Fl -enctypes= Ns Ar enctypes
+.Xc
+Request tickets with this particular enctype.
+.It Xo
+.Fl -fcache-version= Ns Ar version
+.Xc
+Create a credentials cache of version
+.Nm version .
+.It Xo
+.Fl -noaddresses
+.Xc
+Request a ticket with no addresses.
 .El
 
 The following options are only available if
