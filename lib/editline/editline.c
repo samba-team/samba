@@ -143,7 +143,7 @@ TTYput(unsigned char c)
 }
 
 static void
-TTYputs(const unsigned char *p)
+TTYputs(const char *p)
 {
     while (*p)
 	TTYput(*p++);
@@ -197,7 +197,14 @@ TTYget()
     return EOF;
 }
 
-#define TTYback()	(backspace ? TTYputs(backspace) : TTYput('\b'))
+static void
+TTYback(void)
+{
+    if (backspace)
+	TTYputs(backspace);
+    else
+	TTYput('\b');
+}
 
 static void
 TTYbackn(int n)
