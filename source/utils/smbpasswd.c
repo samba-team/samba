@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
 /*
@@ -347,7 +346,7 @@ static int join_domain_byuser(char *domain, char *remote,
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
@@ -355,7 +354,7 @@ static int join_domain_byuser(char *domain, char *remote,
 	}
 
 	make_nmb_name(&called, pdc_name, 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname_unix()), 0);
 
 	if (!cli_establish_connection(&cli, pdc_name, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {
@@ -408,10 +407,12 @@ static int join_domain_byuser(char *domain, char *remote,
 
 	/* Create domain user */
 
-	fstrcpy(acct_name, global_myname);
+	fstrcpy(acct_name, global_myname_unix());
 	fstrcat(acct_name, "$");
 
+	unix_to_dos(acct_name);
 	strlower(acct_name);
+	dos_to_unix(acct_name);
 
 	{
 		uint32 unknown = 0xe005000b;
@@ -572,7 +573,7 @@ static int join_domain(char *domain, char *remote)
 	BOOL ret;
 
 	pstrcpy(pdc_name, remote ? remote : "");
-	fstrcpy(trust_passwd, global_myname);
+	fstrcpy(trust_passwd, global_myname_dos());
 	strlower(trust_passwd);
 
 	/* 
@@ -587,7 +588,7 @@ static int join_domain(char *domain, char *remote)
 	   domain if we are locally set up as a domain
 	   controller. */
 
-	if(strequal(remote, global_myname)) {
+	if(strequal(remote, global_myname_dos())) {
 		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
 		return 1;
 	}
@@ -598,7 +599,7 @@ static int join_domain(char *domain, char *remote)
 	
 	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
 		fprintf(stderr, "Unable to write the machine account password for \
-machine %s in domain %s.\n", global_myname, domain);
+machine %s in domain %s.\n", global_myname_unix(), domain);
 		return 1;
 	}
 	
@@ -618,7 +619,7 @@ machine %s in domain %s.\n", global_myname, domain);
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
@@ -643,15 +644,16 @@ machine %s in domain %s.\n", global_myname, domain);
 	return 0;
 }
 
-static int set_domain_sid_from_dc( char *domain, char *remote )
+static int set_domain_sid_from_dc( const char *domain, const char *remote )
 {
 	pstring pdc_name;
 	DOM_SID domain_sid;
 	fstring sid_str;
+	fstring returned_domain;
 	
 	pstrcpy(pdc_name, remote ? remote : "");
 
-	if(strequal(pdc_name, global_myname)) {
+	if(strequal(pdc_name, global_myname_dos())) {
 		fprintf(stderr, "Cannot fetch domain sid for %s as the domain controller name is our own.\n", domain);
 		return 1;
 	}
@@ -668,14 +670,14 @@ static int set_domain_sid_from_dc( char *domain, char *remote )
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
 	}
 
-	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) 
-		|| !secrets_store_domain_sid(global_myname, &domain_sid))
+	if (!fetch_domain_sid( returned_domain, pdc_name, &domain_sid) 
+		|| !secrets_store_domain_sid(global_myname_dos(), &domain_sid))
 	{
 		fprintf(stderr,"Failed to get domain SID for %s.\n",domain);
 		return 1;
@@ -882,7 +884,7 @@ static int process_root(void)
 	 */
 	 
 	if (local_flags & LOCAL_GET_DOM_SID) {
-		return set_domain_sid_from_dc(lp_workgroup(), remote_machine);
+		return set_domain_sid_from_dc(lp_workgroup_dos(), remote_machine);
 	}
 
 	/*
@@ -1103,18 +1105,17 @@ int main(int argc, char **argv)
 	 * set from the config file. 
 	 */ 
     
-	if (!*global_myname) {   
+	if (!global_myname_unix() || *global_myname_unix() == '\0') {   
+		fstring name;
 		char *p;
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.' );
-		if (p) *p = 0;
+		fstrcpy(name, myhostname());
+		p = strchr(name, '.' );
+		if (p)
+			*p = 0;
+		set_global_myname_unix(name);
 	}           
 
 	codepage_initialise(lp_client_code_page());
-
-	unix_to_dos(global_myname);
-	strupper(global_myname);
-	dos_to_unix(global_myname);
 
 	process_options(argc, argv, amroot);
 

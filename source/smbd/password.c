@@ -26,9 +26,6 @@ extern int Protocol;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /* 
  * track the machine trust account password timeout when
  * in domain mode security
@@ -531,7 +528,7 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
  SMB hash. Return True if the password is correct, False otherwise.
 ****************************************************************************/
 
-BOOL pass_check_smb(char *user, char *domain, uchar *chal, 
+BOOL pass_check_smb(char *user, const char *domain, uchar *chal, 
                     uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
 {
 	SAM_ACCOUNT *sampass = NULL;
@@ -603,7 +600,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 			return False;
 		}
 
-		ret = pass_check_smb(user, global_myworkgroup,
+		ret = pass_check_smb(user, lp_workgroup_dos(),
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
 
 		/*
@@ -1056,7 +1053,7 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip)) {
+	if (!attempt_netbios_session_request(cli, global_myname_unix(), desthost, &dest_ip)) {
 		cli_shutdown(cli);
 		return NULL;
 	}
@@ -1116,7 +1113,7 @@ BOOL server_validate(char *user, char *domain,
 
 	if(baduser[0] == 0) {
 		fstrcpy(baduser, INVALID_USER_PREFIX);
-		fstrcat(baduser, global_myname);
+		fstrcat(baduser, global_myname_unix());
 	}
 
 	/*
@@ -1295,7 +1292,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 		return False;
 	}
   
-	if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
+	if (!attempt_netbios_session_request(pcli, global_myname_unix(), remote_machine, &dest_ip)) {
 		DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
 session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 		cli_shutdown(pcli);
@@ -1399,8 +1396,6 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
 	fstring dc_name;
-	fstring unix_myname;
-	fstring unix_workgroup;
 	int i;
 	BOOL retry = True;
 	BOOL ret = False;
@@ -1412,10 +1407,7 @@ static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, 
 	if (is_zero_ip(*ip))
 		return False;
 
-	fstrcpy(unix_myname, dos_to_unix_static(global_myname));
-	fstrcpy(unix_workgroup, dos_to_unix_static(lp_workgroup()));
-
-	if (!lookup_dc_name(unix_myname, unix_workgroup, ip, dc_name))
+	if (!lookup_dc_name(global_myname_unix(), lp_workgroup_unix(), ip, dc_name))
 		return False;
 
 	for (i = 0; (ret == False) && retry && (i < 3); i++)
@@ -1435,7 +1427,6 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	int i;
 	BOOL connected_ok = False;
 	time_t time_now = time(NULL);
-	fstring unix_workgroup;
 	BOOL use_pdc_only = False;
 
 	/*
@@ -1449,8 +1440,7 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	if (time_now - last_change_time < 3600)
 		use_pdc_only = True;
 
-	fstrcpy(unix_workgroup,  dos_to_unix_static(lp_workgroup()));
-	if (!get_dc_list(use_pdc_only, unix_workgroup, &ip_list, &count))
+	if (!get_dc_list(use_pdc_only, lp_workgroup_unix(), &ip_list, &count))
 		return False;
 
 	/*
@@ -1517,7 +1507,6 @@ BOOL domain_client_validate( char *user, char *domain,
 	unsigned char local_nt_response[24];
 	unsigned char trust_passwd[16];
 	fstring remote_machine;
-	fstring dos_domain;
 	char *p, *pserver;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
@@ -1539,8 +1528,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * password file.
 	 */
 
-	fstrcpy(dos_domain, unix_to_dos_static(domain));
-	if(strequal( dos_domain, global_myname)) {
+	if(strequal( domain, global_myname_unix())) {
 		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
 		return False;
 	}
@@ -1581,8 +1569,8 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * Get the machine account password for our primary domain
 	 */
 
-	if (!secrets_fetch_trust_account_password(global_myworkgroup, trust_passwd, &last_change_time)) {
-		DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", global_myworkgroup));
+	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup_unix()));
 		return False;
 	}
 

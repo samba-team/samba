@@ -26,30 +26,19 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
 /*******************************************************************
  create_wks_info_100
  ********************************************************************/
 
 static void create_wks_info_100(WKS_INFO_100 *inf)
 {
-	pstring my_name;
-	pstring domain;
-
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
-
-	pstrcpy (my_name, global_myname);
-	strupper(my_name);
-
-	pstrcpy (domain, lp_workgroup());
-	strupper(domain);
 
 	init_wks_info_100(inf,
 	                  0x000001f4, /* platform id info */
 	                  lp_major_announce_version(),
 	                  lp_minor_announce_version(),
-	                  my_name, unix_to_dos_static(domain));
+	                  global_myname_dos(), lp_workgroup_dos());
 }
 
 /*******************************************************************

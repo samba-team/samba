@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
-
 /****************************************************************************
 Initialize domain session credentials.
 ****************************************************************************/

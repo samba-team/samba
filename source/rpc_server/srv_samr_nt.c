@@ -30,8 +30,6 @@
 
 #include "includes.h"
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_Builtin;
 
@@ -1223,7 +1221,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * to the local_lookup_name function.
 		 */
  
-		if(local_lookup_name(global_myname, name, &sid, &local_type)) {
+		if(local_lookup_name(global_myname_dos(), name, &sid, &local_type)) {
 			sid_split_rid(&sid, &local_rid);
  
 			if (sid_equal(&sid, &pol_sid)) {
@@ -1822,7 +1820,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			free_samr_db(info);
 			
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL), 
+			init_unk_info2(&ctr->info.inf2, lp_workgroup_dos(), global_myname_dos(), (uint32) time(NULL), 
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
@@ -1832,7 +1830,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, global_myname);
+			init_unk_info5(&ctr->info.inf5, global_myname_dos());
 			break;
 		case 0x06:
 			init_unk_info6(&ctr->info.inf6);
@@ -2129,21 +2127,19 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 {
 	uint32 num_entries = 2;
 	fstring dom[2];
-	char *name;
 
 	r_u->status = NT_STATUS_OK;
 
 	switch (lp_server_role()) {
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
-			name = global_myworkgroup;
+			fstrcpy(dom[0],lp_workgroup_dos());
 			break;
 		default:
-			name = global_myname;
+			fstrcpy(dom[0],global_myname_dos());
+			break;
 	}
 
-	fstrcpy(dom[0],name);
-	strupper(dom[0]);
 	fstrcpy(dom[1],"Builtin");
 
 	if (!make_enum_domains(p->mem_ctx, &r_u->sam, &r_u->uni_dom_name, num_entries, dom))

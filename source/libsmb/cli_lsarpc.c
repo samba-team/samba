@@ -1060,9 +1060,8 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /** Fetch a DOMAIN sid. Does complete cli setup / teardown anonymously. */
 
-BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
+BOOL fetch_domain_sid( char *domain, const char *remote_machine, DOM_SID *psid)
 {
-	extern pstring global_myname;
 	struct cli_state cli;
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
@@ -1085,7 +1084,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
-	if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
+	if (!attempt_netbios_session_request(&cli, global_myname_unix(), remote_machine, &cli.dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
 		goto done;

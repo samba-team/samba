@@ -25,8 +25,6 @@
 #include "includes.h"
 
 extern struct pipe_id_info pipe_names[];
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 
 /********************************************************************
  Rpc pipe call id.
@@ -545,7 +543,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 
 static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_call_id,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
-                                char *my_name, char *domain, uint32 neg_flags)
+                                const char *my_name, const char *domain, uint32 neg_flags)
 {
 	RPC_HDR hdr;
 	RPC_HDR_RB hdr_rb;
@@ -639,7 +637,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
  ********************************************************************/
 
 static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
-				char *domain, char *user_name, char *my_name,
+				const char *domain, const char *user_name, const char *my_name,
 				uint32 ntlmssp_cli_flgs,
 				uint32 rpc_call_id,
 				prs_struct *rpc_out)
@@ -1092,7 +1090,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
 	prs_give_memory( &rpc_out, buffer, sizeof(buffer), False);
 
 	create_rpc_bind_resp(&cli->pwd, cli->domain,
-	                     cli->user_name, global_myname, 
+	                     cli->user_name, global_myname_dos(), 
 	                     cli->ntlmssp_cli_flgs, rpc_call_id,
 	                     &rpc_out);
 			                    
@@ -1144,7 +1142,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, char *my_name)
+BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, const char *my_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1175,7 +1173,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, char *my_name)
 	/* Marshall the outgoing data. */
 	create_rpc_bind_req(&rpc_out, do_auth, rpc_call_id,
 	                    &abstract, &transfer,
-	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
+	                    global_myname_dos(), cli->domain, cli->ntlmssp_cli_flgs);
 
 	/* Initialize the incoming data struct. */
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
@@ -1269,7 +1267,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 
 	/******************* bind request on pipe *****************/
 
-	if (!rpc_pipe_bind(cli, pipe_idx, global_myname)) {
+	if (!rpc_pipe_bind(cli, pipe_idx, global_myname_dos())) {
 		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
 		          cli_errstr(cli)));
 		cli_close(cli, cli->nt_pipe_fnum);
@@ -1285,10 +1283,10 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	strupper(cli->srv_name_slash);
 
 	fstrcpy(cli->clnt_name_slash, "\\\\");
-	fstrcat(cli->clnt_name_slash, global_myname);
+	fstrcat(cli->clnt_name_slash, global_myname_unix());
 	strupper(cli->clnt_name_slash);
 
-	fstrcpy(cli->mach_acct, global_myname);
+	fstrcpy(cli->mach_acct, global_myname_unix());
 	fstrcat(cli->mach_acct, "$");
 	strupper(cli->mach_acct);
 

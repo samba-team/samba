@@ -529,7 +529,7 @@ BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, i
 ********************************************************************/
 
 void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				char *logon_srv, char *logon_clnt,
+				const char *logon_srv, const char *logon_clnt,
 				DOM_CHAL *clnt_chal)
 {
 	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
@@ -667,7 +667,7 @@ BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 ********************************************************************/
 
 void init_q_auth_2(NET_Q_AUTH_2 *q_a,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
@@ -743,8 +743,8 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
  Inits a NET_Q_SRV_PWSET.
 ********************************************************************/
 
-void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
+void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, const char *logon_srv, const char *acct_name, 
+                uint16 sec_chan, const char *comp_name, DOM_CRED *cred, char nt_cypher[16])
 {
 	DEBUG(5,("init_q_srv_pwset\n"));
 
@@ -845,7 +845,7 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, char *sids_str, DOM_SID2 **ppsids)
  Inits a NET_ID_INFO_1 structure.
 ********************************************************************/
 
-void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
 				char *sess_key,
@@ -1090,7 +1090,7 @@ static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int 
 ********************************************************************/
 
 void init_sam_info(DOM_SAM_INFO *sam,
-				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				const char *logon_srv, const char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr)
 {

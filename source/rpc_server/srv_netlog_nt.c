@@ -29,7 +29,6 @@
 
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
-extern pstring global_myname;
 extern DOM_SID global_sam_sid;
 
 /*************************************************************************
@@ -602,12 +601,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	case INTERACTIVE_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id1.uni_user_name;
             
-		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
+		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup_unix()));
 		break;
 	case NET_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id2.uni_user_name;
             
-		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
+		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup_unix()));
 		break;
 	default:
 		DEBUG(2,("SAM Logon: unsupported switch value\n"));
@@ -690,9 +689,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
         
-		pstrcpy(my_workgroup, lp_workgroup());
-		pstrcpy(my_name, global_myname);
-		strupper(my_name);
+		pstrcpy(my_workgroup, lp_workgroup_dos());
+		pstrcpy(my_name, global_myname_dos());
 
 		/*
 		 * This is the point at which we get the group

@@ -1390,7 +1390,7 @@ BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
  Set the user's UNIX name.
  ********************************************************************/
 
-BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
+BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
 {	
 	if (!sampass)
 		return False;
@@ -1407,7 +1407,7 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
  Set the domain name.
  ********************************************************************/
 
-BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
+BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
 {	
 	if (!sampass)
 		return False;
@@ -1424,7 +1424,7 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
  Set the user's NT name.
  ********************************************************************/
 
-BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
+BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
 {
 	if (!sampass)
 		return False;
@@ -1441,7 +1441,7 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
  Set the user's full name.
  ********************************************************************/
 
-BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
+BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *fullname)
 {
 	if (!sampass)
 		return False;
@@ -1458,7 +1458,7 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
  Set the user's logon script.
  ********************************************************************/
 
-BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script, BOOL store)
+BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1478,7 +1478,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script, BOOL store)
  Set the user's profile path.
  ********************************************************************/
 
-BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path, BOOL store)
+BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1498,7 +1498,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path, BOOL store)
  Set the user's directory drive.
  ********************************************************************/
 
-BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive, BOOL store)
+BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1518,7 +1518,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive, BOOL store)
  Set the user's home directory.
  ********************************************************************/
 
-BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir, BOOL store)
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *homedir, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1538,7 +1538,7 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir, BOOL store)
  Set the user's account description.
  ********************************************************************/
 
-BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
+BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc)
 {
 	if (!sampass)
 		return False;
@@ -1555,7 +1555,7 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
  Set the user's workstation allowed list.
  ********************************************************************/
 
-BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
+BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 {
 	if (!sampass)
 		return False;
@@ -1572,7 +1572,7 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
  Set the user's dial string.
  ********************************************************************/
 
-BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
+BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 {
 	if (!sampass)
 		return False;
@@ -1589,7 +1589,7 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
  Set the user's NT hash.
  ********************************************************************/
 
-BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
+BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 {
 	if (!sampass)
 		return False;
@@ -1620,7 +1620,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
  Set the user's LM hash.
  ********************************************************************/
 
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 {
 	if (!sampass)
 		return False;

@@ -126,22 +126,22 @@ static char *query_flags(int flags)
  Do a node status query.
 ****************************************************************************/
 
-static void do_node_status(int fd, char *name, int type, struct in_addr ip)
+static void do_node_status(int fd, char *unix_name, int type, struct in_addr ip)
 {
-	struct nmb_name nname;
-	int count, i, j;
+	int count, i;
 	struct node_status *status;
 	fstring cleanname;
 
 	printf("Looking up status of %s\n",inet_ntoa(ip));
-	make_nmb_name(&nname, name, type);
-	status = node_status_query(fd,&nname,ip, &count);
+	status = node_status_query(fd,unix_name, type, ip, &count);
 	if (status) {
 		for (i=0;i<count;i++) {
 			fstrcpy(cleanname, status[i].name);
+#if 0
 			for (j=0;cleanname[j];j++) {
 				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
 			}
+#endif
 			printf("\t%-15s <%02x> - %s\n",
 			       cleanname,status[i].type,
 			       node_status_flags(status[i].flags));
@@ -155,14 +155,14 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
  Send out one query.
 ****************************************************************************/
 
-static BOOL query_one(char *lookup, char *lookup_dos, unsigned int lookup_type)
+static BOOL query_one(char *lookup_unix, unsigned int lookup_type)
 {
 	int j, count, flags;
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
-		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
-		ip_list = name_query(ServerFD,lookup_dos,lookup_type,use_bcast,
+		printf("querying %s on %s\n", lookup_unix, inet_ntoa(bcast_addr));
+		ip_list = name_query(ServerFD,lookup_unix,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
 				     bcast_addr,&count, &flags, NULL);
 	} else {
@@ -172,8 +172,8 @@ static BOOL query_one(char *lookup, char *lookup_dos, unsigned int lookup_type)
 		     j--) {
 			bcast = iface_n_bcast(j);
 			printf("querying %s on %s\n", 
-			       lookup, inet_ntoa(*bcast));
-			ip_list = name_query(ServerFD,lookup_dos,lookup_type,
+			       lookup_unix, inet_ntoa(*bcast));
+			ip_list = name_query(ServerFD,lookup_unix,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
 					     *bcast,&count, &flags, NULL);
@@ -192,14 +192,14 @@ static BOOL query_one(char *lookup, char *lookup_dos, unsigned int lookup_type)
 				printf("%s, ", host -> h_name);
 			}
 		}
-		printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+		printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup_unix, lookup_type);
 	}
 
 	/* We can only do find_status if the ip address returned
 	   was valid - ie. name_query returned true.
 	*/
 	if (find_status) {
-		do_node_status(ServerFD, lookup_dos, lookup_type, ip_list[0]);
+		do_node_status(ServerFD, lookup_unix, lookup_type, ip_list[0]);
 	}
 
 	safe_free(ip_list);
@@ -217,7 +217,6 @@ int main(int argc,char *argv[])
   int opt;
   unsigned int lookup_type = 0x0;
   fstring lookup;
-  fstring lookup_dos;
   extern int optind;
   extern char *optarg;
   BOOL find_master=False;
@@ -230,7 +229,6 @@ int main(int argc,char *argv[])
   AllowDebugChange = False;
 
   *lookup = 0;
-  *lookup_dos = 0;
 
   TimeInit();
 
@@ -312,21 +310,18 @@ int main(int argc,char *argv[])
       struct in_addr ip;
 
       fstrcpy(lookup,argv[i]);
-      fstrcpy(lookup_dos,unix_to_dos_static(argv[i]));
 
       if(lookup_by_ip)
       {
         fstrcpy(lookup,"*");
-        fstrcpy(lookup_dos,"*");
         ip = *interpret_addr2(argv[i]);
-	do_node_status(ServerFD, lookup_dos, lookup_type, ip);
+	do_node_status(ServerFD, lookup, lookup_type, ip);
         continue;
       }
 
       if (find_master) {
 	if (*lookup == '-') {
 	  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
-	  fstrcpy(lookup_dos,"\01\02__MSBROWSE__\02");
 	  lookup_type = 1;
 	} else {
 	  lookup_type = 0x1d;
@@ -334,16 +329,12 @@ int main(int argc,char *argv[])
       }
 
       p = strchr(lookup,'#');
-      if (p)
-        *p = '\0';
-
-      p = strchr(lookup_dos,'#');
       if (p) {
         *p = '\0';
         sscanf(++p,"%x",&lookup_type);
       }
 
-      if (!query_one(lookup, lookup_dos, lookup_type)) {
+      if (!query_one(lookup, lookup_type)) {
 	printf( "name_query failed to find name %s", lookup );
         if( 0 != lookup_type )
           printf( "#%02x", lookup_type );

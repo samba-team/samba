@@ -63,7 +63,6 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 		 SMB_INO_T *ino);
 
 extern BOOL in_client;
-extern pstring global_myname;
 static int smbc_initialized = 0;
 static smbc_get_auth_data_fn smbc_auth_fn = NULL;
 /*static int smbc_debug;*/

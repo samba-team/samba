@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 extern BOOL found_lm_clients;
 
 #if 0
@@ -104,7 +102,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
   char *comment = buf+31;
   struct work_record *work;
   struct server_record *servrec;
-  char *work_name;
+  fstring work_name;
   char *source_name = dgram->source_name.name;
 
   START_PROFILE(host_announce);
@@ -131,7 +129,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
   }
 
   /* For a host announce the workgroup name is the destination name. */
-  work_name = dgram->dest_name.name;
+  fstrcpy(work_name, dgram->dest_name.name);
 
   /*
    * Syntax servers version 5.1 send HostAnnounce packets to
@@ -141,8 +139,8 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
    * to be our primary workgroup name.
    */
 
-  if(strequal(work_name, global_myname))
-    work_name = global_myworkgroup;
+  if(strequal(work_name, global_myname_dos()))
+    fstrcpy(work_name, lp_workgroup_dos());
 
   /*
    * We are being very agressive here in adding a workgroup
@@ -396,10 +394,10 @@ master - ignoring master announce.\n"));
     goto done;
   }
   
-  if((work = find_workgroup_on_subnet(subrec, global_myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet(subrec, lp_workgroup_dos())) == NULL)
   {
     DEBUG(0,("process_master_browser_announce: Cannot find workgroup %s on subnet %s\n",
-           global_myworkgroup, subrec->subnet_name));
+           lp_workgroup_unix(), subrec->subnet_name));
     goto done;
   }
 
@@ -439,7 +437,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
   char *announce_name = buf+9;
   struct work_record *work;
   struct server_record *servrec;
-  char *work_name;
+  fstring work_name;
   char *source_name = dgram->source_name.name;
   pstring comment;
   char *s = buf+9;
@@ -478,7 +476,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
   }
 
   /* For a LanMan host announce the workgroup name is the destination name. */
-  work_name = dgram->dest_name.name;
+  fstrcpy(work_name, dgram->dest_name.name);
 
   /*
    * Syntax servers version 5.1 send HostAnnounce packets to
@@ -489,8 +487,8 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
    * not needed in the LanMan announce code, but it won't hurt.
    */
 
-  if(strequal(work_name, global_myname))
-    work_name = global_myworkgroup;
+  if(strequal(work_name, global_myname_dos()))
+    fstrcpy(work_name, lp_workgroup_dos());
 
   /*
    * We are being very agressive here in adding a workgroup
@@ -580,8 +578,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   
   /* We always return at least one name - our own. */
   count = 1;
-  StrnCpy(p,global_myname,15);
-  strupper(p);
+  StrnCpy(p,global_myname_dos(),15);
   p = skip_string(p,1);
 
   /* Look for backup browsers in this workgroup. */
@@ -629,7 +626,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
   send_mailslot(True, BROWSE_MAILSLOT,
                 outbuf,PTR_DIFF(p,outbuf),
-                global_myname, 0, 
+                global_myname_dos(), 0, 
                 send_to_name->name,0,
                 sendto_ip, subrec->myip, port);
 }
@@ -664,7 +661,7 @@ void process_get_backup_list_request(struct subnet_record *subrec,
      for the requested workgroup. That means it must be our
      workgroup. */
 
-  if(strequal(workgroup_name, global_myworkgroup) == False)
+  if(strequal(workgroup_name, lp_workgroup_dos()) == False)
   {
     DEBUG(7,("process_get_backup_list_request: Ignoring announce request for workgroup %s.\n",
            workgroup_name));
@@ -801,7 +798,7 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
            nmb_namestr(&dgram->dest_name)));
   
   /* We only send announcement requests on our workgroup. */
-  if(strequal(workgroup_name, global_myworkgroup) == False)
+  if(strequal(workgroup_name, lp_workgroup_dos()) == False)
   {
     DEBUG(7,("process_announce_request: Ignoring announce request for workgroup %s.\n",
            workgroup_name));
@@ -840,7 +837,7 @@ void process_lm_announce_request(struct subnet_record *subrec, struct packet_str
            nmb_namestr(&dgram->dest_name)));
 
   /* We only send announcement requests on our workgroup. */
-  if(strequal(workgroup_name, global_myworkgroup) == False)
+  if(strequal(workgroup_name, lp_workgroup_dos()) == False)
   {
     DEBUG(7,("process_lm_announce_request: Ignoring announce request for workgroup %s.\n",
            workgroup_name));

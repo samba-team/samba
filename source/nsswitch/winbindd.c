@@ -753,8 +753,6 @@ static void usage(void)
 int main(int argc, char **argv)
 {
 	extern BOOL AllowDebugChange;
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
 	extern BOOL append_log;
 	pstring logfile;
 	int accept_sock;
@@ -852,16 +850,16 @@ int main(int argc, char **argv)
 
 	/* Setup names. */
 
-	if (!*global_myname) {
+	if (global_myname_unix() == NULL || *global_myname_unix() == '\0') {
+		fstring name;
 		char *p;
 
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
+		fstrcpy(name, myhostname());
+		p = strchr(name, '.');
 		if (p)
 			*p = 0;
+		set_global_myname_unix(name);
 	}
-
-        fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if (!interactive) {
 		become_daemon();

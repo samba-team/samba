@@ -4283,7 +4283,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
+	if (secrets_fetch_domain_sid(lp_workgroup_dos(), &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
@@ -4380,7 +4380,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 		/* Change sd owner to workgroup administrator */
 
-		if (winbind_lookup_name(NULL, lp_workgroup(), &owner_sid,
+		if (winbind_lookup_name(NULL, lp_workgroup_dos(), &owner_sid,
 					&name_type)) {
 			SEC_DESC_BUF *new_secdesc_ctr = NULL;
 			SEC_DESC *psd = NULL;

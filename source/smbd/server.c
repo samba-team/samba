@@ -22,8 +22,6 @@
 #include "includes.h"
 
 pstring servicesf = CONFIGFILE;
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 
 int am_parent = 1;
 
@@ -514,15 +512,16 @@ static void init_structs(void )
 	 * set from the config file.
 	 */
 
-	if (!*global_myname) {
+	if (global_myname_unix() == NULL) {
+		fstring myname;
 		char *p;
-		fstrcpy( global_myname, myhostname() );
-		p = strchr( global_myname, '.' );
+
+		fstrcpy( myname, myhostname() );
+		p = strchr( myname, '.' );
 		if (p) 
 			*p = 0;
+		set_global_myname_unix(myname);
 	}
-
-	strupper( global_myname );
 
 	conn_init();
 
@@ -749,8 +748,6 @@ static void usage(char *pname)
 
 	codepage_initialise(lp_client_code_page());
 
-	fstrcpy(global_myworkgroup, lp_workgroup());
-
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
@@ -793,7 +790,7 @@ static void usage(char *pname)
 		claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
-	if (!migrate_from_old_password_file(global_myworkgroup))
+	if (!migrate_from_old_password_file(lp_workgroup_unix()))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
 
 	if(!pdb_generate_sam_sid()) {

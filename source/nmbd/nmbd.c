@@ -29,9 +29,6 @@ int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
 static pstring host_file;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
 
 extern BOOL global_in_nmbd;
 
@@ -563,83 +560,40 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
 static BOOL init_structs(void)
 {
-  extern fstring local_machine;
-  char *p, *ptr;
-  int namecount;
-  int n;
-  int nodup;
-  pstring nbname;
+	extern fstring local_machine;
+	char *p;
+	int n;
 
-  if (! *global_myname)
-  {
-    fstrcpy( global_myname, myhostname() );
-    p = strchr( global_myname, '.' );
-    if (p)
-      *p = 0;
-  }
-  strupper( global_myname );
+	if (global_myname_unix() == NULL || *global_myname_unix() == '\0') {
+		fstring name;
 
-  /* Add any NETBIOS name aliases. Ensure that the first entry
-     is equal to global_myname.
-   */
-  /* Work out the max number of netbios aliases that we have */
-  ptr = lp_netbios_aliases();
-  for( namecount=0; next_token(&ptr,nbname,NULL, sizeof(nbname)); namecount++ )
-    ;
-  if ( *global_myname )
-    namecount++;
+		fstrcpy( name, myhostname() );
+		p = strchr( name, '.' );
+		if (p)
+			*p = 0;
+		if (!set_global_myname_unix(name)) {
+			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+			return False;
+		}
+	}
 
-  /* Allocate space for the netbios aliases */
-  my_netbios_names = (char **)malloc( sizeof(char *) * (namecount+1) );
-  if( NULL == my_netbios_names )
-  {
-     DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
-     return( False );
-  }
- 
-  /* Use the global_myname string first */
-  namecount=0;
-  if ( *global_myname )
-    my_netbios_names[namecount++] = global_myname;
-  
-  ptr = lp_netbios_aliases();
-  while ( next_token( &ptr, nbname, NULL, sizeof(nbname) ) )
-  {
-    strupper( nbname );
-    /* Look for duplicates */
-    nodup=1;
-    for( n=0; n<namecount; n++ )
-    {
-      if( 0 == strcmp( nbname, my_netbios_names[n] ) )
-        nodup=0;
-    }
-    if (nodup)
-      my_netbios_names[namecount++] = strdup( nbname );
-  }
-  
-  /* Check the strdups succeeded. */
-  for( n = 0; n < namecount; n++ )
-    if( NULL == my_netbios_names[n] )
-    {
-      DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
-      return False;
-    }
-  
-  /* Terminate name list */
-  my_netbios_names[namecount++] = NULL;
-  
-  fstrcpy( local_machine, global_myname );
-  trim_string( local_machine, " ", " " );
-  p = strchr( local_machine, ' ' );
-  if (p)
-    *p = 0;
-  strlower( local_machine );
+	if (!set_netbios_aliases(lp_netbios_aliases())) {
+		DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+		return False;
+	}			
 
-  DEBUG( 5, ("Netbios name list:-\n") );
-  for( n=0; my_netbios_names[n]; n++ )
-    DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
+	fstrcpy( local_machine, global_myname_dos() );
+	trim_string( local_machine, " ", " " );
+	p = strchr( local_machine, ' ' );
+	if (p)
+		*p = 0;
+	strlower( local_machine );
 
-  return( True );
+	DEBUG( 5, ("Netbios name list:-\n") );
+	for( n=0; my_netbios_names_unix(n); n++ )
+		DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names_unix(n) ) );
+
+	return( True );
 }
 
 /**************************************************************************** **
@@ -752,8 +706,7 @@ static void usage(char *pname)
           pstrcpy(host_file,optarg);
           break;
         case 'n':
-          pstrcpy(global_myname,optarg);
-          strupper(global_myname);
+          set_global_myname_unix(optarg);
           break;
         case 'l':
           slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", optarg);
@@ -817,9 +770,7 @@ static void usage(char *pname)
 
   reload_nmbd_services( True );
 
-  fstrcpy( global_myworkgroup, lp_workgroup() );
-
-  if (strequal(global_myworkgroup,"*"))
+  if (strequal(lp_workgroup_dos(),"*"))
   {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);

@@ -72,7 +72,7 @@ BOOL wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int 
 
 void init_wks_info_100(WKS_INFO_100 *inf,
 				uint32 platform_id, uint32 ver_major, uint32 ver_minor,
-				char *my_name, char *domain_name)
+				const char *my_name, const char *domain_name)
 {
 	DEBUG(5,("Init WKS_INFO_100: %d\n", __LINE__));
 

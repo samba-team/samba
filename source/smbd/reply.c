@@ -35,8 +35,6 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern userdom_struct current_user_info;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
 unsigned int smb_echo_count = 0;
@@ -453,7 +451,7 @@ int reply_ioctl(connection_struct *conn,
 	{
 	    case IOCTL_QUERY_JOB_INFO:		    
 		SSVAL(p,0,fsp->print_jobid);             /* Job number */
-		StrnCpy(p+2, global_myname, 15);         /* Our NetBIOS name */
+		StrnCpy(p+2, global_myname_dos(), 15);         /* Our NetBIOS name */
 		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
 		break;
 	}
@@ -576,10 +574,6 @@ static int smb_delete_user(char *unix_user)
 
 static BOOL check_domain_match(char *user, char *domain) 
 {
-	fstring dos_domain;
-
-	fstrcpy(dos_domain, unix_to_dos_static(domain));
-
 	/*
 	 * If we aren't serving to trusted domains, we must make sure that
 	 * the validation request comes from an account in the same domain
@@ -587,7 +581,7 @@ static BOOL check_domain_match(char *user, char *domain)
 	 */
 
 	if (!lp_allow_trusted_domains() &&
-			!strequal(lp_workgroup(), dos_domain) ) {
+			!strequal(lp_workgroup_unix(), domain) ) {
 		DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
 		return False;
 	}
@@ -1045,7 +1039,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     p = smb_buf(outbuf);
     pstrcpy(p,"Unix"); p = skip_string(p,1);
     pstrcpy(p,"Samba "); pstrcat(p,VERSION); p = skip_string(p,1);
-    pstrcpy(p,global_myworkgroup); unix_to_dos(p); p = skip_string(p,1);
+    pstrcpy(p,lp_workgroup_dos()); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }

@@ -29,8 +29,6 @@
 #define REGISTER 0
 #endif
 
-extern pstring global_myname;
-
 extern pstring user_socket_options;
 
 

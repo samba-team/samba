@@ -63,7 +63,7 @@ static char winbind_separator(void)
 	return sep;
 }
 
-static char *get_winbind_domain(void)
+static const char *get_winbind_domain(void)
 {
 	struct winbindd_response response;
 	static fstring winbind_domain;
@@ -77,7 +77,7 @@ static char *get_winbind_domain(void)
 		printf("could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
-		return lp_workgroup();
+		return lp_workgroup_dos();
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);
@@ -671,7 +671,6 @@ enum {
 
 int main(int argc, char **argv)
 {
-	extern pstring global_myname;
 	int opt;
 
 	poptContext pc;
@@ -708,13 +707,15 @@ int main(int argc, char **argv)
 
 	/* Samba client initialisation */
 
-	if (!*global_myname) {
+	if (global_myname_unix() == NULL || *global_myname_unix() == '\0') {
+		fstring name;
 		char *p;
 
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
+		fstrcpy(name, myhostname());
+		p = strchr(name, '.');
 		if (p)
 			*p = 0;
+		set_global_myname_unix(name);
 	}
 
 	TimeInit();

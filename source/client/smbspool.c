@@ -54,12 +54,14 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 		*sep,		/* Pointer to separator */
 		*username,	/* Username */
 		*password,	/* Password */
-		*workgroup,	/* Workgroup */
 		*server,	/* Server name */
 		*printer;	/* Printer name */
+  fstring workgroup;
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
+
+  *workgroup = '\0';
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
   if (argc > 2 && strncmp(argv[0],"smb://", 6) && !strncmp(argv[1],"smb://", 6)) {
@@ -173,12 +175,12 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
     *sep++ = '\0';
 
-    workgroup = server;
+    fstrcpy(workgroup, server);
     server    = printer;
     printer   = sep;
   }
   else
-    workgroup = NULL;
+    *workgroup = '\0';
 
  /*
   * Setup the SAMBA server state...
@@ -197,8 +199,8 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     return (1);
   }
 
-  if (workgroup == NULL)
-    workgroup = lp_workgroup();
+  if (*workgroup == '\0')
+    fstrcpy(workgroup, lp_workgroup_unix());
 
   codepage_initialise(lp_client_code_page());
 

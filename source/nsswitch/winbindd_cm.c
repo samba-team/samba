@@ -186,7 +186,7 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	
 	if (*username && **username) {
 		if (!*domain || !**domain) {
-			*domain = smb_xstrdup(lp_workgroup());
+			*domain = smb_xstrdup(lp_workgroup_unix());
 		}
 		
 		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", *domain, *username));
@@ -259,7 +259,6 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 				   struct winbindd_cm_conn *new_conn)
 {
 	struct failed_connection_cache *fcc;
-	extern pstring global_myname;
 	NTSTATUS result;
 	char *ipc_username, *ipc_domain, *ipc_password;
 	struct in_addr dc_ip;
@@ -317,7 +316,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
-	      new_conn->controller, global_myname, ipc_domain, ipc_username));
+	      new_conn->controller, global_myname_unix(), ipc_domain, ipc_username));
 
 	for (i = 0; retry && (i < 3); i++) {
 
@@ -326,7 +325,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			continue;
 		}
 
-		result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
+		result = cli_full_connection(&new_conn->cli, global_myname_unix(), new_conn->controller, 
 			     &dc_ip, 0, "IPC$", 
 			     "IPC", ipc_username, ipc_domain, 
 			     ipc_password, strlen(ipc_password), &retry);
@@ -488,7 +487,7 @@ done:
 
 /* Return a LSA policy handle on a domain */
 
-NTSTATUS cm_get_lsa_handle(char *domain, CLI_POLICY_HND **return_hnd)
+NTSTATUS cm_get_lsa_handle(const char *domain, CLI_POLICY_HND **return_hnd)
 {
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -827,7 +826,7 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
    netlogon pipe as no handle is returned. */
 
-NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
+NTSTATUS cm_get_netlogon_cli(const char *domain, unsigned char *trust_passwd,
 			     struct cli_state **cli)
 {
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;

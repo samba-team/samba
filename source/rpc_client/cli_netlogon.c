@@ -25,9 +25,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /****************************************************************************
 Generate the next creds to use.
 ****************************************************************************/
@@ -128,12 +125,12 @@ NTSTATUS cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
   /* create and send a MSRPC command with api NET_AUTH2 */
 
   DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
-	   cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+	   cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname_unix(),
 	   credstr(cli->clnt_cred.challenge.data), neg_flags));
 
   /* store the parameters */
   init_q_auth_2(&q_a, unix_to_dos_static(cli->srv_name_slash), cli->mach_acct, 
-		sec_chan, global_myname, &cli->clnt_cred.challenge, neg_flags);
+		sec_chan, global_myname_dos(), &cli->clnt_cred.challenge, neg_flags);
 
   /* turn parameters into data stream */
   if(!net_io_q_auth_2("", &q_a,  &buf, 0)) {
@@ -218,11 +215,11 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   /* create and send a MSRPC command with api NET_REQCHAL */
 
   DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
-         cli->desthost, global_myname, credstr(clnt_chal->data)));
+         cli->desthost, global_myname_unix(), credstr(clnt_chal->data)));
 
   /* store the parameters */
   init_q_req_chal(&q_c, unix_to_dos_static(cli->srv_name_slash), 
-		  global_myname, clnt_chal);
+		  global_myname_dos(), clnt_chal);
 
   /* turn parameters into data stream */
   if(!net_io_q_req_chal("", &q_c,  &buf, 0)) {
@@ -282,12 +279,12 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
   DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
-           cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname,
+           cli->srv_name_slash, cli->mach_acct, sec_chan_type, global_myname_unix(),
            credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 
   /* store the parameters */
   init_q_srv_pwset(&q_s, unix_to_dos_static(cli->srv_name_slash), 
-		   cli->mach_acct, sec_chan_type, global_myname, 
+		   cli->mach_acct, sec_chan_type, global_myname_dos(), 
 		   &new_clnt_cred, (char *)hashed_mach_pwd);
 
   /* turn parameters into data stream */
@@ -355,7 +352,7 @@ static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CT
 	/* create and send a MSRPC command with api NET_SAMLOGON */
 
 	DEBUG(4,("cli_net_sam_logon_internal: srv:%s mc:%s clnt %s %x ll: %d\n",
-             cli->srv_name_slash, global_myname, 
+             cli->srv_name_slash, global_myname_unix(), 
              credstr(new_clnt_cred.challenge.data), cli->clnt_cred.timestamp.time,
              ctr->switch_value));
 
@@ -365,7 +362,7 @@ static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CT
 	/* store the parameters */
 	q_s.validation_level = validation_level;
 	init_sam_info(&q_s.sam_id, unix_to_dos_static(cli->srv_name_slash), 
-		global_myname, &new_clnt_cred, &dummy_rtn_creds, 
+		global_myname_dos(), &new_clnt_cred, &dummy_rtn_creds, 
 		ctr->switch_value, ctr);
 
 	/* turn parameters into data stream */
@@ -490,14 +487,14 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
   DEBUG(4,("cli_net_sam_logoff: srv:%s mc:%s clnt %s %x ll: %d\n",
-            cli->srv_name_slash, global_myname,
+            cli->srv_name_slash, global_myname_unix(),
             credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time,
             ctr->switch_value));
 
   memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 
   init_sam_info(&q_s.sam_id, unix_to_dos_static(cli->srv_name_slash), 
-		global_myname, &new_clnt_cred, &dummy_rtn_creds, 
+		global_myname_dos(), &new_clnt_cred, &dummy_rtn_creds, 
 		ctr->switch_value, ctr);
 
   /* turn parameters into data stream */

@@ -2307,8 +2307,6 @@ done:
 
 static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_machine)
 {
-	extern pstring global_myname;
-
 	ZERO_STRUCTP(the_cli);
 	if(cli_initialise(the_cli) == NULL) {
 		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
@@ -2318,7 +2316,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
 	if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
 		DEBUG(0,("connect_to_client: Can't resolve address for %s\n", remote_machine));
 		cli_shutdown(the_cli);
-	return False;
+		return False;
 	}
 
 	if (ismyip(the_cli->dest_ip)) {
@@ -2327,13 +2325,16 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
 		return False;
 	}
 
+	/* Timeout in 2 seconds if we can't connect. */
+	cli_set_timeout(the_cli, 2000);
+
 	if (!cli_connect(the_cli, remote_machine, &the_cli->dest_ip)) {
 		DEBUG(0,("connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);
 		return False;
 	}
   
-	if (!attempt_netbios_session_request(the_cli, global_myname, remote_machine, &the_cli->dest_ip)) {
+	if (!attempt_netbios_session_request(the_cli, global_myname_unix(), remote_machine, &the_cli->dest_ip)) {
 		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
 		cli_shutdown(the_cli);

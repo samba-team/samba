@@ -605,7 +605,6 @@ int main(int argc, char *argv[])
 {
 	extern char 		*optarg;
 	extern int 		optind;
-	extern pstring 		global_myname;
 	BOOL 			got_pass = False;
 	BOOL 			interactive = True;
 	int 			opt;
@@ -735,9 +734,6 @@ int main(int argc, char *argv[])
 
 	load_interfaces();
 
-	get_myname((*global_myname)?NULL:global_myname);
-	strupper(global_myname);
-	
 	/* Resolve the IP address */
 
 	if (!resolve_name(server, &server_ip, 0x20))  {
@@ -760,7 +756,7 @@ int main(int argc, char *argv[])
 	if (!strlen(username) && !got_pass)
 		get_username(username);
 		
-	nt_status = cli_full_connection(&cli, global_myname, server, 
+	nt_status = cli_full_connection(&cli, global_myname_unix(), server, 
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					username, domain,

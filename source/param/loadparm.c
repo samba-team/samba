@@ -70,7 +70,6 @@ BOOL bLoaded = False;
 
 extern int DEBUGLEVEL_CLASS[DBGC_LAST];
 extern pstring user_socket_options;
-extern pstring global_myname;
 pstring global_scope = "";
 
 
@@ -129,6 +128,7 @@ typedef struct
 	char *szSocketOptions;
 	char *szValidChars;
 	char *szWorkGroup;
+	char *szNetbiosAliases;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
 	char *szDomainHostsallow;
@@ -151,7 +151,6 @@ typedef struct
 	char *szSocketAddress;
 	char *szNISHomeMapName;
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
-	char *szNetbiosAliases;
 	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
 	char *szPanicAction;
@@ -560,6 +559,9 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
+static BOOL handle_workgroup( char *pszParmValue, char **ptr );
+static BOOL handle_netbios_aliases( char *pszParmValue, char **ptr );
+static BOOL handle_netbios_scope( char *pszParmValue, char **ptr );
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -711,10 +713,10 @@ static struct parm_struct parm_table[] = {
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
-	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
-	{"netbios name", P_UGSTRING, P_GLOBAL, global_myname, handle_netbios_name, NULL, FLAG_BASIC | FLAG_DOS_STRING},
-	{"netbios aliases", P_STRING, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, FLAG_DOS_STRING},
-	{"netbios scope", P_UGSTRING, P_GLOBAL, global_scope, NULL, NULL, FLAG_DOS_STRING},
+	{"workgroup", P_USTRING, P_GLOBAL, NULL, handle_workgroup, NULL, FLAG_BASIC},
+	{"netbios name", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_name, NULL, FLAG_BASIC },
+	{"netbios aliases", P_STRING, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases, NULL, 0},
+	{"netbios scope", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_scope, NULL, 0},
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
 	{"interfaces", P_STRING, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, 0},
@@ -1557,7 +1559,6 @@ FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
-FN_GLOBAL_STRING(lp_workgroup, &Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 #ifdef USING_GROUPNAME_MAP
 FN_GLOBAL_STRING(lp_groupname_map, &Globals.szGroupnameMap)
@@ -1572,8 +1573,8 @@ FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_STRING(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
-static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases, &Globals.szNetbiosAliases)
+static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
@@ -2332,20 +2333,30 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	pstrcpy(netbios_name, pszParmValue);
 
 	standard_sub_basic(netbios_name,sizeof(netbios_name));
-	strupper(netbios_name);
 
-	/*
-	 * Convert from UNIX to DOS string - the UNIX to DOS converter
-	 * isn't called on the special handlers.
-	 */
-	unix_to_dos(netbios_name);
-	pstrcpy(global_myname, netbios_name);
+	set_global_myname_unix(netbios_name);
 
 	DEBUG(4,
 	      ("handle_netbios_name: set global_myname to: %s\n",
-	       global_myname));
+	       global_myname_unix()));
 
 	return (True);
+}
+
+static BOOL handle_workgroup(char *pszParmValue, char **ptr)
+{
+	return set_global_myworkgroup_unix(pszParmValue);
+}
+
+static BOOL handle_netbios_scope(char *pszParmValue, char **ptr)
+{
+	return set_global_scope_unix(pszParmValue);
+}
+
+static BOOL handle_netbios_aliases(char *pszParmValue, char **ptr)
+{
+	string_set(ptr, pszParmValue);
+	return set_netbios_aliases(pszParmValue);
 }
 
 /***************************************************************************
@@ -3867,7 +3878,7 @@ const char *get_called_name(void)
 	static fstring called_name;
 
 	if (! *local_machine)
-		return global_myname;
+		return global_myname_dos();
 
 	/*
 	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"

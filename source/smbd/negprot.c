@@ -23,7 +23,6 @@
 
 extern int Protocol;
 extern int max_recv;
-extern fstring global_myworkgroup;
 extern fstring remote_machine;
 
 /****************************************************************************
@@ -205,10 +204,10 @@ static int reply_nt1(char *outbuf)
   /* decide where (if) to put the encryption challenge, and
      follow it with the OEM'd domain name
    */
-  data_len = crypt_len + strlen(global_myworkgroup) + 1;
+  data_len = crypt_len + strlen(lp_workgroup_dos()) + 1;
 
   set_message(outbuf,17,data_len,True);
-  pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
+  pstrcpy(smb_buf(outbuf)+crypt_len, lp_workgroup_dos());
 
   SCVAL(outbuf,smb_vwv1,secword);
   SSVALS(outbuf,smb_vwv16+1,crypt_len);

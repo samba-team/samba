@@ -49,8 +49,6 @@ extern int smb_read_error;
 extern SIG_ATOMIC_T reload_after_sighup;
 extern SIG_ATOMIC_T got_sig_term;
 extern BOOL global_machine_password_needs_changing;
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 extern int max_send;
 
 /****************************************************************************
@@ -1176,16 +1174,16 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
      * First, open the machine password file with an exclusive lock.
      */
 
-    if (secrets_lock_trust_account_password(global_myworkgroup, True) == False) {
+    if (secrets_lock_trust_account_password(lp_workgroup_dos(), True) == False) {
       DEBUG(0,("process: unable to lock the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+machine %s in domain %s.\n", global_myname_unix(), lp_workgroup_unix() ));
       return True;
     }
 
-    if(!secrets_fetch_trust_account_password(global_myworkgroup, trust_passwd_hash, &lct)) {
+    if(!secrets_fetch_trust_account_password(lp_workgroup_dos(), trust_passwd_hash, &lct)) {
       DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-      secrets_lock_trust_account_password(global_myworkgroup, False);
+machine %s in domain %s.\n", global_myname_unix(), lp_workgroup_unix() ));
+      secrets_lock_trust_account_password(lp_workgroup_dos(), False);
       return True;
     }
 
@@ -1195,7 +1193,7 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
     if(t < lct + lp_machine_password_timeout()) {
       global_machine_password_needs_changing = False;
-      secrets_lock_trust_account_password(global_myworkgroup, False);
+      secrets_lock_trust_account_password(lp_workgroup_dos(), False);
       return True;
     }
 
@@ -1204,9 +1202,9 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
     pstrcpy(remote_machine_list, lp_passwordserver());
 
-    change_trust_account_password( global_myworkgroup, remote_machine_list);
+    change_trust_account_password( lp_workgroup_dos(), remote_machine_list);
     global_machine_password_needs_changing = False;
-    secrets_lock_trust_account_password(global_myworkgroup, False);
+    secrets_lock_trust_account_password(lp_workgroup_dos(), False);
   }
 
   /*

@@ -27,9 +27,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
-
 static int mach_passwd_lock_depth;
 static FILE *mach_passwd_fp;
 
@@ -79,7 +76,7 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
  Routine to get the name for an old trust account file.
 ************************************************************************/
 
-static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
+static void get_trust_account_file_name( const char *domain, const char *name, char *mac_file)
 {
   unsigned int mac_file_len;
 
@@ -107,7 +104,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
  create the file here, only open it.
 ************************************************************************/
 
-static BOOL trust_password_file_lock(char *domain, char *name)
+static BOOL trust_password_file_lock(const char *domain, const char *name)
 {
   pstring mac_file;
 
@@ -154,7 +151,7 @@ static BOOL trust_password_file_unlock(void)
  delete. This is to ensure it only gets deleted by one smbd.
 ************************************************************************/
 
-static BOOL trust_password_file_delete( char *domain, char *name )
+static BOOL trust_password_file_delete( const char *domain, const char *name )
 {
   pstring mac_file;
   int ret;
@@ -273,11 +270,11 @@ static BOOL get_trust_account_password_from_file( unsigned char *ret_pwd, time_t
  Migrate an old DOMAIN.MACINE.mac password file to the tdb secrets db.
 ************************************************************************/
 
-BOOL migrate_from_old_password_file(char *domain)
+BOOL migrate_from_old_password_file(const char *domain)
 {
 	struct machine_acct_pass pass;
 
-	if (!trust_password_file_lock(domain, global_myname))
+	if (!trust_password_file_lock(domain, global_myname_dos()))
 		return True;
 
 	if (!get_trust_account_password_from_file( pass.hash, &pass.mod_time)) {
@@ -288,7 +285,7 @@ BOOL migrate_from_old_password_file(char *domain)
 	if (!secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass)))
 		return False;
 
-	trust_password_file_delete(domain, global_myname);
+	trust_password_file_delete(domain, global_myname_dos());
 	trust_password_file_unlock();
 
 	return True;

@@ -743,7 +743,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	*num_domains = 0;
 
-	if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(lp_workgroup(), &hnd)))
+	if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(lp_workgroup_dos(), &hnd)))
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,

@@ -74,7 +74,7 @@ void free_domain_list(void)
 
 /* Add a trusted domain to our list of domains */
 
-static struct winbindd_domain *add_trusted_domain(char *domain_name,
+static struct winbindd_domain *add_trusted_domain(const char *domain_name,
 						  struct winbindd_methods *methods)
 {
 	struct winbindd_domain *domain;
@@ -107,7 +107,7 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 	
 	/* see if this is a native mode win2k domain, but only for our own domain */
 	   
-	if ( strequal( lp_workgroup(), domain_name) ) 	{
+	if ( strequal( lp_workgroup_dos(), domain_name) ) 	{
 		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
 		DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
 					domain->native_mode ? "native" : "mixed" ));
@@ -141,7 +141,7 @@ BOOL init_domain_list(void)
 
 	/* Add ourselves as the first entry */
 
-	domain = add_trusted_domain(lp_workgroup(), &cache_methods);
+	domain = add_trusted_domain(lp_workgroup_dos(), &cache_methods);
 
 	/* Now we *must* get the domain sid for our primary domain. Go into
 	   a holding pattern until that is available */
@@ -368,7 +368,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	
 	if(!p && lp_winbind_use_default_domain()) {
 		fstrcpy(user, domuser);
-		fstrcpy(domain, global_myworkgroup);
+		fstrcpy(domain, lp_workgroup_dos());
 	} else {
 		fstrcpy(user, p+1);
 		fstrcpy(domain, domuser);
@@ -389,7 +389,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
 	if(lp_winbind_use_default_domain() &&
-	    !strcmp(global_myworkgroup, domain)) {
+	    !strcmp(lp_workgroup_dos(), domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%s%s",

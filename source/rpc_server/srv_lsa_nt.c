@@ -27,8 +27,6 @@
 #include "includes.h"
 
 extern DOM_SID global_sam_sid;
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 
 static PRIVS privs[] = {
     {SE_PRIV_NONE, "no_privs", "No privilege"},
@@ -371,11 +369,8 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	fstrcpy(dos_myname, global_myname);
-	unix_to_dos(dos_myname);
-
-	fstrcpy(dos_domain, global_myworkgroup);
-	unix_to_dos(dos_domain);
+	fstrcpy(dos_myname, global_myname_dos());
+	fstrcpy(dos_domain, lp_workgroup_dos());
 
 	switch (q_u->info_class) {
 	case 0x02:
@@ -403,7 +398,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				name = dos_domain;
 				/* We need to return the Domain SID here. */
 				if (secrets_fetch_domain_sid(
-					    global_myworkgroup, &domain_sid))
+					    lp_workgroup_dos(), &domain_sid))
 					sid = &domain_sid;
 				else
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

@@ -29,8 +29,6 @@
 #include "includes.h"
 #include "nterr.h"
 
-extern pstring global_myname;
-
 #define MAX_MSDFS_JUNCTIONS 256
 #ifdef WITH_MSDFS
 

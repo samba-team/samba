@@ -29,8 +29,6 @@
 
 #define MAX_MSDFS_JUNCTIONS 256
 
-extern pstring global_myname;
-
 #ifdef WITH_MSDFS
 
 /**********************************************************************

@@ -28,7 +28,6 @@ static struct smbw_file *smbw_files;
 static struct smbw_server *smbw_srvs;
 
 struct bitmap *smbw_file_bmap;
-extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
 fstring smbw_prefix = SMBW_PREFIX;

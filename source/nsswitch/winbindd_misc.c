@@ -23,8 +23,6 @@
 
 #include "winbindd.h"
 
-extern pstring global_myname;
-
 /* Check the machine account password is valid */
 
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
@@ -39,9 +37,9 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 
  again:
 	if (!secrets_fetch_trust_account_password(
-		    lp_workgroup(), trust_passwd, NULL)) {
+		    lp_workgroup_dos(), trust_passwd, NULL)) {
 		result = NT_STATUS_INTERNAL_ERROR;
-		DEBUG(3, ("could not retrieve trust account pw for %s\n", lp_workgroup()));
+		DEBUG(3, ("could not retrieve trust account pw for %s\n", lp_workgroup_unix()));
 		goto done;
 	}
 
@@ -49,7 +47,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
            the trust account password. */
 
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup_dos(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -103,7 +101,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 		/* Skip own domain */
 
-		if (strequal(domain->name, lp_workgroup())) continue;
+		if (strequal(domain->name, lp_workgroup_dos())) continue;
 
 		/* Add domain to list */
 
@@ -209,7 +207,7 @@ enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: request domain name\n", state->pid));
 	
-	fstrcpy(state->response.data.domain_name, lp_workgroup());
+	fstrcpy(state->response.data.domain_name, lp_workgroup_unix());
 
 	return WINBINDD_OK;
 }

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
@@ -25,9 +25,6 @@
 */
 
 #include "includes.h"
-
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 
 /****************************************************************************
 Process a domain logon packet
@@ -62,8 +59,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     goto done;
   }
 
-  pstrcpy(my_name, global_myname);
-  strupper(my_name);
+  pstrcpy(my_name, global_myname_dos());
 
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
@@ -100,8 +96,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       send_mailslot(True, getdc, 
                     outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
-					machine,
+		    global_myname_dos(), 0x0,
+			machine,
                     dgram->source_name.name_type,
                     p->ip, *iface_ip(p->ip), p->port);  
       break;
@@ -167,7 +163,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         q = ALIGN2(q, outbuf);
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
-        q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
+        q += dos_PutUniCode(q, lp_workgroup_dos(),sizeof(pstring), True); /* Domain name*/
 
         SIVAL(q, 0, 1); /* our nt version */
         SSVAL(q, 4, 0xffff); /* our lmnttoken */
@@ -179,7 +175,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
-            machine,inet_ntoa(p->ip), reply_name, global_myworkgroup,
+            machine,inet_ntoa(p->ip), reply_name, lp_workgroup_unix(),
             QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
             (uint32)lm20token ));
 
@@ -187,7 +183,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                   outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
+		    global_myname_dos(), 0x0,
                   dgram->source_name.name,
                   dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
@@ -249,7 +245,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name+2,my_name); 
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup_unix(),
 	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */
@@ -264,7 +260,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
       q += dos_PutUniCode(q, ascuser, sizeof(pstring), True);
-      q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True);
+      q += dos_PutUniCode(q, lp_workgroup_dos(),sizeof(pstring), True);
 
       /* tell the client what version we are */
       SIVAL(q, 0, 1); /* our ntversion */
@@ -276,7 +272,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                    outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
+		    global_myname_dos(), 0x0,
                    dgram->source_name.name,
                    dgram->source_name.name_type,
                    p->ip, *iface_ip(p->ip), p->port);  

@@ -24,13 +24,11 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
 /*********************************************************
  Change the domain password on the PDC.
 **********************************************************/
 
-static BOOL modify_trust_password( char *domain, char *remote_machine, 
+static BOOL modify_trust_password( const char *domain, const char *remote_machine, 
                           unsigned char orig_trust_passwd_hash[16],
                           unsigned char new_trust_passwd_hash[16])
 {
@@ -73,7 +71,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
   
-  if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
+  if (!attempt_netbios_session_request(&cli, global_myname_unix(), remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: machine %s rejected the NetBIOS session request.\n", 
       remote_machine ));
     cli_shutdown(&cli);
@@ -148,7 +146,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 
   if( cli_nt_srv_pwset( &cli,new_trust_passwd_hash ) == False) {
     DEBUG(0,("modify_trust_password: unable to change password for machine %s in domain \
-%s to Domain controller %s. Error was %s.\n", global_myname, domain, remote_machine, 
+%s to Domain controller %s. Error was %s.\n", global_myname_unix(), domain, remote_machine, 
                             cli_errstr(&cli)));
     cli_close(&cli, cli.nt_pipe_fnum);
     cli_ulogoff(&cli);
@@ -169,7 +167,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
  update.
 ************************************************************************/
 
-BOOL change_trust_account_password( char *domain, char *remote_machine_list)
+BOOL change_trust_account_password( const char *domain, char *remote_machine_list)
 {
   fstring remote_machine;
   unsigned char old_trust_passwd_hash[16];
@@ -213,7 +211,7 @@ account password for domain %s.\n", domain));
 
       for(i = 0; i < count; i++) {
         fstring dc_name;
-        if(!lookup_dc_name(global_myname, domain, &ip_list[i], dc_name))
+        if(!lookup_dc_name(global_myname_dos(), domain, &ip_list[i], dc_name))
           continue;
         if((res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash, new_trust_passwd_hash)))

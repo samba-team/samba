@@ -65,16 +65,14 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 {
 	int fd;
 	struct in_addr  ip;
-	struct nmb_name nname;
 	struct node_status *status;
 
 	fd = wins_lookup_open_socket_in();
 	if (fd == -1)
 		return NULL;
 
-	make_nmb_name(&nname, "*", 0);
 	ip = *interpret_addr2(addr);
-	status = node_status_query(fd,&nname,ip, count);
+	status = node_status_query(fd,"*", 0, ip, count);
 
 	close(fd);
 	return status;

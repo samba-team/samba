@@ -44,7 +44,6 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         NET_Q_REQ_CHAL q;
         NET_R_REQ_CHAL r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        extern pstring global_myname;
 
         prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
@@ -52,10 +51,10 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         /* create and send a MSRPC command with api NET_REQCHAL */
 
         DEBUG(4,("new_cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
-                 cli->desthost, global_myname, credstr(clnt_chal->data)));
+                 cli->desthost, global_myname_unix(), credstr(clnt_chal->data)));
         
         /* store the parameters */
-        init_q_req_chal(&q, unix_to_dos_static(cli->desthost), global_myname, clnt_chal);
+        init_q_req_chal(&q, unix_to_dos_static(cli->desthost), global_myname_dos(), clnt_chal);
         
         /* Marshall data and send request */
 
@@ -101,7 +100,6 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
         NET_Q_AUTH_2 q;
         NET_R_AUTH_2 r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        extern pstring global_myname;
 
         prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
@@ -109,12 +107,12 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
         /* create and send a MSRPC command with api NET_AUTH2 */
 
         DEBUG(4,("new_cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
-                 cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+                 cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname_unix(),
                  credstr(cli->clnt_cred.challenge.data), neg_flags));
 
         /* store the parameters */
         init_q_auth_2(&q, unix_to_dos_static(cli->srv_name_slash), cli->mach_acct, 
-                      sec_chan, global_myname, &cli->clnt_cred.challenge, 
+                      sec_chan, global_myname_dos(), &cli->clnt_cred.challenge, 
                       neg_flags);
 
         /* turn parameters into data stream */
@@ -409,7 +407,6 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_R_SAM_LOGON r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds, dummy_rtn_creds;
-        extern pstring global_myname;
         NET_ID_INFO_CTR ctr;
         NET_USER_INFO_3 user;
         int validation_level = 3;
@@ -445,7 +442,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 nt_lm_owf_gen(dos_password, nt_owf_user_pwd, lm_owf_user_pwd);
 
-                init_id_info1(&ctr.auth.id1, lp_workgroup(), 
+                init_id_info1(&ctr.auth.id1, lp_workgroup_dos(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               dos_username, cli->clnt_name_slash,
@@ -464,7 +461,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 SMBencrypt((const uchar *)dos_password, chal, local_lm_response);
                 SMBNTencrypt((const uchar *)dos_password, chal, local_nt_response);
 
-                init_id_info2(&ctr.auth.id2, lp_workgroup(), 
+                init_id_info2(&ctr.auth.id2, lp_workgroup_dos(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               dos_username, cli->clnt_name_slash, chal,
@@ -477,7 +474,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 goto done;
         }
 
-        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
+        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname_dos(),
                       &clnt_creds, &dummy_rtn_creds, logon_type,
                       &ctr);
 
@@ -526,7 +523,6 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds, dummy_rtn_creds;
 	NET_ID_INFO_CTR ctr;
-	extern pstring global_myname;
 	int validation_level = 3;
 	char *workstation_name_slash;
 	fstring dos_username, dos_domain;
@@ -568,7 +564,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 		      dos_username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
-        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
+        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname_dos(),
                       &clnt_creds, &dummy_rtn_creds, NET_LOGON_TYPE,
                       &ctr);
 

@@ -169,7 +169,6 @@ static struct cli_state *init_connection(struct cli_state *cli,
                                          char *password)
 {
         struct ntuser_creds creds;
-        extern pstring global_myname;
         struct in_addr *dest_ip;
         struct nmb_name calling, called;
         int count;

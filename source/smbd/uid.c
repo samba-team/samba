@@ -444,8 +444,6 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
 	fstring sid;
 	char *sep = lp_winbind_separator();
 
@@ -467,19 +465,19 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 			switch (lp_server_role()) {
 				case ROLE_DOMAIN_PDC:
 				case ROLE_DOMAIN_BDC:
-					if (strequal(domain, global_myworkgroup)) {
-						fstrcpy(domain, global_myname);
+					if (strequal(domain, lp_workgroup_dos())) {
+						fstrcpy(domain, global_myname_dos());
 						ret = local_lookup_name(domain, username, psid, name_type);
 					}
 					/* No break is deliberate here. JRA. */
 				default:
-					if (strcasecmp(global_myname, domain) != 0) {
+					if (strcasecmp(global_myname_dos(), domain) != 0) {
 						DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
-						ret = local_lookup_name(global_myname, username, psid, name_type);
+						ret = local_lookup_name(global_myname_dos(), username, psid, name_type);
 					}
 			}
 		} else {
-			ret = local_lookup_name(global_myname, name, psid, name_type);
+			ret = local_lookup_name(global_myname_dos(), name, psid, name_type);
 		}
 
 		if (ret) {

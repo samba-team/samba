@@ -133,7 +133,6 @@ static char *automount_path(char *user_name)
 
 static char *automount_server(char *user_name)
 {
-	extern pstring global_myname;
 	static pstring server_name;
 
 	/* use the local machine name as the default */
@@ -141,7 +140,7 @@ static char *automount_server(char *user_name)
 	if (*local_machine)
 		pstrcpy(server_name, local_machine);
 	else
-		pstrcpy(server_name, global_myname);
+		pstrcpy(server_name, global_myname_dos());
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -168,7 +167,6 @@ static char *automount_server(char *user_name)
 
 void standard_sub_basic(char *str, int len)
 {
-	extern pstring global_myname;
 	char *p, *s;
 	fstring pidstr;
 	struct passwd *pass;
@@ -204,7 +202,7 @@ void standard_sub_basic(char *str, int len)
 			else {
 				pstring temp_name;
 
-				pstrcpy(temp_name, global_myname);
+				pstrcpy(temp_name, global_myname_dos());
 				strlower(temp_name);
 				string_sub(p,"%L", temp_name,l); 
 			}

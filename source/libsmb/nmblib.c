@@ -814,17 +814,17 @@ static int build_dgram(char *buf,struct packet_struct *p)
 }
 
 /*******************************************************************
-  build a nmb name
- *******************************************************************/
+ Build a nmb name. Converts to DOS codepage.
+*******************************************************************/
+
 void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
-	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	StrnCpy( n->name, name, 15 );
 	unix_to_dos(n->name);
 	strupper( n->name );
 	n->name_type = (unsigned int)type & 0xFF;
-	StrnCpy( n->scope, global_scope, 63 );
+	StrnCpy( n->scope, global_scope_dos(), 63 );
 	strupper( n->scope );
 }
 
@@ -1103,7 +1103,7 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
  characters.
 
  ******************************************************************/
-char *dns_to_netbios_name(char *dns_name)
+char *dns_to_netbios_name(const char *dns_name)
 {
 	static char netbios_name[16];
 	int i;
@@ -1129,10 +1129,11 @@ char *dns_to_netbios_name(char *dns_name)
 	return netbios_name;
 }
 
-
 /****************************************************************************
-interpret the weird netbios "name". Return the name type
+ Interpret the weird netbios "name". Return the name type. Outputs in DOS
+ codepage.
 ****************************************************************************/
+
 static int name_interpret(char *in,char *out)
 {
   int ret;
@@ -1171,18 +1172,18 @@ static int name_interpret(char *in,char *out)
 }
 
 /****************************************************************************
-mangle a name into netbios format
-
-  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
+ mangle a name into netbios format. In must be in DOS codepage.
+ Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
+
 int name_mangle( char *In, char *Out, char name_type )
-  {
+{
   int   i;
   int   c;
   int   len;
   char  buf[20];
   char *p = Out;
-  extern pstring global_scope;
+  const char *scope_p = global_scope_dos();
 
   /* Safely copy the input string, In, into buf[]. */
   (void)memset( buf, 0, 20 );
@@ -1206,9 +1207,9 @@ int name_mangle( char *In, char *Out, char name_type )
   p[0] = '\0';
 
   /* Add the scope string. */
-  for( i = 0, len = 0; NULL != global_scope; i++, len++ )
+  for( i = 0, len = 0; NULL != scope_p; i++, len++ )
     {
-    switch( global_scope[i] )
+    switch( scope_p[i] )
       {
       case '\0':
         p[0]     = len;
@@ -1221,47 +1222,49 @@ int name_mangle( char *In, char *Out, char name_type )
         len  = -1;
         break;
       default:
-        p[len+1] = global_scope[i];
+        p[len+1] = scope_p[i];
         break;
       }
     }
 
   return( name_len(Out) );
-  } /* name_mangle */
+}
 
 
 /****************************************************************************
-find a pointer to a netbios name
+ Find a pointer to a netbios name.
 ****************************************************************************/
+
 static char *name_ptr(char *buf,int ofs)
 {
-  uchar c = *(uchar *)(buf+ofs);
+	uchar c = *(uchar *)(buf+ofs);
 
-  if ((c & 0xC0) == 0xC0)
-    {
-      uint16 l = RSVAL(buf, ofs) & 0x3FFF;
-      DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
-      return(buf + l);
-    }
-  else
-    return(buf+ofs);
+	if ((c & 0xC0) == 0xC0) {
+		uint16 l = RSVAL(buf, ofs) & 0x3FFF;
+		DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
+		return(buf + l);
+	} else
+		return(buf+ofs);
 }  
 
 /****************************************************************************
-extract a netbios name from a buf
+ Extract a netbios name from a buf.
 ****************************************************************************/
+
 int name_extract(char *buf,int ofs,char *name)
 {
-  char *p = name_ptr(buf,ofs);
-  int d = PTR_DIFF(p,buf+ofs);
-  pstrcpy(name,"");
-  if (d < -50 || d > 50) return(0);
-  return(name_interpret(p,name));
+	char *p = name_ptr(buf,ofs);
+	int d = PTR_DIFF(p,buf+ofs);
+	pstrcpy(name,"");
+	if (d < -50 || d > 50)
+		return(0);
+	return(name_interpret(p,name));
 }
   
 /****************************************************************************
-return the total storage length of a mangled name
+ Return the total storage length of a mangled name.
 ****************************************************************************/
+
 int name_len(char *s1)
 {
 	/* NOTE: this argument _must_ be unsigned */
@@ -1279,4 +1282,4 @@ int name_len(char *s1)
 	}
 
 	return(len);
-} /* name_len */
+}

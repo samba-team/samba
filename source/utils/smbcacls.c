@@ -713,7 +713,6 @@ struct cli_state *connect_one(char *share)
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	struct in_addr ip;
-	extern pstring global_myname;
 
 	fstrcpy(server,share+2);
 	share = strchr(server,'\\');
@@ -723,7 +722,7 @@ struct cli_state *connect_one(char *share)
 
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname_unix(), 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
@@ -764,7 +763,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       (workgroup[0] ? workgroup : lp_workgroup()))) {
+			       (workgroup[0] ? workgroup : lp_workgroup_unix()))) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;

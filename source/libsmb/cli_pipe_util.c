@@ -29,7 +29,6 @@ struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
 	struct in_addr dest_ip;
 	struct nmb_name calling, called;
 	fstring dest_host;
-	extern pstring global_myname;
 	struct ntuser_creds anon;
 
 	/* Initialise cli_state information */
@@ -53,7 +52,7 @@ struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
 	}
 
 	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname_unix()), 0);
 
 	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {

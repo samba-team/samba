@@ -31,7 +31,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
 /*

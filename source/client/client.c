@@ -35,7 +35,6 @@ pstring cur_dir = "\\";
 pstring cd_path = "";
 static pstring service;
 static pstring desthost;
-extern pstring global_myname;
 static pstring password;
 static pstring username;
 static pstring workgroup;
@@ -2172,7 +2171,7 @@ struct cli_state *do_connect(char *server, char *share)
 	
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname_unix(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
@@ -2432,7 +2431,7 @@ static int do_message_op(void)
 
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname_unix(), 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
 	zero_ip(&ip);
@@ -2558,7 +2557,7 @@ static int do_message_op(void)
 	sslutil_init(0);
 #endif
 
-	pstrcpy(workgroup,lp_workgroup());
+	pstrcpy(workgroup,lp_workgroup_unix());
 
 	load_interfaces();
 	myumask = umask(0);
@@ -2655,7 +2654,7 @@ static int do_message_op(void)
 			got_pass = True;
 			break;
 		case 'n':
-			pstrcpy(global_myname,optarg);
+			set_global_myname_unix(optarg);
 			break;
 		case 'd':
 			if (*optarg == 'A')
@@ -2793,7 +2792,11 @@ static int do_message_op(void)
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname);  
+	if (global_myname_unix() == NULL || *global_myname_unix() == '\0') {
+		fstring myname;
+		get_myname(myname);
+		set_global_myname_unix(myname);
+	}
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

@@ -43,8 +43,8 @@ static const struct {
  Do an old lanman2 style session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
-				      char *pass, int passlen)
+static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
+				      const char *pass, int passlen)
 {
 	fstring pword;
 	char *p;
@@ -184,8 +184,8 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
-					char *pass, char *workgroup)
+static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user, 
+					const char *pass, const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword;
@@ -240,10 +240,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
  Do a NT1 NTLM/LM encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
-				  char *pass, int passlen,
-				  char *ntpass, int ntpasslen,
-				  char *workgroup)
+static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
+				  const char *pass, int passlen,
+				  const char *ntpass, int ntpasslen,
+				  const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword, ntpword;
@@ -320,10 +320,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 ****************************************************************************/
 
 BOOL cli_session_setup(struct cli_state *cli, 
-		       char *user, 
-		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
-		       char *workgroup)
+		       const char *user, 
+		       const char *pass, int passlen,
+		       const char *ntpass, int ntpasslen,
+		       const char *workgroup)
 {
 	char *p;
 	fstring user2;
@@ -647,12 +647,12 @@ BOOL cli_session_request(struct cli_state *cli,
 	if (cli->port == 445) return True;
 
 	/* send a session request (RFC 1002) */
-	memcpy(&(cli->calling), calling, sizeof(*calling));
-	memcpy(&(cli->called ), called , sizeof(*called ));
+	memcpy(&cli->calling, calling, sizeof(*calling));
+	memcpy(&cli->called, called , sizeof(*called ));
   
 	/* put in the destination name */
 	p = cli->outbuf+len;
-	name_mangle(cli->called .name, p, cli->called .name_type);
+	name_mangle(cli->called.name, p, cli->called .name_type);
 	len += name_len(p);
 
 	/* and my name */
@@ -1041,7 +1041,7 @@ again:
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;

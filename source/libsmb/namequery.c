@@ -72,11 +72,11 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 
 
 /****************************************************************************
-do a NBT node status query on an open socket and return an array of
-structures holding the returned names or NULL if the query failed
-The name part of nmb_name is in DOS codepage.
+ Do a NBT node status query on an open socket and return an array of
+ structures holding the returned names or NULL if the query failed
 **************************************************************************/
-struct node_status *node_status_query(int fd,struct nmb_name *name,
+
+struct node_status *node_status_query(int fd,const char *unix_name, int name_type,
 				      struct in_addr to_ip, int *num_names)
 {
 	BOOL found=False;
@@ -87,8 +87,11 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct node_status *ret;
+	struct nmb_name name;
 
 	ZERO_STRUCT(p);
+
+	make_nmb_name(&name, unix_name, name_type);
 
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
@@ -103,7 +106,7 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 	nmb->header.ancount = 0;
 	nmb->header.nscount = 0;
 	nmb->header.arcount = 0;
-	nmb->question.question_name = *name;
+	nmb->question.question_name = name;
 	nmb->question.question_type = 0x21;
 	nmb->question.question_class = 0x1;
 
@@ -168,7 +171,6 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
 {
 	struct node_status *status = NULL;
-	struct nmb_name nname;
 	int count, i;
 	int sock;
 	BOOL result = False;
@@ -182,8 +184,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 		goto done;
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
-	make_nmb_name(&nname, unix_to_dos_static(q_name), q_type);
-	status = node_status_query(sock, &nname, to_ip, &count);
+	status = node_status_query(sock, q_name, q_type, to_ip, &count);
 	close(sock);
 	if (!status)
 		goto done;
@@ -279,10 +280,6 @@ struct in_addr *name_query(int fd,const char *unix_name,int name_type,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
-	fstring dos_name;
-
-	fstrcpy(dos_name, unix_name);
-	unix_to_dos(dos_name);
 
 	if (timed_out) {
 		*timed_out = False;
@@ -306,7 +303,7 @@ struct in_addr *name_query(int fd,const char *unix_name,int name_type,
 	nmb->header.nscount = 0;
 	nmb->header.arcount = 0;
 
-	make_nmb_name(&nmb->question.question_name,dos_name,name_type);
+	make_nmb_name(&nmb->question.question_name,unix_name,name_type);
 
 	nmb->question.question_type = 0x20;
 	nmb->question.question_class = 0x1;
@@ -1216,7 +1213,7 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 	 * use the 'password server' parameter.
 	 */
 
-	if (strequal(dos_group, lp_workgroup())) {
+	if (strequal(dos_group, lp_workgroup_dos())) {
 		char *p;
 		char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
@@ -1261,14 +1258,13 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 
 BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *ip)
 {
-	extern pstring global_myname;
 	BOOL ret;
 	const char *sv_name = srv_name;
 
 	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
 	if (srv_name == NULL || strequal("\\\\.", srv_name)) {
-		fstrcpy(dest_host, dos_to_unix_static(global_myname));
+		fstrcpy(dest_host, global_myname_unix());
 		ip = interpret_addr2("127.0.0.1");
 		return True;
 	}
@@ -1280,14 +1276,8 @@ BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *i
 	fstrcpy(dest_host, sv_name);
 	/* treat the '*' name specially - it is a magic name for the PDC */
 	if (strcmp(dest_host,"*") == 0) {
-		fstring unix_workgroup;
-		fstring unix_myname;
-
-		fstrcpy(unix_workgroup, dos_to_unix_static(lp_workgroup()));
-		fstrcpy(unix_myname, dos_to_unix_static(global_myname));
-
-		ret = resolve_name(unix_workgroup, ip, 0x1B);
-		lookup_dc_name(unix_myname, unix_workgroup, ip, dest_host);
+		ret = resolve_name(lp_workgroup_unix(), ip, 0x1B);
+		lookup_dc_name(global_myname_unix(), lp_workgroup_unix(), ip, dest_host);
 	} else {
 		ret = resolve_name(dest_host, ip, 0x20);
 	}

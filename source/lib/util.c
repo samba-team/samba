@@ -82,10 +82,197 @@ BOOL case_mangle;
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
-pstring global_myname = "";
-fstring global_myworkgroup = "";
-char **my_netbios_names;
+/***********************************************************************
+ Definitions for DOS codepage and UNIX character set of all names.
+***********************************************************************/
 
+static char *smb_myname_dos;
+static char *smb_myname_unix;
+static char *smb_myworkgroup_dos;
+static char *smb_myworkgroup_unix;
+static char *smb_scope_dos;
+static int smb_num_netbios_names;
+static char **smb_my_netbios_names_dos;
+static char **smb_my_netbios_names_unix;
+
+const char *global_myname_unix(void)
+{
+	return smb_myname_unix;
+}
+
+const char *global_myname_dos(void)
+{
+	return smb_myname_dos;
+}
+
+/***********************************************************************
+ Allocate and set myname in DOS and UNIX codepages. Ensure upper case.
+***********************************************************************/
+
+BOOL set_global_myname_unix(const char *myname_unix)
+{
+	SAFE_FREE(smb_myname_unix);
+	SAFE_FREE(smb_myname_dos);
+	smb_myname_dos = strdup(unix_to_dos_static(myname_unix));
+	if (!smb_myname_dos)
+		return False;
+	strupper(smb_myname_dos);
+	smb_myname_unix = strdup(dos_to_unix_static(smb_myname_dos));
+	if (!smb_myname_unix || !smb_myname_dos)
+		return False;
+	return True;
+}
+
+const char *lp_workgroup_unix(void)
+{
+	return smb_myworkgroup_unix;
+}
+
+const char *lp_workgroup_dos(void)
+{
+	return smb_myworkgroup_dos;
+}
+
+/***********************************************************************
+ Allocate and set myworkgroup in DOS and UNIX codepages. Ensure upper case.
+***********************************************************************/
+
+BOOL set_global_myworkgroup_unix(const char *myworkgroup_unix)
+{
+	SAFE_FREE(smb_myworkgroup_unix);
+	SAFE_FREE(smb_myworkgroup_dos);
+	smb_myworkgroup_dos = strdup(unix_to_dos_static(myworkgroup_unix));
+	if (!smb_myworkgroup_dos)
+		return False;
+	strupper(smb_myworkgroup_dos);
+	smb_myworkgroup_unix = strdup(dos_to_unix_static(smb_myworkgroup_dos));
+	if (!smb_myworkgroup_unix || !smb_myworkgroup_dos)
+		return False;
+	return True;
+}
+
+const char *global_scope_dos(void)
+{
+	return smb_scope_dos;
+}
+
+BOOL set_global_scope_unix(const char *scope_unix)
+{
+	SAFE_FREE(smb_scope_dos);
+	smb_scope_dos = strdup(unix_to_dos_static(scope_unix));
+	if (!smb_scope_dos)
+		return False;
+	strupper(smb_scope_dos);
+	return True;
+}
+
+static void free_netbios_names_array(void)
+{
+	int i;
+
+	for (i = 0; i < smb_num_netbios_names; i++) {
+		SAFE_FREE(smb_my_netbios_names_dos[i]);
+		SAFE_FREE(smb_my_netbios_names_unix[i]);
+	}
+	SAFE_FREE(smb_my_netbios_names_dos);
+	SAFE_FREE(smb_my_netbios_names_unix);
+
+	smb_num_netbios_names = 0;
+}
+
+static BOOL allocate_my_netbios_names_array(int number)
+{
+	free_netbios_names_array();
+
+	smb_num_netbios_names = number + 1;
+	smb_my_netbios_names_dos = (char **)malloc( sizeof(char *) * smb_num_netbios_names );
+	smb_my_netbios_names_unix = (char **)malloc( sizeof(char *) * smb_num_netbios_names );
+
+	if (!smb_my_netbios_names_dos || !smb_my_netbios_names_unix) {
+		SAFE_FREE(smb_my_netbios_names_dos);
+		SAFE_FREE(smb_my_netbios_names_unix);
+		return False;
+	}
+	memset(smb_my_netbios_names_dos, '\0', sizeof(char *) * smb_num_netbios_names);
+	memset(smb_my_netbios_names_unix, '\0', sizeof(char *) * smb_num_netbios_names);
+	return True;
+}
+
+static BOOL set_my_netbios_names_unix(const char *name_unix, int i)
+{
+	SAFE_FREE(smb_my_netbios_names_dos[i]);
+	SAFE_FREE(smb_my_netbios_names_unix[i]);
+
+	smb_my_netbios_names_dos[i] = strdup(unix_to_dos_static(name_unix));
+	if (!smb_my_netbios_names_dos[i])
+		return False;
+	strupper(smb_my_netbios_names_dos[i]);
+	smb_my_netbios_names_unix[i] = strdup(dos_to_unix_static(smb_my_netbios_names_dos[i]));
+
+	if (!smb_my_netbios_names_unix[i] || !smb_my_netbios_names_dos[i]) {
+		SAFE_FREE(smb_my_netbios_names_dos[i]);
+		SAFE_FREE(smb_my_netbios_names_unix[i]);
+		return False;
+	}
+	return True;
+}
+
+const char *my_netbios_names_dos(int i)
+{
+	return smb_my_netbios_names_dos[i];
+}
+
+const char *my_netbios_names_unix(int i)
+{
+	return smb_my_netbios_names_unix[i];
+}
+
+BOOL set_netbios_aliases(char *str)
+{
+        int namecount;
+        char *p = str;
+        pstring nbname;
+
+        /* Work out the max number of netbios aliases that we have */
+        for( namecount=0; next_token(&p, nbname, NULL, sizeof(nbname)); namecount++ )
+                ;
+
+        if ( global_myname_unix() && *global_myname_unix())
+                namecount++;
+
+        /* Allocate space for the netbios aliases */
+
+        if (!allocate_my_netbios_names_array(namecount))
+                return False;
+
+        /* Use the global_myname string first */
+        namecount=0;
+        if ( global_myname_unix() && *global_myname_unix()) {
+                set_my_netbios_names_unix( global_myname_unix(), namecount );
+                namecount++;
+        }
+
+        p = str;
+        while ( next_token( &p, nbname, NULL, sizeof(nbname) ) ) {
+                int n;
+                BOOL duplicate = False;
+
+                /* Look for duplicates */
+
+                for( n=0; n<namecount; n++ ) {
+                        if( strequal_unix( nbname, my_netbios_names_unix(n) ) ) {
+                                duplicate = True;
+                                break;
+                        }
+                }
+                if (!duplicate) {
+                        if (!set_my_netbios_names_unix(nbname, namecount))
+                                return False;
+                        namecount++;
+                }
+        }
+        return True;
+}
 
 /****************************************************************************
  Find a suitable temporary directory. The result should be copied immediately
@@ -1348,17 +1535,18 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 is the name specified one of my netbios names
 returns true is it is equal, false otherwise
 ********************************************************************/
-BOOL is_myname(char *s)
-{
-  int n;
-  BOOL ret = False;
 
-  for (n=0; my_netbios_names[n]; n++) {
-    if (strequal(my_netbios_names[n], s))
-      ret=True;
-  }
-  DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
-  return(ret);
+BOOL is_myname(const char *dos_s)
+{
+	int n;
+	BOOL ret = False;
+
+	for (n=0; my_netbios_names_dos(n); n++) {
+		if (strequal(my_netbios_names_dos(n), dos_s))
+			ret=True;
+	}
+	DEBUG(8, ("is_myname(\"%s\") returns %d\n", dos_s, ret));
+	return(ret);
 }
 
 /********************************************************************
@@ -1380,23 +1568,19 @@ const char* get_my_primary_ip (void)
 }
 
 
-BOOL is_myname_or_ipaddr(char *s)
+BOOL is_myname_or_ipaddr(const char *dos_str)
 {
-	char *ptr;
-	pstring nbname;
-	
 	/* optimize for the common case */
-	if (strequal(s, global_myname)) 
+	if (strequal(dos_str, global_myname_dos())) 
 		return True;
 
 	/* maybe its an IP address? */
-	if (is_ipaddress(s))
-	{
+	if (is_ipaddress(dos_str)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
 		
-		ip = interpret_addr(s);
+		ip = interpret_addr(dos_str);
 		if ((ip==0) || (ip==0xffffffff))
 			return False;
 			
@@ -1408,19 +1592,12 @@ BOOL is_myname_or_ipaddr(char *s)
 	}	
 	
 	/* check for an alias */
-  	ptr = lp_netbios_aliases();
-	while ( next_token(&ptr, nbname, NULL, sizeof(nbname)) )
-	{
-		if (StrCaseCmp(s, nbname) == 0)
-			return True;
-	}
-		
+	if (is_myname(dos_str))
+		return True;
 	
 	/* no match */
 	return False;
-
 }
-
 
 /*******************************************************************
 set the horrid remote_arch string based on an enum.
