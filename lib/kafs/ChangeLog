@@ -1,3 +1,7 @@
+2005-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kafs.h: de-__P
+	
 2004-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c: s/KEYTYPE_DES/ETYPE_DES_CBC_CRC/
