@@ -1002,7 +1002,11 @@ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
 		    const char *val, uint_t value)
 {
-	ndr->print(ndr, "%-25s: %s (%d)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+	if (ndr->flags & LIBNDR_PRINT_ARRAY_HEX) {
+		ndr->print(ndr, "%-25s: %s (0x%X)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+	} else {
+		ndr->print(ndr, "%-25s: %s (%d)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+	}
 }
 
 void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint_t flag, uint_t value)
