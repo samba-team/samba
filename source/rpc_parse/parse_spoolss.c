@@ -615,6 +615,10 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
 
 	if (!prs_align(ps))
 		return False;
+
+	/* From looking at many captures in ethereal, it looks like
+	   the level and ptr fields should be transposed.  -tpot */
+
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 	if (!prs_uint32("ptr", ps, depth, &q_u->ptr))
