@@ -9,6 +9,7 @@
 #define DCERPC_ECHO_SINKDATA 2
 #define DCERPC_ECHO_SOURCEDATA 3
 #define DCERPC_TESTCALL 4
+#define DCERPC_TESTCALL2 5
 
 
 struct echo_AddOne {
@@ -56,21 +57,66 @@ struct echo_SourceData {
 
 };
 
-struct echo_ServerRole {
-	uint16 role;
-};
-
-union echo_PolicyInformation {
-/* [case(6)] */ struct echo_ServerRole role;
-};
-
 struct TestCall {
+	struct {
+		const char *s1;
+	} in;
+
+	struct {
+		const char *s2;
+	} out;
+
+};
+
+struct echo_info1 {
+	uint8 v;
+};
+
+struct echo_info2 {
+	uint16 v;
+};
+
+struct echo_info3 {
+	uint32 v;
+};
+
+struct echo_info4 {
+	HYPER_T v;
+};
+
+struct echo_info5 {
+	uint8 v1;
+	HYPER_T v2;
+};
+
+struct echo_info6 {
+	uint8 v1;
+	struct echo_info1 info1;
+};
+
+struct echo_info7 {
+	uint8 v1;
+	struct echo_info4 info4;
+};
+
+union echo_Info {
+/* [case(1)] */ struct echo_info1 info1;
+/* [case(2)] */ struct echo_info2 info2;
+/* [case(3)] */ struct echo_info3 info3;
+/* [case(4)] */ struct echo_info4 info4;
+/* [case(5)] */ struct echo_info5 info5;
+/* [case(6)] */ struct echo_info6 info6;
+/* [case(7)] */ struct echo_info7 info7;
+};
+
+struct TestCall2 {
 	struct {
 		uint16 level;
 	} in;
 
 	struct {
-		union echo_PolicyInformation *info;
+		union echo_Info *info;
+		NTSTATUS result;
 	} out;
 
 };

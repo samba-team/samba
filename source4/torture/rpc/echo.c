@@ -170,9 +170,8 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct TestCall r;
-	char *s = "foo!";
 
-	r.in.s = s;
+	r.in.s1 = "input string";
 
 	printf("\nTesting TestCall\n");
 	status = dcerpc_TestCall(p, mem_ctx, &r);
@@ -182,6 +181,30 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	return True;
+}
+
+/*
+  test the testcall interface
+*/
+static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct TestCall2 r;
+	int i;
+	BOOL ret = True;
+
+	for (i=1;i<=7;i++) {
+		r.in.level = i;
+
+		printf("\nTesting TestCall2 level %d\n", i);
+		status = dcerpc_TestCall2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("TestCall2 failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
 }
 
 BOOL torture_rpc_echo(int dummy)
@@ -201,6 +224,7 @@ BOOL torture_rpc_echo(int dummy)
 		return False;
 	}
 
+#if 1
 	if (!test_addone(p, mem_ctx)) {
 		ret = False;
 	}
@@ -216,8 +240,15 @@ BOOL torture_rpc_echo(int dummy)
 	if (!test_sinkdata(p, mem_ctx)) {
 		ret = False;
 	}
+#endif
+
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_testcall(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_testcall2(p, mem_ctx)) {
 		ret = False;
 	}
 
