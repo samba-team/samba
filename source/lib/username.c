@@ -425,7 +425,7 @@ BOOL user_in_list(char *user,char *list)
        */
       if(user_in_netgroup_list(user,&tok[1]))
         return True;
-      if(user_in_group_list(user,&tok[1]))
+      if(user_in_unix_group_list(user,&tok[1]))
         return True;
     } else if (*tok == '+') {
 
@@ -433,7 +433,7 @@ BOOL user_in_list(char *user,char *list)
         /*
          * Search UNIX list followed by netgroup.
          */
-        if(user_in_group_list(user,&tok[2]))
+        if(user_in_unix_group_list(user,&tok[2]))
           return True;
         if(user_in_netgroup_list(user,&tok[2]))
           return True;
@@ -444,7 +444,7 @@ BOOL user_in_list(char *user,char *list)
          * Just search UNIX list.
          */
 
-        if(user_in_group_list(user,&tok[1]))
+        if(user_in_unix_group_list(user,&tok[1]))
           return True;
       }
 
@@ -456,7 +456,7 @@ BOOL user_in_list(char *user,char *list)
          */
         if(user_in_netgroup_list(user,&tok[2]))
           return True;
-        if(user_in_group_list(user,&tok[2]))
+        if(user_in_unix_group_list(user,&tok[2]))
           return True;
       } else {
         /*
