@@ -1074,6 +1074,9 @@ static void free_service(service *pservice)
   if (!pservice)
      return;
 
+  if(pservice->szService)
+    DEBUG(5,("free_service: Freeing service %s\n", pservice->szService));
+
   string_free(&pservice->szService);
   if (pservice->copymap)
   {
