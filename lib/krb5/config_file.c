@@ -47,6 +47,29 @@ static krb5_error_code parse_list(FILE *f, unsigned *lineno,
 				  krb5_config_binding **parent,
 				  const char **error_message);
 
+static krb5_config_section *
+get_entry(krb5_config_section **parent, const char *name, int type)
+{
+    krb5_config_section **q;
+
+    for(q = parent; *q != NULL; q = &(*q)->next)
+	if(type == krb5_config_list && 
+	   type == (*q)->type &&
+	   strcmp(name, (*q)->name) == 0)
+	    return *q;
+    *q = calloc(1, sizeof(**q));
+    if(*q == NULL)
+	return NULL;
+    (*q)->name = strdup(name);
+    (*q)->type = type;
+    if((*q)->name == NULL) {
+	free(*q);
+	*q = NULL;
+	return NULL;
+    }
+    return *q;
+}
+
 /*
  * Parse a section:
  *
@@ -75,23 +98,11 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
 	return KRB5_CONFIG_BADFORMAT;
     }
     *p1 = '\0';
-    tmp = malloc(sizeof(*tmp));
-    if (tmp == NULL) {
+    tmp = get_entry(parent, p + 1, krb5_config_list);
+    if(tmp == NULL) {
 	*error_message = "out of memory";
 	return KRB5_CONFIG_BADFORMAT;
     }
-    tmp->name = strdup(p+1);
-    if (tmp->name == NULL) {
-	*error_message = "out of memory";
-	return KRB5_CONFIG_BADFORMAT;
-    }
-    tmp->type = krb5_config_list;
-    tmp->u.list = NULL;
-    tmp->next = NULL;
-    if (*s)
-	(*s)->next = tmp;
-    else
-	*parent = tmp;
     *s = tmp;
     return 0;
 }
@@ -154,44 +165,40 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     while (*p && *p != '=' && !isspace((unsigned char)*p))
 	++p;
     if (*p == '\0') {
-	*error_message = "no =";
+	*error_message = "missing =";
 	return KRB5_CONFIG_BADFORMAT;
     }
     p2 = p;
     while (isspace((unsigned char)*p))
 	++p;
     if (*p != '=') {
-	*error_message = "no =";
+	*error_message = "missing =";
 	return KRB5_CONFIG_BADFORMAT;
     }
     ++p;
     while(isspace((unsigned char)*p))
 	++p;
-    tmp = malloc(sizeof(*tmp));
-    if (tmp == NULL) {
-	*error_message = "out of memory";
-	return KRB5_CONFIG_BADFORMAT;
-    }
     *p2 = '\0';
-    tmp->name = strdup(p1);
-    tmp->next = NULL;
     if (*p == '{') {
-	tmp->type = krb5_config_list;
-	tmp->u.list = NULL;
+	tmp = get_entry(parent, p1, krb5_config_list);
+	if (tmp == NULL) {
+	    *error_message = "out of memory";
+	    return KRB5_CONFIG_BADFORMAT;
+	}
 	ret = parse_list (f, lineno, &tmp->u.list, error_message);
     } else {
+	tmp = get_entry(parent, p1, krb5_config_string);
+	if (tmp == NULL) {
+	    *error_message = "out of memory";
+	    return KRB5_CONFIG_BADFORMAT;
+	}
 	p1 = p;
 	p = p1 + strlen(p1);
 	while(p > p1 && isspace((unsigned char)*(p-1)))
 	    --p;
 	*p = '\0';
-	tmp->type = krb5_config_string;
 	tmp->u.string = strdup(p1);
     }
-    if (*b)
-	(*b)->next = tmp;
-    else
-	*parent = tmp;
     *b = tmp;
     return ret;
 }
@@ -221,7 +228,6 @@ krb5_config_parse_file_debug (const char *fname,
 	*error_message = "cannot open file";
 	return ENOENT;
     }
-    *res = NULL;
     while (fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
@@ -255,9 +261,9 @@ out:
 }
 
 krb5_error_code
-krb5_config_parse_file (krb5_context context,
-			const char *fname,
-			krb5_config_section **res)
+krb5_config_parse_file_multi (krb5_context context,
+			      const char *fname,
+			      krb5_config_section **res)
 {
     const char *str;
     unsigned lineno;
@@ -269,6 +275,15 @@ krb5_config_parse_file (krb5_context context,
 	return ret;
     }
     return 0;
+}
+
+krb5_error_code
+krb5_config_parse_file (krb5_context context,
+			const char *fname,
+			krb5_config_section **res)
+{
+    *res = NULL;
+    return krb5_config_parse_file_multi(context, fname, res);
 }
 
 #endif /* !HAVE_NETINFO */
@@ -316,6 +331,29 @@ krb5_config_get_next (krb5_context context,
     return ret;
 }
 
+static const void *
+vget_next(krb5_context context,
+	  const krb5_config_binding *b,
+	  const krb5_config_binding **pointer,
+	  int type,
+	  const char *name,
+	  va_list args)
+{
+    const char *p = va_arg(args, const char *);
+    while(b != NULL) {
+	if(strcmp(b->name, name) == NULL) {
+	    if(b->type == type && p == NULL) {
+		*pointer = b;
+		return b->u.generic;
+	    } else if(b->type == krb5_config_list && p != NULL) {
+		return vget_next(context, b->u.list, pointer, type, p, args);
+	    }
+	}
+	b = b->next;
+    }
+    return NULL;
+}
+
 const void *
 krb5_config_vget_next (krb5_context context,
 		       const krb5_config_section *c,
@@ -333,32 +371,20 @@ krb5_config_vget_next (krb5_context context,
 	return NULL;
 
     if (*pointer == NULL) {
-	b = (c != NULL) ? c : context->cf;
+	/* first time here, walk down the tree looking for the right
+           section */
 	p = va_arg(args, const char *);
 	if (p == NULL)
 	    return NULL;
-    } else {
-	b = *pointer;
-	p = b->name;
-	b = b->next;
+	return vget_next(context, c, pointer, type, p, args);
     }
 
-    while (b) {
-	if (strcmp (b->name, p) == 0) {
-	    if (*pointer == NULL)
-		p = va_arg(args, const char *);
-	    else
-		p = NULL;
-	    if (type == b->type && p == NULL) {
-		*pointer = b;
-		return b->u.generic;
-	    } else if(b->type == krb5_config_list && p != NULL) {
-		b = b->u.list;
-	    } else {
-		return NULL;
-	    }
-	} else {
-	    b = b->next;
+    /* we were called again, so just look for more entries with the
+       same name and type */
+    for (b = (*pointer)->next; b != NULL; b = b->next) {
+	if(strcmp(b->name, (*pointer)->name) == 0 && b->type == type) {
+	    *pointer = b;
+	    return b->u.generic;
 	}
     }
     return NULL;
