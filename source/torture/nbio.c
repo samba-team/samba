@@ -52,7 +52,7 @@ double nbio_total(void)
 	return total;
 }
 
-void nb_alarm(void)
+void nb_alarm(int ignore)
 {
 	int i;
 	int lines=0, num_clients=0;
@@ -79,6 +79,7 @@ void nbio_shmem(int n)
 	}
 }
 
+#if 0
 static int ne_find_handle(int handle)
 {
 	int i;
@@ -88,6 +89,7 @@ static int ne_find_handle(int handle)
 	}
 	return -1;
 }
+#endif
 
 static int find_handle(int handle)
 {
