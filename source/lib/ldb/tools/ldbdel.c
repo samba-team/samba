@@ -34,10 +34,35 @@
 
 #include "includes.h"
 
+static int ldb_delete_recursive(struct ldb_context *ldb, const char *dn)
+{
+	int ret, i, total=0;
+	const char *attrs[] = { "dn", NULL };
+	struct ldb_message **res;
+	
+	ret = ldb_search(ldb, dn, LDB_SCOPE_SUBTREE, "dn=*", attrs, &res);
+	if (ret <= 0) return -1;
+
+	for (i=0;i<ret;i++) {
+		if (ldb_delete(ldb, res[i]->dn) == 0) {
+			total++;
+		}
+	}
+
+	ldb_search_free(ldb, res);
+
+	if (total == 0) {
+		return -1;
+	}
+	printf("Deleted %d records\n", total);
+	return 0;
+}
+
 static void usage(void)
 {
 	printf("Usage: ldbdel <options> <DN...>\n");
 	printf("Options:\n");
+	printf("  -r               recursively delete the given subtree\n");
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
 	printf("\n");
 	printf("Deletes records from a ldb\n\n");
@@ -49,14 +74,18 @@ static void usage(void)
 	struct ldb_context *ldb;
 	int ret, i;
 	const char *ldb_url;
-	int opt;
+	int opt, recursive=0;
 
 	ldb_url = getenv("LDB_URL");
 
-	while ((opt = getopt(argc, argv, "hH:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hH:r")) != EOF) {
 		switch (opt) {
 		case 'H':
 			ldb_url = optarg;
+			break;
+
+		case 'r':
+			recursive=1;
 			break;
 
 		case 'h':
@@ -88,7 +117,14 @@ static void usage(void)
 	ldb_set_debug_stderr(ldb);
 
 	for (i=0;i<argc;i++) {
-		ret = ldb_delete(ldb, argv[i]);
+		if (recursive) {
+			ret = ldb_delete_recursive(ldb, argv[i]);
+		} else {
+			ret = ldb_delete(ldb, argv[i]);
+			if (ret == 0) {
+				printf("Deleted 1 record\n");
+			}
+		}
 		if (ret != 0) {
 			printf("delete of '%s' failed - %s\n", 
 			       argv[i], ldb_errstring(ldb));
