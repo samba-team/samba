@@ -144,10 +144,9 @@ fcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
     char *f;
-    int ret;
     f = FILENAME(id);
 
-    ret = erase_file(f);
+    return erase_file(f);
   
     return fcc_close (context, id);
 }
