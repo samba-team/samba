@@ -64,6 +64,8 @@ enum {
      UT_GeneralString = 27
 };
 
+#define ASN1_INDEFINITE 0xdce0deed
+
 #ifndef HAVE_TIMEGM
 time_t timegm (struct tm *);
 #endif
