@@ -52,6 +52,7 @@
 .Nm krb5_auth_con_setuserkey ,
 .Nm krb5_auth_con_getlocalsubkey ,
 .Nm krb5_auth_con_setlocalsubkey ,
+.Nm krb5_auth_con_generatelocalsubkey ,
 .Nm krb5_auth_con_getremotesubkey ,
 .Nm krb5_auth_con_setremotesubkey ,
 .Nm krb5_auth_setcksumtype ,
@@ -152,6 +153,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "krb5_auth_context auth_context"
 .Fa "krb5_keyblock **keyblock"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_auth_con_generatelocalsubkey
+.Fa "krb5_context context"
+.Fa "krb5_auth_context auth_context"
+.Fa krb5_keyblock *key"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_auth_con_initivector
@@ -301,7 +308,8 @@ is equivalent to
 .Fn krb5_auth_con_getremotesubkey
 and
 .Fn krb5_auth_con_setremotesubkey
-gets and sets the keyblock for the local and remote subkey. The keyblock returned by
+gets and sets the keyblock for the local and remote subkey.
+The keyblock returned by
 .Fn krb5_auth_con_getlocalsubkey
 and
 .Fn krb5_auth_con_getremotesubkey
@@ -313,6 +321,10 @@ and
 .Fn krb5_auth_getcksumtype
 sets and gets the checksum type that should be used for this
 connection.
+.Pp
+.Fn krb5_auth_con_generatelocalsubkey
+generates a local subkey that have the same encryption type as
+.Fa key .
 .Pp
 .Fn krb5_auth_getremoteseqnumber
 .Fn krb5_auth_setremoteseqnumber ,
