@@ -110,29 +110,36 @@ static char *krb5principal_attrs[] = {
     NULL
 };
 
-static krb5_error_code
-LDAP__hex2bytes(const char *hex_in, char *buffer, size_t len)
+const static char hexchar[] = "0123456789ABCDEF";
+
+static int 
+pos(char c)
 {
-    size_t i;
     const char *p;
+    for (p = hexchar; *p; p++)
+	if (*p == c)
+	    return p - hexchar;
+    return -1;
+}
+
+static krb5_error_code
+LDAP__hex2bytes(const char *hex_in, unsigned char *buffer, size_t len)
+{
+    const char *p;
+    size_t i;
 	
     if (strlen(hex_in) != (2 * len))
 	return EINVAL;
 
     p = hex_in;
-    for (i = 0; i < len; i++) {
-	char p3[3];
-	strncpy(p3, &hex_in[i*2], 2);
-	p3[2] = '\0';
-	buffer[i] = strtoul(p3, NULL, 16);
-    }
+    for (i = 0; i < len; i++)
+	buffer[i] = pos(p[i * 2]) | pos(p[(i * 2) + 1]) << 4;
     return 0;
 }
 
 static krb5_error_code
 LDAP__bytes2hex(const char *buffer, size_t buf_len, char **out)
 {
-    const static char hexchar[] = "0123456789ABCDEF";
     size_t i;
     char *p;
 
@@ -404,10 +411,11 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     krb5_boolean is_heimdal_entry = FALSE;
     krb5_boolean is_heimdal_principal = FALSE;
 
+    char **values;
+
     *pmods = NULL;
 
     if (msg != NULL) {
-	char **values;
 
 	ret = LDAP_message2entry(context, db, msg, &orig);
 	if (ret)
@@ -416,8 +424,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	is_new_entry = FALSE;
 	    
 	values = ldap_get_values(HDB2LDAP(db), msg, "objectClass");
-	    
-	if ( values ) {
+	if (values) {
 	    int num_objectclasses = ldap_count_values(values);
 	    for (i=0; i < num_objectclasses; i++) {
 		if (strcasecmp(values[i], "sambaSamAccount") == 0) {
@@ -640,13 +647,16 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    goto out;
     }
 
-    /* Test each key for replacement */
-
+    /* Remove keys if they exists, and then replace keys. */
     if (!is_new_entry && orig.keys.len > 0) {
-	/* for the moment, clobber and replace keys. */
-	ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5Key", NULL);
-	if (ret)
-	    goto out;
+	values = ldap_get_values(HDB2LDAP(db), msg, "krb5Key");
+	if (values) {
+	    ldap_value_free(values);
+
+	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5Key", NULL);
+	    if (ret)
+		goto out;
+	}
     }
 
     for (i = 0; i < ent->keys.len; i++) {
@@ -673,10 +683,15 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    if (ret)
 		goto out;
 		    
-	    /* have to kill the LM passwod in this case */
-	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "sambaLMPassword", NULL);
-	    if (ret)
-		goto out;
+	    /* have to kill the LM passwod if it exists */
+	    values = ldap_get_values(HDB2LDAP(db), msg, "sambaLMPassword");
+	    if (values) {
+		ldap_value_free(values);
+		ret = LDAP_addmod(&mods, LDAP_MOD_DELETE,
+				  "sambaLMPassword", NULL);
+		if (ret)
+		    goto out;
+	    }
 		    
 	} else if (is_heimdal_entry) {
 	    unsigned char *buf;
@@ -697,9 +712,16 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 
     if (ent->etypes) {
 	/* clobber and replace encryption types. */
-	if (!is_new_entry)
-	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5EncryptionType",
-			      NULL);
+	if (!is_new_entry) {
+	    values = ldap_get_values(HDB2LDAP(db), msg, "krb5EncryptionType");
+	    if (values) {
+		ldap_value_free(values);
+		ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5EncryptionType",
+				  NULL);
+		if (ret)
+		    goto out;
+	    }
+	}
 	for (i = 0; i < ent->etypes->len; i++) {
 	    if (is_samba_account && 
 		ent->keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)
@@ -753,7 +775,7 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 	goto out;
 
     rc = ldap_search_s(HDB2LDAP(db), dn, LDAP_SCOPE_SUBTREE,
-		       "(objectclass=krb5Principal)", krb5principal_attrs,
+		       "(objectClass=krb5Principal)", krb5principal_attrs,
 		       0, &res);
     if (check_ldap(context, db, rc)) {
 	krb5_set_error_string(context, "ldap_search_s: %s",
@@ -800,7 +822,7 @@ LDAP__lookup_princ(krb5_context context,
 	return ret;
 
     rc = asprintf(&filter,
-		  "(&(objectclass=krb5Principal)(krb5PrincipalName=%s))",
+		  "(&(objectClass=krb5Principal)(krb5PrincipalName=%s))",
 		  princname);
     if (rc < 0) {
 	krb5_set_error_string(context, "asprintf: out of memory");
@@ -828,7 +850,7 @@ LDAP__lookup_princ(krb5_context context,
 	*msg = NULL;
 	
 	rc = asprintf(&filter,
-	    "(&(|(objectclass=sambaSamAccount)(objectclass=%s))(uid=%s))",
+	    "(&(|(objectClass=sambaSamAccount)(objectClass=%s))(uid=%s))",
 		      structural_object, userid);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
