@@ -121,7 +121,7 @@ void
 generate_type_free (Symbol *s)
 {
   fprintf (headerfile,
-	   "void free_%s(%s *);\n",
+	   "void   free_%s  (%s *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "void\n"

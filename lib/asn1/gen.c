@@ -161,9 +161,10 @@ define_asn1 (int level, Type *t)
 	    if (tag == -1)
 		tag = m->val;
 	    space(level + 1);
-	    fprintf (headerfile, "%s[%d] ", m->name, m->val);
-	    if(strlen(m->name) < 16)
-		fprintf (headerfile, "%*s", 16 - strlen(m->name), "");
+	    fprintf(headerfile, "%s[%d]", m->name, m->val);
+	    if(strlen(m->name) + 3 + (m->val > 9) < 16)
+		fprintf(headerfile, "%*s", 
+			16 - strlen(m->name) + 3 + (m->val > 9), "");
 	    define_asn1(level + 1, m->type);
 	    if(m->optional)
 		fprintf(headerfile, " OPTIONAL");

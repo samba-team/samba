@@ -207,7 +207,7 @@ void
 generate_type_encode (Symbol *s)
 {
   fprintf (headerfile,
-	   "int encode_%s(unsigned char *, size_t, %s *, size_t *);\n",
+	   "int    encode_%s(unsigned char *, size_t, %s *, size_t *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "#define BACK if (e) return e; p -= l; len -= l; ret += l\n\n");

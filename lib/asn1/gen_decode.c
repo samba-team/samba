@@ -261,7 +261,7 @@ void
 generate_type_decode (Symbol *s)
 {
   fprintf (headerfile,
-	   "int decode_%s(unsigned char *, size_t, %s *, size_t *);\n",
+	   "int    decode_%s(unsigned char *, size_t, %s *, size_t *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "#define FORW "

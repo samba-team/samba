@@ -137,7 +137,7 @@ void
 generate_type_copy (Symbol *s)
 {
   fprintf (headerfile,
-	   "int copy_%s(const %s *, %s *);\n",
+	   "int    copy_%s  (const %s *, %s *);\n",
 	   s->gen_name, s->gen_name, s->gen_name);
 
   fprintf (codefile, "int\n"
