@@ -26,6 +26,9 @@
 
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 use Getopt::Std;
@@ -175,8 +178,7 @@ my $group_desc;
 my $has_members = 0;
 my @members = ();
 
-while (<>)
-{
+while (<>) {
   my $line = $_;
   chomp($line);
   next if ( $line =~ m/^\s*$/ );

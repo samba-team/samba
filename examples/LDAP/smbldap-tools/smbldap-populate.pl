@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Populate a LDAP base for Samba-LDAP usage
 #
@@ -27,10 +27,13 @@
 #       . For lazy people, replace ldapadd (with only an ldif parameter)
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
-
 use Getopt::Std;
+use Net::LDAP::LDIF;
 
 use vars qw(%oc);
 
@@ -56,6 +59,7 @@ if ( (!$ok) || ($Options{'?'}) ) {
 }
 
 my $_ldifName;
+my $tmp_ldif_file="/tmp/$$.ldif";
 
 if (@ARGV >= 1) {
     $_ldifName = $ARGV[0];
@@ -76,6 +80,7 @@ if (!defined($_ldifName)) {
     my $val;
     my $objcl;
 
+  print "Using builtin directory structure\n";
     if ($suffix =~ m/([^=]+)=([^,]+)/) {
 	$attr = $1;
 	$val = $2;
@@ -90,8 +95,8 @@ if (!defined($_ldifName)) {
     my ($organisation,$ext) = ($suffix =~ m/dc=(\w+),dc=(\w+)$/);
 
     #my $FILE="|cat";
-    my $FILE="|$ldapadd -c";
-    open (FILE, $FILE) || die "$!\n";
+  my $FILE=$tmp_ldif_file;
+  open (FILE, ">$FILE") || die "Can't open file $FILE: $!\n";
 
     print FILE <<EOF;
 dn: $suffix
@@ -131,11 +136,11 @@ sambaPwdMustChange: 2147483647
 sambaHomePath: $_userSmbHome
 sambaHomeDrive: $_userHomeDrive
 sambaProfilePath: $_userProfile
-sambaPrimaryGroupSID: 512
+sambaPrimaryGroupSID: $SID-512
 sambaLMPassword: XXX
 sambaNTPassword: XXX
 sambaAcctFlags: [U          ]
-sambaSID: $smbldap_conf::SID-2996
+sambaSID: $SID-2996
 loginShell: /bin/false
 gecos: Netbios Domain Administrator
 
@@ -158,11 +163,11 @@ sambaPwdMustChange: 2147483647
 sambaHomePath: $_userSmbHome
 sambaHomeDrive: $_userHomeDrive
 sambaProfilePath: $_userProfile
-sambaPrimaryGroupSID: $smbldap_conf::SID-514
+sambaPrimaryGroupSID: $SID-514
 sambaLMPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
 sambaNTPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
 sambaAcctFlags: [NU         ]
-sambaSID: $smbldap_conf::SID-2998
+sambaSID: $SID-2998
 loginShell: /bin/false
 
 dn: cn=Domain Admins,$groupsdn
@@ -248,12 +253,26 @@ description: Netbios Domain Computers accounts
 
 EOF
     close FILE;
-    exit($?)
-
 } else {
-    exec "$ldapadd < $_ldifName";
+  $tmp_ldif_file=$_ldifName;
 }
 
+my $ldap_master=connect_ldap_master();
+my $ldif = Net::LDAP::LDIF->new($tmp_ldif_file, "r", onerror => 'undef' );
+while( not $ldif->eof() ) {
+	my $entry = $ldif->read_entry();
+	if ( $ldif->error() ) {
+		print "Error msg: ",$ldif->error(),"\n";
+		print "Error lines:\n",$ldif->error_lines(),"\n";
+	} else {
+		my $dn = $entry->dn;
+		print "adding new entry: $dn\n";
+		my $result=$ldap_master->add($entry);
+		$result->code && warn "failed to add entry: ", $result->error ;
+	}
+}
+$ldap_master->unbind;
+system "rm -f $tmp_ldif_file";
 exit(0);
 
 
@@ -280,9 +299,7 @@ exit(0);
 
        If you give an extra parameter, it is assumed to be the ldif
        file to use instead of the builtin one. Options -a and -b
-       will be ignored. This usage mode makes the command behave
-       like ldapadd(1) with extra parameters taken from the smbldap-tools
-       config (smbldap_conf.pm).
+       will be ignored. 
 
 =head1 FILES
 

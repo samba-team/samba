@@ -9,9 +9,9 @@ to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-i</span></dt><dd><p>Run interactively. Individual commands 
 		of the form destination message-type parameters can be entered 
-		on STDIN. An empty command line or a &quot;q&quot; will quit the 
+		on STDIN. An empty command line or a "q" will quit the 
 		program.</p></dd><dt><span class="term">destination</span></dt><dd><p>One of <i class="parameter"><tt>nmbd</tt></i>, <i class="parameter"><tt>smbd</tt></i> or a process ID.</p><p>The <i class="parameter"><tt>smbd</tt></i> destination causes the 
-		message to &quot;broadcast&quot; to all smbd daemons.</p><p>The <i class="parameter"><tt>nmbd</tt></i> destination causes the 
+		message to "broadcast" to all smbd daemons.</p><p>The <i class="parameter"><tt>nmbd</tt></i> destination causes the 
 		message to be sent to the nmbd daemon specified in the 
 		<tt class="filename">nmbd.pid</tt> file.</p><p>If a single process ID is given, the message is sent 
 		to only that process.</p></dd><dt><span class="term">message-type</span></dt><dd><p>Type of message to send. See 
@@ -20,18 +20,18 @@ compile time.</p></dd><dt><span class="term">-i</span></dt><dd><p>Run interactiv
 	connections to the named share. Note that this doesn't affect client 
 	connections to any other shares. This message-type takes an argument of the
 	share name for which client connections will be closed, or the
-	&quot;*&quot; character which will close all currently open shares.
+	"*" character which will close all currently open shares.
 	This may be useful if you made changes to the access controls on the share.
 	This message can only be sent to <tt class="constant">smbd</tt>.</p></dd><dt><span class="term">debug</span></dt><dd><p>Set debug level to the value specified by the 
 	parameter. This can be sent to any of the destinations.</p></dd><dt><span class="term">force-election</span></dt><dd><p>This message causes the <b class="command">nmbd</b> daemon to 
 	force a new browse master election. </p></dd><dt><span class="term">ping</span></dt><dd><p>
-	Send specified number of &quot;ping&quot; messages and 
-	wait for the same number of  reply &quot;pong&quot; messages. This can be sent to 
+	Send specified number of "ping" messages and 
+	wait for the same number of  reply "pong" messages. This can be sent to 
 	any of the destinations.</p></dd><dt><span class="term">profile</span></dt><dd><p>Change profile settings of a daemon, based on the 
-	parameter. The parameter can be &quot;on&quot; to turn on profile stats 
-	collection, &quot;off&quot; to turn off profile stats collection, &quot;count&quot;
+	parameter. The parameter can be "on" to turn on profile stats 
+	collection, "off" to turn off profile stats collection, "count"
 	to enable only collection of count stats (time stats are 
-	disabled), and &quot;flush&quot; to zero the current profile stats. This can 
+	disabled), and "flush" to zero the current profile stats. This can 
 	be sent to any smbd or nmbd destinations.</p></dd><dt><span class="term">debuglevel</span></dt><dd><p>
 	Request debuglevel of a certain daemon and write it to stdout. This 
 	can be sent to any of the destinations.</p></dd><dt><span class="term">profilelevel</span></dt><dd><p>
@@ -65,8 +65,8 @@ compile time.</p></dd><dt><span class="term">-i</span></dt><dd><p>Run interactiv
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
-	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
 	Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

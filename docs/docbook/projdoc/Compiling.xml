@@ -1,32 +1,33 @@
 <chapter id="compiling">
 <chapterinfo>
 	&author.jelmer;
+	&author.jht;
 	&author.tridge;
 	
 	<pubdate> 22 May 2001 </pubdate>
 	<pubdate> 18 March 2003 </pubdate>
 </chapterinfo>
 
-<title>How to compile Samba</title>
+<title>How to Compile Samba</title>
 
 <para>
-You can obtain the samba source from the
-<ulink url="http://samba.org/">samba website</ulink>. To obtain a development version, 
-you can download samba from CVS or using rsync.
+You can obtain the Samba source from the
+<ulink url="http://samba.org/">Samba Website.</ulink> To obtain a development version, 
+you can download Samba from CVS or using <command>rsync</command>.
 </para>
 
 <sect1>
-<title>Access Samba source code via CVS</title>
+<title>Access Samba Source Code via CVS</title>
 
-<indexterm><primary>CVS</primary></indexterm>
 
 <sect2>
 <title>Introduction</title>
 
 <para>
-Samba is developed in an open environment.  Developers use CVS
-(Concurrent Versioning System) to "checkin" (also known as 
-"commit") new source code.  Samba's various CVS branches can
+<indexterm><primary>CVS</primary></indexterm>
+Samba is developed in an open environment. Developers use
+Concurrent Versioning System (CVS) to <quote>checkin</quote> (also known as 
+<quote>commit</quote>) new source code. Samba's various CVS branches can
 be accessed via anonymous CVS using the instructions
 detailed in this chapter.
 </para>
@@ -44,71 +45,70 @@ This chapter is a modified version of the instructions found at
 <para>
 The machine samba.org runs a publicly accessible CVS 
 repository for access to the source code of several packages, 
-including samba, rsync, distcc, ccache and jitterbug. There are two main ways
-of accessing the CVS server on this host.
+including Samba, rsync, distcc, ccache, and jitterbug. There are two main ways
+of accessing the CVS server on this host:
 </para>
 
 <sect3>
 <title>Access via CVSweb</title>
 
-<indexterm><primary>CVS</primary><secondary>web</secondary></indexterm>
 
 <para>
-You can access the source code via your 
-favourite WWW browser. This allows you to access the contents of 
-individual files in the repository and also to look at the revision 
+<indexterm><primary>CVS</primary><secondary>web</secondary></indexterm>
+You can access the source code via your favorite WWW browser. This allows you to access
+the contents of individual files in the repository and also to look at the revision 
 history and commit logs of individual files. You can also ask for a diff 
 listing between any two versions on the repository.
 </para>
 
 <para>
-Use the URL : <ulink
-noescape="1"	url="http://samba.org/cgi-bin/cvsweb">http://samba.org/cgi-bin/cvsweb</ulink>
+Use the URL:
+<ulink noescape="1" url="http://samba.org/cgi-bin/CVSweb">http://samba.org/cgi-bin/CVSweb</ulink>
 </para>
 </sect3>
 
 <sect3>
-<title>Access via cvs</title>
+<title>Access via CVS</title>
 
 <para>
 You can also access the source code via a 
-normal cvs client.  This gives you much more control over what you can 
+normal CVS client. This gives you much more control over what you can 
 do with the repository and allows you to checkout whole source trees 
-and keep them up to date via normal cvs commands. This is the 
+and keep them up-to-date via normal CVS commands. This is the 
 preferred method of access if you are a developer and not
 just a casual browser.
 </para>
 
 <para>
-To download the latest cvs source code, point your
+To download the latest CVS source code, point your
 browser at the URL :
 <ulink noescape="1" url="http://www.cyclic.com/">http://www.cyclic.com/</ulink>.
-and click on the 'How to get cvs' link. CVS is free software under 
-the GNU GPL (as is Samba).  Note that there are several graphical CVS clients
-which provide a graphical interface to the sometimes mundane CVS commands.
-Links to theses clients are also available from the Cyclic website.
+and click on the <quote>How to get CVS</quote> link. CVS is free software under 
+the GNU GPL (as is Samba). Note that there are several graphical CVS clients
+that provide a graphical interface to the sometimes mundane CVS commands.
+Links to theses clients are also available from the Cyclic Web site.
 </para>
 
 <para>
-To gain access via anonymous cvs use the following steps. 
+To gain access via anonymous CVS, use the following steps. 
 For this example it is assumed that you want a copy of the 
-samba source code. For the other source code repositories 
-on this system just substitute the correct package name
+Samba source code. For the other source code repositories 
+on this system just substitute the correct package name.
 </para>
 
 <procedure>
-	<title>Retrieving samba using CVS</title>
+	<title>Retrieving Samba using CVS</title>
 
 	<step>
 	<para>
-	Install a recent copy of cvs. All you really need is a 
-	copy of the cvs client binary. 
+	Install a recent copy of CVS. All you really need is a 
+	copy of the CVS client binary. 
 	</para>
 	</step>
 
 	<step>
 	<para>
-	Run the command 
+	Run the command:
 	</para>
 
 	<para>
@@ -119,7 +119,7 @@ on this system just substitute the correct package name
 	<step>
 	
 	<para>
-	When it asks you for a password type <userinput>cvs</userinput>.
+	When it asks you for a password, type <userinput>cvs</userinput>.
 	</para>
 	</step>
 
@@ -129,32 +129,32 @@ on this system just substitute the correct package name
 	</para>
 	
 	<para>
-	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</userinput>
+	<userinput>cvs -d :pserver:CVS@samba.org:/cvsroot co samba</userinput>.
 	</para>
 	
 	<para>
-	This will create a directory called samba containing the 
-	latest samba source code (i.e. the HEAD tagged cvs branch). This 
+	This will create a directory called <filename>samba</filename> containing the 
+	latest Samba source code (i.e., the HEAD tagged CVS branch). This 
 	currently corresponds to the 3.0 development tree. 
 	</para>
 	
 	<para>
 	CVS branches other then HEAD can be obtained by using the
-	<option>-r</option> and defining a tag name.  A list of branch tag names 
-	can be found on the "Development" page of the samba web site.  A common
-	request is to obtain the latest 3.0 release code.  This could be done by 
+	<option>-r</option> and defining a tag name. A list of branch tag names 
+	can be found on the <quote>Development</quote> page of the Samba Web site. A common
+	request is to obtain the latest 3.0 release code. This could be done by 
 	using the following command:
 	</para>
 	
 	<para>
-	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_3_0 samba</userinput>
+	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_3_0 samba</userinput>.
 	</para>
 	</step>
 
 	<step>
 	<para>
-	Whenever you want to merge in the latest code changes use 
-	the following command from within the samba directory: 
+	Whenever you want to merge in the latest code changes, use 
+	the following command from within the Samba directory: 
 	</para>
 	
 	<para>
@@ -169,33 +169,34 @@ on this system just substitute the correct package name
 </sect1>
 
 <sect1>
-	<title>Accessing the samba sources via rsync and ftp</title>
+	<title>Accessing the Samba Sources via rsync and ftp</title>
 
-	<indexterm><primary>rsync</primary></indexterm>
-	<indexterm><primary>ftp</primary></indexterm>
 
 	<para>
-	pserver.samba.org also exports unpacked copies of most parts of the CVS
+	<indexterm><primary>rsync</primary></indexterm>
+	<indexterm><primary>ftp</primary></indexterm>
+	<parameter>pserver.samba.org</parameter> also exports unpacked copies of most parts of the CVS
 	tree at <ulink noescape="1" url="ftp://pserver.samba.org/pub/unpacked">ftp://pserver.samba.org/pub/unpacked</ulink> and also via anonymous rsync at 
 	<ulink noescape="1" url="rsync://pserver.samba.org/ftp/unpacked/">rsync://pserver.samba.org/ftp/unpacked/</ulink>. I recommend using rsync rather than ftp.
-	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync homepage</ulink> for more info on rsync.                       
+	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync homepage</ulink> for more info on rsync.                      
 	</para>
 
 	<para>
 	The disadvantage of the unpacked trees is that they do not support automatic
-	merging of local changes like CVS does.  rsync access is most convenient 
-	for an initial install.                       
+	merging of local changes like CVS does. <command>rsync</command> access is most convenient 
+	for an initial install.                      
 	</para>
 </sect1>
 
 <sect1>
-<title>Verifying Samba's PGP signature</title>
+<title>Verifying Samba's PGP Signature</title>
 
 <para>
-In these days of insecurity, it's strongly recommended that you verify the PGP
-signature for any source file before installing it. Even if you're not 
-downloading from a mirror site, verifying PGP signatures should be a
-standard reflex.
+<indexterm><primary>GPG</primary></indexterm>
+It is strongly recommended that you verify the PGP signature for any source file before
+installing it. Even if you're not downloading from a mirror site, verifying PGP signatures
+should be a standard reflex. Many people today use the GNU GPG toolset in place of PGP.
+GPG can substitute for PGP.
 </para>
 
 
@@ -210,7 +211,7 @@ With that said, go ahead and download the following files:
 
 
 <para>
-<indexterm><primary>GPG</primary></indexterm>
+<indexterm><primary>PGP</primary></indexterm>
 The first file is the PGP signature for the Samba source file; the other is the Samba public
 PGP key itself. Import the public PGP key with:
 </para>
@@ -220,7 +221,7 @@ PGP key itself. Import the public PGP key with:
 </screen>
 
 <para>
-And verify the Samba source code integrity with:
+and verify the Samba source code integrity with:
 </para>
 
 <screen>
@@ -229,43 +230,44 @@ And verify the Samba source code integrity with:
 </screen>
 
 <para>
-If you receive a message like, "Good signature from Samba Distribution 
-Verification Key..."
+If you receive a message like, <quote>Good signature from Samba Distribution Verification Key...</quote>
 then all is well. The warnings about trust relationships can be ignored. An
 example of what you would not want to see would be:
 </para>
 
-<para>
-<computeroutput>
-     gpg: BAD signature from "Samba Distribution Verification Key"
- </computeroutput>
- </para>
+<para><screen>
+     gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
+</screen></para>
 
 </sect1>
 
 <sect1>
 	<title>Building the Binaries</title>
 	
-<indexterm><primary>configure</primary></indexterm>
 
 	<para>
-		To do this, first run the program <userinput>./configure
+<indexterm><primary>configure</primary></indexterm>
+		To build the binaries, first run the program <userinput>./configure
 	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
-	needs then you may wish to run</para>
+	needs, then you may wish to run</para>
 	
 <para><screen>&rootprompt;<userinput>./configure --help
 </userinput></screen></para>
 	
-	<para>first to see what special options you can enable.
-	Then executing</para>
+<para>first to see what special options you can enable. Now execute <userinput>./configure</userinput> with any arguments it might need:</para>
 
+<para><screen>&rootprompt;<userinput>./configure <replaceable>[... arguments ...]</replaceable></userinput></screen></para>
+	
+	<para>Executing</para>
+
+	
+	<para>
 <indexterm><primary>make</primary></indexterm>
+		<screen>&rootprompt;<userinput>make</userinput></screen></para>
 	
-<para><screen>&rootprompt;<userinput>make</userinput></screen></para>
-	
-	<para>will create the binaries. Once it's successfully 
-	compiled you can use </para>
+	<para>will create the binaries. Once it is successfully 
+	compiled you can use</para>
 	
 <para><screen>&rootprompt;<userinput>make install</userinput></screen></para>
 	
@@ -280,9 +282,9 @@ example of what you would not want to see would be:
 	<para><screen>&rootprompt;<userinput>make installman
 	</userinput></screen></para>
 
-	<para>Note that if you are upgrading for a previous version 
+	<para>Note that if you are upgrading from a previous version 
 	of Samba you might like to know that the old versions of 
-	the binaries will be renamed with a ".old" extension. You 
+	the binaries will be renamed with an <quote>.old</quote> extension. You 
 	can go back to the previous version with</para>
 	
 <para><screen>&rootprompt;<userinput>make revert
@@ -291,26 +293,25 @@ example of what you would not want to see would be:
 	<para>if you find this version a disaster!</para>
 
 	<sect2>
-	<title>Compiling samba with Active Directory support</title>
+	<title>Compiling Samba with Active Directory Support</title>
 	
-	<para>In order to compile samba with ADS support, you need to have installed
+	<para>In order to compile Samba with ADS support, you need to have installed
 	on your system:</para>
 	<itemizedlist>
 	
-	    <listitem><para>the MIT kerberos development libraries
-	    (either install from the sources or use a package). The
-	    Heimdal libraries will not work.</para></listitem>
+	    <listitem><para>The MIT or Heimdal kerberos development libraries
+	    (either install from the sources or use a package).</para></listitem>
 	
-	    <listitem><para>the OpenLDAP development libraries.</para></listitem>
+	    <listitem><para>The OpenLDAP development libraries.</para></listitem>
 	    
 	</itemizedlist>
 
-	<para>If your kerberos libraries are in a non-standard location then
+	<para>If your kerberos libraries are in a non-standard location, then
 		remember to add the configure option 
 		<option>--with-krb5=<replaceable>DIR</replaceable></option>.</para>
 
-	<para>After you run configure make sure that 
-		<filename>include/config.h</filename> it generates contains lines like 
+	<para>After you run configure, make sure that 
+		<filename>include/config.h</filename> it generates contain lines like 
 		this:</para>
 
 <para><programlisting>
@@ -318,38 +319,56 @@ example of what you would not want to see would be:
 #define HAVE_LDAP 1
 </programlisting></para>
 
-	<para>If it doesn't then configure did not find your krb5 libraries or
-	your ldap libraries. Look in <filename>config.log</filename> to figure
+	<para>If it does not, configure did not find your KRB5 libraries or
+	your LDAP libraries. Look in <filename>config.log</filename> to figure
 	out why and fix it.</para>
 
 	<sect3>
-	<title>Installing the required packages for Debian</title>
+	<title>Installing the Required Packages for Debian</title>
 
-	<para>On Debian you need to install the following packages:</para>
+	<para>On Debian, you need to install the following packages:</para>
 	<para>
 		<itemizedlist>
-			<listitem><para>libkrb5-dev</para></listitem>
-			<listitem><para>krb5-user</para></listitem>
+			<listitem>libkrb5-dev</listitem>
+			<listitem>krb5-user</listitem>
 		</itemizedlist>
 	</para>
 	</sect3>
 
 	<sect3>
-	<title>Installing the required packages for RedHat</title>
+	<title>Installing the Required Packages for Red Hat Linux</title>
 
-	<para>On RedHat this means you should have at least: </para>
+	<para>On Red Hat Linux, this means you should have at least: </para>
 	<para>
 		<itemizedlist>
-			<listitem><para>krb5-workstation (for kinit)</para></listitem>
-			<listitem><para>krb5-libs (for linking with)</para></listitem>
-			<listitem><para>krb5-devel (because you are compiling from source)</para></listitem>
+			<listitem>krb5-workstation (for kinit)</listitem>
+			<listitem>krb5-libs (for linking with)</listitem>
+			<listitem>krb5-devel (because you are compiling from source)</listitem>
 		</itemizedlist>
 	</para>
 
 	<para>in addition to the standard development environment.</para>
 
-	<para>Note that these are not standard on a RedHat install, and you may need
-	to get them off CD2.</para>
+	<para>If these files are not installed on your system, you should check the installation
+	CDs to find which has them and install the files using your tool of choice. If in doubt
+	about what tool to use, refer to the Red Hat Linux documentation.</para>
+
+	</sect3>
+
+	<sect3>
+	<title>SuSE Linux Package Requirements</title>
+
+	<para>SuSE Linux installs Heimdal packages that may be required to allow you to build
+	binary packages. You should verify that the development libraries have been installed on
+	your system.
+	</para>
+
+	<para>SuSE Linux Samba RPMs support Kerberos. Please refer to the documentation for
+	your SuSE Linux system for information regading SuSE Linux specific configuration.
+	Additionally, SuSE are very active in the maintenance of Samba packages that provide
+	the maximum capabilities that are available. You should consider using SuSE provided
+	packages where they are available.
+	</para>
 
 	</sect3>
 	
@@ -360,9 +379,10 @@ example of what you would not want to see would be:
 <sect1>
 	<title>Starting the &smbd; and &nmbd;</title>
 
-	<indexterm><primary>inetd</primary></indexterm>
 
-	<para>You must choose to start &smbd; and &nmbd; either
+	<para>
+	<indexterm><primary>inetd</primary></indexterm>
+		You must choose to start &smbd; and &nmbd; either
 	as daemons or from <application>inetd</application>. Don't try
 	to do both!  Either you can put them in <filename>
 	inetd.conf</filename> and have them started on demand
@@ -371,8 +391,8 @@ example of what you would not want to see would be:
 	daemons either from the command line or in <filename>
 	/etc/rc.local</filename>. See the man pages for details
 	on the command line options. Take particular care to read
-	the bit about what user you need to be in order to start
-	Samba.  In many cases you must be root.</para>
+	the bit about what user you need to have to start
+	Samba. In many cases, you must be root.</para>
 
 	<para>The main advantage of starting &smbd;
 	and &nmbd; using the recommended daemon method
@@ -390,17 +410,17 @@ example of what you would not want to see would be:
 		</note>
 		
 		<para>Look at your <filename>/etc/services</filename>. 
-		What is defined at port 139/tcp. If nothing is defined 
+		What is defined at port 139/tcp? If nothing is defined, 
 		then add a line like this:</para>
 
 		<para><programlisting>netbios-ssn     139/tcp</programlisting></para>
 
-		<para>similarly for 137/udp you should have an entry like:</para>
+		<para>Similarly for 137/udp, you should have an entry like:</para>
 
 		<para><programlisting>netbios-ns	137/udp</programlisting></para>
 
-		<para>Next edit your <filename>/etc/inetd.conf</filename> 
-		and add two lines something like this:</para>
+		<para>Next, edit your <filename>/etc/inetd.conf</filename> 
+		and add two lines like this:</para>
 
 		<para><programlisting>
 		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
@@ -408,33 +428,35 @@ example of what you would not want to see would be:
 		</programlisting></para>
 
 		<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
-		varies between unixes. Look at the other entries in inetd.conf 
+		varies between UNIXes. Look at the other entries in inetd.conf 
 		for a guide. </para>
 
+	<para>
 		<indexterm><primary>xinetd</primary></indexterm>
-		<para>Some distributions use xinetd instead of inetd. Consult the 
+		Some distributions use xinetd instead of inetd. Consult the 
 		xinetd manual for configuration information.</para>
 
-		<note><para>Some unixes already have entries like netbios_ns 
+		<note><para>Some UNIXes already have entries like netbios_ns 
 		(note the underscore) in <filename>/etc/services</filename>. 
-		You must either edit <filename>/etc/services</filename> or
+		You must edit <filename>/etc/services</filename> or
 		<filename>/etc/inetd.conf</filename> to make them consistent.
 		</para></note>
 
+		<note><para>
 		<indexterm><primary>ifconfig</primary></indexterm>
-		<note><para>On many systems you may need to use the 
+				On many systems you may need to use the 
 		<smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to specify the IP
 		address and netmask of your interfaces. Run 
 		<application>ifconfig</application> 
-		as root if you don't know what the broadcast is for your
+		as root if you do not know what the broadcast is for your
 		net. &nmbd; tries to determine it at run 
-		time, but fails on some unixes. 
+		time, but fails on some UNIXes. 
 		</para></note>
 
-		<warning><para>Many unixes only accept around 5 
+		<warning><para>Many UNIXes only accept around five 
 		parameters on the command line in <filename>inetd.conf</filename>. 
 		This means you shouldn't use spaces between the options and 
-		arguments, or you should use a script, and start the script 
+		arguments, or you should use a script and start the script 
 		from <command>inetd</command>.</para></warning>
 
 		<para>Restart <application>inetd</application>, perhaps just send 
@@ -447,11 +469,12 @@ example of what you would not want to see would be:
 	</sect2>
 	
 	<sect2>
-		<title>Alternative: starting it as a daemon</title>
+		<title>Alternative: Starting &smbd; as a Daemon</title>
 
-		<indexterm><primary>daemon</primary></indexterm>
 		
-		<para>To start the server as a daemon you should create 
+		<para>
+		<indexterm><primary>daemon</primary></indexterm>
+			To start the server as a daemon, you should create 
 		a script something like this one, perhaps calling 
 		it <filename>startsmb</filename>.</para>
 
@@ -461,17 +484,17 @@ example of what you would not want to see would be:
 		/usr/local/samba/bin/nmbd -D 
 		</programlisting></para>
 
-		<para>then make it executable with <command>chmod 
+		<para>Make it executable with <command>chmod 
 		+x startsmb</command></para>
 
 		<para>You can then run <command>startsmb</command> by 
-		hand or execute it from <filename>/etc/rc.local</filename>
+		hand or execute it from <filename>/etc/rc.local</filename>.
 		</para>
 
-		<para>To kill it send a kill signal to the processes 
+		<para>To kill it, send a kill signal to the processes 
 			&nmbd; and &smbd;.</para>
 
-		<note><para>If you use the SVR4 style init system then 
+		<note><para>If you use the SVR4 style init system, 
 		you may like to look at the <filename>examples/svr4-startup</filename>
 		script to make Samba fit into that system.</para></note>
 	</sect2>

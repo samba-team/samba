@@ -13,7 +13,7 @@
 
 	<listitem><para>
 	<ulink url="http://hr.uoregon.edu/davidrl/cifs.txt">
-	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by "Hobbit"</ulink>
+	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by <quote>Hobbit</quote></ulink>
 	</para></listitem>
 
 	<listitem><para>
@@ -48,7 +48,7 @@
 
 	<listitem><para>
 	<ulink url="http://www.phrack.org/phrack/60/p60-0x0b.txt">
-	<emphasis>SMB/CIFS by The Root</emphasis> by "ledin"
+	<emphasis>SMB/CIFS by The Root</emphasis> by <quote>ledin</quote>
 	</ulink>
 	</para></listitem>
 
@@ -91,7 +91,7 @@
 
 	<listitem><para>
 	<ulink url="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html">
-	<emphasis>Introduction to Samba 3.0</emphasis> by Motonobu Takahashi 
+	<emphasis>Introduction to Samba-3.0</emphasis> by Motonobu Takahashi 
 	(written in Japanese). </ulink>
 	</para></listitem>
 
@@ -137,13 +137,6 @@
 	<ulink url="http://support.microsoft.com/support/kb/articles/q92/5/88.asp">
 		<emphasis>WFWG: Password Caching and How It Affects LAN Manager
 			Security</emphasis> at Microsoft Knowledge Base
-	</ulink>
-	</para></listitem>
-
-	<listitem><para>
-			<ulink url="http://www2.sphaero.org/docs/#W2K">
-				<emphasis>W2K Samba deploy HOWTO</emphasis>
-				by Arnaud Loonstra
 	</ulink>
 	</para></listitem>
 
