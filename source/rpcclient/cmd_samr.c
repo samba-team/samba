@@ -3012,7 +3012,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	}
 	else
 	{
-		sid.num_auths = 0;
+		fill_domain_sid(srv_name, domain, domain, &sid);
 	}
 
 	if (sid.num_auths == 0)
