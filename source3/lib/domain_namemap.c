@@ -49,6 +49,8 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 
+extern fstring global_myworkgroup;
+extern DOM_SID global_member_sid;
 extern fstring global_sam_name;
 extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_S_1_5_20;
@@ -892,6 +894,116 @@ BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP *grp)
 	}
 }
 
+/************************************************************************
+ Routine to look up a remote nt name
+*************************************************************************/
+static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
+{
+	struct cli_state cli;
+	POLICY_HND lsa_pol;
+	uint16 fnum_lsa;
+	fstring srv_name;
+
+	BOOL res3 = True;
+	BOOL res4 = True;
+	uint32 num_sids;
+	DOM_SID *sids;
+	uint8 *types;
+	const char *names[1];
+
+	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
+	{
+		return False;
+	}
+
+	names[0] = ntname;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli.desthost);
+	strupper(srv_name);
+
+	/* open LSARPC session. */
+	res3 = res3 ? cli_nt_session_open(&cli, PIPE_LSARPC, &fnum_lsa) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res3 = res3 ? lsa_open_policy(&cli, fnum_lsa,
+				srv_name,
+				&lsa_pol, True) : False;
+
+	/* send lsa lookup sids call */
+	res4 = res3 ? lsa_lookup_names(&cli, fnum_lsa, 
+				       &lsa_pol,
+				       1, names, 
+				       &sids, &types, &num_sids) : False;
+
+	res3 = res3 ? lsa_close(&cli, fnum_lsa, &lsa_pol) : False;
+
+	cli_nt_session_close(&cli, fnum_lsa);
+
+	if (res4 && res3 && sids != NULL && types != NULL)
+	{
+		sid_copy(sid, &sids[0]);
+		*type = types[0];
+	}
+	else
+	{
+		res3 = False;
+	}
+	if (types != NULL)
+	{
+		free(types);
+	}
+	
+	if (sids != NULL)
+	{
+		free(sids);
+	}
+	
+	return res3 && res4;
+}
+
+/************************************************************************
+ Routine to look up a remote nt name
+*************************************************************************/
+static BOOL get_sid_and_type(const char *fullntname, uint8 expected_type,
+				DOM_NAME_MAP *gmep)
+{
+	/*
+	 * check with the PDC to see if it owns the name.  if so,
+	 * the SID is resolved with the PDC database.
+	 */
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
+	{
+		if (lookup_remote_ntname(fullntname, &gmep->sid, &gmep->type))
+		{
+			if (sid_front_equal(&gmep->sid, &global_member_sid) &&
+			    strequal(gmep->nt_domain, global_myworkgroup) &&
+			    gmep->type == expected_type)
+			{
+				return True;
+			}
+			return False;
+		}
+	}
+
+	/*
+	 * ... otherwise, it's one of ours.  map the sid ourselves,
+	 * which can only happen in our own SAM database.
+	 */
+
+	if (!strequal(gmep->nt_domain, global_sam_name))
+	{
+		return False;
+	}
+	if (!pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid))
+	{
+		return False;
+	}
+
+	return True;
+}
+
 /*
  * used by lookup functions below
  */
@@ -918,6 +1030,15 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 		gmep->unix_id = (uint32)uid;
 
 		/*
+		 * ok, assume it's one of ours.  then double-check it
+		 * if we are a member of a domain
+		 */
+
+		gmep->type = SID_NAME_USER;
+		fstrcpy(gmep->nt_name, uidtoname(uid));
+		fstrcpy(gmep->unix_name, gmep->nt_name);
+
+		/*
 		 * here we should do a LsaLookupNames() call
 		 * to check the status of the name with the PDC.
 		 * if the PDC know nothing of the name, it's ours.
@@ -931,15 +1052,9 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 		}
 
 		/*
-		 * ok, it's one of ours.  we therefore "create" an nt user named
-		 * after the unix user.  this is the point where "appliance mode"
-		 * should get its teeth in, as unix users won't really exist,
-		 * they will only be numbers...
+		 * ok, it's one of ours.
 		 */
 
-		gmep->type = SID_NAME_USER;
-		fstrcpy(gmep->nt_name, uidtoname(uid));
-		fstrcpy(gmep->unix_name, gmep->nt_name);
 		gmep->nt_domain = global_sam_name;
 		pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid);
 
@@ -975,19 +1090,6 @@ BOOL lookupsmbpwntnam(char *fullntname, DOM_NAME_MAP *gmep)
 		gmep->nt_domain = nt_domain;
 
 		/*
-		 * here we should do a LsaLookupNames() call
-		 * to check the status of the name with the PDC.
-		 * if the PDC know nothing of the name, it's ours.
-		 */
-
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-#if 0
-			lsa_lookup_names(global_myworkgroup, gmep->nt_name, gmep->nt_domain, &gmep->sid...);
-#endif
-		}
-
-		/*
 		 * ok, it's one of ours.  we therefore "create" an nt user named
 		 * after the unix user.  this is the point where "appliance mode"
 		 * should get its teeth in, as unix users won't really exist,
@@ -1001,12 +1103,8 @@ BOOL lookupsmbpwntnam(char *fullntname, DOM_NAME_MAP *gmep)
 			return False;
 		}
 		gmep->unix_id = (uint32)uid;
-		if (!pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid))
-		{
-			return False;
-		}
 
-		return True;
+		return get_sid_and_type(fullntname, gmep->type, gmep);
 	}
 
 	/* oops. */
@@ -1042,7 +1140,7 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			lsa_lookup_sids(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
+			if (lookup_remote_sid(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
 #endif
 		}
 
@@ -1224,10 +1322,8 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 		}
 		fstrcpy(gmep->nt_name, gidtoname(gid));
 		fstrcpy(gmep->unix_name, gmep->nt_name);
-		gmep->nt_domain = global_sam_name;
-		pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid);
 
-		return True;
+		return get_sid_and_type(gmep->nt_name, gmep->type, gmep);
 	}
 
 	/* oops */
