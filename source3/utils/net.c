@@ -129,26 +129,23 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 	}
 }
 
-struct cli_state *net_make_ipc_connection(unsigned flags)
+static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
 {
-	char *server_name = NULL;
-	struct in_addr server_ip;
-	struct cli_state *cli;
 
 	if (opt_host) {
-		server_name = strdup(opt_host);
+		*server_name = strdup(opt_host);
 	}		
 
 	if (have_ip) {
-		server_ip = dest_ip;
-		if (!server_name) {
-			server_name = strdup(inet_ntoa(dest_ip));
+		*server_ip = dest_ip;
+		if (!*server_name) {
+			*server_name = strdup(inet_ntoa(dest_ip));
 		}
 	} else if (server_name) {
 		/* resolve the IP address */
-		if (!resolve_name(server_name, &server_ip, 0x20))  {
+		if (!resolve_name(*server_name, server_ip, 0x20))  {
 			DEBUG(1,("Unable to resolve server name\n"));
-			return NULL;
+			return False;
 		}
 	} else if (flags & NET_FLAGS_PDC) {
 		struct in_addr *ip_list;
@@ -156,18 +153,18 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 		if (get_dc_list(True /* PDC only*/, opt_target_workgroup, &ip_list, &addr_count)) {
 			fstring dc_name;
 			if (addr_count < 1) {
-				return NULL;
+				return False;
 			}
 			
-			server_ip = *ip_list;
+			*server_ip = *ip_list;
 			
-			if (is_zero_ip(server_ip))
-				return NULL;
+			if (is_zero_ip(*server_ip))
+				return False;
 			
-			if (!lookup_dc_name(global_myname, opt_target_workgroup, &server_ip, dc_name))
-				return NULL;
+			if (!lookup_dc_name(global_myname, opt_target_workgroup, server_ip, dc_name))
+				return False;
 				
-			server_name = strdup(dc_name);
+			*server_name = strdup(dc_name);
 		}
 		
 	} else if (flags & NET_FLAGS_DMB) {
@@ -175,32 +172,46 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
 		if (!resolve_name(opt_target_workgroup, &msbrow_ip, 0x1B))  {
 			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
-			return NULL;
+			return False;
 		} else {
-			server_ip = msbrow_ip;
+			*server_ip = msbrow_ip;
 		}
-		server_name = strdup(inet_ntoa(dest_ip));
+		*server_name = strdup(inet_ntoa(dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct in_addr brow_ips;
 		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
-			return NULL;
+			return False;
 		} else {
-			server_ip = brow_ips;
+			*server_ip = brow_ips;
 		}
-		server_name = strdup(inet_ntoa(dest_ip));
+		*server_name = strdup(inet_ntoa(dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
 		extern struct in_addr loopback_ip;
-		server_ip = loopback_ip;
-		server_name = strdup("127.0.0.1");
+		*server_ip = loopback_ip;
+		*server_name = strdup("127.0.0.1");
 	}
 
-	if (!server_name) {
+	if (!server_name || !*server_name) {
 		DEBUG(1,("no server to connect to\n"));
+		return False;
+	}
+
+	return True;
+}
+
+struct cli_state *net_make_ipc_connection(unsigned flags)
+{
+	char *server_name = NULL;
+	struct in_addr server_ip;
+	struct cli_state *cli;
+
+	if (!net_find_server(flags, &server_ip, &server_name)) {
+		d_printf("\nUnable to find a suitable server\n");
 		return NULL;
 	}
-
+	
 	cli = connect_to_ipc(&server_ip, server_name);
 	SAFE_FREE(server_name);
 	if(!cli) {
