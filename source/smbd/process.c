@@ -290,6 +290,7 @@ force write permissions on print services.
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
 #define QUEUE_IN_OPLOCK (1<<6)
+#define ALLOW_IN_KERNEL_OPLOCK (1<<7)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -309,13 +310,13 @@ struct smb_message_struct
 
    {SMBnegprot,"SMBnegprot",reply_negprot,0},
    {SMBtcon,"SMBtcon",reply_tcon,0},
-   {SMBtdis,"SMBtdis",reply_tdis,0},
+   {SMBtdis,"SMBtdis",reply_tdis,ALLOW_IN_KERNEL_OPLOCK},
    {SMBexit,"SMBexit",reply_exit,0},
    {SMBioctl,"SMBioctl",reply_ioctl,0},
    {SMBecho,"SMBecho",reply_echo,0},
    {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
    {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
+   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, ALLOW_IN_KERNEL_OPLOCK}, /* ulogoff doesn't give a valid TID */
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
@@ -327,9 +328,9 @@ struct smb_message_struct
    {SMBmknew,"SMBmknew",reply_mknew,AS_USER}, 
 
    {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
-   {SMBread,"SMBread",reply_read,AS_USER},
-   {SMBwrite,"SMBwrite",reply_write,AS_USER},
-   {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC},
+   {SMBread,"SMBread",reply_read,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBwrite,"SMBwrite",reply_write,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC | ALLOW_IN_KERNEL_OPLOCK},
    {SMBmkdir,"SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
    {SMBrmdir,"SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
    {SMBdskattr,"SMBdskattr",reply_dskattr,AS_USER},
@@ -339,33 +340,33 @@ struct smb_message_struct
       changing of the root path */
    {pSETDIR,"pSETDIR",reply_setdir,AS_USER}, 
 
-   {SMBlseek,"SMBlseek",reply_lseek,AS_USER},
-   {SMBflush,"SMBflush",reply_flush,AS_USER},
+   {SMBlseek,"SMBlseek",reply_lseek,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBflush,"SMBflush",reply_flush,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
    {SMBctemp,"SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
    {SMBsplopen,"SMBsplopen",reply_printopen,AS_USER | QUEUE_IN_OPLOCK },
    {SMBsplclose,"SMBsplclose",reply_printclose,AS_USER},
    {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER},
    {SMBsplwr,"SMBsplwr",reply_printwrite,AS_USER},
-   {SMBlock,"SMBlock",reply_lock,AS_USER},
-   {SMBunlock,"SMBunlock",reply_unlock,AS_USER},
+   {SMBlock,"SMBlock",reply_lock,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBunlock,"SMBunlock",reply_unlock,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
    
    /* CORE+ PROTOCOL FOLLOWS */
    
-   {SMBreadbraw,"SMBreadbraw",reply_readbraw,AS_USER},
-   {SMBwritebraw,"SMBwritebraw",reply_writebraw,AS_USER},
-   {SMBwriteclose,"SMBwriteclose",reply_writeclose,AS_USER},
-   {SMBlockread,"SMBlockread",reply_lockread,AS_USER},
-   {SMBwriteunlock,"SMBwriteunlock",reply_writeunlock,AS_USER},
+   {SMBreadbraw,"SMBreadbraw",reply_readbraw,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBwritebraw,"SMBwritebraw",reply_writebraw,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBwriteclose,"SMBwriteclose",reply_writeclose,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBlockread,"SMBlockread",reply_lockread,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
+   {SMBwriteunlock,"SMBwriteunlock",reply_writeunlock,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
    
    /* LANMAN1.0 PROTOCOL FOLLOWS */
    
-   {SMBreadBmpx,"SMBreadBmpx",reply_readbmpx,AS_USER},
+   {SMBreadBmpx,"SMBreadBmpx",reply_readbmpx,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
    {SMBreadBs,"SMBreadBs",NULL,AS_USER},
-   {SMBwriteBmpx,"SMBwriteBmpx",reply_writebmpx,AS_USER},
+   {SMBwriteBmpx,"SMBwriteBmpx",reply_writebmpx,AS_USER|ALLOW_IN_KERNEL_OPLOCK},
    {SMBwriteBs,"SMBwriteBs",reply_writebs,AS_USER},
    {SMBwritec,"SMBwritec",NULL,AS_USER},
-   {SMBsetattrE,"SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE},
-   {SMBgetattrE,"SMBgetattrE",reply_getattrE,AS_USER},
+   {SMBsetattrE,"SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE | ALLOW_IN_KERNEL_OPLOCK},
+   {SMBgetattrE,"SMBgetattrE",reply_getattrE,AS_USER | ALLOW_IN_KERNEL_OPLOCK},
    {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
    {SMBtranss,"SMBtranss",NULL,AS_USER | CAN_IPC},
    {SMBioctls,"SMBioctls",NULL,AS_USER},
@@ -373,9 +374,9 @@ struct smb_message_struct
    {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
    
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
-   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
-   {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
-   {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
+   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC | ALLOW_IN_KERNEL_OPLOCK},
+   {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC | ALLOW_IN_KERNEL_OPLOCK},
+   {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER | ALLOW_IN_KERNEL_OPLOCK},
    
    {SMBffirst,"SMBffirst",reply_search,AS_USER},
    {SMBfunique,"SMBfunique",reply_search,AS_USER},
@@ -446,19 +447,23 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   {
     DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
 
-    if(global_oplock_break && (smb_messages[match].flags & QUEUE_IN_OPLOCK))
+    if(global_oplock_break)
     {
-      /* 
-       * Queue this message as we are the process of an oplock break.
-       */
+      int flags = smb_messages[match].flags;
 
-      DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
-      DEBUGADD( 2, ( "oplock break state.\n" ) );
+      if((flags & QUEUE_IN_OPLOCK) || (lp_kernel_oplocks() && !(flags & ALLOW_IN_KERNEL_OPLOCK)))
+      {
+        /* 
+         * Queue this message as we are the process of an oplock break.
+         */
 
-      push_oplock_pending_smb_message( inbuf, size );
-      return -1;
-    }          
+        DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
+        DEBUGADD( 2, ( "oplock break state.\n" ) );
 
+        push_oplock_pending_smb_message( inbuf, size );
+        return -1;
+      }          
+    }
     if (smb_messages[match].fn)
     {
       int flags = smb_messages[match].flags;

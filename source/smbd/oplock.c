@@ -35,6 +35,8 @@ static int oplock_pipe_write = -1;
 static int32 global_oplocks_open = 0;
 BOOL global_oplock_break = False;
 
+static files_struct *file_awaiting_break = NULL;
+
 extern int smb_read_error;
 
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
@@ -46,6 +48,39 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
 int32 get_number_of_open_oplocks(void)
 {
   return global_oplocks_open;
+}
+
+/****************************************************************************
+ Check to see if we can accept a request whilst in the kernel oplock
+ break state for this file.
+****************************************************************************/
+
+BOOL defer_processing_due_to_kernel_oplock(files_struct *fsp)
+{
+#if !defined(HAVE_KERNEL_OPLOCKS)
+  return False; /* Never defer. */
+#else /* HAVE_KERNEL_OPLOCKS */
+
+  /*
+   * Not in break state or kernel oplocks not turned on.
+   */
+
+  if(!global_oplock_break || !lp_kernel_oplocks())
+    return False;
+
+  /*
+   * We can process requests on the file awaiting 
+   * break reply.
+   */
+
+  if(file_awaiting_break == fsp)
+    return False;
+
+  /*
+   * But not requests on any other file.
+   */
+  return True;
+#endif /* HAVE_KERNEL_OPLOCKS */
 }
 
 /****************************************************************************
@@ -714,6 +749,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   /* We need this in case a readraw crosses on the wire. */
   global_oplock_break = True;
  
+  file_awaiting_break = fsp;
+
   /* Process incoming messages. */
 
   /* JRA - If we don't get a break from the client in OPLOCK_BREAK_TIMEOUT
@@ -743,7 +780,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 
       if (smb_read_error == READ_TIMEOUT && timeout == 200) {
         send_null_session_msg(Client);
-        timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
+        timeout = ((OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000) -
+                    ((OPLOCK_BREAK_RESENDS - break_counter)*200);
         continue;
       }
 
@@ -758,10 +796,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
         DEBUG(0, ( "oplock_break resend\n" ) );
         send_smb(Client, outbuf);
 
-        if(get_remote_arch() == RA_WIN95) {
-          msleep(200);
-          send_null_session_msg(Client);
-        }
+        if(get_remote_arch() == RA_WIN95)
+          timeout = 200;
         continue;
       }
 
@@ -840,6 +876,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   /* We need this in case a readraw crossed on the wire. */
   if(global_oplock_break)
     global_oplock_break = False;
+
+  file_awaiting_break = NULL;
 
   /*
    * If the client did not respond we must die.

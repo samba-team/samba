@@ -2460,6 +2460,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 int32 get_number_of_open_oplocks(void);
+BOOL defer_processing_due_to_kernel_oplock(files_struct *fsp);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
@@ -2552,23 +2553,23 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
 int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
-int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
-int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,int dum_buffsize);
+int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize);
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
-int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_exit(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_close(connection_struct *conn,
-		char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
+                int dum_buffsize);
 int reply_writeclose(connection_struct *conn,
-		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+		     char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_lock(connection_struct *conn,
 	       char *inbuf,char *outbuf, int length, int dum_buffsize);
-int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_tdis(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_echo(connection_struct *conn,
@@ -2593,10 +2594,10 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
 SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
-int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 
 /*The following definitions come from  smbd/server.c  */
 
