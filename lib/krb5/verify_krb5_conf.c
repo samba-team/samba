@@ -479,7 +479,6 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_config_section *tmp_cf;
     int optind = 0;
-    int i;
 
     setprogname (argv[0]);
 
