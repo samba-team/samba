@@ -367,9 +367,11 @@ static void api_net_srv_pwset( int uid,
 	NET_Q_SRV_PWSET q_a;
 	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
 	DOM_CRED srv_cred;
-        pstring mach_acct;
+#ifdef ALLOW_SRV_PWSET
+	pstring mach_acct;
 	struct smb_passwd *smb_pass;
 	BOOL ret;
+#endif
 	user_struct *vuser;
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
@@ -385,6 +387,8 @@ static void api_net_srv_pwset( int uid,
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
+#ifdef ALLOW_SRV_PWSET
+
 		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
 									q_a.clnt_id.login.uni_acct_name.uni_str_len));
 
@@ -397,26 +401,33 @@ static void api_net_srv_pwset( int uid,
 		if (smb_pass != NULL)
 		{
 			unsigned char pwd[16];
+			uint8 mode = 2;
 
 			memcpy(pwd, q_a.pwd, 16);
 
-			/* lies!  nt and lm passwords are _not_ the same: don't care */
-			smb_pass->smb_passwd    = pwd;
-			smb_pass->smb_nt_passwd = pwd;
-			smb_pass->acct_ctrl     = ACB_WSTRUST;
-
-			become_root(True);
-			ret = mod_smbpwd_entry(smb_pass);
-			unbecome_root(True);
-
-			if (ret)
+			if (obfuscate_pwd(pwd, vuser->dc.sess_key, mode))
 			{
-				/* hooray! */
-				status = 0x0;
+				/* lies!  nt and lm passwords are _not_ the same: don't care */
+				smb_pass->smb_passwd    = pwd;
+				smb_pass->smb_nt_passwd = pwd;
+				smb_pass->acct_ctrl     = ACB_WSTRUST;
+
+				become_root(True);
+				ret = mod_smbpwd_entry(smb_pass);
+				unbecome_root(True);
+
+				if (ret)
+				{
+					/* hooray! */
+					status = 0x0;
+				}
 			}
 		}
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
+#else
+		DEBUG(5,("api_net_srv_pwset: server password set being denied\n"));
+#endif
 
 	}
 	else
