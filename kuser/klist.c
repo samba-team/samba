@@ -475,7 +475,7 @@ static void
 display_tokens(int do_verbose)
 {
     u_int32_t i;
-    unsigned char t[128];
+    unsigned char t[4096];
     struct ViceIoctl parms;
 
     parms.in = (void *)&i;
@@ -496,11 +496,20 @@ display_tokens(int do_verbose)
 		break;
 	    continue;
 	}
+	if(parms.out_size >= sizeof(t))
+	    continue;
+	if(parms.out_size < sizeof(size_secret_tok))
+	    continue;
+	t[parms.out_size] = 0;
 	memcpy(&size_secret_tok, r, sizeof(size_secret_tok));
 	/* dont bother about the secret token */
 	r += size_secret_tok + sizeof(size_secret_tok);
+	if (parms.out_size < (r - t) + sizeof(size_public_tok))
+	    continue;
 	memcpy(&size_public_tok, r, sizeof(size_public_tok));
 	r += sizeof(size_public_tok);
+	if (parms.out_size < (r - t) + size_public_tok + sizeof(int32_t))
+	    continue;
 	memcpy(&ct, r, size_public_tok);
 	r += size_public_tok;
 	/* there is a int32_t with length of cellname, but we dont read it */
@@ -509,19 +518,19 @@ display_tokens(int do_verbose)
 
 	gettimeofday (&tv, NULL);
 	strlcpy (buf1, printable_time(ct.BeginTimestamp),
-			 sizeof(buf1));
+		 sizeof(buf1));
 	if (do_verbose || tv.tv_sec < ct.EndTimestamp)
 	    strlcpy (buf2, printable_time(ct.EndTimestamp),
-			     sizeof(buf2));
+		     sizeof(buf2));
 	else
 	    strlcpy (buf2, ">>> Expired <<<", sizeof(buf2));
 
 	printf("%s  %s  ", buf1, buf2);
 
 	if ((ct.EndTimestamp - ct.BeginTimestamp) & 1)
-	  printf("User's (AFS ID %d) tokens for %s", ct.ViceId, cell);
+	    printf("User's (AFS ID %d) tokens for %s", ct.ViceId, cell);
 	else
-	  printf("Tokens for %s", cell);
+	    printf("Tokens for %s", cell);
 	if (do_verbose)
 	    printf(" (%d)", ct.AuthHandle);
 	putchar('\n');
