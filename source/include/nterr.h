@@ -1,12 +1,13 @@
 /* Win32 Status codes. */
 
-#define STATUS_BUFFER_OVERFLOW            (5)
-#define STATUS_MORE_ENTRIES           (0x105)
 #define ERROR_ALREADY_EXISTS		 (80)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
-#define STATUS_1804	               (1804)
-#define STATUS_NOTIFY_ENUM_DIR (0x10C)
+#define ERROR_INVALID_DATATYPE	       (1804)
+
+#define STATUS_BUFFER_OVERFLOW            (5)
+#define STATUS_MORE_ENTRIES             (261)
+#define STATUS_NOTIFY_ENUM_DIR          (268)
 
 
 /* these are the NT error codes less than 1000. They are here for when
