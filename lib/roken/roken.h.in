@@ -114,9 +114,8 @@ struct sockaddr_dl;
 #include <paths.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
+ROKEN_CPP_START
 
 #ifndef ROKEN_LIB_FUNCTION
 #if defined(__BORLANDC__)
@@ -357,6 +356,25 @@ mkstemp(char *template);
 void pidfile (const char*);
 #endif
 
+#ifndef HAVE_STSVIS
+int strsvis(char *, const char*, int, const char *extra);
+#endif
+#ifndef HAVE_STRSVISX
+int strsvisx(char*, const char*, size_t, int, const char*);
+#endif
+#ifndef HAVE_STRVIS
+int strvis(char*, const char*, int);
+#endif
+#ifndef HAVE_STRVISX
+int strvisx(char*, const char*, size_t, int);
+#endif
+#ifndef HAVE_SVIS
+char *svis(char*, int, int, int, const char *);
+#endif
+#ifndef HAVE_VIS
+char *vis(char*, int, int, int);
+#endif
+
 #ifndef HAVE_FLOCK
 #ifndef LOCK_SH
 #define LOCK_SH   1		/* Shared lock */
@@ -595,6 +613,4 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 void set_progname(char *argv0);
 const char *get_progname(void);
 
-#ifdef __cplusplus
-}
-#endif
+_rk_cpp_end
