@@ -318,7 +318,7 @@ static void set_admin_user(connection_struct *conn)
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
-connection_struct *make_connection(char *service,char *user,char *password, 
+connection_struct *make_connection(char *service,char *password, 
 				   int pwlen, char *dev,uint16 vuid, NTSTATUS *status)
 {
 	int snum;
@@ -326,7 +326,8 @@ connection_struct *make_connection(char *service,char *user,char *password,
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
-	int ret;
+
+	fstring user;
 
 	strlower(service);
 
@@ -345,28 +346,20 @@ connection_struct *make_connection(char *service,char *user,char *password,
 	}
 
 	if (strequal(service,HOMES_NAME)) {
-		if (*user && Get_Pwnam(user,True)) {
-			fstring dos_username;
-			fstrcpy(dos_username, user);
-			return(make_connection(dos_username,user,password,
-					       pwlen,dev,vuid,status));
-		}
-
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
-				fstring dos_username;
-				fstrcpy(user,validated_username(vuid));
-				fstrcpy(dos_username, user);
-				return(make_connection(dos_username,user,password,pwlen,dev,vuid,status));
+				fstring unix_username;
+				fstrcpy(unix_username,validated_username(vuid));
+				return(make_connection(unix_username,password,pwlen,dev,vuid,status));
 			}
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
 			if(*current_user_info.smb_name) {
-				fstring dos_username;
-				fstrcpy(user,current_user_info.smb_name);
-				fstrcpy(dos_username, user);
-				return(make_connection(dos_username,user,password,pwlen,dev,vuid,status));
+				fstring unix_username;
+				fstrcpy(unix_username,current_user_info.smb_name);
+				map_username(unix_username);
+				return(make_connection(unix_username,password,pwlen,dev,vuid,status));
 			}
 		}
 	}
@@ -375,14 +368,12 @@ connection_struct *make_connection(char *service,char *user,char *password,
 		return NULL;
 	}	
 
-	/* lowercase the user name */
-	strlower(user);
-
 	/* add it as a possible user name if we 
 	   are in share mode security */
 	if (lp_security() == SEC_SHARE) {
 		add_session_user(service);
 	}
+
 
 	/* shall we let them in? */
 	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
@@ -574,6 +565,7 @@ connection_struct *make_connection(char *service,char *user,char *password,
 		
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn))) {
+		int ret;
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
@@ -630,6 +622,7 @@ connection_struct *make_connection(char *service,char *user,char *password,
 		
 	/* execute any "preexec = " line */
 	if (*lp_preexec(SNUM(conn))) {
+		int ret;
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);

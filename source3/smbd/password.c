@@ -470,14 +470,6 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	*/
 
 	if (!(GUEST_ONLY(snum) && GUEST_OK(snum))) {
-		/* check the given username and password */
-		if (!ok && (*user) && user_ok(user,snum)) {
-			ok = password_ok(user,password, pwlen);
-			if (ok)
-				DEBUG(3,("authorise_login: ACCEPTED: given username (%s) password ok\n",
-						user ));
-		}
-
 		/* check for a previously registered guest username */
 		if (!ok && (vuser != 0) && vuser->guest) {	  
 			if (user_ok(vuser->user.unix_name,snum) &&
