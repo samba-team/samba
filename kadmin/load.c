@@ -36,7 +36,8 @@
  * SUCH DAMAGE. 
  */
 
-#include "admin_locl.h"
+#include "kadmin_locl.h"
+#include <kadm5/private.h>
 
 RCSID("$Id$");
 
@@ -192,6 +193,7 @@ doit(char *filename, int merge)
     int flags = O_RDWR;
     struct entry e;
     hdb_entry ent;
+    HDB *db = _kadm5_s_get_db(kadm_handle);
 
     f = fopen(filename, "r");
     if(f == NULL){

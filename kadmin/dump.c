@@ -36,7 +36,8 @@
  * SUCH DAMAGE. 
  */
 
-#include "admin_locl.h"
+#include "kadmin_locl.h"
+#include <kadm5/private.h>
 
 RCSID("$Id$");
 
@@ -71,6 +72,29 @@ append_hex(char *str, krb5_data *data)
 	sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
     strcat(str, p);
     free(p);
+}
+
+char *
+time2str(time_t t)
+{
+    static char buf[128];
+    strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", gmtime(&t));
+    return buf;
+}
+
+void
+event2string(Event *ev, char **str)
+{
+    char *p;
+    char *pr;
+    if(ev == NULL){
+	*str = strdup("-");
+	return;
+    }
+    krb5_unparse_name(context, ev->principal, &pr);
+    asprintf(&p, "%s:%s", time2str(ev->time), pr);
+    free(pr);
+    *str = p;
 }
 
 static int
@@ -171,6 +195,8 @@ dump(int argc, char **argv)
 {
     krb5_error_code ret;
     FILE *f;
+
+    HDB *db = _kadm5_s_get_db(kadm_handle);
 
     if(argc < 2)
 	f = stdout;
