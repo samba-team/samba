@@ -20,21 +20,54 @@
 
 #include "includes.h"
 
+/* find a domain pdc generic */
+static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
+{
+	BOOL ret;
+	struct in_addr ip;
+
+	ret = get_pdc_ip(mem_ctx, r->generic.in.domain_name, &ip);
+	if (!ret) {
+		/* fallback to a workstation name */
+		ret = resolve_name(mem_ctx, r->generic.in.domain_name, &ip, 0x20);
+		if (!ret) {
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
+	}
+
+	r->generic.out.pdc_name = talloc_strdup(mem_ctx, inet_ntoa(ip));
+
+	return NT_STATUS_OK;
+}
+
+/* find a domain pdc */
+NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
+{
+	switch (r->generic.level) {
+		case LIBNET_FIND_PDC_GENERIC:
+			return libnet_find_pdc_generic(ctx, mem_ctx, r);
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
 /* connect to a dcerpc interface of a domains PDC */
-NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	NTSTATUS status;
 	const char *binding = NULL;
-	const char *pdc = NULL;
+	union libnet_find_pdc f;
 
-	/* TODO: find real PDC!
-	 * 	 for now I use the  lp_netbios_name()
-	 *	 that's the most important for me as we don't have
-	 *	 smbpasswd in samba4 (and this is good!:-) --metze
-	 */
-	pdc = lp_netbios_name();
+	f.generic.level			= LIBNET_FIND_PDC_GENERIC;
+	f.generic.in.domain_name	= r->pdc.in.domain_name;
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",pdc);
+	status = libnet_find_pdc(ctx, mem_ctx, &f);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",
+					f.generic.out.pdc_name);
 
 	status = dcerpc_pipe_connect(&r->pdc.out.dcerpc_pipe,
 					binding,
