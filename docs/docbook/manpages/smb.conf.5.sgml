@@ -6623,8 +6623,6 @@
 
 
 		<varlistentry>
-
-		<varlistentry>
 		<term><anchor id="SMBPASSWDFILE">smb passwd file (G)</term>
 		<listitem><para>This option sets the path to the encrypted 
  		smbpasswd file.  By default the path to the smbpasswd file 
