@@ -40,31 +40,86 @@
 
 RCSID("$Id$");
 
-char *
-time2str(time_t t)
+
+int
+hdb_entry2string(hdb_entry *ent, char **str)
 {
-    static char s[32];
-    struct tm *tm;
-    tm = gmtime(&t);
-    strftime(s, sizeof(s), "%Y%m%d%H%M%S", tm);
-    return s;
+    char *p;
+    char buf[1024] = "";
+    int i, j;
+    krb5_unparse_name(context, ent->principal, &p);
+    strcat(buf, p);
+    strcat(buf, " ");
+    free(p);
+    asprintf(&p, "%d", ent->kvno);
+    strcat(buf, p);
+    free(p);
+    for(i = 0; i < ent->keys.len; i++){
+	asprintf(&p, ":%d:%d:", 
+		 ent->keys.val[i].mkvno, 
+		 ent->keys.val[i].key.keytype);
+	strcat(buf, p);
+	free(p);
+	for(j = 0; j < ent->keys.val[i].key.keyvalue.length; j++){
+	    asprintf(&p, "%02x", 
+		     ((unsigned char*)ent->keys.val[i].key.keyvalue.data)[j]);
+	    strcat(buf, p);
+	    free(p);
+	}
+    }
+    strcat(buf, " ");
+    event2string(&ent->created_by, &p);
+    strcat(buf, p);
+    strcat(buf, " ");
+    free(p);
+    event2string(ent->modified_by, &p);
+    strcat(buf, p);
+    strcat(buf, " ");
+    free(p);
+
+    if(ent->valid_start)
+	strcat(buf, time2str(*ent->valid_start));
+    else
+	strcat(buf, "-");
+
+    strcat(buf, " ");
+    if(ent->valid_end)
+	strcat(buf, time2str(*ent->valid_end));
+    else
+	strcat(buf, "-");
+
+    strcat(buf, " ");
+    if(ent->pw_end)
+	strcat(buf, time2str(*ent->pw_end));
+    else
+	strcat(buf, "-");
+
+    strcat(buf, " ");
+    if(ent->max_life){
+	asprintf(&p, "%d", *ent->max_life);
+	strcat(buf, p);
+	free(p);
+    }else
+	strcat(buf, "-");
+
+    strcat(buf, " ");
+    if(ent->max_renew){
+	asprintf(&p, "%d", *ent->max_renew);
+	strcat(buf, p);
+	free(p);
+    }else
+	strcat(buf, "-");
+    
+    strcat(buf, " ");
+    asprintf(&p, "%d", flags2int(&ent->flags));
+    strcat(buf, p);
+    free(p);
+
+    *str = strdup(buf);
+    
+    return 0;
 }
 
-char *
-key2str(krb5_keyblock *key)
-{
-    static char *s;
-    unsigned char *p;
-    int i;
-    if(s)
-	free(s);
-    s = malloc(key->keyvalue.length*2+10);
-    sprintf(s, "%d:", key->keytype);
-    p = (unsigned char*)key->keyvalue.data;
-    for(i = 0; i < key->keyvalue.length; i++)
-	sprintf(s + strlen(s), "%02x", p[i]);
-    return s;
-}
 
 int
 dump(int argc, char **argv)
@@ -91,19 +146,8 @@ dump(int argc, char **argv)
     err = db->firstkey(context, db, &ent);
     while(err == 0){
 	char *p;
-	krb5_unparse_name(context, ent.principal, &p);
-	fprintf(f, "%s ", p);
-	free(p);
-	fprintf(f, "%d:%s", ent.kvno, key2str(&ent.keyblock));
-	fprintf(f, " %d %d %s", 
-		ent.max_life, 
-		ent.max_renew, 
-		time2str(ent.last_change));
-	krb5_unparse_name(context, ent.changed_by, &p);
-	fprintf(f, " %s %s %d\n", 
-		p,
-		time2str(ent.expires),
-		ent.flags.i);
+	hdb_entry2string(&ent, &p);
+	fprintf(f, "%s\n", p);
 	free(p);
 	hdb_free_entry(context, &ent);
 	err = db->nextkey(context, db, &ent);
