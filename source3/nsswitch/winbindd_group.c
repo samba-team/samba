@@ -918,7 +918,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	DOM_SID user_sid;
 	enum SID_NAME_USE name_type;
 	uint32 user_rid, num_groups, num_gids;
-	DOM_GID *user_groups = NULL;
+	NTSTATUS status;
+	uint32 *user_gids;
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
 	gid_t *gid_list;
@@ -967,9 +968,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	if (!winbindd_lookup_usergroups(domain, mem_ctx, user_rid, 
-                                        &num_groups, &user_groups))
-		goto done;
+	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &user_gids);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* Copy data back to client */
 
@@ -980,12 +980,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 
 	for (i = 0; i < num_groups; i++) {
-		if (!winbindd_idmap_get_gid_from_rid(
-			domain->name, user_groups[i].g_rid, 
-			&gid_list[num_gids])) {
-
-			DEBUG(1, ("unable to convert group rid %d to gid\n", 
-				  user_groups[i].g_rid));
+		if (!winbindd_idmap_get_gid_from_rid(domain->name, user_gids[i], &gid_list[num_gids])) {
+			DEBUG(1, ("unable to convert group rid %d to gid\n", user_gids[i]));
 			continue;
 		}
 			

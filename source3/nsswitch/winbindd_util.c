@@ -478,62 +478,6 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	return rv;
 }
 
-/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
-
-BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
-                                TALLOC_CTX *mem_ctx,
-				uint32 user_rid, uint32 *num_groups,
-				DOM_GID **user_groups)
-{
-	CLI_POLICY_HND *hnd;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol, user_pol;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	BOOL got_dom_pol = False, got_user_pol = False;
-
-	/* Get sam handle */
-
-	if (!(hnd = cm_get_sam_handle(domain->name)))
-		goto done;
-
-	/* Get domain handle */
-
-	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-					des_access, &domain->sid, &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_dom_pol = True;
-
-	/* Get user handle */
-
-	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
-					des_access, user_rid, &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_user_pol = True;
-
-	/* Query user rids */
-
-	result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
-					num_groups, user_groups);
-
- done:
-
-	/* Clean up policy handles */
-
-	if (got_user_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
-
-	if (got_dom_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-	return NT_STATUS_IS_OK(result);
-}
-
 /* Lookup group membership given a rid.   */
 
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,

@@ -116,6 +116,11 @@ struct winbindd_methods {
 			       TALLOC_CTX *mem_ctx, 
 			       const char *user_name, uint32 user_rid, 
 			       WINBIND_USERINFO *user_info);
+
+	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      uint32 user_rid, uint32 *num_groups,
+				      uint32 **user_gids);
 };
 
 /* Structures to hold per domain information */
