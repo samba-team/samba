@@ -3,7 +3,7 @@
 @chapter Introduction
 
 @quotation
-@strong{Caution:} this is beta quality software. If something doesn't
+@strong{Caution:} this is alpha quality software. If something doesn't
 work, it's probably because it doesn't. Don't be surprised if your
 computer suffers a melt-down.
 @end quotation
@@ -22,6 +22,11 @@ be protocol compatible with existing implementations and, if not in
 conflict, with RFC 1510 (and any future updated RFC)
 @item
 be somewhat compatible with the M.I.T Kerberos V5 API
+@item
+have support for kerberosV5 over GSS-API
+@item
+include the most important and useful application programs (rsh, telnet,
+popper, etc.)
 @end itemize
 
 This initial pre-version is mostly compatible with the M.I.T
@@ -35,10 +40,14 @@ works):
 
 @itemize @bullet
 @item
-there is a complete library to encode/decode/whatever ASN.1 stuff
+there is a stub generator and a library to encode/decode/whatever ASN.1/DER
+stuff
 @item
 a @code{libkrb5} library that should be possible to get to work with
 simple applications
+@item
+a GSS-API library that doesn't have all functions implemented but should
+have all the important ones for building applications that use it
 @item
 Eric Young's @file{libdes}
 @item
@@ -47,6 +56,8 @@ Eric Young's @file{libdes}
 @file{telnet}, @file{telnetd}
 @item
 @file{rsh}, @file{rshd}
+@item
+some simple test programs
 @item
 a simple KDC
 @item
