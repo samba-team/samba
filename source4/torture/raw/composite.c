@@ -26,7 +26,7 @@
 
 #define BASEDIR "\\composite"
 
-static void loadfile_complete(struct smbcli_composite *c)
+static void loadfile_complete(struct composite_context *c)
 {
 	int *count = talloc_get_type(c->async.private, int);
 	(*count)++;
@@ -41,7 +41,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct smb_composite_savefile io1;
 	struct smb_composite_loadfile io2;
-	struct smbcli_composite **c;
+	struct composite_context **c;
 	char *data;
 	size_t len = random() % 100000;
 	const int num_ops = 50;
@@ -68,7 +68,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing parallel loadfile with %d ops\n", num_ops);
 
-	c = talloc_array(mem_ctx, struct smbcli_composite *, num_ops);
+	c = talloc_array(mem_ctx, struct composite_context *, num_ops);
 
 	for (i=0;i<num_ops;i++) {
 		c[i] = smb_composite_loadfile_send(cli->tree, &io2);
@@ -117,7 +117,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct smb_composite_savefile io1;
 	struct smb_composite_fetchfile io2;
-	struct smbcli_composite **c;
+	struct composite_context **c;
 	char *data;
 	int i;
 	size_t len = random() % 10000;
@@ -156,7 +156,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);
 
 	event_ctx = event_context_init(mem_ctx);
-	c = talloc_array(mem_ctx, struct smbcli_composite *, torture_numops);
+	c = talloc_array(mem_ctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {
 		c[i] = smb_composite_fetchfile_send(&io2, event_ctx);

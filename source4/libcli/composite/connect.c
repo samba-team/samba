@@ -42,17 +42,17 @@ struct connect_state {
 	union smb_tcon *io_tcon;
 	struct smb_composite_sesssetup *io_setup;
 	struct smbcli_request *req;
-	struct smbcli_composite *creq;
+	struct composite_context *creq;
 };
 
 
 static void request_handler(struct smbcli_request *);
-static void composite_handler(struct smbcli_composite *);
+static void composite_handler(struct composite_context *);
 
 /*
   setup a negprot send 
 */
-static NTSTATUS connect_send_negprot(struct smbcli_composite *c, 
+static NTSTATUS connect_send_negprot(struct composite_context *c, 
 				     struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -71,7 +71,7 @@ static NTSTATUS connect_send_negprot(struct smbcli_composite *c,
 /*
   a tree connect request has competed
 */
-static NTSTATUS connect_tcon(struct smbcli_composite *c, 
+static NTSTATUS connect_tcon(struct composite_context *c, 
 			     struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -100,7 +100,7 @@ static NTSTATUS connect_tcon(struct smbcli_composite *c,
 /*
   a session setup request has competed
 */
-static NTSTATUS connect_session_setup(struct smbcli_composite *c, 
+static NTSTATUS connect_session_setup(struct composite_context *c, 
 				      struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -147,7 +147,7 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 /*
   a negprot request has competed
 */
-static NTSTATUS connect_negprot(struct smbcli_composite *c, 
+static NTSTATUS connect_negprot(struct composite_context *c, 
 				struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -184,7 +184,7 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 /*
   a session request operation has competed
 */
-static NTSTATUS connect_session_request(struct smbcli_composite *c, 
+static NTSTATUS connect_session_request(struct composite_context *c, 
 					struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -200,7 +200,7 @@ static NTSTATUS connect_session_request(struct smbcli_composite *c,
 /*
   a socket connection operation has competed
 */
-static NTSTATUS connect_socket(struct smbcli_composite *c, 
+static NTSTATUS connect_socket(struct composite_context *c, 
 			       struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -244,7 +244,7 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 /*
   called when name resolution is finished
 */
-static NTSTATUS connect_resolve(struct smbcli_composite *c, 
+static NTSTATUS connect_resolve(struct composite_context *c, 
 				struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -268,7 +268,7 @@ static NTSTATUS connect_resolve(struct smbcli_composite *c,
 /*
   handle and dispatch state transitions
 */
-static void state_handler(struct smbcli_composite *c)
+static void state_handler(struct composite_context *c)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 
@@ -309,32 +309,32 @@ static void state_handler(struct smbcli_composite *c)
 */
 static void request_handler(struct smbcli_request *req)
 {
-	struct smbcli_composite *c = talloc_get_type(req->async.private, 
-						     struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						     struct composite_context);
 	return state_handler(c);
 }
 
 /*
   handler for completion of a smbcli_composite sub-request
 */
-static void composite_handler(struct smbcli_composite *req)
+static void composite_handler(struct composite_context *req)
 {
-	struct smbcli_composite *c = talloc_get_type(req->async.private, 
-						     struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						     struct composite_context);
 	return state_handler(c);
 }
 
 /*
   a function to establish a smbcli_tree from scratch
 */
-struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect *io,
+struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
 						    struct event_context *event_ctx)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct connect_state *state;
 	struct nbt_name name;
 
-	c = talloc_zero(NULL, struct smbcli_composite);
+	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct connect_state);
@@ -369,11 +369,11 @@ failed:
 /*
   recv half of async composite connect code
 */
-NTSTATUS smb_composite_connect_recv(struct smbcli_composite *c, TALLOC_CTX *mem_ctx)
+NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct connect_state *state = talloc_get_type(c->private, struct connect_state);
@@ -389,6 +389,6 @@ NTSTATUS smb_composite_connect_recv(struct smbcli_composite *c, TALLOC_CTX *mem_
 */
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_composite *c = smb_composite_connect_send(io, NULL);
+	struct composite_context *c = smb_composite_connect_send(io, NULL);
 	return smb_composite_connect_recv(c, mem_ctx);
 }

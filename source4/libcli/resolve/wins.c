@@ -28,7 +28,7 @@
 /*
   wins name resolution method - async send
  */
-struct smbcli_composite *resolve_name_wins_send(struct nbt_name *name, 
+struct composite_context *resolve_name_wins_send(struct nbt_name *name, 
 						 struct event_context *event_ctx)
 {
 	const char **address_list = lp_wins_server_list();
@@ -39,7 +39,7 @@ struct smbcli_composite *resolve_name_wins_send(struct nbt_name *name,
 /*
   wins name resolution method - recv side
  */
-NTSTATUS resolve_name_wins_recv(struct smbcli_composite *c, 
+NTSTATUS resolve_name_wins_recv(struct composite_context *c, 
 				 TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
@@ -52,7 +52,7 @@ NTSTATUS resolve_name_wins(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct smbcli_composite *c = resolve_name_wins_send(name, NULL);
+	struct composite_context *c = resolve_name_wins_send(name, NULL);
 	return resolve_name_wins_recv(c, mem_ctx, reply_addr);
 }
 

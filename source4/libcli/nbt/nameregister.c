@@ -158,7 +158,7 @@ struct register_bcast_state {
 */
 static void name_register_handler(struct nbt_name_request *req)
 {
-	struct smbcli_composite *c = talloc_get_type(req->async.private, struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(req->async.private, struct composite_context);
 	struct register_bcast_state *state = talloc_get_type(c->private, struct register_bcast_state);
 	NTSTATUS status;
 
@@ -207,13 +207,13 @@ done:
 /*
   the async send call for a 4 stage name registration
 */
-struct smbcli_composite *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
+struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
 						      struct nbt_name_register_bcast *io)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct register_bcast_state *state;
 
-	c = talloc_zero(nbtsock, struct smbcli_composite);
+	c = talloc_zero(nbtsock, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct register_bcast_state);
@@ -254,10 +254,10 @@ failed:
 /*
   broadcast 4 part name register - recv
 */
-NTSTATUS nbt_name_register_bcast_recv(struct smbcli_composite *c)
+NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c)
 {
 	NTSTATUS status;
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 	talloc_free(c);
 	return status;
 }
@@ -268,6 +268,6 @@ NTSTATUS nbt_name_register_bcast_recv(struct smbcli_composite *c)
 NTSTATUS nbt_name_register_bcast(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_register_bcast *io)
 {
-	struct smbcli_composite *c = nbt_name_register_bcast_send(nbtsock, io);
+	struct composite_context *c = nbt_name_register_bcast_send(nbtsock, io);
 	return nbt_name_register_bcast_recv(c);
 }
