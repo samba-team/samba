@@ -391,6 +391,25 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 
 #endif
 
+static time_t ldapsam_get_entry_timestamp(
+	struct ldapsam_privates *ldap_state,
+	LDAPMessage * entry)
+{
+	pstring temp;	
+	struct tm tm;
+
+	if (!smbldap_get_single_pstring(
+		    ldap_state->smbldap_state->ldap_struct, entry,
+		    get_userattr_key2string(ldap_state->schema_ver, 
+					   LDAP_ATTR_MOD_TIMESTAMP), 
+		    temp)) 
+		return (time_t) 0;
+
+	strptime(temp, "%Y%m%d%H%M%SZ", &tm);
+	tzset();
+	return (mktime(&tm) - timezone);
+}
+
 /**********************************************************************
  Initialize SAM_ACCOUNT from an LDAP query.
  (Based on init_sam_from_buffer in pdb_tdb.c)
@@ -405,7 +424,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			kickoff_time,
 			pass_last_set_time, 
 			pass_can_change_time, 
-			pass_must_change_time;
+			pass_must_change_time,
+			ldap_entry_time,
+			bad_password_time;
 	pstring 	username, 
 			domain,
 			nt_username,
@@ -427,6 +448,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
+	LOGIN_CACHE	*cache_entry = NULL;
 
 	/*
 	 * do a little initialization
@@ -720,6 +742,15 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	}
 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_TIME), temp)) {
+		/* leave as default */
+	} else {
+		bad_password_time = (time_t) atol(temp);
+		pdb_set_bad_password_time(sampass, bad_password_time, PDB_SET);
+	}
+
+
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_COUNT), temp)) {
 			/* leave as default */
@@ -732,6 +763,43 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	pdb_set_hours(sampass, hours, PDB_SET);
 
+	/* check the timestamp of the cache vs ldap entry */
+	if (!(ldap_entry_time = ldapsam_get_entry_timestamp(ldap_state, 
+							    entry)))
+		return True;
+
+	/* see if we have newer updates */
+	if (!(cache_entry = login_cache_read(sampass))) {
+		DEBUG (9, ("No cache entry, bad count = %d, bad time = %d\n",
+			   pdb_get_bad_password_count(sampass),
+			   pdb_get_bad_password_time(sampass)));
+		return True;
+	}
+
+	DEBUG(7, ("ldap time is %d, cache time is %d, bad time = %d\n", 
+		  ldap_entry_time, cache_entry->entry_timestamp, 
+		  cache_entry->bad_password_time));
+
+	if (ldap_entry_time > cache_entry->entry_timestamp) {
+		/* cache is older than directory , so
+		   we need to delete the entry but allow the 
+		   fields to be written out */
+		login_cache_delentry(sampass);
+	} else {
+		/* read cache in */
+		pdb_set_acct_ctrl(sampass, 
+				  pdb_get_acct_ctrl(sampass) | 
+				  (cache_entry->acct_ctrl & ACB_AUTOLOCK),
+				  PDB_SET);
+		pdb_set_bad_password_count(sampass, 
+					   cache_entry->bad_password_count, 
+					   PDB_SET);
+		pdb_set_bad_password_time(sampass, 
+					  cache_entry->bad_password_time, 
+					  PDB_SET);
+	}
+
+	SAFE_FREE(cache_entry);
 	return True;
 }
 
@@ -907,6 +975,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_MUST_CHANGE), temp);
 
+
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))
 			|| (lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
 
@@ -953,6 +1022,56 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ACB_INFO), 
 			pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass), NEW_PW_FORMAT_SPACE_PADDED_LEN));
+
+	/* password lockout cache: 
+	   - If we are now autolocking or clearing, we write to ldap
+	   - If we are clearing, we delete the cache entry
+	   - If the count is > 0, we update the cache
+
+	   This even means when autolocking, we cache, just in case the
+	   update doesn't work, and we have to cache the autolock flag */
+
+	if (need_update(sampass, PDB_BAD_PASSWORD_COUNT))  /* &&
+	    need_update(sampass, PDB_BAD_PASSWORD_TIME)) */ {
+		uint16 badcount = pdb_get_bad_password_count(sampass);
+		time_t badtime = pdb_get_bad_password_time(sampass);
+		uint32 pol;
+		account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &pol);
+
+		DEBUG(3, ("updating bad password fields, policy=%d, count=%d, time=%d\n", pol, badcount, badtime));
+
+		if ((badcount >= pol) || (badcount == 0)) {
+			DEBUG(7, ("making mods to update ldap, count=%d, time=%d\n", badcount, badtime));
+			slprintf (temp, sizeof (temp) - 1, "%li", badcount);
+			smbldap_make_mod(
+				ldap_state->smbldap_state->ldap_struct,
+				existing, mods, 
+				get_userattr_key2string(
+					ldap_state->schema_ver, 
+					LDAP_ATTR_BAD_PASSWORD_COUNT),
+				temp);
+
+			slprintf (temp, sizeof (temp) - 1, "%li", badtime);
+			smbldap_make_mod(
+				ldap_state->smbldap_state->ldap_struct, 
+				existing, mods,
+				get_userattr_key2string(
+					ldap_state->schema_ver, 
+					LDAP_ATTR_BAD_PASSWORD_TIME), 
+				temp);
+		}
+		if (badcount == 0) {
+			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_nt_username(sampass)));
+			login_cache_delentry(sampass);
+		} else {
+			LOGIN_CACHE cache_entry ={time(NULL),
+						  pdb_get_acct_ctrl(sampass),
+						  badcount, badtime};
+			DEBUG(7, ("Updating bad password count and time in login cache\n"));
+			login_cache_write(sampass, cache_entry);
+		}
+			
+	}
 
 	return True;
 }
