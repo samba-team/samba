@@ -58,7 +58,7 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
   if (fd == -1) return False;
 
   if (fd != 1) {
-    if (dup2(fd,1) != 0) {
+    if (dup2(fd,1) != 1) {
       DEBUG(2,("Failed to create stdout file descriptor\n"));
       close(fd);
       return False;
