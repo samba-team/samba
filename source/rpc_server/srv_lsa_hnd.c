@@ -27,7 +27,7 @@
 extern int DEBUGLEVEL;
 
 #ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 64
+#define MAX_OPEN_POLS 2048
 #endif
 
 struct reg_info
