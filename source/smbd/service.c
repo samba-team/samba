@@ -77,6 +77,8 @@ struct server_context *server_service_startup(const char *model)
 		
 		/* TODO: service_init() should return a result */
 		service->ops->service_init(service, model_ops);
+
+		DLIST_ADD(srv_ctx->service_list, service);
 	}
 
 	return srv_ctx;
@@ -327,4 +329,23 @@ BOOL server_service_init(void)
 
 	DEBUG(3,("SERVER SERVICE subsystem version %d initialised\n", SERVER_SERVICE_VERSION));
 	return True;
+}
+
+
+/*
+  close all listening sockets. This is called by process models that fork, to 
+  ensure that the listen sockets from the parent are closed
+*/
+void service_close_listening_sockets(struct server_context *srv_ctx)
+{
+	struct server_service *svc;
+	for (svc=srv_ctx->service_list;svc;svc=svc->next) {
+		struct server_socket *sock;
+		for (sock=svc->socket_list;sock;sock=sock->next) {
+			event_remove_fd(sock->event.ctx, sock->event.fde);
+			sock->event.fde = NULL;
+			socket_destroy(sock->socket);
+			sock->socket = NULL;
+		}
+	}
 }
