@@ -1,3 +1,8 @@
+Changes in release 0.0q:
+
+ * support for building shared libraries with libtool
+ * bug fixes
+
 Changes in release 0.0p:
 
  * keytab moved to /etc/krb5.keytab
