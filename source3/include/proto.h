@@ -3338,6 +3338,7 @@ DIR *vfswrap_opendir(char *fname);
 struct dirent *vfswrap_readdir(DIR *dirp);
 int vfswrap_mkdir(char *path, mode_t mode);
 int vfswrap_rmdir(char *path);
+int vfswrap_closedir(DIR *dirp);
 int vfswrap_open(char *fname, int flags, mode_t mode);
 int vfswrap_close(int fd);
 ssize_t vfswrap_read(int fd, char *data, size_t n);

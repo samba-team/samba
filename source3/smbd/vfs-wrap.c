@@ -70,7 +70,7 @@ int vfswrap_closedir(DIR *dirp)
 {
     int result;
     
-    result = closedir(path);
+    result = closedir(dirp);
     return result;
 }
 
