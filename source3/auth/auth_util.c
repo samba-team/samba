@@ -227,27 +227,13 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 
 		domain = client_domain;
 
-		if ((smb_name) && (*smb_name)) { /* Don't do this for guests */
-			char *user = NULL;
-			if (asprintf(&user, "%s%s%s", 
-				 client_domain, lp_winbind_separator(), 
-				 smb_name) < 0) {
-				DEBUG(0, ("make_user_info_map: asprintf() failed!\n"));
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			DEBUG(5, ("make_user_info_map: testing for user %s\n", user));
-			
-			if (Get_Pwnam(user) == NULL) {
-				DEBUG(5, ("make_user_info_map: test for user %s failed\n", user));
-				domain = lp_workgroup();
-				DEBUG(5, ("make_user_info_map: trusted domain %s doesn't appear to exist, using %s\n", 
-					  client_domain, domain));
-			} else {
-				DEBUG(5, ("make_user_info_map: using trusted domain %s\n", domain));
-			}
-			SAFE_FREE(user);
+		if (is_trusted_domain(domain)) {
+			return make_user_info(user_info, smb_name, internal_username,
+			                      client_domain, domain, wksta_name,
+			                      lm_pwd, nt_pwd, plaintext, ntlmssp_flags,
+			                      encrypted);
 		}
+
 	} else {
 		domain = lp_workgroup();
 	}
