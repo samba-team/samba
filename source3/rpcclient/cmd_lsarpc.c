@@ -106,10 +106,9 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 
 	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
-
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s %s (%d)\n", argv[i + 1], sid_str,
-		       types[i]);
+		printf("%s %s (%s: %d)\n", argv[i + 1], sid_str,
+		       sid_type_lookup(types[i]), types[i]);
 	}
 
  done:
