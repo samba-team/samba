@@ -436,12 +436,18 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		   variable */
 		
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, tmp->name))
+		    !check_domain_env(state->request.domain, tmp->name)) {
+			DEBUG(5, ("skipping domain %s because of env var\n",
+				  tmp->name));
 			continue;
+		}
 		
 		/* Create a state record for this domain */
-		if ((domain_state = create_getent_state(tmp)) == NULL)
-			return WINBINDD_ERROR;
+		if ((domain_state = create_getent_state(tmp)) == NULL) {
+			DEBUG(5, ("error connecting to dc for domain %s\n",
+				  tmp->name));
+			continue;
+		}
 
 		/* Add to list of open domains */
 		
