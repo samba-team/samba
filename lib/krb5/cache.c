@@ -273,3 +273,33 @@ krb5_cc_set_flags(krb5_context context,
     return id->ops->set_flags(context, id, flags);
 }
 		    
+krb5_error_code
+krb5_cc_copy_cache(krb5_context context,
+		   krb5_ccache from,
+		   krb5_ccache to)
+{
+    krb5_error_code ret;
+    krb5_cc_cursor cursor;
+    krb5_creds cred;
+    krb5_principal princ;
+    ret = krb5_cc_get_principal(context, from, &princ);
+    if(ret)
+	return ret;
+    ret = krb5_cc_initialize(context, to, princ);
+    if(ret){
+	krb5_free_principal(context, princ);
+	return ret;
+    }
+    ret = krb5_cc_start_seq_get(context, from, &cursor);
+    if(ret){
+	krb5_free_principal(context, princ);
+	return ret;
+    }
+    while(ret == 0 && krb5_cc_next_cred(context, from, &cred, &cursor) == 0){
+	ret = krb5_cc_store_cred(context, to, &cred);
+	krb5_free_creds_contents (context, &cred);
+    }
+    krb5_cc_end_seq_get(context, from, &cursor);
+    krb5_free_principal(context, princ);
+    return ret;
+}
