@@ -1,3 +1,9 @@
+2000-12-11  Assar Westerlund  <assar@sics.se>
+
+	* login.c (do_login): set the group on the tty.
+	(r_flag): comment out
+	* login.c (krb5_to4): always return a value
+
 2000-10-15  Assar Westerlund  <assar@sics.se>
 
 	* login.c (krb5_to4): check another return code
