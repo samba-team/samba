@@ -39,7 +39,9 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL) -m 0555 $(LIB) $(libdir)
+	-if test "$(LIB)" != ""; then \
+	  $(INSTALL) -m 0555 $(LIB) $(libdir) ; \
+	fi
 
 uninstall:
 
