@@ -349,6 +349,12 @@ const struct server_service_ops *server_service_byname(const char *name)
 	if (strcmp("ldap",name)==0) {
 		return ldapsrv_get_ops();
 	}
+	if (strcmp("winbind",name)==0) {
+		return winbind_get_ops();
+	}
+	if (strcmp("winbind_task",name)==0) {
+		return winbind_task_get_ops();
+	}
 	return NULL;
 }
 
