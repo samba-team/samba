@@ -631,7 +631,8 @@ sub ParseStructPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::need_wire_pointer($e)) {
+		if (util::need_wire_pointer($e) &&
+		    !util::has_property($e, "relative")) {
 			$res .= "\tuint32 _ptr_$e->{NAME};\n";
 		}
 	}
