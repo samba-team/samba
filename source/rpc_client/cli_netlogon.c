@@ -299,8 +299,10 @@ uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (srv_chal == NULL || clnt_chal == NULL)
+	if (srv_chal == NULL || clnt_chal == NULL) {
+		cli_connection_free(con);
 		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	prs_init(&buf, 0, 4, False);
 	prs_init(&rbuf, 0, 4, True);
@@ -347,6 +349,8 @@ uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 
 	prs_free_data(&rbuf);
 	prs_free_data(&buf);
+
+	cli_connection_free(con);
 
 	return status;
 }
