@@ -311,7 +311,7 @@ doit(const char *filename, int merge)
 {
     krb5_error_code ret;
     FILE *f;
-    char s[1024];
+    char s[8192]; /* XXX should fix this properly */
     char *p;
     int line;
     int flags = O_RDWR;
