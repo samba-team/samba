@@ -5476,7 +5476,7 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 	prs_align(ps);
 
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_5 != 0x0)
+	if (usr->unknown_3 != 0x0)
 	{
 		prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6));
 		prs_uint32("padding4      ", ps, depth, &(usr->padding4));
@@ -5803,8 +5803,17 @@ BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 		       usr->hdr_munged_dial.buffer, ps, depth);	/* worksations user can log on from */
 	prs_align(ps);
 
-	prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6));
-	prs_uint32("padding4      ", ps, depth, &(usr->padding4));
+	/* ok, this is only guess-work (as usual) */
+	if (usr->unknown_3 != 0x0)
+	{
+		prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6));
+		prs_uint32("padding4      ", ps, depth, &(usr->padding4));
+	}
+	else if (UNMARSHALLING(ps))
+	{
+		usr->unknown_6 = 0;
+		usr->padding4 = 0;
+	}
 
 	if (usr->ptr_logon_hrs)
 	{
