@@ -69,7 +69,7 @@ struct uidmap_ops {
 	int (*sid_to_id) (DOM_SID* sid, SMB_SID_T type);
 
 	/* From UNIX to NT */
-	DOM_SID* (*id_to_sid) (int id);
+	DOM_SID* (*id_to_sid) (int id, SMB_SID_T type);
 
 };
 
