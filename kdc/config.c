@@ -56,7 +56,8 @@ int enable_http = -1;
 char *v4_realm;
 #endif
 
-static int help;
+static int help_flag;
+static int version_flag;
 
 static struct getargs args[] = {
     { 
@@ -89,7 +90,8 @@ static struct getargs args[] = {
     {	"ports",	'P', 	arg_string, &port_str,
 	"ports to listen to" 
     },
-    { "help", 'h', arg_flag, &help },
+    {	"help",		'h',	arg_flag,   &help_flag },
+    {	"version",	'v',	arg_flag,   &version_flag }
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
@@ -103,6 +105,13 @@ struct units byte_units[] = {
     { NULL, 0 }
 };
 
+static void
+usage(int ret)
+{
+    arg_printusage (args, num_args, "");
+    exit (ret);
+}
+
 void
 configure(int argc, char **argv)
 {
@@ -114,10 +123,17 @@ configure(int argc, char **argv)
     while((e = getarg(args, num_args, argc, argv, &optind)))
 	warnx("error at argument `%s'", argv[optind]);
 
-    if(help){
-	arg_printusage (args, num_args, "");
-	exit(0);
-    }
+    if(help_flag)
+	usage (0);
+
+    if (version_flag)
+	krb5_errx(context, 0, "%s", heimdal_version);
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage(1);
     
     if(config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
@@ -158,8 +174,6 @@ configure(int argc, char **argv)
 
     if(port_str == NULL){
 	p = krb5_config_get_string(cf, "kdc", "ports", NULL);
-	if(p == NULL)
-	    p = "+";
 	port_str = (char*)p;
     }
     if(enable_http == -1)
@@ -187,6 +201,8 @@ end:
 	max_request = 64 * 1024;
     if(require_preauth == -1)
 	require_preauth = 1;
+    if (port_str == NULL)
+	port_str = "+";
 #ifdef KRB4
     if(v4_realm == NULL){
 	v4_realm = malloc(40); /* REALM_SZ */
