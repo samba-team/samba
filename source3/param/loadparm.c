@@ -791,7 +791,7 @@ static void init_globals(void)
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
-  string_set(&Globals.szPasswdProgram, SMB_PASSWD);
+  string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szDriverFile, DRIVERFILE);
   string_set(&Globals.szLockDir, LOCKDIR);
