@@ -115,7 +115,7 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(DOM_CHAL *cred, char session_key[8], DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
 		UTIME timestamp)
 {
 	DOM_CHAL cred2;
@@ -144,7 +144,7 @@ int cred_assert(DOM_CHAL *cred, char session_key[8], DOM_CHAL *stored_cred,
 /****************************************************************************
   checks credentials; generates next step in the credential chain
 ****************************************************************************/
-BOOL clnt_deal_with_creds(char sess_key[8],
+BOOL clnt_deal_with_creds(uchar sess_key[8],
 			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred)
 {
 	UTIME new_clnt_time;
