@@ -370,7 +370,11 @@ send_broken_auth(int s,
 static int
 proto (int s, int errsock,
        char *hostname, char *local_user, char *remote_user,
-       char *cmd, size_t cmd_len)
+       char *cmd, size_t cmd_len,
+       int (*auth_func)(int s,
+			struct sockaddr_in this, struct sockaddr_in that,
+			char *hostname, char *remote_user,
+			char *local_user, size_t cmd_len, char *cmd))
 {
     struct sockaddr_in erraddr;
     int errsock2;
@@ -423,33 +427,12 @@ proto (int s, int errsock,
     }
     close (errsock);
 
-#ifdef KRB4
-    if (auth_method == AUTH_KRB4) {
-	if(send_krb4_auth (s, thisaddr, thataddr,
-			   hostname, remote_user, local_user,
-			   cmd_len, cmd)){
-	    close (errsock2);
-	    return 1;
-	} 
-    } else
-#endif /* KRB4 */
-    if(auth_method == AUTH_KRB5) {
-	if(send_krb5_auth (s, thisaddr, thataddr,
-			   hostname, remote_user, local_user,
-			   cmd_len, cmd)) {
-	    close (errsock2);
-	    return 1;
-	}
-    } else
-    if(auth_method == AUTH_BROKEN) {
-	if(send_broken_auth (s, thisaddr, thataddr,
-			     hostname, remote_user, local_user,
-			     cmd_len, cmd)) {
-	    close (errsock2);
-	    return 1;
-	}
-    } else
-	abort ();
+    if ((*auth_func)(s, thisaddr, thataddr, hostname,
+		     remote_user, local_user,
+		     cmd_len, cmd)) {
+	close (errsock2);
+	return 1;
+    } 
 
     if (net_read (s, &reply, 1) != 1) {
 	warn ("read");
@@ -581,7 +564,8 @@ doit_broken (int argc,
 	ret = proto (priv_socket1, priv_socket2,
 		     argv[optind],
 		     local_user, remote_user,
-		     cmd, cmd_len);
+		     cmd, cmd_len,
+		     send_broken_auth);
 	return ret;
     }
 }
@@ -592,7 +576,11 @@ doit (char *hostname,
       char *local_user,
       int port,
       char *cmd,
-      size_t cmd_len)
+      size_t cmd_len,
+      int (*auth_func)(int s,
+		       struct sockaddr_in this, struct sockaddr_in that,
+		       char *hostname, char *remote_user,
+		       char *local_user, size_t cmd_len, char *cmd))
 {
     struct hostent *hostent;
     struct in_addr **h;
@@ -636,7 +624,7 @@ doit (char *hostname,
 	ret = proto (s, errsock,
 		     hostname,
 		     local_user, remote_user,
-		     cmd, cmd_len);
+		     cmd, cmd_len, auth_func);
 	close (s);
 	return ret;
     }
@@ -798,7 +786,8 @@ main(int argc, char **argv)
 	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB5;
-	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len);
+	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len,
+		    send_krb5_auth);
     }
 #ifdef KRB4
     if (ret && use_v4) {
@@ -812,7 +801,8 @@ main(int argc, char **argv)
 	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB4;
-	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len);
+	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len,
+		    send_krb4_auth);
     }
 #endif
     if (ret && use_broken) {
