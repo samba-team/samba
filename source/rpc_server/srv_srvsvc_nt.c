@@ -564,7 +564,24 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n,
 				      uint32 info_level, uint32 resume_hnd, BOOL all)  
 {
+	user_struct *user;
+
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
+
+	/* Don't let anonymous users access this RPC */
+
+	if (!(user = get_valid_user_struct(p->vuid))) {
+		DEBUG(3, ("invalid vuid %d in init_srv_r_net_share_enum()\n",
+			  p->vuid));
+		r_n->status = WERR_ACCESS_DENIED;
+		return;
+	}
+
+	if (lp_restrict_anonymous() > 0 && user->guest) {
+		DEBUG(5, ("access denied to anonymous connection"));
+		r_n->status = WERR_ACCESS_DENIED;
+		return;
+	}
 
 	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries, all)) {
