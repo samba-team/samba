@@ -656,6 +656,9 @@ static BOOL smb_shm_lock_hash_entry( unsigned int entry)
       return False;
     }
 
+  if (read_only)
+	  return True;
+
   /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_WRLCK) == False)
     {
@@ -679,6 +682,9 @@ static BOOL smb_shm_unlock_hash_entry( unsigned int entry )
       DEBUG(0,("ERROR smb_shm_unlock_hash_entry : bad smb_shm_fd (%d)\n",smb_shm_fd));
       return False;
     }
+
+  if (read_only)
+	  return True;
    
   /* Do a wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_UNLCK) == False)

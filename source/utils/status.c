@@ -120,7 +120,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   charset_initialise();
 
   DEBUGLEVEL = 0;
-  dbf = fopen("/dev/null","w");
+  dbf = stderr;
 
   if (getuid() != geteuid()) {
     printf("smbstatus should not be run setuid\n");
