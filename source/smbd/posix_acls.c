@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef  DBGC_CLASS
+#define DBGC_CLASS DBGC_ACLS
+
 /****************************************************************************
  Data structures representing the internal ACE format.
 ****************************************************************************/
