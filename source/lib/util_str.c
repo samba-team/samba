@@ -754,6 +754,8 @@ void strlower_m(char *s)
 		codepoint_t c = next_codepoint(s, &c_size);
 		c_size2 = push_codepoint(d, tolower_w(c));
 		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
+				 c, tolower_w(c), c_size, c_size2));
 			smb_panic("codepoint expansion in strlower_m\n");
 		}
 		s += c_size;
@@ -788,6 +790,8 @@ void strupper_m(char *s)
 		codepoint_t c = next_codepoint(s, &c_size);
 		c_size2 = push_codepoint(d, toupper_w(c));
 		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
+				 c, toupper_w(c), c_size, c_size2));
 			smb_panic("codepoint expansion in strupper_m\n");
 		}
 		s += c_size;
