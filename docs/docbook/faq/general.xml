@@ -2,13 +2,6 @@
 <title>General Information</title>
 
 <sect1>
-<title>Where can I get it?</title>
-<para>
-The Samba suite is available at the <ulink url="http://samba.org/">samba website</ulink>.
-</para>
-</sect1>
-
-<sect1>
 <title>What do the version numbers mean?</title>
 <para>
 It is not recommended that you run a version of Samba with the word
