@@ -1539,17 +1539,6 @@ fi
 ;;
 esac
 
-AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
-AC_TRY_COMPILE([#include <sys/acl.h>
-#if defined(HAVE_RPCSVC_NIS_H)
-#include <rpcsvc/nis.h>
-#endif],
-[int i;],
-samba_cv_BROKEN_NISPLUS_INCLUDE_FILES=no,samba_cv_BROKEN_NISPLUS_INCLUDE_FILES=yes)])
-if test x"$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" = x"yes"; then
-	AC_DEFINE(BROKEN_NISPLUS_INCLUDE_FILES,1,[Whether the nisplus include files are broken])
-fi
-
 AC_SUBST(SMBD_EXTRA_OBJS)
 AC_SUBST(SMBD_EXTRA_LIBS)
 
