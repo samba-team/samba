@@ -1,3 +1,14 @@
+2004-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* chpass_s.c: deal with changed prototype for _kadm5_free_keys
+	
+	* keys.c (_kadm5_free_keys): change prototype, make it use
+	krb5_context instead of a kadm5_server_context
+	
+	* set_keys.c (parse_key_set): do way with static returning
+	(function) static variable and returned allocated memory
+	(_kadm5_generate_key_set): free enctypes returned by parse_key_set
+
 2004-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c: Fix memory leak, don't return stack variables From
