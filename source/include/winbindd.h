@@ -100,19 +100,22 @@ struct winbindd_response {
 
 /* Structures to hold domain list */
 
-struct winbind_domain_uid {
+struct winbind_domain {
     pstring domain_name;                     /* Domain name */
-    fstring domain_controller;               /* Domain controller */
-    uid_t uid_low, uid_high;                 /* Range of uids to allocate */
+    fstring domain_controller;               /* NetBIOS name of DC */
     DOM_SID domain_sid;                      /* SID for this domain */
+    struct winbind_domain *prev, *next;
+};
+
+struct winbind_domain_uid {
+    struct winbind_domain *domain;           /* Domain info */
+    uid_t uid_low, uid_high;                 /* Range of uids to allocate */
     struct winbind_domain_uid *prev, *next;
 };
 
 struct winbind_domain_gid {
-    pstring domain_name;                     /* Domain name */
-    fstring domain_controller;               /* Domain controller */
+    struct winbind_domain *domain;           /* Domain info */
     gid_t gid_low, gid_high;                 /* Range of gids to allocate */
-    DOM_SID domain_sid;                      /* SID for this domain */
     struct winbind_domain_gid *prev, *next;
 };
 

@@ -1823,15 +1823,16 @@ void remove_sock(void);
 
 /*The following definitions come from  nsswitch/winbindd_surs.c  */
 
-BOOL find_domain_sid_from_domain(char *domain_name, DOM_SID *domain_sid, 
-                                 char *domain_controller);
+struct winbind_domain *find_domain_from_name(char *domain_name);
+BOOL find_domain_sid_from_name(char *domain_name, DOM_SID *domain_sid, 
+                               char *domain_controller);
 BOOL find_domain_sid_from_uid(uid_t uid, DOM_SID *domain_sid,
                               char *domain_name,
                               char *domain_controller);
 BOOL find_domain_sid_from_gid(gid_t gid, DOM_SID *domain_sid,
                               char *domain_controller,
                               char *domain_name);
-int winbindd_surs_init(void);
+BOOL winbindd_surs_init(void);
 BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, 
                                      enum SID_NAME_USE name_type,
                                      POSIX_ID *id);
@@ -1952,7 +1953,6 @@ BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
-BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
 BOOL lp_nt_pipe_support(void);
 BOOL lp_nt_acl_support(void);
