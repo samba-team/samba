@@ -252,13 +252,14 @@
 		[out,ref]     policy_handle *acct_handle
 		);
 
+
 	/************************/
 	/* Function    0x14     */
 
 	typedef struct {
 		samr_Name name;
 		uint32 unknown;
-		uint32 members;
+		uint32 num_members;
 		samr_Name description;
 	} samr_GroupInfoAll;
 
@@ -311,13 +312,45 @@
 	/* Function    0x1a     */
 	NTSTATUS samr_SET_MEMBER_ATTRIBUTES_OF_GROUP();
 
+
 	/************************/
 	/* Function    0x1b     */
-	NTSTATUS samr_OPEN_ALIAS();
+	NTSTATUS samr_OpenAlias (
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 access_mask,
+		[in]          uint32 rid,
+		[out,ref]     policy_handle *acct_handle
+		);
+
 
 	/************************/
 	/* Function    0x1c     */
-	NTSTATUS samr_QUERY_ALIASINFO();
+
+	typedef struct {
+		samr_Name name;
+		uint32 num_members;
+		samr_Name description;
+	} samr_AliasInfoAll;
+
+	typedef struct {
+		samr_Name name;
+	} samr_AliasInfoName;
+
+	typedef struct {
+		samr_Name description;
+	} samr_AliasInfoDescription;
+
+	typedef union {
+		case(1) samr_AliasInfoAll all;
+		case(2) samr_AliasInfoName name;
+		case(3) samr_AliasInfoDescription description;
+	} samr_AliasInfo;
+
+	NTSTATUS samr_QueryAliasInfo(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint16 level,
+		[out,switch_is(level)]    samr_AliasInfo *info
+		);
 
 	/************************/
 	/* Function    0x1d     */

@@ -21,6 +21,34 @@
 
 #include "includes.h"
 
+static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryAliasInfo r;
+	uint16 levels[] = {1, 2, 3};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryAliasInfo level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+
+		status = dcerpc_samr_QueryAliasInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryAliasInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+
+		NDR_PRINT_UNION_DEBUG(samr_AliasInfo, r.in.level, r.out.info);
+	}
+
+	return ret;
+}
+
 static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *handle)
 {
@@ -134,6 +162,34 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle, uint32 rid)
+{
+	NTSTATUS status;
+	struct samr_OpenAlias r;
+	struct policy_handle acct_handle;
+	BOOL ret = True;
+
+	printf("Testing OpenAlias(%u)\n", rid);
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.acct_handle = &acct_handle;
+
+	status = dcerpc_samr_OpenAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenAlias(%u) failed - %s\n", rid, nt_errstr(status));
+		return False;
+	}
+
+	if (!test_QueryAliasInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
 {
@@ -215,6 +271,8 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomainAliases r;
 	uint32 resume_handle=0;
+	int i;
+	BOOL ret = True;
 
 	printf("Testing EnumDomainAliases\n");
 
@@ -231,7 +289,17 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	NDR_PRINT_DEBUG(samr_SamArray, r.out.sam);
 
-	return True;	
+	if (!r.out.sam) {
+		return False;
+	}
+
+	for (i=0;i<r.out.sam->count;i++) {
+		if (!test_OpenAlias(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
+			ret = False;
+		}
+	}
+
+	return ret;	
 }
 
 static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
