@@ -140,6 +140,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		goto out;
 	}
 
+#if 0
 	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
 	 * code surrounding the replay cache... */
 
@@ -148,6 +149,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
+#endif
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
@@ -174,7 +176,9 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 				(unsigned int)enctypes[i], error_message(ret)));
 	}
 
+#if 0
 	release_server_mutex();
+#endif
 
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
