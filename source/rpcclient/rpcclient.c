@@ -573,23 +573,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 }
 
 
-/* Print usage information */
-static void usage(void)
-{
-	printf("Usage: rpcclient [options] server\n");
-
-	printf("\t-c or --command \"command string\"   Execute semicolon separated cmds\n");
-	printf("\t-d or --debug debuglevel           Set the debuglevel\n");
-	printf("\t-l or --logfile logfile            Logfile to use instead of stdout\n");
-	printf("\t-h or --help                       Print this help message.\n");
-	printf("\t-N or --nopass                     Don't ask for a password\n");
-	printf("\t-s or --conf configfile            Specify an alternative config file\n");
-	printf("\t-U or --user username              Set the network username\n");
-	printf("\t-W or --workgroup domain           Set the domain name for user account\n");
-	printf("\t-I or --dest-ip ip                 Specify destination IP address\n");
-	printf("\n");
-}
-
 /* Main function */
 
  int main(int argc, char *argv[])
@@ -641,13 +624,13 @@ static void usage(void)
 
 	/* Parse options */
 
-	if (argc == 1) {
-		usage();
-		return 0;
-	}
-	
 	pc = poptGetContext("rpcclient", argc, (const char **) argv,
 			    long_options, 0);
+
+	if (argc == 1) {
+		poptPrintHelp(pc, stderr, 0);
+		return 0;
+	}
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -692,11 +675,6 @@ static void usage(void)
 		case 'W':
 			pstrcpy(domain, opt_domain);
 			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
 		}
 	}
 
@@ -706,7 +684,7 @@ static void usage(void)
 	server = poptGetArg(pc);
 	
 	if (!server || poptGetArg(pc)) {
-		usage();
+		poptPrintHelp(pc, stderr, 0);
 		return 1;
 	}
 
