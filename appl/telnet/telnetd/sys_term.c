@@ -1084,6 +1084,22 @@ clean_ttyname (char *tty)
 }
 
 /*
+ * Generate a name usable as an `ut_id', typically without `tty'.
+ */
+
+static char *
+make_id (char *tty)
+{
+  char *res = tty;
+  
+  if (strncmp (res, "pts/", 4) == 0)
+    res += 4;
+  if (strncmp (res, "tty", 3) == 0)
+    res += 3;
+  return res;
+}
+
+/*
  * startslave(host)
  *
  * Given a hostname, do whatever
@@ -1244,6 +1260,9 @@ void start_login(char *host, int autologin, char *name)
     strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
 
     strncpy(utmpx.ut_line,  clean_ttyname(line), sizeof(utmpx.ut_line));
+#ifdef HAVE_UT_ID
+    strncpy(utmpx.ut_id, make_id(utmpx.ut_line), sizeof(utmpx.ut_id));
+#endif
     utmpx.ut_pid = pid;
 	
     utmpx.ut_type = LOGIN_PROCESS;
