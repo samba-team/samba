@@ -1218,12 +1218,13 @@ struct bitmap {
 #define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
 
 /* These are the NT transact sub commands. */
-#define NT_TRANSACT_CREATE                1
-#define NT_TRANSACT_IOCTL                 2
-#define NT_TRANSACT_SET_SECURITY_DESC     3
-#define NT_TRANSACT_NOTIFY_CHANGE         4
-#define NT_TRANSACT_RENAME                5
-#define NT_TRANSACT_QUERY_SECURITY_DESC   6
+#define NT_TRANSACT_CREATE                 1
+#define NT_TRANSACT_IOCTL                  2
+#define NT_TRANSACT_SET_SECURITY_DESC      3
+#define NT_TRANSACT_NOTIFY_CHANGE          4
+#define NT_TRANSACT_RENAME                 5
+#define NT_TRANSACT_QUERY_SECURITY_DESC    6
+#define NT_TRANSACT_GET_DFS_REFERRAL    0x10
 
 /* these are the trans2 sub fields for primary requests */
 #define smb_tpscnt smb_vwv0
@@ -1804,6 +1805,8 @@ struct nmb_name {
 
 #include "client.h"
 #include "rpcclient.h"
+
+#include "dfs.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.

@@ -146,6 +146,7 @@ typedef struct
   char *szDomainOtherSIDs;
   char *szDriverFile;
   char *szNameResolveOrder;
+  char *szDfsMap;
 #ifdef WITH_LDAP
   char *szLdapServer;
   char *szLdapSuffix;
@@ -556,6 +557,7 @@ static struct parm_struct parm_table[] =
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
   {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
+  {"dfs map",          P_STRING,  P_GLOBAL, &Globals.szDfsMap,          NULL,   NULL,  0},
   {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL|FLAG_DEPRECATED},
   {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL},
   {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL},
@@ -589,7 +591,6 @@ static struct parm_struct parm_table[] =
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  0},
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
   {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
-
 #ifdef WITH_SSL
   {"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
 
@@ -1212,6 +1213,7 @@ FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
+FN_GLOBAL_STRING(lp_dfs_map,&Globals.szDfsMap)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);

@@ -339,7 +339,7 @@ struct smb_message_struct
    /* LANMAN2.0 PROTOCOL FOLLOWS */
    {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER },
+   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | CAN_IPC},
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
    /* NT PROTOCOL FOLLOWS */

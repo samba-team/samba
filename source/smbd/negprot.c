@@ -27,6 +27,7 @@ extern int max_recv;
 extern fstring global_myworkgroup;
 extern fstring remote_machine;
 extern pstring myhostname;
+extern dfs_internal dfs_struct;
 
 /****************************************************************************
 reply for the core protocol
@@ -178,6 +179,12 @@ static int reply_nt1(char *outbuf)
 	{
 		capabilities |= CAP_LARGE_FILES;
 	}
+
+	if (dfs_struct.ready==True)
+	{
+		capabilities |= CAP_DFS;
+	}
+
 /*
   other valid capabilities which we may support at some time...
                      CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;

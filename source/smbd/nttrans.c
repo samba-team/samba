@@ -1666,6 +1666,7 @@ due to being in oplock break state.\n" ));
 						     length, bufsize, 
                                                      &setup, &params, &data);
       break;
+
   default:
 	  /* Error in request */
 	  DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));

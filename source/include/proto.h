@@ -6,6 +6,11 @@
 /*The following definitions come from  client/client.c  */
 
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
+void complete_process_file(file_info *f);
+char *complete_remote_file(char *text, int state);
+char *complete_cmd(char *text, int state);
+char **completion_fn(char *text, int start, int end);
+char *complete_cmd_null(char *text, int state);
 struct cli_state *do_connect(char *server, char *share, int smb_port);
 
 /*The following definitions come from  client/clitar.c  */
@@ -1250,6 +1255,7 @@ char *lp_driverfile(void);
 char *lp_panic_action(void);
 char *lp_nt_forms(void);
 char *lp_nt_drivers_file(void);
+char *lp_dfs_map(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);
@@ -3245,6 +3251,9 @@ void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTL
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
 void rpcclient_init(void);
+char *complete_cmd(char *text, int state);
+char **completion_fn(char *text, int start, int end);
+char *complete_cmd_null(char *text, int state);
 
 /*The following definitions come from  smbd/blocking.c  */
 
@@ -3296,6 +3305,11 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 /*The following definitions come from  smbd/dfree.c  */
 
 SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
+
+/*The following definitions come from  smbd/dfs.c  */
+
+BOOL init_dfs_table(void);
+int under_dfs(connection_struct *conn, const char *path);
 
 /*The following definitions come from  smbd/dir.c  */
 
