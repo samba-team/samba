@@ -498,6 +498,7 @@ int main(int argc, char **argv)
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
+ 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
 		{ 0, 0, 0, 0 }
 	};
