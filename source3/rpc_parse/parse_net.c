@@ -1977,14 +1977,14 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 			if (ps->io)
 			{
 				/* reading */
-// FIXME			prs_hash1(ps, ps->offset, sess_key);
+/* // FIXME			prs_hash1(ps, ps->offset, sess_key); */
 			}
 			net_io_sam_passwd_info("pass", &(info->pass), ps,
 					       depth);
 			if (!ps->io)
 			{
 				/* writing */
-// FIXME TOO			prs_hash1(ps, old_offset, sess_key);
+/* // FIXME TOO			prs_hash1(ps, old_offset, sess_key); */
 			}
 		}
 		ps->data_offset = old_offset + len;

@@ -786,7 +786,7 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
  Copies a UNISTR2 structure.
 ********************************************************************/
 
-void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
+void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
 
 	/* set up string lengths. add one if string is not null-terminated */
