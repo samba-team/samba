@@ -1493,20 +1493,22 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
 	extern DOM_SID global_sid_World; 
-	SEC_ACE ace;
+	SEC_ACE ace[2];
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 
-	init_sec_access(&sa,PRINTER_ALL_ACCESS);
-	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
+	init_sec_access(&sa,PRINTER_MANAGE_DOCUMENTS);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+					sa, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[1], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+					sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
-	if ((psa = make_sec_acl( 3, 1, &ace)) != NULL) {
-		psd = make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-									&global_sid_World, &global_sid_World,
-									NULL, psa, &sd_size);
+	if ((psa = make_sec_acl( ACL_REVISION, 2, &ace)) != NULL) {
+		psd = make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+									&global_sid_World, &global_sid_World, NULL, psa, &sd_size);
 		free_sec_acl(&psa);
 	}
 
