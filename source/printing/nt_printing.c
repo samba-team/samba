@@ -965,10 +965,10 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
-			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
+		if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+		old_create_time = st.st_mtime;
+		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 	}
 	close_file(fsp, True);
 
@@ -994,34 +994,34 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
-			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
+		if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+		new_create_time = st.st_mtime;
+		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 	}
 	close_file(fsp, True);
 
-	if (use_version) {
+	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
 		if (new_major > old_major ||
 			(new_major == old_major && new_minor > old_minor)) {
 			
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			DEBUG(6,("file_version_is_newer: version Replacing [%s] with [%s]\n", old_file, new_file));
 			return True;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			DEBUG(6,("file_version_is_newer: version Leaving [%s] unchanged\n", old_file));
 			return False;
 		}
 
 	} else {
 		/* Compare modification time/dates and choose the newest time/date */
 		if (new_create_time > old_create_time) {
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			DEBUG(6,("file_version_is_newer: file Replacing [%s] with [%s]\n", old_file, new_file));
 			return True;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			DEBUG(6,("file_version_is_newer: file Leaving [%s] unchanged\n", old_file));
 			return False;
 		}
 	}
