@@ -92,10 +92,10 @@ void cli_setup_pkt(char *outbuf)
 /****************************************************************************
 call a remote api
 ****************************************************************************/
-BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt,
+BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt, int srcnt,
 		     int mprcnt,int mdrcnt,
 		     int *rprcnt,int *rdrcnt,
-		     char *param,char *data,
+		     char *param,char *data, uint16 *setup,
 		     char **rparam,char **rdata)
 {
   static char *inbuf=NULL;
@@ -105,9 +105,9 @@ BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt,
   if (!outbuf) outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
   cli_send_trans_request(outbuf,SMBtrans,pipe_name, 0,0,
-		     data,param,NULL,
-		     drcnt,prcnt,0,
-		     mdrcnt,mprcnt,0);
+		     data, param, setup,
+		     drcnt, prcnt, srcnt,
+		     mdrcnt, mprcnt, 0);
 
   return (cli_receive_trans_response(inbuf,SMBtrans,
                                  rdrcnt,rprcnt,
@@ -808,6 +808,8 @@ send a logout command
 void cli_send_logout(void )
 {
   pstring inbuf,outbuf;
+
+  DEBUG(5,("cli_send_logout\n"));
 
   bzero(outbuf,smb_size);
   set_message(outbuf,0,0,True);

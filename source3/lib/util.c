@@ -1985,6 +1985,9 @@ int read_udp_socket(int fd,char *buf,int len)
   lastip = *(struct in_addr *) &sock.sa_data[2];
   lastport = ntohs(((struct sockaddr_in *)&sock)->sin_port);
 
+  DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
+             inet_ntoa(lastip), lastport, ret));
+
   return(ret);
 }
 

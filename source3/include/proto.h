@@ -60,10 +60,10 @@ void cli_shutdown(struct cli_state *cli);
 /*The following definitions come from  clientutil.c  */
 
 void cli_setup_pkt(char *outbuf);
-BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt,
+BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt, int srcnt,
 		     int mprcnt,int mdrcnt,
 		     int *rprcnt,int *rdrcnt,
-		     char *param,char *data,
+		     char *param,char *data, uint16 *setup,
 		     char **rparam,char **rdata);
 BOOL cli_receive_trans_response(char *inbuf,int trans,
                                    int *data_len,int *param_len,

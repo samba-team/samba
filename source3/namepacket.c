@@ -370,9 +370,9 @@ static void process_dgram(struct packet_struct *p)
   len = SVAL(buf,smb_vwv11);
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
-  DEBUG(4,("process_dgram: datagram from %s to %s for %s of type %d len=%d\n",
+  DEBUG(4,("process_dgram: datagram from %s to %s(%s)for %s of type %d len=%d\n",
 	   namestr(&dgram->source_name),namestr(&dgram->dest_name),
-	   smb_buf(buf),CVAL(buf2,0),len));
+	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
  
   if (len <= 0) return;

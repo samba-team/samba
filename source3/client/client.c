@@ -145,6 +145,24 @@ static BOOL setup_term_code (char *code)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
 /****************************************************************************
+send an SMBclose on an SMB file handle
+****************************************************************************/
+static void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
+{
+  bzero(outbuf,smb_size);
+  set_message(outbuf,3,0,True);
+
+  CVAL (outbuf,smb_com) = SMBclose;
+  SSVAL(outbuf,smb_tid,c_num);
+  cli_setup_pkt(outbuf);
+  SSVAL (outbuf,smb_vwv0, f_num);
+  SIVALS(outbuf,smb_vwv1, -1);
+  
+  send_smb(clnt_fd, outbuf);
+  receive_smb(clnt_fd,inbuf,CLIENT_TIMEOUT);
+}
+
+/****************************************************************************
 write to a local file with CR/LF->LF translation if appropriate. return the 
 number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
@@ -1090,6 +1108,8 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
   SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
   SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
   SSVAL(outbuf,smb_vwv8,1);
+  SSVAL(outbuf,smb_vwv11,0xffff);
+  SSVAL(outbuf,smb_vwv12,0xffff);
   
   p = smb_buf(outbuf);
   strcpy(p,rname);
@@ -1381,17 +1401,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 
   if (!close_done)
     {
-      bzero(outbuf,smb_size);
-      set_message(outbuf,3,0,True);
-      CVAL(outbuf,smb_com) = SMBclose;
-      SSVAL(outbuf,smb_tid,cnum);
-      cli_setup_pkt(outbuf);
-      
-      SSVAL(outbuf,smb_vwv0,fnum);
-      SIVALS(outbuf,smb_vwv1,-1);
-      
-      send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
       
       if (!ignore_close_error && CVAL(inbuf,smb_rcls) != 0)
 	{
@@ -2128,10 +2138,9 @@ static void do_cancel(int job)
   SSVAL(p,0,job);     
   p += 2;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0,
-	       6,1000,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 6, 0, 1000,
 	       &rprcnt,&rdrcnt,
-	       param,NULL,
+	       param,NULL, NULL,
 	       &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
@@ -2464,10 +2473,9 @@ static void cmd_p_queue_4(char *inbuf,char *outbuf )
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintJobEnum()...\n"));
-  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0,
-               10, 4096,
+  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0, 10, 0, 4096,
                &rprcnt, &rdrcnt,
-               param, NULL,
+               param, NULL, NULL,
                &rparam, &rdata) )
     {
       int converter;
@@ -2571,10 +2579,9 @@ static void cmd_qinfo(char *inbuf,char *outbuf )
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintQueueGetInfo()...\n"));
-  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0,
-	       10, 4096,
+  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0, 10, 0, 4096,
 	       &rprcnt, &rdrcnt,
-	       param, NULL,
+	       param, NULL, NULL,
 	       &rparam, &rdata) )
 	{
 	int converter;
@@ -2967,10 +2974,9 @@ static BOOL browse_host(BOOL sort)
   SSVAL(p,2,BUFFER_SIZE);
   p += 4;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0,
-	       1024,BUFFER_SIZE,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 1024, 0, BUFFER_SIZE,
                &rprcnt,&rdrcnt,
-	       param,NULL,
+	       param,NULL, NULL,
 	       &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
@@ -3059,10 +3065,9 @@ static void server_info()
   SSVAL(p,2,1000);
   p += 6;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0,
-	       6,1000,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 6, 0, 1000,
 	       &rprcnt,&rdrcnt,
-	       param,NULL,
+	       param,NULL, NULL,
 	       &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
@@ -3134,10 +3139,10 @@ static BOOL list_servers(char *wk_grp)
   /* first ask for a list of servers in this workgroup */
   SIVAL(svtype_p,0,SV_TYPE_ALL);
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0,
-	       8,BUFFER_SIZE - SAFETY_MARGIN,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 8, 0,
+           BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
-	       param,NULL,
+	       param,NULL, NULL,
 	       &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
@@ -3173,10 +3178,10 @@ static BOOL list_servers(char *wk_grp)
   /* now ask for a list of workgroups */
   SIVAL(svtype_p,0,SV_TYPE_DOMAIN_ENUM);
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0,
-	       8,BUFFER_SIZE - SAFETY_MARGIN,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 8, 0,
+           BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
-	       param,NULL,
+	       param,NULL, NULL,
 	       &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
@@ -3516,9 +3521,9 @@ static BOOL process(char *base_directory)
 }
 
 /****************************************************************************
-LSA Request Challenge on the NETLOGON pipe.
+do a LSA Request Challenge
 ****************************************************************************/
-static BOOL cli_lsa_req_chal(void)
+static BOOL do_lsa_req_chal(uint16 fnum)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -3526,6 +3531,7 @@ static BOOL cli_lsa_req_chal(void)
 	int rdrcnt,rprcnt;
 	int count = 0;
 	pstring param; /* only 1024 bytes */
+	uint16 setup[2]; /* only need 2 uint16 setup parameters */
 	LSA_Q_REQ_CHAL q_c;
 	DOM_CHAL clnt_chal;
 	int call_id = 0x1;
@@ -3541,19 +3547,28 @@ static BOOL cli_lsa_req_chal(void)
 	/* store the parameters */
 	make_q_req_chal(&q_c, desthost, myhostname, &clnt_chal);
 
+	/* i have absolutely no idea why you do this */
+	SIVAL(param, 0, 0xF400);
+
 	/* turn parameters into data stream */
 	p = lsa_io_q_req_chal(False, &q_c, param + 0x18, param, 4, 5);
 
 	/* create the request RPC_HDR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_REQCHAL, param, PTR_DIFF(p, param));
 
+	/* create setup parameters. */
+	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
+	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+
 	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", PTR_DIFF(p, param),0,
-				1024,BUFFER_SIZE,
+	if (cli_call_api("\\PIPE\\", PTR_DIFF(p, param), 0, 2, 1024,
+                BUFFER_SIZE,
 				&rprcnt,&rdrcnt,
-				param,NULL,
+				param, NULL, setup,
 				&rparam,&rdata))
 	{
+		DEBUG(5, ("cli_call_api: return OK\n"));
+		sleep(10);
 #if 0
 		/* oh, now what??? */
 
@@ -3575,6 +3590,85 @@ static BOOL cli_lsa_req_chal(void)
 	if (rdata) free(rdata);
 
 	return(count>0);
+}
+
+/****************************************************************************
+  open an rpc pipe (\NETLOGON or \srvsvc for example)
+  ****************************************************************************/
+static int open_rpc_pipe(char *inbuf, char *outbuf, char *rname)
+{
+  int fnum;
+  char *p;
+
+  DEBUG(5,("open_rpc_pipe: %s\n", rname));
+
+  bzero(outbuf,smb_size);
+  set_message(outbuf,15,1 + strlen(rname),True);
+
+  CVAL(outbuf,smb_com) = SMBopenX;
+  SSVAL(outbuf,smb_tid, cnum);
+  cli_setup_pkt(outbuf);
+
+  SSVAL(outbuf,smb_vwv0,0xFF);
+  SSVAL(outbuf,smb_vwv2,1);
+  SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
+  SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
+  SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
+  SSVAL(outbuf,smb_vwv8,1);
+  
+  p = smb_buf(outbuf);
+  strcpy(p,rname);
+  p = skip_string(p,1);
+
+  send_smb(Client,outbuf);
+  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  
+  if (CVAL(inbuf,smb_rcls) != 0)
+  {
+      DEBUG(0,("%s opening remote pipe %s\n", smb_errstr(inbuf),rname));
+
+      return -1;
+  }
+
+  fnum = SVAL(inbuf, smb_vwv0);
+
+  DEBUG(5,("opening pipe: fnum %d\n", fnum));
+
+  return fnum;
+}
+
+/****************************************************************************
+
+****************************************************************************/
+static BOOL cli_lsa_req_chal(void)
+{
+	int fnum;
+	char *inbuf,*outbuf; 
+
+	inbuf  = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+	outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+
+	if (!inbuf || !outbuf)
+	{
+		DEBUG(0,("out of memory\n"));
+		return -1;
+	}
+	
+	/* open the \PIPE\NETLOGON file */
+	fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON);
+
+	if (fnum > 0)
+	{
+		do_lsa_req_chal(fnum);
+
+		/* close \PIPE\NETLOGON */
+		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+
+		free(inbuf); free(outbuf);
+		return True;
+	}
+
+	return False;
 }
 
 /****************************************************************************

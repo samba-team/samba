@@ -73,7 +73,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 	strupper(my_name);
 
 	code = SVAL(buf,0);
-	DEBUG(1,("namelogon: %x\n", code));
+	DEBUG(1,("namelogon from %s: %x\n", inet_ntoa(p->ip), code));
 
 	switch (code)
 	{
