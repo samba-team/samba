@@ -139,7 +139,7 @@ static int fetch_reg_keys( TDB_CONTEXT *tdb,  char* key, char **subkeys )
 	
 	if ( !buf ) {
 		DEBUG(5,("fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
-		return -1;
+		return 0;
 	}
 	
 	len = tdb_unpack( buf, buflen, "d", &num_items);
@@ -188,7 +188,7 @@ static int fetch_reg_keys_count( TDB_CONTEXT *tdb,  char* key )
 	
 	if ( !buf ) {
 		DEBUG(5,("fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
-		return -1;
+		return 0;
 	}
 	
 	len = tdb_unpack( buf, buflen, "d", &num_items);
@@ -480,21 +480,21 @@ static BOOL get_value_information( Registry_Key *key, uint32 *maxnum,
 		return False;
 
 	/* Hard coded key names first */
-	
-	if ( !strcmp(key->name, KEY_HKLM) || !strcmp(key->name, KEY_HKU) )
-	{
-		*maxnum   = 0;
-		*maxlen   = 0;
-		*maxsize  = 0;
-		return True;
-	}
-	
+	/* nothing has valuies right now */
+		
+	*maxnum   = 0;
+	*maxlen   = 0;
+	*maxsize  = 0;
+	return True;
+
+#if 0	/* JERRY */
 	/* 
 	 * FIXME!!! Need to add routines to look up values in other
 	 * databases   --jerry
 	 */
 
 	return False;
+#endif
 }
 
 /********************************************************************
@@ -670,7 +670,7 @@ NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *
 	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) )
 		return NT_STATUS_ACCESS_DENIED;	
 		
-	r_u->sec_desc = 0x0;	/* size for key's sec_desc */
+	r_u->sec_desc = 0x00000078;	/* size for key's sec_desc */
 	
 	/* Win9x set this to 0x0 since it does not keep timestamps.
 	   Doing the same here for simplicity   --jerry */
