@@ -37,8 +37,12 @@ file	:  section_list
 	;
 
 section_list : /* empty */
-	| section rel_list section_list { 
-					printf("section_list\n"); }
+	| section rel_list section_list 
+		{ 
+#ifdef DEBUG
+			printf("section_list\n"); 
+#endif
+		}
 	;
 
 section
@@ -54,7 +58,11 @@ section
 		cf->sections = p;
 		csec = p;
 		crel = &p->relations;
-		printf("section\n"); strcpy(section, $2); }
+#ifdef DEBUG
+		printf("section\n");
+#endif
+		strcpy(section, $2); 
+	}
 	;
 
 rel_list 
@@ -66,7 +74,12 @@ rel_sub	: /* empty */
 	;
 
 relation
-	: tag '=' value { printf("relation\n"); }
+	: tag '=' value 
+	{ 
+#ifdef DEBUG
+		printf("relation\n");
+#endif
+	}
 	;
 
 tag	: STRING 
@@ -87,7 +100,9 @@ tag	: STRING
 			p->next = *crel;
 			*crel = p;
 		}
+#ifdef DEBUG
 		printf("tag\n"); 
+#endif
 	}
 	;
 
@@ -96,14 +111,18 @@ value	: STRING
 		(*crel)->value.type = krb5_config_value_string;
 		(*crel)->value.data.string = $1;
 		crel = &(*crel)->next;
-		printf("value/string\n"); 
+#ifdef DEBUG
+		printf("value/string\n");
+#endif
 	}
 	| '{' rel_list '}'
 	{
 		crel = rels[--relp];
 		(*crel)->value.type = krb5_config_value_list;
 		crel = &(*crel)->next;
+#ifdef DEBUG
 		printf("value/list\n");
+#endif
 	}
 	;
 
