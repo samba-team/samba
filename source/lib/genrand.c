@@ -261,27 +261,36 @@ BOOL check_password_quality(const char *s)
  Use the random number generator to generate a random string.
 ********************************************************************/
 
-static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
+char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list)
+{
+	size_t i;
+	size_t list_len = strlen(list);
+
+	char *retstr = talloc(mem_ctx, len + 1);
+	if (!retstr) return NULL;
+
+	generate_random_buffer(retstr, len);
+	for (i = 0; i < len; i++) {
+		retstr[i] = list[retstr[i] % list_len];
+	}
+	retstr[i] = '\0';
+
+	return retstr;
+}
 
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 {
-	size_t i;
-
-	char *retstr = talloc(mem_ctx, len + 1);
-
-	if (!retstr) 
-		return NULL;
+	char *retstr;
+	const char *c_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 
 again:
-	generate_random_buffer(retstr, len);
-	for (i = 0; i < len; i++)
-		retstr[i] = c_list[retstr[i] % (sizeof(c_list)-1) ];
-
-	retstr[i] = '\0';
+	retstr = generate_random_str_list(mem_ctx, len, c_list);
+	if (!retstr) return NULL;
 
 	/* we need to make sure the random string passes basic quality tests
 	   or it might be rejected by windows as a password */
 	if (len >= 7 && !check_password_quality(retstr)) {
+		talloc_free(retstr);
 		goto again;
 	}
 

@@ -811,15 +811,15 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
-	io2.t2fnext.in.max_count = num_files - 2;
+	io2.t2fnext.in.max_count = num_files - 1;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
-	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
+	io2.t2fnext.in.last_name = result.list[result.count-2].both_directory_info.name.s;
 
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(result.count, 20);
+	CHECK_VALUE(result.count, 21);
 
 	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
 	ret &= check_result(&result, "t014-14.txt", False, 0);
@@ -840,7 +840,6 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			       result.list[i].both_directory_info.attrib);
 		}
 	}
-	exit(1);
 
 done:
 	smb_raw_exit(cli->session);
@@ -871,7 +870,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		asprintf(&fname, BASEDIR "\\%s.txt", generate_random_str(mem_ctx, 10));
+		asprintf(&fname, BASEDIR "\\%s.txt", generate_random_str_list(mem_ctx, 10, "abcdefgh"));
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
