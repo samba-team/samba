@@ -997,6 +997,8 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 	};
 
+	smbcli_rmdir(cli->tree, dname);
+
 	printf("TESTING ACL INHERITANCE\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1246,7 +1248,153 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rmdir(cli->tree, dname);
 
 done:
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd_orig;
+	status = smb_raw_setfileinfo(cli->tree, &set);
+
 	smbcli_close(cli->tree, fnum);
+	return ret;
+}
+
+
+/*
+  test dynamic acl inheritance
+*/
+static BOOL test_inheritance_dynamic(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *dname = BASEDIR "\\inheritance";
+	const char *fname1 = BASEDIR "\\inheritance\\testfile";
+	BOOL ret = True;
+	int fnum, fnum2;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd, *sd_orig;
+	const char *owner_sid;
+	
+	printf("TESTING DYNAMIC ACL INHERITANCE\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	printf("get the original sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
+
+	printf("owner_sid is %s\n", owner_sid);
+
+	sd = security_descriptor_create(mem_ctx,
+					NULL, NULL,
+					owner_sid,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_FILE_WRITE_DATA | SEC_STD_DELETE | SEC_FILE_READ_ATTRIBUTE,
+					SEC_ACE_FLAG_OBJECT_INHERIT,
+					NULL);
+	sd->type |= SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_DACL_AUTO_INHERIT_REQ;
+
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(cli->tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("create a file with an inherited acl\n");
+	io.ntcreatex.in.fname = fname1;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	smbcli_close(cli->tree, fnum2);
+
+	printf("try and access file with base rights - should be OK\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	smbcli_close(cli->tree, fnum2);
+
+	printf("try and access file with extra rights - should be denied\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA | SEC_FILE_EXECUTE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("update parent sd\n");
+	sd = security_descriptor_create(mem_ctx,
+					NULL, NULL,
+					owner_sid,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_FILE_WRITE_DATA | SEC_STD_DELETE | SEC_FILE_READ_ATTRIBUTE | SEC_FILE_EXECUTE,
+					SEC_ACE_FLAG_OBJECT_INHERIT,
+					NULL);
+	sd->type |= SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_DACL_AUTO_INHERIT_REQ;
+
+	set.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(cli->tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("try and access file with base rights - should be OK\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	smbcli_close(cli->tree, fnum2);
+
+
+	printf("try and access now - should be OK if dynamic inheritance works\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA | SEC_FILE_EXECUTE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Server does not have dynamic inheritance\n");
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		printf("Server does have dynamic inheritance\n");
+	}
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	smbcli_unlink(cli->tree, fname1);
+
+done:
+	printf("put back original sd\n");
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd_orig;
+	status = smb_raw_setfileinfo(cli->tree, &set);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_rmdir(cli->tree, dname);
+
 	return ret;
 }
 
@@ -1276,17 +1424,7 @@ BOOL torture_raw_acls(void)
 	ret &= test_generic_bits(cli, mem_ctx);
 	ret &= test_owner_bits(cli, mem_ctx);
 	ret &= test_inheritance(cli, mem_ctx);
-
-	printf("\n *** NOTE! need to add dynamic inheritance test **\n");
-#if 0
 	ret &= test_inheritance_dynamic(cli, mem_ctx);
-	
-/*
-  open questions:
-    - does "create with ACL" have to obey the ACL that is supplied?
-    - does "create with ACL" look at the owner_sid and group_sid at all?
-*/
-#endif
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
