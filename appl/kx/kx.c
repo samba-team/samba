@@ -2,253 +2,226 @@
 
 RCSID("$Id$");
 
-static char *prog;
+char *prog;
 
 static void
 usage()
 {
-  fprintf (stderr, "Usage: %s local-display-number host|display\n",
-	   prog);
-  exit (1);
-}
-
-static int
-doit_host (char *host, unsigned dnr, int fd)
-{
-  CREDENTIALS cred;
-  KTEXT_ST text;
-  MSG_DAT msg;
-  int status;
-  des_key_schedule schedule;
-  struct sockaddr_in thisaddr, thataddr;
-  int addrlen;
-  void *ret;
-  struct hostent *hostent;
-  int s;
-  struct sockaddr_un unixaddr;
-  des_cblock iv1, iv2;
-  int num1 = 0, num2 = 0;
-
-  /*
-   * Establish authenticated connection
-   */
-
-  hostent = gethostbyname (host);
-  if (hostent == NULL) {
-    fprintf (stderr, "%s: gethostbyname '%s' failed: ", prog, host);
-    return 1;
-  }
-
-  memset (&thataddr, 0, sizeof(thataddr));
-  thataddr.sin_family = AF_INET;
-  thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(2111));
-  memcpy (&thataddr.sin_addr, hostent->h_addr, sizeof(thataddr.sin_addr));
-
-  s = socket (AF_INET, SOCK_STREAM, 0);
-  if (s < 0) {
-    fprintf (stderr, "%s: socket failed: %s\n", prog, k_strerror(errno));
-    return 1;
-  }
-  if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
-    fprintf (stderr, "%s: connect(%s) failed: %s\n", prog, host,
-	     k_strerror(errno));
-    return 1;
-  }
-  addrlen = sizeof(thisaddr);
-  if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
-      addrlen != sizeof(thisaddr)) {
-    fprintf (stderr, "%s: getsockname(%s) failed: %s\n",
-	     prog, host, k_strerror(errno));
-    return 1;
-  }
-  status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
-			 host, krb_realmofhost (host),
-			 getpid(), &msg, &cred, schedule,
-			 &thisaddr, &thataddr, "KXSERV.0");
-  if (status != KSUCCESS) {
-    fprintf (stderr, "%s: %s: %s\n", prog, host,
-	     krb_get_err_text(status));
-    return 1;
-  }
-  /*
-   * Send parameters.
-   */
-
-  {
-    u_char b = dnr;
-    char buf[128];
-    int ret;
-    
-    if (write (s, &b, sizeof(b)) != sizeof(b)) {
-      fprintf (stderr, "%s: write: %s\n", prog, k_strerror (errno));
-      return 1;
-    }
-    if (read (s, &b, sizeof(b)) != sizeof(b)) {
-      fprintf (stderr, "%s: read: %s\n", prog, k_strerror (errno));
-      return 1;
-    }
-    if (b) {
-      fprintf (stderr, "%s: Error from '%s': ", prog, host);
-      ret = read (s, buf, sizeof(buf));
-      if(ret < 0) {
-	fprintf (stderr, "%s: read: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-      fprintf (stderr, "%s\n", buf);
-      return 1;
-    }
-  }
-
-  memcpy (&iv1, &cred.session, sizeof(iv1));
-  memcpy (&iv2, &cred.session, sizeof(iv2));
-  for (;;) {
-    fd_set fdset;
-    int ret;
-    char buf[BUFSIZ];
-
-    FD_ZERO(&fdset);
-    FD_SET(s, &fdset);
-    FD_SET(fd, &fdset);
-
-    ret = select (256, &fdset, NULL, NULL, NULL); /* XXX */
-    if (ret < 0 && errno != EINTR) {
-      fprintf (stderr, "%s: select: %s\n", prog, k_strerror (errno));
-      return 1;
-    }
-    if (FD_ISSET(s, &fdset)) {
-      ret = read (s, buf, sizeof(buf));
-      if (ret == 0)
-	return 0;
-      if (ret < 0) {
-	fprintf (stderr, "%s: read: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-#ifndef NOENCRYPTION
-      des_cfb64_encrypt (buf, buf, ret, schedule, &iv1,
-			 &num1, DES_DECRYPT);
-#endif
-      ret = krb_net_write (fd, buf, ret);
-      if (ret < 0) {
-	fprintf (stderr, "%s: write: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-    }
-    if (FD_ISSET(fd, &fdset)) {
-      ret = read (fd, buf, sizeof(buf));
-      if (ret == 0)
-	return 0;
-      if (ret < 0) {
-	fprintf (stderr, "%s: read: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-#ifndef NOENCRYPTION
-      des_cfb64_encrypt (buf, buf, ret, schedule, &iv2,
-			 &num2, DES_ENCRYPT);
-#endif
-      ret = krb_net_write (s, buf, ret);
-      if (ret < 0) {
-	fprintf (stderr, "%s: write: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-    }
-  }
+     fprintf (stderr, "Usage: %s host\n",
+	      prog);
+     exit (1);
 }
 
 /*
- * Listen for calls to the remote X-server.
+ * Establish authenticated connection
  */
 
 static int
-doit (unsigned localnr, char *host, unsigned remotenr)
+connect_host (char *host, des_cblock *key, des_key_schedule schedule)
 {
-  int fd;
-  struct sockaddr_un addr;
-  int dnr;
+     CREDENTIALS cred;
+     KTEXT_ST text;
+     MSG_DAT msg;
+     int status;
+     struct sockaddr_in thisaddr, thataddr;
+     int addrlen;
+     struct hostent *hostent;
+     int s;
+     u_char b;
 
-  fd = socket (AF_UNIX, SOCK_STREAM, 0);
-  if (fd < 0) {
-    fprintf (stderr, "%s: socket failed: %s\n", prog, k_strerror(errno));
-    return 1;
-  }    
-  addr.sun_family = AF_UNIX;
-  sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", localnr);
-  unlink (addr.sun_path);
-  if(bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    fprintf (stderr, "%s: bind failed: %s\n", prog,
-	     k_strerror(errno));
-    return 1;
-  }
-  if (listen (fd, 5) < 0) {
-    fprintf (stderr, "%s: listen failed: %s\n", prog,
-	     k_strerror(errno));
-    return 1;
-  }
-  for (;;) {
-    int newfd;
-    struct sockaddr_un that;
-    int len;
-    pid_t pid;
+     hostent = gethostbyname (host);
+     if (hostent == NULL) {
+	  fprintf (stderr, "%s: gethostbyname '%s' failed: ", prog, host);
+	  return -1;
+     }
 
-    len = sizeof (that);
-    newfd = accept (fd, (struct sockaddr *)&that, &len);
-    if (newfd < 0)
-      if (errno == EINTR)
-	continue;
-      else {
-	fprintf (stderr, "%s: accept: %s\n", prog, k_strerror (errno));
-	return 1;
-      }
-    fprintf (stderr, "%s: New connection\n", prog);
-    pid = fork ();
-    if (pid < 0) {
-      fprintf (stderr, "%s: fork: %s\n", prog, k_strerror (errno));
-      return 1;
-    } else if (pid == 0) {
-      close (fd);
-      return doit_host (host, remotenr, newfd);
-    } else {
-      close (newfd);
-    }
-  }
+     memset (&thataddr, 0, sizeof(thataddr));
+     thataddr.sin_family = AF_INET;
+     thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(2111));
+     memcpy (&thataddr.sin_addr, hostent->h_addr, sizeof(thataddr.sin_addr));
+
+     s = socket (AF_INET, SOCK_STREAM, 0);
+     if (s < 0) {
+	  fprintf (stderr, "%s: socket failed: %s\n", prog, k_strerror(errno));
+	  return -1;
+     }
+     if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
+	  fprintf (stderr, "%s: connect(%s) failed: %s\n", prog, host,
+		   k_strerror(errno));
+	  return -1;
+     }
+     addrlen = sizeof(thisaddr);
+     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
+	 addrlen != sizeof(thisaddr)) {
+	  fprintf (stderr, "%s: getsockname(%s) failed: %s\n",
+		   prog, host, k_strerror(errno));
+	  return -1;
+     }
+     status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
+			    host, krb_realmofhost (host),
+			    getpid(), &msg, &cred, schedule,
+			    &thisaddr, &thataddr, "KXSERV.0");
+     if (status != KSUCCESS) {
+	  fprintf (stderr, "%s: %s: %s\n", prog, host,
+		   krb_get_err_text(status));
+	  return -1;
+     }
+     if (read (s, &b, sizeof(b)) != sizeof(b)) {
+	  fprintf (stderr, "%s: read: %s\n", prog,
+		   k_strerror(errno));
+	  return -1;
+     }
+     if (b) {
+	  char buf[BUFSIZ];
+
+	  read (s, buf, sizeof(buf));
+	  buf[BUFSIZ - 1] = '\0';
+
+	  fprintf (stderr, "%s: %s: %s\n", prog, host, buf);
+	  return -1;
+     }
+
+     memcpy(key, &cred.session, sizeof(des_cblock));
+     return s;
 }
 
-static
-RETSIGTYPE
-childhandler ()
+static int
+active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
 {
-  pid_t pid;
-  int status;
+     int kxd;
+     u_char zero = 0;
 
-  do { 
-    pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
-  } while(pid > 0);
-  signal (SIGCHLD, childhandler);
+     kxd = connect_host (host, iv, schedule);
+     if (kxd < 0)
+	  return 1;
+     if (write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
+	  fprintf (stderr, "%s: write: %s\n", prog,
+		   k_strerror(errno));
+	  return 1;
+     }
+     return copy_encrypted (fd, kxd, iv, schedule);
+}
+
+static int
+passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
+{
+     int xserver;
+
+     xserver = connect_local_xsocket (0);
+     if (xserver < 0)
+	  return 1;
+     return copy_encrypted (xserver, fd, iv, schedule);
 }
 
 /*
- * fx - forward x connection.
+ * Connect to the given host.
+ * Iff passivep, give it a port number to call you back and then wait.
+ * Else, listen on a local display and then connect to the remote host
+ * when a local client gets connected.
+ */
+
+static int
+doit (char *host, int passivep)
+{
+     int otherside;
+     des_key_schedule schedule;
+     des_cblock key;
+     int rendez_vous;
+     int (*fn)(int fd, char *host, des_cblock *iv,
+	       des_key_schedule schedule);
+
+     if (passivep) {
+	  struct sockaddr_in newaddr;
+	  int addrlen;
+	  u_char b = passivep;
+	  int otherside;
+
+	  otherside = connect_host (host, &key, schedule);
+	  if (otherside < 0)
+	       return 1;
+
+	  rendez_vous = socket (AF_INET, SOCK_STREAM, 0);
+	  if (rendez_vous < 0) {
+	       fprintf (stderr, "%s: socket failed: %s\n", prog,
+			k_strerror(errno));
+	       return 1;
+	  }
+	  memset (&newaddr, 0, sizeof(newaddr));
+	  if (bind (rendez_vous, (struct sockaddr *)&newaddr,
+		    sizeof(newaddr)) < 0) {
+	       fprintf (stderr, "%s: bind: %s\n", prog, k_strerror(errno));
+	       return 1;
+	  }
+	  addrlen = sizeof(newaddr);
+	  if (getsockname (rendez_vous, (struct sockaddr *)&newaddr,
+			   &addrlen) < 0) {
+	       fprintf (stderr, "%s: getsockname: %s\n", prog,
+			k_strerror(errno));
+	       return 1;
+	  }
+	  if (listen (rendez_vous, SOMAXCONN) < 0) {
+	       fprintf (stderr, "%s: listen: %s\n", prog, k_strerror(errno));
+	       return 1;
+	  }
+	  if (write (otherside, &b, sizeof(b)) != sizeof(b) ||
+	      write (otherside, &newaddr.sin_port, sizeof(newaddr.sin_port))
+	      != sizeof(newaddr.sin_port)) {
+	       fprintf (stderr, "%s: write: %s\n", prog, k_strerror(errno));
+	       return 1;
+	  }
+	  close (otherside);
+	  fn = passive;
+     } else {
+	  rendez_vous = get_local_xsocket (1); /* XXX */
+	  if (rendez_vous < 0)
+	       return 1;
+	  fn = active;
+     }
+     for (;;) {
+	  pid_t child;
+	  int fd;
+	  int zero = 0;
+
+	  fd = accept (rendez_vous, NULL, &zero);
+	  if (fd < 0)
+	       if (errno == EINTR)
+		    continue;
+	       else {
+		    fprintf (stderr, "%s: accept: %s\n", prog,
+			     k_strerror(errno));
+		    return 1;
+	       }
+	  child = fork ();
+	  if (child < 0) {
+	       fprintf (stderr, "%s: fork: %s\n", prog,
+			k_strerror(errno));
+	       continue;
+	  } else if (child == 0) {
+	       close (rendez_vous);
+	       return (*fn)(fd, host, &key, schedule);
+	  } else {
+	       close (fd);
+	  }
+     }
+}
+
+/*
+ * kx - forward x connection over a kerberos-encrypted channel.
+ *
+ * passive mode if $DISPLAY begins with :
  */
 
 int
-main(argc, argv)
-     int argc;
-     char **argv;
+main(int argc, char **argv)
 {
-  int dnr;
-  char *p;
+     int passivep;
+     char *disp;
 
-  prog = argv[0];
-  if (argc != 3)
-    usage ();
-
-  p = strchr (argv[2], ':');
-  if (p) {
-    *p = '\0';
-    dnr = atoi (p+1);
-  } else
-    dnr = 0;
-
-  signal (SIGCHLD, childhandler);
-
-  return doit (atoi(argv[1]), argv[2], dnr);
+     prog = argv[0];
+     if (argc != 2)
+	  usage ();
+     disp = getenv("DISPLAY");
+     passivep = disp != NULL && *disp == ':';
+     signal (SIGCHLD, childhandler);
+     return doit (argv[1], passivep);
 }

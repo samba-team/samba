@@ -24,3 +24,21 @@
 #include <sys/un.h>
 
 #include <krb.h>
+
+#ifndef max
+#define max(a,b) (((a)>(b))?(a):(b))
+#endif
+
+#ifndef SOMAXCONN
+#define SOMAXCONN 5
+#endif
+
+extern char *prog;
+
+int copy_encrypted (int fd1, int fd2, des_cblock *iv,
+		    des_key_schedule schedule);
+
+RETSIGTYPE childhandler ();
+
+int get_local_xsocket (unsigned dnr);
+int connect_local_xsocket (unsigned dnr);

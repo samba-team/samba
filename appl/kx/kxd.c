@@ -4,6 +4,8 @@ RCSID("$Id$");
 
 #include <syslog.h>
 
+char *prog;
+
 static int
 fatal (int fd, char *s)
 {
@@ -16,27 +18,19 @@ fatal (int fd, char *s)
 }
 
 static int
-doit(int sock)
+recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
+	   struct sockaddr_in *retaddr)
 {
      int status;
      KTEXT_ST ticket;
      AUTH_DAT auth;
      char instance[INST_SZ + 1];
-     des_key_schedule schedule;
      struct sockaddr_in thisaddr, thataddr;
      int addrlen;
-     int len;
-     char buf[BUFSIZ];
-     void *data;
-     struct passwd *passwd;
      char version[KRB_SENDAUTH_VLEN];
-     int fd;
-     struct stat sb;
-     struct sockaddr_un addr;
      char *username;
-     des_cblock iv1, iv2;
-     int num1 = 0, num2 = 0;
-     unsigned dnr;
+     u_char ok = 0;
+     struct passwd *passwd;
 
      addrlen = sizeof(thisaddr);
      if (getsockname (sock, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
@@ -57,17 +51,7 @@ doit(int sock)
 	 strncmp(version, "KXSERV.0", KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
-     {
-	  u_char b;
-
-	  if (read (sock, &b, sizeof(b)) != sizeof(b))
-	       return 1;
-	  dnr = b;
-     }
-
-     if (stat ("/dev/console", &sb) < 0)
-	  return fatal (sock, "Cannot stat /dev/console");
-     passwd = getpwuid (sb.st_uid);
+     passwd = getpwnam (auth.pname);
      if (passwd == NULL)
 	  return fatal (sock, "Cannot find uid");
      username = strdup (passwd->pw_name);
@@ -79,65 +63,103 @@ doit(int sock)
 	 setuid(passwd->pw_uid)) {
 	  return fatal (sock, "Cannot set uid");
      }
-     fd = socket (AF_UNIX, SOCK_STREAM, 0);
-     if (fd < 0)
-	  return fatal (sock, "Cannot create socket");
-     addr.sun_family = AF_UNIX;
-     sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
-     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-       {
-	 char msg[200];
-	 sprintf (msg, "Cannot connect to %s", addr.sun_path);
-	 return fatal (sock, msg);
-       }
-     memcpy (&iv1, &auth.session, sizeof(iv1));
-     memcpy (&iv2, &auth.session, sizeof(iv2));
-     {
-	  u_char b = 0;
+     if (write (sock, &ok, sizeof(ok)) != sizeof(ok))
+	  return 1;
 
-	  if (write (sock, &b, sizeof(b)) != sizeof(b))
-	      return 1;
-     }
-     for (;;) {
-	  fd_set fdset;
-	  int ret;
-	  char buf[BUFSIZ];
+     memcpy(key, &auth.session, sizeof(des_cblock));
+     *retaddr = thataddr;
+     return 0;
+}
 
-	  FD_ZERO(&fdset);
-	  FD_SET(sock, &fdset);
-	  FD_SET(fd, &fdset);
+static int
+doit_conn (int fd, struct sockaddr_in *thataddr,
+	   des_cblock *key, des_key_schedule schedule)
+{
+  int sock;
 
-	  ret = select (fd+1, &fdset, NULL, NULL, NULL);
-	  if (ret < 0 && errno != EINTR)
+  sock = socket (AF_INET, SOCK_STREAM, 0);
+  if (sock < 0) {
+    char msg[200];
+    sprintf (msg, "socket: %s", k_strerror(errno));
+    return fatal (sock, msg);
+  }
+  if (connect (sock, (struct sockaddr *)thataddr,
+	       sizeof(*thataddr)) < 0) {
+    abort ();
+  }
+  return copy_encrypted (fd, sock, key, schedule);
+}
+
+/*
+ *
+ */
+
+static int
+check_user_console ()
+{
+     struct stat sb;
+
+     if (stat ("/dev/console", &sb) < 0)
+	  return fatal (0, "Cannot stat /dev/console");
+     if (getuid() != sb.st_uid)
+	  return fatal (0, "Permission denied");
+     return 0;
+}
+
+static int
+doit(int sock)
+{
+     u_char passivep;
+     struct sockaddr_in thataddr;
+     des_key_schedule schedule;
+     des_cblock key;
+     int localx;
+
+     if (recv_conn (sock, &key, schedule, &thataddr))
+	  return 1;
+     if (read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
+	  return 1;
+     if (passivep) {
+	  if (read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
+	      != sizeof(thataddr.sin_port))
 	       return 1;
-	  if (FD_ISSET(sock, &fdset)) {
- 	       ret = read (sock, buf, sizeof(buf));
-	       if (ret == 0)
-		    return 0;
-	       if (ret < 0)
-		    return 1;
-#ifndef NOENCRYPTION
-	       des_cfb64_encrypt (buf, buf, ret, schedule,
-				&iv1, &num1, DES_DECRYPT);
-#endif
-	       ret = krb_net_write (fd, buf, ret);
-	       if (ret < 0)
-		    return 1;
+	  localx = get_local_xsocket (1);
+	  if (localx < 0)
+	       return 1;
+	  for (;;) {
+	       pid_t child;
+	       int fd;
+	       int zero = 0;
+
+	       fd = accept (localx, NULL, &zero);
+	       if (fd < 0)
+		    if (errno == EINTR)
+			 continue;
+		    else {
+			 char msg[200];
+			 sprintf (msg, "accept: %s\n", k_strerror (errno));
+			 return fatal (sock, msg);
+		    }
+	       child = fork ();
+	       if (child < 0) {
+		    char msg[200];
+		    sprintf (msg, "fork: %s\n", k_strerror (errno));
+		    return fatal(sock, msg);
+	       } else if (child == 0) {
+		    close (localx);
+		    return doit_conn (fd, &thataddr, &key, schedule);
+	       } else {
+		    close (fd);
+	       }
 	  }
-	  if (FD_ISSET(fd, &fdset)) {
-	       ret = read (fd, buf, sizeof(buf));
-	       if (ret == 0)
-		    return 0;
-	       if (ret < 0)
-		    return 1;
-#ifndef NOENCRYPTION
-	       des_cfb64_encrypt (buf, buf, ret, schedule,
-				&iv2, &num2, DES_ENCRYPT);
-#endif
-	       ret = krb_net_write (STDOUT_FILENO, buf, ret);
-	       if (ret < 0)
-		    return 1;
-	  }
+     } else {
+	  if (check_user_console ())
+	       return 1;
+
+	  localx = connect_local_xsocket (0);
+	  if (localx < 0)
+	       return 1;
+	  return copy_encrypted (localx, sock, &key, schedule);
      }
 }
 
@@ -148,6 +170,9 @@ doit(int sock)
 int
 main (int argc, char **argv)
 {
-     openlog(argv[0], LOG_PID|LOG_CONS, LOG_DAEMON);
+     prog = argv[0];
+
+     openlog(prog, LOG_PID|LOG_CONS, LOG_DAEMON);
+     signal (SIGCHLD, childhandler);
      return doit(0);
 }
