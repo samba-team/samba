@@ -1,3 +1,8 @@
+2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* doc/setup.texi: say something about starting kadmind from the
+	command line
+
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
 	* kpasswd/kpasswdd.c: use kadm5_s_chpass_principal_cond instead of
