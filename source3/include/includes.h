@@ -933,4 +933,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 
 extern int DEBUGLEVEL;
 
+#define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
+
 #endif /* _INCLUDES_H */
