@@ -408,6 +408,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata);
 
 /* The following definitions come from libsmb/clireadwrite.c  */
 
@@ -3221,8 +3222,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
-void init_sam_user_info24(SAM_USER_INFO_24 * usr,
-			  char newpass[516], uint16 passlen);
+void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516]);
 void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all zeros */
 			NTTIME * logoff_time,	/* all zeros */
 			NTTIME * kickoff_time,	/* all zeros */
@@ -4644,7 +4644,7 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode);
 
-/* The following definitions come from utils/nbio.c  */
+/* The following definitions come from torture/nbio.c  */
 
 void nb_setup(struct cli_state *cli);
 void nb_unlink(char *fname);
@@ -4658,8 +4658,9 @@ void nb_rename(char *old, char *new);
 void nb_stat(char *fname, int size);
 void nb_create(char *fname, int size);
 
-/* The following definitions come from utils/torture.c  */
+/* The following definitions come from torture/torture.c  */
 
+void new_trans(struct cli_state *pcli, int fnum, int level);
 
 /* The following definitions come from web/cgi.c  */
 
