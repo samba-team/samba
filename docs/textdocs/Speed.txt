@@ -113,6 +113,10 @@ file to open the file read-only if the first has it open
 read-write. For many applications that do their own locking this
 doesn't matter, but for some it may.
 
+NOTE: In the most recent versions of Samba there is an option to use
+shared memory via mmap() to implement the share modes. This makes
+things much faster. See the Makefile for how to enable this.
+
 LOG LEVEL
 ---------
 

@@ -143,6 +143,8 @@ You can then run startsmb by hand or execute it from /etc/rc.local
 
 To kill it send a kill signal to the processes nmbd and smbd.
 
+NOTE: If you use the SVR4 style init system then you may like to look
+at the examples/svr4-startup script to make Samba fit into that system.
 
 
 STEP 7. Try listing the shares available on your server
