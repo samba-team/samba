@@ -66,6 +66,9 @@
 #ifdef HAVE_NETINET6_IN6_H
 #include <netinet6/in6.h>
 #endif
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 
 #ifdef HAVE_FCNTL_H
