@@ -1115,9 +1115,15 @@ void strlower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      if (isupper(*s))
-        *s = tolower(*s);
-      s++;
+      int skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else
+      {
+        if (isupper(*s))
+          *s = tolower(*s);
+        s++;
+      }
     }
   }
 }
@@ -1162,9 +1168,15 @@ void strupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      if (islower(*s))
-        *s = toupper(*s);
-      s++;
+      int skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else
+      {
+        if (islower(*s))
+          *s = toupper(*s);
+        s++;
+      }
     }
   }
 }
@@ -1197,34 +1209,13 @@ BOOL strisnormal(char *s)
 ****************************************************************************/
 void string_replace(char *s,char oldc,char newc)
 {
+  int skip;
   while (*s)
   {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-    {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-        s += 2;
-      else if (is_kana (*s))
-        s++;
-      else
-      {
-        if (oldc == *s)
-          *s = newc;
-        s++;
-      }
-    }
+    skip = skip_multibyte_char( *s );
+    if( skip != 0 )
+      s += skip;
     else
-#endif /* KANJI_WIN95_COMPATIBILITY */
     {
       if (oldc == *s)
         *s = newc;
