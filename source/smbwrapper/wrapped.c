@@ -722,14 +722,23 @@
 #endif
 
 #ifdef real_seekdir
- void seekdir(DIR *dir, off_t offset)
+#if SEEKDIR_RETURNS_VOID
+ void 
+#else
+ int
+#endif
+seekdir(DIR *dir, off_t offset)
 {
 	if (smbw_dirp(dir)) {
 		smbw_seekdir(dir, offset);
-		return;
+		goto done;
 	}
 
 	real_seekdir(dir, offset);
+ done:
+#ifndef SEEKDIR_RETURNS_VOID
+	return 0;
+#endif
 }
 #endif
 
