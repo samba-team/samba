@@ -50,6 +50,7 @@ static int do_leave;
 static int do_version;
 static int do_help;
 static int do_from;
+static int do_count;
 static char *header_str;
 
 struct getargs args[] = {
@@ -72,6 +73,7 @@ struct getargs args[] = {
     { "from",	 0,  arg_flag,		&do_from,	"Behave like from",
       NULL },
     { "header",	 0,  arg_string,	&header_str,	"Header string to print", NULL },
+    { "count", 'c',  arg_flag,		&do_count,	"Print number of messages", NULL},
     { "version", 0,  arg_flag,		&do_version,	"Print version",
       NULL },
     { "help",	 0,  arg_flag,		&do_help,	NULL,
@@ -392,10 +394,16 @@ doit(int s,
 		    } else if (++state == STAT) {
 			if(sscanf (beg + 4, "%u %u", &count, &bytes) != 2)
 			    errx(1, "Bad STAT-line: %.*s", (int)(p - beg), beg);
-			if (verbose)
+			if (verbose) {
 			    fprintf (stderr, "%u message(s) (%u bytes). "
 				     "fetching... ",
 				     count, bytes);
+			    if (do_from)
+				fprintf (stderr, "\n");
+			} else if (do_count) {
+			    fprintf (stderr, "%u message(s) (%u bytes).\n",
+				     count, bytes);
+			}
 			if (count == 0) {
 			    state = QUIT;
 			    net_write (s, "QUIT\r\n", 6);
