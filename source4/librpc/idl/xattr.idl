@@ -9,7 +9,8 @@
 */
 
 [
-  depends(security)
+  depends(security),
+  pointer_default(unique)
 ]
 interface xattr
 {
