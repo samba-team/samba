@@ -44,7 +44,7 @@ OM_uint32 gss_inquire_context (
             gss_OID * mech_type,
             OM_uint32 * ctx_flags,
             int * locally_initiated,
-            int * open
+            int * open_context
            )
 {
   OM_uint32 ret;
@@ -77,8 +77,8 @@ OM_uint32 gss_inquire_context (
   if (locally_initiated)
     *locally_initiated = context_handle->more_flags & LOCAL;
 
-  if (open)
-    *open = context_handle->more_flags & OPEN;
+  if (open_context)
+    *open_context = context_handle->more_flags & OPEN;
 
   return GSS_S_COMPLETE;
 }
