@@ -653,6 +653,24 @@ if test x"$samba_cv_immediate_structures" = x"yes"; then
 fi
 
 ############################################
+# check if the compiler can do immediate structures
+AC_CACHE_CHECK([if the compiler will optimize out function calls],samba_cv_optimize_out_funcation_calls, [
+    AC_TRY_LINK([
+#include <stdio.h>],
+[
+		if (1) {
+		   this_function_does_not_exist();
+		} else {
+		  return 1;
+		}
+
+],
+	samba_cv_optimize_out_funcation_calls=yes,samba_cv_optimize_out_funcation_calls=no)])
+if test x"$samba_cv_optimize_out_funcation_calls" = x"yes"; then
+   AC_DEFINE(HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS,1,[Whether the compiler will optimize out function calls])
+fi
+
+############################################
 # check for unix domain sockets
 AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
     AC_TRY_COMPILE([
