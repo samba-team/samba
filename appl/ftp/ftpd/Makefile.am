@@ -47,7 +47,7 @@ LDADD = ../common/libcommon.a \
 	$(LIB_gssapi) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/otp/libotp.la \
+	$(LIB_otp) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_roken) \
 	$(DBLIB)
