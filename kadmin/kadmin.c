@@ -82,6 +82,8 @@ static SL_cmd commands[] = {
     { "ext_keytab",	ext_keytab, 	"ext_keytab principal..."},
     { "get_entry",	get_entry, 	"get_entry principal"},
     { "rename",		rename_entry, 	"rename source target"},
+    { "get_privileges",	get_privs, 	"show maximum privileges" },
+    { "privileges" },
     { "help",		help, "help"},
     { "?"},
     { "exit",		exit_kadmin, "exit"},
@@ -109,6 +111,23 @@ usage(int ret)
 {
     arg_printusage (args, num_args, "");
     exit (ret);
+}
+
+int
+get_privs(int argc, char **argv)
+{
+    u_int32_t privs;
+    char str[128];
+    kadm5_ret_t ret;
+    
+    ret = kadm5_get_privs(kadm_handle, &privs);
+    if(ret)
+	krb5_warn(context, ret, "kadm5_get_privs");
+    else{
+	ret =_kadm5_privs_to_string(privs, str, sizeof(str));
+	printf("%s\n", str);
+    }
+    return 0;
 }
 
 int

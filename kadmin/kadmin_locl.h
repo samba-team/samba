@@ -95,6 +95,7 @@ DECL(ext_keytab);
 DECL(get_entry);
 DECL(rename_entry);
 DECL(help);
+DECL(get_privs);
 DECL(exit_kadmin);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
