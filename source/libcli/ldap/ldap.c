@@ -602,7 +602,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest;
 		asn1_push_tag(&data,
 			      ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest));
-		asn1_write_Integer(&data, r->messageid);
+		asn1_write_implicit_Integer(&data, r->messageid);
 		asn1_pop_tag(&data);
 		break;
 	}
