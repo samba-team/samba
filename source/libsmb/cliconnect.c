@@ -406,7 +406,7 @@ do a spnego/NTLMSSP encrypted session setup
 static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user, 
 				      char *pass, char *workgroup)
 {
-	const char *mechs[] = {"1 3 6 1 4 1 311 2 2 10", NULL};
+	const char *mechs[] = {OID_NTLMSSP, NULL};
 	DATA_BLOB msg1;
 	DATA_BLOB blob, chal1, chal2, auth;
 	uint8 challenge[8];
@@ -502,7 +502,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("got OID=%s\n", OIDs[i]));
-		if (strcmp(OIDs[i], "1 2 840 48018 1 2 2") == 0) {
+		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0) {
 			got_kerberos_mechanism = True;
 		}
 		free(OIDs[i]);
