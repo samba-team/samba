@@ -1702,7 +1702,7 @@ static NTSTATUS ldapsam_next_rid(struct ldapsam_privates *ldap_state, uint32 *ri
 		switch (rid_type) {
 		case USER_RID_TYPE:
 			if (!get_single_attribute(ldap_state->ldap_struct, entry,
-				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
+				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
 				old_rid_string)) 
 			{
 				ldap_memfree(dn);
