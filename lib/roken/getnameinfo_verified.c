@@ -57,7 +57,8 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
 	servlen = sizeof(servbuf);
     }
 
-    ret = getnameinfo (sa, salen, host, hostlen, serv, servlen, flags);
+    ret = getnameinfo (sa, salen, host, hostlen, serv, servlen,
+		       flags | NI_NUMERICSERV);
     if (ret)
 	return ret;
 
