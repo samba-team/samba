@@ -473,6 +473,24 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
   } /* cache_compare */
 
 /* ************************************************************************** **
+ * Free a cache entry.
+ *
+ *  Input:  WarrenZevon - Pointer to the entry that is to be returned to
+ *                        Nirvana.
+ *  Output: none.
+ *
+ *  Notes:  This function gets around the possibility that the standard
+ *          free() function may be implemented as a macro, or other evil
+ *          subversions (oh, so much fun).
+ *
+ * ************************************************************************** **
+ */
+static void cache_free_entry( ubi_trNodePtr WarrenZevon )
+  {
+  free( WarrenZevon );
+  } /* cache_free_entry */
+
+/* ************************************************************************** **
  * Initializes or clears the mangled cache.
  *
  *  Input:  none.
@@ -494,7 +512,7 @@ void reset_mangled_cache( void )
     {
     (void)ubi_cacheInit( mangled_cache,
                          cache_compare,
-                         (ubi_trKillNodeRtn)free,
+                         cache_free_entry,
                          MANGLED_CACHE_MAX_ENTRIES,
                          MANGLED_CACHE_MAX_MEMORY );
     mc_initialized = True;
