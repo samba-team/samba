@@ -196,7 +196,6 @@ char *lang_msg(const char *msgid)
 /* free up a string from lang_msg() */
 void lang_msg_free(char *msgstr)
 {
-	if (!tdb) return;
 	free(msgstr);
 }
 
