@@ -781,7 +781,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 {
-	if (acl_sort(acl_d) {
+	if (acl_sort(acl_d) != 0) {
 		return -1;
 	}
 
