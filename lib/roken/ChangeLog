@@ -1,3 +1,9 @@
+2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-common.h: add timed simple_exec
+	
+	* simple_exec.c: add timed simple_exec
+	
 2004-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gai_strerror.c: correct ifdef for EAI_ADDRFAMILY
