@@ -239,6 +239,7 @@ typedef uint32 WERROR;
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+#define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */

@@ -1467,6 +1467,12 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 				goto done;
 			}
 		}
+		/* otherwise it was a failure */
+		else {
+			status = WERR_UNKNOWN_PRINTER_DRIVER;
+			goto done;
+		}
+		
 	}
 	
 	if (printer_driver_in_use(info.info_3)) {

@@ -1256,16 +1256,21 @@ static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
 		result = cli_spoolss_deleteprinterdriver(
 			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
 
-		if (!W_ERROR_IS_OK(result)) {
-			printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
-				argv[1], archi_table[i].long_archi, 
-				W_ERROR_V(result));
-		} else
+		if ( !W_ERROR_IS_OK(result) ) {
+			if ( !W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ) {
+				printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
+					argv[1], archi_table[i].long_archi, 
+					W_ERROR_V(result));
+			}
+		} 
+		else 
+		{
 			printf ("Driver %s removed for arch [%s].\n", argv[1], 
 				archi_table[i].long_archi);
+		}
 	}
 		
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return W_ERROR_IS_OK(result) || W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli, 
