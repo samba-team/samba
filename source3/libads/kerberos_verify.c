@@ -39,11 +39,13 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	BOOL auth_ok = False;
 
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor = NULL;
+	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	char *princ_name = NULL;
 
 	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
 		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", error_message(ret)));
@@ -100,8 +102,12 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	if (princ_name) {
 		krb5_free_unparsed_name(context, princ_name);
 	}
-	if (cursor && keytab) {
-		krb5_kt_end_seq_get(context, keytab, &cursor);
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);
+		}
 	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
