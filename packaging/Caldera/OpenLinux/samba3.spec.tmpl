@@ -9,12 +9,12 @@ Version     	: %{Version}
 Release     	: %{date}
 Group       	: Server/Network
 
-Summary     	: Samba SMB client and server.
+Summary      : Samba SMB client and server.
 
-Copyright   	: Andrew Tridgell, John H Terpstra; GPL
-Packager    	: Klaus Singvogel <klaus@caldera.de>
-Icon        	: Caldera-daemon.gif
-URL         	: http://samba.org/samba
+Copyright      : Andrew Tridgell, John H Terpstra; GPL Version 2
+Packager      : Klaus Singvogel <klaus@caldera.de>
+Icon              : Caldera-daemon.gif
+URL              : http://samba.org/samba
 
 Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 
@@ -30,7 +30,7 @@ Patch1: %{Name}-%{Version}-install.patch
 %Package doc
 Group       	: Server/Network
 
-Summary     	: Documentation on SAMBA.
+Summary      : Documentation on SAMBA.
 
 
 %Package -n smbfs
@@ -41,12 +41,9 @@ Summary     	: Mount and unmount commands for SMB filesystems (smbfs).
 
 %Package -n swat
 Group       	: Administration/Network
-Requires    	: setup >= 2.0-2, tcp_wrappers
+Requires       : setup >= 2.0-2, tcp_wrappers
 
-Summary     	: Samba Web Administration Tool.
-
-
-%Description
+Summary      : Samba Web Administration Tool.
 Samba provides an SMB server which can be used to provide
 network services to SMB (sometimes called "Lan Manager")
 clients, including various versions of MS Windows, OS/2,
@@ -56,27 +53,37 @@ in Linux. Samba uses NetBIOS over TCP/IP (NetBT) protocols
 and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
 protocol.
 
-Samba-2 features an almost working NT Domain Control
-capability and includes the new SWAT (Samba Web Administration
-Tool) that allows samba's smb.conf file to be remotely managed
-using your favourite web browser. For the time being this is
-being enabled on TCP port 901 via inetd.
+Samba-2.2 features working NT Domain Control capability and 
+includes the SWAT (Samba Web Administration Tool) that 
+allows samba's smb.conf file to be remotely managed using your 
+favourite web browser. For the time being this is being
+enabled on TCP port 901 via inetd.
+
+Users are advised to use Samba-2.2 as a Windows NT4
+Domain Controller only on networks that do NOT have a Windows
+NT Domain Controller. This release does NOT as yet have
+Backup Domain control ability.
 
 Please refer to the WHATSNEW.txt document for fixup information.
 This binary release includes encrypted password support.
+
 Please read the smb.conf file and ENCRYPTION.txt in the
 docs directory for implementation details.
 
-NOTE: Caldera OpenLinux uses PAM which has integrated support
-for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
-enabled. Caldera OpenLinux has(?) built-in support for quotas in PAM.
+%Description
 
+NOTE: Caldera OpenLinux uses PAM which has integrated support
+for Shadow passwordsand for quotas. Do NOT recompile with the 
+SHADOW_PWD option enabled.
 
 %Description doc
 Documentation on SAMBA.
 
 
 %Description -n smbfs
+This package includes the tools necessary to mount filesystems from
+SMB servers.
+
 Smbmount and smbumount are an interface to the SMB filesystem. Smbfs is
 a filesystem which understands the SMB protocol. This is the protocol
 Windows for Workgroups, Windows NT or Lan Manager use to talk to each
@@ -155,9 +162,11 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-smbmount --with-pam --without-smbwrapper \
-	--with-utmp
+	--with-utmp --with-quotas --with-vfs --with-msdfs \
+	--with-profile --with-syslog --with-utmp --with-netatalk \
+	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
 
-make all
+make all nsswitch/libnss_wins.so
 
 
 %Install
@@ -166,7 +175,7 @@ VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
-mkdir -p $DESTDIR/usr/{share,swat}
+mkdir -p $DESTDIR/usr/{share,swat/using_samba}
 mkdir -p $DESTDIR/home/samba $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
 
 make -C source  install
@@ -175,6 +184,13 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 
 #cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
+
+# Install the nsswitch library extension file
+cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
+# Make link for wins resolver
+cd $DESTDIR/lib
+ln -s libnss_wins.so libnss_wins.so.2
+cd $RPM_BUILD_DIR
 
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin

@@ -39,7 +39,7 @@ process\&.
 .IP 
 .IP "\fBmessage-type\fP" 
 is one of: debug, force-election, ping, profile,
-or debuglevel\&. 
+debuglevel, or printer-notify\&.
 .IP 
 The \fBdebug\fP message-type allows the debug level to be set to the value
 specified by the parameter\&. This can be sent to any of the destinations\&.
@@ -63,6 +63,11 @@ The \fBdebuglevel\fP message-type sends a "request debug level" message\&.
 The current debug level setting is returned by a 
 "debuglevel" message\&. This can be sent to any of the destinations\&.
 .IP 
+The \fBprinter-notify\fP message-type sends a message to smbd which in turn 
+sends a printer notify message to any Windows NT clients connected to 
+a printer\&.  This message-type takes an argument of the printer name to 
+send notify messages to\&.   This message can only be sent to smbd\&.
+.IP 
 .IP "\fBparameters\fP" 
 is any parameters required for the message-type
 .IP 
@@ -78,7 +83,7 @@ This man page is correct for version 2\&.2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
+Andrew Tridgell samba@samba\&.org\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -86,7 +91,7 @@ This man page source was written in YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 for the Samba 2\&.2\&.0 release by Herb Lewis\&.
-\fIsamba@samba\&.org\fP\&.
+samba@samba\&.org\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
