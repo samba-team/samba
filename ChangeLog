@@ -1,4 +1,11 @@
-2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
+2004-09-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_cred.c (get_cred_kdc_usage): retry using "large
+	message safe" transport if we get back
+	KRB5KRB_ERR_RESPONSE_TOO_BIG error. Idea from Guenther Deschner
+	<gd@sernet.de>
+
+2004-09-23 Johan Danielsson <joda@pdc.kth.se>
 
 	* admin/list.c: use rtbl
 	
