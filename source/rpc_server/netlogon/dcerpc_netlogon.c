@@ -175,7 +175,7 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 				   account_name);
 
 	if (num_records == 0) {
-		DEBUG(3,("Couldn't find user [%s] in passdb file.\n", 
+		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
 			 account_name));
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
@@ -227,7 +227,7 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 	samdb_close(sam_ctx);
 
 	if (!pipe_state->creds) {
-		pipe_state->creds = talloc_p(mem_ctx, struct creds_CredentialState);
+		pipe_state->creds = talloc_p(pipe_state->mem_ctx, struct creds_CredentialState);
 		if (!pipe_state->creds) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -297,6 +297,18 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 						r->out.negotiate_flags); 
 }
 
+static BOOL netr_creds_server_step_check(struct server_pipe_state *pipe_state,
+					 struct netr_Authenticator *received_authenticator,
+					 struct netr_Authenticator *return_authenticator) 
+{
+	if (!pipe_state->authenticated) {
+		return False;
+	}
+	return creds_server_step_check(pipe_state->creds, 
+				       received_authenticator, 
+				       return_authenticator);
+}
+
 /* 
  netr_ServerPasswordSet 
 
@@ -314,10 +326,133 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet *r)
 {
+	struct server_pipe_state *pipe_state = dce_call->conn->private;
 
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	void *sam_ctx;
+	int num_records;
+	int num_records_domain;
+	int ret;
+	int i;
+	struct ldb_message **msgs;
+	struct ldb_message **msgs_domain;
+	NTSTATUS nt_status;
+	struct samr_Hash newNtHash;
+	struct ldb_message mod, *msg_set_pw = &mod;
+	const char *domain_dn;
+	struct dom_sid *domain_sid;
+
+	const char *attrs[] = {"objectSid", NULL 
+	};
+
+	const char **domain_attrs = attrs;
+	ZERO_STRUCT(mod);
+
+	if (!netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!pipe_state) {
+		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	sam_ctx = samdb_connect();
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+	/* pull the user attributes */
+	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
+				   "(&(sAMAccountName=%s)(objectclass=user))", 
+				   pipe_state->account_name);
+
+	if (num_records == 0) {
+		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
+			 pipe_state->account_name));
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_records > 1) {
+		DEBUG(1,("Found %d records matching user [%s]\n", num_records, 
+			 pipe_state->account_name));
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	domain_sid = dom_sid_parse_talloc(mem_ctx, 
+					  samdb_result_string(msgs[0], 
+							      "objectSid", 
+							      NULL));
+	if (!domain_sid) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	sid_split_rid(domain_sid, NULL);
+
+	/* find the domain's DN */
+	num_records_domain = samdb_search(sam_ctx, mem_ctx, NULL, 
+					  &msgs_domain, domain_attrs,
+					  "(&(objectSid=%s)(objectclass=domain))", 
+					  dom_sid_string(mem_ctx, domain_sid));
+
+	if (num_records_domain == 0) {
+		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
+			 dom_sid_string(mem_ctx, domain_sid)));
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_records_domain > 1) {
+		DEBUG(1,("Found %d records matching domain [%s]\n", num_records_domain, dom_sid_string(mem_ctx, domain_sid)));
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	domain_dn = msgs_domain[0]->dn;
 	
+	mod.dn = talloc_strdup(mem_ctx, msgs[0]->dn);
+	if (!mod.dn) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	creds_des_decrypt(pipe_state->creds, &r->in.new_password);
 
+	memcpy(newNtHash.hash, r->in.new_password.data, sizeof(newNtHash.hash));
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	nt_status = samdb_set_password(sam_ctx, mem_ctx,
+				       msgs[0]->dn, domain_dn,
+				       msg_set_pw, 
+				       NULL, /* Don't have plaintext */
+				       NULL, &newNtHash,
+				       False /* This is not considered a password change */);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		samdb_close(sam_ctx);
+		return nt_status;
+	}
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE, 
+	   unless they are already marked with some other flag */
+	for (i=0;i<mod.num_elements;i++) {
+		if (mod.elements[i].flags == 0) {
+			mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+		}
+	}
+
+	ret = samdb_modify(sam_ctx, mem_ctx, msg_set_pw);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+
+		samdb_close(sam_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	samdb_close(sam_ctx);
+	return NT_STATUS_OK;
 }
 
 

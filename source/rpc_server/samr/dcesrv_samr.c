@@ -1687,7 +1687,9 @@ static NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	   so the domain password policy can be used */
 	return samdb_set_password(a_state->sam_ctx, mem_ctx,
 				  a_state->account_dn, a_state->domain_state->domain_dn, 
-				  msg, new_pass, False /* This is a password set, not change */);
+				  msg, new_pass, 
+				  NULL, NULL,
+				  False /* This is a password set, not change */);
 }
 
 /* 
