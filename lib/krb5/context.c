@@ -111,6 +111,8 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
     INIT_FIELD(context, bool, srv_try_rfc2052, TRUE, "srv_try_rfc2052");
+
+    INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
     return 0;
 }
 
@@ -160,7 +162,7 @@ krb5_free_context(krb5_context context)
 
   free(context->etypes);
   free(context->default_realm);
-  krb5_config_file_free (context->cf);
+  krb5_config_file_free (context, context->cf);
   free_error_table (context->et_list);
   for(i = 0; i < context->num_ops; ++i)
     free(context->cc_ops[i].prefix);
@@ -298,4 +300,18 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 	return 0;
     }
     return copy_HostAddresses(context->extra_addresses, addresses);
+}
+
+krb5_error_code
+krb5_set_fcache_version(krb5_context context, int version)
+{
+    context->fcache_vno = version;
+    return 0;
+}
+
+krb5_error_code
+krb5_get_fcache_version(krb5_context context, int *version)
+{
+    *version = context->fcache_vno;
+    return 0;
 }
