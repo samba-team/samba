@@ -139,7 +139,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table 
 		} else {
 #if 0
 			print_depth(depth);
-			printf("expand by %d gives fault 0x%x\n", n, p->last_fault_code);
+			printf("expand by %d gives fault %s\n", n, dcerpc_errstr(mem_ctx, p->last_fault_code));
 #endif
 		}
 		if (p->last_fault_code == 5) {
@@ -171,8 +171,8 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_tab
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
-			printf("possible ptr at ofs %d - fault 0x%08x\n", 
-			       ofs-min_ofs, p->last_fault_code);
+			printf("possible ptr at ofs %d - fault %s\n", 
+			       ofs-min_ofs, dcerpc_errstr(mem_ctx, p->last_fault_code));
 			if (p->last_fault_code == 5) {
 				reopen(&p, iface);
 			}
@@ -234,7 +234,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			printf("opnum %d  size %d fault 0x%08x\n", opnum, i, p->last_fault_code);
+			printf("opnum %d  size %d fault %s\n", opnum, i, dcerpc_errstr(mem_ctx, p->last_fault_code));
 			if (p->last_fault_code == 5) {
 				reopen(&p, iface);
 			}
