@@ -220,9 +220,8 @@ krb5_kt_ret_principal(krb5_storage *sp,
 #else
     p->type = KRB5_NT_SRV_HST;
     p->ncomp = tmp;
-    ret = krb5_kt_ret_data(sp, &realm);
+    ret = krb5_kt_ret_data(sp, &p->realm);
     if(ret) return ret;
-    p->realm = realm;
     p->comp = ALLOC(p->ncomp, krb5_data);
     if(p->comp == NULL){
 	return ENOMEM;
@@ -317,7 +316,7 @@ krb5_kt_store_principal(krb5_storage *sp,
 #else
     ret = krb5_store_int16(sp, p->ncomp);
     if(ret) return ret;
-    ret = krb5_kt_store_string(sp, p->realm);
+    ret = krb5_kt_store_data(sp, p->realm);
     if(ret) return ret;
     for(i = 0; i < p->ncomp; i++){
 	ret = krb5_kt_store_data(sp, p->comp[i]);
