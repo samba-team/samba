@@ -51,7 +51,8 @@ del_entry(int argc, char **argv)
 {
     int i;
     krb5_error_code ret;
-    for(i = 0; i < argc; i++)
+
+    for(i = 1; i < argc; i++)
 	ret = foreach_principal(argv[i], do_del_entry, NULL);
     return 0;
 }
