@@ -57,6 +57,24 @@ krb5_mk_priv(krb5_context context,
   int32_t sec, usec;
   KerberosTime sec2;
   unsigned usec2;
+  krb5_enctype enctype;
+
+  /* XXX - Is this right? */
+
+  if (auth_context->local_subkey.keytype)
+      key = &auth_context->local_subkey;
+  else if (auth_context->remote_subkey.keytype)
+      key = &auth_context->remote_subkey;
+  else
+      key = &auth_context->key;
+
+  if (auth_context->enctype)
+      enctype = auth_context->enctype;
+  else {
+      r = krb5_keytype_to_etype (context, key->keytype, &enctype);
+      if (r)
+	  return r;
+  }
 
   krb5_us_timeofday (context, &sec, &usec);
 
@@ -81,20 +99,11 @@ krb5_mk_priv(krb5_context context,
 
   s.pvno = 5;
   s.msg_type = krb_priv;
-  s.enc_part.etype = auth_context->enctype;
+  s.enc_part.etype = enctype;
   s.enc_part.kvno = NULL;
 
-  /* XXX - Is this right? */
-
-  if (auth_context->local_subkey.keytype)
-      key = &auth_context->local_subkey;
-  else if (auth_context->remote_subkey.keytype)
-      key = &auth_context->remote_subkey;
-  else
-      key = &auth_context->key;
-
   r = krb5_encrypt (context, buf + sizeof(buf) - len, len,
-		    s.enc_part.etype, key, &s.enc_part.cipher);
+		    enctype, key, &s.enc_part.cipher);
   if (r)
     return r;
 
