@@ -2,9 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
- *  Copyright (C) Paul Ashton                  1997-1999.
+ *  Copyright (C) Andrew Tridgell              1992-1997,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Paul Ashton                       1997.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,95 +28,43 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
+
+void init_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
 	q_o->unknown_0 = unknown_0;
 	q_o->unknown_1 = 0x0; /* random - changes */
 	q_o->level = level;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth)
-{
-	if (r_q == NULL) return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_open_hkcr");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("ptr      ", ps, depth, &(r_q->ptr      ));
-	if (r_q->ptr != 0)
-	{
-		prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0));
-		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
-		prs_uint32("level    ", ps, depth, &(r_q->level    ));
-	}
-
-	return True;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth)
-{
-	if (r_r == NULL) return False;
-
-	prs_debug(ps, depth, desc, "reg_io_r_open_hkcr");
-	depth++;
-
-	prs_align(ps);
-	
-	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
-
-	prs_uint32("status", ps, depth, &(r_r->status));
-
-	return True;
-}
-
-
-/*******************************************************************
-creates a structure.
-********************************************************************/
-BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
-				uint16 unknown_0, uint32 level)
-{
-	q_o->ptr = 1;
-	q_o->unknown_0 = unknown_0;
-	q_o->unknown_1 = 0x0; /* random - changes */
-	q_o->level = level;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
 BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr      ", ps, depth, &(r_q->ptr      ));
-	if (r_q->ptr != 0)
-	{
-		prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0));
-		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
-		prs_uint32("level    ", ps, depth, &(r_q->level    ));
+	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
+		return False;
+
+	if (r_q->ptr != 0) {
+		if(!prs_uint16("unknown_0", ps, depth, &r_q->unknown_0))
+			return False;
+		if(!prs_uint16("unknown_1", ps, depth, &r_q->unknown_1))
+			return False;
+		if(!prs_uint32("level    ", ps, depth, &r_q->level))
+			return False;
 	}
 
 	return True;
@@ -126,64 +74,75 @@ BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int d
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
 
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
-{
-	memcpy(&(q_u->pol), pol, sizeof(q_u->pol));
 
-	return True;
+void init_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
+{
+	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_flush_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_flush_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
@@ -191,167 +150,197 @@ BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int d
 /*******************************************************************
 reads or writes SEC_DESC_BUF and SEC_DATA structures.
 ********************************************************************/
-static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
-				SEC_DESC_BUF *data, prs_struct *ps, int depth)
+
+static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DESC_BUF *data, prs_struct *ps, int depth)
 {
-	if (ptr != 0)
-	{
+	if (ptr != 0) {
 		uint32 hdr_offset;
 		uint32 old_offset;
-		smb_io_hdrbuf_pre("hdr_sec", hdr_sec, ps, depth, &hdr_offset);
-		old_offset = ps->offset;
-		if (ptr3 != NULL)
-		{
-			prs_uint32("ptr3", ps, depth, ptr3);
+		if(!smb_io_hdrbuf_pre("hdr_sec", hdr_sec, ps, depth, &hdr_offset))
+			return False;
+
+		old_offset = prs_offset(ps);
+
+		if (ptr3 != NULL) {
+			if(!prs_uint32("ptr3", ps, depth, ptr3))
+				return False;
 		}
-		if (ptr3 == NULL || *ptr3 != 0)
-		{
-			sec_io_desc_buf("data   ", data   , ps, depth);
+
+		if (ptr3 == NULL || *ptr3 != 0) {
+			if(!sec_io_desc_buf("data   ", &data, ps, depth)) /* JRA - this line is probably wrong... */
+				return False;
 		}
-		smb_io_hdrbuf_post("hdr_sec", hdr_sec, ps, depth, hdr_offset,
-		                   data->max_len, data->len);
-		ps->offset = old_offset + data->len + sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3);
-		prs_align(ps);
+
+		if(!smb_io_hdrbuf_post("hdr_sec", hdr_sec, ps, depth, hdr_offset,
+		                   data->max_len, data->len))
+				return False;
+		if(!prs_set_offset(ps, old_offset + data->len + sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3)))
+			return False;
+
+		if(prs_align(ps))
+			return False;
 	}
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-				char *key_name, char *key_class,
-				SEC_ACCESS *sam_access,
-				SEC_DESC_BUF *sec_buf,
-				int sec_len, SEC_DESC *sec)
+
+void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
+				char *name, char *class, SEC_ACCESS *sam_access,
+				SEC_DESC_BUF *sec_buf)
 {
-	int len_name  = key_name  != NULL ? strlen(key_name ) + 1: 0;
-	int len_class = key_class != NULL ? strlen(key_class) + 1: 0;
+	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
+	int len_class = class != NULL ? strlen(class) + 1: 0;
 
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&(q_c->pnt_pol), hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	make_uni_hdr(&(q_c->hdr_name), len_name);
-	make_unistr2(&(q_c->uni_name), key_name, len_name);
+	init_uni_hdr(&q_c->hdr_name, len_name);
+	init_unistr2(&q_c->uni_name, name, len_name);
 
-	make_uni_hdr(&(q_c->hdr_class), len_class);
-	make_unistr2(&(q_c->uni_class), key_class, len_class);
+	init_uni_hdr(&q_c->hdr_class, len_class);
+	init_unistr2(&q_c->uni_class, class, len_class);
 
 	q_c->reserved = 0x00000000;
-	memcpy(&(q_c->sam_access), sam_access, sizeof(q_c->sam_access));
+	memcpy(&q_c->sam_access, sam_access, sizeof(q_c->sam_access));
 
 	q_c->ptr1 = 1;
 	q_c->sec_info = DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION;
 
 	q_c->data = sec_buf;
 	q_c->ptr2 = 1;
-	make_buf_hdr(&(q_c->hdr_sec), sec_len, sec_len);
+	init_buf_hdr(&q_c->hdr_sec, sec_buf->len, sec_buf->len);
 	q_c->ptr3 = 1;
-	make_sec_desc_buf(q_c->data, sec_len, sec);
-
 	q_c->unknown_2 = 0x00000000;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_create_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pnt_pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
+		return False;
 
-	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("", &r_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	smb_io_unihdr ("", &(r_q->hdr_class), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_class), r_q->hdr_class.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("", &r_q->hdr_class, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_class, r_q->hdr_class.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("reserved", ps, depth, &(r_q->reserved));
-	sec_io_access("sam_access", &r_q->sam_access, ps, depth);
+	if(!prs_uint32("reserved", ps, depth, &r_q->reserved))
+		return False;
+	if(!sec_io_access("sam_access", &r_q->sam_access, ps, depth))
+		return False;
 
-	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
-	if (r_q->ptr1 != 0)
-	{
-		prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
+	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
+		return False;
+
+	if (r_q->ptr1 != 0) {
+		if(!prs_uint32("sec_info", ps, depth, &r_q->sec_info))
+			return False;
 	}
 
-	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
-	reg_io_hdrbuf_sec(r_q->ptr2, &r_q->ptr3, &r_q->hdr_sec, r_q->data, ps, depth);
+	if(!prs_uint32("ptr2", ps, depth, &r_q->ptr2))
+		return False;
+	if(!reg_io_hdrbuf_sec(r_q->ptr2, &r_q->ptr3, &r_q->hdr_sec, r_q->data, ps, depth))
+		return False;
 
-	prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
+	if(!prs_uint32("unknown_2", ps, depth, &r_q->unknown_2))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_create_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_r->key_pol), ps, depth);
-	prs_uint32("unknown", ps, depth, &(r_r->unknown));
+	if(!smb_io_pol_hnd("", &r_r->key_pol, ps, depth))
+		return False;
+	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
 
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
+
+void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 				char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&(q_c->pnt_pol), hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	make_uni_hdr(&(q_c->hdr_name), len_name);
-	make_unistr2(&(q_c->uni_name), name, len_name);
-
-	return True;
+	init_uni_hdr(&q_c->hdr_name, len_name);
+	init_unistr2(&q_c->uni_name, name, len_name);
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_delete_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pnt_pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
+		return False;
 
-	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("", &r_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
 	return True;
 }
@@ -360,112 +349,127 @@ BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_delete_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
+
+void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 				char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&(q_c->pnt_pol), hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	make_uni_hdr(&(q_c->hdr_name), len_name);
-	make_unistr2(&(q_c->uni_name), name, len_name);
-
-	return True;
+	init_uni_hdr(&q_c->hdr_name, len_name);
+	init_unistr2(&q_c->uni_name, name, len_name);
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_delete_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pnt_pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
+		return False;
 
-	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("", &r_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_delete_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
+
+void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 				uint32 max_class_len)
 {
 	ZERO_STRUCTP(q_o);
 
-	memcpy(&(q_o->pol), hnd, sizeof(q_o->pol));
-	q_o->hdr_class.uni_str_len = 0;
-	q_o->hdr_class.uni_max_len = max_class_len * 2;
-	q_o->hdr_class.buffer = max_class_len > 0 ? 1 : 0;
+	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
+	init_uni_hdr(&q_o->hdr_class, max_class_len);
 	q_o->uni_class.uni_max_len = max_class_len;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_query_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
-	smb_io_unihdr ("", &(r_q->hdr_class), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_class), r_q->hdr_class.buffer, ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
+	if(!smb_io_unihdr ("", &r_q->hdr_class, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_class, r_q->hdr_class.buffer, ps, depth))
+		return False;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 
 	return True;
 }
@@ -474,168 +478,198 @@ BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int d
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_query_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_unihdr ("", &(r_r->hdr_class), ps, depth);
-	smb_io_unistr2("", &(r_r->uni_class), r_r->hdr_class.buffer, ps, depth);
+	if(!smb_io_unihdr ("", &r_r->hdr_class, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_r->uni_class, r_r->hdr_class.buffer, ps, depth))
+		return False;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("num_subkeys   ", ps, depth, &(r_r->num_subkeys   ));
-	prs_uint32("max_subkeylen ", ps, depth, &(r_r->max_subkeylen ));
-	prs_uint32("mak_subkeysize", ps, depth, &(r_r->max_subkeysize));
-	prs_uint32("num_values    ", ps, depth, &(r_r->num_values    ));
-	prs_uint32("max_valnamelen", ps, depth, &(r_r->max_valnamelen));
-	prs_uint32("max_valbufsize", ps, depth, &(r_r->max_valbufsize));
-	prs_uint32("sec_desc      ", ps, depth, &(r_r->sec_desc      ));
-	smb_io_time("mod_time     ", &(r_r->mod_time), ps, depth);
+	if(!prs_uint32("num_subkeys   ", ps, depth, &r_r->num_subkeys))
+		return False;
+	if(!prs_uint32("max_subkeylen ", ps, depth, &r_r->max_subkeylen))
+		return False;
+	if(!prs_uint32("mak_subkeysize", ps, depth, &r_r->max_subkeysize))
+		return False;
+	if(!prs_uint32("num_values    ", ps, depth, &r_r->num_values))
+		return False;
+	if(!prs_uint32("max_valnamelen", ps, depth, &r_r->max_valnamelen))
+		return False;
+	if(!prs_uint32("max_valbufsize", ps, depth, &r_r->max_valbufsize))
+		return False;
+	if(!prs_uint32("sec_desc      ", ps, depth, &r_r->sec_desc))
+		return False;
+	if(!smb_io_time("mod_time     ", &r_r->mod_time, ps, depth))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd)
-{
-	memcpy(&(q_o->pol), hnd, sizeof(q_o->pol));
 
-	return True;
+void init_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd)
+{
+	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_unk_1a");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
 
 	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_unk_1a");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("unknown", ps, depth, &(r_r->unknown));
-	prs_uint32("status" , ps, depth, &(r_r->status ));
+	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
+		return False;
+	if(!prs_uint32("status" , ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
+
+void init_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
 	q_o->unknown_0 = unknown_0;
 	q_o->unknown_1 = 0x0; /* random - changes */
 	q_o->level = level;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_open_hku");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr      ", ps, depth, &(r_q->ptr      ));
-	if (r_q->ptr != 0)
-	{
-		prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0));
-		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
-		prs_uint32("level    ", ps, depth, &(r_q->level    ));
+	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
+		return False;
+	if (r_q->ptr != 0) {
+		if(!prs_uint16("unknown_0", ps, depth, &r_q->unknown_0))
+			return False;
+		if(!prs_uint16("unknown_1", ps, depth, &r_q->unknown_1))
+			return False;
+		if(!prs_uint32("level    ", ps, depth, &r_q->level))
+			return False;
 	}
 
 	return True;
 }
 
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_hku");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-makes an REG_Q_CLOSE structure.
+ Inits an REG_Q_CLOSE structure.
 ********************************************************************/
-BOOL make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
+
+void init_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
 {
-	if (q_c == NULL || hnd == NULL) return False;
+	DEBUG(5,("init_reg_q_close\n"));
 
-	DEBUG(5,("make_reg_q_close\n"));
-
-	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
-
-	return True;
+	memcpy(&q_c->pol, hnd, sizeof(q_c->pol));
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return False;
+	if (q_u == NULL)
+		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_close");
+	prs_debug(ps, depth, desc, "reg_io_q_unknown_1");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 
-	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
-	prs_align(ps);
+	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
 	return True;
 }
@@ -643,19 +677,25 @@ BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_close");
+	prs_debug(ps, depth, desc, "reg_io_r_unknown_1");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 
-	smb_io_pol_hnd("", &(r_u->pol), ps, depth); 
-	prs_align(ps);
+	if(!smb_io_pol_hnd("", &r_u->pol, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_u->status));
+	if(!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
 
 	return True;
 }
@@ -663,41 +703,43 @@ BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
-				uint32 sec_info,
-				uint32 buf_len, SEC_DESC *sec_desc)
+
+void init_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, SEC_DESC_BUF *sec_desc_buf)
 {
-	if (q_i == NULL) return False;
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
-
-	q_i->sec_info = sec_info;
+	q_i->sec_info = DACL_SECURITY_INFORMATION;
 
 	q_i->ptr = 1;
-	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
-	make_sec_desc_buf(q_i->data, buf_len, sec_desc);
-
-	return True;
+	init_buf_hdr(&q_i->hdr_sec, sec_desc_buf->len, sec_desc_buf->len);
+	q_i->data = sec_desc_buf;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_set_key_sec");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
 
-	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
-	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
+	if(!prs_uint32("sec_info", ps, depth, &r_q->sec_info))
+		return False;
+	if(!prs_uint32("ptr    ", ps, depth, &r_q->ptr))
+		return False;
 
-	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
+	if(!reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth))
+		return False;
 
 	return True;
 }
@@ -705,16 +747,20 @@ BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_set_key_sec");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_q->status));
+	if(!prs_uint32("status", ps, depth, &r_q->status))
+		return False;
 
 	return True;
 }
@@ -723,46 +769,47 @@ BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, in
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 sec_info,
-				uint32 buf_len, SEC_DESC_BUF *sec_buf)
+
+void init_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 sec_buf_size, SEC_DESC_BUF *psdb)
 {
-	if (q_i == NULL) return False;
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+	q_i->sec_info = OWNER_SECURITY_INFORMATION |
+	                GROUP_SECURITY_INFORMATION |
+	                DACL_SECURITY_INFORMATION;
 
-	q_i->sec_info = sec_info;
+	q_i->ptr = psdb != NULL ? 1 : 0;
+	q_i->data = psdb;
 
-	q_i->ptr = sec_buf != NULL ? 1 : 0;
-	q_i->data = sec_buf;
-
-	if (sec_buf != NULL)
-	{
-		make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
-		make_sec_desc_buf(q_i->data, buf_len, NULL);
-	}
-
-	return True;
+	init_buf_hdr(&q_i->hdr_sec, sec_buf_size, 0);
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_get_key_sec");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
 
-	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
-	prs_uint32("ptr     ", ps, depth, &(r_q->ptr     ));
+	if(!prs_uint32("sec_info", ps, depth, &r_q->sec_info))
+		return False;
+	if(!prs_uint32("ptr     ", ps, depth, &r_q->ptr))
+		return False;
 
-	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
+	if(!reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth))
+		return False;
 
 	return True;
 }
@@ -771,196 +818,217 @@ BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 /*******************************************************************
 makes a structure.
 ********************************************************************/
- void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
+ void init_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
 				uint32 buf_len, uint8 *buf,
 				uint32 status)
 {
-	if (r_i == NULL) return False;
-
 	r_i->ptr = 1;
-	make_buf_hdr(&(r_i->hdr_sec), buf_len, buf_len);
-	make_sec_desc_buf(r_i->data, buf_len, 1);
+	init_buf_hdr(&r_i->hdr_sec, buf_len, buf_len);
+	init_sec_desc_buf(r_i->data, buf_len, 1);
 
 	r_i->status = status; /* 0x0000 0000 or 0x0000 007a */
-
-	return True;
 }
 #endif 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_get_key_sec");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr      ", ps, depth, &(r_q->ptr      ));
+	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
+		return False;
 
-	if (r_q->ptr != 0)
-	{
-		smb_io_hdrbuf("", &(r_q->hdr_sec), ps, depth);
-		sec_io_desc_buf("", r_q->data, ps, depth);
-
-		prs_align(ps);
+	if (r_q->ptr != 0) {
+		if(!smb_io_hdrbuf("", &r_q->hdr_sec, ps, depth))
+			return False;
+		if(!sec_io_desc_buf("", &r_q->data, ps, depth))
+			return False;
+		if(prs_align(ps))
+			return False;
 	}
 
-	prs_uint32("status", ps, depth, &(r_q->status));
+	if(!prs_uint32("status", ps, depth, &r_q->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, const char *val_name,
-				uint8 major, uint8 minor)
+
+void init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
+				time_t unix_time, uint8 major, uint8 minor)
 {
-	int len_type = val_name != NULL ? strlen(val_name) + 1 : 0;
+	int len_type  = strlen(product_type);
 
-	if (q_i == NULL) return False;
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+	init_uni_hdr(&q_i->hdr_type, len_type);
+	init_unistr2(&q_i->uni_type, product_type, len_type);
 
-	make_uni_hdr(&(q_i->hdr_val), len_type);
-	make_unistr2(&(q_i->uni_val), val_name, len_type);
+	q_i->ptr1 = 1;
+	unix_to_nt_time(&q_i->time, unix_time);
+	q_i->major_version1 = major;
+	q_i->minor_version1 = minor;
+	memset(q_i->pad1, 0, sizeof(q_i->pad1));
 
-	q_i->ptr_type = 1;
-	q_i->type = 0x77872314;
+	q_i->ptr2 = 1;
+	q_i->major_version2 = major;
+	q_i->minor_version2 = minor;
+	memset(q_i->pad2, 0, sizeof(q_i->pad2));
 
-	q_i->ptr_uni_type = 0x1;
-	q_i->uni_type.buf_max_len = 0x104;
-	q_i->uni_type.buf_len     = 0x0;
-	q_i->uni_type.undoc       = 0;
-
-	q_i->ptr_max_len = 1;
-	q_i->buf_max_len = 0x104;
-
-	q_i->ptr_len = 1;
-	q_i->buf_len = 0x0;
-
-	return True;
+	q_i->ptr3 = 1;
+	q_i->unknown = 0x00000000;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_info");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
-	smb_io_unihdr ("", &(r_q->hdr_val), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_val), r_q->hdr_val.buffer, ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
+	if(!smb_io_unihdr ("", &r_q->hdr_type, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_type, r_q->hdr_type.buffer, ps, depth))
+		return False;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr_type", ps, depth, &(r_q->ptr_type));
-	if (r_q->ptr_type != 0)
-	{
-		prs_uint32("type", ps, depth, &(r_q->type));
+	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
+		return False;
+
+	if (r_q->ptr1 != 0) {
+		if(!smb_io_time("", &r_q->time, ps, depth))
+			return False;
+		if(!prs_uint8 ("major_version1", ps, depth, &r_q->major_version1))
+			return False;
+		if(!prs_uint8 ("minor_version1", ps, depth, &r_q->minor_version1))
+			return False;
+		if(!prs_uint8s(False, "pad1", ps, depth, r_q->pad1, sizeof(r_q->pad1)))
+			return False;
 	}
 
-	prs_uint32("ptr_uni_type", ps, depth, &(r_q->ptr_uni_type));
+	if(!prs_uint32("ptr2", ps, depth, &r_q->ptr2))
+		return False;
 
-	smb_io_buffer2("uni_type", &(r_q->uni_type), r_q->ptr_uni_type, ps, depth);
-	prs_align(ps);
-
-	prs_uint32("ptr_max_len", ps, depth, &(r_q->ptr_max_len));
-	if (r_q->ptr_max_len != 0)
-	{
-		prs_uint32("buf_max_len", ps, depth, &(r_q->buf_max_len));
+	if (r_q->ptr2 != 0) {
+		if(!prs_uint8 ("major_version2", ps, depth, &r_q->major_version2))
+			return False;
+		if(!prs_uint8 ("minor_version2", ps, depth, &r_q->minor_version2))
+			return False;
+		if(!prs_uint8s(False, "pad2", ps, depth, r_q->pad2, sizeof(r_q->pad2)))
+			return False;
 	}
 
-	prs_uint32("ptr_len", ps, depth, &(r_q->ptr_len));
-	if (r_q->ptr_len != 0)
-	{
-		prs_uint32("buf_len", ps, depth, &(r_q->buf_len));
+	if(!prs_uint32("ptr3", ps, depth, &r_q->ptr3))
+		return False;
+
+	if (r_q->ptr3 != 0) {
+		if(!prs_uint32("unknown", ps, depth, &r_q->unknown))
+			return False;
 	}
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 *type, BUFFER2 *buf,
+
+void init_reg_r_info(REG_R_INFO *r_r,
+				uint32 level, char *os_type,
+				uint32 unknown_0, uint32 unknown_1,
 				uint32 status)
 {
-	if (r_r == NULL) return False;
+	uint8 buf[512];
+	int len = dos_struni2((char *)buf, os_type, sizeof(buf));
 
-	r_r->ptr_type = type != NULL ? 1 : 0;
-	r_r->type = type;
+	r_r->ptr1 = 1;
+	r_r->level = level;
 
-	r_r->ptr_uni_type = buf != NULL ? 1 : 0;
-	r_r->uni_type = buf;
+	r_r->ptr_type = 1;
+	init_buffer2(&r_r->uni_type, buf, len*2);
 
-	if (buf != NULL)
-	{
-		r_r->ptr_max_len = 1;
-		r_r->buf_max_len = r_r->uni_type->buf_max_len;
+	r_r->ptr2 = 1;
+	r_r->unknown_0 = unknown_0;
 
-		r_r->ptr_len = 1;
-		r_r->buf_len = r_r->uni_type->buf_len;
-	}
-	else
-	{
-		r_r->ptr_max_len = 0;
-		r_r->ptr_len = 0;
-	}
-		
+	r_r->ptr3 = 1;
+	r_r->unknown_1 = unknown_1;
+
 	r_r->status = status;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_info");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
-	if (r_r->ptr_type != 0)
-	{
-		prs_uint32("type", ps, depth, r_r->type);
+	if(!prs_uint32("ptr1", ps, depth, &r_r->ptr1))
+		return False;
+
+	if (r_r->ptr1 != 0) {
+		if(!prs_uint32("level", ps, depth, &r_r->level))
+			return False;
+		if(!prs_uint32("ptr_type", ps, depth, &r_r->ptr_type))
+			return False;
+
+		if(!smb_io_buffer2("uni_type", &r_r->uni_type, r_r->ptr_type, ps, depth))
+			return False;
+		if(prs_align(ps))
+			return False;
+
+		if(!prs_uint32("ptr2", ps, depth, &r_r->ptr2))
+			return False;
+
+		if (r_r->ptr2 != 0) {
+			if(!prs_uint32("unknown_0", ps, depth, &r_r->unknown_0))
+				return False;
+		}
+
+		if(!prs_uint32("ptr3", ps, depth, &r_r->ptr3))
+			return False;
+
+		if (r_r->ptr3 != 0) {
+			if(!prs_uint32("unknown_1", ps, depth, &r_r->unknown_1))
+				return False;
+		}
+
 	}
-
-	prs_uint32("ptr_uni_type", ps, depth, &(r_r->ptr_uni_type));
-	smb_io_buffer2("uni_type", r_r->uni_type, r_r->ptr_uni_type, ps, depth);
-	prs_align(ps);
-
-	prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len));
-	if (r_r->ptr_max_len != 0)
-	{
-		prs_uint32("buf_max_len", ps, depth, &(r_r->buf_max_len));
-	}
-
-	prs_uint32("ptr_len", ps, depth, &(r_r->ptr_len));
-	if (r_r->ptr_len != 0)
-	{
-		prs_uint32("buf_len", ps, depth, &(r_r->buf_len));
-	}
-
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
@@ -968,20 +1036,17 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
+
+void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 				uint32 val_idx, uint32 max_val_len,
 				uint32 max_buf_len)
 {
-	if (q_i == NULL) return False;
-
 	ZERO_STRUCTP(q_i);
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
 	q_i->val_index = val_idx;
-	q_i->hdr_name.uni_str_len = 0;
-	q_i->hdr_name.uni_max_len = max_val_len * 2;
-	q_i->hdr_name.buffer = max_val_len > 0 ? 1 : 0;
+	init_uni_hdr(&q_i->hdr_name, max_val_len);
 	q_i->uni_name.uni_max_len = max_val_len;
 	
 	q_i->ptr_type = 1;
@@ -995,49 +1060,61 @@ BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 
 	q_i->ptr2 = 1;
 	q_i->len_value2 = 0;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return False;
+	if (q_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_enum_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth); 
+	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 	
-	prs_uint32("val_index", ps, depth, &(q_q->val_index));
-	smb_io_unihdr ("hdr_name", &(q_q->hdr_name), ps, depth);
-	smb_io_unistr2("uni_name", &(q_q->uni_name), q_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!prs_uint32("val_index", ps, depth, &q_q->val_index))
+		return False;
+	if(!smb_io_unihdr ("hdr_name", &q_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_name", &q_q->uni_name, q_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("ptr_type", ps, depth, &(q_q->ptr_type));
+	if(!prs_uint32("ptr_type", ps, depth, &q_q->ptr_type))
+		return False;
 
-	if (q_q->ptr_type != 0)
-	{
-		prs_uint32("type", ps, depth, &(q_q->type));
+	if (q_q->ptr_type != 0) {
+		if(!prs_uint32("type", ps, depth, &q_q->type))
+			return False;
 	}
 
-	prs_uint32("ptr_value", ps, depth, &(q_q->ptr_value));
-	smb_io_buffer2("buf_value", &(q_q->buf_value), q_q->ptr_value, ps, depth);
-	prs_align(ps);
+	if(!prs_uint32("ptr_value", ps, depth, &q_q->ptr_value))
+		return False;
+	if(!smb_io_buffer2("buf_value", &q_q->buf_value, q_q->ptr_value, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("ptr1", ps, depth, &(q_q->ptr1));
-	if (q_q->ptr1 != 0)
-	{
-		prs_uint32("len_value1", ps, depth, &(q_q->len_value1));
+	if(!prs_uint32("ptr1", ps, depth, &q_q->ptr1))
+		return False;
+	if (q_q->ptr1 != 0) {
+		if(!prs_uint32("len_value1", ps, depth, &q_q->len_value1))
+			return False;
 	}
-	prs_uint32("ptr2", ps, depth, &(q_q->ptr2));
-	if (q_q->ptr2 != 0)
-	{
-		prs_uint32("len_value2", ps, depth, &(q_q->len_value2));
+	if(!prs_uint32("ptr2", ps, depth, &q_q->ptr2))
+		return False;
+	if (q_q->ptr2 != 0) {
+		if(!prs_uint32("len_value2", ps, depth, &q_q->len_value2))
+			return False;
 	}
 
 	return True;
@@ -1046,43 +1123,56 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_enum_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_unihdr ("hdr_name", &(r_q->hdr_name), ps, depth);
-	smb_io_unistr2("uni_name", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("hdr_name", &r_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_name", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("ptr_type", ps, depth, &(r_q->ptr_type));
+	if(!prs_uint32("ptr_type", ps, depth, &r_q->ptr_type))
+		return False;
 
-	if (r_q->ptr_type != 0)
-	{
-		prs_uint32("type", ps, depth, &(r_q->type));
+	if (r_q->ptr_type != 0) {
+		if(!prs_uint32("type", ps, depth, &r_q->type))
+			return False;
 	}
 
-	prs_uint32("ptr_value", ps, depth, &(r_q->ptr_value));
-	smb_io_buffer2("buf_value", r_q->buf_value, r_q->ptr_value, ps, depth);
-	prs_align(ps);
+	if(!prs_uint32("ptr_value", ps, depth, &r_q->ptr_value))
+		return False;
+	if(!smb_io_buffer2("buf_value", r_q->buf_value, r_q->ptr_value, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
-	if (r_q->ptr1 != 0)
-	{
-		prs_uint32("len_value1", ps, depth, &(r_q->len_value1));
+	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
+		return False;
+	if (r_q->ptr1 != 0) {
+		if(!prs_uint32("len_value1", ps, depth, &r_q->len_value1))
+			return False;
 	}
 
-	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
-	if (r_q->ptr2 != 0)
-	{
-		prs_uint32("len_value2", ps, depth, &(r_q->len_value2));
+	if(!prs_uint32("ptr2", ps, depth, &r_q->ptr2))
+		return False;
+	if (r_q->ptr2 != 0) {
+		if(!prs_uint32("len_value2", ps, depth, &r_q->len_value2))
+			return False;
 	}
 
-	prs_uint32("status", ps, depth, &(r_q->status));
+	if(!prs_uint32("status", ps, depth, &r_q->status))
+		return False;
 
 	return True;
 }
@@ -1090,48 +1180,55 @@ BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int d
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
+
+void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 				char *val_name, uint32 type,
 				BUFFER3 *val)
 {
 	int val_len = strlen(val_name) + 1;
 
-	if (q_i == NULL) return False;
-
 	ZERO_STRUCTP(q_i);
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	make_uni_hdr(&q_i->hdr_name, val_len);
-	make_unistr2(&(q_i->uni_name), val_name, val_len);
+	init_uni_hdr(&q_i->hdr_name, val_len);
+	init_unistr2(&q_i->uni_name, val_name, val_len);
 	
 	q_i->type      = type;
 	q_i->buf_value = val;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return False;
+	if (q_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_create_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth); 
+	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 	
-	smb_io_unihdr ("hdr_name", &(q_q->hdr_name), ps, depth);
-	smb_io_unistr2("uni_name", &(q_q->uni_name), q_q->hdr_name.buffer, ps, depth);
-	prs_align(ps);
+	if(!smb_io_unihdr ("hdr_name", &q_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_name", &q_q->uni_name, q_q->hdr_name.buffer, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
-	prs_uint32("type", ps, depth, &(q_q->type));
-	smb_io_buffer3("buf_value", q_q->buf_value, ps, depth);
-	prs_align(ps);
+	if(!prs_uint32("type", ps, depth, &q_q->type))
+		return False;
+	if(!smb_io_buffer3("buf_value", q_q->buf_value, ps, depth))
+		return False;
+	if(prs_align(ps))
+		return False;
 
 	return True;
 }
@@ -1139,16 +1236,20 @@ BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_create_val");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("status", ps, depth, &(r_q->status));
+	if(!prs_uint32("status", ps, depth, &r_q->status))
+		return False;
 
 	return True;
 }
@@ -1156,11 +1257,10 @@ BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, i
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
-{
-	if (q_i == NULL) return False;
 
-	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+void init_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
+{
+	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
 	q_i->key_index = key_idx;
 	q_i->key_name_len = 0;
@@ -1174,49 +1274,58 @@ BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
 	memset(q_i->pad2, 0, sizeof(q_i->pad2));
 
 	q_i->ptr3 = 1;
-	init_nt_time(&(q_i->time));   /* ignored ? */
-
-	return True;
+	unix_to_nt_time(&q_i->time, 0);            /* current time? */
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return False;
+	if (q_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_enum_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth); 
+	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 	
-	prs_uint32("key_index", ps, depth, &(q_q->key_index));
-	prs_uint16("key_name_len", ps, depth, &(q_q->key_name_len));
-	prs_uint16("unknown_1", ps, depth, &(q_q->unknown_1));
+	if(!prs_uint32("key_index", ps, depth, &q_q->key_index))
+		return False;
+	if(!prs_uint16("key_name_len", ps, depth, &q_q->key_name_len))
+		return False;
+	if(!prs_uint16("unknown_1", ps, depth, &q_q->unknown_1))
+		return False;
 
-	prs_uint32("ptr1", ps, depth, &(q_q->ptr1));
+	if(!prs_uint32("ptr1", ps, depth, &q_q->ptr1))
+		return False;
 
-	if (q_q->ptr1 != 0)
-	{
-		prs_uint32("unknown_2", ps, depth, &(q_q->unknown_2));
-		prs_uint8s(False, "pad1", ps, depth, q_q->pad1, sizeof(q_q->pad1));
+	if (q_q->ptr1 != 0) {
+		if(!prs_uint32("unknown_2", ps, depth, &q_q->unknown_2))
+			return False;
+		if(!prs_uint8s(False, "pad1", ps, depth, q_q->pad1, sizeof(q_q->pad1)))
+			return False;
 	}
 
-	prs_uint32("ptr2", ps, depth, &(q_q->ptr2));
+	if(!prs_uint32("ptr2", ps, depth, &q_q->ptr2))
+		return False;
 
-	if (q_q->ptr2 != 0)
-	{
-		prs_uint8s(False, "pad2", ps, depth, q_q->pad2, sizeof(q_q->pad2));
+	if (q_q->ptr2 != 0) {
+		if(!prs_uint8s(False, "pad2", ps, depth, q_q->pad2, sizeof(q_q->pad2)))
+			return False;
 	}
 
-	prs_uint32("ptr3", ps, depth, &(q_q->ptr3));
+	if(!prs_uint32("ptr3", ps, depth, &q_q->ptr3))
+		return False;
 
-	if (q_q->ptr3 != 0)
-	{
-		smb_io_time("", &(q_q->time), ps, depth);
+	if (q_q->ptr3 != 0) {
+		if(!smb_io_time("", &q_q->time, ps, depth))
+			return False;
 	}
 
 	return True;
@@ -1225,193 +1334,141 @@ BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int dep
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_enum_key");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint16("key_name_len", ps, depth, &(r_q->key_name_len));
-	prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
+	if(!prs_uint16("key_name_len", ps, depth, &r_q->key_name_len))
+		return False;
+	if(!prs_uint16("unknown_1", ps, depth, &r_q->unknown_1))
+		return False;
 
-	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
+	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
+		return False;
 
-	if (r_q->ptr1 != 0)
-	{
-		prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
-		prs_uint32("unknown_3", ps, depth, &(r_q->unknown_3));
-		smb_io_unistr3("key_name", &(r_q->key_name), ps, depth);
-		prs_align(ps);
+	if (r_q->ptr1 != 0) {
+		if(!prs_uint32("unknown_2", ps, depth, &r_q->unknown_2))
+			return False;
+		if(!prs_uint32("unknown_3", ps, depth, &r_q->unknown_3))
+			return False;
+		if(!smb_io_unistr3("key_name", &r_q->key_name, ps, depth))
+			return False;
+		if(prs_align(ps))
+			return False;
 	}
 
-	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
+	if(!prs_uint32("ptr2", ps, depth, &r_q->ptr2))
+		return False;
 
-	if (r_q->ptr2 != 0)
-	{
-		prs_uint8s(False, "pad2", ps, depth, r_q->pad2, sizeof(r_q->pad2));
+	if (r_q->ptr2 != 0) {
+		if(!prs_uint8s(False, "pad2", ps, depth, r_q->pad2, sizeof(r_q->pad2)))
+			return False;
 	}
 
-	prs_uint32("ptr3", ps, depth, &(r_q->ptr3));
+	if(!prs_uint32("ptr3", ps, depth, &r_q->ptr3))
+		return False;
 
-	if (r_q->ptr3 != 0)
-	{
-		smb_io_time("", &(r_q->time), ps, depth);
+	if (r_q->ptr3 != 0) {
+		if(!smb_io_time("", &r_q->time, ps, depth))
+			return False;
 	}
 
-	prs_uint32("status", ps, depth, &(r_q->status));
+	if(!prs_uint32("status", ps, depth, &r_q->status))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
+
+void init_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 				char *key_name, uint32 unk)
 {
 	int len_name = strlen(key_name)+1;
 
-	if (r_q == NULL) return False;
+	memcpy(&r_q->pol, pol, sizeof(r_q->pol));
 
-	memcpy(&(r_q->pol), pol, sizeof(r_q->pol));
-
-	make_uni_hdr(&(r_q->hdr_name), len_name);
-	make_unistr2(&(r_q->uni_name), key_name, len_name);
+	init_uni_hdr(&r_q->hdr_name, len_name);
+	init_unistr2(&r_q->uni_name, key_name, len_name);
 
 	r_q->unknown_0 = 0x00000000;
 	r_q->unknown_1 = unk;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return False;
+	if (r_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_entry");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
-	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
+	if(!smb_io_unihdr ("", &r_q->hdr_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
+		return False;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	prs_uint32("unknown_0", ps, depth, &(r_q->unknown_0));
-	prs_uint32("unknown_1", ps, depth, &(r_q->unknown_1));
+	if(!prs_uint32("unknown_0", ps, depth, &r_q->unknown_0))
+		return False;
+	if(!prs_uint32("unknown_1", ps, depth, &r_q->unknown_1))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
-creates a structure.
+ Inits a structure.
 ********************************************************************/
-BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
+
+void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status)
 {
-	if (r_r == NULL) return False;
-
-	memcpy(&(r_r->pol), pol, sizeof(r_r->pol));
+	memcpy(&r_r->pol, pol, sizeof(r_r->pol));
 	r_r->status = status;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return False;
+	if (r_r == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_entry");
 	depth++;
 
-	prs_align(ps);
+	if(prs_align(ps))
+		return False;
 	
-	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
+	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_r->status));
+	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
 
 	return True;
 }
-
-/*******************************************************************
-makes a structure.
-********************************************************************/
-BOOL make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
-				const char *msg, uint32 timeout, uint16 flags)
-{
-	int len = strlen(msg) + 1;
-
-	if (q_i == NULL) return False;
-
-	ZERO_STRUCTP(q_i);
-
-	q_i->ptr_0 = 1;
-	q_i->ptr_1 = 1;
-	q_i->ptr_2 = 1;
-
-	make_uni_hdr(&q_i->hdr_msg, len);
-	make_unistr2(&(q_i->uni_msg), msg, len);
-	
-	q_i->timeout = timeout;
-	q_i->flags   = flags;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth)
-{
-	if (q_q == NULL) return False;
-
-	prs_debug(ps, depth, desc, "reg_io_q_shutdown");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("ptr_0", ps, depth, &(q_q->ptr_0));
-	prs_uint32("ptr_1", ps, depth, &(q_q->ptr_1));
-	prs_uint32("ptr_2", ps, depth, &(q_q->ptr_2));
-	
-	smb_io_unihdr ("hdr_msg", &(q_q->hdr_msg), ps, depth);
-	smb_io_unistr2("uni_msg", &(q_q->uni_msg), q_q->hdr_msg.buffer, ps, depth);
-	prs_align(ps);
-
-	prs_uint32("timeout", ps, depth, &(q_q->timeout));
-	prs_uint16("flags  ", ps, depth, &(q_q->flags  ));
-	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth)
-{
-	if (r_q == NULL) return False;
-
-	prs_debug(ps, depth, desc, "reg_io_r_shutdown");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("status", ps, depth, &(r_q->status));
-
-	return True;
-}
-

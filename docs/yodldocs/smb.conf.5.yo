@@ -478,6 +478,10 @@ parameter for details.  Note that some are synonyms.
 
 startit()
 
+it() link(bf(add user script))(adduserscript)
+
+it() link(bf(allow trusted domains))(allowtrusteddomains)
+
 it() link(bf(announce as))(announceas)
 
 it() link(bf(announce version))(announceversion)
@@ -500,13 +504,21 @@ it() link(bf(config file))(configfile)
 
 it() link(bf(deadtime))(deadtime)
 
+it() link(bf(debug hires timestamp))(debughirestimestamp)
+
+it() link(bf(debug pid))(debugpid)
+
 it() link(bf(debug timestamp))(debugtimestamp)
+
+it() link(bf(debug uid))(debuguid)
 
 it() link(bf(debuglevel))(debuglevel)
 
 it() link(bf(default))(default)
 
 it() link(bf(default service))(defaultservice)
+
+it() link(bf(delete user script))(deleteuserscript)
 
 it() link(bf(dfree command))(dfreecommand)
 
@@ -518,8 +530,6 @@ it() link(bf(domain admin users))(domainadminusers)
 
 it() link(bf(domain controller))(domaincontroller)
 
-it() link(bf(domain group map))(domaingroupmap)
-
 it() link(bf(domain groups))(domaingroups)
 
 it() link(bf(domain guest group))(domainguestgroup)
@@ -529,8 +539,6 @@ it() link(bf(domain guest users))(domainguestusers)
 it() link(bf(domain logons))(domainlogons)
 
 it() link(bf(domain master))(domainmaster)
-
-it() link(bf(domain user map))(domainusermap)
 
 it() link(bf(encrypt passwords))(encryptpasswords)
 
@@ -546,11 +554,13 @@ it() link(bf(keepalive))(keepalive)
 
 it() link(bf(kernel oplocks))(kerneloplocks)
 
-it() link(bf(ldap bind as))(ldapbindas)
-
-it() link(bf(ldap passwd file))(ldappasswdfile)
+it() link(bf(ldap filter))(ldapfilter)
 
 it() link(bf(ldap port))(ldapport)
+
+it() link(bf(ldap root))(ldaproot)
+
+it() link(bf(ldap root passwd))(ldaprootpasswd)
 
 it() link(bf(ldap server))(ldapserver)
 
@@ -561,8 +571,6 @@ it() link(bf(lm announce))(lmannounce)
 it() link(bf(lm interval))(lminterval)
 
 it() link(bf(load printers))(loadprinters)
-
-it() link(bf(local group map))(localgroupmap)
 
 it() link(bf(local master))(localmaster)
 
@@ -588,6 +596,8 @@ it() link(bf(machine password timeout))(machinepasswordtimeout)
 
 it() link(bf(mangled stack))(mangledstack)
 
+it() link(bf(map to guest))(maptoguest)
+
 it() link(bf(max disk size))(maxdisksize)
 
 it() link(bf(max log size))(maxlogsize)
@@ -606,6 +616,8 @@ it() link(bf(max xmit))(maxxmit)
 
 it() link(bf(message command))(messagecommand)
 
+it() link(bf(min passwd length))(minpasswdlength)
+
 it() link(bf(min wins ttl))(minwinsttl)
 
 it() link(bf(name resolve order))(nameresolveorder)
@@ -616,6 +628,8 @@ it() link(bf(netbios name))(netbiosname)
 
 it() link(bf(nis homedir))(nishomedir)
 
+it() link(bf(nt acl support))(ntaclsupport)
+
 it() link(bf(nt pipe support))(ntpipesupport)
 
 it() link(bf(nt smb support))(ntsmbsupport)
@@ -623,6 +637,8 @@ it() link(bf(nt smb support))(ntsmbsupport)
 it() link(bf(null passwords))(nullpasswords)
 
 it() link(bf(ole locking compatibility))(olelockingcompatibility)
+
+it() link(bf(oplock break wait time))(oplockbreakwaittime)
 
 it() link(bf(os level))(oslevel)
 
@@ -665,6 +681,8 @@ it() link(bf(read size))(readsize)
 it() link(bf(remote announce))(remoteannounce)
 
 it() link(bf(remote browse sync))(remotebrowsesync)
+
+it() link(bf(restrict anonymous))(restrictanonymous)
 
 it() link(bf(root))(root)
 
@@ -748,6 +766,8 @@ it() link(bf(wins proxy))(winsproxy)
 
 it() link(bf(wins server))(winsserver)
 
+it() link(bf(wins hook))(winshook)
+
 it() link(bf(wins support))(winssupport)
 
 it() link(bf(workgroup))(workgroup)
@@ -804,6 +824,8 @@ it() link(bf(directory mask))(directorymask)
 
 it() link(bf(directory mode))(directorymode)
 
+it() link(bf(directory security mask))(directorysecuritymask)
+
 it() link(bf(dont descend))(dontdescend)
 
 it() link(bf(dos filetime resolution))(dosfiletimeresolution)
@@ -822,7 +844,11 @@ it() link(bf(force create mode))(forcecreatemode)
 
 it() link(bf(force directory mode))(forcedirectorymode)
 
+it() link(bf(force directory security mode))(forcedirectorysecuritymode)
+
 it() link(bf(force group))(forcegroup)
+
+it() link(bf(force security mode))(forcesecuritymode)
 
 it() link(bf(force user))(forceuser)
 
@@ -848,6 +874,8 @@ it() link(bf(include))(include)
 
 it() link(bf(invalid users))(invalidusers)
 
+it() link(bf(level2 oplocks))(level2oplocks)
+
 it() link(bf(locking))(locking)
 
 it() link(bf(lppause command))(lppausecommand)
@@ -864,6 +892,8 @@ it() link(bf(magic script))(magicscript)
 
 it() link(bf(mangle case))(manglecase)
 
+it() link(bf(mangle locks))(manglelocks)
+
 it() link(bf(mangled map))(mangledmap)
 
 it() link(bf(mangled names))(manglednames)
@@ -876,8 +906,6 @@ it() link(bf(map hidden))(maphidden)
 
 it() link(bf(map system))(mapsystem)
 
-it() link(bf(map to guest))(maptoguest)
-
 it() link(bf(max connections))(maxconnections)
 
 it() link(bf(min print space))(minprintspace)
@@ -888,6 +916,8 @@ it() link(bf(only user))(onlyuser)
 
 it() link(bf(oplocks))(oplocks)
 
+it() link(bf(oplock contention limit))(oplockcontentionlimit)
+
 it() link(bf(path))(path)
 
 it() link(bf(postexec))(postexec)
@@ -895,6 +925,8 @@ it() link(bf(postexec))(postexec)
 it() link(bf(postscript))(postscript)
 
 it() link(bf(preexec))(preexec)
+
+it() link(bf(preexec close))(preexecclose)
 
 it() link(bf(preserve case))(preservecase)
 
@@ -929,6 +961,10 @@ it() link(bf(revalidate))(revalidate)
 it() link(bf(root postexec))(rootpostexec)
 
 it() link(bf(root preexec))(rootpreexec)
+
+it() link(bf(security mask))(securitymask)
+
+it() link(bf(root preexec close))(rootpreexecclose)
 
 it() link(bf(set directory))(setdirectory)
 
@@ -975,6 +1011,55 @@ manpagesection(EXPLANATION OF EACH PARAMETER)
 
 startdit()
 
+label(adduserscript)
+dit(bf(add user script (G)))
+
+This is the full pathname to a script that will be run em(AS ROOT) by
+url(bf(smbd (8)))(smbd.8.html) under special circumstances decribed
+below.
+
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows url(bf(smbd))(smbd.8.html) to create
+the required UNIX users em(ON DEMAND) when a user accesses the Samba
+server.
+
+In order to use this option, url(bf(smbd))(smbd.8.html) must be set to
+link(bf(security=server))(securityequalserver) or
+link(bf(security=domain))(securityequaldomain) and bf("add user script")
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of bf(%u), which expands into the UNIX user name to
+create.
+
+When the Windows user attempts to access the Samba server, at
+em("login")(session setup in the SMB protocol) time,
+url(bf(smbd))(smbd.8.html) contacts the link(bf(password
+server))(passwordserver) and attempts to authenticate the given user
+with the given password. If the authentication succeeds then
+url(bf(smbd))(smbd.8.html) attempts to find a UNIX user in the UNIX
+password database to map the Windows user into. If this lookup fails,
+and bf("add user script") is set then url(bf(smbd))(smbd.8.html) will
+call the specified script em(AS ROOT), expanding any bf(%u) argument
+to be the user name to create.
+
+If this script successfully creates the user then
+url(bf(smbd))(smbd.8.html) will continue on as though the UNIX user
+already existed. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts.
+
+See also link(bf(security=server))(securityequalserver),
+link(bf(security=domain))(securityequaldomain), link(bf(password
+server))(passwordserver), link(bf(delete user
+script))(deleteuserscript).
+
+  bf(Default:)
+tt(	add user script = <empty string>)
+
+  bf(Example:)
+tt(	add user script = /usr/local/samba/bin/add_user %u)
+
 label(adminusers)
 dit(bf(admin users (S)))
 
@@ -995,63 +1080,30 @@ tt(	admin users = jason)
 label(allow hosts)
 dit(bf(allow hosts (S)))
 
-A synonym for this parameter is link(bf('hosts allow'))(hostsallow)
+Synonym for link(bf(hosts allow))(hostsallow).
 
-This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service.
+label(allowtrusteddomains)
+dit(bf(allow trusted domains (G)))
 
-If specified in the link(bf([global]))(global) section then it will
-apply to all services, regardless of whether the individual service
-has a different setting.
+This option only takes effect when the link(bf(security))(security)
+option is set to bf(server) or bf(domain).  If it is set to no,
+then attempts to connect to a resource from a domain or workgroup other than
+the one which smbd is running in will fail, even if that domain
+is trusted by the remote server doing the authentication.
 
-You can specify the hosts by name or IP number. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like tt("allow hosts = 150.203.5."). The full syntax of the list is
-described in the man page bf(hosts_access (5)). Note that this man
-page may not be present on your system, so a brief description will
-be given here also.
-
-em(NOTE:) IF you wish to allow the url(bf(smbpasswd
-(8)))(smbpasswd.html.8) program to be run by local users to change
-their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
-daemon, then you em(MUST) ensure that the localhost is listed in your
-bf(allow hosts) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
-in client-server mode and is seen by the local
-url(bf(smbd))(smbd.8.html) process as just another client.
-
-You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups. The em(EXCEPT) keyword can also
-be used to limit a wildcard list. The following examples may provide
-some help:
-
-bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
-
-tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
-
-bf(Example 2): allow localhost and hosts that match the given network/netmask
-
-tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
-
-bf(Example 3): allow a localhost plus a couple of hosts
-
-tt(	hosts allow = localhost, lapland, arvidsjaur)
-
-bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-
-tt( 	hosts allow = @foonet, localhost)
-tt( 	hosts deny = pirate)
-
-Note that access still requires suitable user-level passwords.
-
-See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
-host access to see if it does what you expect.
+This is useful if you only want your Samba server to serve resources
+to users in the domain it is a member of. As an example, suppose that there are
+two domains DOMA and DOMB.  DOMB is trusted by DOMA, which contains
+the Samba server.  Under normal circumstances, a user with an account
+in DOMB can then access the resources of a UNIX account with the same
+account name on the Samba server even if they do not have an account
+in DOMA.  This can make implementing a security boundary difficult.
 
   bf(Default:)
-tt(	none (i.e., all hosts permitted access))
+tt(     allow trusted domains = Yes)
 
   bf(Example:)
-tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
+tt(     allow trusted domains = No)
 
 label(alternatepermissions)
 dit(bf(alternate permissions (S)))
@@ -1067,14 +1119,15 @@ dit(bf(announce as (G)))
 
 This specifies what type of server url(bf(nmbd))(nmbd.8.html) will
 announce itself as, to a network neighborhood browse list. By default
-this is set to Windows NT. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly.
+this is set to Windows NT. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly.
 
   bf(Default:)
-tt(	announce as = NT)
+tt(	announce as = NT Server)
 
   bf(Example)
 tt(	announce as = Win95)
@@ -1158,11 +1211,16 @@ should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces.
 
-In addition, to change a users SMB password, the
-url(bf(smbpasswd))(smbpasswd.8.html) by default connects to the
-em("localhost" - 127.0.0.1) address as an SMB client to issue the
-password change request. If bf("bind interfaces only") is set then
-unless the network address em(127.0.0.1) is added to the
+If bf("bind interfaces only") is set then unless the network address
+em(127.0.0.1) is added to the link(bf('interfaces'))(interfaces) parameter
+list url(bf(smbpasswd))(smbpasswd.8.html) and
+url(bf(swat))(swat.8.html) may not work as expected due to the
+reasons covered below.
+
+To change a users SMB password, the url(bf(smbpasswd))(smbpasswd.8.html)
+by default connects to the em("localhost" - 127.0.0.1) address as an SMB
+client to issue the password change request. If bf("bind interfaces only")
+is set then unless the network address em(127.0.0.1) is added to the
 link(bf('interfaces'))(interfaces) parameter list then
 url(bf(smbpasswd))(smbpasswd.8.html) will fail to connect in it's
 default mode. url(bf(smbpasswd))(smbpasswd.8.html) can be forced to
@@ -1170,6 +1228,14 @@ use the primary IP interface of the local host by using its
 url(bf("-r remote machine"))(smbpasswd.8.html#minusr) parameter, with
 bf("remote machine") set to the IP name of the primary interface
 of the local host.
+
+The url(bf(swat))(swat.8.html) status page tries to connect with
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html) at the address 
+em(127.0.0.1) to determine if they are running.  Not adding em(127.0.0.1)  will cause
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html) to always show
+"not running" even if they really are.  This can prevent
+url(bf(swat))(swat.8.html) from starting/stopping/restarting
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html).
 
   bf(Default:)
 tt(	bind interfaces only = False)
@@ -1282,7 +1348,13 @@ correctly.
 
 it() bf(ISO8859-5) Russian Cyrillic UNIX character set. The parameter
 link(bf(client code page))(clientcodepage) em(MUST) be set to code
-page 866 if the bf(character set) parameter is set to ISO8859-2
+page 866 if the bf(character set) parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly. 
+
+it() bf(ISO8859-7) Greek UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 737 if the bf(character set) parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly. 
 
@@ -1529,6 +1601,22 @@ tt(	deadtime = 0)
   bf(Example:)
 tt(	deadtime = 15)
 
+label(debughirestimestamp)
+dit(bf(debug hires timestamp (G)))
+
+Sometimes the timestamps in the log messages are needed with a
+resolution of higher that seconds, this boolean parameter adds
+microsecond resolution to the timestamp message header when turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt( debug hires timestamp = No)
+
+  bf(Example:)
+tt( debug hires timestamp = Yes)
+
 label(debugtimestamp)
 dit(bf(debug timestamp (G)))
 
@@ -1542,6 +1630,39 @@ tt(	debug timestamp = Yes)
 
   bf(Example:)
 tt(	debug timestamp = No)
+
+label(debugpid)
+dit(bf(debug pid (G)))
+
+When using only one log file for more then one forked smbd-process
+there may be hard to follow which process outputs which message.
+This boolean parameter is adds the process-id to the timestamp message
+headers in the logfile when turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt(	debug pid = No)
+
+  bf(Example:)
+tt(	debug pid = Yes)
+
+label(debuguid)
+dit(bf(debug uid (G)))
+
+Samba is sometimes run as root and sometime run as the connected
+user, this boolean parameter inserts the current euid, egid, uid
+and gid to the timestamp message headers in the log file if turned on.
+
+Note that the parameter link(bf(debug timestamp))(debugtimestamp)
+must be on for this to have an effect.
+
+  bf(Default:)
+tt(	debug uid = No)
+
+  bf(Example:)
+tt(	debug uid = Yes)
 
 label(debuglevel)
 dit(bf(debug level (G)))
@@ -1567,7 +1688,7 @@ dit(bf(default case (S)))
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING). Also note
 the link(bf("short preserve case"))(shortpreservecase) parameter.
 
-label(default service)
+label(defaultservice)
 dit(bf(default service (G)))
 
 This parameter specifies the name of a service which will be connected
@@ -1598,6 +1719,60 @@ verb(
 	[pub]
 		path = /%S
 )
+
+label(deleteuserscript)
+dit(bf(delete user script (G)))
+
+This is the full pathname to a script that will be run em(AS ROOT) by
+url(bf(smbd (8)))(smbd.8.html) under special circumstances decribed
+below.
+
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows url(bf(smbd))(smbd.8.html) to delete
+the required UNIX users em(ON DEMAND) when a user accesses the Samba
+server and the Windows NT user no longer exists.
+
+In order to use this option, url(bf(smbd))(smbd.8.html) must be set to
+link(bf(security=domain))(securityequaldomain) and bf("delete user
+script") must be set to a full pathname for a script that will delete
+a UNIX user given one argument of bf(%u), which expands into the UNIX
+user name to delete. em(NOTE) that this is different to the
+link(bf(add user script))(adduserscript) which will work with the
+link(bf(security=server))(securityequalserver) option as well as
+link(bf(security=domain))(securityequaldomain). The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists. In the
+link(bf(security=server))(securityequalserver) mode a missing user
+is treated the same as an invalid password logon attempt. Deleting
+the user in this circumstance would not be a good idea.
+
+When the Windows user attempts to access the Samba server, at
+em("login")(session setup in the SMB protocol) time,
+url(bf(smbd))(smbd.8.html) contacts the link(bf(password
+server))(passwordserver) and attempts to authenticate the given user
+with the given password. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+url(bf(smbd))(smbd.8.html) attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account. If this lookup succeeds,
+and bf("delete user script") is set then url(bf(smbd))(smbd.8.html) will
+call the specified script em(AS ROOT), expanding any bf(%u) argument
+to be the user name to delete.
+
+This script should delete the given UNIX username. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts.
+
+See also link(bf(security=domain))(securityequaldomain),
+link(bf(password server))(passwordserver), link(bf(add user
+script))(adduserscript).
+
+  bf(Default:)
+tt(	delete user script = <empty string>)
+
+  bf(Example:)
+tt(	delete user script = /usr/local/samba/bin/del_user %u)
 
 label(deletereadonly)
 dit(bf(delete readonly (S)))
@@ -1646,16 +1821,7 @@ tt(	delete veto files = True)
 label(denyhosts)
 dit(bf(deny hosts (S)))
 
-The opposite of link(bf('allow hosts'))(allowhosts) - hosts listed
-here are em(NOT) permitted access to services unless the specific
-services have their own lists to override this one. Where the lists
-conflict, the link(bf('allow'))(allowhosts) list takes precedence.
-
-  bf(Default:)
-tt(	none (i.e., no hosts specifically excluded))
-
-  bf(Example:)
-tt(	deny hosts = 150.203.4. badhost.mynet.edu.au)
+Synonym for link(bf(hosts deny))(hostsdeny).
 
 label(dfreecommand)
 dit(bf(dfree command (G)))
@@ -1737,7 +1903,8 @@ See the link(bf("force directory mode"))(forcedirectorymode) parameter
 to cause particular mode bits to always be set on created directories.
 
 See also the link(bf("create mode"))(createmode) parameter for masking
-mode bits on created files.
+mode bits on created files, and the link(bf("directory security mask"))(directorysecuritymask)
+parameter.
 
   bf(Default:)
 tt(	directory mask = 0755)
@@ -1749,6 +1916,39 @@ label(directorymode)
 dit(bf(directory mode (S)))
 
 Synonym for link(bf(directory mask))(directorymask).
+
+label(directorysecuritymask)
+dit(bf(directory security mask (S)))
+
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box.
+
+This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(directory mask))(directorymask) parameter. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(security
+mask))(securitymask), link(bf(force security mode))(forcesecuritymode)
+parameters.
+
+  bf(Default:)
+tt(	directory security mask = <same as directory mask>)
+
+  bf(Example:)
+tt(	directory security mask = 0777)
 
 label(dnsproxy)
 dit(bf(dns proxy (G)))
@@ -1775,7 +1975,7 @@ label(domainadmingroup)
 bf(domain admin group (G))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code.  It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1785,7 +1985,7 @@ label(domainadminusers)
 dit(bf(domain admin users (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1798,93 +1998,11 @@ This is a bf(DEPRECATED) parameter. It is currently not used within
 the Samba source and should be removed from all current smb.conf
 files. It is left behind for compatibility reasons.
 
-label(domaingroupmap)
-dit(bf(domain group map (G)))
-
-This option allows you to specify a file containing unique mappings
-of individual NT Domain Group names (in any domain) to UNIX group
-names.  This allows NT domain groups to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-
-This option is used in conjunction with link(bf('local group map'))(localgroupmap)
-and link(bf('domain user map'))(domainusermap).  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-
-
-The map file is parsed line by line.  If any line begins with a tt('#')
-or a tt(';') then it is ignored.  Each line should contain a single UNIX
-group name on the left then a single NT Domain Group name on the right,
-separated by a tabstop or tt('=').  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-
-tt(  UNIXgroupname	\\DOMAIN_NAME\\DomainGroupName )
-
-or:
-
-tt(  UNIXgroupname	DomainGroupName )
-
-In the case where Samba is either an bf(EXPERIMENTAL) Domain Controller
-or it is a member of a domain using link(bf("security = domain"))(security),
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
-
-Any UNIX groups that are em(NOT) specified in this map file are assumed to
-be either Local or Domain Groups, depending on the role of the Samba Server.
-
-In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
-will present em(ALL) such unspecified UNIX groups as its own NT Domain
-Groups, with the same name.
-
-In the case where Samba is member of a domain using
-link(bf("security = domain"))(security), Samba will check the UNIX name with
-its Domain Controller (see link(bf("password server"))(passwordserver))
-as if it was an NT Domain Group.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running bf(USRMGR.EXE) and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running bf(MUSRMGR.EXE) on
-a local Workstation.
-
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an bf(EXPERIMENTAL) Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you bf(want) to get fancy, however, you can.
-
-Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group em(REQUIRES) the following:
-
-startit()
-
-it() that the UNIX group exists on the UNIX server.
-
-it() that the NT Domain Group exists in the specified NT Domain
-
-it() that the UNIX Server knows about the specified Domain; 
-
-it() that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using link(bf('domain user map'))(domainusermap).
-
-endit()
-
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
-
-
 label(domaingroups)
 dit(bf(domain groups (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1894,7 +2012,7 @@ label(domainguestgroup)
 dit(bf(domain guest group (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1904,7 +2022,7 @@ label(domainguestusers)
 dit(bf(domain guest users (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It has been removed as of November 98.
+Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1952,98 +2070,8 @@ special name for a link(bf(workgroup))(workgroup) before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
 
-By default ("auto") Samba will attempt to become the domain master
-browser only if it is the Primary Domain Controller.
-
   bf(Default:)
-tt(	domain master = auto)
-
-  bf(Example:)
 tt(	domain master = no)
-
-
-label(domainusermap)
-dit(bf(domain user map (G)))
-
-This option allows you to specify a file containing unique mappings
-of individual NT Domain User names (in any domain) to UNIX user
-names.  This allows NT domain users to be presented correctly to
-NT systems, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-
-This option is used in conjunction with link(bf('local group map'))(localgroupmap)
-and link(bf('domain group map'))(domaingroupmap).  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-
-This option, which provides (and maintains) a one-to-one link between
-UNIX and NT users, is em(DIFFERENT) from link(bf('username map'))
-(usernamemap), which does em(NOT) maintain a distinction between the
-name(s) it can map to and the name it maps.
-
-
-The map file is parsed line by line.  If any line begins with a tt('#')
-or a tt(';') then the line is ignored.  Each line should contain a single UNIX
-user name on the left then a single NT Domain User name on the right,
-separated by a tabstop or tt('=').  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-
-tt(  UNIXusername	\\DOMAIN_NAME\\DomainUserName )
-
-or:
-
-tt(  UNIXusername	DomainUserName )
-
-In the case where Samba is either an bf(EXPERIMENTAL) Domain Controller
-or it is a member of a domain using link(bf("security = domain"))(security),
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
-
-Any UNIX users that are em(NOT) specified in this map file are assumed
-to be either Domain or Workstation Users, depending on the role of the
-Samba Server.
-
-In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
-will present em(ALL) such unspecified UNIX users as its own NT Domain
-Users, with the same name.
-
-In the case where Samba is a member of a domain using
-link(bf("security = domain"))(security), Samba will check the UNIX name with
-its Domain Controller (see link(bf("password server"))(passwordserver))
-as if it was an NT Domain User.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX users which also are not NT Domain
-Users are treated as Local Users in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Users,
-which are managed by running bf(USRMGR.EXE) and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running bf(MUSRMGR.EXE) on
-a local Workstation.
-
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an bf(EXPERIMENTAL) Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you bf(want) to get fancy, however, you can.
-
-Note that adding an entry to map an arbitrary NT User in an arbitrary
-Domain to an arbitrary UNIX user em(REQUIRES) the following:
-
-startit()
-
-it() that the UNIX user exists on the UNIX server.
-
-it() that the NT Domain User exists in the specified NT Domain.
-
-it() that the UNIX Server knows about the specified Domain.
-
-endit()
-
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
-
 
 label(dont descend)
 dit(bf(dont descend (S)))
@@ -2209,14 +2237,15 @@ label(forcecreatemode)
 dit(bf(force create mode (S)))
 
 This parameter specifies a set of UNIX mode bit permissions that will
-em(*always*) be set on a file created by Samba. This is done by
-bitwise 'OR'ing these bits onto the mode bits of a file that is being
-created. The default for this parameter is (in octal) 000. The modes
-in this parameter are bitwise 'OR'ed onto the file mode after the mask
-set in the link(bf("create mask"))(createmask) parameter is applied.
+em(*always*) be set on a file by Samba. This is done by bitwise
+'OR'ing these bits onto the mode bits of a file that is being created
+or having its permissions changed. The default for this parameter is
+(in octal) 000. The modes in this parameter are bitwise 'OR'ed onto
+the file mode after the mask set in the link(bf("create
+mask"))(createmask) parameter is applied.
 
 See also the parameter link(bf("create mask"))(createmask) for details
-on masking mode bits on created files.
+on masking mode bits on files.
 
   bf(Default:)
 tt(	force create mode = 000)
@@ -2252,6 +2281,39 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 
+label(forcedirectorysecuritymode)
+dit(bf(force directory security mode (S)))
+
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box.
+
+This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be 'on'.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(force directory mode))(forcedirectorymode) parameter. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+
+See also the link(bf(directory security mask))(directorysecuritymask),
+link(bf(security mask))(securitymask), link(bf(force security
+mode))(forcesecuritymode) parameters.
+
+  bf(Default:)
+tt(	force directory security mode = <same as force directory mode>)
+
+  bf(Example:)
+tt(	force directory security mode = 0)
+
 label(forcegroup)
 dit(bf(force group (S)))
 
@@ -2263,11 +2325,63 @@ permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files.
 
+In Samba 2.0.5 and above this parameter has extended functionality in the following
+way. If the group name listed here has a '+' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group. This gives a finer granularity of ownership
+assignment. For example, the setting tt(force group = +sys) means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share. All
+other users will retain their ordinary primary group.
+
+If the link(bf("force user"))(forceuser) parameter is also set the
+group specified in bf(force group) will override the primary group
+set in link(bf("force user"))(forceuser).
+
+See also link(bf("force user"))(forceuser)
+
   bf(Default:)
 tt(	no forced group)
 
   bf(Example:)
 tt(	force group = agroup)
+
+label(forcesecuritymode)
+dit(bf(force security mode (S)))
+
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box.
+
+This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(force create mode))(forcecreatemode) parameter. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(directory security
+mask))(directorysecuritymask), link(bf(security mask))(securitymask)
+parameters.
+
+  bf(Default:)
+tt(	force security mode = <same as force create mode>)
+
+  bf(Example:)
+tt(	force security mode = 0)
 
 label(forceuser)
 dit(bf(force user (S)))
@@ -2283,6 +2397,13 @@ password. Once connected, all file operations will be performed as the
 tt("forced user"), no matter what username the client connected as.
 
 This can be very useful.
+
+In Samba 2.0.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity. Prior to 2.0.5 the primary group was left as the
+primary group of the connecting user (this was a bug).
+
+See also link(bf("force group"))(forcegroup)
 
   bf(Default:)
 tt(	no forced user)
@@ -2427,7 +2548,7 @@ verb(
 tt(	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/)
 
 The above example is based on files that the Macintosh SMB client
-(DAVE) available from url(bf(Thursby))(www.thursby.com) creates for
+(DAVE) available from url(bf(Thursby))(http://www.thursby.com) creates for
 internal use, and also still hides all files beginning with a dot.
 
 label(homedirmap)
@@ -2460,12 +2581,74 @@ tt(	homedir map = amd.homedir)
 label(hostsallow)
 dit(bf(hosts allow (S)))
 
-Synonym for link(bf(allow hosts))(allowhosts).
+A synonym for this parameter is link(bf('allow hosts'))(allowhosts)
+
+This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service.
+
+If specified in the link(bf([global]))(global) section then it will
+apply to all services, regardless of whether the individual service
+has a different setting.
+
+You can specify the hosts by name or IP number. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like tt("allow hosts = 150.203.5."). The full syntax of the list is
+described in the man page bf(hosts_access (5)). Note that this man
+page may not be present on your system, so a brief description will
+be given here also.
+
+Note that the localhost address 127.0.0.1 will always be allowed
+access unless specifically denied by a "hosts deny" option.
+
+You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups. The em(EXCEPT) keyword can also
+be used to limit a wildcard list. The following examples may provide
+some help:
+
+bf(Example 1): allow all IPs in 150.203.*.* except one
+
+tt(	hosts allow = 150.203. EXCEPT 150.203.6.66)
+
+bf(Example 2): allow hosts that match the given network/netmask
+
+tt(	hosts allow = 150.203.15.0/255.255.255.0)
+
+bf(Example 3): allow a couple of hosts
+
+tt(	hosts allow = lapland, arvidsjaur)
+
+bf(Example 4): allow only hosts in NIS netgroup "foonet", but 
+deny access from one particular host
+
+tt( 	hosts allow = @foonet)
+
+tt( 	hosts deny = pirate)
+
+Note that access still requires suitable user-level passwords.
+
+See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
+host access to see if it does what you expect.
+
+  bf(Default:)
+tt(	none (i.e., all hosts permitted access))
+
+  bf(Example:)
+tt(	allow hosts = 150.203.5. myhost.mynet.edu.au)
+
 
 label(hostsdeny)
 dit(bf(hosts deny (S)))
 
-Synonym for link(bf(denyhosts))(denyhosts).
+The opposite of link(bf('hosts allow'))(hostsallow) - hosts listed
+here are em(NOT) permitted access to services unless the specific
+services have their own lists to override this one. Where the lists
+conflict, the link(bf('allow'))(hostsallow) list takes precedence.
+
+  bf(Default:)
+tt(	none (i.e., no hosts specifically excluded))
+
+  bf(Example:)
+tt(	hosts deny = 150.203.4. badhost.mynet.edu.au)
 
 label(hostsequiv)
 dit(bf(hosts equiv (G)))
@@ -2474,7 +2657,7 @@ If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password.
 
-This is not be confused with link(bf(allow hosts))(allowhosts) which
+This is not be confused with link(bf(hosts allow))(hostsallow) which
 is about hosts access to services and is more useful for guest
 services. bf(hosts equiv) may be useful for NT clients which will not
 supply passwords to samba.
@@ -2504,28 +2687,39 @@ link(bf(%P))(percentP) and link(bf(%S))(percentS).
 label(interfaces)
 dit(bf(interfaces (G)))
 
-This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces.
+This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127.0.0.1 that are
+broadcast capable.
 
-The option takes a list of ip/netmask pairs. The netmask may either be
-a bitmask, or a bitlength.
+The option takes a list of interface strings. Each string can be in
+any of the following forms:
+
+startit()
+it() a network interface name (such as eth0). This may include
+     shell-like wildcards so eth* will match any interface starting
+     with the substring "eth"
+if() a IP address. In this case the netmask is determined
+     from the list of interfaces obtained from the kernel
+if() a IP/mask pair. 
+if() a broadcast/mask pair. 
+endit()
+
+The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form.
+
+The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms.
 
 For example, the following line:
 
-tt(interfaces = 192.168.2.10/24 192.168.3.10/24)
+tt(interfaces = eth0 192.168.2.10/24 192.168.3.10/255.255.255.0)
 
-would configure two network interfaces with IP addresses 192.168.2.10
-and 192.168.3.10. The netmasks of both interfaces would be set to
-255.255.255.0.
-
-You could produce an equivalent result by using:
-
-tt(interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0)
-
-if you prefer that format.
-
-If this option is not set then Samba will attempt to find a primary
-interface, but won't attempt to configure more than one interface.
+would configure three network interfaces corresponding to the eth0
+device and IP addresses 192.168.2.10 and 192.168.3.10. The netmasks of
+the latter two interfaces would be set to 255.255.255.0.
 
 See also link(bf("bind interfaces only"))(bindinterfacesonly).
 
@@ -2576,10 +2770,10 @@ options"))(socketoptions)). Basically you should only use this option
 if you strike difficulties.
 
   bf(Default:)
-tt(	keep alive = 0)
+tt(	keepalive = 0)
 
   bf(Example:)
-tt(	keep alive = 60)
+tt(	keepalive = 60)
 
 label(kerneloplocks)
 dit(bf(kernel oplocks (G)))
@@ -2598,55 +2792,76 @@ This parameter defaults to em("On") on systems that have the support,
 and em("off") on systems that don't. You should never need to touch
 this parameter.
 
-label(ldapbindas)
-dit(bf(ldap bind as (G)))
+See also the link(bf("oplocks"))(oplocks) and link(bf("level2 oplocks"))(level2oplocks)
+parameters.
+
+label(ldapfilter)
+dit(bf(ldap filter (G)))
 
 This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the bf(--with-ldap)
-option.
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
 
-This parameter specifies the entity to bind to an LDAP directory as.
-Usually it should be safe to use the LDAP root account; for larger
-installations it may be preferable to restrict Samba's access. See also
-link(bf(ldap passwd file))(ldappasswdfile).
-
-  bf(Default:)
-tt(	none (bind anonymously))
-
-  bf(Example:)
-tt(	ldap bind as = "uid=root, dc=mydomain, dc=org")
-
-label(ldappasswdfile)
-dit(bf(ldap passwd file (G)))
-
-This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the bf(--with-ldap)
-option.
-
-This parameter specifies a file containing the password with which
-Samba should bind to an LDAP server. For obvious security reasons
-this file must be set to mode 700 or less.
+This parameter specifies an LDAP search filter used to search for a
+user name in the LDAP database. It must contain the string
+link(bf(%u))(percentU) which will be replaced with the user being
+searched for.
 
   bf(Default:)
-tt(	none (bind anonymously))
-
-  bf(Example:)
-tt(	ldap passwd file = /usr/local/samba/private/ldappasswd)
+tt(	empty string.)
 
 label(ldapport)
 dit(bf(ldap port (G)))
 
 This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server. These options are only
-available if your version of Samba was configured with the bf(--with-ldap)
-option.
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
 
-This parameter specifies the TCP port number of the LDAP server.
+This parameter specifies the TCP port number to use to contact
+the LDAP server on.
 
   bf(Default:)
 tt(	ldap port = 389.)
+
+label(ldaproot)
+dit(bf(ldap root (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the entity to bind to the LDAP server
+as (essentially the LDAP username) in order to be able to perform
+queries and modifications on the LDAP database.
+
+See also link(bf(ldap root passwd))(ldaprootpasswd).
+
+  bf(Default:)
+tt(	empty string (no user defined))
+
+label(ldaprootpasswd)
+dit(bf(ldap root passwd (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the password for the entity to bind to the
+LDAP server as (the password for this LDAP username) in order to be
+able to perform queries and modifications on the LDAP database.
+
+em(BUGS:) This parameter should em(NOT) be a readable parameter
+in the bf(smb.conf) file and will be removed once a correct
+storage place is found.
+
+See also link(bf(ldap root))(ldaproot).
+
+  bf(Default:)
+tt(	empty string.)
 
 label(ldapserver)
 dit(bf(ldap server (G)))
@@ -2657,8 +2872,7 @@ are only available if your version of Samba was configured with
 the bf(--with-ldap) option.
 
 This parameter specifies the DNS name of the LDAP server to use
-when storing and retrieving information about Samba users and
-groups.
+for SMB/CIFS authentication purposes.
 
   bf(Default:)
 tt(	ldap server = localhost)
@@ -2671,15 +2885,53 @@ password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the bf(--with-ldap) option.
 
-This parameter specifies the node of the LDAP tree beneath which
-Samba should store its information. This parameter MUST be provided
-when using LDAP with Samba.
+This parameter specifies the tt("dn") or LDAP em("distinguished name")
+that tells url(bf(smbd))(smbd.8.html) to start from when searching
+for an entry in the LDAP password database.
 
   bf(Default:)
-tt(	none)
+tt(	empty string.)
+
+label(level2oplocks)
+dit(bf(level2 oplocks (S)))
+
+This parameter (new in Samba 2.0.5) controls whether Samba supports
+level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release.
+
+Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks). This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application .EXE files).
+
+Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches.
+
+It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-).
+
+For more discussions on level2 oplocks see the CIFS spec.
+
+Currently, if link(bf("kernel oplocks"))(kerneloplocks) are supported
+then level2 oplocks are not granted (even if this parameter is set
+to tt("true")). Note also, the link(bf("oplocks"))(oplocks) parameter must
+be set to "true" on this share in order for this parameter to have any
+effect.
+
+See also the link(bf("oplocks"))(oplocks) and link(bf("kernel oplocks"))(kerneloplocks) parameters.
+
+  bf(Default:)
+tt( level2 oplocks = False)
 
   bf(Example:)
-tt(	ldap suffix = "dc=mydomain, dc=org")
+tt( level2 oplocks = True)
 
 label(lmannounce)
 dit(bf(lm announce (G)))
@@ -2734,88 +2986,6 @@ tt(	load printers = yes)
 
   bf(Example:)
 tt(	load printers = no)
-
-label(localgroupmap)
-dit(bf(local group map (G)))
-
-This option allows you to specify a file containing unique mappings
-of individual NT Local Group names (in any domain) to UNIX group
-names.  This allows NT Local groups (aliases) to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
-with the NT Domain system and its administration.
-
-This option is used in conjunction with link(bf('domain group map'))(domaingroupmap)
-and link(bf('domain name map'))(domainusermap).  The use of these three
-options is trivial and often unnecessary in the case where Samba
-is not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers).
-
-
-The map file is parsed line by line.  If any line begins with a tt('#')
-or a tt(';') then it is ignored.  Each line should contain a single UNIX
-group name on the left then a single NT Local Group name on the right,
-separated by a tabstop or tt('=').  If either name contains spaces then
-it should be enclosed in quotes.
-The line can be either of the form:
-
-tt(  UNIXgroupname	\\DOMAIN_NAME\\LocalGroupName )
-
-or:
-
-tt(  UNIXgroupname	LocalGroupName )
-
-In the case where Samba is either an bf(EXPERIMENTAL) Domain Controller
-or it is a member of a domain using link(bf("security = domain"))(security),
-the latter format can be used: the default Domain name is the Samba Server's
-Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
-
-Any UNIX groups that are em(NOT) specified in this map file are treated
-as either Local or Domain Groups depending on the role of the Samba Server.
-
-In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
-will present em(ALL) unspecified UNIX groups as its own NT Domain
-Groups, with the same name, and em(NOT) as Local Groups.
-
-In the case where Samba is member of a domain using
-link(bf("security = domain"))(security), Samba will check the UNIX name with
-its Domain Controller (see link(bf("password server"))(passwordserver))
-as if it was an NT Domain Group.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server's local SAM database.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running bf(USRMGR.EXE) and selecting a remote
-Domain named "\\WORKSTATION_NAME", or by running bf(MUSRMGR.EXE) on
-a local Workstation.
-
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an bf(EXPERIMENTAL) Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all.  If you bf(want) to get fancy, however, you can.
-
-Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group em(REQUIRES) the following:
-
-startit()
-
-it() that the UNIX group exists on the UNIX server.
-
-it() that the NT Domain Group exists in the specified NT Domain
-
-it() that the UNIX Server knows about the specified Domain; 
-
-it() that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using link(bf('domain user map'))(domainusermap).
-
-endit()
-
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users.
-
 
 label(localmaster)
 dit(bf(local master (G)))
@@ -3240,6 +3410,13 @@ dit(bf(mangle case (S)))
 
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING).
 
+label(manglelocks)
+dit(bf(mangle locks (S)))
+
+This option is was introduced with Samba 2.0.4 and above and has been
+removed in Samba 2.0.6 as Samba now dynamically configures such things
+on 32 bit systems.
+
 label(mangledmap)
 dit(bf(mangled map (S)))
 
@@ -3542,7 +3719,7 @@ never need to set this parameter.
 tt(	max mux = 50)
 
 label(maxopenfiles)
-dit(bf(maxopenfiles (G)))
+dit(bf(max open files (G)))
 
 This parameter limits the maximum number of open files that one
 url(bf(smbd))(smbd.8.html) file serving process may have open for
@@ -3676,6 +3853,20 @@ tt(	min print space = 0)
   bf(Example:)
 tt(	min print space = 2000)
 
+label(minpasswdlength)
+dit(bf(min passwd length (G)))
+
+This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing.
+
+See also link(bf("unix password sync"))(unixpasswordsync),
+link(bf("passwd program"))(passwdprogram) and link(bf("passwd chat
+debug"))(passwdchatdebug).
+
+  bf(Default:)
+tt(	min passwd length = 5)
+
+
 label(minwinsttl)
 dit(bf(min wins ttl (G)))
 
@@ -3703,11 +3894,16 @@ names to be resolved as follows :
 startit()
 
 it() bf(lmhosts) : Lookup an IP address in the Samba lmhosts file.
+If the line in lmhosts has no name type attached to the NetBIOS
+name (see the url(bf(lmhosts (5)))(lmhosts.5.html) for details) then
+any name type matches for lookup.
 
 it() bf(host) : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the em(/etc/nsswitch.conf) file).
+Note that this method is only used if the NetBIOS name type being
+queried is the 0x20 (server) name type, otherwise it is ignored.
 
 it() bf(wins) : Query a name with the IP address listed in the
 link(bf(wins server))(winsserver) parameter. If no WINS server has
@@ -3797,6 +3993,18 @@ tt(	nis homedir = false)
 
   bf(Example:)
 tt(	nis homedir = true)
+
+label(ntaclsupport)
+dit(bf(nt acl support (G)))
+
+This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
+will attempt to map UNIX permissions into Windows NT access control lists.
+
+  bf(Default:)
+tt(	nt acl support = yes)
+
+  bf(Example:)
+tt(	nt acl support = no)
 
 label(ntpipesupport)
 dit(bf(nt pipe support (G)))
@@ -3902,11 +4110,47 @@ all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process. See the link(bf(kernel oplocks))(kerneloplocks) parameter
 for details.
 
+See also the link(bf("kernel oplocks"))(kerneloplocks) and
+link(bf("level2 oplocks"))(level2oplocks) parameters.
+
   bf(Default:)
 tt(	oplocks = True)
 
   bf(Example:)
 tt(	oplocks = False)
+
+label(oplockbreakwaittime)
+dit(bf(oplock break wait time (G)))
+
+This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients.
+
+em(DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE).
+
+  bf(Default:)
+tt(	oplock break wait time = 10)
+
+label(oplockcontentionlimit)
+dit(bf(oplock contention limit (S)))
+
+This is a em(very) advanced url(bf(smbd))(smbd.8.html) tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file.
+
+In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit. This causes url(bf(smbd))(smbd.8.html) to
+behave in a similar way to Windows NT.
+
+em(DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE).
+
+  bf(Default:)
+tt( oplock contention limit = 2)
 
 label(oslevel)
 dit(bf(os level (G)))
@@ -3915,12 +4159,12 @@ This integer value controls what level Samba advertises itself as for
 browse elections. The value of this parameter determines whether
 url(bf(nmbd))(nmbd.8.html) has a chance of becoming a local master
 browser for the link(bf(WORKGROUP))(workgroup) in the local broadcast
-area. Setting this to zero will cause url(bf(nmbd))(nmbd.8.html) to
-always lose elections to Windows machines. See BROWSING.txt in the
-Samba docs/ directory for details.
+area. The default is zero, which means url(bf(nmbd))(nmbd.8.html) will
+lose elections to Windows machines. See BROWSING.txt in the Samba
+docs/ directory for details.
 
   bf(Default:)
-tt(	os level = 32)
+tt(	os level = 20)
 
   bf(Example:)
 tt(	os level = 65    ; This will win against any NT Server)
@@ -4123,13 +4367,19 @@ better restrict them with hosts allow!
 If the link(bf("security"))(security) parameter is set to
 bf("domain"), then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-link(bf(Domain))(workgroup), as the Samba server is cryptographicly
+link(bf(Domain))(workgroup) or the character tt(*), as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on. The advantage of using
 link(bf("security=domain"))(securityequaldomain) is that if you list
 several hosts in the bf("password server") option then
 url(bf(smbd))(smbd.8.html) will try each in turn till it finds one
 that responds. This is useful in case your primary server goes down.
+
+If the bf("password server") option is set to the character tt(*),
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name tt(WORKGROUP<1C>)
+and then contacting each server returned in the list of IP addresses
+from the link(bf(name resolution))(nameresolveorder) source.
 
 If the link(bf("security"))(security) parameter is set to
 link(bf("server"))(securityequalserver), then there are different
@@ -4162,6 +4412,9 @@ tt(	password server = <empty string>)
 
   bf(Example:)
 tt(	password server = NT-PDC, NT-BDC1, NT-BDC2)
+
+  bf(Example:)
+tt(	password server = *)
 
 label(path)
 dit(bf(path (S)))
@@ -4243,13 +4496,25 @@ verb(
 
 Of course, this could get annoying after a while :-)
 
-See also link(bf(postexec))(postexec).
+See also link(bf(preexec close))(preexecclose) and link(bf(postexec))(postexec).
 
   bf(Default:)
 tt(	none (no command executed))
 
   bf(Example:)
 tt(        preexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log)
+
+label(preexecclose)
+dit(bf(preexec close (S)))
+
+This boolean option controls whether a non-zero return code from
+link(bf("preexec"))(preexec) should close the service being connected to.
+
+  bf(Default:)
+tt( 	preexec close = no)
+
+  bf(Example:)
+tt( 	preexec close = yes)
 
 label(preferredmaster)
 dit(bf(preferred master (G)))
@@ -4262,8 +4527,7 @@ force an election, and it will have a slight advantage in winning the
 election.  It is recommended that this parameter is used in
 conjunction with link(bf("domain master = yes"))(domainmaster), so
 that url(bf(nmbd))(nmbd.8.html) can guarantee becoming a domain
-master. Indeed the default ("auto") enables "preferred master" if
-Samba is configured as the domain master browser.
+master.
 
 Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
@@ -4275,7 +4539,7 @@ capabilities.
 See also link(bf(os level))(oslevel).
 
   bf(Default:)
-tt( 	preferred master = auto)
+tt( 	preferred master = no)
 
   bf(Example:)
 tt( 	preferred master = yes)
@@ -4314,16 +4578,11 @@ command you specify should remove the spool file when it has been
 processed, otherwise you will need to manually remove old spool files.
 
 The print command is simply a text string. It will be used verbatim,
-with two exceptions: All occurrences of tt("%s") will be replaced by
-the appropriate spool file name, and all occurrences of tt("%p") will
-be replaced by the appropriate printer name. The spool file name is
-generated automatically by the server, the printer name is discussed
-below.
-
-The full path name will be used for the filename if tt("%s") is not
-preceded by a tt('/'). If you don't like this (it can stuff up some
-lpq output) then use tt("%f") instead. Any occurrences of tt("%f") get
-replaced by the spool filename without the full path at the front.
+with two exceptions: All occurrences of tt("%s") and tt("%f") will be
+replaced by the appropriate spool file name, and all occurrences of
+tt("%p") will be replaced by the appropriate printer name. The spool
+file name is generated automatically by the server, the printer name
+is discussed below.
 
 The print command em(MUST) contain at least one occurrence of tt("%s")
 or tt("%f") - the tt("%p") is optional. At the time a job is
@@ -4721,14 +4980,14 @@ This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other.
 
-The default value is 2048, but very little experimentation has been
+The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily.
 
   bf(Default:)
-tt(	read size = 2048)
+tt(	read size = 16384)
 
   bf(Example:)
 tt(	read size = 8192)
@@ -4801,6 +5060,39 @@ tt(	remote browse sync = <empty string>)
 
   bf(Example:)
 tt(	remote browse sync = 192.168.2.255 192.168.4.255)
+
+
+label(restrict anonymous)
+dit(bf(restrict anonymous (G)))
+
+This is a boolean parameter.  If it is true, then anonymous access
+to the server will be restricted, namely in the case where the server
+is expecting the client to send a username, but it doesn't.  Setting
+it to true will force these anonymous connections to be denied, and
+the client will be required to always supply a username and password
+when connecting. Use of this parameter is only recommened for homogenous 
+NT client environments.
+
+This parameter makes the use of macro expansions that rely
+on the username (%U, %G, etc) consistant.  NT 4.0 likes to use
+anonymous connections when refreshing the share list, and this
+is a way to work around that.
+
+When restrict anonymous is true, all anonymous connections are denied
+no matter what they are for.  This can effect the ability of a machine
+to access the samba Primary Domain Controller to revalidate it's machine
+account after someone else has logged on the client interactively.  The
+NT client will display a message saying that the machine's account in 
+the domain doesn't exist or the password is bad.  The best way to deal 
+with this is to reboot NT client machines between interactive logons, 
+using "Shutdown and Restart", rather than "Close all programs and logon 
+as a different user".
+
+  bf(Default:)
+tt(     restrict anonymous = false)
+
+  bf(Example:)
+tt(     restrict anonymous = true)
 
 label(revalidate)
 dit(bf(revalidate (S)))
@@ -4878,7 +5170,16 @@ This is the same as the link(bf("preexec"))(preexec) parameter except
 that the command is run as root. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized.
 
-See also link(bf("preexec"))(preexec).
+See also link(bf("preexec"))(preexec)
+and link(bf("root preexec close"))(rootpreexecclose).
+
+label(rootpreexecclose)
+dit(bf(root preexec close (S)))
+
+This is the same as the link(bf("preexec close"))(preexecclose) parameter
+except that the command is run as root.
+
+See also link(bf("preexec"))(preexec), link(bf("preexec close"))(preexecclose).
 
 label(security)
 dit(bf(security (G)))
@@ -5079,7 +5380,7 @@ users into the link(bf("guest account"))(guestaccount). See the
 link(bf("map to guest"))(maptoguest) parameter for details on
 doing this.
 
-e,(BUG:) There is currently a bug in the implementation of
+em(BUG:) There is currently a bug in the implementation of
 bf("security=domain) with respect to multi-byte character
 set usernames. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -5100,6 +5401,40 @@ tt( 	security = USER)
 
   bf(Example:)
 tt( 	security = DOMAIN)
+
+label(securitymask)
+dit(bf(security mask (S)))
+
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box.
+
+This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(create mask))(createmask) parameter. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(directory security
+mask))(directorysecuritymask), link(bf(force security
+mode))(forcesecuritymode) parameters.
+
+  bf(Default:)
+tt(	security mask = <same as create mask>)
+
+  bf(Example:)
+tt(	security mask = 0777)
+
 
 label(serverstring)
 dit(bf(server string (G)))
@@ -5169,6 +5504,9 @@ increase this parameter. Signs that this parameter is set too low are
 users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like tt("ERROR
 smb_shm_alloc : alloc of XX bytes failed").
+
+If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0.8 until the OS accepts it.
 
   bf(Default:)
 tt(	shared mem size = 1048576)
@@ -5691,9 +6029,12 @@ dit(bf(syslog (G)))
 This parameter maps how Samba debug messages are logged onto the
 system syslog logging levels. Samba debug level zero maps onto syslog
 LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
-to LOG_NOTICE, debug level three maps onto LOG_INFO.  The parameter
-sets the threshold for doing the mapping, all Samba debug messages
-above this threshold are mapped to syslog LOG_DEBUG messages.
+onto LOG_NOTICE, debug level three maps onto LOG_INFO. All higher 
+levels are mapped to LOG_DEBUG.
+
+This paramter sets the threshold for sending messages to syslog. 
+Only messages with debug level less than this value will be sent 
+to syslog.
 
   bf(Default:)
 tt(	syslog = 1)
@@ -5933,17 +6274,6 @@ Windows machines to those that the UNIX box uses. The other is to map
 multiple users to a single username so that they can more easily share
 files.
 
-The use of this option, therefore, relates to UNIX usernames
-and not Windows (specifically NT Domain) usernames.  In other words,
-once a name has been mapped using this option, the Samba server uses
-the mapped name for internal em(AND) external purposes.
-
-This option is em(DIFFERENT) from the link(bf("domain user map"))(domainusermap) 
-parameter, which maintains a one-to-one mapping between UNIX usernames
-and NT Domain Usernames: more specifically, the Samba server maintains
-a link between em(BOTH) usernames, presenting the NT username to the
-external NT world, and using the UNIX username internally.
-
 The map file is parsed line by line. Each line should contain a single
 UNIX username on the left then a tt('=') followed by a list of
 usernames on the right. The list of usernames on the right may contain
@@ -6020,7 +6350,7 @@ tt(	no username map)
 tt(	username map = /usr/local/samba/lib/users.map)
 
 label(validchars)
-dit(bf(valid chars (S)))
+dit(bf(valid chars (G)))
 
 The option allows you to specify additional characters that should be
 considered valid by the server in filenames. This is particularly
@@ -6194,6 +6524,10 @@ directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
 tree being exported.
 
+Note that setting this parameter can have a negative effect on your
+server performance due to the extra system calls that Samba has to
+do in order to perform the link checks.
+
   bf(Default:)
 tt( 	wide links = yes)
 
@@ -6216,7 +6550,7 @@ dit(bf(wins server (G)))
 This specifies the IP address (or DNS name: IP address for preference)
 of the WINS server that url(bf(nmbd))(nmbd.8.html) should register with.
 If you have a WINS server on your network then you should set this to
-the WINS server's IP.
+the WINS server's IP.        
 
 You should point this at your WINS server if you have a
 multi-subnetted network.
@@ -6232,6 +6566,42 @@ tt(	wins server = )
 
   bf(Example:)
 tt(	wins server = 192.9.200.1)
+
+label(winshook)
+dit(bf(wins hook (G)))
+
+When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+
+The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+
+   wins_hook operation name nametype ttl IP_list
+
+The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+
+The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+
+The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+
+The fourth argument is the TTL (time to live) for the name in seconds.
+
+The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+
+An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 
 label(winssupport)
 dit(bf(wins support (G)))
@@ -6264,7 +6634,6 @@ label(writable)
 dit(bf(writable (S)))
 
 Synonym for link(bf("writeable"))(writeable) for people who can't spell :-).
-Pronounced "ritter-bull".
 
 label(writelist)
 dit(bf(write list (S)))
@@ -6322,6 +6691,8 @@ verb(
  	writeable = yes
  	write ok = yes
 )
+
+endit()
 
 label(WARNINGS)
 manpagesection(WARNINGS)

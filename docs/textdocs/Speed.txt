@@ -1,9 +1,6 @@
 !==
-!== Speed.txt for Samba release 2.1.0prealpha 981204
+!== Speed.txt for Samba release 2.0.4b 20 May 1999
 !==
-Contributor:	Andrew Tridgell
-Date:		January 1995
-Status:		Current
 
 Subject:	Samba performance issues
 ============================================================================
@@ -62,6 +59,21 @@ Previous to Samba 1.9.18 there was a 'fake oplocks' option. This
 option has been left in the code for backwards compatibility reasons
 but it's use is now deprecated. A short summary of what the old
 code did follows.
+
+LEVEL2 OPLOCKS
+--------------
+
+With Samba 2.0.5 a new capability - level2 (read only) oplocks is
+supported (although the option is off by default - see the smb.conf
+man page for details). Turning on level2 oplocks (on a share-by-share basis)
+by setting the parameter :
+
+level2 oplocks = true 
+
+should speed concurrent access to files that are not commonly written
+to, such as application serving shares (ie. shares that contain common
+.EXE files - such as a Microsoft Office share) as it allows clients to
+read-ahread cache copies of these files.
 
 Old 'fake oplocks' option - deprecated.
 ---------------------------------------

@@ -5,7 +5,7 @@ smbd \- server to provide SMB/CIFS services to clients
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbd\fP [-D] [-a] [-o] [-d debuglevel] [-l log file] [-p port number] [-O socket options] [-s configuration file] [-i scope] [-P] [-h]
+\fBsmbd\fP [-D] [-a] [-o] [-P] [-h] [-V] [-d debuglevel] [-l log file] [-p port number] [-O socket options] [-s configuration file] [-i scope]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -64,6 +64,16 @@ append log messages to the log file\&.  This is the default\&.
 If this parameter is specified, the log files will be
 overwritten when opened\&.  By default, the log files will be appended
 to\&.
+.IP 
+.IP "\fB-P\fP" 
+Passive option\&. Causes smbd not to send any network traffic
+out\&. Used for debugging by the developers only\&.
+.IP 
+.IP "\fB-h\fP" 
+Prints the help information (usage) for \fBsmbd\fP\&.
+.IP 
+.IP "\fB-V\fP" 
+Prints the version number for \fBsmbd\fP\&.
 .IP 
 .IP "\fB-d debuglevel\fP" 
 debuglevel is an integer from 0 to 10\&.
@@ -134,13 +144,6 @@ use of NetBIOS scopes, see rfc1001\&.txt and rfc1002\&.txt\&. NetBIOS scopes
 are \fIvery\fP rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with\&.
-.IP 
-.IP "\fB-h\fP" 
-Prints the help information (usage) for smbd\&.
-.IP 
-.IP "\fB-P\fP" 
-Passive option\&. Causes smbd not to send any network traffic
-out\&. Used for debugging by the developers only\&.
 .IP 
 .PP 
 .SH "FILES" 
@@ -409,16 +412,11 @@ performance\&.
 .PP 
 .SH "SEE ALSO" 
 .PP 
-\fBhosts_access (5)\fP,
-\fBinetd (8)\fP,
-\fBnmbd (8)\fP,
-\fBsmb\&.conf (5)\fP,
-\fBsmbclient (1)\fP,
-\fBtestparm (1)\fP,
-\fBtestprns (1)\fP,
-\fBrpcclient (1)\fP,
-and the Internet RFC\'s \fBrfc1001\&.txt\fP, \fBrfc1002\&.txt\fP\&.
-In addition the CIFS (formerly SMB)
+\fBhosts_access (5)\fP, \fBinetd (8)\fP, \fBnmbd (8)\fP,
+\fBsmb\&.conf (5)\fP, \fBsmbclient
+(1)\fP, \fBtestparm (1)\fP,
+\fBtestprns (1)\fP, and the Internet RFC\'s
+\fBrfc1001\&.txt\fP, \fBrfc1002\&.txt\fP\&. In addition the CIFS (formerly SMB)
 specification is available as a link from the Web page :
 http://samba\&.org/cifs/\&.
 .PP 

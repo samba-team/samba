@@ -87,7 +87,7 @@ echo "server $server, service $service" >> $logfile
 (
 # NOTE You may wish to add the line `echo translate' if you want automatic
 # CR/LF translation when printing.
-	if [ $TRANS ]; then
+	if [ $TRANS -eq 1 ]; then
           echo translate
         fi
 	echo "print -"

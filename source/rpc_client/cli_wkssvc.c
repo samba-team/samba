@@ -6,6 +6,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison                    1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,64 +35,59 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a WKS Open Policy
 ****************************************************************************/
-BOOL wks_query_info( char *srv_name, uint32 switch_value,
+BOOL do_wks_query_info(struct cli_state *cli, 
+			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	WKS_Q_QUERY_INFO q_o;
-	BOOL valid_info = False;
-	struct cli_connection *con = NULL;
+	WKS_R_QUERY_INFO r_o;
 
-	if (wks100 == NULL) return False;
-
-	if (!cli_connection_init(srv_name, PIPE_WKSSVC, &con))
-	{
+	if (server_name == 0 || wks100 == NULL)
 		return False;
-	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+	prs_init(&rbuf, 0, 4, UNMARSHALL );
 
 	/* create and send a MSRPC command with api WKS_QUERY_INFO */
 
 	DEBUG(4,("WKS Query Info\n"));
 
 	/* store the parameters */
-	make_wks_q_query_info(&q_o, srv_name, switch_value);
+	init_wks_q_query_info(&q_o, server_name, switch_value);
 
 	/* turn parameters into data stream */
-	wks_io_q_query_info("", &q_o, &buf, 0);
+	if(!wks_io_q_query_info("", &q_o, &buf, 0)) {
+		prs_mem_free(&buf);
+		prs_mem_free(&rbuf);
+		return False;
+	}
 
 	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, WKS_QUERY_INFO, &buf, &rbuf))
-	{
-		WKS_R_QUERY_INFO r_o;
-		BOOL p;
+	if (!rpc_api_pipe_req(cli, WKS_QUERY_INFO, &buf, &rbuf)) {
+		prs_mem_free(&buf);
+		prs_mem_free(&rbuf);
+		return False;
+	}
 
-		r_o.wks100 = wks100;
+	prs_mem_free(&buf);
 
-		wks_io_r_query_info("", &r_o, &rbuf, 0);
-		p = rbuf.offset != 0;
+	r_o.wks100 = wks100;
 
-		if (p && r_o.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("WKS_R_QUERY_INFO: %s\n", get_nt_error_msg(r_o.status)));
-			p = False;
-		}
+	if(!wks_io_r_query_info("", &r_o, &rbuf, 0)) {
+		prs_mem_free(&rbuf);
+		return False;
+	}
 
-		if (p)
-		{
-			valid_info = True;
-		}
+	if (r_o.status != 0) {
+		/* report error code */
+		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		prs_mem_free(&rbuf);
+		return False;
 	}
 
 	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
 
-	cli_connection_unlink(con);
-
-	return valid_info;
+	return True;
 }
-

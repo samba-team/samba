@@ -2,8 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB client generic functions
-   Copyright (C) Andrew Tridgell 1994-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell 1994-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,70 +24,22 @@
 #include "includes.h"
 #include "trans2.h"
 
+
 extern int DEBUGLEVEL;
+extern pstring user_socket_options;
+extern pstring scope;
 
-/* 
- * set the port that will be used for connections by the client
+static void cli_process_oplock(struct cli_state *cli);
+
+/*
+ * Change the port number used to call on 
  */
-
 int cli_set_port(struct cli_state *cli, int port)
 {
-
-	if (port != 0)
+	if (port > 0)
 	  cli->port = port;
 
-	return cli->port;   /* return it incase caller wants it */
-
-}
-
-/****************************************************************************
-copy a string (unicode or otherwise) into an SMB buffer.  skips a string
-plus points to next
-****************************************************************************/
-static char *cli_put_string(struct cli_state *cli, char *p, const char *str,
-				BOOL skip_end)
-{
-	uint16 flgs2 = SVAL(cli->outbuf, smb_flg2);
-	if (IS_BITS_SET_ALL(flgs2, FLAGS2_UNICODE_STRINGS))
-	{
-		p = align2(p, cli->outbuf);
-		p = ascii_to_unibuf(p, str, 1024);
-		if (skip_end)
-		{
-			CVAL(p, 0) = 0; p++;
-			CVAL(p, 0) = 0; p++;
-		}
-		return p;
-	}
-	else
-	{
-		pstrcpy(p, str);
-		p = skip_string(p, 1);
-		if (skip_end)
-		{
-			CVAL(p, 0) = 0; p++;
-		}
-		return p;
-	}
-}
-
-/****************************************************************************
-copy a string (unicode or otherwise) into an SMB buffer.  skips a string
-plus points to next
-****************************************************************************/
-static const char *cli_get_string(struct cli_state *cli, char *p,
-				char *str, size_t str_len)
-{
-	uint16 flgs2 = SVAL(cli->inbuf,smb_flg2);
-	if (IS_BITS_SET_ALL(flgs2, FLAGS2_UNICODE_STRINGS))
-	{
-		return unibuf_to_ascii(str, p, str_len);
-	}
-	else
-	{
-		safe_strcpy(str, p, str_len-1);
-		return skip_string(p, 1);
-	}
+	return cli->port;
 }
 
 /****************************************************************************
@@ -96,13 +47,29 @@ recv an smb
 ****************************************************************************/
 static BOOL cli_receive_smb(struct cli_state *cli)
 {
-	return client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	BOOL ret;
+ again:
+	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	
+	if (ret) {
+		/* it might be an oplock break request */
+		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
+		    SVAL(cli->inbuf,smb_vwv7) == 0) {
+			if (cli->use_oplocks) cli_process_oplock(cli);
+			/* try to prevent loops */
+			CVAL(cli->inbuf,smb_com) = 0xFF;
+			goto again;
+		}
+	}
+
+	return ret;
 }
 
 /****************************************************************************
   send an smb to a fd and re-establish if necessary
 ****************************************************************************/
-static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
+static BOOL cli_send_smb(struct cli_state *cli)
 {
 	size_t len;
 	size_t nwritten=0;
@@ -111,26 +78,9 @@ static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
 
 	len = smb_len(cli->outbuf) + 4;
 
-	if (show)
-	{
-		uint8 msg_type = CVAL(cli->outbuf, 0);
-		if (msg_type == 0)
-		{
-			show_msg(cli->outbuf);
-		}
-		else
-		{
-			dump_data(10, cli->outbuf, len);
-		}
-	}
-
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
-		if (ret <= 0 && errno == EPIPE && !reestablished)
-		{
-			DEBUG(5,("cli_send_smb: write error (%s) - reconnecting\n",
-			          strerror(errno)));
-	
+		if (ret <= 0 && errno == EPIPE && !reestablished) {
 			if (cli_reestablish_connection(cli)) {
 				reestablished = True;
 				nwritten=0;
@@ -139,8 +89,9 @@ static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
 		}
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",
-				 len,ret));
-			return False;
+				 (int)len,(int)ret));
+			close_sockets();
+			exit(1);
 		}
 		nwritten += ret;
 	}
@@ -148,25 +99,61 @@ static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
 	return True;
 }
 
-/******************************************************
- Return an error message - either an SMB error or a RAP
- error.
-*******************************************************/
-    
-char *cli_errstr(struct cli_state *cli)
-{   
-	static fstring error_message;
-	cli_safe_errstr(cli, error_message, sizeof(error_message));
-	return error_message;
+/****************************************************************************
+setup basics in a outgoing packet
+****************************************************************************/
+static void cli_setup_packet(struct cli_state *cli)
+{
+        cli->rap_error = 0;
+        cli->nt_error = 0;
+	SSVAL(cli->outbuf,smb_pid,cli->pid);
+	SSVAL(cli->outbuf,smb_uid,cli->vuid);
+	SSVAL(cli->outbuf,smb_mid,cli->mid);
+	if (cli->protocol > PROTOCOL_CORE) {
+		SCVAL(cli->outbuf,smb_flg,0x8);
+		SSVAL(cli->outbuf,smb_flg2,0x1);
+	}
 }
 
+
+
 /****************************************************************************
-  return a description of an SMB error
+process an oplock break request from the server
 ****************************************************************************/
-void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len)
+static void cli_process_oplock(struct cli_state *cli)
 {
-	smb_safe_errstr(cli->inbuf, msg, len);
+	char *oldbuf = cli->outbuf;
+	pstring buf;
+	int fnum;
+
+	fnum = SVAL(cli->inbuf,smb_vwv2);
+
+	/* damn, we really need to keep a record of open files so we
+	   can detect a oplock break and a close crossing on the
+	   wire. for now this swallows the errors */
+	if (fnum == 0) return;
+
+	cli->outbuf = buf;
+
+        memset(buf,'\0',smb_size);
+        set_message(buf,8,0,True);
+
+        CVAL(buf,smb_com) = SMBlockingX;
+	SSVAL(buf,smb_tid, cli->cnum);
+        cli_setup_packet(cli);
+	SSVAL(buf,smb_vwv0,0xFF);
+	SSVAL(buf,smb_vwv1,0);
+	SSVAL(buf,smb_vwv2,fnum);
+	SSVAL(buf,smb_vwv3,2); /* oplock break ack */
+	SIVAL(buf,smb_vwv4,0); /* timoeut */
+	SSVAL(buf,smb_vwv6,0); /* unlockcount */
+	SSVAL(buf,smb_vwv7,0); /* lockcount */
+
+        cli_send_smb(cli);	
+
+	cli->outbuf = oldbuf;
 }
+
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
@@ -186,36 +173,36 @@ struct
   {2244, "This password cannot be used now (password history conflict)." },
   {2245, "The password is shorter than required." },
   {2246, "The password of this user is too recent to change."},
+
+  /* these really shouldn't be here ... */
+  {0x80, "Not listening on called name"},
+  {0x81, "Not listening for calling name"},
+  {0x82, "Called name not present"},
+  {0x83, "Called name present, but insufficient resources"},
+
   {0, NULL}
 };  
 
 /****************************************************************************
-  return a description of a RAP error
-****************************************************************************/
-BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen)
-{
-	int i;
-
-	slprintf(err_msg, msglen - 1, "RAP code %d", rap_error);
-
-	for (i = 0; rap_errmap[i].message != NULL; i++)
-	{
-		if (rap_errmap[i].err == rap_error)
-		{
-			safe_strcpy( err_msg, rap_errmap[i].message, msglen);
-			return True;
-		}
-	} 
-	return False;
-}
-
-/****************************************************************************
   return a description of an SMB error
 ****************************************************************************/
-void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen)
+static char *cli_smb_errstr(struct cli_state *cli)
+{
+	return smb_errstr(cli->inbuf);
+}
+
+/******************************************************
+ Return an error message - either an SMB error or a RAP
+ error.
+*******************************************************/
+    
+char *cli_errstr(struct cli_state *cli)
 {   
+	static fstring error_message;
 	uint8 errclass;
 	uint32 errnum;
+	uint32 nt_rpc_error;
+	int i;      
 
 	/*  
 	 * Errors are of three kinds - smb errors,
@@ -224,54 +211,50 @@ void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen)
 	 * errors, whose error code is in cli.rap_error.
 	 */ 
 
-	cli_error(cli, &errclass, &errnum);
+	cli_error(cli, &errclass, &errnum, &nt_rpc_error);
 
 	if (errclass != 0)
 	{
-		cli_safe_smb_errstr(cli, err_msg, msglen);
+		return cli_smb_errstr(cli);
 	}
-	else if (cli->nt_error)
-	{
-		/*
-		 * Was it an NT error ?
-		 */
 
-		(void)get_safe_nt_error_msg(cli->nt_error, err_msg, msglen);
-	}
-	else
+	/*
+	 * Was it an NT error ?
+	 */
+
+	if (nt_rpc_error)
 	{
-		/*
-		 * Must have been a rap error.
-		 */
-		(void)get_safe_rap_errstr(cli->rap_error, err_msg, msglen);
+		char *nt_msg = get_nt_error_msg(nt_rpc_error);
+
+		if (nt_msg == NULL)
+		{
+			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", nt_rpc_error);
+		}
+		else
+		{
+			fstrcpy(error_message, nt_msg);
+		}
+
+		return error_message;
 	}
+
+	/*
+	 * Must have been a rap error.
+	 */
+
+	slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
+
+	for (i = 0; rap_errmap[i].message != NULL; i++)
+	{
+		if (rap_errmap[i].err == cli->rap_error)
+		{
+			fstrcpy( error_message, rap_errmap[i].message);
+			break;
+		}
+	} 
+
+	return error_message;
 }
-/****************************************************************************
-setup basics in a outgoing packet
-****************************************************************************/
-static void cli_setup_packet(struct cli_state *cli)
-{
-	uint16 flgs2 = 0;
-	flgs2 |= FLAGS2_LONG_PATH_COMPONENTS;
-	flgs2 |= FLAGS2_32_BIT_ERROR_CODES;
-	flgs2 |= FLAGS2_EXT_SEC;
-#if 0
-	flgs2 |= FLAGS2_UNICODE_STRINGS;
-#endif
-
-        cli->rap_error = 0;
-        cli->nt_error = 0;
-	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->vuid);
-	SSVAL(cli->outbuf,smb_mid,cli->mid);
-
-	if (cli->protocol > PROTOCOL_CORE)
-	{
-		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,flgs2);
-	}
-}
-
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.
@@ -299,7 +282,7 @@ static char *fix_char_ptr(unsigned int datap, unsigned int converter,
 /****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
-BOOL cli_send_trans(struct cli_state *cli, int trans, 
+static BOOL cli_send_trans(struct cli_state *cli, int trans, 
                            char *name, int pipe_name_len, 
                            int fid, int flags,
                            uint16 *setup, int lsetup, int msetup,
@@ -315,7 +298,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
 	CVAL(cli->outbuf,smb_com) = trans;
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
@@ -353,7 +336,8 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	set_message(cli->outbuf,14+lsetup,		/* wcnt, bcc */
 		    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
 
-	cli_send_smb(cli, True);
+	show_msg(cli->outbuf);
+	cli_send_smb(cli);
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
@@ -387,13 +371,14 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 			if (trans==SMBtrans2)
 				SSVALS(cli->outbuf,smb_sfid,fid);		/* fid */
 			if (this_lparam)			/* param[] */
-				memcpy(outparam,param,this_lparam);
+				memcpy(outparam,param+tot_param,this_lparam);
 			if (this_ldata)			/* data[] */
-				memcpy(outdata,data,this_ldata);
+				memcpy(outdata,data+tot_data,this_ldata);
 			set_message(cli->outbuf,trans==SMBtrans?8:9, /* wcnt, bcc */
 				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
 			
-			cli_send_smb(cli, True);
+			show_msg(cli->outbuf);
+			cli_send_smb(cli);
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -414,12 +399,16 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
-	
+	uint8 eclass;
+	uint32 ecode;
+
 	*data_len = *param_len = 0;
 
 	if (!cli_receive_smb(cli))
 		return False;
 
+	show_msg(cli->inbuf);
+	
 	/* sanity check */
 	if (CVAL(cli->inbuf,smb_com) != trans) {
 		DEBUG(0,("Expected %s response, got command 0x%02x\n",
@@ -428,9 +417,16 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	if (cli_error(cli, NULL, NULL))
+	/*
+	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
+	 * to a trans call. This is not an error and should not
+	 * be treated as such.
+	 */
+
+	if (cli_error(cli, &eclass, &ecode, NULL))
 	{
-		return(False);
+        if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+			return(False);
 	}
 
 	/* parse out the lengths */
@@ -472,6 +468,8 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		if (!cli_receive_smb(cli))
 			return False;
 
+		show_msg(cli->inbuf);
+		
 		/* sanity check */
 		if (CVAL(cli->inbuf,smb_com) != trans) {
 			DEBUG(0,("Expected %s response, got command 0x%02x\n",
@@ -479,10 +477,10 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-
-		if (cli_error(cli, NULL, NULL))
+		if (cli_error(cli, &eclass, &ecode, NULL))
 		{
-			return(False);
+        	if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+				return(False);
 		}
 	}
 	
@@ -642,6 +640,8 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
 		      int type = SVAL(p,14);
 		      int comment_offset = IVAL(p,16) & 0xFFFF;
 		      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+			  dos_to_unix(sname,True);
+			  dos_to_unix(cmnt,True);
 		      fn(sname, type, cmnt);
 	      }
       } else {
@@ -719,6 +719,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
+				dos_to_unix(sname, True);
+				dos_to_unix(cmnt, True);
 				fn(sname, stype, cmnt);
 			}
 		}
@@ -754,41 +756,76 @@ prots[] =
 
 
 /****************************************************************************
-send a session setup 
+ Send a session setup. The username is in UNIX character format and must be
+ converted to DOS codepage format before sending. If the password is in
+ plaintext, the same should be done.
 ****************************************************************************/
-BOOL cli_session_setup_x(struct cli_state *cli, 
-				char *user, 
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain)
+
+BOOL cli_session_setup(struct cli_state *cli, 
+		       char *user, 
+		       char *pass, int passlen,
+		       char *ntpass, int ntpasslen,
+		       char *workgroup)
 {
-	uint8 eclass;
-	uint32 ecode;
 	char *p;
-	BOOL esec = cli->capabilities & CAP_EXTENDED_SECURITY;
-
-	if (cli->reuse)
-	{
-		DEBUG(3,("cli_session_setup_x: reuse enabled, skipping SMBsesssetupX\n"));
-		return True;
-	}
-
-	DEBUG(100,("cli_session_setup.  extended security: %s\n",
-	            BOOLSTR(esec)));
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("cli_session_setup.  pass, ntpass\n"));
-	dump_data(100, pass, passlen);
-	dump_data(100, ntpass, ntpasslen);
-#endif
+	fstring pword, ntpword;
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
-	{
 		return True;
+
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+		return False;
 	}
 
+	if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
+		/* Null session connect. */
+		pword[0] = '\0';
+		ntpword[0] = '\0';
+	} else {
+		if ((cli->sec_mode & 2) && passlen != 24) {
+			/*
+			 * Encrypted mode needed, and non encrypted password supplied.
+			 */
+			passlen = 24;
+			ntpasslen = 24;
+			fstrcpy(pword, pass);
+			unix_to_dos(pword,True);
+			fstrcpy(ntpword, ntpass);;
+			unix_to_dos(ntpword,True);
+			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
+			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
+		} else if ((cli->sec_mode & 2) && passlen == 24) {
+			/*
+			 * Encrypted mode needed, and encrypted password supplied.
+			 */
+			memcpy(pword, pass, passlen);
+			if(ntpasslen == 24) {
+				memcpy(ntpword, ntpass, ntpasslen);
+			} else {
+				fstrcpy(ntpword, "");
+				ntpasslen = 0;
+			}
+		} else {
+			/*
+			 * Plaintext mode needed, assume plaintext supplied.
+			 */
+			fstrcpy(pword, pass);
+			unix_to_dos(pword,True);
+			fstrcpy(ntpword, "");
+			ntpasslen = 0;
+		}
+	}
+
+	/* if in share level security then don't send a password now */
+	if (!(cli->sec_mode & 1)) {
+		fstrcpy(pword, "");
+		passlen=1;
+		fstrcpy(ntpword, "");
+		ntpasslen=1;
+	} 
+
 	/* send a session setup command */
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 
 	if (cli->protocol < PROTOCOL_NT1)
 	{
@@ -803,36 +840,13 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		p = smb_buf(cli->outbuf);
-		memcpy(p,pass,passlen);
+		memcpy(p,pword,passlen);
 		p += passlen;
 		pstrcpy(p,user);
+		unix_to_dos(p,True);
 		strupper(p);
 	}
-	else if (esec)
-	{
-		set_message(cli->outbuf,12,0,True);
-		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_packet(cli);
-		
-		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-		SSVAL(cli->outbuf,smb_vwv7,passlen);
-		SIVAL(cli->outbuf,smb_vwv10, CAP_EXTENDED_SECURITY|CAP_STATUS32|CAP_UNICODE);
-		p = smb_buf(cli->outbuf);
-		memcpy(p,pass,passlen); 
-		p += passlen;
-
-		p = cli_put_string(cli, p, "Unix", False);
-		p = cli_put_string(cli, p, "Samba", False);
-		p = cli_put_string(cli, p, "", False);
-		p++;
-		
-		set_message(cli->outbuf,12,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
-	}
-	else 
+	else
 	{
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
@@ -845,204 +859,58 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SIVAL(cli->outbuf,smb_vwv11, 0);
+		SSVAL(cli->outbuf,smb_vwv11,0);
 		p = smb_buf(cli->outbuf);
-		memcpy(p,pass,passlen); 
+		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpass,ntpasslen); 
+		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		strupper(user);
-		p = cli_put_string(cli, p, user, False);
-		strupper(user_domain);
-		p = cli_put_string(cli, p, user_domain, False);
-		p = cli_put_string(cli, p, "Unix", True);
-		p = cli_put_string(cli, p, "Samba", False);
-		
+		pstrcpy(p,user);
+		unix_to_dos(p,True);
+		strupper(p);
+		p = skip_string(p,1);
+		pstrcpy(p,workgroup);
+		strupper(p);
+		p = skip_string(p,1);
+		pstrcpy(p,"Unix");p = skip_string(p,1);
+		pstrcpy(p,"Samba");p = skip_string(p,1);
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 
-	cli_send_smb(cli, True);
-	if (!cli_receive_smb(cli))
-	{
-		DEBUG(10,("cli_session_setup_x: receive smb failed\n"));
+      cli_send_smb(cli);
+      if (!cli_receive_smb(cli))
 	      return False;
-	}
 
-	if (cli_error(cli, &eclass, &ecode))
-	{
-		uint16 flgs2 = SVAL(cli->inbuf,smb_flg2);
-		if (IS_BITS_CLR_ALL(flgs2, FLAGS2_32_BIT_ERROR_CODES))
-		{
-			if (ecode != ERRmoredata || !esec)
-			{
-				return False;
-			}
-		}
-		else if (ecode != 0xC0000016) /* STATUS_MORE_PROCESSING_REQD */
-		{
-			return False;
-		}
-	}
+      show_msg(cli->inbuf);
 
-	/* use the returned vuid from now on */
-	cli->vuid = SVAL(cli->inbuf,smb_uid);
-
-	if (cli->protocol >= PROTOCOL_NT1)
-	{
-		if (esec)
-		{
-		}
-		else
-		{
-			/*
-			 * Save off some of the connected server
-			 * info.
-			 */
-			char *server_domain;
-			char *server_os;
-			char *server_type;
-
-			server_os = smb_buf(cli->inbuf);
-			server_type = skip_string(server_os,1);
-			server_domain = skip_string(server_type,1);
-
-			fstrcpy(cli->server_os, server_os);
-			fstrcpy(cli->server_type, server_type);
-			fstrcpy(cli->server_domain, server_domain);
-		}
+      if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	      return False;
       }
 
+      /* use the returned vuid from now on */
+      cli->vuid = SVAL(cli->inbuf,smb_uid);
+
+      if (cli->protocol >= PROTOCOL_NT1) {
+        /*
+         * Save off some of the connected server
+         * info.
+         */
+        char *server_domain,*server_os,*server_type;
+        server_os = smb_buf(cli->inbuf);
+        server_type = skip_string(server_os,1);
+        server_domain = skip_string(server_type,1);
+        fstrcpy(cli->server_os, server_os);
+		dos_to_unix(cli->server_os, True);
+        fstrcpy(cli->server_type, server_type);
+		dos_to_unix(cli->server_type, True);
+        fstrcpy(cli->server_domain, server_domain);
+		dos_to_unix(cli->server_domain, True);
+      }
+
+      fstrcpy(cli->user_name, user);
+      dos_to_unix(cli->user_name, True);
+
       return True;
-}
-
-static BOOL cli_calc_session_pwds(struct cli_state *cli,
-				char *myhostname,
-				char *pword, char *ntpword,
-				char *pass, int *passlen,
-				char *ntpass, int *ntpasslen,
-				char *sess_key,
-				BOOL ntlmv2)
-{
-	BOOL ntpass_ok = ntpass != NULL && ntpasslen != NULL;
-
-	if (pass == NULL || passlen == NULL)
-	{
-		DEBUG(0,("cli_calc_session_pwds: pass and passlen are NULL\n"));
-		return False;
-	}
-	if ((ntpass != NULL || ntpasslen != NULL) &&
-	    (ntpass == NULL || ntpasslen == NULL))
-	{
-		DEBUG(0,("cli_calc_session_pwds: ntpasswd pointers invalid\n"));
-		return False;
-	}
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("cli_calc_session_pwds.  pass, ntpass\n"));
-	dump_data(100, pass, *passlen);
-	if (ntpass_ok)
-	{
-		dump_data(100, ntpass, *ntpasslen);
-	}
-#endif
-	if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
-	{
-		/* if in share level security then don't send a password now */
-		pword[0] = '\0';
-		*passlen=1;
-		if (ntpass_ok)
-		{
-			ntpword[0] = '\0';
-			*ntpasslen=1;
-		}
-		return True;
-	} 
-	else if ((*passlen == 0 || *passlen == 1) && (pass[0] == '\0'))
-	{
-		/* Null session connect. */
-		pword  [0] = '\0';
-		if (ntpass_ok)
-		{
-			ntpword[0] = '\0';
-			*ntpasslen=0;
-		}
-
-		return True;
-	}
-
-	if (!ntpass_ok)
-	{
-		return False;
-	}
-
-	if (*passlen == 24 && *ntpasslen >= 24)
-	{
-		if (IS_BITS_SET_ALL(cli->sec_mode, 2))
-		{
-			/* encrypted password, implicit from 24-byte lengths */
-			memcpy(pword  , pass  , *passlen);
-			memcpy(ntpword, ntpass, *ntpasslen);
-		}
-		else
-		{
-			DEBUG(0,("cli_calc_session_pwds: encrypted passwords not supported by server\n"));
-			return False;
-		}
-	}
-	else if (*ntpasslen == 0 || !IS_BITS_SET_ALL(cli->sec_mode, 2))
-	{
-		/* plain-text password: server doesn't support encrypted. */
-		fstrcpy(pword, pass);
-		fstrcpy(ntpword, "");
-		*ntpasslen = 0;
-	}
-	else if (ntpasslen != NULL)
-	{
-		if (cli->use_ntlmv2 != False)
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
-			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, myhostname,
-			           cli->usr.domain);
-		}
-		else
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
-		}
-
-		pwd_get_lm_nt_owf(&(cli->usr.pwd), pass, ntpass,
-		                  ntpasslen, sess_key);
-
-		*passlen = 24; 
-	}
-	return True;
-}
-
-/****************************************************************************
-send a session setup 
-****************************************************************************/
-BOOL cli_session_setup(struct cli_state *cli, 
-				char *myhostname, char *user,
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain)
-{
-	fstring pword, ntpword;
-
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1)
-	{
-		return False;
-	}
-
-	fstrcpy(cli->usr.user_name, user);
-
-	return cli_calc_session_pwds(cli, myhostname, pword, ntpword,
-				pass, &passlen,
-				ntpass, &ntpasslen, cli->sess_key,
-	                        cli->use_ntlmv2) &&
-	       cli_session_setup_x(cli, user, pass, passlen, ntpass, ntpasslen,
-				user_domain);
 }
 
 /****************************************************************************
@@ -1051,20 +919,14 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
-	if (cli->reuse)
-	{
-		DEBUG(3,("cli_ulogoff: reuse enabled, skipping SMBulogoff\n"));
-		return True;
-	}
-
-        bzero(cli->outbuf,smb_size);
+        memset(cli->outbuf,'\0',smb_size);
         set_message(cli->outbuf,2,0,True);
         CVAL(cli->outbuf,smb_com) = SMBulogoffX;
         cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 
-        cli_send_smb(cli, True);
+        cli_send_smb(cli);
         if (!cli_receive_smb(cli))
                 return False;
 
@@ -1077,10 +939,10 @@ send a tconX
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen)
 {
-	fstring fullshare, pword;
+	fstring fullshare, pword, dos_pword;
 	char *p;
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	fstrcpy(cli->share, share);
 
@@ -1091,17 +953,32 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+		/*
+		 * Non-encrypted passwords - convert to DOS codepage before encryption.
+		 */
 		passlen = 24;
-		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+		fstrcpy(dos_pword,pass);
+		unix_to_dos(dos_pword,True);
+		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
-		memcpy(pword, pass, passlen);
+		if(!(cli->sec_mode & 2)) {
+			/*
+			 * Non-encrypted passwords - convert to DOS codepage before using.
+			 */
+			fstrcpy(pword,pass);
+			unix_to_dos(pword,True);
+		} else {
+			memcpy(pword, pass, passlen);
+		}
 	}
 
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
+	unix_to_dos(fullshare, True);
 	strupper(fullshare);
 
-	set_message(cli->outbuf,4, 0, True);
+	set_message(cli->outbuf,4,
+		    2 + strlen(fullshare) + passlen + strlen(dev),True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 
@@ -1111,15 +988,14 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p = cli_put_string(cli, p, fullshare, False);
-	fstrcpy(p, dev);
-	p = skip_string(p, 1);
-
-	set_message(cli->outbuf,4,PTR_DIFF(p, smb_buf(cli->outbuf)),False);
+	fstrcpy(p,fullshare);
+	p = skip_string(p,1);
+	pstrcpy(p,dev);
+	unix_to_dos(p,True);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
 
@@ -1129,10 +1005,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	fstrcpy(cli->dev, "A:");
 
-	if (cli->protocol >= PROTOCOL_NT1)
-	{
-		cli_get_string(cli, smb_buf(cli->inbuf),
-		               cli->dev, sizeof(cli->dev));
+	if (cli->protocol >= PROTOCOL_NT1) {
+		fstrcpy(cli->dev, smb_buf(cli->inbuf));
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
@@ -1140,8 +1014,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	/* only grab the device if we have a recent protocol level */
-	if (cli->protocol >= PROTOCOL_NT1 && smb_buflen(cli->inbuf) == 3)
-	{
+	if (cli->protocol >= PROTOCOL_NT1 &&
+	    smb_buflen(cli->inbuf) == 3) {
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
@@ -1156,13 +1030,13 @@ send a tree disconnect
 ****************************************************************************/
 BOOL cli_tdis(struct cli_state *cli)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBtdis;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
 	
@@ -1176,8 +1050,8 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
 {
         char *p;
 
-        bzero(cli->outbuf,smb_size);
-        bzero(cli->inbuf,smb_size);
+        memset(cli->outbuf,'\0',smb_size);
+        memset(cli->inbuf,'\0',smb_size);
 
         set_message(cli->outbuf,1, 4 + strlen(fname_src) + strlen(fname_dst), True);
 
@@ -1190,11 +1064,13 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         p = smb_buf(cli->outbuf);
         *p++ = 4;
         pstrcpy(p,fname_src);
+        unix_to_dos(p,True);
         p = skip_string(p,1);
         *p++ = 4;
         pstrcpy(p,fname_dst);
+        unix_to_dos(p,True);
 
-        cli_send_smb(cli, True);
+        cli_send_smb(cli);
         if (!cli_receive_smb(cli)) {
                 return False;
         }
@@ -1213,8 +1089,8 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,1, 2 + strlen(fname),True);
 
@@ -1227,8 +1103,9 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,fname);
+    unix_to_dos(p,True);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1247,8 +1124,8 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,0, 2 + strlen(dname),True);
 
@@ -1259,8 +1136,9 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,dname);
+    unix_to_dos(p,True);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1279,8 +1157,8 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,0, 2 + strlen(dname),True);
 
@@ -1291,8 +1169,9 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,dname);
+    unix_to_dos(p,True);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1309,12 +1188,12 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 /****************************************************************************
 open a file
 ****************************************************************************/
-int cli_nt_create(struct cli_state *cli, const char *fname)
+int cli_nt_create(struct cli_state *cli, char *fname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,24,1 + strlen(fname),True);
 
@@ -1335,9 +1214,10 @@ int cli_nt_create(struct cli_state *cli, const char *fname)
 
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
+    unix_to_dos(p,True);
 	p = skip_string(p,1);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return -1;
 	}
@@ -1353,8 +1233,7 @@ int cli_nt_create(struct cli_state *cli, const char *fname)
 /****************************************************************************
 open a file
 ****************************************************************************/
-int cli_open(struct cli_state *cli, const char *fname,
-				int flags, int share_mode)
+int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;
@@ -1389,8 +1268,8 @@ int cli_open(struct cli_state *cli, const char *fname,
 	}
 #endif /* O_SYNC */
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,15,1 + strlen(fname),True);
 
@@ -1404,13 +1283,21 @@ int cli_open(struct cli_state *cli, const char *fname,
 	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
 	SSVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
+
+	if (cli->use_oplocks) {
+		/* if using oplocks then ask for a batch oplock via
+                   core and extended methods */
+		CVAL(cli->outbuf,smb_flg) |= 
+			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
+		SSVAL(cli->outbuf,smb_vwv2,SVAL(cli->outbuf,smb_vwv2) | 6);
+	}
   
 	p = smb_buf(cli->outbuf);
-	p = cli_put_string(cli, p, fname, False);
+	pstrcpy(p,fname);
+    unix_to_dos(p,True);
+	p = skip_string(p,1);
 
-	set_message(cli->outbuf,15,PTR_DIFF(p, smb_buf(cli->outbuf)),False);
-
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return -1;
 	}
@@ -1430,8 +1317,8 @@ int cli_open(struct cli_state *cli, const char *fname,
 ****************************************************************************/
 BOOL cli_close(struct cli_state *cli, int fnum)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,3,0,True);
 
@@ -1442,7 +1329,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 	SIVALS(cli->outbuf,smb_vwv1,-1);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1463,8 +1350,8 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	char *p;
         int saved_timeout = cli->timeout;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0', smb_size);
 
 	set_message(cli->outbuf,8,10,True);
 
@@ -1483,7 +1370,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
 
@@ -1508,8 +1395,8 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,8,10,True);
 
@@ -1529,7 +1416,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1549,8 +1436,8 @@ issue a single SMBread and don't wait for a reply
 static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,10,0,True);
 		
@@ -1565,7 +1452,7 @@ static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -1577,15 +1464,24 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	int total = -1;
 	int issued=0;
 	int received=0;
-	int mpx = MIN(MAX(cli->max_mux-1, 1), MAX_MAX_MUX_LIMIT);
+/*
+ * There is a problem in this code when mpx is more than one.
+ * for some reason files can get corrupted when being read.
+ * Until we understand this fully I am serializing reads (one
+ * read/one reply) for now. JRA.
+ */
+#if 0
+	int mpx = MAX(cli->max_mux-1, 1); 
+#else
+	int mpx = 1;
+#endif
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int mid;
 	int blocks = (size + (block-1)) / block;
 
 	if (size == 0) return 0;
 
-	while (received < blocks)
-	{
+	while (received < blocks) {
 		int size2;
 
 		while (issued - received < mpx && issued < blocks) {
@@ -1602,8 +1498,7 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 		mid = SVAL(cli->inbuf, smb_mid) - cli->mid;
 		size2 = SVAL(cli->inbuf, smb_vwv5);
 
-		if (cli_error(cli, NULL, NULL))
-		{
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
 			blocks = MIN(blocks, mid-1);
 			continue;
 		}
@@ -1647,8 +1542,8 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,12,size,True);
 	
@@ -1673,7 +1568,8 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 	
-	cli_send_smb(cli, True);
+	show_msg(cli->outbuf);
+	cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -1687,58 +1583,98 @@ ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size)
 {
-	int total = -1;
-	int issued=0;
-	int received=0;
+	int bwritten = 0;
+	int issued = 0;
+	int received = 0;
 	int mpx = MAX(cli->max_mux-1, 1);
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
-	int mid;
 	int blocks = (size + (block-1)) / block;
 
-	if (size == 0) return 0;
-
 	while (received < blocks) {
-		int size2;
 
-		while (issued - received < mpx && issued < blocks) {
-			int size1 = MIN(block, size-issued*block);
-			cli_issue_write(cli, fnum, offset+issued*block,
+		while ((issued - received < mpx) && (issued < blocks))
+		{
+			int bsent = issued * block;
+			int size1 = MIN(block, size - bsent);
+
+			cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
-			                buf + issued*block,
+			                buf + bsent,
 					size1, issued);
 			issued++;
 		}
 
-		if (!cli_receive_smb(cli)) {
-			return total;
+		if (!cli_receive_smb(cli))
+		{
+			return bwritten;
 		}
 
 		received++;
-		mid = SVAL(cli->inbuf, smb_mid) - cli->mid;
-		size2 = SVAL(cli->inbuf, smb_vwv2);
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0) {
-			blocks = MIN(blocks, mid-1);
-			continue;
+		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		{
+			break;
 		}
 
-		if (size2 <= 0) {
-			blocks = MIN(blocks, mid-1);
-			/* this distinguishes EOF from an error */
-			total = MAX(total, 0);
-			continue;
-		}
-
-		total += size2;
-
-		total = MAX(total, mid*block + size2);
+		bwritten += SVAL(cli->inbuf, smb_vwv2);
 	}
 
-	while (received < issued) {
-		cli_receive_smb(cli);
+	while (received < issued && cli_receive_smb(cli))
+	{
 		received++;
 	}
 	
+	return bwritten;
+}
+
+
+/****************************************************************************
+  write to a file using a SMBwrite and not bypassing 0 byte writes
+****************************************************************************/
+ssize_t cli_smbwrite(struct cli_state *cli,
+		     int fnum, char *buf, off_t offset, size_t size1)
+{
+	char *p;
+	ssize_t total = 0;
+
+	do {
+		size_t size = MIN(size1, cli->max_xmit - 48);
+		
+		memset(cli->outbuf,'\0',smb_size);
+		memset(cli->inbuf,'\0',smb_size);
+
+		set_message(cli->outbuf,5, 3 + size,True);
+
+		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		cli_setup_packet(cli);
+		
+		SSVAL(cli->outbuf,smb_vwv0,fnum);
+		SSVAL(cli->outbuf,smb_vwv1,size);
+		SIVAL(cli->outbuf,smb_vwv2,offset);
+		SSVAL(cli->outbuf,smb_vwv4,0);
+		
+		p = smb_buf(cli->outbuf);
+		*p++ = 1;
+		SSVAL(p, 0, size);
+		memcpy(p+2, buf, size);
+		
+		cli_send_smb(cli);
+		if (!cli_receive_smb(cli)) {
+			return -1;
+		}
+		
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+			return -1;
+		}
+
+		size = SVAL(cli->inbuf,smb_vwv0);
+		if (size == 0) break;
+
+		size1 -= size;
+		total += size;
+	} while (size1);
+
 	return total;
 }
 
@@ -1750,10 +1686,10 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,2,0,True);
+	set_message(cli->outbuf,1,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBgetattrE;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -1761,7 +1697,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 
 	SSVAL(cli->outbuf,smb_vwv0,fd);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1802,8 +1738,8 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,0,strlen(fname)+2,True);
 
@@ -1814,8 +1750,9 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	p = smb_buf(cli->outbuf);
 	*p = 4;
 	pstrcpy(p+1, fname);
+    unix_to_dos(p+1,True);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1848,8 +1785,8 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,8,strlen(fname)+4,True);
 
@@ -1863,10 +1800,11 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	p = smb_buf(cli->outbuf);
 	*p = 4;
 	pstrcpy(p+1, fname);
+    unix_to_dos(p+1,True);
 	p = skip_string(p,1);
 	*p = 4;
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -1899,6 +1837,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	memset(param, 0, param_len);
 	SSVAL(param, 0, SMB_INFO_STANDARD);
 	pstrcpy(&param[6], fname);
+    unix_to_dos(&param[6],True);
 
 	do {
 		ret = (cli_send_trans(cli, SMBtrans2, 
@@ -1916,7 +1855,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode);
+			cli_error(cli, &eclass, &ecode, NULL);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 		}
@@ -1972,6 +1911,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	memset(param, 0, param_len);
 	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
 	pstrcpy(&param[6], fname);
+    unix_to_dos(&param[6],True);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
                             NULL, 0,                      /* name, length */
@@ -2009,7 +1949,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 40);
+		*size = IVAL(rdata, 48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -2081,7 +2021,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 40);
+		*size = IVAL(rdata, 48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -2117,6 +2057,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
 				pstrcpy(finfo->name,p+27);
+				dos_to_unix(finfo->name,True);
 			}
 			return(28 + CVAL(p,26));
 
@@ -2129,6 +2070,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
 				pstrcpy(finfo->name,p+31);
+				dos_to_unix(finfo->name,True);
 			}
 			return(32 + CVAL(p,30));
 
@@ -2142,6 +2084,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
 				pstrcpy(finfo->name,p+33);
+				dos_to_unix(finfo->name,True);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -2154,6 +2097,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
 				pstrcpy(finfo->name,p+37);
+				dos_to_unix(finfo->name,True);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -2189,7 +2133,8 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 4; /* EA size */
 				p += 2; /* short name len? */
 				p += 24; /* short name? */	  
-				StrnCpy(finfo->name,p,namelen);
+				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
+				dos_to_unix(finfo->name,True);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -2217,7 +2162,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int dirlist_len = 0;
 	int total_received = -1;
 	BOOL First = True;
-	int ff_resume_key = 0;
 	int ff_searchcount=0;
 	int ff_eos=0;
 	int ff_lastname=0;
@@ -2230,6 +2174,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	pstring param;
 	
 	pstrcpy(mask,Mask);
+	unix_to_dos(mask,True);
 	
 	while (ff_eos == 0) {
 		loop_count++;
@@ -2253,12 +2198,12 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,0,ff_dir_handle);
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
-			SIVAL(param,6,ff_resume_key); /* ff_resume_key */
+			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
 			pstrcpy(param+12,mask);
 
-			DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
-				 ff_dir_handle,ff_resume_key,ff_lastname,mask));
+			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
+				 ff_dir_handle,ff_lastname,mask));
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
@@ -2279,7 +2224,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode);
+			cli_error(cli, &eclass, &ecode, NULL);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 			continue;
@@ -2311,19 +2256,19 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			switch(info_level)
 				{
 				case 260:
-					ff_resume_key =0;
 					StrnCpy(mask,p+ff_lastname,
-						data_len-ff_lastname);
+						MIN(sizeof(mask)-1,data_len-ff_lastname));
 					break;
 				case 1:
 					pstrcpy(mask,p + ff_lastname + 1);
-					ff_resume_key = 0;
 					break;
 				}
 		} else {
 			pstrcpy(mask,"");
 		}
-  
+ 
+		dos_to_unix(mask, True);
+ 
 		/* and add them to the dirlist pool */
 		dirlist = Realloc(dirlist,dirlist_len + data_len);
 
@@ -2347,8 +2292,10 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		if (rdata) free(rdata); rdata = NULL;
 		if (rparam) free(rparam); rparam = NULL;
 		
-		DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
-			 ff_searchcount,ff_eos,ff_resume_key));
+		DEBUG(3,("received %d entries (eos=%d)\n",
+			 ff_searchcount,ff_eos));
+
+		if (ff_searchcount > 0) loop_count = 0;
 
 		First = False;
 	}
@@ -2383,6 +2330,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *rparam = NULL;
   char *rdata = NULL;
   int rprcnt, rdrcnt;
+  pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -2408,19 +2356,22 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
   fstrcpy(upper_case_old_pw, old_password);
+  unix_to_dos(upper_case_old_pw,True);
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-	if (!make_oem_passwd_hash( data, new_password, old_pw_hash, False))
-	{
-		return False;
-	}
+  pstrcpy(dos_new_password, new_password);
+  unix_to_dos(dos_new_password, True);
+
+  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
+    return False;
 
   /* 
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
   fstrcpy(upper_case_new_pw, new_password);
+  unix_to_dos(upper_case_new_pw,True);
   strupper(upper_case_new_pw);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
@@ -2429,14 +2380,13 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
   data_len = 532;
     
-  if (!cli_send_trans(cli,SMBtrans,
+  if (cli_send_trans(cli,SMBtrans,
                     PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
                     data,data_len,0                       /* data, length, max */
-                   ))
-  {
+                   ) == False) {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));
     return False;
@@ -2466,7 +2416,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	int numprots;
 	int plength;
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
 	for (plength=0,numprots=0;
@@ -2482,6 +2432,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++) {
 		*p++ = 2;
 		pstrcpy(p,prots[numprots].name);
+		unix_to_dos(p,True);
 		p += strlen(p) + 1;
 	}
 
@@ -2490,11 +2441,11 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
-	{
 		return False;
-	}
+
+	show_msg(cli->inbuf);
 
 	if (CVAL(cli->inbuf,smb_rcls) != 0 || 
 	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
@@ -2504,56 +2455,28 @@ BOOL cli_negprot(struct cli_state *cli)
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
 
 
-	if (cli->protocol >= PROTOCOL_NT1)
-	{    
-		char *buf = smb_buf(cli->inbuf);
-		int bcc = SVAL(cli->inbuf,smb_vwv+2*(CVAL(cli->inbuf,smb_wct)));
+	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
 		cli->max_xmit = IVAL(cli->inbuf,smb_vwv3+1);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv7+1);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
+		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
-
+		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
-		if (IS_BITS_SET_ALL(cli->capabilities, CAP_RAW_MODE))
-		{
+		if (cli->capabilities & 1) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
-
-		if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
-		{
-			/* oops, some kerberos-related nonsense. */
-			/* expect to have to use NTLMSSP-over-SMB */
-			DEBUG(10,("unknown kerberos-related (?) blob\n"));
-			memset(cli->cryptkey, 0, 8);
-			cli->server_domain[0] = 0;
-		}
-		else
-		{
-			memcpy(cli->cryptkey, buf,8);
-			if (bcc > 8)
-			{
-				unibuf_to_ascii(cli->server_domain,  buf+8,
-						sizeof(cli->server_domain));
-			}
-			else
-			{
-				cli->server_domain[0] = 0;
-			}
-			DEBUG(5,("server's domain: %s bcc: %d\n",
-				cli->server_domain, bcc));
-		}
-	}
-	else if (cli->protocol >= PROTOCOL_LANMAN1)
-	{
+	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv10)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
+		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
 		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
@@ -2584,11 +2507,6 @@ BOOL cli_session_request(struct cli_state *cli,
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
   
-	if (cli->port == 445)
-	{
-		return True;
-	}
-
 	/* put in the destination name */
 	p = cli->outbuf+len;
 	name_mangle(cli->called .name, p, cli->called .name_type);
@@ -2607,11 +2525,40 @@ BOOL cli_session_request(struct cli_state *cli,
 retry:
 #endif /* WITH_SSL */
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	DEBUG(5,("Sent session request\n"));
 
 	if (!cli_receive_smb(cli))
 		return False;
+
+	if (CVAL(cli->inbuf,0) == 0x84) {
+		/* C. Hoch  9/14/95 Start */
+		/* For information, here is the response structure.
+		 * We do the byte-twiddling to for portability.
+		struct RetargetResponse{
+		unsigned char type;
+		unsigned char flags;
+		int16 length;
+		int32 ip_addr;
+		int16 port;
+		};
+		*/
+		int port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
+		/* SESSION RETARGET */
+		putip((char *)&cli->dest_ip,cli->inbuf+4);
+
+		close_sockets();
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, port, LONG_CONNECT_TIMEOUT);
+		if (cli->fd == -1)
+			return False;
+
+		DEBUG(3,("Retargeted\n"));
+
+		set_socket_options(cli->fd,user_socket_options);
+
+		/* Try again */
+		return cli_session_request(cli, calling, called);
+	} /* C. Hoch 9/14/95 End */
 
 #ifdef WITH_SSL
     if (CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
@@ -2624,7 +2571,7 @@ retry:
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
-		cli->rap_error = CVAL(cli->inbuf,0);
+		cli->rap_error = CVAL(cli->inbuf,4);
 		return False;
 	}
 	return(True);
@@ -2637,7 +2584,6 @@ open the client sockets
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern struct in_addr ipzero;
-	int port = cli->port;
 
 	fstrcpy(cli->desthost, host);
 	
@@ -2650,37 +2596,18 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		cli->dest_ip = *ip;
 	}
 
-
-	if (port == 0) port = SMB_PORT2;
+        if (cli->port == 0) cli->port = 139;  /* Set to default */
 
 	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-				  port, cli->timeout);
+				  cli->port, cli->timeout);
 	if (cli->fd == -1)
-	{
-		if (cli->port != 0)
-		{
-			return False;
-		}
-		port = SMB_PORT;
+		return False;
 
-		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-					  port, cli->timeout);
-		if (cli->fd == -1) return False;
-	}
-
-	cli->port = port;
+	set_socket_options(cli->fd,user_socket_options);
 
 	return True;
 }
 
-
-/****************************************************************************
-initialise a client structure
-****************************************************************************/
-void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
-{
-	copy_nt_creds(&cli->usr, usr);
-}
 
 /****************************************************************************
 initialise a client structure
@@ -2707,7 +2634,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->mid = 1;
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
-	cli->timeout = 20000;
+	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)malloc(cli->bufsize);
@@ -2717,31 +2644,12 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		return False;
 	}
 
-	cli->initialised = 1;
-	cli->capabilities = CAP_DFS | CAP_NT_SMBS | CAP_STATUS32;
-	cli->use_ntlmv2 = Auto;
+	memset(cli->outbuf, '\0', cli->bufsize);
+	memset(cli->inbuf, '\0', cli->bufsize);
 
-	cli_init_creds(cli, NULL);
+	cli->initialised = 1;
 
 	return cli;
-}
-
-/****************************************************************************
-close the socket descriptor
-****************************************************************************/
-void cli_close_socket(struct cli_state *cli)
-{
-#ifdef WITH_SSL
-	if (cli->fd != -1)
-	{
-		sslutil_disconnect(cli->fd);
-	}
-#endif /* WITH_SSL */
-	if (cli->fd != -1) 
-	{
-		close(cli->fd);
-	}
-	cli->fd = -1;
 }
 
 /****************************************************************************
@@ -2749,7 +2657,6 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
-	DEBUG(10,("cli_shutdown\n"));
 	if (cli->outbuf)
 	{
 		free(cli->outbuf);
@@ -2758,7 +2665,12 @@ void cli_shutdown(struct cli_state *cli)
 	{
 		free(cli->inbuf);
 	}
-	cli_close_socket(cli);
+#ifdef WITH_SSL
+    if (cli->fd != -1)
+      sslutil_disconnect(cli->fd);
+#endif /* WITH_SSL */
+	if (cli->fd != -1) 
+      close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }
 
@@ -2771,43 +2683,34 @@ void cli_shutdown(struct cli_state *cli)
   for 32 bit "warnings", a return code of 0 is expected.
 
 ****************************************************************************/
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
 {
-	int  flgs2;
+	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
 	char rcls;
 	int code;
 
-	if (!cli->initialised)
-	{
-		DEBUG(0,("cli_error: client state uninitialised!\n"));
-		return EINVAL;
-	}
-
-	flgs2 = SVAL(cli->inbuf,smb_flg2);
-
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
+	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
-	{
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 		/* 32 bit error codes detected */
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
 		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
 		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
 
-		switch (nt_err & 0xFFFFFF)
-		{
-			case NT_STATUS_ACCESS_VIOLATION     : return EACCES;
-			case NT_STATUS_NO_SUCH_FILE         : return ENOENT;
-			case NT_STATUS_NO_SUCH_DEVICE       : return ENODEV;
-			case NT_STATUS_INVALID_HANDLE       : return EBADF;
-			case NT_STATUS_NO_MEMORY            : return ENOMEM;
-			case NT_STATUS_ACCESS_DENIED        : return EACCES;
-			case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
-			case NT_STATUS_SHARING_VIOLATION    : return EBUSY;
-			case NT_STATUS_OBJECT_PATH_INVALID  : return ENOTDIR;
-			case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
+		switch (nt_err & 0xFFFFFF) {
+		case NT_STATUS_ACCESS_VIOLATION: return EACCES;
+		case NT_STATUS_NO_SUCH_FILE: return ENOENT;
+		case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
+		case NT_STATUS_INVALID_HANDLE: return EBADF;
+		case NT_STATUS_NO_MEMORY: return ENOMEM;
+		case NT_STATUS_ACCESS_DENIED: return EACCES;
+		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
+		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
+		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
+		case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
 		}
 
 		/* for all other cases - a default code */
@@ -2830,7 +2733,6 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case ERRrename: return EEXIST;
 		case ERRbadshare: return EBUSY;
 		case ERRlock: return EBUSY;
-		case ERRmoredata: return 0; /* Informational only */
 		}
 	}
 	if (rcls == ERRSRV) {
@@ -2887,36 +2789,29 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 
 	if (cli->cnum != 0)
 	{
-		do_tcon = True;
-	}
-
-	if (do_tcon)
-	{
 		fstrcpy(share, cli->share);
 		fstrcpy(dev  , cli->dev);
+		do_tcon = True;
 	}
 
 	memcpy(&called , &(cli->called ), sizeof(called ));
 	memcpy(&calling, &(cli->calling), sizeof(calling));
-	fstrcpy(dest_host, cli->desthost);
+	fstrcpy(dest_host, cli->full_dest_host_name);
 
 	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
 		 nmb_namestr(&calling), nmb_namestr(&called), 
 		 inet_ntoa(cli->dest_ip),
-		 cli->usr.user_name, cli->usr.domain));
+		 cli->user_name, cli->domain));
 
 	cli->fd = -1;
 
 	if (cli_establish_connection(cli,
 				     dest_host, &cli->dest_ip,
 				     &calling, &called,
-				     share, dev, False, do_tcon))
-	{
-		if (cli->fd != oldfd)
-		{
-			if (dup2(cli->fd, oldfd) == oldfd)
-			{
-				cli_close_socket(cli);
+				     share, dev, False, do_tcon)) {
+		if (cli->fd != oldfd) {
+			if (dup2(cli->fd, oldfd) == oldfd) {
+				close(cli->fd);
 			}
 		}
 		return True;
@@ -2924,101 +2819,18 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	return False;
 }
 
-static BOOL cli_init_redirect(struct cli_state *cli,
-				const char* srv_name, struct in_addr *destip,
-				const struct ntuser_creds *usr)
-{
-	int sock;
-	fstring ip_name;
-	struct cli_state cli_redir;
-	fstring path;
-
-	uint32 len;
-	char *data;
-	char *in = cli->inbuf;
-	char *out = cli->outbuf;
-	prs_struct ps;
-	uint16 command;
-
-	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", getuid());
-
-	if (strequal(srv_name, "*SMBSERVER"))
-	{
-		fstrcpy(ip_name, "\\\\");
-		inet_aton(&ip_name[2], destip);
-		srv_name = ip_name;
-	}
-
-	sock = open_pipe_sock(path);
-
-	if (sock < 0)
-	{
-		return False;
-	}
-
-	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
-
-	if (!create_ntuser_creds(&ps, srv_name, 0x0, command, usr, cli->reuse))
-	{
-		DEBUG(0,("could not parse credentials\n"));
-		close(sock);
-		return False;
-	}
-
-	len = ps.offset;
-	data = mem_data(&ps.data, 0);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("data len: %d\n", len));
-	dump_data(100, data, len);
-#endif
-
-	SIVAL(data, 0, len);
-
-	if (write(sock, data, len) <= 0)
-	{
-		DEBUG(0,("write failed\n"));
-		close(sock);
-		return False;
-	}
-
-	len = read(sock, &cli_redir, sizeof(cli_redir));
-
-	if (len != sizeof(cli_redir))
-	{
-		DEBUG(0,("read failed\n"));
-		close(sock);
-		return False;
-	}
-	
-	memcpy(cli, &cli_redir, sizeof(cli_redir));
-	cli->inbuf = in;
-	cli->outbuf = out;
-	cli->fd = sock;
-	cli->reuse = False;
-
-	return sock;
-}
-
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
 BOOL cli_establish_connection(struct cli_state *cli, 
-				const char *dest_host, struct in_addr *dest_ip,
+				char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon)
 {
-	fstring callingstr;
-	fstring calledstr;
-
-	nmb_safe_namestr(calling, callingstr, sizeof(callingstr));
-	nmb_safe_namestr(called , calledstr , sizeof(calledstr ));
-
-	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s] with NTLM%s\n",
-		          callingstr, calledstr, inet_ntoa(*dest_ip),
-	              cli->usr.user_name, cli->usr.domain,
-			cli->use_ntlmv2 ? "v2" : "v1"));
+	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
+		          nmb_namestr(calling), nmb_namestr(called), inet_ntoa(*dest_ip),
+	              cli->user_name, cli->domain));
 
 	/* establish connection */
 
@@ -3027,24 +2839,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
-	if (cli->fd == -1 && cli->redirect)
-	{
-		if (cli_init_redirect(cli, dest_host, dest_ip, &cli->usr))
-		{
-			DEBUG(10,("cli_establish_connection: redirected OK\n"));
-			return True;
-		}
-		else
-		{
-			DEBUG(10,("redirect FAILED, make direct connection\n"));
-		}
-	}
 	if (cli->fd == -1)
 	{
 		if (!cli_connect(cli, dest_host, dest_ip))
 		{
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  callingstr, inet_ntoa(*dest_ip)));
+					  nmb_namestr(calling), inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
@@ -3053,9 +2853,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
-		{
-			cli_shutdown(cli);
-		}
+          cli_shutdown(cli);
 		return False;
 	}
 
@@ -3063,242 +2861,33 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed negprot\n"));
 		if (do_shutdown)
-		{
-			cli_shutdown(cli);
-		}
+          cli_shutdown(cli);
 		return False;
 	}
 
-	if (cli->usr.domain[0] == 0)
+	if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
-		safe_strcpy(cli->usr.domain, cli->server_domain,
-		            sizeof(cli->usr.domain));
-	}
+		fstring passwd;
+		int pass_len;
 
-	if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
-	{
-		/* common to both session setups */
-		uint32 ntlmssp_flgs;
-		char pwd_buf[128];
-		int buf_len;
-		char *p;
-		char *e = pwd_buf + sizeof(pwd_buf);
-
-		/* 1st session setup */
-		char pwd_data[34] =
-		{
-			0x60, 0x40, 0x06, 0x06, 0x2b, 0x06, 0x01, 0x05,
-			0x05, 0x02, 0xa0, 0x36, 0x30, 0x34, 0xa0, 0x0e,
-			0x30, 0x0c, 0x06, 0x0a, 0x2b, 0x06, 0x01, 0x04,
-			0x01, 0x82, 0x37, 0x02, 0x02, 0x0a, 0xa2, 0x22,
-			0x04, 0x20
-		};
-		/* 2nd session setup */
-#if 0
-		char pwd_data_2[8] =
-		{
-			0xa1, 0x51, 0x30, 0x4f, 0xa2, 0x4d, 0x04, 0x4b
-		};
-#endif
-		char pwd_data_2[8] =
-		{
-			0xa1, 0x51, 0x30, 0x4f, 0xa2, 0x4d, 0x04, 0x4b
-		};
-		prs_struct auth_resp;
-		int resp_len;
-		char *p_gssapi;
-		char *p_oem;
-		char *p_gssapi_end;
-		uint16 gssapi_len;
-
-		memset(pwd_buf, 0, sizeof(pwd_buf));
-		memcpy(pwd_buf, pwd_data, sizeof(pwd_data));
-		p = pwd_buf + sizeof(pwd_data);
-
-		safe_strcpy(p, "NTLMSSP", PTR_DIFF(e, p) - 1);
-		p = skip_string(p, 1);
-		CVAL(p, 0) = 0x1;
-		p += 4;
-		ntlmssp_flgs = 
-				NTLMSSP_NEGOTIATE_UNICODE |
-				NTLMSSP_NEGOTIATE_OEM |
-				NTLMSSP_NEGOTIATE_SIGN |
-				NTLMSSP_NEGOTIATE_SEAL |
-				NTLMSSP_NEGOTIATE_LM_KEY |
-				NTLMSSP_NEGOTIATE_NTLM |
-				NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
-				NTLMSSP_NEGOTIATE_00001000 |
-				NTLMSSP_NEGOTIATE_00002000;
-		SIVAL(p, 0, ntlmssp_flgs);
-		p += 4;
-		p += 16; /* skip some NULL space */
-		CVAL(p, 0) = 0; p++; /* alignment */
-
-		buf_len = PTR_DIFF(p, pwd_buf);
-
-		/* first session negotiation stage */
-		if (!cli_session_setup_x(cli, cli->usr.user_name,
-			       pwd_buf, buf_len,
-			       NULL, 0,
-			       cli->usr.domain))
-		{
-			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown)
-			{
-				cli_shutdown(cli);
-			}
-			return False;
-		}
-
-		DEBUG(1,("1st session setup ok\n"));
-
-		if (*cli->server_domain || *cli->server_os || *cli->server_type)
-		{
-			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			     cli->server_domain,
-		             cli->server_os,
-		             cli->server_type));
-		}
-	
-		p = smb_buf(cli->inbuf) + 0x2f;
-		ntlmssp_flgs = IVAL(p, 0); /* 0x80808a05; */
-		p += 4;
-		memcpy(cli->cryptkey, p, 8);
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("cli_session_setup_x: ntlmssp %8x\n",
-			    ntlmssp_flgs));
-			   
-		DEBUG(100,("cli_session_setup_x: crypt key\n"));
-		dump_data(100, cli->cryptkey, 8);
-#endif
-		prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
-
-		if (cli->use_ntlmv2 != False)
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
-			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, calling->name, cli->usr.domain);
-		}
-		else
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
-		}
-
-		create_ntlmssp_resp(&cli->usr.pwd, cli->usr.domain,
-				     cli->usr.user_name, cli->calling.name,
-				     ntlmssp_flgs,
-				     &auth_resp);
-		prs_link(NULL, &auth_resp, NULL);
-
-		memset(pwd_buf, 0, sizeof(pwd_buf));
-		p = pwd_buf;
-
-		CVAL(p, 0) = 0xa1; p++;
-		CVAL(p, 0) = 0x82; p++;
-		p_gssapi = p; p+= 2;
-		CVAL(p, 0) = 0x30; p++;
-		CVAL(p, 0) = 0x82; p++;
-		p += 2;
-		
-		CVAL(p, 0) = 0xa2; p++;
-		CVAL(p, 0) = 0x82; p++;
-		p_oem = p; p+= 2;
-		CVAL(p, 0) = 0x04; p++;
-		CVAL(p, 0) = 0x82; p++;
-		p += 2;
-
-		p_gssapi_end = p;
-		
-		safe_strcpy(p, "NTLMSSP", PTR_DIFF(e, p) - 1);
-		p = skip_string(p, 1);
-		CVAL(p, 0) = 0x3;
-		p += 4;
-
-		resp_len = mem_buf_len(auth_resp.data);
-		mem_buf_copy(p, auth_resp.data, 0, resp_len);
-		prs_mem_free(&auth_resp);
-
-		p += resp_len;
-
-		buf_len = PTR_DIFF(p, pwd_buf);
-		gssapi_len = PTR_DIFF(p, p_gssapi_end) + 12;
-
-		*p_gssapi++ = (gssapi_len >> 8) & 0xff;
-		*p_gssapi++ = gssapi_len & 0xff;
-
-		p_gssapi += 2;
-		gssapi_len -= 4;
-
-		*p_gssapi++ = (gssapi_len >> 8) & 0xff;
-		*p_gssapi++ = gssapi_len & 0xff;
-
-		gssapi_len -= 4;
-
-		*p_oem++ = (gssapi_len >> 8) & 0xff;
-		*p_oem++ = gssapi_len & 0xff;
-
-		p_oem += 2;
-		gssapi_len -= 4;
-
-		*p_oem++ = (gssapi_len >> 8) & 0xff;
-		*p_oem++ = gssapi_len & 0xff;
-
-		/* second session negotiation stage */
-		if (!cli_session_setup_x(cli, cli->usr.user_name,
-			       pwd_buf, buf_len,
-			       NULL, 0,
-			       cli->usr.domain))
-		{
-			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown)
-			{
-				cli_shutdown(cli);
-			}
-			return False;
-		}
-
-		DEBUG(1,("2nd session setup ok\n"));
-
-		if (do_tcon)
-		{
-			if (!cli_send_tconX(cli, service, service_type,
-			                    NULL, 0))
-			                    
-			{
-				DEBUG(1,("failed tcon_X\n"));
-				if (do_shutdown)
-				{
-					cli_shutdown(cli);
-				}
-				return False;
-			}
-		}
-	}
-	else if (cli->usr.pwd.cleartext || cli->usr.pwd.null_pwd)
-	{
-		fstring passwd, ntpasswd;
-		int pass_len = 0, ntpass_len = 0;
-
-		if (cli->usr.pwd.null_pwd)
+		if (cli->pwd.null_pwd)
 		{
 			/* attempt null session */
-			passwd[0] = ntpasswd[0] = 0;
-			pass_len = ntpass_len = 1;
+			passwd[0] = 0;
+			pass_len = 1;
 		}
 		else
 		{
 			/* attempt clear-text session */
-			pwd_get_cleartext(&(cli->usr.pwd), passwd);
+			pwd_get_cleartext(&(cli->pwd), passwd);
 			pass_len = strlen(passwd);
 		}
 
 		/* attempt clear-text session */
-		if (!cli_session_setup(cli, calling->name,
-		               cli->usr.user_name,
+		if (!cli_session_setup(cli, cli->user_name,
 	                       passwd, pass_len,
-	                       ntpasswd, ntpass_len,
-	                       cli->usr.domain))
+	                       NULL, 0,
+	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
@@ -3324,68 +2913,25 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	else
 	{
 		/* attempt encrypted session */
+		unsigned char nt_sess_pwd[24];
 		unsigned char lm_sess_pwd[24];
-		unsigned char nt_sess_pwd[128];
-		size_t nt_sess_pwd_len;
 
-		if (cli->use_ntlmv2 != False)
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
-			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, calling->name, cli->usr.domain);
-		}
-		else
-		{
-			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
-		}
-
-		pwd_get_lm_nt_owf(&(cli->usr.pwd), lm_sess_pwd, nt_sess_pwd,
-		                  &nt_sess_pwd_len, cli->sess_key);
+		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
+		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
 
 		/* attempt encrypted session */
-		if (!cli_session_setup_x(cli, cli->usr.user_name,
-			               (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
-			               (char*)nt_sess_pwd, nt_sess_pwd_len,
-			               cli->usr.domain))
+		if (!cli_session_setup(cli, cli->user_name,
+	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
+	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
+	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
-
-			if (cli->use_ntlmv2 == Auto)
-			{
-				DEBUG(10,("NTLMv2 failed.  Using NTLMv1\n"));
-				cli->use_ntlmv2 = False;
-				if (do_tcon)
-				{
-					fstrcpy(cli->share, service);
-					fstrcpy(cli->dev, service_type);
-				}
-				fstrcpy(cli->desthost, dest_host);
-				cli_close_socket(cli);
-				return cli_establish_connection(cli, 
-					dest_host, dest_ip,
-					calling, called,
-					service, service_type,
-					do_shutdown, do_tcon);
-			}
-			
 			if (do_shutdown)
-			{
-				cli_shutdown(cli);
-			}
+              cli_shutdown(cli);
 			return False;
 		}
 
-		DEBUG(1,("session setup ok\n"));
-
-		if (*cli->server_domain || *cli->server_os || *cli->server_type)
-		{
-			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			     cli->server_domain,
-		             cli->server_os,
-		             cli->server_type));
-		}
-	
 		if (do_tcon)
 		{
 			if (!cli_send_tconX(cli, service, service_type,
@@ -3393,184 +2939,18 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			{
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-				{
-					cli_shutdown(cli);
-				}
+                  cli_shutdown(cli);
 				return False;
 			}
 		}
 	}
 
 	if (do_shutdown)
-	{
-		cli_shutdown(cli);
-	}
+      cli_shutdown(cli);
 
 	return True;
 }
 
-BOOL cli_connect_auth(struct cli_state *cli,
-				const char* desthost,
-				struct in_addr *dest_ip,
-				const struct ntuser_creds *usr)
-{
-	extern pstring global_myname;
-	extern pstring scope;
-	struct nmb_name calling, called;
-
-	ZERO_STRUCTP(cli);
-	if (!cli_initialise(cli))
-	{
-		DEBUG(0,("unable to initialise client connection.\n"));
-		return False;
-	}
-
-	make_nmb_name(&calling, global_myname, 0x0 , scope);
-	make_nmb_name(&called , desthost     , 0x20, scope);
-
-	cli_init_creds(cli, usr);
-
-	if (!cli_establish_connection(cli, desthost, dest_ip,
-				      &calling, &called,
-				      "IPC$", "IPC", 
-				      False, True))
-	{
-		cli_shutdown(cli);
-		return False;
-	}
-
-	return True;
-}
-
-/****************************************************************************
- connect to one of multiple servers: don't care which
-****************************************************************************/
-BOOL cli_connect_servers_auth(struct cli_state *cli,
-				char *p,
-				const struct ntuser_creds *usr)
-{
-	fstring remote_host;
-	BOOL connected_ok = False;
-
-	/*
-	* Treat each name in the 'password server =' line as a potential
-	* PDC/BDC. Contact each in turn and try and authenticate.
-	*/
-
-	while(p && next_token(&p,remote_host,LIST_SEP,sizeof(remote_host)))
-	{
-		fstring desthost;
-		struct in_addr dest_ip;
-		strupper(remote_host);
-
-		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
-		{
-			DEBUG(1,("Can't resolve address for %s\n", remote_host));
-			continue;
-		}   
-
-		if (!cli_connect_auth(cli, desthost, &dest_ip, usr) &&
-		    !cli_connect_auth(cli, "*SMBSERVER", &dest_ip, usr))
-		{
-			continue;
-		}
-
-		if (cli->protocol < PROTOCOL_LANMAN2 ||
-		    !IS_BITS_SET_ALL(cli->sec_mode, 1))
-		{
-			DEBUG(1,("machine %s not in user level security mode\n",
-				  remote_host));
-			cli_shutdown(cli);
-			continue;
-		}
-
-		/*
-		 * We have an anonymous connection to IPC$.
-		 */
-
-		connected_ok = True;
-		break;
-	}
-
-	if (!connected_ok)
-	{
-		DEBUG(0,("Domain password server not available.\n"));
-	}
-
-	return connected_ok;
-}
-
-/****************************************************************************
- connect to one of multiple servers: don't care which
-****************************************************************************/
-BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
-{
-	fstring remote_host;
-	fstring desthost;
-	struct in_addr dest_ip;
-	BOOL connected_ok = False;
-
-	/*
-	* Treat each name in the 'password server =' line as a potential
-	* PDC/BDC. Contact each in turn and try and authenticate.
-	*/
-
-	while(p && next_token(&p,remote_host,LIST_SEP,sizeof(remote_host)))
-	{
-		ZERO_STRUCTP(cli);
-
-		if (!cli_initialise(cli))
-		{
-			DEBUG(0,("cli_connect_serverlist: unable to initialise client connection.\n"));
-			return False;
-		}
-
-		standard_sub_basic(remote_host);
-		strupper(remote_host);
-
-		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
-		{
-			DEBUG(1,("cli_connect_serverlist: Can't resolve address for %s\n", remote_host));
-			continue;
-		}   
-
-		if ((lp_security() != SEC_USER) && (ismyip(dest_ip)))
-		{
-			DEBUG(1,("cli_connect_serverlist: Password server loop - not using password server %s\n", remote_host));
-			continue;
-		}
-
-		if (!cli_connect_auth(cli, remote_host , &dest_ip, NULL) &&
-		    !cli_connect_auth(cli, "*SMBSERVER", &dest_ip, NULL))
-		{
-			continue;
-		}
-
-
-		if (cli->protocol < PROTOCOL_LANMAN2 ||
-		    !IS_BITS_SET_ALL(cli->sec_mode, 1))
-		{
-			DEBUG(1,("cli_connect_serverlist: machine %s isn't in user level security mode\n",
-				  remote_host));
-			cli_shutdown(cli);
-			continue;
-		}
-
-		/*
-		 * We have an anonymous connection to IPC$.
-		 */
-
-		connected_ok = True;
-		break;
-	}
-
-	if (!connected_ok)
-	{
-		DEBUG(0,("cli_connect_serverlist: Domain password server not available.\n"));
-	}
-
-	return connected_ok;
-}
 
 /****************************************************************************
   cancel a print job
@@ -3583,7 +2963,7 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	int rdrcnt,rprcnt, ret = -1;
 	pstring param;
 
-	bzero(param,sizeof(param));
+	memset(param,'\0',sizeof(param));
 
 	p = param;
 	SSVAL(p,0,81);		/* DosPrintJobDel() */
@@ -3624,7 +3004,7 @@ int cli_print_queue(struct cli_state *cli,
 	int result_code=0;
 	int i = -1;
 	
-	bzero(param,sizeof(param));
+	memset(param,'\0',sizeof(param));
 
 	p = param;
 	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
@@ -3686,29 +3066,29 @@ check for existance of a dir
 ****************************************************************************/
 BOOL cli_chkpath(struct cli_state *cli, char *path)
 {
-	fstring path2;
+	pstring path2;
 	char *p;
 	
-	fstrcpy(path2,path);
+	safe_strcpy(path2,path,sizeof(pstring));
 	trim_string(path2,NULL,"\\");
 	if (!*path2) *path2 = '\\';
 	
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,4 + strlen(path2),True);
 	SCVAL(cli->outbuf,smb_com,SMBchkpth);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
-	
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	fstrcpy(p,path2);
+	safe_strcpy(p,path2,strlen(path2));
+	unix_to_dos(p,True);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }
@@ -3723,7 +3103,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	char *p;
 
 	/* send a SMBsendstrt command */
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendstrt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3732,20 +3112,22 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
 	pstrcpy(p,username);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 	*p++ = 4;
 	pstrcpy(p,host);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 	
 	set_message(cli->outbuf,0,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	
-	cli_send_smb(cli, True);	
+	cli_send_smb(cli);	
 	
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	*grp = SVAL(cli->inbuf,smb_vwv0);
 
@@ -3760,7 +3142,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,1,len+3,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendtxt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3772,13 +3154,13 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 	*p = 1;
 	SSVAL(p,1,len);
 	memcpy(p+3,msg,len);
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }      
@@ -3788,7 +3170,7 @@ end a message
 ****************************************************************************/
 BOOL cli_message_end(struct cli_state *cli, int grp)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,1,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendend;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3797,13 +3179,13 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 
 	cli_setup_packet(cli);
 	
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }      
@@ -3814,13 +3196,13 @@ query disk space
 ****************************************************************************/
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBdskattr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	cli_send_smb(cli, True);
+	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
@@ -3832,21 +3214,49 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
-BOOL get_any_dc_name(const char *domain, char *srv_name)
+/****************************************************************************
+ Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
+****************************************************************************/
+
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                            struct in_addr *pdest_ip)
 {
-	struct cli_state cli;
+  struct nmb_name calling, called;
 
-	if (!cli_connect_servers_auth(&cli,
-	                              get_trusted_serverlist(domain), NULL))
-	{
-		return False;
-	}
+  make_nmb_name(&calling, srchost, 0x0, scope);
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, cli.desthost);
-	strupper(srv_name);
+  /*
+   * If the called name is an IP address
+   * then use *SMBSERVER immediately.
+   */
 
-	cli_shutdown(&cli);
+  if(is_ipaddress(desthost))
+    make_nmb_name(&called, "*SMBSERVER", 0x20, scope);
+  else
+    make_nmb_name(&called, desthost, 0x20, scope);
 
-	return True;
+  if (!cli_session_request(cli, &calling, &called)) {
+    struct nmb_name smbservername;
+
+    /*
+     * If the name wasn't *SMBSERVER then
+     * try with *SMBSERVER if the first name fails.
+     */
+
+    cli_shutdown(cli);
+
+    make_nmb_name(&smbservername , "*SMBSERVER", 0x20, scope);
+
+    if (!nmb_name_equal(&called, &smbservername) ||
+        !cli_initialise(cli) ||
+        !cli_connect(cli, desthost, pdest_ip) ||
+        !cli_session_request(cli, &calling, &smbservername)) {
+          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER.\n",
+                desthost));
+          cli_shutdown(cli);
+          return False;
+    }
+  }
+
+  return True;
 }

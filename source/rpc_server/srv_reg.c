@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -38,10 +37,10 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 	REG_R_CLOSE r_u;
 
 	/* set up the REG unknown_1 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
+	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
 
 	/* close the policy handle */
-	if (close_policy_hnd(&(q_r->pol)))
+	if (close_lsa_policy_hnd(&(q_r->pol)))
 	{
 		r_u.status = 0;
 	}
@@ -61,7 +60,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_close( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_CLOSE q_r;
@@ -71,6 +70,8 @@ static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_close(&q_r, rdata);
+
+	return True;
 }
 
 
@@ -84,7 +85,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 
 	r_u.status = 0x0;
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !open_policy_hnd(&(r_u.pol)))
+	if (r_u.status == 0x0 && !open_lsa_policy_hnd(&(r_u.pol)))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -100,7 +101,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_open( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_HKLM q_u;
@@ -110,6 +111,8 @@ static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_open(&q_u, rdata);
+
+	return True;
 }
 
 
@@ -126,35 +129,30 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
-	if (status == 0 && find_policy_by_hnd(&(q_u->pol)) == -1)
+	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(&pol))
+	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	unistr2_to_ascii(name, &q_u->uni_name, sizeof(name)-1);
+	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
 
 	if (status == 0x0)
 	{
 		DEBUG(5,("reg_open_entry: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
-		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
-		    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
-		{
-			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
-		}
 	}
 
-	if (status == 0x0 && !set_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	make_reg_r_open_entry(&r_u, &pol, status);
+	init_reg_r_open_entry(&r_u, &pol, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_open_entry("", &r_u, rdata, 0);
@@ -165,7 +163,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static void api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_open_entry( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_ENTRY q_u;
@@ -175,6 +173,8 @@ static void api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply. */
 	reg_reply_open_entry(&q_u, rdata);
+
+	return True;
 }
 
 
@@ -187,32 +187,19 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	uint32 status     = 0;
 
 	REG_R_INFO r_u;
-	uint32 type = 0xcafeface;
-	BUFFER2 buf;
-	fstring name;
-
-	ZERO_STRUCT(buf);
 
 	DEBUG(5,("reg_info: %d\n", __LINE__));
 
-	if (status == 0x0 && !get_policy_reg_name(&q_u->pol, name))
+	if (status == 0 && find_lsa_policy_by_hnd(&(q_u->pol)) == -1)
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0 &&
-	   strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+	if (status == 0)
 	{
-		char *key = "LanmanNT";
-		make_buffer2(&buf, key, strlen(key));
-		type = 0x1;
-	}
-	else
-	{
-		status = 0x2; /* Win32 status code.  ick */
 	}
 
-	make_reg_r_info(&r_u, &type, &buf, status);
+	init_reg_r_info(&r_u, 1, "LanmanNT", 0x12, 0x12, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);
@@ -223,7 +210,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_info( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_INFO q_u;
@@ -233,6 +220,8 @@ static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_info(&q_u, rdata);
+
+	return True;
 }
 
 
@@ -251,7 +240,7 @@ static struct api_struct api_reg_cmds[] =
 /*******************************************************************
  receives a reg pipe and responds.
  ********************************************************************/
-BOOL api_reg_rpc(rpcsrv_struct *p, prs_struct *data)
+BOOL api_reg_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds, data);
 }

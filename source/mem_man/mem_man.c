@@ -501,9 +501,8 @@ int smb_mem_free(void *ptr,char *file,int line)
 static void mem_write_Index_info(int Index,FILE *outfile)
 {
   if (memory_blocks[Index].status != S_UNALLOCATED)
-    fprintf(outfile,"block %d file %s(%d) : ptr: %p size %d, alloc size %d, status %s\n",
+    fprintf(outfile,"block %d file %s(%d) : size %d, alloc size %d, status %s\n",
 	    Index,memory_blocks[Index].file,memory_blocks[Index].line,
-	    memory_blocks[Index].pointer,
 	    memory_blocks[Index].present_size,
 	    memory_blocks[Index].allocated_size,
 	    status_to_str(memory_blocks[Index].status));

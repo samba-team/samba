@@ -10,6 +10,15 @@ $curdir = $ENV{"PWD"};
 open(IGNORES,"../../source/.cvsignore") || die "Unable to open .cvsignore file\n";
 while (<IGNORES>) {
   chop;
+  next if /cvs\.log/;
+  $ignores{$_}++;
+}
+close IGNORES;
+
+# We don't want the files listed in .cvsignore in the source/include tree
+open(IGNORES,"../../source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
+while (<IGNORES>) {
+  chop;
   $ignores{$_}++;
 }
 close IGNORES;
@@ -32,6 +41,7 @@ if (@sprogs) {
 }
 if (@progs) {
   @progs[0] =~ s/^.*\=//;
+  @progs[0] =~ s/\$\(\S+\)\s//g;
   @progs = split(' ',@progs[0]);
 }
 if (@mprogs) {
@@ -48,6 +58,7 @@ if (@progs2) {
 }
 if (@scripts) {
   @scripts[0] =~ s/^.*\=//;
+  @scripts[0] =~ s/\$\(srcdir\)\///g;
   @scripts = split(' ',@scripts[0]);
 }
 if (@codepage) {
@@ -177,7 +188,7 @@ while (@sorted) {
     print IDB "d 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
   }
   else {
-    if (grep((/\.sh$/ | /\.pl$/ | /mkman$/),$nextfile)) {
+    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/),$nextfile)) {
 	print IDB "f 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
     }
     else {
@@ -210,7 +221,7 @@ while (@catman) {
   $nextfile = shift @catman;
   ($file = $nextfile) =~ s/^packaging\/SGI\/catman\///;
   ($dirnum = $file) =~ s/^[\D]*//;
-  $dirnum =~ s/\.Z//;
+  $dirnum =~ s/\.z//;
   if ($dirnum ne $olddirnum) {
     print IDB "d 0755 root sys usr/share/catman/u_man/cat$dirnum packaging/SGI samba.man.manpages\n";
     $olddirnum = $dirnum;

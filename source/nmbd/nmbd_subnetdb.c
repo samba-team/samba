@@ -55,22 +55,7 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
 
 static void add_subnet(struct subnet_record *subrec)
 {
-  struct subnet_record *subrec2;
-
-  if (!subnetlist)
-  {
-    subnetlist = subrec;
-    subrec->prev = NULL;
-    subrec->next = NULL;
-    return;
-  }
-
-  for (subrec2 = subnetlist; subrec2->next; subrec2 = subrec2->next)
-    ;
-
-  subrec2->next = subrec;
-  subrec->next = NULL;
-  subrec->prev = subrec2;
+	DLIST_ADD(subnetlist, subrec);
 }
 
 /* ************************************************************************** **
@@ -96,19 +81,41 @@ static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
     Debug1( "nmbd_subnetdb:namelist_entry_compare()\n" );
     Debug1( "%d == memcmp( \"%s\", \"%s\", %d )\n",
             memcmp( Item, &(NR->name), sizeof(struct nmb_name) ),
-            nmb_namestr(Iname), nmb_namestr(&NR->name), sizeof(struct nmb_name) );
+            nmb_namestr(Iname), nmb_namestr(&NR->name), (int)sizeof(struct nmb_name) );
     }
 
   return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) ); 
   } /* namelist_entry_compare */
+
+
+/****************************************************************************
+stop listening on a subnet
+we don't free the record as we don't have proper reference counting for it
+yet and it may be in use by a response record
+  ****************************************************************************/
+void close_subnet(struct subnet_record *subrec)
+{
+	DLIST_REMOVE(subnetlist, subrec);
+
+	if (subrec->dgram_sock != -1) {
+		close(subrec->dgram_sock);
+		subrec->dgram_sock = -1;
+	}
+	if (subrec->nmb_sock != -1) {
+		close(subrec->nmb_sock);
+		subrec->nmb_sock = -1;
+	}
+}
+
+
 
 /****************************************************************************
   Create a subnet entry.
   ****************************************************************************/
 
 static struct subnet_record *make_subnet(char *name, enum subnet_type type,
-                                         struct in_addr myip, struct in_addr bcast_ip, 
-                                         struct in_addr mask_ip)
+					 struct in_addr myip, struct in_addr bcast_ip, 
+					 struct in_addr mask_ip)
 {
   struct subnet_record *subrec = NULL;
   int nmb_sock, dgram_sock;
@@ -130,7 +137,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
      * Fail the subnet creation if this fails.
      */
 
-    if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr)) == -1)
+    if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr,True)) == -1)
     {
       if( DEBUGLVL( 0 ) )
       {
@@ -142,7 +149,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
       return NULL;
     }
 
-    if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr)) == -1)
+    if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr,True)) == -1)
     {
       if( DEBUGLVL( 0 ) )
       {
@@ -170,7 +177,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
     return(NULL);
   }
   
-  bzero( (char *)subrec, sizeof(*subrec) );
+  memset( (char *)subrec, '\0', sizeof(*subrec) );
   (void)ubi_trInitTree( subrec->namelist,
                         namelist_entry_compare,
                         ubi_trOVERWRITE );
@@ -202,6 +209,23 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
   return subrec;
 }
 
+
+/****************************************************************************
+  Create a normal subnet
+**************************************************************************/
+struct subnet_record *make_normal_subnet(struct interface *iface)
+{
+	struct subnet_record *subrec;
+
+	subrec = make_subnet(inet_ntoa(iface->ip), NORMAL_SUBNET,
+			     iface->ip, iface->bcast, iface->nmask);
+	if (subrec) {
+		add_subnet(subrec);
+	}
+	return subrec;
+}
+
+
 /****************************************************************************
   Create subnet entries.
 **************************************************************************/
@@ -225,13 +249,9 @@ BOOL create_subnets(void)
 
   for (i = 0 ; i < num_interfaces; i++)
   {
-    struct subnet_record *subrec;
     struct interface *iface = get_interface(i);
 
-    if((subrec = make_subnet(inet_ntoa(iface->ip), NORMAL_SUBNET,
-                 iface->ip, iface->bcast,iface->nmask)) == NULL)
-      return False;
-    add_subnet(subrec);
+    if (!make_normal_subnet(iface)) return False;
   }
 
   /* 

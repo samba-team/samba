@@ -54,7 +54,7 @@ static void msg_deliver(void)
 
   /* put it in a temporary file */
   slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
-  fstrcpy(name,(char *)mktemp(s));
+  fstrcpy(name,(char *)smbd_mktemp(s));
 
   fd = sys_open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
   if (fd == -1) {
@@ -74,10 +74,13 @@ static void msg_deliver(void)
   /* run the command */
   if (*lp_msg_command())
     {
+      fstring alpha_msgfrom;
+      fstring alpha_msgto;
+
       pstrcpy(s,lp_msg_command());
-      string_sub(s,"%s",name);
-      string_sub(s,"%f",msgfrom);
-      string_sub(s,"%t",msgto);
+      pstring_sub(s,"%s",name);
+      pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,sizeof(alpha_msgfrom)));
+      pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,sizeof(alpha_msgto)));
       standard_sub_basic(s);
       smbrun(s,NULL,False);
     }
@@ -99,7 +102,6 @@ int reply_sends(connection_struct *conn,
 
   msgpos = 0;
 
-
   if (! (*lp_msg_command()))
     return(ERROR(ERRSRV,ERRmsgoff));
 
@@ -113,7 +115,9 @@ int reply_sends(connection_struct *conn,
   fstrcpy(msgto,dest);
 
   len = SVAL(msg,0);
-  len = MIN(len,1600-msgpos);
+  len = MIN(len,sizeof(msgbuf)-msgpos);
+
+  memset(msgbuf,'\0',sizeof(msgbuf));
 
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
@@ -140,6 +144,7 @@ int reply_sendstrt(connection_struct *conn,
 
   outsize = set_message(outbuf,1,0,True);
 
+  memset(msgbuf,'\0',sizeof(msgbuf));
   msgpos = 0;
 
   orig = smb_buf(inbuf)+1;
@@ -172,7 +177,7 @@ int reply_sendtxt(connection_struct *conn,
   msg = smb_buf(inbuf) + 1;
 
   len = SVAL(msg,0);
-  len = MIN(len,1600-msgpos);
+  len = MIN(len,sizeof(msgbuf)-msgpos);
 
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
@@ -202,4 +207,3 @@ int reply_sendend(connection_struct *conn,
 
   return(outsize);
 }
-

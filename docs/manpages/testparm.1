@@ -5,7 +5,7 @@ testparm \- check an smb\&.conf configuration file for internal correctness
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBtestparm\fP [-s] [configfilename] [hostname hostIP]
+\fBtestparm\fP [-s] [-h] [-L servername] [configfilename] [hostname hostIP]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -24,6 +24,11 @@ If the optional host name and host IP address are specified on the
 command line, this test program will run through the service entries
 reporting whether the specified host has access to each service\&.
 .PP 
+If \fBtestparm\fP finds an error in the \fBsmb\&.conf\fP
+file it returns an exit code of 1 to the calling program, else it returns
+an exit code of 0\&. This allows shell scripts to test the output from
+\fBtestparm\fP\&.
+.PP 
 .SH "OPTIONS" 
 .PP 
 .IP 
@@ -31,6 +36,13 @@ reporting whether the specified host has access to each service\&.
 Without this option, \fBtestparm\fP will prompt for a
 carriage return after printing the service names and before dumping
 the service definitions\&.
+.IP 
+.IP "\fB-h\fP" 
+Print usage message
+.IP 
+.IP "\fB-L servername\fP" 
+Sets the value of the %L macro to servername\&. This
+is useful for testing include files specified with the %L macro\&.
 .IP 
 .IP "\fBconfigfilename\fP" 
 This is the name of the configuration file to

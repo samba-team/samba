@@ -2,7 +2,7 @@
 
 echo
 echo
-echo Samba for IRIX has been installed on your system.
+echo Samba has been installed on your system.
 echo 
 echo Your /etc/services and /etc/inetd.conf files have
 echo been modified to automatically start the

@@ -8,7 +8,7 @@ manpagename(smbd)(server to provide SMB/CIFS services to clients)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-d debuglevel)(minusd)] [link(-l log file)(minusl)] [link(-p port number)(minusp)] [link(-O socket options)(minusO)] [link(-s configuration file)(minuss)] [link(-i scope)(minusi)] [link(-P)(minusP)] [link(-h)(minush)]
+bf(smbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-P)(minusP)] [link(-h)(minush)] [link(-V)(minusV)] [link(-d debuglevel)(minusd)] [link(-l log file)(minusl)] [link(-p port number)(minusp)] [link(-O socket options)(minusO)] [link(-s configuration file)(minuss)] [link(-i scope)(minusi)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -70,6 +70,16 @@ label(minuso)
 dit(bf(-o)) If this parameter is specified, the log files will be
 overwritten when opened.  By default, the log files will be appended
 to.
+
+label(minusP)
+dit(bf(-P)) Passive option. Causes smbd not to send any network traffic
+out. Used for debugging by the developers only.
+
+label(minush)
+dit(bf(-h)) Prints the help information (usage) for bf(smbd).
+
+label(minusV)
+dit(bf(-V)) Prints the version number for bf(smbd).
 
 label(minusd)
 dit(bf(-d debuglevel)) debuglevel is an integer from 0 to 10.
@@ -141,13 +151,6 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are em(very) rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
-
-label(minush)
-dit(bf(-h)) Prints the help information (usage) for smbd.
-
-label(minusP)
-dit(bf(-P)) Passive option. Causes smbd not to send any network traffic
-out. Used for debugging by the developers only.
 
 endit()
 
@@ -421,16 +424,11 @@ performance.
 label(SEEALSO)
 manpageseealso()
 
-bf(hosts_access (5)),
-bf(inetd (8)),
-url(bf(nmbd (8)))(nmbd.8.html),
-url(bf(smb.conf (5)))(smb.conf.5.html),
-url(bf(smbclient (1)))(smbclient.1.html),
-url(bf(testparm (1)))(testparm.1.html),
-url(bf(testprns (1)))(testprns.1.html),
-url(bf(rpcclient (1)))(rpcclient.1.html),
-and the Internet RFC's bf(rfc1001.txt), bf(rfc1002.txt).
-In addition the CIFS (formerly SMB)
+bf(hosts_access (5)), bf(inetd (8)), url(bf(nmbd (8)))(nmbd.8.html),
+url(bf(smb.conf (5)))(smb.conf.5.html), url(bf(smbclient
+(1)))(smbclient.1.html), url(bf(testparm (1)))(testparm.1.html),
+url(bf(testprns (1)))(testprns.1.html), and the Internet RFC's
+bf(rfc1001.txt), bf(rfc1002.txt). In addition the CIFS (formerly SMB)
 specification is available as a link from the Web page :
 url(http://samba.org/cifs/)(http://samba.org/cifs/).
 

@@ -247,7 +247,7 @@ its the GMT you get by taking a localtime and adding the
 serverzone. This is NOT the same as GMT in some cases. This routine
 converts this to real GMT.
 ****************************************************************************/
-time_t nt_time_to_unix(const NTTIME *nt)
+time_t nt_time_to_unix(NTTIME *nt)
 {
   double d;
   time_t ret;
@@ -298,6 +298,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
 	double d;
 
+	if (t==0)
+	{
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+
 	/* this converts GMT to kludge-GMT */
 	t -= LocTimeDiff(t) - serverzone; 
 
@@ -309,15 +316,6 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
 }
 
-/****************************************************************************
-initialise an NTTIME to -1, which means "unknown" or "don't expire"
-****************************************************************************/
-
-void init_nt_time(NTTIME *nt)
-{
-	nt->high = 0x7FFFFFFF;
-	nt->low = 0xFFFFFFFF;
-}
 
 /****************************************************************************
 take an NTTIME structure, containing high / low time.  convert to unix time.
@@ -506,21 +504,57 @@ char *http_timestring(time_t t)
 
 
 /****************************************************************************
-  return the date and time as a string
+ Return the date and time as a string
 ****************************************************************************/
-char *timestring(void )
+
+char *timestring(BOOL hires)
 {
 	static fstring TimeBuf;
-	time_t t = time(NULL);
-	struct tm *tm = LocalTime(&t);
+	struct timeval tp;
+	time_t t;
+	struct tm *tm;
 
+	if (hires) {
+		GetTimeOfDay(&tp);
+		t = (time_t)tp.tv_sec;
+	} else {
+		t = time(NULL);
+	}
+	tm = LocalTime(&t);
 	if (!tm) {
-		slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
+		if (hires) {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld.%06ld seconds since the Epoch",
+				 (long)tp.tv_sec, 
+				 (long)tp.tv_usec);
+		} else {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld seconds since the Epoch",
+				 (long)t);
+		}
 	} else {
 #ifdef HAVE_STRFTIME
-		strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
+		if (hires) {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			slprintf(TimeBuf+strlen(TimeBuf),
+				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
+				 ".%06ld", 
+				 (long)tp.tv_usec);
+		} else {
+			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
+		}
 #else
-		fstrcpy(TimeBuf, asctime(tm));
+		if (hires)() {
+			slprintf(TimeBuf, 
+				 sizeof(TimeBuf)-1, 
+				 "%s.%06ld", 
+				 asctime(tm), 
+				 (long)tp.tv_usec);
+		} else {
+			fstrcpy(TimeBuf, asctime(tm));
+		}
 #endif
 	}
 	return(TimeBuf);

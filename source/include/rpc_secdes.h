@@ -88,20 +88,15 @@ typedef struct security_ace_info
 
 } SEC_ACE;
 
-
-#define MAX_SEC_ACES 16
-
 /* SEC_ACL */
 typedef struct security_acl_info
 {
 	uint16 revision; /* 0x0002 */
 	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
-
-	SEC_ACE *ace;
+	SEC_ACE *ace_list;
 
 } SEC_ACL;
-
 
 /* SEC_DESC */
 typedef struct security_descriptor_info

@@ -514,31 +514,8 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
-	{ "NT_STATUS_NO_SUCH_JOB", NT_STATUS_NO_SUCH_JOB },
 	{ NULL, 0 }
 };
-
-/*****************************************************************************
- returns an NT error message.  not amazingly helpful, but better than a number.
- *****************************************************************************/
-void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
-{
-	int idx = 0;
-
-	snprintf(msg, len, "NT code %08x", nt_code);
-
-        nt_code &= 0xFFFF;
-
-	while (nt_errs[idx].nt_errstr != NULL)
-	{
-		if (nt_errs[idx].nt_errcode == nt_code)
-		{
-			safe_strcpy(msg, nt_errs[idx].nt_errstr, len);
-			return;
-		}
-		idx++;
-	}
-}
 
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
@@ -546,6 +523,21 @@ void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
 char *get_nt_error_msg(uint32 nt_code)
 {
 	static pstring msg;
-	get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
+	int idx = 0;
+
+	pstrcpy(msg, "Unknown NT error");
+
+        nt_code &= 0xFFFF;
+
+	while (nt_errs[idx].nt_errstr != NULL)
+	{
+		if (nt_errs[idx].nt_errcode == nt_code)
+		{
+			pstrcpy(msg, nt_errs[idx].nt_errstr);
+			return msg;
+		}
+		idx++;
+	}
 	return msg;
 }
+

@@ -101,7 +101,7 @@ static void mdfour64(uint32 *M)
 		X[j] = 0;
 }
 
-static void copy64(uint32 *M, const unsigned char *in)
+static void copy64(uint32 *M, unsigned char *in)
 {
 	int i;
 
@@ -119,7 +119,7 @@ static void copy4(unsigned char *out,uint32 x)
 }
 
 /* produce a md4 message digest from data of length n bytes */
-void mdfour(unsigned char *out, const unsigned char *in, int n)
+void mdfour(unsigned char *out, unsigned char *in, int n)
 {
 	unsigned char buf[128];
 	uint32 M[16];

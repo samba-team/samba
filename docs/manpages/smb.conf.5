@@ -242,6 +242,7 @@ would look like this:
 
  	[printers]
  		path = /usr/spool/public
+ 		writeable = no
  		guest ok = yes
  		printable = yes 
 
@@ -490,6 +491,12 @@ parameter for details\&.  Note that some are synonyms\&.
 .PP 
 .IP 
 .IP o 
+\fBadd user script\fP
+.IP 
+.IP o 
+\fBallow trusted domains\fP
+.IP 
+.IP o 
 \fBannounce as\fP
 .IP 
 .IP o 
@@ -523,7 +530,16 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBdeadtime\fP
 .IP 
 .IP o 
+\fBdebug hires timestamp\fP
+.IP 
+.IP o 
+\fBdebug pid\fP
+.IP 
+.IP o 
 \fBdebug timestamp\fP
+.IP 
+.IP o 
+\fBdebug uid\fP
 .IP 
 .IP o 
 \fBdebuglevel\fP
@@ -533,6 +549,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBdefault service\fP
+.IP 
+.IP o 
+\fBdelete user script\fP
 .IP 
 .IP o 
 \fBdfree command\fP
@@ -550,9 +569,6 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBdomain controller\fP
 .IP 
 .IP o 
-\fBdomain group map\fP
-.IP 
-.IP o 
 \fBdomain groups\fP
 .IP 
 .IP o 
@@ -566,9 +582,6 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBdomain master\fP
-.IP 
-.IP o 
-\fBdomain user map\fP
 .IP 
 .IP o 
 \fBencrypt passwords\fP
@@ -592,13 +605,16 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBkernel oplocks\fP
 .IP 
 .IP o 
-\fBldap bind as\fP
-.IP 
-.IP o 
-\fBldap passwd file\fP
+\fBldap filter\fP
 .IP 
 .IP o 
 \fBldap port\fP
+.IP 
+.IP o 
+\fBldap root\fP
+.IP 
+.IP o 
+\fBldap root passwd\fP
 .IP 
 .IP o 
 \fBldap server\fP
@@ -614,9 +630,6 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBload printers\fP
-.IP 
-.IP o 
-\fBlocal group map\fP
 .IP 
 .IP o 
 \fBlocal master\fP
@@ -655,6 +668,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBmangled stack\fP
 .IP 
 .IP o 
+\fBmap to guest\fP
+.IP 
+.IP o 
 \fBmax disk size\fP
 .IP 
 .IP o 
@@ -682,6 +698,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBmessage command\fP
 .IP 
 .IP o 
+\fBmin passwd length\fP
+.IP 
+.IP o 
 \fBmin wins ttl\fP
 .IP 
 .IP o 
@@ -697,6 +716,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBnis homedir\fP
 .IP 
 .IP o 
+\fBnt acl support\fP
+.IP 
+.IP o 
 \fBnt pipe support\fP
 .IP 
 .IP o 
@@ -707,6 +729,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBole locking compatibility\fP
+.IP 
+.IP o 
+\fBoplock break wait time\fP
 .IP 
 .IP o 
 \fBos level\fP
@@ -770,6 +795,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBremote browse sync\fP
+.IP 
+.IP o 
+\fBrestrict anonymous\fP
 .IP 
 .IP o 
 \fBroot\fP
@@ -895,6 +923,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBwins server\fP
 .IP 
 .IP o 
+\fBwins hook\fP
+.IP 
+.IP o 
 \fBwins support\fP
 .IP 
 .IP o 
@@ -971,6 +1002,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBdirectory mode\fP
 .IP 
 .IP o 
+\fBdirectory security mask\fP
+.IP 
+.IP o 
 \fBdont descend\fP
 .IP 
 .IP o 
@@ -998,7 +1032,13 @@ parameter for details\&. Note that some are synonyms\&.
 \fBforce directory mode\fP
 .IP 
 .IP o 
+\fBforce directory security mode\fP
+.IP 
+.IP o 
 \fBforce group\fP
+.IP 
+.IP o 
+\fBforce security mode\fP
 .IP 
 .IP o 
 \fBforce user\fP
@@ -1037,6 +1077,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBinvalid users\fP
 .IP 
 .IP o 
+\fBlevel2 oplocks\fP
+.IP 
+.IP o 
 \fBlocking\fP
 .IP 
 .IP o 
@@ -1061,6 +1104,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBmangle case\fP
 .IP 
 .IP o 
+\fBmangle locks\fP
+.IP 
+.IP o 
 \fBmangled map\fP
 .IP 
 .IP o 
@@ -1079,9 +1125,6 @@ parameter for details\&. Note that some are synonyms\&.
 \fBmap system\fP
 .IP 
 .IP o 
-\fBmap to guest\fP
-.IP 
-.IP o 
 \fBmax connections\fP
 .IP 
 .IP o 
@@ -1097,6 +1140,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBoplocks\fP
 .IP 
 .IP o 
+\fBoplock contention limit\fP
+.IP 
+.IP o 
 \fBpath\fP
 .IP 
 .IP o 
@@ -1107,6 +1153,9 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBpreexec\fP
+.IP 
+.IP o 
+\fBpreexec close\fP
 .IP 
 .IP o 
 \fBpreserve case\fP
@@ -1158,6 +1207,12 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBroot preexec\fP
+.IP 
+.IP o 
+\fBsecurity mask\fP
+.IP 
+.IP o 
+\fBroot preexec close\fP
 .IP 
 .IP o 
 \fBset directory\fP
@@ -1220,6 +1275,54 @@ parameter for details\&. Note that some are synonyms\&.
 .SH "EXPLANATION OF EACH PARAMETER" 
 .PP 
 .IP 
+.IP "\fBadd user script (G)\fP" 
+.IP 
+This is the full pathname to a script that will be run \fIAS ROOT\fP by
+\fBsmbd (8)\fP under special circumstances decribed
+below\&.
+.IP 
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server\&. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task\&. This option allows \fBsmbd\fP to create
+the required UNIX users \fION DEMAND\fP when a user accesses the Samba
+server\&.
+.IP 
+In order to use this option, \fBsmbd\fP must be set to
+\fBsecurity=server\fP or
+\fBsecurity=domain\fP and \fB"add user script"\fP
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of \fB%u\fP, which expands into the UNIX user name to
+create\&.
+.IP 
+When the Windows user attempts to access the Samba server, at
+\fI"login"\fP(session setup in the SMB protocol) time,
+\fBsmbd\fP contacts the \fBpassword
+server\fP and attempts to authenticate the given user
+with the given password\&. If the authentication succeeds then
+\fBsmbd\fP attempts to find a UNIX user in the UNIX
+password database to map the Windows user into\&. If this lookup fails,
+and \fB"add user script"\fP is set then \fBsmbd\fP will
+call the specified script \fIAS ROOT\fP, expanding any \fB%u\fP argument
+to be the user name to create\&.
+.IP 
+If this script successfully creates the user then
+\fBsmbd\fP will continue on as though the UNIX user
+already existed\&. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts\&.
+.IP 
+See also \fBsecurity=server\fP,
+\fBsecurity=domain\fP, \fBpassword
+server\fP, \fBdelete user
+script\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	add user script = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW	add user script = /usr/local/samba/bin/add_user %u\fP
+.IP 
 .IP "\fBadmin users (S)\fP" 
 .IP 
 This is a list of users who will be granted administrative privileges
@@ -1240,63 +1343,29 @@ file permissions\&.
 .IP 
 .IP "\fBallow hosts (S)\fP" 
 .IP 
-A synonym for this parameter is \fB\'hosts allow\'\fP
+Synonym for \fBhosts allow\fP\&.
 .IP 
-This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service\&.
+.IP "\fBallow trusted domains (G)\fP" 
 .IP 
-If specified in the \fB[global]\fP section then it will
-apply to all services, regardless of whether the individual service
-has a different setting\&.
+This option only takes effect when the \fBsecurity\fP
+option is set to \fBserver\fP or \fBdomain\fP\&.  If it is set to no,
+then attempts to connect to a resource from a domain or workgroup other than
+the one which smbd is running in will fail, even if that domain
+is trusted by the remote server doing the authentication\&.
 .IP 
-You can specify the hosts by name or IP number\&. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like \f(CW"allow hosts = 150\&.203\&.5\&."\fP\&. The full syntax of the list is
-described in the man page \fBhosts_access (5)\fP\&. Note that this man
-page may not be present on your system, so a brief description will
-be given here also\&.
-.IP 
-\fINOTE:\fP IF you wish to allow the \fBsmbpasswd
-(8)\fP program to be run by local users to change
-their Samba passwords using the local \fBsmbd (8)\fP
-daemon, then you \fIMUST\fP ensure that the localhost is listed in your
-\fBallow hosts\fP list, as \fBsmbpasswd (8)\fP runs
-in client-server mode and is seen by the local
-\fBsmbd\fP process as just another client\&.
-.IP 
-You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups\&. The \fIEXCEPT\fP keyword can also
-be used to limit a wildcard list\&. The following examples may provide
-some help:
-.IP 
-\fBExample 1\fP: allow localhost and all IPs in 150\&.203\&.*\&.* except one
-.IP 
-\f(CW	hosts allow = localhost, 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
-.IP 
-\fBExample 2\fP: allow localhost and hosts that match the given network/netmask
-.IP 
-\f(CW	hosts allow = localhost, 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
-.IP 
-\fBExample 3\fP: allow a localhost plus a couple of hosts
-.IP 
-\f(CW	hosts allow = localhost, lapland, arvidsjaur\fP
-.IP 
-\fBExample 4\fP: allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-.IP 
-\f(CW 	hosts allow = @foonet, localhost\fP
-\f(CW 	hosts deny = pirate\fP
-.IP 
-Note that access still requires suitable user-level passwords\&.
-.IP 
-See \fBtestparm (1)\fP for a way of testing your
-host access to see if it does what you expect\&.
+This is useful if you only want your Samba server to serve resources
+to users in the domain it is a member of\&. As an example, suppose that there are
+two domains DOMA and DOMB\&.  DOMB is trusted by DOMA, which contains
+the Samba server\&.  Under normal circumstances, a user with an account
+in DOMB can then access the resources of a UNIX account with the same
+account name on the Samba server even if they do not have an account
+in DOMA\&.  This can make implementing a security boundary difficult\&.
 .IP 
 \fBDefault:\fP
-\f(CW	none (i\&.e\&., all hosts permitted access)\fP
+\f(CW     allow trusted domains = Yes\fP
 .IP 
 \fBExample:\fP
-\f(CW	allow hosts = 150\&.203\&.5\&. localhost myhost\&.mynet\&.edu\&.au\fP
+\f(CW     allow trusted domains = No\fP
 .IP 
 .IP "\fBalternate permissions (S)\fP" 
 .IP 
@@ -1310,14 +1379,15 @@ regardless if the owner of the file is the currently logged on user or not\&.
 .IP 
 This specifies what type of server \fBnmbd\fP will
 announce itself as, to a network neighborhood browse list\&. By default
-this is set to Windows NT\&. The valid options are : "NT", "Win95" or
-"WfW" meaning Windows NT, Windows 95 and Windows for Workgroups
-respectively\&. Do not change this parameter unless you have a specific
-need to stop Samba appearing as an NT server as this may prevent Samba
-servers from participating as browser servers correctly\&.
+this is set to Windows NT\&. The valid options are : "NT", which is a
+synonym for "NT Server", "NT Server", "NT Workstation", "Win95" or
+"WfW" meaning Windows NT Server, Windows NT Workstation, Windows 95
+and Windows for Workgroups respectively\&. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT server
+as this may prevent Samba servers from participating as browser servers correctly\&.
 .IP 
 \fBDefault:\fP
-\f(CW	announce as = NT\fP
+\f(CW	announce as = NT Server\fP
 .IP 
 \fBExample\fP
 \f(CW	announce as = Win95\fP
@@ -1396,11 +1466,16 @@ should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces\&.
 .IP 
-In addition, to change a users SMB password, the
-\fBsmbpasswd\fP by default connects to the
-\fI"localhost" - 127\&.0\&.0\&.1\fP address as an SMB client to issue the
-password change request\&. If \fB"bind interfaces only"\fP is set then
-unless the network address \fI127\&.0\&.0\&.1\fP is added to the
+If \fB"bind interfaces only"\fP is set then unless the network address
+\fI127\&.0\&.0\&.1\fP is added to the \fB\'interfaces\'\fP parameter
+list \fBsmbpasswd\fP and
+\fBswat\fP may not work as expected due to the
+reasons covered below\&.
+.IP 
+To change a users SMB password, the \fBsmbpasswd\fP
+by default connects to the \fI"localhost" - 127\&.0\&.0\&.1\fP address as an SMB
+client to issue the password change request\&. If \fB"bind interfaces only"\fP
+is set then unless the network address \fI127\&.0\&.0\&.1\fP is added to the
 \fB\'interfaces\'\fP parameter list then
 \fBsmbpasswd\fP will fail to connect in it\'s
 default mode\&. \fBsmbpasswd\fP can be forced to
@@ -1408,6 +1483,14 @@ use the primary IP interface of the local host by using its
 \fB"-r remote machine"\fP parameter, with
 \fB"remote machine"\fP set to the IP name of the primary interface
 of the local host\&.
+.IP 
+The \fBswat\fP status page tries to connect with
+\fBsmbd\fP and \fBnmbd\fP at the address 
+\fI127\&.0\&.0\&.1\fP to determine if they are running\&.  Not adding \fI127\&.0\&.0\&.1\fP  will cause
+\fBsmbd\fP and \fBnmbd\fP to always show
+"not running" even if they really are\&.  This can prevent
+\fBswat\fP from starting/stopping/restarting
+\fBsmbd\fP and \fBnmbd\fP\&.
 .IP 
 \fBDefault:\fP
 \f(CW	bind interfaces only = False\fP
@@ -1462,11 +1545,11 @@ shares in a net view and in the browse list\&.
 \fBExample:\fP
 \f(CW	browseable = No\fP
 .IP 
-.IP "\fBcase sensitive (S)\fP" 
+.IP "\fBcase sensitive (G)\fP" 
 .IP 
 See the discussion in the section \fBNAME MANGLING\fP\&.
 .IP 
-.IP "\fBcasesignames (S)\fP" 
+.IP "\fBcasesignames (G)\fP" 
 .IP 
 Synonym for \fB"case sensitive"\fP\&.
 .IP 
@@ -1514,7 +1597,14 @@ correctly\&.
 .IP o 
 \fBISO8859-5\fP Russian Cyrillic UNIX character set\&. The parameter
 \fBclient code page\fP \fIMUST\fP be set to code
-page 866 if the \fBcharacter set\fP parameter is set to ISO8859-2
+page 866 if the \fBcharacter set\fP parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly\&. 
+.IP 
+.IP o 
+\fBISO8859-7\fP Greek UNIX character set\&. The parameter
+\fBclient code page\fP \fIMUST\fP be set to code
+page 737 if the \fBcharacter set\fP parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly\&. 
 .IP 
@@ -1766,6 +1856,21 @@ performed\&.
 \fBExample:\fP
 \f(CW	deadtime = 15\fP
 .IP 
+.IP "\fBdebug hires timestamp (G)\fP" 
+.IP 
+Sometimes the timestamps in the log messages are needed with a
+resolution of higher that seconds, this boolean parameter adds
+microsecond resolution to the timestamp message header when turned on\&.
+.IP 
+Note that the parameter \fBdebug timestamp\fP
+must be on for this to have an effect\&.
+.IP 
+\fBDefault:\fP
+\f(CW debug hires timestamp = No\fP
+.IP 
+\fBExample:\fP
+\f(CW debug hires timestamp = Yes\fP
+.IP 
 .IP "\fBdebug timestamp (G)\fP" 
 .IP 
 Samba2\&.0 debug log messages are timestamped by default\&. If you are
@@ -1778,6 +1883,37 @@ off\&.
 .IP 
 \fBExample:\fP
 \f(CW	debug timestamp = No\fP
+.IP 
+.IP "\fBdebug pid (G)\fP" 
+.IP 
+When using only one log file for more then one forked smbd-process
+there may be hard to follow which process outputs which message\&.
+This boolean parameter is adds the process-id to the timestamp message
+headers in the logfile when turned on\&.
+.IP 
+Note that the parameter \fBdebug timestamp\fP
+must be on for this to have an effect\&.
+.IP 
+\fBDefault:\fP
+\f(CW	debug pid = No\fP
+.IP 
+\fBExample:\fP
+\f(CW	debug pid = Yes\fP
+.IP 
+.IP "\fBdebug uid (G)\fP" 
+.IP 
+Samba is sometimes run as root and sometime run as the connected
+user, this boolean parameter inserts the current euid, egid, uid
+and gid to the timestamp message headers in the log file if turned on\&.
+.IP 
+Note that the parameter \fBdebug timestamp\fP
+must be on for this to have an effect\&.
+.IP 
+\fBDefault:\fP
+\f(CW	debug uid = No\fP
+.IP 
+\fBExample:\fP
+\f(CW	debug uid = Yes\fP
 .IP 
 .IP "\fBdebug level (G)\fP" 
 .IP 
@@ -1836,6 +1972,59 @@ interesting things\&.
  
 
 .IP 
+.IP "\fBdelete user script (G)\fP" 
+.IP 
+This is the full pathname to a script that will be run \fIAS ROOT\fP by
+\fBsmbd (8)\fP under special circumstances decribed
+below\&.
+.IP 
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server\&. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task\&. This option allows \fBsmbd\fP to delete
+the required UNIX users \fION DEMAND\fP when a user accesses the Samba
+server and the Windows NT user no longer exists\&.
+.IP 
+In order to use this option, \fBsmbd\fP must be set to
+\fBsecurity=domain\fP and \fB"delete user
+script"\fP must be set to a full pathname for a script that will delete
+a UNIX user given one argument of \fB%u\fP, which expands into the UNIX
+user name to delete\&. \fINOTE\fP that this is different to the
+\fBadd user script\fP which will work with the
+\fBsecurity=server\fP option as well as
+\fBsecurity=domain\fP\&. The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists\&. In the
+\fBsecurity=server\fP mode a missing user
+is treated the same as an invalid password logon attempt\&. Deleting
+the user in this circumstance would not be a good idea\&.
+.IP 
+When the Windows user attempts to access the Samba server, at
+\fI"login"\fP(session setup in the SMB protocol) time,
+\fBsmbd\fP contacts the \fBpassword
+server\fP and attempts to authenticate the given user
+with the given password\&. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+\fBsmbd\fP attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account\&. If this lookup succeeds,
+and \fB"delete user script"\fP is set then \fBsmbd\fP will
+call the specified script \fIAS ROOT\fP, expanding any \fB%u\fP argument
+to be the user name to delete\&.
+.IP 
+This script should delete the given UNIX username\&. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts\&.
+.IP 
+See also \fBsecurity=domain\fP,
+\fBpassword server\fP, \fBadd user
+script\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	delete user script = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW	delete user script = /usr/local/samba/bin/del_user %u\fP
+.IP 
 .IP "\fBdelete readonly (S)\fP" 
 .IP 
 This parameter allows readonly files to be deleted\&.  This is not
@@ -1880,16 +2069,7 @@ See also the \fBveto files\fP parameter\&.
 .IP 
 .IP "\fBdeny hosts (S)\fP" 
 .IP 
-The opposite of \fB\'allow hosts\'\fP - hosts listed
-here are \fINOT\fP permitted access to services unless the specific
-services have their own lists to override this one\&. Where the lists
-conflict, the \fB\'allow\'\fP list takes precedence\&.
-.IP 
-\fBDefault:\fP
-\f(CW	none (i\&.e\&., no hosts specifically excluded)\fP
-.IP 
-\fBExample:\fP
-\f(CW	deny hosts = 150\&.203\&.4\&. badhost\&.mynet\&.edu\&.au\fP
+Synonym for \fBhosts deny\fP\&.
 .IP 
 .IP "\fBdfree command (G)\fP" 
 .IP 
@@ -1980,7 +2160,8 @@ See the \fB"force directory mode"\fP parameter
 to cause particular mode bits to always be set on created directories\&.
 .IP 
 See also the \fB"create mode"\fP parameter for masking
-mode bits on created files\&.
+mode bits on created files, and the \fB"directory security mask"\fP
+parameter\&.
 .IP 
 \fBDefault:\fP
 \f(CW	directory mask = 0755\fP
@@ -1991,6 +2172,38 @@ mode bits on created files\&.
 .IP "\fBdirectory mode (S)\fP" 
 .IP 
 Synonym for \fBdirectory mask\fP\&.
+.IP 
+.IP "\fBdirectory security mask (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (AND\'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified\&. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBdirectory mask\fP parameter\&. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0777\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBsecurity
+mask\fP, \fBforce security mode\fP
+parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	directory security mask = <same as directory mask>\fP
+.IP 
+\fBExample:\fP
+\f(CW	directory security mask = 0777\fP
 .IP 
 .IP "\fBdns proxy (G)\fP" 
 .IP 
@@ -2015,7 +2228,7 @@ See also the parameter \fBwins support\fP\&.
 \fBdomain admin group (G)\fP
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&.  It has been removed as of November 98\&.
+Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
@@ -2024,7 +2237,7 @@ mailing list \fBSamba-ntdom\fP available by sending email to
 .IP "\fBdomain admin users (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
+Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
@@ -2036,91 +2249,10 @@ This is a \fBDEPRECATED\fP parameter\&. It is currently not used within
 the Samba source and should be removed from all current smb\&.conf
 files\&. It is left behind for compatibility reasons\&.
 .IP 
-.IP "\fBdomain group map (G)\fP" 
-.IP 
-This option allows you to specify a file containing unique mappings
-of individual NT Domain Group names (in any domain) to UNIX group
-names\&.  This allows NT domain groups to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX\&.  The reader is advised to become familiar
-with the NT Domain system and its administration\&.
-.IP 
-This option is used in conjunction with \fB\'local group map\'\fP
-and \fB\'domain user map\'\fP\&.  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers)\&.
-.IP 
-The map file is parsed line by line\&.  If any line begins with a \f(CW\'#\'\fP
-or a \f(CW\';\'\fP then it is ignored\&.  Each line should contain a single UNIX
-group name on the left then a single NT Domain Group name on the right,
-separated by a tabstop or \f(CW\'=\'\fP\&.  If either name contains spaces then
-it should be enclosed in quotes\&.
-The line can be either of the form:
-.IP 
-\f(CW  UNIXgroupname	\e\eDOMAIN_NAME\e\eDomainGroupName \fP
-.IP 
-or:
-.IP 
-\f(CW  UNIXgroupname	DomainGroupName \fP
-.IP 
-In the case where Samba is either an \fBEXPERIMENTAL\fP Domain Controller
-or it is a member of a domain using \fB"security = domain"\fP,
-the latter format can be used: the default Domain name is the Samba Server\'s
-Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
-.IP 
-Any UNIX groups that are \fINOT\fP specified in this map file are assumed to
-be either Local or Domain Groups, depending on the role of the Samba Server\&.
-.IP 
-In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
-will present \fIALL\fP such unspecified UNIX groups as its own NT Domain
-Groups, with the same name\&.
-.IP 
-In the case where Samba is member of a domain using
-\fB"security = domain"\fP, Samba will check the UNIX name with
-its Domain Controller (see \fB"password server"\fP)
-as if it was an NT Domain Group\&.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server\'s local SAM database\&.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running \fBUSRMGR\&.EXE\fP and selecting a remote
-Domain named "\e\eWORKSTATION_NAME", or by running \fBMUSRMGR\&.EXE\fP on
-a local Workstation\&.
-.IP 
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an \fBEXPERIMENTAL\fP Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all\&.  If you \fBwant\fP to get fancy, however, you can\&.
-.IP 
-Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group \fIREQUIRES\fP the following:
-.IP 
-.IP 
-.IP o 
-that the UNIX group exists on the UNIX server\&.
-.IP 
-.IP o 
-that the NT Domain Group exists in the specified NT Domain
-.IP 
-.IP o 
-that the UNIX Server knows about the specified Domain; 
-.IP 
-.IP o 
-that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using \fB\'domain user map\'\fP\&.
-.IP 
-.IP 
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users\&.
-.IP 
 .IP "\fBdomain groups (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
+Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
@@ -2129,7 +2261,7 @@ mailing list \fBSamba-ntdom\fP available by sending email to
 .IP "\fBdomain guest group (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
+Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
@@ -2138,7 +2270,7 @@ mailing list \fBSamba-ntdom\fP available by sending email to
 .IP "\fBdomain guest users (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
+Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
@@ -2184,94 +2316,8 @@ special name for a \fBworkgroup\fP before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail\&.
 .IP 
-By default ("auto") Samba will attempt to become the domain master
-browser only if it is the Primary Domain Controller\&.
-.IP 
 \fBDefault:\fP
-\f(CW	domain master = auto\fP
-.IP 
-\fBExample:\fP
 \f(CW	domain master = no\fP
-.IP 
-.IP "\fBdomain user map (G)\fP" 
-.IP 
-This option allows you to specify a file containing unique mappings
-of individual NT Domain User names (in any domain) to UNIX user
-names\&.  This allows NT domain users to be presented correctly to
-NT systems, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX\&.  The reader is advised to become familiar
-with the NT Domain system and its administration\&.
-.IP 
-This option is used in conjunction with \fB\'local group map\'\fP
-and \fB\'domain group map\'\fP\&.  The use of these three
-options is trivial and often unnecessary in the case where Samba is
-not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers)\&.
-.IP 
-This option, which provides (and maintains) a one-to-one link between
-UNIX and NT users, is \fIDIFFERENT\fP from \fB\'username map\'\fP, which does \fINOT\fP maintain a distinction between the
-name(s) it can map to and the name it maps\&.
-.IP 
-The map file is parsed line by line\&.  If any line begins with a \f(CW\'#\'\fP
-or a \f(CW\';\'\fP then the line is ignored\&.  Each line should contain a single UNIX
-user name on the left then a single NT Domain User name on the right,
-separated by a tabstop or \f(CW\'=\'\fP\&.  If either name contains spaces then
-it should be enclosed in quotes\&.
-The line can be either of the form:
-.IP 
-\f(CW  UNIXusername	\e\eDOMAIN_NAME\e\eDomainUserName \fP
-.IP 
-or:
-.IP 
-\f(CW  UNIXusername	DomainUserName \fP
-.IP 
-In the case where Samba is either an \fBEXPERIMENTAL\fP Domain Controller
-or it is a member of a domain using \fB"security = domain"\fP,
-the latter format can be used: the default Domain name is the Samba Server\'s
-Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
-.IP 
-Any UNIX users that are \fINOT\fP specified in this map file are assumed
-to be either Domain or Workstation Users, depending on the role of the
-Samba Server\&.
-.IP 
-In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
-will present \fIALL\fP such unspecified UNIX users as its own NT Domain
-Users, with the same name\&.
-.IP 
-In the case where Samba is a member of a domain using
-\fB"security = domain"\fP, Samba will check the UNIX name with
-its Domain Controller (see \fB"password server"\fP)
-as if it was an NT Domain User\&.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX users which also are not NT Domain
-Users are treated as Local Users in the Samba Server\'s local SAM database\&.
-NT Administrators will recognise these as Workstation Users,
-which are managed by running \fBUSRMGR\&.EXE\fP and selecting a remote
-Domain named "\e\eWORKSTATION_NAME", or by running \fBMUSRMGR\&.EXE\fP on
-a local Workstation\&.
-.IP 
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an \fBEXPERIMENTAL\fP Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all\&.  If you \fBwant\fP to get fancy, however, you can\&.
-.IP 
-Note that adding an entry to map an arbitrary NT User in an arbitrary
-Domain to an arbitrary UNIX user \fIREQUIRES\fP the following:
-.IP 
-.IP 
-.IP o 
-that the UNIX user exists on the UNIX server\&.
-.IP 
-.IP o 
-that the NT Domain User exists in the specified NT Domain\&.
-.IP 
-.IP o 
-that the UNIX Server knows about the specified Domain\&.
-.IP 
-.IP 
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users\&.
 .IP 
 .IP "\fBdont descend (S)\fP" 
 .IP 
@@ -2470,6 +2516,38 @@ would force all created directories to have read and execute
 permissions set for \'group\' and \'other\' as well as the
 read/write/execute bits set for the \'user\'\&.
 .IP 
+.IP "\fBforce directory security mode (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (OR\'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on\&. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be \'on\'\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBforce directory mode\fP parameter\&. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0000\&.
+.IP 
+See also the \fBdirectory security mask\fP,
+\fBsecurity mask\fP, \fBforce security
+mode\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	force directory security mode = <same as force directory mode>\fP
+.IP 
+\fBExample:\fP
+\f(CW	force directory security mode = 0\fP
+.IP 
 .IP "\fBforce group (S)\fP" 
 .IP 
 This specifies a UNIX group name that will be assigned as the default
@@ -2480,11 +2558,62 @@ permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files\&.
 .IP 
+In Samba 2\&.0\&.5 and above this parameter has extended functionality in the following
+way\&. If the group name listed here has a \'+\' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group\&. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group\&. This gives a finer granularity of ownership
+assignment\&. For example, the setting \f(CWforce group = +sys\fP means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share\&. All
+other users will retain their ordinary primary group\&.
+.IP 
+If the \fB"force user"\fP parameter is also set the
+group specified in \fBforce group\fP will override the primary group
+set in \fB"force user"\fP\&.
+.IP 
+See also \fB"force user"\fP
+.IP 
 \fBDefault:\fP
 \f(CW	no forced group\fP
 .IP 
 \fBExample:\fP
 \f(CW	force group = agroup\fP
+.IP 
+.IP "\fBforce security mode (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (OR\'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on\&. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be \'on\'\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBforce create mode\fP parameter\&. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0000\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBdirectory security
+mask\fP, \fBsecurity mask\fP
+parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	force security mode = <same as force create mode>\fP
+.IP 
+\fBExample:\fP
+\f(CW	force security mode = 0\fP
 .IP 
 .IP "\fBforce user (S)\fP" 
 .IP 
@@ -2499,6 +2628,13 @@ password\&. Once connected, all file operations will be performed as the
 \f(CW"forced user"\fP, no matter what username the client connected as\&.
 .IP 
 This can be very useful\&.
+.IP 
+In Samba 2\&.0\&.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity\&. Prior to 2\&.0\&.5 the primary group was left as the
+primary group of the connecting user (this was a bug)\&.
+.IP 
+See also \fB"force group"\fP
 .IP 
 \fBDefault:\fP
 \f(CW	no forced user\fP
@@ -2671,11 +2807,72 @@ logons\fP\&.
 .IP 
 .IP "\fBhosts allow (S)\fP" 
 .IP 
-Synonym for \fBallow hosts\fP\&.
+A synonym for this parameter is \fB\'allow hosts\'\fP
+.IP 
+This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service\&.
+.IP 
+If specified in the \fB[global]\fP section then it will
+apply to all services, regardless of whether the individual service
+has a different setting\&.
+.IP 
+You can specify the hosts by name or IP number\&. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like \f(CW"allow hosts = 150\&.203\&.5\&."\fP\&. The full syntax of the list is
+described in the man page \fBhosts_access (5)\fP\&. Note that this man
+page may not be present on your system, so a brief description will
+be given here also\&.
+.IP 
+Note that the localhost address 127\&.0\&.0\&.1 will always be allowed
+access unless specifically denied by a "hosts deny" option\&.
+.IP 
+You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups\&. The \fIEXCEPT\fP keyword can also
+be used to limit a wildcard list\&. The following examples may provide
+some help:
+.IP 
+\fBExample 1\fP: allow all IPs in 150\&.203\&.*\&.* except one
+.IP 
+\f(CW	hosts allow = 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
+.IP 
+\fBExample 2\fP: allow hosts that match the given network/netmask
+.IP 
+\f(CW	hosts allow = 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
+.IP 
+\fBExample 3\fP: allow a couple of hosts
+.IP 
+\f(CW	hosts allow = lapland, arvidsjaur\fP
+.IP 
+\fBExample 4\fP: allow only hosts in NIS netgroup "foonet", but 
+deny access from one particular host
+.IP 
+\f(CW 	hosts allow = @foonet\fP
+.IP 
+\f(CW 	hosts deny = pirate\fP
+.IP 
+Note that access still requires suitable user-level passwords\&.
+.IP 
+See \fBtestparm (1)\fP for a way of testing your
+host access to see if it does what you expect\&.
+.IP 
+\fBDefault:\fP
+\f(CW	none (i\&.e\&., all hosts permitted access)\fP
+.IP 
+\fBExample:\fP
+\f(CW	allow hosts = 150\&.203\&.5\&. myhost\&.mynet\&.edu\&.au\fP
 .IP 
 .IP "\fBhosts deny (S)\fP" 
 .IP 
-Synonym for \fBdenyhosts\fP\&.
+The opposite of \fB\'hosts allow\'\fP - hosts listed
+here are \fINOT\fP permitted access to services unless the specific
+services have their own lists to override this one\&. Where the lists
+conflict, the \fB\'allow\'\fP list takes precedence\&.
+.IP 
+\fBDefault:\fP
+\f(CW	none (i\&.e\&., no hosts specifically excluded)\fP
+.IP 
+\fBExample:\fP
+\f(CW	hosts deny = 150\&.203\&.4\&. badhost\&.mynet\&.edu\&.au\fP
 .IP 
 .IP "\fBhosts equiv (G)\fP" 
 .IP 
@@ -2683,7 +2880,7 @@ If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password\&.
 .IP 
-This is not be confused with \fBallow hosts\fP which
+This is not be confused with \fBhosts allow\fP which
 is about hosts access to services and is more useful for guest
 services\&. \fBhosts equiv\fP may be useful for NT clients which will not
 supply passwords to samba\&.
@@ -2711,28 +2908,38 @@ It takes the standard substitutions, except \fB%u\fP,
 .IP 
 .IP "\fBinterfaces (G)\fP" 
 .IP 
-This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces\&.
+This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic\&. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127\&.0\&.0\&.1 that are
+broadcast capable\&.
 .IP 
-The option takes a list of ip/netmask pairs\&. The netmask may either be
-a bitmask, or a bitlength\&.
+The option takes a list of interface strings\&. Each string can be in
+any of the following forms:
+.IP 
+.IP o 
+a network interface name (such as eth0)\&. This may include
+shell-like wildcards so eth* will match any interface starting
+with the substring "eth"
+if() a IP address\&. In this case the netmask is determined
+from the list of interfaces obtained from the kernel
+if() a IP/mask pair\&. 
+if() a broadcast/mask pair\&. 
+.IP 
+The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form\&.
+.IP 
+The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms\&.
 .IP 
 For example, the following line:
 .IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/24\fP
+\f(CWinterfaces = eth0 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
 .IP 
-would configure two network interfaces with IP addresses 192\&.168\&.2\&.10
-and 192\&.168\&.3\&.10\&. The netmasks of both interfaces would be set to
-255\&.255\&.255\&.0\&.
-.IP 
-You could produce an equivalent result by using:
-.IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/255\&.255\&.255\&.0 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
-.IP 
-if you prefer that format\&.
-.IP 
-If this option is not set then Samba will attempt to find a primary
-interface, but won\'t attempt to configure more than one interface\&.
+would configure three network interfaces corresponding to the eth0
+device and IP addresses 192\&.168\&.2\&.10 and 192\&.168\&.3\&.10\&. The netmasks of
+the latter two interfaces would be set to 255\&.255\&.255\&.0\&.
 .IP 
 See also \fB"bind interfaces only"\fP\&.
 .IP 
@@ -2781,10 +2988,10 @@ options"\fP)\&. Basically you should only use this option
 if you strike difficulties\&.
 .IP 
 \fBDefault:\fP
-\f(CW	keep alive = 0\fP
+\f(CW	keepalive = 0\fP
 .IP 
 \fBExample:\fP
-\f(CW	keep alive = 60\fP
+\f(CW	keepalive = 60\fP
 .IP 
 .IP "\fBkernel oplocks (G)\fP" 
 .IP 
@@ -2802,52 +3009,72 @@ This parameter defaults to \fI"On"\fP on systems that have the support,
 and \fI"off"\fP on systems that don\'t\&. You should never need to touch
 this parameter\&.
 .IP 
-.IP "\fBldap bind as (G)\fP" 
+See also the \fB"oplocks"\fP and \fB"level2 oplocks"\fP
+parameters\&.
+.IP 
+.IP "\fBldap filter (G)\fP" 
 .IP 
 This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server\&. These options are only
-available if your version of Samba was configured with the \fB--with-ldap\fP
-option\&.
+password database stored on an LDAP server back-end\&. These options
+are only available if your version of Samba was configured with
+the \fB--with-ldap\fP option\&.
 .IP 
-This parameter specifies the entity to bind to an LDAP directory as\&.
-Usually it should be safe to use the LDAP root account; for larger
-installations it may be preferable to restrict Samba\'s access\&. See also
-\fBldap passwd file\fP\&.
-.IP 
-\fBDefault:\fP
-\f(CW	none (bind anonymously)\fP
-.IP 
-\fBExample:\fP
-\f(CW	ldap bind as = "uid=root, dc=mydomain, dc=org"\fP
-.IP 
-.IP "\fBldap passwd file (G)\fP" 
-.IP 
-This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server\&. These options are only
-available if your version of Samba was configured with the \fB--with-ldap\fP
-option\&.
-.IP 
-This parameter specifies a file containing the password with which
-Samba should bind to an LDAP server\&. For obvious security reasons
-this file must be set to mode 700 or less\&.
+This parameter specifies an LDAP search filter used to search for a
+user name in the LDAP database\&. It must contain the string
+\fB%u\fP which will be replaced with the user being
+searched for\&.
 .IP 
 \fBDefault:\fP
-\f(CW	none (bind anonymously)\fP
-.IP 
-\fBExample:\fP
-\f(CW	ldap passwd file = /usr/local/samba/private/ldappasswd\fP
+\f(CW	empty string\&.\fP
 .IP 
 .IP "\fBldap port (G)\fP" 
 .IP 
 This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server\&. These options are only
-available if your version of Samba was configured with the \fB--with-ldap\fP
-option\&.
+password database stored on an LDAP server back-end\&. These options
+are only available if your version of Samba was configured with
+the \fB--with-ldap\fP option\&.
 .IP 
-This parameter specifies the TCP port number of the LDAP server\&.
+This parameter specifies the TCP port number to use to contact
+the LDAP server on\&.
 .IP 
 \fBDefault:\fP
 \f(CW	ldap port = 389\&.\fP
+.IP 
+.IP "\fBldap root (G)\fP" 
+.IP 
+This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
+password database stored on an LDAP server back-end\&. These options
+are only available if your version of Samba was configured with
+the \fB--with-ldap\fP option\&.
+.IP 
+This parameter specifies the entity to bind to the LDAP server
+as (essentially the LDAP username) in order to be able to perform
+queries and modifications on the LDAP database\&.
+.IP 
+See also \fBldap root passwd\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	empty string (no user defined)\fP
+.IP 
+.IP "\fBldap root passwd (G)\fP" 
+.IP 
+This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
+password database stored on an LDAP server back-end\&. These options
+are only available if your version of Samba was configured with
+the \fB--with-ldap\fP option\&.
+.IP 
+This parameter specifies the password for the entity to bind to the
+LDAP server as (the password for this LDAP username) in order to be
+able to perform queries and modifications on the LDAP database\&.
+.IP 
+\fIBUGS:\fP This parameter should \fINOT\fP be a readable parameter
+in the \fBsmb\&.conf\fP file and will be removed once a correct
+storage place is found\&.
+.IP 
+See also \fBldap root\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	empty string\&.\fP
 .IP 
 .IP "\fBldap server (G)\fP" 
 .IP 
@@ -2857,8 +3084,7 @@ are only available if your version of Samba was configured with
 the \fB--with-ldap\fP option\&.
 .IP 
 This parameter specifies the DNS name of the LDAP server to use
-when storing and retrieving information about Samba users and
-groups\&.
+for SMB/CIFS authentication purposes\&.
 .IP 
 \fBDefault:\fP
 \f(CW	ldap server = localhost\fP
@@ -2870,15 +3096,52 @@ password database stored on an LDAP server back-end\&. These options
 are only available if your version of Samba was configured with
 the \fB--with-ldap\fP option\&.
 .IP 
-This parameter specifies the node of the LDAP tree beneath which
-Samba should store its information\&. This parameter MUST be provided
-when using LDAP with Samba\&.
+This parameter specifies the \f(CW"dn"\fP or LDAP \fI"distinguished name"\fP
+that tells \fBsmbd\fP to start from when searching
+for an entry in the LDAP password database\&.
 .IP 
 \fBDefault:\fP
-\f(CW	none\fP
+\f(CW	empty string\&.\fP
+.IP 
+.IP "\fBlevel2 oplocks (S)\fP" 
+.IP 
+This parameter (new in Samba 2\&.0\&.5) controls whether Samba supports
+level2 (read-only) oplocks on a share\&. In Samba 2\&.0\&.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release\&.
+.IP 
+Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks)\&. This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie\&. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application \&.EXE files)\&.
+.IP 
+Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches\&.
+.IP 
+It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-)\&.
+.IP 
+For more discussions on level2 oplocks see the CIFS spec\&.
+.IP 
+Currently, if \fB"kernel oplocks"\fP are supported
+then level2 oplocks are not granted (even if this parameter is set
+to \f(CW"true"\fP)\&. Note also, the \fB"oplocks"\fP parameter must
+be set to "true" on this share in order for this parameter to have any
+effect\&.
+.IP 
+See also the \fB"oplocks"\fP and \fB"kernel oplocks"\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW level2 oplocks = False\fP
 .IP 
 \fBExample:\fP
-\f(CW	ldap suffix = "dc=mydomain, dc=org"\fP
+\f(CW level2 oplocks = True\fP
 .IP 
 .IP "\fBlm announce (G)\fP" 
 .IP 
@@ -2930,87 +3193,6 @@ will be loaded for browsing by default\&. See the
 .IP 
 \fBExample:\fP
 \f(CW	load printers = no\fP
-.IP 
-.IP "\fBlocal group map (G)\fP" 
-.IP 
-This option allows you to specify a file containing unique mappings
-of individual NT Local Group names (in any domain) to UNIX group
-names\&.  This allows NT Local groups (aliases) to be presented correctly to
-NT users, despite the lack of native support for the NT Security model
-(based on VAX/VMS) in UNIX\&.  The reader is advised to become familiar
-with the NT Domain system and its administration\&.
-.IP 
-This option is used in conjunction with \fB\'domain group map\'\fP
-and \fB\'domain name map\'\fP\&.  The use of these three
-options is trivial and often unnecessary in the case where Samba
-is not expected to interact with any other SAM databases (whether local
-workstations or Domain Controllers)\&.
-.IP 
-The map file is parsed line by line\&.  If any line begins with a \f(CW\'#\'\fP
-or a \f(CW\';\'\fP then it is ignored\&.  Each line should contain a single UNIX
-group name on the left then a single NT Local Group name on the right,
-separated by a tabstop or \f(CW\'=\'\fP\&.  If either name contains spaces then
-it should be enclosed in quotes\&.
-The line can be either of the form:
-.IP 
-\f(CW  UNIXgroupname	\e\eDOMAIN_NAME\e\eLocalGroupName \fP
-.IP 
-or:
-.IP 
-\f(CW  UNIXgroupname	LocalGroupName \fP
-.IP 
-In the case where Samba is either an \fBEXPERIMENTAL\fP Domain Controller
-or it is a member of a domain using \fB"security = domain"\fP,
-the latter format can be used: the default Domain name is the Samba Server\'s
-Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
-.IP 
-Any UNIX groups that are \fINOT\fP specified in this map file are treated
-as either Local or Domain Groups depending on the role of the Samba Server\&.
-.IP 
-In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
-will present \fIALL\fP unspecified UNIX groups as its own NT Domain
-Groups, with the same name, and \fINOT\fP as Local Groups\&.
-.IP 
-In the case where Samba is member of a domain using
-\fB"security = domain"\fP, Samba will check the UNIX name with
-its Domain Controller (see \fB"password server"\fP)
-as if it was an NT Domain Group\&.  If the Domain Controller says that it is not,
-such unspecified (unmapped) UNIX groups which also are not NT Domain
-Groups are treated as Local Groups in the Samba Server\'s local SAM database\&.
-NT Administrators will recognise these as Workstation Local Groups,
-which are managed by running \fBUSRMGR\&.EXE\fP and selecting a remote
-Domain named "\e\eWORKSTATION_NAME", or by running \fBMUSRMGR\&.EXE\fP on
-a local Workstation\&.
-.IP 
-This may sound complicated, but it means that a Samba Server as
-either a member of a domain or as an \fBEXPERIMENTAL\fP Domain Controller
-will act like an NT Workstation (with a local SAM database) or an NT PDC
-(with a Domain SAM database) respectively, without the need for any of
-the map files at all\&.  If you \fBwant\fP to get fancy, however, you can\&.
-.IP 
-Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group \fIREQUIRES\fP the following:
-.IP 
-.IP 
-.IP o 
-that the UNIX group exists on the UNIX server\&.
-.IP 
-.IP o 
-that the NT Domain Group exists in the specified NT Domain
-.IP 
-.IP o 
-that the UNIX Server knows about the specified Domain; 
-.IP 
-.IP o 
-that all the UNIX users (who are expecting to access the Samba
-Server as the correct NT user and with the correct NT group permissions)
-in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using \fB\'domain user map\'\fP\&.
-.IP 
-.IP 
-Failure to meet any of these requirements may result in either (or
-both) errors reported in the log files or (and) incorrect or missing
-access rights granted to users\&.
 .IP 
 .IP "\fBlocal master (G)\fP" 
 .IP 
@@ -3416,6 +3598,12 @@ Magic scripts are \fIEXPERIMENTAL\fP and should \fINOT\fP be relied upon\&.
 .IP 
 See the section on \fB"NAME MANGLING"\fP\&.
 .IP 
+.IP "\fBmangle locks (S)\fP" 
+.IP 
+This option is was introduced with Samba 2\&.0\&.4 and above and has been
+removed in Samba 2\&.0\&.6 as Samba now dynamically configures such things
+on 32 bit systems\&.
+.IP 
 .IP "\fBmangled map (S)\fP" 
 .IP 
 This is for those who want to directly map UNIX file names which can
@@ -3708,7 +3896,7 @@ never need to set this parameter\&.
 \fBDefault:\fP
 \f(CW	max mux = 50\fP
 .IP 
-.IP "\fBmaxopenfiles (G)\fP" 
+.IP "\fBmax open files (G)\fP" 
 .IP 
 This parameter limits the maximum number of open files that one
 \fBsmbd\fP file serving process may have open for
@@ -3837,6 +4025,18 @@ See also the \fBprinting\fP parameter\&.
 \fBExample:\fP
 \f(CW	min print space = 2000\fP
 .IP 
+.IP "\fBmin passwd length (G)\fP" 
+.IP 
+This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing\&.
+.IP 
+See also \fB"unix password sync"\fP,
+\fB"passwd program"\fP and \fB"passwd chat
+debug"\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	min passwd length = 5\fP
+.IP 
 .IP "\fBmin wins ttl (G)\fP" 
 .IP 
 This option tells \fBnmbd\fP when acting as a WINS
@@ -3861,12 +4061,17 @@ names to be resolved as follows :
 .IP 
 .IP o 
 \fBlmhosts\fP : Lookup an IP address in the Samba lmhosts file\&.
+If the line in lmhosts has no name type attached to the NetBIOS
+name (see the \fBlmhosts (5)\fP for details) then
+any name type matches for lookup\&.
 .IP 
 .IP o 
 \fBhost\fP : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups\&. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the \fI/etc/nsswitch\&.conf\fP file)\&.
+Note that this method is only used if the NetBIOS name type being
+queried is the 0x20 (server) name type, otherwise it is ignored\&.
 .IP 
 .IP o 
 \fBwins\fP : Query a name with the IP address listed in the
@@ -3954,6 +4159,17 @@ system and the Samba server with this option must also be a
 .IP 
 \fBExample:\fP
 \f(CW	nis homedir = true\fP
+.IP 
+.IP "\fBnt acl support (G)\fP" 
+.IP 
+This boolean parameter controls whether \fBsmbd\fP
+will attempt to map UNIX permissions into Windows NT access control lists\&.
+.IP 
+\fBDefault:\fP
+\f(CW	nt acl support = yes\fP
+.IP 
+\fBExample:\fP
+\f(CW	nt acl support = no\fP
 .IP 
 .IP "\fBnt pipe support (G)\fP" 
 .IP 
@@ -4052,11 +4268,45 @@ all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process\&. See the \fBkernel oplocks\fP parameter
 for details\&.
 .IP 
+See also the \fB"kernel oplocks"\fP and
+\fB"level2 oplocks"\fP parameters\&.
+.IP 
 \fBDefault:\fP
 \f(CW	oplocks = True\fP
 .IP 
 \fBExample:\fP
 \f(CW	oplocks = False\fP
+.IP 
+.IP "\fBoplock break wait time (G)\fP" 
+.IP 
+This is a tuning parameter added due to bugs in both Windows 9x and WinNT\&.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request\&. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients\&.
+.IP 
+\fIDO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	oplock break wait time = 10\fP
+.IP 
+.IP "\fBoplock contention limit (S)\fP" 
+.IP 
+This is a \fIvery\fP advanced \fBsmbd\fP tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file\&.
+.IP 
+In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit\&. This causes \fBsmbd\fP to
+behave in a similar way to Windows NT\&.
+.IP 
+\fIDO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW oplock contention limit = 2\fP
 .IP 
 .IP "\fBos level (G)\fP" 
 .IP 
@@ -4064,12 +4314,12 @@ This integer value controls what level Samba advertises itself as for
 browse elections\&. The value of this parameter determines whether
 \fBnmbd\fP has a chance of becoming a local master
 browser for the \fBWORKGROUP\fP in the local broadcast
-area\&. Setting this to zero will cause \fBnmbd\fP to
-always lose elections to Windows machines\&. See BROWSING\&.txt in the
-Samba docs/ directory for details\&.
+area\&. The default is zero, which means \fBnmbd\fP will
+lose elections to Windows machines\&. See BROWSING\&.txt in the Samba
+docs/ directory for details\&.
 .IP 
 \fBDefault:\fP
-\f(CW	os level = 32\fP
+\f(CW	os level = 20\fP
 .IP 
 \fBExample:\fP
 \f(CW	os level = 65    ; This will win against any NT Server\fP
@@ -4276,13 +4526,19 @@ better restrict them with hosts allow!
 If the \fB"security"\fP parameter is set to
 \fB"domain"\fP, then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-\fBDomain\fP, as the Samba server is cryptographicly
+\fBDomain\fP or the character \f(CW*\fP, as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on\&. The advantage of using
 \fB"security=domain"\fP is that if you list
 several hosts in the \fB"password server"\fP option then
 \fBsmbd\fP will try each in turn till it finds one
 that responds\&. This is useful in case your primary server goes down\&.
+.IP 
+If the \fB"password server"\fP option is set to the character \f(CW*\fP,
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name \f(CWWORKGROUP<1C>\fP
+and then contacting each server returned in the list of IP addresses
+from the \fBname resolution\fP source\&.
 .IP 
 If the \fB"security"\fP parameter is set to
 \fB"server"\fP, then there are different
@@ -4315,6 +4571,9 @@ See also the \fB"security"\fP parameter\&.
 .IP 
 \fBExample:\fP
 \f(CW	password server = NT-PDC, NT-BDC1, NT-BDC2\fP
+.IP 
+\fBExample:\fP
+\f(CW	password server = *\fP
 .IP 
 .IP "\fBpath (S)\fP" 
 .IP 
@@ -4397,13 +4656,24 @@ time they log in\&. Maybe a message of the day? Here is an example:
 .IP 
 Of course, this could get annoying after a while :-)
 .IP 
-See also \fBpostexec\fP\&.
+See also \fBpreexec close\fP and \fBpostexec\fP\&.
 .IP 
 \fBDefault:\fP
 \f(CW	none (no command executed)\fP
 .IP 
 \fBExample:\fP
 \f(CW        preexec = echo \e"%u connected to %S from %m (%I)\e" >> /tmp/log\fP
+.IP 
+.IP "\fBpreexec close (S)\fP" 
+.IP 
+This boolean option controls whether a non-zero return code from
+\fB"preexec"\fP should close the service being connected to\&.
+.IP 
+\fBDefault:\fP
+\f(CW 	preexec close = no\fP
+.IP 
+\fBExample:\fP
+\f(CW 	preexec close = yes\fP
 .IP 
 .IP "\fBpreferred master (G)\fP" 
 .IP 
@@ -4415,8 +4685,7 @@ force an election, and it will have a slight advantage in winning the
 election\&.  It is recommended that this parameter is used in
 conjunction with \fB"domain master = yes"\fP, so
 that \fBnmbd\fP can guarantee becoming a domain
-master\&. Indeed the default ("auto") enables "preferred master" if
-Samba is configured as the domain master browser\&.
+master\&.
 .IP 
 Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
@@ -4428,7 +4697,7 @@ capabilities\&.
 See also \fBos level\fP\&.
 .IP 
 \fBDefault:\fP
-\f(CW 	preferred master = auto\fP
+\f(CW 	preferred master = no\fP
 .IP 
 \fBExample:\fP
 \f(CW 	preferred master = yes\fP
@@ -4648,7 +4917,7 @@ find the printer driver files for the automatic installation of
 drivers for Windows 95 machines\&. If Samba is set up to serve printer
 drivers to Windows 95 machines, this should be set to
 .IP 
-\f(CW\e\eMACHINE\ePRINTER$\fP
+\f(CW\e\eMACHINE\eaPRINTER$\fP
 .IP 
 Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
 is a share you set up for serving printer driver files\&. For more
@@ -4859,14 +5128,14 @@ This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other\&.
 .IP 
-The default value is 2048, but very little experimentation has been
+The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway\&. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily\&.
 .IP 
 \fBDefault:\fP
-\f(CW	read size = 2048\fP
+\f(CW	read size = 16384\fP
 .IP 
 \fBExample:\fP
 \f(CW	read size = 8192\fP
@@ -4938,6 +5207,37 @@ master on it\'s segment\&.
 \fBExample:\fP
 \f(CW	remote browse sync = 192\&.168\&.2\&.255 192\&.168\&.4\&.255\fP
 .IP 
+.IP "\fBrestrict anonymous (G)\fP" 
+.IP 
+This is a boolean parameter\&.  If it is true, then anonymous access
+to the server will be restricted, namely in the case where the server
+is expecting the client to send a username, but it doesn\'t\&.  Setting
+it to true will force these anonymous connections to be denied, and
+the client will be required to always supply a username and password
+when connecting\&. Use of this parameter is only recommened for homogenous 
+NT client environments\&.
+.IP 
+This parameter makes the use of macro expansions that rely
+on the username (%U, %G, etc) consistant\&.  NT 4\&.0 likes to use
+anonymous connections when refreshing the share list, and this
+is a way to work around that\&.
+.IP 
+When restrict anonymous is true, all anonymous connections are denied
+no matter what they are for\&.  This can effect the ability of a machine
+to access the samba Primary Domain Controller to revalidate it\'s machine
+account after someone else has logged on the client interactively\&.  The
+NT client will display a message saying that the machine\'s account in 
+the domain doesn\'t exist or the password is bad\&.  The best way to deal 
+with this is to reboot NT client machines between interactive logons, 
+using "Shutdown and Restart", rather than "Close all programs and logon 
+as a different user"\&.
+.IP 
+\fBDefault:\fP
+\f(CW     restrict anonymous = false\fP
+.IP 
+\fBExample:\fP
+\f(CW     restrict anonymous = true\fP
+.IP 
 .IP "\fBrevalidate (S)\fP" 
 .IP 
 Note that this option only works with
@@ -5008,7 +5308,15 @@ This is the same as the \fB"preexec"\fP parameter except
 that the command is run as root\&. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized\&.
 .IP 
-See also \fB"preexec"\fP\&.
+See also \fB"preexec"\fP
+and \fB"root preexec close"\fP\&.
+.IP 
+.IP "\fBroot preexec close (S)\fP" 
+.IP 
+This is the same as the \fB"preexec close"\fP parameter
+except that the command is run as root\&.
+.IP 
+See also \fB"preexec"\fP, \fB"preexec close"\fP\&.
 .IP 
 .IP "\fBsecurity (G)\fP" 
 .IP 
@@ -5208,7 +5516,7 @@ users into the \fB"guest account"\fP\&. See the
 \fB"map to guest"\fP parameter for details on
 doing this\&.
 .IP 
-e,(BUG:) There is currently a bug in the implementation of
+\fIBUG:\fP There is currently a bug in the implementation of
 \fB"security=domain\fP with respect to multi-byte character
 set usernames\&. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -5228,6 +5536,38 @@ and the \fB"encrypted passwords"\fP parameter\&.
 .IP 
 \fBExample:\fP
 \f(CW 	security = DOMAIN\fP
+.IP 
+.IP "\fBsecurity mask (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (AND\'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified\&. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBcreate mask\fP parameter\&. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0777\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBdirectory security
+mask\fP, \fBforce security
+mode\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	security mask = <same as create mask>\fP
+.IP 
+\fBExample:\fP
+\f(CW	security mask = 0777\fP
 .IP 
 .IP "\fBserver string (G)\fP" 
 .IP 
@@ -5294,13 +5634,16 @@ users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like \f(CW"ERROR
 smb_shm_alloc : alloc of XX bytes failed"\fP\&.
 .IP 
+If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0\&.8 until the OS accepts it\&.
+.IP 
 \fBDefault:\fP
 \f(CW	shared mem size = 1048576\fP
 .IP 
 \fBExample:\fP
 \f(CW	shared mem size = 5242880 ; Set to 5mb for a large number of files\&.\fP
 .IP 
-.IP "\fBshort preserve case (S)\fP" 
+.IP "\fBshort preserve case (G)\fP" 
 .IP 
 This boolean parameter controls if new files which conform to 8\&.3
 syntax, that is all in upper case and of suitable length, are created
@@ -5796,9 +6139,12 @@ See also the \fB"strict sync"\fP parameter\&.
 This parameter maps how Samba debug messages are logged onto the
 system syslog logging levels\&. Samba debug level zero maps onto syslog
 LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
-to LOG_NOTICE, debug level three maps onto LOG_INFO\&.  The parameter
-sets the threshold for doing the mapping, all Samba debug messages
-above this threshold are mapped to syslog LOG_DEBUG messages\&.
+onto LOG_NOTICE, debug level three maps onto LOG_INFO\&. All higher 
+levels are mapped to LOG_DEBUG\&.
+.IP 
+This paramter sets the threshold for sending messages to syslog\&. 
+Only messages with debug level less than this value will be sent 
+to syslog\&.
 .IP 
 \fBDefault:\fP
 \f(CW	syslog = 1\fP
@@ -6030,17 +6376,6 @@ purposes\&. The most common is to map usernames that users use on DOS or
 Windows machines to those that the UNIX box uses\&. The other is to map
 multiple users to a single username so that they can more easily share
 files\&.
-.IP 
-The use of this option, therefore, relates to UNIX usernames
-and not Windows (specifically NT Domain) usernames\&.  In other words,
-once a name has been mapped using this option, the Samba server uses
-the mapped name for internal \fIAND\fP external purposes\&.
-.IP 
-This option is \fIDIFFERENT\fP from the \fB"domain user map"\fP 
-parameter, which maintains a one-to-one mapping between UNIX usernames
-and NT Domain Usernames: more specifically, the Samba server maintains
-a link between \fIBOTH\fP usernames, presenting the NT username to the
-external NT world, and using the UNIX username internally\&.
 .IP 
 The map file is parsed line by line\&. Each line should contain a single
 UNIX username on the left then a \f(CW\'=\'\fP followed by a list of
@@ -6315,6 +6650,10 @@ directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
 tree being exported\&.
 .IP 
+Note that setting this parameter can have a negative effect on your
+server performance due to the extra system calls that Samba has to
+do in order to perform the link checks\&.
+.IP 
 \fBDefault:\fP
 \f(CW 	wide links = yes\fP
 .IP 
@@ -6335,7 +6674,7 @@ need to set this to \f(CW"yes"\fP for some older clients\&.
 This specifies the IP address (or DNS name: IP address for preference)
 of the WINS server that \fBnmbd\fP should register with\&.
 If you have a WINS server on your network then you should set this to
-the WINS server\'s IP\&.
+the WINS server\'s IP\&.        
 .IP 
 You should point this at your WINS server if you have a
 multi-subnetted network\&.
@@ -6351,6 +6690,41 @@ Samba source distribution\&.
 .IP 
 \fBExample:\fP
 \f(CW	wins server = 192\&.9\&.200\&.1\fP
+.IP 
+.IP "\fBwins hook (G)\fP" 
+.IP 
+When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database\&. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS\&.
+.IP 
+The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+.IP 
+wins_hook operation name nametype ttl IP_list
+.IP 
+The first argument is the operation and is one of "add", "delete",
+or "refresh"\&. In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information\&. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add\&.
+.IP 
+The second argument is the netbios name\&. If the name is not a legal
+name then the wins hook is not called\&. Legal names contain only
+letters, digits, hyphens, underscores and periods\&.
+.IP 
+The third argument is the netbios name type as a 2 digit hexadecimal
+number\&. 
+.IP 
+The fourth argument is the TTL (time to live) for the name in seconds\&.
+.IP 
+The fifth and subsequent arguments are the IP addresses currently
+registered for that name\&. If this list is empty then the name should
+be deleted\&.
+.IP 
+An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code\&. 
 .IP 
 .IP "\fBwins support (G)\fP" 
 .IP 
@@ -6380,7 +6754,6 @@ workgroup = MYGROUP
 .IP "\fBwritable (S)\fP" 
 .IP 
 Synonym for \fB"writeable"\fP for people who can\'t spell :-)\&.
-Pronounced "ritter-bull"\&.
 .IP 
 .IP "\fBwrite list (S)\fP" 
 .IP 
@@ -6441,51 +6814,52 @@ permitting), but only via spooling operations\&.
  
 
 .IP 
+.PP 
 .SH "WARNINGS" 
-.IP 
+.PP 
 Although the configuration file permits service names to contain
 spaces, your client software may not\&. Spaces will be ignored in
 comparisons anyway, so it shouldn\'t be a problem - but be aware of the
 possibility\&.
-.IP 
+.PP 
 On a similar note, many clients - especially DOS clients - limit
 service names to eight characters\&. \fBSmbd\fP has no
 such limitation, but attempts to connect from such clients will fail
 if they truncate the service names\&.  For this reason you should
 probably keep your service names down to eight characters in length\&.
-.IP 
+.PP 
 Use of the \fB[homes]\fP and \fB[printers]\fP
 special sections make life for an administrator easy, but the various
 combinations of default attributes can be tricky\&. Take extreme care
 when designing these sections\&. In particular, ensure that the
 permissions on spool directories are correct\&.
-.IP 
+.PP 
 .SH "VERSION" 
-.IP 
+.PP 
 This man page is correct for version 2\&.0 of the Samba suite\&.
-.IP 
+.PP 
 .SH "SEE ALSO" 
-.IP 
+.PP 
 \fBsmbd (8)\fP, \fBsmbclient (1)\fP,
 \fBnmbd (8)\fP, \fBtestparm (1)\fP,
 \fBtestprns (1)\fP, \fBSamba\fP,
 \fBnmblookup (1)\fP, \fBsmbpasswd (5)\fP,
 \fBsmbpasswd (8)\fP\&.
-.IP 
+.PP 
 .SH "AUTHOR" 
-.IP 
+.PP 
 The original Samba software and related utilities were created by
 Andrew Tridgell \fIsamba-bugs@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
-.IP 
+.PP 
 The original Samba man pages were written by Karl Auer\&. The man page
 sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
 \fIsamba-bugs@samba\&.org\fP\&.
-.IP 
+.PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
 comments etc\&.

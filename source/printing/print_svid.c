@@ -60,7 +60,17 @@ static void populate_printers(void)
 			if (((tmp = strchr(buf, ' ')) == NULL) ||
 			    ((tmp = strchr(++tmp, ' ')) == NULL))
 				continue;
-			name = ++tmp;
+
+			/*
+			 * In case we're only at the "for ".
+			 */
+
+            if(!strncmp("for ",++tmp,4))
+            {
+				tmp=strchr(tmp, ' ');
+				tmp++;
+			}
+			name = tmp;
 
 			/* truncate the ": ..." */
 			if ((tmp = strchr(name, ':')) != NULL)
@@ -69,9 +79,12 @@ static void populate_printers(void)
 			/* add it to the cache */
 			if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
 				ZERO_STRUCTP(ptmp);
-				ptmp->name = strdup(name);
+				if((ptmp->name = strdup(name)) == NULL)
+					DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
 				ptmp->next = printers;
 				printers = ptmp;
+			} else {
+				DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
 			}
 		}
 		pclose(fp);

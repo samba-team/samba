@@ -1,12 +1,12 @@
-PSTAMP=Mon Sep 29 17:26:14 BST 1997
 PKG=samba
 NAME=SMB based file/printer sharing
-VERSION=1.9.17p2,REV=1
 ARCH=sparc
+VERSION=2.0.6
 CATEGORY=system
-VENDOR=samba group
+VENDOR=Samba Group
 DESC=File and printer sharing for NT workstations
-CLASSES=none
-INTONLY=1
 HOTLINE=Please contact your local UNIX support group
-BASEDIR=/
+EMAIL=samba@samba.org
+CLASSES=none
+BASEDIR=/usr/local
+INTONLY=1

@@ -47,15 +47,6 @@ servers (such as Windows NT), and can also be used to allow a UNIX box
 to print to a printer attached to any SMB server (such as a PC running
 Windows NT).
 
-dit(url(bf(rpcclient))(rpcclient.1.html)) nl() nl() The url(bf(rpcclient)
-(1))(rpcclient.1.html) program is a client that can 'talk' to an
-SMB/CIFS MSRPC server.  Operations include things like managing a SAM
-Database (users, groups and aliases) in the same way as the Windows NT
-programs bf(User Manager for Domains) and bf(Server Manager for Domains);
-managing a remote registry in the same way as the Windows NT programs
-bf(REGEDT32.EXE) and bf(REGEDIT.EXE); viewing a remote event log (same
-as bf(EVENTVWR.EXE)).
-
 dit(url(bf(testparm))(testparm.1.html)) nl() nl() The url(bf(testparm
 (1)))(testparm.1.html) utility allows you to test your url(bf(smb.conf
 (5)))(smb.conf.5.html) configuration file.

@@ -46,10 +46,12 @@ enum SID_NAME_USE
 #define LSA_LOOKUPSIDS         0x0f
 #define LSA_OPENPOLICY         0x06
 #define LSA_OPENPOLICY2        0x2c
-#define LSA_OPENSECRET         0x1c
-#define LSA_QUERYSECRET        0x1e
+#define LSA_OPENSECRET         0x1C
 
-#define LSA_MAX_GROUPS 32
+/* XXXX these are here to get a compile! */
+#define LSA_LOOKUPRIDS      0xFD
+
+#define LSA_MAX_GROUPS 96
 #define LSA_MAX_SIDS 32
 
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
@@ -94,7 +96,7 @@ typedef struct obj_attr_info
 typedef struct lsa_q_open_pol_info
 {
 	uint32 ptr;         /* undocumented buffer pointer */
-	uint16 system_name; /* system name BUG!!! (should be \\server!) */
+	uint16 system_name; /* 0x5c - system name */
 	LSA_OBJ_ATTR attr ; /* object attributes */
 
 	uint32 des_access; /* desired access attributes */
@@ -132,7 +134,7 @@ typedef struct lsa_r_open_pol2_info
 typedef struct lsa_query_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint16 info_class; /* info class */
+    uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
 
@@ -153,73 +155,14 @@ typedef struct lsa_r_query_info
 
 } LSA_R_QUERY_INFO;
 
-/* LSA_Q_OPEN_SECRET - LSA Open Secret */
-typedef struct lsa_q_open_secret_info
-{
-	POLICY_HND pol;
-	UNIHDR hdr_secret;
-	UNISTR2 uni_secret;
-
-	uint32 des_access; /* desired access attributes */
-
-} LSA_Q_OPEN_SECRET;
-
-/* LSA_R_OPEN_SECRET - response to LSA Open Secret */
-typedef struct lsa_r_open_secret_info
-{
-	POLICY_HND pol;
-	uint32 status;
-
-} LSA_R_OPEN_SECRET;
-
-typedef struct lsa_secret_value_info
-{
-	uint32 ptr_secret;
-	STRHDR2 hdr_secret;
-	STRING2 enc_secret; /* encrypted, see nt_encrypt_string2 */
-
-} LSA_SECRET_VALUE;
-
-typedef struct lsa_secret_info_info
-{
-	uint32 ptr_value;
-	LSA_SECRET_VALUE value;
-
-	uint32 ptr_update;
-	NTTIME last_update; /* N.B. 64-bit alignment? */
-
-} LSA_SECRET_INFO;
-
-/* LSA_Q_QUERY_SECRET - LSA Query Secret */
-typedef struct lsa_q_query_secret_info
-{
-	POLICY_HND pol;
-
-	LSA_SECRET_INFO info;    /* [in, out] */
-	LSA_SECRET_INFO oldinfo;
-
-} LSA_Q_QUERY_SECRET;
-
-/* LSA_R_QUERY_SECRET - response to LSA Query Secret */
-typedef struct lsa_r_query_secret_info
-{
-	LSA_SECRET_INFO info;
-	LSA_SECRET_INFO oldinfo;
-
-	uint32 status;
-
-} LSA_R_QUERY_SECRET;
-
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint32 enum_context; /* enumeration context handle */
-	uint32 preferred_len; /* preferred maximum length */
+    uint32 enum_context; /* enumeration context handle */
+    uint32 preferred_len; /* preferred maximum length */
 
 } LSA_Q_ENUM_TRUST_DOM;
-
-#define MAX_TRUSTED_DOMS 10
 
 /* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
 typedef struct lsa_r_enum_trust_dom_info
@@ -229,12 +172,12 @@ typedef struct lsa_r_enum_trust_dom_info
 	uint32 ptr_enum_domains; /* buffer pointer to num domains */
 
 	/* this lot is only added if ptr_enum_domains is non-NULL */
-	uint32 num_domains2; /* number of domains */
-	UNIHDR2 hdr_domain_name[MAX_TRUSTED_DOMS];
-	UNISTR2 uni_domain_name[MAX_TRUSTED_DOMS];
-	DOM_SID2 domain_sid[MAX_TRUSTED_DOMS];
+		uint32 num_domains2; /* number of domains */
+		UNIHDR2 hdr_domain_name;
+		UNISTR2 uni_domain_name;
+		DOM_SID2 other_domain_sid;
 
-	uint32 status; /* return code */
+    uint32 status; /* return code */
 
 } LSA_R_ENUM_TRUST_DOM;
 
@@ -255,7 +198,7 @@ typedef struct lsa_r_close_info
 } LSA_R_CLOSE;
 
 
-#define MAX_REF_DOMAINS 10
+#define MAX_REF_DOMAINS 32
 
 /* DOM_TRUST_HDR */
 typedef struct dom_trust_hdr
@@ -276,13 +219,13 @@ typedef struct dom_trust_info
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
-	uint32 num_ref_doms_1; /* num referenced domains */
-	uint32 ptr_ref_dom; /* pointer to referenced domains */
-	uint32 max_entries; /* 32 - max number of entries */
-	uint32 num_ref_doms_2; /* num referenced domains */
+    uint32 num_ref_doms_1; /* num referenced domains */
+    uint32 ptr_ref_dom; /* pointer to referenced domains */
+    uint32 max_entries; /* 32 - max number of entries */
+    uint32 num_ref_doms_2; /* num referenced domains */
 
-	DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
-	DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
+    DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
+    DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
 
 } DOM_R_REF;
 
@@ -347,20 +290,19 @@ typedef struct lsa_r_lookup_sids
 
 } LSA_R_LOOKUP_SIDS;
 
-
 /* LSA_Q_LOOKUP_NAMES - LSA Lookup NAMEs */
 typedef struct lsa_q_lookup_names
 {
-    POLICY_HND pol; /* policy handle */
-    uint32 num_entries;
-    uint32 num_entries2;
-    UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* name buffer pointers */
-    UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
+	POLICY_HND pol; /* policy handle */
+	uint32 num_entries;
+	uint32 num_entries2;
+	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* name buffer pointers */
+	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
 
-    uint32 num_trans_entries; 
-    uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */
-    uint32 lookup_level; 
-    uint32 mapped_count; 
+	uint32 num_trans_entries;
+	uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */
+	uint32 lookup_level;
+	uint32 mapped_count;
 
 } LSA_Q_LOOKUP_NAMES;
 
@@ -372,15 +314,14 @@ typedef struct lsa_r_lookup_names
 
 	uint32 num_entries;
 	uint32 ptr_entries;
-	uint32 num_entries2; 
+	uint32 num_entries2;
 	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
 
-	uint32 mapped_count; 
+	uint32 mapped_count;
 
 	uint32 status; /* return code */
 
 } LSA_R_LOOKUP_NAMES;
-
 
 #endif /* _RPC_LSA_H */
 

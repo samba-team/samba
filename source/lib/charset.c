@@ -320,8 +320,9 @@ clean_and_exit:
 }
 
 /****************************************************************************
-initialise the client codepage.
+ Initialise the client codepage.
 ****************************************************************************/
+
 void codepage_initialise(int client_codepage)
 {
   int i;
@@ -369,6 +370,9 @@ for code page %d failed. Using default client codepage 850\n",
     for(i = 0; !((cp[i][0] == '\0') && (cp[i][1] == '\0')); i++)
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
+
+  /* Try and load the unicode map. */
+  load_dos_unicode_map(client_codepage);
 }
 
 /*******************************************************************

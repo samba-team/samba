@@ -119,7 +119,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
     return NULL;
   }
 
-  bzero((char *)rrec, sizeof(*rrec));
+  memset((char *)rrec, '\0', sizeof(*rrec));
 
   rrec->response_id = nmb->header.name_trn_id;
 

@@ -19,13 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-
-/*
- * Hmmm, only check on WITH_SSL after we have included includes.h
- * which pulls in config.h which is where WITH_SSL is defined, if 
- * at all :-)
+/* 
+ * since includes.h pulls in config.h which is were WITH_SSL will be 
+ * defined, we want to include includes.h before testing for WITH_SSL
+ * RJS 26-Jan-1999
  */
+
+#include "includes.h"
 
 #ifdef WITH_SSL  /* should always be defined if this module is compiled */
 

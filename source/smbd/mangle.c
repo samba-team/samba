@@ -63,11 +63,13 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
  *                  global.  There is a call to lp_magicchar() in server.c
  *                  that is used to override the initial value.
  *
- * basechars      - The set of 36 characters used for name mangling.  This
+ * MANGLE_BASE    - This is the number of characters we use for name mangling.
+ *
+ * basechars      - The set characters used for name mangling.  This
  *                  is static (scope is this file only).
  *
- * base36()       - Macro used to select a character from basechars (i.e.,
- *                  base36(n) will return the nth digit, modulo 36).
+ * mangle()       - Macro used to select a character from basechars (i.e.,
+ *                  mangle(n) will return the nth digit, modulo MANGLE_BASE).
  *
  * chartest       - array 0..255.  The index range is the set of all possible
  *                  values of a byte.  For each byte value, the content is a
@@ -110,12 +112,13 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
 char magic_char = '~';
 
-static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
+#define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
 static unsigned char chartest[256]  = { 0 };
 static BOOL          ct_initialized = False;
 
-#define base36(V) ((char)(basechars[(V) % 36]))
+#define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
 #define ILLEGAL_MASK  0x0f
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
@@ -148,7 +151,7 @@ static void init_chartest( void )
   char          *illegalchars = "*\\/?<>|\":";
   unsigned char *s;
   
-  bzero( (char *)chartest, 256 );
+  memset( (char *)chartest, '\0', 256 );
 
   for( s = (unsigned char *)illegalchars; *s; s++ )
     chartest[*s] = ILLEGAL_MASK;
@@ -514,7 +517,7 @@ void reset_mangled_cache( void )
  *
  *          If the extension of the raw name maps directly to the
  *          extension of the mangled name, then we'll store both names
- *          *without* extensions.  That way, we can provide consistant
+ *          *without* extensions.  That way, we can provide consistent
  *          reverse mangling for all names that match.  The test here is
  *          a bit more careful than the one done in earlier versions of
  *          mangle.c:
@@ -533,9 +536,9 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   ubi_cacheEntryPtr new_entry;
   char             *s1;
   char             *s2;
-  int               mangled_len;
-  int               raw_len;
-  int               i;
+  size_t               mangled_len;
+  size_t               raw_len;
+  size_t               i;
 
   /* If the cache isn't initialized, give up. */
   if( !mc_initialized )
@@ -561,7 +564,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
       }
     }
 
-  /* Allocate a new cache entry.  If the allcoation fails, just return. */
+  /* Allocate a new cache entry.  If the allocation fails, just return. */
   i = sizeof( ubi_cacheEntry ) + mangled_len + raw_len + 2;
   new_entry = malloc( i );
   if( !new_entry )
@@ -589,11 +592,13 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  *
  * ************************************************************************** **
  */
+
 BOOL check_mangled_cache( char *s )
-  {
+{
   ubi_cacheEntryPtr FoundPtr;
   char             *ext_start = NULL;
   char             *found_name;
+  char             *saved_ext = NULL;
 
   /* If the cache isn't initialized, give up. */
   if( !mc_initialized )
@@ -603,19 +608,34 @@ BOOL check_mangled_cache( char *s )
 
   /* If we didn't find the name *with* the extension, try without. */
   if( !FoundPtr )
-    {
+  {
     ext_start = strrchr( s, '.' );
     if( ext_start )
-      {
+    {
+      if((saved_ext = strdup(ext_start)) == NULL)
+        return False;
+
       *ext_start = '\0';
       FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
-      *ext_start = '.';
-      }
+      /* 
+       * At this point s is the name without the
+       * extension. We re-add the extension if saved_ext
+       * is not null, before freeing saved_ext.
+       */
     }
+  }
 
   /* Okay, if we haven't found it we're done. */
   if( !FoundPtr )
+  {
+    if(saved_ext)
+    {
+      /* Replace the saved_ext as it was truncated. */
+      (void)pstrcat( s, saved_ext );
+      free(saved_ext);
+    }
     return( False );
+  }
 
   /* If we *did* find it, we need to copy it into the string buffer. */
   found_name = (char *)(FoundPtr + 1);
@@ -624,13 +644,17 @@ BOOL check_mangled_cache( char *s )
   DEBUG( 3, ("Found %s on mangled stack ", s) );
 
   (void)pstrcpy( s, found_name );
-  if( ext_start )
-    (void)pstrcat( s, ext_start );
+  if( saved_ext )
+  {
+    /* Replace the saved_ext as it was truncated. */
+    (void)pstrcat( s, saved_ext );
+    free(saved_ext);
+  }
 
   DEBUG( 3, ("as %s\n", s) );
 
   return( True );
-  } /* check_mangled_cache */
+} /* check_mangled_cache */
 
 
 /* ************************************************************************** **
@@ -652,6 +676,12 @@ static char *map_filename( char *s,         /* This is null terminated */
   pstrcpy( matching_bit, "" );  /* Match but no star gets this. */
   pp = pat;                     /* Initialize the pointers. */
   sp = s;
+
+  if( strequal(s, ".") || strequal(s, ".."))
+    {
+    return NULL;                /* Do not map '.' and '..' */
+    }
+
   if( (len == 1) && (*pattern == '*') )
     {
     return NULL;                /* Impossible, too ambiguous for */
@@ -807,7 +837,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
  */
 void mangle_name_83( char *s)
   {
-  int csum = str_checksum(s);
+  int csum;
   char *p;
   char extension[4];
   char base[9];
@@ -829,7 +859,11 @@ void mangle_name_83( char *s)
       csum = str_checksum( s );
       *p = '.';
       }
+    else
+      csum = str_checksum(s);
     }
+  else
+    csum = str_checksum(s);
 
   strupper( s );
 
@@ -855,7 +889,7 @@ void mangle_name_83( char *s)
               }
             else 
               {
-              extension[extlen++] = base36( (unsigned char)*p );
+              extension[extlen++] = mangle( (unsigned char)*p );
               }
             p += 2;
             break;
@@ -889,7 +923,7 @@ void mangle_name_83( char *s)
           }
         else 
           {
-          base[baselen++] = base36( (unsigned char)*p );
+          base[baselen++] = mangle( (unsigned char)*p );
           }
         p += 2;
         break;
@@ -906,10 +940,10 @@ void mangle_name_83( char *s)
     }
   base[baselen] = 0;
 
-  csum = csum % (36*36);
+  csum = csum % (MANGLE_BASE*MANGLE_BASE);
 
   (void)slprintf(s, 12, "%s%c%c%c",
-                 base, magic_char, base36( csum/36 ), base36( csum ) );
+                 base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
 
   if( *extension )
     {
@@ -935,6 +969,11 @@ void mangle_name_83( char *s)
  *                    signal that a client does not require name mangling,
  *                    thus skipping the name mangling even on shares which
  *                    have name-mangling turned on.
+ *          cache83 - If False, the mangled name cache will not be updated.
+ *                    This is usually used to prevent that we overwrite
+ *                    a conflicting cache entry prematurely, i.e. before
+ *                    we know whether the client is really interested in the
+ *                    current name.  (See PR#13758).  UKD.
  *          snum    - Share number.  This identifies the share in which the
  *                    name exists.
  *
@@ -943,11 +982,11 @@ void mangle_name_83( char *s)
  *
  * ****************************************************************************
  */
-BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
+BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	char *map;
-	DEBUG(5,("name_map_mangle( %s, %s, %d )\n", 
-		 OutName, need83?"TRUE":"FALSE", snum));
+	DEBUG(5,("name_map_mangle( %s, need83 = %s, cache83 = %s, %d )\n", OutName,
+		need83 ? "TRUE" : "FALSE", cache83 ? "TRUE" : "FALSE", snum));
 
 #ifdef MANGLE_LONG_FILENAMES
 	if( !need83 && is_illegal_name(OutName) )
@@ -963,17 +1002,19 @@ BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
 
 	/* check if it's already in 8.3 format */
 	if (need83 && !is_8_3(OutName, True)) {
-		char *tmp; 
+		char *tmp = NULL; 
 
 		if (!lp_manglednames(snum)) {
 			return(False);
 		}
 
 		/* mangle it into 8.3 */
-		tmp = strdup(OutName);
+		if (cache83)
+			tmp = strdup(OutName);
+
 		mangle_name_83(OutName);
 
-		if(tmp) {
+		if(tmp != NULL) {
 			cache_mangled_name(OutName, tmp);
 			free(tmp);
 		}

@@ -40,7 +40,7 @@ struct sync_record {
 	fstring server;
 	pstring fname;
 	struct in_addr ip;
-	int pid;
+	pid_t pid;
 };
 
 /* a linked list of current sync connections */
@@ -92,7 +92,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!cli_session_setup(&cli, local_machine, "", "", 1, "", 0, workgroup)) {
+	if (!cli_session_setup(&cli, "", "", 1, "", 0, workgroup)) {
 		cli_shutdown(&cli);
 		return;
 	}
@@ -103,7 +103,7 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	/* Fetch a workgroup list. */
-	cli_NetServerEnum(&cli, workgroup, 
+	cli_NetServerEnum(&cli, cli.server_domain?cli.server_domain:workgroup, 
 			  local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 	
@@ -147,7 +147,7 @@ void sync_browse_lists(struct work_record *work,
 
 	slprintf(s->fname, sizeof(pstring)-1,
 		 "%s/sync.%d", lp_lockdir(), counter++);
-	string_sub(s->fname,"//", "/");
+	all_string_sub(s->fname,"//", "/", 0);
 	
 	DLIST_ADD(syncs, s);
 

@@ -37,6 +37,9 @@ extern struct in_addr loopback_ip;
 
 static void queue_packet(struct packet_struct *packet);
 
+BOOL rescan_listen_set = False;
+
+
 /*******************************************************************
   The global packet linked-list. Incoming entries are 
   added to the end of this list. It is supposed to remain fairly 
@@ -88,6 +91,43 @@ void set_nb_flags(char *buf, uint16 nb_flags)
 {
   *buf++ = ((nb_flags & NB_FLGMSK) & 0xFF);
   *buf = '\0';
+}
+
+/***************************************************************************
+Dumps out the browse packet data.
+**************************************************************************/
+
+static void debug_browse_data(char *outbuf, int len)
+{
+  int i,j;
+
+  DEBUG( 4, ( "debug_browse_data():\n" ) );
+  for (i = 0; i < len; i+= 16)
+  {
+    DEBUGADD( 4, ( "%3x char ", i ) );
+
+    for (j = 0; j < 16; j++)
+    {
+      unsigned char x = outbuf[i+j];
+      if (x < 32 || x > 127) 
+        x = '.';
+	    
+      if (i+j >= len)
+        break;
+      DEBUGADD( 4, ( "%c", x ) );
+    }
+
+    DEBUGADD( 4, ( "%*s hex", 16-j, "" ) );
+
+    for (j = 0; j < 16; j++)
+    {
+      if (i+j >= len) 
+        break;
+      DEBUGADD( 4, ( " %02x", (unsigned char)outbuf[i+j] ) );
+    }
+
+    DEBUGADD( 4, ("\n") );
+  }
 }
 
 /***************************************************************************
@@ -143,7 +183,6 @@ static BOOL send_netbios_packet(struct packet_struct *p)
 
 static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmbname,
                                                             BOOL bcast,
-                                                            BOOL rec_des,
                                                             struct in_addr to_ip)
 {
   struct packet_struct *packet = NULL;
@@ -156,13 +195,13 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
     return NULL;
   }
     
-  bzero((char *)packet,sizeof(*packet));
+  memset((char *)packet,'\0',sizeof(*packet));
 
   nmb = &packet->packet.nmb;
 
   nmb->header.name_trn_id = generate_name_trn_id();
   nmb->header.response = False;
-  nmb->header.nm_flags.recursion_desired = rec_des;
+  nmb->header.nm_flags.recursion_desired = False;
   nmb->header.nm_flags.recursion_available = False;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = False;
@@ -203,13 +242,17 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
     return False;
   }
 
-  bzero((char *)nmb->additional,sizeof(struct res_rec));
+  memset((char *)nmb->additional,'\0',sizeof(struct res_rec));
 
   nmb->additional->rr_name  = nmb->question.question_name;
   nmb->additional->rr_type  = RR_TYPE_NB;
   nmb->additional->rr_class = RR_CLASS_IN;
 
-  nmb->additional->ttl = lp_max_ttl();
+  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
+  if (nmb->header.nm_flags.bcast)
+    nmb->additional->ttl = PERMANENT_TTL;
+  else
+    nmb->additional->ttl = lp_max_ttl();
 
   nmb->additional->rdlength = 6;
 
@@ -431,12 +474,11 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
   struct packet_struct *p;
   struct response_record *rrec;
   BOOL bcast = (subrec == unicast_subnet) ? False : True;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, rec_des,
+  if(( p = create_and_init_netbios_packet(nmbname, bcast, 
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -481,7 +523,6 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
   struct packet_struct *p;
   struct response_record *rrec;
   BOOL bcast = False;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
   BOOL ret;
      
   /* Sanity check. */
@@ -495,7 +536,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
   if(assert_check_subnet(subrec))
     return NULL;
      
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, rec_des,
+  if(( p = create_and_init_netbios_packet(nmbname, bcast,
                              subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -542,14 +583,13 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
                           struct in_addr release_ip)
 {
   BOOL bcast = (subrec == unicast_subnet) ? False : True;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
   struct packet_struct *p;
   struct response_record *rrec;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, rec_des,
+  if(( p = create_and_init_netbios_packet(nmbname, bcast, 
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -601,14 +641,13 @@ struct response_record *queue_refresh_name( struct subnet_record *subrec,
                           struct in_addr refresh_ip)
 {
   BOOL bcast = (subrec == unicast_subnet) ? False : True;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
   struct packet_struct *p;
   struct response_record *rrec;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(&namerec->name, bcast,rec_des,
+  if(( p = create_and_init_netbios_packet(&namerec->name, bcast,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -650,7 +689,6 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
   struct packet_struct *p;
   struct response_record *rrec;
   BOOL bcast = True;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
 
   if ((subrec == unicast_subnet) || (subrec == wins_server_subnet))
     bcast = False;
@@ -658,7 +696,7 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast,rec_des,
+  if(( p = create_and_init_netbios_packet(nmbname, bcast,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -700,10 +738,8 @@ struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
   struct packet_struct *p;
   struct response_record *rrec;
   BOOL bcast = False;
-  BOOL rec_des = True;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, rec_des,
-		to_ip)) == NULL)
+  if(( p = create_and_init_netbios_packet(nmbname, bcast, to_ip)) == NULL)
     return NULL;
 
   if(initiate_name_query_packet_from_wins_server( p ) == False)
@@ -745,7 +781,6 @@ struct response_record *queue_node_status( struct subnet_record *subrec,
   struct packet_struct *p;
   struct response_record *rrec;
   BOOL bcast = False;
-  BOOL rec_des = (subrec == wins_server_subnet) ? True : False;
 
   /* Sanity check. */
   if(subrec != unicast_subnet)
@@ -758,7 +793,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast,rec_des,
+  if(( p = create_and_init_netbios_packet(nmbname, bcast,
                              send_ip)) == NULL)
     return NULL;
 
@@ -895,10 +930,10 @@ for id %hu\n",
   nmb->header.nscount = 0;
   nmb->header.arcount = 0;
   
-  bzero((char*)&nmb->question,sizeof(nmb->question));
+  memset((char*)&nmb->question,'\0',sizeof(nmb->question));
   
   nmb->answers = &answers;
-  bzero((char*)nmb->answers,sizeof(*nmb->answers));
+  memset((char*)nmb->answers,'\0',sizeof(*nmb->answers));
   
   nmb->answers->rr_name  = orig_nmb->question.question_name;
   nmb->answers->rr_type  = orig_nmb->question.question_type;
@@ -1013,45 +1048,43 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   {
     case ANN_HostAnnouncement:
     {
+      debug_browse_data(buf, len);
       process_host_announce(subrec, p, buf+1);
       break;
     }
     case ANN_DomainAnnouncement:
     {
+      debug_browse_data(buf, len);
       process_workgroup_announce(subrec, p, buf+1);
       break;
     }
     case ANN_LocalMasterAnnouncement:
     {
+      debug_browse_data(buf, len);
       process_local_master_announce(subrec, p, buf+1);
       break;
     }
     case ANN_AnnouncementRequest:
     {
+      debug_browse_data(buf, len);
       process_announce_request(subrec, p, buf+1);
       break;
     }
     case ANN_Election:
     {
+      debug_browse_data(buf, len);
       process_election(subrec, p, buf+1);
       break;
     }
     case ANN_GetBackupListReq:
     {
-
-      /* This is one occasion where we change a subnet that is
-        given to us. If the packet was sent to WORKGROUP<1b> instead
-        of WORKGROUP<1d> then it was unicast to us a domain master
-        browser. Change subrec to unicast.
-      */
-      if(dgram->dest_name.name_type == 0x1b)
-        subrec = unicast_subnet;
-
+      debug_browse_data(buf, len);
       process_get_backup_list_request(subrec, p, buf+1);
       break;
     }
     case ANN_GetBackupListResp:
     {
+      debug_browse_data(buf, len);
       /* We never send ANN_GetBackupListReq so we
          should never get these. */
       DEBUG(0,("process_browse_packet: Discarding GetBackupListResponse \
@@ -1060,6 +1093,7 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
     }
     case ANN_ResetBrowserState:
     {
+      debug_browse_data(buf, len);
       process_reset_browser(subrec, p, buf+1);
       break;
     }
@@ -1069,6 +1103,7 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
          on the unicast subnet. */
       subrec = unicast_subnet;
 
+      debug_browse_data(buf, len);
       process_master_browser_announce(subrec, p, buf+1);
       break;
     }
@@ -1077,6 +1112,7 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
       /* 
        * We don't currently implement this. Log it just in case.
        */
+      debug_browse_data(buf, len);
       DEBUG(10,("process_browse_packet: On subnet %s ignoring browse packet \
 command ANN_BecomeBackup from %s IP %s to %s\n",
             subrec->subnet_name, nmb_namestr(&dgram->source_name),
@@ -1085,6 +1121,7 @@ command ANN_BecomeBackup from %s IP %s to %s\n",
     }
     default:
     {
+      debug_browse_data(buf, len);
       DEBUG(0,("process_browse_packet: On subnet %s ignoring browse packet \
 command code %d from %s IP %s to %s\n", 
             subrec->subnet_name, command, nmb_namestr(&dgram->source_name),
@@ -1123,7 +1160,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   {
     case ANN_HostAnnouncement:
     {
-      dump_data(4, buf, len);
+      debug_browse_data(buf, len);
       process_lm_host_announce(subrec, p, buf+1);
       break;
     }
@@ -1208,11 +1245,10 @@ static void process_dgram(struct packet_struct *p)
 	   nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
+ 
   if (len <= 0)
     return;
 
-  dump_data(100, buf2, len);
- 
   /* Datagram packet received for the browser mailslot */
   if (strequal(smb_buf(buf),BROWSE_MAILSLOT))
   {
@@ -1687,6 +1723,10 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
   }
 
   *listen_number = (count*2) + 2;
+
+  if (*ppset) free(*ppset);
+  if (*psock_array) free(*psock_array);
+
   *ppset = pset;
   *psock_array = sock_array;
  
@@ -1710,13 +1750,14 @@ BOOL listen_for_packets(BOOL run_election)
   int dns_fd;
 #endif
 
-  if(listen_set == NULL)
+  if(listen_set == NULL || rescan_listen_set)
   {
     if(create_listen_fdset(&listen_set, &sock_array, &listen_number))
     {
       DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
       return True;
     }
+    rescan_listen_set = False;
   }
 
   memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));
@@ -1749,7 +1790,7 @@ BOOL listen_for_packets(BOOL run_election)
   BlockSignals(False, SIGUSR2);
 #endif /* SIGUSR2 */
 
-  selrtn = sys_select(256,&fds,NULL, &timeout);
+  selrtn = sys_select(FD_SETSIZE,&fds,&timeout);
 
   /* We can only take signals when we are in the select - block them again here. */
 
@@ -1864,7 +1905,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   char *ptr,*p2;
   char tmp[4];
 
-  bzero((char *)&p,sizeof(p));
+  memset((char *)&p,'\0',sizeof(p));
 
   if(ismyip(dest_ip))
     loopback_this_packet = True;
@@ -1873,7 +1914,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
 
   /* DIRECT GROUP or UNIQUE datagram. */
   dgram->header.msg_type = unique ? 0x10 : 0x11; 
-  dgram->header.flags.node_type = M_NODE | 0x40;
+  dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
   dgram->header.dgm_id = name_trn_id;
@@ -1920,7 +1961,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
                     nmb_namestr(&dgram->source_name), inet_ntoa(src_ip)));
   DEBUG(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), inet_ntoa(dest_ip)));
 
-  dump_data(4, buf, len);
+  debug_browse_data(buf, len);
 
   if(loopback_this_packet)
   {

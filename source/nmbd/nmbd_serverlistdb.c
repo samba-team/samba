@@ -156,7 +156,7 @@ workgroup %s. This is a bug.\n", name, work->work_group));
     return NULL;
   }
 
-  bzero((char *)servrec,sizeof(*servrec));
+  memset((char *)servrec,'\0',sizeof(*servrec));
  
   servrec->subnet = work->subnet;
  
@@ -399,7 +399,8 @@ void write_browse_list(time_t t, BOOL force_write)
     slprintf(tmp, sizeof(tmp)-1, "\"%s\"", my_netbios_names[i]);
     fprintf(fp, "%-25s ", tmp);
     fprintf(fp, "%08x ", stype);
-    slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", lp_serverstring());
+    slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", 
+	     string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
     fprintf(fp, "%-30s", tmp);
     fprintf(fp, "\"%s\"\n", global_myworkgroup);
   }

@@ -30,6 +30,10 @@
 #include <errno.h>
 #include "realcalls.h"
 
+#ifndef NULL
+# define NULL ((void *)0)
+#endif
+
  int open(char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
@@ -687,7 +691,7 @@
 		static double xx[70];
 		void *d;
 		d = (void *)readdir(dir);
-		if (!d) return (void *)0;
+		if (!d) return NULL;
 		dirent64_convert(d, xx);
 		return xx;
 	}
@@ -699,3 +703,4 @@
 {
 	return smbw_fork();
 }
+

@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-#ifdef HAVE_SYSV_IPC
+#ifdef USE_SYSV_IPC
 
 extern int DEBUGLEVEL;
 
@@ -33,7 +33,11 @@ extern int DEBUGLEVEL;
 #define SHM_MAGIC 0x53484100
 #define SHM_VERSION 2
 
+#ifdef SHM_R
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
+#else
+#define IPC_PERMS 0644
+#endif
 
 
 #ifdef SECURE_SEMAPHORES
@@ -320,7 +324,7 @@ static BOOL shm_free(int offset)
 	shm_header_p->consistent = False;
 	
 	DEBUG(6,("shm_free : freeing %d bytes at offset %d\n",
-		 header_p->size*CellSize,offset));
+		 (int)(header_p->size*CellSize),(int)offset));
 
 	/* zero the area being freed - this allows us to find bugs faster */
 	memset(shm_offset2addr(offset), 0, header_p->size*CellSize);
@@ -524,6 +528,7 @@ static struct shmem_ops shmops = {
 /*******************************************************************
   open the shared memory
   ******************************************************************/
+
 struct shmem_ops *sysv_shm_open(int ronly)
 {
 	BOOL other_processes;
@@ -531,7 +536,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	struct semid_ds sem_ds;
 	union semun su;
 	int i;
-	int pid;
+	pid_t pid;
+	struct passwd *root_pwd = sys_getpwuid((uid_t)0);
+	gid_t root_gid = root_pwd ? root_pwd->pw_gid : (gid_t)0;
 
 	read_only = ronly;
 
@@ -589,15 +596,16 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	hash_size = sem_ds.sem_nsems-1;
 
 	if (!read_only) {
-		if (sem_ds.sem_perm.cuid != 0 || sem_ds.sem_perm.cgid != 0) {
-			DEBUG(0,("ERROR: root did not create the semaphore\n"));
+		if (sem_ds.sem_perm.cuid != 0 || ((sem_ds.sem_perm.cgid != root_gid) && (sem_ds.sem_perm.cgid != 0))) {
+			DEBUG(0,("ERROR: root did not create the semaphore: semgid=%u, rootgid=%u\n",
+                  (unsigned int)sem_ds.sem_perm.cgid, (unsigned int)root_gid));
 			return NULL;
 		}
 
 		if (semctl(sem_id, 0, GETVAL, su) == 0 &&
-		    !process_exists((pid=semctl(sem_id, 0, GETPID, su)))) {
+		    !process_exists((pid=(pid_t)semctl(sem_id, 0, GETPID, su)))) {
 			DEBUG(0,("WARNING: clearing global IPC lock set by dead process %d\n",
-				 pid));
+				 (int)pid));
 			su.val = 1;
 			if (semctl(sem_id, 0, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear global lock. Error was %s\n",
@@ -620,9 +628,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 
 	for (i=1;i<hash_size+1;i++) {
 		if (semctl(sem_id, i, GETVAL, su) == 0 && 
-		    !process_exists((pid=semctl(sem_id, i, GETPID, su)))) {
+		    !process_exists((pid=(pid_t)semctl(sem_id, i, GETPID, su)))) {
 			DEBUG(1,("WARNING: clearing IPC lock %d set by dead process %d\n", 
-				 i, pid));
+				 i, (int)pid));
 			su.val = 1;
 			if (semctl(sem_id, i, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear IPC lock %d. Error was %s\n",
@@ -680,7 +688,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	}
 
 	if (!read_only) {
-		if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
+		if (shm_ds.shm_perm.cuid != 0 || ((shm_ds.shm_perm.cgid != root_gid) && (shm_ds.shm_perm.cgid != 0))) {
 			DEBUG(0,("ERROR: root did not create the shmem\n"));
 			global_unlock();
 			return NULL;

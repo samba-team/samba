@@ -25,23 +25,24 @@
 /*************************************************************
 add a new user to the local smbpasswd file
 *************************************************************/
-static BOOL add_new_user(char *user_name, uid_t uid,
-				uint16 acb_info,
-				uchar *new_p16, uchar *new_nt_p16)
+static BOOL add_new_user(char *user_name, uid_t uid, BOOL trust_account, 
+			 BOOL disable_user, BOOL set_no_password,
+			 uchar *new_p16, uchar *new_nt_p16)
 {
 	struct smb_passwd new_smb_pwent;
 
-	pwdb_init_smb(&new_smb_pwent);
-
 	/* Create a new smb passwd entry and set it to the given password. */
-	new_smb_pwent.unix_uid = uid;
-	new_smb_pwent.nt_name = user_name; 
+	new_smb_pwent.smb_userid = uid;
+	new_smb_pwent.smb_name = user_name; 
 	new_smb_pwent.smb_passwd = NULL;
 	new_smb_pwent.smb_nt_passwd = NULL;
-	new_smb_pwent.acct_ctrl = acb_info;
+	new_smb_pwent.acct_ctrl = (trust_account ? ACB_WSTRUST : ACB_NORMAL);
 	
-	if (IS_BITS_CLR_ALL(acb_info, ACB_DISABLED | ACB_PWNOTREQ))
-	{
+	if(disable_user) {
+		new_smb_pwent.acct_ctrl |= ACB_DISABLED;
+	} else if (set_no_password) {
+		new_smb_pwent.acct_ctrl |= ACB_PWNOTREQ;
+	} else {
 		new_smb_pwent.smb_passwd = new_p16;
 		new_smb_pwent.smb_nt_passwd = new_nt_p16;
 	}
@@ -51,93 +52,83 @@ static BOOL add_new_user(char *user_name, uid_t uid,
 
 
 /*************************************************************
-change a password entry in the local smbpasswd file.
-
-when modifying an account, set acb_mask to those bits that
-require changing (to zero or one) and set acb_info to the
-value required in those bits.  all bits NOT set in acb_mask
-will NOT be modified.
-
-when _adding_ an account, acb_mask must be set to 0xFFFF and
-it is ignored, btw :-)
-
+change a password entry in the local smbpasswd file
 *************************************************************/
-BOOL local_password_change(char *user_name,
-				BOOL add_user,
-				uint16 acb_info, uint16 acb_mask,
-				char *new_passwd, 
-				char *err_str, size_t err_str_len,
-				char *msg_str, size_t msg_str_len)
+
+BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
+			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
+			   char *new_passwd, 
+			   char *err_str, size_t err_str_len,
+			   char *msg_str, size_t msg_str_len)
 {
-	const struct passwd  *pwd;
+	struct passwd  *pwd;
+	void *vp;
 	struct smb_passwd *smb_pwent;
-	static struct smb_passwd new_pwent;
-	static uchar           new_p16[16];
-	static uchar           new_nt_p16[16];
-	fstring unix_name;
-	uid_t unix_uid;
+	uchar           new_p16[16];
+	uchar           new_nt_p16[16];
 
 	*err_str = '\0';
 	*msg_str = '\0';
 
-	pwd = Get_Pwnam(user_name, False);
+	pwd = sys_getpwnam(user_name);
 	
 	/*
-	 * Check for a trust account.
+	 * Check for a local account.
 	 */
 	
-	if ((acb_info & acb_mask) != acb_info)
-	{
-		slprintf(err_str, err_str_len - 1, "programmer error: acb_info (%x) requests bits to be set outside of acb_mask (%x) range\n", acb_info, acb_mask);
-	}
-
-	if (pwd == NULL)
-	{
-		if (!IS_BITS_SET_ALL(acb_info, ACB_NORMAL))
-		{
-			slprintf(err_str, err_str_len - 1, "User %s does not \
-exist in system password file (usually /etc/passwd).  \
-Cannot add trust account without a valid system user.\n", user_name);
-		}
-		else
-		{
-			slprintf(err_str, err_str_len - 1, "User %s does not \
-exist in system password file (usually /etc/passwd).\n", user_name);
-		}
+	if(!pwd) {
+		slprintf(err_str, err_str_len - 1, "User %s does not \
+exist in system password file (usually /etc/passwd). Cannot add \
+account without a valid local system user.\n", user_name);
 		return False;
 	}
-
-	unix_uid = pwd->pw_uid;
-	fstrcpy(unix_name, pwd->pw_name);
 
 	/* Calculate the MD4 hash (NT compatible) of the new password. */
 	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
+	/*
+	 * Open the smbpaswd file.
+	 */
+	vp = startsmbpwent(True);
+	if (!vp && errno == ENOENT) {
+		FILE *fp;
+		slprintf(msg_str,msg_str_len-1,
+			"smbpasswd file did not exist - attempting to create it.\n");
+		fp = sys_fopen(lp_smb_passwd_file(), "w");
+		if (fp) {
+			fprintf(fp, "# Samba SMB password file\n");
+			fclose(fp);
+			vp = startsmbpwent(True);
+		}
+	}
+
+	if (!vp) {
+		slprintf(err_str, err_str_len-1, "Cannot open file %s. Error was %s\n",
+			lp_smb_passwd_file(), strerror(errno) );
+		return False;
+	}
+  
 	/* Get the smb passwd entry for this user */
 	smb_pwent = getsmbpwnam(user_name);
-	if (smb_pwent == NULL)
-	{
-		if (!add_user)
-		{
+	if (smb_pwent == NULL) {
+		if(add_user == False) {
 			slprintf(err_str, err_str_len-1,
-				"Failed to find entry for user %s.\n", unix_name);
+				"Failed to find entry for user %s.\n", pwd->pw_name);
+			endsmbpwent(vp);
 			return False;
 		}
 
-		if (add_new_user(user_name, unix_uid, acb_info,
-				 new_p16, new_nt_p16))
-		{
+		if (add_new_user(user_name, pwd->pw_uid, trust_account, disable_user,
+				 set_no_password, new_p16, new_nt_p16)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
+			endsmbpwent(vp);
 			return True;
-		}
-		else
-		{
+		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
+			endsmbpwent(vp);
 			return False;
 		}
-	}
-	else
-	{
+	} else {
 		/* the entry already existed */
 		add_user = False;
 	}
@@ -147,25 +138,44 @@ exist in system password file (usually /etc/passwd).\n", user_name);
 	 * and the valid last change time.
 	 */
 
-	memcpy(&new_pwent, smb_pwent, sizeof(new_pwent));
-	new_pwent.nt_name = user_name; 
-	new_pwent.acct_ctrl &= ~acb_mask;
-	new_pwent.acct_ctrl |= (acb_info & acb_mask);
-	new_pwent.smb_passwd = NULL;
-	new_pwent.smb_nt_passwd = NULL;
-
-	if (IS_BITS_CLR_ALL(acb_info, ACB_DISABLED | ACB_PWNOTREQ))
-	{
-		new_pwent.smb_passwd = new_p16;
-		new_pwent.smb_nt_passwd = new_nt_p16;
+	if(disable_user) {
+		smb_pwent->acct_ctrl |= ACB_DISABLED;
+	} else if (enable_user) {
+		if(smb_pwent->smb_passwd == NULL) {
+			smb_pwent->smb_passwd = new_p16;
+			smb_pwent->smb_nt_passwd = new_nt_p16;
+		}
+		smb_pwent->acct_ctrl &= ~ACB_DISABLED;
+	} else if (set_no_password) {
+		smb_pwent->acct_ctrl |= ACB_PWNOTREQ;
+		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
+		smb_pwent->smb_passwd = NULL;
+		smb_pwent->smb_nt_passwd = NULL;
+	} else {
+		/*
+		 * If we're dealing with setting a completely empty user account
+		 * ie. One with a password of 'XXXX', but not set disabled (like
+		 * an account created from scratch) then if the old password was
+		 * 'XX's then getsmbpwent will have set the ACB_DISABLED flag.
+		 * We remove that as we're giving this user their first password
+		 * and the decision hasn't really been made to disable them (ie.
+		 * don't create them disabled). JRA.
+		 */
+		if((smb_pwent->smb_passwd == NULL) && (smb_pwent->acct_ctrl & ACB_DISABLED))
+			smb_pwent->acct_ctrl &= ~ACB_DISABLED;
+		smb_pwent->acct_ctrl &= ~ACB_PWNOTREQ;
+		smb_pwent->smb_passwd = new_p16;
+		smb_pwent->smb_nt_passwd = new_nt_p16;
 	}
 	
-	if (!mod_smbpwd_entry(&new_pwent, True))
-	{
+	if(mod_smbpwd_entry(smb_pwent,True) == False) {
 		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n",
-			unix_name);
+			pwd->pw_name);
+		endsmbpwent(vp);
 		return False;
 	}
+
+	endsmbpwent(vp);
 
 	return True;
 }

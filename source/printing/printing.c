@@ -49,12 +49,12 @@ Build the print command in the supplied buffer. This means getting the
 print command for the service and inserting the printer name and the
 print file name. Return NULL on error, else the passed buffer pointer.
 ****************************************************************************/
-static char *build_print_command(connection_struct *conn, int snum,
+static char *build_print_command(connection_struct *conn,
 				 char *command, 
-				 char *syscmd, char *filename1)
+				 char *syscmd, char *filename)
 {
+	int snum = SNUM(conn);
 	char *tstr;
-	pstring filename;
   
 	/* get the print command for the service. */
 	tstr = command;
@@ -72,13 +72,8 @@ static char *build_print_command(connection_struct *conn, int snum,
 		DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
 	}
   
-	if (strstr(syscmd,"%s")) {
-		pstrcpy(filename,filename1);
-    
-		string_sub(syscmd, "%s", filename);
-	}
-  
-	string_sub(syscmd, "%f", filename1);
+	pstring_sub(syscmd, "%s", filename);
+	pstring_sub(syscmd, "%f", filename);
   
 	/* Does the service have a printername? If not, make a fake
            and empty */
@@ -90,17 +85,10 @@ static char *build_print_command(connection_struct *conn, int snum,
 		tstr = SERVICE(snum);
 	}
   
-	string_sub(syscmd, "%p", tstr);
+	pstring_sub(syscmd, "%p", tstr);
   
-	if (conn != NULL)
-	{
-		standard_sub(conn, syscmd);
-	}
-	else
-	{
-		standard_sub_basic(syscmd);
-	}
-
+	standard_sub(conn,syscmd);
+  
 	return (syscmd);
 }
 
@@ -108,9 +96,10 @@ static char *build_print_command(connection_struct *conn, int snum,
 /****************************************************************************
 print a file - called on closing the file
 ****************************************************************************/
-void print_file(connection_struct *conn, int snum, files_struct *file)
+void print_file(connection_struct *conn, files_struct *file)
 {
 	pstring syscmd;
+	int snum = SNUM(conn);
 	char *tempstr;
 
 	*syscmd = 0;
@@ -121,7 +110,7 @@ void print_file(connection_struct *conn, int snum, files_struct *file)
 		return;
 	}
 
-	tempstr = build_print_command(conn, snum,
+	tempstr = build_print_command(conn, 
 				      PRINTCOMMAND(snum), 
 				      syscmd, file->fsp_name);
 	if (tempstr != NULL) {
@@ -252,7 +241,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the Job and Total columns must be integer */
-  if (!isdigit(*tok[JOBTOK]) || !isdigit(*tok[TOTALTOK])) return(False);
+  if (!isdigit((int)*tok[JOBTOK]) || !isdigit((int)*tok[TOTALTOK])) return(False);
 
   buf->job = atoi(tok[JOBTOK]);
   buf->size = atoi(tok[TOTALTOK]);
@@ -275,6 +264,8 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
         break;
       }
     }
+    /* Ensure null termination. */
+    buf->file[sizeof(buf->file)-1] = '\0';
   }
 
 #ifdef PRIOTOK
@@ -345,7 +336,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
     return(False);
   }
 
-  if (!isdigit(*tokarr[LPRNG_JOBTOK]) || !isdigit(*tokarr[LPRNG_TOTALTOK])) {
+  if (!isdigit((int)*tokarr[LPRNG_JOBTOK]) || !isdigit((int)*tokarr[LPRNG_TOTALTOK])) {
     return(False);
   }
 
@@ -354,7 +345,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
     buf->status = LPQ_PRINTING;
-  } else if (isdigit(*tokarr[LPRNG_RANKTOK])) {
+  } else if (isdigit((int)*tokarr[LPRNG_RANKTOK])) {
     buf->status = LPQ_QUEUED;
   } else {
     buf->status = LPQ_PAUSED;
@@ -390,6 +381,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
         break;
       }
     }
+    /* Ensure null termination. */
+    buf->file[sizeof(buf->file)-1] = '\0';
   }
 
   return(True);
@@ -415,9 +408,9 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  string_sub(line,"standard input","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  pstring_sub(line,"standard input","STDIN");
+  all_string_sub(line,"(","\"",0);
+  all_string_sub(line,")","\"",0);
 
   for (count=0; 
        count<10 && 
@@ -532,9 +525,9 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     }
     if (!header_line_ok) return (False); /* incorrect header line */
     /* handle the case of "(standard input)" as a filename */
-    string_sub(line,"standard input","STDIN");
-    all_string_sub(line,"(","\"");
-    all_string_sub(line,")","\"");
+    pstring_sub(line,"standard input","STDIN");
+    all_string_sub(line,"(","\"",0);
+    all_string_sub(line,")","\"",0);
     
     for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
@@ -570,7 +563,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     else if (base_prio) base_prio_reset=False;
     
     /* handle the dash in the job id */
-    string_sub(line,"-"," ");
+    pstring_sub(line,"-"," ");
     
     for (count=0; count<12 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
       
@@ -605,7 +598,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
 
 
 /****************************************************************************
-parse a lpq line
+parse a lpstat line
 
 here is an example of "lpstat -o dcslw" output under sysv
 
@@ -619,27 +612,47 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
   char *p;
 
-  /* handle the dash in the job id */
-  string_sub(line,"-"," ");
-  
-  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+  /* 
+   * Handle the dash in the job id, but make sure that we skip over
+   * the printer name in case we have a dash in that.
+   * Patch from Dom.Mitchell@palmerharvey.co.uk.
+   */
+
+  /*
+   * Move to the first space.
+   */
+  for (p = line ; !isspace(*p) && *p; p++)
+    ;
+
+  /*
+   * Back up until the last '-' character or
+   * start of line.
+   */
+  for (; (p >= line) && (*p != '-'); p--)
+    ;
+
+  if((p >= line) && (*p == '-'))
+    *p = ' ';
+
+  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++)
+    ;
 
   /* we must get 7 tokens */
   if (count < 7)
     return(False);
 
   /* the 2nd and 4th, 6th columns must be integer */
-  if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[3])) return(False);
-  if (!isdigit((int)*tok[5])) return(False);
+  if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[3]))
+    return(False);
+  if (!isdigit((int)*tok[5]))
+    return(False);
 
   /* if the user contains a ! then trim the first part of it */  
-  if ((p=strchr(tok[2],'!')))
-    {
+  if ((p=strchr(tok[2],'!'))) {
       fstring tmp;
       fstrcpy(tmp,p+1);
       fstrcpy(tok[2],tmp);
-    }
-    
+  }
 
   buf->job = atoi(tok[1]);
   buf->size = atoi(tok[3]);
@@ -674,14 +687,14 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   DEBUG(4,("antes [%s]\n", line));
 
   /* handle the case of "-- standard input --" as a filename */
-  string_sub(line,"standard input","STDIN");
+  pstring_sub(line,"standard input","STDIN");
   DEBUG(4,("despues [%s]\n", line));
-  all_string_sub(line,"-- ","\"");
-  all_string_sub(line," --","\"");
+  all_string_sub(line,"-- ","\"",0);
+  all_string_sub(line," --","\"",0);
   DEBUG(4,("despues 1 [%s]\n", line));
 
-  string_sub(line,"[job #","");
-  string_sub(line,"]","");
+  pstring_sub(line,"[job #","");
+  pstring_sub(line,"]","");
   DEBUG(4,("despues 2 [%s]\n", line));
 
   
@@ -737,9 +750,9 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  string_sub(line,"stdin","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  pstring_sub(line,"stdin","STDIN");
+  all_string_sub(line,"(","\"",0);
+  all_string_sub(line,")","\"",0);
   
   for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
@@ -807,7 +820,7 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* mung all the ":"s to spaces*/
-  string_sub(line,":"," ");
+  pstring_sub(line,":"," ");
   
   for (count=0; count<10 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
@@ -851,8 +864,8 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
     t->tm_mon  = atoi(tok[count+2]+3);
     switch (*tok[count+2])
     {
-    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]) + 1900; break;
-    default:                t->tm_year = atoi(tok[count+2]) + 2000; break;
+    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]); break;
+    default:                t->tm_year = atoi(tok[count+2]); break;
     }
 
     t->tm_hour = atoi(tok[count+3]);
@@ -964,7 +977,8 @@ static BOOL parse_lpq_entry(int snum,char *line,
 /****************************************************************************
 get a printer queue
 ****************************************************************************/
-int get_printqueue(int snum, connection_struct *conn, print_queue_struct **queue,
+int get_printqueue(int snum, 
+		   connection_struct *conn,print_queue_struct **queue,
 		   print_status_struct *status)
 {
 	char *lpq_command = lp_lpqcommand(snum);
@@ -993,16 +1007,9 @@ int get_printqueue(int snum, connection_struct *conn, print_queue_struct **queue
 	}
     
 	pstrcpy(syscmd,lpq_command);
-	string_sub(syscmd,"%p",printername);
+	pstring_sub(syscmd,"%p",printername);
 
-	if (conn != NULL)
-	{
-		standard_sub(conn, syscmd);
-	}
-	else
-	{
-		standard_sub_basic(syscmd);
-	}
+	standard_sub(conn,syscmd);
 
 	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
@@ -1039,7 +1046,7 @@ int get_printqueue(int snum, connection_struct *conn, print_queue_struct **queue
 			break;
 		}
 
-		bzero((char *)&(*queue)[count],sizeof(**queue));
+		memset((char *)&(*queue)[count],'\0',sizeof(**queue));
 	  
 		/* parse it */
 		if (!parse_lpq_entry(snum,line,
@@ -1089,16 +1096,9 @@ void del_printqueue(connection_struct *conn,int snum,int jobid)
   slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lprm_command);
-  string_sub(syscmd,"%p",printername);
-  string_sub(syscmd,"%j",jobstr);
-	if (conn != NULL)
-	{
-		standard_sub(conn, syscmd);
-	}
-	else
-	{
-		standard_sub_basic(syscmd);
-	}
+  pstring_sub(syscmd,"%p",printername);
+  pstring_sub(syscmd,"%j",jobstr);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1134,16 +1134,9 @@ void status_printjob(connection_struct *conn,int snum,int jobid,int status)
   slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lpstatus_command);
-  string_sub(syscmd,"%p",printername);
-  string_sub(syscmd,"%j",jobstr);
-	if (conn != NULL)
-	{
-		standard_sub(conn, syscmd);
-	}
-	else
-	{
-		standard_sub_basic(syscmd);
-	}
+  pstring_sub(syscmd,"%p",printername);
+  pstring_sub(syscmd,"%j",jobstr);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1197,15 +1190,8 @@ void status_printqueue(connection_struct *conn,int snum,int status)
   }
 
   pstrcpy(syscmd,queuestatus_command);
-  string_sub(syscmd,"%p",printername);
-	if (conn != NULL)
-	{
-		standard_sub(conn, syscmd);
-	}
-	else
-	{
-		standard_sub_basic(syscmd);
-	}
+  pstring_sub(syscmd,"%p",printername);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));

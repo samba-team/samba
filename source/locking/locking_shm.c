@@ -80,6 +80,7 @@ static BOOL shm_stop_share_mode_mgmt(void)
 static BOOL shm_lock_share_entry(connection_struct *conn,
 				 SMB_DEV_T dev, SMB_INO_T inode, int *ptok)
 {
+	*ptok = 0; /* For purify... */
 	return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
 }
 
@@ -165,7 +166,7 @@ static int shm_get_share_modes(connection_struct *conn,
                  malloc(num_entries * sizeof(share_mode_entry));
     if(*old_shares == 0)
     {
-      DEBUG(0,("get_share_modes: malloc fail!\n"));
+      DEBUG(0,("get_share_modes: malloc fail for size 0x%x!\n", (unsigned int)(num_entries * sizeof(share_mode_entry))));
       return 0;
     }
   }
@@ -177,7 +178,7 @@ static int shm_get_share_modes(connection_struct *conn,
   entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
   {
-    int pid = entry_scanner_p->e.pid;
+    pid_t pid = entry_scanner_p->e.pid;
 
     if (pid && !process_exists(pid))
     {
@@ -209,7 +210,7 @@ static int shm_get_share_modes(connection_struct *conn,
         return 0;
       }
 
-      DEBUG(0,("get_share_modes: process %d no longer exists\n", pid));
+      DEBUG(0,("get_share_modes: process %d no longer exists\n", (int)pid));
 
       shmops->shm_free(shmops->addr2offset(delete_entry_p));
     } 
@@ -226,7 +227,7 @@ static int shm_get_share_modes(connection_struct *conn,
               sizeof(struct timeval));
        num_entries_copied++;
        DEBUG(5,("get_share_modes Read share mode 0x%X pid=%d\n", 
-		entry_scanner_p->e.share_mode, entry_scanner_p->e.pid));
+		entry_scanner_p->e.share_mode, (int)entry_scanner_p->e.pid));
        entry_prev_p = entry_scanner_p;
        entry_scanner_p = (shm_share_mode_entry *)
                            shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
@@ -270,7 +271,7 @@ static void shm_del_share_mode(int token, files_struct *fsp)
   shm_share_mode_entry *entry_scanner_p;
   shm_share_mode_entry *entry_prev_p;
   BOOL found = False;
-  int pid = getpid();
+  pid_t pid = getpid();
 
   dev = fsp->fd_ptr->dev;
   inode = fsp->fd_ptr->inode;
@@ -430,7 +431,7 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
     int new_offset = shmops->shm_alloc(sizeof(share_mode_record) +
-				   strlen(fsp->fsp_name) + 1);
+				   strlen(fsp->fsp_name) + strlen(fsp->conn->connectpath) + 2);
     if(new_offset == 0) {
 	    DEBUG(0,("ERROR:set_share_mode shmops->shm_alloc fail!\n"));
 	    return False;
@@ -441,7 +442,9 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
     new_mode_p->share_mode_entries = 0;
-    pstrcpy(new_mode_p->file_name, fsp->fsp_name);
+    pstrcpy(new_mode_p->file_name, fsp->conn->connectpath);
+    pstrcat(new_mode_p->file_name, "/");
+    pstrcat(new_mode_p->file_name, fsp->fsp_name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
     new_mode_p->next_offset = mode_array[hash_entry];
@@ -489,7 +492,7 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
   file_scanner_p->num_share_mode_entries += 1;
 
   DEBUG(3,("set_share_mode: Created share entry for %s with mode 0x%X pid=%d\n",
-	   fsp->fsp_name, fsp->share_mode, new_entry_p->e.pid));
+	   fsp->fsp_name, fsp->share_mode, (int)new_entry_p->e.pid));
 
   return(True);
 }
@@ -510,7 +513,7 @@ static BOOL shm_mod_share_entry(int token, files_struct *fsp,
   share_mode_record *file_prev_p;
   shm_share_mode_entry *entry_scanner_p;
   BOOL found = False;
-  int pid = getpid();
+  pid_t pid = getpid();
 
   dev = fsp->fd_ptr->dev;
   inode = fsp->fd_ptr->inode;
@@ -689,12 +692,12 @@ struct share_ops *locking_shm_init(int ronly)
 {
 	read_only = ronly;
 
-#ifdef HAVE_SYSV_IPC
+#ifdef USE_SYSV_IPC
 	shmops = sysv_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif
 
-#ifdef HAVE_SHARED_MMAP
+#ifdef USE_SHARED_MMAP
 	shmops = smb_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif

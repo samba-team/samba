@@ -26,7 +26,6 @@
 
 
 /* winreg pipe defines */
-#define REG_OPEN_HKCR       0x00
 #define REG_OPEN_HKLM       0x02
 #define REG_OPEN_HKU        0x04
 #define REG_FLUSH_KEY       0x0B
@@ -43,34 +42,12 @@
 #define REG_OPEN_ENTRY      0x0f
 #define REG_INFO            0x11
 #define REG_CLOSE           0x05
-#define REG_SHUTDOWN        0x18
 
-#define HKEY_CLASSES_ROOT  0x80000000
-#define HKEY_CURRENT_USER  0x80000001
-#define HKEY_LOCAL_MACHINE 0x80000002
+#define HKEY_LOCAL_MACHINE 0x80000000
 #define HKEY_USERS         0x80000003
 
-/* REG_Q_OPEN_HKCR   */
-typedef struct q_reg_open_hkcr_info
-{
-	uint32 ptr;
-	uint16 unknown_0; /* 0x5428      - 16 bit unknown */
-	uint16 unknown_1; /* random.  changes */
-	uint32 level;     /* 0x0200 0000 */
-
-} REG_Q_OPEN_HKCR;
-
-/* REG_R_OPEN_HKCR   */
-typedef struct r_reg_open_hkcr_info
-{
-	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
-
-} REG_R_OPEN_HKCR;
-
-
 /* REG_Q_OPEN_HKLM   */
-typedef struct q_reg_open_hklm_info
+typedef struct q_reg_open_policy_info
 {
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
@@ -80,7 +57,7 @@ typedef struct q_reg_open_hklm_info
 } REG_Q_OPEN_HKLM  ;
 
 /* REG_R_OPEN_HKLM   */
-typedef struct r_reg_open_hklm_info
+typedef struct r_reg_open_policy_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
@@ -89,7 +66,7 @@ typedef struct r_reg_open_hklm_info
 
 
 /* REG_Q_OPEN_HKU */
-typedef struct q_reg_open_hku_info
+typedef struct q_reg_open_unk4_info
 {
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
@@ -99,7 +76,7 @@ typedef struct q_reg_open_hku_info
 } REG_Q_OPEN_HKU;
 
 /* REG_R_OPEN_HKU */
-typedef struct r_reg_open_hku_info
+typedef struct r_reg_open_unk4_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
@@ -159,6 +136,8 @@ typedef struct q_reg_get_key_sec_info
 /* REG_R_GET_KEY_SEC */
 typedef struct r_reg_get_key_sec_info
 {
+	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
+
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
 	SEC_DESC_BUF *data;    /* security data */
@@ -419,37 +398,39 @@ typedef struct q_reg_info_info
 {
 	POLICY_HND pol;        /* policy handle */
 
-	UNIHDR  hdr_val;       /* unicode product type header */
-	UNISTR2 uni_val;       /* unicode product type - "ProductType" */
+	UNIHDR  hdr_type;       /* unicode product type header */
+	UNISTR2 uni_type;       /* unicode product type - "ProductType" */
 
-	uint32 ptr_type;            /* pointer */
-	uint32 type;            /* type of buffer */
+	uint32 ptr1;            /* pointer */
+	NTTIME time;            /* current time? */
+	uint8  major_version1;  /* 0x4 - os major version? */
+	uint8  minor_version1;  /* 0x1 - os minor version? */
+	uint8  pad1[10];        /* padding - zeros */
 
-	uint32 ptr_uni_type;       /* pointer to o/s type */
-	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
+	uint32 ptr2;            /* pointer */
+	uint8  major_version2;  /* 0x4 - os major version? */
+	uint8  minor_version2;  /* 0x1 - os minor version? */
+	uint8  pad2[2];         /* padding - zeros */
 
-	uint32 ptr_max_len;           /* pointer to unknown_0 */
-	uint32 buf_max_len;    /* 0x12 */
-
-	uint32 ptr_len;           /* pointer to unknown_1 */
-	uint32 buf_len;        /* 0x12 */
+	uint32 ptr3;            /* pointer */
+	uint32 unknown;         /* 0x0000 0000 */
 
 } REG_Q_INFO;
 
 /* REG_R_INFO */
 typedef struct r_reg_info_info
 { 
-	uint32 ptr_type;            /* buffer pointer */
-	uint32 *type;          /* 0x1 - info level? */
+	uint32 ptr1;            /* buffer pointer */
+	uint32 level;          /* 0x1 - info level? */
 
-	uint32 ptr_uni_type;       /* pointer to o/s type */
-	BUFFER2 *uni_type;      /* unicode string o/s type - "LanmanNT" */
+	uint32 ptr_type;       /* pointer to o/s type */
+	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
 
-	uint32 ptr_max_len;    /* pointer to unknown_0 */
-	uint32 buf_max_len;    /* 0x12 */
+	uint32 ptr2;           /* pointer to unknown_0 */
+	uint32 unknown_0;      /* 0x12 */
 
-	uint32 ptr_len;    /* pointer to unknown_1 */
-	uint32 buf_len;        /* 0x12 */
+	uint32 ptr3;           /* pointer to unknown_1 */
+	uint32 unknown_1;      /* 0x12 */
 
 	uint32 status;         /* return status */
 
@@ -479,26 +460,6 @@ typedef struct r_reg_open_entry_info
 
 } REG_R_OPEN_ENTRY;
 
-
-/* REG_Q_SHUTDOWN */
-typedef struct q_reg_shutdown_info
-{
-	uint32 ptr_0;
-	uint32 ptr_1;
-	uint32 ptr_2;
-	UNIHDR hdr_msg;   /* shutdown message */
-	UNISTR2 uni_msg;
-	uint32 timeout; /* seconds */
-	uint16 flags;       
-
-} REG_Q_SHUTDOWN;
-
-/* REG_R_SHUTDOWN */
-typedef struct r_reg_shutdown_info
-{ 
-	uint32 status; /* return status */
-
-} REG_R_SHUTDOWN;
 
 
 #endif /* _RPC_REG_H */

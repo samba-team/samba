@@ -3,9 +3,10 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
- *  Copyright (C) Paul Ashton                  1997-1999.
+ *  Copyright (C) Andrew Tridgell              1992-1997,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison                    1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,501 +33,476 @@ extern int DEBUGLEVEL;
 interface/version dce/rpc pipe identification
 ********************************************************************/
 
-#define TRANS_SYNT_V2             \
-{                                 \
-	{                             \
-		0x04, 0x5d, 0x88, 0x8a,   \
-		0xeb, 0x1c, 0xc9, 0x11,   \
-		0x9f, 0xe8, 0x08, 0x00,   \
-		0x2b, 0x10, 0x48, 0x60    \
-	}, 0x02                       \
-}                                 \
-
-#define SYNT_SVCCTL_V2          \
-{                                 \
-	{                             \
-		0x81, 0xbb, 0x7a, 0x36,   \
-		0x44, 0x98, 0xf1, 0x35,   \
-		0xad, 0x32, 0x98, 0xf0,   \
-		0x38, 0x00, 0x10, 0x03    \
-	}, 0x02                       \
-}                                 \
-
-#define SYNT_BROWSER_V0          \
-{                                 \
-	{                             \
-		0x98, 0xd0, 0xff, 0x6b,   \
-		0x12, 0xa1, 0x10, 0x36,   \
-		0x98, 0x33, 0x01, 0x28,   \
-		0x92, 0x02, 0x01, 0x62    \
-	}, 0x00                       \
-}                                 \
-
-#define SYNT_NETLOGON_V2          \
-{                                 \
-	{                             \
-		0x04, 0x5d, 0x88, 0x8a,   \
-		0xeb, 0x1c, 0xc9, 0x11,   \
-		0x9f, 0xe8, 0x08, 0x00,   \
-		0x2b, 0x10, 0x48, 0x60    \
-	}, 0x02                       \
-}                                 \
-
-#define SYNT_WKSSVC_V1            \
-{                                 \
-	{                             \
-		0x98, 0xd0, 0xff, 0x6b,   \
-		0x12, 0xa1, 0x10, 0x36,   \
-		0x98, 0x33, 0x46, 0xc3,   \
-		0xf8, 0x7e, 0x34, 0x5a    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_SRVSVC_V3            \
-{                                 \
-	{                             \
-		0xc8, 0x4f, 0x32, 0x4b,   \
-		0x70, 0x16, 0xd3, 0x01,   \
-		0x12, 0x78, 0x5a, 0x47,   \
-		0xbf, 0x6e, 0xe1, 0x88    \
-	}, 0x03                       \
-}                                 \
-
-#define SYNT_LSARPC_V0            \
-{                                 \
-	{                             \
-		0x78, 0x57, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0x89, 0xab    \
-	}, 0x00                       \
-}                                 \
-
-#define SYNT_SAMR_V1              \
-{                                 \
-	{                             \
-		0x78, 0x57, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0x89, 0xac    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_NETLOGON_V1          \
-{                                 \
-	{                             \
-		0x78, 0x56, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0xcf, 0xfb    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_WINREG_V1            \
-{                                 \
-	{                             \
-		0x01, 0xd0, 0x8c, 0x33,   \
-		0x44, 0x22, 0xf1, 0x31,   \
-		0xaa, 0xaa, 0x90, 0x00,   \
-		0x38, 0x00, 0x10, 0x03    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_ATSVC_V1            \
-{                                 \
-	{                             \
-		0x82, 0x06, 0xf7, 0x1f,   \
-		0x51, 0x0a, 0xe8, 0x30,   \
-		0x07, 0x6d, 0x74, 0x0b,   \
-		0xe8, 0xce, 0xe9, 0x8b    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_SPOOLSS_V1           \
-{                                 \
-	{                             \
-		0x78, 0x56, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0x89, 0xab    \
-	}, 0x01                       \
-}                                 \
-
-#define SYNT_NONE_V0              \
-{                                 \
-	{                             \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00    \
-	}, 0x00                       \
-}                                 \
-
-#define SYNT_EVENTLOG_V0            \
-{                                 \
-	{                             \
-		0xdc, 0x3f, 0x27, 0x82,   \
-		0x2a, 0xe3, 0xc3, 0x18,   \
-		0x3f, 0x78, 0x82, 0x79,   \
-		0x29, 0xdc, 0x23, 0xea    \
-	}, 0x00                       \
+#define TRANS_SYNT_V2                       \
+{                                           \
+	{                                   \
+		0x8a885d04, 0x1ceb, 0x11c9, \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
+	}, 0x02                             \
 }
-                                 \
+
+#define SYNT_NETLOGON_V2                    \
+{                                           \
+	{                                   \
+		0x8a885d04, 0x1ceb, 0x11c9, \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
+	}, 0x02                             \
+}
+
+#define SYNT_WKSSVC_V1                      \
+{                                           \
+	{                                   \
+		0x6bffd098, 0xa112, 0x3610, \
+		{ 0x98, 0x33, 0x46, 0xc3,   \
+		0xf8, 0x7e, 0x34, 0x5a }    \
+	}, 0x01                             \
+}
+
+#define SYNT_SRVSVC_V3                      \
+{                                           \
+	{                                   \
+		0x4b324fc8, 0x1670, 0x01d3, \
+		{ 0x12, 0x78, 0x5a, 0x47,   \
+		0xbf, 0x6e, 0xe1, 0x88 }    \
+	}, 0x03                             \
+}
+
+#define SYNT_LSARPC_V0                      \
+{                                           \
+	{                                   \
+		0x12345778, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab }    \
+	}, 0x00                             \
+}
+
+#define SYNT_SAMR_V1                        \
+{                                           \
+	{                                   \
+		0x12345778, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xac }    \
+	}, 0x01                             \
+}
+
+#define SYNT_NETLOGON_V1                    \
+{                                           \
+	{                                   \
+		0x12345678, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0xcf, 0xfb }    \
+	}, 0x01                             \
+}
+
+#define SYNT_WINREG_V1                      \
+{                                           \
+	{                                   \
+		0x338cd001, 0x2244, 0x31f1, \
+		{ 0xaa, 0xaa, 0x90, 0x00,   \
+		0x38, 0x00, 0x10, 0x03 }    \
+	}, 0x01                             \
+}
+
+#define SYNT_NONE_V0                        \
+{                                           \
+	{                                   \
+		0x0, 0x0, 0x0,              \
+		{ 0x00, 0x00, 0x00, 0x00,   \
+		0x00, 0x00, 0x00, 0x00 }    \
+	}, 0x00                             \
+}
+
+/* pipe string names */
+#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
+#define PIPE_SAMR     "\\PIPE\\samr"
+#define PIPE_WINREG   "\\PIPE\\winreg"
+#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
+#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
+#define PIPE_NTLSA    "\\PIPE\\ntlsa"
+#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
+#define PIPE_LSASS    "\\PIPE\\lsass"
+#define PIPE_LSARPC   "\\PIPE\\lsarpc"
+
 struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
 	{ PIPE_LSARPC  , SYNT_LSARPC_V0  , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_BROWSER , SYNT_BROWSER_V0 , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_SAMR    , SYNT_SAMR_V1    , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_NETLOGON, SYNT_NETLOGON_V1, PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
-	{ PIPE_ATSVC   , SYNT_ATSVC_V1   , PIPE_ATSVC    , TRANS_SYNT_V2 },
-	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
-	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0, PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 
 /*******************************************************************
-creates an RPC_HDR structure.
+ Inits an RPC_HDR structure.
 ********************************************************************/
-BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
+
+void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len)
 {
-	if (hdr == NULL) return False;
-
 	hdr->major        = 5;               /* RPC version 5 */
 	hdr->minor        = 0;               /* minor version 0 */
 	hdr->pkt_type     = pkt_type;        /* RPC packet type */
 	hdr->flags        = flags;           /* dce/rpc flags */
-	hdr->pack_type    = 0x10;            /* packed data representation */
+	hdr->pack_type[0] = 0x10;            /* little-endian data representation */
+	hdr->pack_type[1] = 0;               /* packed data representation */
+	hdr->pack_type[2] = 0;               /* packed data representation */
+	hdr->pack_type[3] = 0;               /* packed data representation */
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = auth_len;        /* authentication length */
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR structure.
+ Reads or writes an RPC_HDR structure.
 ********************************************************************/
+
 BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr");
 	depth++;
 
-	prs_uint8 ("major     ", ps, depth, &(rpc->major));
-	prs_uint8 ("minor     ", ps, depth, &(rpc->minor));
-	prs_uint8 ("pkt_type  ", ps, depth, &(rpc->pkt_type));
-	prs_uint8 ("flags     ", ps, depth, &(rpc->flags));
-	prs_uint32("pack_type ", ps, depth, &(rpc->pack_type));
-	prs_uint16("frag_len  ", ps, depth, &(rpc->frag_len));
-	prs_uint16("auth_len  ", ps, depth, &(rpc->auth_len));
-	prs_uint32("call_id   ", ps, depth, &(rpc->call_id));
+	if(!prs_uint8 ("major     ", ps, depth, &rpc->major))
+		return False;
 
+	if(!prs_uint8 ("minor     ", ps, depth, &rpc->minor))
+		return False;
+	if(!prs_uint8 ("pkt_type  ", ps, depth, &rpc->pkt_type))
+		return False;
+	if(!prs_uint8 ("flags     ", ps, depth, &rpc->flags))
+		return False;
+	if(!prs_uint8("pack_type0", ps, depth, &rpc->pack_type[0]))
+		return False;
+	if(!prs_uint8("pack_type1", ps, depth, &rpc->pack_type[1]))
+		return False;
+	if(!prs_uint8("pack_type2", ps, depth, &rpc->pack_type[2]))
+		return False;
+	if(!prs_uint8("pack_type3", ps, depth, &rpc->pack_type[3]))
+		return False;
+
+	/*
+	 * If reading and pack_type[0] == 0 then the data is in big-endian
+	 * format. Set the flag in the prs_struct to specify reverse-endainness.
+	 */
+
+	if (ps->io && rpc->pack_type[0] == 0) {
+		DEBUG(10,("smb_io_rpc_hdr: PDU data format is big-endian. Setting flag.\n"));
+		prs_set_bigendian_data(ps);
+	}
+
+	if(!prs_uint16("frag_len  ", ps, depth, &rpc->frag_len))
+		return False;
+	if(!prs_uint16("auth_len  ", ps, depth, &rpc->auth_len))
+		return False;
+	if(!prs_uint32("call_id   ", ps, depth, &rpc->call_id))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_FAULT structure.
+ Reads or writes an RPC_IFACE structure.
 ********************************************************************/
-BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)
+
+static BOOL smb_io_rpc_iface(char *desc, RPC_IFACE *ifc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
-	depth++;
-
-	prs_uint32("status  ", ps, depth, &(rpc->status  ));
-	prs_uint32("reserved", ps, depth, &(rpc->reserved));
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an RPC_IFACE structure.
-********************************************************************/
-static BOOL smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int depth)
-{
-	if (ifc == NULL) return False;
+	if (ifc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint8s (False, "data   ", ps, depth, ifc->data, sizeof(ifc->data));
-	prs_uint32 (       "version", ps, depth, &(ifc->version));
+	if(!prs_uint32 ("data   ", ps, depth, &ifc->uuid.time_low))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_mid))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_hi_and_version))
+		return False;
+
+	if(!prs_uint8s (False, "data   ", ps, depth, ifc->uuid.remaining, sizeof(ifc->uuid.remaining)))
+		return False;
+	if(!prs_uint32 (       "version", ps, depth, &(ifc->version)))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_ADDR_STR structure.
-
-The name can be null (RPC Alter-Context)
+ Inits an RPC_ADDR_STR structure.
 ********************************************************************/
-static BOOL make_rpc_addr_str(RPC_ADDR_STR *str, const char *name)
+
+static void init_rpc_addr_str(RPC_ADDR_STR *str, char *name)
 {
-	if (str == NULL ) return False;
-	if (name == NULL)
-	{
-		str->len = 1;
-		fstrcpy(str->str, "");
-	}
-	else
-	{
-		str->len = strlen(name) + 1;
-		fstrcpy(str->str, name);
-	}
-
-	return True;
+	str->len = strlen(name) + 1;
+	fstrcpy(str->str, name);
 }
 
 /*******************************************************************
-reads or writes an RPC_ADDR_STR structure.
+ Reads or writes an RPC_ADDR_STR structure.
 ********************************************************************/
+
 static BOOL smb_io_rpc_addr_str(char *desc,  RPC_ADDR_STR *str, prs_struct *ps, int depth)
 {
-	if (str == NULL) return False;
+	if (str == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_addr_str");
 	depth++;
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint16 (      "len", ps, depth, &(str->len));
-	prs_uint8s (True, "str", ps, depth, (uchar*)str->str, str->len);
-
+	if(!prs_uint16 (      "len", ps, depth, &str->len))
+		return False;
+	if(!prs_uint8s (True, "str", ps, depth, (uchar*)str->str, MIN(str->len, sizeof(str->str)) ))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_HDR_BBA structure.
+ Inits an RPC_HDR_BBA structure.
 ********************************************************************/
-static BOOL make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid)
-{
-	if (bba == NULL) return False;
 
+static void init_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid)
+{
 	bba->max_tsize = max_tsize; /* maximum transmission fragment size (0x1630) */
 	bba->max_rsize = max_rsize; /* max receive fragment size (0x1630) */   
 	bba->assoc_gid = assoc_gid; /* associated group id (0x0) */ 
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_BBA structure.
+ Reads or writes an RPC_HDR_BBA structure.
 ********************************************************************/
+
 static BOOL smb_io_rpc_hdr_bba(char *desc,  RPC_HDR_BBA *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_bba");
 	depth++;
 
-	prs_uint16("max_tsize", ps, depth, &(rpc->max_tsize));
-	prs_uint16("max_rsize", ps, depth, &(rpc->max_rsize));
-	prs_uint32("assoc_gid", ps, depth, &(rpc->assoc_gid));
-
+	if(!prs_uint16("max_tsize", ps, depth, &rpc->max_tsize))
+		return False;
+	if(!prs_uint16("max_rsize", ps, depth, &rpc->max_rsize))
+		return False;
+	if(!prs_uint32("assoc_gid", ps, depth, &rpc->assoc_gid))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_HDR_RB structure.
+ Inits an RPC_HDR_RB structure.
 ********************************************************************/
-BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
+
+void init_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
 				RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
-	if (rpc == NULL) return False;
-
-	make_rpc_hdr_bba(&(rpc->bba), max_tsize, max_rsize, assoc_gid);
+	init_rpc_hdr_bba(&rpc->bba, max_tsize, max_rsize, assoc_gid);
 
 	rpc->num_elements = num_elements ; /* the number of elements (0x1) */
 	rpc->context_id   = context_id   ; /* presentation context identifier (0x0) */
 	rpc->num_syntaxes = num_syntaxes ; /* the number of syntaxes (has always been 1?)(0x1) */
 
 	/* num and vers. of interface client is using */
-	memcpy(&(rpc->abstract), abstract, sizeof(rpc->abstract));
+	rpc->abstract = *abstract;
 
 	/* num and vers. of interface to use for replies */
-	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
-
-	return True;
+	rpc->transfer = *transfer;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_RB structure.
+ Reads or writes an RPC_HDR_RB structure.
 ********************************************************************/
-BOOL smb_io_rpc_hdr_rb(char *desc,  RPC_HDR_RB *rpc, prs_struct *ps, int depth)
+
+BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_rb");
 	depth++;
 
-	smb_io_rpc_hdr_bba("", &(rpc->bba), ps, depth);
+	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
+		return False;
 
-	prs_uint32("num_elements", ps, depth, &(rpc->num_elements));
-	prs_uint16("context_id  ", ps, depth, &(rpc->context_id  ));
-	prs_uint8 ("num_syntaxes", ps, depth, &(rpc->num_syntaxes));
+	if(!prs_uint32("num_elements", ps, depth, &rpc->num_elements))
+		return False;
+	if(!prs_uint16("context_id  ", ps, depth, &rpc->context_id ))
+		return False;
+	if(!prs_uint8 ("num_syntaxes", ps, depth, &rpc->num_syntaxes))
+		return False;
 
-	smb_io_rpc_iface("", &(rpc->abstract), ps, depth);
-	smb_io_rpc_iface("", &(rpc->transfer), ps, depth);
+	if(!smb_io_rpc_iface("", &rpc->abstract, ps, depth))
+		return False;
+	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_RESULTS structure.
+ Inits an RPC_RESULTS structure.
 
-lkclXXXX only one reason at the moment!
-
+ lkclXXXX only one reason at the moment!
 ********************************************************************/
-static BOOL make_rpc_results(RPC_RESULTS *res, 
+
+static void init_rpc_results(RPC_RESULTS *res, 
 				uint8 num_results, uint16 result, uint16 reason)
 {
-	if (res == NULL) return False;
-
 	res->num_results = num_results; /* the number of results (0x01) */
 	res->result      = result     ;  /* result (0x00 = accept) */
 	res->reason      = reason     ;  /* reason (0x00 = no reason specified) */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_RESULTS structure.
+ Reads or writes an RPC_RESULTS structure.
 
-lkclXXXX only one reason at the moment!
-
+ lkclXXXX only one reason at the moment!
 ********************************************************************/
-static BOOL smb_io_rpc_results(char *desc,  RPC_RESULTS *res, prs_struct *ps, int depth)
+
+static BOOL smb_io_rpc_results(char *desc, RPC_RESULTS *res, prs_struct *ps, int depth)
 {
-	if (res == NULL) return False;
+	if (res == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_results");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint8 ("num_results", ps, depth, &(res->num_results));
+	if(!prs_uint8 ("num_results", ps, depth, &res->num_results))	
+		return False;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint16("result     ", ps, depth, &(res->result     ));
-	prs_uint16("reason     ", ps, depth, &(res->reason     ));
-
+	if(!prs_uint16("result     ", ps, depth, &res->result))
+		return False;
+	if(!prs_uint16("reason     ", ps, depth, &res->reason))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_HDR_BA structure.
+ Init an RPC_HDR_BA structure.
 
-lkclXXXX only one reason at the moment!
-jfm: nope two ! The pipe_addr can be NULL !
+ lkclXXXX only one reason at the moment!
 
 ********************************************************************/
-BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
+
+void init_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				const char *pipe_addr,
+				char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer)
 {
-	if (rpc == NULL || transfer == NULL) return False;
-
-	make_rpc_hdr_bba (&(rpc->bba ), max_tsize, max_rsize, assoc_gid);
-	make_rpc_addr_str(&(rpc->addr), pipe_addr);
-	make_rpc_results (&(rpc->res ), num_results, result, reason);
+	init_rpc_hdr_bba (&rpc->bba, max_tsize, max_rsize, assoc_gid);
+	init_rpc_addr_str(&rpc->addr, pipe_addr);
+	init_rpc_results (&rpc->res, num_results, result, reason);
 
 	/* the transfer syntax from the request */
-	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
-
-	return True;
+	memcpy(&rpc->transfer, transfer, sizeof(rpc->transfer));
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_BA structure.
+ Reads or writes an RPC_HDR_BA structure.
 ********************************************************************/
-BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth)
+
+BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_ba");
 	depth++;
 
-	smb_io_rpc_hdr_bba ("", &(rpc->bba)     , ps, depth);
-	smb_io_rpc_addr_str("", &(rpc->addr)    , ps, depth);
-	smb_io_rpc_results ("", &(rpc->res)     , ps, depth);
-	smb_io_rpc_iface   ("", &(rpc->transfer), ps, depth);
-
+	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
+		return False;
+	if(!smb_io_rpc_addr_str("", &rpc->addr, ps, depth))
+		return False;
+	if(!smb_io_rpc_results("", &rpc->res, ps, depth))
+		return False;
+	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_HDR_REQ structure.
+ Init an RPC_HDR_REQ structure.
 ********************************************************************/
-BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum)
-{
-	if (hdr == NULL) return False;
 
+void init_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum)
+{
 	hdr->alloc_hint   = alloc_hint; /* allocation hint */
 	hdr->context_id   = 0;         /* presentation context identifier */
 	hdr->opnum        = opnum;     /* opnum */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_REQ structure.
+ Reads or writes an RPC_HDR_REQ structure.
 ********************************************************************/
-BOOL smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth)
+
+BOOL smb_io_rpc_hdr_req(char *desc, RPC_HDR_REQ *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_req");
 	depth++;
 
-	prs_uint32("alloc_hint", ps, depth, &(rpc->alloc_hint));
-	prs_uint16("context_id", ps, depth, &(rpc->context_id));
-	prs_uint16("opnum     ", ps, depth, &(rpc->opnum));
-
+	if(!prs_uint32("alloc_hint", ps, depth, &rpc->alloc_hint))
+		return False;
+	if(!prs_uint16("context_id", ps, depth, &rpc->context_id))
+		return False;
+	if(!prs_uint16("opnum     ", ps, depth, &rpc->opnum))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_RESP structure.
+ Reads or writes an RPC_HDR_RESP structure.
 ********************************************************************/
-BOOL smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth)
+
+BOOL smb_io_rpc_hdr_resp(char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, int depth)
 {
-	if (rpc == NULL) return False;
+	if (rpc == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_resp");
 	depth++;
 
-	prs_uint32("alloc_hint", ps, depth, &(rpc->alloc_hint));
-	prs_uint16("context_id", ps, depth, &(rpc->context_id));
-	prs_uint8 ("cancel_ct ", ps, depth, &(rpc->cancel_count));
-	prs_uint8 ("reserved  ", ps, depth, &(rpc->reserved));
-
+	if(!prs_uint32("alloc_hint", ps, depth, &rpc->alloc_hint))
+		return False;
+	if(!prs_uint16("context_id", ps, depth, &rpc->context_id))
+		return False;
+	if(!prs_uint8 ("cancel_ct ", ps, depth, &rpc->cancel_count))
+		return False;
+	if(!prs_uint8 ("reserved  ", ps, depth, &rpc->reserved))
+		return False;
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_HDR_AUTHA structure.
+ Init an RPC_HDR_AUTHA structure.
 ********************************************************************/
-BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
+
+void init_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 				uint16 max_tsize, uint16 max_rsize,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len)
 {
-	if (rai == NULL) return False;
-
 	rai->max_tsize = max_tsize; /* maximum transmission fragment size (0x1630) */
 	rai->max_rsize = max_rsize; /* max receive fragment size (0x1630) */   
 
@@ -536,194 +512,228 @@ BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 	rai->padding       = 0; /* padding 0x00 */
 
 	rai->unknown       = 0x0014a0c0; /* non-zero pointer to something */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_AUTHA structure.
+ Reads or writes an RPC_HDR_AUTHA structure.
 ********************************************************************/
+
 BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth)
 {
-	if (rai == NULL) return False;
+	if (rai == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_autha");
 	depth++;
 
-	prs_uint16("max_tsize    ", ps, depth, &(rai->max_tsize));
-	prs_uint16("max_rsize    ", ps, depth, &(rai->max_rsize));
+	if(!prs_uint16("max_tsize    ", ps, depth, &rai->max_tsize))
+		return False;
+	if(!prs_uint16("max_rsize    ", ps, depth, &rai->max_rsize))
+		return False;
 
-	prs_uint8 ("auth_type    ", ps, depth, &(rai->auth_type    )); /* 0x0a nt lm ssp */
-	prs_uint8 ("auth_level   ", ps, depth, &(rai->auth_level   ));/* 0x06 */
-	prs_uint8 ("stub_type_len", ps, depth, &(rai->stub_type_len));
-	prs_uint8 ("padding      ", ps, depth, &(rai->padding      ));
+	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type)) /* 0x0a nt lm ssp */
+		return False;
+	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
+		return False;
+	if(!prs_uint8 ("stub_type_len", ps, depth, &rai->stub_type_len))
+		return False;
+	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
+		return False;
 
-	prs_uint32("unknown      ", ps, depth, &(rai->unknown      )); /* 0x0014a0c0 */
+	if(!prs_uint32("unknown      ", ps, depth, &rai->unknown)) /* 0x0014a0c0 */
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-checks an RPC_HDR_AUTH structure.
+ Checks an RPC_HDR_AUTH structure.
 ********************************************************************/
+
 BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
 {
-	return ((rai->auth_type == 0x0a || rai->auth_type == 0x44) &&
-	         rai->auth_level == 0x06);
-
-	return True;
+	return (rai->auth_type == NTLMSSP_AUTH_TYPE && rai->auth_level == NTLMSSP_AUTH_LEVEL);
 }
 
 /*******************************************************************
-creates an RPC_HDR_AUTH structure.
+ Inits an RPC_HDR_AUTH structure.
 ********************************************************************/
-BOOL make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
+
+void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len,
 				uint32 ptr)
 {
-	if (rai == NULL) return False;
-
 	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
 	rai->auth_level    = auth_level; /* 0x06 */
 	rai->stub_type_len = stub_type_len; /* 0x00 */
 	rai->padding       = 0; /* padding 0x00 */
 
 	rai->unknown       = ptr; /* non-zero pointer to something */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_AUTH structure.
+ Reads or writes an RPC_HDR_AUTH structure.
 ********************************************************************/
+
 BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth)
 {
-	if (rai == NULL) return False;
+	if (rai == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_auth");
 	depth++;
 
-	prs_uint8 ("auth_type    ", ps, depth, &(rai->auth_type    )); /* 0x0a nt lm ssp */
-	prs_uint8 ("auth_level   ", ps, depth, &(rai->auth_level   ));/* 0x06 */
-	prs_uint8 ("stub_type_len", ps, depth, &(rai->stub_type_len));
-	prs_uint8 ("padding      ", ps, depth, &(rai->padding      ));
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint32("unknown      ", ps, depth, &(rai->unknown      )); /* 0x0014a0c0 */
+	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type)) /* 0x0a nt lm ssp */
+		return False;
+	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
+		return False;
+	if(!prs_uint8 ("stub_type_len", ps, depth, &rai->stub_type_len))
+		return False;
+	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
+		return False;
+
+	if(!prs_uint32("unknown      ", ps, depth, &rai->unknown)) /* 0x0014a0c0 */
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-checks an RPC_AUTH_NTLMSSP_VERIFIER structure.
+ Checks an RPC_AUTH_VERIFIER structure.
 ********************************************************************/
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
+
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type)
 {
 	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
-
-	return True;
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NTLMSSP_VERIFIER structure.
+ Inits an RPC_AUTH_VERIFIER structure.
 ********************************************************************/
-BOOL make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
+
+void init_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type)
 {
-	if (rav == NULL) return False;
-
 	fstrcpy(rav->signature, signature); /* "NTLMSSP" */
 	rav->msg_type = msg_type; /* NTLMSSP_MESSAGE_TYPE */
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_VERIFIER structure.
+ Reads or writes an RPC_AUTH_VERIFIER structure.
 ********************************************************************/
-BOOL smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth)
+
+BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
 {
-	if (rav == NULL) return False;
+	if (rav == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
 	depth++;
 
-	prs_string("signature", ps, depth, rav->signature, 0, sizeof(rav->signature)); /* "NTLMSSP" */
-	prs_uint32("msg_type ", ps, depth, &(rav->msg_type  )); /* NTLMSSP_MESSAGE_TYPE */
+	/* "NTLMSSP" */
+	if(!prs_string("signature", ps, depth, rav->signature, strlen("NTLMSSP"),
+			sizeof(rav->signature)))
+		return False;
+	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NTLMSSP_NEG structure.
+ Inits an RPC_AUTH_NTLMSSP_NEG structure.
 ********************************************************************/
-BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
+
+void init_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain)
 {
 	int len_myname = strlen(myname);
 	int len_domain = strlen(domain);
 
-	if (neg == NULL) return False;
-
 	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
 
-	make_str_hdr(&neg->hdr_domain, len_domain, len_domain, 0x20 + len_myname); 
-	make_str_hdr(&neg->hdr_myname, len_myname, len_myname, 0x20); 
+	init_str_hdr(&neg->hdr_domain, len_domain, len_domain, 0x20 + len_myname); 
+	init_str_hdr(&neg->hdr_myname, len_myname, len_myname, 0x20); 
 
 	fstrcpy(neg->myname, myname);
 	fstrcpy(neg->domain, domain);
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
+ Reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
 
-*** lkclXXXX HACK ALERT! ***
-
+ *** lkclXXXX HACK ALERT! ***
 ********************************************************************/
+
 BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
 {
-	if (neg == NULL) return False;
+	if (neg == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_neg");
 	depth++;
 
-	prs_uint32("neg_flgs ", ps, depth, &(neg->neg_flgs));
+	if(!prs_uint32("neg_flgs ", ps, depth, &neg->neg_flgs))
+		return False;
 
-	if (ps->io)
-	{
+	if (ps->io) {
 		uint32 old_offset;
+		uint32 old_neg_flags = neg->neg_flgs;
 
 		/* reading */
 
 		ZERO_STRUCTP(neg);
 
-		smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
-		smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
+		neg->neg_flgs = old_neg_flags;
 
-		old_offset = ps->offset;
+		if(!smb_io_strhdr("hdr_domain", &neg->hdr_domain, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_myname", &neg->hdr_myname, ps, depth))
+			return False;
 
-		ps->offset = neg->hdr_myname  .buffer + 0x50; /* lkclXXXX HACK! */
-		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
-		old_offset += neg->hdr_myname  .str_str_len;
+		old_offset = prs_offset(ps);
 
-		ps->offset = neg->hdr_domain  .buffer + 0x50; /* lkclXXXX HACK! */
-		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
+		/* lkclXXXX HACK! */
+		if(!prs_set_offset(ps, neg->hdr_myname.buffer + 0x50))
+			return False;
+
+		if(!prs_uint8s(True, "myname", ps, depth, (uint8*)neg->myname, 
+				MIN(neg->hdr_myname.str_str_len, sizeof(neg->myname))))
+			return False;
+
+		old_offset += neg->hdr_myname.str_str_len;
+
+		/* lkclXXXX HACK! */
+		if(!prs_set_offset(ps, neg->hdr_domain.buffer + 0x50))
+			return False;
+
+		if(!prs_uint8s(True, "domain", ps, depth, (uint8*)neg->domain, 
+			MIN(neg->hdr_domain.str_str_len, sizeof(neg->domain  ))))
+			return False;
+
 		old_offset += neg->hdr_domain  .str_str_len;
 
-		ps->offset = old_offset;
-	}
-	else
-	{
+		if(!prs_set_offset(ps, old_offset))
+			return False;
+	} else {
 		/* writing */
-		smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
-		smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
+		if(!smb_io_strhdr("hdr_domain", &neg->hdr_domain, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_myname", &neg->hdr_myname, ps, depth))
+			return False;
 
-		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
-		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
+		if(!prs_uint8s(True, "myname", ps, depth, (uint8*)neg->myname, 
+					MIN(neg->hdr_myname.str_str_len, sizeof(neg->myname))))
+			return False;
+		if(!prs_uint8s(True, "domain", ps, depth, (uint8*)neg->domain, 
+					MIN(neg->hdr_domain.str_str_len, sizeof(neg->domain  ))))
+			return False;
 	}
 
 	return True;
@@ -732,76 +742,72 @@ BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 /*******************************************************************
 creates an RPC_AUTH_NTLMSSP_CHAL structure.
 ********************************************************************/
-BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
+
+void init_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
 				uint32 neg_flags,
 				uint8 challenge[8])
 {
-	if (chl == NULL) return False;
-
 	chl->unknown_1 = 0x0; 
 	chl->unknown_2 = 0x00000028;
 	chl->neg_flags = neg_flags; /* 0x0082b1 */
 
 	memcpy(chl->challenge, challenge, sizeof(chl->challenge)); 
-	bzero (chl->reserved ,            sizeof(chl->reserved)); 
-
-	return True;
+	memset((char *)chl->reserved , '\0', sizeof(chl->reserved)); 
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_CHAL structure.
+ Reads or writes an RPC_AUTH_NTLMSSP_CHAL structure.
 ********************************************************************/
+
 BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth)
 {
-	if (chl == NULL) return False;
+	if (chl == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_chal");
 	depth++;
 
-	prs_uint32("unknown_1", ps, depth, &(chl->unknown_1)); /* 0x0000 0000 */
-	prs_uint32("unknown_2", ps, depth, &(chl->unknown_2)); /* 0x0000 b2b3 */
-	prs_uint32("neg_flags", ps, depth, &(chl->neg_flags)); /* 0x0000 82b1 */
+	if(!prs_uint32("unknown_1", ps, depth, &chl->unknown_1)) /* 0x0000 0000 */
+		return False;
+	if(!prs_uint32("unknown_2", ps, depth, &chl->unknown_2)) /* 0x0000 b2b3 */
+		return False;
+	if(!prs_uint32("neg_flags", ps, depth, &chl->neg_flags)) /* 0x0000 82b1 */
+		return False;
 
-	prs_uint8s (False, "challenge", ps, depth, chl->challenge, sizeof(chl->challenge));
-	prs_uint8s (False, "reserved ", ps, depth, chl->reserved , sizeof(chl->reserved ));
+	if(!prs_uint8s (False, "challenge", ps, depth, chl->challenge, sizeof(chl->challenge)))
+		return False;
+	if(!prs_uint8s (False, "reserved ", ps, depth, chl->reserved , sizeof(chl->reserved )))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NTLMSSP_RESP structure.
+ Inits an RPC_AUTH_NTLMSSP_RESP structure.
 
-*** lkclXXXX FUDGE!  HAVE TO MANUALLY SPECIFY OFFSET HERE (0x1c bytes) ***
-*** lkclXXXX the actual offset is at the start of the auth verifier    ***
-
+ *** lkclXXXX FUDGE!  HAVE TO MANUALLY SPECIFY OFFSET HERE (0x1c bytes) ***
+ *** lkclXXXX the actual offset is at the start of the auth verifier    ***
 ********************************************************************/
-BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24],
-				uchar *nt_resp, size_t nt_len,
+
+void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
+				uchar lm_resp[24], uchar nt_resp[24],
 				char *domain, char *user, char *wks,
 				uint32 neg_flags)
 {
 	uint32 offset;
 	int dom_len = strlen(domain);
-	int wks_len = strlen(wks   );
-	int usr_len = strlen(user  );
-	int lm_len  = nt_len != 0 ? (lm_resp != NULL ? 24 : 0) : 1;
+	int wks_len = strlen(wks);
+	int usr_len = strlen(user);
+	int lm_len  = (lm_resp != NULL) ? 24 : 0;
+	int nt_len  = (nt_resp != NULL) ? 24 : 0;
 
 	DEBUG(5,("make_rpc_auth_ntlmssp_resp\n"));
 
-	if (rsp == NULL) return False;
-
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_resp\n"));
-	if (lm_resp != NULL)
-	{
-		dump_data(100, lm_resp, lm_len);
-	}
+	dump_data(100, (char *)lm_resp, 24);
 	DEBUG(100,("nt_resp\n"));
-	if (nt_resp != NULL)
-	{
-		dump_data(100, nt_resp, nt_len);
-	}
+	dump_data(100, (char *)nt_resp, 24);
 #endif
 
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
@@ -816,153 +822,190 @@ BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 		usr_len *= 2;
 	}
 
-	make_str_hdr(&rsp->hdr_domain , dom_len, dom_len, offset);
+	init_str_hdr(&rsp->hdr_domain, dom_len, dom_len, offset);
 	offset += dom_len;
 
-	make_str_hdr(&rsp->hdr_usr    , usr_len, usr_len, offset);
+	init_str_hdr(&rsp->hdr_usr, usr_len, usr_len, offset);
 	offset += usr_len;
 
-	make_str_hdr(&rsp->hdr_wks    , wks_len, wks_len, offset);
+	init_str_hdr(&rsp->hdr_wks, wks_len, wks_len, offset);
 	offset += wks_len;
 
-	make_str_hdr(&rsp->hdr_lm_resp, lm_len , lm_len , offset);
+	init_str_hdr(&rsp->hdr_lm_resp, lm_len, lm_len, offset);
 	offset += lm_len;
 
-	make_str_hdr(&rsp->hdr_nt_resp, nt_len , nt_len , offset);
+	init_str_hdr(&rsp->hdr_nt_resp, nt_len, nt_len, offset);
 	offset += nt_len;
 
-	make_str_hdr(&rsp->hdr_sess_key, 0, 0, offset);
+	init_str_hdr(&rsp->hdr_sess_key, 0, 0, offset);
 
 	rsp->neg_flags = neg_flags;
 
-	if (lm_resp != NULL && lm_len != 1)
-	{
-		memcpy(rsp->lm_resp, lm_resp, lm_len);
-	}
-	else
-	{
-		rsp->lm_resp[0] = 0;
-	}
-	if (nt_resp != NULL)
-	{
-		memcpy(rsp->nt_resp, nt_resp, nt_len);
-	}
-	else
-	{
-		rsp->nt_resp[0] = 0;
-	}
+	memcpy(rsp->lm_resp, lm_resp, 24);
+	memcpy(rsp->nt_resp, nt_resp, 24);
 
-	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
-	{
-		ascii_to_unibuf(rsp->domain, domain, sizeof(rsp->domain)-2);
-		ascii_to_unibuf(rsp->user  , user  , sizeof(rsp->user  )-2);
-		ascii_to_unibuf(rsp->wks   , wks   , sizeof(rsp->wks   )-2);
-	}
-	else
-	{
+	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE)) {
+		dos_struni2(rsp->domain, domain, sizeof(rsp->domain));
+		dos_struni2(rsp->user, user, sizeof(rsp->user));
+		dos_struni2(rsp->wks, wks, sizeof(rsp->wks));
+	} else {
 		fstrcpy(rsp->domain, domain);
-		fstrcpy(rsp->user  , user  );
-		fstrcpy(rsp->wks   , wks   );
+		fstrcpy(rsp->user, user);
+		fstrcpy(rsp->wks, wks);
 	}
 	rsp->sess_key[0] = 0;
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_RESP structure.
+ Reads or writes an RPC_AUTH_NTLMSSP_RESP structure.
 
-*** lkclXXXX FUDGE!  HAVE TO MANUALLY SPECIFY OFFSET HERE (0x1c bytes) ***
-*** lkclXXXX the actual offset is at the start of the auth verifier    ***
-
+ *** lkclXXXX FUDGE!  HAVE TO MANUALLY SPECIFY OFFSET HERE (0x1c bytes) ***
+ *** lkclXXXX the actual offset is at the start of the auth verifier    ***
 ********************************************************************/
+
 BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth)
 {
-	if (rsp == NULL) return False;
+	if (rsp == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_resp");
 	depth++;
 
-	if (ps->io)
-	{
+	if (ps->io) {
 		uint32 old_offset;
 
 		/* reading */
 
 		ZERO_STRUCTP(rsp);
 
-		smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp , ps, depth); 
-		smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp , ps, depth); 
-		smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain  , ps, depth); 
-		smb_io_strhdr("hdr_user    ", &rsp->hdr_usr     , ps, depth); 
-		smb_io_strhdr("hdr_wks     ", &rsp->hdr_wks     , ps, depth); 
-		smb_io_strhdr("hdr_sess_key", &rsp->hdr_sess_key, ps, depth); 
+		if(!smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_user    ", &rsp->hdr_usr, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_wks     ", &rsp->hdr_wks, ps, depth)) 
+			return False;
+		if(!smb_io_strhdr("hdr_sess_key", &rsp->hdr_sess_key, ps, depth))
+			return False;
 
-		prs_uint32("neg_flags", ps, depth, &(rsp->neg_flags)); /* 0x0000 82b1 */
+		if(!prs_uint32("neg_flags", ps, depth, &rsp->neg_flags)) /* 0x0000 82b1 */
+			return False;
 
-		old_offset = ps->offset;
+		old_offset = prs_offset(ps);
 
-		ps->offset = rsp->hdr_domain  .buffer + 0x1c;
-		prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
-		old_offset += rsp->hdr_domain  .str_str_len;
+		if(!prs_set_offset(ps, rsp->hdr_domain.buffer + 0x1c))
+			return False;
 
-		ps->offset = rsp->hdr_usr     .buffer + 0x1c;
-		prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
-		old_offset += rsp->hdr_usr     .str_str_len;
+		if(!prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain,
+				MIN(rsp->hdr_domain.str_str_len, sizeof(rsp->domain))))
+			return False;
 
-		ps->offset = rsp->hdr_wks     .buffer + 0x1c;
-		prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
-		old_offset += rsp->hdr_wks     .str_str_len;
+		old_offset += rsp->hdr_domain.str_str_len;
 
-		ps->offset = rsp->hdr_lm_resp .buffer + 0x1c;
-		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
-		old_offset += rsp->hdr_lm_resp .str_str_len;
+		if(!prs_set_offset(ps, rsp->hdr_usr.buffer + 0x1c))
+			return False;
 
-		ps->offset = rsp->hdr_nt_resp .buffer + 0x1c;
-		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
-		old_offset += rsp->hdr_nt_resp .str_str_len;
+		if(!prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user,
+				MIN(rsp->hdr_usr.str_str_len, sizeof(rsp->user))))
+			return False;
 
-		if (rsp->hdr_sess_key.str_str_len != 0)
-		{
-			ps->offset = rsp->hdr_sess_key.buffer + 0x1c;
+		old_offset += rsp->hdr_usr.str_str_len;
+
+		if(!prs_set_offset(ps, rsp->hdr_wks.buffer + 0x1c))
+			return False;
+
+		if(!prs_uint8s(True, "wks     ", ps, depth, (uint8*)rsp->wks,
+				MIN(rsp->hdr_wks.str_str_len, sizeof(rsp->wks))))
+			return False;
+
+		old_offset += rsp->hdr_wks.str_str_len;
+
+		if(!prs_set_offset(ps, rsp->hdr_lm_resp.buffer + 0x1c))
+			return False;
+
+		if(!prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp,
+				MIN(rsp->hdr_lm_resp.str_str_len, sizeof(rsp->lm_resp ))))
+			return False;
+
+		old_offset += rsp->hdr_lm_resp.str_str_len;
+
+		if(!prs_set_offset(ps, rsp->hdr_nt_resp.buffer + 0x1c))
+			return False;
+
+		if(!prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp,
+				MIN(rsp->hdr_nt_resp.str_str_len, sizeof(rsp->nt_resp ))))
+			return False;
+
+		old_offset += rsp->hdr_nt_resp.str_str_len;
+
+		if (rsp->hdr_sess_key.str_str_len != 0) {
+
+			if(!prs_set_offset(ps, rsp->hdr_sess_key.buffer + 0x1c))
+				return False;
+
 			old_offset += rsp->hdr_sess_key.str_str_len;
-			prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
+
+			if(!prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key,
+					MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))))
+				return False;
 		}
 
-		ps->offset = old_offset;
-	}
-	else
-	{
+		if(!prs_set_offset(ps, old_offset))
+			return False;
+	} else {
 		/* writing */
-		smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp , ps, depth); 
-		smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp , ps, depth); 
-		smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain  , ps, depth); 
-		smb_io_strhdr("hdr_user    ", &rsp->hdr_usr     , ps, depth); 
-		smb_io_strhdr("hdr_wks     ", &rsp->hdr_wks     , ps, depth); 
-		smb_io_strhdr("hdr_sess_key", &rsp->hdr_sess_key, ps, depth); 
+		if(!smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_user    ", &rsp->hdr_usr, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_wks     ", &rsp->hdr_wks, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_sess_key", &rsp->hdr_sess_key, ps, depth))
+			return False;
 
-		prs_uint32("neg_flags", ps, depth, &(rsp->neg_flags)); /* 0x0000 82b1 */
+		if(!prs_uint32("neg_flags", ps, depth, &rsp->neg_flags)) /* 0x0000 82b1 */
+			return False;
 
-		prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
-		prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
-		prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
-		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
-		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
-		prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
+		if(!prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain,
+				MIN(rsp->hdr_domain.str_str_len, sizeof(rsp->domain))))
+			return False;
+
+		if(!prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user,
+				MIN(rsp->hdr_usr.str_str_len, sizeof(rsp->user))))
+			return False;
+
+		if(!prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks,
+				MIN(rsp->hdr_wks.str_str_len, sizeof(rsp->wks))))
+			return False;
+		if(!prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp,
+				MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp))))
+			return False;
+		if(!prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp,
+				MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))))
+			return False;
+		if(!prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key,
+				MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))))
+			return False;
 	}
 
 	return True;
 }
 
 /*******************************************************************
-checks an RPC_AUTH_NTLMSSP_CHK structure.
+ Checks an RPC_AUTH_NTLMSSP_CHK structure.
 ********************************************************************/
+
 BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num)
 {
 	if (chk == NULL)
-	{
 		return False;
-	}
 
 	if (chk->crc32 != crc32 ||
 	    chk->ver   != NTLMSSP_SIGN_VERSION ||
@@ -975,41 +1018,44 @@ BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_nu
 		return False;
 	}
 	return True;
-
-	return True;
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NTLMSSP_CHK structure.
+ Inits an RPC_AUTH_NTLMSSP_CHK structure.
 ********************************************************************/
-BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
+
+void init_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
 				uint32 ver, uint32 crc32, uint32 seq_num)
 {
-	if (chk == NULL) return False;
-
-	chk->ver      = ver     ;
+	chk->ver      = ver;
 	chk->reserved = 0x0;
-	chk->crc32    = crc32   ;
-	chk->seq_num  = seq_num ;
-
-	return True;
+	chk->crc32    = crc32;
+	chk->seq_num  = seq_num;
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_CHK structure.
+ Reads or writes an RPC_AUTH_NTLMSSP_CHK structure.
 ********************************************************************/
+
 BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth)
 {
-	if (chk == NULL) return False;
+	if (chk == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_chk");
 	depth++;
 
-	prs_uint32("ver     ", ps, depth, &(chk->ver     )); 
-	prs_uint32("reserved", ps, depth, &(chk->reserved)); 
-	prs_uint32("crc32   ", ps, depth, &(chk->crc32   )); 
-	prs_uint32("seq_num ", ps, depth, &(chk->seq_num )); 
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ver     ", ps, depth, &chk->ver))
+		return False;
+	if(!prs_uint32("reserved", ps, depth, &chk->reserved))
+		return False;
+	if(!prs_uint32("crc32   ", ps, depth, &chk->crc32))
+		return False;
+	if(!prs_uint32("seq_num ", ps, depth, &chk->seq_num))
+		return False;
 
 	return True;
 }
-

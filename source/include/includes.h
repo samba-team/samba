@@ -45,15 +45,34 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-
-/* if we have both SYSV IPC and shared mmap then we need to
-   choose. For most systems it is much faster to use SYSV IPC. We used
-   to make an exception for Linux, but now Linux 2.2 has made it
-   better to use sysv if possible */
-#if (defined(HAVE_SYSV_IPC) && defined(HAVE_SHARED_MMAP))
-#  undef HAVE_SHARED_MMAP
+#ifdef LINUX
+#define DEFAULT_PRINTING PRINT_BSD
+#define PRINTCAP_NAME "/etc/printcap"
 #endif
 
+#ifdef RELIANTUNIX
+/*
+ * <unistd.h> has to be included before any other to get
+ * large file support on Reliant UNIX
+ */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif /* RELIANTUNIX */
+
+#ifdef HAVE_SYSV_IPC
+#define USE_SYSV_IPC
+#endif
+
+#ifdef HAVE_SHARED_MMAP
+#define USE_SHARED_MMAP
+#endif
+
+
+/* if we have both SYSV IPC and shared mmap then we need to choose */
+#if (defined(USE_SYSV_IPC) && defined(USE_SHARED_MMAP))
+#  undef USE_SHARED_MMAP
+#endif
 
 #include <sys/types.h>
 
@@ -79,11 +98,6 @@
 #include <stdio.h>
 #include <stddef.h>
 
-#include <netinet/in.h>
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif
-
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -94,10 +108,6 @@
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#endif
-
-#ifdef HAVE_SYS_UN_H
-#include <sys/un.h>
 #endif
 
 #ifdef HAVE_SYS_SYSCALL_H
@@ -159,6 +169,9 @@
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
 #endif
@@ -193,6 +206,7 @@
 #include <varargs.h>
 #endif
 
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <syslog.h>
@@ -202,8 +216,32 @@
 #include <netinet/tcp.h>
 #endif
 
-#ifdef HAVE_TERMIOS_H
+/*
+ * The next three defines are needed to access the IPTOS_* options
+ * on some systems.
+ */
+
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_IP_H
+#include <netinet/in_ip.h>
+#endif
+
+#ifdef HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+
+#if defined(HAVE_TERMIOS_H)
+/* POSIX terminal handling. */
 #include <termios.h>
+#elif defined(HAVE_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <termio.h>
+#elif defined(HAVE_SYS_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <sys/termio.h>
 #endif
 
 #if HAVE_DIRENT_H
@@ -231,17 +269,6 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#endif
-
-#if 0
-/*
- *  I have removed this as it prevents compilation under SCO Server
- *  3.2. If you need to add it back in then please add a comment as to
- *  why it's needed and what OS it's needed for so we can work out how
- *  to test for it properly (tridge) */
-#ifdef HAVE_NET_ROUTE_H
-#include <net/route.h>
-#endif
 #endif
 
 #ifdef HAVE_NET_IF_H
@@ -314,6 +341,12 @@
 #endif
 
 #if defined(HAVE_RPC_RPC_H)
+/*
+ * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
+ */
+#if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
+#undef AUTH_ERROR
+#endif
 #include <rpc/rpc.h>
 #endif
 
@@ -330,12 +363,24 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
-#if defined(HAVE_MYSQL_H)
-#include <mysql.h>
+/*
+ * Define VOLATILE if needed.
+ */
+
+#if defined(HAVE_VOLATILE)
+#define VOLATILE volatile
 #else
-/* needed to get make proto to work with no <mysql.h> */
-#define MYSQL     void
-#define MYSQL_ROW void
+#define VOLATILE
+#endif
+
+/*
+ * Define SIG_ATOMIC_T if needed.
+ */
+
+#if defined(HAVE_SIG_ATOMIC_T_TYPE)
+#define SIG_ATOMIC_T sig_atomic_t
+#else
+#define SIG_ATOMIC_T int
 #endif
 
 #ifndef uchar
@@ -420,7 +465,7 @@
  */
 
 #ifndef SMB_INO_T
-#  ifdef HAVE_INO64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)
 #    define SMB_INO_T ino64_t
 #  else
 #    define SMB_INO_T ino_t
@@ -428,7 +473,7 @@
 #endif
 
 #ifndef LARGE_SMB_INO_T
-#  if defined(HAVE_INO64_T) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
 #    define LARGE_SMB_INO_T 1
 #  endif
 #endif
@@ -440,7 +485,7 @@
 #endif
 
 #ifndef SMB_OFF_T
-#  ifdef HAVE_OFF64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)
 #    define SMB_OFF_T off64_t
 #  else
 #    define SMB_OFF_T off_t
@@ -455,7 +500,7 @@
  */
 
 #ifndef LARGE_SMB_OFF_T
-#  if defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
 #    define LARGE_SMB_OFF_T 1
 #  endif
 #endif
@@ -471,10 +516,22 @@
  */
 
 #ifndef SMB_STRUCT_STAT
-#  if defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_STAT struct stat64
 #  else
 #    define SMB_STRUCT_STAT struct stat
+#  endif
+#endif
+
+/*
+ * Type for dirent structure.
+ */
+
+#ifndef SMB_STRUCT_DIRENT
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
+#    define SMB_STRUCT_DIRENT struct dirent64
+#  else
+#    define SMB_STRUCT_DIRENT struct dirent
 #  endif
 #endif
 
@@ -483,7 +540,7 @@
  */
 
 #ifndef SMB_STRUCT_FLOCK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_FLOCK struct flock64
 #  else
 #    define SMB_STRUCT_FLOCK struct flock
@@ -491,7 +548,7 @@
 #endif
 
 #ifndef SMB_F_SETLKW
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLKW F_SETLKW64
 #  else
 #    define SMB_F_SETLKW F_SETLKW
@@ -499,7 +556,7 @@
 #endif
 
 #ifndef SMB_F_SETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLK F_SETLK64
 #  else
 #    define SMB_F_SETLK F_SETLK
@@ -507,7 +564,7 @@
 #endif
 
 #ifndef SMB_F_GETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_GETLK F_GETLK64
 #  else
 #    define SMB_F_GETLK F_GETLK
@@ -517,9 +574,11 @@
 #if defined(HAVE_LONGLONG)
 #define SMB_BIG_UINT unsigned long long
 #define SMB_BIG_INT long long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #else
 #define SMB_BIG_UINT unsigned long
 #define SMB_BIG_INT long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #endif
 
 #ifndef MIN
@@ -555,10 +614,19 @@ extern int errno;
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
+#include "interfaces.h"
+
+#ifdef HAVE_FNMATCH
+#include <fnmatch.h>
+#else
+#include "fnmatch.h"
+#endif
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
+
+#include "debugparse.h"
 
 #include "version.h"
 #include "smb.h"
@@ -583,9 +651,25 @@ extern int errno;
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
-/* String routines */
+#ifdef strcpy
+#undef strcpy
+#endif /* strcpy */
+#define strcpy(dest,src) __ERROR__XX__NEVER_USE_STRCPY___;
 
-#include "safe_string.h"
+#ifdef strcat
+#undef strcat
+#endif /* strcat */
+#define strcat(dest,src) __ERROR__XX__NEVER_USE_STRCAT___;
+
+#ifdef sprintf
+#undef sprintf
+#endif /* sprintf */
+#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
+
+#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
@@ -596,12 +680,15 @@ extern int errno;
 #endif
 
 /* this guess needs to be improved (tridge) */
-#if defined(STAT_STATVFS) && !defined(SYSV)
+#if (defined(STAT_STATVFS) || defined(STAT_STATVFS64)) && !defined(SYSV)
 #define SYSV 1
 #endif
 
 #ifndef DEFAULT_PRINTING
-#ifdef SYSV
+#ifdef HAVE_LIBCUPS
+#define DEFAULT_PRINTING PRINT_CUPS
+#define PRINTCAP_NAME "cups"
+#elif defined(SYSV)
 #define DEFAULT_PRINTING PRINT_SYSV
 #define PRINTCAP_NAME "lpstat"
 #else
@@ -638,15 +725,10 @@ union semun {
 
 #if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
 #define USE_SMBPASS_DB 1
-#define USE_SMBUNIX_DB 1
 #endif
 
 #if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
 #define OSF1_ENH_SEC 1
-#endif
-
-#if defined(HAVE_PAM_AUTHENTICATE) && defined(HAVE_SECURITY_PAM_APPL_H)
-#define HAVE_PAM 1
 #endif
 
 #ifndef ALLOW_CHANGE_PASSWORD
@@ -673,10 +755,6 @@ union semun {
 #define MAXPATHLEN 256
 #endif
 
-#ifndef MAX_SERVER_POLICY_HANDLES
-#define MAX_SERVER_POLICY_HANDLES 64
-#endif
-
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif
@@ -695,14 +773,6 @@ union semun {
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
-#endif
-
-#ifndef SHM_R
-#define SHM_R (0400)
-#endif
-
-#ifndef SHM_W
-#define SHM_W (0200)
 #endif
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
@@ -725,14 +795,6 @@ union semun {
 #      undef HAVE_LIBREADLINE
 #    endif
 #  endif
-
-/* Some old versions of readline don't define a prototype for
-   filename_completion_function() */
-
-#  ifndef HAVE_READLINE_FCF_PROTO
-char *filename_completion_function(void);
-#  endif
-
 #endif
 
 #ifndef HAVE_STRDUP
@@ -759,15 +821,16 @@ time_t mktime(struct tm *t);
 int ftruncate(int f,long l);
 #endif
 
-#if (defined(HAVE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
-/* stupid glibc */
-int setresuid(uid_t ruid, uid_t euid, uid_t suid);
-int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+#ifndef HAVE_STRTOUL
+unsigned long strtoul(const char *nptr, char **endptr, int base);
 #endif
 
-#if (defined(HAVE_CRYPT) && !defined(HAVE_CRYPT_DECL) && !defined(KRB4_AUTH))
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
 /* stupid glibc */
-int crypt(const char *key, const char *salt);
+int setresuid(uid_t ruid, uid_t euid, uid_t suid);
+#endif
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
+int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
@@ -778,7 +841,32 @@ int crypt(const char *key, const char *salt);
 #define getpass(prompt) getsmbpass((prompt))
 #endif
 
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 254
+#endif
+
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
+
+/*
+ * glibc on linux doesn't seem to have MSG_WAITALL
+ * defined. I think the kernel has it though..
+ */
+
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
+
+/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
+   given the socket IO pattern that Samba uses */
+#ifdef TCP_NODELAY
+#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
+#else
+#define DEFAULT_SOCKET_OPTIONS ""
+#endif
 
 #endif /* _INCLUDES_H */

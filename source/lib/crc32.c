@@ -56,14 +56,12 @@ static unsigned long CRCTable[256] =
         0xB40BBE37,0xC30C8EA1,0x5A05DF1B,0x2D02EF8D
 };
 
-uint32 crc32_calc_buffer( uint32 count, char *buffer)
+uint32 crc32_calc_buffer( char *buffer, uint32 count)
 {
         uint32 crc=0xffffffff;
-	uint32 i;
+	int i;
         for(i=0;i<count;i++)
-	{
                 crc = (crc>>8) ^ CRCTable[(buffer[i] ^ crc) & 0xff];
-	}
         crc^=0xffffffff;
 	DEBUG(10,("crc32_calc_buffer: %x\n", crc));
 	dump_data(100, buffer, count);

@@ -176,6 +176,13 @@ static void lookup_strings(FILE *fichier)
 		pointeur++;
 	}  
   }
+
+  /* CCMRCF Mod, seg fault or worse if not found */
+  if (pointeur == 0) {
+     fprintf(stderr,"Printer not found\tNo [Strings] block in inf file\n");
+     exit(2);
+  }
+
 #ifdef DEBUGIT
   fprintf(stderr,"\t\tFound %d entries\n",pointeur-1);
 #endif

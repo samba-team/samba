@@ -26,10 +26,16 @@ for p in $*; do
  p2=`basename $p`
  echo Installing $p as $BINDIR/$p2
  if [ -f $BINDIR/$p2 ]; then
+   rm -f $BINDIR/$p2.old
    mv $BINDIR/$p2 $BINDIR/$p2.old
  fi
  cp $p $BINDIR/
  chmod $INSTALLPERMS $BINDIR/$p2
+
+ # this is a special case, mount needs this in a specific location
+ if [ $p2 = smbmount ]; then
+   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
+ fi
 done
 
 
@@ -43,4 +49,3 @@ binaries, man pages and shell scripts.
 EOF
 
 exit 0
-

@@ -52,24 +52,20 @@
 extern int DEBUGLEVEL;
 
 #if ALLOW_CHANGE_PASSWORD
-#define MINPASSWDLENGTH 5
-#define BUFSIZE 512
 
 static int findpty(char **slave)
 {
   int master;
-#ifndef HAVE_GRANTPT
   static fstring line;
-  DIR *dirp;
-  struct dirent *dentry;
+  void *dirp;
   char *dpname;
-#endif /* !HAVE_GRANTPT */
   
 #if defined(HAVE_GRANTPT)
-  if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 1) {
+  /* Try to open /dev/ptmx. If that fails, fall through to old method. */
+  if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
     grantpt(master);
     unlockpt(master);
-    *slave = ptsname(master);
+    *slave = (char *)ptsname(master);
     if (*slave == NULL) {
       DEBUG(0,("findpty: Unable to create master/slave pty pair.\n"));
       /* Stop fd leak on error. */
@@ -80,14 +76,14 @@ static int findpty(char **slave)
       return (master);
     }
   }
-#else /* HAVE_GRANTPT */
+#endif /* HAVE_GRANTPT */
+
   fstrcpy( line, "/dev/ptyXX" );
 
-  dirp = opendir("/dev");
+  dirp = OpenDir(NULL, "/dev", False);
   if (!dirp)
     return(-1);
-  while ((dentry = readdir(dirp)) != NULL) {
-    dpname = dentry->d_name;
+  while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
       DEBUG(3,("pty: try to open %s, line was %s\n", dpname, line ) );
       line[8] = dpname[3];
@@ -96,13 +92,12 @@ static int findpty(char **slave)
         DEBUG(3,("pty: opened %s\n", line ) );
         line[5] = 't';
         *slave = line;
-        closedir(dirp);
+        CloseDir(dirp);
         return (master);
       }
     }
   }
-  closedir(dirp);
-#endif /* HAVE_GRANTPT */
+  CloseDir(dirp);
   return (-1);
 }
 
@@ -110,9 +105,9 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 {
   int slave;
   struct termios stermios;
-  const struct passwd *pass = Get_Pwnam(name,True);
-  int gid;
-  int uid;
+  struct passwd *pass = Get_Pwnam(name,True);
+  gid_t gid;
+  uid_t uid;
 
   if (pass == NULL) {
     DEBUG(0,("dochild: user name %s doesn't exist in the UNIX password database.\n",
@@ -122,11 +117,8 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   gid = pass->pw_gid;
   uid = pass->pw_uid;
-#ifdef HAVE_SETRESUID
-  setresuid(0,0,0);
-#else 
-  setuid(0);
-#endif
+
+  gain_root_privilege();
 
   /* Start new session - gets rid of controlling terminal. */
   if (setsid() < 0) {
@@ -186,19 +178,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   /* make us completely into the right uid */
   if (!as_root) {
-#ifdef HAVE_SETRESUID
-	  setresgid(0,0,0);
-	  setresuid(0,0,0);
-	  setresgid(gid,gid,gid);
-	  setresuid(uid,uid,uid);      
-#else      
-	  setuid(0);
-	  seteuid(0);
-	  setgid(gid);
-	  setegid(gid);
-	  setuid(uid);
-	  seteuid(uid);
-#endif
+	  become_user_permanently(uid, gid);
   }
 
   DEBUG(10, ("Invoking '%s' as password change program.\n", passwordprogram));
@@ -211,91 +191,90 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   return(True);
 }
 
-static int expect(int master,char *expected,char *buf)
+static int expect(int master, char *issue, char *expected)
 {
-  int n, m;
- 
-  n = 0;
-  buf[0] = 0;
-  while (1) {
-    if (n >= BUFSIZE-1) {
-      return False;
-    }
+	pstring buffer;
+	int attempts, timeout, nread, len;
+	BOOL match = False;
 
-    /* allow 4 seconds for some output to appear */
-    m = read_with_timeout(master, buf+n, 1, BUFSIZE-1-n, 4000);
-    if (m < 0) 
-      return False;
+	for (attempts = 0; attempts < 2; attempts++)
+	{
+		if (!strequal(issue, "."))
+		{
+			if (lp_passwd_chat_debug())
+				DEBUG(100, ("expect: sending [%s]\n", issue));
 
-    n += m;
-    buf[n] = 0;
+			write(master, issue, strlen(issue));
+		}
 
-    {
-      pstring s1,s2;
-      pstrcpy(s1,buf);
-      pstrcpy(s2,expected);
-      if (do_match(s1, s2, False))
-	return(True);
-    }
-  }
+		if (strequal(expected, "."))
+			return True;
+
+		timeout = 2000;
+		nread = 0;
+		buffer[nread] = 0;
+
+		while ((len = read_with_timeout(master, buffer + nread, 1,
+				 sizeof(buffer) - nread - 1, timeout)) > 0)
+		{
+			nread += len;
+			buffer[nread] = 0;
+
+			if ((match = unix_do_match(buffer, expected, False)))
+				timeout = 200;
+		}
+
+		if (lp_passwd_chat_debug())
+			DEBUG(100, ("expect: expected [%s] received [%s]\n",
+				    expected, buffer));
+
+		if (match)
+			break;
+
+		if (len < 0)
+		{
+			DEBUG(2, ("expect: %s\n", strerror(errno)));
+			return False;
+		}
+	}
+
+	return match;
 }
 
 static void pwd_sub(char *buf)
 {
-  string_sub(buf,"\\n","\n");
-  string_sub(buf,"\\r","\r");
-  string_sub(buf,"\\s"," ");
-  string_sub(buf,"\\t","\t");
+	all_string_sub(buf,"\\n","\n",0);
+	all_string_sub(buf,"\\r","\r",0);
+	all_string_sub(buf,"\\s"," ",0);
+	all_string_sub(buf,"\\t","\t",0);
 }
 
-static void writestring(int fd,char *s)
+static int talktochild(int master, char *seq)
 {
-  int l;
-  
-  l = strlen (s);
-  write (fd, s, l);
+	int count = 0;
+	fstring issue, expected;
+
+	fstrcpy(issue, ".");
+
+	while (next_token(&seq, expected, NULL, sizeof(expected)))
+	{
+		pwd_sub(expected);
+		count++;
+
+		if (!expect(master, issue, expected))
+		{
+			DEBUG(3,("Response %d incorrect\n", count));
+			return False;
+		}
+
+		if (!next_token(&seq, issue, NULL, sizeof(issue)))
+			fstrcpy(issue, ".");
+
+		pwd_sub(issue);
+	}
+
+	return (count > 0);
 }
-
-
-static int talktochild(int master, char *chatsequence)
-{
-  char buf[BUFSIZE];
-  int count=0;
-  char *ptr=chatsequence;
-  fstring chatbuf;
-
-  *buf = 0;
-  sleep(1);
-
-  while (next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) {
-    BOOL ok=True;
-    count++;
-    pwd_sub(chatbuf);
-    if (!strequal(chatbuf,"."))
-      ok = expect(master,chatbuf,buf);
-
-    if (lp_passwd_chat_debug())
-      DEBUG(100,("talktochild: chatbuf=[%s] responsebuf=[%s]\n",chatbuf,buf));
-
-    if (!ok) {
-      DEBUG(3,("response %d incorrect\n",count));
-      return(False);
-    }
-
-    if (!next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) break;
-    pwd_sub(chatbuf);
-    if (!strequal(chatbuf,"."))
-      writestring(master,chatbuf);
-
-    if (lp_passwd_chat_debug())
-      DEBUG(100,("talktochild: sendbuf=[%s]\n",chatbuf));
-  }
-
-  if (count<1) return(False);
-
-  return (True);
-}
-
 
 static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
 {
@@ -311,9 +290,17 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
     return(False);
   }
 
+  /*
+   * We need to temporarily stop CatchChild from eating
+   * SIGCLD signals as it also eats the exit status code. JRA.
+   */
+
+  CatchChildLeaveStatus();
+
   if ((pid = fork()) < 0) {
     DEBUG(3,("Cannot fork() child for password change: %s\n",name));
     close(master);
+    CatchChild();
     return(False);
   }
 
@@ -324,11 +311,25 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
       kill(pid, SIGKILL); /* be sure to end this process */
     }
 
-    if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+	while((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+      if(errno == EINTR) {
+        errno = 0;
+        continue;
+      }
+	  break;
+    }
+
+    if (wpid < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
       close(master);
+      CatchChild();
       return(False);
     }
+
+    /*
+     * Go back to ignoring children.
+     */
+    CatchChild();
 
     close(master);
 
@@ -362,8 +363,12 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
     DEBUG(3,("Dochild for user %s (uid=%d,gid=%d)\n",name,(int)getuid(),(int)getgid()));
     chstat = dochild(master, slavedev, name, passwordprogram, as_root);
 
-    if (as_root)
-      unbecome_root(False);
+	/*
+	 * The child should never return from dochild() ....
+	 */
+
+	DEBUG(0,("chat_with_program: Error: dochild() returned %d\n", chstat ));
+	exit(1);
   }
 
   if (chstat)
@@ -376,8 +381,8 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   pstring passwordprogram;
   pstring chatsequence;
-  int i;
-  int len;
+  size_t i;
+  size_t len;
 
   strlower(name); 
   DEBUG(3,("Password change for user: %s\n",name));
@@ -388,9 +393,10 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 
   /* Take the passed information and test it for minimum criteria */
   /* Minimum password length */
-  if (strlen(newpass) < MINPASSWDLENGTH) /* too short, must be at least MINPASSWDLENGTH */ 
+  if (strlen(newpass) < lp_min_passwd_length()) /* too short, must be at least MINPASSWDLENGTH */ 
     {
-      DEBUG(2,("Password Change: %s, New password is shorter than MINPASSWDLENGTH\n",name));
+      DEBUG(0,("Password Change: user %s, New password is shorter than minimum password length = %d\n",
+            name, lp_min_passwd_length()));
       return (False);		/* inform the user */
     }
   
@@ -435,13 +441,14 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
     }
   }
 
-  string_sub(passwordprogram,"%u",name);
-  all_string_sub(passwordprogram,"%o",oldpass);
-  all_string_sub(passwordprogram,"%n",newpass);
+  pstring_sub(passwordprogram,"%u",name);
+  /* note that we do NOT substitute the %o and %n in the password program
+     as this would open up a security hole where the user could use
+     a new password containing shell escape characters */
 
-  string_sub(chatsequence,"%u",name);
-  all_string_sub(chatsequence,"%o",oldpass);
-  all_string_sub(chatsequence,"%n",newpass);
+  pstring_sub(chatsequence,"%u",name);
+  all_string_sub(chatsequence,"%o",oldpass,sizeof(pstring));
+  all_string_sub(chatsequence,"%n",newpass,sizeof(pstring));
   return(chat_with_program(passwordprogram,name,chatsequence, as_root));
 }
 
@@ -531,7 +538,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 
   if (smbpw->acct_ctrl & ACB_DISABLED)
   {
-    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->unix_name));
+    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->smb_name));
     return False;
   }
 
@@ -573,14 +580,6 @@ BOOL pass_oem_change(char *user,
 	                               &sampw, 
 	                               new_passwd, sizeof(new_passwd));
 
-	/* now we check to see if we are actually allowed to change the
-	   password. */
-	   
-	if (ret && (sampw->acct_ctrl & ACB_PWLOCK))
-	{
-		ret = False;
-	}
-	
 	/* 
 	 * At this point we have the new case-sensitive plaintext
 	 * password in the fstring new_passwd. If we wanted to synchronise
@@ -621,12 +620,12 @@ BOOL check_oem_password(char *user,
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	struct smb_passwd *smbpw = NULL;
+	int new_pw_len;
 	uchar new_ntp16[16];
 	uchar unenc_old_ntpw[16];
 	uchar new_p16[16];
 	uchar unenc_old_pw[16];
 	char no_pw[2];
-	uint32 len;
 
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
@@ -683,9 +682,33 @@ BOOL check_oem_password(char *user,
 	 */
 	SamOEMhash( (uchar *)lmdata, (uchar *)smbpw->smb_passwd, True);
 
-	if (!decode_pw_buffer(lmdata, new_passwd, new_passwd_size, &len))
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	new_pw_len = IVAL(lmdata, 512);
+	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
 	{
+		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
 		return False;
+	}
+
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode
+		 */
+		int uni_pw_len = new_pw_len;
+		char *pw;
+		new_pw_len /= 2;
+		pw = dos_unistrn2((uint16*)(&lmdata[512-uni_pw_len]), new_pw_len);
+		memcpy(new_passwd, pw, new_pw_len+1);
+	}
+	else
+	{
+		memcpy(new_passwd, &lmdata[512-new_pw_len], new_pw_len);
+		new_passwd[new_pw_len] = '\0';
 	}
 
 	/*

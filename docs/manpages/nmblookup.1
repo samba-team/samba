@@ -5,7 +5,7 @@ nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS names
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBnmblookup\fP [-M] [-R] [-S] [-r] [-A] [-h] [-B broadcast address] [-U unicast address] [-d debuglevel] [-s smb config file] [-i NetBIOS scope] name
+\fBnmblookup\fP [-M] [-R] [-S] [-r] [-A] [-h] [-B broadcast address] [-U unicast address] [-d debuglevel] [-s smb config file] [-i NetBIOS scope] [-T] name
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -20,8 +20,9 @@ or to a particular machine\&. All queries are done over UDP\&.
 .PP 
 .IP 
 .IP "\fB-M\fP" 
-Searches for a master browser\&. This is done by doing a
-broadcast lookup on the special name \f(CW__MSBROWSE__\fP\&.
+Searches for a master browser by looking up the 
+NetBIOS name \fBname\fP with a type of 0x1d\&. If \fBname\fP
+is \f(CW"-"\fP then it does a lookup on the special name \f(CW__MSBROWSE__\fP\&.
 .IP 
 .IP "\fB-R\fP" 
 Set the recursion desired bit in the packet to do a
@@ -55,8 +56,8 @@ Print a help (usage) message\&.
 .IP "\fB-B broadcast address\fP" 
 Send the query to the given broadcast
 address\&. Without this option the default behavior of nmblookup is to
-send the query to the broadcast address of the primary network
-interface as either auto-detected or defined in the 
+send the query to the broadcast address of the network
+interfaces as either auto-detected or defined in the 
 \fBinterfaces\fP parameter of the 
 \fBsmb\&.conf (5)\fP file\&.
 .IP 
@@ -96,6 +97,12 @@ use of NetBIOS scopes, see rfc1001\&.txt and rfc1002\&.txt\&. NetBIOS scopes
 are \fIvery\fP rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with\&.
+.IP 
+.IP "\fB-T\fP" 
+This causes any IP addresses found in the lookup to be
+looked up via a reverse DNS lookup into a DNS name, and printed out
+before each \f(CW"IP address   NetBIOS name"\fP pair that is the normal
+output\&.
 .IP 
 .IP "\fBname\fP" 
 This is the NetBIOS name being queried\&. Depending upon

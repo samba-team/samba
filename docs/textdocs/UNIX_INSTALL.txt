@@ -1,14 +1,5 @@
-!==
-!== UNIX_INSTALL.txt for Samba release 2.1.0prealpha 981204
-!==
-Contributor:	Andrew Tridgell <samba-bugs@samba.org>
-Date:		Unknown
-Status:		Current
-Updated:	November 13, 1998	<jra@samba.org>
-
-Subject:	HOW TO INSTALL AND TEST SAMBA
-===============================================================================
-
+HOW TO INSTALL AND TEST SAMBA
+=============================
 
 STEP 0. Read the man pages. They contain lots of useful info that will
 help to get you started. If you don't know how to read man pages then

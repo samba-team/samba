@@ -259,7 +259,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(const uchar *str, uchar *key)
+static void str_to_key(unsigned char *str,unsigned char *key)
 {
 	int i;
 
@@ -277,7 +277,7 @@ static void str_to_key(const uchar *str, uchar *key)
 }
 
 
-void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw)
+static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
 {
 	int i;
 	char outb[64];
@@ -365,10 +365,6 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
   unsigned char index_j = 0;
   unsigned char j = 0;
   int ind;
-  int len = 0;
-  if (val == 1) len = 516;
-  if (val == 0) len = 16;
-  if (val == 2) len = 68;
 
   for (ind = 0; ind < 256; ind++)
   {
@@ -385,7 +381,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
      s_box[ind] = s_box[j];
      s_box[j] = tc;
   }
-  for( ind = 0; ind < len; ind++)
+  for( ind = 0; ind < (val ? 516 : 16); ind++)
   {
     unsigned char tc;
     unsigned char t;
@@ -400,17 +396,4 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
     t = s_box[index_i] + s_box[index_j];
     data[ind] = data[ind] ^ s_box[t];
   }
-}
-
-void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw)
-{
-	unsigned char s[14];
-
-	s[0] = s[4] = s[8] = s[12] = (unsigned char)(rid & 0xFF);
-	s[1] = s[5] = s[9] = s[13] = (unsigned char)((rid >> 8) & 0xFF);
-	s[2] = s[6] = s[10]        = (unsigned char)((rid >> 16) & 0xFF);
-	s[3] = s[7] = s[11]        = (unsigned char)((rid >> 24) & 0xFF);
-
-	smbhash(out, in, s, forw);
-	smbhash(out+8, in+8, s+7, forw);
 }

@@ -22,8 +22,51 @@
 extern int DEBUGLEVEL;
 
 BOOL global_machine_password_needs_changing = False;
-static int mach_passwd_lock_depth = 0;
-static FILE *mach_passwd_fp = NULL;
+
+/***************************************************************
+ Lock an fd. Abandon after waitsecs seconds.
+****************************************************************/
+
+BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
+{
+  if (fd < 0)
+    return False;
+
+  if(*plock_depth == 0) {
+    if (!do_file_lock(fd, secs, type)) {
+      DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
+                 strerror(errno)));
+      return False;
+    }
+  }
+
+  (*plock_depth)++;
+
+  return True;
+}
+
+/***************************************************************
+ Unlock an fd. Abandon after waitsecs seconds.
+****************************************************************/
+
+BOOL pw_file_unlock(int fd, int *plock_depth)
+{
+  BOOL ret=True;
+
+  if(*plock_depth == 1)
+    ret = do_file_lock(fd, 5, F_UNLCK);
+
+  if (*plock_depth > 0)
+    (*plock_depth)--;
+
+  if(!ret)
+    DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",
+                 strerror(errno)));
+  return ret;
+}
+
+static int mach_passwd_lock_depth;
+static FILE *mach_passwd_fp;
 
 /************************************************************************
  Routine to get the name for a trust account file.
@@ -43,7 +86,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 
   if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
   {
-    DEBUG(0,("get_trust_account_file_name: path %s too long to add trust details.\n",
+    DEBUG(0,("trust_password_lock: path %s too long to add trust details.\n",
               mac_file));
     return;
   }
@@ -52,8 +95,6 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
   pstrcat(mac_file, ".");
   pstrcat(mac_file, name);
   pstrcat(mac_file, ".mac");
-
-  DEBUG(5,("trust_account_file_name: %s\n", mac_file));
 }
  
 /************************************************************************
@@ -82,7 +123,7 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 
     chmod(mac_file, 0600);
 
-    if(!file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
+    if(!pw_file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
     {
       DEBUG(0,("trust_password_lock: cannot lock file %s\n", mac_file));
@@ -101,7 +142,7 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 
 BOOL trust_password_unlock(void)
 {
-  BOOL ret = file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
+  BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
   if(mach_passwd_lock_depth == 0)
     fclose(mach_passwd_fp);
   return ret;
@@ -158,7 +199,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
 
   if(strlen(linebuf) != 45) {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (wrong length \
-- was %d, should be 45).\n", strlen(linebuf)));
+- was %d, should be 45).\n", (int)strlen(linebuf)));
 #ifdef DEBUG_PASSWORD
     DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
@@ -169,7 +210,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
    * Get the hex password.
    */
 
-  if (!pwdb_gethexpwd((char *)linebuf, (char *)ret_pwd, NULL) || linebuf[32] != ':' || 
+  if (!pdb_gethexpwd((char *)linebuf, ret_pwd) || linebuf[32] != ':' || 
          strncmp(&linebuf[33], "TLC-", 4)) {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD
@@ -240,17 +281,17 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
   time_t lct;
 
   /*
-   * Get the trust account password.
+   * Get the machine account password.
    */
   if(!trust_password_lock( domain, myname, False)) {
-    DEBUG(0,("trust_get_passwd: unable to open the trust account password file for \
-trust %s in domain %s.\n", myname, domain ));
+    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
+machine %s in domain %s.\n", myname, domain ));
     return False;
   }
 
   if(get_trust_account_password( trust_passwd, &lct) == False) {
-    DEBUG(0,("trust_get_passwd: unable to read the trust account password for \
-trust %s in domain %s.\n", myname, domain ));
+    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
+machine %s in domain %s.\n", myname, domain ));
     trust_password_unlock();
     return False;
   }
@@ -258,7 +299,7 @@ trust %s in domain %s.\n", myname, domain ));
   trust_password_unlock();
 
   /* 
-   * Here we check the last change time to see if the trust
+   * Here we check the last change time to see if the machine
    * password needs changing. JRA. 
    */
 
@@ -267,37 +308,4 @@ trust %s in domain %s.\n", myname, domain ));
     global_machine_password_needs_changing = True;
   }
   return True;
-}
-
-/*********************************************************
-record Trust Account password.
-**********************************************************/
-BOOL create_trust_account_file(char *domain, char *name, uchar pass[16])
-{
-	/*
-	 * Create the machine account password file.
-	 */
-
-	if (!trust_password_lock( domain, name, True))
-	{
-		DEBUG(0,("unable to open the trust account password file for \
-account %s in domain %s.\n", name, domain)); 
-		return False;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if (!set_trust_account_password( pass))
-	{              
-		DEBUG(0,("unable to write the trust account password for \
-%s in domain %s.\n", name, domain));
-		trust_password_unlock();
-		return False;
-	}
-	
-	trust_password_unlock();
-	
-	return True;
 }

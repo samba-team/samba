@@ -1,14 +1,14 @@
 Begin2
 Title        = Samba
-Version      = 2.0
+Version      = 1.8.0
 Desc1        = Samba is a SMB based file and print server for unix. It
 Desc2        = provides access to unix file and print services from
 Desc3        = SMB compatible clients such as WinNT, WfWg, OS/2
 Desc4        = and Pathworks. It also includes a ftp-style unix client
 Desc5        = and a netbios nameserver.
-Author       = Samba Team
+Author       = Andrew Tridgell
 AuthorEmail  = samba-bugs@samba.org
-Maintainer   = Samba Team
+Maintainer   = Andrew Tridgell
 MaintEmail   = samba-bugs@samba.org
 Site1        = samba.org
 Path1        = pub/samba/
@@ -18,8 +18,9 @@ Required1    = Ansi-C compiler and a TCP/IP network.
 CopyPolicy1  = GNU Public License
 Keywords     = LanManager, SMB, Networking
 Comment1     = To join the Samba mailing list send mail to 
-Comment2     = listproc@samba.org with a body of
+Comment2     = listproc@listproc.anu.edu.au with a body of
 Comment3     = "subscribe samba Your Name"
-Entered      = November 1998
+Entered      = October 1994
 EnteredBy    = Andrew Tridgell
 End
+

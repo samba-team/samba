@@ -26,14 +26,13 @@
 extern int DEBUGLEVEL;
 
 extern fstring global_sam_name;
-extern DOM_SID global_sam_sid;
 
 /*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.
  */
 
-static struct aliasdb_ops *aldb_ops = NULL;
+static struct aliasdb_ops *aldb_ops;
 
 /***************************************************************
  Initialise the alias db operations.
@@ -50,8 +49,8 @@ BOOL initialise_alias_db(void)
   aldb_ops =  nisplus_initialise_alias_db();
 #elif defined(WITH_LDAP)
   aldb_ops = ldap_initialise_alias_db();
-#elif defined(USE_SMBUNIX_DB)
-  aldb_ops = unix_initialise_alias_db();
+#else 
+  aldb_ops = file_initialise_alias_db();
 #endif 
 
   return (aldb_ops != NULL);
@@ -68,28 +67,7 @@ BOOL initialise_alias_db(void)
 *************************************************************************/
 LOCAL_GRP *iterate_getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
-	DOM_NAME_MAP gmep;
-	uint32 rid;
-	if (!lookupsmbgrpgid(gid, &gmep))
-	{
-		DEBUG(0,("iterate_getaliasgid: gid %d does not map to one of our Domain's Aliases\n", gid));
-		return NULL;
-	}
-
-	if (gmep.type != SID_NAME_ALIAS )
-	{
-		DEBUG(0,("iterate_getaliasgid: gid %d does not map to one of our Domain's Aliases\n", gid));
-		return NULL;
-	}
-
-	sid_split_rid(&gmep.sid, &rid);
-	if (!sid_equal(&gmep.sid, &global_sam_sid))
-	{
-		DEBUG(0,("iterate_getaliasgid: gid %d does not map into our Domain SID\n", gid));
-		return NULL;
-	}
-
-	return iterate_getaliasrid(rid, mem, num_mem);
+	return iterate_getaliasrid(pwdb_gid_to_alias_rid(gid), mem, num_mem);
 }
 
 /************************************************************************
@@ -114,7 +92,6 @@ LOCAL_GRP *iterate_getaliasrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 
 	while ((als = getaliasent(fp, mem, num_mem)) != NULL && als->rid != rid)
 	{
-		DEBUG(10,("iterate: %s 0x%x", als->name, als->rid));
 	}
 
 	if (als != NULL)
@@ -130,7 +107,7 @@ LOCAL_GRP *iterate_getaliasrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem)
  Utility function to search alias database by name.  use this if your database
  does not have search facilities.
 *************************************************************************/
-LOCAL_GRP *iterate_getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
+LOCAL_GRP *iterate_getaliasnam(char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
 	LOCAL_GRP *als = NULL;
 	void *fp = NULL;
@@ -189,11 +166,11 @@ BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als)
 /*************************************************************************
  checks to see if a user is a member of a domain alias
  *************************************************************************/
-static BOOL user_is_member(const char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
+static BOOL user_is_member(char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
 {
 	int i;
 	pstring name;
-	slprintf(name, sizeof(name)-1, "%s\\%s", global_sam_name, user_name);
+	slprintf(name, sizeof(name)-1, "\\%s\\%s", global_sam_name, user_name);
 
 	for (i = 0; i < num_mem; i++)
 	{
@@ -212,16 +189,16 @@ static BOOL user_is_member(const char *user_name, LOCAL_GRP_MEMBER *mem, int num
  gets an array of aliases that a user is in.  use this if your database
  does not have search facilities
  *************************************************************************/
-BOOL iterate_getuseraliasntnam(const char *user_name, LOCAL_GRP **alss, int *num_alss)
+BOOL iterate_getuseraliasnam(char *user_name, LOCAL_GRP **alss, int *num_alss)
 {
-	LOCAL_GRP *als = NULL;
+	LOCAL_GRP *als;
 	LOCAL_GRP_MEMBER *mem = NULL;
 	int num_mem = 0;
 	void *fp = NULL;
 
 	DEBUG(10, ("search for useralias by name: %s\n", user_name));
 
-	if (user_name == NULL || alss == NULL || num_alss == NULL)
+	if (user_name == NULL || als == NULL || num_alss == NULL)
 	{
 		return False;
 	}
@@ -277,12 +254,12 @@ BOOL iterate_getuseraliasntnam(const char *user_name, LOCAL_GRP **alss, int *num
  *************************************************************************/
 BOOL enumdomaliases(LOCAL_GRP **alss, int *num_alss)
 {
-	LOCAL_GRP *als = NULL;
+	LOCAL_GRP *als;
 	void *fp = NULL;
 
 	DEBUG(10, ("enum user aliases\n"));
 
-	if (alss == NULL || num_alss == NULL)
+	if (als == NULL || num_alss == NULL)
 	{
 		return False;
 	}
@@ -348,25 +325,11 @@ LOCAL_GRP *getaliasent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem)
 
 /************************************************************************
  Routine to add an entry to the alias database file.
- on entry, the entry is added by name.
- on exit, the RID is expected to have been set.
 *************************************************************************/
-BOOL add_alias_entry(LOCAL_GRP *newgrp)
+
+BOOL add_alias_entry(LOCAL_GRP *newals)
 {
-	BOOL ret;
-	if (newgrp->rid != 0xffffffff)
-{
-		DEBUG(0,("add_alias_entry - RID must be 0xffffffff, \
-database instance is responsible for allocating the RID, not you.\n"));
-		return False;
-	}
- 	ret = aldb_ops->add_alias_entry(newgrp);
-	if (newgrp->rid == 0xffffffff)
-	{
-		DEBUG(0,("add_alias_entry - RID has not been set by database\n"));
-		return False;
-	}
-	return ret;
+ 	return aldb_ops->add_alias_entry(newals);
 }
 
 /************************************************************************
@@ -380,35 +343,12 @@ BOOL mod_alias_entry(LOCAL_GRP* als)
 }
 
 /************************************************************************
- Routine to delete alias database entry matching by rid.
-************************************************************************/
-BOOL del_alias_entry(uint32 rid)
-{
- 	return aldb_ops->del_alias_entry(rid);
-}
-
-/************************************************************************
- Routine to add a member to an entry in the alias database file.
-*************************************************************************/
-BOOL add_alias_member(uint32 rid, DOM_SID *member_sid)
-{
- 	return aldb_ops->add_alias_member(rid, member_sid);
-}
-
-/************************************************************************
- Routine to delete a member from an entry in the alias database file.
-*************************************************************************/
-BOOL del_alias_member(uint32 rid, DOM_SID *member_sid)
-{
- 	return aldb_ops->del_alias_member(rid, member_sid);
-}
-/************************************************************************
  Routine to search alias database by name.
 *************************************************************************/
 
-LOCAL_GRP *getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
+LOCAL_GRP *getaliasnam(char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
-	return aldb_ops->getaliasntnam(name, mem, num_mem);
+	return aldb_ops->getaliasnam(name, mem, num_mem);
 }
 
 /************************************************************************
@@ -432,65 +372,18 @@ LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 /*************************************************************************
  gets an array of aliases that a user is in.
  *************************************************************************/
-BOOL getuseraliasntnam(const char *user_name, LOCAL_GRP **als, int *num_alss)
+BOOL getuseraliasnam(char *user_name, LOCAL_GRP **als, int *num_alss)
 {
-	return aldb_ops->getuseraliasntnam(user_name, als, num_alss);
+	return aldb_ops->getuseraliasnam(user_name, als, num_alss);
 }
 
 /*************************************************************
  initialises a LOCAL_GRP.
  **************************************************************/
+
 void aldb_init_als(LOCAL_GRP *als)
 {
 	if (als == NULL) return;
 	ZERO_STRUCTP(als);
 }
 
-/*************************************************************
- turns an alias entry into a string.
- **************************************************************/
-BOOL make_alias_line(char *p, int max_len,
-				LOCAL_GRP *als,
-				LOCAL_GRP_MEMBER **mem, int *num_mem)
-{
-	int i;
-	int len;
-	len = slprintf(p, max_len-1, "%s:%s:%d:", als->name, als->comment, als->rid);
-
-	if (len == -1)
-	{
-		DEBUG(0,("make_alias_line: cannot create entry\n"));
-		return False;
-	}
-
-	p += len;
-	max_len -= len;
-
-	if (mem == NULL || num_mem == NULL)
-	{
-		return True;
-	}
-
-	for (i = 0; i < (*num_mem); i++)
-	{
-		len = strlen((*mem)[i].name);
-		p = safe_strcpy(p, (*mem)[i].name, max_len); 
-
-		if (p == NULL)
-		{
-			DEBUG(0, ("make_alias_line: out of space for aliases!\n"));
-			return False;
-		}
-
-		max_len -= len;
-
-		if (i != (*num_mem)-1)
-		{
-			*p = ',';
-			p++;
-			max_len--;
-		}
-	}
-
-	return True;
-}

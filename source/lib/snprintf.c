@@ -581,8 +581,21 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 {
   int signvalue = 0;
   LDOUBLE ufvalue;
+#ifndef HAVE_FCVT
   char iconvert[20];
   char fconvert[20];
+#else
+  char iconvert[311];
+  char fconvert[311];
+  char *result;
+  int dec_pt, sig;
+  int r_length;
+# ifdef HAVE_FCVTL
+  extern char *fcvtl(long double value, int ndigit, int *decpt, int *sign);
+# else
+  extern char *fcvt(double value, int ndigit, int *decpt, int *sign);
+# endif
+#endif
   int iplace = 0;
   int fplace = 0;
   int padlen = 0; /* amount to pad */
@@ -613,6 +626,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   if (flags & DP_F_UP) caps = 1; /* Should characters be upper case? */
 #endif
 
+#ifndef HAVE_FCVT
   intpart = (long)ufvalue;
 
   /* 
@@ -655,7 +669,53 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   } while(fracpart && (fplace < 20));
   if (fplace == 20) fplace--;
   fconvert[fplace] = 0;
+#else  /* use fcvt() */
+  if (max > 310)
+    max = 310;
+# ifdef HAVE_FCVTL
+  result = fcvtl(ufvalue, max, &dec_pt, &sig);
+# else
+  result = fcvt(ufvalue, max, &dec_pt, &sig);
+# endif
 
+  r_length = strlen(result);
+
+  if (r_length == 0)
+    {
+      result[0] = '0';
+      result[1] = '\0';
+      r_length = 1;
+    }
+  
+  if (dec_pt <= 0)
+    {
+    iplace = 1;
+    iconvert[0] = '0';
+    iconvert[1] = '\0';
+
+    fplace = 0;
+
+    while(r_length)
+      fconvert[fplace++] = result[--r_length];
+
+    while(dec_pt < 0)
+      fconvert[fplace++] = '0';
+    }
+  else
+    {
+    int c;
+
+    iplace=0;
+    for(c=dec_pt; c; iconvert[iplace++] = result[--c]);
+    iconvert[iplace] = '\0';
+
+    result += dec_pt;
+    fplace = 0;
+    
+    for(c=(r_length-dec_pt); c; fconvert[fplace++] = result[--c]);
+    }
+#endif /* fcvt */
+  
   /* -1 for decimal point, another -1 if we are printing a sign */
   padlen = min - iplace - max - 1 - ((signvalue) ? 1 : 0); 
   zpadlen = max - fplace;
@@ -791,7 +851,7 @@ static void dopr_outch (char *buffer, size_t *currlen, size_t maxlen, char c)
     NULL
   };
   double fp_nums[] = { -1.5, 134.21, 91340.2, 341.1234, 0203.9, 0.96, 0.996, 
-    0.9996, 1.996, 4.136, 0};
+    0.9996, 1.996, 4.136, 6442452944.1234, 0};
   char *int_fmt[] = {
     "%-1.5d",
     "%1.5d",

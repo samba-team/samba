@@ -1,8 +1,8 @@
 !==
-!== ENCRYPTION.txt for Samba release 2.1.0prealpha 981204
+!== ENCRYPTION.txt for Samba release 2.0.5a 22 Jul 1999
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.org>
-Updated:	March 19, 1998
+Updated:	April 19, 1999
 Note:		Please refer to WinNT.txt also
 
 Subject:	LanManager / Samba Password Encryption.
@@ -22,7 +22,7 @@ How does it work ?
 
 LanManager encryption is somewhat similar to UNIX password
 encryption. The server uses a file containing a hashed value of a
-users password.  This is created by taking the users plaintext
+user's password.  This is created by taking the user's plaintext
 password, capitalising it, and either truncating to 14 bytes (or
 padding to 14 bytes with null bytes). This 14 byte value is used as
 two 56 bit DES keys to encrypt a 'magic' eight byte value, forming a
@@ -30,7 +30,7 @@ two 56 bit DES keys to encrypt a 'magic' eight byte value, forming a
 be known as the *hashed password*.
 
 Windows NT encryption is a higher quality mechanism, consisting
-of doing an MD4 hash on a Unicode version of the users password. This
+of doing an MD4 hash on a Unicode version of the user's password. This
 also produces a 16 byte hash value that is non-reversible.
 
 When a client (LanManager, Windows for WorkGroups, Windows 95 or
@@ -51,10 +51,10 @@ In the SMB call SMBsessionsetupX (when user level security is
 selected) or the call SMBtconX (when share level security is selected)
 the 24 byte response is returned by the client to the Samba server.
 For Windows NT protocol levels the above calculation is done on
-both hashes of the users password and both responses are returned
+both hashes of the user's password and both responses are returned
 in the SMB call, giving two 24 byte values.
 
-The Samba server then reproduces the above calculation, using it's own
+The Samba server then reproduces the above calculation, using its own
 stored value of the 16 byte hashed password (read from the smbpasswd
 file - described later) and the challenge value that it kept from the
 negotiate protocol reply. It then checks to see if the 24 byte value it
@@ -62,11 +62,11 @@ calculates matches the 24 byte value returned to it from the client.
 
 If these values match exactly, then the client knew the correct
 password (or the 16 byte hashed value - see security note below) and
-is this allowed access. If not then the client did not know the
+is thus allowed access. If not, then the client did not know the
 correct password and is denied access.
 
 Note that the Samba server never knows or stores the cleartext of the
-users password - just the 16 byte hashed values derived from it. Also
+user's password - just the 16 byte hashed values derived from it. Also
 note that the cleartext password or 16 byte hashed values are never
 transmitted over the network - thus increasing security.
 
@@ -79,7 +79,7 @@ typically sends clear text passwords over the nextwork when logging
 in. This is bad. The SMB encryption scheme never sends the cleartext
 password over the network but it does store the 16 byte hashed values
 on disk. This is also bad. Why? Because the 16 byte hashed values are a
-"password equivalent". You cannot derive the users password from them,
+"password equivalent". You cannot derive the user's password from them,
 but they could potentially be used in a modified client to gain access
 to a server. This would require considerable technical knowledge on
 behalf of the attacker but is perfectly possible. You should thus
@@ -106,7 +106,7 @@ a network sniffer cannot just record passwords going to the SMB server.
 
 - WinNT doesn't like talking to a server that isn't using SMB
 encrypted passwords. It will refuse to browse the server if the server
-is also in user level security mode. It will insist on promting the
+is also in user level security mode. It will insist on prompting the
 user for the password on each connection, which is very annoying. The
 only things you can do to stop this is to use SMB encryption.
 
@@ -135,7 +135,7 @@ The smbpasswd file.
 In order for Samba to participate in the above protocol it must
 be able to look up the 16 byte hashed values given a user name.
 Unfortunately, as the UNIX password value is also a one way hash
-function (ie. it is impossible to retrieve the cleartext of the users
+function (ie. it is impossible to retrieve the cleartext of the user's
 password given the UNIX hash of it) then a separate password file
 containing this 16 byte value must be kept. To minimise problems with
 these two password files, getting out of sync, the UNIX /etc/passwd and
@@ -177,10 +177,11 @@ chmod 600 smbpasswd.
 
 The format of the smbpasswd file is
 
-username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Long name:user home dir:user shell
+username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[Account type]:LCT-<last-change-time>:Long name
 
-Although only the username, uid, and XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-sections are significant and are looked at in the Samba code.
+Although only the username, uid, XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX,
+[Account type] and last-change-time sections are significant and
+are looked at in the Samba code.
 
 It is *VITALLY* important that there by 32 'X' characters between the
 two ':' characters in the XXX sections - the smbpasswd and Samba code 
@@ -192,7 +193,7 @@ When the password file is created all users have password entries
 consisting of 32 'X' characters. By default this disallows any access
 as this user. When a user has a password set, the 'X' characters change
 to 32 ascii hexadecimal digits (0-9, A-F). These are an ascii
-representation of the 16 byte hashed value of a users password.
+representation of the 16 byte hashed value of a user's password.
 
 To set a user to have no password (not recommended), edit the file
 using vi, and replace the first 11 characters with the asci text
@@ -202,7 +203,7 @@ NO PASSWORD
 Eg. To clear the password for user bob, his smbpasswd file entry would
 look like :
 
-bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Bob's full name:/bobhome:/bobshell
+bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
 
 If you are allowing users to use the smbpasswd command to set their own
 passwords, you may want to give users NO PASSWORD initially so they do
@@ -214,7 +215,7 @@ that user with no password. Enable this by adding the line :
 null passwords = true
 
 to the [global] section of the smb.conf file (this is why the
-above scenario is not recommended). Preferebly, allocate your
+above scenario is not recommended). Preferably, allocate your
 users a default password to begin with, so you do not have
 to enable this on your server.
 
@@ -236,16 +237,16 @@ setuid root (the new smbpasswd code enforces this restriction so
 it cannot be run this way by accident).
 
 smbpasswd now works in a client-server mode where it contacts
-the local smbd to change the users password on its behalf. This
+the local smbd to change the user's password on its behalf. This
 has enormous benefits - as follows.
 
-1). smbpasswd no longer has to be setuid root - an enourmous
+1). smbpasswd no longer has to be setuid root - an enormous
 range of potential security problems is eliminated.
 
 2). smbpasswd now has the capability to change passwords
 on Windows NT servers (this only works when the request is
 sent to the NT Primary Domain Controller if you are changing 
-an NT Domain users password).
+an NT Domain user's password).
 
 To run smbpasswd as a normal user just type :
 
@@ -313,7 +314,7 @@ If this fails then you will find that you will need entries that look
 like this:
 
 # SMB password file.
-tridge:148:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Andrew Tridgell:/home/tridge:/bin/tcsh
+tridge:148:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Andrew Tridgell:/home/tridge:/bin/tcsh
 
 note that the uid and username fields must be right. Also, you must get
 the number of X's right (there should be 32).

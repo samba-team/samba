@@ -349,6 +349,9 @@ EOF
     *:OpenBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-openbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
 	exit 0 ;;
+    *:QNX:*:4*)
+       echo i386-qnx-qnx4 
+       exit 0 ;;
     i*:CYGWIN*:*)
 	echo i386-unknown-cygwin32
 	exit 0 ;;
@@ -425,6 +428,9 @@ EOF
 		echo ${UNAME_MACHINE}-unknown-sysv32
 	fi
 	exit 0 ;;
+	*:UnixWare:*:*)
+		echo ${UNAME_MACHINE}-UnixWare-sysv${UNAME_RELEASE}
+		exit 0 ;;
     Intel:Mach:3*:*)
 	echo i386-unknown-mach3
 	exit 0 ;;
@@ -446,7 +452,9 @@ EOF
 	test -r /sysV68 && echo 'm68k-motorola-sysv' && exit 0 ;;
     3[34]??:*:4.0:3.0 | 3[34]??,*:*:4.0:3.0)
         uname -p 2>/dev/null | grep 86 >/dev/null \
-          && echo i486-ncr-sysv4.3 && exit 0 ;;
+          && echo i486-ncr-sysv4.3 && exit 0
+        uname -p 2>/dev/null | grep entium >/dev/null \
+          && echo i586-ncr-sysv4.3 && exit 0 ;;
     3[34]??:*:4.0:* | 3[34]??,*:*:4.0:*)
         uname -p 2>/dev/null | grep 86 >/dev/null \
           && echo i486-ncr-sysv4 && exit 0 ;;
@@ -475,6 +483,9 @@ EOF
 	else
 		echo ns32k-sni-sysv
 	fi
+	exit 0 ;;
+	*:ReliantUNIX-*:*:*)
+	echo mips-sni-sysv4
 	exit 0 ;;
     mc68*:A/UX:*:*)
 	echo m68k-apple-aux${UNAME_RELEASE}

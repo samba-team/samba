@@ -19,8 +19,8 @@ case "$1" in
 
 	'start')
 	   echo "Starting Samba"
-	   /usr/local/samba/sbin/smbd
-	   /usr/local/samba/sbin/nmbd
+	   /usr/local/samba/bin/smbd
+	   /usr/local/samba/bin/nmbd
 	   echo "Done."
 	   ;;
 	'stop')

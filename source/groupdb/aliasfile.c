@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBGROUP_DB
+#ifdef USE_SMBPASS_DB
 
 static int al_file_lock_depth = 0;
 extern int DEBUGLEVEL;
@@ -33,7 +33,7 @@ static char s_readbuf[1024];
 
 static void *startalsfilepwent(BOOL update)
 {
-	return startfileent(lp_smb_alias_file(),
+	return startfilepwent(lp_smb_alias_file(),
 	                      s_readbuf, sizeof(s_readbuf),
 	                      &al_file_lock_depth, update);
 }
@@ -44,7 +44,7 @@ static void *startalsfilepwent(BOOL update)
 
 static void endalsfilepwent(void *vp)
 {
-	endfileent(vp, &al_file_lock_depth);
+	endfilepwent(vp, &al_file_lock_depth);
 }
 
 /*************************************************************************
@@ -65,6 +65,51 @@ static BOOL setalsfilepwpos(void *vp, SMB_BIG_UINT tok)
 	return setfilepwpos(vp, tok);
 }
 
+static BOOL make_alias_line(char *p, int max_len,
+				LOCAL_GRP *als,
+				LOCAL_GRP_MEMBER **mem, int *num_mem)
+{
+	int i;
+	int len;
+	len = slprintf(p, max_len-1, "%s:%s:%d:", als->name, als->comment, als->rid);
+
+	if (len == -1)
+	{
+		DEBUG(0,("make_alias_line: cannot create entry\n"));
+		return False;
+	}
+
+	p += len;
+	max_len -= len;
+
+	if (mem == NULL || num_mem == NULL)
+	{
+		return True;
+	}
+
+	for (i = 0; i < (*num_mem); i++)
+	{
+		len = strlen((*mem)[i].name);
+		p = safe_strcpy(p, (*mem)[i].name, max_len); 
+
+		if (p == NULL)
+		{
+			DEBUG(0, ("make_alias_line: out of space for aliases!\n"));
+			return False;
+		}
+
+		max_len -= len;
+
+		if (i != (*num_mem)-1)
+		{
+			*p = ',';
+			p++;
+			max_len--;
+		}
+	}
+
+	return True;
+}
 
 /*************************************************************************
  Routine to return the next entry in the smbdomainalias list.
@@ -85,36 +130,24 @@ static char *get_alias_members(char *p, int *num_mem, LOCAL_GRP_MEMBER **members
 	{
 		DOM_SID sid;
 		uint8 type;
-		BOOL found = False;
 
-		if (strnequal(name, "S-", 2))
+		if (lookup_sid(name, &sid, &type))
 		{
-			/* sid entered directly */
-			string_to_sid(&sid, name);
-			found = lookup_sid(&sid, name, &type) == 0x0;
+			(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
+			(*num_mem)++;
 		}
 		else
-		{
-			found = lookup_name(name, &sid, &type) == 0x0;
-		}
-
-		if (!found)
 		{
 			DEBUG(0,("alias database: could not resolve alias named %s\n", name));
 			continue;
 		}
-
-		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
-
 		if ((*members) == NULL)
 		{
 			return NULL;
 		}
-
-		fstrcpy((*members)[*num_mem].name, name);
-		(*members)[*num_mem].sid_use = type;
-		sid_copy(&(*members)[*num_mem].sid, &sid);
-		(*num_mem)++;
+		fstrcpy((*members)[(*num_mem)-1].name, name);
+		(*members)[(*num_mem)-1].sid_use = type;
+		sid_copy(&(*members)[(*num_mem)-1].sid, &sid);
 	}
 	return p;
 }
@@ -131,17 +164,15 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	pstring linebuf;
 	char  *p;
-	uint8 type;
+	size_t            linebuf_len;
 
 	aldb_init_als(&al_buf);
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
+	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
 	{
-		DOM_NAME_MAP gmep;
-
 		/* get alias name */
 
 		p = strncpyn(al_buf.name, linebuf, sizeof(al_buf.name), ':');
@@ -193,25 +224,9 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 			}
 		}
 
-		/*
-		 * look up the gid, turn it into a rid.  the _correct_ type of rid */
-		 */
+		/* ok, set up the static data structure and return it */
 
-		if (!lookupsmbgrpgid((gid_t)gidval, &gmep))
-		{
-			continue;
-		}
-		if (gmep.type != SID_NAME_DOM_GRP &&
-		    gmep.type != SID_NAME_WKN_GRP))
-		{
-			continue;
-		}
-
-		sid_split_rid(&gmep.sid, &gp_buf.rid);
-		if (!sid_equal(&gmep.sid, &global_sam_sid))
-		{
-			continue;
-		}
+		al_buf.rid     = pwdb_gid_to_alias_rid((gid_t)gidval);
 
 		make_alias_line(linebuf, sizeof(linebuf), &al_buf, mem, num_mem);
 		DEBUG(10,("line: '%s'\n", linebuf));
@@ -235,7 +250,11 @@ static BOOL add_alsfileals_entry(LOCAL_GRP *newals)
 
 /************************************************************************
  Routine to search the aliasdb file for an entry matching the aliasname.
- and then modify its alias entry. 
+ and then modify its alias entry. We can't use the startalspwent()/
+ getalspwent()/endalspwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out alias or NO PASS
 ************************************************************************/
 
 static BOOL mod_alsfileals_entry(LOCAL_GRP* als)
@@ -252,7 +271,7 @@ static struct aliasdb_ops file_ops =
 	getalsfilepwpos,
 	setalsfilepwpos,
 
-	iterate_getaliasntnam,          /* In aliasdb.c */
+	iterate_getaliasnam,          /* In aliasdb.c */
 	iterate_getaliasgid,          /* In aliasdb.c */
 	iterate_getaliasrid,          /* In aliasdb.c */
 	getalsfilepwent,
@@ -260,7 +279,7 @@ static struct aliasdb_ops file_ops =
 	add_alsfileals_entry,
 	mod_alsfileals_entry,
 
-	iterate_getuseraliasntnam      /* in aliasdb.c */
+	iterate_getuseraliasnam      /* in aliasdb.c */
 };
 
 struct aliasdb_ops *file_initialise_alias_db(void)

@@ -27,26 +27,31 @@
 extern int DEBUGLEVEL;
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_neg_flags(char *desc,  NEG_FLAGS *neg, prs_struct *ps, int depth)
+
+static BOOL net_io_neg_flags(char *desc, NEG_FLAGS *neg, prs_struct *ps, int depth)
 {
-	if (neg == NULL) return False;
+	if (neg == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_neg_flags");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("neg_flags", ps, depth, &(neg->neg_flags));
+	if(!prs_uint32("neg_flags", ps, depth, &neg->neg_flags))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates a NETLOGON_INFO_3 structure.
+ Inits a NETLOGON_INFO_3 structure.
 ********************************************************************/
-static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts)
+
+static void init_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts)
 {
 	info->flags          = flags;
 	info->logon_attempts = logon_attempts;
@@ -55,67 +60,80 @@ static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_att
 	info->reserved_3     = 0x0;
 	info->reserved_4     = 0x0;
 	info->reserved_5     = 0x0;
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes a NETLOGON_INFO_3 structure.
+ Reads or writes a NETLOGON_INFO_3 structure.
 ********************************************************************/
+
 static BOOL net_io_netinfo_3(char *desc,  NETLOGON_INFO_3 *info, prs_struct *ps, int depth)
 {
-	if (info == NULL) return False;
+	if (info == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_netinfo_3");
 	depth++;
 
-	prs_align(ps);
-	
-	prs_uint32("flags         ", ps, depth, &(info->flags         ));
-	prs_uint32("logon_attempts", ps, depth, &(info->logon_attempts));
-	prs_uint32("reserved_1    ", ps, depth, &(info->reserved_1    ));
-	prs_uint32("reserved_2    ", ps, depth, &(info->reserved_2    ));
-	prs_uint32("reserved_3    ", ps, depth, &(info->reserved_3    ));
-	prs_uint32("reserved_4    ", ps, depth, &(info->reserved_4    ));
-	prs_uint32("reserved_5    ", ps, depth, &(info->reserved_5    ));
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("flags         ", ps, depth, &info->flags))
+		return False;
+	if(!prs_uint32("logon_attempts", ps, depth, &info->logon_attempts))
+		return False;
+	if(!prs_uint32("reserved_1    ", ps, depth, &info->reserved_1))
+		return False;
+	if(!prs_uint32("reserved_2    ", ps, depth, &info->reserved_2))
+		return False;
+	if(!prs_uint32("reserved_3    ", ps, depth, &info->reserved_3))
+		return False;
+	if(!prs_uint32("reserved_4    ", ps, depth, &info->reserved_4))
+		return False;
+	if(!prs_uint32("reserved_5    ", ps, depth, &info->reserved_5))
+		return False;
 
 	return True;
 }
 
 
 /*******************************************************************
-creates a NETLOGON_INFO_1 structure.
+ Inits a NETLOGON_INFO_1 structure.
 ********************************************************************/
-static BOOL make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status)
+
+static void init_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status)
 {
 	info->flags      = flags;
 	info->pdc_status = pdc_status;
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes a NETLOGON_INFO_1 structure.
+ Reads or writes a NETLOGON_INFO_1 structure.
 ********************************************************************/
-static BOOL net_io_netinfo_1(char *desc,  NETLOGON_INFO_1 *info, prs_struct *ps, int depth)
+
+static BOOL net_io_netinfo_1(char *desc, NETLOGON_INFO_1 *info, prs_struct *ps, int depth)
 {
-	if (info == NULL) return False;
+	if (info == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_netinfo_1");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("flags     ", ps, depth, &(info->flags     ));
-	prs_uint32("pdc_status", ps, depth, &(info->pdc_status));
+	if(!prs_uint32("flags     ", ps, depth, &info->flags))
+		return False;
+	if(!prs_uint32("pdc_status", ps, depth, &info->pdc_status))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-creates a NETLOGON_INFO_2 structure.
+ Inits a NETLOGON_INFO_2 structure.
 ********************************************************************/
-static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
+
+static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
 				uint32 tc_status, char *trusted_dc_name)
 {
 	int len_dc_name = strlen(trusted_dc_name);
@@ -125,544 +143,499 @@ static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_statu
 	info->tc_status  = tc_status;
 
 	if (trusted_dc_name != NULL)
-	{
-		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
-	}
+		init_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
 	else
-	{
-		make_unistr2(&(info->uni_trusted_dc_name), "", 1);
-	}
-
-	return True;
+		init_unistr2(&(info->uni_trusted_dc_name), "", 1);
 }
 
 /*******************************************************************
-reads or writes a NETLOGON_INFO_2 structure.
+ Reads or writes a NETLOGON_INFO_2 structure.
 ********************************************************************/
-static BOOL net_io_netinfo_2(char *desc,  NETLOGON_INFO_2 *info, prs_struct *ps, int depth)
+
+static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, int depth)
 {
-	if (info == NULL) return False;
+	if (info == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_netinfo_2");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("flags              ", ps, depth, &(info->flags              ));
-	prs_uint32("pdc_status         ", ps, depth, &(info->pdc_status         ));
-	prs_uint32("ptr_trusted_dc_name", ps, depth, &(info->ptr_trusted_dc_name));
-	prs_uint32("tc_status          ", ps, depth, &(info->tc_status          ));
+	if(!prs_uint32("flags              ", ps, depth, &info->flags))
+		return False;
+	if(!prs_uint32("pdc_status         ", ps, depth, &info->pdc_status))
+		return False;
+	if(!prs_uint32("ptr_trusted_dc_name", ps, depth, &info->ptr_trusted_dc_name))
+		return False;
+	if(!prs_uint32("tc_status          ", ps, depth, &info->tc_status))
+		return False;
 
-	if (info->ptr_trusted_dc_name != 0)
-	{
-		smb_io_unistr2("unistr2", &(info->uni_trusted_dc_name), info->ptr_trusted_dc_name, ps, depth);
+	if (info->ptr_trusted_dc_name != 0) {
+		if(!smb_io_unistr2("unistr2", &info->uni_trusted_dc_name, info->ptr_trusted_dc_name, ps, depth))
+			return False;
 	}
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-makes an NET_Q_LOGON_CTRL2 structure.
+ Reads or writes an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
-BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, 
-				const char* srv_name,
-				uint32 function_code,
-				uint32 query_level,
-				uint32 switch_value)
+
+BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
 {
-	if (q_l == NULL) return False;
-
-	DEBUG(5,("make_q_logon_ctrl2\n"));
-
-	q_l->ptr = 1;
-
-	make_unistr2(&(q_l->uni_server_name ), srv_name , strlen(srv_name )+1);
-
-	q_l->function_code = function_code;
-	q_l->query_level   = query_level;
-	q_l->switch_value  = switch_value;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an NET_Q_LOGON_CTRL2 structure.
-********************************************************************/
-BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
-{
-	if (q_l == NULL) return False;
+	if (q_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_logon_ctrl2");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint32("ptr          ", ps, depth, &(q_l->ptr          ));
+	if(!prs_uint32("ptr          ", ps, depth, &q_l->ptr))
+		return False;
 
-	smb_io_unistr2 ("", &(q_l->uni_server_name), q_l->ptr, ps, depth);
+	if(!smb_io_unistr2 ("", &q_l->uni_server_name, q_l->ptr, ps, depth))
+		return False;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint32("function_code", ps, depth, &(q_l->function_code));
-	prs_uint32("query_level  ", ps, depth, &(q_l->query_level  ));
-	prs_uint32("switch_value ", ps, depth, &(q_l->switch_value ));
+	if(!prs_uint32("function_code", ps, depth, &q_l->function_code))
+		return False;
+	if(!prs_uint32("query_level  ", ps, depth, &q_l->query_level))
+		return False;
+	if(!prs_uint32("switch_value ", ps, depth, &q_l->switch_value))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-makes an NET_R_LOGON_CTRL2 structure.
+ Inits an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
-BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
+
+void init_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
 				uint32 tc_status, char *trusted_domain_name)
 {
-	if (r_l == NULL) return False;
-
 	DEBUG(5,("make_r_logon_ctrl2\n"));
 
 	r_l->switch_value  = query_level; /* should only be 0x1 */
 
-	switch (query_level)
-	{
-		case 1:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_1(&(r_l->logon.info1), flags, pdc_status);	
-			r_l->status = 0;
+	switch (query_level) {
+	case 1:
+		r_l->ptr = 1; /* undocumented pointer */
+		init_netinfo_1(&r_l->logon.info1, flags, pdc_status);	
+		r_l->status = 0;
+		break;
+	case 2:
+		r_l->ptr = 1; /* undocumented pointer */
+		init_netinfo_2(&r_l->logon.info2, flags, pdc_status,
+		               tc_status, trusted_domain_name);	
+		r_l->status = 0;
+		break;
+	case 3:
+		r_l->ptr = 1; /* undocumented pointer */
+		init_netinfo_3(&(r_l->logon.info3), flags, logon_attempts);	
+		r_l->status = 0;
+		break;
+	default:
+		DEBUG(2,("init_r_logon_ctrl2: unsupported switch value %d\n",
+			r_l->switch_value));
+		r_l->ptr = 0; /* undocumented pointer */
 
-			break;
-		}
-		case 2:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_2(&(r_l->logon.info2), flags, pdc_status,
-			               tc_status, trusted_domain_name);	
-			r_l->status = 0;
-
-			break;
-		}
-		case 3:
-		{
-			r_l->ptr = 1; /* undocumented pointer */
-			make_netinfo_3(&(r_l->logon.info3), flags, logon_attempts);	
-			r_l->status = 0;
-
-			break;
-		}
-		default:
-		{
-			DEBUG(2,("make_r_logon_ctrl2: unsupported switch value %d\n",
-				r_l->switch_value));
-			r_l->ptr = 0; /* undocumented pointer */
-
-			/* take a guess at an error code... */
-			r_l->status = NT_STATUS_INVALID_INFO_CLASS;
-
-			break;
-		}
+		/* take a guess at an error code... */
+		r_l->status = NT_STATUS_INVALID_INFO_CLASS;
+		break;
 	}
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an NET_R_LOGON_CTRL2 structure.
+ Reads or writes an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
-BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth)
+
+BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth)
 {
-	if (r_l == NULL) return False;
+	if (r_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_logon_ctrl2");
 	depth++;
 
-	prs_uint32("switch_value ", ps, depth, &(r_l->switch_value ));
-	prs_uint32("ptr          ", ps, depth, &(r_l->ptr          ));
+	if(!prs_uint32("switch_value ", ps, depth, &r_l->switch_value))
+		return False;
+	if(!prs_uint32("ptr          ", ps, depth, &r_l->ptr))
+		return False;
 
-	if (r_l->ptr != 0)
-	{
-		switch (r_l->switch_value)
-		{
-			case 1:
-			{
-				net_io_netinfo_1("", &(r_l->logon.info1), ps, depth);
-				break;
-			}
-			case 2:
-			{
-				net_io_netinfo_2("", &(r_l->logon.info2), ps, depth);
-				break;
-			}
-			case 3:
-			{
-				net_io_netinfo_3("", &(r_l->logon.info3), ps, depth);
-				break;
-			}
-			default:
-			{
-				DEBUG(2,("net_io_r_logon_ctrl2: unsupported switch value %d\n",
-					r_l->switch_value));
-				break;
-			}
+	if (r_l->ptr != 0) {
+		switch (r_l->switch_value) {
+		case 1:
+			if(!net_io_netinfo_1("", &r_l->logon.info1, ps, depth))
+				return False;
+			break;
+		case 2:
+			if(!net_io_netinfo_2("", &r_l->logon.info2, ps, depth))
+				return False;
+			break;
+		case 3:
+			if(!net_io_netinfo_3("", &r_l->logon.info3, ps, depth))
+				return False;
+			break;
+		default:
+			DEBUG(2,("net_io_r_logon_ctrl2: unsupported switch value %d\n",
+				r_l->switch_value));
+			break;
 		}
 	}
 
-	prs_uint32("status       ", ps, depth, &(r_l->status       ));
+	if(!prs_uint32("status       ", ps, depth, &r_l->status))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-makes an NET_R_TRUST_DOM_LIST structure.
+ Inits an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
-BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char **dom_name)
+
+void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
+			uint32 num_doms, char *dom_name)
 {
-	if (r_t == NULL) return False;
+	int i = 0;
 
 	DEBUG(5,("make_r_trust_dom\n"));
 
-	make_buffer2_multi(&r_t->uni_trust_dom_name,
-			dom_name, num_doms);
-	if (num_doms == 0)
-	{
-		r_t->uni_trust_dom_name.buf_max_len = 0x2;
-		r_t->uni_trust_dom_name.buf_len = 0x2;
+	for (i = 0; i < MAX_TRUST_DOMS; i++) {
+		r_t->uni_trust_dom_name[i].uni_str_len = 0;
+		r_t->uni_trust_dom_name[i].uni_max_len = 0;
 	}
-	r_t->uni_trust_dom_name.undoc = 0x1;
+	if (num_doms > MAX_TRUST_DOMS)
+		num_doms = MAX_TRUST_DOMS;
+
+	for (i = 0; i < num_doms; i++) {
+		fstring domain_name;
+		fstrcpy(domain_name, dom_name);
+		strupper(domain_name);
+		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, strlen(domain_name)+1);
+		/* the use of UNISTR2 here is non-standard. */
+		r_t->uni_trust_dom_name[i].undoc = 0x1;
+	}
 	
 	r_t->status = 0;
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an NET_R_TRUST_DOM_LIST structure.
+ Reads or writes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
-BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
+
+BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
 {
-	if (r_t == NULL) return False;
+	int i;
+	if (r_t == NULL)
+		 return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_trust_dom");
 	depth++;
 
-	smb_io_buffer2("", &r_t->uni_trust_dom_name, True, ps, depth);
-	prs_align(ps);
+	for (i = 0; i < MAX_TRUST_DOMS; i++) {
+		if (r_t->uni_trust_dom_name[i].uni_str_len == 0)
+			break;
+		if(!smb_io_unistr2("", &r_t->uni_trust_dom_name[i], True, ps, depth))
+			 return False;
+	}
 
-	prs_uint32("status", ps, depth, &(r_t->status));
+	if(!prs_uint32("status", ps, depth, &r_t->status))
+		 return False;
 
 	return True;
 }
 
 
 /*******************************************************************
-reads or writes an NET_Q_TRUST_DOM_LIST structure.
+ Reads or writes an NET_Q_TRUST_DOM_LIST structure.
 ********************************************************************/
-BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth)
+
+BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth)
 {
-	if (q_l == NULL) return False;
+	if (q_l == NULL)
+		 return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_trust_dom");
 	depth++;
 
-	prs_uint32("ptr", ps, depth, &(q_l->ptr));
-	smb_io_unistr2 ("name", &(q_l->uni_server_name), q_l->ptr, ps, depth);
+	if(!prs_uint32("ptr          ", ps, depth, &q_l->ptr))
+		 return False;
+	if(!smb_io_unistr2 ("", &q_l->uni_server_name, q_l->ptr, ps, depth))
+		 return False;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		 return False;
 
-	prs_uint32("function_code", ps, depth, &(q_l->function_code));
+	if(!prs_uint32("function_code", ps, depth, &q_l->function_code))
+		 return False;
 
 	return True;
 }
 
 /*******************************************************************
-makes an NET_Q_REQ_CHAL structure.
+ Inits an NET_Q_REQ_CHAL structure.
 ********************************************************************/
-BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				const char *logon_srv, const char *logon_clnt,
+
+void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
+				char *logon_srv, char *logon_clnt,
 				DOM_CHAL *clnt_chal)
 {
-	if (q_c == NULL) return False;
-
 	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
 
 	q_c->undoc_buffer = 1; /* don't know what this buffer is */
 
-	make_unistr2(&(q_c->uni_logon_srv ), logon_srv , strlen(logon_srv )+1);
-	make_unistr2(&(q_c->uni_logon_clnt), logon_clnt, strlen(logon_clnt)+1);
+	init_unistr2(&q_c->uni_logon_srv, logon_srv , strlen(logon_srv )+1);
+	init_unistr2(&q_c->uni_logon_clnt, logon_clnt, strlen(logon_clnt)+1);
 
 	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 
 	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes an NET_Q_REQ_CHAL structure.
+ Reads or writes an NET_Q_REQ_CHAL structure.
 ********************************************************************/
+
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
 {
 	int old_align;
-	if (q_c == NULL) return False;
+
+	if (q_c == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_req_chal");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	prs_uint32("undoc_buffer", ps, depth, &(q_c->undoc_buffer));
+	if(!prs_uint32("undoc_buffer", ps, depth, &q_c->undoc_buffer))
+		return False;
 
-	smb_io_unistr2("", &(q_c->uni_logon_srv ), True, ps, depth); /* logon server unicode string */
-	smb_io_unistr2("", &(q_c->uni_logon_clnt), True, ps, depth); /* logon client unicode string */
+	if(!smb_io_unistr2("", &q_c->uni_logon_srv, True, ps, depth)) /* logon server unicode string */
+		return False;
+	if(!smb_io_unistr2("", &q_c->uni_logon_clnt, True, ps, depth)) /* logon client unicode string */
+		return False;
 
 	old_align = ps->align;
 	ps->align = 0;
 	/* client challenge is _not_ aligned after the unicode strings */
-	smb_io_chal("", &(q_c->clnt_chal), ps, depth); /* client challenge */
+	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth)) {
+		/* client challenge */
+		ps->align = old_align;
+		return False;
+	}
 	ps->align = old_align;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth)
+
+BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth)
 {
-	if (r_c == NULL) return False;
+	if (r_c == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_req_chal");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	smb_io_chal("", &(r_c->srv_chal), ps, depth); /* server challenge */
+	if(!smb_io_chal("", &r_c->srv_chal, ps, depth)) /* server challenge */
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_c->status));
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL make_q_auth(NET_Q_AUTH *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal)
-{
-	if (q_a == NULL) return False;
-
-	DEBUG(5,("make_q_auth: %d\n", __LINE__));
-
-	make_log_info(&(q_a->clnt_id), logon_srv, acct_name, sec_chan, comp_name);
-	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
-
-	DEBUG(5,("make_q_auth: %d\n", __LINE__));
+	if(!prs_uint32("status", ps, depth, &r_c->status))
+		return False;
 
 	return True;
 }
 
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL net_io_q_auth(char *desc,  NET_Q_AUTH *q_a, prs_struct *ps, int depth)
-{
-	int old_align;
-	if (q_a == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_q_auth");
-	depth++;
-
-	prs_align(ps);
-    
-	smb_io_log_info ("", &(q_a->clnt_id), ps, depth); /* client identification info */
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	smb_io_chal     ("", &(q_a->clnt_chal), ps, depth); /* client-calculated credentials */
-	ps->align = old_align;
-
-	return True;
-}
 
 /*******************************************************************
-reads or writes a structure.
+ Inits a NET_Q_AUTH_2 struct.
 ********************************************************************/
-BOOL net_io_r_auth(char *desc,  NET_R_AUTH *r_a, prs_struct *ps, int depth)
-{
-	if (r_a == NULL) return False;
 
-	prs_debug(ps, depth, desc, "net_io_r_auth");
-	depth++;
-
-	prs_align(ps);
-    
-	smb_io_chal     ("", &(r_a->srv_chal), ps, depth); /* server challenge */
-	prs_uint32("status", ps, depth, &(r_a->status));
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL make_q_auth_2(NET_Q_AUTH_2 *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
+void init_q_auth_2(NET_Q_AUTH_2 *q_a,
+		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
-	if (q_a == NULL) return False;
+	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
 
-	DEBUG(5,("make_q_auth_2: %d\n", __LINE__));
-
-	make_log_info(&(q_a->clnt_id), logon_srv, acct_name, sec_chan, comp_name);
+	init_log_info(&q_a->clnt_id, logon_srv, acct_name, sec_chan, comp_name);
 	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 	q_a->clnt_flgs.neg_flags = clnt_flgs;
 
-	DEBUG(5,("make_q_auth_2: %d\n", __LINE__));
-
-	return True;
+	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
+
+BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
 {
 	int old_align;
-	if (q_a == NULL) return False;
+	if (q_a == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_auth_2");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	smb_io_log_info ("", &(q_a->clnt_id), ps, depth); /* client identification info */
+	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
+		return False;
 	/* client challenge is _not_ aligned */
 	old_align = ps->align;
 	ps->align = 0;
-	smb_io_chal     ("", &(q_a->clnt_chal), ps, depth); /* client-calculated credentials */
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
+		/* client-calculated credentials */
+		ps->align = old_align;
+		return False;
+	}
 	ps->align = old_align;
-	net_io_neg_flags("", &(q_a->clnt_flgs), ps, depth);
+	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
+
+BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 {
-	if (r_a == NULL) return False;
+	if (r_a == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_auth_2");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	smb_io_chal     ("", &(r_a->srv_chal), ps, depth); /* server challenge */
-	net_io_neg_flags("", &(r_a->srv_flgs), ps, depth);
+	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
+		return False;
+	if(!net_io_neg_flags("", &r_a->srv_flgs, ps, depth))
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_a->status));
+	if(!prs_uint32("status", ps, depth, &r_a->status))
+		return False;
 
 	return True;
 }
 
 
 /*******************************************************************
-reads or writes a structure.
+ Inits a NET_Q_SRV_PWSET.
 ********************************************************************/
-BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
-				const char *logon_srv, const char *acct_name, 
-                		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred, char nt_cypher[16])
-{
-	if (q_s == NULL || cred == NULL) return False;
 
+void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
+                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
+{
 	DEBUG(5,("make_q_srv_pwset\n"));
 
-	make_clnt_info(&(q_s->clnt_id), logon_srv, acct_name, sec_chan, comp_name, cred);
+	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
 
 	memcpy(q_s->pwd, nt_cypher, sizeof(q_s->pwd)); 
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth)
+
+BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth)
 {
-	if (q_s == NULL) return False;
+	if (q_s == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_srv_pwset");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	smb_io_clnt_info("", &(q_s->clnt_id), ps, depth); /* client identification/authentication info */
-	prs_uint8s (False, "pwd", ps, depth, q_s->pwd, 16); /* new password - undocumented */
+	if(!smb_io_clnt_info("", &q_s->clnt_id, ps, depth)) /* client identification/authentication info */
+		return False;
+	if(!prs_uint8s (False, "pwd", ps, depth, q_s->pwd, 16)) /* new password - undocumented */
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth)
+
+BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth)
 {
-	if (r_s == NULL) return False;
+	if (r_s == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_srv_pwset");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
     
-	smb_io_cred("", &(r_s->srv_cred), ps, depth); /* server challenge */
+	if(!smb_io_cred("", &r_s->srv_cred, ps, depth)) /* server challenge */
+		return False;
 
-	prs_uint32("status", ps, depth, &(r_s->status));
+	if(!prs_uint32("status", ps, depth, &r_s->status))
+		return False;
 
 	return True;
 }
 
-
 /*************************************************************************
- make DOM_SID2 array from a string containing multiple sids
+ Init DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
-static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
+
+static int init_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 {
 	char *ptr;
 	pstring s2;
-	int count;
+	int count = 0;
 
-	DEBUG(4,("make_dom_sid2s: %s\n", sids_str ? sids_str:""));
+	DEBUG(4,("init_dom_sid2s: %s\n", sids_str ? sids_str:""));
 
-	if (sids_str == NULL || *sids_str == 0) return 0;
-
-	for (count = 0, ptr = sids_str; 
-	     next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; 
-	     count++) 
-	{
-                DOM_SID tmpsid;
-                string_to_sid(&tmpsid, s2);
-		make_dom_sid2(&sids[count], &tmpsid);
+	if(sids_str) {
+		for (count = 0, ptr = sids_str; 
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; count++) {
+			DOM_SID tmpsid;
+			string_to_sid(&tmpsid, s2);
+			init_dom_sid2(&sids[count], &tmpsid);
+		}
 	}
 
 	return count;
-
-	return True;
 }
 
 /*******************************************************************
-makes a NET_ID_INFO_1 structure.
+ Inits a NET_ID_INFO_1 structure.
 ********************************************************************/
-BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
+
+void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
+				char *user_name, char *wksta_name,
 				char sess_key[16],
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
 {
@@ -673,30 +646,26 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 	unsigned char lm_owf[16];
 	unsigned char nt_owf[16];
 
-	if (id == NULL) return False;
-
 	DEBUG(5,("make_id_info1: %d\n", __LINE__));
 
 	id->ptr_id_info1 = 1;
 
-	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
+	init_uni_hdr(&id->hdr_domain_name, len_domain_name);
 
 	id->param_ctrl = param_ctrl;
-	id->logon_id.low = log_id_low;
-	id->logon_id.high = log_id_high;
+	init_logon_id(&id->logon_id, log_id_low, log_id_high);
 
-	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
-	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
+	init_uni_hdr(&id->hdr_user_name, len_user_name);
+	init_uni_hdr(&id->hdr_wksta_name, len_wksta_name);
 
-	if (lm_cypher && nt_cypher)
-	{
+	if (lm_cypher && nt_cypher) {
 		unsigned char key[16];
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("lm cypher:"));
-		dump_data(100, lm_cypher, 16);
+		dump_data(100, (char *)lm_cypher, 16);
 
 		DEBUG(100,("nt cypher:"));
-		dump_data(100, nt_cypher, 16);
+		dump_data(100, (char *)nt_cypher, 16);
 #endif
 
 		memset(key, 0, 16);
@@ -709,63 +678,77 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of lm owf password:"));
-		dump_data(100, lm_owf, 16);
+		dump_data(100, (char *)lm_owf, 16);
 
 		DEBUG(100,("encrypt of nt owf password:"));
-		dump_data(100, nt_owf, 16);
+		dump_data(100, (char *)nt_owf, 16);
 #endif
 		/* set up pointers to cypher blocks */
 		lm_cypher = lm_owf;
 		nt_cypher = nt_owf;
 	}
 
-	make_owf_info(&(id->lm_owf), lm_cypher);
-	make_owf_info(&(id->nt_owf), nt_cypher);
+	init_owf_info(&id->lm_owf, lm_cypher);
+	init_owf_info(&id->nt_owf, nt_cypher);
 
-	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
-	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
-	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
-
-	return True;
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 }
 
 /*******************************************************************
-reads or writes an NET_ID_INFO_1 structure.
+ Reads or writes an NET_ID_INFO_1 structure.
 ********************************************************************/
+
 static BOOL net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)
 {
-	if (id == NULL) return False;
+	if (id == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_id_info1");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr_id_info1", ps, depth, &(id->ptr_id_info1));
+	if(!prs_uint32("ptr_id_info1", ps, depth, &id->ptr_id_info1))
+		return False;
 
-	if (id->ptr_id_info1 != 0)
-	{
-		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
+	if (id->ptr_id_info1 != 0) {
+		if(!smb_io_unihdr("unihdr", &id->hdr_domain_name, ps, depth))
+			return False;
 
-		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
-		smb_io_bigint("", &(id->logon_id), ps, depth);
+		if(!prs_uint32("param_ctrl", ps, depth, &id->param_ctrl))
+			return False;
+		if(!smb_io_logon_id("", &id->logon_id, ps, depth))
+			return False;
 
-		smb_io_unihdr("unihdr", &(id->hdr_user_name  ), ps, depth);
-		smb_io_unihdr("unihdr", &(id->hdr_wksta_name ), ps, depth);
+		if(!smb_io_unihdr("unihdr", &id->hdr_user_name, ps, depth))
+			return False;
+		if(!smb_io_unihdr("unihdr", &id->hdr_wksta_name, ps, depth))
+			return False;
 
-		smb_io_owf_info("", &(id->lm_owf), ps, depth);
-		smb_io_owf_info("", &(id->nt_owf), ps, depth);
+		if(!smb_io_owf_info("", &id->lm_owf, ps, depth))
+			return False;
+		if(!smb_io_owf_info("", &id->nt_owf, ps, depth))
+			return False;
 
-		smb_io_unistr2("unistr2", &(id->uni_domain_name), id->hdr_domain_name.buffer, ps, depth);
-		smb_io_unistr2("unistr2", &(id->uni_user_name  ), id->hdr_user_name.buffer, ps, depth);
-		smb_io_unistr2("unistr2", &(id->uni_wksta_name ), id->hdr_wksta_name.buffer, ps, depth);
+		if(!smb_io_unistr2("unistr2", &id->uni_domain_name,
+				id->hdr_domain_name.buffer, ps, depth))
+			return False;
+		if(!smb_io_unistr2("unistr2", &id->uni_user_name,
+				id->hdr_user_name.buffer, ps, depth))
+			return False;
+		if(!smb_io_unistr2("unistr2", &id->uni_wksta_name,
+				id->hdr_wksta_name.buffer, ps, depth))
+			return False;
 	}
 
 	return True;
 }
 
 /*******************************************************************
-makes a NET_ID_INFO_2 structure.
+Inits a NET_ID_INFO_2 structure.
 
 This is a network logon packet. The log_id parameters
 are what an NT server would generate for LUID once the
@@ -779,10 +762,9 @@ checking for a logon as it doesn't export the password
 hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
 
-BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
+void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
+				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+				char *user_name, char *wksta_name,
 				unsigned char lm_challenge[8],
 				unsigned char lm_chal_resp[24],
 				unsigned char nt_chal_resp[24])
@@ -790,87 +772,101 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
- 	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
+	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
 	int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[24];
 
-	if (id == NULL) return False;
-
-	DEBUG(5,("make_id_info2: %d\n", __LINE__));
+	DEBUG(5,("init_id_info2: %d\n", __LINE__));
 
 	id->ptr_id_info2 = 1;
 
-	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
+	init_uni_hdr(&id->hdr_domain_name, len_domain_name);
 
 	id->param_ctrl = param_ctrl;
-	id->logon_id.low = log_id_low;
-	id->logon_id.high = log_id_high;
+	init_logon_id(&id->logon_id, log_id_low, log_id_high);
 
-	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
-	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
+	init_uni_hdr(&id->hdr_user_name, len_user_name);
+	init_uni_hdr(&id->hdr_wksta_name, len_wksta_name);
 
-	if (nt_chal_resp)
-	{
+	if (nt_chal_resp) {
 		/* oops.  can only send what-ever-it-is direct */
 		memcpy(nt_owf, nt_chal_resp, 24);
 		nt_chal_resp = nt_owf;
 	}
-	if (lm_chal_resp)
-	{
+	if (lm_chal_resp) {
 		/* oops.  can only send what-ever-it-is direct */
 		memcpy(lm_owf, lm_chal_resp, 24);
 		lm_chal_resp = lm_owf;
 	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
-	make_str_hdr(&(id->hdr_nt_chal_resp), 24, nt_chal_resp_len, nt_chal_resp != NULL ? 1 : 0);
-	make_str_hdr(&(id->hdr_lm_chal_resp), 24, lm_chal_resp_len, lm_chal_resp != NULL ? 1 : 0);
+	init_str_hdr(&id->hdr_nt_chal_resp, 24, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
+	init_str_hdr(&id->hdr_lm_chal_resp, 24, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
-	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
-	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
-	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
-	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_resp_len);
-	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_resp_len);
-
-	return True;
+	init_string2(&id->nt_chal_resp, (char *)nt_chal_resp, nt_chal_resp_len);
+	init_string2(&id->lm_chal_resp, (char *)lm_chal_resp, lm_chal_resp_len);
 }
 
 /*******************************************************************
-reads or writes an NET_ID_INFO_2 structure.
+ Reads or writes an NET_ID_INFO_2 structure.
 ********************************************************************/
+
 static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int depth)
 {
-	if (id == NULL) return False;
+	if (id == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_id_info2");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr_id_info2", ps, depth, &(id->ptr_id_info2));
+	if(!prs_uint32("ptr_id_info2", ps, depth, &id->ptr_id_info2))
+		return False;
 
-	if (id->ptr_id_info2 != 0)
-	{
-		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
+	if (id->ptr_id_info2 != 0) {
+		if(!smb_io_unihdr("unihdr", &id->hdr_domain_name, ps, depth))
+			return False;
 
-		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
-		smb_io_bigint("", &(id->logon_id), ps, depth);
+		if(!prs_uint32("param_ctrl", ps, depth, &id->param_ctrl))
+			return False;
+		if(!smb_io_logon_id("", &id->logon_id, ps, depth))
+			return False;
 
-		smb_io_unihdr("unihdr", &(id->hdr_user_name  ), ps, depth);
-		smb_io_unihdr("unihdr", &(id->hdr_wksta_name ), ps, depth);
+		if(!smb_io_unihdr("unihdr", &id->hdr_user_name, ps, depth))
+			return False;
+		if(!smb_io_unihdr("unihdr", &id->hdr_wksta_name, ps, depth))
+			return False;
 
-		prs_uint8s (False, "lm_chal", ps, depth, id->lm_chal, 8); /* lm 8 byte challenge */
+		if(!prs_uint8s (False, "lm_chal", ps, depth, id->lm_chal, 8)) /* lm 8 byte challenge */
+			return False;
 
-		smb_io_strhdr("hdr_nt_chal_resp", &(id->hdr_nt_chal_resp ), ps, depth);
-		smb_io_strhdr("hdr_lm_chal_resp", &(id->hdr_lm_chal_resp ), ps, depth);
+		if(!smb_io_strhdr("hdr_nt_chal_resp", &id->hdr_nt_chal_resp, ps, depth))
+			return False;
+		if(!smb_io_strhdr("hdr_lm_chal_resp", &id->hdr_lm_chal_resp, ps, depth))
+			return False;
 
-		smb_io_unistr2("uni_domain_name", &(id->uni_domain_name), id->hdr_domain_name .buffer, ps, depth);
-		smb_io_unistr2("uni_user_name  ", &(id->uni_user_name  ), id->hdr_user_name   .buffer, ps, depth);
-		smb_io_unistr2("uni_wksta_name ", &(id->uni_wksta_name ), id->hdr_wksta_name  .buffer, ps, depth);
-		smb_io_string2("nt_chal_resp"   , &(id->nt_chal_resp)   , id->hdr_nt_chal_resp.buffer, ps, depth);
-		smb_io_string2("lm_chal_resp"   , &(id->lm_chal_resp)   , id->hdr_lm_chal_resp.buffer, ps, depth);
+		if(!smb_io_unistr2("uni_domain_name", &id->uni_domain_name,
+				id->hdr_domain_name.buffer, ps, depth))
+			return False;
+		if(!smb_io_unistr2("uni_user_name  ", &id->uni_user_name,
+				id->hdr_user_name.buffer, ps, depth))
+			return False;
+		if(!smb_io_unistr2("uni_wksta_name ", &id->uni_wksta_name,
+				id->hdr_wksta_name.buffer, ps, depth))
+			return False;
+		if(!smb_io_string2("nt_chal_resp", &id->nt_chal_resp,
+				id->hdr_nt_chal_resp.buffer, ps, depth))
+			return False;
+		if(!smb_io_string2("lm_chal_resp", &id->lm_chal_resp,
+				id->hdr_lm_chal_resp.buffer, ps, depth))
+			return False;
 	}
 
 	return True;
@@ -878,104 +874,103 @@ static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int 
 
 
 /*******************************************************************
-makes a DOM_SAM_INFO structure.
+ Inits a DOM_SAM_INFO structure.
 ********************************************************************/
-BOOL make_sam_info(DOM_SAM_INFO *sam,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred,
+
+void init_sam_info(DOM_SAM_INFO *sam,
+				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr)
 {
-	if (sam == NULL) return False;
+	DEBUG(5,("init_sam_info: %d\n", __LINE__));
 
-	DEBUG(5,("make_sam_info: %d\n", __LINE__));
+	init_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
 
-	make_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
-
-	if (rtn_cred != NULL)
-	{
+	if (rtn_cred != NULL) {
 		sam->ptr_rtn_cred = 1;
-		memcpy(&(sam->rtn_cred), rtn_cred, sizeof(sam->rtn_cred));
-	}
-	else
-	{
+		memcpy(&sam->rtn_cred, rtn_cred, sizeof(sam->rtn_cred));
+	} else {
 		sam->ptr_rtn_cred = 0;
 	}
 
 	sam->logon_level  = logon_level;
 	sam->ctr          = ctr;
-
-	return True;
 }
 
 /*******************************************************************
-reads or writes a DOM_SAM_INFO structure.
+ Reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
-static BOOL net_io_id_info_ctr(char *desc,  NET_ID_INFO_CTR *ctr, prs_struct *ps, int depth)
+
+static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
-	if (ctr == NULL) return False;
+	if (ctr == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_sam_info");
 	depth++;
 
 	/* don't 4-byte align here! */
 
-	prs_uint16("switch_value ", ps, depth, &(ctr->switch_value));
+	if(!prs_uint16("switch_value ", ps, depth, &ctr->switch_value))
+		return False;
 
-	switch (ctr->switch_value)
-	{
-		case 1:
-		{
-			net_io_id_info1("", &(ctr->auth.id1), ps, depth);
-			break;
-		}
-		case 2:
-		{
-			net_io_id_info2("", &(ctr->auth.id2), ps, depth);
-			break;
-		}
-		default:
-		{
-			/* PANIC! */
-			DEBUG(4,("smb_io_sam_info: unknown switch_value!\n"));
-			break;
-		}
+	switch (ctr->switch_value) {
+	case 1:
+		if(!net_io_id_info1("", &ctr->auth.id1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!net_io_id_info2("", &ctr->auth.id2, ps, depth))
+			return False;
+		break;
+	default:
+		/* PANIC! */
+		DEBUG(4,("smb_io_sam_info: unknown switch_value!\n"));
+		break;
 	}
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a DOM_SAM_INFO structure.
-********************************************************************/
-static BOOL smb_io_sam_info(char *desc,  DOM_SAM_INFO *sam, prs_struct *ps, int depth)
+ Reads or writes a DOM_SAM_INFO structure.
+ ********************************************************************/
+
+static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int depth)
 {
-	if (sam == NULL) return False;
+	if (sam == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_sam_info");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	smb_io_clnt_info2("", &(sam->client  ), ps, depth);
+	if(!smb_io_clnt_info2("", &sam->client, ps, depth))
+		return False;
 
-	prs_uint32("ptr_rtn_cred ", ps, depth, &(sam->ptr_rtn_cred));
-	smb_io_cred      ("", &(sam->rtn_cred), ps, depth);
+	if(!prs_uint32("ptr_rtn_cred ", ps, depth, &sam->ptr_rtn_cred))
+		return False;
+	if(!smb_io_cred("", &sam->rtn_cred, ps, depth))
+		return False;
 
-	prs_uint16("logon_level  ", ps, depth, &(sam->logon_level ));
+	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
+		return False;
 
-	if (sam->logon_level != 0 && sam->ctr != NULL)
-	{
-		net_io_id_info_ctr("logon_info", sam->ctr, ps, depth);
+	if (sam->logon_level != 0 && sam->ctr != NULL) {
+		if(!net_io_id_info_ctr("logon_info", sam->ctr, ps, depth))
+			return False;
 	}
 
 	return True;
 }
 
 /*************************************************************************
- make_net_user_info3
+ Init
  *************************************************************************/
-BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
+
+void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	NTTIME *logon_time,
 	NTTIME *logoff_time,
@@ -1010,7 +1005,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
-	uint32 i;
+	int i;
 	int num_other_sids = 0;
 
 	int len_user_name    = strlen(user_name   );
@@ -1023,6 +1018,8 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
+    memset(usr, '\0', sizeof(*usr));
+
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
 	usr->logon_time            = *logon_time;
@@ -1032,12 +1029,12 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 	usr->pass_can_change_time  = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   );
-	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
-	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
-	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
-	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
-	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
+	init_uni_hdr(&usr->hdr_user_name, len_user_name);
+	init_uni_hdr(&usr->hdr_full_name, len_full_name);
+	init_uni_hdr(&usr->hdr_logon_script, len_logon_script);
+	init_uni_hdr(&usr->hdr_profile_path, len_profile_path);
+	init_uni_hdr(&usr->hdr_home_dir, len_home_dir);
+	init_uni_hdr(&usr->hdr_dir_drive, len_dir_drive);
 
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
@@ -1049,835 +1046,274 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 	usr->user_flgs = user_flgs;
 
 	if (sess_key != NULL)
-	{
 		memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
-	}
 	else
-	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
-	}
+		memset((char *)usr->user_sess_key, '\0', sizeof(usr->user_sess_key));
 
-	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
-	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
+	init_uni_hdr(&usr->hdr_logon_srv, len_logon_srv);
+	init_uni_hdr(&usr->hdr_logon_dom, len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	memset((char *)usr->padding, '\0', sizeof(usr->padding));
 
-	num_other_sids = make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
+	num_other_sids = init_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
 
 	usr->num_other_sids = num_other_sids;
-	usr->buffer_other_sids = num_other_sids != 0 ? 1 : 0; 
+	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
 	
-	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   );
-	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   );
-	make_unistr2(&(usr->uni_logon_script), logon_script, len_logon_script);
-	make_unistr2(&(usr->uni_profile_path), profile_path, len_profile_path);
-	make_unistr2(&(usr->uni_home_dir    ), home_dir    , len_home_dir    );
-	make_unistr2(&(usr->uni_dir_drive   ), dir_drive   , len_dir_drive   );
+	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
+	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
+	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
+	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
+	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
 
 	usr->num_groups2 = num_groups;
 
 	SMB_ASSERT_ARRAY(usr->gids, num_groups);
 
 	for (i = 0; i < num_groups; i++)
-	{
 		usr->gids[i] = gids[i];
-	}
 
-	make_unistr2(&(usr->uni_logon_srv), logon_srv, len_logon_srv);
-	make_unistr2(&(usr->uni_logon_dom), logon_dom, len_logon_dom);
+	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
+	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
 
-	make_dom_sid2(&(usr->dom_sid), dom_sid);
+	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */
-
-	return True;
 }
 
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
-{
-	uint32 i;
 
-	if (usr == NULL) return False;
+static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (usr == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_lsa_user_info");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("ptr_user_info ", ps, depth, &(usr->ptr_user_info));
+	if(!prs_uint32("ptr_user_info ", ps, depth, &usr->ptr_user_info))
+		return False;
 
-	if (usr->ptr_user_info != 0)
-	{
-		smb_io_time("time", &(usr->logon_time)           , ps, depth); /* logon time */
-		smb_io_time("time", &(usr->logoff_time)          , ps, depth); /* logoff time */
-		smb_io_time("time", &(usr->kickoff_time)         , ps, depth); /* kickoff time */
-		smb_io_time("time", &(usr->pass_last_set_time)   , ps, depth); /* password last set time */
-		smb_io_time("time", &(usr->pass_can_change_time) , ps, depth); /* password can change time */
-		smb_io_time("time", &(usr->pass_must_change_time), ps, depth); /* password must change time */
+	if (usr->ptr_user_info == 0)
+		return True;
 
-		smb_io_unihdr("unihdr", &(usr->hdr_user_name)   , ps, depth); /* username unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_full_name)   , ps, depth); /* user's full name unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_logon_script), ps, depth); /* logon script unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_profile_path), ps, depth); /* profile path unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_home_dir)    , ps, depth); /* home directory unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_dir_drive)   , ps, depth); /* home directory drive unicode string header */
+	if(!smb_io_time("time", &usr->logon_time, ps, depth)) /* logon time */
+		return False;
+	if(!smb_io_time("time", &usr->logoff_time, ps, depth)) /* logoff time */
+		return False;
+	if(!smb_io_time("time", &usr->kickoff_time, ps, depth)) /* kickoff time */
+		return False;
+	if(!smb_io_time("time", &usr->pass_last_set_time, ps, depth)) /* password last set time */
+		return False;
+	if(!smb_io_time("time", &usr->pass_can_change_time , ps, depth)) /* password can change time */
+		return False;
+	if(!smb_io_time("time", &usr->pass_must_change_time, ps, depth)) /* password must change time */
+		return False;
 
-		prs_uint16("logon_count   ", ps, depth, &(usr->logon_count ));  /* logon count */
-		prs_uint16("bad_pw_count  ", ps, depth, &(usr->bad_pw_count)); /* bad password count */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_full_name, ps, depth)) /* user's full name unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_script, ps, depth)) /* logon script unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_profile_path, ps, depth)) /* profile path unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_home_dir, ps, depth)) /* home directory unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_dir_drive, ps, depth)) /* home directory drive unicode string header */
+		return False;
 
-		prs_uint32("user_id       ", ps, depth, &(usr->user_id      ));       /* User ID */
-		prs_uint32("group_id      ", ps, depth, &(usr->group_id     ));      /* Group ID */
-		prs_uint32("num_groups    ", ps, depth, &(usr->num_groups   ));    /* num groups */
-		prs_uint32("buffer_groups ", ps, depth, &(usr->buffer_groups)); /* undocumented buffer pointer to groups. */
-		prs_uint32("user_flgs     ", ps, depth, &(usr->user_flgs    ));     /* user flags */
+	if(!prs_uint16("logon_count   ", ps, depth, &usr->logon_count))  /* logon count */
+		return False;
+	if(!prs_uint16("bad_pw_count  ", ps, depth, &usr->bad_pw_count)) /* bad password count */
+		return False;
 
-		prs_uint8s (False, "user_sess_key", ps, depth, usr->user_sess_key, 16); /* unused user session key */
+	if(!prs_uint32("user_id       ", ps, depth, &usr->user_id))       /* User ID */
+		return False;
+	if(!prs_uint32("group_id      ", ps, depth, &usr->group_id))      /* Group ID */
+		return False;
+	if(!prs_uint32("num_groups    ", ps, depth, &usr->num_groups))    /* num groups */
+		return False;
+	if(!prs_uint32("buffer_groups ", ps, depth, &usr->buffer_groups)) /* undocumented buffer pointer to groups. */
+		return False;
+	if(!prs_uint32("user_flgs     ", ps, depth, &usr->user_flgs))     /* user flags */
+		return False;
 
-		smb_io_unihdr("unihdr", &(usr->hdr_logon_srv), ps, depth); /* logon server unicode string header */
-		smb_io_unihdr("unihdr", &(usr->hdr_logon_dom), ps, depth); /* logon domain unicode string header */
+	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* unused user session key */
+		return False;
 
-		prs_uint32("buffer_dom_id ", ps, depth, &(usr->buffer_dom_id)); /* undocumented logon domain id pointer */
-		prs_uint8s (False, "padding       ", ps, depth, usr->padding, 40); /* unused padding bytes? */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */
+		return False;
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_dom, ps, depth)) /* logon domain unicode string header */
+		return False;
 
-		prs_uint32("num_other_sids", ps, depth, &(usr->num_other_sids)); /* 0 - num_sids */
-		prs_uint32("buffer_other_sids", ps, depth, &(usr->buffer_other_sids)); /* NULL - undocumented pointer to SIDs. */
+	if(!prs_uint32("buffer_dom_id ", ps, depth, &usr->buffer_dom_id)) /* undocumented logon domain id pointer */
+		return False;
+	if(!prs_uint8s (False, "padding       ", ps, depth, usr->padding, 40)) /* unused padding bytes? */
+		return False;
+
+	if(!prs_uint32("num_other_sids", ps, depth, &usr->num_other_sids)) /* 0 - num_sids */
+		return False;
+	if(!prs_uint32("buffer_other_sids", ps, depth, &usr->buffer_other_sids)) /* NULL - undocumented pointer to SIDs. */
+		return False;
 		
-		smb_io_unistr2("unistr2", &(usr->uni_user_name)   , usr->hdr_user_name   .buffer, ps, depth); /* username unicode string */
-		smb_io_unistr2("unistr2", &(usr->uni_full_name)   , usr->hdr_full_name   .buffer, ps, depth); /* user's full name unicode string */
-		smb_io_unistr2("unistr2", &(usr->uni_logon_script), usr->hdr_logon_script.buffer, ps, depth); /* logon script unicode string */
-		smb_io_unistr2("unistr2", &(usr->uni_profile_path), usr->hdr_profile_path.buffer, ps, depth); /* profile path unicode string */
-		smb_io_unistr2("unistr2", &(usr->uni_home_dir)    , usr->hdr_home_dir    .buffer, ps, depth); /* home directory unicode string */
-		smb_io_unistr2("unistr2", &(usr->uni_dir_drive)   , usr->hdr_dir_drive   .buffer, ps, depth); /* home directory drive unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
+		return False;
 
-		prs_align(ps);
-		prs_uint32("num_groups2   ", ps, depth, &(usr->num_groups2));        /* num groups */
-		SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
-		for (i = 0; i < usr->num_groups2; i++)
-		{
-			smb_io_gid("", &(usr->gids[i]), ps, depth); /* group info */
-		}
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups */
+		return False;
+	SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
+	for (i = 0; i < usr->num_groups2; i++) {
+		if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
+			return False;
+	}
 
-		smb_io_unistr2("unistr2", &( usr->uni_logon_srv), usr->hdr_logon_srv.buffer, ps, depth); /* logon server unicode string */
-		smb_io_unistr2("unistr2", &( usr->uni_logon_dom), usr->hdr_logon_srv.buffer, ps, depth); /* logon domain unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
+		return False;
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
+		return False;
 
-		smb_io_dom_sid2("", &(usr->dom_sid), ps, depth);           /* domain SID */
+	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
+		return False;
 
-		SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
+	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 
-		for (i = 0; i < usr->num_other_sids; i++)
-		{
-			smb_io_dom_sid2("", &(usr->other_sids[i]), ps, depth); /* other domain SIDs */
-		}
+	for (i = 0; i < usr->num_other_sids; i++) {
+		if(!smb_io_dom_sid2("", &usr->other_sids[i], ps, depth)) /* other domain SIDs */
+			return False;
 	}
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth)
+
+BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth)
 {
-	if (q_l == NULL) return False;
+	if (q_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_sam_logon");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	smb_io_sam_info("", &(q_l->sam_id), ps, depth);           /* domain SID */
-	prs_uint16("validation_level", ps, depth, &(q_l->validation_level));
+	if(!smb_io_sam_info("", &q_l->sam_id, ps, depth))           /* domain SID */
+		return False;
 
+	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth)
+
+BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth)
 {
-	if (r_l == NULL) return False;
+	if (r_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_sam_logon");
 	depth++;
 
-	prs_uint32("buffer_creds", ps, depth, &(r_l->buffer_creds)); /* undocumented buffer pointer */
-	smb_io_cred("", &(r_l->srv_creds), ps, depth); /* server credentials.  server time stamp appears to be ignored. */
+	if(!prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds)) /* undocumented buffer pointer */
+		return False;
+	if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
+		return False;
 
-	prs_uint16("switch_value", ps, depth, &(r_l->switch_value));
-	prs_align(ps);
+	if(!prs_uint16("switch_value", ps, depth, &r_l->switch_value))
+		return False;
+	if(!prs_align(ps))
+		return False;
 
-	if (r_l->switch_value != 0)
-	{
-		net_io_user_info3("", r_l->user, ps, depth);
+	if (r_l->switch_value != 0) {
+		if(!net_io_user_info3("", r_l->user, ps, depth))
+			return False;
 	}
 
-	prs_uint32("auth_resp   ", ps, depth, &(r_l->auth_resp)); /* 1 - Authoritative response; 0 - Non-Auth? */
+	if(!prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp)) /* 1 - Authoritative response; 0 - Non-Auth? */
+		return False;
 
-	prs_uint32("status      ", ps, depth, &(r_l->status));
+	if(!prs_uint32("status      ", ps, depth, &r_l->status))
+		return False;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
+
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth)
 {
-	if (q_l == NULL) return False;
+	if (q_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_q_sam_logoff");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	smb_io_sam_info("", &(q_l->sam_id), ps, depth);           /* domain SID */
+	if(!smb_io_sam_info("", &q_l->sam_id, ps, depth))           /* domain SID */
+		return False;
 
 	return True;
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth)
+
+BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth)
 {
-	if (r_l == NULL) return False;
+	if (r_l == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_sam_logoff");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("buffer_creds", ps, depth, &(r_l->buffer_creds)); /* undocumented buffer pointer */
-	smb_io_cred("", &(r_l->srv_creds), ps, depth); /* server credentials.  server time stamp appears to be ignored. */
-
-	prs_uint32("status      ", ps, depth, &(r_l->status));
-
-	return True;
-}
-
-/*******************************************************************
-makes a NET_Q_SAM_SYNC structure.
-********************************************************************/
-BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
-				const char *srv_name,
-				const char *cli_name,
-				DOM_CRED *cli_creds, uint32 database_id)
-{
-	if (q_s == NULL) return False;
-
-	DEBUG(5,("make_q_sam_sync\n"));
-
-	make_unistr2(&(q_s->uni_srv_name), srv_name, strlen(srv_name)+1);
-	make_unistr2(&(q_s->uni_cli_name), cli_name, strlen(cli_name)+1);
-
-	memcpy(&(q_s->cli_creds), cli_creds, sizeof(q_s->cli_creds));
-	memset(&(q_s->ret_creds), 0, sizeof(q_s->ret_creds));
-
-	q_s->database_id = database_id;
-	q_s->restart_state = 0;
-	q_s->sync_context = 0;
-	q_s->max_size = 0xffff;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth)
-{
-	if (q_s == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_q_sam_sync");
-	depth++;
-
-	smb_io_unistr2("", &(q_s->uni_srv_name), True, ps, depth);
-	smb_io_unistr2("", &(q_s->uni_cli_name), True, ps, depth);
-
-	smb_io_cred("", &(q_s->cli_creds), ps, depth);
-	smb_io_cred("", &(q_s->ret_creds), ps, depth);
-
-	prs_uint32("database_id  ", ps, depth, &(q_s->database_id  ));
-	prs_uint32("restart_state", ps, depth, &(q_s->restart_state));
-	prs_uint32("sync_context ", ps, depth, &(q_s->sync_context ));
-
-	prs_uint32("max_size", ps, depth, &(q_s->max_size));
-
-	return True;
-}
-
-/*******************************************************************
-makes a SAM_DELTA_HDR structure.
-********************************************************************/
-BOOL make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid)
-{
-	if (delta == NULL) return False;
-
-	DEBUG(5,("make_sam_delta_hdr\n"));
-
-	delta->type2 = delta->type = type;
-	delta->target_rid = rid;
-
-	delta->type3 = type;
-	delta->ptr_delta = 1;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR *delta, prs_struct *ps, int depth)
-{
-	if (delta == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_delta_hdr");
-	depth++;
-
-	prs_uint16("type",       ps, depth, &(delta->type      ));
-	prs_uint16("type2",      ps, depth, &(delta->type2     ));
-	prs_uint32("target_rid", ps, depth, &(delta->target_rid));
-
-	prs_uint32("type3",      ps, depth, &(delta->type3     ));
-	prs_uint32("ptr_delta",  ps, depth, &(delta->ptr_delta ));
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO *info, prs_struct *ps, int depth)
-{
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_domain_info");
-	depth++;
-
-	smb_io_unihdr("hdr_dom_name" , &(info->hdr_dom_name) , ps, depth);
-	smb_io_unihdr("hdr_oem_info" , &(info->hdr_oem_info) , ps, depth);
-
-	smb_io_bigint("force_logoff" , &(info->force_logoff) , ps, depth);
-	prs_uint16("min_pwd_len"     , ps, depth, &(info->min_pwd_len    ));
-	prs_uint16("pwd_history_len" , ps, depth, &(info->pwd_history_len));
-	smb_io_bigint("max_pwd_age"  , &(info->max_pwd_age)  , ps, depth);
-	smb_io_bigint("min_pwd_age"  , &(info->min_pwd_age)  , ps, depth);
-	smb_io_bigint("dom_mod_count", &(info->dom_mod_count), ps, depth);
-	smb_io_time("creation_time"  , &(info->creation_time), ps, depth);
-
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc) , ps, depth);
-	smb_io_unihdr ("hdr_unknown" , &(info->hdr_unknown)  , ps, depth);
-	ps->offset += 40;
-
-	smb_io_unistr2("uni_dom_name", &(info->uni_dom_name),
-		       info->hdr_dom_name.buffer, ps, depth);
-	smb_io_unistr2("buf_oem_info", &(info->buf_oem_info),
-		       info->hdr_oem_info.buffer, ps, depth);
-
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
-	smb_io_unistr2("buf_unknown" , &(info->buf_unknown ),
-		       info->hdr_unknown .buffer, ps, depth);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO *info, prs_struct *ps, int depth)
-{
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_group_info");
-	depth++;
-
-	smb_io_unihdr ("hdr_grp_name", &(info->hdr_grp_name), ps, depth);
-	smb_io_gid    ("gid",          &(info->gid),          ps, depth);
-	smb_io_unihdr ("hdr_grp_desc", &(info->hdr_grp_desc), ps, depth);
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	ps->offset += 48;
-
-	smb_io_unistr2("uni_grp_name", &(info->uni_grp_name),
-		       info->hdr_grp_name.buffer, ps, depth);
-	smb_io_unistr2("uni_grp_desc", &(info->uni_grp_desc),
-		       info->hdr_grp_desc.buffer, ps, depth);
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
-
-	return True;
-}
-
-/*******************************************************************
-makes a SAM_ACCOUNT_INFO structure.
-********************************************************************/
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
-			   char *full_name, uint32 user_rid, uint32 group_rid,
-			   char *home_dir, char *dir_drive, char *logon_script,
-			   char *acct_desc, uint32 acb_info, char *profile)
-{
-	int len_user_name = strlen(user_name);
-	int len_full_name = strlen(full_name);
-	int len_home_dir = strlen(home_dir);
-	int len_dir_drive = strlen(dir_drive);
-	int len_logon_script = strlen(logon_script);
-	int len_acct_desc = strlen(acct_desc);
-	int len_profile = strlen(profile);
-
-	DEBUG(5,("make_sam_account_info\n"));
-
-        make_uni_hdr(&(info->hdr_acct_name   ), len_user_name   );
-        make_uni_hdr(&(info->hdr_full_name   ), len_full_name   );
-        make_uni_hdr(&(info->hdr_home_dir    ), len_home_dir    );
-        make_uni_hdr(&(info->hdr_dir_drive   ), len_dir_drive   );
-        make_uni_hdr(&(info->hdr_logon_script), len_logon_script);
-        make_uni_hdr(&(info->hdr_acct_desc   ), len_acct_desc   );
-        make_uni_hdr(&(info->hdr_profile     ), len_profile     );
-
-	/* not present */
-        make_uni_hdr(&(info->hdr_workstations), 0);
-        make_uni_hdr(&(info->hdr_comment), 0);
-        make_uni_hdr(&(info->hdr_parameters), 0);
-	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
-
-	info->user_rid = user_rid;
-	info->group_rid = group_rid;
-
-	init_nt_time(&(info->logon_time));
-	init_nt_time(&(info->logoff_time));
-	init_nt_time(&(info->pwd_last_set_time));
-	init_nt_time(&(info->acct_expiry_time));
-
-	info->logon_divs = 0xA8;
-	info->ptr_logon_hrs = 0; /* Don't care right now */
-
-	info->bad_pwd_count = 0;
-	info->logon_count = 0;
-	info->acb_info = acb_info;
-	info->nt_pwd_present = 0;
-	info->lm_pwd_present = 0;
-	info->pwd_expired = 0;
-	info->country = 0;
-	info->codepage = 0;
-
-	info->unknown1 = 0x4EC;
-	info->unknown2 = 0;
-
-	make_unistr2(&(info->uni_acct_name), user_name, len_user_name+1);
-	make_unistr2(&(info->uni_full_name), full_name, len_full_name+1);
-	make_unistr2(&(info->uni_home_dir ), home_dir , len_home_dir +1);
-	make_unistr2(&(info->uni_dir_drive), dir_drive, len_dir_drive+1);
-	make_unistr2(&(info->uni_logon_script), logon_script, len_logon_script+1);
-	make_unistr2(&(info->uni_acct_desc), acct_desc, len_acct_desc+1);
-	make_unistr2(&(info->uni_profile  ), profile  , len_profile  +1);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_passwd_info(char *desc, SAM_PWD *pwd,
-				prs_struct *ps, int depth)
-{
-	if (pwd == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_passwd_info");
-	depth++;
-
-	prs_uint32("unk_0 ", ps, depth, &(pwd->unk_0 ));
-
-	smb_io_unihdr ("hdr_lm_pwd", &(pwd->hdr_lm_pwd), ps, depth);
-	prs_uint8s(False, "buf_lm_pwd", ps, depth, pwd->buf_lm_pwd, 16);
-	
-	smb_io_unihdr ("hdr_nt_pwd", &(pwd->hdr_nt_pwd), ps, depth);
-	prs_uint8s(False, "buf_nt_pwd", ps, depth, pwd->buf_nt_pwd, 16);
-
-	smb_io_unihdr("", &(pwd->hdr_empty_lm), ps, depth);
-	smb_io_unihdr("", &(pwd->hdr_empty_nt), ps, depth);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
-			SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
-{
-	BUFHDR2 hdr_priv_data;
-	uint32 i;
-
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_account_info");
-	depth++;
-
-	smb_io_unihdr("hdr_acct_name", &(info->hdr_acct_name), ps, depth);
-	smb_io_unihdr("hdr_full_name", &(info->hdr_full_name), ps, depth);
-
-	prs_uint32("user_rid ", ps, depth, &(info->user_rid ));
-	prs_uint32("group_rid", ps, depth, &(info->group_rid));
-
-	smb_io_unihdr("hdr_home_dir "   , &(info->hdr_home_dir ), ps, depth);
-	smb_io_unihdr("hdr_dir_drive"   , &(info->hdr_dir_drive), ps, depth);
-	smb_io_unihdr("hdr_logon_script", &(info->hdr_logon_script), ps, depth);
-	smb_io_unihdr("hdr_acct_desc"   , &(info->hdr_acct_desc), ps, depth);
-	smb_io_unihdr("hdr_workstations", &(info->hdr_workstations), ps, depth);
-
-	smb_io_time("logon_time" , &(info->logon_time ), ps, depth);
-	smb_io_time("logoff_time", &(info->logoff_time), ps, depth);
-
-	prs_uint32("logon_divs   ", ps, depth, &(info->logon_divs   ));
-	prs_uint32("ptr_logon_hrs", ps, depth, &(info->ptr_logon_hrs));
-
-	prs_uint16("bad_pwd_count", ps, depth, &(info->bad_pwd_count));
-	prs_uint16("logon_count"  , ps, depth, &(info->logon_count  ));
-	smb_io_time("pwd_last_set_time", &(info->pwd_last_set_time), ps, depth);
-	smb_io_time("acct_expiry_time" , &(info->acct_expiry_time ), ps, depth);
-
-	prs_uint32("acb_info", ps, depth, &(info->acb_info));
-	prs_uint8s(False, "nt_pwd", ps, depth, info->nt_pwd, 16);
-	prs_uint8s(False, "lm_pwd", ps, depth, info->lm_pwd, 16);
-	prs_uint8("lm_pwd_present", ps, depth, &(info->lm_pwd_present));
-	prs_uint8("nt_pwd_present", ps, depth, &(info->nt_pwd_present));
-	prs_uint8("pwd_expired"   , ps, depth, &(info->pwd_expired   ));
-
-	smb_io_unihdr("hdr_comment"   , &(info->hdr_comment   ), ps, depth);
-	smb_io_unihdr("hdr_parameters", &(info->hdr_parameters), ps, depth);
-	prs_uint16("country" , ps, depth, &(info->country ));
-	prs_uint16("codepage", ps, depth, &(info->codepage));
-
-	smb_io_bufhdr2("hdr_priv_data", &(hdr_priv_data), ps, depth);
-	smb_io_bufhdr2("hdr_sec_desc" , &(info->hdr_sec_desc) , ps, depth);
-	smb_io_unihdr ("hdr_profile"  , &(info->hdr_profile)  , ps, depth);
-
-	for (i = 0; i < 3; i++)
-	{
-		smb_io_unihdr("hdr_reserved", &(info->hdr_reserved[i]), ps, depth);
-	}
-
-	for (i = 0; i < 4; i++)
-	{
-		prs_uint32("dw_reserved", ps, depth, &(info->dw_reserved[i]));
-	}
-
-	smb_io_unistr2("uni_acct_name", &(info->uni_acct_name),
-		       info->hdr_acct_name.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_full_name", &(info->uni_full_name),
-		       info->hdr_full_name.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_home_dir ", &(info->uni_home_dir ),
-		       info->hdr_home_dir .buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_dir_drive", &(info->uni_dir_drive),
-		       info->hdr_dir_drive.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_logon_script", &(info->uni_logon_script),
-		       info->hdr_logon_script.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_acct_desc", &(info->uni_acct_desc),
-		       info->hdr_acct_desc.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_workstations", &(info->uni_workstations),
-		       info->hdr_workstations.buffer, ps, depth);
-	prs_align(ps);
-
-	prs_uint32("unknown1", ps, depth, &(info->unknown1));
-	prs_uint32("unknown2", ps, depth, &(info->unknown2));
-
-	smb_io_buffer4("buf_logon_hrs" , &(info->buf_logon_hrs ),
-		       info->ptr_logon_hrs, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_comment"   , &(info->uni_comment   ),
-		       info->hdr_comment.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_parameters", &(info->uni_parameters),
-		       info->hdr_parameters.buffer, ps, depth);
-	prs_align(ps);
-	if (hdr_priv_data.buffer != 0)
-	{
-		int old_offset;
-		uint32 len = 0x44;
-		prs_uint32("pwd_len", ps, depth, &len);
-		old_offset = ps->offset;
-		if (len == 0x44)
-		{
-			if (ps->io)
-			{
-				/* reading */
-				prs_hash1(ps, ps->offset, sess_key);
-			}
-			net_io_sam_passwd_info("pass", &(info->pass), ps, depth);
-			if (!ps->io)
-			{
-				/* writing */
-				prs_hash1(ps, old_offset, sess_key);
-			}
-		}
-		ps->offset = old_offset + len;
-	}
-	smb_io_buffer4("buf_sec_desc"  , &(info->buf_sec_desc  ),
-		       info->hdr_sec_desc.buffer, ps, depth);
-	prs_align(ps);
-	smb_io_unistr2("uni_profile"   , &(info->uni_profile   ),
-		       info->hdr_profile.buffer, ps, depth);
-	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO *info, prs_struct *ps, int depth)
-{
-	uint32 i;
-	fstring tmp;
-
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_group_mem_info");
-	depth++;
-
-	prs_align(ps);
-	prs_uint32("ptr_rids   ", ps, depth, &(info->ptr_rids   ));
-	prs_uint32("ptr_attribs", ps, depth, &(info->ptr_attribs));
-	prs_uint32("num_members", ps, depth, &(info->num_members));
-	ps->offset += 16;
-
-	if (info->ptr_rids != 0)
-	{
-		prs_uint32("num_members2", ps, depth, &(info->num_members2));
-		if (info->num_members2 != info->num_members)
-		{
-			/* RPC fault */
-			return False;
-		}
-
-		SMB_ASSERT_ARRAY(info->rids, info->num_members2);
-
-		for (i = 0; i < info->num_members2; i++)
-		{
-			slprintf(tmp, sizeof(tmp) - 1, "rids[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->rids[i]));
-		}
-	}
-
-	if (info->ptr_attribs != 0)
-	{
-		prs_uint32("num_members3", ps, depth, &(info->num_members3));
-		if (info->num_members3 != info->num_members)
-		{
-			/* RPC fault */
-			return False;
-		}
-
-		SMB_ASSERT_ARRAY(info->attribs, info->num_members3);
-
-		for (i = 0; i < info->num_members3; i++)
-		{
-			slprintf(tmp, sizeof(tmp) - 1, "attribs[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->attribs[i]));
-		}
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO *info, prs_struct *ps, int depth)
-{
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_alias_info");
-	depth++;
-
-	smb_io_unihdr ("hdr_als_name", &(info->hdr_als_name), ps, depth);
-	prs_uint32("als_rid", ps, depth, &(info->als_rid));
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	smb_io_unihdr ("hdr_als_desc", &(info->hdr_als_desc), ps, depth);
-	ps->offset += 40;
-
-	smb_io_unistr2("uni_als_name", &(info->uni_als_name),
-		       info->hdr_als_name.buffer, ps, depth);
-	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
-		       info->hdr_sec_desc.buffer, ps, depth);
-	smb_io_unistr2("uni_als_desc", &(info->uni_als_desc),
-		       info->hdr_als_name.buffer, ps, depth);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_struct *ps, int depth)
-{
-	uint32 i;
-	fstring tmp;
-
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_alias_mem_info");
-	depth++;
-
-	prs_align(ps);
-	prs_uint32("num_members", ps, depth, &(info->num_members));
-	prs_uint32("ptr_members", ps, depth, &(info->ptr_members));
-	ps->offset += 16;
-
-	if (info->ptr_members != 0)
-	{
-		prs_uint32("num_sids", ps, depth, &(info->num_sids));
-		if (info->num_sids != info->num_members)
-		{
-			/* RPC fault */
-			return False;
-		}
-
-		SMB_ASSERT_ARRAY(info->ptr_sids, info->num_sids);
-
-		for (i = 0; i < info->num_sids; i++)
-		{
-			slprintf(tmp, sizeof(tmp) - 1, "ptr_sids[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(info->ptr_sids[i]));
-		}
-
-		SMB_ASSERT_ARRAY(info->sids, info->num_sids);
-
-		for (i = 0; i < info->num_sids; i++)
-		{
-			if (info->ptr_sids[i] != 0)
-			{
-				slprintf(tmp, sizeof(tmp) - 1, "sids[%02d]", i);
-				smb_io_dom_sid2(tmp, &(info->sids[i]), ps, depth);
-			}
-		}
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
-				SAM_DELTA_CTR *delta, uint16 type,
-				prs_struct *ps, int depth)
-{
-	if (delta == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_sam_delta_ctr");
-	depth++;
-
-	switch (type)
-	{
-		case 1:
-		{
-			net_io_sam_domain_info("", &(delta->domain_info),
-			                           ps, depth);
-			break;
-		}
-		case 2:
-		{
-			net_io_sam_group_info("", &(delta->group_info), 
-			                           ps, depth);
-			break;
-		}
-		case 5:
-		{
-			net_io_sam_account_info("", sess_key,
-						&(delta->account_info), 
-			                           ps, depth);
-			break;
-		}
-		case 8:
-		{
-			net_io_sam_group_mem_info("", &(delta->grp_mem_info), 
-			                           ps, depth);
-			break;
-		}
-		case 9:
-		{
-			net_io_sam_alias_info("", &(delta->alias_info), 
-			                           ps, depth);
-			break;
-		}
-		case 0xC:
-		{
-			net_io_sam_alias_mem_info("", &(delta->als_mem_info), 
-			                           ps, depth);
-			break;
-		}
-		default:
-		{
-			DEBUG(0, ("Replication error: Unknown delta type %x\n", type));
-			break;
-		}
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
-				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth)
-{
-	uint32 i;
-
-	if (r_s == NULL) return False;
-
-	prs_debug(ps, depth, desc, "net_io_r_sam_sync");
-	depth++;
-
-	smb_io_cred("", &(r_s->srv_creds), ps, depth);
-	prs_uint32("sync_context", ps, depth, &(r_s->sync_context));
-
-	prs_uint32("ptr_deltas", ps, depth, &(r_s->ptr_deltas));
-	if (r_s->ptr_deltas != 0)
-	{
-		prs_uint32("num_deltas ", ps, depth, &(r_s->num_deltas ));
-		prs_uint32("ptr_deltas2", ps, depth, &(r_s->ptr_deltas2));
-		if (r_s->ptr_deltas2 != 0)
-		{
-			prs_uint32("num_deltas2", ps, depth, &(r_s->num_deltas2));
-			if (r_s->num_deltas2 != r_s->num_deltas)
-			{
-				/* RPC fault */
-				return False;
-			}
-
-			for (i = 0; i < r_s->num_deltas2; i++)
-			{
-				net_io_sam_delta_hdr("", &r_s->hdr_deltas[i], ps, depth);
-			}
-
-			for (i = 0; i < r_s->num_deltas2; i++)
-			{
-				net_io_sam_delta_ctr("", sess_key,
-				          &r_s->deltas[i],
-				          r_s->hdr_deltas[i].type3, ps, depth);
-			}
-		}
-	}
-
-	prs_align(ps);
-	prs_uint32("status", ps, depth, &(r_s->status));
+	if(!prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds)) /* undocumented buffer pointer */
+		return False;
+	if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
+		return False;
+
+	if(!prs_uint32("status      ", ps, depth, &r_l->status))
+		return False;
 
 	return True;
 }

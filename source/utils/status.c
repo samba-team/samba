@@ -36,9 +36,11 @@
 
 #include "includes.h"
 
+struct connect_record crec;
+
 struct session_record{
-  int pid;
-  int uid;
+  pid_t pid;
+  uid_t uid;
   char machine[31];
   time_t start;
   struct session_record *next;
@@ -46,10 +48,9 @@ struct session_record{
 
 extern int DEBUGLEVEL;
 extern FILE *dbf;
-extern pstring myhostname;
 
 static pstring Ucrit_username = "";                   /* added by OH */
-int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
+pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 int            Ucrit_MaxPid=0;                        /* added by OH */
 unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
@@ -76,7 +77,7 @@ static unsigned int Ucrit_checkUsername(char *username)
 	return 0;
 }
 
-static void Ucrit_addPid(int pid)
+static void Ucrit_addPid(pid_t pid)
 {
 	int i;
 	if ( !Ucrit_IsActive) return;
@@ -85,7 +86,7 @@ static void Ucrit_addPid(int pid)
 	Ucrit_pid[Ucrit_MaxPid++] = pid;
 }
 
-static unsigned int Ucrit_checkPid(int pid)
+static unsigned int Ucrit_checkPid(pid_t pid)
 {
 	int i;
 	if ( !Ucrit_IsActive) return 1;
@@ -106,7 +107,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	count++;
 
 	if (Ucrit_checkPid(e->pid)) {
-          printf("%-5d  ",e->pid);
+          printf("%-5d  ",(int)e->pid);
 	  switch ((e->share_mode>>4)&0xF) {
 	  case DENY_NONE: printf("DENY_NONE  "); break;
 	  case DENY_ALL:  printf("DENY_ALL   "); break;
@@ -128,10 +129,13 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 		printf("EXCLUSIVE       ");
 	  else if (e->op_type & BATCH_OPLOCK)
 		printf("BATCH           ");
+	  else if (e->op_type & LEVEL_II_OPLOCK)
+		printf("LEVEL_II        ");
 	  else
 		printf("NONE            ");
 
-	  printf(" %s   %s",fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+	  printf(" %s   %s",dos_to_unix(fname,False),
+             asctime(LocalTime((time_t *)&e->time.tv_sec)));
 	}
 }
 
@@ -167,12 +171,9 @@ static int profile_dump(void)
   extern char *optarg;
   int verbose = 0, brief =0;
   BOOL processes_only=False;
-  int last_pid=0;
+  pid_t last_pid=(pid_t)0;
   struct session_record *ptr;
   int profile_only = 0;
-  struct connect_record *crec = NULL;
-  uint32 connection_count;
-  uint32 conn;	
 
   TimeInit();
   setup_logging(argv[0],True);
@@ -214,12 +215,10 @@ static int profile_dump(void)
       Ucrit_addUsername(optarg);                    /* added by OH */
       break;
     default:
-      fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); 
+      fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
       return (-1);
     }
   }
-
-  get_myname(myhostname, NULL);
 
   if (!lp_load(servicesf,False,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
@@ -232,7 +231,7 @@ static int profile_dump(void)
   }
 
   if (profile_only) {
-	  return profile_dump();
+	return profile_dump();
   }
 
   pstrcpy(fname,lp_lockdir());
@@ -267,59 +266,60 @@ static int profile_dump(void)
 	  printf("----------------------------------------------\n");
 	}
     }
-		
-    if (get_connection_status(&crec, &connection_count))
-	{
-          for (conn=0;conn<connection_count;conn++) 
-	  {
-	     if (Ucrit_checkUsername(uidtoname(crec[conn].uid)))
-	       {
-  	     	if (brief)
-		      {
-			ptr=srecs;
-			while (ptr!=NULL)
-			  {
-			    if ((ptr->pid==crec[conn].pid)&&(strncmp(ptr->machine,crec[conn].machine,30)==0)) 
-			      {
-				if (ptr->start > crec[conn].start)
-				  ptr->start=crec[conn].start;
-				break;
-			      }
-			    ptr=ptr->next;
-			  }
-			if (ptr==NULL)
-			  {
-			    ptr=(struct session_record *) malloc(sizeof(struct session_record));
-			    ptr->uid=crec[conn].uid;
-			    ptr->pid=crec[conn].pid;
-			    ptr->start=crec[conn].start;
-			    strncpy(ptr->machine,crec[conn].machine,30);
-			    ptr->machine[30]='\0';
-			    ptr->next=srecs;
-			    srecs=ptr;
-			  }
-		      }
-		    else
-		      {
-			Ucrit_addPid(crec[conn].pid);                                             /* added by OH */
-			if (processes_only) {
-			  if (last_pid != crec[conn].pid)
-			    printf("%d\n",crec[conn].pid);
-			  last_pid = crec[conn].pid; /* XXXX we can still get repeats, have to
-					    add a sort at some time */
-			}
-			else	  
-			  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-				 crec[conn].name,uidtoname(crec[conn].uid),gidtoname(crec[conn].gid),crec[conn].pid,
-				 crec[conn].machine,crec[conn].addr,
-				 asctime(LocalTime(&crec[conn].start)));
-		      }
-	       }
-          }
-          free(crec);
-	}
-  }
 
+    while (!feof(f))
+      {
+	if (fread(&crec,sizeof(crec),1,f) != 1)
+	  break;
+	if (crec.cnum == -1) continue;
+	if ( crec.magic == 0x280267 && process_exists(crec.pid) 
+	     && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
+	     )
+	  {
+	    if (brief)
+	      {
+		ptr=srecs;
+		while (ptr!=NULL)
+		  {
+		    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
+		      {
+			if (ptr->start > crec.start)
+			  ptr->start=crec.start;
+			break;
+		      }
+		    ptr=ptr->next;
+		  }
+		if (ptr==NULL)
+		  {
+		    ptr=(struct session_record *) malloc(sizeof(struct session_record));
+		    ptr->uid=crec.uid;
+		    ptr->pid=crec.pid;
+		    ptr->start=crec.start;
+		    strncpy(ptr->machine,crec.machine,30);
+		    ptr->machine[30]='\0';
+		    ptr->next=srecs;
+		    srecs=ptr;
+		  }
+	      }
+	    else
+	      {
+		Ucrit_addPid(crec.pid);                                             /* added by OH */
+		if (processes_only) {
+		  if (last_pid != crec.pid)
+		    printf("%d\n",(int)crec.pid);
+		  last_pid = crec.pid; /* XXXX we can still get repeats, have to
+				    add a sort at some time */
+		}
+		else	  
+		  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
+			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),(int)crec.pid,
+			 crec.machine,crec.addr,
+			 asctime(LocalTime(&crec.start)));
+	      }
+	  }
+      }
+    fclose(f);
+  }
   if (processes_only) exit(0);
   
   if (brief)
@@ -327,7 +327,7 @@ static int profile_dump(void)
     ptr=srecs;
     while (ptr!=NULL)
     {
-      printf("%-8d%-10.10s%-30.30s%s",ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
+      printf("%-8d%-10.10s%-30.30s%s",(int)ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
     ptr=ptr->next;
     }
     printf("\n");

@@ -51,7 +51,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   lock.l_len = 1;
   lock.l_pid = 0;
 
-  alarm(5);
+  alarm(waitsecs);
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
   CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
@@ -113,22 +113,22 @@ BOOL file_unlock(int fd, int *plock_depth)
  update to be set = True if modification is required.
 ****************************************************************/
 
-void *startfileent(char *pfile, char *s_readbuf, int bufsize,
+void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update)
 {
   FILE *fp = NULL;
 
   if (!*pfile)
  {
-    DEBUG(0, ("startfileent: No file set\n"));
+    DEBUG(0, ("startfilepwent: No file set\n"));
     return (NULL);
   }
-  DEBUG(10, ("startfileent: opening file %s\n", pfile));
+  DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
 
   fp = sys_fopen(pfile, update ? "r+b" : "rb");
 
   if (fp == NULL) {
-    DEBUG(0, ("startfileent: unable to open file %s\n", pfile));
+    DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));
     return NULL;
   }
 
@@ -137,7 +137,7 @@ void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 
   if (!file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, file_lock_depth))
   {
-    DEBUG(0, ("startfileent: unable to lock file %s\n", pfile));
+    DEBUG(0, ("startfilepwent: unable to lock file %s\n", pfile));
     fclose(fp);
     return NULL;
   }
@@ -152,13 +152,13 @@ void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 /***************************************************************
  End enumeration of the file.
 ****************************************************************/
-void endfileent(void *vp, int *file_lock_depth)
+void endfilepwent(void *vp, int *file_lock_depth)
 {
   FILE *fp = (FILE *)vp;
 
   file_unlock(fileno(fp), file_lock_depth);
   fclose(fp);
-  DEBUG(7, ("endfileent: closed file.\n"));
+  DEBUG(7, ("endfilepwent: closed file.\n"));
 }
 
 /*************************************************************************
@@ -181,6 +181,7 @@ BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok)
 
 /*************************************************************************
  gets a line out of a file.
+ line is of format "xxxx:xxxxxx:xxxxx:".
  lines with "#" at the front are ignored.
 *************************************************************************/
 int getfileline(void *vp, char *linebuf, int linebuf_size)
@@ -188,6 +189,7 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 	/* Static buffers we will return. */
 	FILE *fp = (FILE *)vp;
 	unsigned char   c;
+	unsigned char  *p;
 	size_t            linebuf_len;
 
 	if (fp == NULL)
@@ -247,6 +249,12 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 			continue;
 		}
 
+		p = (unsigned char *) strchr(linebuf, ':');
+		if (p == NULL)
+		{
+			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));
+			continue;
+		}
 		return linebuf_len;
 	}
 	return -1;
@@ -319,49 +327,3 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   return(s);
 }
 
-/****************************************************************************
-checks if a file has changed since last read
-****************************************************************************/
-BOOL file_modified(const char *filename, time_t *lastmodified)
-{
-	SMB_STRUCT_STAT st;
-
-	if (sys_stat(filename, &st) != 0)
-	{
-		DEBUG(0, ("file_changed: Unable to stat file %s. Error was %s\n",
-			  filename, strerror(errno) ));
-		return False;
-	}
-
-	if(st.st_mtime <= *lastmodified)
-	{
-		DEBUG(20, ("file_modified: %s not modified\n", filename));
-		return False;
-	}
-
-	DEBUG(20, ("file_modified: %s modified\n", filename));
-	*lastmodified = st.st_mtime;
-	return True;
-}
-
-/***************************************************************************
-opens a file if modified otherwise returns NULL
-***************************************************************************/
-void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified)
-{
-	FILE *f;
-
-	if (!file_modified(filename, lastmodified))
-	{
-		return NULL;
-	}
-
-	if( (f = fopen(filename, mode)) == NULL)
-	{
-		DEBUG(0, ("open_file_if_modified: can't open file %s. Error was %s\n",
-			  filename, strerror(errno)));
-		return NULL;
-	}
-
-	return (void *)f;
-}

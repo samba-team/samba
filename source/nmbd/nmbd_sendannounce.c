@@ -46,7 +46,7 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
   DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
        reset_type, to_name, to_type, inet_ntoa(to_ip) ));
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_ResetBrowserState;
   p++;
@@ -73,7 +73,7 @@ void broadcast_announce_request(struct subnet_record *subrec, struct work_record
   DEBUG(3,("broadcast_announce_request: sending announce request for workgroup %s \
 to subnet %s\n", work->work_group, subrec->subnet_name));
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_AnnouncementRequest;
   p++;
@@ -101,7 +101,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   pstring outbuf;
   char *p;
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf+1;
 
   CVAL(outbuf,0) = announce_type;
@@ -142,7 +142,7 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
   pstring outbuf;
   char *p=outbuf;
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
 
   SSVAL(p,0,announce_type);
   SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
@@ -504,7 +504,7 @@ void announce_remote(time_t t)
   if (!*s)
     return;
 
-  comment = lp_serverstring();
+  comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
 
   for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
   {
@@ -587,7 +587,7 @@ for workgroup %s on subnet %s.\n", global_myworkgroup, FIRST_SUBNET->subnet_name
     return;
   } 
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
   CVAL(p,0) = ANN_MasterAnnouncement;
   p++;

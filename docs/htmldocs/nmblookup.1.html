@@ -24,7 +24,7 @@
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
-<p><br><strong>nmblookup</strong> [<a href="nmblookup.1.html#minusM">-M</a>] [<a href="nmblookup.1.html#minusR">-R</a>] [<a href="nmblookup.1.html#minusS">-S</a>] [<a href="nmblookup.1.html#minusr">-r</a>] [<a href="nmblookup.1.html#minusA">-A</a>] [<a href="nmblookup.1.html#minush">-h</a>] [<a href="nmblookup.1.html#minusB">-B broadcast address</a>] [<a href="nmblookup.1.html#minusU">-U unicast address</a>] [<a href="nmblookup.1.html#minusd">-d debuglevel</a>] [<a href="nmblookup.1.html#minuss">-s smb config file</a>] [<a href="nmblookup.1.html#minusi">-i NetBIOS scope</a>] <a href="nmblookup.1.html#name">name</a>
+<p><br><strong>nmblookup</strong> [<a href="nmblookup.1.html#minusM">-M</a>] [<a href="nmblookup.1.html#minusR">-R</a>] [<a href="nmblookup.1.html#minusS">-S</a>] [<a href="nmblookup.1.html#minusr">-r</a>] [<a href="nmblookup.1.html#minusA">-A</a>] [<a href="nmblookup.1.html#minush">-h</a>] [<a href="nmblookup.1.html#minusB">-B broadcast address</a>] [<a href="nmblookup.1.html#minusU">-U unicast address</a>] [<a href="nmblookup.1.html#minusd">-d debuglevel</a>] [<a href="nmblookup.1.html#minuss">-s smb config file</a>] [<a href="nmblookup.1.html#minusi">-i NetBIOS scope</a>] [<a href="nmblookup.1.html#minusT">-T</a>] <a href="nmblookup.1.html#name">name</a>
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -38,8 +38,9 @@ or to a particular machine. All queries are done over UDP.
     
 <p><br><ul>
 <p><br><a name="minusM"></a>
-<li><strong><strong>-M</strong></strong> Searches for a master browser. This is done by doing a
-broadcast lookup on the special name <code>__MSBROWSE__</code>.
+<li><strong><strong>-M</strong></strong> Searches for a master browser by looking up the 
+NetBIOS name <a href="nmblookup.1.html#name"><strong>name</strong></a> with a type of 0x1d. If <a href="nmblookup.1.html#name"><strong>name</strong></a>
+is <code>"-"</code> then it does a lookup on the special name <code>__MSBROWSE__</code>.
 <p><br><a name="minusR"></a>
 <li><strong><strong>-R</strong></strong> Set the recursion desired bit in the packet to do a
 recursive lookup. This is used when sending a name query to a machine
@@ -67,8 +68,8 @@ query on this address.
 <p><br><a name="minusB"></a>
 <li><strong><strong>-B broadcast address</strong></strong> Send the query to the given broadcast
 address. Without this option the default behavior of nmblookup is to
-send the query to the broadcast address of the primary network
-interface as either auto-detected or defined in the 
+send the query to the broadcast address of the network
+interfaces as either auto-detected or defined in the 
 <a href="smb.conf.5.html#interfaces"><strong>interfaces</strong></a> parameter of the 
 <a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a> file.
 <p><br><a name="minusU"></a>
@@ -100,6 +101,11 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are <em>very</em> rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
+<p><br><a name="minusT"></a>
+<li><strong><strong>-T</strong></strong> This causes any IP addresses found in the lookup to be
+looked up via a reverse DNS lookup into a DNS name, and printed out
+before each <code>"IP address   NetBIOS name"</code> pair that is the normal
+output.
 <p><br><a name="name"></a>
 <li><strong><strong>name</strong></strong> This is the NetBIOS name being queried. Depending upon
 the previous options this may be a NetBIOS name or IP address. If a

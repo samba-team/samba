@@ -176,8 +176,9 @@ void process_name_refresh_request(struct subnet_record *subrec,
        and send an error reply back.
      */
     DEBUG(0,("process_name_refresh_request: unicast name registration request \
-received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
+received for name %s from IP %s on subnet %s.\n",
           nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+    DEBUG(0,("Error - should be sent to WINS server\n"));
     
     send_name_registration_response(FMT_ERR, 0, p);
     return;
@@ -366,7 +367,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
            strequal(qname, namerec->name.name)))
       {
         /* Start with the name. */
-        bzero(buf,18);
+        memset(buf,'\0',18);
         slprintf(buf, 17, "%-15.15s",namerec->name.name);
         strupper(buf);
         
@@ -421,7 +422,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
   
   /* We don't send any stats as they could be used to attack
      the protocol. */
-  bzero(buf,46);
+  memset(buf,'\0',46);
   
   buf += 46;
   

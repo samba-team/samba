@@ -1,96 +1,37 @@
-.TH SMBMNT 8 "13 Nov 1998" "smbmnt 2.0.0-beta1"
-.SH NAME
-smbmnt \- mount smb file system
-.SH SYNOPSIS
-.B smbmnt
-.B mount-point
-[
-.B -u
-.I uid
-] [
-.B -g
-.I gid
-] [
-.B -f
-.I file mode
-] [
-.B -d
-.I dir mode
-]
-
-.SH DESCRIPTION
-.B smbmnt 
-is a helper application used by the 
-.BI smbmount (8)
-program to do the actual mounting.
-.B smbmnt
-is meant to be installed setuid root so that normal users can mount
-their smb shares. It checks whether the user has write permissions
-on the mount point and then mounts the directory.
-
-The
-.B smbmnt
-program is normally invoked by a mount command to
-.BI smbmount ,
-and the command line arguments are passed directly to
-.B smbmnt.
-
-.SH OPTIONS
-.B -u
-.I uid,
-.B -g
-.I gid
-.RS 3
-A Lan Manager server does not tell us anything about the owner of a
-file, but Unix requires that each file have an owner and a group it belongs
-to. With 
-.B -u
-and
-.B -g
-you can tell smbmount which id's it should assign to the files in the
-mounted directory.
-
-The defaults for these values are the current uid and gid.
-.RE
-
-.B -f
-.I file mode,
-.B -d
-.I dir mode
-.RS 3
-Like 
-.B -u
-and
-.B -g,
-these options are also used to bridge differences in concepts between
-Lan Manager and Unix. Lan Manager does not know anything about file
-permissions, so
-.B smbmnt
-must be told which permissions it should assign to the mounted files
-and directories.
-
-The values must be given as octal numbers. The default values are taken
-from the current umask, where the file mode is the current umask,
-and the dir mode adds execute permissions where the file mode gives
-read permissions.
-
-Note that these permissions can differ from the rights the server
-gives to us. If you do not have write permissions on the server,
-you should choose a file mode that matches your actual permissions.
-This certainly cannot override the restrictions imposed by the server.
-
-In addition to specifying the file mode, the
-.B -f
-argument can be used to specify certain bug-fix workarounds.
-This allows bug fixes to be enabled on a per mount-point basis,
-rather than being compiled into the kernel.
-The required bug fixes are specified by prepending an (octal) value
-to the file mode.
-For information on the available bug workarounds, refer to the
-.B smbfs.txt
-file in the Linux kernel Documentation directory. 
-.RE
-
-.SH SEE ALSO
-.B smbmount(8)
-
+.TH "smbmnt " "1" "25 September 1999" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+smbmnt \- helper utility for mounting SMB filesystems
+.PP 
+.SH "SYNOPSIS" 
+\fBsmbmnt\fP mount-point [ -s share ] [ -r ] [ -u uid ] [ -g gid ] [ -f mask ] [ -d mask ] 
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+smbmnt is a helper application used by the smbmount program to do the
+actual mounting of SMB shares\&. smbmnt is meant to be installed setuid
+root so that normal users can mount their smb shares\&. It checks
+whether the user has write permissions on the mount point and then
+mounts the directory\&.
+.PP 
+The smbmnt program is normally invoked by smbmount\&. It should not be
+invoked directly by users\&.
+.PP 
+.IP "\fB-r\fP" 
+mount the filesystem read-only
+.PP 
+.IP "\fB-u uid\fP" 
+specify the uid that the files will be owned by
+.PP 
+.IP "\fB-g gid\fP" 
+specify the gid that the files will be owned by
+.PP 
+.IP "\fB-f mask\fP" 
+specify the octal file mask applied 
+.PP 
+.IP "\fB-d mask\fP" 
+specify the octal directory mask applied 
+.PP 
+.SH "AUTHOR" 
+The maintainer of smbfs, smbmnt and smbmount is Andrew Tridgell
+\fItridge@samba\&.org\fP

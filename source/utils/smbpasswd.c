@@ -1,7 +1,6 @@
 /*
- * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module.
- * Copyright (C) Jeremy Allison               1995-1999
- * Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+ * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module. Copyright
+ * (C) Jeremy Allison 1995-1998
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -20,9 +19,7 @@
 
 #include "includes.h"
 
-extern pstring myhostname;
 extern pstring global_myname;
-extern pstring global_myworkgroup;
 extern int DEBUGLEVEL;
 
 /*
@@ -65,78 +62,13 @@ static void usage(void)
 	if (getuid() == 0) {
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
-		printf("  -S                   synchronise with PDC (if we are BDC)\n");
 		printf("  -a                   add user\n");
 		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
-		printf("  -m                   workstation trust account\n");
-		printf("  -b                   backup domain controller account\n");
-		printf("  -i                   inter-domain trust account\n");
-		printf("  -p                   user cannot change password\n");
-		printf("  -x                   user can change password\n");
+		printf("  -m                   machine trust account\n");
 	}
-	
 	exit(1);
-}
-
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int create_interdomain_trust_acct(char *domain, char *name)
-{
-	fstring trust_passwd;
-	unsigned char hash[16];
-	uint16 sec_chan;
-
-	switch (lp_server_role())
-	{
-		case ROLE_DOMAIN_PDC:
-		{
-			DEBUG(0, ("Joining domain - we are PDC\n"));
-			sec_chan = SEC_CHAN_DOMAIN;
-			break;
-		}
-		case ROLE_DOMAIN_BDC:
-		{
-			DEBUG(0, ("Cannot set up inter-domain trust as BDC!\n"));
-			return 1;
-		}
-		default:
-		{
-			DEBUG(0, ("Cannot set up inter-domain trust as workstation!\n"));
-			return 1;
-		}
-	}
-
-#if 0
-	pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
-
-	if (!remote_machine[0])
-	{
-		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
-		return 1;
-	}
-#endif
-
-	fstrcpy(trust_passwd, name);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, hash);
-
-	if (!create_trust_account_file(domain, name, hash))
-	{
-		return 1;
-	}
-	
-#if 0
-	if(!change_trust_account_password(domain, remote_machine, sec_chan))
-	{
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-		return 1;
-	}
-#endif
-	printf("Created Inter-Domain Trust Account for %s.\n",domain);
-	return 0;
 }
 
 /*********************************************************
@@ -147,53 +79,68 @@ static int join_domain(char *domain, char *remote)
 	pstring remote_machine;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
-	uint16 sec_chan;
+	BOOL ret;
 
-	switch (lp_server_role())
-	{
-		case ROLE_DOMAIN_PDC:
-		{
-			DEBUG(0, ("Cannot join domain - we are PDC!\n"));
-			return 1;
-		}
-		case ROLE_DOMAIN_BDC:
-		{
-			DEBUG(0, ("Joining Domain as BDC\n"));
-			sec_chan = SEC_CHAN_BDC;
-			break;
-		}
-		default:
-		{
-			DEBUG(0, ("Joining Domain as Workstation\n"));
-			sec_chan = SEC_CHAN_WKSTA;
-		}
-	}
-
-	pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
-
-	if (!remote_machine[0])
-	{
-		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
-		return 1;
-	}
-
+	pstrcpy(remote_machine, remote ? remote : "");
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
-	if (!create_trust_account_file(domain, global_myname, trust_passwd))
-	{
-		return 1;
-	}
-	
-	if(!change_trust_account_password(domain, remote_machine, sec_chan))
-	{
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
+	/* Ensure that we are not trying to join a
+	   domain if we are locally set up as a domain
+	   controller. */
+
+	if(strequal(remote, global_myname)) {
+		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
 		return 1;
 	}
 
-	printf("Joined domain %s.\n",domain);
-	return 0;
+	/*
+	 * Create the machine account password file.
+	 */
+	if(!trust_password_lock( domain, global_myname, True)) {
+		fprintf(stderr, "Unable to open the machine account password file for \
+machine %s in domain %s.\n", global_myname, domain); 
+		return 1;
+	}
+
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if(!set_trust_account_password( orig_trust_passwd_hash)) {              
+		fprintf(stderr, "Unable to write the machine account password for \
+machine %s in domain %s.\n", global_myname, domain);
+		trust_password_unlock();
+		return 1;
+	}
+	
+	/*
+	 * If we are given a remote machine assume this is the PDC.
+	 */
+	
+	if(remote == NULL) {
+		pstrcpy(remote_machine, lp_passwordserver());
+	}
+
+	if(!*remote_machine) {
+		fprintf(stderr, "No password server list given in smb.conf - \
+unable to join domain.\n");
+		trust_password_unlock();
+		return 1;
+	}
+
+	ret = change_trust_account_password( domain, remote_machine);
+	trust_password_unlock();
+	
+	if(!ret) {
+		trust_password_delete( domain, global_myname);
+		fprintf(stderr,"Unable to join domain %s.\n",domain);
+	} else {
+		printf("Joined domain %s.\n",domain);
+	}
+	
+	return (int)ret;
 }
 
 
@@ -262,6 +209,7 @@ static char *prompt_for_new_password(BOOL stdin_get)
 
 	if (strcmp(p, new_passwd)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
+		ZERO_ARRAY(new_passwd);
 		return NULL;
 	}
 
@@ -273,47 +221,35 @@ static char *prompt_for_new_password(BOOL stdin_get)
 change a password either locally or remotely
 *************************************************************/
 static BOOL password_change(const char *remote_machine, char *user_name, 
-				char *old_passwd, char *new_passwd, 
-				BOOL add_user, 
-				uint16 acb_info, uint16 acb_mask)
+			    char *old_passwd, char *new_passwd, 
+			    BOOL add_user, BOOL enable_user, 
+			    BOOL disable_user, BOOL set_no_password,
+			    BOOL trust_account)
 {
 	BOOL ret;
 	pstring err_str;
 	pstring msg_str;
 
-	if (remote_machine != NULL)
-	{
-		if (add_user ||
-		    IS_BITS_SET_SOME(acb_info, ACB_PWNOTREQ | ACB_WSTRUST | ACB_DOMTRUST | ACB_SVRTRUST) ||
-		    (IS_BITS_SET_SOME(acb_mask, ACB_DISABLED) && 
-		     IS_BITS_CLR_ALL(acb_info, ACB_DISABLED)))
-		{
+	if (remote_machine != NULL) {
+		if (add_user || enable_user || disable_user || set_no_password || trust_account) {
 			/* these things can't be done remotely yet */
 			return False;
 		}
 		ret = remote_password_change(remote_machine, user_name, 
-		                            old_passwd, new_passwd,
-		                            err_str, sizeof(err_str));
-		if (*err_str != 0)
-		{
+									 old_passwd, new_passwd, err_str, sizeof(err_str));
+		if(*err_str)
 			fprintf(stderr, err_str);
-		}
 		return ret;
 	}
 	
-	ret = local_password_change(user_name, add_user, acb_info, acb_mask,
-				     new_passwd, 
-				     err_str, sizeof(err_str),
-	                             msg_str, sizeof(msg_str));
+	ret = local_password_change(user_name, trust_account, add_user, enable_user, 
+				     disable_user, set_no_password, new_passwd, 
+				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
-	if (*msg_str != 0)
-	{
+	if(*msg_str)
 		printf(msg_str);
-	}
-	if (*err_str != 0)
-	{
+	if(*err_str)
 		fprintf(stderr, err_str);
-	}
 
 	return ret;
 }
@@ -326,156 +262,80 @@ static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
 	int ch;
-	uint16 acb_info = 0;
-	uint16 acb_mask = 0;
 	BOOL joining_domain = False;
-	BOOL sam_sync = False;
-	BOOL wks_trust_account = False;
-	BOOL srv_trust_account = False;
-	BOOL dom_trust_account = False;
+	BOOL trust_account = False;
 	BOOL add_user = False;
 	BOOL disable_user = False;
 	BOOL enable_user = False;
 	BOOL set_no_password = False;
 	BOOL stdin_passwd_get = False;
-	BOOL lock_password = False;
-	BOOL unlock_password = False;
 	char *user_name = NULL;
 	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
-	int ret;
 
-	while ((ch = getopt(argc, argv, "abdehimnpxj:Sr:sR:D:U:")) != EOF)
-	{
-		switch(ch)
-		{
-			case 'a':
-			{
-				add_user = True;
-				break;
-			}
-			case 'd':
-			{
-				disable_user = True;
-				new_passwd = "XXXXXX";
-				break;
-			}
-			case 'e':
-			{
-				enable_user = True;
-				break;
-			}
-			case 'D':
-			{
-				DEBUGLEVEL = atoi(optarg);
-				break;
-			}
-			case 'n':
-			{
-				set_no_password = True;
-				new_passwd = "NO PASSWORD";
-			}
-			case 'r':
-			{
-				remote_machine = optarg;
-				break;
-			}
-			case 's':
-			{
-				set_line_buffering(stdin);
-				set_line_buffering(stdout);
-				set_line_buffering(stderr);
-				stdin_passwd_get = True;
-				break;
-			}
-			case 'R':
-			{
-				lp_set_name_resolve_order(optarg);
-				break;
-			}
-			case 'i':
-			{
-				dom_trust_account = True;
-				break;
-			}
-			case 'b':
-			{
-				srv_trust_account = True;
-				break;
-			}
-			case 'm':
-			{
-				wks_trust_account = True;
-				break;
-			}
-			case 'j':
-			{
-				new_domain = optarg;
-				strupper(new_domain);
-				joining_domain = True;
-				break;
-			}
-			case 'S':
-			{
-				sam_sync = True;
-				break;
-			}
-			case 'U':
-			{
-				user_name = optarg;
-				break;
-			}
-			case 'p':
-			{
-				lock_password = True;
-				break;
-			}
-			case 'x':
-			{
-				unlock_password = True;
-				break;
-			}
-			default:
-			{
-				usage();
-			}
+	while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
+		switch(ch) {
+		case 'a':
+			add_user = True;
+			break;
+		case 'd':
+			disable_user = True;
+			new_passwd = "XXXXXX";
+			break;
+		case 'e':
+			enable_user = True;
+			break;
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'n':
+			set_no_password = True;
+			new_passwd = "NO PASSWORD";
+		case 'r':
+			remote_machine = optarg;
+			break;
+		case 's':
+			set_line_buffering(stdin);
+			set_line_buffering(stdout);
+			set_line_buffering(stderr);
+			stdin_passwd_get = True;
+			break;
+		case 'R':
+			lp_set_name_resolve_order(optarg);
+			break;
+		case 'm':
+			trust_account = True;
+			break;
+		case 'j':
+			new_domain = optarg;
+			strupper(new_domain);
+			joining_domain = True;
+			break;
+		case 'U':
+			user_name = optarg;
+			break;
+		default:
+			usage();
 		}
 	}
 	
 	argc -= optind;
 	argv += optind;
 
+
 	/*
 	 * Ensure add_user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if (add_user && ((remote_machine != NULL) || joining_domain))
-	{
+	if(add_user && ((remote_machine != NULL) || joining_domain)) {
 		usage();
 	}
-
-	if (sam_sync && lp_server_role() != ROLE_DOMAIN_BDC) {
-		fprintf(stderr, "The -S option can only be used on a Backup Domain Controller.\n");
-		return 1;
-	}
 	
-	if (joining_domain)
-	{
-		if (!dom_trust_account)
-		{
-			if (argc != 0) usage();
-			ret = join_domain(new_domain, remote_machine);
-
-			if ((ret != 0) || (!sam_sync))
-				return ret;
-		}
-	}
-
-	if (sam_sync)
-	{
-		return synchronise_passdb();
+	if(joining_domain) {
+		if (argc != 0) usage();
+		return join_domain(new_domain, remote_machine);
 	}
 
 	/*
@@ -496,7 +356,7 @@ static int process_root(int argc, char *argv[])
 		usage();
 	}
 
-	if (!user_name && (pwd = getpwuid(0))) {
+	if (!user_name && (pwd = sys_getpwuid(0))) {
 		user_name = xstrdup(pwd->pw_name);
 	} 
 
@@ -505,8 +365,7 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (wks_trust_account || srv_trust_account || dom_trust_account)
-	{
+	if (trust_account) {
 		/* add the $ automatically */
 		static fstring buf;
 
@@ -539,24 +398,12 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (joining_domain)
-	{
-		if (dom_trust_account)
-		{
-			ret = create_interdomain_trust_acct(new_domain,
-			                                    global_myworkgroup);
-
-			if ((ret != 0) || (!sam_sync))
-				return ret;
-		}
-	}
-
 	if (remote_machine != NULL) {
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
-	if (!new_passwd)
-	{
+	if (!new_passwd) {
+
 		/*
 		 * If we are trying to enable a user, first we need to find out
 		 * if they are using a modern version of the smbpasswd file that
@@ -566,94 +413,43 @@ static int process_root(int argc, char *argv[])
 		 * smbpasswd file) then we need to prompt for a new password.
 		 */
 
-		if (enable_user)
-		{
+		if(enable_user) {
 			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
-			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL))
-			{
+			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
 				new_passwd = "XXXX"; /* Don't care. */
 			}
 		}
 
 		if(!new_passwd)
-		{
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
+
+		if(!new_passwd) {
+			fprintf(stderr, "Unable to get new password.\n");
+			exit(1);
 		}
 	}
 	
-	if (enable_user)
-	{
-		acb_mask |= ACB_DISABLED;
-		acb_info &= ~ACB_DISABLED;
-	}
-
-	if (disable_user)
-	{
-		acb_mask |= ACB_DISABLED;
-		acb_info |= ACB_DISABLED;
-	}
-
-	if (set_no_password)
-	{
-		acb_mask |= ACB_PWNOTREQ;
-		acb_info |= ACB_PWNOTREQ;
-	}
-
-	if (lock_password)
-	{
-		acb_mask |= ACB_PWLOCK;
-		acb_info |= ACB_PWLOCK;
-	}
-
-	if (unlock_password)
-	{
-		acb_mask |= ACB_PWLOCK;
-		acb_info &= ~ACB_PWLOCK;
-	}
-	
-	if (wks_trust_account)
-	{
-		acb_mask |= ACB_WSTRUST;
-		acb_info |= ACB_WSTRUST;
-	}
-	else if (srv_trust_account)
-	{
-		acb_mask |= ACB_SVRTRUST;
-		acb_info |= ACB_SVRTRUST;
-	}
-	else if (dom_trust_account)
-	{
-		acb_mask |= ACB_DOMTRUST;
-		acb_info |= ACB_DOMTRUST;
-	}
-	else
-	{
-		acb_mask |= ACB_NORMAL;
-		acb_info |= ACB_NORMAL;
-	}
-
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
-			     add_user, acb_info, acb_mask))
-	{
+			     add_user, enable_user, disable_user, set_no_password,
+			     trust_account)) {
 		fprintf(stderr,"Failed to change password entry for %s\n", user_name);
 		return 1;
 	} 
 
-	if (disable_user)
-	{
+	if(disable_user) {
 		printf("User %s disabled.\n", user_name);
-	}
-	if (enable_user)
-	{
+	} else if(enable_user) {
 		printf("User %s enabled.\n", user_name);
-	}
-	if (set_no_password)
-	{
+	} else if (set_no_password) {
 		printf("User %s - set to no password.\n", user_name);
-	}
-	if (!disable_user && !enable_user && !set_no_password)
-	{
-		printf("Password changed for user %s\n", user_name);
+	} else {
+		struct smb_passwd *smb_pass = getsmbpwnam(user_name);
+		printf("Password changed for user %s.", user_name );
+		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_DISABLED ))
+			printf(" User has disabled flag set.");
+		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+			printf(" User has no password flag set.");
+		printf("\n");
 	}
 	return 0;
 }
@@ -671,11 +467,9 @@ static int process_nonroot(int argc, char *argv[])
 	char *remote_machine = NULL;
 	char *user_name = NULL;
 	char *new_passwd = NULL;
-	
-	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF)
-	{
-		switch(ch)
-		{
+
+	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF) {
+		switch(ch) {
 		case 'D':
 			DEBUGLEVEL = atoi(optarg);
 			break;
@@ -708,7 +502,7 @@ static int process_nonroot(int argc, char *argv[])
 	}
 	
 	if (!user_name) {
-		pwd = getpwuid(getuid());
+		pwd = sys_getpwuid(getuid());
 		if (pwd) {
 			user_name = xstrdup(pwd->pw_name);
 		} else {
@@ -726,6 +520,7 @@ static int process_nonroot(int argc, char *argv[])
 		remote_machine = "127.0.0.1";
 	}
 
+
 	if (remote_machine != NULL) {
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 	}
@@ -735,14 +530,12 @@ static int process_nonroot(int argc, char *argv[])
 	}
 	
 	if (!new_passwd) {
-		printf("unable to get new password\n");
-		exit(0);
+		fprintf(stderr, "Unable to get new password.\n");
+		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name,
-	                     old_passwd, new_passwd,
-			     False, 0x0, 0x0))
-	{
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
+			     False, False, False, False, False)) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		return 1;
 	}
@@ -760,20 +553,24 @@ int main(int argc, char **argv)
 {	
 	static pstring servicesf = CONFIGFILE;
 
+#if defined(HAVE_SET_AUTH_PARAMETERS)
+	set_auth_parameters(argc, argv);
+#endif /* HAVE_SET_AUTH_PARAMETERS */
+
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);
 	
 	charset_initialise();
 	
-	if (!lp_load(servicesf,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			servicesf);
+	if(!initialize_password_db()) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}
 
-	if(!get_myname(myhostname,NULL)) {
-		fprintf(stderr, "unable to get my hostname.\n");
+	if (!lp_load(servicesf,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+			servicesf);
 		exit(1);
 	}
 
@@ -784,7 +581,7 @@ int main(int argc, char **argv)
     
 	if (!*global_myname) {   
 		char *p;
-		fstrcpy(global_myname, myhostname);
+		fstrcpy(global_myname, myhostname());
 		p = strchr(global_myname, '.' );
 		if (p) *p = 0;
 	}           
@@ -793,12 +590,6 @@ int main(int argc, char **argv)
 	codepage_initialise(lp_client_code_page());
 
 	load_interfaces();
-
-	if(!pwdb_initialise(False))
-	{
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
 
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {

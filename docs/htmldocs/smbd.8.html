@@ -24,7 +24,7 @@
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><br><strong>smbd</strong> [<a href="smbd.8.html#minusD">-D</a>] [<a href="smbd.8.html#minusa">-a</a>] [<a href="smbd.8.html#minuso">-o</a>] [<a href="smbd.8.html#minusd">-d debuglevel</a>] [<a href="smbd.8.html#minusl">-l log file</a>] [<a href="smbd.8.html#minusp">-p port number</a>] [<a href="smbd.8.html#minusO">-O socket options</a>] [<a href="smbd.8.html#minuss">-s configuration file</a>] [<a href="smbd.8.html#minusi">-i scope</a>] [<a href="smbd.8.html#minusP">-P</a>] [<a href="smbd.8.html#minush">-h</a>]
+<p><br><strong>smbd</strong> [<a href="smbd.8.html#minusD">-D</a>] [<a href="smbd.8.html#minusa">-a</a>] [<a href="smbd.8.html#minuso">-o</a>] [<a href="smbd.8.html#minusP">-P</a>] [<a href="smbd.8.html#minush">-h</a>] [<a href="smbd.8.html#minusV">-V</a>] [<a href="smbd.8.html#minusd">-d debuglevel</a>] [<a href="smbd.8.html#minusl">-l log file</a>] [<a href="smbd.8.html#minusp">-p port number</a>] [<a href="smbd.8.html#minusO">-O socket options</a>] [<a href="smbd.8.html#minuss">-s configuration file</a>] [<a href="smbd.8.html#minusi">-i scope</a>]
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -75,6 +75,13 @@ append log messages to the log file.  This is the default.
 <li><strong><strong>-o</strong></strong> If this parameter is specified, the log files will be
 overwritten when opened.  By default, the log files will be appended
 to.
+<p><br><a name="minusP"></a>
+<li><strong><strong>-P</strong></strong> Passive option. Causes smbd not to send any network traffic
+out. Used for debugging by the developers only.
+<p><br><a name="minush"></a>
+<li><strong><strong>-h</strong></strong> Prints the help information (usage) for <strong>smbd</strong>.
+<p><br><a name="minusV"></a>
+<li><strong><strong>-V</strong></strong> Prints the version number for <strong>smbd</strong>.
 <p><br><a name="minusd"></a>
 <li><strong><strong>-d debuglevel</strong></strong> debuglevel is an integer from 0 to 10.
 <p><br>The default value if this parameter is not specified is zero.
@@ -133,11 +140,6 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are <em>very</em> rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
-<p><br><a name="minush"></a>
-<li><strong><strong>-h</strong></strong> Prints the help information (usage) for smbd.
-<p><br><a name="minusP"></a>
-<li><strong><strong>-P</strong></strong> Passive option. Causes smbd not to send any network traffic
-out. Used for debugging by the developers only.
 <p><br></ul>
 <p><br><a name="FILES"></a>
 <h2>FILES</h2>
@@ -357,16 +359,11 @@ performance.
 <p><br><a name="SEEALSO"></a>
 <h2>SEE ALSO</h2>
     
-<p><br><strong>hosts_access (5)</strong>,
-<strong>inetd (8)</strong>,
-<a href="nmbd.8.html"><strong>nmbd (8)</strong></a>,
-<a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a>,
-<a href="smbclient.1.html"><strong>smbclient (1)</strong></a>,
-<a href="testparm.1.html"><strong>testparm (1)</strong></a>,
-<a href="testprns.1.html"><strong>testprns (1)</strong></a>,
-<a href="rpcclient.1.html"><strong>rpcclient (1)</strong></a>,
-and the Internet RFC's <strong>rfc1001.txt</strong>, <strong>rfc1002.txt</strong>.
-In addition the CIFS (formerly SMB)
+<p><br><strong>hosts_access (5)</strong>, <strong>inetd (8)</strong>, <a href="nmbd.8.html"><strong>nmbd (8)</strong></a>,
+<a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a>, <a href="smbclient.1.html"><strong>smbclient
+(1)</strong></a>, <a href="testparm.1.html"><strong>testparm (1)</strong></a>,
+<a href="testprns.1.html"><strong>testprns (1)</strong></a>, and the Internet RFC's
+<strong>rfc1001.txt</strong>, <strong>rfc1002.txt</strong>. In addition the CIFS (formerly SMB)
 specification is available as a link from the Web page :
 <a href="http://samba.org/cifs/">http://samba.org/cifs/</a>.
 <p><br><a name="AUTHOR"></a>
