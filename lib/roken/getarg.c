@@ -69,6 +69,8 @@ print_arg (FILE *stream, int mdoc, int longp, struct getargs *arg)
 	s = "number";
     else if (arg->type == arg_string)
 	s = "string";
+    else
+	s = "<undefined>";
 
     fprintf (stream, "%s", s);
     return 1 + strlen(s);
@@ -245,8 +247,8 @@ arg_match_long(struct getargs *args, size_t num_args,
 	       char *argv)
 {
     int i;
-    char *optarg;
-    int negate;
+    char *optarg = NULL;
+    int negate = 0;
     int partial_match = 0;
     struct getargs *partial = NULL;
     struct getargs *current = NULL;
