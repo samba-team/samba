@@ -161,6 +161,7 @@ BOOL lang_tdb_init(const char *lang)
 	}
 
 	current_lang = strdup(lang);
+	result = True;
 
  done:
 	SAFE_FREE(msg_path);
