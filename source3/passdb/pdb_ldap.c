@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_LDAP_SAM
+#ifdef HAVE_LDAP
 /* TODO:
 *  persistent connections: if using NSS LDAP, many connections are made
 *      however, using only one within Samba would be nice
@@ -1505,13 +1505,13 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 
 NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
-	DEBUG(0, ("ldapsam not compiled in!\n"));
+	DEBUG(0, ("ldap not detected at configure time, ldapsam not availalble!\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
-	DEBUG(0, ("ldapsam_nua not compiled in!\n"));
+	DEBUG(0, ("ldap not dectected at configure time, ldapsam_nua not available!\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 

@@ -41,9 +41,7 @@ static char *old_passwd = NULL;
 static char *remote_machine = NULL;
 static pstring configfile;
 
-#ifdef WITH_LDAP_SAM
 static fstring ldap_secret;
-#endif
 
 /*********************************************************
  Print command usage on stderr and die.
@@ -71,9 +69,7 @@ static void usage(void)
 	printf("  -i                   interdomain trust account\n");
 	printf("  -m                   machine trust account\n");
 	printf("  -n                   set no password\n");
-#ifdef WITH_LDAP_SAM
 	printf("  -w                   ldap admin password\n");
-#endif
 	printf("  -x                   delete user\n");
 	printf("  -R ORDER             name resolve order\n");
 
@@ -157,14 +153,9 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			break;
 		case 'w':
 			if (!amroot) goto bad_args;
-#ifdef WITH_LDAP_SAM
 			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
 			fstrcpy(ldap_secret, optarg);
 			break;
-#else
-			printf("-w not available unless configured --with-ldap\n");
-			goto bad_args;
-#endif			
 		case 'R':
 			if (!amroot) goto bad_args;
 			lp_set_name_resolve_order(optarg);
@@ -329,7 +320,6 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 	return ret;
 }
 
-#ifdef WITH_LDAP_SAM
 /*******************************************************************
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
@@ -343,7 +333,6 @@ static BOOL store_ldap_admin_pw (char* pw)
 	
 	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
 }
-#endif
 
 
 /*************************************************************
@@ -355,7 +344,6 @@ static int process_root(void)
 	struct passwd  *pwd;
 	int result = 0;
 
-#ifdef WITH_LDAP_SAM
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
 	{
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
@@ -364,7 +352,6 @@ static int process_root(void)
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
 		goto done;
 	}
-#endif
 
 	/*
 	 * Ensure both add/delete user are not set

@@ -89,6 +89,12 @@ void build_options(BOOL screen)
 #ifdef HAVE_KRB5
        output(screen,"   HAVE_KRB5");
 #endif
+#ifdef HAVE_GSSAPI
+       output(screen,"   HAVE_GSSAPI");
+#endif
+#ifdef HAVE_LDAP
+       output(screen,"   HAVE_LDAP");
+#endif
 #ifdef WITH_AUTOMOUNT
        output(screen,"   WITH_AUTOMOUNT\n");
 #endif
@@ -100,9 +106,6 @@ void build_options(BOOL screen)
 #endif
 #ifdef WITH_TDB_SAM
        output(screen,"   WITH_TDB_SAM\n");
-#endif
-#ifdef WITH_LDAP_SAM
-       output(screen,"   WITH_LDAP_SAM\n");
 #endif
 #ifdef WITH_SMBPASSWD_SAM
        output(screen,"   WITH_SMBPASSWD_SAM\n");
