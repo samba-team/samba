@@ -202,9 +202,9 @@ NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u
 	/* timeout */
 	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
 	/* reboot */
-	snprintf(r, sizeof(r), (q_u->flags & 0x100)?SHUTDOWN_R_STRING:"");
+	snprintf(r, sizeof(r), (q_u->flags & REG_REBOOT_ON_SHUTDOWN)?SHUTDOWN_R_STRING:"");
 	/* force */
-	snprintf(f, sizeof(f), (q_u->flags & 0x001)?SHUTDOWN_F_STRING:"");
+	snprintf(f, sizeof(f), (q_u->flags & REG_FORCE_SHUTDOWN)?SHUTDOWN_F_STRING:"");
 
 	pstrcpy(shutdown_script, lp_shutdown_script());
 
