@@ -100,6 +100,8 @@ always occur even if smbd is under load.
 21). Fixed signed/unsigned problem in quotas code.
 22). Fixed bug where setting the password of a completely fresh
 user would end up setting the account disabled flag.
+23). Improved user logon messages to help admins having
+trouble with user authentication.
 
 Bugfixes added since 2.0.1
 --------------------------
