@@ -221,9 +221,9 @@ authenticate(p, addr)
     
     if (auth != KSUCCESS) {
         pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
-                krb_err_msg(auth));
+                krb_get_err_text(auth));
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
-                kdata.pname, kdata.pinst, kdata.prealm, krb_err_msg(auth));
+                kdata.pname, kdata.pinst, kdata.prealm, krb_get_err_text(auth));
         exit(-1);
     }
 

@@ -194,11 +194,11 @@ kerberos4_send(char *name, Authenticator *ap)
 		return(0);
 	}
 	if (r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L)) {
-		printf("mk_req failed: %s\r\n", krb_err_msg(r));
+		printf("mk_req failed: %s\r\n", krb_get_err_text(r));
 		return(0);
 	}
 	if (r = krb_get_cred(KRB_SERVICE_NAME, instance, realm, &cred)) {
-		printf("get_cred failed: %s\r\n", krb_err_msg(r));
+		printf("get_cred failed: %s\r\n", krb_get_err_text(r));
 		return(0);
 	}
 	if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
@@ -298,7 +298,7 @@ kerberos4_is(ap, data, cnt)
 				   instance, 0, &adat, "")) {
 			if (auth_debug_mode)
 				printf("Kerberos failed him as %s\r\n", name);
-			Data(ap, KRB_REJECT, (void *)krb_err_msg(r), -1);
+			Data(ap, KRB_REJECT, (void *)krb_get_err_text(r), -1);
 			auth_finished(ap, AUTH_REJECT);
 			return;
 		}
