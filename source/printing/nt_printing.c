@@ -2889,6 +2889,23 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 		}
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		SEC_ACL *acl = (*secdesc_ctr)->sec->dacl;
+		int i;
+
+		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
+			   printername, acl->num_aces));
+
+		for (i = 0; i < acl->num_aces; i++) {
+			fstring sid_str;
+
+			sid_to_string(sid_str, &acl->ace[i].sid);
+
+			DEBUG(10, ("%s 0x%08x\n", sid_str, 
+				  acl->ace[i].info.mask));
+		}
+	}
+
 	prs_mem_free(&ps);
 	talloc_destroy(mem_ctx);
 	return True;
