@@ -88,7 +88,7 @@ static void populate_printers(void)
 			*tmp = '\0';
 		
 		/* add it to the cache */
-		if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
+		if ((ptmp = SMB_MALLOC_P(printer_t)) != NULL) {
 			ZERO_STRUCTP(ptmp);
 			if((ptmp->name = SMB_STRDUP(name)) == NULL)
 				DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
