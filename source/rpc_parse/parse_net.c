@@ -1019,8 +1019,8 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	init_unistr2(&id->uni_user_name, user_name, len_user_name);
 	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
-	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len);
-	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len);
+	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len);
+	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len);
 
 }
 

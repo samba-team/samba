@@ -820,23 +820,23 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
  Creates a STRING2 structure.
 ********************************************************************/
 
-void init_string2(STRING2 *str, const char *buf, int len)
+void init_string2(STRING2 *str, const char *buf, int max_len, int str_len)
 {
 	int alloc_len = 0;
 
 	/* set up string lengths. */
-	str->str_max_len = len;
+	str->str_max_len = max_len;
 	str->undoc       = 0;
-	str->str_str_len = len;
+	str->str_str_len = str_len;
 
 	/* store the string */
-	if(len != 0) {
-		if (len < MAX_STRINGLEN)
+	if(str_len != 0) {
+		if (str_len < MAX_STRINGLEN)
 			alloc_len = MAX_STRINGLEN;
 		str->buffer = talloc_zero(get_talloc_ctx(), alloc_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
-		memcpy(str->buffer, buf, len);
+		memcpy(str->buffer, buf, str_len);
   }
 }
 

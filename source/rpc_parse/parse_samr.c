@@ -725,9 +725,18 @@ inits a structure.
 
 void init_unk_info1(SAM_UNK_INFO_1 * u_1)
 {
-	memset(u_1->padding, 0, sizeof(u_1->padding));	/* 12 bytes zeros */
-	u_1->unknown_1 = 0x80000000;
-	u_1->unknown_2 = 0x00000000;
+	u_1->min_length_password = 0;
+	u_1->password_history = 0;
+	u_1->flag = 0;
+	
+	/* password never expire */
+	u_1->expire.high = 0x80000000;
+	u_1->expire.low = 0;
+	
+	/* can change the password now */
+	u_1->min_passwordage.high = 0;
+	u_1->min_passwordage.low = 0;
+	
 }
 
 /*******************************************************************
@@ -743,12 +752,15 @@ static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 * u_1,
 	prs_debug(ps, depth, desc, "sam_io_unk_info1");
 	depth++;
 
-	if(!prs_uint8s(False, "padding", ps, depth, u_1->padding, sizeof(u_1->padding)))
+	if(!prs_uint16("min_length_password", ps, depth, &u_1->min_length_password))
 		return False;
-	
-	if(!prs_uint32("unknown_1", ps, depth, &u_1->unknown_1)) /* 0x8000 0000 */
+	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
 		return False;
-	if(!prs_uint32("unknown_2", ps, depth, &u_1->unknown_2)) /* 0x0000 0000 */
+	if(!prs_uint32("flag", ps, depth, &u_1->flag))
+		return False;
+	if(!smb_io_time("expire", &u_1->expire, ps, depth))
+		return False;
+	if(!smb_io_time("min_passwordage", &u_1->min_passwordage, ps, depth))
 		return False;
 
 	return True;
@@ -1122,8 +1134,7 @@ static void init_sam_entry4(SAM_ENTRY4 * sam, uint32 user_idx,
 	DEBUG(5, ("init_sam_entry4\n"));
 
 	sam->user_idx = user_idx;
-	init_str_hdr(&sam->hdr_acct_name, len_acct_name, len_acct_name,
-		     len_acct_name != 0);
+	init_str_hdr(&sam->hdr_acct_name, len_acct_name+1, len_acct_name, len_acct_name != 0);
 }
 
 /*******************************************************************
@@ -1779,7 +1790,7 @@ NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_e
 		init_sam_entry4(&sam->sam[i], start_idx + i + 1, len_sam_name);
 
 		unistr2_to_ascii(sam_name, &pass[i].uni_user_name, sizeof(sam_name));
-		init_string2(&sam->str[i].acct_name, sam_name, len_sam_name);
+		init_string2(&sam->str[i].acct_name, sam_name, len_sam_name+1, len_sam_name);
 	  
 		dsize += sizeof(SAM_ENTRY4);
 		dsize += len_sam_name;
@@ -1836,8 +1847,6 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 		if(!smb_io_string2("acct_name", &sam->str[i].acct_name,
 			     sam->sam[i].hdr_acct_name.buffer, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	return True;
@@ -1879,7 +1888,7 @@ NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_e
 		len_sam_name = strlen(grp[i].name);
 	  
 		init_sam_entry5(&sam->sam[i], start_idx + i + 1, len_sam_name);
-		init_string2(&sam->str[i].grp_name, grp[i].name, len_sam_name);
+		init_string2(&sam->str[i].grp_name, grp[i].name, len_sam_name+1, len_sam_name);
 	  
 		dsize += sizeof(SAM_ENTRY5);
 		dsize += len_sam_name;
@@ -1954,7 +1963,11 @@ void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
 {
 	DEBUG(5, ("init_samr_r_query_dispinfo: level %d\n", switch_level));
 
-	r_u->total_size = data_size;	/* not calculated */
+	if (switch_level==4)
+		r_u->total_size = 0;	/* not calculated */
+	else
+		r_u->total_size = data_size;	/* not calculated */
+
 	r_u->data_size = data_size;
 
 	r_u->switch_level = switch_level;
