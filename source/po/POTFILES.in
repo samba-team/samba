@@ -1,0 +1,7 @@
+# List of source files containing translatable strings.
+# (written by rkawa).
+
+web/swat.c
+# web/cgi.c
+web/statuspage.c
+param/loadparm.c
