@@ -327,6 +327,26 @@ static int net_file(int argc, const char **argv)
 	return net_rap_file(argc, argv);
 }
 
+/***********************************************************
+ migrated functionality from smbgroupedit
+ **********************************************************/
+static int net_groupmap(int argc, const char **argv)
+{
+	if ( 0 == argc )
+		return net_help_groupmap( argc, argv );
+
+	if ( !StrCaseCmp( argv[0], "add" ) )
+		return net_groupmap_add(argc-1, argv+1);
+	else if ( !StrCaseCmp( argv[0], "modify" ) )
+		return net_groupmap_modify(argc-1, argv+1);
+	else if ( !StrCaseCmp( argv[0], "delete" ) )
+		return net_groupmap_delete(argc-1, argv+1);
+	else if ( !StrCaseCmp( argv[0], "list" ) )
+		return net_groupmap_list(argc-1, argv+1);
+	
+	return net_help_groupmap( argc, argv );
+}
+
 /*
  Retrieve our local SID or the SID for the specified name
  */
@@ -488,6 +508,7 @@ static struct functable net_func[] = {
 	{"PRINTQ", net_rap_printq},
 	{"USER", net_user},
 	{"GROUP", net_group},
+	{"GROUPMAP", net_groupmap},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
