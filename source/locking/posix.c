@@ -299,18 +299,66 @@ static const char *posix_lock_type_name(int lock_type)
 }
 
 /****************************************************************************
- Add an entry into the POSIX locking tdb. Returns the number of records that
- match the given start and size, or -1 on error.
+ Delete a POSIX lock entry by index number. Used if the tdb add succeeds, but
+ then the POSIX fcntl lock fails.
 ****************************************************************************/
 
-static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type)
+static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
+{
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
+	struct posix_lock *locks;
+	size_t count;
+
+	dbuf.dptr = NULL;
+	
+	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
+
+	if (!dbuf.dptr) {
+		DEBUG(10,("delete_posix_lock_entry_by_index: tdb_fetch failed !\n"));
+		goto fail;
+	}
+
+	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
+	locks = (struct posix_lock *)dbuf.dptr;
+
+	if (count == 1) {
+		tdb_delete(posix_lock_tdb, kbuf);
+	} else {
+		if (entry < count-1) {
+			memmove(&locks[entry], &locks[entry+1], sizeof(*locks)*((count-1) - entry));
+		}
+		dbuf.dsize -= sizeof(*locks);
+		tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
+	}
+
+	free(dbuf.dptr);
+
+	return True;
+
+ fail:
+    if (dbuf.dptr)
+		free(dbuf.dptr);
+    return False;
+}
+
+/****************************************************************************
+ Add an entry into the POSIX locking tdb. Returns the number of records that
+ completely overlap this request, or -1 on error. entry_num gets set to the
+ index number of the added lock (used in case we need to delete *exactly*
+ this entry).
+****************************************************************************/
+
+static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type, size_t *entry_num)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
 	struct posix_lock pl;
 	struct posix_lock *entries;
 	size_t i, count;
-	int num_records = 0;
+	int num_overlapping_records = 0;
+
+	*entry_num = 0;
 
 	/*
 	 * Windows is very strange. It allows read locks to be overlayed on 
@@ -321,7 +369,7 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
 	 * ------------------------------------------------------------------------
 	 * WRITE LOCK : start = 0, len = 10
 	 *                                            READ LOCK: start =0, len = 10 - FAIL
-	 * READ LOCK : start = 0, len = 10
+	 * READ LOCK : start = 5, len = 2 
 	 *                                            READ LOCK: start =0, len = 10 - FAIL
 	 * UNLOCK : start = 0, len = 10
 	 *                                            READ LOCK: start =0, len = 10 - OK
@@ -337,8 +385,26 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
+	count = (size_t)(dbuf.dsize / sizeof(pl));
+	entries = (struct posix_lock *)dbuf.dptr;
+
 	/*
-	 * New record.
+	 * Ensure we look for overlapping entries *before*
+	 * we add this entry. Count the number of entries
+	 * that completely overlap this request.
+	 */
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *entry = &entries[i];
+
+		if (fsp->fd == entry->fd &&
+			start >= entry->start &&
+			start + size <= entry->start + entry->size)
+				num_overlapping_records++;
+	}
+
+	/*
+	 * Add new record.
 	 */
 
 	pl.fd = fsp->fd;
@@ -355,18 +421,7 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
 	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
 	dbuf.dsize += sizeof(pl);
 
-	count = (size_t)(dbuf.dsize / sizeof(pl));
-	entries = (struct posix_lock *)dbuf.dptr;
-
-	for (i = 0; i < count; i++) {
-		struct posix_lock *entry = &entries[i];
-
-		if (fsp->fd == entry->fd &&
-			start == entry->start &&
-			size == entry->size)
-			num_records++;
-
-	}
+	*entry_num = count;
 
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
 		DEBUG(0,("add_posix_lock: Failed to add lock entry on file %s\n", fsp->fsp_name));
@@ -376,20 +431,22 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
     free(dbuf.dptr);
 
 	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: num_records = %d : dev=%.0f inode=%.0f\n",
-			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, num_records,
+			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, num_overlapping_records,
 			(double)fsp->dev, (double)fsp->inode ));
 
-    return num_records;
+    return num_overlapping_records;
 
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
+	*entry_num = 0;
     return -1;
 }
 
 /****************************************************************************
  Delete an entry from the POSIX locking tdb. Returns a copy of the entry being
- deleted and the number of remaining matching records, or -1 on error.
+ deleted and the number of records that are completely overlapped by this one,
+ or -1 on error.
 ****************************************************************************/
 
 static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, struct posix_lock *pl)
@@ -398,7 +455,8 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 	TDB_DATA dbuf;
 	struct posix_lock *locks;
 	size_t i, count;
-	int num_records = 0;
+	BOOL found = False;
+	int num_overlapping_records = 0;
 
 	dbuf.dptr = NULL;
 	
@@ -414,19 +472,9 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 	count = (size_t)(dbuf.dsize / sizeof(*locks));
 
 	/*
-	 * Count the number of entries that match this
-	 * unlock request.
+	 * Search for and delete the first record that matches the
+	 * unlock criteria.
 	 */
-
-	for (i = 0; i < count; i++) {
-		struct posix_lock *entry = &locks[i];
-
-		if (entry->fd == fsp->fd &&
-			entry->start == start &&
-			entry->size == size) {
-				num_records++;
-		}
-	}
 
 	for (i=0; i<count; i++) { 
 		struct posix_lock *entry = &locks[i];
@@ -435,15 +483,9 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 			entry->start == start &&
 			entry->size == size) {
 
-			num_records--; /* We're deleting one. */
-
 			/* Make a copy if requested. */
 			if (pl)
 				*pl = *entry;
-
-			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
-					posix_lock_type_name(entry->lock_type), (double)entry->start, (double)entry->size,
-					(unsigned int)num_records ));
 
 			/* Found it - delete it. */
 			if (count == 1) {
@@ -455,13 +497,39 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 				dbuf.dsize -= sizeof(*locks);
 				tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 			}
-
-			free(dbuf.dptr);
-			return num_records;
+			count--;
+			found = True;
+			break;
 		}
 	}
 
-	/* We didn't find it. */
+	if (!found)
+		goto fail;
+
+	/*
+	 * Count the number of entries that are
+	 * overlapped completely by this unlock request.
+	 * (Note that this is the reverse of the test in
+	 * add_posix_lock).
+	 */
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *entry = &locks[i];
+
+		if (fsp->fd == entry->fd &&
+			entry->start >= start &&
+			entry->start + entry->size <= start + size)
+				num_overlapping_records++;
+	}
+
+		DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
+				posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
+					(unsigned int)num_overlapping_records ));
+
+    if (dbuf.dptr)
+		free(dbuf.dptr);
+
+	return num_overlapping_records;
 
  fail:
     if (dbuf.dptr)
@@ -854,8 +922,9 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	BOOL ret = True;
+	size_t entry_num = 0;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
-	int ref_count;
+	int num_overlapping_records;
 
 	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
@@ -878,19 +947,30 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	 * case described above in add_posix_lock_entry().
 	 */
 
-	ref_count = add_posix_lock_entry(fsp,offset,count,posix_lock_type);
+	num_overlapping_records = add_posix_lock_entry(fsp,offset,count,posix_lock_type,&entry_num);
 
-	if (ref_count == 1) {
+	if (num_overlapping_records == -1) {
+		DEBUG(0,("set_posix_lock: Unable to create posix lock entry !\n"));
+		return False;
+	}
+
+	/*
+	 * num_overlapping_records is the count of lock records that
+	 * completely contain this request on the same fsp. Only bother
+	 * with the real lock request if there are none, otherwise ignore.
+	 */
+
+	if (num_overlapping_records == 0) {
 		/*
-		 * First lock entry created. Do a real POSIX lock.
+		 * First lock entry for this range created. Do a real POSIX lock.
 		 */
 	    ret = posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type);
 
 		/*
-		 * Oops, POSIX lock failed, delete the tdb entry.
+		 * Oops, POSIX lock failed, delete the tdb entry we just added.
 		 */
 		if (!ret)
-			delete_posix_lock_entry(fsp,offset,count,NULL);
+			delete_posix_lock_entry_by_index(fsp,entry_num);
 	}
 
 	return ret;
@@ -953,8 +1033,8 @@ static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list
 
 		for (ul_curr = ulhead; ul_curr;) {
 
-			DEBUG(10,("posix_unlock_list: lock: start=%.0f,size=%.0f:",
-				(double)lock->start, (double)lock->size ));
+			DEBUG(10,("posix_unlock_list: lock: fd=%d: start=%.0f,size=%.0f:type=%s", lock->fd,
+				(double)lock->start, (double)lock->size, posix_lock_type_name(lock->lock_type) ));
 
 			if ( (ul_curr->start >= (lock->start + lock->size)) ||
 				 (lock->start >= (ul_curr->start + ul_curr->size))) {
@@ -1139,7 +1219,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	struct unlock_list *ulist = NULL;
 	struct unlock_list *ul = NULL;
 	struct posix_lock deleted_lock;
-	int num_entries;
+	int num_overlapped_entries;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
 		fsp->fsp_name, (double)u_offset, (double)u_count ));
@@ -1154,32 +1234,26 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 
 	/*
 	 * We treat this as one unlock request for POSIX accounting purposes even
-	 * if it may have been split into multiple smaller POSIX unlock ranges.
+	 * if it may later be split into multiple smaller POSIX unlock ranges.
 	 */ 
 
-	num_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
+	num_overlapped_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
 
-	if (num_entries == -1) {
+	if (num_overlapped_entries == -1) {
         smb_panic("release_posix_lock: unable find entry to delete !\n");
 	}
 
 	/*
-	 * If num_entries is > 0, and the lock_type we just deleted from the tdb was
-	 * a POSIX write lock, then rather than doing an unlock we need to downgrade
+	 * If num_overlapped_entries is > 0, and the lock_type we just deleted from the tdb was
+	 * a POSIX write lock, then before doing the unlock we need to downgrade
 	 * the POSIX lock to a read lock.
 	 */
 
-	if (num_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
-		return posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK);
-	}
-
-	/*
-	 * Only do the POSIX unlock when the num_entries is now zero.
-	 */
-
-	if (num_entries > 0) {
-		DEBUG(10, ("release_posix_lock: num_entries = %d\n", num_entries ));
-		return True;
+	if (num_overlapped_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
+		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK)) {
+			DEBUG(0,("release_posix_lock: downgrade of lock failed !\n"));
+			return False;
+		}
 	}
 
 	if ((ul_ctx = talloc_init()) == NULL) {
