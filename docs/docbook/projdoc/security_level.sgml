@@ -136,7 +136,7 @@ MS Windows clients may use encrypted passwords as part of a challenege/response
 authentication model (a.k.a. NTLMv1) or alone, or clear text strings for simple
 password based authentication. It should be realized that with the SMB protocol
 the password is passed over the network either in plain text or encrypted, but
-not both in the same authentication requests.
+not both in the same authentication request.
 </para>
 
 <para>
@@ -203,10 +203,10 @@ However, passwords on UNIX systems often make use of mixed case characters.
 This means that in order for a user on a Windows 9x client to connect to a Samba
 server using clear text authentication, the <parameter>password level</parameter>
 must be set to the maximum number of upper case letter which <emphasis>could</emphasis>
-appear is a password.  Note that is the server OS uses the traditional DES version
-of crypt(), then a <parameter>password level</parameter> of 8 will result in case
+appear is a password.  Note that the server OS uses the traditional DES version
+of crypt(), a <parameter>password level</parameter> of 8 will result in case
 insensitive passwords as seen from Windows users.  This will also result in longer
-login times as Samba hash to compute the permutations of the password string and 
+login times as Samba has to compute the permutations of the password string and 
 try them one by one until a match is located (or all combinations fail).
 </para>
 
@@ -235,7 +235,7 @@ This method involves the additions of the following parameters in the &smb.conf;
 There are two ways of identifying whether or not a username and 
 password pair was valid or not. One uses the reply information provided 
 as part of the authentication messaging process, the other uses 
-just and error code.
+just an error code.
 </para>
 
 <para>
@@ -304,8 +304,8 @@ MS Windows NT security domain. This is done as follows:
 <para>
 Use of this mode of authentication does require there to be a standard Unix account
 for the user in order to assign a uid once the account has been authenticated by
-the remote Windows DC.  This account can be blocked to prevent logons by other than
-MS Windows clients by things such as setting an invalid shell in the
+the remote Windows DC.  This account can be blocked to prevent logons by clients other than
+MS Windows through things such as setting an invalid shell in the
 <filename>/etc/passwd</filename> entry. 
 </para>
 

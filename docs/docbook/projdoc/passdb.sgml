@@ -140,7 +140,7 @@
 			record passwords going to the SMB server.</member>
 		 
 			<member>WinNT doesn't like talking to a server 
-			that SM not support encrypted passwords. It will refuse 
+			that does not support encrypted passwords. It will refuse 
 			to browse the server if the server is also in user level 
 			security mode. It will insist on prompting the user for the 
 			password on each connection, which is very annoying. The
@@ -300,7 +300,7 @@ in the thousands).
 The first is that all lookups must be performed sequentially.  Given that
 there are approximately two lookups per domain logon (one for a normal
 session connection such as when mapping a network drive or printer), this
-is a performance bottleneck for lareg sites.  What is needed is an indexed approach
+is a performance bottleneck for large sites.  What is needed is an indexed approach
 such as is used in databases.
 </para></listitem>
 
@@ -394,7 +394,7 @@ url="mailto:jerry@samba.org">jerry@samba.org</ulink>
 </para>
 
 <para>
-Just as the smbpasswd file is mean to store information which supplements a
+Just as the smbpasswd file is meant to store information which supplements a
 user's <filename>/etc/passwd</filename> entry, so is the sambaAccount object
 meant to supplement the UNIX user account information.  A sambaAccount is a
 <constant>STRUCTURAL</constant> objectclass so it can be stored individually
@@ -528,7 +528,7 @@ use with an LDAP directory could appear as
      # The password for this DN is not stored in smb.conf.  Rather it
      # must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the
      # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
-     # changes, this password will need to be reset.
+     # change, this password will need to be reset.
      ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
 
      # Define the SSL option when connecting to the directory
@@ -566,12 +566,12 @@ use with an LDAP directory could appear as
 
 <para>
 As users accounts are managed thru the sambaAccount objectclass, you should
-modify you existing administration tools to deal with sambaAccount attributes.
+modify your existing administration tools to deal with sambaAccount attributes.
 </para>
 
 <para>
 Machines accounts are managed with the sambaAccount objectclass, just
-like users accounts. However, it's up to you to stored thoses accounts
+like users accounts. However, it's up to you to store thoses accounts
 in a different tree of you LDAP namespace: you should use
 "ou=Groups,dc=plainjoe,dc=org" to store groups and
 "ou=People,dc=plainjoe,dc=org" to store users. Just configure your
@@ -581,7 +581,7 @@ file).
 
 <para>
 In Samba release 3.0, the group management system is based on posix
-groups. This means that Samba make usage of the posixGroup objectclass.
+groups. This means that Samba makes usage of the posixGroup objectclass.
 For now, there is no NT-like group system management (global and local
 groups).
 </para>
@@ -733,7 +733,7 @@ the <parameter>logon home</parameter> string is expanded to \\TASHTEGO\becky.
 If the smbHome attribute exists in the entry "uid=becky,ou=people,dc=samba,dc=org",
 this value is used.  However, if this attribute does not exist, then the value
 of the <parameter>logon home</parameter> parameter is used in its place.  Samba
-will only write the attribute value to the directory entry is the value is
+will only write the attribute value to the directory entry if the value is
 something other than the default (e.g. \\MOBY\becky).
 </para>
 

@@ -183,7 +183,7 @@ known as the group policy template (GPT).
 </para>
 
 <para>
-With NT4 clients the policy file is read and executed upon only aas each user log onto the network.
+With NT4 clients the policy file is read and executed upon only as each user logs onto the network.
 MS Windows 200x policies are much more complex - GPOs are processed and applied at client machine
 startup (machine specific part) and when the user logs onto the network the user specific part
 is applied. In MS Windows 200x style policy management each machine and/or user may be subject
@@ -278,7 +278,7 @@ This has considerable advanage compared with the use of NTConfig.POL (NT4) style
 </para>
 
 <para>
-Inaddition to user access controls that may be imposed or applied via system and/or group policies
+In addition to user access controls that may be imposed or applied via system and/or group policies
 in a manner that works in conjunction with user profiles, the user management environment under
 MS Windows NT4/200x/XP allows per domain as well as per user account restrictions to be applied.
 Common restrictions that are frequently used includes:

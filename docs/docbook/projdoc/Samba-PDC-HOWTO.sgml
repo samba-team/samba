@@ -109,7 +109,7 @@ The following functionalities are NOT provided by Samba 3.0:
 <para>
 Please note that Windows 9x / Me / XP Home clients are not true members of a domain
 for reasons outlined in this article.  Therefore the protocol for
-support Windows 9x-style domain logons is completely different
+support of Windows 9x-style domain logons is completely different
 from NT4 / Win2k type domain logons and has been officially supported for some 
 time.
 </para>
@@ -263,7 +263,7 @@ shared secret with the domain controller.
 </para>
 
 <para>A Windows PDC stores each machine trust account in the Windows
-Registry. A Samba-3 PDC also has to stoe machine trust account information
+Registry. A Samba-3 PDC also has to store machine trust account information
 in a suitable back-end data store. With Samba-3 there can be multiple back-ends
 for this including:
 </para>
@@ -665,7 +665,7 @@ the network and download their preferences, desktop and start menu.
 
 <para>
 Before launching into the configuration instructions, it is 
-worthwhile lookingat how a Windows 9x/ME client performs a logon:
+worthwhile to look at how a Windows 9x/ME client performs a logon:
 </para>
 
 <orderedlist>
@@ -705,7 +705,7 @@ worthwhile lookingat how a Windows 9x/ME client performs a logon:
 	<para>
 	The client then sends a NetUserGetInfo request to the server, to retrieve
 	the user's home share, which is used to search for profiles. Since the
-	response to the NetUserGetInfo request does not contain much more 	
+	response to the NetUserGetInfo request does not contain much more then	
 	the user's home share, profiles for Win9X clients MUST reside in the user
 	home directory.
 	</para>
@@ -774,7 +774,7 @@ Actually, this issue is also closely tied to the debate on whether
 or not Samba must be the domain master browser for its workgroup
 when operating as a DC.  While it may technically be possible
 to configure a server as such (after all, browsing and domain logons
-are two distinctly different functions), it is not a good idea to
+are two distinctly different functions), it is not a good idea to do
 so.  You should remember that the DC must register the DOMAIN#1b NetBIOS 
 name.  This is the name used by Windows clients to locate the DC.
 Windows clients do not distinguish between the DC and the DMB.
@@ -786,7 +786,7 @@ Now back to the issue of configuring a Samba DC to use a mode other
 than "security = user".  If a Samba host is configured to use 
 another SMB server or DC in order to validate user connection 
 requests, then it is a fact that some other machine on the network 
-(the "password server") knows more about user than the Samba host.
+(the "password server") knows more about the user than the Samba host.
 99% of the time, this other host is a domain controller.  Now 
 in order to operate in domain mode security, the "workgroup" parameter
 must be set to the name of the Windows NT domain (which already 
