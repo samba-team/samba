@@ -1433,6 +1433,43 @@ void strupper_m(char *s)
 }
 
 /**
+   work out the number of multibyte chars in a string
+**/
+size_t strlen_m(const char *s)
+{
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
+	}
+
+	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+		s++;
+		count++;
+	}
+
+	if (!*s) {
+		return count;
+	}
+
+	push_ucs2(NULL,tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	return count + strlen_w(tmpbuf);
+}
+
+/**
+   Work out the number of multibyte chars in a string, including the NULL
+   terminator.
+**/
+size_t strlen_m_term(const char *s)
+{
+	if (!s) {
+		return 0;
+	}
+
+	return strlen_m(s) + 1;
+}
+
+/**
  Return a RFC2254 binary string representation of a buffer.
  Used in LDAP filters.
  Caller must free.

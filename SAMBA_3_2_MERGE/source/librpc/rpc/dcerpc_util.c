@@ -458,12 +458,12 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	}
 	    
 	if ((binding->flags & DCERPC_SCHANNEL_ANY) || !username || !username[0]) {
-		status = cli_full_connection(&cli, lp_netbios_name(),
+		status = cli_full_connection(&cli, global_myname(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     "", "", NULL, 0, &retry);
 	} else {
-		status = cli_full_connection(&cli, lp_netbios_name(),
+		status = cli_full_connection(&cli, global_myname(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     username, domain,

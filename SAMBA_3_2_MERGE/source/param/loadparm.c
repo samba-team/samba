@@ -563,7 +563,6 @@ static BOOL handle_copy( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
@@ -867,8 +866,8 @@ static struct parm_struct parm_table[] = {
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR}, 
 
-	{"log level", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, FLAG_ADVANCED}, 
-	{"debuglevel", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, FLAG_HIDE}, 
+	{"log level", P_STRING, P_GLOBAL, &Globals.szLogLevel, NULL, NULL, FLAG_ADVANCED}, 
+	{"debuglevel", P_STRING, P_GLOBAL, &Globals.szLogLevel, NULL, NULL, FLAG_HIDE}, 
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, FLAG_ADVANCED}, 
 	{"syslog only", P_BOOL, P_GLOBAL, &Globals.bSyslogOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"log file", P_STRING, P_GLOBAL, &Globals.szLogFile, NULL, NULL, FLAG_ADVANCED}, 
@@ -2912,19 +2911,6 @@ static BOOL handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle the DEBUG level list.
-***************************************************************************/
-
-static BOOL handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
-{
-	pstring pszParmValue;
-
-	pstrcpy(pszParmValue, pszParmValueIn);
-	string_set(ptr, pszParmValueIn);
-	return debug_parse_levels( pszParmValue );
-}
-
-/***************************************************************************
  Handle ldap suffixes - default to ldapsuffix if sub-suffixes are not defined.
 ***************************************************************************/
 
@@ -3911,7 +3897,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	bGlobalOnly = global_only;
 
 	init_globals();
-	debug_init();
 
 	if (save_defaults)
 	{

@@ -857,6 +857,8 @@ extern int errno;
 
 #include "asn_1.h"
 
+#include "mutex.h"
+
 #include "popt.h"
 
 #include "mangle.h"

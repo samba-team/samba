@@ -630,7 +630,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
 BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
-            lib/system.o lib/dprintf.o lib/time.o
+            lib/system.o lib/dprintf.o lib/time.o lib/talloc.o lib/mutex.o
 
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
@@ -639,7 +639,7 @@ CLIENT_OBJ1 = client/client.o client/clitar.o
 #             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(LIBCLI_OBJ) $(LIBCMDLINE_OBJ) $(LIBNMB_OBJ) \
-             $(PARAM_OBJ) $(BASIC_OBJ)
+             $(PARAM_OBJ) $(BASIC_OBJ) $(LIBRPC_OBJ)
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
@@ -726,7 +726,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBCLI_OBJ) \
             $(LIBRPC_OBJ) $(LIBCMDLINE_OBJ) $(CLIENT_OBJ1) $(LIBNMB_OBJ) \
 	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) \
+	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(BASIC_OBJ) \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
