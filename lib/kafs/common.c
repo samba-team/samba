@@ -223,6 +223,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid)
 
    This does not work when the VL-server is living in one realm, but
    the cell it is serving is living in another realm.
+
+   Return 0 on success, -1 otherwise.
    */
 
 static int
@@ -233,28 +235,37 @@ realm_of_cell(kafs_data *data, const char *cell, char **realm)
     char *p;
     int ret = -1;
 
-    if((F = fopen(_PATH_CELLSERVDB, "r"))){
-	while(fgets(buf, sizeof(buf), F)){
-	    if(buf[0] != '>')
-		continue;
-	    if(strncmp(buf + 1, cell, strlen(cell)) == 0){
-		if(fgets(buf, sizeof(buf), F) == NULL)
-		    break;
+    if ((F = fopen(_PATH_CELLSERVDB, "r")))
+      {
+	while (fgets(buf, sizeof(buf), F))
+	  {
+	    if (buf[0] != '>')
+	      continue;		/* Not a cell name line, try next line */
+	    if (strncmp(buf + 1, cell, strlen(cell)) == 0)
+	      {
+		/*
+		 * We found the cell name we're looking for.
+		 * Read next line on the form ip-address '#' hostname
+		 */
+		if (fgets(buf, sizeof(buf), F) == NULL)
+		  break;	/* Read failed, give up */
 		p = strchr(buf, '#');
-		if(p == NULL)
-		    break;
+		if (p == NULL)
+		  break;	/* No '#', give up */
 		p++;
-		if(buf[strlen(buf) - 1] == '\n')
-		    buf[strlen(buf) - 1] = 0;
+		if (buf[strlen(buf) - 1] == '\n')
+		  buf[strlen(buf) - 1] = 0;
 		*realm = (*data->get_realm)(data, p);
-		break;
-	    }
-	}
+		if (*realm && **realm != 0)
+		  ret = 0;
+		break;		/* Won't try any more */
+	      }
+	  }
 	fclose(F);
-    }
+      }
 #if 0
-    if(realm == NULL){
-	if(dns_find_cell(cell, buf) == 0)
+    if (realm == NULL) {
+	if (dns_find_cell(cell, buf) == 0)
 	    realm = krb_realmofhost(buf);
     }
 #endif
@@ -297,32 +308,31 @@ _kafs_get_cred(kafs_data *data,
      * blondino and she might as well have it.)
      */
   
-    if(krealm){
+    if (krealm) {
 	ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, krealm, c);
-	if(ret == 0) return 0;
+	if (ret == 0) return 0;
 	ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", krealm, c);
     }
-    if(ret == 0) return 0;
+    if (ret == 0) return 0;
 
     foldup(CELL, cell);
 
     ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, CELL, c);
-    if(ret == 0) return 0;
+    if (ret == 0) return 0;
 
     ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", CELL, c);
-    if(ret == 0) return 0;
+    if (ret == 0) return 0;
     
     /* this might work in some cases */
-    if(realm_of_cell(data, cell, &vl_realm) == 0){
-	char *vl_realm;
+    if (realm_of_cell(data, cell, &vl_realm) == 0) {
 	ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, vl_realm, c);
-	if(ret)
+	if (ret)
 	    ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", vl_realm, c);
 	free(vl_realm);
-	if(ret == 0) return 0;
+	if (ret == 0) return 0;
     }
     
-    if(lrealm)
+    if (lrealm)
 	ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, lrealm, c);
     return ret;
 }
