@@ -248,6 +248,7 @@ int main(int argc, char **argv)
   int             pwfd;
   char            ascii_p16[66];
   char            c;
+  int             ch;
   int             ret, i, err, writelen;
   int             lockfd = -1;
   char           *pfile = SMB_PASSWD_FILE;
@@ -257,6 +258,7 @@ int main(int argc, char **argv)
   char *remote_machine = NULL;
   BOOL		 add_user = False;
   BOOL		 got_new_pass = False;
+  BOOL		 machine_account = False;
   pstring servicesf = CONFIGFILE;
 
   new_passwd[0] = '\0';
@@ -290,13 +292,16 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((c = getopt(argc, argv, "ahr:")) != EOF) {
-    switch(c) {
+  while ((ch = getopt(argc, argv, "ahr:m:")) != EOF) {
+    switch(ch) {
     case 'a':
       add_user = True;
       break;
     case 'r':
       remote_machine = optarg;
+      break;
+    case 'm':
+      machine_account = True;
       break;
     case 'h':
     default:
@@ -313,6 +318,14 @@ int main(int argc, char **argv)
    */
   if(add_user && (remote_machine != NULL))
     usage(prog_name, True);
+
+  /*
+   * If we are adding a machine account then pretend
+   * we already have the new password, we will be using
+   * the machinename as the password.
+   */
+  if(add_user && machine_account)
+    got_new_pass = True;
 
   if( is_root ) {
 
@@ -488,6 +501,24 @@ int main(int argc, char **argv)
     exit(0);
   }
 
+  /*
+   * Check for a machine account flag - make sure the username ends in
+   * a '$' etc....
+   */
+
+  if(machine_account) {
+    int username_len = strlen(user_name);
+    if(username_len >= sizeof(pstring) - 1) {
+      fprintf(stderr, "%s: machine account name too long.\n", user_name);
+      exit(1);
+    }
+
+    if(user_name[username_len] != '$') {
+      user_name[username_len] = '$';
+      user_name[username_len+1] = '\0';
+    } 
+  }
+
   /* Calculate the MD4 hash (NT compatible) of the old and new passwords */
   memset(old_nt_p16, '\0', 16);
   E_md4hash((uchar *)old_passwd, old_nt_p16);
@@ -575,13 +606,13 @@ int main(int argc, char **argv)
 
       if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
+Error was %s\n", prog_name, user_name, pfile, strerror(errno));
         fclose(fp);
         pw_file_unlock(lockfd);
         exit(1);
       }
 
-      new_entry_length = strlen(pwd->pw_name) + 1 + 15 + 1 + 
+      new_entry_length = strlen(user_name) + 1 + 15 + 1 + 
                          32 + 1 + 32 + 1 + strlen(pwd->pw_gecos) + 
                          1 + strlen(pwd->pw_dir) + 1 + 
                          strlen(pwd->pw_shell) + 1;

@@ -485,22 +485,22 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 {
 	uint32 status = 0x0;
 
-#ifdef USE_ARCFOUR
-	extern void arcfour(uint8 key[16], uint8 out[16], uint8 in[16]);
 	char nt_pwd[16];
 	char lm_pwd[16];
-	unsigned char arc4_key[16];
-	memset(arc4_key, 0, 16);
-	memcpy(arc4_key, vuser->dc.sess_key, 8);
+	unsigned char key[16];
+	memset(key, 0, 16);
+	memcpy(key, vuser->dc.sess_key, 8);
 
-	arcfour(arc4_key, lm_pwd, id1->arc4_lm_owf.data);
-	arcfour(arc4_key, nt_pwd, id1->arc4_nt_owf.data);
+        memcpy(lm_pwd, id1->lm_owf.data, 16);
+        memcpy(nt_pwd, id1->nt_owf.data, 16);
+	SamOEMhash(lm_pwd, key, False);
+	SamOEMhash(nt_pwd, key, False);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("arcfour decrypt of lm owf password:"));
+	DEBUG(100,("decrypt of lm owf password:"));
 	dump_data(100, lm_pwd, 16);
 
-	DEBUG(100,("arcfour decrypt of nt owf password:"));
+	DEBUG(100,("decrypt of nt owf password:"));
 	dump_data(100, nt_pwd, 16);
 #endif
 
@@ -509,13 +509,6 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	{
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}
-#else
-/* sorry.  have to assume that the password is always ok.
-   this _is_ ok, because the LSA SAM Logon is nothing to do
-   with SMB connections to shares.
- */
-DEBUG(3,("SAM Logon.  Password not being checked\n"));
-#endif
 
 	return status;
 }

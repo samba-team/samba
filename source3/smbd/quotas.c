@@ -115,6 +115,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
       return(False);
     }
   else {
+    if (D.dqb_bsoftlimit == 0)
+      D.dqb_bsoftlimit = D.dqb_bhardlimit;
     *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
     *dsize = D.dqb_bsoftlimit;
   }

@@ -848,13 +848,13 @@ void smb_io_logon_id(char *desc,  DOM_LOGON_ID *log, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-makes an ARC4_OWF structure.
+makes an OWF_INFO structure.
 ********************************************************************/
-void make_arc4_owf(ARC4_OWF *hash, uint8 data[16])
+void make_owf_info(OWF_INFO *hash, uint8 data[16])
 {
 	if (hash == NULL) return;
 
-	DEBUG(5,("make_arc4_owf: %d\n", __LINE__));
+	DEBUG(5,("make_owf_info: %d\n", __LINE__));
 	
 	if (data != NULL)
 	{
@@ -867,13 +867,13 @@ void make_arc4_owf(ARC4_OWF *hash, uint8 data[16])
 }
 
 /*******************************************************************
-reads or writes an ARC4_OWF structure.
+reads or writes an OWF_INFO structure.
 ********************************************************************/
-void smb_io_arc4_owf(char *desc,  ARC4_OWF *hash, prs_struct *ps, int depth)
+void smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
 {
 	if (hash == NULL) return;
 
-	prs_debug(ps, depth, desc, "smb_io_arc4_owf");
+	prs_debug(ps, depth, desc, "smb_io_owf_info");
 	depth++;
 
 	prs_align(ps);
