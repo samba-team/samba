@@ -116,7 +116,6 @@ set_config(kadm5_server_context *ctx,
     if(ctx->config.acl_file == NULL)
 	set_field(ctx->context, binding, ctx->config.dbname, 
 		  "acl_file", "acl", &ctx->config.acl_file);
-    /* XXX calling a file a `stash file' isn't very clever */
     if(ctx->config.stash_file == NULL)
 	set_field(ctx->context, binding, ctx->config.dbname, 
 		  "mkey_file", "mkey", &ctx->config.stash_file);
