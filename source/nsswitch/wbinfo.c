@@ -647,8 +647,9 @@ static void usage(void)
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
 	printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
-	printf("\t-p 'ping' winbindd to see if it is alive\n");
+	printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
 	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
+	printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
 }
 
 /* Main program */
