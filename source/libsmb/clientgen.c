@@ -3360,6 +3360,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	extern pstring global_myname;
 	extern pstring scope;
 	fstring remote_machine;
+	fstring desthost;
 	struct in_addr dest_ip;
 	struct nmb_name calling, called, stupid_smbserver_called;
 	BOOL connected_ok = False;
@@ -3382,7 +3383,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 		standard_sub_basic(remote_machine);
 		strupper(remote_machine);
 
-		if (!resolve_name( remote_machine, &dest_ip, 0x20))
+		if (!resolve_srv_name( remote_machine, desthost, &dest_ip))
 		{
 			DEBUG(1,("cli_connect_serverlist: Can't resolve address for %s\n", remote_machine));
 			continue;
@@ -3394,8 +3395,8 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 			continue;
 		}
 
-		make_nmb_name(&calling, global_myname , 0x0 , scope);
-		make_nmb_name(&called , remote_machine, 0x20, scope);
+		make_nmb_name(&calling, global_myname, 0x0 , scope);
+		make_nmb_name(&called , desthost     , 0x20, scope);
 		/* stupid microsoft destruction of the ability of netbios
 		 * to provide multiple netbios servers on one host.
 		 */
@@ -3403,11 +3404,11 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 
 		pwd_set_nullpwd(&cli->usr.pwd);
 
-		if (!cli_establish_connection(cli, remote_machine, &dest_ip,
+		if (!cli_establish_connection(cli, desthost, &dest_ip,
 					      &calling, &called,
 					      "IPC$", "IPC", 
 					      False, True) &&
-		    !cli_establish_connection(cli, remote_machine, &dest_ip,
+		    !cli_establish_connection(cli, desthost, &dest_ip,
 					      &calling, &stupid_smbserver_called,
 					      "IPC$", "IPC", 
 					      False, True))
