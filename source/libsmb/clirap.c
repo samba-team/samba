@@ -85,19 +85,19 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	p = param;
 	SSVAL(p,0,132); /* api number */
 	p += 2;
-	pstrcpy(p,"OOWb54WrLh");
+	pstrcpy_base(p,"OOWb54WrLh",param);
 	p = skip_string(p,1);
-	pstrcpy(p,"WB21BWDWWDDDDDDDzzzD");
+	pstrcpy_base(p,"WB21BWDWWDDDDDDDzzzD",param);
 	p = skip_string(p,1);
 	SSVAL(p,0,1);
 	p += 2;
-	pstrcpy(p,user);
+	pstrcpy_base(p,user,param);
 	strupper(p);
 	p += 21;
 	p++;
 	p += 15;
 	p++; 
-	pstrcpy(p, workstation); 
+	pstrcpy_base(p, workstation, param);
 	strupper(p);
 	p += 16;
 	SSVAL(p, 0, CLI_BUFFER_SIZE);
@@ -145,9 +145,9 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 	p = param;
 	SSVAL(p,0,0); /* api number */
 	p += 2;
-	pstrcpy(p,"WrLeh");
+	pstrcpy_base(p,"WrLeh",param);
 	p = skip_string(p,1);
-	pstrcpy(p,"B13BWz");
+	pstrcpy_base(p,"B13BWz",param);
 	p = skip_string(p,1);
 	SSVAL(p,0,1);
 	/*
