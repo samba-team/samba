@@ -159,6 +159,10 @@
 extern int LIBPREFIX(fclose)      (FILE *);
 #endif
 
+/* SunOS doesn't have any declaration of fclose */
+
+int fclose(FILE *stream);
+
 int yyparse();
 
 #ifndef LOG_FTP
