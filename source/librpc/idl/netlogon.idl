@@ -134,7 +134,7 @@ interface netlogon
 	} netr_Authenticator;
 
 	typedef struct {
-		uint32 user_id;
+		uint32 rid;
 		uint32 attributes;
 	} netr_GroupMembership;
 
@@ -184,7 +184,7 @@ interface netlogon
 		uint32 attribute;
 	} netr_SidAttr;
 
-	typedef struct {
+	typedef [public] struct {
 		netr_SamBaseInfo base;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
