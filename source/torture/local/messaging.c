@@ -28,9 +28,10 @@ static void ping_message(void *msg_ctx, void *private,
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
 	NTSTATUS status;
-	do {
-		status = messaging_send(msg_ctx, src, MY_PONG, data);
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	status = messaging_send(msg_ctx, src, MY_PONG, data);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pong failed - %s\n", nt_errstr(status));
+	}
 }
 
 static void pong_message(void *msg_ctx, void *private, 
@@ -85,15 +86,17 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		status1 = messaging_send(msg_ctx, 1, MY_PING, &data);
 		status2 = messaging_send(msg_ctx, 1, MY_PING, NULL);
 
-		if (NT_STATUS_IS_OK(status1)) {
-			ping_count++;
+		if (!NT_STATUS_IS_OK(status1)) {
+			printf("msg1 failed - %s\n", nt_errstr(status1));
 		}
 
-		if (NT_STATUS_IS_OK(status2)) {
-			ping_count++;
+		if (!NT_STATUS_IS_OK(status2)) {
+			printf("msg2 failed - %s\n", nt_errstr(status2));
 		}
 
-		while (ping_count > pong_count + 10) {
+		ping_count += 2;
+
+		while (ping_count > pong_count + 20) {
 			event_loop_once(ev);
 		}
 	}
