@@ -1204,9 +1204,56 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	}
 }
 
+static void sam_display_group_info(char *domain, DOM_SID *sid,
+				uint32 group_rid, 
+				GROUP_INFO_CTR *ctr)
+{
+	display_group_info_ctr(out_hnd, ACTION_HEADER   , ctr);
+	display_group_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
+	display_group_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
+}
+
+static void sam_display_group(char *domain, DOM_SID *sid,
+				uint32 group_rid, char *group_name)
+{
+	report(out_hnd, "Group RID: %8x  Group Name: %s\n",
+			  group_rid, group_name);
+}
+
+static void sam_display_group_members(char *domain, DOM_SID *sid,
+				uint32 group_rid, char *group_name,
+				uint32 num_names,
+				uint32 *rid_mem,
+				char **name,
+				uint32 *type)
+{
+	display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+	display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+	display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+}
+
+static void sam_display_user_info(char *domain, DOM_SID *sid,
+				uint32 user_rid, 
+				SAM_USER_INFO_21 *usr)
+{
+	display_sam_user_info_21(out_hnd, ACTION_HEADER   , usr);
+	display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr);
+	display_sam_user_info_21(out_hnd, ACTION_FOOTER   , usr);
+}
+
+static void sam_display_user(char *domain, DOM_SID *sid,
+				uint32 user_rid, char *user_name)
+{
+	report(out_hnd, "User RID: %8x  User Name: %s\n",
+			user_rid, user_name);
+}
+
 static void req_user_info(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
-				uint32 user_rid)
+				char *domain,
+				DOM_SID *sid,
+				uint32 user_rid,
+				USER_INFO_FN(usr_inf))
 {
 	SAM_USER_INFO_21 usr;
 	/* send user info query, level 0x15 */
@@ -1214,9 +1261,7 @@ static void req_user_info(struct cli_state *cli, uint16 fnum,
 				    pol_dom,
 				    0x15, user_rid, &usr))
 	{
-		display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
-		display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, &usr);
-		display_sam_user_info_21(out_hnd, ACTION_FOOTER   , &usr);
+		usr_inf(domain, sid, user_rid, &usr);
 	}
 }
 
@@ -1225,12 +1270,15 @@ SAM Query User Groups.
 ****************************************************************************/
 uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
+				char *domain,
+				DOM_SID *sid,
 				uint32 user_rid,
+				char *user_name,
 				uint32 *num_groups,
 				DOM_GID **gid,
 				char    ***name,
-				uint32  **type)
-
+				uint32  **type,
+				USER_MEM_FN(usr_mem))
 {
 	uint32 num_names = 0;
 	(*gid) = NULL;
@@ -1262,9 +1310,9 @@ uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
 				(*num_groups), rid_mem, 
 				&num_names, name, type))
 		{
-			display_group_members(out_hnd, ACTION_HEADER   , num_names, *name, *type);
-			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, *name, *type);
-			display_group_members(out_hnd, ACTION_FOOTER   , num_names, *name, *type);
+			usr_mem(domain, sid,
+			       user_rid, user_name,
+			       num_names, rid_mem, *name, *type);
 		}
 	}
 
@@ -1273,7 +1321,9 @@ uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
 
 static void req_group_info(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
-				uint32 user_rid)
+				char *domain, DOM_SID *sid,
+				uint32 user_rid, char *user_name,
+				USER_MEM_FN(usr_mem))
 {
 	uint32 num_groups;
 	uint32 num_names;
@@ -1281,9 +1331,11 @@ static void req_group_info(struct cli_state *cli, uint16 fnum,
 	char    **name   = NULL;
 	uint32  *type    = NULL;
 
-	num_names = sam_query_usergroups(cli, fnum, pol_dom, user_rid,
+	num_names = sam_query_usergroups(cli, fnum, pol_dom,
+				domain, sid,
+				user_rid, user_name,
 				&num_groups, &gid,
-				&name, &type);
+				&name, &type, usr_mem);
 
 	free_char_array(num_names, name);
 	if (type != NULL)
@@ -1299,10 +1351,13 @@ static void req_group_info(struct cli_state *cli, uint16 fnum,
 
 static void req_alias_info(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
-				DOM_SID *sid1, uint32 user_rid)
+				char *domain,
+				DOM_SID *sid1, uint32 user_rid,
+				char *user_name,
+				USER_MEM_FN(usr_mem))
 {
 	uint32 num_aliases;
-	uint32 *rid = NULL;
+	uint32 *rid_mem = NULL;
 	uint32 *ptr_sid;
 	DOM_SID2 *als_sid;
 
@@ -1318,20 +1373,30 @@ static void req_alias_info(struct cli_state *cli, uint16 fnum,
 	/* send user alias query */
 	if (samr_query_useraliases(cli, fnum,
 				pol_dom,
-				ptr_sid, als_sid, &num_aliases, &rid))
+				ptr_sid, als_sid, &num_aliases, &rid_mem))
 	{
 		uint32 num_names;
 		char    **name = NULL;
 		uint32  *type = NULL;
 
-		if (samr_query_lookup_rids(cli, fnum, 
-				pol_dom, 0x3e8,
-				num_aliases, rid, 
-				&num_names, &name, &type))
+		uint32 *rid_copy = (uint32*)malloc(num_aliases * sizeof(*rid_copy));
+
+		if (rid_copy != NULL)
 		{
-			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+			uint32 i;
+			for (i = 0; i < num_aliases; i++)
+			{
+				rid_copy[i] = rid_mem[i];
+			}
+			if (samr_query_lookup_rids(cli, fnum, 
+					pol_dom, 0x3e8,
+					num_aliases, rid_copy, 
+					&num_names, &name, &type))
+			{
+				usr_mem(domain, sid1,
+				       user_rid, user_name,
+				       num_names, rid_mem, name, type);
+			}
 		}
 
 		free_char_array(num_names, name);
@@ -1339,6 +1404,12 @@ static void req_alias_info(struct cli_state *cli, uint16 fnum,
 		{
 			free(type);
 		}
+	}
+
+	if (rid_mem != NULL)
+	{
+		free(rid_mem);
+		rid_mem = NULL;
 	}
 
 	if (ptr_sid != NULL)
@@ -1359,9 +1430,10 @@ experimental SAM users enum.
 int msrpc_sam_enum_users(struct client_info *info,
 			struct acct_info **sam,
 			uint32 *num_sam_entries,
-			BOOL request_user_info,
-			BOOL request_group_info,
-			BOOL request_alias_info)
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn))
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1449,26 +1521,37 @@ int msrpc_sam_enum_users(struct client_info *info,
 		for (user_idx = 0; res && user_idx <
 			      (*num_sam_entries); user_idx++)
 		{
-			uint32 user_rid = (*sam)[user_idx].rid;
+			uint32 user_rid  = (*sam)[user_idx].rid;
+			char  *user_name = (*sam)[user_idx].acct_name;
 
-			report(out_hnd, "User RID: %8x  User Name: %s\n",
-				user_rid,
-				(*sam)[user_idx].acct_name);
+			usr_fn(domain, &sid1, user_rid, user_name);
 
-			if (request_group_info)
+			if (usr_inf_fn)
 			{
-				req_group_info(smb_cli, fnum, &pol_dom, user_rid);
+				req_user_info(smb_cli, fnum, &pol_dom,
+				                  domain, &sid1,
+				                  user_rid, 
+				                  usr_inf_fn);
 			}
 
-			if (request_user_info)
+			if (usr_grp_fn != NULL)
 			{
-				req_user_info(smb_cli, fnum, &pol_dom, user_rid);
+				req_group_info(smb_cli, fnum, &pol_dom,
+				                  domain, &sid1,
+				                  user_rid, user_name,
+				                  usr_grp_fn);
 			}
 
-			if (request_alias_info)
+			if (usr_als_fn != NULL)
 			{
-				req_alias_info(smb_cli, fnum, &pol_dom, &sid1, user_rid);
-				req_alias_info(smb_cli, fnum, &pol_blt, &sid1, user_rid);
+				req_alias_info(smb_cli, fnum, &pol_dom,
+				                  domain, &sid1,
+				                  user_rid, user_name,
+				                  usr_als_fn);
+				req_alias_info(smb_cli, fnum, &pol_blt,
+				                  domain, &sid1,
+				                  user_rid, user_name,
+				                  usr_als_fn);
 			}
 		}
 	}
@@ -1522,9 +1605,10 @@ void cmd_sam_enum_users(struct client_info *info)
 	}
 
 	msrpc_sam_enum_users(info, &sam, &num_sam_entries,
-	                     request_user_info,
-	                     request_group_info,
-	                     request_alias_info);
+	            sam_display_user,
+	            request_user_info  ? sam_display_user_info     : NULL,
+	            request_group_info ? sam_display_group_members : NULL,
+	            request_alias_info ? sam_display_group_members : NULL);
 
 	if (sam != NULL)
 	{
@@ -2079,34 +2163,6 @@ BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 	return res3;
 }
 
-static void sam_display_group_info(char *domain, DOM_SID *sid,
-				uint32 group_rid, 
-				GROUP_INFO_CTR *ctr)
-{
-	display_group_info_ctr(out_hnd, ACTION_HEADER   , ctr);
-	display_group_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
-	display_group_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
-}
-
-static void sam_display_group(char *domain, DOM_SID *sid,
-				uint32 group_rid, char *group_name)
-{
-	report(out_hnd, "Group RID: %8x  Group Name: %s\n",
-			  group_rid, group_name);
-}
-
-static void sam_display_group_members(char *domain, DOM_SID *sid,
-				uint32 group_rid, char *group_name,
-				uint32 num_names,
-				uint32 *rid_mem,
-				char **name,
-				uint32 *type)
-{
-	display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-	display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-	display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
-}
-
 static void query_groupinfo(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				char *domain,
@@ -2142,7 +2198,6 @@ static void req_groupmem_info(struct cli_state *cli, uint16 fnum,
 	if (sam_query_groupmem(cli, fnum, pol_dom, group_rid,
 				&num_names, &rid_mem, &name, &type))
 	{
-
 		grp_mem(domain, sid,
 		       group_rid, group_name,
 		       num_names, rid_mem, name, type);

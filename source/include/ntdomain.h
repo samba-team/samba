@@ -154,5 +154,9 @@ struct acct_info
 #define GROUP_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *)
 #define GROUP_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*)
 
+#define USER_FN(fn) void (*fn)(char*, DOM_SID*, uint32, char*)
+#define USER_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, SAM_USER_INFO_21 *)
+#define USER_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*)
+
 #endif /* _NT_DOMAIN_H */
 
