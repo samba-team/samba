@@ -180,7 +180,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 
 	entry_offset = pai_buf + PAI_ENTRIES_BASE;
 
-	for (ace_list = dir_ace_list; ace_list; ace_list = ace_list->next) {
+	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next) {
 		if (ace_list->inherited) {
 			uint8 type_val = (unsigned char)ace_list->owner_type;
 			uint32 entry_val = get_entry_val(ace_list);
@@ -191,7 +191,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 		}
 	}
 
-	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next) {
+	for (ace_list = dir_ace_list; ace_list; ace_list = ace_list->next) {
 		if (ace_list->inherited) {
 			uint8 type_val = (unsigned char)ace_list->owner_type;
 			uint32 entry_val = get_entry_val(ace_list);
