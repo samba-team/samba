@@ -302,6 +302,13 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 		return NT_STATUS_OK;
 	}
 	
+	if (sid_equal(sid, &global_sid_Builtin)) {
+		/* No domain groups for now in the BUILTIN domain */
+		info->disp_info.num_group_account=0;
+		info->disp_info.disp_group_info=NULL;
+		info->disp_info.group_dbloaded=True;
+		return NT_STATUS_OK;
+	}
 
 	become_root();
 	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED); 
