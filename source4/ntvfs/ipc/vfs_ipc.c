@@ -215,7 +215,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p->pipe_name = talloc_strdup(p, fname);
+	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	if (!p->pipe_name) {
 		talloc_free(p);
 		return NT_STATUS_NO_MEMORY;
