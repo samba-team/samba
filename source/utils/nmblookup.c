@@ -156,10 +156,6 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 	status = nbt_name_query(nbtsock, nbtsock, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (io.out.rcode != 0) {
-		return nbt_rcode_to_ntstatus(io.out.rcode);
-	}
-		
 	for (i=0;i<io.out.num_addrs;i++) {
 		printf("%s %s<%02x>\n",
 		       io.out.reply_addrs[i],
@@ -221,7 +217,7 @@ static void process_one(const char *name)
 	} else {
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
-			const char *bcast = sys_inet_ntoa(*iface_n_bcast(i));
+			const char *bcast = iface_n_bcast(i);
 			status = do_node_query(nbtsock, bcast, node_name, node_type, True);
 			if (NT_STATUS_IS_OK(status)) break;
 		}

@@ -40,8 +40,7 @@ struct composite_context *resolve_name_bcast_send(struct nbt_name *name,
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		struct ipv4_addr *ip = iface_n_bcast(i);
-		address_list[i] = talloc_strdup(address_list, sys_inet_ntoa(*ip));
+		address_list[i] = talloc_strdup(address_list, iface_n_bcast(i));
 		if (address_list[i] == NULL) {
 			talloc_free(address_list);
 			return NULL;

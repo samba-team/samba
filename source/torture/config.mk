@@ -171,7 +171,8 @@ REQUIRED_SUBSYSTEMS = \
 [SUBSYSTEM::TORTURE_NBT]
 ADD_OBJ_FILES = \
 		torture/nbt/query.o \
-		torture/nbt/register.o
+		torture/nbt/register.o \
+		torture/nbt/wins.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_NBT

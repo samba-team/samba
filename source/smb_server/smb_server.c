@@ -795,7 +795,7 @@ static NTSTATUS smbsrv_init(struct event_context *event_context, const struct mo
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = sys_inet_ntoa(*iface_n_ip(i));
+			const char *address = iface_n_ip(i);
 			status = smb_add_socket(event_context, model_ops, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
