@@ -33,11 +33,16 @@ static BOOL analyze;
 
 #define FILENAME "locktest.dat"
 #define LOCKRANGE 100
+#define LOCKBASE 0
+
+/*
+#define LOCKBASE (0x40000000 - 50)
+*/
 
 #define READ_PCT 50
 #define LOCK_PCT 25
 #define UNLOCK_PCT 65
-#define RANGE_MULTIPLE 32
+#define RANGE_MULTIPLE 1
 #define NCONNECTIONS 2
 #define NFILES 2
 #define LOCK_TIMEOUT 0
@@ -48,19 +53,11 @@ static BOOL analyze;
 struct record {
 	char r1, r2;
 	char conn, f;
-	int start, len;
+	unsigned start, len;
 	char needed;
 };
 
 static struct record preset[] = {
-{77, 11, 0, 0, 2432, 480, 1},
-{13, 11, 0, 0, 2624, 224, 1},
-{16, 19, 0, 1, 448, 1344, 1},
-{21, 96, 0, 0, 2144, 640, 1},
-{53, 5, 1, 1, 2336, 608, 1},
-
-
-
 {36,  5, 0, 0, 0,  8, 1},
 { 2,  6, 0, 1, 0,  1, 1},
 {53, 92, 0, 0, 0,  0, 1},
@@ -80,7 +77,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 
 		if (lastino != ino) {
 			slprintf(cmd, sizeof(cmd), 
-				 "egrep POSIX.*%d /proc/locks", (int)ino);
+				 "egrep POSIX.*%u /proc/locks", (int)ino);
 			system(cmd);
 		}
 		lastino = ino;
@@ -118,7 +115,7 @@ struct cli_state *connect_one(char *share)
 	
 	ip = ipzero;
 
-	slprintf(myname,sizeof(myname), "lock-%d-%d", getpid(), count++);
+	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
@@ -226,13 +223,13 @@ static BOOL test_one(struct cli_state *cli[2][2],
 		     int fnum[2][2][2],
 		     struct record *rec)
 {
-	int conn = rec->conn;
-	int f = rec->f;
-	int start = rec->start;
-	int len = rec->len;
-	int r1 = rec->r1;
-	int r2 = rec->r2;
-	int op;
+	unsigned conn = rec->conn;
+	unsigned f = rec->f;
+	unsigned start = rec->start;
+	unsigned len = rec->len;
+	unsigned r1 = rec->r1;
+	unsigned r2 = rec->r2;
+	unsigned op;
 	BOOL ret1, ret2;
 
 	if (r1 < READ_PCT) {
@@ -250,7 +247,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 				fnum[1][conn][f],
 				start, len, LOCK_TIMEOUT, op);
 		if (showall || ret1 != ret2) {
-			printf("lock   conn=%d f=%d range=%d:%d(%d) op=%s -> %d:%d\n",
+			printf("lock   conn=%u f=%u range=%u:%u(%u) op=%s -> %u:%u\n",
 			       conn, f, 
 			       start, start+len-1, len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
@@ -267,7 +264,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 				  fnum[1][conn][f],
 				  start, len);
 		if (showall || ret1 != ret2) {
-			printf("unlock conn=%d f=%d range=%d:%d(%d)       -> %d:%d\n",
+			printf("unlock conn=%u f=%u range=%u:%u(%u)       -> %u:%u\n",
 			       conn, f, 
 			       start, start+len-1, len,
 			       ret1, ret2);
@@ -293,7 +290,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 			return False;
 		}
 		if (showall) {
-			printf("reopen conn=%d f=%d\n",
+			printf("reopen conn=%u f=%u\n",
 			       conn, f);
 			brl_forall(print_brl);
 		}
@@ -302,7 +299,7 @@ static BOOL test_one(struct cli_state *cli[2][2],
 }
 
 static void close_files(struct cli_state *cli[2][2], 
-		       int fnum[2][2][2])
+			int fnum[2][2][2])
 {
 	int server, conn, f; 
 
@@ -330,7 +327,7 @@ static void open_files(struct cli_state *cli[2][2],
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
 		if (fnum[server][conn][f] == -1) {
-			fprintf(stderr,"Failed to open fnum[%d][%d][%d]\n",
+			fprintf(stderr,"Failed to open fnum[%u][%u][%u]\n",
 				server, conn, f);
 			exit(1);
 		}
@@ -343,10 +340,10 @@ static int retest(struct cli_state *cli[2][2],
 		   int n)
 {
 	int i;
-	printf("testing %d ...\n", n);
+	printf("testing %u ...\n", n);
 	for (i=0; i<n; i++) {
 		if (i && i % 100 == 0) {
-			printf("%d\n", i);
+			printf("%u\n", i);
 		}
 
 		if (recorded[i].needed &&
@@ -379,8 +376,9 @@ static void test_locks(char *share1, char *share2)
 		} else {
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
-			recorded[n].start = random() % (LOCKRANGE-1);
-			recorded[n].len = 1 + random() % (LOCKRANGE-recorded[n].start);
+			recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
+			recorded[n].len = 1 + 
+				random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
 			recorded[n].r1 = random() % 100;
@@ -432,12 +430,12 @@ static void test_locks(char *share1, char *share2)
 	showall = True;
 	n1 = retest(cli, fnum, n);
 	if (n1 != n-1) {
-		printf("ERROR - inconsistent result (%d %d)\n", n1, n);
+		printf("ERROR - inconsistent result (%u %u)\n", n1, n);
 	}
 	close_files(cli, fnum);
 
 	for (i=0;i<n;i++) {
-		printf("{%d, %d, %d, %d, %d, %d, %d},\n",
+		printf("{%u, %u, %u, %u, %u, %u, %u},\n",
 		       recorded[i].r1,
 		       recorded[i].r2,
 		       recorded[i].conn,
@@ -544,7 +542,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	DEBUG(0,("seed=%d\n", seed));
+	DEBUG(0,("seed=%u\n", seed));
 	srandom(seed);
 
 	locking_init(1);
