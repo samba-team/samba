@@ -475,7 +475,7 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 {
 	fstring sid_str;
-	int     i;
+	size_t     i;
 	
 	if (!token) {
 		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
@@ -564,7 +564,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	sid_ndx = 5; /* next available spot */
 
 	for (i = 0; i < n_groupSIDs; i++) {
-		int check_sid_idx;
+		size_t check_sid_idx;
 		for (check_sid_idx = 1; check_sid_idx < ptoken->num_sids; check_sid_idx++) {
 			if (sid_equal(&ptoken->user_sids[check_sid_idx], 
 				      &groupSIDs[i])) {
@@ -678,7 +678,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	}
 	
 	if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
-		*unix_groups = Realloc(unix_groups, sizeof(gid_t) * n_unix_groups);
+		*unix_groups = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
 		if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
 			SAFE_FREE(*unix_groups);
@@ -867,7 +867,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	NT_USER_TOKEN *token;
 
 	DOM_SID *all_group_SIDs;
-	int i;
+	size_t i;
 
 	/* 
 	   Here is where we should check the list of
