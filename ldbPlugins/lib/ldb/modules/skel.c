@@ -37,7 +37,7 @@
 /* close */
 static int skel_close(struct ldb_module *module)
 {
-	return ldb_next_close()
+	return ldb_next_close(module);
 }
 
 /* search */
@@ -55,13 +55,13 @@ static int skel_search_free(struct ldb_module *module, struct ldb_message **res)
 }
 
 /* add_record */
-static int skel_add_record(struct ldb_module *module, struct ldb_message *msg)
+static int skel_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	return ldb_next_add_record(module, msg);
 }
 
 /* modify_record */
-static int skel_modify_record(struct ldb_module *module, struct ldb_message *msg)
+static int skel_modify_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	return ldb_next_modify_record(module, msg);
 }
@@ -84,12 +84,12 @@ static const char *skel_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
-static const char *skel_cache_free(struct ldb_module *module)
+static void skel_cache_free(struct ldb_module *module)
 {
-	return ldb_next_cache_free(module);
+	ldb_next_cache_free(module);
 }
 
-static const struct ldb_module skel_ops = {
+static const struct ldb_module_ops skel_ops = {
 	"skel",
 	skel_close, 
 	skel_search,
