@@ -1441,19 +1441,19 @@ int cmd_setmode(const char **cmd_ptr)
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-int cmd_tar(char **cmd_ptr)
+int cmd_tar(const char **cmd_ptr)
 {
   fstring buf;
   char **argl;
   int argcl;
 
-  if (!next_token((const char **)cmd_ptr,buf,NULL,sizeof(buf)))
+  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
       return 1;
     }
 
-  argl=toktocliplist(*cmd_ptr, &argcl, NULL);
+  argl=toktocliplist(discard_const_p(char, *cmd_ptr), &argcl, NULL);
   if (!tar_parseargs(argcl, argl, buf, 0))
     return 1;
 
