@@ -162,7 +162,7 @@ void init_valid_table(void)
  Convert a wchar to upper case.
 ********************************************************************/
 
-static smb_ucs2_t toupper_w(smb_ucs2_t val)
+smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
 	return upcase_table[SVAL(&val,0)];
 }
