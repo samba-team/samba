@@ -57,6 +57,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
+	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
         uint32 smb_uid_low;
@@ -75,8 +76,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.auth.pass[sizeof(state->request.data.auth.pass)-1]='\0';
 
-	DEBUG(3, ("[%5d]: pam auth domain: %s user: %s\n", state->pid,
-		  state->request.data.auth.domain, state->request.data.auth.user));
+	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
+		  state->request.data.auth.user));
 
 	if (!(mem_ctx = talloc_init_named("winbind pam auth for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth: could not talloc_init()!\n"));
@@ -86,6 +87,13 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 	
+	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
+			       name_user)) {
+		DEBUG(5,("no domain separator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
 	{
 		unsigned char local_lm_response[24];
 		unsigned char local_nt_response[24];
@@ -125,10 +133,11 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                 goto done;
         }
 
-	result = cli_netlogon_sam_network_logon(
-		cli, mem_ctx, state->request.data.auth.user,
-		state->request.data.auth.domain, 
-		global_myname, chal, lm_resp, nt_resp, &info3);
+	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
+						name_user, name_domain, 
+						global_myname, chal, 
+						lm_resp, nt_resp, 
+						&info3);
         
 	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
@@ -138,12 +147,10 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
-	      ("Plain-text authentication for user %s/%s returned %s (PAM: %d)\n", 
-	       state->request.data.auth.domain, 
-	       state->request.data.auth.user, 
-	       state->response.data.auth.nt_status_string,
-	       state->response.data.auth.pam_error));	      
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
+	      state->request.data.auth.user, 
+	      state->response.data.auth.nt_status_string,
+	      state->response.data.auth.pam_error));	      
 
 	if (mem_ctx) 
 		talloc_destroy(mem_ctx);

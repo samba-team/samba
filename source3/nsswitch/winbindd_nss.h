@@ -127,8 +127,10 @@ struct winbindd_request {
 		uid_t uid;           /* getpwuid, uid_to_sid */
 		gid_t gid;           /* getgrgid, gid_to_sid */
 		struct {
+			/* We deliberatedly don't split into domain/user to
+                           avoid having the client know what the separator
+                           character is. */	
 			fstring user;
-			fstring domain;
 			fstring pass;
 		} auth;              /* pam_winbind auth module */
                 struct {
