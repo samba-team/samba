@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
-import sys, dcerpc
-from optparse import OptionParser
+import dcerpc
 
-def test_Connect(handle):
+def test_Connect(pipe):
 
     print 'testing samr_Connect'
 
@@ -93,7 +92,7 @@ def test_QuerySecurity(pipe, handle):
 
     dcerpc.samr_QuerySecurity(pipe, r)
 
-def test_GetDomPwInfo(pipe, domain):
+def test_GetDomPwInfo(pipe, handle, domain):
 
     print 'testing samr_GetDomPwInfo'
 
@@ -830,23 +829,23 @@ def test_LookupDomain(pipe, connect_handle, domain):
 
     result = dcerpc.samr_LookupDomain(pipe, r)
 
-    test_GetDomPwInfo(pipe, domain)
+    test_GetDomPwInfo(pipe, connect_handle, domain)
 
-    test_OpenDomain(pipe, handle, result['sid'])
+    test_OpenDomain(pipe, connect_handle, result['sid'])
     
 def test_EnumDomains(pipe, connect_handle):
 
     print 'testing samr_EnumDomains'
 
     r = {}
-    r['connect_handle'] = handle
+    r['connect_handle'] = connect_handle
     r['resume_handle'] = 0
     r['buf_size'] = -1
 
     result = dcerpc.samr_EnumDomains(pipe, r)
 
     for domain in result['sam']['entries']:
-        test_LookupDomain(pipe, handle, domain['name']['name'])
+        test_LookupDomain(pipe, connect_handle, domain['name']['name'])
 
 def test_LongInt(pipe):
 
@@ -858,48 +857,18 @@ def test_LongInt(pipe):
 
     result = dcerpc.samr_Connect(pipe, r)
 
-# Parse command line
+def runtests(binding, domain, username, password):
 
-parser = OptionParser()
+    print 'Testing SAMR pipe'
 
-parser.add_option("-b", "--binding", action="store", type="string",
-                  dest="binding")
+    pipe = dcerpc.pipe_connect(binding,
+            dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
+            domain, username, password)
 
-parser.add_option("-d", "--domain", action="store", type="string",
-                  dest="domain")
+    test_LongInt(pipe)
 
-parser.add_option("-u", "--username", action="store", type="string",
-                  dest="username")
+    handle = test_Connect(pipe)
 
-parser.add_option("-p", "--password", action="store", type="string",
-                  dest="password")
+    test_QuerySecurity(pipe, handle)
 
-(options, args) = parser.parse_args()
-
-if not options.binding:
-   parser.error('You must supply a binding string')
-
-if not options.username or not options.password or not options.domain:
-   parser.error('You must supply a domain, username and password')
-
-
-binding = options.binding
-domain = options.domain
-username = options.username
-password = options.password
-
-print 'Connecting...'
-
-pipe = dcerpc.pipe_connect(binding,
-	dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
-	domain, username, password)
-
-test_LongInt(pipe)
-
-handle = test_Connect(pipe)
-
-test_QuerySecurity(pipe, handle)
-
-test_EnumDomains(pipe, handle)
-
-print 'Done'
+    test_EnumDomains(pipe, handle)
