@@ -46,6 +46,7 @@ store_ticket(KTEXT cip)
     char srealm[REALM_SZ];
     unsigned char kvno;
     KTEXT_ST tkt;
+    int left = cip->length;
 
     int kerror;
     
@@ -56,42 +57,49 @@ store_ticket(KTEXT cip)
     /* extract session key */
     memmove(session, ptr, 8);
     ptr += 8;
+    left -= 8;
 
-    if ((strlen(ptr) + (ptr - (char *) cip->dat)) > cip->length)
+    if (strnlen(ptr, left) == left)
 	return(INTK_BADPW);
-
+    
     /* extract server's name */
     strcpy(sname,ptr);
     ptr += strlen(sname) + 1;
+    left -= strlen(sname) + 1;
 
-    if ((strlen(ptr) + (ptr - (char *) cip->dat)) > cip->length)
+    if (strnlen(ptr, left) == left)
 	return(INTK_BADPW);
 
     /* extract server's instance */
     strcpy(sinst, ptr);
     ptr += strlen(sinst) + 1;
+    left -= strlen(sinst) + 1;
 
-    if ((strlen(ptr) + (ptr - (char *) cip->dat)) > cip->length)
+    if (strnlen(ptr, left) == left)
 	return(INTK_BADPW);
 
     /* extract server's realm */
     strcpy(srealm,ptr);
     ptr += strlen(srealm) + 1;
+    left -= strlen(srealm) + 1;
 
+    if(left < 3)
+	return INTK_BADPW;
     /* extract ticket lifetime, server key version, ticket length */
     /* be sure to avoid sign extension on lifetime! */
     lifetime = (unsigned char) ptr[0];
     kvno = (unsigned char) ptr[1];
     tkt.length = (unsigned char) ptr[2];
     ptr += 3;
+    left -= 3;
     
-    if ((tkt.length < 0) ||
-	((tkt.length + (ptr - (char *) cip->dat)) > cip->length))
+    if (tkt.length > left)
 	return(INTK_BADPW);
 
     /* extract ticket itself */
     memmove(tkt.dat, ptr, tkt.length);
     ptr += tkt.length;
+    left -= tkt.length;
 
     /* Here is where the time should be verified against the KDC.
      * Unfortunately everything is sent in host byte order (receiver
@@ -145,7 +153,7 @@ void kauth(char *principal, char *ticket)
 	return;
     }
     if(realm[0] == 0)
-	krb_get_lrealm(realm, 0);
+	krb_get_lrealm(realm, 1);
 
     if(ticket){
 	cip.length = base64_decode(ticket, &cip.dat);
