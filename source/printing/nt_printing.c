@@ -289,6 +289,7 @@ BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
 	const char *vstring = "INFO/version";
+	WERROR win_rc;
 
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
@@ -376,6 +377,10 @@ BOOL nt_printing_init(void)
 	   tell messages.c that you interested in receiving PRINT_GENERAL 
 	   msgs.  This is done in claim_connection() */
 
+
+	win_rc = check_published_printers();
+	if (!W_ERROR_IS_OK(win_rc))
+		DEBUG(3, ("error checking published printers: %s\n", W_ERROR_V(win_rc)));
 
 	return True;
 }
@@ -2631,56 +2636,20 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 			    (char *) &guid, sizeof(struct uuid));	
 }
 
-static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
+static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
+                                     NT_PRINTER_INFO_LEVEL *printer)
 {
 	ADS_STATUS ads_rc;
-	TALLOC_CTX *ctx = talloc_init("publish_it");
-	ADS_MODLIST mods = ads_init_mods(ctx);
+	void *res;
 	char *prt_dn = NULL, *srv_dn, *srv_cn_0;
 	char *srv_dn_utf8, **srv_cn_utf8;
-	void *res = NULL;
-	ADS_STRUCT *ads;
+	TALLOC_CTX *ctx;
+	ADS_MODLIST mods;
 	const char *attrs[] = {"objectGUID", NULL};
 	struct uuid guid;
 	WERROR win_rc = WERR_OK;
 
-	ZERO_STRUCT(guid);
-	/* set the DsSpooler info and attributes */
-	if (!(map_nt_printer_info2_to_dsspooler(printer->info_2)))
-			return WERR_NOMEM;
-	printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
-	win_rc = mod_a_printer(*printer, 2);
-	if (!W_ERROR_IS_OK(win_rc)) {
-		DEBUG(3, ("err %d saving data\n",
-				  W_ERROR_V(win_rc)));
-		return win_rc;
-	}
-
-	/* Build the ads mods */
-	get_local_printer_publishing_data(ctx, &mods, 
-					  &printer->info_2->data);
-	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
-		    printer->info_2->sharename);
-
-	/* initial ads structure */
-	
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(3, ("ads_init() failed\n"));
-		return WERR_SERVER_UNAVAILABLE;
-	}
-	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
-		NULL, NULL);
-		
-	/* ads_connect() will find the DC for us */					    
-	ads_rc = ads_connect(ads);
-	if (!ADS_ERR_OK(ads_rc)) {
-		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
-		ads_destroy(&ads);
-		return WERR_ACCESS_DENIED;
-	}
+	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
 
 	/* figure out where to publish */
 	ads_find_machine_acct(ads, &res, global_myname());
@@ -2724,41 +2693,146 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	SAFE_FREE(srv_dn);
 	SAFE_FREE(srv_cn_0);
 
+	/* build the ads mods */
+	ctx = talloc_init("nt_printer_publish_ads");
+	mods = ads_init_mods(ctx);
+
+	get_local_printer_publishing_data(ctx, &mods, 
+	                                  &printer->info_2->data);
+	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
+	            printer->info_2->sharename);
+
 	/* publish it */
 	ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
 	if (LDAP_ALREADY_EXISTS == ads_rc.err.rc)
-		ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx,&mods);
+		ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
 	
+	talloc_destroy(ctx);
+
 	/* retreive the guid and store it locally */
 	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
+		ZERO_STRUCT(guid);
 		ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
 		store_printer_guid(printer->info_2, guid);
-		win_rc = mod_a_printer(*printer, 2);
+		win_rc = mod_a_printer(printer, 2);
 	} 
 
 	SAFE_FREE(prt_dn);
-	ads_destroy(&ads);
+	return win_rc;
+}
 
+static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
+                                       NT_PRINTER_INFO_LEVEL *printer)
+{
+	ADS_STATUS ads_rc;
+	void *res;
+	char *prt_dn = NULL;
+
+	DEBUG(5, ("unpublishing printer %s\n", printer->info_2->printername));
+
+	/* remove the printer from the directory */
+	ads_rc = ads_find_printer_on_server(ads, &res, 
+			    printer->info_2->sharename, global_myname());
+
+	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+		prt_dn = ads_get_dn(ads, res);
+		ads_rc = ads_del_dn(ads, prt_dn);
+		ads_memfree(ads, prt_dn);
+	}
+
+	ads_msgfree(ads, res);
 	return WERR_OK;
 }
 
-WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
+/****************************************************************************
+ * Publish a printer in the directory
+ *
+ * @param snum describing printer service
+ * @return WERROR indicating status of publishing
+ ***************************************************************************/
+
+WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 {
 	ADS_STATUS ads_rc;
-	ADS_STRUCT *ads;
-	void *res;
-	char *prt_dn = NULL;
+	ADS_STRUCT *ads = NULL;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR win_rc;
 
-	printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
-	win_rc = mod_a_printer(*printer, 2);
-	if (!W_ERROR_IS_OK(win_rc)) {
-		DEBUG(3, ("err %d saving data\n",
-				  W_ERROR_V(win_rc)));
-		return win_rc;
+	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(win_rc))
+		goto done;
+
+	switch (action) {
+	case SPOOL_DS_PUBLISH:
+	case SPOOL_DS_UPDATE:
+		/* set the DsSpooler info and attributes */
+		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2))) {
+			win_rc = WERR_NOMEM;
+			goto done;
+		}
+
+		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
+		break;
+	case SPOOL_DS_UNPUBLISH:
+		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
+		break;
+	default:
+		win_rc = WERR_NOT_SUPPORTED;
+		goto done;
 	}
-	
+
+	win_rc = mod_a_printer(printer, 2);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(3, ("err %d saving data\n", W_ERROR_V(win_rc)));
+		goto done;
+	}
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(3, ("ads_init() failed\n"));
+		win_rc = WERR_SERVER_UNAVAILABLE;
+		goto done;
+	}
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+		NULL, NULL);
+
+	/* ads_connect() will find the DC for us */					    
+	ads_rc = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_rc)) {
+		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
+		win_rc = WERR_ACCESS_DENIED;
+		goto done;
+	}
+
+	switch (action) {
+	case SPOOL_DS_PUBLISH:
+	case SPOOL_DS_UPDATE:
+		win_rc = nt_printer_publish_ads(ads, printer);
+		break;
+	case SPOOL_DS_UNPUBLISH:
+		win_rc = nt_printer_unpublish_ads(ads, printer);
+		break;
+	}
+
+done:
+	free_a_printer(&printer, 2);
+	ads_destroy(&ads);
+	return win_rc;
+}
+
+WERROR check_published_printers(void)
+{
+	ADS_STATUS ads_rc;
+	ADS_STRUCT *ads = NULL;
+	void *res = NULL;
+	int snum;
+	int n_services = lp_numservices();
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	WERROR win_rc;
+
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
@@ -2776,52 +2850,36 @@ WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
 		ads_destroy(&ads);
 		return WERR_ACCESS_DENIED;
 	}
-	
-	/* remove the printer from the directory */
-	ads_rc = ads_find_printer_on_server(ads, &res, 
-			    printer->info_2->sharename, global_myname());
-	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
-		prt_dn = ads_get_dn(ads, res);
+
+	for (snum = 0; snum < n_services; snum++) {
+		if (!(lp_snum_ok(snum) && lp_print_ok(snum)))
+			continue;
+
+		if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2,
+		                                 lp_servicename(snum))) ||
+		    !(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
+			goto next;
+
+		DEBUG(5, ("checking directory for printer %s\n", printer->info_2->printername));
+		ads_rc = ads_find_printer_on_server(ads, &res,
+				printer->info_2->sharename, global_myname());
+		if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+			DEBUG(5, ("printer %s is in directory\n", printer->info_2->printername));
+			goto next;
+		}
+
+		win_rc = nt_printer_publish_ads(ads, printer);
+		if (!W_ERROR_IS_OK(win_rc))
+			DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, W_ERROR_V(win_rc)));
+
+	next:
+		free_a_printer(&printer, 2);
 		ads_msgfree(ads, res);
-		ads_rc = ads_del_dn(ads, prt_dn);
-		ads_memfree(ads, prt_dn);
+		res = NULL;
 	}
 
 	ads_destroy(&ads);
 	return WERR_OK;
-}
-
-/****************************************************************************
- * Publish a printer in the directory
- *
- * @param snum describing printer service
- * @return WERROR indicating status of publishing
- ***************************************************************************/
-
-WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	WERROR win_rc;
-
-	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(win_rc))
-		return win_rc;
-
-	switch(action) {
-	case SPOOL_DS_PUBLISH:
-	case SPOOL_DS_UPDATE:
-		win_rc = publish_it(printer);
-		break;
-	case SPOOL_DS_UNPUBLISH:
-		win_rc = unpublish_it(printer);
-		break;
-	default:
-		win_rc = WERR_NOT_SUPPORTED;
-	}
-	
-
-	free_a_printer(&printer, 2);
-	return win_rc;
 }
 
 BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
@@ -2833,43 +2891,42 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 	WERROR win_rc;
 	int i;
 
-
 	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(win_rc))
-		return False;
 
-	if (!(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
-		return False;
-
-	if ((i = lookup_printerkey(&printer->info_2->data, 
-				   SPOOL_DSSPOOLER_KEY)) < 0)
-		return False;
-
-	if (!(ctr = &printer->info_2->data.keys[i].values)) {
-		return False;
-	}
-
-	if (!(guid_val = regval_ctr_getvalue(ctr, "objectGUID"))) {
+	if (!W_ERROR_IS_OK(win_rc) ||
+	    !(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) ||
+	    ((i = lookup_printerkey(&printer->info_2->data, 
+	                            SPOOL_DSSPOOLER_KEY)) < 0) ||
+	    !(ctr = &printer->info_2->data.keys[i].values) ||
+	    !(guid_val = regval_ctr_getvalue(ctr, "objectGUID"))) {
+		free_a_printer(&printer, 2);
 		return False;
 	}
 
 	if (regval_size(guid_val) == sizeof(struct uuid))
 		memcpy(guid, regval_data_p(guid_val), sizeof(struct uuid));
 
+	free_a_printer(&printer, 2);
 	return True;
 }
-	
 #else
 WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 {
 	return WERR_OK;
 }
+
+WERROR check_published_printers(void)
+{
+	return WERR_OK;
+}
+
 BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
 			  struct uuid *guid)
 {
 	return False;
 }
-#endif
+#endif /* HAVE_ADS */
+
 /****************************************************************************
  ***************************************************************************/
  
@@ -3391,7 +3448,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 /****************************************************************************
  Debugging function, dump at level 6 the struct in the logs.
 ****************************************************************************/
-static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
 	uint32 result;
 	NT_PRINTER_INFO_LEVEL_2	*info2;
@@ -3401,11 +3458,11 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	switch (level) {
 		case 2:
 		{
-			if (printer.info_2 == NULL)
+			if (printer->info_2 == NULL)
 				result=5;
 			else
 			{
-				info2=printer.info_2;
+				info2=printer->info_2;
 			
 				DEBUGADD(106,("attributes:[%d]\n", info2->attributes));
 				DEBUGADD(106,("priority:[%d]\n", info2->priority));
@@ -3501,7 +3558,7 @@ static BOOL send_printer_mod_msg( char* printername )
  Modify a printer. This is called from SETPRINTERDATA/DELETEPRINTERDATA.
 ****************************************************************************/
 
-WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
 	WERROR result;
 	
@@ -3513,8 +3570,8 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	 * get_a_printer() 
 	 */
 	 
-	invalidate_printer_hnd_cache( printer.info_2->sharename );
-	send_printer_mod_msg( printer.info_2->sharename );
+	invalidate_printer_hnd_cache( printer->info_2->sharename );
+	send_printer_mod_msg( printer->info_2->sharename );
 	
 	switch (level) {
 		case 2:
@@ -3529,7 +3586,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			   of client's spoolss service in order for the
 			   client's cache to show updates */
 
-			printer.info_2->changeid = rev_changeid();
+			printer->info_2->changeid = rev_changeid();
 
 			/*
 			 * Because one day someone will ask:
@@ -3550,7 +3607,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 * 14/12/01	--jerry
 			 */
 
-			result=update_a_printer_2(printer.info_2);
+			result=update_a_printer_2(printer->info_2);
 			
 			break;
 		}
@@ -3758,7 +3815,7 @@ done:
  Update (i.e. save) the driver init info (DEVMODE and values) for a printer
 ****************************************************************************/
 
-uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
 	uint32 result;
 	
@@ -3766,7 +3823,7 @@ uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	
 	switch (level) {
 		case 2:
-			result = update_driver_init_2(printer.info_2);
+			result = update_driver_init_2(printer->info_2);
 			break;
 		default:
 			result = 1;
@@ -3871,7 +3928,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 	 * 
 	 */
 
-	if ( update_driver_init(*printer, 2) != 0 ) {
+	if ( update_driver_init(printer, 2) != 0 ) {
 		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
 		status = WERR_NOMEM;
 		goto done;
@@ -3882,7 +3939,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 	 * printer to match it. This allows initialization of the current printer 
 	 * as well as the driver.
 	 */
-	status = mod_a_printer(*printer, 2);
+	status = mod_a_printer(printer, 2);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
 				  printer->info_2->printername));
@@ -4058,7 +4115,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 			/* we have a new printer now.  Save it with this handle */
 			
 			if ( W_ERROR_IS_OK(result) ) {
-				dump_a_printer(*printer, level);
+				dump_a_printer(printer, level);
 					
 				/* save a copy in cache */
 				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {

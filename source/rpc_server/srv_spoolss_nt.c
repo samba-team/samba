@@ -1292,7 +1292,7 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 				
 				/* all we care about currently is the change_id */
 				
-				result = mod_a_printer(*printer, 2);
+				result = mod_a_printer(printer, 2);
 				if (!W_ERROR_IS_OK(result)) {
 					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n", 
 						dos_errstr(result)));
@@ -1396,7 +1396,7 @@ void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
 						printer->info_2->printername, printer->info_2->drivername));
 				}	
 				
-				result = mod_a_printer( *printer, 2 );
+				result = mod_a_printer( printer, 2 );
 				if ( !W_ERROR_IS_OK(result) ) {
 					DEBUG(3,("reset_all_printerdata: mod_a_printer() failed!  (%s)\n", 
 						get_dos_error_msg(result)));
@@ -6191,7 +6191,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
 	/* Update printer info */
-	result = mod_a_printer(*printer, 2);
+	result = mod_a_printer(printer, 2);
 
 done:
 	free_a_printer(&printer, 2);
@@ -7433,7 +7433,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	}
 
 	/* write the ASCII on disk */
-	err = mod_a_printer(*printer, 2);
+	err = mod_a_printer(printer, 2);
 	if (!W_ERROR_IS_OK(err)) {
 		free_a_printer(&printer,2);
 		return err;
@@ -7971,7 +7971,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	status = set_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename, 
 					type, data, real_len );
 		if ( W_ERROR_IS_OK(status) )
-			status = mod_a_printer(*printer, 2);
+			status = mod_a_printer(printer, 2);
 	}
 
 done:
@@ -8049,7 +8049,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
 	
 	if ( W_ERROR_IS_OK(status) )
-		mod_a_printer( *printer, 2 );
+		mod_a_printer( printer, 2 );
 
 	free_a_printer(&printer, 2);
 
@@ -8119,7 +8119,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	 */
 	 
 	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
-		status = mod_a_printer(*printer, 2);
+		status = mod_a_printer(printer, 2);
 	
 done:
 	if ( printer )
@@ -8186,7 +8186,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	 */
 	 
 	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
-		status = mod_a_printer(*printer, 2);
+		status = mod_a_printer(printer, 2);
 	
 done:
 	if ( printer )
@@ -8252,7 +8252,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	 */
 	 
 	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
-		status = mod_a_printer(*printer, 2);
+		status = mod_a_printer(printer, 2);
 	
 	
 done:
@@ -8864,7 +8864,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 			                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
 		}
 	
-		status = mod_a_printer(*printer, 2);
+		status = mod_a_printer(printer, 2);
 	}
 		
 	free_a_printer(&printer, 2);
@@ -8914,7 +8914,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 	status = delete_printer_dataex( printer, keyname, valuename );
 
 	if ( W_ERROR_IS_OK(status) )
-		mod_a_printer( *printer, 2 );
+		mod_a_printer( printer, 2 );
 		
 	free_a_printer(&printer, 2);
 
@@ -9037,7 +9037,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	status = delete_all_printer_data( printer->info_2, key );	
 
 	if ( W_ERROR_IS_OK(status) )
-		status = mod_a_printer(*printer, 2);
+		status = mod_a_printer(printer, 2);
 	
 	free_a_printer( &printer, 2 );
 	
