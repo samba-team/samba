@@ -437,18 +437,18 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 
 /*The following definitions come from  mem_man/mem_man.c  */
 
-void *mem_malloc(size_t size,char *file,int line);
-char *mem_strdup(char *s, char *file, int line);
-int mem_free(void *ptr,char *file,int line);
-void mem_write_info(void *ptr,FILE *outfile);
-char *mem_query_file(void *ptr);
-int mem_query_line(void *ptr);
-int mem_test(void *ptr);
-void mem_write_status(FILE *outfile);
-void mem_write_verbose(FILE *outfile);
-void mem_write_errors(FILE *outfile);
-void mem_set_multiplier(int multiplier);
-void *mem_resize(void *ptr,size_t newsize);
+void *smb_mem_malloc(size_t size,char *file,int line);
+char *smb_mem_strdup(char *s, char *file, int line);
+int smb_mem_free(void *ptr,char *file,int line);
+void smb_mem_write_info(void *ptr,FILE *outfile);
+char *smb_mem_query_file(void *ptr);
+int smb_mem_query_line(void *ptr);
+int smb_mem_test(void *ptr);
+void smb_mem_write_status(FILE *outfile);
+void smb_mem_write_verbose(FILE *outfile);
+void smb_mem_write_errors(FILE *outfile);
+void smb_mem_set_multiplier(int multiplier);
+void *smb_mem_resize(void *ptr,size_t newsize);
 
 /*The following definitions come from  message.c  */
 
