@@ -477,6 +477,8 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 	BOOL is_user = pdb_rid_is_user(rid);
 
+	*psid_name_use = SID_NAME_UNKNOWN;
+
 	DEBUG(5,("local_lookup_rid: looking up %s RID %u.\n", is_user ? "user" :
 			"group", (unsigned int)rid));
 
@@ -484,11 +486,13 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		if(rid == DOMAIN_USER_RID_ADMIN) {
 			pstring admin_users;
 			char *p = admin_users;
+			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Administrator");
 		} else if (rid == DOMAIN_USER_RID_GUEST) {
 			pstring guest_users;
 			char *p = guest_users;
+			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Guest");
 		} else {
@@ -566,6 +570,8 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 	DOM_SID local_sid;
 	fstring user;
 	fstring domain;
+
+	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
 	 * domain and user may be quoted const strings, and map_username and
@@ -670,6 +676,8 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 		(unsigned int)*puid, pass->pw_name ));
 
+	*name_type = SID_NAME_USER;
+
 	return True;
 }
 
@@ -726,6 +734,8 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u) (%s).\n", sid_to_string( str, psid),
 		(unsigned int)*pgid, grp->gr_name ));
+
+	*name_type = SID_NAME_ALIAS;
 
 	return True;
 }
