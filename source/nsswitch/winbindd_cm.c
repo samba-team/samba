@@ -140,16 +140,23 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 */
 static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
-	struct in_addr *ip_list = NULL;
+	struct in_addr *ip_list = NULL, exclude_ip;
 	int count, i;
+
+	zero_ip(&exclude_ip);
 
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (get_dc_list(True, domain, &ip_list, &count) &&
-	    name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
-		*dc_ip = ip_list[0];
+
+	if (get_dc_list(True, domain, &ip_list, &count)) {
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
+			*dc_ip = ip_list[0];
+			SAFE_FREE(ip_list);
+			return True;
+		}
+		/* Didn't get name, remember not to talk to this DC. */
+		exclude_ip = ip_list[0];
 		SAFE_FREE(ip_list);
-		return True;
 	}
 
 	if (!get_dc_list(False, domain, &ip_list, &count)) {
@@ -157,9 +164,18 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 		return False;
 	}
 
+	/* Remove the entry we've already failed with (should be the PDC). */
+	for (i = 0; i < count; i++) {
+		if (ip_equal( exclude_ip, ip_list[i]))
+			zero_ip(&ip_list[i]);
+	}
+
 	/* Pick a nice close server */
 	/* Look for DC on local net */
 	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
 		if (!is_local_net(ip_list[i]))
 			continue;
 		
