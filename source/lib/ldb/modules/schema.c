@@ -94,7 +94,7 @@ static int schema_attr_cmp(const char *attr1, const char *attr2)
 	return ret;
 }
 
-struct schema_attribute *schema_find_attribute(struct schema_attribute_list *list, const char *attr_name)
+static struct schema_attribute *schema_find_attribute(struct schema_attribute_list *list, const char *attr_name)
 {
 	unsigned int i;
 	for (i = 0; i < list->num; i++) {
