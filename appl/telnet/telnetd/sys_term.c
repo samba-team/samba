@@ -859,10 +859,10 @@ tty_rspeed(int val)
 extern	struct utmp wtmp;
 extern char wtmpf[];
 
-extern void utmp_sig_init P((void));
-extern void utmp_sig_reset P((void));
-extern void utmp_sig_wait P((void));
-extern void utmp_sig_notify P((int));
+extern void utmp_sig_init (void);
+extern void utmp_sig_reset (void);
+extern void utmp_sig_wait (void);
+extern void utmp_sig_notify (int);
 # endif /* PARENT_DOES_UTMP */
 
 #ifdef STREAMSPTY

@@ -141,7 +141,7 @@ int debug = 0;
 int keepalive = 1;
 char *progname;
 
-extern void usage P((void));
+extern void usage (void);
 
 /*
  * The string to pass to getopt().  We do it this way so
@@ -721,7 +721,7 @@ char *hostname;
 char host_name[MaxHostNameLen];
 char remote_host_name[MaxHostNameLen];
 
-extern void telnet P((int, int));
+extern void telnet (int, int);
 
 /*
  * Get a pty, scan input lines.

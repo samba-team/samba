@@ -38,46 +38,60 @@
 
 RCSID("$Id$");
 
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include <fcntl.h>
-#include <signal.h>
-#include <netdb.h>
-#include <ctype.h>
-#include <pwd.h>
-#include <stdarg.h>
-#include <errno.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
+#include <signal.h>
+#include <errno.h>
 
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+#ifdef HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 
 #include "general.h"
-
 #include "ring.h"
 
 #include "externs.h"
 #include "defines.h"
 #include "types.h"
+#include "libtelnet/misc-proto.h"
 
 #include "roken.h"
-
-#if !defined(CRAY) && !defined(sysV88)
-#include <netinet/in_systm.h>
-# if (defined(vax) || defined(tahoe) || defined(hp300)) && !defined(ultrix)
-# include <machine/endian.h>
-# endif /* vax */
-#endif /* !defined(CRAY) && !defined(sysV88) */
-#include <netinet/ip.h>
-
-
-#ifndef	MaxHostNameLen
-#define	MaxHostNameLen 64
-#endif
 
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 int tos = -1;
@@ -85,12 +99,6 @@ int tos = -1;
 
 char	*hostname;
 static char _hostname[MaxHostNameLen];
-
-extern char *getenv();
-
-extern int isprefix();
-extern char **genget();
-extern int Ambiguous();
 
 typedef int (*intrtn_t)(int, char**);
 static int call(intrtn_t, ...);
@@ -107,7 +115,7 @@ static char saveline[256];
 static int margc;
 static char *margv[20];
 
-    static void
+static void
 makeargv()
 {
     char *cp, *cp2, c;
@@ -164,7 +172,8 @@ makeargv()
  * Todo:  1.  Could take random integers (12, 0x12, 012, 0b1).
  */
 
-static char special(char *s)
+static char
+special(char *s)
 {
 	char c;
 	char b;
@@ -189,9 +198,8 @@ static char special(char *s)
  * Construct a control character sequence
  * for a special character.
  */
-	static char *
-control(c)
-	cc_t c;
+static char *
+control(cc_t c)
 {
 	static char buf[5];
 	/*
@@ -245,12 +253,12 @@ struct sendlist {
 
 
 static int
-	send_esc P((void)),
-	send_help P((void)),
-	send_docmd P((char *)),
-	send_dontcmd P((char *)),
-	send_willcmd P((char *)),
-	send_wontcmd P((char *));
+	send_esc (void),
+	send_help (void),
+	send_docmd (char *),
+	send_dontcmd (char *),
+	send_willcmd (char *),
+	send_wontcmd (char *);
 
 static struct sendlist Sendlist[] = {
     { "ao",	"Send Telnet Abort output",		1, 0, 0, 2, AO },
@@ -284,7 +292,8 @@ static struct sendlist Sendlist[] = {
 #define	GETSEND(name) ((struct sendlist *) genget(name, (char **) Sendlist, \
 				sizeof(struct sendlist)))
 
-static int sendcmd(int argc, char **argv)
+static int
+sendcmd(int argc, char **argv)
 {
     int count;		/* how many bytes we are going to need to send */
     int i;
@@ -364,43 +373,39 @@ static int sendcmd(int argc, char **argv)
     return (count == success);
 }
 
-    static int
+static int
 send_esc()
 {
     NETADD(escape);
     return 1;
 }
 
-    static int
-send_docmd(name)
-    char *name;
+static int
+send_docmd(char *name)
 {
     return(send_tncmd(send_do, "do", name));
 }
 
-    static int
-send_dontcmd(name)
-    char *name;
+static int
+send_dontcmd(char *name)
 {
     return(send_tncmd(send_dont, "dont", name));
 }
-    static int
-send_willcmd(name)
-    char *name;
+
+static int
+send_willcmd(char *name)
 {
     return(send_tncmd(send_will, "will", name));
 }
-    static int
-send_wontcmd(name)
-    char *name;
+
+static int
+send_wontcmd(char *name)
 {
     return(send_tncmd(send_wont, "wont", name));
 }
 
-    int
-send_tncmd(func, cmd, name)
-    void	(*func)();
-    char	*cmd, *name;
+int
+send_tncmd(void (*func)(), char *cmd, char *name)
 {
     char **cpp;
     extern char *telopts[];
@@ -426,7 +431,7 @@ send_tncmd(func, cmd, name)
 	printf("\n");
 	return 0;
     }
-    cpp = (char **)genget(name, telopts, sizeof(char *));
+    cpp = genget(name, telopts, sizeof(char *));
     if (Ambiguous(cpp)) {
 	fprintf(stderr,"'%s': ambiguous argument ('send %s ?' for help).\n",
 					name, cmd);
@@ -460,7 +465,7 @@ send_tncmd(func, cmd, name)
     return 1;
 }
 
-    static int
+static int
 send_help()
 {
     struct sendlist *s;	/* pointer to current command */
@@ -476,14 +481,14 @@ send_help()
  * to by the arguments to the "toggle" command.
  */
 
-    static int
+static int
 lclchars()
 {
     donelclchars = 1;
     return 1;
 }
 
-    static int
+static int
 togdebug()
 {
 #ifndef	NOT43
@@ -502,7 +507,7 @@ togdebug()
 }
 
 
-    static int
+static int
 togcrlf()
 {
     if (crlf) {
@@ -515,9 +520,8 @@ togcrlf()
 
 int binmode;
 
-    static int
-togbinary(val)
-    int val;
+static int
+togbinary(int val)
 {
     donebinarytoggle = 1;
 
@@ -554,9 +558,8 @@ togbinary(val)
     return 1;
 }
 
-    static int
-togrbinary(val)
-    int val;
+static int
+togrbinary(int val)
 {
     donebinarytoggle = 1;
 
@@ -581,9 +584,8 @@ togrbinary(val)
     return 1;
 }
 
-    static int
-togxbinary(val)
-    int val;
+static int
+togxbinary(int val)
 {
     donebinarytoggle = 1;
 
@@ -609,15 +611,15 @@ togxbinary(val)
 }
 
 
-static int togglehelp P((void));
+static int togglehelp (void);
 #if	defined(AUTHENTICATION)
-extern int auth_togdebug P((int));
+extern int auth_togdebug (int);
 #endif
 #if	defined(ENCRYPTION)
-extern int EncryptAutoEnc P((int));
-extern int EncryptAutoDec P((int));
-extern int EncryptDebug P((int));
-extern int EncryptVerbose P((int));
+extern int EncryptAutoEnc (int);
+extern int EncryptAutoDec (int);
+extern int EncryptDebug (int);
+extern int EncryptVerbose (int);
 #endif
 
 struct togglelist {
@@ -743,7 +745,7 @@ static struct togglelist Togglelist[] = {
     { 0 }
 };
 
-    static int
+static int
 togglehelp()
 {
     struct togglelist *c;
@@ -761,9 +763,8 @@ togglehelp()
     return 0;
 }
 
-    static void
-settogglehelp(set)
-    int set;
+static void
+settogglehelp(int set)
 {
     struct togglelist *c;
 
@@ -781,10 +782,8 @@ settogglehelp(set)
 #define	GETTOGGLE(name) (struct togglelist *) \
 		genget(name, (char **) Togglelist, sizeof(struct togglelist))
 
-    static int
-toggle(argc, argv)
-    int  argc;
-    char *argv[];
+static int
+toggle(int argc, char *argv[])
 {
     int retval = 1;
     char *name;
@@ -895,17 +894,15 @@ _setlist_init()
 }
 #endif	/* defined(CRAY) && !defined(__STDC__) */
 
-    static struct setlist *
-getset(name)
-    char *name;
+static struct setlist *
+getset(char *name)
 {
     return (struct setlist *)
 		genget(name, (char **) Setlist, sizeof(struct setlist));
 }
 
-    void
-set_escape_char(s)
-    char *s;
+void
+set_escape_char(char *s)
 {
 	if (rlogin != _POSIX_VDISABLE) {
 		rlogin = (s && *s) ? special(s) : _POSIX_VDISABLE;
@@ -917,10 +914,8 @@ set_escape_char(s)
 	}
 }
 
-    static int
-setcmd(argc, argv)
-    int  argc;
-    char *argv[];
+static int
+setcmd(int argc, char *argv[])
 {
     int value;
     struct setlist *ct;
@@ -990,10 +985,8 @@ setcmd(argc, argv)
     return 1;
 }
 
-    static int
-unsetcmd(argc, argv)
-    int  argc;
-    char *argv[];
+static int
+unsetcmd(int argc, char *argv[])
 {
     struct setlist *ct;
     struct togglelist *c;
@@ -1060,7 +1053,8 @@ unsetcmd(argc, argv)
 #ifdef	KLUDGELINEMODE
 extern int kludgelinemode;
 
-static int dokludgemode(void)
+static int
+dokludgemode(void)
 {
     kludgelinemode = 1;
     send_wont(TELOPT_LINEMODE, 1);
@@ -1070,7 +1064,7 @@ static int dokludgemode(void)
 }
 #endif
 
-    static int
+static int
 dolinemode()
 {
 #ifdef	KLUDGELINEMODE
@@ -1082,7 +1076,7 @@ dolinemode()
     return 1;
 }
 
-    static int
+static int
 docharmode()
 {
 #ifdef	KLUDGELINEMODE
@@ -1095,9 +1089,8 @@ docharmode()
     return 1;
 }
 
-    static int
-dolmmode(bit, on)
-    int bit, on;
+static int
+dolmmode(int bit, int on)
 {
     unsigned char c;
     extern int linemode;
@@ -1116,14 +1109,14 @@ dolmmode(bit, on)
     return 1;
 }
 
-    int
-setmode(bit)
+static int
+tn_setmode(int bit)
 {
     return dolmmode(bit, 1);
 }
 
-    int
-clearmode(bit)
+static int
+tn_clearmode(int bit)
 {
     return dolmmode(bit, 0);
 }
@@ -1136,7 +1129,7 @@ struct modelist {
 	int	arg1;
 };
 
-extern int modehelp();
+static int modehelp();
 
 static struct modelist ModeList[] = {
     { "character", "Disable LINEMODE option",	docharmode, 1 },
@@ -1149,18 +1142,18 @@ static struct modelist ModeList[] = {
 #endif
     { "", "", 0 },
     { "",	"These require the LINEMODE option to be enabled", 0 },
-    { "isig",	"Enable signal trapping",	setmode, 1, MODE_TRAPSIG },
-    { "+isig",	0,				setmode, 1, MODE_TRAPSIG },
-    { "-isig",	"Disable signal trapping",	clearmode, 1, MODE_TRAPSIG },
-    { "edit",	"Enable character editing",	setmode, 1, MODE_EDIT },
-    { "+edit",	0,				setmode, 1, MODE_EDIT },
-    { "-edit",	"Disable character editing",	clearmode, 1, MODE_EDIT },
-    { "softtabs", "Enable tab expansion",	setmode, 1, MODE_SOFT_TAB },
-    { "+softtabs", 0,				setmode, 1, MODE_SOFT_TAB },
-    { "-softtabs", "Disable character editing",	clearmode, 1, MODE_SOFT_TAB },
-    { "litecho", "Enable literal character echo", setmode, 1, MODE_LIT_ECHO },
-    { "+litecho", 0,				setmode, 1, MODE_LIT_ECHO },
-    { "-litecho", "Disable literal character echo", clearmode, 1, MODE_LIT_ECHO },
+    { "isig",	"Enable signal trapping",	tn_setmode, 1, MODE_TRAPSIG },
+    { "+isig",	0,				tn_setmode, 1, MODE_TRAPSIG },
+    { "-isig",	"Disable signal trapping",	tn_clearmode, 1, MODE_TRAPSIG },
+    { "edit",	"Enable character editing",	tn_setmode, 1, MODE_EDIT },
+    { "+edit",	0,				tn_setmode, 1, MODE_EDIT },
+    { "-edit",	"Disable character editing",	tn_clearmode, 1, MODE_EDIT },
+    { "softtabs", "Enable tab expansion",	tn_setmode, 1, MODE_SOFT_TAB },
+    { "+softtabs", 0,				tn_setmode, 1, MODE_SOFT_TAB },
+    { "-softtabs", "Disable character editing",	tn_clearmode, 1, MODE_SOFT_TAB },
+    { "litecho", "Enable literal character echo", tn_setmode, 1, MODE_LIT_ECHO },
+    { "+litecho", 0,				tn_setmode, 1, MODE_LIT_ECHO },
+    { "-litecho", "Disable literal character echo", tn_clearmode, 1, MODE_LIT_ECHO },
     { "help",	0,				modehelp, 0 },
 #ifdef	KLUDGELINEMODE
     { "kludgeline", 0,				dokludgemode, 1 },
@@ -1171,7 +1164,7 @@ static struct modelist ModeList[] = {
 };
 
 
-    int
+static int
 modehelp()
 {
     struct modelist *mt;
@@ -1191,10 +1184,8 @@ modehelp()
 #define	GETMODECMD(name) (struct modelist *) \
 		genget(name, (char **) ModeList, sizeof(struct modelist))
 
-    static int
-modecmd(argc, argv)
-    int  argc;
-    char *argv[];
+static int
+modecmd(int argc, char **argv)
 {
     struct modelist *mt;
 
@@ -1219,10 +1210,8 @@ modecmd(argc, argv)
  * "display" command.
  */
 
-    static int
-display(argc, argv)
-    int  argc;
-    char *argv[];
+static int
+display(int argc, char *argv[])
 {
     struct togglelist *tl;
     struct setlist *sl;
@@ -1290,10 +1279,8 @@ display(argc, argv)
 /*
  * Set the escape character.
  */
-	static int
-setescape(argc, argv)
-	int argc;
-	char *argv[];
+static int
+setescape(int argc, char *argv[])
 {
 	char *arg;
 	char buf[50];
@@ -1316,8 +1303,7 @@ setescape(argc, argv)
 	return 1;
 }
 
-    /*VARARGS*/
-    static int
+static int
 togcrmod()
 {
     crmod = !crmod;
@@ -1327,8 +1313,7 @@ togcrmod()
     return 1;
 }
 
-    /*VARARGS*/
-    int
+static int
 suspend()
 {
 #ifdef	SIGTSTP
@@ -1357,8 +1342,7 @@ suspend()
     return 1;
 }
 
-    /*ARGSUSED*/
-int
+static int
 shell(int argc, char **argv)
 {
     long oldrows, oldcols, newrows, newcols, err;
@@ -1404,7 +1388,8 @@ shell(int argc, char **argv)
     return 1;
 }
 
-static int bye(int argc, char **argv)
+static int
+bye(int argc, char **argv)
 {
     extern int resettermname;
 
@@ -1425,16 +1410,15 @@ static int bye(int argc, char **argv)
     return 0;	/* NOTREACHED */
 }
 
-/*VARARGS*/
-int quit(void)
+int
+quit(void)
 {
 	call(bye, "bye", "fromquit", 0);
 	Exit(0);
 	return 0; /*NOTREACHED*/
 }
 
-/*VARARGS*/
-	int
+static int
 logout()
 {
 	send_do(TELOPT_LOGOUT, 1);
@@ -1468,7 +1452,7 @@ struct slclist SlcList[] = {
     { 0 },
 };
 
-    static void
+static void
 slc_help()
 {
     struct slclist *c;
@@ -1483,15 +1467,15 @@ slc_help()
     }
 }
 
-    static struct slclist *
-getslc(name)
-    char *name;
+static struct slclist *
+getslc(char *name)
 {
     return (struct slclist *)
 		genget(name, (char **) SlcList, sizeof(struct slclist));
 }
 
-static int slccmd(int argc, char **argv)
+static int
+slccmd(int argc, char **argv)
 {
     struct slclist *c;
 
@@ -1528,15 +1512,15 @@ struct envlist {
 };
 
 extern struct env_lst *
-	env_define P((unsigned char *, unsigned char *));
+	env_define (unsigned char *, unsigned char *);
 extern void
-	env_undefine P((unsigned char *)),
-	env_export P((unsigned char *)),
-	env_unexport P((unsigned char *)),
-	env_send P((unsigned char *)),
-	env_list P((void));
+	env_undefine (unsigned char *),
+	env_export (unsigned char *),
+	env_unexport (unsigned char *),
+	env_send (unsigned char *),
+	env_list (void);
 static void
-	env_help P((void));
+	env_help (void);
 
 struct envlist EnvList[] = {
     { "define",	"Define an environment variable",
@@ -1555,7 +1539,7 @@ struct envlist EnvList[] = {
     { 0 },
 };
 
-    static void
+static void
 env_help()
 {
     struct envlist *c;
@@ -1570,15 +1554,15 @@ env_help()
     }
 }
 
-    static struct envlist *
-getenvcmd(name)
-    char *name;
+static struct envlist *
+getenvcmd(char *name)
 {
     return (struct envlist *)
 		genget(name, (char **) EnvList, sizeof(struct envlist));
 }
 
-int env_cmd(int argc, char **argv)
+static int
+env_cmd(int argc, char **argv)
 {
     struct envlist *c;
 
@@ -1620,9 +1604,8 @@ struct env_lst {
 
 struct env_lst envlisthead;
 
-	struct env_lst *
-env_find(var)
-	unsigned char *var;
+struct env_lst *
+env_find(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1637,7 +1620,7 @@ env_find(var)
 #define environ _environ
 #endif
 
-	void
+void
 env_init()
 {
 	extern char **environ;
@@ -1694,9 +1677,8 @@ env_init()
 	env_export((unsigned char *)"XAUTHORITY");
 }
 
-	struct env_lst *
-env_define(var, value)
-	unsigned char *var, *value;
+struct env_lst *
+env_define(unsigned char *var, unsigned char *value)
 {
 	struct env_lst *ep;
 
@@ -1720,9 +1702,8 @@ env_define(var, value)
 	return(ep);
 }
 
-	void
-env_undefine(var)
-	unsigned char *var;
+void
+env_undefine(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1738,9 +1719,8 @@ env_undefine(var)
 	}
 }
 
-	void
-env_export(var)
-	unsigned char *var;
+void
+env_export(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1748,9 +1728,8 @@ env_export(var)
 		ep->export = 1;
 }
 
-	void
-env_unexport(var)
-	unsigned char *var;
+void
+env_unexport(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1758,9 +1737,8 @@ env_unexport(var)
 		ep->export = 0;
 }
 
-	void
-env_send(var)
-	unsigned char *var;
+void
+env_send(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1785,7 +1763,7 @@ env_send(var)
 	env_opt_end(0);
 }
 
-	void
+void
 env_list()
 {
 	struct env_lst *ep;
@@ -1796,9 +1774,8 @@ env_list()
 	}
 }
 
-	unsigned char *
-env_default(init, welldefined)
-	int init;
+unsigned char *
+env_default(int init, int welldefined)
 {
 	static struct env_lst *nep = NULL;
 
@@ -1815,9 +1792,8 @@ env_default(init, welldefined)
 	return(NULL);
 }
 
-	unsigned char *
-env_getvalue(var)
-	unsigned char *var;
+unsigned char *
+env_getvalue(unsigned char *var)
 {
 	struct env_lst *ep;
 
@@ -1840,11 +1816,11 @@ struct authlist {
 };
 
 extern int
-	auth_enable P((char *)),
-	auth_disable P((char *)),
-	auth_status P((void));
+	auth_enable (char *),
+	auth_disable (char *),
+	auth_status (void);
 static int
-	auth_help P((void));
+	auth_help (void);
 
 struct authlist AuthList[] = {
     { "status",	"Display current status of authentication information",
@@ -1858,7 +1834,7 @@ struct authlist AuthList[] = {
     { 0 },
 };
 
-    static int
+static int
 auth_help()
 {
     struct authlist *c;
@@ -1874,7 +1850,8 @@ auth_help()
     return 0;
 }
 
-int auth_cmd(int argc, char **argv)
+static int
+auth_cmd(int argc, char **argv)
 {
     struct authlist *c;
 
@@ -1923,18 +1900,18 @@ struct encryptlist {
 };
 
 extern int
-	EncryptEnable P((char *, char *)),
-	EncryptDisable P((char *, char *)),
-	EncryptType P((char *, char *)),
-	EncryptStart P((char *)),
-	EncryptStartInput P((void)),
-	EncryptStartOutput P((void)),
-	EncryptStop P((char *)),
-	EncryptStopInput P((void)),
-	EncryptStopOutput P((void)),
-	EncryptStatus P((void));
+	EncryptEnable (char *, char *),
+	EncryptDisable (char *, char *),
+	EncryptType (char *, char *),
+	EncryptStart (char *),
+	EncryptStartInput (void),
+	EncryptStartOutput (void),
+	EncryptStop (char *),
+	EncryptStopInput (void),
+	EncryptStopOutput (void),
+	EncryptStatus (void);
 static int
-	EncryptHelp P((void));
+	EncryptHelp (void);
 
 struct encryptlist EncryptList[] = {
     { "enable", "Enable encryption. ('encrypt enable ?' for more)",
@@ -1963,7 +1940,7 @@ struct encryptlist EncryptList[] = {
     { 0 },
 };
 
-    static int
+static int
 EncryptHelp()
 {
     struct encryptlist *c;
@@ -1979,7 +1956,8 @@ EncryptHelp()
     return 0;
 }
 
-int encrypt_cmd(int argc, char **argv)
+static int
+encrypt_cmd(int argc, char **argv)
 {
     struct encryptlist *c;
 
@@ -2026,7 +2004,8 @@ int encrypt_cmd(int argc, char **argv)
  * Print status about the connection.
  */
 
-static int status(int argc, char **argv)
+static int
+status(int argc, char **argv)
 {
     if (connected) {
 	printf("Connected to %s.\n", hostname);
@@ -2080,7 +2059,8 @@ static char rcbuf[128];
 
 static Command *getcmd(char *name);
 
-static void cmdrc(char *m1, char *m2)
+static void
+cmdrc(char *m1, char *m2)
 {
     Command *c;
     FILE *rcfile;
@@ -2159,7 +2139,8 @@ static void cmdrc(char *m1, char *m2)
     fclose(rcfile);
 }
 
-int tn(int argc, char **argv)
+int
+tn(int argc, char **argv)
 {
     struct hostent *host = 0;
     struct sockaddr_in sin;
@@ -2292,9 +2273,6 @@ int tn(int argc, char **argv)
 		return 0;
 	    }
 	} else {
-#if	!defined(htons) && 0
-	    u_short htons P((unsigned short));
-#endif	/* !defined(htons) */
 	    sin.sin_port = htons(sin.sin_port);
 	}
     } else {
@@ -2462,7 +2440,8 @@ static Command cmdtab2[] = {
  * Call routine with argc, argv set from args (terminated by 0).
  */
 
-static int call(intrtn_t routine, ...)
+static int
+call(intrtn_t routine, ...)
 {
     va_list ap;
     char *args[100];
@@ -2475,7 +2454,8 @@ static int call(intrtn_t routine, ...)
 }
 
 
-static Command *getcmd(char *name)
+static Command
+*getcmd(char *name)
 {
     Command *cm;
 
@@ -2484,11 +2464,8 @@ static Command *getcmd(char *name)
     return (Command *) genget(name, (char **) cmdtab2, sizeof(Command));
 }
 
-    void
-command(top, tbuf, cnt)
-    int top;
-    char *tbuf;
-    int cnt;
+void
+command(int top, char *tbuf, int cnt)
 {
     Command *c;
 
@@ -2560,7 +2537,8 @@ command(top, tbuf, cnt)
 /*
  * Help command.
  */
-static int help(int argc, char **argv)
+static int
+help(int argc, char **argv)
 {
 	Command *c;
 
@@ -2629,11 +2607,8 @@ static int help(int argc, char **argv)
  *		pointed to by *cpp is.
  *
  */
-	unsigned long
-sourceroute(arg, cpp, lenp)
-	char	*arg;
-	char	**cpp;
-	int	*lenp;
+unsigned long
+sourceroute(char *arg, char **cpp, int *lenp)
 {
 	static char lsr[44];
 #ifdef	sysV88

@@ -67,21 +67,15 @@ RCSID("$Id$");
 #include "encrypt.h"
 #include "misc.h"
 
-#ifdef	__STDC__
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 /*
  * These functions pointers point to the current routines
  * for encrypting and decrypting data.
  */
-void	(*encrypt_output) P((unsigned char *, int));
-int	(*decrypt_input) P((int));
+void	(*encrypt_output) (unsigned char *, int);
+int	(*decrypt_input) (int);
 char	*nclearto;
 
 int encrypt_debug_mode = 0;

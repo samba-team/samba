@@ -31,10 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)genget.c	8.2 (Berkeley) 5/30/95";
-#endif /* not lint */
+#include <config.h>
 
+RCSID("$Id$");
 
 #include <ctype.h>
 
@@ -97,7 +96,7 @@ genget(char *name, char **table, int stlen)
  * Function call version of Ambiguous()
  */
 int
-Ambiguous(char *s)
+Ambiguous(void *s)
 {
     return((char **)s == &ambiguous);
 }

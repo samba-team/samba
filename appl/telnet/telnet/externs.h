@@ -33,6 +33,8 @@
  *	@(#)externs.h	8.3 (Berkeley) 5/30/95
  */
 
+/* $Id$ */
+
 #include <stdio.h>
 #include <setjmp.h>
 #if defined(CRAY) && !defined(NO_BSD_SETJMP)
@@ -66,14 +68,6 @@
 #endif
 
 #define	SUBBUFSIZE	256
-
-#if	!defined(P)
-# ifdef	__STDC__
-#  define	P(x)	x
-# else
-#  define	P(x)	()
-# endif
-#endif
 
 extern int
     autologin,		/* Autologin enabled */
@@ -120,8 +114,8 @@ extern char
     options[],		/* All the little options */
     *hostname;		/* Who are we connected to? */
 #if	defined(ENCRYPTION)
-extern void (*encrypt_output) P((unsigned char *, int));
-extern int (*decrypt_input) P((int));
+extern void (*encrypt_output) (unsigned char *, int);
+extern int (*decrypt_input) (int);
 #endif
 
 /*
@@ -192,80 +186,80 @@ extern FILE
 extern unsigned char
     NetTraceFile[];	/* Name of file where debugging output goes */
 extern void
-    SetNetTrace P((char *));	/* Function to change where debugging goes */
+    SetNetTrace (char *);	/* Function to change where debugging goes */
 
 extern jmp_buf
     peerdied,
     toplevel;		/* For error conditions. */
 
 extern void
-    command P((int, char *, int)),
-    Dump P((char, unsigned char *, int)),
-    printoption P((char *, int, int)),
-    printsub P((char, unsigned char *, int)),
-    sendnaws P((void)),
-    setconnmode P((int)),
-    setcommandmode P((void)),
-    setneturg P((void)),
-    sys_telnet_init P((void)),
-    telnet P((char *)),
-    tel_enter_binary P((int)),
-    TerminalFlushOutput P((void)),
-    TerminalNewMode P((int)),
-    TerminalRestoreState P((void)),
-    TerminalSaveState P((void)),
-    tninit P((void)),
-    upcase P((char *)),
-    willoption P((int)),
-    wontoption P((int));
+    command (int, char *, int),
+    Dump (char, unsigned char *, int),
+    printoption (char *, int, int),
+    printsub (char, unsigned char *, int),
+    sendnaws (void),
+    setconnmode (int),
+    setcommandmode (void),
+    setneturg (void),
+    sys_telnet_init (void),
+    telnet (char *),
+    tel_enter_binary (int),
+    TerminalFlushOutput (void),
+    TerminalNewMode (int),
+    TerminalRestoreState (void),
+    TerminalSaveState (void),
+    tninit (void),
+    upcase (char *),
+    willoption (int),
+    wontoption (int);
 
 extern void
-    send_do P((int, int)),
-    send_dont P((int, int)),
-    send_will P((int, int)),
-    send_wont P((int, int));
+    send_do (int, int),
+    send_dont (int, int),
+    send_will (int, int),
+    send_wont (int, int);
 
 extern void
-    lm_will P((unsigned char *, int)),
-    lm_wont P((unsigned char *, int)),
-    lm_do P((unsigned char *, int)),
-    lm_dont P((unsigned char *, int)),
-    lm_mode P((unsigned char *, int, int));
+    lm_will (unsigned char *, int),
+    lm_wont (unsigned char *, int),
+    lm_do (unsigned char *, int),
+    lm_dont (unsigned char *, int),
+    lm_mode (unsigned char *, int, int);
 
 extern void
-    slc_init P((void)),
-    slcstate P((void)),
-    slc_mode_export P((void)),
-    slc_mode_import P((int)),
-    slc_import P((int)),
-    slc_export P((void)),
-    slc P((unsigned char *, int)),
-    slc_check P((void)),
-    slc_start_reply P((void)),
-    slc_add_reply P((unsigned char, unsigned char, cc_t)),
-    slc_end_reply P((void));
+    slc_init (void),
+    slcstate (void),
+    slc_mode_export (void),
+    slc_mode_import (int),
+    slc_import (int),
+    slc_export (void),
+    slc (unsigned char *, int),
+    slc_check (void),
+    slc_start_reply (void),
+    slc_add_reply (unsigned char, unsigned char, cc_t),
+    slc_end_reply (void);
 extern int
-    slc_update P((void));
+    slc_update (void);
 
 extern void
-    env_opt P((unsigned char *, int)),
-    env_opt_start P((void)),
-    env_opt_start_info P((void)),
-    env_opt_add P((unsigned char *)),
-    env_opt_end P((int));
+    env_opt (unsigned char *, int),
+    env_opt_start (void),
+    env_opt_start_info (void),
+    env_opt_add (unsigned char *),
+    env_opt_end (int);
 
 extern unsigned char
-    *env_default P((int, int)),
-    *env_getvalue P((unsigned char *));
+    *env_default (int, int),
+    *env_getvalue (unsigned char *);
 
 extern int
-    get_status P((void)),
-    dosynch P((void));
+    get_status (void),
+    dosynch (void);
 
 extern cc_t
-    *tcval P((int));
+    *tcval (int);
 
-extern int quit P((void));
+extern int quit (void);
 
 
 extern struct	termios new_tc;

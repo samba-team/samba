@@ -115,14 +115,14 @@ struct keyidlist {
 #define	FB64_IV_BAD	3
 
 
-void fb64_stream_iv P((des_cblock, struct stinfo *));
-void fb64_init P((struct fb *));
-static int fb64_start P((struct fb *, int, int));
-int fb64_is P((unsigned char *, int, struct fb *));
-int fb64_reply P((unsigned char *, int, struct fb *));
-static void fb64_session P((Session_Key *, int, struct fb *));
-void fb64_stream_key P((des_cblock, struct stinfo *));
-int fb64_keyid P((int, unsigned char *, int *, struct fb *));
+void fb64_stream_iv (des_cblock, struct stinfo *);
+void fb64_init (struct fb *);
+static int fb64_start (struct fb *, int, int);
+int fb64_is (unsigned char *, int, struct fb *);
+int fb64_reply (unsigned char *, int, struct fb *);
+static void fb64_session (Session_Key *, int, struct fb *);
+void fb64_stream_key (des_cblock, struct stinfo *);
+int fb64_keyid (int, unsigned char *, int *, struct fb *);
 
 void cfb64_init(int server)
 {

@@ -79,21 +79,15 @@ RCSID("$Id$");
 
 #include <des.h>
 #include <krb.h>
-#ifdef	__STDC__
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include "encrypt.h"
 #include "auth.h"
 #include "misc.h"
 
-int krb_mk_encpwd_req P((KTEXT, char *, char *, char *, char *, char *, char *));
-int krb_rd_encpwd_req P((KTEXT, char *, char *, u_long, AUTH_DAT *, char *, char *, char *, char *));
+int krb_mk_encpwd_req (KTEXT, char *, char *, char *, char *, char *, char *);
+int krb_rd_encpwd_req (KTEXT, char *, char *, u_long, AUTH_DAT *, char *, char *, char *, char *);
 
 extern auth_debug_mode;
 

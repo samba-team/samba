@@ -55,6 +55,7 @@
  * or implied warranty.
  */
 
+/* $Id$ */
 
 #ifndef	__ENCRYPT__
 #define	__ENCRYPT__
@@ -73,26 +74,18 @@ typedef	struct {
 	unsigned char	*data;
 } Session_Key;
 
-#if	!defined(P)
-#ifdef	__STDC__
-#define P(x)	x
-#else
-#define P(x)	()
-#endif
-#endif
-
 typedef struct {
 	char	*name;
 	int	type;
-	void	(*output) P((unsigned char *, int));
-	int	(*input) P((int));
-	void	(*init) P((int));
-	int	(*start) P((int, int));
-	int	(*is) P((unsigned char *, int));
-	int	(*reply) P((unsigned char *, int));
-	void	(*session) P((Session_Key *, int));
-	int	(*keyid) P((int, unsigned char *, int *));
-	void	(*printsub) P((unsigned char *, int, unsigned char *, int));
+	void	(*output) (unsigned char *, int);
+	int	(*input) (int);
+	void	(*init) (int);
+	int	(*start) (int, int);
+	int	(*is) (unsigned char *, int);
+	int	(*reply) (unsigned char *, int);
+	void	(*session) (Session_Key *, int);
+	int	(*keyid) (int, unsigned char *, int *);
+	void	(*printsub) (unsigned char *, int, unsigned char *, int);
 } Encryptions;
 
 #define	SK_DES		1	/* Matched Kerberos v5 KEYTYPE_DES */
@@ -100,6 +93,6 @@ typedef struct {
 #include "enc-proto.h"
 
 extern int encrypt_debug_mode;
-extern int (*decrypt_input) P((int));
-extern void (*encrypt_output) P((unsigned char *, int));
+extern int (*decrypt_input) (int);
+extern void (*encrypt_output) (unsigned char *, int);
 #endif

@@ -50,10 +50,8 @@ RCSID("$Id$");
 #include "defines.h"
 #include "types.h"
 
-	int
-net_write(str, len)
-	unsigned char *str;
-	int len;
+int
+net_write(unsigned char *str, int len)
 {
 	if (NETROOM() > len) {
 		ring_supply_data(&netoring, str, len);
@@ -64,7 +62,7 @@ net_write(str, len)
 	return(0);
 }
 
-	void
+void
 net_encrypt()
 {
 #if	defined(ENCRYPTION)
@@ -75,25 +73,20 @@ net_encrypt()
 #endif
 }
 
-	int
+int
 telnet_spin()
 {
 	return(-1);
 }
 
-	char *
-telnet_getenv(val)
-	char *val;
+char *
+telnet_getenv(char *val)
 {
 	return((char *)env_getvalue((unsigned char *)val));
 }
 
-	char *
-telnet_gets(prompt, result, length, echo)
-	char *prompt;
-	char *result;
-	int length;
-	int echo;
+char *
+telnet_gets(char *prompt, char *result, int length, int echo)
 {
 	extern char *getpass();
 	extern int globalmode;

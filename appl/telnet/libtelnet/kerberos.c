@@ -80,7 +80,7 @@ RCSID("$Id$");
 #include "auth.h"
 #include "misc.h"
 
-int kerberos4_cksum P((unsigned char *, int));
+int kerberos4_cksum (unsigned char *, int);
 extern int auth_debug_mode;
 
 static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
@@ -306,9 +306,12 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		Data(ap, KRB_REJECT, NULL, 0);
 	    sprintf (msg, "user `%s' is not authorized to "
 		     "login as `%s'", 
+#if 0
 		     krb_unparse_name_long(adat.pname, 
 					   adat.pinst, 
 					   adat.prealm), 
+#endif
+		     NULL,
 		     UserNameRequested);
 	    
 	    Data(ap, KRB_REJECT, (void *)msg, -1);
