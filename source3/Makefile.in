@@ -97,6 +97,8 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
+TDB_OBJ = tdb/tdb.o tdb/tdbutil.o 
+
 LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
@@ -106,7 +108,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util_array.o lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o lib/fnmatch.o \
-	  tdb/tdb.o lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o
+	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
+	  $(TDB_OBJ)
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
