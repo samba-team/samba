@@ -66,6 +66,7 @@ ATTRIB_MAP_ENTRY attrib_map_v22[] = {
 	{ LDAP_ATTR_DOMAIN,		"domain"	},
 	{ LDAP_ATTR_OBJCLASS,		"objectClass"	},
 	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
+	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
 	{ LDAP_ATTR_LIST_END,		NULL 		}
 };
 
@@ -427,6 +428,12 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char oldval[2048]; /* current largest allowed value is mungeddial */
 	BOOL existed;
+
+	if (attribute == NULL) {
+		/* This can actually happen for ldapsam_compat where we for
+		 * example don't have a password history */
+		return;
+	}
 
 	if (existing != NULL) {
 		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval, sizeof(oldval));
