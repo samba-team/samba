@@ -28,12 +28,16 @@
 #include <afs/venus.h>
 #include <asm/unistd.h>
 #include <openssl/des.h>
+#include <sys/syscall.h>
 
-_syscall5(int, afs_syscall, int, subcall,
-	  char *, path,
-	  int, cmd,
-	  char *, cmarg,
-	  int, follow);
+int afs_syscall( int subcall,
+	  char * path,
+	  int cmd,
+	  char * cmarg,
+	  int follow)
+{
+	return( syscall( SYS_afs_syscall, subcall, path, cmd, cmarg, follow));
+}
 
 struct ClearToken {
 	uint32 AuthHandle;
