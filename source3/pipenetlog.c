@@ -164,7 +164,7 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
-	usr->undoc_buffer = 1; /* yes, we're bothering to put USER_INFO data here */
+	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
 	usr->logon_time            = *logon_time;
 	usr->logoff_time           = *logoff_time;
@@ -186,7 +186,7 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 	usr->user_id = user_id;
 	usr->group_id = group_id;
 	usr->num_groups = num_groups;
-	usr->buffer_groups = num_groups ? 1 : 0; /* yes, we're bothering to put group info in */
+	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
 	if (sess_key != NULL)
@@ -240,8 +240,17 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 
 	/* store the user information, if there is any. */
 	r_s.user = user_info;
-	r_s.buffer_user = user_info != NULL ? 1 : 0;
-	r_s.status = user_info != NULL ? 0 : (0xC000000|NT_STATUS_NO_SUCH_USER);
+	if (user_info != NULL && user_info->ptr_user_info != 0)
+	{
+		r_s.switch_value = 3; /* indicates type of validation user info */
+		r_s.status = 0;
+	}
+	else
+	{
+		r_s.switch_value = 0; /* don't know what this value is supposed to be */
+		r_s.status = 0xC000000|NT_STATUS_NO_SUCH_USER;
+	}
+
 	r_s.auth_resp = 1; /* authoritative response */
 
 	/* store the response in the SMB stream */
@@ -406,7 +415,7 @@ static BOOL deal_with_credentials(user_struct *vuser,
 	srv_cred->timestamp.time = 0;
 
 	/* check that the client credentials are valid */
-	if (cred_assert(&(clnt_cred->challenge), vuser->dc.sess_key,
+	if (!cred_assert(&(clnt_cred->challenge), vuser->dc.sess_key,
                     &(vuser->dc.clnt_cred), clnt_cred->timestamp))
 	{
 		return False;
@@ -478,7 +487,6 @@ static void api_lsa_sam_logon( user_struct *vuser,
 {
 	LSA_Q_SAM_LOGON q_l;
 	LSA_USER_INFO usr_info;
-	LSA_USER_INFO *p_usr_info = NULL;
 
 	DOM_CRED srv_creds;
 
@@ -523,9 +531,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		standard_sub_basic(home_dir);
 #endif
 
-		p_usr_info = &usr_info;
-
-		make_lsa_user_info(p_usr_info,
+		make_lsa_user_info(&usr_info,
 
 		               &dummy_time, /* logon_time */
 		               &dummy_time, /* logoff_time */
@@ -558,9 +564,13 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		               dom_sid, /* char *dom_sid */
 		               NULL); /* char *other_sids */
 	}
+	else
+	{
+		usr_info.ptr_user_info = 0;
+	}
 
 	*rdata_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata,
-					&srv_creds, p_usr_info);
+					&srv_creds, &usr_info);
 }
 
 

@@ -741,7 +741,7 @@ typedef struct lsa_r_srv_pwset_info
 /* LSA_USER_INFO */
 typedef struct lsa_q_user_info
 {
-	uint32 undoc_buffer;
+	uint32 ptr_user_info;
 
 	NTTIME logon_time;            /* logon time */
 	NTTIME logoff_time;           /* logoff time */
@@ -809,7 +809,7 @@ typedef struct lsa_r_sam_logon_info
     uint32 buffer_creds; /* undocumented buffer pointer */
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
-    uint32 buffer_user;
+	uint16 switch_value; /* 3 - indicates type of USER INFO */
     LSA_USER_INFO *user;
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
