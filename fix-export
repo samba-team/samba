@@ -1,4 +1,5 @@
 #! /bin/sh
+# $Id$
 
 echo "fixing distribution in $1..."
 
@@ -21,14 +22,15 @@ for i in include/config.h.in lib/roken/config.h.in; do
 done
 autoreconf --force --install
 automake lib/roken/Makefile ## stupid automake gets this wrong
-(cd doc; makeinfo heimdal.texi)
+(cd doc && makeinfo heimdal.texi)
 
 find . -name Makefile.am | while read f; do
 	for i in `sed -n -e '/^man_MANS/{
 			:loop
 			p
-			/[^\\]$/tquit
-			tloop
+			/[^\\]$/b quit
+			n
+			b loop
 			}
 		:quit' $f | sed 's/man_MANS//;s/=//;s/[	\\][	\\]*/ /g'`; do 
 		x=`dirname $f`/$i
