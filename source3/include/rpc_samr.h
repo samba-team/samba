@@ -98,6 +98,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_GROUPINFO   0x14
 #define SAMR_SET_GROUPINFO     0x15
 #define SAMR_ADD_GROUPMEM      0x16
+#define SAMR_DELETE_DOM_GROUP  0x17
+#define SAMR_DEL_GROUPMEM      0x18
 #define SAMR_QUERY_GROUPMEM    0x19
 
 #define SAMR_OPEN_ALIAS        0x1b
@@ -694,6 +696,23 @@ typedef struct r_samr_query_dispinfo_info
 } SAMR_R_QUERY_DISPINFO;
 
 
+/* SAMR_Q_DELETE_DOM_GROUP - delete domain group */
+typedef struct q_samr_delete_dom_group_info
+{
+    POLICY_HND group_pol;          /* policy handle */
+
+} SAMR_Q_DELETE_DOM_GROUP;
+
+
+/* SAMR_R_DELETE_DOM_GROUP - delete domain group */
+typedef struct r_samr_delete_dom_group_info
+{
+	POLICY_HND pol;       /* policy handle */
+	uint32 status;        /* return status */
+
+} SAMR_R_DELETE_DOM_GROUP;
+
+
 /* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
 typedef struct q_samr_create_dom_group_info
 {
@@ -1128,6 +1147,24 @@ typedef struct r_samr_query_groupmem_info
 	uint32 status;
 
 } SAMR_R_QUERY_GROUPMEM;
+
+
+/* SAMR_Q_DEL_GROUPMEM - probably an del group member */
+typedef struct q_samr_del_group_mem_info
+{
+	POLICY_HND pol;       /* policy handle */
+
+	uint32 rid;         /* rid */
+
+} SAMR_Q_DEL_GROUPMEM;
+
+
+/* SAMR_R_DEL_GROUPMEM - probably an del group member */
+typedef struct r_samr_del_group_mem_info
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_DEL_GROUPMEM;
 
 
 /* SAMR_Q_ADD_GROUPMEM - probably an add group member */
