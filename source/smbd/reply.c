@@ -1575,13 +1575,14 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				
 				if (sys_direntry) {
 					error = NT_STATUS_OBJECT_NAME_INVALID;
-					continue;
+					break;
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype,bad_path);
-				if (!NT_STATUS_IS_OK(error))
+				if (!NT_STATUS_IS_OK(error)) {
 					continue;
+				}
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
 					count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
