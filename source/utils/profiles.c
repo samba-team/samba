@@ -577,6 +577,8 @@ int main(int argc, char *argv[])
 	}
   }
 
+  poptGetArg(pc); /* To get argv[0] */
+
   if (!poptPeekArg(pc)) {
 	  poptPrintUsage(pc, stderr, 0);
 	  exit(1);
@@ -587,8 +589,6 @@ int main(int argc, char *argv[])
 	  poptPrintUsage(pc, stderr, 0);
 	  exit(252);
   }
-
-  poptGetArg(pc); /* To get argv[0] */
 
   fd = open(poptPeekArg(pc), O_RDWR, 0000);
 
