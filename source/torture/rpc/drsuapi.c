@@ -638,8 +638,8 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	int i;
 	struct {
-		int32 level;
-		int32 infotype;
+		int32_t level;
+		int32_t infotype;
 		const char *obj_dn;
 	} array[] = {
 		{	
@@ -765,7 +765,7 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsReplicaSyncRequest1Info info1;
 
 	struct {
-		int32 level;
+		int32_t level;
 	} array[] = {
 		{	
 			1
