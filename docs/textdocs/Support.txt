@@ -26,12 +26,12 @@ These are currently:
 Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
-    AMERICA - CENTRAL & SOUTH                     1
-    AMERICA - USA                                20
+    AMERICA - CENTRAL & SOUTH                     3
+    AMERICA - USA                                22
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        6
-    EUROPE                                       27
+    EUROPE                                       28
 
 
 AFRICA
@@ -79,6 +79,24 @@ AMERICA - CENTRAL & SOUTH
 
 
 ------------------------------------------------------------------------------
+CHILE - SOUTH AMERICA
+
+Company: Magic Consulting Group/Magic Dealer
+Street Addr: Alberto Reyes #035 Barrio Bellavista
+             Providencia Santiago
+Contact no's: +56 2 365 19 18, Fax: +56 2 365 14 55
+
+Contact Person: Marcelo Bartsch or Roy Zderich
+        
+
+Our level of experience: support for all Samba and Linux security and
+compatability issues. We use Samba in our local network and we have
+experience instaling it on some other locations. we also provide
+techincal support for Linux, Novell, Windows NT, OS/2 and other 
+Operating Systems.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 HONDURAS - CENTRAL AMERICA
 
 Open Systems, S.A.
@@ -103,6 +121,19 @@ San Pedro Sula, Honduras, Central America
 Tel/Fax 011 (504) 529868
 e-mail: selim@opensys.hn
 URL: http://www.opensys.hn
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+VILLAHERMOSA, TAB. - MEXICO
+
+Carlos Enrique García Díaz
+E-mail: cgarcia@tnet.net.mx
+Phone: (93) 12-33-91
+
+Samba experience:
+Server: Samba 1.9.15 and above with Solaris (Sparc & x86), SG Irix 5.2 - 6.3, 
+AIX 3.2, DEC OSF1 v4.0, DG/UX v4.11, SunOS.
+Client: WinNT, Win95, WfWg, Win 3.1 & LAN WorkPlace.
 ------------------------------------------------------------------------------
 
 
@@ -149,6 +180,24 @@ We are located in the "Bay Area" of California, USA.  We provide
 consultant and training for Unix, Windows, Macintosh applications,
 and hardware.  We also provide Internet access to many of the local 
 companies as a part of our "one-stop-shop" model.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SAN FRANCISCO BAY AREA - USA
+
+2125 Hamilton Ave. Suite 100
+San Jose, CA 95125
+888-ACCLAIM [Inside California]
+(408) 879 - 3100
+(408) 377-4900 [Fax]
+
+We can provide commercial support for Samba.  We have created additional
+scripts that we can add to the Samba distribution to create an installation in 
+Sun Solaris "package add" format.  We are a Sun Reseller, but we can also
+support Samba on HP, SGI, Linux, in addition to Sun Solaris Sparc/X86.
+
+To find out more about our company, look at our website:
+                                http://www.acclaim.com
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -269,6 +318,23 @@ Dacula(Atlanta), Georgia 30019
 Supporting the Atlanta, Georgia USA area for two and a half years.  
 In the computer field for 22 years.
 
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+OWA - USA
+
+Afan Ottenheimer
+JEONET
+PO Box 1282
+Iowa City, IA 52244
+Phone: 319-338-6353
+Fax: 319-338-6353
+Email: afan@jeonet.com
+WWW: http://www.jeonet.com/jeonet/
+
+Specializing in systems integration, database, and advanced web 
+site design since 1995. Have extensive experience in 
+Linux<->NT<->Windows 3.11<->Windows 95 interaction using SAMBA.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1048,6 +1114,20 @@ I am located in Bielefeld/Germany and have been doing Unix consultancy
 work for the past 8 years throughout Germany and the rest of Europe. I
 can be contacted by email at <jpm@mens.de> or via phone at +49 521
 9225922 or telefax at +49 521 9225924.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BIELEFELD - GERMANY
+
+Name   : media engineering gmbh
+Address: Bleichstr. 77a , D-33607 Bielefeld
+Phone  : +49-521-1365640
+Fax    : +49-521-1365642
+eMail  : info@media-eng.bielefeld.com
+URL    : http://www.media-eng.bielefeld.com/
+Contact: Dipl.Ing. Hartmut Holzgraefe
+
+Type of support: phone, eMail, inhouse, remote administration
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
