@@ -579,14 +579,14 @@ May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE
 @section Transit policy
 @cindex Transit policy
 
-If you want to use cross realm authentication over an intermediate
+If you want to use cross realm authentication through an intermediate
 realm it must be explicitly allowed by either the KDCs or the server
 receiving the request. This is done in @file{krb5.conf} in the
 @code{[capaths]} section.
 
-When the a ticket is transited a though a realm to another realm, the
-destination realm adds it peer to the ``transited-realms'' field in
-the ticket. The field is unorded, this is since there is no way to
+When the ticket transits through a realm to another realm, the
+destination realm adds its peer to the "transited-realms" field in the
+ticket. The field is unordered, this is since there is no way to know if
 know if one of the transited-realms changed the order of the list.
 
 The syntax for @code{[capaths]} section:
@@ -602,7 +602,7 @@ The syntax for @code{[capaths]} section:
 
 The realm @code{STACKEN.KTH.SE} allows clients from @code{SU.SE} and
 @code{DSV.SU.SE} to cross in. Since @code{STACKEN.KTH.SE} only have
-cross realm with @code{KTH.SE}, and @code{DSV.SU.SE} only have cross
+direct cross realm with @code{KTH.SE}, and @code{DSV.SU.SE} only have direct cross
 realm with @code{SU.SE} they need to use both @code{SU.SE} and
 @code{KTH.SE} as transit realms.
 
