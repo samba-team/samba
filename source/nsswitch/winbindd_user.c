@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Jeremy Allison 2001.
+   Copyright (C) Gerald (Jerry) Carter 2003.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -118,9 +119,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* don't handle our own domain if we are a DC.  This code handles cases where
 	   the account doesn't exist anywhere and gets passed on down the NSS layer */
 
-	if ( ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role()==ROLE_DOMAIN_BDC)) &&
-		strequal(name_domain, lp_workgroup()) ) 
-	{
+	if ( IS_DC_FOR_DOMAIN(domain->name) ) {
 		DEBUG(7,("winbindd_getpwnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
 			name_domain, name_user));
 		return WINBINDD_ERROR;
@@ -296,6 +295,12 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 	for(domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
                 
+		
+		/* don't add our domaina if we are a PDC */
+		
+		if ( IS_DC_FOR_DOMAIN( domain->name ) )
+			continue; 
+						
 		/* Create a state record for this domain */
                 
 		if ((domain_state = (struct getent_state *)
