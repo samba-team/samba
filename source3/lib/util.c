@@ -260,8 +260,8 @@ void show_msg(char *buf)
 	int i;
 	int bcc=0;
 
-	if (DEBUGLEVEL < 5) return;
-
+	if (!DEBUGLVL(5)) return;
+	
 	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
 			smb_len(buf),
 			(int)CVAL(buf,smb_com),
@@ -270,31 +270,26 @@ void show_msg(char *buf)
 			(int)SVAL(buf,smb_err),
 			(int)CVAL(buf,smb_flg),
 			(int)SVAL(buf,smb_flg2)));
-	DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
+	DEBUGADD(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\n",
 			(int)SVAL(buf,smb_tid),
 			(int)SVAL(buf,smb_pid),
 			(int)SVAL(buf,smb_uid),
-			(int)SVAL(buf,smb_mid),
-			(int)CVAL(buf,smb_wct)));
+			(int)SVAL(buf,smb_mid)));
+	DEBUGADD(5,("smt_wct=%d\n",(int)CVAL(buf,smb_wct)));
 
 	for (i=0;i<(int)CVAL(buf,smb_wct);i++)
-	{
-		DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
+		DEBUGADD(5,("smb_vwv[%2d]=%5d (0x%X)\n",i,
 			SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
-	}
-
+	
 	bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
 
-	DEBUG(5,("smb_bcc=%d\n",bcc));
+	DEBUGADD(5,("smb_bcc=%d\n",bcc));
 
 	if (DEBUGLEVEL < 10) return;
 
-	if (DEBUGLEVEL < 50)
-	{
-		bcc = MIN(bcc, 512);
-	}
+	if (DEBUGLEVEL < 50) bcc = MIN(bcc, 512);
 
-	dump_data(10, smb_buf(buf), bcc);
+	dump_data(10, smb_buf(buf), bcc);	
 }
 
 /*******************************************************************
@@ -1574,35 +1569,35 @@ void print_asc(int level, const unsigned char *buf,int len)
 
 void dump_data(int level, const char *buf1,int len)
 {
-  const unsigned char *buf = (const unsigned char *)buf1;
-  int i=0;
-  if (len<=0) return;
+	const unsigned char *buf = (const unsigned char *)buf1;
+	int i=0;
+	if (len<=0) return;
 
-  DEBUG(level,("[%03X] ",i));
-  for (i=0;i<len;) {
-    DEBUG(level,("%02X ",(int)buf[i]));
-    i++;
-    if (i%8 == 0) DEBUG(level,(" "));
-    if (i%16 == 0) {      
-      print_asc(level,&buf[i-16],8); DEBUG(level,(" "));
-      print_asc(level,&buf[i-8],8); DEBUG(level,("\n"));
-      if (i<len) DEBUG(level,("[%03X] ",i));
-    }
-  }
-  if (i%16) {
-    int n;
-
-    n = 16 - (i%16);
-    DEBUG(level,(" "));
-    if (n>8) DEBUG(level,(" "));
-    while (n--) DEBUG(level,("   "));
-
-    n = MIN(8,i%16);
-    print_asc(level,&buf[i-(i%16)],n); DEBUG(level,(" "));
-    n = (i%16) - n;
-    if (n>0) print_asc(level,&buf[i-n],n); 
-    DEBUG(level,("\n"));    
-  }
+	if (!DEBUGLVL(level)) return;
+	
+	DEBUGADD(level,("[%03X] ",i));
+	for (i=0;i<len;) {
+		DEBUGADD(level,("%02X ",(int)buf[i]));
+		i++;
+		if (i%8 == 0) DEBUGADD(level,(" "));
+		if (i%16 == 0) {      
+			print_asc(level,&buf[i-16],8); DEBUGADD(level,(" "));
+			print_asc(level,&buf[i-8],8); DEBUGADD(level,("\n"));
+			if (i<len) DEBUGADD(level,("[%03X] ",i));
+		}
+	}
+	if (i%16) {
+		int n;
+		n = 16 - (i%16);
+		DEBUGADD(level,(" "));
+		if (n>8) DEBUGADD(level,(" "));
+		while (n--) DEBUGADD(level,("   "));
+		n = MIN(8,i%16);
+		print_asc(level,&buf[i-(i%16)],n); DEBUGADD(level,( " " ));
+		n = (i%16) - n;
+		if (n>0) print_asc(level,&buf[i-n],n); 
+		DEBUGADD(level,("\n"));    
+	}	
 }
 
 char *tab_depth(int depth)
