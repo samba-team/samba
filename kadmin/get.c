@@ -81,13 +81,13 @@ print_entry_short(kadm5_principal_ent_t princ)
     krb5_unparse_name_fixed_short(context, princ->principal, buf, sizeof(buf));
     printf("%-20s ", buf);
     
-    timeval2str(princ->princ_expire_time, buf, sizeof(buf), 0);
+    time_t2str(princ->princ_expire_time, buf, sizeof(buf), 0);
     printf("%-10s ", buf);
 	    
-    timeval2str(princ->pw_expiration, buf, sizeof(buf), 0);
+    time_t2str(princ->pw_expiration, buf, sizeof(buf), 0);
     printf("%-10s ", buf);
 	    
-    timeval2str(princ->last_pwd_change, buf, sizeof(buf), 0);
+    time_t2str(princ->last_pwd_change, buf, sizeof(buf), 0);
     printf("%-10s ", buf);
 	
     deltat2str(princ->max_life, buf, sizeof(buf));
@@ -97,7 +97,7 @@ print_entry_short(kadm5_principal_ent_t princ)
     printf("%-9s ", buf);
 
 #if 0
-    timeval2str(princ->mod_date, buf, sizeof(buf), 0);
+    time_t2str(princ->mod_date, buf, sizeof(buf), 0);
     printf("%-10s ", buf);
 
     krb5_unparse_name_fixed(context, princ->mod_name, buf, sizeof(buf));
@@ -115,13 +115,13 @@ print_entry_long(kadm5_principal_ent_t princ)
     
     krb5_unparse_name_fixed(context, princ->principal, buf, sizeof(buf));
     printf("%24s: %s\n", "Principal", buf);
-    timeval2str(princ->princ_expire_time, buf, sizeof(buf), 1);
+    time_t2str(princ->princ_expire_time, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Principal expires", buf);
 	    
-    timeval2str(princ->pw_expiration, buf, sizeof(buf), 1);
+    time_t2str(princ->pw_expiration, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Password expires", buf);
 	    
-    timeval2str(princ->last_pwd_change, buf, sizeof(buf), 1);
+    time_t2str(princ->last_pwd_change, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Last password change", buf);
 	
     deltat2str(princ->max_life, buf, sizeof(buf));
@@ -132,16 +132,16 @@ print_entry_long(kadm5_principal_ent_t princ)
     printf("%24s: %d\n", "Kvno", princ->kvno);
     printf("%24s: %d\n", "Mkvno", princ->mkvno);
     printf("%24s: %s\n", "Policy", princ->policy ? princ->policy : "none");
-    timeval2str(princ->last_success, buf, sizeof(buf), 1);
+    time_t2str(princ->last_success, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Last successful login", buf);
-    timeval2str(princ->last_failed, buf, sizeof(buf), 1);
+    time_t2str(princ->last_failed, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Last failed login", buf);
     printf("%24s: %d\n", "Failed login count", princ->fail_auth_count);
-    timeval2str(princ->mod_date, buf, sizeof(buf), 1);
+    time_t2str(princ->mod_date, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Last modified", buf);
     krb5_unparse_name_fixed(context, princ->mod_name, buf, sizeof(buf));
     printf("%24s: %s\n", "Modifier", buf);
-    attr2str (princ->attributes, buf, sizeof(buf));
+    attributes2str (princ->attributes, buf, sizeof(buf));
     printf("%24s: %s\n", "Attributes", buf);
 
     printf("%24s: ", "Keytypes(salts)");

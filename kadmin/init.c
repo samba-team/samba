@@ -150,14 +150,15 @@ init(int argc, char **argv)
 
 	/* Create `krbtgt/REALM' */
 	krb5_make_principal(context, &princ, argv[i], "krbtgt", argv[i], NULL);
-	if (realm_max_life == NULL)
-	    get_deltat("Realm max ticket life", 
-		       "unlimited",
-		       &max_life);
-	if (realm_max_rlife == NULL)
-	    get_deltat("Realm max renewable ticket life", 
-		       "unlimited",
-		       &max_rlife);
+	if (realm_max_life == NULL) {
+	    max_life = 0;
+	    edit_deltat ("Realm max ticket life", &max_life, NULL, 0);
+	}
+	if (realm_max_rlife == NULL) {
+	    max_rlife = 0;
+	    edit_deltat("Realm max renewable ticket life", &max_rlife,
+			NULL, 0);
+	}
 	create_random_entry(princ, max_life, max_rlife, 0);
 	krb5_free_principal(context, princ);
 	/* Create `kadmin/changepw' */
