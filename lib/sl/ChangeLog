@@ -1,3 +1,9 @@
+2001-01-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* sl.h: proto
+
+	* sl.c (sl_command_loop): try to handle user pressing C-c
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libss_la_LDFLAGS): bump version to 1:2:1
