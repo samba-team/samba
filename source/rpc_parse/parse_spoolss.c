@@ -4162,7 +4162,6 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  **asc)
 {
 	NT_PRINTER_INFO_LEVEL_2 *d;
-	NTTIME time_nt;
 	time_t time_unix;
 	
 	DEBUG(7,("Converting from UNICODE to ASCII\n"));
@@ -4194,10 +4193,6 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	d->untiltime=uni->untiltime;
 	d->status=uni->status;
 	d->cjobs=uni->cjobs;
-
-	unix_to_nt_time(&time_nt, time_unix);
-	d->changeid=time_nt.low;
-	d->c_setprinter++;
 	
 	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername)-1);
 	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername)-1);
