@@ -533,16 +533,15 @@
 
 	/******************/
 	/* Function: 0x48 */
-	NTSTATUS spoolss_EnumPrinterData(
+	WERROR spoolss_EnumPrinterData(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
 		[in]     uint32 value_offered,
-		[out]	 uint32 value_len,
-		[out]	 unistr *value_name,
+		[out]	 DATA_BLOB value,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
-		[in,out]     DATA_BLOB *buffer,
-		[in,out,ref] uint32 *buf_size
+		[out]    DATA_BLOB data,
+		[in,out,ref] uint32 *data_size
 		);
 
 	/******************/
