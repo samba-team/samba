@@ -137,7 +137,9 @@ doit_v5 (char *host, int port)
     krb5_principal server;
     int s = get_socket (host, port);
 
-    krb5_init_context (&context);
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
     
     ret = krb5_sname_to_principal (context,
 				   host,
