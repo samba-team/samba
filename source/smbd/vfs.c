@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    VFS initialisation and support functions
    Copyright (C) Tim Potter 1999
 
@@ -31,7 +32,7 @@ struct vfs_syminfo {
    very important.  They must be in the same order as defined in
    vfs.h.  Change at your own peril. */
 
-static struct vfs_ops default_vfs_ops = {
+struct vfs_ops default_vfs_ops = {
 
 	/* Disk operations */
 
@@ -73,6 +74,7 @@ static struct vfs_ops default_vfs_ops = {
 	vfswrap_readlink,
 	vfswrap_link,
 	vfswrap_mknod,
+	vfswrap_realpath,
 
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
@@ -131,46 +133,48 @@ static BOOL vfs_init_default(connection_struct *conn)
 static BOOL vfs_init_custom(connection_struct *conn)
 {
 	int vfs_version = -1;
-	struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
+    struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
 
-	DEBUG(3, ("Initialising custom vfs hooks from %s\n",
-		  lp_vfsobj(SNUM(conn))));
+    DEBUG(3, ("Initialising custom vfs hooks from %s\n",
+	      lp_vfsobj(SNUM(conn))));
 
-	/* Open object file */
-	if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), 
-					  RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), sys_dlerror()));
+    /* Open object file */
+
+    if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
+		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
 		return False;
-	}
+    }
 
-	/* Get handle on vfs_init() symbol */
-	init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
+    /* Get handle on vfs_init() symbol */
 
-	if (init_fptr == NULL) {
+    init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
+
+    if (init_fptr == NULL) {
 		DEBUG(0, ("No vfs_init() symbol found in %s\n",
-			  lp_vfsobj(SNUM(conn))));
+		  lp_vfsobj(SNUM(conn))));
 		return False;
-	}
+    }
 
-	/* Initialise vfs_ops structure */
+    /* Initialise vfs_ops structure */
+
 	conn->vfs_ops = default_vfs_ops;
 
-	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops)) == NULL) {
-		DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
+    if ((ops = init_fptr(&vfs_version, &default_vfs_ops)) == NULL) {
+        DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
 		return False;
-	}
-	
+    }
+
 	if (vfs_version != SMB_VFS_INTERFACE_VERSION) {
 		DEBUG(0, ("vfs_init returned wrong interface version info (was %d, should be %d)\n",
-			  vfs_version, SMB_VFS_INTERFACE_VERSION ));
+			vfs_version, SMB_VFS_INTERFACE_VERSION ));
 		return False;
 	}
-	
+
 	if (ops != &conn->vfs_ops) {
 		memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
 	}
 
-	return True;
+    return True;
 }
 #endif
 
@@ -276,7 +280,7 @@ BOOL vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT 
  Check if a file exists in the vfs.
 ********************************************************************/
 
-BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 

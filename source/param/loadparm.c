@@ -1047,7 +1047,7 @@ static struct parm_struct parm_table[] = {
 	{"hide local users", P_BOOL, P_GLOBAL, &Globals.bHideLocalUsers, NULL,
 	 NULL, 0},
 
-	{"VFS options", P_SEP, P_SEPARATOR},
+	{"VFS module options", P_SEP, P_SEPARATOR},
 	
 	{"vfs object", P_STRING, P_LOCAL, &sDefault.szVfsObjectFile, handle_vfs_object, NULL, FLAG_SHARE},
 	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
@@ -1700,6 +1700,7 @@ FN_LOCAL_LIST(lp_writelist, writelist)
 FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
+FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
 static FN_LOCAL_STRING(lp_volume, volume)
 FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
 FN_LOCAL_STRING(lp_veto_files, szVetoFiles)

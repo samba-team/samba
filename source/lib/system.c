@@ -255,6 +255,21 @@ int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
 }
 
 /*******************************************************************
+ Wrapper for realpath.
+********************************************************************/
+
+char *sys_realpath(const char *path, char *resolved_path)
+{
+#if defined(HAVE_REALPATH)
+	return realpath(path, resolved_path);
+#else
+	/* As realpath is not a system call we can't return ENOSYS. */
+	errno = EINVAL;
+	return NULL;
+#endif
+}
+
+/*******************************************************************
 The wait() calls vary between systems
 ********************************************************************/
 

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    VFS structures and parameters
    Copyright (C) Tim Potter 1999
    
@@ -55,7 +56,7 @@ struct vfs_ops {
 	int (*connect)(struct connection_struct *conn, const char *service, const char *user);
 	void (*disconnect)(struct connection_struct *conn);
 	SMB_BIG_UINT (*disk_free)(struct connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
-			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+		SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
     
 	/* Directory operations */
 
@@ -91,6 +92,7 @@ struct vfs_ops {
 	int (*readlink)(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 	int (*link)(struct connection_struct *conn, const char *oldpath, const char *newpath);
 	int (*mknod)(struct connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev);
+	char *(*realpath)(struct connection_struct *conn, const char *path, char *resolved_path);
 
 	/* NT ACL operations. */
 

@@ -5395,7 +5395,7 @@ else
 fi
 done
 
-for ac_func in initgroups select poll rdchk getgrnam getgrent pathconf
+for ac_func in initgroups select poll rdchk getgrnam getgrent pathconf realpath
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:5402: checking for $ac_func" >&5
@@ -13447,12 +13447,12 @@ case "$host_os" in
 		;;
 	*solaris*)
 		HAVE_WINBIND=yes
-		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		WINBIND_NSS_EXTRA_LIBS="-lsocket"
 		;;
 	*hpux11*)
 		HAVE_WINBIND=yes
-		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		;;
 	*)
 		HAVE_WINBIND=no
