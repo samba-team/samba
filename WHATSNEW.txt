@@ -28,6 +28,7 @@ smb.conf changes
 
     Parameter Name              Action
     --------------              ------
+    winbind nested groups       New
 
     
 commits
@@ -40,12 +41,15 @@ o   Andrew Bartlet <abartlet@samba.org>
 
 
 o   Gerald Carter <jerry@samba.org>
+    * Ensure server schannel uses the auth level requested by the 
+      client.
 
 
 o   Steve French <sfrench@us.ibm.com>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * Add support in winbindd for expanding nested local groups.
 
 
 o   Jianliang Lu <j.lu@tiesse.com>
@@ -55,6 +59,8 @@ o   Jim McDonough <jmcd@us.ibm.com>
 
 
 o   Andrew Tridgell <tridge@samba.org>
+    * Force winbindd to use schannel in clients connections to 
+      DC's if possible.
 
 
 
