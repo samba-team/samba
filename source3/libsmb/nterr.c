@@ -523,7 +523,7 @@ BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len)
 {
 	int idx = 0;
 
-	slprintf(msg, len-1, "NT code %08x", nt_code);
+	slprintf(msg, len-1, "NT code 0x%08x", nt_code);
 
 	while (nt_errs[idx].nt_errstr != NULL)
 	{
