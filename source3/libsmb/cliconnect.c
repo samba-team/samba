@@ -1153,6 +1153,7 @@ static void init_creds(struct ntuser_creds *creds, char* username,
    @param user Username, unix string
    @param domain User's domain
    @param password User's password, unencrypted unix string.
+   @param retry BOOL. Did this connection fail with a retryable error ?
 */
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
@@ -1161,7 +1162,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     struct in_addr *dest_ip, int port,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password, int flags) 
+			     char *password, int flags,
+			     BOOL *retry) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -1170,6 +1172,9 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli;
 	struct in_addr ip;
 	extern pstring global_myname;
+
+	if (retry)
+		*retry = False;
 
 	if (!my_name) 
 		my_name = global_myname;
@@ -1184,6 +1189,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	cli_set_timeout(cli, 10000); /* 10 seconds. */
 
 	if (dest_ip)
 		ip = *dest_ip;
@@ -1200,6 +1207,9 @@ again:
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	if (retry)
+		*retry = True;
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		char *p;
