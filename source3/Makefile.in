@@ -22,10 +22,6 @@ DYNEXP=@DYNEXP@
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
 
-PRINTLIBS=@PRINTLIBS@
-
-SMBDLIBS=$(PRINTLIBS) @SMBDLIBS@
-
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
 INSTALLCMD=@INSTALL@
@@ -612,7 +608,7 @@ bin/.dummy:
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(SMBDLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -624,7 +620,7 @@ bin/wrepld: $(WREPL_OBJ) bin/.dummy
 
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
 
 bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -664,7 +660,7 @@ bin/testparm: $(TESTPARM_OBJ) bin/.dummy
 
 bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(PRINTLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbstatus: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
