@@ -4809,7 +4809,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
  *
  * ****************************************************************************
  */
-int str_checksum(char *s)
+int str_checksum(const char *s)
 {
 	int res = 0;
 	int c;

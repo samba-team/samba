@@ -448,7 +448,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, char *))
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
 {
   char *rparam = NULL;
   char *rdata = NULL;
