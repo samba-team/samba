@@ -100,7 +100,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			mem_ctx, *info, 
 			(*num_entries) * sizeof(WINBIND_USERINFO));
 
-		if (!(*info)) {
+		if ((*num_entries) * sizeof(WINBIND_USERINFO) != 0 &&
+		    *info == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			talloc_destroy(ctx2);
 			goto done;
