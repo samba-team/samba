@@ -36,8 +36,6 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	krb5_keytab keytab = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
-	krb5_data salt;
-	krb5_encrypt_block eblock;
 	int ret, i;
 	krb5_keyblock * key;
 	krb5_principal host_princ;
@@ -92,17 +90,11 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	ret = krb5_principal2salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-    
 	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if ((ret = krb5_get_permitted_enctypes(context, &enctypes))) {
+	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
 		DEBUG(1,("krb5_get_permitted_enctypes failed (%s)\n", 
 			 error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
@@ -110,10 +102,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	/* we need to setup a auth context with each possible encoding type in turn */
 	for (i=0;enctypes[i];i++) {
-		krb5_use_enctype(context, &eblock, enctypes[i]);
-
-		ret = krb5_string_to_key(context, &eblock, key, &password, &salt);
-		if (ret) {
+		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
 			continue;
 		}
 
@@ -124,7 +113,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
 				       NULL, keytab, NULL, &tkt))) {
-			krb5_free_ktypes(context, enctypes);
+			free_kerberos_etypes(context, enctypes);
 			auth_ok = True;
 			break;
 		}
@@ -133,6 +122,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	if (!auth_ok) {
 		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
+		SAFE_FREE(key);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -140,11 +130,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-
-	if (tkt->enc_part2) {
-		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
-				       tkt->enc_part2->authorization_data[0]->length);
-	}
+	get_auth_data_from_tkt(auth_data, tkt);
 
 #if 0
 	if (tkt->enc_part2) {
@@ -154,7 +140,8 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	}
 #endif
 
-	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client, principal))) {
+	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
+				     principal))) {
 		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
