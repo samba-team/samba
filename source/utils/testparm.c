@@ -168,6 +168,12 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		printf("'winbind separator = +' might cause problems with group membership.\n");
 	}
 
+#ifndef HAVE_DLOPEN
+	if (lp_modules() != NULL) {
+		printf("'modules = ' specified in configuration file, but this samba build does not support plugins!\n");
+	}
+#endif
+
 	if (lp_algorithmic_rid_base() < BASE_RID) {
 		/* Try to prevent admin foot-shooting, we can't put algorithmic
 		   rids below 1000, that's the 'well known RIDs' on NT */
@@ -208,6 +214,7 @@ int main(int argc, const char *argv[])
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
+	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
 	while((opt = poptGetNextOpt(pc)) != -1);
 
