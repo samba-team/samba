@@ -47,6 +47,10 @@ int loglevel = -2;
 int require_preauth = 1;
 char *keyfile;
 
+#ifdef KRB4
+char *v4_realm;
+#endif
+
 static int help;
 
 static struct getargs args[] = {
@@ -70,6 +74,12 @@ static struct getargs args[] = {
 	"key-file",	'k',	arg_string, &keyfile, 
 	"location of master key file", "file"
     },
+#ifdef KRB4
+    { 
+	"v4-realm",	'r',	arg_string, &v4_realm, 
+	"realm to serve v4-requests for"
+    },
+#endif
     { "help", 'h', arg_flag, &help },
 };
 
@@ -139,6 +149,17 @@ configure(int argc, char **argv)
 		require_preauth = 0;
 	}
     }
+#ifdef KRB4
+    if(v4_realm == NULL){
+	p = krb5_config_get_string (cf, 
+				    "kdc",
+				    "v4-realm",
+				    NULL);
+	if(p)
+	    v4_realm = strdup(p);
+    }
+#endif
+    
     krb5_config_file_free (cf);
 end:
     if(logfile == NULL)
@@ -147,4 +168,10 @@ end:
 	loglevel = 0;
     if(require_preauth == -1)
 	require_preauth = 1;
+#ifdef KRB4
+    if(v4_realm == NULL){
+	v4_realm = malloc(40); /* REALM_SZ */
+	krb_get_lrealm(v4_realm, 1);
+    }
+#endif
 }
