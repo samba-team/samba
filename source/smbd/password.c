@@ -104,20 +104,6 @@ BOOL password_ok(const char *orig_user, const char *domain,
 		}
 	}
 
-	DEBUG(10, ("password_ok: check Unix auth\n"));
-	/*
-	 * unix password check
-	 */
-
-	if (!lp_update_encrypted())
-	{
-		if (pass_check
-		    (orig_user, smb_apasswd, smb_apasslen, pwd, NULL))
-		{
-			DEBUG(10, ("password_ok: Unix auth succeeded\n"));
-			return True;
-		}
-	}
 	return False;
 }
 
