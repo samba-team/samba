@@ -337,7 +337,6 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	}
 
 	SAFE_FREE(workgroup);
-	SAFE_FREE(user);
 	SAFE_FREE(machine);
 	
 	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
@@ -351,12 +350,15 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	data_blob_free(&nthash);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		SAFE_FREE(user);
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
 	sess_vuid = register_vuid(server_info, user);
 
 	free_server_info(&server_info);
+
+	SAFE_FREE(user);
   
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
