@@ -897,7 +897,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	sid_copy(psid, get_global_sam_sid());
 	
-	if (get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
+	if (get_group_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_copy(psid, &map.sid);
 	} 
 	else {
