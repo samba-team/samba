@@ -19,7 +19,7 @@ interface netlogon
 	/* Function 0x00 */
 
 	typedef struct {
-		unistr *effective_name;
+		unistr *account_name;
 		uint32 priv;
 		uint32 auth_flags;
 		uint32 logon_count;
@@ -65,54 +65,51 @@ interface netlogon
 	/* Function 0x02 */
 
 	typedef struct {
-		uint16 size;
-		uint16 length;
-		unistr *string;
+		[value(strlen_m(r->string)*2)] uint16 size;
+		[value(r->size)]               uint16 length;
+		unistr_noterm *string;
 	} netr_String;
 
 	typedef struct {
-		netr_String LogonDomainName;
-		uint32 ParameterControl;
-		HYPER_T LogonID;
+		netr_String domain_name;
+		uint32      parameter_control;
+		uint32      logon_id_low;
+		uint32      logon_id_high;
 		netr_String username;
 		netr_String workstation;
-	} LOGON_IDENTITY_INFO;
+	} netr_IdentityInfo;
 
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		uint8 password[16];
-	} LM_OWF_PASSWORD;
+	} netr_Password;
 
 	typedef struct {
-		uint8 password[16];
-	} NT_OWF_PASSWORD;
-
-	typedef struct {
-		LOGON_IDENTITY_INFO identity_info;
-		LM_OWF_PASSWORD lmpassword;
-		NT_OWF_PASSWORD ntpassword;
-	} INTERACTIVE_INFO;
+		netr_IdentityInfo identity_info;
+		netr_Password lmpassword;
+		netr_Password ntpassword;
+	} netr_PasswordInfo;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[8];
 	} netr_Credential;
 
-	typedef struct {
-		LOGON_IDENTITY_INFO logon_info;
-		netr_Credential challenge;
-		unistr ntchallengeresponse;
-		unistr lmchallengeresponse;
-	} NETWORK_INFO;
+	typedef [flag(NDR_PAHEX)] struct {
+		uint16 length;
+		[value(r->length)] uint16 size;
+		[size_is(size),length_is(length)] uint8 *data;
+	} netr_ChallengeResponse;
 
 	typedef struct {
-		LOGON_IDENTITY_INFO logon_info;
-		LM_OWF_PASSWORD lmpassword;
-		NT_OWF_PASSWORD ntpassword;
-	} SERVICE_INFO;
+		netr_IdentityInfo logon_info;
+		netr_Credential challenge;
+		netr_ChallengeResponse nt;
+		netr_ChallengeResponse lm;
+	} netr_NetworkInfo;
 
 	typedef union {
-		[case(1)] INTERACTIVE_INFO *iinfo;
-		[case(2)] NETWORK_INFO *ninfo;
-		[case(3)] SERVICE_INFO *sinfo;
+		[case(1)] netr_PasswordInfo *interactive;
+		[case(2)] netr_NetworkInfo  *network;
+		[case(3)] netr_PasswordInfo *service;
 	} netr_LogonLevel;
 
 	typedef struct {
@@ -123,93 +120,97 @@ interface netlogon
 	typedef struct {
 		uint32 user_id;
 		uint32 attributes;
-	} GROUP_MEMBERSHIP;
+	} netr_GroupMembership;
 
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		uint8 user_session_key[16];
-	} USER_SESSION_KEY;
+	} netr_UserSessionKey;
 
 	typedef struct {
-		NTTIME LogonTime;
-		NTTIME LogoffTime;
-		NTTIME KickOffTime;
-		NTTIME PasswdLastSet;
-		NTTIME PasswdCanChange;
-		NTTIME PasswdMustChange;
-		netr_String effectivename;
-		netr_String fullname;
-		netr_String logonscript;
-		netr_String profilepath;
-		netr_String homedirectory;
-		netr_String homedirectorydrive;
-		uint16 LogonCount;
-		uint16 BadPasswdCount;
+		NTTIME logon_time;
+		NTTIME logoff_time;
+		NTTIME kickoff_time;
+		NTTIME passwd_last_set;
+		NTTIME passwd_can_change;
+		NTTIME passwd_must_change;
+		netr_String account_name;
+		netr_String full_name;
+		netr_String logon_script;
+		netr_String profile_path;
+		netr_String home_dir;
+		netr_String home_drive;
+		uint16 logon_count;
+		uint16 bad_passwd_count;
 		uint32 userid;
-		uint32 primarygroup;
-		uint32 groupcount;
-		[size_is(groupcount)] GROUP_MEMBERSHIP *groupids;
-		uint32 userflags;
-		USER_SESSION_KEY key;
-		netr_String logonserver;
-		netr_String domainname;
-		dom_sid2 logondomainid;
+		uint32 primary_group;
+		uint32 group_count;
+		[size_is(group_count)] netr_GroupMembership *groupids;
+		uint32 user_flags;
+		netr_UserSessionKey key;
+		netr_String logon_server;
+		netr_String domain;
+		dom_sid2 *domain_sid;
 		uint32 expansionroom[10];
-	} VALIDATION_SAM_INFO;
+	} netr_SamInfo;
 
 	typedef struct {
-		NTTIME LogonTime;
-		NTTIME LogoffTime;
-		NTTIME KickOffTime;
-		NTTIME PasswdLastSet;
-		NTTIME PasswdCanChange;
-		NTTIME PasswdMustChange;
-		netr_String effectivename;
-		netr_String fullname;
-		netr_String logonscript;
-		netr_String profilepath;
-		netr_String homedirectory;
-		netr_String homedirectorydrive;
-		uint16 LogonCount;
-		uint16 BadPasswdCount;
+		dom_sid2 *sid;
+		uint32 attribute;
+	} netr_SidAttr;
+
+	typedef struct {
+		NTTIME logon_time;
+		NTTIME logoff_time;
+		NTTIME kickoff_time;
+		NTTIME passwd_last_set;
+		NTTIME passwd_can_change;
+		NTTIME passwd_must_change;
+		netr_String account_name;
+		netr_String full_name;
+		netr_String logon_script;
+		netr_String profile_path;
+		netr_String home_dir;
+		netr_String home_drive;
+		uint16 logon_count;
+		uint16 bad_passwd_count;
 		uint32 userid;
-		uint32 primarygroup;
-		uint32 groupcount;
-		GROUP_MEMBERSHIP *groupids;
-		uint32 userflags;
-		USER_SESSION_KEY key;
-		netr_String logonserver;
-		netr_String domainname;
-		dom_sid2 logondomainid;
+		uint32 primary_group;
+		uint32 group_count;
+		[size_is(group_count)] netr_GroupMembership *groupids;
+		uint32 user_flags;
+		netr_UserSessionKey key;
+		netr_String logon_server;
+		netr_String domain;
+		dom_sid2 *domain_sid;
 		uint32 expansionroom[10];
 		uint32 sidcount;
-		dom_sid2 sid;
-		uint32 sid_attribs;
-	} VALIDATION_SAM_INFO2;
+		[size_is(sidcount)] netr_SidAttr *sids;
+	} netr_SamInfo2;
 
 	typedef struct {
 		uint32 pac_size;
 		[size_is(pac_size)] uint8 *pac;
-		netr_String logondomain;
-		netr_String logonserver;
-		netr_String principalname;
+		netr_String logon_domain;
+		netr_String logon_server;
+		netr_String principal_name;
 		uint32 auth_size;
 		[size_is(auth_size)] uint8 *auth;
-		USER_SESSION_KEY user_session_key;
+		netr_UserSessionKey user_session_key;
 		uint32 expansionroom[10];
-		netr_String dummy1;
-		netr_String dummy2;
-		netr_String dummy3;
-		netr_String dummy4;
-	} VALIDATION_PAC_INFO;
+		netr_String unknown1;
+		netr_String unknown2;
+		netr_String unknown3;
+		netr_String unknown4;
+	} netr_PacInfo;
 
 	typedef union {
-		[case(2)] VALIDATION_SAM_INFO *sam;
-		[case(3)] VALIDATION_SAM_INFO2 *sam2;
-		[case(4)] VALIDATION_PAC_INFO *pac;
-		[case(5)] VALIDATION_PAC_INFO *pac2;
+		[case(2)] netr_SamInfo  *sam;
+		[case(3)] netr_SamInfo2 *sam2;
+		[case(4)] netr_PacInfo  *pac;
+		[case(5)] netr_PacInfo  *pac2;
 	} netr_Validation;
 
-	WERROR netr_LogonSamLogon(
+	NTSTATUS netr_LogonSamLogon(
 		[in] unistr *server_name,
 		[in] unistr *workstation,
 		[in] netr_Authenticator *credential,

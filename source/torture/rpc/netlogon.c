@@ -32,7 +32,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.username = lp_parm_string(-1, "torture", "username");
 	r.in.workstation = lp_netbios_name();
 
-	printf("Testing LogonUasLogon");
+	printf("Testing LogonUasLogon\n");
 
 	status = dcerpc_netr_LogonUasLogon(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -53,7 +53,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.username = lp_parm_string(-1, "torture", "username");
 	r.in.workstation = lp_netbios_name();
 
-	printf("Testing LogonUasLogoff");
+	printf("Testing LogonUasLogoff\n");
 
 	status = dcerpc_netr_LogonUasLogoff(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -65,17 +65,22 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 }
 
-static BOOL test_Authenticate(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
-	struct netr_Credential client_chal, server_chal, cred2;
+	struct netr_LogonSamLogon l;
+	struct netr_Credential client_chal, server_chal, cred2, cred3;
 	uint8 session_key[8];
 	const char *plain_pass;
 	uint8 mach_pwd[16];
+	struct netr_Authenticator auth, auth2;
+	struct netr_NetworkInfo ninfo;
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *password = lp_parm_string(-1, "torture", "password");
 
-	printf("Testing ServerReqChallenge");
+	printf("Testing ServerReqChallenge\n");
 
 	ZERO_STRUCT(client_chal);
 
@@ -108,11 +113,58 @@ static BOOL test_Authenticate(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	a.in.secure_challenge_type = 2;
 	a.in.computer_name = lp_netbios_name();
 	a.in.client_challenge = &cred2;
-	a.out.client_challenge = &cred2;
+	a.out.client_challenge = &cred3;
+
+	printf("Testing ServerAuthenticate\n");
 
 	status = dcerpc_netr_ServerAuthenticate(p, mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ServerAuthenticate - %s\n", nt_errstr(status));
+		return False;
+	}
+
+
+	if (!cred_assert(&cred3, session_key, &server_chal, 0)) {
+		printf("cred_assert failed!\n");
+	}
+
+	auth.timestamp = 0;
+	auth.cred = cred3;
+	auth2.timestamp = 0;
+	auth2.cred = server_chal;
+
+	cred_create(session_key, &cred2, 0, &auth.cred);
+
+	ninfo.logon_info.domain_name.string = lp_workgroup();
+	ninfo.logon_info.parameter_control = 0;
+	ninfo.logon_info.logon_id_low = 0;
+	ninfo.logon_info.logon_id_high = 0;
+	ninfo.logon_info.username.string = username;
+	ninfo.logon_info.workstation.string = lp_netbios_name();
+	generate_random_buffer(ninfo.challenge.data, 
+			       sizeof(ninfo.challenge.data), False);
+	ninfo.nt.length = 24;
+	ninfo.nt.data = talloc(mem_ctx, 24);
+	SMBNTencrypt(password, ninfo.challenge.data, ninfo.nt.data);
+	ninfo.lm.length = 24;
+	ninfo.lm.data = talloc(mem_ctx, 24);
+	SMBencrypt(password, ninfo.challenge.data, ninfo.lm.data);
+
+	ZERO_STRUCT(auth2);
+
+	l.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	l.in.workstation = lp_netbios_name();
+	l.in.credential = &auth;
+	l.in.authenticator = &auth2;
+	l.in.logon_level = 2;
+	l.in.logon.network = &ninfo;
+	l.in.validation_level = 2;
+
+	printf("Testing SamLogon\n");
+
+	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &l);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LogonSamLogon - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -147,7 +199,7 @@ BOOL torture_rpc_netlogon(int dummy)
 		ret = False;
 	}
 
-	if (!test_Authenticate(p, mem_ctx)) {
+	if (!test_SamLogon(p, mem_ctx)) {
 		ret = False;
 	}
 
