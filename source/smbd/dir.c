@@ -667,12 +667,47 @@ check to see if a user can read a file. This is only approximate,
 it is used as part of the "hide unreadable" option. Don't
 use it for anything security sensitive
 ********************************************************************/
+
 static BOOL user_can_read_file(connection_struct *conn, char *name)
 {
+	extern struct current_user current_user;
 	SMB_STRUCT_STAT ste;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	files_struct *fsp;
+	int smb_action;
+	NTSTATUS status;
+	uint32 access_granted;
+
+	ZERO_STRUCT(ste);
 
 	/* if we can't stat it does not show it */
-	if (vfs_stat(conn, name, &ste) != 0) return False;
+	if (vfs_stat(conn, name, &ste) != 0)
+		return False;
+
+	/* Pseudo-open the file (note - no fd's created). */
+
+	if(S_ISDIR(ste.st_mode))	
+		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), FILE_OPEN,
+			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
+	else
+		fsp = open_file_stat(conn,name,&ste,DOS_OPEN_RDONLY,&smb_action);
+	if (!fsp)
+		return False;
+
+	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
+	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+	close_file(fsp, True);
+
+	/* No access if SD get failed. */
+	if (!sd_size)
+		return False;
+
+	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
+                                 &access_granted, &status);
+
+#if 0
+	/* Old - crappy check :-). JRA */
 
 	if (ste.st_uid == conn->uid) {
 		return (ste.st_mode & S_IRUSR) == S_IRUSR;
@@ -689,6 +724,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	}
 
 	return (ste.st_mode & S_IROTH) == S_IROTH;
+#endif
 }
 
 /*******************************************************************
