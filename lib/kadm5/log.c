@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,6 +73,15 @@ kadm5_log_get_version (int fd,
 }
 
 kadm5_ret_t
+kadm5_log_set_version (kadm5_server_context *context, u_int32_t vno)
+{
+    kadm5_log_context *log_context = &context->log_context;
+
+    log_context->version = vno;
+    return 0;
+}
+
+kadm5_ret_t
 kadm5_log_init (kadm5_server_context *context)
 {
     int fd;
@@ -96,6 +105,30 @@ kadm5_log_init (kadm5_server_context *context)
     log_context->log_fd  = fd;
     return 0;
 }
+
+kadm5_ret_t
+kadm5_log_reinit (kadm5_server_context *context)
+{
+    int fd;
+    kadm5_log_context *log_context = &context->log_context;
+
+    if (log_context->log_fd != -1) {
+	close (log_context->log_fd);
+	log_context->log_fd = -1;
+    }
+    fd = open (log_context->log_file, O_RDWR | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0)
+	return errno;
+    if (flock (fd, LOCK_EX) < 0) {
+	close (fd);
+	return errno;
+    }
+
+    log_context->version = 0;
+    log_context->log_fd  = fd;
+    return 0;
+}
+
 
 kadm5_ret_t
 kadm5_log_end (kadm5_server_context *context)
@@ -563,6 +596,49 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 }
 
 /*
+ * Add a `nop' operation to the log.
+ */
+
+kadm5_ret_t
+kadm5_log_nop (kadm5_server_context *context)
+{
+    krb5_storage *sp;
+    kadm5_ret_t ret;
+    kadm5_log_context *log_context = &context->log_context;
+
+    sp = krb5_storage_emem();
+    ret = kadm5_log_preamble (context, sp, kadm_nop);
+    if (ret) {
+	krb5_storage_free (sp);
+	return ret;
+    }
+    ret = kadm5_log_postamble (log_context, sp);
+    if (ret) {
+	krb5_storage_free (sp);
+	return ret;
+    }
+    ret = kadm5_log_flush (log_context, sp);
+    krb5_storage_free (sp);
+    if (ret)
+	return ret;
+    ret = kadm5_log_end (context);
+    return ret;
+}
+
+/*
+ * Read a `nop' log operation from `sp' and apply it.
+ */
+
+kadm5_ret_t
+kadm5_log_replay_nop (kadm5_server_context *context,
+		      u_int32_t ver,
+		      u_int32_t len,
+		      krb5_storage *sp)
+{
+    return 0;
+}
+
+/*
  * Call `func' for each log record in the log in `context'
  */
 
@@ -660,6 +736,8 @@ kadm5_log_replay (kadm5_server_context *context,
 	return kadm5_log_replay_rename (context, ver, len, sp);
     case kadm_modify :
 	return kadm5_log_replay_modify (context, ver, len, sp);
+    case kadm_nop :
+	return kadm5_log_replay_nop (context, ver, len, sp);
     default :
 	return KADM5_FAILURE;
     }
