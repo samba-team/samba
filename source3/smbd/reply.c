@@ -2348,6 +2348,10 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   int outsize = 0;
 
+	  /* If it's an IPC, pass off the pipe handler. */
+	  if (IS_IPC(conn))
+	    return reply_pipe_write(inbuf,outbuf,dum_size,dum_buffsize);
+
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);

@@ -137,7 +137,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q = skip_string(q, 1); /* PDC name */
 
       /* PDC and domain name */
+#if 0
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0)
+#endif
       {
         q = align2(q, buf);
 
@@ -179,13 +181,16 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       uniuser = skip_unibuf(unicomp, buf+len-q);
       getdc = skip_unibuf(uniuser, buf+len-q);
       q = skip_string(getdc,1);
-      q += 4;
+      q += 4; /* skip Account Control Bits */
       domainsidsize = IVAL(q, 0);
       q += 4;
-      q += domainsidsize;
 
-      q = align4(q, buf);
-      q += 2;
+	if (domainsidsize != 0)
+	{
+		q += domainsidsize;
+		q += 2;
+		q = align4(q, buf);
+	}
 
       ntversion = IVAL(q, 0);
       q += 4;
@@ -205,6 +210,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
+	ntversion = 0x01;
+	lmnttoken = 0xffff;
+	lm20token = 0xffff;
+
       if (DEBUGLVL(3))
 	{
 	      fstring ascuser;
@@ -221,7 +230,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       /* Construct reply. */
 
       q = outbuf;
-      SSVAL(q, 0, SAMLOGON_R);
+	if (uniuser[0] == 0)
+	{
+		SSVAL(q, 0, SAMLOGON_UNK_R); /* user unknown */
+	}
+	else
+	{
+		SSVAL(q, 0, SAMLOGON_R);
+	}
       q += 2;
 
       /* Logon server, trust account, domain */

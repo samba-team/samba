@@ -43,6 +43,7 @@ enum RPC_PKT_TYPE
 /* DCE/RPC flags */
 #define RPC_FLG_FIRST 0x01
 #define RPC_FLG_LAST  0x02
+#define RPC_FLG_NOCALL 0x20
 
 /* NTLMSSP message types */
 enum NTLM_MESSAGE_TYPE
@@ -126,6 +127,14 @@ typedef struct rpc_hdr_resp_info
   uint8  reserved;     /* 0 - reserved. */
 
 } RPC_HDR_RESP;
+
+/* RPC_HDR_FAULT - ms fault rpc header */
+typedef struct rpc_hdr_fault_info
+{
+	uint32 status;
+	uint32 reserved; /* 0x0000 0000 */
+
+} RPC_HDR_FAULT;
 
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
