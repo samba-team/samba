@@ -95,6 +95,8 @@ int decode_unsigned (const unsigned char*, size_t, unsigned*, size_t*);
 int decode_enumerated (const unsigned char*, size_t, unsigned*, size_t*);
 int decode_general_string (const unsigned char*, size_t,
 			   general_string*, size_t*);
+int decode_oid (const unsigned char *p, size_t len, 
+		oid *k, size_t *size);
 int decode_octet_string (const unsigned char*, size_t, octet_string*, size_t*);
 int decode_generalized_time (const unsigned char*, size_t, time_t*, size_t*);
 
@@ -138,6 +140,7 @@ size_t length_unsigned (const unsigned *data);
 size_t length_enumerated (const unsigned *data);
 size_t length_general_string (const general_string *data);
 size_t length_octet_string (const octet_string *k);
+size_t length_oid (const oid *k);
 size_t length_generalized_time (const time_t *t);
 
 int copy_general_string (const general_string *from, general_string *to);

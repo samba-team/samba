@@ -143,6 +143,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	     oid *data, size_t *size)
 {
     int n;
+    size_t oldlen = len;
 
     if (len < 1)
 	return ASN1_OVERRUN;
@@ -167,6 +168,8 @@ der_get_oid (const unsigned char *p, size_t len,
 	free_oid (data);
 	return ASN1_OVERRUN;
     }
+    if (size)
+	*size = oldlen;
     return 0;
 }
 
@@ -366,6 +369,38 @@ decode_octet_string (const unsigned char *p, size_t len,
 	return ASN1_OVERRUN;
 
     e = der_get_octet_string (p, slen, k, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    if(size) *size = ret;
+    return 0;
+}
+
+int
+decode_oid (const unsigned char *p, size_t len, 
+	    oid *k, size_t *size)
+{
+    size_t ret = 0;
+    size_t l;
+    int e;
+    size_t slen;
+
+    e = der_match_tag (p, len, UNIV, PRIM, UT_OID, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+
+    e = der_get_length (p, len, &slen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    if (len < slen)
+	return ASN1_OVERRUN;
+
+    e = der_get_oid (p, slen, k, &l);
     if (e) return e;
     p += l;
     len -= l;
