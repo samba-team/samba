@@ -446,25 +446,25 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 static void find_cm_connection(const char *domain, const char *pipe_name,
 			       struct winbindd_cm_conn **conn_out) 
 {
-	struct winbindd_cm_conn *conn, conn_temp;
+	struct winbindd_cm_conn *conn;
 
-	*conn_out = NULL;
-
-	for (conn = cm_conns; conn; conn = conn->next) {
+	for (conn = cm_conns; conn; ) {
 		if (strequal(conn->domain, domain) && 
 		    strequal(conn->pipe_name, pipe_name)) {
 			if (!connection_ok(conn)) {
+				/* Dead connection - remove it. */
+				struct winbindd_cm_conn *conn_temp = conn->next;
 				if (conn->cli)
 					cli_shutdown(conn->cli);
-				ZERO_STRUCT(conn_temp);
-				conn_temp.next = conn->next;
 				DLIST_REMOVE(cm_conns, conn);
 				SAFE_FREE(conn);
-				conn = &conn_temp;  /* Just to keep the loop moving */
+				conn = conn_temp;  /* Keep the loop moving */
+				continue;
 			} else {
 				break;
 			}
 		}
+		conn = conn->next;
 	}
 
 	*conn_out = conn;
