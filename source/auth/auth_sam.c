@@ -241,7 +241,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	unbecome_root();
 
 	if (ret == False) {
-		DEBUG(3,("check_sam_security: Couldn't find user '%s' in passdb file.\n", user_info->internal_username.str));
+		DEBUG(3,("check_sam_security: Couldn't find user '%s' in passdb.\n", user_info->internal_username.str));
 		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
