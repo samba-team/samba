@@ -39,7 +39,7 @@ static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
 	size_t sendlen;
 
 	status = socket_send(sock, out, &sendlen, 0);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return -1;
 	}
 
@@ -265,6 +265,7 @@ void dcesrv_sock_recv(struct server_connection *conn, time_t t, uint16_t flags)
 		return;
 	}
 	if (nread == 0) {
+		talloc_free(tmp_blob.data);
 		return;
 	}
 
