@@ -2289,6 +2289,7 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
+BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
 BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size);
 BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
 BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
