@@ -1,0 +1,408 @@
+mailto(samba-bugs@samba.org)
+manpage(RPCCLIENT)(8)(March 27 2000)(SambaTNG)(SAMBA)
+label(NAME)
+manpagename(rpcclient)(developer's tool)
+label(SYNOPSIS)
+manpagesynopsis()
+dit(bf(rpcclient)) [link(-d debuglevel)(minusd)] [link(-S server)(minusS)] [link(-l logbasename)(minusl)] [link(-n netbios name)(minusn)] [link(-N)(minusN)]
+[link(-m maxprotocol)(minusl)] [link(-I destIP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-W workgroup)(minusW)] [link(-c `command string`)(minusc)]
+[link(-t terminalcode)(minust)] [link(-i scope)(minusi)] [link(-O socket options)(minusO)]
+[link(-s smb.conf)(minuss)]
+label(DESCRIPTION)
+manpagedescription()
+dit(bf(rpcclient))
+is a utility for developers that combines the commands found in
+link(regedit)(REGEDITCMD), link(samedit)(SAMEDITCMD) and others. To find
+out more about the commands found in rpcclient refer to the samedit,
+regedit and other manual pages. These commands together perform the tasks
+seen by the Windows NT Server Tools.
+label(OPTIONS)
+manpagesection(OPTIONS)
+
+label(minusd)
+dit(bf(-d debuglevel))
+set the debuglevel. Debug level 0 is the lowest and 100 being the
+highest. This should be set to 100 if you are planning on 
+submitting a bug report to the Samba team (see BUGS.txt).
+
+label(minusS)
+dit(bf(-S server))
+NetBIOS name of Server to connect to (\\. or .
+for localhost). The server can be any SMB/CIFS server. The name is resolved
+using either the "name resolve order = " line or by using the
+bf(-R) option.
+
+label(minusl)
+dit(bf(-l logbasename))
+File name for log/debug files. .client will be
+appended. The log file is never removed  by the client.
+
+label(minusn)
+dit(bf(-n netbios name))
+NetBIOS name of the local machine. This option
+is only needed if your Samba client cannot find
+it automatically. Samba should use the uppercase of the machine's
+hostname.
+
+label(minusN)
+dit(bf(-N))
+tells rpcclient not to ask for a password. rpcclient will prompt
+the user by default.
+
+label(minusm)
+dit(bf(-m max protocol))
+is ignored in Samba TNG. It is included only for backwards compatibility.
+
+label(minusI)
+dit(bf(-I destIP))
+The IP address of the server specified with the bf(-S)
+option. Only needed when the server's NetBIOS
+name cannot be resolved using WINS or broadcast
+and isn't found in the LMHOSTS file.
+
+label(minusE)
+dit(bf(-E))
+causes regedit to write messages to stderr instead of stdout.
+
+label(minusU)
+dit(bf(-U username[%pass]))
+Sets the SMB username or username and password. If %pass is not
+specified, The user will be prompted. The client will first check the USER
+environment variable, then the LOGNAME variable and if either exist, the
+string is uppercased. Anything in these variables following a % sign will be
+treated as the password. If these environmental variables are not found, the
+username GUEST is used.
+
+label(minusW)
+dit(bf(-W domain))
+Set the SMB domain. Note that this is very different
+from the DNS domain name. For information on NT domains,
+consult
+bf(Lars Kneschke's Samba TNG FAQ) at
+if(http://www.kneschke.de/projekte/samba_tng/).
+This overrides the default domain which is the domain of the server specified
+with the bt(-S) option. If the domain specified is the same as the server's
+NetBIOS name, it causes the client to log on using the server's local SAM
+(as opposed to the Domain SAM).
+
+label(minusc)
+dit(bf(-c 'command string'))
+execute semicolon separated commands (listed below))
+
+label(minust)
+dit(bf(-t terminalcode))
+This tells the Samba client how to interpret the incoming filenames, in regards
+to character sets. The list here is not complete. For a complete list see your
+local Samba source. Some valid options are sjis, euc, jis7, jis8, junet and hex.
+
+label(minusO)
+dit(bf(-O socket options))
+These socket options are the same as in smb.conf (under the bt(socket options = )
+section).
+
+label(minuss)
+dit(bf(-s smb.conf))
+Specifies the location of the all important smb.conf file.
+
+label(minusi)
+dit(bf(-i scope))
+Defines the NetBIOS scope. For more information on NetBIOS scopes, see rfc1001
+and rfc1002. NetBIOS scopes are rarely used.
+
+label(COMMANDS)
+manpagesection(COMMANDS)
+
+label(SAMEDITCMD)
+dit(bf(SAMEDIT Commands))
+dit(link(ntlogin)(NTLOGIN))
+dit(link(domtrust)(DOMTRUST))
+dit(link(samsync)(SAMSYNC))
+dit(link(lookupdomain)(LOOKUPDOMAIN))
+dit(link(lookuprids)(LOOKUPRIDS))
+dit(link(samlookupnames)(SAMLOOKUPNAMES))
+dit(link(enumusers)(ENUMUSERS))
+dit(link(addgroupmem)(ADDGROUPMEM))
+dit(link(addaliasmem)(ADDALIASMEM))
+dit(link(delgroupmem)(DELGROUPMEM))
+dit(link(delaliasmem)(DELALIASMEM))
+dit(link(creategroup)(CREATEGROUP))
+dit(link(createalias)(CREATEALIAS))
+dit(link(createuser)(CREATEUSER))
+dit(link(deluser)(DELUSER))
+dit(link(delgroup)(DELGROUP))
+dit(link(delalias)(DELALIAS))
+dit(link(ntpass)(NTPASS))
+dit(link(samquerysync)(SAMQUERYSYNC))
+dit(link(samuserset2)(SAMUSERSET2))
+dit(link(samuserset)(SAMUSERSET))
+dit(link(samuser)(SAMUSER))
+dit(link(samgroup)(SAMGROUP))
+dit(link(samalias)(SAMALIAS))
+dit(link(samaliasmem)(SAMALIASMEM))
+dit(link(samgroupmem)(SAMBAGROUPMEM))
+dit(link(samtest)(SAMTEST))
+dit(link(enumaliases)(ENUMALIASES))
+dit(link(enumdomains)(ENUMDOMAINS))
+dit(link(enumgroups)(ENUMGROUPS))
+dit(link(dominfo)(DOMINFO))
+dit(link(dispinfo)(DISPINFO))
+dit(link(set)(SET))
+dit(link(use)(USE))
+dit(link(help)(HELP))
+dit(link(quit)(QUIT))
+
+label(REGEDITCMD)
+dit(bf(REGEDIT Commands))
+
+dit(link(regenum)(REGENUM))
+dit(link(regdeletekey)(REGDELETEKEY))
+dit(link(regcreatekey)(REGCREATEKEY))
+dit(link(shutdown)(SHUTDOWN))
+dit(link(regqueryval)(REGQUERYVAL))
+dit(link(regquerykey)(REGQUERYKEY))
+dit(link(regdeleteval)(REGDELETEVAL))
+dit(link(regcreateval)(REGCREATEVAL))
+dit(link(reggetsec)(REGGETSEC))
+dit(link(regtestsec)(REGTESTSEC))
+dit(link(set)(REGSET))
+dit(link(use)(REGUSE))
+dit(link(help)(REGHELP))
+dit(link(quit)(REGQUIT))
+
+
+dit(bf(SAMEDIT))
+
+label(NTLOGIN)
+dit(bf(ntlogin [username]))
+Logs into an NT domain as bf(username.)
+
+label(DOMTRUST)
+dit(bf(domtrust))
+Experimental NT netlogon test
+
+label(SAMSYNC)
+dit(bf(samsync))
+Experimental command that Synchronises the
+bf(SAM database)
+on a Backup Domain Controller with a Primary Domain Controller.
+
+label(LOOKUPDOMAIN)
+dit(bf(lookupdomain))
+Returns the SID string for the local NT domain.
+
+label(LOOKUPRIDS)
+dit(bf(samlookuprids [-d domain] <RID> [<RID>...]))
+Return a value associated with a specified RID in the specified NT domain
+
+label(SAMLOOKUPNAMES)
+dit(bf(samlookupnames [-d domain] <name> [<name>...]))
+Return a RID associated with the specified name(s) in the specified NT domain
+
+label(ENUMUSERS)
+dit(bf(enumusers))
+Experimental SAM database query command
+
+label(ADDGROUPMEM)
+dit(bf(addgroupmem <grouprid> [user...]))
+Adds a user to the group specified by
+bf(grouprid.)
+
+label(ADDALIASMEM)
+dit(bf(addaliasmem <grouprid> [member sid...]))
+Adds a Domain Alias member
+
+label(DELGROUPMEM)
+dit(bf(delgroupmem <grouprid> [user...]))
+Removes members from the group specified by
+bf(grouprid.)
+
+label(DELALIASMEM)
+dit(bf(delaliasmem <grouprid> [member sid...]))
+Removes a Domain Alias member
+
+label(CREATEGROUP)
+dit(bf(creategroup <group>))
+Creates a domainwide (Global) group in the domain.
+
+label(CREATEALIAS)
+dit(bf(createalias <alias>))
+Creates a domain alias.
+
+label(CREATEUSER)
+dit(bf(createuser <accountname>))
+Creates an account in the NT domain. This account can be either a user account
+or a workstation trust account (ending in a `$` sign).
+
+label(DELUSER)
+dit(bf(deluser <accountname>))
+Removes an account from the domain.
+
+label(DELGROUP)
+dit(bf(delgroup <group name>))
+Removes a group from the domain.
+
+label(DELALIAS)
+dit(bf(delalias <alias name>))
+Removes an alias from the domain.
+
+label(NTPASS)
+dit(bf(ntpass))
+Change the NT password.
+
+label(SAMQUERYSYNC)
+dit(bf(samquerysec <user name>))
+Query SAM security object
+
+label(SAMUSERSET2)
+dit(bf(samuserset2 <user> [-p password])) and
+
+label(SAMUSERSET)
+dit(bf(samuserset <user> [-p password]))
+Set the a user's password
+
+label(SAMUSER)
+dit(bf(samuser <name> [-a | -u | -g]))
+Do a query on a username in the SAM database. The option that follows the
+bf(name) can be used to show user aliases bf(-a), user account details bf(-u)
+or user groups bf(-g).
+
+label(SAMGROUP)
+dit(bf(samgroup <name>))
+Do a SAM query on a group account.
+
+label(SAMALIAS)
+dit(bf(samalias <name>))
+Do a SAM query on an alias account
+
+label(SAMALIASMEM)
+dit(bf(samaliasmem <name>))
+Query SAM alias members.
+
+label(SAMBAGROUPMEM)
+dit(bf(samgroupmem))
+Do a SAM query on group members
+
+label(SAMTEST)
+dit(bf(samtest))
+encrypted RPC-based SAM test
+
+label(ENUMALIASES)
+dit(bf(enumaliases))
+experimental SAM alias query
+
+label(ENUMDOMAINS)
+dit(bf(enumdomains))
+expermental domain query
+
+label(ENUMGROUPS)
+dit(bf(enumgroups))
+experimental SAM group query
+
+label(DOMINFO)
+dit(bf(dominfo))
+experimental domain info query
+
+label(DISPINFO)
+dit(bf(dispinfo))
+SAM query display info
+
+label(SET)
+dit(bf(set [OPTIONS...]))
+Runs rpcclient within itself (thus allowing command line options to be changed).
+
+label(USE)
+dit(bf(use [\\Server] [-U user%pass] [-W domain] [-d] [-f])) or
+
+dit(bf(use -u))
+Equivalent of the net use command in Windows NT. Can be used to connect to
+remote services.
+
+label(HELP)
+dit(bf(help, ?))
+Shows all commands or help on a specific command.
+
+label(QUIT)
+dit(bf(quit, exit, bye))
+Exits the utility
+
+
+dit(bf(REGEDIT))
+
+label(REGENUM)
+dit(bf(regenum <keyname>))
+Registry key enumeration
+
+label(REGDELETEKEY)
+dit(bf(regdeletekey <keyname>))
+Deletes the specified registry key.
+
+label(REGCREATEKEY)
+dit(bf(regcreatekey <keyname> [keyclass]))
+Creates the specified registry key
+
+label(SHUTDOWN)
+dit(bf(shutdown [-m message] [-t timeout] [-r] [-f]))
+Forces a remote shutdown or reboot (if the -r option is set) of an NT machine.
+
+label(REGQUERYVAL)
+dit(bf(regqueryval <valname>))
+Registry Value Query
+
+label(REGQUERYKEY)
+dit(bf(regquerykey <keyname>))
+Registry Key Query
+
+label(REGDELETEVAL)
+dit(bf(regdeleteval <valname>))
+Delete registry key specified by bf(valname)
+
+label(REGCREATEVAL)
+dit(bf(regcreateval <val_name> <val_type> <val>))
+Create a registry value.
+
+label(REGGETSEC)
+dit(bf(reggetsec))
+Get registry key security
+
+label(REGTESTSEC)
+dit(bf(regtestsec <keyname>))
+Test registry key security
+
+label(REGSET)
+dit(bf(set [OPTIONS...]))
+Runs rpcclient within regedit (thus allowing command line options to be
+changed).
+
+label(REGUSE)
+dit(bf(use [\\Server] [-U user%pass] [-W domain] [-d] [-f])) or
+
+dit(bf(use -u))
+Equivalent of the net view and net use commands.
+
+label(REGHELP)
+dit(bf(help, ?))
+Shows all commands or help on a specific command.
+
+label(REGQUIT)
+dit(bf(quit, exit, bye))
+Exits the utility
+
+label(BUGS)
+manpagesection(BUGS)
+Samba TNG is still in alpha stage and considered not suitable for production use.
+
+From Luke Leighton's original rpcclient man page:
+"WARNING! The MSRPC over SMB code has been developed from examining Network traces. No documentation is available from the original creators (Microsoft) on how MSRPC over SMB works, or how the individual MSRPC services work. Microsoft's implementation of these services has been demonstrated (and reported) to be... a bit flakey in places.
+
+The development of Samba's implementation is also a bit rough, and as more of the services are understood, it can even result in versions of bf(smbd(8)) and rpcclient that are incompatible for some commands or services. Additionally, the developers are sending reports to Microsoft, and problems found or reported to Microsoft are fixed in Service Packs, which may result in incompatibilities."
+
+label(SEEALSO)
+manpageseealso()
+bf(samba (7)),
+bf(samedit (8)),
+bf(regedit (8))
+manpageauthor()
+Samba is written by The Samba Team as Open Source. This man page was written
+by Matthew Geddes and has strongly "borrowed" from Luke Kenneth Casson
+Leighton's original rpcclient man page and wise words and the Samba source.
+

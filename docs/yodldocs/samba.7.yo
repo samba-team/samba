@@ -1,5 +1,5 @@
 mailto(samba-bugs@samba.org)
-manpage(Samba htmlcommand((7)))(7)(23 Oct 1998)(Samba)()
+manpage(Samba htmlcommand((7)))(7)(27 Mar 2000)(Samba)()
 
 label(NAME)
 manpagename(Samba)(A Windows SMB/CIFS fileserver for UNIX)
@@ -27,6 +27,9 @@ of those components that you use. If the manual pages aren't clear
 enough then please send a patch or bug report
 to email(samba-bugs@samba.org).
 
+The daemons new to Samba TNG may not have manual pages written yet. If not,
+please be patient, help out and write one or read the source.
+
 startdit() 
 
 dit(url(bf(smbd))(smbd.8.html)) nl() nl() The url(bf(smbd)
@@ -40,6 +43,49 @@ dit(url(bf(nmbd))(nmbd.8.html)) nl() nl() The url(bf(nmbd)
 support. The configuration file for this daemon is described in
 url(bf(smb.conf (5)))(smb.conf.5.html).
 
+dit(url(bf(browserd))(browserd.8.html)) nl() nl() The url(bf(browserd)(8))
+(browserd.8.html) daemon controls the domain browse lists. The configuration file for this daemon is described in
+url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(lsarpcd))(lsarpcd.8.html)) nl() nl() The url(bf(lsarpcd)(8))
+(lsarpcd.8.html) daemon provides support for the Local Security Authority,
+which is used to resolve account information. The configuration file for
+this daemon is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(netlogond))(netlogond.8.html)) nl() nl() The url(bf(netlogond)(8))
+(netlogond.8.html) daemon provides Authentication services for user
+and machine (trust) accounts. The configuration file for this daemon
+is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(samrd))(samrd.8.html)) nl() nl() The url(bf(samrd)(8))
+(samrd.8.html) daemon provides management services for accessing
+the SAM database. Samba's samedit command makes use of these
+services. The configuration file for this daemon
+is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(spoolssd))(spoolssd.8.html)) nl() nl() The url(bf(spoolssd)(8))
+(spoolssd.8.html) daemon provides NT style print services. The configuration
+file for this daemon is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(srvsvcd))(srvsvcd.8.html)) nl() nl() The url(bf(srvsvcd)(8))
+(srvsvcd.8.html) daemon provides services for remote administration
+of a server. The configuration file for this daemon is described in
+url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(svcctld))(svcctld.8.html)) nl() nl() The url(bf(svcctld)(8))
+(svcctld.8.html) daemon provides remote service control services.
+The configuration file for this daemon is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(winregd))(winregd.8.html)) nl() nl() The url(bf(winregd)(8))
+(winregd.8.html) daemon provides remote registry services. Windows' REGEDIT.EXE
+and REGEDT32.EXE and Samba's regedit make use of these services.
+The configuration file for this daemon is described in url(bf(smb.conf (5)))(smb.conf.5.html).
+
+dit(url(bf(wkssvcd))(wkssvcd.8.html)) nl() nl() The url(bf(wkssvcd)(8))
+(wkssvcd.8.html) daemon provides services like that of Windows NT's Workstation
+service. The configuration file for this daemon is described in url(bf(smb.conf
+(5)))(smb.conf.5.html).
+
 dit(url(bf(smbclient))(smbclient.1.html)) nl() nl() The url(bf(smbclient)
 (1))(smbclient.1.html) program implements a simple ftp-like
 client. This is useful for accessing SMB shares on other compatible
@@ -47,14 +93,24 @@ servers (such as Windows NT), and can also be used to allow a UNIX box
 to print to a printer attached to any SMB server (such as a PC running
 Windows NT).
 
-dit(url(bf(rpcclient))(rpcclient.1.html)) nl() nl() The url(bf(rpcclient)
-(1))(rpcclient.1.html) program is a client that can 'talk' to an
+dit(url(bf(rpcclient))(rpcclient.8.html)) nl() nl() The url(bf(rpcclient)
+(8))(rpcclient.8.html) program is a client that can 'talk' to an
 SMB/CIFS MSRPC server.  Operations include things like managing a SAM
 Database (users, groups and aliases) in the same way as the Windows NT
 programs bf(User Manager for Domains) and bf(Server Manager for Domains);
 managing a remote registry in the same way as the Windows NT programs
 bf(REGEDT32.EXE) and bf(REGEDIT.EXE); viewing a remote event log (same
 as bf(EVENTVWR.EXE)).
+
+dit(url(bf(samedit))(samedit.8.html)) nl() nl() The url(bf(samedit)(8))
+(samedit.8.html) program is a client that implements the SAM database side
+of all bf(rpcclient) commands. The corresponding NT server programs are
+bf(User Manager for Domains) and bf(Server Manager for Domains).
+
+dit(url(bf(regedit))(regedit.8.html)) nl() nl() The url(bf(regedit)(8))
+(regedit.8.html) program is a client that implements the registry editing side
+of all bf(rpcclient) commands. The corresponding NT server program is
+bf(REGEDT32.EXE).
 
 dit(url(bf(testparm))(testparm.1.html)) nl() nl() The url(bf(testparm
 (1)))(testparm.1.html) utility allows you to test your url(bf(smb.conf
@@ -153,3 +209,6 @@ Source software, available at
 url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
 and updated for the Samba2.0 release by Jeremy Allison.
 email(samba-bugs@samba.org).
+
+This man page was modified March 2000 by Matthew Geddes to include (very basic)
+information about the new Samba TNG daemons and support programs.

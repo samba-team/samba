@@ -1,0 +1,70 @@
+mailto(samba-bugs@samba.org) 
+manpage(svcctld htmlcommand((1)))(1)(28 March 2000)(Samba)(SAMBA)
+
+label(NAME)
+manpagename(svcctld)(Service Control daemon)
+
+label(SYNOPSIS)
+manpagesynopsis() 
+
+dit(bf(svcctld) [link(-d debuglevel)(minusd)] [link(-D)(minusD)] [link(-a)(minusa)] [link(-p port)(minusp)] [link(-o)(minuso)] [link(-P)(minusP)] [link(-i scope)(minusi)] [link(-s servicesfile)(minuss)] [link(-l basename for log file)(minusl)])
+
+label(DESCRIPTION)
+manpagedescription()
+
+This daemon is part of the new bf(Samba TNG) suite.
+
+bf(svcctld) will allow remote administration of Samba services. This includes starting, stopping, disabling and enabling of services. Each of the new TNG daemons correspond to a service of the same name. You must be root to start and stop the services.
+
+This daemon is not needed for normal Samba operation (File serving or Domain Control)
+
+label(OPTIONS)
+manpageoptions()
+
+startdit()
+
+label(minusd)
+dit(bf(-d debuglevel))
+sets the debuglevel to an integer between 0 and 100. 0 is for no debugging and 100 is for reams and reams. To submit a bug report to the Samba Team, use debug level 100 (see bf(BUGS.txt)).
+label(minusD)
+dit(bf(-D))
+tells svcctld to become a daemon and detach from the current terminal. This should be used for the most part.
+label(minusa)
+dit(bf(-a))
+tells svcctld to append to it's log file rather than overwrite it. This is on by default.
+label(minusp)
+dit(bf(-p port))
+sets the port on which svcctld listens for incoming requests. Not used often.
+label(minuso)
+dit(bf(-o))
+tells svcctld to overwrite the log file each time it is restarted. This is useful for reporting specific problems to the Samba Team.
+label(minusP)
+dit(bf(-P))
+(unknown)
+label(minusi)
+dit(bf(-i scope))
+sets the NetBIOS scope. The NetBIOS scope is not used normally. To find out more about the NetBIOS scope, see RFCs 1001 and 1002.
+label(minuss)
+dit(bf(-s servicesfile))
+specifies the location of the services file. The default being bf(/etc/services)
+label(minusl)
+dit(bf(-l basename for log file))
+sets the basename of the log file. The default is log and .svcctld will be appended to the file name.
+
+enddit()
+
+label(SEEALSO)
+manpageseealso()
+
+bf(samba(7)),bf(browserd(8)),bf(lsarpcd(8)),bf(samrd(8)),bf(smbd(8)),bf(nmbd(8)),bf(netlogond(8)),bf(svcctld(8)),bf(srvsvcd(8)),bf(winregd(8)),bf(wkssvcd(8)),bf(spoolssd(8)),bf(samedit(8)),bf(regedit(8))
+
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell email(samba-bugs@samba.org). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+
+This manual page (as incomplete as it is) was written by Matthew Geddes for
+The Samba Team.
