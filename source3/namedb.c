@@ -44,7 +44,7 @@ extern struct in_addr ipgrp;
 struct browse_cache_record *browserlist = NULL;
 
 /* this is our domain/workgroup/server database */
-struct domain_record *domainlist = NULL;
+struct subnet_record *subnetlist = NULL;
 
 static BOOL updatedlists = True;
 int  updatecount=0;
@@ -61,7 +61,7 @@ int workgroup_count = 0; /* unique index key: one for each workgroup */
 /****************************************************************************
   add a workgroup into the domain list
   **************************************************************************/
-static void add_workgroup(struct work_record *work, struct domain_record *d)
+static void add_workgroup(struct work_record *work, struct subnet_record *d)
 {
   struct work_record *w2;
 
@@ -89,7 +89,7 @@ static void add_workgroup(struct work_record *work, struct domain_record *d)
 static struct work_record *make_workgroup(char *name)
 {
   struct work_record *work;
-  struct domain_record *d;
+  struct subnet_record *d;
   int t = -1;
   
   if (!name || !name[0]) return NULL;
@@ -108,7 +108,7 @@ static struct work_record *make_workgroup(char *name)
   
   /* make sure all token representations of workgroups are unique */
   
-  for (d = domainlist; d && t == -1; d = d->next)
+  for (d = subnetlist; d && t == -1; d = d->next)
     {
       struct work_record *w;
       for (w = d->workgrouplist; w && t == -1; w = w->next)
@@ -177,7 +177,7 @@ static void remove_old_servers(struct work_record *work, time_t t)
 /*******************************************************************
   remove workgroups
   ******************************************************************/
-struct work_record *remove_workgroup(struct domain_record *d, 
+struct work_record *remove_workgroup(struct subnet_record *d, 
 				     struct work_record *work)
 {
   struct work_record *ret_work = NULL;
@@ -204,19 +204,19 @@ struct work_record *remove_workgroup(struct domain_record *d,
 /****************************************************************************
   add a domain into the list
   **************************************************************************/
-static void add_domain(struct domain_record *d)
+static void add_subnet(struct subnet_record *d)
 {
-  struct domain_record *d2;
+  struct subnet_record *d2;
 
-  if (!domainlist)
+  if (!subnetlist)
   {
-    domainlist = d;
+    subnetlist = d;
     d->prev = NULL;
     d->next = NULL;
     return;
   }
 
-  for (d2 = domainlist; d2->next; d2 = d2->next);
+  for (d2 = subnetlist; d2->next; d2 = d2->next);
 
   d2->next = d;
   d->next = NULL;
@@ -305,7 +305,7 @@ void expire_browse_cache(time_t t)
   that it get created/added anyway. this allows us to force entries in
   lmhosts file to be added.
   **************************************************************************/
-struct work_record *find_workgroupstruct(struct domain_record *d, 
+struct work_record *find_workgroupstruct(struct subnet_record *d, 
 					 fstring name, BOOL add)
 {
   struct work_record *ret, *work;
@@ -342,13 +342,13 @@ struct work_record *find_workgroupstruct(struct domain_record *d,
     {
       if (lp_preferred_master() &&
 	  strequal(lp_workgroup(), name) &&
-	  ismybcast(d->bcast_ip))
+	  d->my_interface)
 	{
 	  DEBUG(3, ("preferred master startup for %s\n", work->work_group));
 	  work->needelection = True;
 	  work->ElectionCriterion |= (1<<3);
 	}
-      if (!ismybcast(d->bcast_ip))
+      if (!d->my_interface)
 	{
 	  work->needelection = False;
 	}
@@ -359,21 +359,19 @@ struct work_record *find_workgroupstruct(struct domain_record *d,
 }
 
 /****************************************************************************
-  find a domain in the domainlist 
+  find a domain in the subnetlist 
   **************************************************************************/
-struct domain_record *find_domain(struct in_addr source_ip)
+struct subnet_record *find_domain(struct in_addr ip)
 {   
-  struct domain_record *d;
+  struct subnet_record *d;
   
   /* search through domain list for broadcast/netmask that matches
      the source ip address */
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
-      if (same_net(source_ip, d->bcast_ip, d->mask_ip))
-	{
-	  return(d);
-	}
+      if (same_net(ip, d->bcast_ip, d->mask_ip))
+	return(d);
     }
   
   return (NULL);
@@ -385,9 +383,9 @@ struct domain_record *find_domain(struct in_addr source_ip)
   **************************************************************************/
 void dump_workgroups(void)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       if (d->workgrouplist)
 	{
@@ -416,23 +414,25 @@ void dump_workgroups(void)
 /****************************************************************************
   create a domain entry
   ****************************************************************************/
-static struct domain_record *make_domain(struct in_addr ip, struct in_addr mask)
+static struct subnet_record *make_subnet(struct in_addr bcast_ip,
+					 struct in_addr mask)
 {
-  struct domain_record *d;
-  d = (struct domain_record *)malloc(sizeof(*d));
+  struct subnet_record *d;
+  d = (struct subnet_record *)malloc(sizeof(*d));
   
   if (!d) return(NULL);
   
   bzero((char *)d,sizeof(*d));
   
-  DEBUG(4, ("making domain %s ", inet_ntoa(ip)));
-  DEBUG(4, ("%s\n", inet_ntoa(mask)));
+  DEBUG(4,("making subnet %s ", inet_ntoa(bcast_ip)));
+  DEBUG(4,("%s\n", inet_ntoa(mask)));
   
-  d->bcast_ip = ip;
+  d->bcast_ip = bcast_ip;
   d->mask_ip  = mask;
   d->workgrouplist = NULL;
-  
-  add_domain(d);
+  d->my_interface = ismybcast(d->bcast_ip);
+
+  add_subnet(d);
   
   return d;
 }
@@ -441,11 +441,11 @@ static struct domain_record *make_domain(struct in_addr ip, struct in_addr mask)
   add a domain entry. creates a workgroup, if necessary, and adds the domain
   to the named a workgroup.
   ****************************************************************************/
-struct domain_record *add_domain_entry(struct in_addr source_ip, 
+struct subnet_record *add_subnet_entry(struct in_addr source_ip, 
 				       struct in_addr source_mask,
 				       char *name, BOOL add)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   struct in_addr ip;
   
   ip = ipgrp;
@@ -455,7 +455,7 @@ struct domain_record *add_domain_entry(struct in_addr source_ip,
   
   /* add the domain into our domain database */
   if ((d = find_domain(source_ip)) ||
-      (d = make_domain(source_ip, source_mask)))
+      (d = make_subnet(source_ip, source_mask)))
     {
       struct work_record *w = find_workgroupstruct(d, name, add);
       
@@ -547,7 +547,7 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 /****************************************************************************
   add a server entry
   ****************************************************************************/
-struct server_record *add_server_entry(struct domain_record *d, 
+struct server_record *add_server_entry(struct subnet_record *d, 
 				       struct work_record *work,
 				       char *name,int servertype, 
 				       int ttl,char *comment,
@@ -584,7 +584,7 @@ struct server_record *add_server_entry(struct domain_record *d,
       bzero((char *)s,sizeof(*s));
     }
   
-  if (ismybcast(d->bcast_ip) &&
+  if (d->my_interface &&
       strequal(lp_workgroup(),work->work_group))
     {
       if (servertype)
@@ -633,7 +633,7 @@ struct server_record *add_server_entry(struct domain_record *d,
   ******************************************************************/
 void write_browse_list(void)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   
   pstring fname,fnamenew;
   FILE *f;
@@ -661,7 +661,7 @@ void write_browse_list(void)
       return;
     }
   
-  for (d = domainlist; d ; d = d->next)
+  for (d = subnetlist; d ; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work ; work = work->next)
@@ -706,9 +706,9 @@ void write_browse_list(void)
   ******************************************************************/
 void expire_servers(time_t t)
 {
-  struct domain_record *d;
+  struct subnet_record *d;
   
-  for (d = domainlist ; d ; d = d->next)
+  for (d = subnetlist ; d ; d = d->next)
     {
       struct work_record *work;
       

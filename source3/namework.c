@@ -50,7 +50,7 @@ extern int workgroup_count; /* total number of workgroups we know about */
 extern struct browse_cache_record *browserlist;
 
 /* this is our domain/workgroup/server database */
-extern struct domain_record *domainlist;
+extern struct subnet_record *subnetlist;
 
 /* machine comment for host announcements */
 extern  pstring ServerComment;
@@ -107,8 +107,8 @@ tell a server to become a backup browser
 **************************************************************************/
 void tell_become_backup(void)
 {
-  struct domain_record *d;
-  for (d = domainlist; d; d = d->next)
+  struct subnet_record *d;
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -161,7 +161,7 @@ find a server responsible for a workgroup, and sync browse lists
 **************************************************************************/
 static BOOL sync_browse_entry(struct browse_cache_record *b)
 {                     
-  struct domain_record *d;
+  struct subnet_record *d;
   struct work_record *work;
   /*
     if (!strequal(serv_name, b->name))
@@ -245,13 +245,13 @@ void update_from_reg(char *name, int type, struct in_addr ip)
   if (type >= 0x1b && type <= 0x1e)
     {
       struct work_record *work;
-      struct domain_record *d;
+      struct subnet_record *d;
       
       if (!(d    = find_domain(ip))) return;
       if (!(work = find_workgroupstruct(d, name, False))) return;
       
       /* request the server to announce if on our subnet */
-      if (ismybcast(d->bcast_ip)) announce_request(work, ip);
+      if (d->my_interface) announce_request(work, ip);
       
       /* domain master type or master browser type */
       if (type == 0x1b || type == 0x1d)
@@ -280,7 +280,7 @@ void add_my_domains(char *group)
   for (i=0;i<n;i++) {
     ip = iface_n_ip(i);
     if (!ip) return;
-    add_domain_entry(*iface_bcast(*ip),*iface_nmask(*ip),lp_workgroup(),True);
+    add_subnet_entry(*iface_bcast(*ip),*iface_nmask(*ip),lp_workgroup(),True);
   }
 }
 
@@ -292,7 +292,7 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
 			     int info_count, int token, int info,
 			     int name_type, struct in_addr ip)
 {                     
-  struct domain_record *d;
+  struct subnet_record *d;
   char outbuf[1024];
   char *p, *countptr, *nameptr;
   int count = 0;
@@ -331,7 +331,7 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
   
   nameptr = p;
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
       
@@ -465,7 +465,7 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip); 
+  struct subnet_record *d = find_domain(ip); 
   int update_count = CVAL(buf,0);
   int ttl = IVAL(buf,1)/1000;
   char *name = buf+5;
@@ -546,8 +546,8 @@ static void process_master_announce(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip);
-  struct domain_record *mydomain = find_domain(*iface_bcast(ip));
+  struct subnet_record *d = find_domain(ip);
+  struct subnet_record *mydomain = find_domain(*iface_bcast(ip));
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
@@ -597,7 +597,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   for (buf1 = buf+5; *buf1 && count; buf1 = skip_string(buf1, 1), --count)
     {
       struct in_addr back_ip;
-      struct domain_record *d;
+      struct subnet_record *d;
       
       DEBUG(4,("Searching for backup browser %s at %s...\n",
 	       buf1, inet_ntoa(ip)));
@@ -616,8 +616,8 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
       
       if ((d = find_domain(back_ip)))
 	{
-	  struct domain_record *d1;
-	  for (d1 = domainlist; d1; d1 = d1->next)
+	  struct subnet_record *d1;
+	  for (d1 = subnetlist; d1; d1 = d1->next)
 	    {
 	      struct work_record *work;
 	      for (work = d1->workgrouplist; work; work = work->next)
@@ -651,7 +651,7 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d; 
+  struct subnet_record *d; 
   struct work_record *work;
 
   int count = CVAL(buf,0);
@@ -669,7 +669,7 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
     return;
   }
   
-  for (d = domainlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
       for (work = d->workgrouplist; work; work = work->next)
 	{
@@ -707,8 +707,8 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
   /* stop being a master but still deal with being a backup browser */
   if (state & 0x1)
     {
-      struct domain_record *d;
-      for (d = domainlist; d; d = d->next)
+      struct subnet_record *d;
+      for (d = subnetlist; d; d = d->next)
 	{
 	  struct work_record *work;
 	  for (work = d->workgrouplist; work; work = work->next)
@@ -724,8 +724,8 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
   /* totally delete all servers and start afresh */
   if (state & 0x2)
     {
-      struct domain_record *d;
-      for (d = domainlist; d; d = d->next)
+      struct subnet_record *d;
+      for (d = subnetlist; d; d = d->next)
 	{
 	  struct work_record *work;
 	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work));
@@ -752,7 +752,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   struct dgram_packet *dgram = &p->packet.dgram;
   struct work_record *work;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip);
+  struct subnet_record *d = find_domain(ip);
   int token = CVAL(buf,0);
   char *name = buf+1;
   
@@ -765,7 +765,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   
   if (!d) return;
   
-  if (!ismybcast(d->bcast_ip)) return;
+  if (!d->my_interface) return;
   
   for (work = d->workgrouplist; work; work = work->next)
     {
@@ -784,7 +784,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip);
+  struct subnet_record *d = find_domain(ip);
   char *logname,*q;
   char *reply_name;
   BOOL add_slashes = False;

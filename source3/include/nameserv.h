@@ -144,17 +144,19 @@ struct work_record
   uint32  ElectionCriterion;
 };
 
-/* a domain structure. it contains a list of workgroups */
-struct domain_record
+/* a subnet structure. it contains a list of workgroups */
+struct subnet_record
 {
-  struct domain_record *next;
-  struct domain_record *prev;
+  struct subnet_record *next;
+  struct subnet_record *prev;
 
   struct work_record *workgrouplist;
 
   struct in_addr bcast_ip;
   struct in_addr mask_ip;
   struct in_addr myip;
+
+  BOOL my_interface;
 };
 
 /* a resource record */
