@@ -168,31 +168,12 @@ parse_event(Event *ev, char *str)
 }
 
 static HDBFlags
-parse_flags(char *str)
+parse_hdbflags2int(char *str)
 {
     unsigned i;
-    HDBFlags f;
     parse_integer(&i, str);
-    f.initial = i & 1;
-    i >>= 1;
-    f.forwardable = i & 1;
-    i >>= 1;
-    f.proxiable = i & 1;
-    i >>= 1;
-    f.renewable = i & 1;
-    i >>= 1;
-    f.postdate = i & 1;
-    i >>= 1;
-    f.server = i & 1;
-    i >>= 1;
-    f.client = i & 1;
-    i >>= 1;
-    f.invalid = i & 1;
-    i >>= 1;
-    f.require_preauth = i & 1;
-    i >>= 1;
-    f.change_pw = i & 1;
-    return f;
+
+    return int2flags(i);
 }
 
 static void
@@ -284,7 +265,7 @@ doit(char *filename, int merge)
 	ent.max_life = parse_integer(NULL, e.max_life);
 	ent.max_renew = parse_integer(NULL, e.max_renew);
 	
-	ent.flags = parse_flags(e.flags);
+	ent.flags = parse_hdbflags2int(e.flags);
 	db->store(context, db, &ent);
 	hdb_free_entry (context, &ent);
     }
