@@ -96,7 +96,12 @@ static int global_stat_cache_hits;
 
 void print_stat_cache_statistics(void)
 {
-  double eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
+  double eff;
+
+  if(global_stat_cache_lookups == 0)
+    return;
+
+  eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
 
   DEBUG(0,("stat cache stats: lookups = %d, hits = %d, misses = %d, \
 stat cache was %f%% effective.\n", global_stat_cache_lookups,
