@@ -1,15 +1,10 @@
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 
-<book>
-
-<bookinfo>
-	<author><firstname>Jeremy</firstname><surname>Allison</surname></author>
-	<pubdate>7th Oct 1999</pubdate>
-</bookinfo>
+<article>
 
 <sect1>
 
-	<title>Joining an NT Domain with Samba 2.2</emphasis></title>
+	<title>Joining an NT Domain with Samba 2.2</title>
 
 	<para>In order for a Samba-2 server to join an NT domain, 
 	you must first add the NetBIOS name of the Samba server to the 
@@ -165,4 +160,4 @@
 	the NIS/NT Samba</ulink>.</para>
 
 </sect1>
-</book>
+</article>
