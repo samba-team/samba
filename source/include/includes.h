@@ -649,6 +649,31 @@ extern int errno;
 #define MAXCODEPAGELINES 256
 #endif
 
+/*
+ * Type for wide character dirent structure.
+ */
+
+typedef struct smb_wdirent {
+	SMB_INO_T       d_ino;
+	SMB_OFF_T       d_off;
+	unsigned short  d_reclen;
+	wpstring        d_name;
+} SMB_STRUCT_WDIRENT;
+
+/*
+ * Type for wide character passwd structure.
+ */
+
+typedef struct smb_wpasswd {
+	wfstring       pw_name;
+	char           *pw_passwd;
+	uid_t          pw_uid;
+	gid_t          pw_gid;
+	wpstring       pw_gecos;
+	wpstring       pw_dir;
+	wpstring       pw_shell;
+} SMB_STRUCT_WPASSWD;
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 

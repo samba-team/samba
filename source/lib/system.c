@@ -722,3 +722,172 @@ struct passwd *sys_getpwuid(uid_t uid)
 {
 	return setup_pwret(getpwuid(uid));
 }
+
+/**************************************************************************
+ The following are the UNICODE versions of *all* system interface functions
+ called within Samba. Ok, ok, the exceptions are the gethostbyXX calls,
+ which currently are left as ascii as they are not used other than in name
+ resolution.
+****************************************************************************/
+
+/**************************************************************************
+ Wide stat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_stat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_stat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide lstat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_lstat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_lstat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide creat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_creat(const smb_ucs2_t *wfname, mode_t mode)
+{
+	pstring fname;
+	return sys_creat(unicode_to_unix(fname,wfname,sizeof(fname)), mode);
+}
+
+/**************************************************************************
+ Wide open. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_open(const smb_ucs2_t *wfname, int oflag, mode_t mode)
+{
+	pstring fname;
+	return sys_open(unicode_to_unix(fname,wfname,sizeof(fname)), oflag, mode);
+}
+
+/**************************************************************************
+ Wide fopen. Just narrow and call sys_xxx.
+****************************************************************************/
+
+FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type)
+{
+	pstring fname;
+	return sys_fopen(unicode_to_unix(fname,wfname,sizeof(fname)), type);
+}
+
+/**************************************************************************
+ Wide opendir. Just narrow and call sys_xxx.
+****************************************************************************/
+
+DIR *wsys_opendir(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return opendir(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide readdir. Return a structure pointer containing a wide filename.
+****************************************************************************/
+
+SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
+{
+	static SMB_STRUCT_WDIRENT retval;
+	SMB_STRUCT_DIRENT *dirval = sys_readdir(dirp);
+
+	if(!dirval)
+		return NULL;
+
+	retval.d_ino = (SMB_INO_T)dirval->d_ino;
+	retval.d_off = (SMB_OFF_T)dirval->d_off;
+	unix_to_unicode(retval.d_name,dirval->d_name,sizeof(retval.d_name));
+	retval.d_reclen = wstrlen(retval.d_name);
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getwd. Call sys_xxx and widen. Assumes s points to a wpstring.
+****************************************************************************/
+
+smb_ucs2_t *wsys_getwd(smb_ucs2_t *s)
+{
+	pstring fname;
+	char *p = sys_getwd(fname);
+
+	if(!p)
+		return NULL;
+
+	return unix_to_unicode(s, p, sizeof(wpstring));
+}
+
+/**************************************************************************
+ Wide chown. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid)
+{
+	pstring fname;
+	return chown(unicode_to_unix(fname,wfname,sizeof(fname)), uid, gid);
+}
+
+/**************************************************************************
+ Wide chroot. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chroot(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return chroot(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide getpwnam. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwnam(const smb_ucs2_t *wname)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	fstring name;
+	struct passwd *pwret = sys_getpwnam(unicode_to_unix(name,wname,sizeof(name)));
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getpwuid. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	struct passwd *pwret = sys_getpwuid(uid);
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
+}
