@@ -646,11 +646,11 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 		case 'U': {
 			char *lp;
 
-			pstrcpy(username,opt_username);
+			fstrcpy(username,opt_username);
 
 			if ((lp=strchr_m(username,'%'))) {
 				*lp = 0;
-				pstrcpy(password,lp+1);
+				fstrcpy(password,lp+1);
 				got_pass = 1;
 				memset(strchr_m(opt_username,'%') + 1, 'X',
 				       strlen(password));
@@ -664,7 +664,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 				return 1;
 			}
 		case 'W':
-			pstrcpy(domain, opt_domain);
+			fstrcpy(domain, opt_domain);
 			break;
 		}
 	}
