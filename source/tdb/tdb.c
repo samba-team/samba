@@ -1,6 +1,5 @@
  /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Andrew Tridgell              1999-2000
    Copyright (C) Luke Kenneth Casson Leighton      2000
@@ -1379,7 +1378,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 static int tdb_already_open(dev_t device,
 			    ino_t ino)
 {
-	TDB_CONTEXT *i = NULL;
+	TDB_CONTEXT *i;
 	
 	for (i = tdbs; i; i = i->next) {
 		if (i->device == device && i->inode == ino) {
@@ -1411,7 +1410,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn)
 {
-	TDB_CONTEXT *tdb = NULL;
+	TDB_CONTEXT *tdb;
 	struct stat st;
 	int rev = 0, locked;
 
@@ -1453,7 +1452,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	if ((tdb->fd = open(name, open_flags, mode)) == -1) {
-		TDB_LOG((tdb, 0, "tdb_open_ex: could not open file %s: %s\n",
+		TDB_LOG((tdb, 5, "tdb_open_ex: could not open file %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
 	}
@@ -1572,7 +1571,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 /* close a database */
 int tdb_close(TDB_CONTEXT *tdb)
 {
-	TDB_CONTEXT **i = NULL;
+	TDB_CONTEXT **i;
 	int ret = 0;
 
 	if (tdb->map_ptr) {
@@ -1729,7 +1728,7 @@ fail:
 /* reopen all tdb's */
 int tdb_reopen_all(void)
 {
-	TDB_CONTEXT *tdb = NULL;
+	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
 		if (tdb_reopen(tdb) != 0) return -1;
