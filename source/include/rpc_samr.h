@@ -1160,7 +1160,7 @@ typedef struct r_samr_query_aliasmem_info
 	uint32 ptr;
 	uint32 num_sids1;
 
-	DOM_SID *sid;
+	DOM_SID2 *sid;
 
 	uint32 status;
 
@@ -1207,6 +1207,8 @@ typedef struct r_samr_add_alias_mem_info
 /* SAMR_Q_OPEN_ALIAS - probably an open */
 typedef struct q_samr_open_alias_info
 {
+	POLICY_HND dom_pol;
+
 	uint32 unknown_0;         /* 0x0000 0008 */
 	uint32 rid_alias;        /* rid */
 

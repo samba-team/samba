@@ -26,8 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-static void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, int depth);
-
 /*******************************************************************
 creates a LSA_TRANS_NAME structure.
 ********************************************************************/
@@ -563,6 +561,48 @@ static void lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 }
 
 /*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
+				prs_struct *ps, int depth)
+{
+	int i;
+
+	if (trn == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_trans_names");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("num_entries    ", ps, depth, &(trn->num_entries));
+	prs_uint32("ptr_trans_names", ps, depth, &(trn->ptr_trans_names));
+
+	if (trn->ptr_trans_names != 0)
+	{
+		prs_uint32("num_entries2   ", ps, depth, &(trn->num_entries2));
+		SMB_ASSERT_ARRAY(trn->name, trn->num_entries);
+
+		for (i = 0; i < trn->num_entries2; i++)
+		{
+			fstring t;
+			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
+
+			lsa_io_trans_name(t, &(trn->name[i]), ps, depth); /* translated name */
+
+		}
+		for (i = 0; i < trn->num_entries2; i++)
+		{
+			fstring t;
+			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
+
+			smb_io_unistr2(t, &(trn->uni_name[i]), trn->name[i].hdr_name.buffer, ps, depth);
+			prs_align(ps);
+		}
+	}
+}
+
+/*******************************************************************
 makes a structure.
 ********************************************************************/
 void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
@@ -576,9 +616,8 @@ void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
 	make_lsa_sid_enum(&(q_l->sids), num_sids, sids);
 
-	q_l->names.num_entries     = 0;
 	q_l->names.ptr_trans_names = 0;
-	q_l->names.num_entries2    = 0;
+	q_l->names.num_entries     = 0;
 
 	q_l->level.value = level;
 }
@@ -601,48 +640,6 @@ void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, in
 	smb_io_lookup_level("switch ", &(q_s->level  ), ps, depth); /* lookup level */
 
 	prs_uint32("mapped_count", ps, depth, &(q_s->mapped_count));
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
-				prs_struct *ps, int depth)
-{
-	int i;
-	int i2;
-
-	if (trn == NULL) return;
-
-	prs_debug(ps, depth, desc, "lsa_io_trans_names");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("num_entries    ", ps, depth, &(trn->num_entries));
-	prs_uint32("ptr_trans_names", ps, depth, &(trn->ptr_trans_names));
-
-	if (trn->ptr_trans_names != 0)
-	{
-		prs_uint32("num_entries2   ", ps, depth, &(trn->num_entries2));
-
-		SMB_ASSERT_ARRAY(trn->name, trn->num_entries);
-
-		for (i = 0, i2 = 0; i < trn->num_entries2; i++)
-		{
-			fstring t;
-			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
-
-			lsa_io_trans_name(t, &(trn->name[i]), ps, depth); /* translated name */
-
-			if (trn->name[i].hdr_name.buffer != 0)
-			{
-				smb_io_unistr2(t, &(trn->uni_name[i2]), 1, ps, depth);
-				prs_align(ps);
-				i2++;
-			}
-		}
-	}
 }
 
 /*******************************************************************
