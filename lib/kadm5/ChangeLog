@@ -1,3 +1,8 @@
+2002-02-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* init_c.c: we have to create our own param struct before
+	marshaling
+
 2001-09-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: link with LIB_pidfile
