@@ -50,5 +50,6 @@
 
 #define strtok_r _kafs_strtok_r
 #define strlcpy _kafs_strlcpy
+#define strsep _kafs_strsep
 
 #endif /* __roken_rename_h__ */

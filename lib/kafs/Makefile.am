@@ -48,7 +48,7 @@ libkafs_la_LIBADD = ../roken/libroken.la $(DEPLIB_krb4)
 endif # KRB5
 
 lib_LTLIBRARIES = $(AFSLIBS)
-libkafs_la_LDFLAGS = -version-info 3:2:3
+libkafs_la_LDFLAGS = -version-info 3:3:3
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
@@ -62,7 +62,7 @@ afskrb5_c = afskrb5.c
 endif
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c
+ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
 endif
 
 libkafs_la_SOURCES =				\
@@ -98,3 +98,6 @@ strtok_r.c:
 
 strlcpy.c:
 	$(LN_S) $(srcdir)/../roken/strlcpy.c .
+
+strsep.c:
+	$(LN_S) $(srcdir)/../roken/strsep.c .
