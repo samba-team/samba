@@ -513,6 +513,54 @@ krb5_425_conv_principal(krb5_context context,
 				strlen(realm), realm, name, instance, 0);
 }
 
+krb5_error_code
+krb5_524_conv_principal(krb5_context context,
+			const krb5_principal principal,
+			char *name, 
+			char *instance,
+			char *realm)
+{
+#ifdef USE_ASN1_PRINCIPAL
+    char *n, *i, *r;
+    char tmpinst[40];
+    r = principal->realm;
+
+    switch(principal->name.name_string.len){
+    case 1:
+	n = principal->name.name_string.val[0];
+	i = "";
+	break;
+    case 2:
+	n = principal->name.name_string.val[0];
+	i = principal->name.name_string.val[1];
+	break;
+    default:
+	return -1;
+    }
+    
+    if(strcmp(n, "host") == 0){
+	char *p;
+	n = "rcmd";
+	strncpy(tmpinst, i, sizeof(tmpinst));
+	p = strchr(tmpinst, '.');
+	if(p) *p = 0;
+	i = tmpinst;
+    }
+    if(strlen(r) >= 40)
+	return -1;
+    if(strlen(n) >= 40)
+	return -1;
+    if(strlen(i) >= 40)
+	return -1;
+    strcpy(realm, r);
+    strcpy(name, n);
+    strcpy(instance, i);
+    return 0;
+#else
+    abort();
+#endif
+}
+
 
 			
 krb5_error_code
