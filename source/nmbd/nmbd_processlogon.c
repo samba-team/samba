@@ -139,9 +139,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       fstrcpy(q, reply_name);
       q = skip_string(q, 1); /* PDC name */
 
-#if 0
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
-#endif
         q = align2(q, buf);
 
         PutUniCode(q, my_name); /* PDC name */
@@ -155,9 +153,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         q += 2;
         SSVAL(q, 0, lm20token);
         q += 2;
-#if 0
       }
-#endif
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
