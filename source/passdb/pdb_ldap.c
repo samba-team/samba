@@ -3306,6 +3306,15 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 }
 
 
+/**
+ * Init SAM_TRUST_PASSWD structure from LDAP structures received from ldap calls.
+ *
+ * @param ldap_state LDAP state structure required by ldap calls
+ * @param trust trust password structure used by password backend
+ * @param entry LDAPMessage structure returned from ldap calls
+ * @return true if initialised successfully, otherwise false
+ */
+
 static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUST_PASSWD *trust,
                                    LDAPMessage *entry)
 {
@@ -3420,6 +3429,12 @@ static NTSTATUS ldapsam_settrustpwent(struct pdb_methods *methods)
 	return NT_STATUS_OK;
 }
 
+
+/**
+ * Ends trust passwords enumeration and frees any remaining ldap pointers.
+ *
+ * @param methods passdb backend methods related to current context
+ */
 
 static void ldapsam_endtrustpwent(struct pdb_methods *methods)
 {
