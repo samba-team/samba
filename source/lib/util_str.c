@@ -844,24 +844,40 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
     return dest;
 }
 
-/****************************************************************************
- This is a safer strcpy(), meant to prevent core dumps when nasty things happen
-****************************************************************************/
+/*******************************************************************
+ Paranoid strcpy into a buffer of given length (includes terminating
+ zero. Strips out all but 'a-Z0-9' and replaces with '_'. Deliberately
+ does *NOT* check for multibyte characters. Don't change it !
+********************************************************************/
 
-char *StrCpy(char *dest,const char *src)
+char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
 {
-  char *d = dest;
+	size_t len, i;
 
-  /* I don't want to get lazy with these ... */
-  SMB_ASSERT(dest && src);
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
+		return NULL;
+	}
 
-  if (!dest) return(NULL);
-  if (!src) {
-    *dest = 0;
-    return(dest);
-  }
-  while ((*d++ = *src++)) ;
-  return(dest);
+	if (!src) {
+		*dest = 0;
+		return dest;
+	}  
+
+	len = strlen(src);
+	if (len >= maxlength)
+		len = maxlength - 1;
+
+	for(i = 0; i < len; i++) {
+		if(isupper(src[i]) ||islower(src[i]) || isdigit(src[i]))
+			dest[i] = src[i];
+		else
+			dest[i] = '_';
+	}
+
+	dest[i] = '\0';
+
+	return dest;
 }
 
 /****************************************************************************
