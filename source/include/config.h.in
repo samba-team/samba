@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -232,6 +232,7 @@
 #undef MMAP_BLACKLIST
 #undef HAVE_IMMEDIATE_STRUCTURES
 #undef HAVE_CUPS
+#undef WITH_SAM
 #undef WITH_LDAP_SAM
 #undef WITH_NISPLUS_SAM
 #undef WITH_TDB_SAM
