@@ -206,7 +206,7 @@ void cmd_at(struct client_info *info)
 				return;
 			}
 		}
-		else if (sscanf(temp, "%d:%d:%d", &hours, &minutes, &seconds) > 2)
+		else if (sscanf(temp, "%d:%d:%d", &hours, &minutes, &seconds) >= 2)
 		{
 			p = strchr(temp, 0);
 
