@@ -27,7 +27,7 @@
 #ifdef WITH_TDB_SAM
 
 #define PDB_VERSION		"20010830"
-#define PASSDB_FILE_NAME	"/passdb.tdb"
+#define PASSDB_FILE_NAME	"passdb.tdb"
 #define TDB_FORMAT_STRING	"ddddddBBBBBBBBBBBBddBBwdwdBdd"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
@@ -866,7 +866,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	} else {
 		pstring tdbfile;
 		get_private_directory(tdbfile);
-		pstrcat (tdbfile, PASSDB_FILE_NAME);
+		pstrcat(tdbfile, "/");
+		pstrcat(tdbfile, PASSDB_FILE_NAME);
 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
 	}
 
