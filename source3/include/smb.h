@@ -1155,6 +1155,12 @@ struct bitmap {
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
 
+/* flags for SMBntrename call (from Samba4) */
+#define RENAME_FLAG_MOVE_CLUSTER_INFORMATION 0x102 /* ???? */
+#define RENAME_FLAG_HARD_LINK                0x103
+#define RENAME_FLAG_RENAME                   0x104
+#define RENAME_FLAG_COPY                     0x105
+
 /* Filesystem Attributes. */
 #define FILE_CASE_SENSITIVE_SEARCH      0x00000001
 #define FILE_CASE_PRESERVED_NAMES       0x00000002

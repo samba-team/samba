@@ -224,6 +224,44 @@ BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_
 }
 
 /****************************************************************************
+ NT Rename a file.
+****************************************************************************/
+
+BOOL cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf, 4, 0, True);
+
+	SCVAL(cli->outbuf,smb_com,SMBntrename);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(cli->outbuf,smb_vwv1, RENAME_FLAG_RENAME);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_src, -1, STR_TERMINATE);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_dst, -1, STR_TERMINATE);
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	if (cli_is_error(cli))
+		return False;
+
+	return True;
+}
+
+/****************************************************************************
  Delete a file.
 ****************************************************************************/
 
