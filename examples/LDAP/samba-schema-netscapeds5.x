@@ -21,8 +21,8 @@ aci: (targetattr = "*")(version 3.0; acl "SIE Group"; allow (all)groupdn = "ld
  ap:///cn=slapd-sambaldap, cn=iPlanet Directory Server, cn=Server Group, cn=iPlanetDirectory.samba.org, ou=samba.org, o=NetscapeRoot";)
 modifiersName: cn=directory manager
 modifyTimestamp: 20020322124844Z
-objectClasses: ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTUR
- AL MAY ( acctFlags $ domain $ homeDrive $ kickoffTime $ lmPassword $ logofft
+objectClasses: ( 1.3.1.5.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
+ MAY ( acctFlags $ domain $ homeDrive $ kickoffTime $ lmPassword $ logofft
  ime $ logonTime $ ntPassword $ primaryGroupID $ profilePath $ pwdCanChange $
   pwdLastSet $ pwdMustChange $ rid $ scriptPath $ smbHome $ userWorkstations 
  ) X-ORIGIN 'user defined' )

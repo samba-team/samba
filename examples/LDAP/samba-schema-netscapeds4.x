@@ -24,7 +24,7 @@ attribute       domain                  1.3.6.1.4.1.7165.2.1.18 cis single
 
 objectclass sambaAccount
        oid
-               1.3.1.5.1.4.1.7165.2.2.2
+               1.3.1.5.1.4.1.7165.2.2.3
        superior
                top
        requires
