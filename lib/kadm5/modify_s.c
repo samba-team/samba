@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,18 +40,16 @@
 
 RCSID("$Id$");
 
-#define FORBIDDEN_MASK (KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME | KADM5_MOD_NAME | KADM5_MKVNO | KADM5_AUX_ATTRIBUTES | KADM5_LAST_SUCCESS | KADM5_LAST_FAILED | KADM5_KEY_DATA)
-
-
-kadm5_ret_t
-kadm5_s_modify_principal(void *server_handle,
-			 kadm5_principal_ent_t princ, 
-			 u_int32_t mask)
+static kadm5_ret_t
+modify_principal(void *server_handle,
+		 kadm5_principal_ent_t princ, 
+		 u_int32_t mask,
+		 u_int32_t forbidden_mask)
 {
     kadm5_server_context *context = server_handle;
     hdb_entry ent;
     kadm5_ret_t ret;
-    if((mask & FORBIDDEN_MASK))
+    if((mask & forbidden_mask))
 	return KADM5_BAD_MASK;
     if((mask & KADM5_POLICY) && strcmp(princ->policy, "default"))
 	return KADM5_UNK_POLICY;
@@ -82,3 +80,27 @@ out:
     return _kadm5_error_code(ret);
 }
 
+
+kadm5_ret_t
+kadm5_s_modify_principal(void *server_handle,
+			 kadm5_principal_ent_t princ, 
+			 u_int32_t mask)
+{
+    return modify_principal(server_handle, princ, mask, 
+			    KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
+			    | KADM5_MOD_NAME | KADM5_MKVNO 
+			    | KADM5_AUX_ATTRIBUTES | KADM5_LAST_SUCCESS
+			    | KADM5_LAST_FAILED | KADM5_KEY_DATA);
+}
+
+kadm5_ret_t
+kadm5_s_modify_principal_with_key(void *server_handle,
+				  kadm5_principal_ent_t princ, 
+				  u_int32_t mask)
+{
+    return modify_principal(server_handle, princ, mask, 
+			    KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
+			    | KADM5_MOD_NAME | KADM5_MKVNO 
+			    | KADM5_AUX_ATTRIBUTES | KADM5_LAST_SUCCESS
+			    | KADM5_LAST_FAILED);
+}
