@@ -739,8 +739,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 
 	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
 	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
-				fname, byte_count));
+		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %lu\n",
+			 fname, (unsigned long)byte_count));
 		goto no_version_info;
 	}
 
@@ -760,8 +760,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
-				fname, byte_count));
+		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %lu\n",
+			 fname, (unsigned long)byte_count));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
 		goto no_version_info;
 	}
@@ -794,8 +794,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		}
 
 		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
-			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
-					fname, byte_count));
+			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %lu\n",
+				 fname, (unsigned long)byte_count));
 			goto error_exit;
 		}
 
@@ -825,8 +825,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
-					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
-							fname, byte_count));
+					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %lu\n",
+						 fname, (unsigned long)byte_count));
 					goto error_exit;
 				}
 

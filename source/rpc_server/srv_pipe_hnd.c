@@ -541,7 +541,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 void free_pipe_context(pipes_struct *p)
 {
 	if (p->mem_ctx) {
-		DEBUG(3,("free_pipe_context: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
+		DEBUG(3,("free_pipe_context: destroying talloc pool of size %lu\n", (unsigned long)talloc_pool_size(p->mem_ctx) ));
 		talloc_destroy_pool(p->mem_ctx);
 	} else {
 		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);
