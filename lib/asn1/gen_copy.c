@@ -43,7 +43,8 @@ RCSID("$Id$");
 static void
 copy_primitive (char *typename, char *from, char *to)
 {
-    fprintf (codefile, "copy_%s(%s, %s);\n", typename, from, to);
+    fprintf (codefile, "if(copy_%s(%s, %s)) return ENOMEM;\n", 
+	     typename, from, to);
 }
 
 static void
@@ -54,7 +55,8 @@ copy_type (char *from, char *to, Type *t)
 #if 0
       copy_type (from, to, t->symbol->type);
 #endif
-      fprintf (codefile, "copy_%s(%s, %s);\n", t->symbol->gen_name, from, to);
+      fprintf (codefile, "if(copy_%s(%s, %s)) return ENOMEM;\n", 
+	       t->symbol->gen_name, from, to);
       break;
   case TInteger:
       fprintf(codefile, "*(%s) = *(%s);\n", to, from);
@@ -84,6 +86,7 @@ copy_type (char *from, char *to, Type *t)
 	  if(m->optional){
 	      fprintf(codefile, "if(%s) {\n", f);
 	      fprintf(codefile, "%s = malloc(sizeof(*%s));\n", t, t);
+	      fprintf(codefile, "if(%s == NULL) return ENOMEM;\n", t);
 	  }
 	  copy_type (f, t, m->type);
 	  if(m->optional){
@@ -101,9 +104,10 @@ copy_type (char *from, char *to, Type *t)
       char *f;
       char *T;
 
-      fprintf (codefile, "(%s)->val = "
-	       "malloc((%s)->len * sizeof(*(%s)->val));\n", 
+      fprintf (codefile, "if(((%s)->val = "
+	       "malloc((%s)->len * sizeof(*(%s)->val))) == NULL)\n", 
 	       to, from, to);
+      fprintf (codefile, "return ENOMEM;\n");
       fprintf(codefile,
 	      "for((%s)->len = 0; (%s)->len < (%s)->len; (%s)->len++){\n",
 	      to, to, from, to);
@@ -133,15 +137,15 @@ void
 generate_type_copy (Symbol *s)
 {
   fprintf (headerfile,
-	   "void copy_%s(const %s *, %s *);\n",
+	   "int copy_%s(const %s *, %s *);\n",
 	   s->gen_name, s->gen_name, s->gen_name);
 
-  fprintf (codefile, "void\n"
+  fprintf (codefile, "int\n"
 	   "copy_%s(const %s *from, %s *to)\n"
 	   "{\n",
 	   s->gen_name, s->gen_name, s->gen_name);
 
   copy_type ("from", "to", s->type);
-  fprintf (codefile, "}\n\n");
+  fprintf (codefile, "return 0;\n}\n\n");
 }
 
