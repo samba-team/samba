@@ -85,7 +85,7 @@ kt_remove(int argc, char **argv)
     krb5_principal principal;
     int kvno = 0;
     char *keytype_string = NULL;
-    krb5_keytype keytype = 0;
+    krb5_keytype keytype = KEYTYPE_NULL;
     int help_flag = 0;
     struct getargs args[] = {
 	{ "principal", 'p', arg_string, NULL, "principal to remove" },
@@ -120,7 +120,7 @@ kt_remove(int argc, char **argv)
 	if(ret) {
 	    int t;
 	    if(sscanf(keytype_string, "%d", &t) == 1)
-		keytype = t;
+		keytype = (krb5_keytype)t;
 	    else {
 		krb5_warn(context, ret, "%s", keytype_string);
 		if(principal)
@@ -200,7 +200,7 @@ kt_add(int argc, char **argv)
     if(ret) {
 	int t;
 	if(sscanf(keytype_string, "%d", &t) == 1)
-	    keytype = t;
+	    keytype = (krb5_keytype)t;
 	else {
 	    krb5_warn(context, ret, "%s", keytype_string);
 	    if(entry.principal)
