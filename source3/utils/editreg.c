@@ -458,7 +458,12 @@ typedef struct sk_map_s {
 #define REGF_REGTYPE_NONE 0
 #define REGF_REGTYPE_NT   1
 #define REGF_REGTYPE_W9X  2
- 
+
+#define TTTONTTIME(r, t1, t2) (r)->last_mod_time.low = (t1); \
+                              (r)->last_mod_time.high = (t2);
+
+#define REGF_HDR_BLKSIZ 0x1000 
+
 typedef struct regf_struct_s {
   int reg_type;
   char *regfile_name, *outfile_name;
@@ -466,6 +471,7 @@ typedef struct regf_struct_s {
   struct stat sbuf;
   char *base;
   int modified;
+  NTTIME last_mod_time;
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
   SK_MAP **sk_map;
@@ -474,6 +480,16 @@ typedef struct regf_struct_s {
 /*
  * Structures for dealing with the on-disk format of the registry
  */
+
+#define IVAL(buf) ((unsigned int) \
+                   (unsigned int)*((unsigned char *)(buf)+3)<<24| \
+                   (unsigned int)*((unsigned char *)(buf)+2)<<16| \
+                   (unsigned int)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned int)*((unsigned char *)(buf)+0)) 
+
+#define SVAL(buf) ((unsigned short) \
+                   (unsigned short)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned short)*((unsigned char *)(buf)+0)) 
 
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
@@ -586,8 +602,8 @@ typedef struct vk_struct {
 #define REG_TYPE_DWORD     4
 #define REG_TYPE_MULTISZ   7
 
-#define OFF(f) ((f) + 0x1000 + 4) 
-#define LOCN(f) (base + OFF(f))
+#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
+#define LOCN(base, f) ((base) + OFF(f))
 
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
@@ -632,25 +648,25 @@ int nt_free_regf(REGF *regf)
 
 }
 
-/* Get the header of the registry 
-   If the mmap'd area has not been allocated, then mmap the input file
-*/
-int nt_get_regf_hdr(REGF *regf)
+/* Get the header of the registry. Return a pointer to the structure 
+ * If the mmap'd area has not been allocated, then mmap the input file
+ */
+REGF_HDR *nt_get_regf_hdr(REGF *regf)
 {
   if (!regf)
-    return -1; /* What about errors */
+    return NULL; /* What about errors */
 
   if (!regf->regfile_name)
-    return -1; /* What about errors */
+    return NULL; /* What about errors */
 
   if (!regf->base) { /* Try to mmap etc the file */
 
     if ((regf->fd = open(regf->regfile_name, O_RDONLY, 0000)) <0) {
-      return regf->fd; /* What about errors */
+      return NULL; /* What about errors? */
     }
 
     if (fstat(regf->fd, &regf->sbuf) < 0) {
-      return -1;
+      return NULL;
     }
 
     regf->base = mmap(0, regf->sbuf.st_size, PROT_READ, MAP_SHARED, regf->fd, 0);
@@ -658,7 +674,7 @@ int nt_get_regf_hdr(REGF *regf)
     if ((int)regf->base == 1) {
       fprintf(stderr, "Could not mmap file: %s, %s\n", regf->regfile_name,
 	      strerror(errno));
-      return -1;
+      return NULL;
     }
   }
 
@@ -669,9 +685,7 @@ int nt_get_regf_hdr(REGF *regf)
 
   assert(regf->base != NULL);
 
-  
-
-  return 1;
+  return (REGF_HDR *)regf->base;
 }
 
 int nt_get_hbin_hdr(REGF *regf, int hbin_offs)
@@ -682,15 +696,28 @@ int nt_get_hbin_hdr(REGF *regf, int hbin_offs)
 
 int nt_load_registry(REGF *regf)
 {
-  int rc;
+  REGF_HDR *regf_hdr;
+  unsigned int regf_id;
 
   /* Get the header */
 
-  if ((rc = nt_get_regf_hdr(regf)) < 0) {
-    return rc;
+  if ((regf_hdr = nt_get_regf_hdr(regf)) == NULL) {
+    return -1;
   }
 
-  /* Now what? */
+  /* Now process that header and start to read the rest in */
+
+  if ((regf_id = IVAL(&regf_hdr->REGF_ID)) != REG_REGF_ID) {
+    fprintf(stderr, "Unrecognized NT registry header id: %0X, %s\n",
+	    regf_id, regf->regfile_name);
+    return -1;
+  }
+
+  /* Update the last mod date, and then go get the first NK record and on */
+
+  TTTONTTIME(regf, IVAL(&regf_hdr->tim1), IVAL(&regf_hdr->tim2));
+
+  
 
   return 1;
 }
