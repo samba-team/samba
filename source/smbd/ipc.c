@@ -3131,7 +3131,6 @@ static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
 			DEBUG(3,("unexpected message type in NTLMSSP %d\n",
 			          p->auth_verifier.msg_type));
 			return False;
-			break;
 		}
 	}
 
