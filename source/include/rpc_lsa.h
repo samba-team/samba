@@ -185,6 +185,53 @@ typedef struct lsa_r_open_pol2_info
 
 } LSA_R_OPEN_POL2;
 
+
+#define POLICY_VIEW_LOCAL_INFORMATION    0x00000001
+#define POLICY_VIEW_AUDIT_INFORMATION    0x00000002
+#define POLICY_GET_PRIVATE_INFORMATION   0x00000004
+#define POLICY_TRUST_ADMIN               0x00000008
+#define POLICY_CREATE_ACCOUNT            0x00000010
+#define POLICY_CREATE_SECRET             0x00000020
+#define POLICY_CREATE_PRIVILEGE          0x00000040
+#define POLICY_SET_DEFAULT_QUOTA_LIMITS  0x00000080
+#define POLICY_SET_AUDIT_REQUIREMENTS    0x00000100
+#define POLICY_AUDIT_LOG_ADMIN           0x00000200
+#define POLICY_SERVER_ADMIN              0x00000400
+#define POLICY_LOOKUP_NAMES              0x00000800
+
+#define POLICY_ALL_ACCESS ( STANDARD_RIGHTS_REQUIRED_ACCESS  |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION   |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN              |\
+                            POLICY_LOOKUP_NAMES )
+
+
+#define POLICY_READ       ( STANDARD_RIGHTS_READ_ACCESS      |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION)
+
+#define POLICY_WRITE      ( STANDARD_RIGHTS_WRITE_ACCESS     |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN)
+
+#define POLICY_EXECUTE    ( STANDARD_RIGHTS_EXECUTE_ACCESS   |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_LOOKUP_NAMES )
+
 /* LSA_Q_QUERY_SEC_OBJ - LSA query security */
 typedef struct lsa_query_sec_obj_info
 {
@@ -624,22 +671,6 @@ typedef struct lsa_r_removeprivs
 } LSA_R_REMOVEPRIVS;
 
 
-
 #endif /* _RPC_LSA_H */
-/*
-
-opnum 11: opensid: query: handle du domaine, sid du user
-reply: handle, status
-
-opnum 12: getlistofprivs: query: handle du user
-reply: ptr, nombre, nombre, tableau de 3 uint32: flag+priv.low+priv.high
-uint32 0, status 
-
-opnum 17: ?? query: handle
-reply: uint32 + status
-
-
-*/
-
 
 

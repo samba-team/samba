@@ -913,3 +913,73 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	return r_u->status;
 }
 
+/***************************************************************************
+ For a given SID, remove some privileges.
+ ***************************************************************************/
+
+NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUERY_SEC_OBJ *r_u)
+{
+	struct lsa_info *info=NULL;
+	extern DOM_SID global_sid_World;
+	extern DOM_SID global_sid_Builtin;
+	DOM_SID adm_sid;
+
+	SEC_ACE ace[2];
+	SEC_ACCESS mask;
+
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+
+	switch (q_u->sec_info) {
+	case 1:
+		/* SD contains only the owner */
+
+		sid_copy(&adm_sid, &global_sid_Builtin);
+		sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+
+		if((psd = make_sec_desc(p->mem_ctx, SEC_DESC_REVISION, &adm_sid, NULL, NULL, NULL, &sd_size)) == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+			return NT_STATUS_NO_MEMORY;
+		break;
+	case 4:
+		/* SD contains only the ACL */
+
+		init_sec_access(&mask, POLICY_EXECUTE);
+		init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+		sid_copy(&adm_sid, &global_sid_Builtin);
+		sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+
+		init_sec_access(&mask, POLICY_ALL_ACCESS);
+		init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+		if((psa = make_sec_acl(p->mem_ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if((psd = make_sec_desc(p->mem_ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, &sd_size)) == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+			return NT_STATUS_NO_MEMORY;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+		break;
+	}
+
+	r_u->ptr=1;
+
+	return r_u->status;
+}
+
+
