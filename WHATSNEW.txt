@@ -21,6 +21,7 @@ that cannot access structures on non-aligned boundaries
 4). Compiler warnings in nmbd fixed.
 5). Makefile updated for Linux 2.0 versions (new smbmount
 commands should only be compiled for 2.1.x kernels).
+6). Addition of a timestamp to attack warning messages.
 
 Changes in 1.9.18.
 ------------------
