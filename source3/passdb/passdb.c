@@ -65,6 +65,36 @@ static void pdb_init_dispinfo(struct sam_disp_info *user)
 	ZERO_STRUCTP(user);
 }
 
+
+/************************************************************
+ Fill the SAM_ACCOUNT with default values.
+ ***********************************************************/
+
+static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
+{
+	if (user == NULL) {
+		DEBUG(0,("pdb_fill_default_sam: SAM_ACCOUNT was NULL\n"));
+		return False;
+	}
+	
+	ZERO_STRUCTP(user);
+	(user)->logon_time            = (time_t)0;
+	(user)->logoff_time           = (time_t)-1;
+	(user)->kickoff_time          = (time_t)-1;
+	(user)->pass_last_set_time    = (time_t)-1;
+	(user)->pass_can_change_time  = (time_t)-1;
+	(user)->pass_must_change_time = (time_t)-1;
+
+	(user)->unknown_3 = 0x00ffffff; 	/* don't know */
+	(user)->logon_divs = 168; 	/* hours per week */
+	(user)->hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset((user)->hours, 0xff, (user)->hours_len); /* available at all hours */
+	(user)->unknown_5 = 0x00000000; /* don't know */
+	(user)->unknown_6 = 0x000004ec; /* don't know */
+	return True;
+}	
+
+
 /*************************************************************
  Alloc memory and initialises a struct sam_passwd.
  ************************************************************/
@@ -85,25 +115,89 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 		DEBUG(0,("pdb_init_sam: error while allocating memory\n"));
 		return False;
 	}
-	
-	ZERO_STRUCTP(*user);
 
-	(*user)->logon_time            = (time_t)0;
-	(*user)->logoff_time           = (time_t)-1;
-	(*user)->kickoff_time          = (time_t)-1;
-	(*user)->pass_last_set_time    = (time_t)-1;
-	(*user)->pass_can_change_time  = (time_t)-1;
-	(*user)->pass_must_change_time = (time_t)-1;
+	pdb_fill_default_sam(*user);
 
-	(*user)->unknown_3 = 0x00ffffff; 	/* don't know */
-	(*user)->logon_divs = 168; 	/* hours per week */
-	(*user)->hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset((*user)->hours, 0xff, (*user)->hours_len); /* available at all hours */
-	(*user)->unknown_5 = 0x00000000; /* don't know */
-	(*user)->unknown_6 = 0x000004ec; /* don't know */
-	
 	return True;
 }
+
+
+/*************************************************************
+ Initialises a struct sam_passwd with sane values.
+ ************************************************************/
+
+BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
+{
+	if (!pwd) {
+		new_sam_acct = NULL;
+		return False;
+	}
+
+	if (!pdb_init_sam(new_sam_acct)) {
+		new_sam_acct = NULL;
+		return False;
+	}
+
+	pdb_set_username(*new_sam_acct, pwd->pw_name);
+	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
+	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
+	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
+	pdb_set_pass_last_set_time(*new_sam_acct, time(NULL));
+	pdb_set_profile_path(*new_sam_acct, lp_logon_path());
+	pdb_set_homedir(*new_sam_acct, lp_logon_home());
+	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive());
+	pdb_set_logon_script(*new_sam_acct, lp_logon_script());
+	return True;
+}
+
+
+/************************************************************
+ Free the NT/LM hashes only.
+ ***********************************************************/
+
+static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
+{
+	if (user == NULL) {
+		DEBUG(0,("pdb_free_sam_contents: SAM_ACCOUNT was NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_free_sam\n");
+#endif
+		return False;
+	}
+
+	/* As we start mallocing more strings this is where  
+	   we should free them. */
+
+	SAFE_FREE(user->nt_pw);
+	SAFE_FREE(user->lm_pw);
+	
+	return True;	
+}
+
+
+/************************************************************
+ Reset the SAM_ACCOUNT and free the NT/LM hashes.
+  - note: they are not zero'ed out however.
+ ***********************************************************/
+
+BOOL pdb_reset_sam(SAM_ACCOUNT *user)
+{
+	if (user == NULL) {
+		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
+		return False;
+	}
+	
+	if (!pdb_free_sam_contents(user)) {
+		return False;
+	}
+
+	if (!pdb_fill_default_sam(user)) {
+		return False;
+	}
+
+	return True;
+}
+
 
 /************************************************************
  Free the SAM_ACCOUNT and the NT/LM hashes.
@@ -119,30 +213,15 @@ BOOL pdb_free_sam(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	SAFE_FREE(user->nt_pw);
-	SAFE_FREE(user->lm_pw);
+	if (!pdb_free_sam_contents(user)) {
+		return False;
+	}
+
 	SAFE_FREE(user);
 	
 	return True;	
 }
 
-/************************************************************
- Reset the SAM_ACCOUNT and the NT/LM hashes.
- ***********************************************************/
-
-BOOL pdb_reset_sam(SAM_ACCOUNT *user)
-{
-	if (user == NULL) {
-		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
-		return False;
-	}
-	
-	SAFE_FREE(user->nt_pw);
-	SAFE_FREE(user->lm_pw);
-	ZERO_STRUCTP(user);
-
-	return True;
-}
 
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
@@ -800,16 +879,9 @@ account without a valid local system user.\n", user_name);
 		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account.
 		   Because the new_sam_pwd only exists in the scope of this function
 		   we will not allocate memory for members */
-		pdb_init_sam(&new_sam_acct);
-		pdb_set_username(new_sam_acct, user_name);
-		pdb_set_fullname(new_sam_acct, pwd->pw_gecos);
-		pdb_set_uid(new_sam_acct, pwd->pw_uid);
-		pdb_set_gid(new_sam_acct, pwd->pw_gid);
-		pdb_set_pass_last_set_time(new_sam_acct, time(NULL));
-		pdb_set_profile_path(new_sam_acct, lp_logon_path());
-		pdb_set_homedir(new_sam_acct, lp_logon_home());
-		pdb_set_dir_drive(new_sam_acct, lp_logon_drive());
-		pdb_set_logon_script(new_sam_acct, lp_logon_script());
+		if (!pdb_init_sam_pw(&new_sam_acct, pwd)) {
+			return False;
+		}
 
 		/* set account flags */
 		pdb_set_acct_ctrl(new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
