@@ -259,12 +259,11 @@ max can be %d\n",
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
-                /*
-                 * Ensure this child has kernel oplock
-                 * capabilities, but not it's children.
-                 */
-                set_process_capability(KERNEL_OPLOCK_CAPABILITY, True);
-                set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+				/*
+				 * Ensure this child has kernel oplock
+				 * capabilities, but not it's children.
+				 */
+				oplock_set_capability(True, False);
 
 				return True; 
 			}

@@ -53,27 +53,84 @@ int32 get_number_of_exclusive_open_oplocks(void)
   return exclusive_oplocks_open;
 }
 
+
+#if HAVE_KERNEL_OPLOCKS_IRIX
+/****************************************************************************
+test to see if IRIX kernel oplocks work
+****************************************************************************/
+static BOOL irix_oplocks_available(void)
+{
+	int fd;
+	int pfd[2];
+	pstring tmpname;
+
+	oplock_set_capability(True, True);
+
+	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
+
+	if(pipe(pfd) != 0) {
+		DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
+			 strerror(errno) ));
+		return False;
+	}
+
+	if((fd = sys_open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
+		DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
+			 tmpname, strerror(errno) ));
+		unlink( tmpname );
+		close(pfd[0]);
+		close(pfd[1]);
+		return False;
+	}
+
+	unlink( tmpname );
+
+	if(fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
+		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
+Disabling kernel oplock support.\n" ));
+		close(pfd[0]);
+		close(pfd[1]);
+		close(fd);
+		return False;
+	}
+
+	if(fcntl(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
+		DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
+Disabling kernel oplock support.\n", strerror(errno) ));
+		close(pfd[0]);
+		close(pfd[1]);
+		close(fd);
+		return False;
+	}
+
+	close(pfd[0]);
+	close(pfd[1]);
+	close(fd);
+
+	return True;
+}
+#endif
+
 /****************************************************************************
  Setup the kernel level oplock backchannel for this process.
 ****************************************************************************/
-
 BOOL setup_kernel_oplock_pipe(void)
 {
 #if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-  if(lp_kernel_oplocks()) {
-    int pfd[2];
+	if(lp_kernel_oplocks()) {
+		int pfd[2];
 
-    if(pipe(pfd) != 0) {
-      DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. Error was %s\n",
-            strerror(errno) ));
-      return False;
-    }
+		if(pipe(pfd) != 0) {
+			DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. Error was %s\n",
+				 strerror(errno) ));
+			return False;
+		}
 
-    oplock_pipe_read = pfd[0];
-    oplock_pipe_write = pfd[1];
-  }
+		oplock_pipe_read = pfd[0];
+		oplock_pipe_write = pfd[1];
+	}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-  return True;
+	return True;
 }
 
 /****************************************************************************
@@ -189,8 +246,8 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
 
 /****************************************************************************
- Read an oplock break message from the either the oplock UDP fd
- or the kernel oplock pipe fd (if kernel oplocks are supported).
+ Read an oplock break message from either the oplock UDP fd or the
+ kernel oplock pipe fd (if kernel oplocks are supported).
 
  If timeout is zero then *fds contains the file descriptors that
  are ready to be read and acted upon. If timeout is non-zero then
@@ -283,94 +340,85 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
  Attempt to set an kernel oplock on a file. Always returns True if kernel
  oplocks not available.
 ****************************************************************************/
-
 static BOOL set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
+	if(!lp_kernel_oplocks()) return True;
+
 #if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-  if(lp_kernel_oplocks()) {
-    if(fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
-      if(errno != EAGAIN) {
-        DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
+	if (fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
+		if(errno != EAGAIN) {
+			DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f. Error was %s\n", 
-              fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
-               strerror(errno) ));
-      } else {
-        DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
+				 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
+				 strerror(errno) ));
+		} else {
+			DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f. Another process had the file open.\n",
-              fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode ));
-      }
-      return False;
-    }
-
-    DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
-          fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
-
-  }
+				 fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode ));
+		}
+		return False;
+	}
+	
+	DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
+		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-  return True;
+
+	return True;
 }
 
 /****************************************************************************
  Attempt to set an oplock on a file. Always succeeds if kernel oplocks are
  disabled (just sets flags). Returns True if oplock set.
 ****************************************************************************/
-
 BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 {
-  if (!set_kernel_oplock(fsp, oplock_type))
-    return False;
+	if (!set_kernel_oplock(fsp, oplock_type))
+		return False;
 
-  fsp->oplock_type = oplock_type;
-  fsp->sent_oplock_break = NO_BREAK_SENT;
-  if ( oplock_type == LEVEL_II_OPLOCK)
-    level_II_oplocks_open++;
-  else
-    exclusive_oplocks_open++;
+	fsp->oplock_type = oplock_type;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	if (oplock_type == LEVEL_II_OPLOCK)
+		level_II_oplocks_open++;
+	else
+		exclusive_oplocks_open++;
 
-  DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
-        fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
-        (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
+	DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+		 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
+		 (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
 
-  return True;
+	return True;
 }
 
 /****************************************************************************
  Release a kernel oplock on a file.
 ****************************************************************************/
-
 static void release_kernel_oplock(files_struct *fsp)
 {
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
+	if (!lp_kernel_oplocks()) return;
 
-  if(lp_kernel_oplocks())
-  {
-    if( DEBUGLVL( 10 ))
-    {
-      /*
-       * Check and print out the current kernel
-       * oplock state of this file.
-       */
-      int state = fcntl(fsp->fd, F_OPLKACK, -1);
-      dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f has kernel \
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
+	if (DEBUGLVL(10)) {
+		/*
+		 * Check and print out the current kernel
+		 * oplock state of this file.
+		 */
+		int state = fcntl(fsp->fd, F_OPLKACK, -1);
+		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, state );
-    }
+	}
 
-    /*
-     * Remove the kernel oplock on this file.
-     */
-
-    if(fcntl(fsp->fd, F_OPLKACK, OP_REVOKE) < 0)
-    {
-      if( DEBUGLVL( 0 ))
-      {
-        dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
-        dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
-                 fsp->fsp_name, (unsigned int)fsp->dev, 
-                 (double)fsp->inode, strerror(errno) );
-      }
-    }
-  }
+	/*
+	 * Remove the kernel oplock on this file.
+	 */
+	if(fcntl(fsp->fd, F_OPLKACK, OP_REVOKE) < 0) {
+		if( DEBUGLVL( 0 )) {
+			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
+			dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
+				fsp->fsp_name, (unsigned int)fsp->dev, 
+				(double)fsp->inode, strerror(errno) );
+		}
+	}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 }
 
@@ -381,17 +429,17 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 
 void release_file_oplock(files_struct *fsp)
 {
-  release_kernel_oplock(fsp);
+	release_kernel_oplock(fsp);
 
-  if (fsp->oplock_type == LEVEL_II_OPLOCK)
-    level_II_oplocks_open--;
-  else
-    exclusive_oplocks_open--;
-
-  fsp->oplock_type = NO_OPLOCK;
-  fsp->sent_oplock_break = NO_BREAK_SENT;
-
-  flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
+	if (fsp->oplock_type == LEVEL_II_OPLOCK)
+		level_II_oplocks_open--;
+	else
+		exclusive_oplocks_open--;
+	
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	
+	flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
 }
 
 /****************************************************************************
@@ -1329,74 +1377,23 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 
 void check_kernel_oplocks(void)
 {
-  static BOOL done;
+	static BOOL done;
 
-  /*
-   * We only do this check once on startup.
-   */
-
-  if(done)
-    return;
-
-  done = True;
-  lp_set_kernel_oplocks(False);
+	/*
+	 * We only do this check once on startup.
+	 */
+	if(done) return;
+  
+	done = True;
+	lp_set_kernel_oplocks(False);
 
 #if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-  {
-    int fd;
-    int pfd[2];
-    pstring tmpname;
+	if (irix_oplocks_available()) {
+		lp_set_kernel_oplocks(True);
 
-    set_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
-    set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
-
-	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
-
-    if(pipe(pfd) != 0) {
-      DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
-            strerror(errno) ));
-      return;
-    }
-
-    if((fd = sys_open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
-      DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
-            tmpname, strerror(errno) ));
-      unlink( tmpname );
-      close(pfd[0]);
-      close(pfd[1]);
-      return;
-    }
-
-    unlink( tmpname );
-
-    if(fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
-      DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
-Disabling kernel oplock support.\n" ));
-      close(pfd[0]);
-      close(pfd[1]);
-      close(fd);
-      return;
-    }
-
-    if(fcntl(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
-      DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
-Disabling kernel oplock support.\n", strerror(errno) ));
-      close(pfd[0]);
-      close(pfd[1]);
-      close(fd);
-      return;
-    }
-
-    close(pfd[0]);
-    close(pfd[1]);
-    close(fd);
-
-    lp_set_kernel_oplocks(True);
-
-    DEBUG(0,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
-          lp_kernel_oplocks() ? "True" : "False" ));
-
-  }
+		DEBUG(0,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
+			 lp_kernel_oplocks() ? "True" : "False" ));
+	}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 }
 
