@@ -417,7 +417,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	if (check_name(name,conn)) {
 		if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)
 			if (!(ok = S_ISDIR(sbuf.st_mode)))
-				errno = ENOTDIR;
+				return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
 	}
 
 	if (!ok) {
