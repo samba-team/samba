@@ -466,22 +466,23 @@ IP addresses.
 %message_system
 %endif
 
-%if %{?_without_debug:0}%{!?_without_debug:1}
-%package debug
+%if %{?_without_test:0}%{!?_without_test:1}
+%package test
 URL:	http://www.samba.org
 Summary: Debugging and benchmarking tools for samba
 Group: System/Servers
 Requires: %{name}-common = %{version}
 %endif
-%if %build_system && %{?_without_debug:0}%{!?_without_debug:1}
-Provides:  samba3-debug
-Obsoletes: samba3-debug
+%if %build_system && %{?_without_test:0}%{!?_without_test:1}
+Provides:  samba3-test samba3-debug
+Obsoletes: samba3-test samba3-debug
 %else
-Provides: samba-debug
+Provides: samba-test samba3-debug
+Obsoletes: samba3-debug
 %endif
-%if %{?_without_debug:0}%{!?_without_debug:1}
+%if %{?_without_test:0}%{!?_without_test:1}
 
-%description debug
+%description test
 This package provides tools for benchmarking samba, and debugging
 the correct operation of tools against smb servers.
 %endif
@@ -806,6 +807,7 @@ CFLAGS="$RPM_OPT_FLAGS"
 		--with-acl-support      \
 %endif
 		--disable-mysqltest \
+		--with-expsam=mysql,xml \
 		--program-suffix=%{samba_major} 
 #		--with-manpages-langs=en,ja,pl	\
 #%if !%build_system
@@ -821,7 +823,7 @@ make proto_exists
 # torture target broken in alpha22 (only on 9.0?)
 #make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" \
 #	all libsmbclient smbfilter wins modules %{!?_without_debug: torture debug2html}
-%make	all libsmbclient smbfilter wins modules %{!?_without_debug: torture debug2html}
+%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html}
 #%make	all libsmbclient debug2html smbfilter wins torture modules
 # Build VFS modules (experimental)
 #cd ../%vfsdir
@@ -937,7 +939,7 @@ done
 # Make link for wins and winbind resolvers
 ( cd $RPM_BUILD_ROOT/%{_lib}; ln -s libnss_wins%{samba_major}.so libnss_wins%{samba_major}.so.2; ln -s libnss_winbind%{samba_major}.so libnss_winbind%{samba_major}.so.2)
 
-%if %{?_without_debug:0}%{!?_without_debug:1}
+%if %{?_without_test:0}%{!?_without_test:1}
 # Debugging stuff (broken in alpha22)
 for i in smbtorture msgtest masktest locktest locktest2 nsstest vfstest debug2html;do
   install -m755 source/bin/$i $RPM_BUILD_ROOT/%{_bindir}
@@ -1405,8 +1407,8 @@ fi
 %attr(755,root,root) /%{_lib}/libnss_wins%{samba_major}.so*
 %endif
 
-%if %{?_without_debug:0}%{!?_without_debug:1}
-%files debug
+%if %{?_without_test:0}%{!?_without_test:1}
+%files test
 %defattr(-,root,root)
 %{_bindir}/debug2html%{samba_major}
 %{_bindir}/smbtorture%{samba_major}
@@ -1503,6 +1505,10 @@ fi
 %endif
 
 %changelog
+* Fri Jun 06 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0-0.alpha24.2mdk
+- Rename debug package to test and other fixes for rpm-4.2
+- prepare for beta1
+
 * Wed Apr 30 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0-0.alpha24.1mdk
 - Remove some files removed upstream
 - In builds from source, don't terminate on missing docs or unpackaged files
@@ -1645,7 +1651,7 @@ fi
 - addtosmbpass seems to have returned for now, but make_* have disappeared!
 
 * Fri Dec 14 2001 Buchan Milne <bgmilne@cae.co.za> 3.0alpha6-0.0mdk
-- DESTDIR patch for Makefile.in (p23), remove a lot of %install scripts
+- DESTDIR patch for Makefile.in (p23), remove a lot of %%install scripts
   this forces move of smbcontrol and smbmnt to %{prefix}/bin
   removed --with-pam_smbpass as it doesn't compile.
 
@@ -1754,7 +1760,7 @@ fi
 - cleanup /var/lib/samba/codepage/src
 
 * Tue Aug 21 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.1a-7mdk
-- moved codepage generation to %install and codepage dir to /var/lib/samba
+- moved codepage generation to %%install and codepage dir to /var/lib/samba
 
 * Tue Aug 21 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.1a-6mdk
 - /lib/* was in both samba and samba-common
