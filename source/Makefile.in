@@ -156,10 +156,11 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
 		librpc/rpc/dcerpc_util.o \
+		librpc/rpc/dcerpc_schannel.o librpc/rpc/dcerpc_ntlm.o \
 		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o
 
 LIBNTLMSSP_OBJ = libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o \
-		libcli/auth/ntlmssp_sign.o
+		libcli/auth/ntlmssp_sign.o libcli/auth/schannel.o
 
 LIBCLIAUTH_OBJ = $(LIBNTLMSSP_OBJ) libcli/auth/credentials.o
 
@@ -217,7 +218,7 @@ SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
-CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
+CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
 	     $(LIB_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ)
 
@@ -231,16 +232,16 @@ SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(LI
 SMBTORTURE_LIBS = $(LIBS)
 
 GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) libcli/raw/clirewrite.o
+		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) libcli/raw/clirewrite.o
+		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
 LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-		$(LIB_OBJ) libcli/raw/clirewrite.o
+		$(LIB_OBJ) $(SECRETS_OBJ) libcli/raw/clirewrite.o
 
 NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
-		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(SECRETS_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
@@ -492,6 +493,12 @@ proto_test:
 	@[ -f include/proto.h ] || $(MAKE) proto
 
 .PHONY: headers proto
+
+etags:
+	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
+
+ctags:
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
 	-rm -f config.log bin/.dummy

@@ -20,16 +20,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  see http://www.opengroup.org/onlinepubs/9629399/chap12.htm for details
-  of these structures
-
-  note that the structure definitions here don't include some of the
-  fields that are wire-artifacts. Those are put on the wire by the
-  marshalling/unmarshalling routines in decrpc.c
-*/
-
 enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
+
+/*
+  this defines a generic security context for signed/sealed dcerpc pipes.
+*/
+struct dcerpc_security {
+	void *private;
+	NTSTATUS (*unseal_packet)(struct dcerpc_security *, 
+				  uchar *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_packet)(struct dcerpc_security *, 
+				 const uchar *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*seal_packet)(struct dcerpc_security *, 
+				 uchar *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*sign_packet)(struct dcerpc_security *, 
+				const uchar *data, size_t length, DATA_BLOB *sig);
+	void (*security_end)(struct dcerpc_security *);
+};
 
 
 struct dcerpc_pipe {
@@ -39,7 +46,7 @@ struct dcerpc_pipe {
 	uint32 srv_max_xmit_frag;
 	uint32 srv_max_recv_frag;
 	unsigned flags;
-	struct ntlmssp_state *ntlmssp_state;
+	struct dcerpc_security *security_state;
 	struct dcerpc_auth *auth_info;
 	const char *binding_string;
 	
@@ -72,6 +79,8 @@ struct dcerpc_pipe {
 
 #define DCERPC_PUSH_BIGENDIAN   64
 #define DCERPC_PULL_BIGENDIAN  128
+
+#define DCERPC_SCHANNEL        256
 
 /*
   this is used to find pointers to calls

@@ -295,7 +295,6 @@ static const char *smb_peer_name(struct dcerpc_pipe *p)
 	return smb->tree->session->transport->called.name;
 }
 
-
 /* 
    open a rpc connection to a named pipe 
 */

@@ -121,7 +121,7 @@ void hmac_md5_final(uchar *digest, HMACMD5Context *ctx)
  single function to calculate an HMAC MD5 digest from data.
  use the microsoft hmacmd5 init method because the key is 16 bytes.
 ************************************************************/
-void hmac_md5( uchar key[16], uchar* data, int data_len, uchar* digest)
+void hmac_md5(const uchar key[16], const uchar *data, int data_len, uchar* digest)
 {
 	HMACMD5Context ctx;
 	hmac_md5_init_limK_to_64(key, 16, &ctx);

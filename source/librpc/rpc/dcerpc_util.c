@@ -275,6 +275,7 @@ static const struct {
 } ncacn_options[] = {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
+	{"schannel", DCERPC_SCHANNEL},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
@@ -481,11 +482,23 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
+	if (binding->flags & DCERPC_SCHANNEL) {
+		const char *trust_password = secrets_fetch_machine_password();
+		if (!trust_password) {
+			DEBUG(0,("Unable to fetch machine password\n"));
+			goto done;
+		}
+		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
+						   lp_workgroup(), 
+						   lp_netbios_name(), 
+						   trust_password);
+	} else if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	}
+
+done:
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);

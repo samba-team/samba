@@ -99,9 +99,10 @@ interface dcerpc
 	} dcerpc_fault;
 
 
-	const uint8 DCERPC_AUTH_TYPE_NONE    = 0;
-	const uint8 DCERPC_AUTH_TYPE_KRB5    = 1;
-	const uint8 DCERPC_AUTH_TYPE_NTLMSSP = 10;
+	const uint8 DCERPC_AUTH_TYPE_NONE     = 0;
+	const uint8 DCERPC_AUTH_TYPE_KRB5     = 1;
+	const uint8 DCERPC_AUTH_TYPE_NTLMSSP  = 10;
+	const uint8 DCERPC_AUTH_TYPE_SCHANNEL = 68;
 	
 	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
 	const uint8 DCERPC_AUTH_LEVEL_CONNECT   = 2;
