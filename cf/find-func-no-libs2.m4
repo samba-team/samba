@@ -28,12 +28,10 @@ fi
 
 eval "ac_res=\$ac_cv_funclib_$1"
 
-dnl autoheader tricks *sigh*
-: << END
-@@@funcs="$funcs $1"@@@
-@@@libs="$libs $2"@@@
-END
-
+if false; then
+	AC_CHECK_FUNCS($1)
+dnl	AC_CHECK_LIBS($2, foo)
+fi
 # $1
 eval "ac_tr_func=HAVE_[]upcase($1)"
 eval "ac_tr_lib=HAVE_LIB[]upcase($ac_res | sed -e 's/-l//')"
