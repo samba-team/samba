@@ -130,6 +130,15 @@ int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 	DEBUG(5,("	challenge : %lx %lx\n", cred->data[0], cred->data[1]));
 	DEBUG(5,("	calculated: %lx %lx\n", cred2.data[0], cred2.data[1]));
 
-	return memcmp(cred->data, cred2.data, 8) == 0;
+	if (memcmp(cred->data, cred2.data, 8) == 0)
+	{
+		DEBUG(5, ("credentials check ok\n"));
+		return True;
+	}
+	else
+	{
+		DEBUG(5, ("credentials check wrong\n"));
+		return False;
+	}
 }
 
