@@ -1,7 +1,7 @@
 README for Samba Password Database (PDB) examples
 ====================================================
 Jelmer Vernooij <jelmer@nl.linux.org>
-Stefan (metze) Metzmacher <metze@metzemix.de>
+Stefan (metze) Metzmacher <metze@samba.org>
 
 The pdb_test.c file in this directory contains a very basic example of 
 a pdb plugin. It just prints the name of the function that is executed using
