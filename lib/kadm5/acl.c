@@ -115,7 +115,7 @@ fetch_acl (kadm5_server_context *context,
 	ret = _kadm5_string_to_privs(p, &flags);
 	if (ret)
 	    break;
-	p = strtok_r(NULL, "\n", &foo);
+	p = strtok_r(NULL, " \t\n", &foo);
 	if (p == NULL) {
 	    *ret_flags = flags;
 	    break;
