@@ -51,7 +51,9 @@ _warnerr(krb5_context context, int doexit, int eval, int do_errtext, krb5_error_
     
     arg = args;
     if(fmt){
-	strcat(xfmt, "%s: ");
+	strcat(xfmt, "%s");
+	if(do_errtext)
+	    strcat(xfmt, ": ");
 	vasprintf(&msg, fmt, ap);
 	if(msg == NULL)
 	    return ENOMEM;
