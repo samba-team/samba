@@ -54,6 +54,7 @@ RCSID("$Id$");
 
 #define PAM_SM_AUTH
 #define PAM_SM_SESSION
+#include <security/pam_appl.h>
 #include <security/pam_modules.h>
 
 #include <netinet/in.h>
