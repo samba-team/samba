@@ -470,6 +470,9 @@ static void wait_before_sending_break(BOOL local_request)
     struct timeval cur_tv;
     long wait_left = (long)lp_oplock_break_wait_time();
 
+	if (wait_left == 0)
+		return;
+
     GetTimeOfDay(&cur_tv);
 
     wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
