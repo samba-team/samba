@@ -1149,8 +1149,6 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
-  /* if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) && dfs_redirect(fname,conn)) return(dfs_path_error(inbuf,outbuf)); 
-   */
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
