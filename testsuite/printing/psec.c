@@ -167,7 +167,7 @@ int psec_getsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
 	tdb = tdb_open(tdb_path, 0, 0, O_RDONLY, 0600);
 
 	if (!tdb) {
@@ -264,7 +264,7 @@ int psec_setsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
 	tdb = tdb_open(tdb_path, 0, 0, O_RDWR, 0600);
 
 	if (!tdb) {
