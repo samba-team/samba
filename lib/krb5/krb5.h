@@ -401,10 +401,14 @@ struct krb5_rcache_data;
 typedef struct krb5_rcache_data *krb5_rcache;
 typedef Authenticator krb5_donot_replay;
 
-#define KRB5_STORAGE_HOST_BYTEORDER			0x01
+#define KRB5_STORAGE_HOST_BYTEORDER			0x01 /* old */
 #define KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS	0x02
 #define KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE		0x04
 #define KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE		0x08
+#define KRB5_STORAGE_BYTEORDER_MASK			0x60
+#define KRB5_STORAGE_BYTEORDER_BE			0x00 /* default */
+#define KRB5_STORAGE_BYTEORDER_LE			0x20
+#define KRB5_STORAGE_BYTEORDER_HOST			0x40
 
 typedef struct krb5_storage {
     void *data;
