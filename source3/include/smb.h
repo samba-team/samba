@@ -161,6 +161,8 @@ typedef uint16 smb_ucs2_t;
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
 typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
+/* This error code can go into the client smb_rw_error. */
+#define WRITE_ERROR 4
 
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8

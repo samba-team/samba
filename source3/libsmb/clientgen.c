@@ -100,7 +100,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	/* If the server is not responding, note that now */
 
 	if (!ret) {
-		cli->smb_read_error = smb_read_error;
+		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
 	}
@@ -131,6 +131,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 		if (ret <= 0) {
 			close(cli->fd);
 			cli->fd = -1;
+			cli->smb_rw_error = WRITE_ERROR;
 			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
 			return False;
@@ -295,7 +296,7 @@ void cli_close_connection(struct cli_state *cli)
 	if (cli->fd != -1) 
 		close(cli->fd);
 	cli->fd = -1;
-	cli->smb_read_error = 0;
+	cli->smb_rw_error = 0;
 }
 
 /****************************************************************************
