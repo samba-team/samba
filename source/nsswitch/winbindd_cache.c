@@ -1043,3 +1043,29 @@ struct winbindd_methods cache_methods = {
 	trusted_domains,
 	domain_sid
 };
+
+/* Invalidate cached user and group lists coherently */
+
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+		       void *state)
+{
+	if (strncmp(kbuf.dptr, "UL/", 3) == 0 ||
+	    strncmp(kbuf.dptr, "GL/", 3) == 0)
+		tdb_delete(the_tdb, kbuf);
+
+	return 0;
+}
+
+void wcache_invalidate_cache(void)
+{
+	struct winbindd_domain *domain;
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		struct winbind_cache *cache = get_cache(domain);
+
+		DEBUG(10, ("wcache_invalidate_cache: invalidating cache "
+			   "entries for %s\n", domain->name));
+		if (cache)
+			tdb_traverse(cache->tdb, traverse_fn, NULL);
+	}
+}

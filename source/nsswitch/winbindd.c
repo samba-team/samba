@@ -170,9 +170,19 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
+
+#if 0
 	/* Clear cached user and group enumation info */	
 	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
 		wcache_flush_cache();
+#endif
+
+	/* We need to invalidate cached user list entries on a SIGHUP 
+           otherwise cached access denied errors due to restrict anonymous
+           hang around until the sequence number changes. */
+
+	wcache_invalidate_cache();
+
 }
 
 /* Handle the signal by unlinking socket and exiting */
