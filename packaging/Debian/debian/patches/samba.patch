@@ -49,7 +49,7 @@ diff -uNr samba-3.0.0beta1.orig/source/script/installbin.sh samba-3.0.0beta1/sou
 diff -uNr samba-3.0.0beta1.orig/source/smbd/service.c samba-3.0.0beta1/source/smbd/service.c
 --- samba-3.0.0beta1.orig/source/smbd/service.c	2003-06-07 12:57:39.000000000 -0500
 +++ samba-3.0.0beta1/source/smbd/service.c	2003-06-30 20:12:57.000000000 -0500
-@@ -885,6 +885,9 @@
+@@ -887,6 +887,9 @@
  	file_close_conn(conn);
  	dptr_closecnum(conn);
  
@@ -59,7 +59,7 @@ diff -uNr samba-3.0.0beta1.orig/source/smbd/service.c samba-3.0.0beta1/source/sm
  	/* execute any "postexec = " line */
  	if (*lp_postexec(SNUM(conn)) && 
  	    change_to_user(conn, vuid))  {
-@@ -904,8 +907,5 @@
+@@ -906,8 +909,5 @@
  		smbrun(cmd,NULL);
  	}
  

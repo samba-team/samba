@@ -366,7 +366,7 @@ diff -uNr samba-3.0.0beta2.orig/source/param/loadparm.c samba-3.0.0beta2/source/
  	char *szLockDir;
  	char *szPidDir;
  	char *szRootdir;
-@@ -1082,8 +1082,13 @@
+@@ -1083,8 +1083,13 @@
  	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
  	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
  	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
