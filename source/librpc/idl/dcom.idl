@@ -57,14 +57,13 @@ interface ObjectRpcBaseTypes
 	} COMVERSION;
 
 	/* enumeration of additional information present in the call packet. */
-	/* Should be an enum but DCE IDL does not support sparse enumerators. */
 	typedef enum {
-		ORPCF_NULL = 0, /* no additional info in packet */
-		ORPCF_LOCAL = 1, /* call is local to this machine */
-		ORPCF_RESERVED1 = 2, /* reserved for local use */
-		ORPCF_RESERVED2 = 4, /* reserved for local use */
-		ORPCF_RESERVED3 = 8, /* reserved for local use */
-		ORPCF_RESERVED4 = 16 /* reserved for local use */
+		ORPCF_NULL = 			0x00, /* no additional info in packet */
+		ORPCF_LOCAL = 			0x01, /* call is local to this machine */
+		ORPCF_RESERVED1 = 		0x02, /* reserved for local use */
+		ORPCF_RESERVED2 = 		0x04, /* reserved for local use */
+		ORPCF_RESERVED3 = 		0x08, /* reserved for local use */
+		ORPCF_RESERVED4 = 	    0x10  /* reserved for local use */
 	} ORPC_FLAGS;
 
 	/* Extension to implicit parameters. */
@@ -127,7 +126,9 @@ interface ObjectRpcBaseTypes
 	} 	SECURITYBINDING;
 
 	/* signature value for OBJREF (object reference, actually the */
-	/* marshaled form of a COM interface). */
+	/* marshaled form of a COM interface). 
+	 * MEOW apparently stands for "Microsoft Extended Object Wireformat"
+	 */
 	const uint32 OBJREF_SIGNATURE = 0x574f454d; /* 'MEOW' */
 
 	/* flag values for OBJREF */
@@ -198,7 +199,7 @@ interface ObjectRpcBaseTypes
 	} OBJREF_Types;
 
 	/* OBJREF is the format of a marshaled interface pointer. */
-	typedef [public] struct 
+	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct 
 	{
 		uint32 signature;
 		uint32 flags; /* OBJREF flags (see above) */
@@ -245,7 +246,7 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	[local] WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown*/, 
+	[local] WERROR IClassFactory_CreateInstance([in] MInterfacePointer *pUnknown, 
 			       [in] GUID *iid,
 			       [out, iid_is(riid)] MInterfacePointer *ppv);
 
@@ -253,7 +254,7 @@ interface IUnknown
 
 	/* Set lock to TRUE when you want to do a lock
 	and set it to FALSE when you want to unlock */
-	[local] WERROR LockServer([in] uint8 lock);
+	[local] WERROR IClassFactory_LockServer([in] uint8 lock);
 
 	[call_as(LockServer)] WERROR RemoteLockServer();
 }

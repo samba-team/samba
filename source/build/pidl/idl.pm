@@ -2080,10 +2080,8 @@ sub parse_idl($$)
 				die("No such parent interface " . $x->{BASE});
 			}
 			
-			$x->{INHERITED_FUNCTIONS} = scalar @{$parent->{INHERITED_DATA}};
 			@{$x->{INHERITED_DATA}} = (@{$parent->{INHERITED_DATA}}, @{$x->{DATA}});
 		} else {
-			$x->{INHERITED_FUNCTIONS} = 0;
 			$x->{INHERITED_DATA} = $x->{DATA};
 		}
 	}

@@ -291,15 +291,16 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 		i = 0;
 		do {
 			status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
+
+			if (NT_STATUS_IS_OK(status)) {
+				binding.flags = iface->ctx->dcerpc_flags;
+				status = dcerpc_pipe_connect_b(&po, &binding, DCERPC_IOXIDRESOLVER_UUID, DCERPC_IOXIDRESOLVER_VERSION, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
+			} else {
+				DEBUG(1, ("Error parsing string binding - %s", nt_errstr(status)));
+			}
+
 			i++;
 		} while (!NT_STATUS_IS_OK(status) && iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
-
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(1, ("Error parsing string binding"));
-			return status;
-		}
-
-		status = dcerpc_pipe_connect_b(&po, &binding, DCERPC_IOXIDRESOLVER_UUID, DCERPC_IOXIDRESOLVER_VERSION, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(1, ("Error while connecting to OXID Resolver : %s\n", nt_errstr(status)));
@@ -337,17 +338,18 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 	i = 0;
 	do {
 		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, m->bindings.stringbindings[i]);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, ("Error parsing string binding"));
+		} else {
+			binding.flags = iface->ctx->dcerpc_flags;
+			status = dcerpc_pipe_connect_b(&m->pipe, &binding, GUID_string(iface->ctx, &iid) , 0.0, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
+		}
+
 		i++;
 	} while (NT_STATUS_IS_ERR(status) && m->bindings.stringbindings[i]);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(1, ("Error parsing string binding"));
-		return status;
-	}
-
-	status = dcerpc_pipe_connect_b(&m->pipe, &binding, GUID_string(iface->ctx, &iid) , 0.0, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
-
-	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Unable to connect to remote host - %s\n", nt_errstr(status)));
 		return status;
 	}
 

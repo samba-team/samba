@@ -38,6 +38,7 @@ struct dcom_context
 	const char *domain;
 	const char *user;
 	const char *password;
+	uint32_t dcerpc_flags;
 };
 
 struct dcom_interface

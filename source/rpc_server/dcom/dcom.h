@@ -24,13 +24,15 @@
 struct dcom_class
 {
 	const char *name;
+	const char *prog_id;
 	struct GUID CLSID;
 
 	/* List of IID's implemented */
-	uint32 cIIDs;
+	uint32 num_iids;
 	struct GUID *IID;
 
 	/* Pointers to functions this class implements */
+	void **interfaces;
 };
 
 struct dcom_object 
@@ -45,6 +47,7 @@ struct dcom_object
 struct dcom_interface_pointer
 {
 	struct dcom_object *object;
+	struct dcerpc_interface_table *interface;
 	struct GUID ipid;
 };
 

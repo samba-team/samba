@@ -38,11 +38,14 @@ struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 */
 static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct RemoteActivation *r)
 {
+	struct IClassFactory_CreateInstance *cr;
+	struct IUnknown_Release *ur;
+	struct dcom_interface *o;
 	int i;
+
 	/* FIXME: CoGetClassObject() */
 	/* FIXME: IClassFactory::CreateInstance() */
-	/* FIXME: Register newly created object with dcerpc subsystem */
-	/* FIXME: IClassFactory::Release() */
+	/* FIXME: IUnknown::Release() */
 	
 	ZERO_STRUCT(r->out);
 	r->out.ServerVersion.MajorVersion = COM_MAJOR_VERSION;
@@ -55,17 +58,21 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	 * r->out.interfaces */
 	r->out.ifaces = talloc_array_p(mem_ctx, struct pMInterfacePointer, r->in.Interfaces);
 	r->out.results = talloc_array_p(mem_ctx, WERROR, r->in.Interfaces);
+	r->out.hr = cr->out.result;
+
 	for (i = 0; i < r->in.Interfaces; i++) {
-			ZERO_STRUCT(r->out.ifaces[i]);	
-			r->out.results[i] = WERR_NOT_SUPPORTED;
+		struct IUnknown_QueryInterface rr;
+		rr.in.iid = &r->in.pIIDs[i];
+		dcerpc_IUnknown_QueryInterface(o, mem_ctx, &rr);
+		ZERO_STRUCT(r->out.ifaces[i]);	
+		r->out.results[i] = rr.out.result;
 	}
 
 	/* FIXME: */
 	r->out.pOxid = 0;
 	ZERO_STRUCT(r->out.ipidRemUnknown);
-	r->out.hr = WERR_NOT_SUPPORTED;
 	
-	return WERR_NOT_SUPPORTED;
+	return WERR_OK;
 }
 
 

@@ -350,16 +350,27 @@ sub HeaderInterface($)
 	    $res .= "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
     }
 
-	$count = $interface->{INHERITED_FUNCTIONS};
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
 		    my $u_name = uc $d->{NAME};
-		    $res .= "#define DCERPC_$u_name " . sprintf("0x%02x", $count) . "\n";
+			$res .= "#define DCERPC_$u_name (";
+		
+			if (defined($interface->{BASE})) {
+				$res .= "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
+			}
+			
+		    $res .= sprintf("0x%02x", $count) . ")\n";
 		    $count++;
 	    }
     }
 
-    $res .= "\n\n";
+	$res .= "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
+	
+	if (defined($interface->{BASE})) {
+		$res .= "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
+	}
+	
+	$res .= "$count)\n\n";
 
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "CONST") &&
