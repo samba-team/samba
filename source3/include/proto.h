@@ -2276,6 +2276,9 @@ BOOL get_samr_query_aliasinfo(struct cli_state *cli, uint16 fnum,
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
+BOOL msrpc_sam_create_dom_user(struct cli_state *cli, DOM_SID *sid1,
+				char *acct_name, uint16 acb_info,
+				uint32 *rid);
 
 /*The following definitions come from  rpc_parse/parse_at.c  */
 
@@ -4013,7 +4016,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 				const char *user, const char *domain,
 				uchar *lm_pass, size_t lm_pwd_len,
 				uchar *nt_pass, size_t nt_pwd_len);
-BOOL pass_check_smb(char *user, char *domain, uchar *chal,
+BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
 		uchar *lm_pwd, size_t lm_pwd_len,
 		uchar *nt_pwd, size_t nt_pwd_len,
 		struct passwd *pwd, uchar user_sess_key[16]);
