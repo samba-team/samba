@@ -17,7 +17,7 @@
  */
 
 int
-der_put_int (unsigned char *p, int len, int val)
+der_put_int (unsigned char *p, int len, unsigned val)
 {
   unsigned char *base = p;
 
@@ -107,7 +107,7 @@ der_put_tag (unsigned char *p, int len, Der_class class, Der_type type,
 int
 encode_integer (unsigned char *p, int len, void *data)
 {
-  int num = *((int *)data);
+  unsigned num = *((unsigned *)data);
   int ret = 0;
   int l;
 

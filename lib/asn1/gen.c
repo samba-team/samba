@@ -52,7 +52,7 @@ define_type (char *name, Type *t)
     fprintf (headerfile, "%s %s;\n", t->symbol->gen_name, name);
     break;
   case TInteger:
-    fprintf (headerfile, "int %s;\n", name);
+    fprintf (headerfile, "unsigned %s;\n", name);
     break;
   case TOctetString:
     fprintf (headerfile, "krb5_data %s;\n", name);

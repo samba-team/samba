@@ -17,7 +17,7 @@
  */
 
 int
-der_get_int (unsigned char *p, int len, int *ret)
+der_get_int (unsigned char *p, int len, unsigned *ret)
 {
   int val = 0;
   int oldlen = len;
@@ -41,11 +41,13 @@ der_get_length (unsigned char *p, int len, int *ret)
     return 1;
   } else {
     int l;
+    unsigned tmp;
 
     val &= 0x7F;
     if (len < val)
       return -1;
-    l = der_get_int (p, val, ret);
+    l = der_get_int (p, val, &tmp);
+    *ret = tmp;
     if (l < 0)
       return l;
     else
@@ -128,7 +130,7 @@ der_match_tag (unsigned char *p, int len, Der_class class, Der_type type,
 int
 decode_integer (unsigned char *p, int len, void *data)
 {
-  int *num = (int *)data;
+  unsigned *num = (unsigned *)data;
   int ret = 0;
   int l, reallen;
 
