@@ -488,15 +488,15 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 		{
 			ncacn_np_name = &ncacn_np_name[6];
 		}
-		if (!strequal(ncacn_np_srv_name, srv_name))
+		if (!strequal(ncacn_np_name, pipe_name))
 		{
 			continue;
 		}
 		if (strnequal("\\\\", ncacn_np_srv_name, 2))
 		{
-			ncacn_np_srv_name = &ncacn_np_srv_name[6];
+			ncacn_np_srv_name = &ncacn_np_srv_name[2];
 		}
-		if (!strequal(ncacn_np_name, pipe_name))
+		if (!strequal(ncacn_np_srv_name, srv_name))
 		{
 			continue;
 		}
