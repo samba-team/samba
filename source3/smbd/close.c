@@ -196,6 +196,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
 		}
+		process_pending_change_notify_queue((time_t)0);
 	}
 
 	unlock_share_entry_fsp(fsp);
@@ -262,6 +263,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 		if(ok)
 			remove_pending_change_notify_requests_by_filename(fsp);
+		process_pending_change_notify_queue((time_t)0);
 	}
 
 	/*
