@@ -1,3 +1,8 @@
+2001-05-08  Assar Westerlund  <assar@sics.se>
+
+	* freeaddrinfo.c (freeaddrinfo): also free every `struct
+	addrinfo'.  from <tmartin@mirapoint.com>
+
 2001-04-25  Assar Westerlund  <assar@sics.se>
 
 	* getarg.h (free_getarg_strings): add prototype
