@@ -337,90 +337,144 @@ password ?).\n", cli->desthost ));
 }
 
 /***************************************************************************
-LSA SAM Logon - interactive or network.
+ LSA SAM Logon internal - interactive or network. Does level 2 or 3 but always
+ returns level 3.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3)
+static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+                       NET_USER_INFO_3 *user_info3, uint16 validation_level)
 {
-  DOM_CRED new_clnt_cred;
-  DOM_CRED dummy_rtn_creds;
-  prs_struct rbuf;
-  prs_struct buf; 
-  uint16 validation_level = 3;
-  NET_Q_SAM_LOGON q_s;
-  BOOL ok = False;
+	DOM_CRED new_clnt_cred;
+	DOM_CRED dummy_rtn_creds;
+	prs_struct rbuf;
+	prs_struct buf; 
+	NET_Q_SAM_LOGON q_s;
+	NET_R_SAM_LOGON r_s;
+	uint32 retval;
 
-  gen_next_creds( cli, &new_clnt_cred);
+	gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+	prs_init(&buf , 1024, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
 
-  /* create and send a MSRPC command with api NET_SAMLOGON */
+	/* create and send a MSRPC command with api NET_SAMLOGON */
 
-  DEBUG(4,("cli_net_sam_logon: srv:%s mc:%s clnt %s %x ll: %d\n",
+	DEBUG(4,("cli_net_sam_logon_internal: srv:%s mc:%s clnt %s %x ll: %d\n",
              cli->srv_name_slash, global_myname, 
              credstr(new_clnt_cred.challenge.data), cli->clnt_cred.timestamp.time,
              ctr->switch_value));
 
-  memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 	dummy_rtn_creds.timestamp.time = time(NULL);
 
-  /* store the parameters */
-  q_s.validation_level = validation_level;
-  init_sam_info(&q_s.sam_id, unix_to_dos(cli->srv_name_slash,False), 
+	/* store the parameters */
+	q_s.validation_level = validation_level;
+	init_sam_info(&q_s.sam_id, unix_to_dos(cli->srv_name_slash,False), 
 		global_myname, &new_clnt_cred, &dummy_rtn_creds, 
 		ctr->switch_value, ctr);
 
-  /* turn parameters into data stream */
-  if(!net_io_q_sam_logon("", &q_s,  &buf, 0)) {
-    DEBUG(0,("cli_net_sam_logon: Error : failed to marshall NET_Q_SAM_LOGON struct.\n"));
-    prs_mem_free(&buf);
-    prs_mem_free(&rbuf);
-    return False;
-  }
+	/* turn parameters into data stream */
+	if(!net_io_q_sam_logon("", &q_s,  &buf, 0)) {
+		DEBUG(0,("cli_net_sam_logon_internal: Error : failed to marshall NET_Q_SAM_LOGON struct.\n"));
+		retval = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
-  /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf))
-  {
-    NET_R_SAM_LOGON r_s;
+	/* send the data on \PIPE\ */
+	if (!rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf)) {
+		DEBUG(0,("cli_net_sam_logon_internal: Erro rpc_api_pipe_req failed.\n"));
+		retval = cli->nt_error;
+		goto out;
+	}
 
-    r_s.user = user_info3;
+	r_s.user = user_info3;
 
-    ok = net_io_r_sam_logon("", &r_s, &rbuf, 0);
+	if(!net_io_r_sam_logon("", &r_s, &rbuf, 0)) {
+		DEBUG(0,("cli_net_sam_logon_internal: Error : failed to unmarshal NET_R_SAM_LOGON struct.\n"));
+		retval = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 		
-    if (ok && r_s.status != 0)
-    {
-      /* report error code */
-      DEBUG(0,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
-      cli->nt_error = r_s.status;
-      ok = False;
+	retval = r_s.status;
+
+	/*
+	 * Don't treat NT_STATUS_INVALID_INFO_CLASS as an error - we will re-issue
+	 * the call.
+	 */
+	
+	if (retval == NT_STATUS_INVALID_INFO_CLASS) {
+		goto out;
+	}
+
+	if (retval != 0) {
+		/* report error code */
+		DEBUG(0,("cli_net_sam_logon_internal: %s\n", get_nt_error_msg(r_s.status)));
+		cli->nt_error = r_s.status;
+		goto out;
     }
 
     /* Update the credentials. */
-    if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)))
-    {
-      /*
-       * Server replied with bad credential. Fail.
-       */
-      DEBUG(0,("cli_net_sam_logon: server %s replied with bad credential (bad machine \
+    if (!clnt_deal_with_creds(cli->sess_key, &cli->clnt_cred, &r_s.srv_creds)) {
+		/*
+		 * Server replied with bad credential. Fail.
+		 */
+		DEBUG(0,("cli_net_sam_logon_internal: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
-        ok = False;
+		retval = NT_STATUS_WRONG_PASSWORD;
     }
 
-    if (ok && r_s.switch_value != 3)
-    {
-      /* report different switch_value */
-      DEBUG(0,("cli_net_sam_logon: switch_value of 3 expected %x\n",
-                   r_s.switch_value));
-      ok = False;
+    if (r_s.switch_value != validation_level) {
+		/* report different switch_value */
+		DEBUG(0,("cli_net_sam_logon: switch_value of %u expected %x\n", r_s.switch_value));
+		retval = NT_STATUS_INVALID_PARAMETER;
     }
-  }
 
-  prs_mem_free(&buf);
-  prs_mem_free(&rbuf);
+  out:
 
-  return ok;
+	prs_mem_free(&buf);
+	prs_mem_free(&rbuf);
+
+	return retval;
+}
+
+/***************************************************************************
+LSA SAM Logon - interactive or network.
+****************************************************************************/
+
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
+{
+	BOOL ok = True;
+#if 0 /* JRATEST */
+	uint16 validation_level=2;
+#else
+	uint16 validation_level=3;
+#endif
+	uint32 ret_err_code;
+
+	ret_err_code = cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level);
+
+	if(ret_err_code == NT_STATUS_NOPROBLEMO) {
+		DEBUG(10,("cli_net_sam_logon: Success \n"));
+		ok = True;
+	} else if (ret_err_code == NT_STATUS_INVALID_INFO_CLASS) {
+		DEBUG(10,("cli_net_sam_logon: STATUS INVALID INFO CLASS \n"));
+
+		validation_level=2;
+
+		/*
+		 * Since this is the second time we call this function, don't care
+		 * for the error. If its error, return False. 
+		 */
+
+		if(cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level) != 0)
+			ok = False;
+
+	} else {
+		DEBUG(10,("cli_net_sam_logon: Error\n"));
+		ok = False;
+	}
+
+	return ok;
 }
 
 /***************************************************************************

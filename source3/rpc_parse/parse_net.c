@@ -1130,10 +1130,14 @@ void free_user_info3(NET_USER_INFO_3 *usr)
 }
 
 /*******************************************************************
- Reads or writes a structure.
+ This code has been modified to cope with a NET_USER_INFO_2 - which is
+ exactly the same as a NET_USER_INFO_3, minus the other sids parameters.
+ We use validation level to determine if we're marshalling a info 2 or
+ INFO_3 - be we always return an INFO_3. Based on code donated by Marc
+ Jacobsen at HP. JRA.
 ********************************************************************/
 
-static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
+static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth, uint16 validation_level)
 {
 	int i;
 
@@ -1142,6 +1146,9 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 
 	prs_debug(ps, depth, desc, "lsa_io_lsa_user_info");
 	depth++;
+
+	if (UNMARSHALLING(ps))
+		ZERO_STRUCTP(usr);
 
 	if(!prs_align(ps))
 		return False;
@@ -1207,10 +1214,17 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!prs_uint8s (False, "padding       ", ps, depth, usr->padding, 40)) /* unused padding bytes? */
 		return False;
 
-	if(!prs_uint32("num_other_sids", ps, depth, &usr->num_other_sids)) /* 0 - num_sids */
-		return False;
-	if(!prs_uint32("buffer_other_sids", ps, depth, &usr->buffer_other_sids)) /* NULL - undocumented pointer to SIDs. */
-		return False;
+	if (validation_level == 3) {
+		if(!prs_uint32("num_other_sids", ps, depth, &usr->num_other_sids)) /* 0 - num_sids */
+			return False;
+		if(!prs_uint32("buffer_other_sids", ps, depth, &usr->buffer_other_sids)) /* NULL - undocumented pointer to SIDs. */
+			return False;
+	} else {
+		if (UNMARSHALLING(ps)) {
+			usr->num_other_sids = 0;
+			usr->buffer_other_sids = 0;
+		}
+	}
 		
 	if(!smb_io_unistr2("unistr2", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
@@ -1260,7 +1274,7 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 		if(!prs_uint32("num_other_groups", ps, depth, &usr->num_other_groups))
 			return False;
 
-		if (UNMARSHALLING(ps)) {
+		if (UNMARSHALLING(ps) && usr->num_other_groups > 0) {
 			usr->other_gids = (DOM_GID *)prs_alloc_mem(ps, sizeof(DOM_GID)*usr->num_other_groups);
 			if (usr->other_gids == NULL)
 				return False;
@@ -1326,7 +1340,7 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int de
 		return False;
 
 	if (r_l->switch_value != 0) {
-		if(!net_io_user_info3("", r_l->user, ps, depth))
+		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
 			return False;
 	}
 
