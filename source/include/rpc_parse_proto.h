@@ -860,6 +860,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
 				 const char* clientname, const char* user_name,
 				 uint32 level, PRINTER_INFO_2 *info);
+void free_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u);
 BOOL make_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 			       PRINTER_INFO_2 *info);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
@@ -995,6 +996,14 @@ void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
 void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il);
+BOOL make_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+				     const char* srv_name, uint32 level, 
+				     PRINTER_DRIVER_CTR *info);
+BOOL make_spool_driver_info_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+			      DRIVER_INFO_3 *info3);
+void free_spool_driver_info_3 (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info);
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
+void free_spool_buffer5(BUFFER5 *buf);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 void free_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);

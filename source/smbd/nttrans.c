@@ -1677,8 +1677,10 @@ static int call_nt_transact_notify_change(connection_struct *conn,
   char *setup = *ppsetup;
   files_struct *fsp;
   change_notify_buf *cnbp;
+  uint32 flags;
 
   fsp = file_fsp(setup,4);
+  flags = IVAL(setup, 0);
 
   DEBUG(3,("call_nt_transact_notify_change\n"));
 
@@ -1764,41 +1766,6 @@ static int call_nt_transact_rename(connection_struct *conn,
   }
 
   return(outsize);
-}
-
-/****************************************************************************
- Reply to query a security descriptor from an fsp. If it succeeds it allocates
- the space for the return elements and returns True.
-****************************************************************************/
-
-static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
-{
-  SMB_STRUCT_STAT sbuf;
-  mode_t mode;
-
-    if(fsp->is_directory || fsp->fd == -1) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-        return 0;
-      }
-    } else {
-      if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
-        return 0;
-      }
-    }
-
-    if(fsp->is_directory) {
-      /*
-       * For directory ACLs we also add in the inherited permissions
-       * ACE entries. These are the permissions a file would get when
-       * being created in the directory.
-       */
-      mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
-    }
-    else
-    {
-	    mode = sbuf.st_mode;
-    }
-  return convertperms_unix_to_sd(&sbuf, fsp->is_directory, mode, ppdesc);
 }
 
 /****************************************************************************
@@ -2156,6 +2123,7 @@ due to being in oplock break state.\n" ));
     push_oplock_pending_smb_message( inbuf, length);
     return -1;
   }
+
 
   outsize = set_message(outbuf,0,0,True);
 

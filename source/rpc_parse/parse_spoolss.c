@@ -119,18 +119,18 @@ static BOOL smb_io_doc_info_1(char *desc, DOC_INFO_1 *info_1, prs_struct *ps, in
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("p_docname",    ps, depth, &(info_1->p_docname)))
+	if(!prs_uint32("p_docname",    ps, depth, &info_1->p_docname))
 		return False;
-	if(!prs_uint32("p_outputfile", ps, depth, &(info_1->p_outputfile)))
+	if(!prs_uint32("p_outputfile", ps, depth, &info_1->p_outputfile))
 		return False;
-	if(!prs_uint32("p_datatype",   ps, depth, &(info_1->p_datatype)))
+	if(!prs_uint32("p_datatype",   ps, depth, &info_1->p_datatype))
 		return False;
 
-	if(!smb_io_unistr2("", &(info_1->docname),    info_1->p_docname,    ps, depth))
+	if(!smb_io_unistr2("", &info_1->docname,    info_1->p_docname,    ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(info_1->outputfile), info_1->p_outputfile, ps, depth))
+	if(!smb_io_unistr2("", &info_1->outputfile, info_1->p_outputfile, ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(info_1->datatype),   info_1->p_datatype,   ps, depth))
+	if(!smb_io_unistr2("", &info_1->datatype,   info_1->p_datatype,   ps, depth))
 		return False;
 
 	return True;
@@ -151,16 +151,16 @@ static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int dept
 	if(!prs_align(ps))
 		return False;
         
-	if(!prs_uint32("switch_value", ps, depth, &(info->switch_value)))
+	if(!prs_uint32("switch_value", ps, depth, &info->switch_value))
 		return False;
 	
-	if(!prs_uint32("doc_info_X ptr", ps, depth, &(useless_ptr)))
+	if(!prs_uint32("doc_info_X ptr", ps, depth, &useless_ptr))
 		return False;
 
 	switch (info->switch_value)
 	{
 		case 1:	
-			if(!smb_io_doc_info_1("",&(info->doc_info_1), ps, depth))
+			if(!smb_io_doc_info_1("",&info->doc_info_1, ps, depth))
 				return False;
 			break;
 		case 2:
@@ -174,7 +174,7 @@ static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int dept
 			  Maybe one day with Windows for dishwasher 2037 ...
 			  
 			*/
-			/* smb_io_doc_info_2("",&(info->doc_info_2), ps, depth); */
+			/* smb_io_doc_info_2("",&info->doc_info_2, ps, depth); */
 			break;
 		default:
 			DEBUG(0,("Something is obviously wrong somewhere !\n"));
@@ -357,10 +357,8 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		return False;
 	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
-#if 1 /* JRATEST - NEEDED ???? */
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
-#endif /* JRATEST - NEEDED ???? */
 
 
 	/*prs_align(ps);*/
@@ -466,26 +464,26 @@ static BOOL spool_io_user_level_1(char *desc, SPOOL_USER_1 *q_u, prs_struct *ps,
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("size", ps, depth, &(q_u->size)))
+	if (!prs_uint32("size", ps, depth, &q_u->size))
 		return False;
-	if (!prs_uint32("client_name_ptr", ps, depth, &(q_u->client_name_ptr)))
+	if (!prs_uint32("client_name_ptr", ps, depth, &q_u->client_name_ptr))
 		return False;
-	if (!prs_uint32("user_name_ptr", ps, depth, &(q_u->user_name_ptr)))
+	if (!prs_uint32("user_name_ptr", ps, depth, &q_u->user_name_ptr))
 		return False;
-	if (!prs_uint32("build", ps, depth, &(q_u->build)))
+	if (!prs_uint32("build", ps, depth, &q_u->build))
 		return False;
-	if (!prs_uint32("major", ps, depth, &(q_u->major)))
+	if (!prs_uint32("major", ps, depth, &q_u->major))
 		return False;
-	if (!prs_uint32("minor", ps, depth, &(q_u->minor)))
+	if (!prs_uint32("minor", ps, depth, &q_u->minor))
 		return False;
-	if (!prs_uint32("processor", ps, depth, &(q_u->processor)))
+	if (!prs_uint32("processor", ps, depth, &q_u->processor))
 		return False;
 
-	if (!smb_io_unistr2("", &(q_u->client_name), q_u->client_name_ptr, ps, depth))
+	if (!smb_io_unistr2("", &q_u->client_name, q_u->client_name_ptr, ps, depth))
 		return False;
 	if (!prs_align(ps))
 		return False;
-	if (!smb_io_unistr2("", &(q_u->user_name),   q_u->user_name_ptr,   ps, depth))
+	if (!smb_io_unistr2("", &q_u->user_name,   q_u->user_name_ptr,   ps, depth))
 		return False;
 
 	return True;
@@ -510,7 +508,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
 	
 	switch (q_u->level) {	
 	case 1:
-		if (!spool_io_user_level_1("", &(q_u->user1), ps, depth))
+		if (!spool_io_user_level_1("", &q_u->user1, ps, depth))
 			return False;
 		break;
 	default:
@@ -685,13 +683,13 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
 	if (!prs_uint32("datatype_ptr", ps, depth, &pd->datatype_ptr))
 		return False;
 
-	if (!smb_io_unistr2("datatype", &(pd->datatype), pd->datatype_ptr, ps,depth))
+	if (!smb_io_unistr2("datatype", &pd->datatype, pd->datatype_ptr, ps,depth))
 		return False;
 	
 	if (!prs_align(ps))
 		return False;
 
-	if (!spoolss_io_devmode_cont("", &(pd->devmode_cont), ps, depth))
+	if (!spoolss_io_devmode_cont("", &pd->devmode_cont, ps, depth))
 		return False;
 
 	if (!prs_uint32("access_required", ps, depth, &pd->access_required))
@@ -787,6 +785,41 @@ BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name
 	
 	return True;
 }
+
+/*******************************************************************
+ free dynamically allocated members
+ ********************************************************************/
+void free_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u)
+{
+	switch (q_u->info.level)
+	{
+	case 1:
+		if (q_u->info.info_1 != NULL)
+		{
+			free(q_u->info.info_1);
+			q_u->info.info_1 = NULL;
+		}
+			break;
+	case 2:
+		if (q_u->info.info_2 != NULL)
+		{
+			free(q_u->info.info_2);
+			q_u->info.info_2 = NULL;
+		}
+		break;
+	case 3:
+		if (q_u->info.info_3 != NULL)
+		{
+			free(q_u->info.info_3);
+			q_u->info.info_3 = NULL;
+		}
+		break;
+	}
+
+	return;
+	
+}
+	
 /*******************************************************************
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
@@ -1424,6 +1457,8 @@ static uint32 size_of_relative_string(UNISTR *string)
 	size=str_len_uni(string);	/* the string length       */
 	size=size+1;			/* add the leading zero    */
 	size=size*2;			/* convert in char         */
+	/* Ensure size is 4 byte multiple (prs_align is being called...). */
+	size += ((4 - (size & 3)) & 3);
 	size=size+4;			/* add the size of the ptr */	
 
 	return size;
@@ -1470,6 +1505,14 @@ static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int d
 
 	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
 	depth++;
+	
+	/* there should be no align here as it can mess up
+	   parsing a NEW_BUFFER->prs */
+#if 0	/* JERRY */
+	if (!prs_align(ps))
+		return False;
+#endif
+		
 	if (!prs_unistr("unistr", ps, depth, uni))
 		return False;
 
@@ -1561,15 +1604,6 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		p=*string;
 		q=*string;
 
-#if 0 /* JRATEST */
-		if (p == NULL) {
-			relative_offset = 0;
-			if (!prs_uint32("offset", ps, depth, &relative_offset))
-				return False;
-			return True;
-		}
-#endif
-		
 		/* first write the last 0 */
 		buffer->string_at_end -= 2;
 		if(!prs_set_offset(ps, buffer->string_at_end))
@@ -1578,28 +1612,25 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		if(!prs_uint16("leading zero", ps, depth, &zero))
 			return False;
 
-#if 0 /* JRATEST */
-		if (p == NULL)
-			p = &zero;
-		if (q == NULL)
-			q = &zero;
-#endif /* JRATEST */
 
 		do
 		{	
 			while (*q!=0)
 				q++;
 
+
 			memcpy(chaine.buffer, p, (q-p+1)*sizeof(uint16));
 
 			buffer->string_at_end -= (q-p+1)*sizeof(uint16);
 
-			if(!prs_set_offset(ps, buffer->string_at_end))
+			if(!prs_set_offset(ps, buffer->string_at_end)) {
 				return False;
+			}
 
 			/* write the string */
-			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
+			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth)) {
 				return False;
+			}
 			q++;
 			p=q;
 
@@ -1641,6 +1672,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			l_chaine2+=l_chaine+1;
 		
 		} while(l_chaine!=0);
+		
 		if (chaine2)
 		{
 			chaine2[l_chaine2] = '\0';
@@ -1691,9 +1723,6 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
-#if 0 /* JRATEST */
-		relative_offset = 0x54;
-#endif
 
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
 			return False;
@@ -3269,6 +3298,15 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
+	if(!new_spoolss_io_buffer("", ps, depth, r_u->buffer))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -4071,8 +4109,6 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("dummy1", ps, depth, &il->dummy1))
-		return False;
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
 	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
@@ -4294,6 +4330,142 @@ void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il)
 }
 
 /*******************************************************************
+ init a SPOOL_Q_ADDPRINTERDRIVER struct
+ ******************************************************************/
+BOOL make_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+				     const char* srv_name, uint32 level, 
+				     PRINTER_DRIVER_CTR *info)
+{
+	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
+	
+	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
+	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name)+1);
+	
+	q_u->level = level;
+	
+	q_u->info.level = level;
+	q_u->info.ptr = (info!=NULL)?1:0;
+	switch (level)
+	{
+		/* info level 3 is supported by Windows 95/98, 
+		   WinNT and Win2k */
+		case 3 :
+			q_u->info.info_3=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
+				          malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+			make_spool_driver_info_3(q_u->info.info_3, info->info3);
+			break;
+		
+		/* info level 6 is supported by WinME and Win2k */
+		case 6:
+			/* WRITEME!!  will add later  --jerry */
+			break;
+		default:
+			DEBUG(0,("make_spoolss_q_addprinterdriver: Unknown \
+info level [%d]\n", level));
+			break;
+	
+	}
+	
+	return True;
+}
+
+BOOL make_spool_driver_info_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+			      DRIVER_INFO_3 *info3)
+{
+	uint32		len = 0;
+	uint16		*ptr = info3->dependentfiles;
+	BOOL		done = False;
+	BOOL		null_char = False;
+
+	spool_drv_info->cversion	= info3->version;
+	spool_drv_info->name_ptr	= (info3->name.buffer!=NULL)?1:0;
+	spool_drv_info->environment_ptr	= (info3->architecture.buffer!=NULL)?1:0;
+	spool_drv_info->driverpath_ptr	= (info3->driverpath.buffer!=NULL)?1:0;
+	spool_drv_info->datafile_ptr	= (info3->datafile.buffer!=NULL)?1:0;
+	spool_drv_info->configfile_ptr	= (info3->configfile.buffer!=NULL)?1:0;
+	spool_drv_info->helpfile_ptr	= (info3->helpfile.buffer!=NULL)?1:0;
+	spool_drv_info->monitorname_ptr	= (info3->monitorname.buffer!=NULL)?1:0;
+	spool_drv_info->defaultdatatype_ptr	= (info3->defaultdatatype.buffer!=NULL)?1:0;
+
+	init_unistr2_from_unistr(&spool_drv_info->name, &info3->name);
+	init_unistr2_from_unistr(&spool_drv_info->environment, &info3->architecture);
+	init_unistr2_from_unistr(&spool_drv_info->driverpath, &info3->driverpath);
+	init_unistr2_from_unistr(&spool_drv_info->datafile, &info3->datafile);
+	init_unistr2_from_unistr(&spool_drv_info->configfile, &info3->configfile);
+	init_unistr2_from_unistr(&spool_drv_info->helpfile, &info3->helpfile);
+	init_unistr2_from_unistr(&spool_drv_info->monitorname, &info3->monitorname);
+	init_unistr2_from_unistr(&spool_drv_info->defaultdatatype, &info3->defaultdatatype);
+
+	while (!done)
+	{
+		switch (*ptr)
+		{
+			case 0:
+				/* the null_char BOOL is used to help locate
+				   two '\0's back to back */
+				if (null_char)
+					done = True;
+				else
+					null_char = True;
+				break;
+					
+			default:
+				null_char = False;
+				;;
+				break;				
+		}
+		len++;
+		ptr++;
+	}
+	spool_drv_info->dependentfiles_ptr = (info3->dependentfiles!=NULL)?1:0;
+	spool_drv_info->dependentfilessize = len;
+	make_spool_buffer5(&spool_drv_info->dependentfiles, len, info3->dependentfiles);
+	
+	return True;
+}	     
+
+void free_spool_driver_info_3 (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info)
+{
+	if (info != NULL)
+	{
+		free_spool_buffer5(&info->dependentfiles);
+	}
+	
+	return;
+}
+
+/*******************************************************************
+ make a BUFFER5 struct from a uint16*
+ ******************************************************************/
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
+{
+
+	buf5->buf_len = len;
+	if((buf5->buffer=(uint16*)malloc(sizeof(uint16)*len)) == NULL)
+	{
+		DEBUG(0,("make_spool_buffer5: Unable to malloc memory for buffer!\n"));
+		return False;
+	}
+	
+	memcpy(buf5->buffer, src, sizeof(uint16)*len);
+
+	return True;
+}
+
+
+void free_spool_buffer5(BUFFER5 *buf)
+{
+	if (buf != NULL)
+	{
+		free(buf->buffer);
+		buf->buffer = NULL;
+	}
+	
+	return;
+}
+
+/*******************************************************************
+ fill in the prs_struct for a ADDPRINTERDRIVER request PDU
 ********************************************************************/  
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {

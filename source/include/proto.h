@@ -3057,8 +3057,11 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 
 /*The following definitions come from  smbd/fileio.c  */
 
+SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
+BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
+void delete_write_cache(files_struct *fsp);
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 void sync_file(connection_struct *conn, files_struct *fsp);
@@ -3099,7 +3102,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 /*The following definitions come from  smbd/lanman.c  */
 
 int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
-	      char *params, int tdscnt, int tpscnt, int mdrcnt, int mprcnt);
+	      char *params,
+	      int tdscnt, int tpscnt, int mdrcnt, int mprcnt);
 
 /*The following definitions come from  smbd/mangle.c  */
 
@@ -3133,6 +3137,8 @@ BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT
 
 /*The following definitions come from  smbd/nttrans.c  */
 
+void fail_next_srvsvc_open(void);
+BOOL should_fail_next_srvsvc_open(const char *pipename);
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ntcancel(connection_struct *conn,
@@ -3372,6 +3378,10 @@ BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL become_userk(connection_struct *conn, const vuser_key *key);
 BOOL unbecome_user(void );
 
+/*The following definitions come from  smbd/unix_acls.c  */
+
+size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
+
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
 int vfswrap_dummy_connect(struct vfs_connection_struct *conn, char *service,
@@ -3565,8 +3575,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
 uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
-				uint32 level,
-				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
+				uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered, 
 					uint32 *needed);
