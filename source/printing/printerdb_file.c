@@ -84,7 +84,7 @@ static BOOL file_find(TALLOC_CTX *mem_ctx, const char *directory,
 	if (*num_files == 0)
 		return False;
 
-	DEBUG(0,("found: %d files\n", *num_files));
+	DEBUG(10,("found: %d files\n", *num_files));
 
 	return True;
 }
@@ -330,7 +330,7 @@ uint32 file_get_c_setprinter(void)
 	if (ret != len)
 		goto done;
 
-	DEBUG(0,("file_get_c_setprinter: will return %d\n", result));
+	DEBUG(10,("file_get_c_setprinter: will return %d\n", result));
 
  done:
 	if (mem_ctx != NULL)
@@ -817,7 +817,7 @@ static WERROR file_get_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC
 	result = sec_io_desc_buf("file_get_secdesc", secdesc_ctr, &ps, 1) ?
 		WERR_OK : WERR_NOMEM;
 
-	prs_mem_free(&ps);
+	/* prs_mem_free(&ps); */
 	return result;
 }
 
@@ -958,12 +958,6 @@ WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharenam
 	len += unpack_devicemode(&info.devmode, buf+len, buflen-len);
 
 	len += unpack_values( &info.data, buf+len, buflen-len );
-
-	if (len != buflen) {
-		DEBUG(0,("len: %d != buflen %d\n", len, buflen));
-		result = WERR_INVALID_PARAM;
-		goto done;
-	}
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 

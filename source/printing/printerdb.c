@@ -154,7 +154,14 @@ BOOL printerdb_close(void)
 
 static BOOL printerdb_valid(struct printerdb_methods *printerdb, int tdb)
 {
-	time_t t = time(NULL);
+	time_t t;
+
+	if (lp_printerdb_cache_time() <= 0) {
+		DEBUG(10,("printerdb_valid: tdb caching disabled\n"));
+		return False;
+	}
+
+	t = time(NULL);
 
 	if (t < printerdb->get_last_update(tdb) + lp_printerdb_cache_time()) {
 		DEBUG(10,("printerdb_valid: printerdb still valid (%d < %d)\n",
@@ -162,7 +169,7 @@ static BOOL printerdb_valid(struct printerdb_methods *printerdb, int tdb)
 		return True;
 	}
 
-	DEBUG(3,("printerdb_valid: cache expired, asking remote backend\n"));
+	DEBUG(10,("printerdb_valid: cache expired, asking remote backend\n"));
 
 	return False;
 }
