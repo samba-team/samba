@@ -335,6 +335,7 @@ BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
 /*The following definitions come from  md4.c  */
 
+void mdfour(unsigned char *out, unsigned char *in, int n);
 
 /*The following definitions come from  message.c  */
 
