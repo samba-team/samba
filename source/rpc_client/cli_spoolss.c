@@ -358,13 +358,10 @@ uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
 	        r_o.buffer=buffer;
 
 	        if(!spoolss_io_r_getprinter("", &r_o, &rbuf, 0)) 
-		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
-			{
 				DEBUG(3,("SPOOLSS_GETPRINTER: %s\n", get_nt_error_msg(r_o.status)));
-			}
-		        *needed=r_o.needed;
-		}
+
+		*needed=r_o.needed;
 	}
 
         prs_mem_free(&rbuf);

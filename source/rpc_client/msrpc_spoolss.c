@@ -566,7 +566,8 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
         POLICY_HND hnd;
         uint32 status=0;
         NEW_BUFFER buffer;
-        uint32 needed=1000;
+        uint32 offered=1000;
+	uint32 needed=0;
 	TALLOC_CTX *mem_ctx = NULL;
 	
         DEBUG(4,("spoolenum_getprinter - printer: %s\n", printer_name));
@@ -579,13 +580,14 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 		DEBUG(0,("msrpc_spoolss_getprinter: talloc_init failed!\n"));
 		return False;
 	}
-        init_buffer(&buffer, needed, mem_ctx);
+        init_buffer(&buffer, offered, mem_ctx);
 
-        status = spoolss_getprinter(&hnd, level, &buffer, needed, &needed);
+        status = spoolss_getprinter(&hnd, level, &buffer, offered, &needed);
 
         if (status==ERROR_INSUFFICIENT_BUFFER) {
-                init_buffer(&buffer, needed, mem_ctx);
-                status = spoolss_getprinter(&hnd, level, &buffer, needed, &needed);
+		offered=needed;
+                init_buffer(&buffer, offered, mem_ctx);
+                status = spoolss_getprinter(&hnd, level, &buffer, offered, &needed);
         }
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);

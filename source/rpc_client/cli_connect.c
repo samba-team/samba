@@ -177,13 +177,14 @@ static struct cli_connection *cli_con_get(const char *srv_name,
                 {
                         con->auth = &cli_noauth_fns;
                 }
-
+#if 0
                 if (!rpc_pipe_bind(con->pCli_state, pipe_name, global_myname))
                 {
                 	DEBUG(0, ("rpc_pipe_bind failed\n"));
                 	cli_connection_free(con);
                 	return NULL;
                 }
+#endif
 	}
         else
         {
