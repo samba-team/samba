@@ -174,6 +174,7 @@ implemented */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERRunknownipc 2142
 #define ERRbuftoosmall 2123
+#define ERRnosuchprintjob 2151
 
 #define ERROR_SUCCESS                     (0)
 #define ERROR_INVALID_FUNCTION		  (1)
