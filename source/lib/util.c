@@ -1401,9 +1401,11 @@ void smb_panic(const char *why)
 	char *cmd;
 	int result;
 	size_t i;
+#ifdef HAVE_BACKTRACE_SYMBOLS
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;
 	char **backtrace_strings;
+#endif
 
 #ifdef DEVELOPER
 	{
