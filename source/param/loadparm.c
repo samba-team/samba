@@ -1477,7 +1477,6 @@ FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword);
 #endif /* WITH_LDAP */
-FN_GLOBAL_STRING(lp_printer_admin, &Globals.szPrinterAdmin);
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion);
@@ -3702,3 +3701,16 @@ const char *get_called_name(void)
         return local_machine;
 }
 
+/* Return the value of the 'printer admin' parameter in dos codepage at
+   call time rather than at smb.conf parsing time.  This is a horrible hack
+   for CR593 to avoid having to re-order the smb.conf parameter and risk
+   random other international character breakage. */
+
+char *lp_printer_admin(void)
+{
+	char *printer_admin = lp_string(Globals.szPrinterAdmin);
+
+	unix_to_dos(printer_admin, True);
+
+	return printer_admin;
+}
