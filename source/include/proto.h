@@ -1600,6 +1600,9 @@ char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
 char *lp_ldap_root(void);
 char *lp_ldap_rootpasswd(void);
+char *lp_add_share_cmd(void);
+char *lp_change_share_cmd(void);
+char *lp_delete_share_cmd(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -3593,6 +3596,7 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 					RPC_IFACE* transfer);
 BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
 BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in);
+struct current_user *get_current_user(struct current_user *user, pipes_struct *p);
 BOOL api_pipe_request(pipes_struct *p);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, 
 		struct api_struct *api_rpc_cmds);

@@ -179,6 +179,9 @@ typedef struct
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
+	char *szAddShareCommand;
+	char *szChangeShareCommand;
+	char *szDeleteShareCommand;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -951,6 +954,9 @@ static struct parm_struct parm_table[] = {
 #endif /* WITH_LDAP */
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
+	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, 0},
+	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, 0},
+	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, 0},
 	{"smbrun", P_STRING, P_GLOBAL, &Globals.szSmbrun, NULL, NULL, 0},
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
@@ -1490,6 +1496,9 @@ FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword);
 #endif /* WITH_LDAP */
+FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand);
+FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand);
+FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand);
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion);
