@@ -95,11 +95,6 @@ static BOOL samba_private_attr_name(const char *unix_ea_name)
 	return False;
 }
 
-struct ea_list {
-	struct ea_list *next, *prev;
-	struct ea_struct ea;
-};
-
 /****************************************************************************
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
@@ -313,7 +308,7 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
  Set or delete an extended attribute.
 ****************************************************************************/
 
-static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, struct ea_list *ea_list)
+NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, struct ea_list *ea_list)
 {
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
@@ -420,6 +415,63 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 }
 
 /****************************************************************************
+ Read one EA list entry from the buffer.
+****************************************************************************/
+
+struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used)
+{
+	struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
+	uint16 val_len;
+	unsigned int namelen;
+
+	if (!eal) {
+		return NULL;
+	}
+
+	if (data_size < 6) {
+		return NULL;
+	}
+
+	eal->ea.flags = CVAL(pdata,0);
+	namelen = CVAL(pdata,1);
+	val_len = SVAL(pdata,2);
+
+	if (4 + namelen + 1 + val_len > data_size) {
+		return NULL;
+	}
+
+	/* Ensure the name is null terminated. */
+	if (pdata[namelen + 4] != '\0') {
+		return NULL;
+	}
+	pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4);
+	if (!eal->ea.name) {
+		return NULL;
+	}
+
+	eal->ea.value = data_blob(NULL, (size_t)val_len + 1);
+	if (!eal->ea.value.data) {
+		return NULL;
+	}
+
+	memcpy(eal->ea.value.data, pdata + 4 + namelen + 1, val_len);
+
+	/* Ensure we're null terminated just in case we print the value. */
+	eal->ea.value.data[val_len] = '\0';
+	/* But don't count the null. */
+	eal->ea.value.length--;
+
+	if (pbytes_used) {
+		*pbytes_used = 4 + namelen + 1 + val_len;
+	}
+
+	DEBUG(10,("read_ea_list_entry: read ea name %s\n", eal->ea.name));
+	dump_data(10, eal->ea.value.data, eal->ea.value.length);
+
+	return eal;
+}
+
+/****************************************************************************
  Read a list of EA names and data from an incoming data buffer. Create an ea_list with them.
 ****************************************************************************/
 
@@ -427,63 +479,18 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 {
 	struct ea_list *ea_list_head = NULL;
 	size_t offset = 0;
+	size_t bytes_used = 0;
 
-	if (data_size < 10) {
-		return NULL;
-	}
-
-	/* Each entry must be at least 6 bytes in length. */
-	while (offset + 6 <= data_size) {
+	while (offset < data_size) {
 		struct ea_list *tmp;
-		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
-		uint16 val_len;
-		unsigned int namelen;
+		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset, data_size - offset, &bytes_used);
 
-		eal->ea.flags = CVAL(pdata,offset);
-		namelen = CVAL(pdata,offset + 1);
-		val_len = SVAL(pdata,offset + 2);
-
-		/* integer wrap paranioa. */
-		if ((offset + namelen + 5 + val_len < offset) ||
-				(offset + namelen + 5 + val_len < namelen) ||
-				(offset + namelen + 5 + val_len < val_len) ||
-				(offset > data_size) ||
-				(namelen > data_size) ||
-				(offset + namelen >= data_size)) {
+		if (!eal) {
 			return NULL;
 		}
-
-		if (offset + 4 + namelen + 1 + val_len > data_size) {
-			return NULL;
-		}
-
-		/* Ensure the name is null terminated. */
-		if (pdata[offset + 4 + namelen] != '\0') {
-			return NULL;
-		}
-		pull_ascii_talloc(ctx, &eal->ea.name, pdata + offset + 4);
-		if (!eal->ea.name) {
-			return NULL;
-		}
-
-		eal->ea.value = data_blob(NULL, (size_t)val_len + 1);
-		if (!eal->ea.value.data) {
-			break;
-		}
-
-		memcpy(eal->ea.value.data, pdata + offset + 4 + namelen + 1, val_len);
-
-		/* Ensure we're null terminated just in case we print the value. */
-		eal->ea.value.data[val_len] = '\0';
-		/* But don't count the null. */
-		eal->ea.value.length--;
-
-		offset += 4 + namelen + 1 + val_len;
 
 		DLIST_ADD_END(ea_list_head, eal, tmp);
-
-		DEBUG(10,("read_ea_list: read ea name %s\n", eal->ea.name));
-		dump_data(10, eal->ea.value.data, eal->ea.value.length);
+		offset += bytes_used;
 	}
 
 	return ea_list_head;
