@@ -689,7 +689,6 @@ BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
 void prs_set_packtype(prs_struct *ps, const uint8 *pack_type);
 void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
 BOOL prs_copy(prs_struct *ps, const prs_struct *from);
-BOOL prs_alloc_data(prs_struct *buf, int size);
 BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 		  uint32 offset, uint32 len);
 void prs_struct_free(prs_struct **buf);

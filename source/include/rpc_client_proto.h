@@ -380,9 +380,9 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 BOOL samr_close(  POLICY_HND *hnd);
-BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
-				uint32 *num_entries,
-				SAM_DISPINFO_CTR *ctr);
+uint32 samr_query_dispinfo(POLICY_HND *pol_domain, uint32 *start_idx,
+			   uint16 level, uint32 *num_entries, 
+			   SAM_DISPINFO_CTR *ctr);
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
