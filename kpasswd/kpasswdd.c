@@ -456,6 +456,8 @@ doit (krb5_keytab keytab, int port)
 	    krb5_err (context, 1, errno, "bind(%s)", str);
 	}
 	maxfd = max (maxfd, sockets[i]);
+	if (maxfd >= FD_SETSIZE)
+	    krb5_errx (context, 1, "fd too large");
 	FD_SET(sockets[i], &real_fdset);
     }
 
