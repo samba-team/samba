@@ -7,12 +7,13 @@ Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
 current method (likely to change) to manage the groups is a new command called
 smbgroupedit.
 
-The first immediate reason to use the group mapping on a PDC, is that the
-'domain admin group' of smb.conf is now gone. This parameter used to make
-administrators the listed users. It was some magic stuff that simply worked but
-didn't scale very well for complex setups.
+The first immediate reason to use the group mapping on a PDC, is that
+the 'domain admin group' of smb.conf is now gone. This parameter was
+used to give the listed users local admin rights on their
+workstations. It was some magic stuff that simply worked but didn't
+scale very well for complex setups.
 
-Let me explain how it works on NT/W2K, to have this magic fades away.
+Let me explain how it works on NT/W2K, to have this magic fade away.
 When installing NT/W2K on a computer, the installer program creates some users
 and groups. Notably the 'Administrators' group, and gives to that group some
 privileges like the ability to change the date and time or to kill any process
