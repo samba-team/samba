@@ -609,6 +609,10 @@ static void usage(char *pname)
 
 	charset_initialise();
 
+	/* we want to re-seed early to prevent time delays causing
+           client problems at a later date. (tridge) */
+	generate_random_buffer(NULL, 0, False);
+
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
 
