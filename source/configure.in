@@ -3184,6 +3184,10 @@ case "$host_os" in
 		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		;;
+	*aix*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_aix.o"
+		;;
 	*)
 		HAVE_WINBIND=no
 		winbind_no_reason=", unsupported on $host_os"
