@@ -620,7 +620,7 @@ BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		buf3->buffer = prs_alloc_mem(ps, buf3->buf_max_len);
+		buf3->buffer = (unsigned char *)prs_alloc_mem(ps, buf3->buf_max_len);
 		if (buf3->buffer == NULL)
 			return False;
 	}

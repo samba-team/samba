@@ -592,7 +592,7 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = prs_alloc_mem(ps,str->str_str_len);
+		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_str_len);
 		if (str->buffer == NULL)
 			return False;
 	}

@@ -255,22 +255,22 @@ BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int dep
 	}
 	prs_uint32("crypted", ps, depth, (uint32 *)&(pwd->crypted));
 		
-	prs_uint8s(False, "smb_lm_pwd", ps, depth, (char*)&pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
+	prs_uint8s(False, "smb_lm_pwd", ps, depth, (unsigned char*)&pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 	prs_align(ps);
-	prs_uint8s(False, "smb_nt_pwd", ps, depth, (char*)&pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
+	prs_uint8s(False, "smb_nt_pwd", ps, depth, (unsigned char*)&pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
 	prs_align(ps);
 
-	prs_uint8s(False, "smb_lm_owf", ps, depth, (char*)&pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
+	prs_uint8s(False, "smb_lm_owf", ps, depth, (unsigned char*)&pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
 	prs_align(ps);
 	prs_uint32("nt_owf_len", ps, depth, &(pwd->nt_owf_len));
 	if (pwd->nt_owf_len > sizeof(pwd->smb_nt_owf))
 	{
 		return False;
 	}
-	prs_uint8s(False, "smb_nt_owf", ps, depth, (char*)&pwd->smb_nt_owf, pwd->nt_owf_len);
+	prs_uint8s(False, "smb_nt_owf", ps, depth, (unsigned char*)&pwd->smb_nt_owf, pwd->nt_owf_len);
 	prs_align(ps);
 
-	prs_uint8s(False, "lm_cli_chal", ps, depth, (char*)&pwd->lm_cli_chal, sizeof(pwd->lm_cli_chal));
+	prs_uint8s(False, "lm_cli_chal", ps, depth, (unsigned char*)&pwd->lm_cli_chal, sizeof(pwd->lm_cli_chal));
 	prs_align(ps);
 	prs_uint32("nt_cli_chal_len", ps, depth, &(pwd->nt_cli_chal_len));
 
@@ -278,7 +278,7 @@ BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int dep
 	{
 		return False;
 	}
-	prs_uint8s(False, "nt_cli_chal", ps, depth, (char*)&pwd->nt_cli_chal, pwd->nt_cli_chal_len);
+	prs_uint8s(False, "nt_cli_chal", ps, depth, (unsigned char*)&pwd->nt_cli_chal, pwd->nt_cli_chal_len);
 	prs_align(ps);
 
 	return True;
@@ -354,7 +354,7 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	}
 	if (r_u->ptr_ssk != 0)
 	{
-		prs_uint8s(False, "usr_sess_key", ps, depth, (char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
+		prs_uint8s(False, "usr_sess_key", ps, depth, (unsigned char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
 	}
 	else
 	{

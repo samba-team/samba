@@ -966,7 +966,7 @@ static BOOL samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
   SAMR_R_QUERY_ALIASINFO r_e;
   fstring alias_desc = "Local Unix group";
   fstring alias="";
-  uint8 type;
+  enum SID_NAME_USE type;
   uint32 alias_rid;
 
   ZERO_STRUCT(r_e);
@@ -1112,7 +1112,7 @@ static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 				    prs_struct *rdata)
 {
   uint32 rid[MAX_SAM_ENTRIES];
-  uint8  type[MAX_SAM_ENTRIES];
+  enum SID_NAME_USE type[MAX_SAM_ENTRIES];
   uint32 status = 0;
   int i;
   int num_rids = q_u->num_names1;
