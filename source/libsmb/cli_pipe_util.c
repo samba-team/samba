@@ -24,8 +24,7 @@
 /* Opens a SMB connection to a named pipe */
 
 struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
-				      int pipe_idx, 
-                                      struct ntuser_creds *creds)
+				      int pipe_idx, struct ntuser_creds *creds)
 {
 	struct in_addr dest_ip;
 	struct nmb_name calling, called;

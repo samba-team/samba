@@ -937,40 +937,6 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, const char *pipe_name,
 	return state_set;
 }
 
-#if 0	/* JERRY */
-
-/****************************************************************************
- check the rpc bind acknowledge response
-****************************************************************************/
-
-static BOOL valid_pipe_name(const char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *transfer)
-{
-	int pipe_idx = 0;
-
-	while (pipe_names[pipe_idx].client_pipe != NULL) {
-		if (strequal(pipe_name, pipe_names[pipe_idx].client_pipe )) {
-			DEBUG(5,("Bind Abstract Syntax: "));	
-			dump_data(5, (char*)&(pipe_names[pipe_idx].abstr_syntax), 
-			          sizeof(pipe_names[pipe_idx].abstr_syntax));
-			DEBUG(5,("Bind Transfer Syntax: "));
-			dump_data(5, (char*)&(pipe_names[pipe_idx].trans_syntax),
-			          sizeof(pipe_names[pipe_idx].trans_syntax));
-
-			/* copy the required syntaxes out so we can do the right bind */
-			*transfer = pipe_names[pipe_idx].trans_syntax;
-			*abstract = pipe_names[pipe_idx].abstr_syntax;
-
-			return True;
-		}
-		pipe_idx++;
-	};
-
-	DEBUG(5,("Bind RPC Pipe[%s] unsupported\n", pipe_name));
-	return False;
-}
-
-#endif
-
 /****************************************************************************
  check the rpc bind acknowledge response
 ****************************************************************************/
@@ -988,14 +954,28 @@ int get_pipe_index( const char *pipe_name )
 	return -1;
 }
 
+
 /****************************************************************************
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL valid_pipe_name_by_idx(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
+char* get_pipe_name_from_index( const int pipe_index )
+{
+
+	if ( (pipe_index < 0) || (pipe_index >= PI_MAX_PIPES) )
+		return NULL;
+
+	return pipe_names[pipe_index].client_pipe;		
+}
+
+/****************************************************************************
+ check the rpc bind acknowledge response
+****************************************************************************/
+
+static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	if ( pipe_idx >= PI_MAX_PIPES ) {
-		DEBUG(0,("valid_pipe_name_by_idx: Programmer error!  Invalid pipe index [%d]\n",
+		DEBUG(0,("valid_pipe_name: Programmer error!  Invalid pipe index [%d]\n",
 			pipe_idx));
 		return False;
 	}
@@ -1163,7 +1143,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, char *my_name)
 
 	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_names[pipe_idx].client_pipe));
 
-	if (!valid_pipe_name_by_idx(pipe_idx, &abstract, &transfer))
+	if (!valid_pipe_name(pipe_idx, &abstract, &transfer))
 		return False;
 
 	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
