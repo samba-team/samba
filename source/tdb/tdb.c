@@ -1217,7 +1217,8 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			/* Try to clean dead ones from old traverses */
 			current = tlock->off;
 			tlock->off = rec->next;
-			if (do_delete(tdb, current, rec) != 0)
+			if (!tdb->read_only && 
+			    do_delete(tdb, current, rec) != 0)
 				goto fail;
 		}
 		tdb_unlock(tdb, tlock->hash, F_WRLCK);
