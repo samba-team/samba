@@ -1,3 +1,5 @@
+#ifndef _SMBAUTH_H_
+#define _SMBAUTH_H_
 /* 
    Unix SMB/Netbios implementation.
    Version 2.2
@@ -93,3 +95,4 @@ typedef struct serversupplied_info
 	
 } auth_serversupplied_info;
 
+#endif /* _SMBAUTH_H_ */
