@@ -352,8 +352,6 @@ main(int argc, char **argv)
 
     set_progname (argv[0]);
 
-    if (argc < 3)
-	usage ();
     auth_method = AUTH_KRB5;
     while ((c = getopt(argc, argv, "45l:nxp:")) != EOF) {
 	switch (c) {
@@ -392,6 +390,11 @@ main(int argc, char **argv)
 	    break;
 	}
     }
+    argc -= optind;
+    argv += optind;
+
+    if (argc < 1)
+	usage ();
 
     if (port == 0)
 	if (do_encrypt && auth_method == AUTH_KRB4)
@@ -399,6 +402,6 @@ main(int argc, char **argv)
 	else
 	    port = k_getportbyname ("kshell", "tcp", htons(544));
 
-    return doit (argv[optind], remote_user, port,
-		 argc - optind - 1, argv + optind + 1);
+    return doit (*argv, remote_user, port,
+		 argc - 1, argv + 1);
 }
