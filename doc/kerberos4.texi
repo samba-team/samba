@@ -36,7 +36,7 @@ principal @samp{rcmd.foo}.
 
 The @samp{rcmd} name suggests that the instance is a hostname (even if
 there are exceptions to this rule). To correctly convert the instance
-@samp{foo} to a hostame, you have to know which host it referred to. You
+@samp{foo} to a hostname, you have to know which host it referred to. You
 can to this by either guessing (from the realm) which domain name to
 append, or you have to have a list of possible hostnames. In the
 simplest cases you can cover most principals with the first rule. If you
@@ -46,10 +46,10 @@ table for the exceptions.
 
 In a complex scenario you will need some kind of host lookup mechanism.
 Using DNS for this is tempting, but DNS is error prone, slow and unsafe
-@footnote{at least until secure DNS is comonly available}.
+@footnote{at least until secure DNS is commonly available}.
 
 Fortunately, the KDC has a trump on hand: it can easily tell if a
-principal exists in the databse. The KDC will use
+principal exists in the database. The KDC will use
 @code{krb5_425_conv_principal_ext} to convert principals.
 
 @node Converting a version 4 database,  , Principal conversion issues, Kerberos 4 issues
@@ -67,7 +67,7 @@ converted. This might be because these principals are not used anymore,
 or it might be just because the principal couldn't be converted. 
 
 You might also see problems with a many-to-one mapping of
-principals. For inctance, if you are using DNS lookups and you have two
+principals. For instance, if you are using DNS lookups and you have two
 principals @samp{rcmd.foo} and @samp{rcmd.bar}, where `foo' is a CNAME
 for `bar', the resulting principals will be the same. Since the
 conversion function can't tell which is correct, these conflicts will

@@ -12,7 +12,9 @@ To setup a realm you will first have to create a configuration file:
 @file{/etc/krb5.conf}. The @file{krb5.conf} file can contain many
 configuration options, some which are described here.
 
-The confguration file is a hierarchial structure consisting of sections,
+There is a sample @file{krb5.conf} supplied with the distribution.
+
+The configuration file is a hierarchical structure consisting of sections,
 each containing a list of bindings (either variable assignments or
 subsections). A section starts with @samp{[section-name]}.  A binding
 consists of a left hand side, an equal (@samp{=}) and a right hand
@@ -77,7 +79,7 @@ default principals for that realm. You can have more than one realm in
 one database, so @samp{init} does not destroy any old database.
 
 Before creating the database, @samp{init} will ask you some questions
-about default and max ticket lifes. The default values should be fine.
+about default and max ticket lifetimes. The default values should be fine.
 
 After creating the database you should probably add yourself. You do
 this with the @samp{ank} command. It takes as argument the name of a
