@@ -576,6 +576,25 @@ int main(int argc, char **argv)
     }
 
     if(*user_name) {
+
+      if(machine_account) {
+        int username_len = strlen(user_name);
+        if(username_len >= sizeof(pstring) - 1) {
+          fprintf(stderr, "%s: machine account name too long.\n", user_name);
+          exit(1);
+        }
+
+        if(user_name[username_len-1] != '$') {
+          user_name[username_len] = '$';
+          user_name[username_len+1] = '\0';
+        }
+      }
+
+    /*
+     * Setup the pwd struct to point to known
+     * values for a machine account (it doesn't
+     * exist in /etc/passwd).
+     */
       if((pwd = getpwnam(user_name)) == NULL) {
         fprintf(stderr, "%s: User \"%s\" was not found in system password file.\n", 
                     prog_name, user_name);
@@ -630,6 +649,8 @@ int main(int argc, char **argv)
     strncpy(new_passwd, user_name, sizeof(fstring));
     new_passwd[sizeof(fstring)-1] = '\0';
     strlower(new_passwd);
+    if(new_passwd[strlen(new_passwd)-1] == '$')
+      new_passwd[strlen(new_passwd)-1] = '\0';
   }
 
   /* 
@@ -741,17 +762,7 @@ int main(int argc, char **argv)
    * a '$' etc....
    */
 
-  if(machine_account) {
-    int username_len = strlen(user_name);
-    if(username_len >= sizeof(pstring) - 1) {
-      fprintf(stderr, "%s: machine account name too long.\n", user_name);
-      exit(1);
-    }
-
-    if(user_name[username_len] != '$') {
-      user_name[username_len] = '$';
-      user_name[username_len+1] = '\0';
-    }
+  if(machine_account && !pwd) {
 
     /*
      * Setup the pwd struct to point to known

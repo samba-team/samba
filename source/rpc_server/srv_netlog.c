@@ -367,11 +367,9 @@ static void api_net_srv_pwset( int uid,
 	NET_Q_SRV_PWSET q_a;
 	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
 	DOM_CRED srv_cred;
-#ifdef ALLOW_SRV_PWSET
 	pstring mach_acct;
 	struct smb_passwd *smb_pass;
 	BOOL ret;
-#endif
 	user_struct *vuser;
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return;
@@ -387,47 +385,44 @@ static void api_net_srv_pwset( int uid,
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-#ifdef ALLOW_SRV_PWSET
-
 		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
 									q_a.clnt_id.login.uni_acct_name.uni_str_len));
 
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
 		become_root(True);
-		smb_pass = get_smbpwd_entry(mach_acct, 0);
+		smb_pass = getsmbpwnam(mach_acct);
 		unbecome_root(True);
 
 		if (smb_pass != NULL)
 		{
-			unsigned char pwd[16];
-			uint8 mode = 2;
+                  unsigned char pwd[16];
+                  int i;
 
-			memcpy(pwd, q_a.pwd, 16);
+                  DEBUG(0,("Server password set : new given value was :\n"));
+                  for(i = 0; i < 16; i++)
+                    DEBUG(0,("%02X ", q_a.pwd[i]));
+                  DEBUG(0,("\n"));
 
-			if (obfuscate_pwd(pwd, vuser->dc.sess_key, mode))
-			{
-				/* lies!  nt and lm passwords are _not_ the same: don't care */
-				smb_pass->smb_passwd    = pwd;
-				smb_pass->smb_nt_passwd = pwd;
-				smb_pass->acct_ctrl     = ACB_WSTRUST;
+                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key);
 
-				become_root(True);
-				ret = mod_smbpwd_entry(smb_pass);
-				unbecome_root(True);
+                  /* lies!  nt and lm passwords are _not_ the same: don't care */
+                  smb_pass->smb_passwd    = pwd;
+                  smb_pass->smb_nt_passwd = pwd;
+                  smb_pass->acct_ctrl     = ACB_WSTRUST;
 
-				if (ret)
-				{
-					/* hooray! */
-					status = 0x0;
-				}
-			}
-		}
+                  become_root(True);
+                  ret = mod_smbpwd_entry(smb_pass);
+                  unbecome_root(True);
+
+                  if (ret)
+                  {
+                    /* hooray! */
+                    status = 0x0;
+                  }
+                }
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
-#else
-		DEBUG(5,("api_net_srv_pwset: server password set being denied\n"));
-#endif
 
 	}
 	else
@@ -436,9 +431,8 @@ static void api_net_srv_pwset( int uid,
 		status = 0xC0000000 | NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
-	/* construct reply.  always indicate failure.  nt keeps going... */
-	net_reply_srv_pwset(&q_a, rdata,
-					&srv_cred, status);
+	/* Construct reply. */
+	net_reply_srv_pwset(&q_a, rdata, &srv_cred, status);
 }
 
 
