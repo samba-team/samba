@@ -742,10 +742,14 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 		      prs_struct * data, prs_struct * rdata)
 {
+	BOOL ret;
 	DEBUG(10, ("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
 		   op_num, data->offset, data->data_size));
+	prs_dump("in_rpcclient", (int)op_num, data);
 	prs_realloc_data(data, data->offset);
-	return rpc_api_pipe_req(con, op_num, data, rdata);
+	ret = rpc_api_pipe_req(con, op_num, data, rdata);
+	prs_dump("out_rpcclient", (int)op_num, rdata);
+	return ret;
 }
 
 /****************************************************************************
