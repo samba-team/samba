@@ -27,6 +27,8 @@ my($opt_diff) = 0;
 my($opt_header) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
+my($opt_keep) = 0;
+my($opt_output);
 
 #####################################################################
 # parse an IDL file returning a structure containing all the data
@@ -63,12 +65,14 @@ sub ShowHelp()
 
            Options:
              --help                this help page
+             --output OUTNAME      put output in OUTNAME.*
              --parse               parse a idl file to a .pidl file
              --dump                dump a pidl file back to idl
              --header              create a C header file
              --parser              create a C parser
              --eparser             create an ethereal parser
              --diff                run diff on the idl and dumped output
+             --keep                keep the .pidl file
            \n";
     exit(0);
 }
@@ -76,12 +80,14 @@ sub ShowHelp()
 # main program
 GetOptions (
 	    'help|h|?' => \$opt_help, 
+	    'output=s' => \$opt_output,
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
 	    'header' => \$opt_header,
 	    'parser' => \$opt_parser,
 	    'eparser' => \$opt_eparser,
-	    'diff' => \$opt_diff
+	    'diff' => \$opt_diff,
+	    'keep' => \$opt_keep
 	    );
 
 if ($opt_help) {
@@ -92,10 +98,14 @@ if ($opt_help) {
 my($idl_file) = shift;
 die "ERROR: You must specify an idl file to process" unless ($idl_file);
 
-my($pidl_file) = util::ChangeExtension($idl_file, "pidl");
+if (!defined($opt_output)) {
+	$opt_output = $idl_file;
+}
+
+my($pidl_file) = util::ChangeExtension($opt_output, "pidl");
 
 if ($opt_parse) {
-    print "Generating $pidl_file\n";
+    print "Generating $pidl_file from $idl_file\n";
     my($idl) = IdlParse($idl_file);
     util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
 }
@@ -107,29 +117,33 @@ if ($opt_dump) {
 
 if ($opt_header) {
     my($idl) = util::LoadStructure($pidl_file);
-    my($header) = util::ChangeExtension($idl_file, "h");
+    my($header) = util::ChangeExtension($opt_output, "h");
     print "Generating $header\n";
     util::FileSave($header, IdlHeader::Dump($idl));
 }
 
 if ($opt_parser) {
     my($idl) = util::LoadStructure($pidl_file);
-    my($parser) = util::ChangeExtension($idl_file, "c");
+    my($parser) = util::ChangeExtension($opt_output, "c");
     print "Generating $parser\n";
     util::FileSave($parser, IdlParser::Parse($idl));
 }
 
 if ($opt_eparser) {
     my($idl) = util::LoadStructure($pidl_file);
-    my($parser) = util::ChangeExtension($idl_file, "c");
+    my($parser) = util::ChangeExtension($opt_output, "c");
     print "Generating $parser for ethereal\n";
     util::FileSave($parser, IdlEParser::Parse($idl));
 }
 
 if ($opt_diff) {
     my($idl) = util::LoadStructure($pidl_file);
-    my($tempfile) = util::ChangeExtension($idl_file, "tmp");
+    my($tempfile) = util::ChangeExtension($opt_output, "tmp");
     util::FileSave($tempfile, IdlDump::Dump($idl));
     system("diff -wu $idl_file $tempfile");
     unlink($tempfile);
+}
+
+if (!$opt_keep) {
+	system("rm -f $pidl_file");
 }

@@ -55,10 +55,6 @@ sub DumpElement($)
     $res .= " ";
     if ($element->{POINTERS}) {
 	    my($n) = $element->{POINTERS};
-	    if (util::is_scalar_type($element->{TYPE}) && 
-		util::has_property($element->{PROPERTIES}, "ref")) {
-		    $n--;
-	    }
 	    for (my($i)=$n; $i > 0; $i--) {
 		    $res .= "*";
 	    }
