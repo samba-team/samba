@@ -25,7 +25,7 @@
 typedef void TALLOC_CTX;
 
 /* useful macros for creating type checked pointers */
-#define talloc_p(ctx, type) (type *)talloc(ctx, sizeof(type))
+#define talloc_p(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count)
 #define talloc_realloc_p(p, type, count) (type *)talloc_realloc_array(p, sizeof(type), count)
 
