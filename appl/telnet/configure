@@ -1162,7 +1162,7 @@ tgetent()
 EOF
 if { (eval echo configure:1164: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_tgetent=${ac_lib-yes}";break
+  eval "if test -n \"$acl_lib\";then ac_cv_funclib_tgetent=$ac_lib; else ac_cv_funclib_tgetent=yes; fi";break
 fi
 rm -f conftest*
 
@@ -1240,7 +1240,7 @@ setupterm()
 EOF
 if { (eval echo configure:1242: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_setupterm=${ac_lib-yes}";break
+  eval "if test -n \"$acl_lib\";then ac_cv_funclib_setupterm=$ac_lib; else ac_cv_funclib_setupterm=yes; fi";break
 fi
 rm -f conftest*
 
@@ -1318,7 +1318,7 @@ socket()
 EOF
 if { (eval echo configure:1320: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_socket=${ac_lib-yes}";break
+  eval "if test -n \"$acl_lib\";then ac_cv_funclib_socket=$ac_lib; else ac_cv_funclib_socket=yes; fi";break
 fi
 rm -f conftest*
 
@@ -1396,7 +1396,7 @@ gethostbyname()
 EOF
 if { (eval echo configure:1398: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_gethostbyname=${ac_lib-yes}";break
+  eval "if test -n \"$acl_lib\";then ac_cv_funclib_gethostbyname=$ac_lib; else ac_cv_funclib_gethostbyname=yes; fi";break
 fi
 rm -f conftest*
 
@@ -1679,7 +1679,7 @@ logout()
 EOF
 if { (eval echo configure:1681: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_logout=${ac_lib-yes}";break
+  eval "if test -n \"$acl_lib\";then ac_cv_funclib_logout=$ac_lib; else ac_cv_funclib_logout=yes; fi";break
 fi
 rm -f conftest*
 
