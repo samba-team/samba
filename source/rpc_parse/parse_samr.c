@@ -23,7 +23,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
 #include "rpc_parse.h"
 #include "nterr.h"
@@ -1435,16 +1434,28 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 {
 	uint32 i;
 
-	if (sam == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_1");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 
-	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+	if (UNMARSHALLING(ps) && num_entries > 0) {
+
+		if ((sam->sam = (SAM_ENTRY1 *)
+		     prs_alloc_mem(ps, sizeof(SAM_ENTRY1) *
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_ENTRY1\n"));
+			return False;
+		}
+
+		if ((sam->str = (SAM_STR1 *)
+		     prs_alloc_mem(ps, sizeof(SAM_STR1) * 
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_STR1\n"));
+			return False;
+		}
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		if(!sam_io_sam_entry1("", &sam->sam[i], ps, depth))
