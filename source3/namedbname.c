@@ -41,6 +41,27 @@ extern struct subnet_record *subnetlist;
 
 #define WINS_LIST "wins.dat"
 
+uint16 nb_type = 0; /* samba's NetBIOS name type */
+
+
+/****************************************************************************
+  samba's NetBIOS name type
+
+  XXXX maybe functionality could be set: B, M, P or H name registration
+  and resolution could be set through nb_type. just a thought.  
+  ****************************************************************************/
+void set_samba_nb_type(void)
+{
+	if (lp_wins_support() || (*lp_wins_server()))
+	{
+		nb_type = NB_MFLAG; /* samba is a 'hybrid' node type */
+	}
+	else
+	{
+		nb_type = NB_BFLAG; /* samba is broadcast-only node type */
+	}
+}
+
 
 /****************************************************************************
   true if two netbios names are equal
@@ -390,7 +411,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
     if (!wins && type != 0x1b)
     {
        /* the only broadcast (non-WINS) names we are adding are ours
-          (SELF) and PDC type names */
+          (SELF) and Domain Master type names */
        return NULL;
     }
   }

@@ -49,7 +49,7 @@ static BOOL open_sockets(void)
       return False;
     }   
 
-  ServerFD = open_socket_in(SOCK_DGRAM, NMB_PORT,3);
+  ServerFD = open_socket_in(SOCK_DGRAM, 0,3);
 
   if (ServerFD == -1)
     return(False);
@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
 
 
   for (i=optind;i<argc;i++)
-    {
+  {
       BOOL bcast = True;
       int retries = 2;
       char *p;
@@ -177,20 +177,18 @@ int main(int argc,char *argv[])
 	retries = 1;
       }
 
-      if (name_query(ServerFD,lookup,lookup_type,bcast,True,
+    if (name_query(ServerFD,lookup,lookup_type,bcast,True,
 		     *iface_bcast(ipzero),&ip,NULL)) 
 	{
 	  printf("%s %s\n",inet_ntoa(ip),lookup);
-	  if (find_status) 
-	    {
+    }
+	if (find_status) 
+	{
 	      printf("Looking up status of %s\n",inet_ntoa(ip));
 	      name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
 	      printf("\n");
-	    }
-      } else {
-	printf("couldn't find name %s\n",lookup);
-      }
-    }
+	}
+  }
 
   return(0);
 }

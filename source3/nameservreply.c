@@ -294,7 +294,8 @@ void reply_name_reg(struct packet_struct *p)
     /* initiate some enquiries to the current owner. */
 	queue_netbios_packet(d,ClientNMB,NMB_QUERY,
 						 NAME_REGISTER_CHALLENGE,
-						 reply_name->name,reply_name->name_type,nb_flags,0,
+						 reply_name->name,reply_name->name_type,
+	                     nb_flags,0,0,NULL,NULL,
 						 False, False, n->ip, p->ip);
   }
   else
@@ -311,8 +312,11 @@ void reply_name_reg(struct packet_struct *p)
 
 
 /****************************************************************************
-reply to a name status query
-****************************************************************************/
+  reply to a name status query
+
+  combine the list of the local interface on which the query was made with
+  the names registered via wins.
+  ****************************************************************************/
 void reply_name_status(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -323,7 +327,7 @@ void reply_name_status(struct packet_struct *p)
   int names_added;
   struct name_record *n;
   struct subnet_record *d = NULL;
-  int search = FIND_SELF;
+  int search = FIND_SELF | FIND_WINS;
 
   BOOL bcast = nmb->header.nm_flags.bcast;
   
@@ -338,8 +342,6 @@ void reply_name_status(struct packet_struct *p)
 	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
   
   if (bcast)
-    search |= FIND_WINS;
-  else
     search |= FIND_LOCAL;
 
   n = find_name_search(&d, &nmb->question.question_name,
@@ -353,38 +355,55 @@ void reply_name_status(struct packet_struct *p)
   buf += 1;
   
   names_added = 0;
-  
-  for (n = d->namelist ; n && buf < bufend; n = n->next) 
+
+  n = d->namelist;
+
+  while (buf < bufend) 
+  {
+    if (n->source == SELF)
     {
       int name_type = n->name.name_type;
       
-      if (n->source != SELF) continue;
+      /* check if we want to exclude other workgroup names
+	     from the response. if we don't exclude them, windows clients
+	     get confused and will respond with an error for NET VIEW */
       
-      /* start with first bit of putting info in buffer: the name */
+      if (name_type < 0x1b || name_type > 0x20 || 
+          ques_type < 0x1b || ques_type > 0x20 ||
+          strequal(qname, n->name.name))
+      {
+        /* start with first bit of putting info in buffer: the name */
+        bzero(buf,18);
+	    sprintf(buf,"%-15.15s",n->name.name);
+        strupper(buf);
+        
+        /* put name type and netbios flags in buffer */
+        buf[15] = name_type;
+        buf[16]  = n->nb_flags;
+        
+        buf += 18;
       
-      bzero(buf,18);
-	  sprintf(buf,"%-15.15s",n->name.name);
-      strupper(buf);
-      
-      /* now check if we want to exclude other workgroup names
-	 from the response. if we don't exclude them, windows clients
-	 get confused and will respond with an error for NET VIEW */
-      
-      if (name_type >= 0x1b && name_type <= 0x20 && 
-	  ques_type >= 0x1b && ques_type <= 0x20)
-	{
-	  if (!strequal(qname, n->name.name)) continue;
-	}
-      
-      /* carry on putting name info in buffer */
-      
-      buf[15] = name_type;
-      buf[16]  = n->nb_flags;
-      
-      buf += 18;
-      
-      names_added++;
+        names_added++;
+      }
     }
+
+    n = n->next;
+
+    if (!n)
+    {
+      /* end of this name list: add wins names too? */
+      struct subnet_record *w_d;
+
+      if (!(w_d = find_subnet(ipgrp))) break;
+
+      if (w_d != d)
+      {
+        d = w_d;
+        n = d->namelist; /* start on the wins name list */
+      }
+	}
+	if (!n) break;
+  }
   
   SCVAL(countptr,0,names_added);
   
@@ -396,9 +415,7 @@ void reply_name_status(struct packet_struct *p)
     SIVAL(buf,24,num_good_receives);
   }
   
-  SIVAL(buf,46,0xFFB8E5); /* undocumented - used by NT */
-  
-  buf += 64;
+  buf += 46;
   
   /* Send a POSITIVE NAME STATUS RESPONSE */
   reply_netbios_packet(p,nmb->header.name_trn_id,
@@ -451,14 +468,13 @@ void reply_name_query(struct packet_struct *p)
   struct name_record *n;
 
   /* directed queries are for WINS server: broadcasts are local SELF queries.
-     the exception is PDC names.  */
+     the exception is Domain Master names.  */
 
   int search = bcast ? FIND_LOCAL | FIND_SELF : FIND_WINS;
   
-  if (name_type == 0x1b)
+  if (name_type == 0x1b || name_type == 0x0 || name_type == 0x20)
   {
-    /* even if it's a broadcast, we don't ignore queries for PDC names */
-    search = FIND_WINS;
+    search |= FIND_WINS;
   }
 
   if (search | FIND_LOCAL)
@@ -500,10 +516,11 @@ void reply_name_query(struct packet_struct *p)
 	    }
 	  }
       
-      /* name is directed query, or it's self, or it's a PDC type name, or
-	     we're replying on behalf of a caller because they are on a different
-         subnet and cannot hear the broadcast. XXXX lp_wins_proxy should be
-		 switched off in environments where broadcasts are forwarded */
+      /* name is directed query, or it's self, or it's a Domain Master type
+         name, or we're replying on behalf of a caller because they are on a
+         different subnet and cannot hear the broadcast. XXXX lp_wins_proxy
+         should be switched off in environments where broadcasts are forwarded
+       */
 
       /* XXXX note: for proxy servers, we should forward the query on to
          another WINS server if the name is not in our database, or we are

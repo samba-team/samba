@@ -120,9 +120,12 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 		 int name_type,
 		 struct in_addr ip)
 {                     
-  add_browser_entry(serv_name, name_type, work_name, 0, ip);
+  /* with a domain master we can get the whole list (not local only list) */
+  BOOL local_only = state != NAME_STATUS_DOM_SRV_CHK;
 
-  if (state == NAME_STATUS_PDC_SRV_CHK)
+  add_browser_entry(serv_name, name_type, work_name, 0, ip, local_only);
+
+  if (state == NAME_STATUS_DOM_SRV_CHK)
   {
     /* announce ourselves as a master browser to serv_name */
     do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
@@ -230,7 +233,7 @@ void announce_backup(void)
 /****************************************************************************
   send a host announcement packet
   **************************************************************************/
-static void do_announce_host(int command,
+void do_announce_host(int command,
 		char *from_name, int from_type, struct in_addr from_ip,
 		char *to_name  , int to_type  , struct in_addr to_ip,
 		time_t announce_interval,
@@ -303,45 +306,86 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 					char *name, char *comment, time_t ttl, int server_type)
 {
 	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX;
-
-	if (AM_MASTER(work))
+	BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
+	
+	if (wins_iface && server_type != 0)
 	{
-		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
-
-		do_announce_host(ANN_LocalMasterAnnouncement,
-						name            , 0x00, d->myip,
-						work->work_group, 0x1e, d->bcast_ip,
-						ttl*1000,
-						name, server_type, comment);
-
-		DEBUG(3,("sending domain announce to %s for %s\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
-
-		/* XXXX should we do a domain-announce-kill? */
-		if (server_type != 0)
+		/* wins pseudo-ip interface */
+		if (!AM_MASTER(work))
 		{
-			if (AM_DOMCTL(work)) {
-				domain_type |= SV_TYPE_DOMAIN_CTRL;
+			/* non-master announce by unicast to the domain master */
+			if (!lp_wins_support() && *lp_wins_server())
+			{
+				/* look up the domain master with the WINS server */
+				queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
+					 NAME_QUERY_ANNOUNCE_HOST,
+					 work->work_group,0x1b,0,ttl*1000,
+					 server_type,name,comment,
+					 False, False, ipzero, d->bcast_ip);
 			}
-			do_announce_host(ANN_DomainAnnouncement,
-						name    , 0x00, d->myip,
-						MSBROWSE, 0x01, d->bcast_ip,
-						ttl*1000,
-						work->work_group, server_type ? domain_type : 0,
-						comment);
+			else
+			{
+				/* we are the WINS server, but not the domain master.
+				   what's going on??? and we're not going to deal with
+				   this case, right now
+				 */
+			}
 		}
+
+		if (AM_DOMCTL(work))
+		{
+			/* XXXX announce to backup domain masters? */
+		}
+
+		/* XXXX any other kinds of announcements we need to consider here?
+		   e.g local master browsers... no. local master browsers do
+		   local master announcements to their domain master. they even
+		   use WINS lookup of the domain master if another wins server
+		   is being used! 
+		 */
 	}
 	else
 	{
-		DEBUG(3,("sending host announce to %s for %s(1d)\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
+		if (AM_MASTER(work))
+		{
+			DEBUG(3,("sending local master announce to %s for %s(1e)\n",
+							inet_ntoa(d->bcast_ip),work->work_group));
 
-		do_announce_host(ANN_HostAnnouncement,
-						name            , 0x00, d->myip,
-						work->work_group, 0x1d, d->bcast_ip,
-						ttl*1000,
-						name, server_type, comment);
+			do_announce_host(ANN_LocalMasterAnnouncement,
+							name            , 0x00, d->myip,
+							work->work_group, 0x1e, d->bcast_ip,
+							ttl*1000,
+							name, server_type, comment);
+
+			DEBUG(3,("sending domain announce to %s for %s\n",
+							inet_ntoa(d->bcast_ip),work->work_group));
+
+			/* XXXX should we do a domain-announce-kill? */
+			if (server_type != 0)
+			{
+				if (AM_DOMCTL(work))
+				{
+					domain_type |= SV_TYPE_DOMAIN_CTRL;
+				}
+				do_announce_host(ANN_DomainAnnouncement,
+							name    , 0x00, d->myip,
+							MSBROWSE, 0x01, d->bcast_ip,
+							ttl*1000,
+							work->work_group, server_type ? domain_type : 0,
+							comment);
+			}
+		}
+		else
+		{
+			DEBUG(3,("sending host announce to %s for %s(1d)\n",
+							inet_ntoa(d->bcast_ip),work->work_group));
+
+			do_announce_host(ANN_HostAnnouncement,
+							name            , 0x00, d->myip,
+							work->work_group, 0x1d, d->bcast_ip,
+							ttl*1000,
+							name, server_type, comment);
+		}
 	}
 }
 
@@ -433,7 +477,7 @@ void announce_host(void)
   least 15 minutes.
   
   this actually gets done in search_and_sync_workgroups() via the
-  NAME_QUERY_PDC_SRV_CHK command, if there is a response from the
+  NAME_QUERY_DOM_SRV_CHK command, if there is a response from the
   name query initiated here.  see response_name_query()
   **************************************************************************/
 void announce_master(void)
@@ -473,7 +517,7 @@ void announce_master(void)
 	    {
 	      if (strequal(s->serv.name, myname)) continue;
 	      
-	      /* all PDCs (which should also be master browsers) */
+	      /* all DOMs (which should also be master browsers) */
 	      if (s->serv.type & SV_TYPE_DOMAIN_CTRL)
 		{
 		  /* check the existence of a pdc for this workgroup, and if
@@ -485,13 +529,10 @@ void announce_master(void)
 		    {
 		      if (!lp_wins_support() && *lp_wins_server())
 			{
-			  struct in_addr ip;
-			  ip = ipzero;
-			  
 			  queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
-						 NAME_QUERY_PDC_SRV_CHK,
-						 work->work_group,0x1b,0,0,
-						 False, False, ip, ip);
+						 NAME_QUERY_DOM_SRV_CHK,
+						 work->work_group,0x1b,0,0,0,NULL,NULL,
+						 False, False, ipzero, ipzero);
 			}
 		      else
 			{
@@ -499,8 +540,8 @@ void announce_master(void)
 			  for (d2 = subnetlist; d2; d2 = d2->next)
 			    {
 			      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-						   NAME_QUERY_PDC_SRV_CHK,
-						   work->work_group,0x1b,0,0,
+						   NAME_QUERY_DOM_SRV_CHK,
+						   work->work_group,0x1b,0,0,0,NULL,NULL,
 						   True, False, d2->bcast_ip, d2->bcast_ip);
 			    }
 			}
@@ -527,14 +568,14 @@ void announce_master(void)
 		bcast = True;
 	      }
 
-	      DEBUG(2, ("Searching for PDC %s at %s\n",
+	      DEBUG(2, ("Searching for DOM %s at %s\n",
 			lp_domain_controller(), inet_ntoa(ip)));
 	      
 	      /* check the existence of a pdc for this workgroup, and if
 		 one exists at the specified ip, sync with it and announce
 		 ourselves as a master browser to it */
-	      queue_netbios_pkt_wins(d,ClientNMB, NMB_QUERY,NAME_QUERY_PDC_SRV_CHK,
-				     work->work_group,0x1b, 0, 0,
+	      queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
+				     work->work_group,0x1b,0,0,0,NULL,NULL,
 				     bcast, False, ip, ip);
 	    }
 	}

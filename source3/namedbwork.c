@@ -181,7 +181,7 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
       DEBUG(2,("add any workgroups: initiating browser search on %s\n",
 	       inet_ntoa(d->bcast_ip)));
       queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY, NAME_QUERY_FIND_MST,
-			     MSBROWSE,0x1,0,0,
+			     MSBROWSE,0x1,0,0,0,NULL,NULL,
 			     True,False, d->bcast_ip, d->bcast_ip);
       return NULL;
     }

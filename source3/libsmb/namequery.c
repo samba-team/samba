@@ -54,7 +54,7 @@ static void _interpret_node_status(char *p, char *master,char *rname)
       if ((p[0] & 0x60) == 0x00) strcat(flags,"B ");
       if ((p[0] & 0x60) == 0x20) strcat(flags,"P ");
       if ((p[0] & 0x60) == 0x40) strcat(flags,"M ");
-      if ((p[0] & 0x60) == 0x60) strcat(flags,"_ ");
+      if ((p[0] & 0x60) == 0x60) strcat(flags,"H ");
       if (p[0] & 0x10) strcat(flags,"<DEREGISTERING> ");
       if (p[0] & 0x08) strcat(flags,"<CONFLICT> ");
       if (p[0] & 0x04) strcat(flags,"<ACTIVE> ");
@@ -109,8 +109,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   nmb->header.opcode = 0;
   nmb->header.response = False;
   nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = 0;
-  nmb->header.nm_flags.recursion_desired = 1;
+  nmb->header.nm_flags.recursion_available = False;
+  nmb->header.nm_flags.recursion_desired = False;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = False;
   nmb->header.rcode = 0;
@@ -152,6 +152,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
       if ((p2=receive_packet(fd,NMB_PACKET,90)))
 	{     
 	  struct nmb_packet *nmb2 = &p2->packet.nmb;
+      debug_nmb_packet(p2);
+
 	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
 	      !nmb2->header.response) {
 	    /* its not for us - maybe deal with it later */
@@ -172,8 +174,6 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 	    free_packet(p2);
 	    continue;
 	  }
-
-      debug_nmb_packet(p2);
 
 	  _interpret_node_status(&nmb2->answers->rdata[0], master,rname);
 	  free_packet(p2);
@@ -257,6 +257,8 @@ BOOL name_query(int fd,char *name,int name_type,
       if ((p2=receive_packet(fd,NMB_PACKET,90)))
 	{     
 	  struct nmb_packet *nmb2 = &p2->packet.nmb;
+      debug_nmb_packet(p2);
+
 	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
 	      !nmb2->header.response) {
 	    /* its not for us - maybe deal with it later 
@@ -268,8 +270,6 @@ BOOL name_query(int fd,char *name,int name_type,
 	    continue;
 	  }
 	  
-      debug_nmb_packet(p2);
-
 	  if (nmb2->header.opcode != 0 ||
 	      nmb2->header.nm_flags.bcast ||
 	      nmb2->header.rcode ||

@@ -53,7 +53,6 @@ time_t StartupTime =0;
 
 extern struct in_addr ipzero;
 
-
  /****************************************************************************
   catch a sigterm
   ****************************************************************************/
@@ -89,6 +88,8 @@ static int sig_hup(void)
   DEBUG(0,("Got SIGHUP (reload not implemented)\n"));
   dump_names();
   reload_services(True);
+
+  set_samba_nb_type();
 
   BlockSignals(False);
 #ifndef DONT_REINSTALL_SIG
@@ -523,6 +524,8 @@ static void usage(char *pname)
 
   if (!reload_services(False))
     return(-1);	
+
+  set_samba_nb_type();
 
   if (*group)
     add_my_subnets(group);

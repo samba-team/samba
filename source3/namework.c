@@ -284,17 +284,12 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
   tell_become_backup();
 #endif
 
-  /* XXXX over-kill: i don't think we should really be doing this,
-     but it doesn't do much harm other than to add extra network
-     traffic. to be more precise, we should (possibly) only
-     sync browse lists with a host that sends an
-     ANN_LocalMasterAnnouncement or an ANN_DomainAnnouncement.
-     possibly.
-   */
-
-  /* get their browse list from them and add it to ours. */
-  add_browser_entry(serv_name,dgram->dest_name.name_type,
-		    work->work_group,30,ip);
+  /* get the local_only browse list from the local master and add it to ours. */
+  if (command == ANN_LocalMasterAnnouncement)
+  {
+    add_browser_entry(serv_name,dgram->dest_name.name_type,
+		    work->work_group,30,ip,True);
+  }
 }
 
 /*******************************************************************
@@ -319,13 +314,13 @@ static void process_master_announce(struct packet_struct *p,char *buf)
   if (!lp_domain_master()) return;
   
   for (work = mydomain->workgrouplist; work; work = work->next)
+  {
+    if (AM_MASTER(work))
     {
-      if (AM_MASTER(work))
-	{
 	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1b, work->work_group,30,ip);
-	}
+	  add_browser_entry(name,0x1b, work->work_group,30,ip,True);
     }
+  }
 }
 
 /*******************************************************************
@@ -394,7 +389,8 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 		  if (work->token == 0 /* token */)
 		  {
 		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
-					   work->work_group,0x1d,0,0,
+					   work->work_group,0x1d,
+                       0,0,0,NULL,NULL,
 					   False,False,back_ip,back_ip);
 		      return;
 		  }
