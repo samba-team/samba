@@ -101,10 +101,10 @@ condition is if the pointer had a destructor attached to it and the
 destructor returned -1. See talloc_set_destructor() for details on
 destructors.
 
-If this pointer has an additional reference when talloc_free() is
-called then the memory is not actually released, but instead the most
-recently established reference is destroyed. See talloc_reference()
-for details on establishing additional references.
+If this pointer has an additional parent when talloc_free() is called
+then the memory is not actually released, but instead the most
+recently established parent is destroyed. See talloc_reference() for
+details on establishing additional parents.
 
 For more control on which parent is removed, see talloc_unlink()
 
@@ -114,8 +114,8 @@ talloc_free() operates recursively on its children.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_reference(const void *context, const void *ptr);
 
-The talloc_reference() function returns an additional reference to
-"ptr", and makes this additional reference a child of "context".
+The talloc_reference() function makes "context" an additional parent
+of "ptr".
 
 The return value of talloc_reference() is always the original pointer
 "ptr", unless talloc ran out of memory in creating the reference in
@@ -125,18 +125,13 @@ around 48 bytes of memory on intel x86 platforms).
 After creating a reference you can free it in one of the following
 ways:
 
-  - you can talloc_free() a parent of the original pointer. That will
-    destroy the reference and make the pointer a child of the
-    "context" argument from the most recently called
-    talloc_reference() on the pointer.
+  - you can talloc_free() any parent of the original pointer. That
+    will reduce the number of parents of this pointer by 1, and will
+    cause this pointer to be freed if it runs out of parents.
 
   - you can talloc_free() the pointer itself. That will destroy the
-    most recently established reference to the pointer and leave the
+    most recently established parent to the pointer and leave the
     pointer as a child of its current parent.
-
-  - you can talloc_free() the context where you placed the
-    reference. That will destroy the reference, and leave the pointer
-    where it is.
 
 For more control on which parent to remove, see talloc_unlink()
 
@@ -205,6 +200,14 @@ The main use for names on pointer is for "talloc reports". See
 talloc_report() and talloc_report_full() for details. Also see
 talloc_enable_leak_report() and talloc_enable_leak_report_full().
 
+The talloc_set_name() function allocates memory as a child of the
+pointer. It is logically equivalent to:
+  talloc_set_name_const(ptr, talloc_asprintf(ptr, fmt, ...));
+
+Note that multiple calls to talloc_set_name() will allocate more
+memory without releasing the name. All of the memory is released when
+the ptr is freed using talloc_free().
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_name_const(const void *ptr, const char *name);
@@ -212,6 +215,11 @@ void talloc_set_name_const(const void *ptr, const char *name);
 The function talloc_set_name_const() is just like talloc_set_name(),
 but it takes a string constant, and is much faster. It is extensively
 used by the "auto naming" macros, such as talloc_p().
+
+This function does not allocate any memory. It just copies the
+supplied pointer into the internal representation of the talloc
+ptr. This means you must not pass a name pointer to memory that will
+disappear before the ptr is freed with talloc_free().
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -263,7 +271,7 @@ is ignored.
 
 talloc_realloc() returns the new pointer, or NULL on failure. The call
 will fail either due to a lack of memory, or because the pointer has
-an reference (see talloc_reference()).
+more than one parent (see talloc_reference()).
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -408,12 +416,19 @@ The talloc_strdup() function is equivalent to:
   ptr = talloc(ctx, strlen(p)+1);
   if (ptr) memcpy(ptr, p, strlen(p)+1);
 
+This functions sets the name of the new pointer to the passed
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 char *talloc_strndup(const void *t, const char *p, size_t n);
 
 The talloc_strndup() function is the talloc equivalent of the C
 library function strndup()
+
+This functions sets the name of the new pointer to the passed
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -428,6 +443,10 @@ char *talloc_asprintf(const void *t, const char *fmt, ...);
 
 The talloc_asprintf() function is the talloc equivalent of the C
 library function asprintf()
+
+This functions sets the name of the new pointer to the passed
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
