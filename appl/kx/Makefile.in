@@ -54,18 +54,18 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	PROG_BIN=$(PROG_BIN); for x in $$PROG_BIN; do \
+	PROG_BIN='$(PROG_BIN)'; for x in $$PROG_BIN; do \
 	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
-	PROG_LIBEXEC=$(PROG_LIBEXEC); for x in $$PROG_LIBEXEC; do \
+	PROG_LIBEXEC='$(PROG_LIBEXEC)'; for x in $$PROG_LIBEXEC; do \
 	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
-	PROG_BIN=$(PROG_BIN); for x in $$PROG_BIN; do \
+	PROG_BIN='$(PROG_BIN)'; for x in $$PROG_BIN; do \
 	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
-	PROG_LIBEXEC=$(PROG_LIBEXEC); for x in $$PROG_LIBEXEC; do \
+	PROG_LIBEXEC='$(PROG_LIBEXEC)'; for x in $$PROG_LIBEXEC; do \
 	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 

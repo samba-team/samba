@@ -12,7 +12,7 @@ SHELL		= /bin/sh
 SUBDIRS		= @LIB_AUTH_SUBDIRS@
 
 all:
-		SUBDIRS=$(SUBDIRS); \
+		SUBDIRS='$(SUBDIRS)'; \
 		for i in $$SUBDIRS; \
 		do (cd $$i && $(MAKE) $(MFLAGS) all); done
 
