@@ -29,7 +29,7 @@
 /* Create a new credentials structure, on the specified TALLOC_CTX */
 struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
-	struct cli_credentails *cred = talloc_zero(mem_ctx, struct cli_credentials);
+	struct cli_credentials *cred = talloc_zero(mem_ctx, struct cli_credentials);
 	if (!cred) {
 		return cred;
 	}
@@ -311,6 +311,7 @@ void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
 
+	cli_credentials_set_username(cred, "", CRED_GUESSED);
 	cli_credentials_set_conf(cred);
 	
 	if (getenv("LOGNAME")) {
@@ -455,7 +456,7 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 	const char *username = cli_credentials_get_username(cred);
 
 	/* Yes, it is deliberate that we die if we have a NULL pointer
-	 * here - anymous is "", not NULL, which is 'never specified,
+	 * here - anonymous is "", not NULL, which is 'never specified,
 	 * never guessed', ie programmer bug */
 	if (!username[0]) 
 		return True;
