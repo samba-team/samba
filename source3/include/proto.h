@@ -837,7 +837,7 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align);
-char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align);
+char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
 char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
 char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align);

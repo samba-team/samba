@@ -410,13 +410,16 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align)
 /*******************************************************************
 reads or writes an LSA_POL_HND structure.
 ********************************************************************/
-char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align)
+char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth)
 {
 	if (pol == NULL) return NULL;
 
+	DEBUG(5,("%ssmb_io_pol_hnd\n", tab_depth(depth)));
+	depth++;
+
 	q = align_offset(q, base, align);
 	
-	RW_PCVAL(io, q, pol->data, POL_HND_SIZE); q += POL_HND_SIZE;
+	DBG_RW_PCVAL("data", depth, base, io, q, pol->data, POL_HND_SIZE); q += POL_HND_SIZE;
 
 	return q;
 }

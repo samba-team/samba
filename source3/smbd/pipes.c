@@ -482,7 +482,7 @@ static void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 	hdr->minor        = 0;               /* minor version 0 */
 	hdr->pkt_type     = 2;               /* RPC response packet */
 	hdr->frag         = 3;               /* first frag + last frag */
-	hdr->pack_type    = 1;               /* packed data representation */
+	hdr->pack_type    = 0x10;            /* packed data representation */
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = 0;               /* authentication length */
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
@@ -507,11 +507,18 @@ static int lsa_reply_open_policy(char *q, char *base)
 	char *start = q;
 	LSA_R_OPEN_POL r_o;
 
+	static char handle[20] =
+	{ 0x00, 0x00, 0x00, 0x00,
+      0x2f, 0x79, 0x0a, 0x81,
+      0xd5, 0x17, 0xd1, 0x11,
+      0x80, 0xaf, 0x96, 0xcd,
+      0x50, 0xf8, 0xbc, 0x6c
+    };
 	/* set up the LSA QUERY INFO response */
 	/* bzero(&(r_o.pol.data), POL_HND_SIZE); */
 	for (i = 0; i < POL_HND_SIZE; i++)
 	{
-		r_o.pol.data[i] = i;
+		r_o.pol.data[i] = handle[i];
 	}
 	r_o.status = 0x0;
 
@@ -960,24 +967,16 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 static void api_lsa_open_policy( char *param, char *data,
                              char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	/* we might actually want to decode the query, but it's not necessary */
 	/* lsa_io_q_open_policy(...); */
 
-	/* return a 20 byte policy handle */
-	reply_len = lsa_reply_open_policy(*rdata + 0x18, *rdata + 0x18);
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
+	/* construct a 20 byte policy handle. return length*/
+	*rdata_len = lsa_reply_open_policy(*rdata + 0x18, *rdata);
 }
 
-static void api_lsa_query_info( char *param, char *data,
+static int api_lsa_query_info( char *param, char *data,
                                 char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	LSA_Q_QUERY_INFO q_i;
 	pstring dom_name;
 	pstring dom_sid;
@@ -989,19 +988,13 @@ static void api_lsa_query_info( char *param, char *data,
 	pstrcpy(dom_sid , lp_domainsid());
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata + 0x18, 
+	return lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata, 
 									 dom_name, dom_sid);
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 static void api_lsa_lookup_sids( char *param, char *data,
                                  char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	int i;
 	LSA_Q_LOOKUP_SIDS q_l;
 	pstring dom_name;
@@ -1021,21 +1014,15 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_lookup_sids(*rdata + 0x18, *rdata + 0x18,
+	*rdata_len =  lsa_reply_lookup_sids(*rdata + 0x18, *rdata,
 	            q_l.num_entries, dom_sids, /* text-converted SIDs */
 				dom_name, dom_sid, /* domain name, domain SID */
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 static void api_lsa_lookup_names( char *param, char *data,
                                   char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	int i;
 	LSA_Q_LOOKUP_RIDS q_l;
 	pstring dom_name;
@@ -1056,14 +1043,10 @@ static void api_lsa_lookup_names( char *param, char *data,
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_lookup_rids(*rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_lookup_rids(*rdata + 0x18, *rdata,
 	            q_l.num_entries, dom_rids, /* text-converted SIDs */
 				dom_name, dom_sid, /* domain name, domain SID */
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
@@ -1088,6 +1071,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENPOLICY\n"));
 			api_lsa_open_policy(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
+
 			break;
 		}
 
@@ -1096,6 +1081,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			DEBUG(3,("LSA_QUERYINFOPOLICY\n"));
 
 			api_lsa_query_info(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
+
 			break;
 		}
 
@@ -1157,6 +1144,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENSECRET\n"));
 			api_lsa_lookup_sids(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
+
 			break;
 		}
 
@@ -1164,6 +1153,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_LOOKUPNAMES\n"));
 			api_lsa_lookup_names(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
+
 			break;
 		}
 
@@ -1657,10 +1648,16 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	uint16 opnum = SVAL(data,22);
-	int pkttype  = CVAL(data, 2);
-
+	uint16 opnum;
+	char pkttype;
 	user_struct *vuser;
+
+	DEBUG(5,("api_netlogrpcTNP data:%x\n", data));
+
+	if (data == NULL) return False;
+
+	opnum = SVAL(data,22);
+	pkttype = CVAL(data, 2);
 
 	if (pkttype == 0x0b) /* RPC BIND */
 	{
@@ -1669,7 +1666,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n", opnum));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
