@@ -267,7 +267,7 @@ parse_auth_level(char *str)
 {
     char *p;
     int ret = 0;
-    char *foo;
+    char *foo = NULL;
 
     for(p = strtok_r(str, ",", &foo);
 	p;
@@ -721,6 +721,7 @@ checkaccess(char *name)
     FILE *fd;
     int allowed = ALLOWED;
     char *user, *perm, line[BUFSIZ];
+    char *foo;
     
     fd = fopen(_PATH_FTPUSERS, "r");
     
@@ -728,10 +729,11 @@ checkaccess(char *name)
 	return allowed;
 
     while (fgets(line, sizeof(line), fd) != NULL)  {
-	user = strtok(line, " \t\n");
-	if (user[0] == '#')
+	foo = NULL;
+	user = strtok_r(line, " \t\n", &foo);
+	if (user == NULL || user[0] == '#')
 	    continue;
-	perm = strtok(NULL, " \t\n");
+	perm = strtok_r(NULL, " \t\n", &foo);
 	if (match(user, name) == 0){
 	    if(perm && strcmp(perm, "allow") == 0)
 		allowed = ALLOWED;
