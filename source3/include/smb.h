@@ -1085,6 +1085,7 @@ struct bitmap {
 #define REQUEST_OPLOCK 2
 #define REQUEST_BATCH_OPLOCK 4
 #define OPEN_DIRECTORY 8
+#define EXTENDED_RESPONSE_REQUIRED 0x10
 
 /* ShareAccess field. */
 #define FILE_SHARE_NONE 0 /* Cannot be used in bitmask. */
