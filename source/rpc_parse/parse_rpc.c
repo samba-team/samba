@@ -52,6 +52,16 @@ interface/version dce/rpc pipe identification
 	}, 0x02                       \
 }                                 \
 
+#define SYNT_BROWSER_V0          \
+{                                 \
+	{                             \
+		0x98, 0xd0, 0xff, 0x6b,   \
+		0x12, 0xa1, 0x10, 0x36,   \
+		0x98, 0x33, 0x01, 0x28,   \
+		0x92, 0x02, 0x01, 0x62    \
+	}, 0x00                       \
+}                                 \
+
 #define SYNT_NETLOGON_V2          \
 {                                 \
 	{                             \
@@ -166,6 +176,7 @@ struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
 	{ PIPE_LSARPC  , SYNT_LSARPC_V0  , PIPE_LSASS    , TRANS_SYNT_V2 },
+	{ PIPE_BROWSER , SYNT_BROWSER_V0 , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_SAMR    , SYNT_SAMR_V1    , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_NETLOGON, SYNT_NETLOGON_V1, PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3  , PIPE_NTSVCS   , TRANS_SYNT_V2 },

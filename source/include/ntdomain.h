@@ -42,6 +42,7 @@
 #include "rpc_srvsvc.h"
 #include "rpc_svcctl.h"
 #include "rpc_wkssvc.h"
+#include "rpc_brs.h"
 #include "rpc_atsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"

@@ -1741,6 +1741,12 @@ BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum,
 BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command);
 
+/*The following definitions come from  rpc_client/cli_brs.c  */
+
+BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum, 
+			const char *server_name, uint32 switch_value,
+			void *id);
+
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
 BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hnd);
@@ -2181,6 +2187,17 @@ BOOL at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 BOOL make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid);
 BOOL at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth);
 BOOL at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_brs.c  */
+
+BOOL make_brs_q_query_info(BRS_Q_QUERY_INFO *q_u,
+				const char *server, uint16 switch_value)  ;
+BOOL brs_io_q_query_info(char *desc, BRS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth);
+BOOL make_brs_info_100(BRS_INFO_100 *inf);
+BOOL make_brs_r_query_info(BRS_R_QUERY_INFO *r_u,
+				uint32 switch_value, void *inf,
+				int status)  ;
+BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
 
@@ -3394,6 +3411,10 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpcclient/cmd_atsvc.c  */
 
 void cmd_at(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_brs.c  */
+
+void cmd_brs_query_info(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_eventlog.c  */
 

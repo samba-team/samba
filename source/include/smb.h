@@ -249,6 +249,7 @@ typedef char fstring[FSTRING_LEN];
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
+#define PIPE_BROWSER  "\\PIPE\\browser"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
 #define PIPE_SAMR     "\\PIPE\\samr"
 #define PIPE_WINREG   "\\PIPE\\winreg"
@@ -261,7 +262,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 #define PIPE_EPMAPPER "\\PIPE\\epmapper"
 #define PIPE_ATSVC    "\\PIPE\\atsvc"
-#define PIPE_SPOOLSS  "\\pipe\\spoolss"
+#define PIPE_SPOOLSS  "\\PIPE\\spoolss"
 #define PIPE_EVENTLOG "\\PIPE\\EVENTLOG"
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
