@@ -68,6 +68,14 @@ $1_cflags=
 $1_libs=
 
 case "$with_$1_config" in
+yes|no|""|"$7")
+	if test -f $with_$1/bin/$7 ; then
+		with_$1_config=$with_$1/bin/$7
+	fi
+	;;
+esac
+
+case "$with_$1_config" in
 yes|no|"")
 	;;
 *)
