@@ -1,3 +1,8 @@
+2003-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* chpass_s.c (change): fix same-password-again by decrypting keys
+	and setting an error code From: Buck Huppmann <buckh@pobox.com>
+	
 2003-12-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_c.c (_kadm5_c_init_context): catch errors from strdup and
