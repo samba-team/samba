@@ -585,9 +585,6 @@ typedef struct {
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
-#include "mapping.h"
-#include "passdb.h"
-
 /*
  * Flags for account policy.
  */
@@ -1519,11 +1516,6 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-#include "rpc_creds.h"
-#include "rpc_misc.h"
-#include "rpc_secdes.h"
-#include "nt_printing.h"
-
 typedef struct user_struct
 {
 	struct user_struct *next, *prev;
@@ -1563,9 +1555,11 @@ struct unix_error_map {
 	NTSTATUS nt_error;
 };
 
+/*
 #include "ntdomain.h"
 
 #include "client.h"
+*/
 
 /*
  * Size of new password account encoding string.  This is enough space to

@@ -661,26 +661,6 @@ typedef struct lsa_q_enumprivsaccount
 	POLICY_HND pol; /* policy handle */
 } LSA_Q_ENUMPRIVSACCOUNT;
 
-
-typedef struct LUID
-{
-	uint32 low;
-	uint32 high;
-} LUID;
-
-typedef struct LUID_ATTR
-{
-	LUID luid;
-	uint32 attr;
-} LUID_ATTR ;
-
-typedef struct privilege_set
-{
-	uint32 count;
-	uint32 control;
-	LUID_ATTR *set;
-} PRIVILEGE_SET;
-
 typedef struct lsa_r_enumprivsaccount
 {
 	uint32 ptr;
