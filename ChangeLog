@@ -1,3 +1,9 @@
+2001-05-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/eai_to_heim_errno.c (krb5_eai_to_heim_errno): add
+	`errno' (called system_error) to allow callers to make sure they
+	pass the current and relevant value.  update callers
+
 2001-05-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kerberos5.c: pass context to krb5_domain_x500_decode
