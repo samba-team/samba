@@ -23,7 +23,7 @@ Samba, the free and very popular SMB server product. An SMB server
 allows file and printer connections from clients such as Windows,
 OS/2, Linux and others. Current to version 3.0. Please send any
 corrections to the samba documentation mailinglist at
-<ulink url="mailto:samba-doc@samba.org">samba-doc@samba.org</ulink>. 
+<ulink url="mailto:samba-docs@samba.org">samba-docs@samba.org</ulink>. 
 This FAQ was based on the old Samba FAQ by Dan Shearer and Paul Blackman, 
 and the old samba text documents which were mostly written by John Terpstra.
 </para>

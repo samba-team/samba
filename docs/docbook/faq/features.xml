@@ -290,7 +290,7 @@ Wizzards) can be found at
 <title>How do I convert between unix and dos text formats?</title>
 
 <para>
-Jim barry has written an <ulink url="ftp://samba.org/pub/samba/contributed/fixcrlf.zip">
+Jim barry has written an <ulink url="http://samba.org/samba/ftp/contributed/fixcrlf.zip">
 excellent drag-and-drop cr/lf converter for
 windows</ulink>. Just drag your file onto the icon and it converts the file.
 </para>
