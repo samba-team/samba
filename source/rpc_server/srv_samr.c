@@ -1842,6 +1842,7 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	pstring msg_str;
 	int local_flags=0;
 	DOM_SID sid;
+	pstring add_script;
 	
 	/* find the policy handle.  open a policy on it. */
 	if (find_lsa_policy_by_hnd(&dom_pol) == -1)
@@ -1879,12 +1880,14 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	 */
 
 	/* add the user in the /etc/passwd file or the unix authority system */
-	if (lp_adduser_script())
-		if(smb_create_user(mach_acct, NULL) != 0) {
-			DEBUG(0,("Could not create the unix account\n"));
-			close_lsa_policy_hnd(user_pol);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+
+	pstrcpy(add_script, lp_adduser_script());
+
+	if(*add_script && smb_create_user(mach_acct, NULL) != 0) {
+		DEBUG(0,("Could not create the unix account\n"));
+		close_lsa_policy_hnd(user_pol);
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, 
