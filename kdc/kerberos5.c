@@ -1252,29 +1252,33 @@ fix_transited_encoding(krb5_boolean check_policy,
 	}
 	num_realms++;
     }
+    if(num_realms == 0) {
+	if(strcmp(client_realm, server_realm)) 
+	    kdc_log(0, "cross-realm %s -> %s", client_realm, server_realm);
+    } else {
+	size_t l = 0;
+	char *rs;
+	for(i = 0; i < num_realms; i++)
+	    l += strlen(realms[i]) + 2;
+	rs = malloc(l);
+	if(rs != NULL) {
+	    *rs = '\0';
+	    for(i = 0; i < num_realms; i++) {
+		if(i > 0)
+		    strlcat(rs, ", ", l);
+		strlcat(rs, realms[i], l);
+	    }
+	    kdc_log(0, "cross-realm %s -> %s via [%s]", client_realm, server_realm, rs);
+	    free(rs);
+	}
+    }
     if(check_policy) {
 	ret = krb5_check_transited(context, client_realm, 
 				   server_realm, 
 				   realms, num_realms, NULL);
 	if(ret) {
-	    size_t l = 0;
-	    char *rs;
-	    krb5_warn(context, ret, "cross-realm from %s to %s", 
+	    krb5_warn(context, ret, "cross-realm %s -> %s", 
 		      client_realm, server_realm);
-	    for(i = 0; i < num_realms; i++)
-		l += strlen(realms[i]) + 2;
-	    rs = malloc(l);
-	    if(rs != NULL) {
-		*rs = '\0';
-		for(i = 0; i < num_realms; i++) {
-		    if(i > 0)
-			strlcat(rs, ", ", l);
-		    strlcat(rs, realms[i], l);
-		}
-		krb5_warnx(context, "transited realms: %s", rs);
-		free(rs);
-	    }
-	    
 	    goto free_realms;
 	}
 	et->flags.transited_policy_checked = 1;
