@@ -1569,7 +1569,15 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	srvstr_get_path(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, True);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ERROR_NT(ntstatus);
+		/* Win9x can send a resume name of "..". This will cause the parser to
+		   complain (it thinks we're asking for the directory above the shared
+		   path). Catch this as the resume name is only compared, never used in
+		   a file access. JRA. */
+		if (NT_STATUS_V(ntstatus) == NT_STATUS_V(NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
+			pstrcpy(resume_name, "..");
+		} else {
+			return ERROR_NT(ntstatus);
+		}
 	}
 
 	DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
