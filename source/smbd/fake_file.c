@@ -40,7 +40,7 @@ files_struct *open_fake_file_shared1(enum FAKE_FILE_TYPE fake_file_type, connect
 	}
 
 	/* access check */
-	if (conn->admin_user != True) {
+	if (current_user.uid != 0) {
 		DEBUG(1,("access_denied to service[%s] file[%s] user[%s]\n",
 			lp_servicename(SNUM(conn)),fname,conn->user));
 		errno = EACCES;
