@@ -101,7 +101,7 @@ em(/usr/samba/var/log.nmb) or em(/var/log/log.nmb).
 
 dit(bf(-n primary NetBIOS name)) This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical to
-setting the bf(netbios name) parameter in the smb.conf file
+setting the bf(NetBIOS name) parameter in the smb.conf file
 but will override the setting in the smb.conf file.
 
 dit(bf(-p UDP port number)) UDP port number is a positive integer value.
