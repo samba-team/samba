@@ -15,3 +15,10 @@ $VALGRIND bin/ldbadd tests/test-index.ldif  || exit 1
 
 echo "Starting ldbtest indexed"
 time $VALGRIND bin/ldbtest -r 1000 -s 5000  || exit 1
+
+echo "Testing one level search"
+count=`$VALGRIND bin/ldbsearch -b 'ou=Groups,o=University of Michigan,c=US' -s one 'objectclass=*' none |grep ^dn | wc -l`
+if [ "$count" != 3 ]; then
+    echo returned $count records - expected 3
+    exit 1
+fi
