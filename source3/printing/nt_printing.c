@@ -314,6 +314,11 @@ BOOL nt_printing_init(void)
 
 	update_c_setprinter(True);
 
+	/*
+	 * register callback to handle updating printers as new
+	 * drivers are installed
+	 */
+	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
 	return True;
 }
 
@@ -2957,6 +2962,30 @@ uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	}
 	
 	return result;
+}
+
+/****************************************************************************
+ Delete driver init data stored for a specified driver
+****************************************************************************/
+
+BOOL del_driver_init(char *drivername)
+{
+	pstring key;
+	TDB_DATA kbuf;
+
+	if (!drivername || !*drivername) {
+		DEBUG(3,("del_driver_init: No drivername specified!\n"));
+		return False;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, drivername);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	DEBUG(6,("del_driver_init: Removing driver init data for [%s]\n", drivername));
+
+	return (tdb_delete(tdb_drivers, kbuf) == 0);
 }
 
 /****************************************************************************
