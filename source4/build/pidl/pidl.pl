@@ -141,6 +141,10 @@ sub process_file($)
 	if ($opt_header) {
 		my($header) = util::ChangeExtension($output, ".h");
 		util::FileSave($header, IdlHeader::Parse($pidl));
+		if ($opt_eparser) {
+		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
+		  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
+		}
 	}
 
 	if ($opt_client) {
@@ -202,26 +206,10 @@ $dcom
 	if ($opt_parser) {
 		my($parser) = util::ChangeExtension($output, ".c");
 		IdlParser::Parse($pidl, $parser);
-	}
-
-	if ($opt_eparser) {
-
-	  # Generate regular .c and .h files for marshaling and
-	  # unmarshaling.
-
-	  my($parser) = util::ChangeExtension($output, ".c");
-	  IdlParser::Parse($pidl, $parser);
-
-	  my($header) = util::ChangeExtension($output, ".h");
-	  util::FileSave($header, IdlHeader::Parse($pidl));
-
-	  # Postprocess to produce ethereal parsers.
-
-	  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
-	  IdlEParser::RewriteC($pidl, $parser, $eparser);
-
-	  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
-	  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
+		if($opt_eparser) {
+		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
+		  IdlEParser::RewriteC($pidl, $parser, $eparser);
+		}
 	}
 
 	if ($opt_swig) {
