@@ -35,10 +35,10 @@
 
 BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 {
-	pipes_struct *plist = get_first_pipe();
+	pipes_struct *plist = get_first_internal_pipe();
 	struct handle_list *hl = NULL;
 
-	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
+	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist)) {
 		if (strequal( plist->name, pipe_name)) {
 			if (!plist->pipe_handles) {
 				pstring msg;

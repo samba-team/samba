@@ -45,7 +45,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	pstring fname;
 	pstring pipe_name;
 	uint16 vuid = SVAL(inbuf, smb_uid);
-	pipes_struct *p;
+	smb_np_struct *p;
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
 	int size=0,fmode=0,mtime=0,rmode=0;
 	int i;
@@ -116,7 +116,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 ****************************************************************************/
 int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 {
-	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	size_t numtowrite = SVAL(inbuf,smb_vwv1);
 	int nwritten;
 	int outsize;
@@ -154,7 +154,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
@@ -210,11 +210,13 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
+	BOOL unused;
+
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
            data on the pipe */
@@ -228,7 +230,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_from_pipe(p, data, smb_maxcnt);
+	nread = read_from_pipe(p, data, smb_maxcnt, &unused);
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -248,7 +250,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 {
-	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	int outsize = set_message(outbuf,0,0,True);
 
 	if (!p)
@@ -256,7 +258,7 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
-	if (!close_rpc_pipe_hnd(p, conn))
+	if (!close_rpc_pipe_hnd(p))
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 
 	return(outsize);
