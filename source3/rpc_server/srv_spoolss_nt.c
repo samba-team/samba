@@ -773,13 +773,17 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 
 	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
 
-	if((*data  = (uint8 *)malloc( in_size *sizeof(uint8) )) == NULL) {
-		return False;
-	}
+	if (in_size) {
+		if((*data  = (uint8 *)malloc( in_size *sizeof(uint8) )) == NULL) {
+			return False;
+		}
 
-	memset(*data, 0, in_size *sizeof(uint8));
-	/* copy the min(in_size, len) */
-	memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
+		memset(*data, 0, in_size *sizeof(uint8));
+		/* copy the min(in_size, len) */
+		memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
+	} else {
+		*data = NULL;
+	}
 
 	*needed = len;
 	
@@ -835,9 +839,14 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	if (found==False) {
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		/* reply this param doesn't exist */
-		if((*data=(uint8 *)malloc(*out_size*sizeof(uint8))) == NULL)
-			return ERROR_NOT_ENOUGH_MEMORY;
-		memset(*data, 0x0, *out_size*sizeof(uint8));
+		if (*out_size) {
+			if((*data=(uint8 *)malloc(*out_size*sizeof(uint8))) == NULL)
+				return ERROR_NOT_ENOUGH_MEMORY;
+			memset(*data, '\0', *out_size*sizeof(uint8));
+		} else {
+			*data = NULL;
+		}
+
 		return ERROR_INVALID_PARAMETER;
 	}
 	
@@ -3102,8 +3111,8 @@ uint32 _spoolss_fcpn(const POLICY_HND *handle)
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	safe_free(Printer->notify.option);
 	safe_free(Printer->notify.option->ctr.type);
+	safe_free(Printer->notify.option);
 	Printer->notify.option=NULL;
 	
 	return NT_STATUS_NO_PROBLEMO;

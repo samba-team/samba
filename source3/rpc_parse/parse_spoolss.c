@@ -1529,7 +1529,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 ********************************************************************/
 static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_reldevmode");
 	depth++;
@@ -2022,7 +2022,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 	prs_debug(ps, depth, desc, "new_spoolss_io_buffer");
 	depth++;
 	
-	if (!prs_uint32("ptr", ps, depth, &(buffer->ptr)))
+	if (!prs_uint32("ptr", ps, depth, &buffer->ptr))
 		return False;
 	
 	/* reading */
@@ -2031,7 +2031,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		buffer->string_at_end=0;
 		
 		if (buffer->ptr==0) {
-			if (!prs_init(&(buffer->prs), 0, 4, UNMARSHALL))
+			if (!prs_init(&buffer->prs, 0, 4, UNMARSHALL))
 				return False;
 			return True;
 		}
@@ -2039,10 +2039,10 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
 					
-		if (!prs_init(&(buffer->prs), buffer->size, 4, UNMARSHALL))
+		if (!prs_init(&buffer->prs, buffer->size, 4, UNMARSHALL))
 			return False;
 
-		if (!prs_append_some_prs_data(&(buffer->prs), ps, prs_offset(ps), buffer->size))
+		if (!prs_append_some_prs_data(&buffer->prs, ps, prs_offset(ps), buffer->size))
 			return False;
 
 		if (!prs_set_offset(&buffer->prs, 0))
@@ -2060,9 +2060,9 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (buffer->ptr==0)
 			return True;
 		
-		if (!prs_uint32("size", ps, depth, &(buffer->size)))
+		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
-		if (!prs_append_some_prs_data(ps, &(buffer->prs), 0, buffer->size))
+		if (!prs_append_some_prs_data(ps, &buffer->prs, 0, buffer->size))
 			return False;
 
 		return True;
@@ -4541,6 +4541,11 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 		return False;
 
 	return True;
+}
+
+void free_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u)
+{
+	safe_free(q_u->data);
 }
 
 /*******************************************************************
