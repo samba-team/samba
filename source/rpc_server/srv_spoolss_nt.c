@@ -563,7 +563,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	
 	new_printer->notify.option=NULL;
 				
-	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
+	if ( !(new_printer->ctx = talloc_init("Printer Entry [%p]", hnd)) ) {
 		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
 		close_printer_handle(p, hnd);
 		return False;
