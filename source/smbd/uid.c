@@ -204,6 +204,8 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 	}
 
 	set_sec_ctx(p->uid, p->gid, 0, NULL);  /* fix group stuff */
+
+	return True;
 }
 
 /****************************************************************************
