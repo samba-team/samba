@@ -649,9 +649,9 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth
 ********************************************************************/
 
 void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
-		       int num_entries, DOM_SID **sids)
+		       int num_entries, DOM_SID *sids)
 {
-	int i, i2;
+	int i;
 
 	DEBUG(5, ("init_lsa_sid_enum\n"));
 
@@ -677,14 +677,9 @@ void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
 
 	/* Copy across SIDs and SID pointers */
 
-	for (i = 0, i2 = 0; i < num_entries; i++) {
-		if (sids[i] != NULL) {
-			sen->ptr_sid[i] = 1;
-			init_dom_sid2(&sen->sid[i2], sids[i]);
-			i2++;
-		} else {
-			sen->ptr_sid[i] = 0;
-		}
+	for (i = 0; i < num_entries; i++) {
+		sen->ptr_sid[i] = 1;
+		init_dom_sid2(&sen->sid[i], &sids[i]);
 	}
 }
 
@@ -756,7 +751,7 @@ static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 ********************************************************************/
 
 void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
-			POLICY_HND *hnd, int num_sids, DOM_SID **sids,
+			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			uint16 level)
 {
 	DEBUG(5, ("init_r_enum_trust_dom\n"));
@@ -914,31 +909,39 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, in
 makes a structure.
 ********************************************************************/
 
-void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-                int num_names, char **names)
+void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
+			 POLICY_HND *hnd, int num_names, char **names)
 {
 	int i;
 
 	DEBUG(5, ("init_q_lookup_names\n"));
 
-	memcpy(&q_l->pol, hnd, sizeof(q_l->pol));
+	ZERO_STRUCTP(q_l);
 
+	q_l->pol = *hnd;
 	q_l->num_entries = num_names;
 	q_l->num_entries2 = num_names;
+	q_l->lookup_level = 1;
 
-	SMB_ASSERT_ARRAY(q_l->uni_name, q_l->num_entries);
+	if ((q_l->uni_name = (UNISTR2 *)talloc(
+		mem_ctx, num_names * sizeof(UNISTR2))) == NULL) {
+		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
+		return;
+	}
+
+	if ((q_l->hdr_name = (UNIHDR *)talloc(
+		mem_ctx, num_names * sizeof(UNIHDR))) == NULL) {
+		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
+		return;
+	}
 
 	for (i = 0; i < num_names; i++) {
 		char* name = names[i];
-		int len = strlen(name)+1;
+		int len = strlen(name);
+
 		init_uni_hdr(&q_l->hdr_name[i], len);
 		init_unistr2(&q_l->uni_name[i], name, len);
 	}
-
-	q_l->num_trans_entries  = 0;
-	q_l->ptr_trans_sids  = 0;
-	q_l->lookup_level = 1;
-	q_l->mapped_count = 0;
 }
 
 /*******************************************************************
@@ -965,8 +968,6 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 		return False;
 	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
 		return False;
-
-	SMB_ASSERT_ARRAY(q_r->uni_name, q_r->num_entries);
 
 	for (i = 0; i < q_r->num_entries; i++) {
 		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
@@ -996,7 +997,8 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc, 
+			   LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -1027,6 +1029,13 @@ BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, 
 
 		if (r_r->num_entries2 != r_r->num_entries) {
 			/* RPC fault */
+			return False;
+		}
+
+		if ((r_r->dom_rid = (DOM_RID2 *)
+		     talloc(mem_ctx, r_r->num_entries2 * sizeof(DOM_RID2)))
+		    == NULL) {
+			DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
 			return False;
 		}
 

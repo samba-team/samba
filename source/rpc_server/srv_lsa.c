@@ -277,13 +277,26 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
  ***************************************************************************/
 
 static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
-				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS], uint32 *mapped_count)
+				 int num_entries, DOM_SID2 *sid,
+				 uint32 *mapped_count)
 {
 	int i;
 	int total = 0;
 	*mapped_count = 0;
 
-	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
+	/* Allocate memory for list of names */
+
+	if (!(trn->name = (LSA_TRANS_NAME *)malloc(sizeof(LSA_TRANS_NAME) *
+						  num_entries))) {
+		DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
+		return;
+	}
+
+	if (!(trn->uni_name = (UNISTR2 *)malloc(sizeof(UNISTR2) * 
+						num_entries))) {
+		DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
+		return;
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		BOOL status = False;
@@ -318,7 +331,8 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
-		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to referenced list.\n", dom_name, name ));
+		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
+			  "referenced list.\n", dom_name, name ));
 
 		(*mapped_count)++;
 
@@ -376,6 +390,11 @@ static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entr
 		return False;
 	}
 
+	/* Free memory - perhaps this should be done using talloc()? */
+
+	safe_free(names.name);
+	safe_free(names.uni_name);
+
 	return True;
 }
 
@@ -383,13 +402,17 @@ static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entr
 lsa_reply_lookup_names
  ***************************************************************************/
 
-static BOOL lsa_reply_lookup_names(prs_struct *rdata,
-                UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
+static BOOL lsa_reply_lookup_names(prs_struct *rdata, UNISTR2 *names, 
+				   int num_entries)
 {
 	LSA_R_LOOKUP_NAMES r_l;
 	DOM_R_REF ref;
 	DOM_RID2 rids[MAX_LOOKUP_SIDS];
 	uint32 mapped_count = 0;
+	TALLOC_CTX *mem_ctx = talloc_init();
+	BOOL result = True;
+
+	if (!mem_ctx) return False;
 
 	ZERO_STRUCT(r_l);
 	ZERO_STRUCT(ref);
@@ -400,12 +423,13 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata,
 	init_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_names("", &r_l, rdata, 0)) {
+	if(!lsa_io_r_lookup_names(mem_ctx, "", &r_l, rdata, 0)) {
 		DEBUG(0,("lsa_reply_lookup_names: Failed to marshall LSA_R_LOOKUP_NAMES.\n"));
-		return False;
+		result = False;
 	}
 
-	return True;
+	talloc_destroy(mem_ctx);
+	return result;
 }
 
 /***************************************************************************
@@ -551,20 +575,29 @@ static BOOL api_lsa_lookup_sids(pipes_struct *p)
 	LSA_Q_LOOKUP_SIDS q_l;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
+	BOOL result = True;
 
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
 	if(!lsa_io_q_lookup_sids("", &q_l, data, 0)) {
 		DEBUG(0,("api_lsa_lookup_sids: failed to unmarshall LSA_Q_LOOKUP_SIDS.\n"));
-		return False;
+		result = False;
+		goto done;
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	if(!lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries))
-		return False;
+	if(!lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries)) {
+		result = False;
+		goto done;
+	}
 
-	return True;
+
+ done:
+	safe_free(q_l.sids.ptr_sid);
+	safe_free(q_l.sids.sid);
+
+	return result;
 }
 
 /***************************************************************************

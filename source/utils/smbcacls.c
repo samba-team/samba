@@ -24,7 +24,9 @@
 
 static fstring password;
 static fstring username;
+static fstring server;
 static int got_pass;
+static int test_args;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
@@ -59,27 +61,85 @@ static struct perm_value standard_values[] = {
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
-	if (numeric) {
-		sid_to_string(str, sid);
-	} else {
+	struct cli_state cli;
+	POLICY_HND pol;
+	struct ntuser_creds creds;
+	char **names;
+	uint32 *types;
+	int num_names;
 
-		/* Need to add LSA lookups */
+        ZERO_STRUCT(creds);             
+	ZERO_STRUCT(cli);
+	ZERO_STRUCT(pol);
 
+        creds.pwd.null_pwd = 1;
+
+	if (numeric || !cli_lsa_initialise(&cli, server, &creds) ||
+	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				&pol) != NT_STATUS_NOPROBLEMO ||
+	    cli_lsa_lookup_sids(&cli, &pol, 1, sid, &names, &types, 
+				&num_names) != NT_STATUS_NOPROBLEMO) {
 		sid_to_string(str, sid);
+		goto done;
+	}
+
+	fstrcpy(str, names[0]);
+
+	safe_free(names[0]);
+	safe_free(names);
+	safe_free(types);
+
+ done:
+	if (cli.initialised) {
+		cli_lsa_close(&cli, &pol);
+		cli_lsa_shutdown(&cli);
 	}
 }
 
 /* convert a string to a SID, either numeric or username/group */
 static BOOL StringToSid(DOM_SID *sid, fstring str)
 {
-	if (strncmp(str,"S-", 2) == 0) {
-		return string_to_sid(sid, str);
-	} else {
+	uint32 *types;
+	struct cli_state cli;
+	struct ntuser_creds creds;
+	POLICY_HND pol;
+	int num_sids;
+	BOOL result = True;
+	DOM_SID *sids;
+	
+	/* Short cut */
 
-		/* Need to add LSA lookups */
-
+	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
 	}
+
+	ZERO_STRUCT(creds);
+	ZERO_STRUCT(cli);
+	ZERO_STRUCT(pol);
+
+	creds.pwd.null_pwd = 1;      
+
+	if (!cli_lsa_initialise(&cli, server, &creds) ||
+	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				&pol) != NT_STATUS_NOPROBLEMO ||
+	    cli_lsa_lookup_names(&cli, &pol, 1, &str, &sids, &types, 
+				 &num_sids) != NT_STATUS_NOPROBLEMO) {
+		result = string_to_sid(sid, str);
+		goto done;
+	}
+
+	sid_copy(sid, &sids[0]);
+
+	safe_free(sids);
+	safe_free(types);
+
+ done:
+	if (cli.initialised) {
+		cli_lsa_close(&cli, &pol);
+		cli_lsa_shutdown(&cli);
+	}
+
+	return result;
 }
 
 
@@ -88,6 +148,8 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 {
 	struct perm_value *v;
 	fstring sidstr;
+	int do_print = 0;
+	uint32 got_mask;
 
 	SidToString(sidstr, &ace->sid);
 
@@ -122,11 +184,27 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 		}
 	}
 
-	/* Special permissions */
+	/* Special permissions.  Print out a hex value if we have
+	   leftover bits in the mask. */
 
+	got_mask = ace->info.mask;
+
+ again:
 	for (v = special_values; v->perm; v++) {
 		if ((ace->info.mask & v->mask) == v->mask) {
-			fprintf(f, "%s", v->perm);
+			if (do_print) {
+				fprintf(f, "%s", v->perm);
+			}
+			got_mask &= ~v->mask;
+		}
+	}
+
+	if (!do_print) {
+		if (got_mask != 0) {
+			fprintf(f, "0x%08x", ace->info.mask);
+		} else {
+			do_print = 1;
+			goto again;
 		}
 	}
 
@@ -138,18 +216,89 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 static BOOL parse_ace(SEC_ACE *ace, char *str)
 {
 	char *p;
+	fstring tok;
 	unsigned atype, aflags, amask;
 	DOM_SID sid;
 	SEC_ACCESS mask;
+	struct perm_value *v;
+
 	ZERO_STRUCTP(ace);
 	p = strchr(str,':');
 	if (!p) return False;
-	*p = 0;
-	if (sscanf(p+1, "%i/%i/%i", 
-		   &atype, &aflags, &amask) != 3 ||
-	    !StringToSid(&sid, str)) {
+	*p = '\0';
+	p++;
+
+	/* Try to parse numeric form */
+
+	if (sscanf(p, "%i/%i/%i", &atype, &aflags, &amask) == 3 &&
+	    StringToSid(&sid, str)) {
+		goto done;
+	}
+
+	/* Try to parse text form */
+
+	if (!StringToSid(&sid, str)) {
 		return False;
 	}
+
+	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+		return False;
+	}
+
+	if (strncmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
+		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
+		atype = SEC_ACE_TYPE_ACCESS_DENIED;
+	} else {
+		return False;
+	}
+
+	/* Only numeric form accepted for flags at present */
+
+	if (!(next_token(NULL, tok, "/", sizeof(fstring)) &&
+	      sscanf(tok, "%i", &aflags))) {
+		return False;
+	}
+
+	if (!next_token(NULL, tok, "/", sizeof(fstring))) {
+		return False;
+	}
+
+	if (strncmp(tok, "0x", 2) == 0) {
+		if (sscanf(tok, "%i", &amask) != 1) {
+			return False;
+		}
+		goto done;
+	}
+
+	for (v = standard_values; v->perm; v++) {
+		if (strcmp(tok, v->perm) == 0) {
+			amask = v->mask;
+			goto done;
+		}
+	}
+
+	p = tok;
+
+	while(*p) {
+		BOOL found = False;
+
+		for (v = special_values; v->perm; v++) {
+			if (v->perm[0] == *p) {
+				amask |= v->mask;
+				found = True;
+			}
+		}
+
+		if (!found) return False;
+		p++;
+	}
+
+	if (*p) {
+		return False;
+	}
+
+ done:
 	mask.mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
@@ -185,16 +334,12 @@ static SEC_DESC *sec_desc_parse(char *str)
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
-	int type=0x8004;
 
 	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
-		}
-
-		if (strncmp(tok,"TYPE:", 5) == 0) {
-			type = strtol(tok+5, NULL, 16);
+			continue;
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
@@ -204,6 +349,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse owner sid\n");
 				return NULL;
 			}
+			continue;
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
@@ -213,6 +359,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse group sid\n");
 				return NULL;
 			}
+			continue;
 		}
 
 		if (strncmp(tok,"ACL:", 4) == 0) {
@@ -222,13 +369,18 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse ACL\n");
 				return NULL;
 			}
+			continue;
 		}
+
+		printf("Failed to parse security descriptor\n");
+		return NULL;
 	}
 
 	ret = make_sec_desc(revision, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
 	free_sec_acl(&dacl);
+
 	if (grp_sid) free(grp_sid);
 	if (owner_sid) free(owner_sid);
 
@@ -242,7 +394,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	fstring sidstr;
 	int i;
 
-	printf("REVISION:%d\nTYPE:0x%x\n", sd->revision, sd->type);
+	printf("REVISION:%d\n", sd->revision);
 
 	/* Print owner and group sid */
 
@@ -280,6 +432,8 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	int fnum;
 	SEC_DESC *sd;
 
+	if (test_args) return;
+
 	fnum = cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
@@ -312,10 +466,9 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	unsigned sd_size;
 
 	sd = sec_desc_parse(acl);
-	if (!sd) {
-		printf("Failed to parse security descriptor\n");
-		return;
-	}
+
+	if (!sd) return;
+	if (test_args) return;
 
 	/* the desired access below is the only one I could find that works with
 	   NT4, W2KP and Samba */
@@ -331,6 +484,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	switch (mode) {
 	case ACL_DELETE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			BOOL found = False;
+
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
@@ -345,8 +500,16 @@ static void cacl_set(struct cli_state *cli, char *filename,
 						old->dacl = NULL;
 						old->off_dacl = 0;
 					}
+					found = True;
 					break;
 				}
+			}
+
+			if (!found) {
+				fstring str;
+
+				SidToString(str, &sd->dacl->ace[i].sid);
+				printf("ACL for SID %s not found\n", str);
 			}
 		}
 		break;
@@ -380,10 +543,9 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		break;
 
 	case ACL_SET:
-		free_sec_desc(&old);
-		old = sd;
+ 		free_sec_desc(&old);
+ 		old = sd;
 		break;
-		
 	}
 
 	if (sd != old) {
@@ -413,7 +575,6 @@ struct cli_state *connect_one(char *share)
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
-	fstring server;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 	extern pstring global_myname;
@@ -492,16 +653,17 @@ struct cli_state *connect_one(char *share)
 static void usage(void)
 {
 	printf(
-"Usage: smbcacls //server1/share1 filename [options]\n\n\
+"Usage: smbcacls //server1/share1 filename -U username [options]\n\
 \n\
 \t-D <acls>               delete an acl\n\
 \t-M <acls>               modify an acl\n\
 \t-A <acls>               add an acl\n\
 \t-S <acls>               set acls\n\
-\t-U username             set the network username\n\
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
 \n\
+The username can be of the form username%%password or\n\
+workgroup\\username%%password.\n\n\
 An acl is of the form ACL:<SID>:type/flags/mask\n\
 You can string acls together with spaces, commas or newlines\n\
 ");
@@ -556,7 +718,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:t")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -592,6 +754,10 @@ You can string acls together with spaces, commas or newlines\n\
 			numeric = 1;
 			break;
 
+		case 't':
+			test_args = 1;
+			break;
+
 		case 'h':
 			usage();
 			exit(1);
@@ -604,9 +770,16 @@ You can string acls together with spaces, commas or newlines\n\
 
 	argc -= optind;
 	argv += optind;
+	
+	if (argc > 0) {
+		usage();
+		exit(1);
+	}
 
-	cli = connect_one(share);
-	if (!cli) exit(1);
+	if (!test_args) {
+		cli = connect_one(share);
+		if (!cli) exit(1);
+	}
 
 	if (acl) {
 		cacl_set(cli, filename, acl, mode);

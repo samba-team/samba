@@ -119,11 +119,13 @@ PARAM_OBJ = param/loadparm.o param/params.o
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
-	     libsmb/clitrans.o \
+	     libsmb/clitrans.o libsmb/clisecdesc.o \
 	     libsmb/namequery.o libsmb/nmblib.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
+
+LIBMSRPC_OBJ = libsmb/cli_lsarpc.o rpc_client/cli_pipe.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
@@ -296,9 +298,9 @@ MSGTEST_OBJ = utils/msgtest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-
-SMBCACLS_OBJ = utils/smbcacls.o utils/clisecdesc.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
-				$(UBIQX_OBJ) $(LIB_OBJ)
+SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
+				$(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
+				$(LIBMSRPC_OBJ)
 
 
 LOCKTEST2_OBJ = utils/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
@@ -320,7 +322,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) $(LIBMSRPC_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
