@@ -32,6 +32,7 @@
 RCSID("$Id$");
 
 #ifdef HAVE_TERMIOS_H
+
 void
 rl_ttyset(int Reset)
 {
@@ -58,7 +59,9 @@ rl_ttyset(int Reset)
     else
 	tcsetattr(0, TCSANOW, &old);
 }
+
 #else /* !HAVE_TERMIOS_H */
+
 void
 rl_ttyset(int Reset)
 {
