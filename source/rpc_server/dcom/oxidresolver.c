@@ -46,8 +46,7 @@ struct PingSet
 /* 
   ResolveOxid 
 */
-static WERROR ResolveOxid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ResolveOxid *r)
+static WERROR ResolveOxid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ResolveOxid *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -56,8 +55,7 @@ static WERROR ResolveOxid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 /* 
   SimplePing 
 */
-static WERROR SimplePing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct SimplePing *r)
+static WERROR SimplePing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct SimplePing *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -65,8 +63,7 @@ static WERROR SimplePing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 /* 
   ComplexPing 
 */
-static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ComplexPing *r)
+static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ComplexPing *r)
 {
 	/* struct PingSet *ps; */
 	
@@ -81,8 +78,7 @@ static WERROR ComplexPing(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 /* 
   ServerAlive 
 */
-static WERROR ServerAlive(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ServerAlive *r)
+static WERROR ServerAlive(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ServerAlive *r)
 {
 	return WERR_OK;
 }
@@ -91,8 +87,7 @@ static WERROR ServerAlive(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 /* 
   ResolveOxid2 
 */
-static WERROR ResolveOxid2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ResolveOxid2 *r)
+static WERROR ResolveOxid2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ResolveOxid2 *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -101,8 +96,7 @@ static WERROR ResolveOxid2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /* 
   ServerAlive2 
 */
-static WERROR ServerAlive2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ServerAlive2 *r)
+static WERROR ServerAlive2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ServerAlive2 *r)
 {
 	return WERR_NOT_SUPPORTED;
 }

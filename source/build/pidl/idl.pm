@@ -2055,6 +2055,7 @@ sub parse_idl($$)
 		if (defined($x->{PROPERTIES}->{object})) {
 			foreach my $e (@{$x->{DATA}}) {
 				if($e->{TYPE} eq "FUNCTION") {
+					$e->{PROPERTIES}->{object} = 1;
 					unshift(@{$e->{DATA}}, 
                         { 'NAME' => 'ORPCthis',
                           'POINTERS' => 0,

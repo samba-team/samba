@@ -24,16 +24,40 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_remact.h"
+#include "rpc_server/dcom/dcom.h"
+
+static void register_dcom_class(void *_c)
+{
+	struct dcom_class *class = _c;
+	/* FIXME */
+}
+
+struct dcom_object *dcom_object_by_oid(struct GUID *oid)
+{
+	/* FIXME */
+	return NULL;
+}
+
+struct dcom_class *dcom_class_by_clsid(struct GUID *clsid)
+{
+	/* FIXME */
+	return NULL;
+}
+
+struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
+{
+	/* FIXME */
+	return NULL;
+}
 
 /* 
   RemoteActivation 
 */
-static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RemoteActivation *r)
+static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct RemoteActivation *r)
 {
 	/* FIXME: CoGetClassObject() */
 	/* FIXME: IClassFactory::CreateInstance() */
-	/* FIXME: IClassFactory::ReleaseInstance() */
+	/* FIXME: IClassFactory::Release() */
 	return WERR_NOT_SUPPORTED;
 }
 

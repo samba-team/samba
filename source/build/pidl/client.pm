@@ -19,15 +19,22 @@ sub ParseFunction($)
 
 	return if (util::has_property($fn, "local"));
 
+	my $objargdef = "";
+	my $objarg = ", NULL";
+	if (util::has_property($fn, "object")) {
+		$objargdef = ", struct GUID *object";
+		$objarg = ", object";
+	}
+
 	$res .= 
 "
-struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p$objargdef, TALLOC_CTX *mem_ctx, struct $name *r)
 {
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
-	return dcerpc_ndr_request_send(p, DCERPC_$uname, mem_ctx,
+	return dcerpc_ndr_request_send(p$objarg, DCERPC_$uname, mem_ctx,
 				    (ndr_push_flags_fn_t) ndr_push_$name,
 				    (ndr_pull_flags_fn_t) ndr_pull_$name,
 				    r, sizeof(*r));
@@ -35,11 +42,12 @@ struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 
 ";
 
+	$objarg = "" unless (util::has_property($fn, "object"));
 	$res .= 
 "
-NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+NTSTATUS dcerpc_$name(struct dcerpc_pipe *p$objargdef, TALLOC_CTX *mem_ctx, struct $name *r)
 {
-	struct rpc_request *req = dcerpc_$name\_send(p, mem_ctx, r);
+	struct rpc_request *req = dcerpc_$name\_send(p$objarg, mem_ctx, r);
 	NTSTATUS status;
 	if (req == NULL) return NT_STATUS_NO_MEMORY;
 
