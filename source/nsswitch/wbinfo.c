@@ -663,7 +663,7 @@ static BOOL wbinfo_ping(void)
 
 	/* Display response */
 
-        d_printf("'ping' to winbindd %s on fd %d\n", 
+        d_printf("Ping to winbindd %s on fd %d\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", winbindd_fd);
 
         return result == NSS_STATUS_SUCCESS;
@@ -695,8 +695,8 @@ int main(int argc, char **argv)
 
 		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users"},
 		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups" },
-		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP (WINS)", "NETBIOS-NAME" },
-		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name (WINS)", "IP" },
+		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP", "NETBIOS-NAME" },
+		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
 		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
@@ -705,12 +705,12 @@ int main(int argc, char **argv)
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
-		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "show sequence numbers of all domains" },
+		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
-		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "'ping' winbindd to see if it is alive" },
+		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0 }
 	};
