@@ -38,6 +38,9 @@ extern int DEBUGLEVEL;
    jobids are assigned when a job starts spooling. 
 */
 
+#define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
+
+
 struct printjob {
 	pid_t pid; /* which process launched the job */
 	int sysjob; /* the system (lp) job number */
@@ -898,10 +901,8 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
 	if (next_jobid == -1) next_jobid = 1;
 
-	for (jobid = next_jobid+1; jobid != next_jobid; ) {
+	for (jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid)) {
 		if (!print_job_exists(jobid)) break;
-		jobid = (jobid + 1) % PRINT_MAX_JOBID;
-		if (jobid == 0) jobid = 1;
 	}
 	if (jobid == next_jobid || !print_job_store(jobid, &pjob)) {
 		jobid = -1;
