@@ -373,3 +373,48 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 	NDR_CHECK(ndr_pull_uint32(ndr, &t->high));
 	return NT_STATUS_OK;
 }
+
+
+void ndr_print_struct(struct ndr_print *ndr, const char *name)
+{
+	ndr->print(ndr, "%s:", name);
+}
+
+void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8 v)
+{
+	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
+}
+
+void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16 v)
+{
+	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
+}
+
+void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32 v)
+{
+	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+}
+
+void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p)
+{
+	if (p) {
+		ndr->print(ndr, "%-25s: *", name);
+	} else {
+		ndr->print(ndr, "%-25s: NULL", name);
+	}
+}
+
+void ndr_print_unistr_noterm(struct ndr_print *ndr, const char *name, const char *s)
+{
+	ndr->print(ndr, "%-25s: '%s'", name, s);
+}
+
+void ndr_print_unistr(struct ndr_print *ndr, const char *name, const char *s)
+{
+	ndr->print(ndr, "%-25s: '%s'", name, s);
+}
+
+void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
+{
+	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr->mem_ctx, &t));
+}

@@ -71,6 +71,21 @@ sub ParseArrayPush($$)
 }
 
 #####################################################################
+# print an array
+sub ParseArrayPrint($$)
+{
+	my $e = shift;
+	my $var_prefix = shift;
+	my $size = find_size_var($e, util::array_size($e));
+
+	if (util::is_scalar_type($e->{TYPE})) {
+		$res .= "\t\tndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, $size);\n";
+	} else {
+		$res .= "\t\tndr_print_array(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_print_fn_t)ndr_print_$e->{TYPE});\n";
+	}
+}
+
+#####################################################################
 # parse an array - pull side
 sub ParseArrayPull($$)
 {
@@ -106,6 +121,30 @@ sub ParseElementPushScalar($$$)
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
+	}
+}
+
+#####################################################################
+# print scalars in a structure element
+sub ParseElementPrintScalar($$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my $cprefix = util::c_push_prefix($e);
+
+	if (util::has_property($e, "struct_len")) {
+		return;
+	}
+
+	if (defined $e->{VALUE}) {
+		$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $e->{VALUE});\n";
+	} elsif (util::need_wire_pointer($e)) {
+		$res .= "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
+		$res .= "\tndr->depth++;\n";
+		ParseElementPrintBuffer($e, "r->");
+		$res .= "\tndr->depth--;\n";
+	} else {
+		$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
 	}
 }
 
@@ -179,6 +218,33 @@ sub ParseElementPushBuffer($$)
 		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
 		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
+	}
+
+	if (util::need_wire_pointer($e)) {
+		$res .= "\t}\n";
+	}	
+}
+
+#####################################################################
+# print buffers in a structure element
+sub ParseElementPrintBuffer($$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my $cprefix = util::c_push_prefix($e);
+
+	if (util::is_pure_scalar($e)) {
+		return;
+	}
+
+	if (util::need_wire_pointer($e)) {
+		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
+	}
+	    
+	if (util::array_size($e)) {
+		ParseArrayPrint($e, "r->");
+	} else {
+		$res .= "\t\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
 	}
 
 	if (util::need_wire_pointer($e)) {
@@ -272,6 +338,25 @@ sub ParseStructPush($)
 }
 
 #####################################################################
+# generate a struct print function
+sub ParseStructPrint($)
+{
+	my($struct) = shift;
+
+	$res .= "\tndr_print_struct(ndr, name);\n";
+
+	if (! defined $struct->{ELEMENTS}) {
+		return;
+	}
+
+	$res .= "\tndr->depth++;\n";
+	foreach my $e (@{$struct->{ELEMENTS}}) {
+		ParseElementPrintScalar($e, "r->");
+	}
+	$res .= "\tndr->depth--;\n";
+}
+
+#####################################################################
 # parse a struct - pull side
 sub ParseStructPull($)
 {
@@ -341,6 +426,14 @@ sub ParseUnionPush($)
 }
 
 #####################################################################
+# print a union
+sub ParseUnionPrint($)
+{
+	my $e = shift;
+	print "WARNING! union print not done\n";	
+}
+
+#####################################################################
 # parse a union - pull side
 sub ParseUnionPull($)
 {
@@ -381,6 +474,20 @@ sub ParseTypePush($)
 		    ParseStructPush($data);
 		($data->{TYPE} eq "UNION") &&
 		    ParseUnionPush($data);
+	}
+}
+
+#####################################################################
+# generate a print function for a type
+sub ParseTypePrint($)
+{
+	my($data) = shift;
+
+	if (ref($data) eq "HASH") {
+		($data->{TYPE} eq "STRUCT") &&
+		    ParseStructPrint($data);
+		($data->{TYPE} eq "UNION") &&
+		    ParseUnionPrint($data);
 	}
 }
 
@@ -456,6 +563,26 @@ sub ParseTypedefPull($)
 }
 
 
+#####################################################################
+# parse a typedef - push side
+sub ParseTypedefPrint($)
+{
+	my($e) = shift;
+
+	if ($e->{DATA}->{TYPE} eq "STRUCT") {
+		$res .= "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePrint($e->{DATA});
+		$res .= "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "UNION") {
+		$res .= "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, uint16 level, union $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePrint($e->{DATA});
+		$res .= "}\n\n";
+	}
+}
 
 
 #####################################################################
@@ -537,6 +664,7 @@ sub ParseTypedef($)
 	my($e) = shift;
 	ParseTypedefPush($e);
 	ParseTypedefPull($e);
+	ParseTypedefPrint($e);
 }
 
 #####################################################################

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+
 /*
   these really shouldn't be here ....
 */
@@ -189,23 +190,12 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	}
 
 	if (r.out.domains) {
-		printf("lookup gave %d domains (max_count=%d)\n", 
-		       r.out.domains->count,
-		       r.out.domains->max_count);
-		for (i=0;i<r.out.domains->count;i++) {
-			printf("name='%s' sid=%s\n", 
-			       r.out.domains->domains[i].name.name,
-			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
-		}
+		NDR_PRINT_DEBUG(lsa_RefDomainList, r.out.domains);
 	}
 
 	printf("lookup gave %d sids (sids.count=%d)\n", count, sids.count);
-	for (i=0;i<sids.count;i++) {
-		printf("sid_type=%d rid=%d sid_index=%d\n", 
-		       sids.sids[i].sid_type,
-		       sids.sids[i].rid,
-		       sids.sids[i].sid_index);
-	}
+
+	NDR_PRINT_DEBUG(lsa_TransSidArray, r.out.sids);
 
 	printf("\n");
 
@@ -244,23 +234,10 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	}
 
 	if (r.out.domains) {
-		printf("lookup gave %d domains (max_count=%d)\n", 
-		       r.out.domains->count,
-		       r.out.domains->max_count);
-		for (i=0;i<r.out.domains->count;i++) {
-			printf("name='%s' sid=%s\n", 
-			       r.out.domains->domains[i].name.name,
-			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
-		}
+		NDR_PRINT_DEBUG(lsa_RefDomainList, r.out.domains);
 	}
 
-	printf("lookup gave %d names (names.count=%d)\n", count, names.count);
-	for (i=0;i<names.count;i++) {
-		printf("type=%d sid_index=%d name='%s'\n", 
-		       names.names[i].sid_type,
-		       names.names[i].sid_index,
-		       names.names[i].name.name);
-	}
+	NDR_PRINT_DEBUG(lsa_TransNameArray, r.out.names);
 
 	printf("\n");
 
@@ -289,7 +266,7 @@ static BOOL test_LookupPrivName(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf(" '%s'\n", r.out.name->name);
+	NDR_PRINT_DEBUG(lsa_Name, r.out.name);
 
 	return True;
 }
@@ -316,15 +293,11 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 	       r.out.privs?r.out.privs->count:0, r.out.unknown);
 
 	if (r.out.privs) {
-		struct lsa_PrivilegeSet *privs = r.out.privs;
 		int i;
-		for (i=0;i<privs->count;i++) {
-			printf("luid=%08x-%08x  attribute=0x%08x ", 
-			       privs->set[i].luid.low,
-			       privs->set[i].luid.high,
-			       privs->set[i].attribute);
+		NDR_PRINT_DEBUG(lsa_PrivilegeSet, r.out.privs);
+		for (i=0;i<r.out.privs->count;i++) {
 			test_LookupPrivName(p, mem_ctx, handle, 
-					    &privs->set[i].luid);
+					    &r.out.privs->set[i].luid);
 		}
 	}
 
@@ -353,10 +326,7 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("received %d rights\n", rights.count);
-	for (i=0;i<rights.count;i++) {
-		printf("\t'%s'\n", rights.names[i].name);
-	}
+	NDR_PRINT_DEBUG(lsa_RightSet, r.out.rights);
 
 	return True;
 }
@@ -417,9 +387,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 
 	printf("Got %d sids resume_handle=%u\n", sids1.num_sids, resume_handle);
 
-	for (i=0;i<sids1.num_sids;i++) {
-		printf("%s\n", lsa_sid_string_talloc(mem_ctx, sids1.sids[i].sid));
-	}
+	NDR_PRINT_DEBUG(lsa_SidArray, r.out.sids);
 
 	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
 		return False;
@@ -446,6 +414,8 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		printf("EnumAccounts failed - %s\n", nt_errstr(status));
 		return False;
 	}
+
+	NDR_PRINT_DEBUG(lsa_SidArray, r.out.sids);
 
 	if (sids2.num_sids != 1) {
 		printf("Returned wrong number of entries (%d)\n", sids2.num_sids);
@@ -483,12 +453,7 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 
 	printf("Got %d privs resume_handle=%u\n", privs1.count, resume_handle);
 
-	for (i=0;i<privs1.count;i++) {
-		printf("luid=%08x-%08x '%s'\n", 
-		       privs1.privs[i].luid_low,
-		       privs1.privs[i].luid_high,
-		       privs1.privs[i].name.name);
-	}
+	NDR_PRINT_DEBUG(lsa_PrivArray, r.out.privs);
 
 	return True;
 }
@@ -519,11 +484,8 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	}
 
 	printf("lookup gave %d domains\n", domains.count);
-	for (i=0;i<r.out.domains->count;i++) {
-		printf("name='%s' sid=%s\n", 
-		       domains.domains[i].name.name,
-		       lsa_sid_string_talloc(mem_ctx, domains.domains[i].sid));
-	}
+
+	NDR_PRINT_DEBUG(lsa_DomainList, r.out.domains);
 
 	return True;
 }
@@ -546,15 +508,7 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	{
-		struct lsa_AuditLogInfo *u = &r.out.info->audit_log;
-		printf("percent_full=%d log_size=%d retention_time=%s\n", 
-		       u->percent_full, u->log_size, 
-		       nt_time_string(mem_ctx, &u->retention_time));
-		printf("shutdown_in_progress=%d time_to_shutdown=%s next_audit_record=%d unknown=0x%x\n", 
-		       u->shutdown_in_progress, nt_time_string(mem_ctx, &u->time_to_shutdown),
-		       u->next_audit_record, u->unknown);
-	}
+	NDR_PRINT_DEBUG(lsa_AuditLogInfo, &r.out.info->audit_log);
 
 	return True;
 }
