@@ -1998,7 +1998,7 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
  set_user_info_21
  ********************************************************************/
 
-static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
+static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -2236,19 +2236,13 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 {
 	DOM_SID sid;
 	uint32 rid = 0x0;
-	SAM_USERINFO_CTR *ctr = NULL;
+	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
-
-	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
-	if (!ctr)
-	  return NT_STATUS_NO_MEMORY;
-
-	q_u->ctr = ctr;
 
 	/* search for the handle */
 	if (find_lsa_policy_by_hnd(pol) == -1)
@@ -2267,7 +2261,7 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	ctr->switch_value = switch_value;
+	switch_value=ctr->switch_value;
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {
