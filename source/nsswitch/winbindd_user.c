@@ -337,7 +337,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
-    DEBUG(0, ("[%5d]: endpwent\n", state->pid));
+    DEBUG(3, ("[%5d]: endpwent\n", state->pid));
 
     if (state == NULL) return WINBINDD_ERROR;
 
@@ -460,17 +460,10 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 	/* Fill in remaining fields */
 	
-	DEBUG(0, ("Read %d sam user entries from domain %s\n",
-		  ent->num_sam_entries, ent->domain->name));
-
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
 	ent->got_all_sam_entries = (status != STATUS_MORE_ENTRIES);
 
-	if (ent->got_all_sam_entries) {
-		DEBUG(0, ("Got all sam entries for this domain\n"));
-	}
-	
 	return ent->num_sam_entries > 0;
 }
 
