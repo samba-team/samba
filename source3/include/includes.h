@@ -223,7 +223,7 @@
 # endif
 #endif
 
-#ifdef HAVE_SHARED_MMAP
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
 
