@@ -1,3 +1,8 @@
+2003-05-08  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* sia/Makefile.am: inline COMPILE since (modern) automake doesn't
+	add it by itself for some reason
+
 2003-04-30  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* afskauthlib/Makefile.am: always includes kafs now that its built
