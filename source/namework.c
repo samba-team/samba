@@ -23,9 +23,6 @@
    14 jan 96: lkcl@pires.co.uk
    added multiple workgroup domain master support
 
-   30 July 96: David.Chappell@mail.trincoll.edu
-   Expanded multiple workgroup domain master browser support.
-
 */
 
 #include "includes.h"
@@ -39,10 +36,14 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern BOOL CanRecurse;
 
+extern pstring myname;
+
 extern int ClientNMB;
 extern int ClientDGRAM;
 
 extern struct in_addr ipzero;
+
+extern int workgroup_count; /* total number of workgroups we know about */
 
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
@@ -63,7 +64,7 @@ state - 0x01 become backup instead of master
       - 0x02 remove all entries in browse list and become non-master
       - 0x04 stop master browser service altogether. NT ignores this 
 **************************************************************************/
-void reset_server(struct work_record *work, char *name, int state, struct in_addr ip)
+void reset_server(char *name, int state, struct in_addr ip)
 {
   char outbuf[20];
   char *p;
@@ -76,10 +77,10 @@ void reset_server(struct work_record *work, char *name, int state, struct in_add
   p += 2;
 
   DEBUG(2,("sending reset to %s %s of state %d\n",
-       name,inet_ntoa(ip),state));
+	   name,inet_ntoa(ip),state));
 
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-              conf_browsing_alias(work->token),name,0x20,0x1d,ip,*iface_ip(ip));
+		      myname,name,0x20,0x1d,ip,*iface_ip(ip));
 }
 
 
@@ -98,47 +99,47 @@ void tell_become_backup(void)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
-    {
-      struct server_record *s;
-      int num_servers = 0;
-      int num_backups = 0;
-      
-      for (s = work->serverlist; s; s = s->next)
-        {
-          if (s->serv.type & SV_TYPE_DOMAIN_ENUM) continue;
-          
-          num_servers++;
-          
-          if (strequal(conf_browsing_alias(work->token), s->serv.name)) continue;
-          
-          if (s->serv.type & SV_TYPE_BACKUP_BROWSER) {
-        num_backups++;
-        continue;
-          }
-          
-          if (s->serv.type & SV_TYPE_MASTER_BROWSER) continue;
-          
-          if (!(s->serv.type & SV_TYPE_POTENTIAL_BROWSER)) continue;
-          
-          DEBUG(3,("num servers: %d num backups: %d\n", 
-               num_servers, num_backups));
-          
-          /* make first server a backup server. thereafter make every
-         tenth server a backup server */
-          if (num_backups != 0 && (num_servers+9) / num_backups > 10)
-        {
-          continue;
-        }
-          
-          DEBUG(2,("sending become backup to %s %s for %s\n",
-               s->serv.name, inet_ntoa(d->bcast_ip),
-               work->work_group));
-          
-          /* type 11 request from conf_browsing_alias(work->token)(20) to WG(1e) for SERVER */
-          do_announce_request(s->serv.name, s->serv.name, work->work_group,
-                  ANN_BecomeBackup, 0x20, 0x1e, d->bcast_ip);
-        }
-    }
+	{
+	  struct server_record *s;
+	  int num_servers = 0;
+	  int num_backups = 0;
+	  
+	  for (s = work->serverlist; s; s = s->next)
+	    {
+	      if (s->serv.type & SV_TYPE_DOMAIN_ENUM) continue;
+	      
+	      num_servers++;
+	      
+	      if (strequal(myname, s->serv.name)) continue;
+	      
+	      if (s->serv.type & SV_TYPE_BACKUP_BROWSER) {
+		num_backups++;
+		continue;
+	      }
+	      
+	      if (s->serv.type & SV_TYPE_MASTER_BROWSER) continue;
+	      
+	      if (!(s->serv.type & SV_TYPE_POTENTIAL_BROWSER)) continue;
+	      
+	      DEBUG(3,("num servers: %d num backups: %d\n", 
+		       num_servers, num_backups));
+	      
+	      /* make first server a backup server. thereafter make every
+		 tenth server a backup server */
+	      if (num_backups != 0 && (num_servers+9) / num_backups > 10)
+		{
+		  continue;
+		}
+	      
+	      DEBUG(2,("sending become backup to %s %s for %s\n",
+		       s->serv.name, inet_ntoa(d->bcast_ip),
+		       work->work_group));
+	      
+	      /* type 11 request from MYNAME(20) to WG(1e) for SERVER */
+	      do_announce_request(s->serv.name, work->work_group,
+				  ANN_BecomeBackup, 0x20, 0x1e, d->bcast_ip);
+	    }
+	}
     }
 }
 
@@ -149,23 +150,8 @@ void tell_become_backup(void)
   ******************************************************************/
 BOOL same_context(struct dgram_packet *dgram)
 {
-  if (!strequal(dgram->dest_name  .scope,scope )) return True;
-  
-  return False;
-}
-
-
-/*******************************************************************
-  am I listening on a name. XXXX check the type of name as well.
-  ******************************************************************/
-BOOL listening_name(struct work_record *work, struct nmb_name *n)
-{
-  if (strequal(n->name,conf_browsing_alias(work->token)) ||
-      strequal(n->name,work->work_group) ||
-      strequal(n->name,MSBROWSE))
-    {
-      return(True);
-    }
+  if (!strequal(dgram->dest_name  .scope,scope )) return(True);
+  if ( strequal(dgram->source_name.name ,myname)) return(True);
   
   return(False);
 }
@@ -211,8 +197,8 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
   
   DEBUG(4,("Announce(%d) %s(%x)",command,name,name[15]));
   DEBUG(4,("%s count=%d ttl=%d OS=(%d,%d) type=%08x sig=%4x %4x comment=%s\n",
-       namestr(&dgram->dest_name),update_count,ttl,osmajor,osminor,
-       servertype,browse_type,browse_sig,comment));
+	   namestr(&dgram->dest_name),update_count,ttl,osmajor,osminor,
+	   servertype,browse_type,browse_sig,comment));
   
   name[15] = 0;  
   
@@ -227,7 +213,7 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
        dgram->dest_name.name_type != 0x1))
     {
       DEBUG(0,("Announce(%d) from %s should be __MSBROWSE__(1) not %s\n",
-        command, inet_ntoa(ip), namestr(&dgram->dest_name)));
+		command, inet_ntoa(ip), namestr(&dgram->dest_name)));
       return;
     }
   
@@ -279,7 +265,7 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
   if (command == ANN_LocalMasterAnnouncement)
   {
     add_browser_entry(serv_name,dgram->dest_name.name_type,
-              work->work_group,30,ip,True);
+		      work->work_group,30,ip,True);
   }
 }
 
@@ -292,40 +278,26 @@ static void process_master_announce(struct packet_struct *p,char *buf)
   struct in_addr ip = dgram->header.source_ip;
   struct subnet_record *d = find_subnet(ip);
   struct subnet_record *mydomain = find_subnet(*iface_bcast(ip));
-  char *to_name = dgram->dest_name.name; /* our primary name or an alias */
-
   char *name = buf;
-  char *work_name; 
-  int token;
+  struct work_record *work;
   name[15] = 0;
   
-  DEBUG(3,("Master Announce from %s (%s)\n", name, inet_ntoa(ip)));
+  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(ip)));
   
   if (same_context(dgram)) return;
   
   if (!d || !mydomain) return;
   
-  token = conf_alias_to_token(to_name);
-
-  if (token == -1)
-  {
-    DEBUG(4, ("alias %s not known\n", to_name));
-    return;
-  }
-
-  /* carry on only if we are a domain master under the server alias */
-  if (!conf_should_domain_master(token)) return;
-
-  /* Convert the server name by which the master browser
-     called this server to the workgroup name. */
-  if ((work_name = conf_workgroup_name(token)) == (char*)NULL)
-  {
-      DEBUG(4, ("process_master_announce(): no alias for \"%s\"\n", to_name));
-      return;
-  }          
+  if (!lp_domain_master()) return;
   
-  /* merge browse lists with them */
-  add_browser_entry(name, 0x1b, work_name,30,ip,True);
+  for (work = mydomain->workgrouplist; work; work = work->next)
+  {
+    if (AM_MASTER(work))
+    {
+	  /* merge browse lists with them */
+	  add_browser_entry(name,0x1b, work->work_group,30,ip,True);
+    }
+  }
 }
 
 /*******************************************************************
@@ -350,8 +322,8 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   char *buf1;
   
   DEBUG(3,("Receive Backup ack for %s from %s total=%d info=%d\n",
-       namestr(&dgram->dest_name), inet_ntoa(ip),
-       count, info));
+	   namestr(&dgram->dest_name), inet_ntoa(ip),
+	   count, info));
   
   if (same_context(dgram)) return;
   
@@ -364,44 +336,44 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
     struct subnet_record *d;
       
     DEBUG(4,("Searching for backup browser %s at %s...\n",
-           buf1, inet_ntoa(ip)));
+	       buf1, inet_ntoa(ip)));
       
     /* XXXX assume name is a DNS name NOT a netbios name. a more complete
-       approach is to use reply_name_query functionality to find the name */
+	   approach is to use reply_name_query functionality to find the name */
 
     back_ip = *interpret_addr2(buf1);
       
     if (zero_ip(back_ip))
-    {
-      DEBUG(4,("Failed to find backup browser server using DNS\n"));
-      continue;
-    }
+	{
+	  DEBUG(4,("Failed to find backup browser server using DNS\n"));
+	  continue;
+	}
       
       DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
       DEBUG(4,("END THIS LOOP: CODE NEEDS UPDATING\n"));
       
       /* XXXX function needs work */
-      continue;
+	  continue;
 
     if ((d = find_subnet(back_ip)))
-    {
-      struct subnet_record *d1;
-      for (d1 = subnetlist; d1; d1 = d1->next)
-      {
-          struct work_record *work;
-          for (work = d1->workgrouplist; work; work = work->next)
-        {
-          if (work->token == 0 /* token */)
-          {
-              queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
-                       work->token,work->work_group,0x1d,
+	{
+	  struct subnet_record *d1;
+	  for (d1 = subnetlist; d1; d1 = d1->next)
+	  {
+	      struct work_record *work;
+	      for (work = d1->workgrouplist; work; work = work->next)
+		{
+		  if (work->token == 0 /* token */)
+		  {
+		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
+					   work->work_group,0x1d,
                        0,0,0,NULL,NULL,
-                       False,False,back_ip,back_ip);
-              return;
-          }
-        }
-      }
-    }
+					   False,False,back_ip,back_ip);
+		      return;
+		  }
+		}
+	  }
+	}
   }
 }
 
@@ -409,9 +381,9 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 /****************************************************************************
   send a backup list response.
   **************************************************************************/
-static void send_backup_list(struct work_record *work, struct nmb_name *src_name,
-                 int token, uint32 info,
-                 int name_type, struct in_addr ip)
+static void send_backup_list(char *work_name, struct nmb_name *src_name,
+			     int token, uint32 info,
+			     int name_type, struct in_addr ip)
 {                     
   char outbuf[1024];
   char *p, *countptr, *nameptr;
@@ -419,8 +391,8 @@ static void send_backup_list(struct work_record *work, struct nmb_name *src_name
   char *theirname = src_name->name;
   
   DEBUG(3,("sending backup list of %s to %s: %s(%x) %s(%x)\n", 
-       work->work_group, inet_ntoa(ip),
-       conf_browsing_alias(work->token),0x0,theirname,0x0));     
+	   work_name, inet_ntoa(ip),
+	   myname,0x0,theirname,0x0));	   
   
   if (name_type == 0x1d)
     {
@@ -452,51 +424,62 @@ static void send_backup_list(struct work_record *work, struct nmb_name *src_name
 
 #if 0
 
-  struct server_record *s;
+  for (d = subnetlist; d; d = d->next)
+  {
+      struct work_record *work;
       
-  for (s = work->serverlist; s; s = s->next)
-  { 
-      BOOL found = False;
-      char *n;
-          
-      if (s->serv.type & SV_TYPE_DOMAIN_ENUM) continue;
-          
-    for (n = nameptr; n < p; n = skip_string(n, 1))
-    {
-      if (strequal(n, s->serv.name)) found = True;
-    }
-          
-    if (found) continue; /* exclude names already added */
-          
-      /* workgroup request: include all backup browsers in the list */
-      /* domain request: include all domain members in the list */
+      for (work = d->workgrouplist; work; work = work->next)
+	{
+	  struct server_record *s;
+	  
+	  if (!strequal(work->work_group, work_name)) continue;
+	  
+	  for (s = work->serverlist; s; s = s->next)
+	    { 
+	      BOOL found = False;
+	      char *n;
+	      
+	      if (s->serv.type & SV_TYPE_DOMAIN_ENUM) continue;
+	      
+	      for (n = nameptr; n < p; n = skip_string(n, 1))
+		{
+		  if (strequal(n, s->serv.name)) found = True;
+		}
+	      
+	      if (found) continue; /* exclude names already added */
+	      
+	      /* workgroup request: include all backup browsers in the list */
+	      /* domain request: include all domain members in the list */
 
-    if ((name_type == 0x1d && (s->serv.type & MASTER_TYPE)) ||
-        (name_type == 0x1b && (s->serv.type & DOMCTL_TYPE)))
-    {                          
-      DEBUG(4, ("%s ", s->serv.name));
-          
-      count++;
-      strcpy(p,s->serv.name);
-      strupper(p);
-      p = skip_string(p,1);
-    }
+	      if ((name_type == 0x1d && (s->serv.type & MASTER_TYPE)) ||
+		      (name_type == 0x1b && (s->serv.type & DOMCTL_TYPE)))
+		{                          
+		  DEBUG(4, ("%s ", s->serv.name));
+		  
+		  count++;
+		  strcpy(p,s->serv.name);
+		  strupper(p);
+		  p = skip_string(p,1);
+		}
+	 }
+	}
   }
+
 #endif
 
-    count++;
-    strcpy(p,conf_browsing_alias(work->token));
-    strupper(p);
-    p = skip_string(p,1);
+	count++;
+	strcpy(p,myname);
+	strupper(p);
+	p = skip_string(p,1);
 
   if (count == 0)
-  {
+    {
       DEBUG(4, ("none\n"));
-  }
+    }
   else
-  {
+    {
       DEBUG(4, (" - count %d\n", count));
-  }
+    }
   
   CVAL(countptr, 0) = count;
 
@@ -505,7 +488,7 @@ static void send_backup_list(struct work_record *work, struct nmb_name *src_name
     debug_browse_data(outbuf, len);
   }
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-              conf_browsing_alias(work->token),theirname,0x0,0x0,ip,*iface_ip(ip));
+		      myname,theirname,0x0,0x0,ip,*iface_ip(ip));
 }
 
 
@@ -536,24 +519,24 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
   
   if (name_type != 0x1b && name_type != 0x1d) {
     DEBUG(0,("backup request to wrong type %d from %s\n",
-          name_type,inet_ntoa(ip)));
+	      name_type,inet_ntoa(ip)));
     return;
   }
   
   for (d = subnetlist; d; d = d->next)
     {
       for (work = d->workgrouplist; work; work = work->next)
-    {
-      if (strequal(work->work_group, dgram->dest_name.name))
-        {
-          DEBUG(2,("sending backup list to %s %s id=%x\n",
-               namestr(&dgram->dest_name),inet_ntoa(ip),info));
+	{
+	  if (strequal(work->work_group, dgram->dest_name.name))
+	    {
+	      DEBUG(2,("sending backup list to %s %s id=%x\n",
+		       namestr(&dgram->dest_name),inet_ntoa(ip),info));
   
-          send_backup_list(work,&dgram->source_name,
-                   token,info,name_type,ip);
-          return;
-        }
-    } 
+	      send_backup_list(work->work_group,&dgram->source_name,
+			       token,info,name_type,ip);
+	      return;
+	    }
+	} 
     }
 }
 
@@ -573,23 +556,23 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
   int state = CVAL(buf,0);
 
   DEBUG(1,("received diagnostic browser reset request to %s state=0x%X\n",
-       namestr(&dgram->dest_name), state));
+	   namestr(&dgram->dest_name), state));
 
   /* stop being a master but still deal with being a backup browser */
   if (state & 0x1)
     {
       struct subnet_record *d;
       for (d = subnetlist; d; d = d->next)
-    {
-      struct work_record *work;
-      for (work = d->workgrouplist; work; work = work->next)
-        {
-          if (AM_MASTER(work))
-        {
-          become_nonmaster(d,work,SV_TYPE_DOMAIN_MASTER|SV_TYPE_MASTER_BROWSER);
-        }
-        }
-    }
+	{
+	  struct work_record *work;
+	  for (work = d->workgrouplist; work; work = work->next)
+	    {
+	      if (AM_MASTER(work))
+		{
+		  become_nonmaster(d,work,SV_TYPE_DOMAIN_MASTER|SV_TYPE_MASTER_BROWSER);
+		}
+	    }
+	}
     }
   
   /* XXXX documentation inconsistency: the above description does not
@@ -598,21 +581,21 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 
   /* totally delete all servers and start afresh */
   if (state & 0x2)
-  {
-    struct subnet_record *d;
-    for (d = subnetlist; d; d = d->next)
     {
-      struct work_record *work;
-      for (work=d->workgrouplist;work;work=remove_workgroup(d,work,True));
+      struct subnet_record *d;
+      for (d = subnetlist; d; d = d->next)
+	{
+	  struct work_record *work;
+	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work,True));
+	}
+      add_my_subnets(lp_workgroup());
     }
-    add_my_subnets(lp_workgroup());
-  }
   
   /* stop browsing altogether. i don't think this is a good idea! */
   if (state & 0x4)
-  {
+    {
       DEBUG(1,("ignoring request to stop being a browser. sorry!\n"));
-  }
+    }
 }
 
 /*******************************************************************
@@ -633,9 +616,9 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   name[15] = 0;
   
   DEBUG(3,("Announce request from %s to %s token=0x%X\n",
-       name,namestr(&dgram->dest_name), token));
+	   name,namestr(&dgram->dest_name), token));
   
-  if (strequal(dgram->source_name.name,conf_browsing_alias(work->token))) return;
+  if (strequal(dgram->source_name.name,myname)) return;
   
   /* XXXX BUG or FEATURE?: need to ensure that we are a member of
      this workgroup before announcing, particularly as we only
@@ -647,17 +630,18 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   if (!d) return;
   
   for (work = d->workgrouplist; work; work = work->next)
-  {
+    {
      /* XXXX BUG: the destination name type should also be checked,
         not just the name. e.g if the name is WORKGROUP(0x1d) then
         we should only respond if we own that name */
     
       if (strequal(dgram->dest_name.name,work->work_group)) 
-    {
-      work->needannounce = True;
+	{
+	  work->needannounce = True;
+	}
     }
-  }
 }
+
 
 
 /****************************************************************************
@@ -673,27 +657,27 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
     case ANN_LocalMasterAnnouncement:
       {
         debug_browse_data(buf, len);
-    process_announce(p,command,buf+1);
-    break;
+	process_announce(p,command,buf+1);
+	break;
       }
       
     case ANN_AnnouncementRequest:
       {
-    process_announce_request(p,buf+1);
-    break;
+	process_announce_request(p,buf+1);
+	break;
       }
       
     case ANN_Election:
       {
-    process_election(p,buf+1);
-    break;
+	process_election(p,buf+1);
+	break;
       }
       
     case ANN_GetBackupListReq:
       {
         debug_browse_data(buf, len);
-    process_send_backup_list(p,buf+1);
-    break;
+	process_send_backup_list(p,buf+1);
+	break;
       }
       
     case ANN_GetBackupListResp:
@@ -705,22 +689,22 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
       
     case ANN_ResetBrowserState:
       {
-    process_reset_browser(p, buf+1);
-    break;
+	process_reset_browser(p, buf+1);
+	break;
       }
       
     case ANN_MasterAnnouncement:
       {
-    process_master_announce(p,buf+1);
-    break;
+	process_master_announce(p,buf+1);
+	break;
       }
       
     default:
       {
-    struct dgram_packet *dgram = &p->packet.dgram;
-    DEBUG(4,("ignoring browse packet %d from %s %s to %s\n",
-         command, namestr(&dgram->source_name), 
-         inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+	struct dgram_packet *dgram = &p->packet.dgram;
+	DEBUG(4,("ignoring browse packet %d from %s %s to %s\n",
+		 command, namestr(&dgram->source_name), 
+		 inet_ntoa(p->ip), namestr(&dgram->dest_name)));
       }
     }
 }

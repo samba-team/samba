@@ -983,26 +983,8 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
 
   if (strcmp(str1, "WrLehDz") == 0) {
     StrnCpy(domain, p, sizeof(fstring)-1);
-  }
-  else
-  {
-    /* a server will connect to us under one of samba's NetBIOS
-       name aliases, and by not giving us a domain name it
-       assumes we know which domain it's talking about.
-       do a look-up for the workgroup name against the name
-       the host connected to us as.
-     */
-       
-    char *work_alias;
-	char host_alias[16];
-
-	StrnCpy(host_alias, local_machine, 15);
-	work_alias = conf_alias_to_workgroup(host_alias); /* look-up */
-
-	DEBUG(4,("host alias: %s work_alias: %s\n",
-				host_alias, work_alias));
-	if (work_alias)
-      StrnCpy(domain, work_alias, sizeof(fstring)-1);    
+  } else {
+    StrnCpy(domain, lp_workgroup(), sizeof(fstring)-1);    
   }
 
   if (lp_browse_list())
@@ -1686,23 +1668,9 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
       pstring comment;
       uint32 servertype=DFLT_SERVER_TYPE;
 
-      char *work_alias;
-	  char host_alias[16];
-	  char domain[16];
-  
-	  StrnCpy(host_alias, local_machine, 15);
-	  work_alias = conf_alias_to_workgroup(host_alias); /* look-up */
-  
-	  DEBUG(4,("host alias: %s work_alias: %s\n",
-				  host_alias, work_alias));
-	  if (work_alias)
-        StrnCpy(domain, work_alias, sizeof(fstring)-1);    
-      else
-        *domain = 0;
-
       strcpy(comment,lp_serverstring());
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,domain))>0) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine)) {
 	    servertype = servers[i].type;
