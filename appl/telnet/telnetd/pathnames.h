@@ -49,7 +49,3 @@
 # endif
 
 #endif
-
-#ifdef BFTPDAEMON
-#define		BFTPPATH	"/usr/ucb/bftp"
-#endif  /* BFTPDAEMON */
