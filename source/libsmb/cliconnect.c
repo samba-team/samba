@@ -972,6 +972,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
+	
+	if ( cli->protocol >= PROTOCOL_LANMAN2 )
+		cli->dfsroot = (SVAL( cli->inbuf, smb_vwv2 ) & SMB_SHARE_IN_DFS);
 
 	cli->cnum = SVAL(cli->inbuf,smb_tid);
 	return True;
