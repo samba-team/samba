@@ -45,8 +45,17 @@
 #include <stdarg.h>
 #include <string.h>
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_GRP_H
+#include <grp.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
 #endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -74,12 +83,20 @@ char *getusershell(void);
 char * strdup(const char *old);
 #endif
 
+#ifndef HAVE_STRLWR
+char * strlwr(char *);
+#endif
+
 #ifndef HAVE_STRNLEN
 int strnlen(char*, int);
 #endif
 
 #ifndef HAVE_STRTOK_R
 char *strtok_r(char *s1, const char *s2, char **lasts);
+#endif
+
+#ifndef HAVE_STRUPR
+char * strupr(char *);
 #endif
 
 #ifndef HAVE_GETDTABLESIZE
@@ -147,10 +164,31 @@ int setegid(int egid);
 #endif
 
 #if !defined(HAVE_STRCHR) && defined(HAVE_INDEX)
-#define strchr(p, ch) index(p, ch)
+char *strchr(const char *s, int c);
 #endif
 #if !defined(HAVE_STRRCHR) && defined(HAVE_RINDEX)
-#define strrchr(p, ch) rindex(p, ch)
+char *strrchr(const char *s, int c);
+#endif
+
+#ifndef HAVE_LSTAT
+int lstat(const char *path, struct stat *buf);
+#endif
+
+#ifndef HAVE_INITGROUPS
+int initgroups(const char *name, gid_t basegid);
+#endif
+
+#ifndef HAVE_FCHOWN
+int fchown(int fd, uid_t owner, gid_t group);
+#endif
+
+#ifndef HAVE_CHOWN
+int chown(const char *path, uid_t owner, gid_t group);
+#endif
+
+#ifndef HAVE_RCMD
+int rcmd(char **ahost, unsigned short inport, const char *locuser,
+	 const char *remuser, const char *cmd, int *fd2p);
 #endif
 
 #ifdef TIME_WITH_SYS_TIME
