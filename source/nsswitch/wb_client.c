@@ -32,7 +32,7 @@ NSS_STATUS winbindd_request(int req_type,
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static void parse_domain_user(char *domuser, fstring domain, fstring user)
+static BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
         char *p = strchr(domuser,*lp_winbind_separator());
 

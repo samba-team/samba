@@ -154,5 +154,5 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
-void parse_domain_user(char *domuser, fstring domain, fstring user);
+BOOL parse_domain_user(char *domuser, fstring domain, fstring user);
 #endif /* _PROTO_H_ */
