@@ -149,10 +149,11 @@ struct name_record *find_name(struct name_record *n,
 		if (name_equal(&ret->name,name))
 		{
 			/* self search: self names only */
-			if ((search&FIND_SELF) == FIND_SELF && 
-			    ret->source != SELF)
+			if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
+			{
 				continue;
-	  
+	  		}
+
 			return ret;
 		}
 	}

@@ -141,28 +141,29 @@ void initiate_netbios_packet(uint16 *id,
   
   make_nmb_name(&nmb->question.question_name,name,name_type,scope);
   
-  nmb->question.question_type = quest_type;
+  nmb->question.question_type = 0x20;
   nmb->question.question_class = 0x1;
   
   if (quest_type == NMB_REG ||
       quest_type == NMB_REG_REFRESH ||
       quest_type == NMB_REL)
-    {
+  {
       nmb->additional = &additional_rec;
       bzero((char *)nmb->additional,sizeof(*nmb->additional));
       
       nmb->additional->rr_name  = nmb->question.question_name;
-      nmb->additional->rr_type  = nmb->question.question_type;
-      nmb->additional->rr_class = nmb->question.question_class;
+      nmb->additional->rr_type  = 0x20;
+      nmb->additional->rr_class = 0x1;
       
       if (quest_type == NMB_REG || quest_type == NMB_REG_REFRESH)
-	nmb->additional->ttl = lp_max_ttl();
+        nmb->additional->ttl = lp_max_ttl();
       else
-	nmb->additional->ttl = 0;
+        nmb->additional->ttl = 0;
+
       nmb->additional->rdlength = 6;
       nmb->additional->rdata[0] = nb_flags;
       putip(&nmb->additional->rdata[2],(char *)iface_ip(to_ip));
-    }
+  }
   
   p.ip = to_ip;
   p.port = NMB_PORT;
@@ -492,58 +493,60 @@ void run_packet_queue()
   ***************************************************************************/
 void listen_for_packets(BOOL run_election)
 {
-  fd_set fds;
-  int selrtn;
-  struct timeval timeout;
+	fd_set fds;
+	int selrtn;
+	struct timeval timeout;
 
-try_again:
+	FD_ZERO(&fds);
+	FD_SET(ClientNMB,&fds);
+	FD_SET(ClientDGRAM,&fds);
 
-  FD_ZERO(&fds);
-  FD_SET(ClientNMB,&fds);
-  FD_SET(ClientDGRAM,&fds);
+	/* during elections and when expecting a netbios response packet we
+	need to send election packets at tighter intervals 
 
-  /* during elections and when expecting a netbios response packet we
-     need to send election packets at tighter intervals 
+	ideally it needs to be the interval (in ms) between time now and
+	the time we are expecting the next netbios packet */
 
-     ideally it needs to be the interval (in ms) between time now and
-     the time we are expecting the next netbios packet */
+	timeout.tv_sec = (run_election||num_response_packets) ? 1:NMBD_SELECT_LOOP;
+	timeout.tv_usec = 0;
 
-  timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
-  timeout.tv_usec = 0;
+	selrtn = sys_select(&fds,&timeout);
 
-  selrtn = sys_select(&fds,&timeout);
-
-  if (FD_ISSET(ClientNMB,&fds))
-    {
-      struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
-      if (packet) {
-	if (ismyip(packet->ip) &&
-	    (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(7,("discarding own packet from %s:%d\n",
-		   inet_ntoa(packet->ip),packet->port));	  
-	  free_packet(packet);
-	  goto try_again;
-	} else {
-	  queue_packet(packet);
+	if (FD_ISSET(ClientNMB,&fds))
+	{
+		struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
+		if (packet)
+		{
+			if (ismyip(packet->ip) && packet->port == NMB_PORT)
+			{
+				DEBUG(7,("discarding own packet from %s:%d\n",
+				          inet_ntoa(packet->ip),packet->port));	  
+				free_packet(packet);
+			}
+			else
+			{
+				queue_packet(packet);
+			}
+		}
 	}
-      }
-    }
 
-  if (FD_ISSET(ClientDGRAM,&fds))
-    {
-      struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
-      if (packet) {
-	if (ismyip(packet->ip) &&
-	      (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(7,("discarding own packet from %s:%d\n",
-		   inet_ntoa(packet->ip),packet->port));	  
-	  free_packet(packet);
-	  goto try_again;
-	} else {
-	  queue_packet(packet);
+	if (FD_ISSET(ClientDGRAM,&fds))
+	{
+		struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
+		if (packet)
+		{
+			if (ismyip(packet->ip) && packet->port == DGRAM_PORT)
+			{
+				DEBUG(7,("discarding own packet from %s:%d\n",
+				          inet_ntoa(packet->ip),packet->port));	  
+				free_packet(packet);
+			}
+			else
+			{
+				queue_packet(packet);
+			}
+		}
 	}
-      }
-    }
 }
 
 

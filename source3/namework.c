@@ -175,8 +175,7 @@ BOOL same_context(struct dgram_packet *dgram)
 static void process_announce(struct packet_struct *p,uint16 command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip); 
+  struct subnet_record *d = find_subnet(p->ip); 
   int update_count = CVAL(buf,0);
 
   int ttl = IVAL(buf,1)/1000;
@@ -213,7 +212,7 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
        dgram->dest_name.name_type != 0x1))
     {
       DEBUG(0,("Announce(%d) from %s should be __MSBROWSE__(1) not %s\n",
-		command, inet_ntoa(ip), namestr(&dgram->dest_name)));
+		command, inet_ntoa(p->ip), namestr(&dgram->dest_name)));
       return;
     }
   
@@ -243,6 +242,9 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
        dgram->dest_name.name_type == 0x1e))
     add = True;
   
+  DEBUG(4,("search for workgroup: %s (add? %s)\n",
+            work_name, BOOLSTR(add)));
+
   if (!(work = find_workgroupstruct(d, work_name,add)))
     return;
   
@@ -265,7 +267,7 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
   if (command == ANN_LocalMasterAnnouncement)
   {
     add_browser_entry(serv_name,dgram->dest_name.name_type,
-		      work->work_group,30,ip,True);
+		      work->work_group,30,p->ip,True);
   }
 }
 
@@ -275,27 +277,25 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
 static void process_master_announce(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip);
-  struct subnet_record *mydomain = find_subnet(*iface_bcast(ip));
+  struct subnet_record *d = find_subnet(p->ip);
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
   
-  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(ip)));
+  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(p->ip)));
   
   if (same_context(dgram)) return;
   
-  if (!d || !mydomain) return;
+  if (!d) return;
   
   if (!lp_domain_master()) return;
   
-  for (work = mydomain->workgrouplist; work; work = work->next)
+  for (work = d->workgrouplist; work; work = work->next)
   {
     if (AM_MASTER(work))
     {
 	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1b, work->work_group,30,ip,True);
+	  add_browser_entry(name,0x1b, work->work_group,30,p->ip,True);
     }
   }
 }
@@ -316,13 +316,12 @@ static void process_master_announce(struct packet_struct *p,char *buf)
 static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
   int count = CVAL(buf,0);
   uint32 info = IVAL(buf,1); /* XXXX caller's incremental info */
   char *buf1;
   
   DEBUG(3,("Receive Backup ack for %s from %s total=%d info=%d\n",
-	   namestr(&dgram->dest_name), inet_ntoa(ip),
+	   namestr(&dgram->dest_name), inet_ntoa(p->ip),
 	   count, info));
   
   if (same_context(dgram)) return;
@@ -336,7 +335,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
     /* struct subnet_record *d; */
       
     DEBUG(4,("Searching for backup browser %s at %s...\n",
-	       buf1, inet_ntoa(ip)));
+	       buf1, inet_ntoa(p->ip)));
       
     /* XXXX assume name is a DNS name NOT a netbios name. a more complete
 	   approach is to use reply_name_query functionality to find the name */

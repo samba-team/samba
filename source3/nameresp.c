@@ -134,25 +134,28 @@ static void dead_netbios_entry(struct subnet_record *d,
 		 on that subnet. if we are using a WINS server, then the WINS
 		 server must be dead or deaf.
 	   */
-	  if (n->bcast)
+	  if (n->num_msgs == 0)
 	  {
-		/* broadcast method: implicit acceptance of the name registration
-		   by not receiving any objections. */
+	    if (n->bcast)
+	    {
+		  /* broadcast method: implicit acceptance of the name registration
+		     by not receiving any objections. */
 
-		/* IMPORTANT: see response_name_reg() */
+		  /* IMPORTANT: see response_name_reg() */
 
-		name_register_work(d,n->name.name,n->name.name_type,
-				n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
-	  }
-	  else if (n->num_msgs == 0)
-	  {
-		/* received no response. rfc1001.txt states that after retrying,
-		   we should assume the WINS server is dead, and fall back to
-		   broadcasting (see bits about M nodes: can't find any right
-           now) */
+		  name_register_work(d,n->name.name,n->name.name_type,
+				  n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
+	    }
+        else
+        {
+		  /* received no response. rfc1001.txt states that after retrying,
+		     we should assume the WINS server is dead, and fall back to
+		     broadcasting (see bits about M nodes: can't find any right
+             now) */
 		
-		DEBUG(1,("WINS server did not respond to name registration!\n"));
-        /* XXXX whoops. we have problems. must deal with this */
+		  DEBUG(1,("WINS server did not respond to name registration!\n"));
+          /* XXXX whoops. we have problems. must deal with this */
+        }
 	  }
 	  break;
 	}

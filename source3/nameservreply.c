@@ -127,9 +127,9 @@ void reply_name_release(struct packet_struct *p)
   }
 
   if (bcast)
-	search &= FIND_LOCAL;
+	search |= FIND_LOCAL;
   else
-	search &= FIND_WINS;
+	search |= FIND_WINS;
 
   n = find_name_search(&d, &nmb->question.question_name, 
 					search, ip);
@@ -183,7 +183,7 @@ void reply_name_reg(struct packet_struct *p)
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
   ip = from_ip;
   
-  DEBUG(3,("Name registration for name %s at %s\n",
+  DEBUG(3,("Name registration for name %s at %s - ",
 	           namestr(question),inet_ntoa(ip)));
   
   if (group)
@@ -201,15 +201,16 @@ void reply_name_reg(struct packet_struct *p)
   }
 
   if (bcast)
-	search &= FIND_LOCAL;
+	search |= FIND_LOCAL;
   else
-	search &= FIND_WINS;
+	search |= FIND_WINS;
 
   /* see if the name already exists */
   n = find_name_search(&d, question, search, from_ip);
   
   if (n)
   {
+    DEBUG(3,("found\n"));
     if (!group) /* unique names */
 	{
 	  if (n->source == SELF || NAME_GROUP(n->ip_flgs[0].nb_flags))
@@ -259,6 +260,7 @@ void reply_name_reg(struct packet_struct *p)
   }
   else
   {
+      DEBUG(3,("not found\n"));
       /* add the name to our name/subnet, or WINS, database */
       n = add_netbios_entry(d,qname,qname_type,nb_flags,ttl,REGISTER,ip,
 				True,!bcast);
@@ -458,10 +460,8 @@ void reply_name_status(struct packet_struct *p)
   reply_netbios_packet(p,nmb->header.name_trn_id,
 			   0,NMB_STATUS,0,True,
 		       &nmb->question.question_name,
-		       nmb->question.question_type,
-		       nmb->question.question_class,
-		       0,
-		       rdata,PTR_DIFF(buf,rdata));
+		       0x21, 0x01,
+		       0, rdata,PTR_DIFF(buf,rdata));
 }
 
 
@@ -549,8 +549,8 @@ void reply_name_query(struct packet_struct *p)
     n = find_name_search(&d, question, search, p->ip);
 
     /* it is a name that already failed DNS lookup or it's expired */
-    if (n->source == DNSFAIL ||
-        (n->death_time && n->death_time < p->timestamp))
+    if (n && (n->source == DNSFAIL ||
+              (n->death_time && n->death_time < p->timestamp)))
     {
       success = False;
     }
@@ -625,8 +625,7 @@ void reply_name_query(struct packet_struct *p)
   reply_netbios_packet(p,nmb->header.name_trn_id,
 			   rcode,NMB_QUERY,0,True,
 		       &nmb->question.question_name,
-		       nmb->question.question_type,
-		       nmb->question.question_class,
+               0x20, 0x01,
 		       ttl,
 		       rdata, success ? 6 : 0);
 }
