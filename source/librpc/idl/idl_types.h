@@ -80,5 +80,7 @@
 */
 #define NDR_PAHEX LIBNDR_PRINT_ARRAY_HEX
 
+/* this enables spoolss style relative ptrs */
+#define RELATIVE_CURRENT LIBNDR_FLAG_RELATIVE_CURRENT
 
 #define bool8 uint8
