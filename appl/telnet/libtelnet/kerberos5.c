@@ -436,7 +436,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	}
 	auth_finished(ap, AUTH_USER);
 
-	krb5_free_keyblock(context, key_block);
+	krb5_free_keyblock_contents(context, key_block);
 	
 	break;
 #ifdef	FORWARD
@@ -557,7 +557,7 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	skey.length = 8;
 	skey.data = keyblock->keyvalue.data;
 	encrypt_session_key(&skey, 0);
-	krb5_free_keyblock (context, keyblock);
+	krb5_free_keyblock_contents (context, keyblock);
 	auth_finished(ap, AUTH_USER);
 #ifdef	FORWARD
 	if (forward_flags & OPTS_FORWARD_CREDS)

@@ -176,7 +176,7 @@ krb5_kt_free_entry(krb5_context context,
 		   krb5_keytab_entry *entry)
 {
   krb5_free_principal (context, entry->principal);
-  krb5_free_keyblock (context, &entry->keyblock);
+  krb5_free_keyblock_contents (context, &entry->keyblock);
   return 0;
 }
 

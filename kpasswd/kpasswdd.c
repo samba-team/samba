@@ -339,7 +339,7 @@ change (krb5_auth_context auth_context,
 	ret = db->store (context, db, 1, &ent);
     }
     krb5_data_free (&salt);
-    krb5_free_keyblock (context, &new_keyblock);
+    krb5_free_keyblock_contents (context, &new_keyblock);
 
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,

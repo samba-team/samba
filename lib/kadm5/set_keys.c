@@ -57,7 +57,7 @@ _kadm5_set_keys(kadm5_server_context *context,
 	    free_Salt(key->salt);
 	    key->salt = NULL;
 	}
-	krb5_free_keyblock(context->context, &key->key);
+	krb5_free_keyblock_contents(context->context, &key->key);
 	ret = krb5_string_to_key(password, 
 				 key->salt ? &key->salt->salt : &salt,
 				 key->key.keytype,

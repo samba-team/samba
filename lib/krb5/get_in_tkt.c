@@ -455,7 +455,7 @@ init_as_req (krb5_context context,
 	if (ret)
 	    goto fail;
 	ret = make_pa_enc_timestamp(context, &a->padata->val[0], etype, key);
-	krb5_free_keyblock (context, key);
+	krb5_free_keyblock_contents (context, key);
 	free (key);
 	if (ret)
 	    goto fail;
@@ -472,7 +472,7 @@ init_as_req (krb5_context context,
 	if (ret)
 	    goto fail;
 	ret = make_pa_enc_timestamp(context, &a->padata->val[1], etype, key);
-	krb5_free_keyblock (context, key);
+	krb5_free_keyblock_contents (context, key);
 	free (key);
 	if (ret)
 	    goto fail;
@@ -593,7 +593,7 @@ krb5_get_in_cred(krb5_context context,
     ret = _krb5_extract_ticket(context, &rep, creds, key, keyseed, 
 			      NULL, nonce, FALSE, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
-    krb5_free_keyblock (context, key);
+    krb5_free_keyblock_contents (context, key);
     free (key);
 
     if (ret == 0 && ret_as_reply)

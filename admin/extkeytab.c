@@ -108,7 +108,7 @@ ext_keytab(int argc, char **argv)
 	
 	if (ret) {
 	    krb5_free_principal (context, key_entry.principal);
-	    krb5_free_keyblock (context, &key_entry.keyblock);
+	    krb5_free_keyblock_contents (context, &key_entry.keyblock);
 	    krb5_warn(context, ret, "krb5_kt_add_entry");
 	    break;
 	}

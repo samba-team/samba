@@ -357,7 +357,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     krb5_data_free(&resp);
 out:
     if(subkey){
-	krb5_free_keyblock(context, subkey);
+	krb5_free_keyblock_contents(context, subkey);
 	free(subkey);
     }
     return ret;

@@ -62,6 +62,6 @@ krb5_generate_seq_number(krb5_context context,
 	q = (q << 8) | *p;
     q &= 0xffffffff;
     *seqno = q;
-    krb5_free_keyblock (context, subkey);
+    krb5_free_keyblock_contents (context, subkey);
     return 0;
 }

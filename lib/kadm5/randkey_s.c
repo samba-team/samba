@@ -68,7 +68,7 @@ kadm5_s_randkey_principal(void *server_handle,
 		free_Salt(key->salt);
 		key->salt = NULL;
 	    }
-	    krb5_free_keyblock(context->context, &key->key);
+	    krb5_free_keyblock_contents(context->context, &key->key);
 	    ret = krb5_generate_random_keyblock(context->context,
 						key->key.keytype,
 						&key->key);
@@ -97,7 +97,7 @@ out:
     if(ret){
 	int i;
 	for(i = 0; i < *n_keys; i++)
-	    krb5_free_keyblock(context->context, &(*new_keys)[i]);
+	    krb5_free_keyblock_contents(context->context, &(*new_keys)[i]);
 	free(*new_keys);
 	*n_keys = 0;
     }

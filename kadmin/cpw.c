@@ -105,7 +105,7 @@ cpw_entry(int argc, char **argv)
 		krb5_warn(context, ret, "%s", argv[i]);
 	    else{
 		for(i = 0; i < num_keys; i++)
-		    krb5_free_keyblock(context, &keys[i]);
+		    krb5_free_keyblock_contents(context, &keys[i]);
 		free(keys);
 	    }
 	}

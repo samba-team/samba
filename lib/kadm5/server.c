@@ -238,7 +238,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	    krb5_store_int32(sp, n_keys);
 	    for(i = 0; i < n_keys; i++){
 		krb5_store_keyblock(sp, new_keys[i]);
-		krb5_free_keyblock(context->context, &new_keys[i]);
+		krb5_free_keyblock_contents(context->context, &new_keys[i]);
 	    }
 	}
 	break;

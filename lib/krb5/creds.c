@@ -47,7 +47,7 @@ krb5_free_creds_contents (krb5_context context, krb5_creds *c)
     c->client = NULL;
     krb5_free_principal (context, c->server);
     c->server = NULL;
-    krb5_free_keyblock (context, &c->session);
+    krb5_free_keyblock_contents (context, &c->session);
     krb5_data_free (&c->ticket);
     krb5_data_free (&c->second_ticket);
     krb5_data_free (&c->authdata);
