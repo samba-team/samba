@@ -175,10 +175,11 @@ int lookup(nsd_file_t *rq)
 {
 	char *map;
 	char *key;
+	char *addr;
 	struct in_addr *ip_list;
 	struct node_status *status;
-	int i, count;
-	char response[80];
+	int i, count, len, size;
+	char response[1024];
 	BOOL found = False;
 
 	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
@@ -197,17 +198,37 @@ int lookup(nsd_file_t *rq)
 		return NSD_ERROR;
 	}
 
+	response[0] = '\0';
+	len = sizeof(response) - 2;
+
 	if (strcasecmp(map,"hosts.byaddr") == 0) {
 		if ( status = lookup_byaddr_backend(key, &count)) {
+		    size = strlen(key) + 1;
+		    if (size > len) {
+			free(status);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    strncat(response,key,size);
+		    strncat(response,"\t",1);
+nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 		    for (i = 0; i < count; i++) {
 			/* ignore group names */
 			if (status[i].flags & 0x80) continue;
 			if (status[i].type == 0x20) {
-				snprintf(response,79,"%s %s\n",key, status[i].name);
+				size = sizeof(status[i].name) + 1;
+				if (size > len) {
+				    free(status);
+				    return NSD_ERROR;
+				}
+				len -= size;
+				strncat(response, status[i].name, size);
+				strncat(response, " ", 1);
+nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 				found = True;
-				break;
 			}
 		    }
+		    response[strlen(response)-1] = '\n';
 		    free(status);
 		}
 	} else if (strcasecmp(map,"hosts.byname") == 0) {
@@ -215,15 +236,27 @@ int lookup(nsd_file_t *rq)
 		nsd_logprintf(NSD_LOG_LOW, 
 			"lookup (wins %s) %d addresses returned\n",
 			map,count);
-/* 
- * IRIX seems to only support being able to return only one IP address so 
- * just return the last one but still print them all to the log for debugging.
- */
-		for (i = 0; i < count; i++) {
-		    nsd_logprintf(NSD_LOG_LOW, "lookup (wins) %s\n",
-				inet_ntoa(ip_list[i]));
-		    snprintf(response,79,"%s %s\n",inet_ntoa(ip_list[i]),key);
+		for (i = count; i ; i--) {
+		    addr = inet_ntoa(ip_list[i-1]);
+		    nsd_logprintf(NSD_LOG_LOW, "lookup (wins) %s\n",addr);
+		    size = strlen(addr) + 1;
+		    if (size > len) {
+			free(ip_list);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    if (i != 0)
+			response[strlen(response)-1] = ' ';
+		    strncat(response,addr,size);
+		    strncat(response,"\t",1);
 		}
+		size = strlen(key) + 1;
+		if (size > len) {
+		    free(ip_list);
+		    return NSD_ERROR;
+		}   
+		strncat(response,key,size);
+		strncat(response,"\n",1);
 		found = True;
 		free(ip_list);
 	    }
