@@ -247,7 +247,9 @@ char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int a
 
 	q = smb_io_unistr2(io, &(q_c->uni_logon_srv), q, base, align, depth); /* logon server unicode string */
 	q = smb_io_unistr2(io, &(q_c->uni_logon_clnt), q, base, align, depth); /* logon client unicode string */
-	q = smb_io_chal(io, &(q_c->clnt_chal), q, base, align, depth); /* client challenge */
+
+	/* client challenge is _not_ aligned after the unicode strings */
+	q = smb_io_chal(io, &(q_c->clnt_chal), q, base, 0, depth); /* client challenge */
 
 	return q;
 }
