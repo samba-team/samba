@@ -547,7 +547,7 @@ sub ParseUnion($)
 	$result .= "\tif (switch_is == $e->{CASE}) {\n";
 	my $prefix = util::c_pull_prefix($e);
 	if (defined $e->{DATA}{NAME}) {
-		$result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, $prefix\u->$e->{DATA}{NAME}));\n";
+		$result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, ${prefix}u->$e->{DATA}{NAME}));\n";
 	}
 	$result .= "\t}\n";
     }
