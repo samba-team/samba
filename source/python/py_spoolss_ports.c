@@ -25,7 +25,7 @@
 PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 {
 	WERROR werror;
-	PyObject *result, *creds = NULL;
+	PyObject *result = NULL, *creds = NULL;
 	int level = 1;
 	uint32 i, needed, num_ports;
 	static char *kwlist[] = {"server", "level", "creds", NULL};
@@ -37,8 +37,8 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|iO!", kwlist, &server, &creds, &level,
-		    &PyDict_Type))
+		    args, kw, "s|iO!", kwlist, &server, &level,
+		    &PyDict_Type, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
@@ -48,13 +48,13 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		      server, creds, cli_spoolss_initialise, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
-		return NULL;
+		goto done;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
-		return NULL;
+			spoolss_error, "unable to init talloc context\n");
+		goto done;
 	}
 
 	/* Call rpc function */
@@ -67,39 +67,63 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 			cli, mem_ctx, needed, NULL, level,
 			&num_ports, &ctr);
 
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		goto done;
+	}
+
 	/* Return value */
 	
-	result = Py_None;
-
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
-
-	result = PyList_New(num_ports);
-
 	switch (level) {
 	case 1: 
+		result = PyDict_New();
+
 		for (i = 0; i < num_ports; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.port.info_1[i].port_name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PORT_INFO_1(&value, &ctr.port.info_1[i]);
 
-			PyList_SetItem(result, i, value);
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(1));
+
+			PyDict_SetItemString(result, name, value);
 		}
 
 		break;
 	case 2:
+		result = PyDict_New();
+
 		for(i = 0; i < num_ports; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.port.info_2[i].port_name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PORT_INFO_2(&value, &ctr.port.info_2[i]);
 
-			PyList_SetItem(result, i, value);
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(2));
+
+			PyDict_SetItemString(result, name, value);
 		}
 		
 		break;
+	default:
+		PyErr_SetString(spoolss_error, "unknown info level");
+		goto done;
 	}
 
  done:
-	Py_INCREF(result);
+	if (cli)
+		cli_shutdown(cli);
+	
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+
 	return result;
 }
