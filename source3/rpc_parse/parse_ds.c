@@ -50,10 +50,19 @@ static BOOL ds_io_dominfobasic( char *desc, prs_struct *ps, int depth, DSROLE_PR
 		
 	if ( !smb_io_unistr2( "netbios_domain", &p->netbios_domain, p->netbios_ptr, ps, depth) )
 		return False;
+	if ( !prs_align(ps) )
+		return False;
+	
 	if ( !smb_io_unistr2( "dns_domain", &p->dns_domain, p->dnsname_ptr, ps, depth) )
 		return False;
+	if ( !prs_align(ps) )
+		return False;
+	
 	if ( !smb_io_unistr2( "forest_domain", &p->forest_domain, p->forestname_ptr, ps, depth) )
 		return False;
+	if ( !prs_align(ps) )
+		return False;
+	
 		
 	return True;
 		
