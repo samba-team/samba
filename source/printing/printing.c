@@ -247,7 +247,6 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	   completed, so delete the database entry. */
 
 	if (i == ts->qcount) {
-		time_t cur_t = time(NULL);
 
 		/* A race can occur between the time a job is spooled and
 		   when it appears in the lpq output.  This happens when
