@@ -170,9 +170,9 @@ static int negprot_spnego(char *p)
 	DATA_BLOB blob;
 	extern pstring global_myname;
 	uint8 guid[16];
-	const char *OIDs_krb5[] = {OID_NTLMSSP,
-				   OID_KERBEROS5,
+	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
+				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	char *principal;
@@ -199,9 +199,7 @@ static int negprot_spnego(char *p)
 	if (lp_security() != SEC_ADS) {
 		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
 	} else {
-		/* win2000 uses host$@REALM, which we will probably use eventually,
-		   but for now this works */
-		asprintf(&principal, "HOST/%s@%s", guid, lp_realm());
+		asprintf(&principal, "%s$@%s", guid, lp_realm());
 		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, principal);
 		free(principal);
 	}
