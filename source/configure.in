@@ -3270,10 +3270,10 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         if test x"$BLDSHARED" = x"true"; then
 		case "$host_os" in
 		*irix*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.$SHLIBEXT"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
 			;;
 		*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.$SHLIBEXT"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
 			;;
 		esac
 		if test x"$with_pam" = x"yes"; then
