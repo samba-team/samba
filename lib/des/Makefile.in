@@ -1,3 +1,6 @@
+#
+# $Header$
+#
 
 SHELL = /bin/sh
 
@@ -24,7 +27,7 @@ PICFLAGS = @PICFLAGS@
  
 LIBNAME = libdes
 LIBEXT = @LIBEXT@
-MAJORVER = @MAJORVER@
+SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
@@ -59,7 +62,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o
+	rm -f $(LIB) *.o *.a
 
 mostlyclean: clean
 
@@ -80,8 +83,8 @@ $(LIBNAME).a: $(OBJECTS)
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
 
-$(LIBNAME).so.$(MAJORVER): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../config.h

@@ -1,3 +1,6 @@
+#
+# $Header$
+#
 
 SHELL = /bin/sh
 
@@ -24,7 +27,7 @@ PICFLAGS = @PICFLAGS@
  
 LIBNAME = libkafs
 LIBEXT = @LIBEXT@
-MAJORVER = @MAJORVER@
+SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = afssys.c
@@ -51,7 +54,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o
+	rm -f $(LIB) *.o *.a
 
 mostlyclean: clean
 
@@ -73,8 +76,8 @@ $(LIBNAME).a: $(OBJECTS)
 	-if [ "$(AIX_SYSCALL_MAGIC)" = yes ] ; then $(AR) cr $@ $(srcdir)/afsl.exp ; fi
 	-$(RANLIB) $@
 
-$(LIBNAME).so.$(MAJORVER): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../config.h
