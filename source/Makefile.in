@@ -822,7 +822,7 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
-	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) \
+	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
 bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
