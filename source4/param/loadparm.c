@@ -149,6 +149,7 @@ typedef struct
 	char *szGuestaccount;
 	int mangled_stack;
 	int max_mux;
+	int max_xmit;
 	int pwordlevel;
 	int unamelevel;
 	int maxprotocol;
@@ -619,6 +620,7 @@ static struct parm_struct parm_table[] = {
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"name resolve order", P_STRING, P_GLOBAL, &Globals.szNameResolveOrder, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"max ttl", P_INTEGER, P_GLOBAL, &Globals.max_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
@@ -972,6 +974,7 @@ static void init_globals(void)
 	Globals.bLoadPrinters = True;
 	Globals.mangled_stack = 50;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
+	Globals.max_xmit = 4356; /* the value w2k3 chooses */
 	Globals.lpqcachetime = 10;
 	Globals.bDisableSpoolss = False;
 	Globals.pwordlevel = 0;
@@ -1280,6 +1283,7 @@ FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.min_wins_ttl)
 FN_GLOBAL_INTEGER(lp_time_offset, &Globals.time_offset)
 FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
+FN_GLOBAL_INTEGER(lp_max_xmit, &Globals.max_xmit)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
