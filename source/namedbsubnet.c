@@ -137,7 +137,7 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   
   bzero((char *)d,sizeof(*d));
   
-  DEBUG(4, ("making domain %s ", inet_ntoa(bcast_ip)));
+  DEBUG(4, ("making subnet %s ", inet_ntoa(bcast_ip)));
   DEBUG(4, ("%s\n", inet_ntoa(mask_ip)));
   
   d->bcast_ip = bcast_ip;
