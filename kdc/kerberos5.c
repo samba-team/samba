@@ -310,7 +310,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 #if 0
 	    *pa.val[i].salttype = 1; /* or 0 with salt? */
 #else
-	    *pa.val[i].salttype = pa_pw_salt;
+	    *pa.val[i].salttype = KRB5_PADATA_PW_SALT;
 #endif
 	    pa.val[i].salt = NULL;
 	}
@@ -332,7 +332,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	free(buf);
 	return ret;
     }
-    md->val[md->len - 1].padata_type = pa_etype_info;
+    md->val[md->len - 1].padata_type = KRB5_PADATA_ETYPE_INFO;
     md->val[md->len - 1].padata_value.length = len;
     md->val[md->len - 1].padata_value.data = buf;
     return 0;
@@ -516,7 +516,7 @@ as_rep(KDC_REQ *req,
 	PA_DATA *pa;
 	int found_pa = 0;
 	kdc_log(5, "Looking for pa-data -- %s", client_name);
-	while((pa = find_padata(req, &i, pa_enc_timestamp))){
+	while((pa = find_padata(req, &i, KRB5_PADATA_ENC_TIMESTAMP))){
 	    krb5_data ts_data;
 	    PA_ENC_TS_ENC p;
 	    time_t patime;
@@ -619,7 +619,7 @@ as_rep(KDC_REQ *req,
 
 	ret = realloc_method_data(&method_data);
 	pa = &method_data.val[method_data.len-1];
-	pa->padata_type		= pa_enc_timestamp;
+	pa->padata_type		= KRB5_PADATA_ENC_TIMESTAMP;
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
@@ -1659,7 +1659,7 @@ tgs_rep(KDC_REQ *req,
 	goto out;
     }
     
-    tgs_req = find_padata(req, &i, pa_tgs_req);
+    tgs_req = find_padata(req, &i, KRB5_PADATA_TGS_REQ);
 
     if(tgs_req == NULL){
 	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
