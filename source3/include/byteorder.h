@@ -105,8 +105,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define CAREFUL_ALIGNMENT 1
 #endif
 
-#define CVAL(buf,pos) (((const unsigned char *)(buf))[pos])
-#define CVAL_NC(buf,pos) (((unsigned char *)(buf))[pos]) /* Non-const version of CVAL */
+#define CVAL(buf,pos) ((unsigned)(((const unsigned char *)(buf))[pos]))
+#define CVAL_NC(buf,pos) ((unsigned)(((unsigned char *)(buf))[pos])) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
 
