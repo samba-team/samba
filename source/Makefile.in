@@ -182,25 +182,16 @@ LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \
 	     libcli/clideltree.o \
 	     $(LIBRAW_OBJ)
 
-PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
-
-PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
-		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
-		passdb/pdb_tdb.o passdb/pdb_ldap.o \
-		passdb/pdb_unix.o passdb/pdb_guest.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o passdb/pdb_nisplus.o
-
-PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
-
-AUTH_OBJ = auth/auth.o auth/auth_sam.o \
-	   auth/auth_unix.o auth/auth_util.o	\
-	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
-	   $(PLAINTEXT_AUTH_OBJ)
-
 SMBD_OBJ_MAIN = smbd/server.o
 
 SMB_OBJS = @SMB_OBJS@
 SMB_LIBS = @SMB_LIBS@
+
+AUTH_OBJS = @AUTH_OBJS@
+AUTH_LIBS = @AUTH_LIBS@
+
+PASSDB_OBJS = @PASSDB_OBJS@
+PASSDB_LIBS = @PASSDB_LIBS@
 
 NTVFS_OBJS = @NTVFS_OBJS@
 NTVFS_LIBS = @NTVFS_LIBS@
@@ -212,7 +203,7 @@ SMBD_OBJ_SRV =	smbd/process.o \
 		lib/server_mutex.o \
 		smbd/build_options.o \
 		smbd/rewrite.o \
-		$(DCERPC_OBJS) $(SMB_OBJS) $(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
+		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
 
 PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
 PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
@@ -222,7 +213,7 @@ SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
 		$(AUTH_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
 
 SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
-SMBD_LIBS = $(LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(NTVFS_LIBS)
+SMBD_LIBS = $(LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 

@@ -50,7 +50,7 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 /* Guest modules initialisation */
 
-NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
+static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -101,7 +101,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 /** Module initailisation function */
 
-NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -150,7 +150,7 @@ static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_contex
 
 /** Module initailisation function */
 
-NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -161,50 +161,38 @@ NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char
 	return NT_STATUS_OK;
 }
 
-/**
- * Outsorce an auth module to an external loadable .so
- *
- * Only works on systems with dlopen() etc.
- **/
-
-/* Plugin modules initialisation */
-
-NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+NTSTATUS auth_builtin_init(void)
 {
-	void * dl_handle;
-	char *plugin_param, *plugin_name, *p;
-	auth_init_function plugin_init;
+	NTSTATUS ret;
+	struct auth_operations ops;
 
-	if (param == NULL) {
-		DEBUG(0, ("auth_init_plugin: The plugin module needs an argument!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	ops.name = "guest";
+	ops.init = auth_init_guest;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
 	}
 
-	plugin_name = smb_xstrdup(param);
-	p = strchr(plugin_name, ':');
-	if (p) {
-		*p = 0;
-		plugin_param = p+1;
-		trim_string(plugin_param, " ", " ");
-	} else plugin_param = NULL;
-
-	trim_string(plugin_name, " ", " ");
-
-	DEBUG(5, ("auth_init_plugin: Trying to load auth plugin %s\n", plugin_name));
-	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
-	if (!dl_handle) {
-		DEBUG(0, ("auth_init_plugin: Failed to load auth plugin %s using sys_dlopen (%s)\n",
-					plugin_name, sys_dlerror()));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-    
-	plugin_init = (auth_init_function)sys_dlsym(dl_handle, "auth_init");
-	if (!plugin_init){
-		DEBUG(0, ("Failed to find function 'auth_init' using sys_dlsym in sam plugin %s (%s)\n",
-					plugin_name, sys_dlerror()));	    
-		return NT_STATUS_UNSUCCESSFUL;
+#ifdef DEVELOPER
+	ops.name = "name_to_ntstatus";
+	ops.init = auth_init_name_to_ntstatus;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
 	}
 
-	DEBUG(5, ("Starting sam plugin %s with paramater %s\n", plugin_name, plugin_param?plugin_param:"(null)"));
-	return plugin_init(auth_context, plugin_param, auth_method);
+	ops.name = "fixed_challenge";
+	ops.init = auth_init_fixed_challenge;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+#endif /* DEVELOPER */
+	return ret;
 }

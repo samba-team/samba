@@ -88,7 +88,7 @@ static NTSTATUS unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return unixsam_getsampwrid(my_methods, user, rid);
 }
 
-NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	
@@ -107,4 +107,25 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_unix_init(void)
+{
+	NTSTATUS ret;
+	struct passdb_ops ops;
+
+	/* fill in our name */
+	ops.name = "unixsam";
+	/* fill in all the operations */
+	ops.init = pdb_init_unixsam;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }

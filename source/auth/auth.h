@@ -1,5 +1,3 @@
-#ifndef _SMBAUTH_H_
-#define _SMBAUTH_H_
 /* 
    Unix SMB/CIFS implementation.
    Standardised Authentication types
@@ -20,15 +18,26 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _SAMBA_AUTH_H
+#define _SAMBA_AUTH_H
+
+/* modules can use the following to determine if the interface has changed
+ * please increment the version number after each interface change
+ * with a comment and maybe update struct auth_critical_sizes.
+ */
+/* version 1 - version from samba 3.0 - metze */
+/* version 2 - initial samba4 version - metze */
+#define AUTH_INTERFACE_VERSION 2
+
 /* AUTH_STR - string */
-typedef struct normal_string
+typedef struct auth_str
 {
 	int len;
 	char *str;
 } AUTH_STR;
 
 /* AUTH_UNISTR - unicode string or buffer */
-typedef struct unicode_string
+typedef struct auth_unistr
 {
 	int len;
 	uchar *unistr;
@@ -42,7 +51,6 @@ typedef struct unicode_string
 
 typedef struct auth_usersupplied_info
 {
-	
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
  	DATA_BLOB plaintext_password;
@@ -56,7 +64,6 @@ typedef struct auth_usersupplied_info
 	AUTH_STR           internal_username;    /* username after mapping */
 	AUTH_STR           smb_name;        /* username before mapping */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
-	
 } auth_usersupplied_info;
 
 #define SAM_FILL_NAME  0x01
@@ -87,7 +94,6 @@ typedef struct auth_serversupplied_info
 	SAM_ACCOUNT *sam_account;
 	
 	void *pam_handle;
-	
 } auth_serversupplied_info;
 
 struct auth_context {
@@ -120,7 +126,7 @@ typedef struct auth_methods
 			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
-			 auth_serversupplied_info **server_info);
+			 struct auth_serversupplied_info **server_info);
 
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
@@ -134,17 +140,7 @@ typedef struct auth_methods
 
 	/* Function to send a keepalive message on the above structure */
 	void (*send_keepalive)(void **private_data);
-
 } auth_methods;
-
-typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
-
-struct auth_init_function_entry {
-	const char *name;
-	/* Function to create a member of the authmethods list */
-
-	auth_init_function init;
-};
 
 typedef struct auth_ntlmssp_state
 {
@@ -154,4 +150,26 @@ typedef struct auth_ntlmssp_state
 	struct ntlmssp_state *ntlmssp_state;
 } AUTH_NTLMSSP_STATE;
 
-#endif /* _SMBAUTH_H_ */
+#define auth_ops __XXX_ERROR_BLA
+struct auth_operations {
+	/* the name of the backend */
+	const char *name;
+
+	/* Function to create a member of the authmethods list */
+	NTSTATUS (*init)(struct auth_context *, const char *, struct auth_methods **);
+};
+
+/* this structure is used by backends to determine the size of some critical types */
+struct auth_critical_sizes {
+	int interface_version;
+	int sizeof_auth_operations;
+	int sizeof_auth_methods;
+	int sizeof_auth_context;
+	int sizeof_auth_ntlmssp_state;
+	int sizeof_auth_usersupplied_info;
+	int sizeof_auth_serversupplied_info;
+	int sizeof_auth_str;
+	int sizeof_auth_unistr;
+};
+
+#endif /* _SAMBA_AUTH_H */

@@ -468,7 +468,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -509,7 +509,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 }
 
 /* module initialisation */
-NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -552,7 +552,7 @@ static NTSTATUS check_samstrict_dc_security(const struct auth_context *auth_cont
 }
 
 /* module initialisation */
-NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -561,4 +561,39 @@ NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *p
 	(*auth_method)->auth = check_samstrict_dc_security;
 	(*auth_method)->name = "samstrict_dc";
 	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_sam_init(void)
+{
+	NTSTATUS ret;
+	struct auth_operations ops;
+
+	ops.name = "sam";
+	ops.init = auth_init_sam;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	ops.name = "samstrict";
+	ops.init = auth_init_samstrict;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	ops.name = "samstrict_dc";
+	ops.init = auth_init_samstrict_dc;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }

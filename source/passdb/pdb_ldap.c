@@ -28,7 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-#ifdef HAVE_LDAP
 /* TODO:
 *  persistent connections: if using NSS LDAP, many connections are made
 *      however, using only one within Samba would be nice
@@ -1979,7 +1978,7 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -2036,7 +2035,7 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -2064,20 +2063,36 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 	return NT_STATUS_OK;
 }
 
-
-#else
-
-NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_ldap_init(void)
 {
-	DEBUG(0, ("ldap not detected at configure time, ldapsam not availalble!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
+	struct passdb_ops ops;
+
+	/* fill in our name */
+	ops.name = "ldapsam";
+	/* fill in all the operations */
+	ops.init = pdb_init_ldapsam;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	/* fill in our name */
+	ops.name = "ldapsam_nua";
+	/* fill in all the operations */
+	ops.init = pdb_init_ldapsam_nua;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }
-
-NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	DEBUG(0, ("ldap not dectected at configure time, ldapsam_nua not available!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-#endif
