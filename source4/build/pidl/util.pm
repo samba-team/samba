@@ -6,11 +6,16 @@ package util;
 
 use Data::Dumper;
 
-sub dumpit($)
+#####################################################################
+# load a data structure from a file (as saved with SaveStructure)
+sub LoadStructure($)
 {
-	my $a = shift;
-	return Dumper $a;
+	my $f = shift;
+	my $contents = FileLoad($f);
+	return eval "$contents";
 }
+
+use strict;
 
 #####################################################################
 # flatten an array of arrays into a single array
@@ -137,13 +142,6 @@ sub SaveStructure($$)
 }
 
 #####################################################################
-# load a data structure from a file (as saved with SaveStructure)
-sub LoadStructure($)
-{
-    return eval FileLoad(shift);
-}
-
-#####################################################################
 # see if a pidl property list contains a give property
 sub has_property($$)
 {
@@ -242,7 +240,6 @@ sub need_wire_pointer($)
 	return undef;
 }
 
-
 # determine if an element is a pass-by-reference structure
 sub is_ref_struct($)
 {
@@ -318,6 +315,7 @@ sub c_push_prefix($)
 	}
 	return "";
 }
+
 
 # determine the C prefix used to refer to a variable when passing to a pull
 # return '&' or ''
