@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 2002 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,6 +66,9 @@ main(int argc, char **argv)
     fputs("#include <openssl/md4.h>\n", f);
     fputs("#include <openssl/md5.h>\n", f);
     fputs("#include <openssl/sha.h>\n", f);
+#if ENABLE_AES
+    fputs("#include <openssl/aes.h>\n", f);
+#endif    
 #else
     fputs("#include <des.h>\n", f);
     fputs("#include <md4.h>\n", f);
