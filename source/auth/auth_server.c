@@ -211,6 +211,7 @@ use this machine as the password server.\n"));
 			       user_info->nt_resp.len, 
 			       user_info->domain.str)) {
 		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
+		/* Make this cli_nt_error() when the conversion is in */
 		nt_status = NT_STATUS_LOGON_FAILURE;
 	} else {
 		nt_status = NT_STATUS_NOPROBLEMO;

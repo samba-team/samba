@@ -28,9 +28,6 @@ extern struct in_addr ipzero;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users;
 static int next_vuid = VUID_OFFSET;

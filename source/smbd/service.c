@@ -214,6 +214,47 @@ int find_service(char *service)
 
 
 /****************************************************************************
+ do some basic sainity checks on the share.  
+ This function modifies dev, ecode.
+****************************************************************************/
+static BOOL share_sanity_checks(int snum, char* service, char *dev, int *ecode) 
+{
+	
+	if (!lp_snum_ok(snum) || 
+	    !check_access(smbd_server_fd(), 
+			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
+		*ecode = ERRaccess;
+		return False;
+	}
+
+	/* you can only connect to the IPC$ service as an ipc device */
+	if (strequal(service,"IPC$") || strequal(service,"ADMIN$"))
+		pstrcpy(dev,"IPC");
+	
+	if (*dev == '?' || !*dev) {
+		if (lp_print_ok(snum)) {
+			pstrcpy(dev,"LPT1:");
+		} else {
+			pstrcpy(dev,"A:");
+		}
+	}
+
+	/* if the request is as a printer and you can't print then refuse */
+	strupper(dev);
+	if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
+		DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
+		*ecode = ERRinvdevice;
+		return False;
+	}
+
+	/* Behave as a printer if we are supposed to */
+	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
+		pstrcpy(dev, "LPT1:");
+	}
+	return True;
+}
+
+/****************************************************************************
   make a connection to a service
 ****************************************************************************/
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
@@ -268,37 +309,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 	}
 
-	if (!lp_snum_ok(snum) || 
-	    !check_access(smbd_server_fd(), 
-			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
-		*ecode = ERRaccess;
+	if (!share_sanity_checks(snum, service, dev, ecode)) {
 		return NULL;
-	}
-
-	/* you can only connect to the IPC$ service as an ipc device */
-	if (strequal(service,"IPC$") || strequal(service,"ADMIN$"))
-		pstrcpy(dev,"IPC");
-	
-	if (*dev == '?' || !*dev) {
-		if (lp_print_ok(snum)) {
-			pstrcpy(dev,"LPT1:");
-		} else {
-			pstrcpy(dev,"A:");
-		}
-	}
-
-	/* if the request is as a printer and you can't print then refuse */
-	strupper(dev);
-	if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
-		DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
-		*ecode = ERRinvdevice;
-		return NULL;
-	}
-
-	/* Behave as a printer if we are supposed to */
-	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
-		pstrcpy(dev, "LPT1:");
-	}
+	}	
 
 	/* lowercase the user name */
 	strlower(user);

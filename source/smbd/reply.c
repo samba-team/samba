@@ -37,7 +37,6 @@ extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern userdom_struct current_user_info;
 extern pstring global_myname;
-extern fstring global_myworkgroup;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
 unsigned int smb_echo_count = 0;
@@ -800,7 +799,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (!guest) {
 	  valid_password = (pass_check_smb(user, domain, 
 					   smb_apasswd, smb_apasslen, 
-				       smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
+					   smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
 
     /* The true branch will be executed if 
        (1) the NT password failed (or was not tried), and 
@@ -862,7 +861,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     p = smb_buf(outbuf);
     p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
     p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-    p += srvstr_push(outbuf, p, global_myworkgroup, -1, STR_TERMINATE);
+    p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
     set_message_end(outbuf,p);
     /* perhaps grab OS version here?? */
   }
