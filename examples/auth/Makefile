@@ -9,7 +9,7 @@ SAMBA_INCL = ../../source/include
 UBIQX_SRC = ../../source/ubiqx
 SMBWR_SRC = ../../source/smbwrapper
 CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
-AUTH_OBJS = auth_skel.so
+AUTH_OBJS = auth_skel.la
 
 # Default target
 
@@ -17,8 +17,8 @@ default: $(AUTH_OBJS)
 
 # Pattern rules
 
-%.so: %.lo
-	$(LIBTOOL) --mode=link $(CC) -shared -o $@ $< $(LDFLAGS)
+%.la: %.lo
+	$(LIBTOOL) --mode=link $(CC) -module -o $@ $< $(LDFLAGS)
 
 %.lo: %.c
 	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
@@ -28,4 +28,4 @@ default: $(AUTH_OBJS)
 clean:
 	rm -rf .libs
 	rm -f core *~ *% *.bak \
-		$(AUTH_OBJS) $(AUTH_OBJS:.so=.o) $(AUTH_OBJS:.so=.lo) 
+		$(AUTH_OBJS) $(AUTH_OBJS:.la=.o) $(AUTH_OBJS:.la=.lo) 
