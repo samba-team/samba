@@ -30,37 +30,43 @@
 
 static void userinfo_handler(struct rpc_request *req);
 
+enum userinfo_stage { USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
+
+struct userinfo_state {
+	enum userinfo_stage stage;
+	struct dcerpc_pipe *pipe;
+	struct rpc_request *req;
+	struct policy_handle user_handle;
+	uint16_t level;
+	struct samr_OpenUser      openuser;
+	struct samr_QueryUserInfo queryuserinfo;
+	struct samr_Close         samrclose;	
+	union  samr_UserInfo      *info;
+};
 
 /**
  * Stage 1: Open user policy handle in SAM server.
  */
-
 static NTSTATUS userinfo_openuser(struct composite_context *c,
-				  struct rpc_composite_userinfo *io)
+				  struct userinfo_state *s)
 {
-	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
-	struct rpc_request *req = s->req;
-	struct samr_OpenUser *rep;
-	struct samr_QueryUserInfo r;
-
 	/* receive samr_OpenUser reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
-	rep = (struct samr_OpenUser*)req->ndr.struct_ptr;
 
 	/* prepare parameters for QueryUserInfo call */
-	r.in.user_handle = rep->out.user_handle;
-	r.in.level       = io->in.level;
+	s->queryuserinfo.in.user_handle = &s->user_handle;
+	s->queryuserinfo.in.level       = s->level;
 	
 	/* queue rpc call, set event handling and new state */
-	s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &r);
+	s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuserinfo);
 	if (s->req == NULL) goto failure;
 	
 	s->req->async.callback = userinfo_handler;
 	s->req->async.private  = c;
 	s->stage = USERINFO_GETUSER;
 	
-	return rep->out.result;
+	return NT_STATUS_OK;
 
 failure:
 	return NT_STATUS_UNSUCCESSFUL;
@@ -72,53 +78,42 @@ failure:
  */
 
 static NTSTATUS userinfo_getuser(struct composite_context *c,
-				 struct rpc_composite_userinfo *io)
+				 struct userinfo_state *s)
 {
-	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
-	struct rpc_request *req = s->pipe->conn->pending;
-	struct samr_QueryUserInfo *rep;
-	struct samr_Close r;
-	
 	/* receive samr_QueryUserInfo reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
-	rep = (struct samr_QueryUserInfo*)req->ndr.struct_ptr;
+
+	s->info = talloc_steal(s, s->queryuserinfo.out.info);
 	
 	/* prepare arguments for Close call */
-	r.in.handle = rep->in.user_handle;
+	s->samrclose.in.handle  = &s->user_handle;
+	s->samrclose.out.handle = &s->user_handle;
 	
 	/* queue rpc call, set event handling and new state */
-	s->req = dcerpc_samr_Close_send(s->pipe, c, &r);
+	s->req = dcerpc_samr_Close_send(s->pipe, c, &s->samrclose);
 	
 	s->req->async.callback = userinfo_handler;
 	s->req->async.private  = c;
 	s->stage = USERINFO_CLOSEUSER;
 
-	/* copying result of composite call */
-	io->out.info = *rep->out.info;
-
-	return rep->out.result;
+	return NT_STATUS_OK;
 }
 
 
 /**
  * Stage3: Close policy handle associated with opened user.
  */
-
 static NTSTATUS userinfo_closeuser(struct composite_context *c,
-				   struct rpc_composite_userinfo *io)
+				   struct userinfo_state *s)
 {
-	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
-	struct rpc_request *req = s->pipe->conn->pending;
-	struct samr_Close *rep;
-	
 	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
-	rep = (struct samr_Close*)req->ndr.struct_ptr;
 
-	/* return result */
-	return rep->out.result;
+	c->state = SMBCLI_REQUEST_DONE;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -128,7 +123,6 @@ static NTSTATUS userinfo_closeuser(struct composite_context *c,
  *
  * @param req rpc call context
  */
-
 static void userinfo_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
@@ -137,15 +131,15 @@ static void userinfo_handler(struct rpc_request *req)
 	/* Stages of the call */
 	switch (s->stage) {
 	case USERINFO_OPENUSER:
-		c->status = userinfo_openuser(c, &s->io);
+		c->status = userinfo_openuser(c, s);
 		break;
 
 	case USERINFO_GETUSER:
-		c->status = userinfo_getuser(c, &s->io);
+		c->status = userinfo_getuser(c, s);
 		break;
 		
 	case USERINFO_CLOSEUSER:
-		c->status = userinfo_closeuser(c, &s->io);
+		c->status = userinfo_closeuser(c, s);
 		break;
 	}
 
@@ -166,14 +160,12 @@ static void userinfo_handler(struct rpc_request *req)
  * @param p dce/rpc call pipe 
  * @param io arguments and results of the call
  */
-
-struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
+struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 						      struct rpc_composite_userinfo *io)
 {	
 
 	struct composite_context *c;
 	struct userinfo_state *s;
-	struct samr_OpenUser *r;
 	struct dom_sid *sid;
 	
 	c = talloc_zero(p, struct composite_context);
@@ -181,25 +173,25 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	
 	s = talloc_zero(c, struct userinfo_state);
 	if (s == NULL) goto failure;
+
+	s->level = io->in.level;
+	s->pipe  = p;
 	
-	/* copying input parameters */
-	s->io.in.domain_handle  = io->in.domain_handle;
-	s->io.in.sid            = talloc_strdup(p, io->in.sid);
-	s->io.in.level          = io->in.level;
-	sid                     = dom_sid_parse_talloc(c, s->io.in.sid);
+	sid = dom_sid_parse_talloc(s, io->in.sid);
 	if (sid == NULL) goto failure;
 	
-	c->private = s;
+	c->state     = SMBCLI_REQUEST_SEND;
+	c->private   = s;
 	c->event_ctx = dcerpc_event_context(p);
 
 	/* preparing parameters to send rpc request */
-	r = talloc_zero(p, struct samr_OpenUser);
-	r->in.domain_handle  = &s->io.in.domain_handle;
-	r->in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r->in.rid            = sid->sub_auths[sid->num_auths - 1];
+	s->openuser.in.domain_handle  = &io->in.domain_handle;
+	s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
+	s->openuser.in.rid            = sid->sub_auths[sid->num_auths - 1];
+	s->openuser.out.user_handle   = &s->user_handle;
 
 	/* send request */
-	s->req = dcerpc_samr_OpenUser_send(p, c, r);
+	s->req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
 
 	/* callback handler */
 	s->req->async.callback = userinfo_handler;
@@ -234,8 +226,8 @@ NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *me
 	
 	if (NT_STATUS_IS_OK(status) && io) {
 		s = talloc_get_type(c->private, struct userinfo_state);
-		talloc_steal(mem_ctx, &s->io.out.info);
-		io->out.info = s->io.out.info;
+		talloc_steal(mem_ctx, s->info);
+		io->out.info = *s->info;
 	}
 	
 	/* memory context associated to composite context is no longer needed */

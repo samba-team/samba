@@ -25,7 +25,6 @@
 
 #define TEST_USERNAME  "libnetuserinfotest"
 
-
 static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, struct samr_String *domname,
 			    struct dom_sid2 *sid)
@@ -51,7 +50,7 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 
-	printf("domain lookup\n");
+	printf("domain lookup on %s\n", domname->string);
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -96,7 +95,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
 	
-	printf("user account lookup\n");
+	printf("user account lookup '%s'\n", username);
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -150,7 +149,7 @@ static BOOL test_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.user_handle  = &user_handle;
 	r.out.rid          = rid;
 
-	printf("creating user account\n");
+	printf("creating user account %s\n", name);
 
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -237,7 +236,7 @@ BOOL torture_userinfo(void)
 		ret = False;
 		goto done;
 	}
-	name.string = b->host;
+	name.string = lp_workgroup();
 
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
 		ret = False;
