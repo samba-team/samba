@@ -312,7 +312,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	   return the flags we want. Obviously this is not correct */
 	
 	chal_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_LM_KEY | 
+		NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_CHAL_TARGET_INFO;
 	
