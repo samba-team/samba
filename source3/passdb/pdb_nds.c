@@ -764,6 +764,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		char protocol[12];
 		char ldap_server[256];
 		const char *username = pdb_get_username(sam_acct);
+		BOOL got_clear_text_pw = False;
 
 		DEBUG(5,("pdb_nds_update_login_attempts: %s login for %s\n",
 				success ? "Successful" : "Failed", username));
@@ -795,7 +796,8 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		pwd_len = sizeof(clear_text_pw);
 		if (success == True) {
 			if (pdb_nds_get_password(ldap_state->smbldap_state, dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
-				/*  */
+				/* Got clear text password. Use simple ldap bind */
+				got_clear_text_pw = True;
 			}
 		} else {
 			generate_random_buffer(clear_text_pw, 24);
@@ -849,22 +851,24 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			}
 		}
 
-		/* Attempt simple bind with real or bogus password */
-		rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
-		if (rc == LDAP_SUCCESS) {
-			DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
-			ldap_unbind_ext(ld, NULL, NULL);
-		} else {
-			NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
-			DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
-			switch(rc) {
-				case LDAP_INVALID_CREDENTIALS:
-					nt_status = NT_STATUS_WRONG_PASSWORD;
-					break;
-				default:
-					break;
+		if((success != True) || (got_clear_text_pw == True)) {
+			/* Attempt simple bind with real or bogus password */
+			rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
+			if (rc == LDAP_SUCCESS) {
+				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
+				ldap_unbind_ext(ld, NULL, NULL);
+			} else {
+				NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
+				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
+				switch(rc) {
+					case LDAP_INVALID_CREDENTIALS:
+						nt_status = NT_STATUS_WRONG_PASSWORD;
+						break;
+					default:
+						break;
+				}
+				return nt_status;
 			}
-			return nt_status;
 		}
 	}
 	
