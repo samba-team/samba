@@ -409,7 +409,9 @@ as_rep(KDC_REQ *req,
      */
     ek.last_req.val = malloc(2 * sizeof(*ek.last_req.val));
     ek.last_req.len = 0;
-    if (client->pw_end) {
+    if (client->pw_end
+	&& (kdc_warn_pwexpire == 0
+	    || kdc_time + kdc_warn_pwexpire <= *client->pw_end)) {
 	ek.last_req.val[ek.last_req.len].lr_type  = 6;
 	ek.last_req.val[ek.last_req.len].lr_value = *client->pw_end;
 	++ek.last_req.len;
