@@ -501,3 +501,8 @@ BOOL auth_init(void)
 	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
 	return True;
 }
+
+NTSTATUS server_service_auth_init(void)
+{
+	return NT_STATUS_OK;	
+}

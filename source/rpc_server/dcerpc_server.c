@@ -271,6 +271,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->auth_state.auth_info = NULL;
 	(*p)->auth_state.gensec_security = NULL;
 	(*p)->auth_state.session_info = NULL;
+	(*p)->srv_conn = NULL;
 
 	return NT_STATUS_OK;
 }
@@ -1016,6 +1017,87 @@ NTSTATUS dcesrv_init_context(struct dcesrv_context *dce_ctx)
 	return NT_STATUS_OK;
 }
 
+static void dcesrv_init(struct server_service *service, const struct model_ops *model_ops)
+{
+	TALLOC_CTX *mem_ctx;
+	struct dcesrv_context *dce_ctx;
+	int i;
+	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
+
+	DEBUG(0,("dcesrv_init\n"));
+
+
+	if (!endpoint_servers) {
+		DEBUG(0,("dcesrv_init_context: no endpoint servers configured\n"));
+		return;
+	}
+
+	mem_ctx = talloc_init("struct dcesrv_context");
+
+	dce_ctx = talloc_p(mem_ctx, struct dcesrv_context);
+	if (!dce_ctx) {
+		DEBUG(0,("talloc_p(mem_ctx, struct dcesrv_context) failed\n"));
+		return;
+	}
+
+	ZERO_STRUCTP(dce_ctx);
+	dce_ctx->mem_ctx	= mem_ctx;
+	dce_ctx->endpoint_list	= NULL;
+
+	for (i=0;endpoint_servers[i];i++) {
+		NTSTATUS ret;
+		const struct dcesrv_endpoint_server *ep_server;
+		
+		ep_server = dcesrv_ep_server_byname(endpoint_servers[i]);
+		if (!ep_server) {
+			DEBUG(0,("dcesrv_init_context: failed to find endpoint server = '%s'\n", endpoint_servers[i]));
+			return;
+		}
+
+		ret = ep_server->init_server(dce_ctx, ep_server);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s'\n", endpoint_servers[i]));
+			return;
+		}
+	}
+
+	dcesrv_tcp_init(service, model_ops, dce_ctx);
+
+	return;	
+}
+
+static void dcesrv_accept(struct server_connection *srv_conn)
+{
+	dcesrv_tcp_accept(srv_conn);
+}
+
+static void dcesrv_recv(struct server_connection *srv_conn, time_t t, uint16_t flags)
+{
+	dcesrv_tcp_recv(srv_conn, t, flags);
+}
+
+static void dcesrv_send(struct server_connection *srv_conn, time_t t, uint16_t flags)
+{
+	dcesrv_tcp_send(srv_conn, t, flags);
+}
+
+static void dcesrv_idle(struct server_connection *srv_conn, time_t t)
+{
+	dcesrv_tcp_idle(srv_conn, t);
+}
+
+static void dcesrv_close(struct server_connection *srv_conn, const char *reason)
+{
+	dcesrv_tcp_close(srv_conn, reason);
+	return;	
+}
+
+static void dcesrv_exit(struct server_service *service, const char *reason)
+{
+	dcesrv_tcp_exit(service, reason);
+	return;	
+}
+
 /* the list of currently registered DCERPC endpoint servers.
  */
 static struct {
@@ -1101,7 +1183,7 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 /*
   initialise the DCERPC subsystem
 */
-BOOL dcesrv_init(void)
+BOOL subsystem_dcerpc_init(void)
 {
 	NTSTATUS status;
 
@@ -1115,4 +1197,25 @@ BOOL dcesrv_init(void)
 
 	DEBUG(3,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
 	return True;
+}
+
+static const struct server_service_ops dcesrv_ops = {
+	.name			= "rpc",
+	.service_init		= dcesrv_init,
+	.accept_connection	= dcesrv_accept,
+	.recv_handler		= dcesrv_recv,
+	.send_handler		= dcesrv_send,
+	.idle_handler		= dcesrv_idle,
+	.close_connection	= dcesrv_close,
+	.service_exit		= dcesrv_exit,	
+};
+
+const struct server_service_ops *dcesrv_get_ops(void)
+{
+	return &dcesrv_ops;
+}
+
+NTSTATUS server_service_rpc_init(void)
+{
+	return NT_STATUS_OK;	
 }

@@ -23,37 +23,10 @@
 
 #include "includes.h"
 
-struct rpc_server_context {
-	struct dcesrv_ep_description *ep_description;
+struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
-	const struct model_ops *model_ops;
-	struct dcesrv_connection *dce_conn;
-	struct dcesrv_context dcesrv_context;
-	int socket_fd;
-	struct event_context *events;	
+	struct dcesrv_context *dcesrv_ctx;	
 };
-
-/*
-  a callback from the process model termination routine 
-*/
-void rpc_server_terminate(void *rr)
-{
-	struct rpc_server_context *r = rr;
-
-	dcesrv_endpoint_disconnect(r->dce_conn);
-	close(r->socket_fd);
-	event_remove_fd_all(r->events, r->socket_fd);
-	free(r);
-}
-
-/*
-  called when a rpc session needs to be shutdown
-*/
-static void terminate_rpc_session(struct rpc_server_context *r, const char *reason)
-{
-	r->model_ops->terminate_rpc_connection(r, reason);
-}
-
 
 /*
   write_fn callback for dcesrv_output()
@@ -69,45 +42,128 @@ static ssize_t dcerpc_write_fn(void *private, const void *buf, size_t count)
 	return ret;
 }
 
-/*
-  called when a RPC socket becomes writable
-*/
-static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde, 
-				 time_t t, uint16_t flags)
+void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
-	struct rpc_server_context *r = fde->private;
-	NTSTATUS status;
-
-	status = dcesrv_output(r->dce_conn, fde, dcerpc_write_fn);
-	if (NT_STATUS_IS_ERR(status)) {
-		/* TODO: destroy fd_event? */
-	}
-
-	if (!r->dce_conn->call_list || !r->dce_conn->call_list->replies) {
-		fde->flags &= ~EVENT_FD_WRITE;
-	}
+	server_terminate_connection(dce_conn->srv_conn, reason);
 }
 
 /*
-  called when a RPC socket becomes readable
+  add a socket address to the list of events, one event per dcerpc endpoint
 */
-static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde, 
-				time_t t, uint16_t flags)
+static void add_socket_rpc(struct server_service *service, 
+		       const struct model_ops *model_ops,
+		       struct socket_context *socket_ctx,
+		       struct dcesrv_context *dce_ctx, 
+		       struct in_addr *ifip)
 {
-	struct rpc_server_context *r = fde->private;
-	DATA_BLOB blob;
-	ssize_t ret;
+	struct dcesrv_endpoint *e;
 
-	blob = data_blob(NULL, 0x4000);
-	if (!blob.data) {
-		terminate_rpc_session(r, "out of memory");
+	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		if (e->ep_description.type == ENDPOINT_TCP) {
+			struct server_socket *sock;
+			struct dcesrv_socket_context *dcesrv_sock;
+
+			sock = service_setup_socket(service,model_ops,socket_ctx,ifip, &e->ep_description.info.tcp_port);
+			if (!sock) {
+				DEBUG(0,("service_setup_socket(port=%u) failed\n",e->ep_description.info.tcp_port));
+				continue;
+			}
+
+			dcesrv_sock = talloc_p(sock->mem_ctx, struct dcesrv_socket_context);
+			if (!dcesrv_sock) {
+				DEBUG(0,("talloc_p(sock->mem_ctx, struct dcesrv_socket_context) failed\n"));
+				continue;
+			}
+
+			/* remeber the enpoint of this socket */
+			dcesrv_sock->endpoint		= e;
+			dcesrv_sock->dcesrv_ctx		= dce_ctx;
+			
+			sock->private_data = dcesrv_sock;
+		}
+	}
+}
+
+/****************************************************************************
+ Open the listening sockets for RPC over TCP
+****************************************************************************/
+void dcesrv_tcp_init(struct server_service *service, const struct model_ops *model_ops, struct dcesrv_context *dce_ctx)
+{
+	DEBUG(1,("dcesrv_tcp_init\n"));
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+		for(i = 0; i < num_interfaces; i++) {
+			struct in_addr *ifip = iface_n_ip(i);
+			if (ifip == NULL) {
+				continue;
+			}
+			add_socket_rpc(service, model_ops, NULL, dce_ctx,  ifip);
+		}
+	} else {
+		struct in_addr *ifip;
+		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
+		if (!mem_ctx) {
+			smb_panic("No memory");
+		}
+
+		ifip = interpret_addr2(mem_ctx, lp_socket_address());
+		add_socket_rpc(service, model_ops, NULL, dce_ctx,  ifip);
+		talloc_destroy(mem_ctx);
+	}
+
+	return;	
+}
+
+void dcesrv_tcp_accept(struct server_connection *conn)
+{
+	NTSTATUS status;
+	struct dcesrv_socket_context *dcesrv_sock = conn->server_socket->private_data;
+	struct dcesrv_connection *dcesrv_conn = NULL;
+
+	DEBUG(5,("dcesrv_tcp_accept\n"));
+
+
+
+	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx, dcesrv_sock->endpoint, &dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcesrv_tcp_accept: dcesrv_endpoint_connect failed: %s\n", 
+			nt_errstr(status)));
 		return;
 	}
 
-	ret = read(fde->fd, blob.data, blob.length);
+	dcesrv_conn->srv_conn = conn;
+
+	conn->private_data = dcesrv_conn;
+
+	/* TODO: this should to the generic code
+	 *       but the smb server can't handle it yet
+	 *	 --metze
+	 */ 
+	set_blocking(conn->socket->fde->fd, False);
+
+	return;	
+}
+
+void dcesrv_tcp_recv(struct server_connection *conn, time_t t, uint16_t flags)
+{
+	struct dcesrv_connection *dce_conn = conn->private_data;
+	DATA_BLOB blob;
+	ssize_t ret;
+
+	DEBUG(10,("dcesrv_tcp_recv\n"));
+
+	blob = data_blob(NULL, 0x4000);
+	if (!blob.data) {
+		dcesrv_terminate_connection(dce_conn, "eof on socket");
+		return;
+	}
+
+	ret = read(conn->socket->fde->fd, blob.data, blob.length);
 	if (ret == 0 || (ret == -1 && errno != EINTR)) {
 		data_blob_free(&blob);
-		terminate_rpc_session(r, "eof on socket");
+		dcesrv_terminate_connection(dce_conn, "eof on socket");
 		return;
 	}
 	if (ret == -1) {
@@ -117,197 +173,61 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
 
 	blob.length = ret;
 
-	dcesrv_input(r->dce_conn, &blob);
+	dcesrv_input(dce_conn, &blob);
 
 	data_blob_free(&blob);
 
-	if (r->dce_conn->call_list && r->dce_conn->call_list->replies) {
-		fde->flags |= EVENT_FD_WRITE;
+	if (dce_conn->call_list && dce_conn->call_list->replies) {
+		conn->socket->fde->flags |= EVENT_FD_WRITE;
 	}
+
+	return;	
 }
 
-
-
-
-/*
-  called when a RPC socket becomes readable
-*/
-static void dcerpc_io_handler(struct event_context *ev, struct fd_event *fde, 
-			      time_t t, uint16_t flags)
+void dcesrv_tcp_send(struct server_connection *conn, time_t t, uint16_t flags)
 {
-	if (flags & EVENT_FD_WRITE) {
-		dcerpc_write_handler(ev, fde, t, flags);
-	}
-
-	if (flags & EVENT_FD_READ) {
-		dcerpc_read_handler(ev, fde, t, flags);
-	}
-}
-	
-/*
-  initialise a server_context from a open socket and register a event handler
-  for reading from that socket
-*/
-void init_rpc_session(struct event_context *ev, void *private, int fd)
-{
-	struct fd_event fde;
-	struct rpc_server_context *r = private;
+	struct dcesrv_connection *dce_conn = conn->private_data;
 	NTSTATUS status;
 
-	r = memdup(r, sizeof(struct rpc_server_context));
+	DEBUG(10,("dcesrv_tcp_send\n"));
 
-	r->events = ev;
-	r->socket_fd = fd;
-
-	set_socket_options(fd,"SO_KEEPALIVE");
-	set_socket_options(fd, lp_socket_options());
-
-	status = dcesrv_endpoint_connect(&r->dcesrv_context, r->endpoint, &r->dce_conn);
-	if (!NT_STATUS_IS_OK(status)) {
-		close(fd);
-		free(r);
-		DEBUG(0,("init_rpc_session: connection to endpoint failed: %s\n", 
-			nt_errstr(status)));
-		return;
+	status = dcesrv_output(dce_conn, conn->socket->fde, dcerpc_write_fn);
+	if (NT_STATUS_IS_ERR(status)) {
+		/* TODO: destroy fd_event? */
 	}
 
-	r->dce_conn->dce_ctx = &r->dcesrv_context;
+	if (!dce_conn->call_list || !dce_conn->call_list->replies) {
+		conn->socket->fde->flags &= ~EVENT_FD_WRITE;
+	}
 
-	set_blocking(fd, False);
-
-	/* setup a event handler for this socket. We are initially
-	   only interested in reading from the socket */
-	fde.fd = fd;
-	fde.handler = dcerpc_io_handler;
-	fde.private = r;
-	fde.flags = EVENT_FD_READ;
-
-	event_add_fd(ev, &fde);
+	return;	
 }
 
-
-/*
-  setup a single rpc listener
- */
-static void setup_listen_rpc(struct event_context *events,
-			     const struct model_ops *model_ops, 
-			     struct in_addr *ifip, uint32_t *port,
-			     struct rpc_server_context *r,
-			     const struct dcesrv_endpoint *endpoint)
+void dcesrv_tcp_idle(struct server_connection *conn, time_t t)
 {
-	struct fd_event fde;
-	int i;
+	DEBUG(10,("dcesrv_tcp_idle\n"));
+	conn->event.idle->next_event = t + 5;
 
-	if (*port == 0) {
-		fde.fd = -1;
-		for (i=DCERPC_TCP_LOW_PORT;i<= DCERPC_TCP_HIGH_PORT;i++) {
-			fde.fd = open_socket_in(SOCK_STREAM, i, 0, ifip->s_addr, True);			
-			if (fde.fd != -1) break;
-		}
-		if (fde.fd != -1) {
-			*port = i;
-		}
-	} else {
-		fde.fd = open_socket_in(SOCK_STREAM, *port, 0, ifip->s_addr, True);
-	}
-
-	if (fde.fd == -1) {
-		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-			 inet_ntoa(*ifip), *port, strerror(errno)));
-		return;
-	}
-
-	/* each listening socket has separate state, so must use a different context */
-	r = memdup(r, sizeof(struct rpc_server_context));
-	if (!r) {
-		smb_panic("out of memory");
-	}
-
-	r->ep_description = malloc(sizeof(struct dcesrv_ep_description));
-	if (!r->ep_description) {
-		smb_panic("out of memory");
-	}
-	r->ep_description->type = ENDPOINT_TCP;
-	r->ep_description->info.tcp_port = *port;
-
-	r->endpoint = endpoint;
-
-	/* ready to listen */
-	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
-	set_socket_options(fde.fd, lp_socket_options());
-      
-	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("Failed to listen on %s:%d - %s\n",
-			 inet_ntoa(*ifip), *port, strerror(errno)));
-		close(fde.fd);
-		return;
-	}
-
-	/* we are only interested in read events on the listen socket */
-	fde.flags = EVENT_FD_READ;
-	fde.private = r;
-	fde.handler = model_ops->accept_rpc_connection;
-	
-	event_add_fd(events, &fde);
+	return;	
 }
 
-/*
-  add a socket address to the list of events, one event per dcerpc endpoint
-*/
-static void add_socket_rpc(struct event_context *events, 
-			   const struct model_ops *model_ops, 
-			   struct in_addr *ifip)
+void dcesrv_tcp_close(struct server_connection *conn, const char *reason)
 {
-	struct dcesrv_endpoint *e;
-	struct rpc_server_context *r;
+	struct dcesrv_connection *dce_conn = conn->private_data;
 
-	r = malloc(sizeof(struct rpc_server_context));
-	if (!r) {
-		smb_panic("out of memory");
-	}
+	DEBUG(5,("dcesrv_tcp_close: %s\n",reason));
 
-	r->dcesrv_context.endpoint_list = NULL;
-	dcesrv_init_context(&r->dcesrv_context);
-	r->ep_description = NULL;
-	r->model_ops = model_ops;
-	r->dce_conn = NULL;
-	r->socket_fd = -1;
-	r->events = NULL;
-	
-	for (e=r->dcesrv_context.endpoint_list;e;e=e->next) {
-		if (e->ep_description.type == ENDPOINT_TCP) {
-			setup_listen_rpc(events, model_ops, ifip, 
-					 &e->ep_description.info.tcp_port, 
-					 r, e);
-		}
-	}
+	close(conn->event.fde->fd);
+	event_remove_fd_all(conn->event.ctx, conn->socket->fde->fd);
+	event_remove_timed(conn->event.ctx, conn->event.idle);
 
-	free(r);
+	talloc_destroy(dce_conn->mem_ctx);
+
+	return;
 }
 
-/****************************************************************************
- Open the listening sockets for RPC over TCP
-****************************************************************************/
-void open_sockets_rpc(struct event_context *events,
-		      const struct model_ops *model_ops)
+void dcesrv_tcp_exit(struct server_service *service, const char *reason)
 {
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
-			if (ifip == NULL) {
-				continue;
-			}
-			add_socket_rpc(events, model_ops, ifip);
-		}
-	} else {
-		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");		
-		struct in_addr *ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		if (!mem_ctx) {
-			smb_panic("No memory");
-		}
-		add_socket_rpc(events, model_ops, ifip);
-		talloc_destroy(mem_ctx);
-	} 
+	DEBUG(1,("dcesrv_tcp_exit: %s\n",reason));
+	return;
 }

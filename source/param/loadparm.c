@@ -137,6 +137,7 @@ typedef struct
 	char *szWINSHook;
 	char *szWINSPartners;
 	char **dcerpc_ep_servers;
+	char **server_services;
 	char *szWinbindUID;
 	char *szWinbindGID;
 	char *szNonUnixAccountRange;
@@ -568,6 +569,7 @@ static struct parm_struct parm_table[] = {
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ntvfs handler", P_STRING, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
 	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
+	{"server services", P_LIST, P_GLOBAL, &Globals.server_services, NULL, NULL, FLAG_ADVANCED},
 
 	{"Security Options", P_SEP, P_SEPARATOR},
 	
@@ -959,6 +961,8 @@ static void init_globals(void)
 
 	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss", NULL);
 
+	Globals.server_services = str_list_make("smb rpc", NULL);
+
 	Globals.AuthMethods = str_list_make("guest sam_ignoredomain", NULL);
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
@@ -1218,6 +1222,7 @@ FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
+FN_GLOBAL_LIST(lp_server_services, &Globals.server_services)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)

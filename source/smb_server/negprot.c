@@ -342,7 +342,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		memcpy(req->out.ptr, blob.data, blob.length);
 		DEBUG(3,("using SPNEGO\n"));
 #else
-		exit_server(req->smb_conn, "no SPNEGO please");
+		smbsrv_terminate_connection(req->smb_conn, "no SPNEGO please");
 #endif
 	}
 	
@@ -450,7 +450,7 @@ void reply_negprot(struct smbsrv_request *req)
 	int arch = ARCH_ALL;
 
 	if (req->smb_conn->negotiate.done_negprot) {
-		exit_server(req->smb_conn, "multiple negprot's are not permitted");
+		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
 	}
 	req->smb_conn->negotiate.done_negprot = True;
 

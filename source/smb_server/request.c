@@ -54,12 +54,12 @@ struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 	   structure itself is also allocated inside this context, so
 	   we need to allocate it before we construct the request
 	*/
-	mem_ctx = talloc_init("request_context[%d]", smb_conn->socket.pkt_count);
+	mem_ctx = talloc_init("request_context[%d]", smb_conn->connection->socket->pkt_count);
 	if (!mem_ctx) {
 		return NULL;
 	}
 
-	smb_conn->socket.pkt_count++;
+	smb_conn->connection->socket->pkt_count++;
 
 	req = talloc(mem_ctx, sizeof(*req));
 	if (!req) {
@@ -91,7 +91,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
 
 	req->out.buffer = talloc_realloc(req->mem_ctx, req->out.buffer, req->out.allocated);
 	if (!req->out.buffer) {
-		exit_server(req->smb_conn, "allocation failed");
+		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
@@ -125,7 +125,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 
 	req->out.buffer = talloc(req->mem_ctx, req->out.allocated);
 	if (!req->out.buffer) {
-		exit_server(req->smb_conn, "allocation failed");
+		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
@@ -262,7 +262,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	if (write_data(req->smb_conn->socket.fd, req->out.buffer, req->out.size) != req->out.size) {
+	if (write_data(req->smb_conn->connection->socket->fde->fd, req->out.buffer, req->out.size) != req->out.size) {
 		smb_panic("failed to send reply\n");
 	}
 
