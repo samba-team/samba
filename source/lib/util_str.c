@@ -612,19 +612,6 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	}
 }
 
-/**
- Write an octal as a string.
-**/
-
-const char *octal_string(int i)
-{
-	static char ret[64];
-	if (i == -1)
-		return "-1";
-	slprintf(ret, sizeof(ret)-1, "0%o", i);
-	return ret;
-}
-
 
 /**
  Strchr and strrchr_m are a bit complex on general multi-byte strings. 
@@ -954,13 +941,13 @@ void rfc1738_unescape(char *buf)
 	}
 }
 
-static const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
 /**
  * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
  **/
 DATA_BLOB base64_decode_data_blob(const char *s)
 {
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 	int bit_offset, byte_offset, idx, i, n;
 	DATA_BLOB decoded = data_blob(s, strlen(s)+1);
 	uint8_t *d = decoded.data;
@@ -1010,6 +997,7 @@ void base64_decode_inplace(char *s)
  **/
 char * base64_encode_data_blob(DATA_BLOB data)
 {
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bits = 0;
 	int char_count = 0;
 	size_t out_cnt = 0;
