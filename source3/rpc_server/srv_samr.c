@@ -735,8 +735,12 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
-	/* oops! */
-	status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+	if (!pass_oem_change(user_name,
+	                     q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+	                     q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
+	{
+		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+	}
 
 	make_samr_r_chgpasswd_user(&r_u, status);
 

@@ -383,8 +383,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-
-BOOL smb_password_ok(struct smb_passwd *smb_pass,
+BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24])
 {
 	uchar challenge[8];
@@ -400,9 +399,19 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
 		return(False);
 	}
 
-	if (!last_challenge(challenge)) {
-		DEBUG(1,("no challenge done - password failed\n"));
-		return False;
+	if (chal == NULL)
+	{
+		DEBUG(5,("use last SMBnegprot challenge\n"));
+		if (!last_challenge(challenge))
+		{
+			DEBUG(1,("no challenge done - password failed\n"));
+			return False;
+		}
+	}
+	else
+	{
+		DEBUG(5,("challenge received\n"));
+		memcpy(challenge, chal, 8);
 	}
 
 	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL)) {
@@ -450,7 +459,7 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL pass_check_smb(char *user, char *domain,
-		char *challenge, char *lm_pwd, char *nt_pwd,
+		uchar *chal, char *lm_pwd, char *nt_pwd,
 		struct passwd *pwd)
 {
 	struct passwd *pass;
@@ -504,7 +513,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 
-	if (smb_password_ok(smb_pass, (uchar *)lm_pwd, (uchar *)nt_pwd))
+	if (smb_password_ok(smb_pass, chal, (uchar *)lm_pwd, (uchar *)nt_pwd))
 	{
 		return(True);
 	}

@@ -4490,15 +4490,10 @@ char *unistrn2(uint16 *buf, int len)
 
 	nexti = (nexti+1)%8;
 
-	DEBUG(10, ("unistrn2: "));
-
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
 	{
-		DEBUG(10, ("%4x ", *buf));
 		*p = *buf;
 	}
-
-	DEBUG(10,("\n"));
 
 	*p = 0;
 	return lbuf;
@@ -4518,15 +4513,10 @@ char *unistr2(uint16 *buf)
 
 	nexti = (nexti+1)%8;
 
-	DEBUG(10, ("unistr2: "));
-
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf++)
 	{
-		DEBUG(10, ("%4x ", *buf));
 		*p = *buf;
 	}
-
-	DEBUG(10,("\n"));
 
 	*p = 0;
 	return lbuf;
@@ -4545,17 +4535,12 @@ int struni2(uint16 *p, char *buf)
 
 	if (p == NULL) return 0;
 
-	DEBUG(10, ("struni2: "));
-
 	if (buf != NULL)
 	{
 		for (; *buf && len < MAXUNI-2; len++, p++, buf++)
 		{
-			DEBUG(10, ("%2x ", *buf));
 			*p = *buf;
 		}
-
-		DEBUG(10,("\n"));
 	}
 
 	*p = 0;
@@ -4857,6 +4842,10 @@ int set_maxfiles(int requested_max)
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
 	getrlimit(RLIMIT_NOFILE, &rlp);
+	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+	 * account for the extra fd we need 
+	 * as well as the log files and standard
+	 * handles etc.  */
 	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 	setrlimit(RLIMIT_NOFILE, &rlp);
 	getrlimit(RLIMIT_NOFILE, &rlp);
@@ -4868,4 +4857,3 @@ int set_maxfiles(int requested_max)
 	return requested_max;
 #endif
 }
-
