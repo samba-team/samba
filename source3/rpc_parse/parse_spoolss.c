@@ -4261,10 +4261,6 @@ BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 
-	/* According to MSDN there is another [in] parameter for this rpc
-	   which could be a pointer to a buffer.  NT4 puts four zero bytes
-	   here which we currently don't parse. -tpot */
-
 	return True;
 }
 
