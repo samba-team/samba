@@ -88,28 +88,29 @@ struct dcerpc_pipe {
 #define DCERPC_DEBUG_VALIDATE_OUT      (1<<3)
 #define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
 
-#define DCERPC_SIGN                    (1<<4)
-#define DCERPC_SEAL                    (1<<5)
+#define DCERPC_CONNECT                 (1<<4)
+#define DCERPC_SIGN                    (1<<5)
+#define DCERPC_SEAL                    (1<<6)
 
-#define DCERPC_PUSH_BIGENDIAN          (1<<6)
-#define DCERPC_PULL_BIGENDIAN          (1<<7)
+#define DCERPC_PUSH_BIGENDIAN          (1<<7)
+#define DCERPC_PULL_BIGENDIAN          (1<<8)
 
-#define DCERPC_SCHANNEL_BDC            (1<<8)
-#define DCERPC_SCHANNEL_WORKSTATION    (1<<9)
-#define DCERPC_SCHANNEL_DOMAIN         (1<<10)
+#define DCERPC_SCHANNEL_BDC            (1<<9)
+#define DCERPC_SCHANNEL_WORKSTATION    (1<<10)
+#define DCERPC_SCHANNEL_DOMAIN         (1<<11)
 #define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
 					DCERPC_SCHANNEL_DOMAIN| \
 					DCERPC_SCHANNEL_WORKSTATION)
 /* use a 128 bit session key */
-#define DCERPC_SCHANNEL_128            (1<<11)
+#define DCERPC_SCHANNEL_128            (1<<12)
 
 #define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
 
 /* check incoming pad bytes */
-#define DCERPC_DEBUG_PAD_CHECK         (1<<12)
+#define DCERPC_DEBUG_PAD_CHECK         (1<<13)
 
 /* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
-#define DCERPC_NDR_REF_ALLOC           (1<<13)
+#define DCERPC_NDR_REF_ALLOC           (1<<14)
 
 /*
   this is used to find pointers to calls

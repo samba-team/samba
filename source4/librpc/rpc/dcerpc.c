@@ -145,6 +145,32 @@ static NTSTATUS dcerpc_pull(struct dcerpc_pipe *p, DATA_BLOB *blob, TALLOC_CTX *
 	return ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 }
 
+/*
+  generate a CONNECT level verifier
+*/
+static NTSTATUS dcerpc_connect_verifier(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+{
+	*blob = data_blob_talloc(mem_ctx, NULL, 16);
+	if (blob->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	SIVAL(blob->data, 0, 1);
+	memset(blob->data+4, 0, 12);
+	return NT_STATUS_OK;
+}
+
+/*
+  generate a CONNECT level verifier
+*/
+static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
+{
+	if (blob->length != 16 ||
+	    IVAL(blob->data, 0) != 1) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
 /* 
    parse a possibly signed blob into a dcerpc request packet structure
 */
@@ -158,7 +184,8 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB auth_blob;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || !p->security_state.generic_state) {
+	if (!p->security_state.auth_info || 
+	    !p->security_state.generic_state) {
 		return dcerpc_pull(p, blob, mem_ctx, pkt);
 	}
 
@@ -179,6 +206,11 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 
 	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
 		return status;
+	}
+
+	if (pkt->auth_length == 0 &&
+	    p->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+		return NT_STATUS_OK;
 	}
 
 	auth_blob.length = 8 + pkt->auth_length;
@@ -233,7 +265,11 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 					     blob->length - auth.credentials.length,
 					     &auth.credentials);
 		break;
-		
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		status = dcerpc_check_connect_verifier(&auth.credentials);
+		break;
+
 	case DCERPC_AUTH_LEVEL_NONE:
 		break;
 
@@ -264,7 +300,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || !p->security_state.generic_state) {
+	if (!p->security_state.auth_info || 
+	    !p->security_state.generic_state) {
 		return dcerpc_push_auth(blob, mem_ctx, pkt, p->security_state.auth_info);
 	}
 
@@ -297,6 +334,10 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		data_blob_clear(&p->security_state.auth_info->credentials);
 		break;
 
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		status = dcerpc_connect_verifier(mem_ctx, &p->security_state.auth_info->credentials);
+		break;
+		
 	case DCERPC_AUTH_LEVEL_NONE:
 		p->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
@@ -349,6 +390,9 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 					    p->security_state.auth_info->credentials.length,
 					    &creds2);
 		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -1247,6 +1291,8 @@ uint32 dcerpc_auth_level(struct dcerpc_pipe *p)
 		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	} else if (p->flags & DCERPC_SIGN) {
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	} else if (p->flags & DCERPC_CONNECT) {
+		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 	} else {
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
