@@ -37,7 +37,7 @@ void smbw_setup_shared(void)
 
 	slprintf(s,sizeof(s)-1, "%s/smbw.XXXXXX",tmpdir());
 
-	fstrcpy(name,(char *)mktemp(s));
+	fstrcpy(name,(char *)smbd_mktemp(s));
 
 	/* note zero permissions! don't change this */
 	fd = sys_open(name,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,0); 

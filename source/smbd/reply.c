@@ -1782,7 +1782,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  pstrcpy(fname2,(char *)mktemp(fname));
+  pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
@@ -2971,7 +2971,7 @@ int reply_printopen(connection_struct *conn,
 	if (!fsp)
 		return(ERROR(ERRSRV,ERRnofids));
 	
-	pstrcpy(fname2,(char *)mktemp(fname));
+	pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
 	if (!check_name(fname2,conn)) {
 		file_free(fsp);

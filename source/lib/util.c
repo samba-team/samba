@@ -3045,3 +3045,32 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 
 	return True;
 }
+
+
+/*****************************************************************
+like mktemp() but make sure that no % characters are used
+% characters are bad for us because of the macro subs
+ *****************************************************************/  
+char *smbd_mktemp(char *template)
+{
+	char *p = mktemp(template);
+	char *p2;
+	struct stat st;
+
+	if (!p) return NULL;
+
+	while ((p2=strchr(p,'%'))) {
+		p2[0] = 'A';
+		while (stat(p,&st) == 0 && p2[0] < 'Z') {
+			/* damn, it exists */
+			p2[0]++;
+		}
+		if (p2[0] == 'Z') {
+			/* oh well ... better return something */
+			p2[0] = '%';
+			return p;
+		}
+	}
+
+	return p;
+}
