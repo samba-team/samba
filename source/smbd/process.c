@@ -1087,13 +1087,18 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	extern int keepalive;
 
 	if (smb_read_error == READ_EOF) {
-		DEBUG(3,("end of file from client\n"));
+		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
 		return False;
 	}
 
 	if (smb_read_error == READ_ERROR) {
-		DEBUG(3,("receive_smb error (%s) exiting\n",
+		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
 			strerror(errno)));
+		return False;
+	}
+
+	if (smb_read_error == READ_BAD_SIG) {
+		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
 		return False;
 	}
 

@@ -187,7 +187,12 @@ static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good)
 
 	if (!good) {
 		if (si->doing_signing) {
-			DEBUG(1, ("SMB signature check failed!\n"));
+			struct smb_basic_signing_context *data = si->signing_context;
+
+			/* W2K sends a bad first signature but the sign engine is on.... JRA. */
+			if (data->send_seq_num > 1)
+				DEBUG(1, ("SMB signature check failed!\n"));
+
 			return False;
 		} else {
 			DEBUG(3, ("Server did not sign reply correctly\n"));
@@ -491,6 +496,21 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 	return True;
 }
 
+static BOOL outgoing_packet_is_oplock_break(char *outbuf)
+{
+	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
+		return False;
+	}
+
+	if (CVAL(outbuf,smb_com) != SMBlockingX)
+		return False;
+
+	if (CVAL(outbuf,smb_vwv3) != LOCKING_ANDX_OPLOCK_RELEASE)
+		return False;
+
+	return True;
+}
+
 /***********************************************************
  SMB signing - Server implementation - send the MAC.
 ************************************************************/
@@ -502,12 +522,32 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	uint32 send_seq_number = data->send_seq_num;
 	BOOL was_deferred_packet;
 
-	if (!si->doing_signing)
+	if (!si->doing_signing) {
+		if (si->allow_smb_signing && si->negotiated_smb_signing) {
+			uint16 mid = SVAL(outbuf, smb_mid);
+
+			was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, 
+						    mid, &send_seq_number);
+			if (!was_deferred_packet) {
+				/*
+				 * Is this an outgoing oplock break ? If so, store the
+				 * mid in the outstanding list. 
+				 */
+
+				if (outgoing_packet_is_oplock_break(outbuf)) {
+					store_sequence_for_reply(&data->outstanding_packet_list, 
+								 mid, data->send_seq_num);
+				}
+
+				data->send_seq_num++;
+			}
+		}
 		return;
+	}
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
 	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("srv_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
+		DEBUG(1, ("srv_sign_outgoing_message: Logic error. Can't send signature on short packet! smb_len = %u\n",
 					smb_len(outbuf) ));
 		abort();
 	}
@@ -555,8 +595,13 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return False;
 	}
 
-	reply_seq_number = data->send_seq_num;
-	data->send_seq_num++;
+	/* Oplock break requests store an outgoing mid in the packet list. */
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
+				    SVAL(inbuf, smb_mid), 
+				    &reply_seq_number)) {
+		reply_seq_number = data->send_seq_num;
+		data->send_seq_num++;
+	}
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
@@ -564,11 +609,28 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 	
 	if (!good) {
+
 		DEBUG(5, ("srv_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
 		dump_data(5, calc_md5_mac, 8);
 		
 		DEBUG(5, ("srv_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
+
+#if 0 /* JRATEST */
+		{
+			int i;
+			reply_seq_number -= 5;
+			for (i = 0; i < 10; i++, reply_seq_number++) {
+				simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
+				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
+					DEBUG(0,("srv_check_incoming_message: out of seq. seq num %u matches.\n",
+							reply_seq_number ));
+					break;
+				}
+			}
+		}
+#endif /* JRATEST */
+
 	}
 	return signing_good(inbuf, si, good);
 }

@@ -79,9 +79,7 @@ typedef int BOOL;
 #define READ_TIMEOUT 1
 #define READ_EOF 2
 #define READ_ERROR 3
-
-/* This error code can go into the client smb_rw_error. */
-#define WRITE_ERROR 4
+#define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
 
 #define DIR_STRUCT_SIZE 43
