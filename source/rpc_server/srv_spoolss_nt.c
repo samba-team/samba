@@ -6111,15 +6111,6 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 		goto done;
 	}
 
-	
-
-#if 0	/* JERRY */
-	/*
-	 * Feels like we need an access check here, but I've not
-	 * had enough time to verify what response NT sends back
-	 * and all that jazz.  Leaving commented out for now.
-	 * --jerry
-	 */
 	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
@@ -6129,8 +6120,6 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
-#endif
-
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
@@ -6190,6 +6179,16 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
 		return ERROR_INVALID_HANDLE;
 	}
 
+ 	if (!get_printer_snum(p, handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
 	/* can't delete if builtin */
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
 		return ERROR_INVALID_PARAMETER;
@@ -6239,6 +6238,16 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
  	DEBUG(5,("spoolss_setform\n"));
+
+	if (!get_printer_snum(p, handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_setform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
