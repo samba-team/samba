@@ -371,7 +371,7 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 	memset(addresses, 0, sizeof(*addresses));
 	return 0;
     }
-    return copy_HostAddresses(context->extra_addresses, addresses);
+    return krb5_copy_addresses(context->extra_addresses, addresses);
 }
 
 krb5_error_code
@@ -409,7 +409,7 @@ krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 	memset(addresses, 0, sizeof(*addresses));
 	return 0;
     }
-    return copy_HostAddresses(context->ignore_addresses, addresses);
+    return krb5_copy_addresses(context, context->ignore_addresses, addresses);
 }
 
 krb5_error_code
