@@ -755,7 +755,7 @@ BOOL samr_query_sec_obj(  const POLICY_HND *pol,
 do a SAMR Open User
 ****************************************************************************/
 BOOL samr_open_user(  const POLICY_HND *pol,
-				uint32 unk_0, uint32 rid, 
+				uint32 access_mask, uint32 rid, 
 				POLICY_HND *user_pol)
 {
 	prs_struct data;
@@ -764,8 +764,8 @@ BOOL samr_open_user(  const POLICY_HND *pol,
 	SAMR_Q_OPEN_USER q_o;
 	BOOL valid_pol = False;
 
-	DEBUG(4,("SAMR Open User.  unk_0: %08x RID:%x\n",
-	          unk_0, rid));
+	DEBUG(4,("SAMR Open User.  access_mask: %08x RID:%x\n",
+	          access_mask, rid));
 
 	if (pol == NULL || user_pol == NULL) return False;
 
@@ -775,7 +775,7 @@ BOOL samr_open_user(  const POLICY_HND *pol,
 	prs_init(&rdata, 0, 4, True );
 
 	/* store the parameters */
-	make_samr_q_open_user(&q_o, pol, unk_0, rid);
+	make_samr_q_open_user(&q_o, pol, access_mask, rid);
 
 	/* turn parameters into data stream */
 	if (samr_io_q_open_user("", &q_o,  &data, 0) &&
