@@ -36,8 +36,6 @@
 
 #include "includes.h"
 
-struct connect_record crec;
-
 struct session_record{
   int pid;
   int uid;
@@ -172,6 +170,9 @@ static int profile_dump(void)
   int last_pid=0;
   struct session_record *ptr;
   int profile_only = 0;
+  struct connect_record *crec = NULL;
+  uint32 connection_count;
+  uint32 conn;	
 
   TimeInit();
   setup_logging(argv[0],True);
@@ -266,60 +267,59 @@ static int profile_dump(void)
 	  printf("----------------------------------------------\n");
 	}
     }
-
-    while (!feof(f))
-      {
-	if (fread(&crec,sizeof(crec),1,f) != 1)
-	  break;
-	if (crec.cnum == -1) continue;
-	if ( crec.magic == 0x280267 && process_exists(crec.pid) 
-	     && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
-	     )
+		
+    if (get_connection_status(&crec, &connection_count))
+	{
+          for (conn=0;conn<connection_count;conn++) 
 	  {
-	    if (brief)
-	      {
-		ptr=srecs;
-		while (ptr!=NULL)
-		  {
-		    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
+	     if (Ucrit_checkUsername(uidtoname(crec[conn].uid)))
+	       {
+  	     	if (brief)
 		      {
-			if (ptr->start > crec.start)
-			  ptr->start=crec.start;
-			break;
+			ptr=srecs;
+			while (ptr!=NULL)
+			  {
+			    if ((ptr->pid==crec[conn].pid)&&(strncmp(ptr->machine,crec[conn].machine,30)==0)) 
+			      {
+				if (ptr->start > crec[conn].start)
+				  ptr->start=crec[conn].start;
+				break;
+			      }
+			    ptr=ptr->next;
+			  }
+			if (ptr==NULL)
+			  {
+			    ptr=(struct session_record *) malloc(sizeof(struct session_record));
+			    ptr->uid=crec[conn].uid;
+			    ptr->pid=crec[conn].pid;
+			    ptr->start=crec[conn].start;
+			    strncpy(ptr->machine,crec[conn].machine,30);
+			    ptr->machine[30]='\0';
+			    ptr->next=srecs;
+			    srecs=ptr;
+			  }
 		      }
-		    ptr=ptr->next;
-		  }
-		if (ptr==NULL)
-		  {
-		    ptr=(struct session_record *) malloc(sizeof(struct session_record));
-		    ptr->uid=crec.uid;
-		    ptr->pid=crec.pid;
-		    ptr->start=crec.start;
-		    strncpy(ptr->machine,crec.machine,30);
-		    ptr->machine[30]='\0';
-		    ptr->next=srecs;
-		    srecs=ptr;
-		  }
-	      }
-	    else
-	      {
-		Ucrit_addPid(crec.pid);                                             /* added by OH */
-		if (processes_only) {
-		  if (last_pid != crec.pid)
-		    printf("%d\n",crec.pid);
-		  last_pid = crec.pid; /* XXXX we can still get repeats, have to
-				    add a sort at some time */
-		}
-		else	  
-		  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
-			 crec.machine,crec.addr,
-			 asctime(LocalTime(&crec.start)));
-	      }
-	  }
-      }
-    fclose(f);
+		    else
+		      {
+			Ucrit_addPid(crec[conn].pid);                                             /* added by OH */
+			if (processes_only) {
+			  if (last_pid != crec[conn].pid)
+			    printf("%d\n",crec[conn].pid);
+			  last_pid = crec[conn].pid; /* XXXX we can still get repeats, have to
+					    add a sort at some time */
+			}
+			else	  
+			  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
+				 crec[conn].name,uidtoname(crec[conn].uid),gidtoname(crec[conn].gid),crec[conn].pid,
+				 crec[conn].machine,crec[conn].addr,
+				 asctime(LocalTime(&crec[conn].start)));
+		      }
+	       }
+          }
+          free(crec);
+	}
   }
+
   if (processes_only) exit(0);
   
   if (brief)
