@@ -72,7 +72,7 @@ struct getargs args[] = {
       "number-or-service" },
     { "from",	 0,  arg_flag,		&do_from,	"Behave like from",
       NULL },
-    { "header",	 0,  arg_string,	&header_str,	"Header string to print", NULL },
+    { "headers", 0,  arg_string,	&header_str,	"Headers to print", NULL },
     { "count", 'c',  arg_flag,		&do_count,	"Print number of messages", NULL},
     { "version", 0,  arg_flag,		&do_version,	"Print version",
       NULL },
@@ -98,7 +98,7 @@ do_connect (const char *hostname, int port, int nodelay)
     struct addrinfo *ai, *a;
     struct addrinfo hints;
     int error;
-    int s;
+    int s = -1;
     char portstr[NI_MAXSERV];
 
     memset (&hints, 0, sizeof(hints));
@@ -157,9 +157,7 @@ write_state_init (struct write_state *w, int fd)
 #endif
     w->allociovecs = min(STEP, w->maxiovecs);
     w->niovecs = 0;
-    w->iovecs = malloc(w->allociovecs * sizeof(*w->iovecs));
-    if (w->iovecs == NULL)
-	err (1, "malloc");
+    w->iovecs = emalloc(w->allociovecs * sizeof(*w->iovecs));
     w->fd = fd;
 }
 
@@ -173,10 +171,8 @@ write_state_add (struct write_state *w, void *v, size_t len)
 	    w->niovecs = 0;					
 	} else {						
 	    w->allociovecs = min(w->allociovecs + STEP, w->maxiovecs);	
-	    w->iovecs = realloc (w->iovecs,				
-				 w->allociovecs * sizeof(*w->iovecs));	
-	    if (w->iovecs == NULL)					
-		errx (1, "realloc");				
+	    w->iovecs = erealloc (w->iovecs,				
+				  w->allociovecs * sizeof(*w->iovecs));	
 	}							
     }								
     w->iovecs[w->niovecs].iov_base = v;				
@@ -225,11 +221,30 @@ doit(int s,
     size_t from_line_length;
     time_t now;
     struct write_state write_state;
+    int numheaders = 1;
+    char **headers = NULL;
+    int i;
+    char *tmp = estrdup(header_str);
 
     if (do_from) {
+	char *tmp2 = tmp;
+
 	out_fd = -1;
 	if (verbose)
 	    fprintf (stderr, "%s@%s\n", user, host);
+	while (*tmp != '\0') {
+	    tmp = strchr(tmp, ',');
+	    if (tmp == NULL)
+		break;
+	    tmp++;
+	    numheaders++;
+	}
+
+	headers = emalloc(sizeof(char *) * (numheaders + 1));
+	for (i = 0; i < numheaders; i++) {
+	    headers[i] = strtok_r(tmp2, ",", &tmp2);
+	}
+	headers[numheaders] = NULL;
     } else {
 	out_fd = open(outfilename, O_WRONLY | O_APPEND | O_CREAT, 0666);
 	if (out_fd < 0)
@@ -296,12 +311,17 @@ doit(int s,
 		if (state == TOP) {
 		    char *copy = beg;
 
-		    if (strncasecmp(copy,
-				    header_str,
-				    min(p - copy + 1, strlen(header_str))) == 0) {
-			fprintf (stdout, "%.*s\n", (int)(p - copy), copy);
+		    for (i = 0; i < numheaders; i++) {
+			size_t len;
+
+			len = min(p - copy + 1, strlen(headers[i]));
+			if (strncasecmp(copy, headers[i], len) == 0) {
+			    fprintf (stdout, "%.*s\n", (int)(p - copy), copy);
+			}
 		    }
 		    if (beg[0] == '.' && beg[1] == '\r' && beg[2] == '\n') {
+			if (numheaders > 1)
+			    fprintf (stdout, "\n");
 			state = STAT;
 			if (++retrieved == count) {
 			    state = QUIT;
@@ -450,8 +470,12 @@ doit(int s,
     }
     if (verbose)
 	fprintf (stderr, "Done\n");
-    if (!do_from)
+    if (do_from) {
+	free (tmp);
+	free (headers);
+    } else {
 	write_state_destroy (&write_state);
+    }
     return 0;
 }
 
@@ -572,12 +596,8 @@ hesiod_get_pobox (const char **user)
 	if (strcasecmp(hpo->hesiod_po_type, "pop") != 0)
 	    errx (1, "Unsupported po type %s", hpo->hesiod_po_type);
 
-	ret = strdup(hpo->hesiod_po_host);
-	if(ret == NULL)
-	    errx (1, "strdup: out of memory");
-	*user = strdup(hpo->hesiod_po_name);
-	if (*user == NULL)
-	    errx (1, "strdup: out of memory");
+	ret = estrdup(hpo->hesiod_po_host);
+	*user = estrdup(hpo->hesiod_po_name);
 	hesiod_free_postoffice (context, hpo);
     }
     hesiod_end (context);
@@ -599,12 +619,8 @@ hesiod_get_pobox (const char **user)
 	if (strcasecmp(hpo->po_type, "pop") != 0)
 	    errx (1, "Unsupported po type %s", hpo->po_type);
 
-	ret = strdup(hpo->po_host);
-	if(ret == NULL)
-	    errx (1, "strdup: out of memory");
-	*user = strdup(hpo->po_name);
-	if (*user == NULL)
-	    errx (1, "strdup: out of memory");
+	ret = estrdup(hpo->po_host);
+	*user = estrdup(hpo->po_name);
     }
     return ret;
 }
@@ -644,9 +660,7 @@ parse_pobox (char *a0, const char **host, const char **user)
 
 	    if (pwd == NULL)
 		errx (1, "Who are you?");
-	    *user = strdup (pwd->pw_name);
-	    if (*user == NULL)
-		errx (1, "strdup: out of memory");
+	    *user = estrdup (pwd->pw_name);
 	}
 	*host = get_pobox (user);
 	return;
