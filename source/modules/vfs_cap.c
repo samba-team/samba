@@ -45,9 +45,9 @@ static DIR *cap_opendir(vfs_handle_struct *handle, connection_struct *conn, cons
 	return SMB_VFS_NEXT_OPENDIR(handle, conn, capname);
 }
 
-static struct dirent *cap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
-        struct dirent *result;
+        SMB_STRUCT_DIRENT *result;
 	DEBUG(3,("cap: cap_readdir\n"));
 	result = SMB_VFS_NEXT_READDIR(handle, conn, dirp);
 	if (result) {
