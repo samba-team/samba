@@ -1223,6 +1223,7 @@ again:
 	}
 	
 	if (cli_set_port(cli, port) != port) {
+		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1235,6 +1236,7 @@ again:
 	{
 		DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
+		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
