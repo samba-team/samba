@@ -107,7 +107,7 @@ static void print_header(void)
 
 	if (!include_html("include/header.html")) {
 		printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
-		printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"%simages/background.jpg\">\n\n", cgi_rooturl());
+		printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"/swat/images/background.jpg\">\n\n");
 	}
 }
 
@@ -132,8 +132,8 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td><A HREF=\"%shelp/parameters.html#%s\">?</A> %s</td><td>", 
-	       cgi_rooturl(), parm->label, parm->label);
+	printf("<tr><td><A HREF=\"/swat/help/parameters.html#%s\">?</A> %s</td><td>", 
+	       parm->label, parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
@@ -355,10 +355,9 @@ static void load_config(void)
 /* spit out the html for a link with an image */
 static void image_link(char *name,char *hlink, char *src, int width, int height)
 {
-	printf("<A HREF=\"%s/%s\"><img width=%d height=%d src=\"%s%s\" alt=\"%s\"></A>\n", 
+	printf("<A HREF=\"%s/%s\"><img width=%d height=%d src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(),
 	       hlink, width, height, 
-	       cgi_rooturl(),
 	       src, name);
 }
 

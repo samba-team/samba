@@ -622,8 +622,10 @@ void cgi_setup(char *rootdir, int auth_required)
 		*p = 0;
 	}
 
-	if (strstr(url+1,"..")==0 && file_exist(url+1, NULL)) {
-		cgi_download(url+1);
+	string_sub(url, "/swat/", "");
+
+	if (strstr(url,"..")==0 && file_exist(url, NULL)) {
+		cgi_download(url);
 	}
 
 	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
@@ -643,18 +645,6 @@ char *cgi_baseurl(void)
 	}
 	return getenv("SCRIPT_NAME");
 }
-
-/***************************************************************************
-return the root URL for images etc
-  ***************************************************************************/
-char *cgi_rooturl(void)
-{
-	if (baseurl) {
-		return "/";
-	}
-	return "/swat/";
-}
-
 
 /***************************************************************************
 return the current pages path info
