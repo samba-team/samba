@@ -17,15 +17,19 @@ construction.  The following VFS modules are given:
 		connect/disconnect, directory opens/create/remove,
 		file open/close/rename/unlink/chmod.
 
-	streamer
-		Stream file writes to a network address instead of to
-		disk.
+The libtool program, available from your favourite GNU software
+archive, is required to compile these programs.
 
-	perlfs
-		A wrapper for writing Samba VFS modules in Perl.
+To use the VFS modules, create a share similar to the one below.  The
+important parameter is the 'vfs object' parameter which must point to
+the exact pathname of the shared library object.
 
-The modules need only to be compiled with -I/samba/source/dir added to
-CFLAGS.
+       [audit]
+                comment = Audited /data directory
+                path = /data
+                vfs object = /path/to/audit.so
+                writeable = yes
+                browseable = yes
 
 Further documentation on writing VFS modules for Samba can be found in
 docs directory of the Samba source distribution.

@@ -1,7 +1,7 @@
 /* 
  * Skeleton VFS module.
  *
- * Copyright (C) Tim Potter, 1999
+ * Copyright (C) Tim Potter, 1999-2000
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: skel.c,v 1.1 2000/02/03 04:40:56 tpot Exp $
+ * $Id: skel.c,v 1.2 2000/02/04 05:08:16 tpot Exp $
  */
 
 #include "config.h"
@@ -42,7 +42,7 @@
 
 int skel_connect(struct vfs_connection_struct *conn, char *svc, char *user);
 void skel_disconnect(void);
-SMB_BIG_UINT skel_disk_free(char *path, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT skel_disk_free(char *path, BOOL smallquery, SMB_BIG_UINT *bsize, 
 			    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 DIR *skel_opendir(char *fname);
@@ -57,11 +57,10 @@ ssize_t skel_read(int fd, char *data, size_t n);
 ssize_t skel_write(int fd, char *data, size_t n);
 SMB_OFF_T skel_lseek(int filedes, SMB_OFF_T offset, int whence);
 int skel_rename(char *old, char *new);
-void skel_sync(int fd);
+void skel_fsync(int fd);
 int skel_stat(char *fname, SMB_STRUCT_STAT *sbuf);
 int skel_fstat(int fd, SMB_STRUCT_STAT *sbuf);
 int skel_lstat(char *path, SMB_STRUCT_STAT *sbuf);
-BOOL skel_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 int skel_unlink(char *path);
 int skel_chmod(char *path, mode_t mode);
 int skel_utime(char *path, struct utimbuf *times);
@@ -92,11 +91,10 @@ struct vfs_ops skel_ops = {
     skel_write,
     skel_lseek,
     skel_rename,
-    skel_sync,
+    skel_fsync,
     skel_stat,
     skel_fstat,
     skel_lstat,
-    skel_lock,
     skel_unlink,
     skel_chmod,
     skel_utime
@@ -123,10 +121,10 @@ void skel_disconnect(void)
     default_vfs_ops.disconnect();
 }
 
-SMB_BIG_UINT skel_disk_free(char *path, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT skel_disk_free(char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-    return default_vfs_ops.disk_free(path, bsize, dfree, dsize);
+    return default_vfs_ops.disk_free(path, small_query, bsize, dfree, dsize);
 }
 
 DIR *skel_opendir(char *fname)
@@ -184,9 +182,9 @@ int skel_rename(char *old, char *new)
     return default_vfs_ops.rename(old, new);
 }
 
-void skel_sync(int fd)
+void skel_fsync(int fd)
 {
-    default_vfs_ops.sync(fd);
+    default_vfs_ops.fsync(fd);
 }
 
 int skel_stat(char *fname, SMB_STRUCT_STAT *sbuf)
@@ -202,11 +200,6 @@ int skel_fstat(int fd, SMB_STRUCT_STAT *sbuf)
 int skel_lstat(char *path, SMB_STRUCT_STAT *sbuf)
 {
     return default_vfs_ops.lstat(path, sbuf);
-}
-
-BOOL skel_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
-{
-    return default_vfs_ops.lock(fd, op, offset, count, type);
 }
 
 int skel_unlink(char *path)
