@@ -225,11 +225,18 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
-	ret = krb5_copy_creds_contents (context,
-					in_creds,
-					*out_creds);
+	ret = krb5_copy_principal(context, 
+				  in_creds->client, 
+				  &(*out_creds)->client);
 	if(ret)
 	    goto out;
+	ret = krb5_copy_principal(context, 
+				  in_creds->server, 
+				  &(*out_creds)->server);
+	if(ret)
+	    goto out;
+	/* this should go someplace else */
+	(*out_creds)->times.endtime = in_creds->times.endtime;
 
 	ret = extract_ticket(context,
 			     &rep,
@@ -328,6 +335,7 @@ krb5_get_credentials(krb5_context context,
 	free(*out_creds);
 	return ret;
     }
+    memset(*out_creds, 0, sizeof(**out_creds));
     {
 	krb5_creds tmp_creds;
 	general_string tgt_inst;
