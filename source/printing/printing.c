@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+
 extern int DEBUGLEVEL;
 
 /* 
@@ -248,6 +249,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (!pjob.smbjob) {
 		/* remove a unix job if it isn't in the system queue
                    any more */
+
 		for (i=0;i<ts->qcount;i++) {
 			if (jobid == ts->queue[i].job + UNIX_JOB_START) break;
 		}
@@ -1032,6 +1034,7 @@ int print_queue_snum(char *qname)
 ****************************************************************************/
 BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 {
+	char *printer_name;
 	int ret;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
@@ -1042,21 +1045,22 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL, 
 				NULL);
 
+	if (ret != 0) {
+		*errcode = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
 	/* force update the database */
 	print_cache_flush(snum);
 
 	/* Send a printer notify message */
 
-	if (ret == 0) {
-		char *printer_name;
+	printer_name = PRINTERNAME(snum);
 
-		printer_name = PRINTERNAME(snum);
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
 
-		message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
-				 strlen(printer_name) + 1);
-	}
-
-	return ret == 0;
+	return True;
 }
 
 /****************************************************************************
@@ -1064,6 +1068,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 ****************************************************************************/
 BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 {
+	char *printer_name;
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
@@ -1074,21 +1079,22 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 	ret = print_run_command(snum, lp_queueresumecommand(snum), NULL, 
 				NULL);
 
+	if (ret != 0) {
+		*errcode = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
 	/* force update the database */
 	print_cache_flush(snum);
 
 	/* Send a printer notify message */
 
-	if (ret == 0) {
-		char *printer_name;
+	printer_name = PRINTERNAME(snum);
 
-		printer_name = PRINTERNAME(snum);
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
 
-		message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
-				 strlen(printer_name) + 1);
-	}
-
-	return ret == 0;
+	return True;
 }
 
 /****************************************************************************
