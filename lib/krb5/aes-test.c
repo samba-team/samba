@@ -38,8 +38,6 @@
 
 RCSID("$Id$");
 
-#ifdef ENABLE_AES
-
 static int verbose = 0;
 
 static void
@@ -69,6 +67,7 @@ struct {
     char *pbkdf2;
     char *key;
 } keys[] = {
+#ifdef ENABLE_AES
     { 
 	"password", "ATHENA.MIT.EDUraeburn", -1,
 	1, 
@@ -185,7 +184,15 @@ struct {
 	"\xe7\xfe\x37\xa0\xc4\x1e\x02\xc2\x81\xff\x30\x69\xe1\xe9\x4f\x52",
 	"\x4b\x6d\x98\x39\xf8\x44\x06\xdf\x1f\x09\xcc\x16\x6d\xb4\xb8\x3c"
 	"\x57\x18\x48\xb7\x84\xa3\xd6\xbd\xc3\x46\x58\x9a\x3e\x39\x3f\x9e"
-    }	
+    },
+#endif
+    {
+	"foo", "", -1, 
+	0,
+	ETYPE_ARCFOUR_HMAC_MD5, 16,
+	NULL,
+	"\xac\x8e\x65\x7f\x83\xdf\x82\xbe\xea\x5d\x43\xbd\xaf\x78\x00\xcc"
+    }
 };
 
 static int
@@ -222,48 +229,54 @@ string_to_key_test(krb5_context context)
 	if (keys[i].keylen > sizeof(keyout))
 	    abort();
 
-#ifdef HAVE_OPENSSL
-	PKCS5_PBKDF2_HMAC_SHA1(password.data, password.length,
-			       salt.saltvalue.data, salt.saltvalue.length,
-			       keys[i].iterations, 
-			       keys[i].keylen, keyout);
+#ifdef ENABLE_AES
+	if (keys[i].enctype == ETYPE_AES256_CTS_HMAC_SHA1_96 ||
+	    keys[i].enctype == ETYPE_AES256_CTS_HMAC_SHA1_96) {
 
-	if (memcmp(keyout, keys[i].pbkdf2, keys[i].keylen) != 0) {
-	    krb5_warnx(context, "%d: openssl key pbkdf2", i);
-	    val = 1;
-	    continue;
+#ifdef HAVE_OPENSSL
+	    PKCS5_PBKDF2_HMAC_SHA1(password.data, password.length,
+				   salt.saltvalue.data, salt.saltvalue.length,
+				   keys[i].iterations, 
+				   keys[i].keylen, keyout);
+	    
+	    if (memcmp(keyout, keys[i].pbkdf2, keys[i].keylen) != 0) {
+		krb5_warnx(context, "%d: openssl key pbkdf2", i);
+		val = 1;
+		continue;
+	    }
+#endif
+	    
+	    ret = krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
+				    keys[i].iterations - 1,
+				    keys[i].enctype,
+				    &key);
+	    if (ret) {
+		krb5_warn(context, ret, "%d: krb5_PKCS5_PBKDF2", i);
+		val = 1;
+		continue;
+	    }
+	    
+	    if (key.keyvalue.length != keys[i].keylen) {
+		krb5_warnx(context, "%d: size key pbkdf2", i);
+		val = 1;
+		continue;
+	    }
+
+	    if (memcmp(key.keyvalue.data, keys[i].pbkdf2, keys[i].keylen) != 0) {
+		krb5_warnx(context, "%d: key pbkdf2 pl %d", 
+			   i, password.length);
+		val = 1;
+		continue;
+	    }
+
+	    if (verbose) {
+		printf("PBKDF2:\n");
+		hex_dump_data(&key.keyvalue);
+	    }
+	    
+	    krb5_free_keyblock_contents(context, &key);
 	}
 #endif
-
-	ret = krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
-				keys[i].iterations - 1,
-				keys[i].enctype,
-				&key);
-	if (ret) {
-	    krb5_warn(context, ret, "%d: krb5_PKCS5_PBKDF2", i);
-	    val = 1;
-	    continue;
-	}
-
-	if (key.keyvalue.length != keys[i].keylen) {
-	    krb5_warnx(context, "%d: size key pbkdf2", i);
-	    val = 1;
-	    continue;
-	}
-
-	if (memcmp(key.keyvalue.data, keys[i].pbkdf2, keys[i].keylen) != 0) {
-	    krb5_warnx(context, "%d: key pbkdf2 pl %d", 
-		       i, password.length);
-	    val = 1;
-	    continue;
-	}
-
-	if (verbose) {
-	    printf("PBKDF2:\n");
-	    hex_dump_data(&key.keyvalue);
-	}
-
-	krb5_free_keyblock_contents(context, &key);
 
 	ret = krb5_string_to_key_data_salt_opaque (context, keys[i].enctype,
 						   password, salt, opaque, 
@@ -275,7 +288,8 @@ string_to_key_test(krb5_context context)
 	}
 
 	if (key.keyvalue.length != keys[i].keylen) {
-	    krb5_warnx(context, "%d: key wrong length", i);
+	    krb5_warnx(context, "%d: key wrong length (%d/%d)",
+		       i, key.keyvalue.length, keys[i].keylen);
 	    val = 1;
 	    continue;
 	}
@@ -294,6 +308,8 @@ string_to_key_test(krb5_context context)
     }
     return val;
 }
+
+#ifdef ENABLE_AES
 
 struct {
     size_t len;
@@ -425,7 +441,6 @@ encryption_test(krb5_context context)
 int
 main(int argc, char **argv)
 {
-#ifdef ENABLE_AES
     krb5_error_code ret;
     krb5_context context;
     int val = 0;
@@ -436,7 +451,9 @@ main(int argc, char **argv)
 
     val |= string_to_key_test(context);
 
+#ifdef ENABLE_AES
     val |= encryption_test(context);
+#endif
 
     if (verbose && val == 0)
 	printf("all ok\n");
@@ -446,7 +463,4 @@ main(int argc, char **argv)
     krb5_free_context(context);
 
     return val;
-#else /* ! ENABLE_AES */
-    return 0;
-#endif /* ENABLE_AES */
 }
