@@ -467,7 +467,7 @@ typedef krb5_error_code (*kpwd_process_reply) (krb5_context,
 					       krb5_data *,
 					       const char *);
 
-struct kpwd_proc {
+static struct kpwd_proc {
     const char *name;
     int flags;
 #define SUPPORT_TCP	1
