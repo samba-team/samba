@@ -181,14 +181,14 @@ int ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
 /*
   add a machine account to the ADS server
 */
-static int ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname)
+static int ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
 {
 	int ret;
 	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
 
 	asprintf(&host_spn, "HOST/%s", hostname);
 	asprintf(&host_upn, "%s@%s", host_spn, ads->realm);
-	asprintf(&new_dn, "cn=%s,cn=Computers,%s", hostname, ads->bind_path);
+	asprintf(&new_dn, "cn=%s,cn=%s,%s", hostname, org_unit, ads->bind_path);
 	asprintf(&samAccountName, "%s$", hostname);
 	asprintf(&controlstr, "%u", 
 		UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT | 
@@ -300,7 +300,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
   join a machine to a realm, creating the machine account
   and setting the machine password
 */
-int ads_join_realm(ADS_STRUCT *ads, const char *hostname)
+int ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
 {
 	int rc;
 	LDAPMessage *res;
@@ -316,7 +316,7 @@ int ads_join_realm(ADS_STRUCT *ads, const char *hostname)
 		return LDAP_SUCCESS;
 	}
 
-	rc = ads_add_machine_acct(ads, host);
+	rc = ads_add_machine_acct(ads, host, org_unit);
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("ads_add_machine_acct: %s\n", ads_errstr(rc)));
 		return rc;
