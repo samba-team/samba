@@ -425,16 +425,11 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o
 
-NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
-		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
-		auth/auth_util.o
-
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(GROUPDB_OBJ) $(PROFILE_OBJ) \
-		$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ)
+		$(GROUPDB_OBJ) $(PROFILE_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 	passdb/secrets.o

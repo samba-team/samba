@@ -684,7 +684,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 
-	result = cli_nt_setup_creds(conn.cli, trust_passwd);
+	result = new_cli_nt_setup_creds(conn.cli, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
