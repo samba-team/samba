@@ -169,13 +169,11 @@
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
-#endif
-
-/* AIX 4.1 and previous needs this for setpriv */
-#if defined(HAVE_SETPRIV) && defined(HAVE_SYS_PRIV_H)
-#include <sys/priv.h>
 #endif
 
 #include <errno.h>
@@ -820,11 +818,11 @@ int ftruncate(int f,long l);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 #endif
 
-#if (defined(HAVE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
 /* stupid glibc */
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #endif
-#if (defined(HAVE_SETRESGID) && !defined(HAVE_SETRESGID_DECL))
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 

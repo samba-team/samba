@@ -174,6 +174,10 @@
 #undef USE_BOTH_CRYPT_CALLS
 #undef HAVE_BROKEN_FCNTL64_LOCKS
 #undef HAVE_FNMATCH
+#undef USE_SETEUID
+#undef USE_SETRESUID
+#undef USE_SETREUID
+#undef USE_SETUIDX
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -574,14 +578,8 @@
 /* Define if you have the set_auth_parameters function.  */
 #undef HAVE_SET_AUTH_PARAMETERS
 
-/* Define if you have the setegid function.  */
-#undef HAVE_SETEGID
-
 /* Define if you have the setenv function.  */
 #undef HAVE_SETENV
-
-/* Define if you have the seteuid function.  */
-#undef HAVE_SETEUID
 
 /* Define if you have the setgidx function.  */
 #undef HAVE_SETGIDX
@@ -597,12 +595,6 @@
 
 /* Define if you have the setpriv function.  */
 #undef HAVE_SETPRIV
-
-/* Define if you have the setregid function.  */
-#undef HAVE_SETREGID
-
-/* Define if you have the setreuid function.  */
-#undef HAVE_SETREUID
 
 /* Define if you have the setsid function.  */
 #undef HAVE_SETSID

@@ -308,15 +308,14 @@ char *fgets_slash(char *s2,int maxlen,FILE *f);
 
 /*The following definitions come from  lib/util_sec.c  */
 
-int trapdoor_set_effective_uid(uid_t uid);
-int trapdoor_set_real_uid(uid_t uid);
-int trapdoor_set_effective_gid(gid_t gid);
 void gain_root_privilege(void);
 void gain_root_group_privilege(void);
-int set_effective_uid(uid_t uid);
-int set_effective_gid(gid_t gid);
-int set_real_uid(uid_t uid);
-BOOL become_user_permanently(uid_t uid, gid_t gid);
+void set_effective_uid(uid_t uid);
+void set_effective_gid(gid_t gid);
+void save_re_uid(void);
+void restore_re_uid(void);
+int set_re_uid(void);
+void become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
 
@@ -404,19 +403,13 @@ char *string_truncate(char *s, int length);
 int dos_PutUniCode(char *dst,char *src, ssize_t len);
 char *skip_unicode_string(char *buf,int n);
 char *dos_unistrn2(uint16 *src, int len);
-char *unix_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
-char *unix_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);
-char *unix_unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *dos_buffer2_to_str(BUFFER2 *str);
-char *unix_buffer2_to_str(BUFFER2 *str);
 char *dos_buffer2_to_multistr(BUFFER2 *str);
-char *unix_buffer2_to_multistr(BUFFER2 *str);
 size_t dos_struni2(char *dst, const char *src, size_t max_len);
 char *dos_unistr(char *buf);
-char *unix_unistr(char *buf);
 int unistrcpy(char *dst, char *src);
 void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);

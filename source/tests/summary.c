@@ -11,12 +11,13 @@ main()
 	printf("WARNING: no shared memory. Running with slow locking code\n");
 #endif
 
-#ifdef HAVE_TRAPDOOR_UID
-	printf("WARNING: trapdoor uid system - Samba may not operate correctly\n");
-#endif
-
 #if !(defined(HAVE_IFACE_IFCONF) || defined(HAVE_IFACE_IFREQ) || defined(HAVE_IFACE_AIX))
 	printf("WARNING: No automated network interface determination\n");
+#endif
+
+#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX))
+	printf("ERROR: no seteuid method available\n");
+	exit(1);
 #endif
 
 #if !(defined(STAT_STATVFS) || defined(STAT_STATVFS64) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
