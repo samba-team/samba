@@ -313,16 +313,19 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
 	uint32			i = 0, num_printers, needed;
+	char *name = NULL;
 
-	if (argc > 2) 
+	if (argc > 3) 
 	{
-		printf("Usage: %s [level]\n", argv[0]);
+		printf("Usage: %s [level] [name]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2) {
+	if (argc == 2)
 		info_level = atoi(argv[1]);
-	}
+
+	if (argc == 3)
+		name = argv[2];
 
 	/* Enumerate printers  -- Should we enumerate types other 
 	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
@@ -330,12 +333,12 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	ZERO_STRUCT(ctr);
 
 	result = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, PRINTER_ENUM_LOCAL, 
+		cli, mem_ctx, 0, &needed, name, PRINTER_ENUM_LOCAL, 
 		info_level, &num_printers, &ctr);
 
 	if (W_ERROR_V(result) == ERRinsufficientbuffer)
 		result = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, PRINTER_ENUM_LOCAL, 
+			cli, mem_ctx, needed, NULL, name, PRINTER_ENUM_LOCAL, 
 			info_level, &num_printers, &ctr);
 
 	if (W_ERROR_IS_OK(result)) {

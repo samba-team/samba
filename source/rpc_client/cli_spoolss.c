@@ -393,7 +393,7 @@ WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 uint32 offered, uint32 *needed,
-				 uint32 flags, uint32 level,
+				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -406,7 +406,13 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	/* Use server name if no object name specified */
+
+	if (name)
+		slprintf(server, sizeof(fstring) - 1, "\\\\%s", name);
+	else
+		slprintf(server, sizeof(fstring) - 1, "\\\\%s", cli->desthost);
+
         strupper (server);
 	
 	/* Initialise input parameters */
