@@ -1909,6 +1909,8 @@ BOOL samr_create_dom_user(struct cli_state *cli, uint16 fnum,
 BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *alias_pol, uint32 *rid);
+BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 BOOL samr_set_aliasinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 BOOL samr_open_group(struct cli_state *cli, uint16 fnum, 
