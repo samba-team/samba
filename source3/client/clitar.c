@@ -102,6 +102,7 @@ BOOL tar_system=True;
 BOOL tar_hidden=True;
 /* Be noisy - make a catalogue */
 BOOL tar_noisy=True;
+BOOL tar_real_noisy=True;
 
 char tar_type='\0';
 static char **cliplist=NULL;
@@ -568,7 +569,7 @@ static int strslashcmp(char *s1, char *s2)
 do_setrtime, set time on a file or dir ...
 **********************************************************************/
 
-static int do_setrtime(char *fname, int mtime)
+static int do_setrtime(char *fname, int mtime, BOOL err_silent)
 {
   char *inbuf, *outbuf, *p;
   char *name;
@@ -583,8 +584,14 @@ static int do_setrtime(char *fname, int mtime)
 
   }
 
-  safe_strcpy(name, "\\", strlen(fname) + 1);
+  if (*fname != '\\')
+    safe_strcpy(name, "\\", strlen(fname) + 1);
+  else
+    safe_strcpy(name, "", strlen(fname) + 1);
   safe_strcat(name, fname, strlen(fname) + 1);
+
+  if (fname[strlen(name) - 1] == '\\')
+    name[strlen(name) - 1] = '\0';
 
   inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -619,8 +626,10 @@ static int do_setrtime(char *fname, int mtime)
 
   if (CVAL(inbuf,smb_rcls) != 0)
     {
-      DEBUG(0,("%s setting attributes on file %s\n",
-	    smb_errstr(inbuf), fname));
+      if (!err_silent) {
+	DEBUG(0,("%s setting attributes on file %s\n",
+		 smb_errstr(inbuf), fname));
+      }
       free(name);free(inbuf);free(outbuf);
       return(False);
     }
@@ -1954,10 +1963,12 @@ static void do_tarput()
 
 		  DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-		  if (!do_setrtime(finfo.name, finfo.mtime)) {
+		  if (!do_setrtime(finfo.name, finfo.mtime, True)) {
 
-                    DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
-                    return;
+		    if (tar_real_noisy) {
+		      DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
+		    }
+                    /*return; /* Win 95 does not like setting time on dirs */
 
                   }
 

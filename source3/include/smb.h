@@ -164,6 +164,7 @@ implemented */
 #define ERRnofiles 18 /* no more files found in file search */
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
+#define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRcannotopen 110 /* Cannot open the file specified */
 #define ERRunknownlevel 124
