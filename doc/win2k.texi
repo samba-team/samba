@@ -10,25 +10,79 @@ that we have found out while trying to test Heimdal against Windows
 2000 is the almost complete lack of documentation.
 
 This information should apply to Heimdal @value{VERSION} and Windows
-2000 RC1.  It's of course subject all the time and mostly consists of
+2000 Professional.  It's of course subject all the time and mostly consists of
 our not so inspired guesses.  Hopefully it's still somewhat useful.
 
 @menu
+* Configuring Windows 2000 to use a Heimdal KDC::
 * Encryption types::            
 * Authorization data::          
 @end menu
 
-@node Encryption types, Authorization data, Windows 2000 compatability, Windows 2000 compatability
+@node Configuring Windows 2000 to use a Heimdal KDC, Encryption types, Windows 2000 compatability, Windows 2000 compatability
+@comment node-name, next, precious, up
+@section Configuring Windows 2000 to use a Heimdal KDC
+
+You need the command line program called @code{ksetup.exe} which is available
+in the file @code{SUPPORT/TOOLS/SUPPORT.CAB} on the Windows 2000 Professional
+CD-ROM. This program is used to configure the Kerberos settings on a
+Workstation.
+
+Use the kadmin program in Heimdal to create a host principal in the
+Kerberos realm.
+
+@example
+unix% kadmin
+kadmin> ank -pw password host/datan.my.domain
+@end example
+
+You must configure the Workstation as a member of a workgroup, as opposed
+to a member in an NT domain, and specify the KDC server of the realm
+as follows:
+@example
+C:> ksetup /setdomain MY.REALM
+C:> ksetup /addkdc MY.REALM kdc.my.domain
+@end example
+
+Set the machine password, i.e. create the local keytab:
+@example
+C:> ksetup /setmachpassword password
+@end example
+
+The workstation must now be rebooted.
+
+A mapping between local NT users and Kerberos principals must be specified,
+you have two choices:
+
+@example
+C:> ksetup /mapuser user@@MY.REALM nt_user
+@end example
+
+This will map a user to a specific principal, this allows you to have
+other usernames in the realm than in your NT user database. (Don't ask
+me why on earth you would want that...)
+
+You can also say:
+@example
+C:> ksetup /mapuser * *
+@end example
+The Windows machine will now map any user to the corresponding principal,
+for example @samp{nisse} to the principal @samp{nisse@@MY.REALM}.
+(This most likely what you want.)
+
+More information about the Windows 2000 Kerberos implementation can be found
+at @url{http://www.microsoft.com/windows2000/library/planning/security/kerbsteps.asp}
+
+@node Encryption types, Authorization data, Configuring Windows 2000 to use a Heimdal KDC, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
 @section Encryption types
 
 Windows 2000 supports both the standard DES encryptions (des-cbc-crc and
-des-cbc-md5) and its own proprietary encryption that is based on md4 and
+des-cbc-md5) and its own proprietary encryption that is based on MD4 and
 rc4 and which is supposed to be described in
-draft-brezak-win2k-krb-rc4-hmac-01.txt.  To enable a given principal to
-use DES, it needs to have DES keys in the database.  To do this, you
-need to enable DES keys for the particular principal with the user
-administration tool and then change the password.
+draft-brezak-win2k-krb-rc4-hmac-01.txt.  New users will get both MD4 and
+DES keys.  Users that are converted from a NT4 database, will only have
+MD4 passwords and will need a password change to get a DES key.
 
 @node Authorization data,  , Encryption types, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
