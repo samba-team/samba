@@ -247,22 +247,12 @@ sub ParseArrayPull($$)
 #		}
 
 		# non fixed arrays encode the size just before the array
-		pidl "\t{\n";
-		pidl "\t\tguint32 _array_size;\n\n";
-		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_size, &_array_size);\n";
-		if ($size =~ /r->in/) {
-			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
-		} else {
-			pidl "\t\tif ($size != _array_size) {\n";
-		}
-		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array size (%u should be %u)\", _array_size, $size);\n";
-		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array size (%u should be %u)\", _array_size, $size);\n";
-		pidl "\t\t}\n";
-		if ($size =~ /r->in/) {
-			pidl "else { $size = _array_size; }\n";
-		}
-		pidl "\t}\n";
+
+	    if (!($size =~ /\d+/)) {
+		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_size, &$size);\n";
+	    } else {
+		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_size, NULL);\n";
+	    }
 	}
 
 #	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
@@ -280,33 +270,18 @@ sub ParseArrayPull($$)
 #		}
 #	}
 
-	pidl "\t{\n";
-
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length);
-		pidl "\t\tguint32 _offset, _length;\n";
 		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_offset, &_offset);\n";
 		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_length, &_length);\n";
-		pidl "\t\tif (_offset != 0) {\n";
-		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array offset %d\", _offset);\n";
-		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"Bad array offset %d\", _offset);\n";
-		pidl "\t\t}\n";
-		pidl "\t\tif (_length > $size || _length != $length) {\n";
-		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
-		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array length %d > size %d\", _offset, $size);\n";
-		pidl "\t\t}\n";
 		$size = "_length";
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, $ndr_flags, $size);\n";
+		pidl "\tndr_pull_array_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, $ndr_flags, $size);\n";
 	} else {
-		pidl "\t\tndr_pull_array(ndr, tree, $ndr_flags, $size, ndr_pull_$e->{TYPE});\n";
+		pidl "\tndr_pull_array(ndr, tree, $ndr_flags, $size, ndr_pull_$e->{TYPE});\n";
 	}
-
-	pidl "\t}\n";
 }
 
 
@@ -445,6 +420,8 @@ sub ParseStructPull($)
 {
 	my($struct) = shift;
 	my $conform_e;
+
+	pidl "\tguint32 _offset, _length;\n";
 
 	for my $x (@{$struct->{ELEMENTS}}) {
 	    if (util::is_builtin_type($x->{TYPE})) {
@@ -717,6 +694,7 @@ sub ParseFunctionPull($)
 	pidl $static . "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n";
 	pidl "{\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
+	pidl "\tguint32 _offset, _length;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
