@@ -3,8 +3,8 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000-2002
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
+   Copyright (C) Tim Potter      2000-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
    Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
 
    This program is free software; you can redistribute it and/or modify
@@ -91,6 +91,8 @@ static DATA_BLOB opt_nt_response;
 static int request_lm_key;
 static int request_nt_key;
 
+static const char *require_membership_of;
+static const char *require_membership_sid;
 
 static char winbind_separator(void)
 {
@@ -138,7 +140,7 @@ static const char *get_winbind_domain(void)
 	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("could not obtain winbind domain name!\n"));
-		return NULL;
+		exit(1);
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);
@@ -173,13 +175,78 @@ static const char *get_winbind_netbios_name(void)
 
 }
 
+/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
+   form DOMAIN/user into a domain and a user */
+
+static BOOL parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
+				     fstring user)
+{
+
+	char *p = strchr(domuser,winbind_separator());
+
+	if (!p) {
+		return False;
+	}
+        
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper_m(domain);
+
+	return True;
+}
+
+static BOOL get_require_membership_sid(void) {
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	if (!require_membership_of) {
+		return True;
+	}
+
+	if (require_membership_sid) {
+		return True;
+	}
+
+	/* Otherwise, ask winbindd for the name->sid request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (!parse_ntlm_auth_domain_user(require_membership_of, 
+					 request.data.name.dom_name, 
+					 request.data.name.name)) {
+		DEBUG(0, ("Could not parse %s into seperate domain/name parts!\n", 
+			  require_membership_of));
+		return False;
+	}
+
+	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
+			  require_membership_of));
+		return False;
+	}
+
+	require_membership_sid = strdup(response.data.sid.sid);
+
+	if (require_membership_sid)
+		return True;
+
+	return False;
+}
 /* Authenticate a user with a plaintext password */
 
-static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout_diagnostics)
+static BOOL check_plaintext_auth(const char *user, const char *pass, 
+				 BOOL stdout_diagnostics)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
         NSS_STATUS result;
+
+	if (!get_require_membership_sid()) {
+		return False;
+	}
 
 	/* Send off request */
 
@@ -188,6 +255,8 @@ static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout
 
 	fstrcpy(request.data.auth.user, user);
 	fstrcpy(request.data.auth.pass, pass);
+	if (require_membership_sid)
+		fstrcpy(request.data.auth.required_membership_sid, require_membership_sid);
 
 	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
 
@@ -237,10 +306,17 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	static uint8 zeros[16];
 
+	if (!get_require_membership_sid()) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	request.flags = flags;
+
+	if (require_membership_sid)
+		fstrcpy(request.data.auth_crap.required_membership_sid, require_membership_sid);
 
 	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
 		*error_string = smb_xstrdup(
@@ -264,12 +340,16 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
 
 	if (lm_response && lm_response->length) {
-		memcpy(request.data.auth_crap.lm_resp, lm_response->data, MIN(lm_response->length, sizeof(request.data.auth_crap.lm_resp)));
+		memcpy(request.data.auth_crap.lm_resp, 
+		       lm_response->data, 
+		       MIN(lm_response->length, sizeof(request.data.auth_crap.lm_resp)));
 		request.data.auth_crap.lm_resp_len = lm_response->length;
 	}
 
 	if (nt_response && nt_response->length) {
-		memcpy(request.data.auth_crap.nt_resp, nt_response->data, MIN(nt_response->length, sizeof(request.data.auth_crap.nt_resp)));
+		memcpy(request.data.auth_crap.nt_resp, 
+		       nt_response->data, 
+		       MIN(nt_response->length, sizeof(request.data.auth_crap.nt_resp)));
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 	
@@ -346,7 +426,9 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
-		       ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, error_string ? error_string : "unknown error (NULL)"));
+		       ntlmssp_state->domain, ntlmssp_state->user, 
+		       ntlmssp_state->workstation, 
+		       error_string ? error_string : "unknown error (NULL)"));
 		ntlmssp_state->auth_context = NULL;
 	}
 	return nt_status;
@@ -382,7 +464,10 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 		if (memcmp(nt_key, zeros, 16) != 0) {
 			*user_session_key = data_blob(nt_key, 16);
 		}
-		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, "%s%c%s", ntlmssp_state->domain, *lp_winbind_separator(), ntlmssp_state->user);
+		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, 
+							      "%s%c%s", ntlmssp_state->domain, 
+							      *lp_winbind_separator(), 
+							      ntlmssp_state->user);
 	} else {
 		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
@@ -1381,6 +1466,8 @@ static BOOL check_auth_crap(void)
 	if (request_nt_key) 
 		flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
+	flags |= WBFLAG_PAM_NT_STATUS_SQUASH;
+
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
 					      &opt_challenge, 
@@ -1773,7 +1860,7 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 
 	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(user_session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
-		DEBUG(1, ("USER Session Key does not match expectations!\n"));
+		DEBUG(1, ("USER (NT) Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
@@ -2008,7 +2095,8 @@ enum {
 	OPT_PASSWORD,
 	OPT_LM_KEY,
 	OPT_NT_KEY,
-	OPT_DIAGNOSTICS
+	OPT_DIAGNOSTICS,
+	OPT_REQUIRE_MEMBERSHIP
 };
 
  int main(int argc, const char **argv)
@@ -2020,12 +2108,6 @@ enum {
 	static const char *hex_challenge;
 	static const char *hex_lm_response;
 	static const char *hex_nt_response;
-	char *challenge;
-	char *lm_response;
-	char *nt_response;
-	size_t challenge_len;
-	size_t lm_response_len;
-	size_t nt_response_len;
 
 	poptContext pc;
 
@@ -2050,6 +2132,7 @@ enum {
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retreive LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_nt_key, OPT_NT_KEY, "Retreive NT session key"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
+		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -2083,40 +2166,32 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			challenge = smb_xmalloc((strlen(hex_challenge))/2+1);
-			if ((challenge_len = strhex_to_str(challenge, 
-							   strlen(hex_challenge), 
-							   hex_challenge)) != 8) {
-				x_fprintf(x_stderr, "hex decode of %s failed (only got %lu bytes)!\n", 
-					hex_challenge, (unsigned long)challenge_len);
+			opt_challenge = strhex_to_data_blob(hex_challenge);
+			if (opt_challenge.length != 8) {
+				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_challenge);
 				exit(1);
 			}
-			opt_challenge = data_blob(challenge, challenge_len);
-			SAFE_FREE(challenge);
 			break;
 		case OPT_LM: 
-			lm_response = smb_xmalloc((strlen(hex_lm_response))/2+1);
-			lm_response_len = strhex_to_str(lm_response, 	
-							strlen(hex_lm_response), 
-							hex_lm_response);
-			if (lm_response_len != 24) {
+			opt_lm_response = strhex_to_data_blob(hex_lm_response);
+			if (opt_lm_response.length != 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_lm_response);
 				exit(1);
 			}
-			opt_lm_response = data_blob(lm_response, lm_response_len);
-			SAFE_FREE(lm_response);
 			break;
+
 		case OPT_NT: 
-			nt_response = smb_xmalloc((strlen(hex_nt_response)+2)/2+1);
-			nt_response_len = strhex_to_str(nt_response, 
-							strlen(hex_nt_response), 
-							hex_nt_response);
-			if (nt_response_len < 24) {
+			opt_nt_response = strhex_to_data_blob(hex_nt_response);
+			if (opt_nt_response.length < 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_nt_response);
 				exit(1);
 			}
-			opt_nt_response = data_blob(nt_response, nt_response_len);
-			SAFE_FREE(nt_response);
+			break;
+
+                case OPT_REQUIRE_MEMBERSHIP:
+			if (StrnCaseCmp("S-", require_membership_of, 2) == 0) {
+				require_membership_sid = require_membership_of;
+			}
 			break;
 		}
 	}
