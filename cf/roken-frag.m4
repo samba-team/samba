@@ -163,8 +163,10 @@ AC_CHECK_FUNCS([				\
 	asprintf				\
 	cgetent					\
 	getconfattr				\
+	getprogname				\
 	getrlimit				\
 	getspnam				\
+	setprogname				\
 	strsvis					\
 	strunvis				\
 	strvis					\
