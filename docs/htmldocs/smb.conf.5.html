@@ -542,6 +542,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a>
+<p><br><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><br><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
@@ -921,7 +922,12 @@ in order for the conversion to the UNIX character set to be done
 correctly. 
 <p><br><li > <strong>ISO8859-5</strong> Russian Cyrillic UNIX character set. The parameter
 <a href="smb.conf.5.html#clientcodepage"><strong>client code page</strong></a> <em>MUST</em> be set to code
-page 866 if the <strong>character set</strong> parameter is set to ISO8859-2
+page 866 if the <strong>character set</strong> parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly. 
+<p><br><li > <strong>ISO8859-7</strong> Greek UNIX character set. The parameter
+<a href="smb.conf.5.html#clientcodepage"><strong>client code page</strong></a> <em>MUST</em> be set to code
+page 737 if the <strong>character set</strong> parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly. 
 <p><br><li > <strong>KOI8-R</strong> Alternate mapping for Russian Cyrillic UNIX
@@ -1878,20 +1884,32 @@ is included literally, as though typed in place.
 <a href="smb.conf.5.html#percentP"><strong>%P</strong></a> and <a href="smb.conf.5.html#percentS"><strong>%S</strong></a>.
 <p><br><a name="interfaces"></a>
 <li><strong><strong>interfaces (G)</strong></strong>
-<p><br>This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces.
-<p><br>The option takes a list of ip/netmask pairs. The netmask may either be
-a bitmask, or a bitlength.
+<p><br>This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127.0.0.1 that are
+broadcast capable.
+<p><br>The option takes a list of interface strings. Each string can be in
+any of the following forms:
+<p><br><ul>
+<li > a network interface name (such as eth0). This may include
+     shell-like wildcards so eth* will match any interface starting
+     with the substring "eth"
+if() a IP address. In this case the netmask is determined
+     from the list of interfaces obtained from the kernel
+if() a IP/mask pair. 
+if() a broadcast/mask pair. 
+</ul>
+<p><br>The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form.
+<p><br>The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms.
 <p><br>For example, the following line:
-<p><br><code>interfaces = 192.168.2.10/24 192.168.3.10/24</code>
-<p><br>would configure two network interfaces with IP addresses 192.168.2.10
-and 192.168.3.10. The netmasks of both interfaces would be set to
-255.255.255.0.
-<p><br>You could produce an equivalent result by using:
-<p><br><code>interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0</code>
-<p><br>if you prefer that format.
-<p><br>If this option is not set then Samba will attempt to find a primary
-interface, but won't attempt to configure more than one interface.
+<p><br><code>interfaces = eth0 192.168.2.10/24 192.168.3.10/255.255.255.0</code>
+<p><br>would configure three network interfaces corresponding to the eth0
+device and IP addresses 192.168.2.10 and 192.168.3.10. The netmasks of
+the latter two interfaces would be set to 255.255.255.0.
 <p><br>See also <a href="smb.conf.5.html#bindinterfacesonly"><strong>"bind interfaces only"</strong></a>.
 <p><br><a name="invalidusers"></a>
 <li><strong><strong>invalid users (S)</strong></strong>
@@ -2952,7 +2970,7 @@ area. The default is zero, which means <a href="nmbd.8.html"><strong>nmbd</stron
 lose elections to Windows machines. See BROWSING.txt in the Samba
 docs/ directory for details.
 <p><br><strong>Default:</strong>
-<code>	os level = 0</code>
+<code>	os level = 20</code>
 <p><br><strong>Example:</strong>
 <code>	os level = 65    ; This will win against any NT Server</code>
 <p><br><a name="packetsize"></a>
@@ -4719,6 +4737,32 @@ Samba source distribution.
 <code>	wins server = </code>
 <p><br><strong>Example:</strong>
 <code>	wins server = 192.9.200.1</code>
+<p><br><a name="winshook"></a>
+<li><strong><strong>wins hook (G)</strong></strong>
+<p><br>When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+<p><br>The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+<p><br>wins_hook operation name nametype ttl IP_list
+<p><br>The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+<p><br>The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+<p><br>The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+<p><br>The fourth argument is the TTL (time to live) for the name in seconds.
+<p><br>The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+<p><br>An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 <p><br><a name="winssupport"></a>
 <li><strong><strong>wins support (G)</strong></strong>
 <p><br>This boolean controls if the <a href="nmbd.8.html"><strong>nmbd</strong></a> process in

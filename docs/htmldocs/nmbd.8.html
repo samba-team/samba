@@ -25,7 +25,7 @@ naming services to clients
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><br><strong>nmbd</strong> [<a href="nmbd.8.html#minusD">-D</a>] [<a href="nmbd.8.html#minuso">-o</a>] [<a href="nmbd.8.html#minusa">-a</a>] [<a href="nmbd.8.html#minusH">-H lmhosts file</a>] [<a href="nmbd.8.html#minusd">-d debuglevel</a>] [<a href="nmbd.8.html#minusl">-l log file basename</a>] [<a href="nmbd.8.html#minusn">-n primary NetBIOS name</a>] [<a href="nmbd.8.html#minusp">-p port number</a>] [<a href="nmbd.8.html#minuss">-s configuration file</a>] [<a href="nmbd.8.html#minusi">-i NetBIOS scope</a>] [<a href="nmbd.8.html#minush">-h</a>]
+<p><br><strong>nmbd</strong> [<a href="nmbd.8.html#minusD">-D</a>] [<a href="nmbd.8.html#minusa">-a</a>] [<a href="nmbd.8.html#minuso">-o</a>] [<a href="nmbd.8.html#minush">-h</a>] [<a href="nmbd.8.html#minusV">-V</a>] [<a href="nmbd.8.html#minusH">-H lmhosts file</a>] [<a href="nmbd.8.html#minusd">-d debuglevel</a>] [<a href="nmbd.8.html#minusl">-l log file basename</a>] [<a href="nmbd.8.html#minusn">-n primary NetBIOS name</a>] [<a href="nmbd.8.html#minusp">-p port number</a>] [<a href="nmbd.8.html#minuss">-s configuration file</a>] [<a href="nmbd.8.html#minusi">-i NetBIOS scope</a>]
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -70,6 +70,10 @@ append log messages to the log file.  This is the default.
 <li><strong><strong>-o</strong></strong> If this parameter is specified, the log files will be
 overwritten when opened.  By default, the log files will be appended
 to.
+<p><br><a name="minush"></a>
+<li><strong><strong>-h</strong></strong> Prints the help information (usage) for <strong>nmbd</strong>.
+<p><br><a name="minusV"></a>
+<li><strong><strong>-V</strong></strong> Prints the version number for <strong>nmbd</strong>.
 <p><br><a name="minusH"></a>
 <li><strong><strong>-H filename</strong></strong> NetBIOS lmhosts file.
 <p><br>The lmhosts file is a list of NetBIOS names to IP addresses that is
@@ -133,8 +137,6 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are <em>very</em> rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
-<p><br><a name="minush"></a>
-<li><strong><strong>-h</strong></strong> Prints the help information (usage) for <strong>nmbd</strong>.
 <p><br></ul>
 <p><br><a name="FILES"></a>
 <h2>FILES</h2>

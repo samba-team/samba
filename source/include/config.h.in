@@ -482,6 +482,9 @@
 /* Define if you have the getdents function.  */
 #undef HAVE_GETDENTS
 
+/* Define if you have the getgrent function.  */
+#undef HAVE_GETGRENT
+
 /* Define if you have the getgrnam function.  */
 #undef HAVE_GETGRNAM
 

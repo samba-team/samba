@@ -265,29 +265,33 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
 
 static BOOL user_in_group_list(char *user,char *gname)
 {
-#ifdef HAVE_GETGRNAM 
-  struct group *gptr;
-  char **member;  
-  struct passwd *pass = Get_Pwnam(user,False);
+#ifdef HAVE_GETGRENT
+	struct group *gptr;
+	char **member;  
+	struct passwd *pass = Get_Pwnam(user,False);
 
-  if (pass) { 
-    gptr = getgrgid(pass->pw_gid);
-    if (gptr && strequal(gptr->gr_name,gname))
-      return(True); 
-  } 
+	if (pass) { 
+		gptr = getgrgid(pass->pw_gid);
+		if (gptr && strequal(gptr->gr_name,gname))
+			return(True); 
+	} 
 
-  gptr = (struct group *)getgrnam(gname);
+	while ((gptr = (struct group *)getgrent())) {
+		if (!strequal(gptr->gr_name,gname))
+			continue;
+		member = gptr->gr_mem;
+		while (member && *member) {
+			if (strequal(*member,user)) {
+				endgrent();
+				return(True);
+			}
+			member++;
+		}
+	}
 
-  if (gptr) {
-    member = gptr->gr_mem;
-    while (member && *member) {
-      if (strequal(*member,user))
-        return(True);
-      member++;
-    }
-  }
+	endgrent();
 #endif /* HAVE_GETGRNAM */
-  return False;
+	return False;
 }	      
 
 /****************************************************************************

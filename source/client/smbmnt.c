@@ -1,7 +1,8 @@
 /*
- *  smbmount.c
+ *  smbmnt.c
  *
  *  Copyright (C) 1995-1998 by Paal-Kr. Engstad and Volker Lendecke
+ *  extensively modified by Tridge
  *
  */
 
@@ -23,12 +24,24 @@
 #include <linux/fs.h>
 #endif
 
+static uid_t mount_uid;
+static gid_t mount_gid;
+static int mount_ro;
+static unsigned mount_fmask;
+static unsigned mount_dmask;
+static int user_mount;
+
 static void
 help(void)
 {
         printf("\n");
         printf("usage: smbmnt mount-point [options]\n");
         printf("-s share       share name on server\n"
+               "-r             mount read-only\n"
+               "-u uid         mount as uid\n"
+               "-g gid         mount as gid\n"
+               "-f mask        permission mask for files\n"
+               "-d mask        permission mask for directories\n"
                "-h             print this help text\n");
 }
 
@@ -37,12 +50,31 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 {
         int opt;
 
-        while ((opt = getopt (argc, argv, "s:")) != EOF)
+        while ((opt = getopt (argc, argv, "s:u:g:rf:d:")) != EOF)
 	{
                 switch (opt)
 		{
                 case 's':
                         *share = optarg;
+                        break;
+                case 'u':
+			if (!user_mount) {
+				mount_uid = strtol(optarg, NULL, 0);
+			}
+                        break;
+                case 'g':
+			if (!user_mount) {
+				mount_gid = strtol(optarg, NULL, 0);
+			}
+                        break;
+                case 'r':
+                        mount_ro = 1;
+                        break;
+                case 'f':
+                        mount_fmask = strtol(optarg, NULL, 8);
+                        break;
+                case 'd':
+                        mount_dmask = strtol(optarg, NULL, 8);
                         break;
                 default:
                         return -1;
@@ -86,7 +118,7 @@ static int mount_ok(char *mount_point)
                 errno = ENOTDIR;
                 return -1;
         }
-	
+
         if ((getuid() != 0) && 
 	    ((getuid() != st.st_uid) || 
 	     ((st.st_mode & S_IRWXU) != S_IRWXU))) {
@@ -101,27 +133,37 @@ static int mount_ok(char *mount_point)
 {
 	char *mount_point, *share_name = NULL;
 	FILE *mtab;
-	int fd, um;
+	int fd;
 	unsigned int flags;
 	struct smb_mount_data data;
 	struct mntent ment;
 
 	memset(&data, 0, sizeof(struct smb_mount_data));
 
+	if (argc < 2) {
+		help();
+		exit(1);
+	}
+
 	if (argv[1][0] == '-') {
 		help();
 		exit(1);
 	}
 
+	if (getuid() != 0) {
+		user_mount = 1;
+	}
+
         if (geteuid() != 0) {
-                fprintf(stderr, "smbmnt must be installed suid root\n");
+                fprintf(stderr, "smbmnt must be installed suid root for direct user mounts (%d,%d)\n", getuid(), geteuid());
                 exit(1);
         }
 
-	if (argc < 2) {
-		help();
-		exit(1);
-	}
+	mount_uid = getuid();
+	mount_gid = getgid();
+	mount_fmask = umask(0);
+        umask(mount_fmask);
+	mount_fmask = ~mount_fmask;
 
         mount_point = fullpath(argv[1]);
 
@@ -139,19 +181,17 @@ static int mount_ok(char *mount_point)
         /* getuid() gives us the real uid, who may umount the fs */
         data.mounted_uid = getuid();
 
-        data.uid = getuid();
-        data.gid = getgid();
-        um = umask(0);
-        umask(um);
-        data.file_mode = (S_IRWXU|S_IRWXG|S_IRWXO) & ~um;
-        data.dir_mode  = 0;
-
         if (parse_args(argc, argv, &data, &share_name) != 0) {
                 help();
                 return -1;
         }
 
-        if (data.dir_mode == 0) {
+        data.uid = mount_uid;
+        data.gid = mount_gid;
+        data.file_mode = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_fmask;
+        data.dir_mode  = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_dmask;
+
+        if (mount_dmask == 0) {
                 data.dir_mode = data.file_mode;
                 if ((data.dir_mode & S_IRUSR) != 0)
                         data.dir_mode |= S_IXUSR;
@@ -163,10 +203,18 @@ static int mount_ok(char *mount_point)
 
 	flags = MS_MGC_VAL;
 
+	if (mount_ro) flags |= MS_RDONLY;
+
 	if (mount(share_name, ".", "smbfs", flags, (char *)&data) < 0)
 	{
-		perror("mount error");
-		printf("Please refer to the smbmnt(8) manual page\n");
+		switch (errno) {
+		case ENODEV:
+			fprintf(stderr, "ERROR: smbfs filesystem not supported by the kernel\n");
+			break;
+		default:
+			perror("mount error");
+		}
+		fprintf(stderr, "Please refer to the smbmnt(8) manual page\n");
 		return -1;
 	}
 

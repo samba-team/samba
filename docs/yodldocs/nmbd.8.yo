@@ -9,7 +9,7 @@ naming services to clients)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(nmbd) [link(-D)(minusD)] [link(-o)(minuso)] [link(-a)(minusa)] [link(-H lmhosts file)(minusH)] [link(-d debuglevel)(minusd)] [link(-l log file basename)(minusl)] [link(-n primary NetBIOS name)(minusn)] [link(-p port number)(minusp)] [link(-s configuration file)(minuss)] [link(-i NetBIOS scope)(minusi)] [link(-h)(minush)]
+bf(nmbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-h)(minush)] [link(-V)(minusV)] [link(-H lmhosts file)(minusH)] [link(-d debuglevel)(minusd)] [link(-l log file basename)(minusl)] [link(-n primary NetBIOS name)(minusn)] [link(-p port number)(minusp)] [link(-s configuration file)(minuss)] [link(-i NetBIOS scope)(minusi)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -64,6 +64,12 @@ label(minuso)
 dit(bf(-o)) If this parameter is specified, the log files will be
 overwritten when opened.  By default, the log files will be appended
 to.
+
+label(minush)
+dit(bf(-h)) Prints the help information (usage) for bf(nmbd).
+
+label(minusV)
+dit(bf(-V)) Prints the version number for bf(nmbd).
 
 label(minusH)
 dit(bf(-H filename)) NetBIOS lmhosts file.
@@ -143,9 +149,6 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are em(very) rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
-
-label(minush)
-dit(bf(-h)) Prints the help information (usage) for bf(nmbd).
 
 endit()
 

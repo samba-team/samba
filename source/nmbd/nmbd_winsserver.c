@@ -30,6 +30,41 @@ extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
 
 
+/****************************************************************************
+possibly call the WINS hook external program when a WINS change is made
+*****************************************************************************/
+static void wins_hook(char *operation, struct name_record *namerec, int ttl)
+{
+	pstring command;
+	char *cmd = lp_wins_hook();
+	char *p;
+	int i;
+
+	if (!cmd || !*cmd) return;
+
+	for (p=namerec->name.name; *p; p++) {
+		if (!(isalnum((int)*p) || strchr("._-",*p))) {
+			DEBUG(3,("not calling wins hook for invalid name %s\n", nmb_namestr(&namerec->name)));
+			return;
+		}
+	}
+	
+	p = command;
+	p += slprintf(p, sizeof(command), "%s %s %s %02x %d", 
+		      cmd,
+		      operation, 
+		      namerec->name.name,
+		      namerec->name.name_type,
+		      ttl);
+
+	for (i=0;i<namerec->data.num_ips;i++) {
+		p += slprintf(p, sizeof(command) - (p-command), " %s", inet_ntoa(namerec->data.ip[i]));
+	}
+
+	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
+	smbrun(command, NULL, False);
+}
+
 
 /****************************************************************************
 hash our interfaces and netbios names settings
@@ -451,6 +486,7 @@ does not match group bit in WINS for this name.\n", nmb_namestr(question), group
      */
     update_name_ttl(namerec, ttl);
     send_wins_name_registration_response(0, ttl, p);
+    wins_hook("refresh", namerec, ttl);
     return;
   }
   else if(group)
@@ -780,6 +816,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
        */
       update_name_ttl(namerec, ttl);
       send_wins_name_registration_response(0, ttl, p);
+      wins_hook("refresh", namerec, ttl);
       return;
     }
   }
@@ -796,6 +833,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
   {
     update_name_ttl( namerec, ttl );
     send_wins_name_registration_response( 0, ttl, p );
+    wins_hook("refresh", namerec, ttl);
     return;
   }
 
@@ -853,6 +891,9 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 
   (void)add_name_to_subnet( subrec, question->name, question->name_type,
                             nb_flags, ttl, REGISTER_NAME, 1, &from_ip );
+  if ((namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME))) {
+	  wins_hook("add", namerec, ttl);
+  }
 
   send_wins_name_registration_response(0, ttl, p);
 }
@@ -911,6 +952,7 @@ a subsequent IP addess.\n", nmb_namestr(question_name) ));
     add_ip_to_name_record(namerec, from_ip);
   update_name_ttl(namerec, ttl);
   send_wins_name_registration_response(0, ttl, orig_reg_packet);
+  wins_hook("add", namerec, ttl);
 
   orig_reg_packet->locked = False;
   free_packet(orig_reg_packet);
@@ -1077,11 +1119,16 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
        * It's one of our names and one of our IP's. Ensure the IP is in the record and
        *  update the ttl.
        */
-      if(!find_ip_in_name_record(namerec, from_ip))
-        add_ip_to_name_record(namerec, from_ip);
-      update_name_ttl(namerec, ttl);
-      send_wins_name_registration_response(0, ttl, p);
-      return;
+	    if(!find_ip_in_name_record(namerec, from_ip)) {
+		    add_ip_to_name_record(namerec, from_ip);
+		    wins_hook("add", namerec, ttl);
+	    } else {
+		    wins_hook("refresh", namerec, ttl);
+	    }
+
+	    update_name_ttl(namerec, ttl);
+	    send_wins_name_registration_response(0, ttl, p);
+	    return;
     }
   }
 
@@ -1094,6 +1141,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
   {
     update_name_ttl(namerec, ttl);
     send_wins_name_registration_response(0, ttl, p);
+    wins_hook("refresh", namerec, ttl);
     return;
   }
 
@@ -1152,6 +1200,10 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 
   (void)add_name_to_subnet( subrec, question->name, question->name_type,
                             nb_flags, ttl, REGISTER_NAME, 1, &from_ip );
+
+  if ((namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME))) {
+	  wins_hook("add", namerec, ttl);
+  }
 
   send_wins_name_registration_response(0, ttl, p);
 }
@@ -1489,6 +1541,8 @@ release name %s as IP %s is not one of the known IP's for this name.\n",
 
   send_wins_name_release_response(0, p);
   remove_ip_from_name_record(namerec, from_ip);
+
+  wins_hook("delete", namerec, 0);
 
   /* 
    * Remove the name entirely if no IP addresses left.

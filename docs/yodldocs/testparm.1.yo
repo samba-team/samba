@@ -8,7 +8,7 @@ manpagename(testparm)(check an smb.conf configuration file for internal correctn
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(testparm) [link(-s)(minuss)] [link(configfilename)(configfilename)] [link(hostname)(hostname) link(hostIP)(hostIP)]
+bf(testparm) [link(-s)(minuss)] [link(-h)(minush)] [link(-L servername)(minusL)] [link(configfilename)(configfilename)] [link(hostname)(hostname) link(hostIP)(hostIP)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -42,6 +42,13 @@ label(minuss)
 dit(bf(-s)) Without this option, bf(testparm) will prompt for a
 carriage return after printing the service names and before dumping
 the service definitions.
+
+label(minush)
+dit(bf(-h)) Print usage message
+
+label(minusL)
+dit(bf(-L servername)) Sets the value of the %L macro to servername. This
+is useful for testing include files specified with the %L macro.
 
 label(configfilename)
 dit(bf(configfilename)) This is the name of the configuration file to

@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "22 Jul 1999" "smb.conf 2.0.5a"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -914,6 +914,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBwins server\fP
 .IP 
 .IP o 
+\fBwins hook\fP
+.IP 
+.IP o 
 \fBwins support\fP
 .IP 
 .IP o 
@@ -1579,7 +1582,14 @@ correctly\&.
 .IP o 
 \fBISO8859-5\fP Russian Cyrillic UNIX character set\&. The parameter
 \fBclient code page\fP \fIMUST\fP be set to code
-page 866 if the \fBcharacter set\fP parameter is set to ISO8859-2
+page 866 if the \fBcharacter set\fP parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly\&. 
+.IP 
+.IP o 
+\fBISO8859-7\fP Greek UNIX character set\&. The parameter
+\fBclient code page\fP \fIMUST\fP be set to code
+page 737 if the \fBcharacter set\fP parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly\&. 
 .IP 
@@ -2837,28 +2847,38 @@ It takes the standard substitutions, except \fB%u\fP,
 .IP 
 .IP "\fBinterfaces (G)\fP" 
 .IP 
-This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces\&.
+This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic\&. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127\&.0\&.0\&.1 that are
+broadcast capable\&.
 .IP 
-The option takes a list of ip/netmask pairs\&. The netmask may either be
-a bitmask, or a bitlength\&.
+The option takes a list of interface strings\&. Each string can be in
+any of the following forms:
+.IP 
+.IP o 
+a network interface name (such as eth0)\&. This may include
+shell-like wildcards so eth* will match any interface starting
+with the substring "eth"
+if() a IP address\&. In this case the netmask is determined
+from the list of interfaces obtained from the kernel
+if() a IP/mask pair\&. 
+if() a broadcast/mask pair\&. 
+.IP 
+The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form\&.
+.IP 
+The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms\&.
 .IP 
 For example, the following line:
 .IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/24\fP
+\f(CWinterfaces = eth0 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
 .IP 
-would configure two network interfaces with IP addresses 192\&.168\&.2\&.10
-and 192\&.168\&.3\&.10\&. The netmasks of both interfaces would be set to
-255\&.255\&.255\&.0\&.
-.IP 
-You could produce an equivalent result by using:
-.IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/255\&.255\&.255\&.0 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
-.IP 
-if you prefer that format\&.
-.IP 
-If this option is not set then Samba will attempt to find a primary
-interface, but won\'t attempt to configure more than one interface\&.
+would configure three network interfaces corresponding to the eth0
+device and IP addresses 192\&.168\&.2\&.10 and 192\&.168\&.3\&.10\&. The netmasks of
+the latter two interfaces would be set to 255\&.255\&.255\&.0\&.
 .IP 
 See also \fB"bind interfaces only"\fP\&.
 .IP 
@@ -4263,7 +4283,7 @@ lose elections to Windows machines\&. See BROWSING\&.txt in the Samba
 docs/ directory for details\&.
 .IP 
 \fBDefault:\fP
-\f(CW	os level = 0\fP
+\f(CW	os level = 20\fP
 .IP 
 \fBExample:\fP
 \f(CW	os level = 65    ; This will win against any NT Server\fP
@@ -6606,6 +6626,41 @@ Samba source distribution\&.
 .IP 
 \fBExample:\fP
 \f(CW	wins server = 192\&.9\&.200\&.1\fP
+.IP 
+.IP "\fBwins hook (G)\fP" 
+.IP 
+When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database\&. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS\&.
+.IP 
+The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+.IP 
+wins_hook operation name nametype ttl IP_list
+.IP 
+The first argument is the operation and is one of "add", "delete",
+or "refresh"\&. In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information\&. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add\&.
+.IP 
+The second argument is the netbios name\&. If the name is not a legal
+name then the wins hook is not called\&. Legal names contain only
+letters, digits, hyphens, underscores and periods\&.
+.IP 
+The third argument is the netbios name type as a 2 digit hexadecimal
+number\&. 
+.IP 
+The fourth argument is the TTL (time to live) for the name in seconds\&.
+.IP 
+The fifth and subsequent arguments are the IP addresses currently
+registered for that name\&. If this list is empty then the name should
+be deleted\&.
+.IP 
+An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code\&. 
 .IP 
 .IP "\fBwins support (G)\fP" 
 .IP 

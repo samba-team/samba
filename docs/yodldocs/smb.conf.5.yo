@@ -761,6 +761,8 @@ it() link(bf(wins proxy))(winsproxy)
 
 it() link(bf(wins server))(winsserver)
 
+it() link(bf(wins hook))(winshook)
+
 it() link(bf(wins support))(winssupport)
 
 it() link(bf(workgroup))(workgroup)
@@ -1337,7 +1339,13 @@ correctly.
 
 it() bf(ISO8859-5) Russian Cyrillic UNIX character set. The parameter
 link(bf(client code page))(clientcodepage) em(MUST) be set to code
-page 866 if the bf(character set) parameter is set to ISO8859-2
+page 866 if the bf(character set) parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly. 
+
+it() bf(ISO8859-7) Greek UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 737 if the bf(character set) parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly. 
 
@@ -2620,28 +2628,39 @@ link(bf(%P))(percentP) and link(bf(%S))(percentS).
 label(interfaces)
 dit(bf(interfaces (G)))
 
-This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces.
+This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127.0.0.1 that are
+broadcast capable.
 
-The option takes a list of ip/netmask pairs. The netmask may either be
-a bitmask, or a bitlength.
+The option takes a list of interface strings. Each string can be in
+any of the following forms:
+
+startit()
+it() a network interface name (such as eth0). This may include
+     shell-like wildcards so eth* will match any interface starting
+     with the substring "eth"
+if() a IP address. In this case the netmask is determined
+     from the list of interfaces obtained from the kernel
+if() a IP/mask pair. 
+if() a broadcast/mask pair. 
+endit()
+
+The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form.
+
+The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms.
 
 For example, the following line:
 
-tt(interfaces = 192.168.2.10/24 192.168.3.10/24)
+tt(interfaces = eth0 192.168.2.10/24 192.168.3.10/255.255.255.0)
 
-would configure two network interfaces with IP addresses 192.168.2.10
-and 192.168.3.10. The netmasks of both interfaces would be set to
-255.255.255.0.
-
-You could produce an equivalent result by using:
-
-tt(interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0)
-
-if you prefer that format.
-
-If this option is not set then Samba will attempt to find a primary
-interface, but won't attempt to configure more than one interface.
+would configure three network interfaces corresponding to the eth0
+device and IP addresses 192.168.2.10 and 192.168.3.10. The netmasks of
+the latter two interfaces would be set to 255.255.255.0.
 
 See also link(bf("bind interfaces only"))(bindinterfacesonly).
 
@@ -4111,7 +4130,7 @@ lose elections to Windows machines. See BROWSING.txt in the Samba
 docs/ directory for details.
 
   bf(Default:)
-tt(	os level = 0)
+tt(	os level = 20)
 
   bf(Example:)
 tt(	os level = 65    ; This will win against any NT Server)
@@ -6488,6 +6507,42 @@ tt(	wins server = )
 
   bf(Example:)
 tt(	wins server = 192.9.200.1)
+
+label(winshook)
+dit(bf(wins hook (G)))
+
+When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+
+The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+
+   wins_hook operation name nametype ttl IP_list
+
+The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+
+The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+
+The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+
+The fourth argument is the TTL (time to live) for the name in seconds.
+
+The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+
+An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 
 label(winssupport)
 dit(bf(wins support (G)))

@@ -27,11 +27,7 @@
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 
-#ifndef REGISTER
-#define REGISTER 0
-#endif
-
-/* Uncomment this to allow debug the smbmount daemon */
+/* Uncomment this to allow debug the mount.smb daemon */
 /* WARNING!  This option is incompatible with autofs/automount because
 	it does not close the stdout pipe back to the automount
 	process, which automount depends on.  This will cause automount
@@ -42,18 +38,25 @@ extern struct in_addr ipzero;
 extern int DEBUGLEVEL;
 
 extern pstring scope;
-extern pstring global_myname;
 extern BOOL in_client;
 extern pstring user_socket_options;
 
+static pstring my_netbios_name;
 static pstring password;
 static pstring username;
 static pstring workgroup;
+static pstring mpoint;
+static pstring service;
 
 static struct in_addr dest_ip;
 static BOOL have_ip;
-static int port = 139;
+static int smb_port = 139;
 static BOOL got_pass;
+static uid_t mount_uid;
+static gid_t mount_gid;
+static int mount_ro;
+static unsigned mount_fmask;
+static unsigned mount_dmask;
 
 static void usage(void);
 
@@ -71,7 +74,7 @@ static void daemonize(void)
 	signal( SIGTERM, exit_parent );
 
 	if ((child_pid = fork()) < 0) {
-		DEBUG(0, ("could not fork\n"));
+		fprintf(stderr,"could not fork\n");
 	}
 
 	if (child_pid > 0) {
@@ -139,7 +142,7 @@ static struct cli_state *do_connection(char *service)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
+	make_nmb_name(&calling, my_netbios_name, 0x0, "");
 	make_nmb_name(&called , server, 0x20, "");
 
  again:
@@ -147,14 +150,14 @@ static struct cli_state *do_connection(char *service)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) == 0) ||
 	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+		fprintf(stderr,"Connection to %s failed\n", server_n);
 		return NULL;
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
+		fprintf(stderr, "session request to %s failed\n", called.name);
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
@@ -166,7 +169,7 @@ static struct cli_state *do_connection(char *service)
 	DEBUG(4,(" session request ok\n"));
 
 	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
+		fprintf(stderr, "protocol negotiation failed\n");
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -182,7 +185,7 @@ static struct cli_state *do_connection(char *service)
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+		fprintf(stderr, "session setup failed: %s\n", cli_errstr(c));
 		return NULL;
 	}
 
@@ -190,7 +193,7 @@ static struct cli_state *do_connection(char *service)
 
 	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
+		fprintf(stderr,"tree connect failed: %s\n", cli_errstr(c));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -224,29 +227,29 @@ static void smb_umount(char *mount_point)
 		the lights to exit anyways...
 	*/
         if (umount(mount_point) != 0) {
-                DEBUG(0, ("Could not umount %s: %s\n",
-                        mount_point, strerror(errno)));
+                fprintf(stderr, "Could not umount %s: %s\n",
+                        mount_point, strerror(errno));
                 return;
         }
 
         if ((fd = open(MOUNTED"~", O_RDWR|O_CREAT|O_EXCL, 0600)) == -1) {
-                DEBUG(0, ("Can't get "MOUNTED"~ lock file"));
+                fprintf(stderr, "Can't get "MOUNTED"~ lock file");
                 return;
         }
 
         close(fd);
 	
         if ((mtab = setmntent(MOUNTED, "r")) == NULL) {
-                DEBUG(0, ("Can't open " MOUNTED ": %s\n",
-                        strerror(errno)));
+                fprintf(stderr, "Can't open " MOUNTED ": %s\n",
+                        strerror(errno));
                 return;
         }
 
 #define MOUNTED_TMP MOUNTED".tmp"
 
         if ((new_mtab = setmntent(MOUNTED_TMP, "w")) == NULL) {
-                DEBUG(0, ("Can't open " MOUNTED_TMP ": %s\n",
-                        strerror(errno)));
+                fprintf(stderr, "Can't open " MOUNTED_TMP ": %s\n",
+                        strerror(errno));
                 endmntent(mtab);
                 return;
         }
@@ -260,21 +263,21 @@ static void smb_umount(char *mount_point)
         endmntent(mtab);
 
         if (fchmod (fileno (new_mtab), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) < 0) {
-                DEBUG(0, ("Error changing mode of %s: %s\n",
-                        MOUNTED_TMP, strerror(errno)));
+                fprintf(stderr, "Error changing mode of %s: %s\n",
+                        MOUNTED_TMP, strerror(errno));
                 return;
         }
 
         endmntent(new_mtab);
 
         if (rename(MOUNTED_TMP, MOUNTED) < 0) {
-                DEBUG(0, ("Cannot rename %s to %s: %s\n",
-                        MOUNTED, MOUNTED_TMP, strerror(errno)));
+                fprintf(stderr, "Cannot rename %s to %s: %s\n",
+                        MOUNTED, MOUNTED_TMP, strerror(errno));
                 return;
         }
 
         if (unlink(MOUNTED"~") == -1) {
-                DEBUG(0, ("Can't remove "MOUNTED"~"));
+                fprintf(stderr, "Can't remove "MOUNTED"~");
                 return;
         }
 }
@@ -286,27 +289,19 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *service, char *mount_point)
+static void send_fs_socket(char *service, char *mount_point, struct cli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
-	struct cli_state *c = NULL;
 	struct smb_conn_opt conn_options;
 
 	memset(&conn_options, 0, sizeof(conn_options));
 
 	while (1) {
 		if ((fd = open(mount_point, O_RDONLY)) < 0) {
-			DEBUG(0, ("smbmount: can't open %s\n", mount_point));
+			fprintf(stderr, "mount.smb: can't open %s\n", mount_point);
 			break;
 		}		
-
-		c = do_connection(service);
-
-		if (!c) {
-			DEBUG(0, ("smbmount: login failed\n"));
-			break;
-		}
 
 		conn_options.fd = c->fd;
 		conn_options.protocol = c->protocol;
@@ -323,7 +318,7 @@ static void send_fs_socket(char *service, char *mount_point)
 
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0) {
-			DEBUG(0,("smbmount: ioctl failed, res=%d\n", res));
+			fprintf(stderr, "mount.smb: ioctl failed, res=%d\n", res);
 			break;
 		}
 
@@ -341,7 +336,9 @@ static void send_fs_socket(char *service, char *mount_point)
 #ifndef SMBFS_DEBUG
 		/* Close all open files if we haven't done so yet. */
 		if (!closed) {
+			extern FILE *dbf;
 			closed = 1;
+			dbf = NULL;
 			close_our_files(c?c->fd:-1);
 		}
 #endif
@@ -350,12 +347,13 @@ static void send_fs_socket(char *service, char *mount_point)
 		CatchSignal(SIGUSR1, &usr1_handler);
 		pause();
 #ifdef SMBFS_DEBUG
-		DEBUG(0,("smbmount: got signal, getting new socket\n"));
+		DEBUG(2,("mount.smb: got signal, getting new socket\n"));
 #endif
+		c = do_connection(service);
 	}
 
 	smb_umount(mount_point);
-	DEBUG(0,("smbmount: exit\n"));
+	DEBUG(2,("mount.smb: exit\n"));
 	exit(1);
 }
 
@@ -363,16 +361,25 @@ static void send_fs_socket(char *service, char *mount_point)
 /****************************************************************************
 mount smbfs
 ****************************************************************************/
-static void init_mount(char *service, char *mpoint,char *options)
+static void init_mount(void)
 {
 	int retval;
 	char mount_point[MAXPATHLEN+1];
 	pstring mount_command;
 	pstring svc2;
+	char *p;
+	struct cli_state *c;
 
 	if (realpath(mpoint, mount_point) == NULL) {
-		DEBUG(0, ("Could not resolve mount point %s\n", mpoint));
+		fprintf(stderr, "Could not resolve mount point %s\n", mpoint);
 		return;
+	}
+
+
+	c = do_connection(service);
+	if (!c) {
+		fprintf(stderr,"SMB connection failed\n");
+		exit(1);
 	}
 
 	/*
@@ -385,11 +392,36 @@ static void init_mount(char *service, char *mpoint,char *options)
 	string_replace(svc2, '\\','/');
 	string_replace(svc2, ' ','_');
 
-	slprintf(mount_command,sizeof(mount_command),
-		 "smbmnt %s -s %s", mount_point, svc2);
+	p = mount_command;
+	p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+		      "smbmnt %s -s %s", mount_point, svc2);
+	if (mount_ro) {
+		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+			      " -r");
+	}
+	if (mount_uid) {
+		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+			      " -u %d", mount_uid);
+	}
+	if (mount_gid) {
+		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+			      " -g %d", mount_gid);
+	}
+	if (mount_fmask) {
+		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+			      " -f 0%o", mount_fmask);
+	}
+	if (mount_dmask) {
+		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
+			      " -d 0%o", mount_dmask);
+	}
+
+#if 0
+	fprintf(stderr, "[%s]\n", mount_command);
+#endif
 
 	if ((retval = system(mount_command)) != 0) {
-		DEBUG(0,("mount failed\n"));
+		fprintf(stderr, "mount failed [%s]\n", mount_command);
 		exit(1);
 	}
 
@@ -398,10 +430,8 @@ static void init_mount(char *service, char *mpoint,char *options)
 	   for any reason, we will have to unmount the mount point.  There
 	   is no exit from the next call...
 	*/
-	send_fs_socket(service, mount_point);
+	send_fs_socket(service, mount_point, c);
 }
-
-
 
 
 /****************************************************************************
@@ -409,18 +439,148 @@ usage on the program
 ****************************************************************************/
 static void usage(void)
 {
-	DEBUG(0,("Usage: smbmount //server/share mountpoint [options ...]"));
+	printf("Usage: mount.smb service mountpoint [-o options,...]\n");
 
-	DEBUG(0,("\nVersion %s\n",VERSION));
-	DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
-	DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
-	DEBUG(0,("\t-N                    don't ask for a password\n"));
-	DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
-	DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
-	DEBUG(0,("\t-U username           set the network username\n"));
-	DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
-	DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-	DEBUG(0,("\n"));
+	printf("Version %s\n\n",VERSION);
+
+	printf(
+"Options:
+      username=<arg>                  SMB username
+      password=<arg>                  SMB password
+      netbiosname=<arg>               source NetBIOS name
+      uid=<arg>                       mount uid or username
+      gid=<arg>                       mount gid or groupname
+      port=<arg>                      remote SMB port number
+      fmask=<arg>                     file umask
+      dmask=<arg>                     directory umask
+      debug=<arg>                     debug level
+      ip=<arg>                        destination host or IP address
+      workgroup=<arg>                 workgroup on destination
+      sockopt=<arg>                   TCP socket options
+      scope=<arg>                     NetBIOS scope
+      guest                           don't prompt for a password
+      ro                              mount read-only
+      rw                              mount read-write
+
+This command is designed to be run from within /bin/mount by giving
+the option '-t smb'. For example:
+  mount -t smb -o user=tridge,passwd=foobar //fjall/test /data/test
+");
+}
+
+
+/****************************************************************************
+  Argument parsing for mount.smb interface
+  mount will call us like this:
+    mount.smb device mountpoint -o <options>
+  
+  <options> is never empty, containing at least rw or ro
+ ****************************************************************************/
+static void parse_mount_smb(int argc, char **argv)
+{
+	int opt;
+	char *opts;
+	char *opteq;
+	extern char *optarg;
+	int val;
+
+	if (argc < 2 || argv[1][0] == '-') {
+		usage();
+		exit(1);
+	}
+	
+	pstrcpy(service, argv[1]);
+	pstrcpy(mpoint, argv[2]);
+
+	/* Convert any '/' characters in the service name to
+	   '\' characters */
+	string_replace(service, '/','\\');
+	argc -= 2;
+	argv += 2;
+
+	opt = getopt(argc, argv, "o:");
+	if(opt != 'o') {
+		return;
+	}
+
+	/*
+	 * option parsing from nfsmount.c (util-linux-2.9u)
+	 */
+        for (opts = strtok(optarg, ","); opts; opts = strtok(NULL, ",")) {
+		DEBUG(3, ("opts: %s\n", opts));
+                if ((opteq = strchr(opts, '='))) {
+                        val = atoi(opteq + 1);
+                        *opteq = '\0';
+
+                        if (!strcmp(opts, "username") || 
+			    !strcmp(opts, "logon")) {
+				char *lp;
+				pstrcpy(username,opteq+1);
+				if ((lp=strchr(username,'%'))) {
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					got_pass = True;
+					memset(strchr(opteq+1,'%')+1,'X',strlen(password));
+				}
+				if ((lp=strchr(username,'/'))) {
+					*lp = 0;
+					pstrcpy(workgroup,lp+1);
+				}
+			} else if(!strcmp(opts, "passwd") ||
+				  !strcmp(opts, "password")) {
+				pstrcpy(password,opteq+1);
+				got_pass = True;
+				memset(opteq+1,'X',strlen(password));
+			} else if(!strcmp(opts, "netbiosname")) {
+				pstrcpy(my_netbios_name,opteq+1);
+			} else if(!strcmp(opts, "uid")) {
+				mount_uid = nametouid(opteq+1);
+			} else if(!strcmp(opts, "gid")) {
+				mount_gid = nametogid(opteq+1);
+			} else if(!strcmp(opts, "port")) {
+				smb_port = val;
+			} else if(!strcmp(opts, "fmask")) {
+				mount_fmask = strtol(opteq+1, NULL, 8);
+			} else if(!strcmp(opts, "dmask")) {
+				mount_dmask = strtol(opteq+1, NULL, 8);
+			} else if(!strcmp(opts, "debug")) {
+				DEBUGLEVEL = val;
+			} else if(!strcmp(opts, "ip")) {
+				dest_ip = *interpret_addr2(opteq+1);
+				if (zero_ip(dest_ip)) {
+					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
+					exit(1);
+				}
+				have_ip = True;
+			} else if(!strcmp(opts, "workgroup")) {
+				pstrcpy(workgroup,opteq+1);
+			} else if(!strcmp(opts, "sockopt")) {
+				pstrcpy(user_socket_options,opteq+1);
+			} else if(!strcmp(opts, "scope")) {
+				pstrcpy(scope,opteq+1);
+			} else {
+				usage();
+				exit(1);
+			}
+		} else {
+			val = 1;
+			if(!strcmp(opts, "nocaps")) {
+				fprintf(stderr, "Unhandled option: %s\n", opteq+1);
+				exit(1);
+			} else if(!strcmp(opts, "guest")) {
+				got_pass = True;
+			} else if(!strcmp(opts, "rw")) {
+				mount_ro = 0;
+			} else if(!strcmp(opts, "ro")) {
+				mount_ro = 1;
+			}
+		}
+	}
+
+	if (!*service) {
+		usage();
+		exit(1);
+	}
 }
 
 /****************************************************************************
@@ -428,25 +588,14 @@ static void usage(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	int opt;
-	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
 	static pstring servicesf = CONFIGFILE;
-	pstring term_code;
 	char *p;
-	pstring mpoint;
-	pstring service;
 
-#ifdef KANJI
-	pstrcpy(term_code, KANJI);
-#else /* KANJI */
-	*term_code = 0;
-#endif /* KANJI */
-
-	DEBUGLEVEL = 2;
+	DEBUGLEVEL = 1;
 	
-	setup_logging("smbmount",True);
+	setup_logging("mount.smb",True);
 
 	TimeInit();
 	charset_initialise();
@@ -460,9 +609,7 @@ static void usage(void)
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(username);
 	}
 
 	if (getenv("PASSWD")) {
@@ -471,83 +618,11 @@ static void usage(void)
 
 	if (*username == 0 && getenv("LOGNAME")) {
 		pstrcpy(username,getenv("LOGNAME"));
-		strupper(username);
 	}
 
-	if (argc < 3 || *argv[1] == '-' || *argv[2] == '-') {
-		usage();
-		exit(1);
-	}
-  
-	pstrcpy(service, argv[1]);  
-	pstrcpy(mpoint, argv[2]);  
+	parse_mount_smb(argc, argv);
 
-	/* Convert any '/' characters in the service name to
-	   '\' characters */
-	string_replace(service, '/','\\');
-	argc -= 2;
-	argv += 2;
-
-	while ((opt = 
-		getopt(argc, argv,"O:i:U:W:EI:n:Nd:h")) != EOF)
-		switch (opt) {
-		case 'O':
-			pstrcpy(user_socket_options,optarg);
-			break;	
-		case 'i':
-			pstrcpy(scope,optarg);
-			break;
-		case 'U':
-			{
-				char *lp;
-				pstrcpy(username,optarg);
-				if ((lp=strchr(username,'%'))) {
-					*lp = 0;
-					pstrcpy(password,lp+1);
-					got_pass = True;
-					memset(strchr(optarg,'%')+1,'X',strlen(password));
-				}
-			}
-			break;
-		case 'W':
-			pstrcpy(workgroup,optarg);
-			break;
-		case 'E':
-			dbf = stderr;
-			break;
-		case 'I':
-			dest_ip = *interpret_addr2(optarg);
-			if (zero_ip(dest_ip)) {
-				fprintf(stderr,"Can't resolve address %s\n", optarg);
-				exit(1);
-			}
-			have_ip = True;
-			break;
-		case 'n':
-			pstrcpy(global_myname,optarg);
-			break;
-		case 'N':
-			got_pass = True;
-			break;
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'h':
-			usage();
-			exit(0);
-			break;
-		default:
-			usage();
-			exit(1);
-		}
-	
-	if (!*service) {
-		usage();
-		exit(1);
-	}
-
-
-	DEBUG(3,("smbmount started (version %s)\n", VERSION));
+	DEBUG(3,("mount.smb started (version %s)\n", VERSION));
 
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
@@ -556,15 +631,16 @@ static void usage(void)
 
 	codepage_initialise(lp_client_code_page());
 
-	interpret_coding_system(term_code);
-
-	if (*workgroup == 0)
+	if (*workgroup == 0) {
 		pstrcpy(workgroup,lp_workgroup());
+	}
 
 	load_interfaces();
-	get_myname((*global_myname)?NULL:global_myname);  
-	strupper(global_myname);
+	if (!*my_netbios_name) {
+		pstrcpy(my_netbios_name, myhostname());
+	}
+	strupper(my_netbios_name);
 
-	init_mount(service, mpoint, "");
+	init_mount();
 	return 0;
 }

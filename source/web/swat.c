@@ -947,7 +947,7 @@ static void printers_page(void)
 	fault_setup(NULL);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
-    set_auth_parameters(argc, argv);
+	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
 
 	/* just in case it goes wild ... */

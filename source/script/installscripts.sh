@@ -25,6 +25,7 @@ for p in $*; do
   p2=`basename $p`
   echo Installing $BINDIR/$p2
   if [ -f $BINDIR/$p2 ]; then
+    rm -f $BINDIR/$p2.old
     mv $BINDIR/$p2 $BINDIR/$p2.old
   fi
   cp $p $BINDIR/
