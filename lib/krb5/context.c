@@ -230,3 +230,15 @@ krb5_init_ets(krb5_context context)
 	initialize_heim_error_table_r(&context->et_list);
     }
 }
+
+void
+krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
+{
+    context->use_admin_kdc = flag;
+}
+
+krb5_boolean
+krb5_get_use_admin_kdc (krb5_context context)
+{
+    return context->use_admin_kdc;
+}
