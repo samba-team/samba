@@ -412,6 +412,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 				for (k=i;b->options[k];k++) {
 					b->options[k] = b->options[k+1];
 				}
+				i--;
 				break;
 			}
 		}
