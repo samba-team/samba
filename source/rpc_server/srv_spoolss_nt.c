@@ -3479,7 +3479,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 				    uint32 *needed, uint32 *returned)
 {
 	int i;
-	fstring *list;
+	fstring *list = NULL;
 	fstring servername;
 	fstring architecture;
 
