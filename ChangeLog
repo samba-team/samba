@@ -1,5 +1,7 @@
 2003-08-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/db3.c: try to include more db headers
+
 	* lib/hdb/db3.c: patch for working with DB4 on heimdal-discuss
 	From: Luke Howard <lukeh@PADL.COM>
 	
