@@ -437,7 +437,7 @@ char *ufc_crypt(char *key,char *salt);
 
 struct passwd *hashed_getpwnam(const char *name);
 char *uidtoname(uid_t uid);
-char *get_home_dir(char *user);
+char *get_unixhome_dir(char *user);
 BOOL map_username(char *user);
 const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_ok(char *user,int snum);
@@ -2021,6 +2021,10 @@ BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 				uint32 *num_deltas,
 				SAM_DELTA_HDR *hdr_deltas,
 				SAM_DELTA_CTR *deltas);
+
+/*The following definitions come from  rpc_client/cli_netlogon_sync.c  */
+
+BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
@@ -4565,6 +4569,10 @@ BOOL reload_services(BOOL test);
 
 void msrpc_service_init(void);
 BOOL reload_services(BOOL test);
+
+/*The following definitions come from  utils/smbpasswd.c  */
+
+int main(int argc, char **argv);
 
 /*The following definitions come from  web/cgi.c  */
 

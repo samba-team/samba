@@ -302,7 +302,7 @@ char *uidtoname(uid_t uid)
 /****************************************************************************
 get a users home directory.
 ****************************************************************************/
-char *get_home_dir(char *user)
+char *get_unixhome_dir(char *user)
 {
 	const struct passwd *pass;
 	static pstring home_dir;
@@ -312,7 +312,7 @@ char *get_home_dir(char *user)
 	if (pass == NULL || pass->pw_dir == NULL) return(NULL);
 
 	pstrcpy(home_dir, pass->pw_dir);
-	DEBUG(10,("get_home_dir: returning %s for user %s\n", home_dir, user));
+	DEBUG(10,("get_smbhome_dir: returning %s for user %s\n", home_dir, user));
 	return home_dir;
 }
 
