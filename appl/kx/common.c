@@ -555,12 +555,13 @@ fail:
 
 /* 
  * Return 0 iff `cookie' is compatible with the cookie for the
- * localhost with name given in `disp_he' and display number in
- * `disp_nr'.
+ * localhost with name given in `ai' (or `hostname') and display
+ * number in `disp_nr'.
  */
 
 static int
-match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
+match_local_auth (Xauth* auth,
+		  struct addrinfo *ai, const char *hostname, int disp_nr)
 {
     int auth_disp;
     char *tmp_disp;
@@ -582,6 +583,11 @@ match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
 			auth->address_length) == 0)
 	    return 0;
     }
+    if (hostname != NULL
+	&& (auth->family    == FamilyLocal
+	    || auth->family == FamilyWild)
+	&& strncmp (auth->address, hostname, auth->address_length) == 0)
+	return 0;
     return 1;
 }
 
@@ -622,18 +628,18 @@ find_auth_cookie (FILE *f)
     hints.ai_protocol = IPPROTO_TCP;
 
     error = getaddrinfo (display, NULL, &hints, &ai);
-    if (error) {
-	warnx ("getaddrinfo %s: %s", display, gai_strerror(error));
-	return NULL;
-    }
+    if (error)
+	ai = NULL;
 
     for (; (ret = XauReadAuth (f)) != NULL; XauDisposeAuth(ret)) {
-	if (match_local_auth (ret, ai, disp) == 0) {
-	    freeaddrinfo (ai);
+	if (match_local_auth (ret, ai, display, disp) == 0) {
+	    if (ai != NULL)
+		freeaddrinfo (ai);
 	    return ret;
 	}
     }
-    freeaddrinfo (ai);
+    if (ai != NULL)
+	freeaddrinfo (ai);
     return NULL;
 }
 
