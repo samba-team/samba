@@ -65,6 +65,10 @@
 #endif
 #include <errno.h>
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
@@ -73,6 +77,7 @@
 #endif
 #include <err.h>
 #include <roken.h>
+#include <getarg.h>
 #ifdef KRB4
 #include <krb.h>
 #include <prot.h>
