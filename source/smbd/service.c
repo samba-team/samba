@@ -234,7 +234,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	snum = find_service(service);
 	if (snum < 0) {
-		if (strequal(service,"IPC$")) {
+		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
 			DEBUG(3,("refusing IPC connection\n"));
 			*ecode = ERRnoipc;
 			return NULL;
@@ -284,7 +284,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	/* you can only connect to the IPC$ service as an ipc device */
-	if (strequal(service,"IPC$"))
+	if (strequal(service,"IPC$") || strequal(service,"ADMIN$"))
 		pstrcpy(dev,"IPC");
 	
 	if (*dev == '?' || !*dev) {
@@ -387,7 +387,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
-	conn->ipc = (strncmp(dev,"IPC",3) == 0);
+	conn->ipc = ((strncmp(dev,"IPC",3) == 0) || strequal(dev,"ADMIN$"));
 	conn->dirptr = NULL;
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;

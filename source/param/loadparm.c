@@ -1813,10 +1813,10 @@ int lp_add_service(char *pszService, int iDefaultService)
 /***************************************************************************
 add the IPC service
 ***************************************************************************/
-static BOOL lp_add_ipc(void)
+static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 {
 	pstring comment;
-	int i = add_a_service(&sDefault, "IPC$");
+	int i = add_a_service(&sDefault, ipc_name);
 
 	if (i < 0)
 		return (False);
@@ -1833,11 +1833,11 @@ static BOOL lp_add_ipc(void)
 	iSERVICE(i).bAvailable = True;
 	iSERVICE(i).bRead_only = True;
 	iSERVICE(i).bGuest_only = False;
-	iSERVICE(i).bGuest_ok = True;
+	iSERVICE(i).bGuest_ok = guest_ok;
 	iSERVICE(i).bPrint_ok = False;
 	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
 
-	DEBUG(3, ("adding IPC service\n"));
+	DEBUG(3, ("adding IPC service %s\n", ipc_name));
 
 	return (True);
 }
@@ -3254,8 +3254,10 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	lp_add_auto_services(lp_auto_services());
 
-	if (add_ipc)
-		lp_add_ipc();
+	if (add_ipc) {
+		lp_add_ipc("IPC$", True);
+		lp_add_ipc("ADMIN$", False);
+	}
 
 	set_server_role();
 	set_default_server_announce_type();
