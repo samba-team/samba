@@ -113,10 +113,6 @@ static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 #endif	/* FORWARD */
 
 static	krb5_data auth;
-/* telnetd gets session key from here */
-static	/*krb5_tkt_authent*/ void *authdat = NULL;
-/* telnet matches the AP_REQ and AP_REP with this */
-static	krb5_authenticator authenticator;
 static  krb5_ticket *ticket;
 
 static krb5_context context;
@@ -252,6 +248,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
     char *name;
     krb5_principal server;
     krb5_authenticator authenticator;
+    int zero = 0;
 
     if (cnt-- < 1)
 	return;
@@ -274,7 +271,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	ret = krb5_auth_con_setaddrs_from_fd (context,
 					      auth_context,
-					      0);
+					      &zero);
 	if (ret) {
 	    Data(ap, KRB_REJECT, "krb5_auth_con_setaddrs_from_fd failed", -1);
 	    auth_finished(ap, AUTH_REJECT);
@@ -312,7 +309,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	if (ret) {
 	    char *errbuf;
 
-	    authdat = 0;
 	    asprintf(&errbuf,
 		     "Read req failed: %s",
 		     krb5_get_err_text(context, ret));
