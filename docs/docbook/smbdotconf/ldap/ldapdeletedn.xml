@@ -1,5 +1,5 @@
 <samba:parameter xmlns:samba="http://samba.org/common">
-		<term><anchor id="LDAPDELETEDN"/>ldap del only sam attr (G)</term>
+		<term><anchor id="LDAPDELETEDN"/>ldap delete dn (G)</term>
 		<listitem><para> This parameter specifies whether a delete
 		operation in the ldapsam deletes the complete entry or only the attributes
 		specific to Samba.
