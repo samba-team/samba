@@ -82,15 +82,14 @@ arg_printusage (struct getargs *args,
 	size_t len = 0;
 
 	if (args[i].long_name) {
-	    len += 2 + strlen(args[i].long_name);
-	    fprintf (stderr,
-		     " [--%s%s",
-		     args[i].type == arg_negative_flag ?
-		     "no-" : "",
-		     args[i].long_name);
-	    len += print_arg (1, &args[i]);
-	    if (args[i].type == arg_negative_flag)
+	    fprintf (stderr, " [--");
+	    if (args[i].type == arg_negative_flag) {
+		fprintf (stderr, "no-");
 		len += 3;
+	    }
+	    fprintf (stderr, "%s", args[i].long_name);
+	    len += 2 + strlen(args[i].long_name);
+	    len += print_arg (1, &args[i]);
 	    putc (']', stderr);
 	}
 	if (args[i].short_name) {
@@ -121,13 +120,13 @@ arg_printusage (struct getargs *args,
 		count += 4;
 	    }
 	    if (args[i].long_name) {
-		fprintf (stderr, "--%s%s",
-			 args[i].type == arg_negative_flag ?
-			 "no-" : "",
-			 args[i].long_name);
-		count += 2 + strlen(args[i].long_name);
-		if (args[i].type == arg_negative_flag)
+		fprintf (stderr, "--");
+		if (args[i].type == arg_negative_flag) {
+		    fprintf (stderr, "no-");
 		    count += 3;
+		}
+		fprintf (stderr, "%s", args[i].long_name);
+		count += 2 + strlen(args[i].long_name);
 		count += print_arg (1, &args[i]);
 	    }
 	    while(count++ <= max_len)
