@@ -1,6 +1,6 @@
 dnl $Id$
 dnl
-dnl check for Xau{Read,Write}Auth
+dnl check for Xau{Read,Write}Auth and XauFileName
 dnl
 AC_DEFUN(AC_CHECK_XAU,[
 save_CFLAGS="$CFLAGS"
@@ -20,6 +20,8 @@ AC_FIND_FUNC_NO_LIBS(XauWriteAuth, X11 Xau)
 ac_xxx="$LIBS"
 LIBS="$LIB_XauWriteAuth $LIBS"
 AC_FIND_FUNC_NO_LIBS(XauReadAuth, X11 Xau)
+LIBS="$LIB_XauReadAauth $LIBS"
+AC_FIND_FUNC_NO_LIBS(XauFileName, X11 Xau)
 LIBS="$ac_xxx"
 
 ## set LIB_XauReadAuth to union of these tests, since this is what the
@@ -28,9 +30,17 @@ case "$ac_cv_funclib_XauWriteAuth" in
 yes)	;;
 no)	;;
 *)	if test "$ac_cv_funclib_XauReadAuth" = yes; then
-		LIB_XauReadAuth="$LIB_XauWriteAuth"
+		if test "$ac_cv_funclib_XauFileName" = yes; then
+			LIB_XauReadAuth="$LIB_XauWriteAuth"
+		else
+			LIB_XauReadAuth="$LIB_XauWriteAuth $LIB_XauFileName"
+		fi
 	else
-		LIB_XauReadAuth="$LIB_XauReadAuth $LIB_XauWriteAuth"
+		if test "$ac_cv_funclib_XauFileName" = yes; then
+			LIB_XauReadAuth="$LIB_XauReadAuth $LIB_XauWriteAuth"
+		else
+			LIB_XauReadAuth="$LIB_XauReadAuth $LIB_XauWriteAuth $LIB_XauFileName"
+		fi
 	fi
 	;;
 esac
