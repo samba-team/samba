@@ -672,11 +672,11 @@ MAKEDIR = || exec false; \
 # but since we also require "make install prefix=/opt/samba" *not* to
 # rebuild it's a bit hard.
 
-dynconfig.o: dynconfig.c Makefile
+dynconfig.o: dynconfig.c Makefile modules_clean
 	@echo Compiling $*.c
 	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
-dynconfig.po: dynconfig.c Makefile
+dynconfig.po: dynconfig.c Makefile modules_clean
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAG@
@@ -987,7 +987,7 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_ldap.o \
+	@$(SHLD) $(LDSHFLAGS) -o $@ @LDAP_LIBS@ passdb/pdb_ldap.o \
 		@SONAMEFLAG@`basename $@`
 
 bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.o
@@ -1187,6 +1187,11 @@ TOPFILES=dynconfig.o dynconfig.po
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) .headers.stamp
+
+# This is quite ugly actually.. But we need to make 
+# sure the changes to include/config.h are used.
+modules_clean:
+	@-rm -f @MODULES_CLEAN@ auth/auth.o passdb/pdb_interface.o rpc_server/srv_pipe_hnd.o lib/iconv.o
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
