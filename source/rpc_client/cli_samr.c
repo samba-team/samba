@@ -164,7 +164,7 @@ BOOL get_samr_query_groupmem(struct cli_state *cli,
 
 	/* send open domain (on group sid) */
 	if (!samr_open_group(cli, pol_open_domain,
-				group_rid,
+				0x00000010, group_rid,
 				&pol_open_group))
 	{
 		return False;
@@ -267,7 +267,7 @@ BOOL get_samr_query_groupinfo(struct cli_state *cli,
 	/* send open domain (on group sid) */
 	if (!samr_open_group(cli,
 				pol_open_domain,
-				group_rid, &pol_open_group))
+				0x00000010, group_rid, &pol_open_group))
 	{
 		return False;
 	}
@@ -1067,7 +1067,8 @@ BOOL samr_set_aliasinfo(struct cli_state *cli,
 do a SAMR Open Group
 ****************************************************************************/
 BOOL samr_open_group(struct cli_state *cli, 
-				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *domain_pol,
+				uint32 flags, uint32 rid,
 				POLICY_HND *group_pol)
 {
 	prs_struct data;
@@ -1086,7 +1087,7 @@ BOOL samr_open_group(struct cli_state *cli,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_open_group(&q_o, domain_pol, 0x0001, rid);
+	make_samr_q_open_group(&q_o, domain_pol, flags, rid);
 
 	/* turn parameters into data stream */
 	samr_io_q_open_group("", &q_o,  &data, 0);
