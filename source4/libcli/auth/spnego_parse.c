@@ -231,9 +231,11 @@ static BOOL write_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *toke
 	asn1_push_tag(asn1, ASN1_CONTEXT(1));
 	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
 
-	asn1_push_tag(asn1, ASN1_CONTEXT(0));
-	asn1_write_enumerated(asn1, token->negResult);
-	asn1_pop_tag(asn1);
+	if (token->negResult != SPNEGO_NONE_RESULT) {
+		asn1_push_tag(asn1, ASN1_CONTEXT(0));
+		asn1_write_enumerated(asn1, token->negResult);
+		asn1_pop_tag(asn1);
+	}
 
 	if (token->supportedMech) {
 		asn1_push_tag(asn1, ASN1_CONTEXT(1));
