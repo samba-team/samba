@@ -388,13 +388,15 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	int count=8;
 	BOOL ret;
 	time_t (*date_fn)(void *);
+	char *p;
 
-	param_len = strlen(fname) + 7;
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_INFO_STANDARD);
+	p += 6;
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, CLISTR_TERMINATE | CLISTR_CONVERT);
 
-	memset(param, 0, param_len);
-	SSVAL(param, 0, SMB_INFO_STANDARD);
-	pstrcpy(&param[6], fname);
-    unix_to_dos(&param[6],True);
+	param_len = PTR_DIFF(p, param);
 
 	do {
 		ret = (cli_send_trans(cli, SMBtrans2, 
@@ -462,13 +464,15 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
+	char *p;
 
-	param_len = strlen(fname) + 7;
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
+	p += 6;
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, CLISTR_TERMINATE | CLISTR_CONVERT);
 
-	memset(param, 0, param_len);
-	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
-	pstrcpy(&param[6], fname);
-    unix_to_dos(&param[6],True);
+	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
                             NULL,                         /* name */
