@@ -45,6 +45,8 @@ ac_help="$ac_help
   --with-ssl     Include SSL support
   --without-ssl  Don't include SSL support (default)"
 ac_help="$ac_help
+  --with-sslinc=DIR Tells us where the SSL stuff is (default /usr/local/ssl)"
+ac_help="$ac_help
   --with-mmap     Include experimental MMAP support
   --without-mmap  Don't include MMAP support (default)"
 ac_help="$ac_help
@@ -8279,6 +8281,8 @@ if test "${with_ssl+set}" = set; then
     cat >> confdefs.h <<\EOF
 #define WITH_SSL 1
 EOF
+
+    CFLAGS="-I/usr/local/ssl/include $CFLAGS"
 
     ;;
   *)
