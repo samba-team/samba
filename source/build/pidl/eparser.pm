@@ -1224,12 +1224,16 @@ sub RewriteC($$$)
 	# caught by the regex for wrapping scalar values below (i.e
 	# the leading space in front of the first parameter).
 
-	s/(ndr_pull_array_size\(ndr, ([^\)]*?)\);)/ndr_pull_array_size( ndr, tree, $2);/smg;
+	s/(ndr_pull_array_(size|length)\(ndr, ([^\)]*?)\);)/ndr_pull_array_$2( ndr, tree, $3);/smg;
 
 	# Add tree argument to ndr_pull_array()
 
 	s/(ndr_pull_array([^\(]*?)\(ndr, (NDR_[^,]*?), ([^\)].*?)\);)/ndr_pull_array$2( ndr, $3, tree, $4);/smg;
 
+	# Save ndr_pull_relative[12]() calls from being wrapped by the
+	# proceeding regexp.
+
+	s/ndr_pull_(relative1|relative2)\((.*?);/ndr_pull_$1( $2;/smg;
 
 	# Call ethereal wrappers for pull of scalar values in
 	# structures and functions:
@@ -1257,6 +1261,10 @@ sub RewriteC($$$)
 
 	s/^((static )?NTSTATUS ndr_pull_([^\(]*?)\(struct ndr_pull \*ndr, int (ndr_)?flags)/$1, proto_tree \*tree/smg;
 
+	# Add proto_tree parameter to ndr_pull_subcontext_flags_fn()
+
+        s/(ndr_pull_subcontext_flags_fn\(ndr)(.*?);/$1, tree$2;/smg;
+
 	# Get rid of ndr_pull_error() calls.  Ethereal should take
 	# care of buffer overruns and inconsistent array sizes for us.
 
@@ -1270,6 +1278,11 @@ sub RewriteC($$$)
 
 	s/struct ndr_pull \*ndr/struct pidl_pull \*ndr/smg;
 
+	# Fix some internal variable declarations
+
+        s/uint(16|32) _level/uint$1_t _level/smg;
+        s/ndr_pull_([^\(]*)\(ndr, tree, hf_level, &_level\);/ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smg;
+							      
 	pidl $_;
     }
 
