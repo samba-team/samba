@@ -131,6 +131,50 @@ static void unixsam_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
+static NTSTATUS unixsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				 DOM_SID sid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				 gid_t gid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				 char *name, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_add_group_mapping_entry(struct pdb_methods *methods,
+						GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_update_group_mapping_entry(struct pdb_methods *methods,
+						   GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_delete_group_mapping_entry(struct pdb_methods *methods,
+						   DOM_SID sid)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS unixsam_enum_group_mapping(struct pdb_methods *methods,
+					   enum SID_NAME_USE sid_name_use,
+					   GROUP_MAP **rmap, int *num_entries,
+					   BOOL unix_only, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
@@ -154,6 +198,13 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->add_sam_account = unixsam_add_sam_account;
 	(*pdb_method)->update_sam_account = unixsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = unixsam_delete_sam_account;
+	(*pdb_method)->getgrsid = unixsam_getgrsid;
+	(*pdb_method)->getgrgid = unixsam_getgrgid;
+	(*pdb_method)->getgrnam = unixsam_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = unixsam_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = unixsam_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = unixsam_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = unixsam_enum_group_mapping;
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;

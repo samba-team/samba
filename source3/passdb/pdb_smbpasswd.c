@@ -1492,6 +1492,50 @@ static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SA
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS smbpasswd_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				   DOM_SID sid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				   gid_t gid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				   char *name, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_add_group_mapping_entry(struct pdb_methods *methods,
+						  GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_update_group_mapping_entry(struct pdb_methods *methods,
+						     GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_delete_group_mapping_entry(struct pdb_methods *methods,
+						     DOM_SID sid)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_enum_group_mapping(struct pdb_methods *methods,
+					     enum SID_NAME_USE sid_name_use,
+					     GROUP_MAP **rmap, int *num_entries,
+					     BOOL unix_only, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static void free_private_data(void **vp) 
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
@@ -1522,6 +1566,13 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
+	(*pdb_method)->getgrsid = smbpasswd_getgrsid;
+	(*pdb_method)->getgrgid = smbpasswd_getgrgid;
+	(*pdb_method)->getgrnam = smbpasswd_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = smbpasswd_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = smbpasswd_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = smbpasswd_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = smbpasswd_enum_group_mapping;
 
 	/* Setup private data and free function */
 

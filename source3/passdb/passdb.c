@@ -214,7 +214,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 		}
 		
 		/* call the mapping code here */
-		if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
+		if(pdb_getgrgid(&map, pwd->pw_gid, MAPPING_WITHOUT_PRIV)) {
 			if (!pdb_set_group_sid(sam_account,&map.sid, PDB_SET)){
 				DEBUG(0,("Can't set Group SID!\n"));
 				return NT_STATUS_INVALID_PARAMETER;
@@ -636,7 +636,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 
 	pdb_free_sam(&sam_account);
 		
-	if (get_group_map_from_sid(*sid, &map, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrsid(&map, *sid, MAPPING_WITHOUT_PRIV)) {
 		if (map.gid!=-1) {
 			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 		} else {
@@ -746,7 +746,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	 */
 
 	/* check if it's a mapped group */
-	if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrnam(&map, user, MAPPING_WITHOUT_PRIV)) {
 		/* yes it's a mapped group */
 		sid_copy(&local_sid, &map.sid);
 		*psid_name_use = map.sid_name_use;
@@ -768,7 +768,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		 * JFM, 30/11/2001
 		 */
 		
-		if (get_group_map_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)){
+		if (pdb_getgrgid(&map, grp->gr_gid, MAPPING_WITHOUT_PRIV)){
 			return False;
 		}
 		
@@ -859,7 +859,7 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 
 		pdb_free_sam(&sam_user);  
 
-		if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
+		if (pdb_getgrsid(&map, *psid, MAPPING_WITHOUT_PRIV)) {
 			DEBUG(3, ("local_sid_to_uid: SID '%s' is a group, not a user... \n", sid_to_string(str, psid)));
 			/* It's a group, not a user... */
 			return False;
@@ -897,7 +897,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	sid_copy(psid, get_global_sam_sid());
 	
-	if (get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
 		sid_copy(psid, &map.sid);
 	} 
 	else {
@@ -925,7 +925,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	 * Or in the Builtin SID too. JFM, 11/30/2001
 	 */
 
-	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrsid(&map, *psid, MAPPING_WITHOUT_PRIV)) {
 		
 		/* the SID is in the mapping table but not mapped */
 		if (map.gid==-1)
