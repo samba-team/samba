@@ -1965,7 +1965,8 @@ FN_GLOBAL_STRING(lp_mysql_passfile, &Globals.sMysqlPassFile)
 FN_GLOBAL_STRING(lp_mysql_db, &Globals.sMysqlDatabase)
 FN_GLOBAL_STRING(lp_mysql_table, &Globals.sMysqlTable)
 #endif
- FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+
 /* local prototypes */
 static int strwicmp(char *psz1, char *psz2);
 static int map_parameter(char *pszParmName);
