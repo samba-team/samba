@@ -689,6 +689,7 @@ BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 struct cli_state *cli_initialise(struct cli_state *cli);
+void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
