@@ -33,8 +33,9 @@ static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
-#define LOCKRANGE 1000
+#define LOCKRANGE 5
 #define LOCKBASE 0
+#define MINLENGTH 0
 
 /*
 #define LOCKBASE (0x40000000 - 50)
@@ -260,9 +261,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 						 start, len, LOCK_TIMEOUT, op);
 		}
 		if (showall || ret[0] != ret[1]) {
-			printf("lock   conn=%u f=%u range=%.0f:%.0f(%.0f) op=%s -> %u:%u\n",
+			printf("lock   conn=%u f=%u range=%.0f(%.0f) op=%s -> %u:%u\n",
 			       conn, f, 
-			       (double)start, (double)start+len-1, (double)len,
+			       (double)start, (double)len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret[0], ret[1]);
 		}
@@ -276,9 +277,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 						   start, len);
 		}
 		if (showall || (!hide_unlock_fails && (ret[0] != ret[1]))) {
-			printf("unlock conn=%u f=%u range=%.0f:%.0f(%.0f)       -> %u:%u\n",
+			printf("unlock conn=%u f=%u range=%.0f(%.0f)       -> %u:%u\n",
 			       conn, f, 
-			       (double)start, (double)start+len-1, (double)len,
+			       (double)start, (double)len,
 			       ret[0], ret[1]);
 		}
 		if (showall || ret[0] != ret[1]) show_locks();
@@ -372,7 +373,7 @@ static void test_locks(char *share[NSERVERS])
 {
 	struct cli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
-	int n, i, n1; 
+	int n, i, n1, skip; 
 
 	ZERO_STRUCT(fnum);
 	ZERO_STRUCT(cli);
@@ -388,7 +389,7 @@ static void test_locks(char *share[NSERVERS])
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
 			recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
-			recorded[n].len =  
+			recorded[n].len =  MINLENGTH +
 				random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
@@ -407,6 +408,8 @@ static void test_locks(char *share[NSERVERS])
 	if (n == numops || !analyze) return;
 	n++;
 
+	skip = n/2;
+
 	while (1) {
 		n1 = n;
 
@@ -414,24 +417,34 @@ static void test_locks(char *share[NSERVERS])
 		reconnect(cli, fnum, share);
 		open_files(cli, fnum);
 
-		for (i=0;i<n-1;i++) {
-			int m;
-			recorded[i].needed = False;
+		for (i=0;i<n-skip;i++) {
+			int m, j;
+			for (j=i;j<i+skip;j++) {
+				recorded[j].needed = False;
+			}
 
 			close_files(cli, fnum);
 			open_files(cli, fnum);
 
 			m = retest(cli, fnum, n);
 			if (m == n) {
-				recorded[i].needed = True;
-			} else {
-				if (i < m) {
-					memmove(&recorded[i], &recorded[i+1],
-						(m-i)*sizeof(recorded[0]));
+				for (j=i;j<i+skip;j++) {
+					recorded[j].needed = True;
 				}
-				n = m;
+			} else {
+				if (i+(skip-1) < m) {
+					memmove(&recorded[i], &recorded[i+skip],
+						(m-(i+skip-1))*sizeof(recorded[0]));
+				}
+				n = m-(skip-1);
 				i--;
 			}
+		}
+
+		if (skip > 1) {
+			skip = skip/2;
+			printf("skip=%d\n", skip);
+			continue;
 		}
 
 		if (n1 == n) break;
