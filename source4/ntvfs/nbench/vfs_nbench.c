@@ -530,7 +530,7 @@ static NTSTATUS nbench_setfileinfo(struct request_context *req,
 
 	PASS_THRU_REQ(req, setfileinfo, (req, info));
 
-	nbench_log(private, "Setfileinfo %d %d %s\n", 
+	nbench_log(private, "SET_FILE_INFORMATION %d %d %s\n", 
 		   info->generic.file.fnum,
 		   info->generic.level,
 		   get_nt_error_c_code(status));
@@ -549,7 +549,7 @@ static NTSTATUS nbench_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 
 	PASS_THRU_REQ(req, fsinfo, (req, fs));
 
-	nbench_log(private, "Fsinfo %d %s\n", 
+	nbench_log(private, "QUERY_FS_INFORMATION %d %s\n", 
 		   fs->generic.level, 
 		   get_nt_error_c_code(status));
 
