@@ -1251,8 +1251,9 @@ int main(int argc,char *argv[])
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
-	char *servicesf = dyn_CONFIGFILE;
+	static char *servicesf = dyn_CONFIGFILE;
 	extern pstring global_myname;
+	static int debuglevel;
 
 	struct poptOption long_options[] = {
 		{"help",        'h', POPT_ARG_NONE,   0,     'h'},
@@ -1263,8 +1264,8 @@ int main(int argc,char *argv[])
 		{"port",        'p', POPT_ARG_INT,    &opt_port},
 		{"myname",      'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",        's', POPT_ARG_STRING, &servicesf},
-		{"debug",       'd', POPT_ARG_INT,    &DEBUGLEVEL, 'd'},
-		{"debuglevel",  'd', POPT_ARG_INT,    &DEBUGLEVEL, 'd'},
+		{"debug",       'd', POPT_ARG_INT,    &debuglevel, 'd'},
+		{"debuglevel",  'd', POPT_ARG_INT,    &debuglevel, 'd'},
 		{"server",      'S', POPT_ARG_STRING, &opt_host},
 		{"comment",     'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",    'M', POPT_ARG_INT,    &opt_maxusers},
@@ -1309,6 +1310,8 @@ int main(int argc,char *argv[])
 			net_usage();
 		}
 	}
+
+	DEBUGLEVEL = debuglevel;
 
 	lp_load(servicesf,True,False,False);       
 
