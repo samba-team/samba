@@ -31,8 +31,14 @@ static const struct command_set spl_commands[] = {
 	 * printer testing
 	 */
 
+	{"SPOOLSS", NULL, NULL, {NULL, NULL}},
+
 	{"spoolenum", cmd_spoolss_enum_printers,
 	 "Enumerate Printers",
+	 {NULL, NULL}},
+
+	{"spoolenumports", cmd_spoolss_enum_ports,
+	 "Enumerate Ports",
 	 {NULL, NULL}},
 
 	{"spoolenumdatas", cmd_spoolss_enum_printerdata,

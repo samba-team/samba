@@ -98,6 +98,28 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
+uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[])
+{
+	PORT_INFO_CTR ctr;
+	
+	uint32 level = 2;
+
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+	
+	if (msrpc_spoolss_enum_ports(srv_name, level, &ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
