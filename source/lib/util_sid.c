@@ -119,17 +119,17 @@ static void init_sid_name_map (void)
 
 	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
 		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = strdup(lp_workgroup_dos());
+		sid_name_map[i].name = strdup(lp_workgroup_unix());
 		sid_name_map[i].known_users = NULL;
 		i++;
 		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = strdup(global_myname_dos());
+		sid_name_map[i].name = strdup(global_myname_unix());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	}
 	else {
 		sid_name_map[i].sid = &global_sam_sid;
-		sid_name_map[i].name = strdup(global_myname_dos());
+		sid_name_map[i].name = strdup(global_myname_unix());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	}
@@ -273,7 +273,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 	}
 
 	if (nt_domain[0] == 0) {
-		fstrcpy(nt_domain, global_myname_dos());
+		fstrcpy(nt_domain, global_myname_unix());
 		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
 		sid_copy(sid, &global_sam_sid);
 		return True;
@@ -326,7 +326,7 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(domain, full_name);
 		fstrcpy(name, p+1);
 	} else {
-		fstrcpy(domain, global_myname_dos());
+		fstrcpy(domain, global_myname_unix());
 		fstrcpy(name, full_name);
 	}
 
