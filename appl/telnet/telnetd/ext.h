@@ -54,9 +54,6 @@ extern int	restartany;	/* restart output on any character state */
 #ifdef DIAGNOSTICS
 extern int	diagnostic;	/* telnet diagnostic capabilities */
 #endif /* DIAGNOSTICS */
-#ifdef BFTPDAEMON
-extern int	bftpd;		/* behave as bftp daemon */
-#endif /* BFTPDAEMON */
 #if	defined(SecurID)
 extern int	require_SecurID;
 #endif
@@ -80,11 +77,6 @@ extern char	netobuf[BUFSIZ+NETSLOP], *nfrontp, *nbackp;
 extern char	*neturg;		/* one past last bye of urgent data */
 
 extern int	pcc, ncc;
-
-#if defined(CRAY2) && defined(UNICOS5)
-extern int unpcc;  /* characters left unprocessed by CRAY-2 terminal routine */
-extern char *unptyip;  /* pointer to remaining characters in buffer */
-#endif
 
 extern int	ourpty, net;
 extern char	*line;
@@ -223,9 +215,8 @@ extern struct clocks_t clocks;
 extern int log_unauth;
 extern int no_warn;
 
-
-#if	defined(CRAY2) && defined(UNICOS5)
-extern int	needtermstat;
+#ifdef STREAMSPTY
+extern int really_stream;
 #endif
 
 #ifndef USE_IM
