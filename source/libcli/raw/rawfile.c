@@ -267,6 +267,7 @@ static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree,
 ****************************************************************************/
 static NTSTATUS smb_raw_t2open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
+	struct cli_transport *transport = req?req->transport:NULL;
 	struct smb_trans2 t2;
 	NTSTATUS status;
 
@@ -279,8 +280,7 @@ static NTSTATUS smb_raw_t2open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx
 
 	parms->t2open.out.fnum =        SVAL(t2.out.params.data, VWV(0));
 	parms->t2open.out.attrib =      SVAL(t2.out.params.data, VWV(1));
-	parms->t2open.out.write_time = raw_pull_dos_date3(req->transport,
-							  t2.out.params.data + VWV(2));
+	parms->t2open.out.write_time =  raw_pull_dos_date3(transport, t2.out.params.data + VWV(2));
 	parms->t2open.out.size =        IVAL(t2.out.params.data, VWV(4));
 	parms->t2open.out.access =      SVAL(t2.out.params.data, VWV(6));
 	parms->t2open.out.ftype =       SVAL(t2.out.params.data, VWV(7));
