@@ -332,7 +332,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
                          user_info->domain.str, cli->srv_name_slash, 
                          nt_errstr(nt_status)));
 	} else {
-		nt_status = make_server_info_info3(mem_ctx, domain, server_info, &info3);
+		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
+						   user_info->smb_name.str, domain, server_info, &info3);
 #if 0 
 		/* The stuff doesn't work right yet */
 		SMB_ASSERT(sizeof((*server_info)->session_key) == sizeof(info3.user_sess_key)); 

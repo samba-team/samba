@@ -570,14 +570,16 @@ BOOL make_server_info_guest(auth_serversupplied_info **server_info)
 ***************************************************************************/
 
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
+				const char *internal_username,
+				const char *sent_nt_username,
 				const char *domain,
 				auth_serversupplied_info **server_info, 
 				NET_USER_INFO_3 *info3) 
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
 
-	char *nt_domain;
-	char *nt_username;
+	const char *nt_domain;
+	const char *nt_username;
 
 	SAM_ACCOUNT *sam_account = NULL;
 	DOM_SID user_sid;
@@ -605,11 +607,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!(nt_username = unistr2_tdup(mem_ctx, &(info3->uni_user_name)))) {
-		return NT_STATUS_NO_MEMORY;
+		/* If the server didn't give us one, just use the one we sent them */
+		nt_username = sent_nt_username;
 	}
 
 	if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3->uni_logon_dom)))) {
-		return NT_STATUS_NO_MEMORY;
+		/* If the server didn't give us one, just use the one we sent them */
+		domain = domain;
 	}
 
 	if (winbind_sid_to_uid(&uid, &user_sid) 
@@ -622,7 +626,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		dom_user = talloc_asprintf(mem_ctx, "%s%s%s", 
 					   nt_domain,
 					   lp_winbind_separator(),
-					   nt_username);
+					   internal_username);
 		
 		if (!dom_user) {
 			DEBUG(0, ("talloc_asprintf failed!\n"));
@@ -634,10 +638,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				   domain, we don't want this for
 				   trusted domains */
 			    && strequal(nt_domain, lp_workgroup())) {
-				passwd = Get_Pwnam(nt_username);
+				passwd = Get_Pwnam(internal_username);
 			}
 			    
-			if (passwd) {
+			if (!passwd) {
 				return NT_STATUS_NO_SUCH_USER;
 			} else {
 				nt_status = pdb_init_sam_pw(&sam_account, passwd);
