@@ -158,7 +158,7 @@ find_all_addresses (krb5_addresses *res, int loop,
 	 sa  = &ifr->ifr_addr;
 
 	 sz = ifreq_sz;
-#ifdef SOCKADDR_HAS_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 	 sz = max(sz, sizeof(ifr->ifr_name) + sa->sa_len);
 #endif
 
