@@ -20,220 +20,6 @@
 
 #include "python/py_spoolss.h"
 
-struct pyconv py_PRINTER_INFO_0[] = {
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_0, printername) },
-	{ "server_name", PY_UNISTR, offsetof(PRINTER_INFO_0, servername) },
-
-	{ "cjobs", PY_UINT32, offsetof(PRINTER_INFO_0, cjobs) },
-	{ "total_jobs", PY_UINT32, offsetof(PRINTER_INFO_0, total_jobs) },
-	{ "total_bytes", PY_UINT32, offsetof(PRINTER_INFO_0, total_bytes) },
-
-	{ "year", PY_UINT16, offsetof(PRINTER_INFO_0, year) },
-	{ "month", PY_UINT16, offsetof(PRINTER_INFO_0, month) },
-	{ "day_of_week", PY_UINT16, offsetof(PRINTER_INFO_0, dayofweek) },
-	{ "day", PY_UINT16, offsetof(PRINTER_INFO_0, day) },
-	{ "hour", PY_UINT16, offsetof(PRINTER_INFO_0, hour) },
-	{ "minute", PY_UINT16, offsetof(PRINTER_INFO_0, minute) },
-	{ "second", PY_UINT16, offsetof(PRINTER_INFO_0, second) },
-	{ "milliseconds", PY_UINT16, offsetof(PRINTER_INFO_0, milliseconds) },
-
-	{ "global_counter", PY_UINT32, offsetof(PRINTER_INFO_0, global_counter) },
-	{ "total_pages", PY_UINT32, offsetof(PRINTER_INFO_0, total_pages) },
-
-	{ "major_version", PY_UINT16, offsetof(PRINTER_INFO_0, major_version) },
-	{ "build_version", PY_UINT16, offsetof(PRINTER_INFO_0, build_version) },
-
-	{ "unknown7", PY_UINT32, offsetof(PRINTER_INFO_0, unknown7) },
-	{ "unknown8", PY_UINT32, offsetof(PRINTER_INFO_0, unknown8) },
-	{ "unknown9", PY_UINT32, offsetof(PRINTER_INFO_0, unknown9) },
-	{ "session_counter", PY_UINT32, offsetof(PRINTER_INFO_0, session_counter)},
-	{ "unknown11", PY_UINT32, offsetof(PRINTER_INFO_0, unknown11) },
-	{ "printer_errors", PY_UINT32, offsetof(PRINTER_INFO_0, printer_errors) },
-	{ "unknown13", PY_UINT32, offsetof(PRINTER_INFO_0, unknown13) },
-	{ "unknown14", PY_UINT32, offsetof(PRINTER_INFO_0, unknown14) },
-	{ "unknown15", PY_UINT32, offsetof(PRINTER_INFO_0, unknown15) },
-	{ "unknown16", PY_UINT32, offsetof(PRINTER_INFO_0, unknown16) },
-	{ "change_id", PY_UINT32, offsetof(PRINTER_INFO_0, change_id) },
-	{ "unknown18", PY_UINT32, offsetof(PRINTER_INFO_0, unknown18) },
-	{ "status", PY_UINT32, offsetof(PRINTER_INFO_0, status) },
-	{ "unknown20", PY_UINT32, offsetof(PRINTER_INFO_0, unknown20) },
-	{ "c_setprinter", PY_UINT32, offsetof(PRINTER_INFO_0, c_setprinter) },
-	{ "unknown22", PY_UINT32, offsetof(PRINTER_INFO_0, unknown22) },
-	{ "unknown23", PY_UINT32, offsetof(PRINTER_INFO_0, unknown23) },
-	{ "unknown24", PY_UINT32, offsetof(PRINTER_INFO_0, unknown24) },
-	{ "unknown25", PY_UINT32, offsetof(PRINTER_INFO_0, unknown25) },
-	{ "unknown26", PY_UINT32, offsetof(PRINTER_INFO_0, unknown26) },
-	{ "unknown27", PY_UINT32, offsetof(PRINTER_INFO_0, unknown27) },
-	{ "unknown28", PY_UINT32, offsetof(PRINTER_INFO_0, unknown28) },
-	{ "unknown29", PY_UINT32, offsetof(PRINTER_INFO_0, unknown29) },
-
-	{ NULL }
-};	
-
-struct pyconv py_PRINTER_INFO_1[] = {
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_1, name) },
-	{ "description", PY_UNISTR, offsetof(PRINTER_INFO_1, description) },
-	{ "comment", PY_UNISTR, offsetof(PRINTER_INFO_1, comment) },
-	{ "flags", PY_UINT32, offsetof(PRINTER_INFO_1, flags) },
-	{ NULL }
-};	
-
-struct pyconv py_PRINTER_INFO_2[] = {
-	{ "server_name", PY_UNISTR, offsetof(PRINTER_INFO_2, servername) },
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_2, printername) },
-	{ "share_name", PY_UNISTR, offsetof(PRINTER_INFO_2, sharename) },
-	{ "port_name", PY_UNISTR, offsetof(PRINTER_INFO_2, portname) },
-	{ "driver_name", PY_UNISTR, offsetof(PRINTER_INFO_2, drivername) },
-	{ "comment", PY_UNISTR, offsetof(PRINTER_INFO_2, comment) },
-	{ "location", PY_UNISTR, offsetof(PRINTER_INFO_2, location) },
-	{ "datatype", PY_UNISTR, offsetof(PRINTER_INFO_2, datatype) },
-	{ "sepfile", PY_UNISTR, offsetof(PRINTER_INFO_2, sepfile) },
-	{ "print_processor", PY_UNISTR, offsetof(PRINTER_INFO_2, printprocessor) },
-	{ "parameters", PY_UNISTR, offsetof(PRINTER_INFO_2, parameters) },
-	{ "attributes", PY_UINT32, offsetof(PRINTER_INFO_2, attributes) },
-	{ "default_priority", PY_UINT32, offsetof(PRINTER_INFO_2, defaultpriority) },
-	{ "priority", PY_UINT32, offsetof(PRINTER_INFO_2, priority) },
-	{ "start_time", PY_UINT32, offsetof(PRINTER_INFO_2, starttime) },
-	{ "until_time", PY_UINT32, offsetof(PRINTER_INFO_2, untiltime) },
-	{ "status", PY_UINT32, offsetof(PRINTER_INFO_2, status) },
-	{ "cjobs", PY_UINT32, offsetof(PRINTER_INFO_2, cjobs) },
-	{ "average_ppm", PY_UINT32, offsetof(PRINTER_INFO_2, averageppm) },
-	{ NULL }
-};	
-
-struct pyconv py_PRINTER_INFO_3[] = {
-	{ "flags", PY_UINT32, offsetof(PRINTER_INFO_3, flags) },
-	{ NULL }
-};	
-
-struct pyconv py_DEVICEMODE[] = {
-	{ "device_name", PY_UNISTR, offsetof(DEVICEMODE, devicename) },
-	{ "spec_version", PY_UINT16, offsetof(DEVICEMODE, specversion) },
-	{ "driver_version", PY_UINT16, offsetof(DEVICEMODE, driverversion) },
-	{ "size", PY_UINT16, offsetof(DEVICEMODE, size) },
-	{ "fields", PY_UINT16, offsetof(DEVICEMODE, fields) },
-	{ "orientation", PY_UINT16, offsetof(DEVICEMODE, orientation) },
-	{ "paper_size", PY_UINT16, offsetof(DEVICEMODE, papersize) },
-	{ "paper_width", PY_UINT16, offsetof(DEVICEMODE, paperwidth) },
-	{ "paper_length", PY_UINT16, offsetof(DEVICEMODE, paperlength) },
-	{ "scale", PY_UINT16, offsetof(DEVICEMODE, scale) },
-	{ "copies", PY_UINT16, offsetof(DEVICEMODE, copies) },
-	{ "default_source", PY_UINT16, offsetof(DEVICEMODE, defaultsource) },
-	{ "print_quality", PY_UINT16, offsetof(DEVICEMODE, printquality) },
-	{ "color", PY_UINT16, offsetof(DEVICEMODE, color) },
-	{ "duplex", PY_UINT16, offsetof(DEVICEMODE, duplex) },
-	{ "y_resolution", PY_UINT16, offsetof(DEVICEMODE, yresolution) },
-	{ "tt_option", PY_UINT16, offsetof(DEVICEMODE, ttoption) },
-	{ "collate", PY_UINT16, offsetof(DEVICEMODE, collate) },
-	{ "form_name", PY_UNISTR, offsetof(DEVICEMODE, formname) },
-	{ "log_pixels", PY_UINT16, offsetof(DEVICEMODE, logpixels) },
-	{ "bits_per_pel", PY_UINT32, offsetof(DEVICEMODE, bitsperpel) },
-	{ "pels_width", PY_UINT32, offsetof(DEVICEMODE, pelswidth) },
-	{ "pels_height", PY_UINT32, offsetof(DEVICEMODE, pelsheight) },
-	{ "display_flags", PY_UINT32, offsetof(DEVICEMODE, displayflags) },
-	{ "display_frequency", PY_UINT32, offsetof(DEVICEMODE, displayfrequency) },
-	{ "icm_method", PY_UINT32, offsetof(DEVICEMODE, icmmethod) },
-	{ "icm_intent", PY_UINT32, offsetof(DEVICEMODE, icmintent) },
-	{ "media_type", PY_UINT32, offsetof(DEVICEMODE, mediatype) },
-	{ "dither_type", PY_UINT32, offsetof(DEVICEMODE, dithertype) },
-	{ "reserved1", PY_UINT32, offsetof(DEVICEMODE, reserved1) },
-	{ "reserved2", PY_UINT32, offsetof(DEVICEMODE, reserved2) },
-	{ "panning_width", PY_UINT32, offsetof(DEVICEMODE, panningwidth) },
-	{ "panning_height", PY_UINT32, offsetof(DEVICEMODE, panningheight) },
-	{ NULL }
-};
-
-/* Convert a security descriptor to a Python dict */
-
-static PyObject *PySID_FromSID(DOM_SID *sid)
-{
-	fstring sidstr;
-
-	if (!sid) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-
-	if (sid_to_string(sidstr, sid))
-		return PyString_FromString(sidstr);
-
-	Py_INCREF(Py_None);
-	return Py_None;	
-}
-
-static PyObject *PyACE_FromACE(SEC_ACE *ace)
-{
-	PyObject *obj;
-
-	if (!ace) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-
-	obj = PyDict_New();
-
-	PyDict_SetItemString(obj, "type", PyInt_FromLong(ace->type));
-	PyDict_SetItemString(obj, "flags", PyInt_FromLong(ace->flags));
-	PyDict_SetItemString(obj, "mask", PyInt_FromLong(ace->info.mask));
-
-	PyDict_SetItemString(obj, "trustee", PySID_FromSID(&ace->trustee));
-
-	return obj;
-}
-
-static PyObject *PyACL_FromACL(SEC_ACL *acl)
-{
-	PyObject *obj, *ace_list;
-	int i;
-
-	if (!acl) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-
-	obj = PyDict_New();
-
-	PyDict_SetItemString(obj, "revision", PyInt_FromLong(acl->revision));
-
-	ace_list = PyList_New(acl->num_aces);
-
-	for (i = 0; i < acl->num_aces; i++)
-		PyList_SetItem(ace_list, i, PyACE_FromACE(&acl->ace[i]));
-
-	PyDict_SetItemString(obj, "ace_list", ace_list);
-
-	return obj;
-}
-
-static PyObject *PySECDESC_FromSECDESC(SEC_DESC *sd)
-{
-	PyObject *obj = PyDict_New();
-
-	PyDict_SetItemString(obj, "revision", PyInt_FromLong(sd->revision));
-	PyDict_SetItemString(obj, "type", PyInt_FromLong(sd->type));
-
-	PyDict_SetItemString(obj, "owner_sid", PySID_FromSID(sd->owner_sid));
-	PyDict_SetItemString(obj, "group_sid", PySID_FromSID(sd->grp_sid));
-
-	PyDict_SetItemString(obj, "dacl", PyACL_FromACL(sd->dacl));
-	PyDict_SetItemString(obj, "sacl", PyACL_FromACL(sd->sacl));
-
-	return obj;
-}
-
-static PyObject *PyDEVICEMODE_FromDEVICEMODE(DEVICEMODE *devmode)
-{
-	PyObject *obj;
-
-	obj = from_struct(devmode, py_DEVICEMODE);
-
-	PyDict_SetItemString(obj, "private",
-			     PyString_FromStringAndSize(devmode->private, 
-							devmode->driverextra));
-
-	return obj;
-}
-
 /* Open a printer */
 
 PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
@@ -282,8 +68,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	if (!W_ERROR_IS_OK(werror)) {
 		cli_shutdown(cli);
 		SAFE_FREE(cli);
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		goto done;
 	}
 
@@ -331,7 +116,7 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *result;
+	PyObject *result = NULL;
 	PRINTER_INFO_CTR ctr;
 	int level = 1;
 	uint32 needed;
@@ -354,48 +139,35 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Return value */
 
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror,
+				PyInt_FromLong(W_ERROR_V(werror)));
+		return NULL;
+	}
+
 	result = Py_None;
 
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
-
 	switch (level) {
-
+		
 	case 0:
-		result = from_struct(ctr.printers_0, py_PRINTER_INFO_0);
-
+		py_from_PRINTER_INFO_0(&result, ctr.printers_0);
 		break;
 
 	case 1:
-		result = from_struct(ctr.printers_1, py_PRINTER_INFO_1);
-
+		py_from_PRINTER_INFO_1(&result, ctr.printers_1);
 		break;
 
 	case 2:
-		result = from_struct(ctr.printers_2, py_PRINTER_INFO_2);
-
-		PyDict_SetItemString(result, "security_descriptor", 
-				     PySECDESC_FromSECDESC(
-					     ctr.printers_2->secdesc));
-		
-		PyDict_SetItemString(result, "device_mode",
-				     PyDEVICEMODE_FromDEVICEMODE(
-					     ctr.printers_2->devmode));
-
+		py_from_PRINTER_INFO_2(&result, ctr.printers_2);
 		break;
 
 	case 3:
-		result = from_struct(ctr.printers_3, py_PRINTER_INFO_3);
-
-		PyDict_SetItemString(result, "security_descriptor",
-				     PySECDESC_FromSECDESC(
-					     ctr.printers_3->secdesc));
-		break;
-
-	default:
-		result = Py_None;
+		py_from_PRINTER_INFO_3(&result, ctr.printers_3);
 		break;
 	}
+
+	PyDict_SetItemString(result, "level", PyInt_FromLong(level));
+
  done:
 	Py_INCREF(result);
 	return result;
@@ -407,10 +179,10 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *result, *info;
+	PyObject *info, *level_obj;
 	PRINTER_INFO_CTR ctr;
-	int level = 1;
-	static char *kwlist[] = {"dict", "level", NULL};
+	uint32 level;
+	static char *kwlist[] = {"dict", NULL};
 	union {
 		PRINTER_INFO_0 printers_0;
 		PRINTER_INFO_1 printers_1;
@@ -422,20 +194,61 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|i", kwlist, 
-					 &PyDict_Type, &info, &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist, 
+					 &PyDict_Type, &info))
 		return NULL;
 	
+	/* Check dictionary contains a level */
+
+	if ((level_obj = PyDict_GetItemString(info, "level"))) {
+
+		if (!PyInt_Check(level_obj))
+			goto error;
+
+		level = PyInt_AsLong(level_obj);
+
+	} else {
+	error:
+		PyErr_SetString(spoolss_error, "invalid info");
+		return NULL;
+	}
+
 	/* Fill in printer info */
 
 	ZERO_STRUCT(ctr);
 
 	switch (level) {
-	case 1:
-		ctr.printers_1 = &pinfo.printers_1;
-		to_struct(&pinfo.printers_1, info, py_PRINTER_INFO_1);
+	case 2: {
+		PyObject *devmode_obj;
+
+		ctr.printers_2 = &pinfo.printers_2;
+
+		if (!py_to_PRINTER_INFO_2(&pinfo.printers_2, info))
+			goto error;
+
+#if 0
+		devmode_obj = PyDict_GetItemString(info, "device_mode");
+
+		pinfo.printers_2.devmode = talloc(
+			hnd->mem_ctx, sizeof(DEVICEMODE));
+
+		PyDEVICEMODE_AsDEVICEMODE(pinfo.printers_2.devmode, 
+					  devmode_obj);
+
+#else
+
+		/* FIXME: can we actually set the security descriptor using
+		   a setprinter level 2? */
+
+		pinfo.printers_2.secdesc = NULL;
+		pinfo.printers_2.secdesc = NULL;
+
+#endif
 		break;
+	}
 	default:
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		return NULL;
 	}
 
 	/* Call rpc function */
@@ -445,14 +258,13 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Return value */
 
-	result = Py_None;
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
 
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
-
- done:
-	Py_INCREF(result);
-	return result;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 /* Enumerate printers */
@@ -496,10 +308,11 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Return value */
 	
-	result = Py_None;
-
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror,
+				PyInt_FromLong(W_ERROR_V(werror)));
+		return NULL;
+	}
 
 	result = PyList_New(num_printers);
 
@@ -508,8 +321,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		for (i = 0; i < num_printers; i++) {
 			PyObject *value;
 
-			value = from_struct (
-				&ctr.printers_0[i], py_PRINTER_INFO_0);
+			py_from_PRINTER_INFO_0(&value, &ctr.printers_0[i]);
 
 			PyList_SetItem(result, i, value);
 		}
@@ -519,8 +331,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
 
-			value = from_struct(
-				&ctr.printers_1[i], py_PRINTER_INFO_1);
+			py_from_PRINTER_INFO_1(&value, &ctr.printers_1[i]);
 
 			PyList_SetItem(result, i, value);
 		}
@@ -530,8 +341,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
 
-			value = from_struct(
-				&ctr.printers_2[i], py_PRINTER_INFO_2);
+			py_from_PRINTER_INFO_2(&value, &ctr.printers_2[i]);
 
 			PyList_SetItem(result, i, value);
 		}
@@ -541,8 +351,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
 
-			value = from_struct(
-				&ctr.printers_3[i], py_PRINTER_INFO_3);
+			py_from_PRINTER_INFO_3(&value, &ctr.printers_3[i]);
 
 			PyList_SetItem(result, i, value);
 		}
@@ -550,7 +359,6 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		break;
 	}
 
- done:
 	Py_INCREF(result);
 	return result;
 }
