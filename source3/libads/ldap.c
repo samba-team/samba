@@ -557,7 +557,7 @@ BOOL ads_server_info(ADS_STRUCT *ads)
 	int rc;
 	void *res;
 	char **values;
-	char *ret, *p;
+	char *p;
 
 	rc = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
@@ -594,7 +594,8 @@ BOOL ads_server_info(ADS_STRUCT *ads)
 		ads->bind_path = ads_build_dn(ads->realm);
 	}
 
-	DEBUG(3,("got ldap server name %s@%s\n", ret, ads->realm));
+	DEBUG(3,("got ldap server name %s@%s\n", 
+		 ads->ldap_server_name, ads->realm));
 
 	return True;
 }
