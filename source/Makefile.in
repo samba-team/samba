@@ -58,9 +58,6 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
-# libsmbclient support here
-BLDSHARED = @BLDSHARED@
-
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
@@ -484,7 +481,7 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd: build_env $(SMBD_OBJ) bin/.dummy
+bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
 
@@ -613,13 +610,15 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
-libsmbclient: $(LIBSMBCLIENT_PICOBJS)
-	@if [ $(BLDSHARED) = true ]; then \
-	   echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@; \
-	   $(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
-	fi
-	@echo Linking libsmbclient non-shared library bin/$@.a
-	-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS) 
+bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
+	echo Linking libsmbclient shared library $@
+	$(SHLD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS)
+
+bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
+	@echo Linking libsmbclient non-shared library $@
+	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) 
+
+libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
@@ -702,30 +701,27 @@ winbindd_proto:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
-delproto:
-	@/bin/rm -f $(srcdir)/include/proto.h
+delheaders:
+	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
 
-# we want proto.h to be rebuilt if it doesn't exist, but not rebuilt every time
-.proto.stamp: include/proto.h
+# we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
+.headers.stamp: include/proto.h include/build_env.h
 	@[ -f $@ ] || touch $@
 
-$(PROTO_OBJ) : .proto.stamp
+$(PROTO_OBJ) : .headers.stamp
 
 include/proto.h:
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
-proto: delproto include/proto.h
-
-delbuild_env:
-	@/bin/rm -f include/build_env.h
-
 include/build_env.h:
 	@echo rebuilding include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > include/build_env.h
 
-build_env: delbuild_env include/build_env.h
-	@rm -f smbd/build_options.o
+headers: delheaders include/proto.h include/build_env.h
+
+proto: headers
+
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
