@@ -21,6 +21,7 @@ LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
+PERL=@PERL@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -1253,9 +1254,13 @@ utils/net_proto.h:
 	  $(NET_OBJ1)
 
 include/tdbsam2_parse_info.h:
-	@cd $(srcdir) && @PERL@ -w script/genstruct.pl \
-	-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
-	include/tdbsam2.h
+	@if test -n "$(PERL)"; then \
+		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
+		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
+		include/tdbsam2.h; \
+	else \
+		echo Unable to build $@, continuing; \
+	fi
 
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
