@@ -34,7 +34,7 @@ static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 1000
-#define LOCKBASE 0;
+#define LOCKBASE 0
 
 /*
 #define LOCKBASE (0x40000000 - 50)
@@ -59,14 +59,16 @@ struct record {
 	char needed;
 };
 
+#define PRESETS 0
+
+#if PRESETS
 static struct record preset[] = {
-#if 0
 {36,  5, 0, 0, 0,  8, 1},
 { 2,  6, 0, 1, 0,  1, 1},
 {53, 92, 0, 0, 0,  0, 1},
 {99, 11, 0, 0, 7,  1, 1},
-#endif
 };
+#endif
 
 static struct record *recorded;
 
@@ -377,9 +379,12 @@ static void test_locks(char *share[NSERVERS])
 	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
 
 	for (n=0; n<numops; n++) {
+#if PRESETS
 		if (n < sizeof(preset) / sizeof(preset[0])) {
 			recorded[n] = preset[n];
-		} else {
+		} else 
+#endif
+		{
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
 			recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
