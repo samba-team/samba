@@ -580,9 +580,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	NTSTATUS nt_status;
 	int turn = 1;
 	DATA_BLOB msg1;
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob(NULL, 0);
 	DATA_BLOB blob_in = data_blob(NULL, 0);
-	DATA_BLOB blob_out;
+	DATA_BLOB blob_out = data_blob(NULL, 0);
 
 	cli_temp_set_signing(cli);
 
