@@ -59,6 +59,7 @@
 
 #if	defined(ENCRYPTION)
 Encryptions *findencryption (int);
+Encryptions *finddecryption(int);
 int EncryptAutoDec(int);
 int EncryptAutoEnc(int);
 int EncryptDebug(int);
@@ -101,6 +102,7 @@ void encrypt_start_output(int);
 void encrypt_support(unsigned char*, int);
 void encrypt_verbose_quiet(int);
 void encrypt_wait(void);
+int encrypt_delay(void);
 
 #ifdef	TELENTD
 void encrypt_wait (void);
