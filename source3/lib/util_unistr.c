@@ -953,6 +953,7 @@ int wisxdigit( smb_ucs2_t val)
 {
 	return (map_table[val].flags & UNI_XDIGIT);
 }
+
 /*******************************************************************
  Is a space wchar.
 ********************************************************************/
@@ -960,4 +961,22 @@ int wisxdigit( smb_ucs2_t val)
 int wisspace( smb_ucs2_t val)
 {
 	return (map_table[val].flags & UNI_SPACE);
+}
+
+/*******************************************************************
+ Convert a wchar to upper case.
+********************************************************************/
+
+smb_ucs2_t wtoupper( smb_ucs2_t val )
+{
+	return map_table[val].upper;
+}
+
+/*******************************************************************
+ Convert a wchar to lower case.
+********************************************************************/
+
+smb_ucs2_t wtolowerr( smb_ucs2_t val )
+{
+	return map_table[val].lower;
 }
