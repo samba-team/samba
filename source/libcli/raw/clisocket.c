@@ -138,8 +138,7 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 	fde.handler = smbcli_sock_connect_handler;
 	fde.private = sock;
 
-	sock->event.fde = event_add_fd(sock->event.ctx, &fde);
-	talloc_steal(sock, sock->event.fde);
+	sock->event.fde = event_add_fd(sock->event.ctx, &fde, sock);
 
 	sock->port = port;
 	set_blocking(fde.fd, False);

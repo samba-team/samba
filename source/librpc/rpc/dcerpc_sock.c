@@ -347,7 +347,7 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	fde.handler = sock_io_handler;
 	fde.private = c;
 
-	sock->fde = event_add_fd(sock->event_ctx, &fde);
+	sock->fde = event_add_fd(sock->event_ctx, &fde, sock);
 
 	c->transport.private = sock;
 

@@ -143,8 +143,7 @@ static int pvfs_wait_destructor(void *ptr)
 	te.next_event = end_time;
 	te.handler = pvfs_wait_timeout;
 	te.private = pwait;
-	pwait->te = event_add_timed(pwait->ev, &te);
-	talloc_steal(pwait, pwait->te);
+	pwait->te = event_add_timed(pwait->ev, &te, pwait);
 
 	/* register with the messaging subsystem for this message
 	   type */
