@@ -1,5 +1,5 @@
 #
-# @(#) Test handling of NULL passed to various nss functions
+# @(#) Test handling of long arguments passed to various nss functions
 #
 
 load_lib compile.exp
@@ -16,7 +16,7 @@ foreach { test } $longarg_tests {
     set test_desc [lindex $test 0]
     set test_file [lindex $test 1]
 
-    simple_make "null" $test_file
+    simple_make "longarg" $test_file
     set output [util_start "$srcdir/$subdir/$test_file" ]
 
     if { [regexp "PASS" $output] } {
