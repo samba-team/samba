@@ -157,7 +157,6 @@ clean:
 	rm -f Samba-Developers-Guide.*
 	rm -f Samba-Guide.*
 	rm -f $(IMAGEPROJDIR)/*.eps $(MANPAGEDIR)/smb.conf.5.xml
-	rm -f $(PLUCKERDIR)/*.pdb
 
 # Text files
 $(TXTDIR):
