@@ -176,7 +176,8 @@ main (int argc, char **argv)
 	krb5_unparse_name(context, principal, &p);
 	asprintf(&prompt, "%s's Password: ", p);
 	free(p);
-	des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 0);
+	if(des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 0))
+	    return 1;
 	free(prompt);
     }
 
