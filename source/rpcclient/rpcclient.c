@@ -237,36 +237,6 @@ static int process_tok(fstring tok)
 }
 
 /****************************************************************************
-wait for keyboard activity, swallowing network packets
-****************************************************************************/
-static void wait_keyboard(struct cli_state *cli)
-{
-  fd_set fds;
-  struct timeval timeout;
-  
-  while (1) 
-    {
-      FD_ZERO(&fds);
-      FD_SET(cli->fd,&fds);
-      FD_SET(fileno(stdin),&fds);
-
-      timeout.tv_sec = 20;
-      timeout.tv_usec = 0;
-      sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
-      
-      if (FD_ISSET(fileno(stdin),&fds))
-  	return;
-
-      /* We deliberately use receive_smb instead of
-         client_receive_smb as we want to receive
-         session keepalives and then drop them here.
-       */
-      if (FD_ISSET(cli->fd,&fds))
-  	receive_smb(cli->fd,cli->inbuf,0);
-    }  
-}
-
-/****************************************************************************
   process commands from the client
 ****************************************************************************/
 static void do_command(struct client_info *info, char *tok, char *line)
