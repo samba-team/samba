@@ -15,7 +15,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_search.o \
 		lib/ldb/ldb_tdb/ldb_pack.o \
 		lib/ldb/ldb_tdb/ldb_index.o \
-		lib/ldb/ldb_tdb/ldb_match.o
+		lib/ldb/ldb_tdb/ldb_match.o \
+		lib/ldb/ldb_tdb/ldb_cache.o
 # End MODULE libldb_tdb
 ################################################
 
@@ -28,7 +29,11 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_ldif.o \
 		lib/ldb/common/ldb_parse.o \
 		lib/ldb/common/ldb_msg.o \
-		lib/ldb/common/util.o
+		lib/ldb/common/util.o \
+		lib/ldb/common/ldb_utf8.o \
+		lib/ldb/common/ldb_alloc.o \
+		lib/ldb/common/ldb_debug.o
+#
 # End SUBSYSTEM LIBLDB
 ################################################
 

@@ -1,0 +1,83 @@
+
+# ldap support is optional edit WITH_LDAP to suit
+WITH_LDAP=1
+
+ifeq ($(WITH_LDAP),1)
+OPENLDAP_PREFIX=/usr
+LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -lldap
+LDAP_FLAGS=-DHAVE_LDAP=1
+LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
+endif
+
+TDBDIR=../tdb
+
+CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
+
+TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
+
+LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
+	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
+	ldb_tdb/ldb_cache.o
+
+
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
+	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
+	   common/ldb_alloc.o common/ldb_debug.o
+
+OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
+
+LDB_LIB = lib/libldb.a
+
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbtest
+
+LIBS = $(LDB_LIB)($(OBJS))
+
+DIRS = lib bin
+
+all: $(DIRS) $(BINS) $(LIBS)
+
+lib:
+	mkdir -p lib
+
+bin:
+	mkdir -p bin
+
+lib/libldb.a: $(OBJS)
+
+bin/ldbadd: tools/ldbadd.o $(LIBS)
+	$(CC) -o bin/ldbadd tools/ldbadd.o $(LIB_FLAGS)
+
+bin/ldbsearch: tools/ldbsearch.o $(LIBS)
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o $(LIB_FLAGS)
+
+bin/ldbdel: tools/ldbdel.o $(LIBS)
+	$(CC) -o bin/ldbdel tools/ldbdel.o $(LIB_FLAGS)
+
+bin/ldbmodify: tools/ldbmodify.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o $(LIB_FLAGS)
+
+bin/ldbedit: tools/ldbedit.o $(LIBS)
+	$(CC) -o bin/ldbedit tools/ldbedit.o $(LIB_FLAGS)
+
+bin/ldbtest: tools/ldbtest.o $(LIBS)
+	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
+
+clean:
+	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB)
+
+proto:
+	mkproto.pl */*.c > include/proto.h
+
+etags:
+	etags */*.[ch]
+
+test-tdb:
+	@echo "STARTING TDB BACKEND TEST"
+	tests/test-tdb.sh
+
+test-ldap:
+	@echo "STARTING LDAP BACKEND TEST"
+	tests/test-ldap.sh
+
+test: test-tdb test-ldap

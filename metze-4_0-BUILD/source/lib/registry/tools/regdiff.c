@@ -33,12 +33,12 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "-%s\n", reg_key_get_path(t1)+1);
 		} else if(!W_ERROR_IS_OK(error2)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %d\n", error2));
+			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
 		}
 	}
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting subkey by index: %d\n", error1));
+		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
@@ -47,30 +47,30 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "\n[%s]\n", reg_key_get_path(t1)+1);
 		} else if(!W_ERROR_IS_OK(error2)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %d\n", error2));
+			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
 		}
 		writediff(t2, t1, out);
 	}
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting subkey by index: %d\n", error1));
+		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
 	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(newkey, i, &v1)); i++) {
 		error2 = reg_key_get_value_by_name(oldkey, reg_val_name(v1), &v2);
-		if ((W_ERROR_IS_OK(error2) && reg_val_size(v2) != reg_val_size(v1) || memcmp(reg_val_data_blk(v1), reg_val_data_blk(v2), reg_val_size(v1))) 
+		if (((W_ERROR_IS_OK(error2) && reg_val_size(v2) != reg_val_size(v1)) || memcmp(reg_val_data_blk(v1), reg_val_data_blk(v2), reg_val_size(v1))) 
 			|| W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "\"%s\"=%s:%s\n", reg_val_name(v1), str_regtype(reg_val_type(v1)), reg_val_data_string(v1));
 		}
 
 		if(!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting value by name: %d\n", error2));
+			DEBUG(0, ("Error occured while getting value by name: %d\n", W_ERROR_V(error2)));
 		}
 	}
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting value by index: %d\n", error1));
+		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 
@@ -81,22 +81,20 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		} else if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "\"%s\"=-\n", reg_val_name(v1));
 		} else {
-			DEBUG(0, ("Error occured while getting value by name: %d\n", error2));
+			DEBUG(0, ("Error occured while getting value by name: %d\n", W_ERROR_V(error2)));
 		}
 	}
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting value by index: %d\n", error1));
+		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
 		return;
 	}
 }
 
- int main (int argc, char **argv)
+ int main(int argc, char **argv)
 {
-	uint32	setparms, checkparms;
 	int opt;
 	poptContext pc;
-	REG_KEY *root;
 	const char *backend1 = NULL, *backend2 = NULL;
 	const char *location2;
 	const char *credentials1= NULL, *credentials2 = NULL;
@@ -105,7 +103,6 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	REG_HANDLE *h2;
 	REG_KEY *root1 = NULL, *root2;
 	int from_null = 0;
-	int fullpath = 0, no_values = 0;
 	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

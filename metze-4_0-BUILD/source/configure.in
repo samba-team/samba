@@ -212,6 +212,7 @@ sinclude(ntvfs/config.m4)
 sinclude(rpc_server/config.m4)
 sinclude(lib/registry/config.m4)
 sinclude(torture/config.m4)
+sinclude(scripting/config.m4)
 
 SMB_BINARY(smbd, [ALL], [SBIN],
 	[smbd/server.o

@@ -22,7 +22,7 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawnotify.o 
 		libcli/raw/rawioctl.o 
 		libcli/raw/rawacl.o 
-		libcli/raw/rawdate.o ])
+		libcli/raw/rawdate.o])
 
 SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		[libcli/util/asn1.o 
@@ -43,7 +43,8 @@ SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		libcli/auth/ntlmssp_sign.o
 		libcli/auth/schannel.o
 		libcli/auth/credentials.o
-		libcli/auth/session.o])
+		libcli/auth/session.o
+		libcli/auth/ntlm_check.o])
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		[libcli/unexpected.o

@@ -1,0 +1,13 @@
+dn: @ATTRIBUTES
+uid: CASE_INSENSITIVE WILDCARD
+dn: CASE_INSENSITIVE
+
+dn: @SUBCLASSES
+top: domain
+top: person
+domain: domainDNS
+person: organizationalPerson
+person: fooPerson
+organizationalPerson: user
+organizationalPerson: OpenLDAPperson
+user: computer

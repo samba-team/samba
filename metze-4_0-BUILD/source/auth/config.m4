@@ -8,5 +8,4 @@ SMB_SUBSYSTEM(AUTH,auth/auth.o,
 		[auth/auth_ntlmssp.o
 		auth/auth_util.o
 		auth/pampass.o
-		auth/pass_check.o
-		auth/auth_compat.o])
+		auth/pass_check.o])

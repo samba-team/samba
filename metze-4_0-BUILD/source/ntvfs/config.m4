@@ -240,7 +240,7 @@ SMB_MODULE(ntvfs_print, NTVFS, STATIC, [ntvfs/print/vfs_print.o])
 
 SMB_MODULE(ntvfs_ipc, NTVFS, STATIC, [ntvfs/ipc/vfs_ipc.o])
 
-SMB_MODULE(ntvfs_posix, NTVFS, NOT, [ntvfs/posix/vfs_posix.o])
+SMB_MODULE(ntvfs_posix, NTVFS, STATIC, [ntvfs/posix/vfs_posix.o])
 
 SMB_MODULE(ntvfs_nbench, NTVFS, STATIC, [ntvfs/nbench/vfs_nbench.o])
 
