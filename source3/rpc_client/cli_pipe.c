@@ -1192,6 +1192,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 {
 	int fnum;
 
+	SMB_ASSERT(cli->nt_pipe_fnum == 0);
+
 	if (cli->capabilities & CAP_NT_SMBS) {
 		if ((fnum = cli_nt_create(cli, &(pipe_name[5]), DESIRED_ACCESS_PIPE)) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
@@ -1253,4 +1255,5 @@ close the session
 void cli_nt_session_close(struct cli_state *cli)
 {
 	cli_close(cli, cli->nt_pipe_fnum);
+	cli->nt_pipe_fnum = 0;
 }
