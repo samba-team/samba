@@ -317,23 +317,6 @@
 
 #endif
 
-#if defined(HAVE_SYS_IPC_H)
-#include <sys/ipc.h>
-#endif /* HAVE_SYS_IPC_H */
-
-#if defined(HAVE_SYS_SHM_H)
-#include <sys/shm.h>
-#endif /* HAVE_SYS_SHM_H */
-
-#ifdef HAVE_NATIVE_ICONV
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#endif
-#ifdef HAVE_GICONV
-#include <giconv.h>
-#endif
-#endif
-
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
