@@ -50,14 +50,21 @@ static BOOL reload_services_file(BOOL test)
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
 
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
 
 	ret = lp_load(servicesf,False,False,True);
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
 
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
+
 	load_interfaces();
 
 	return(ret);
@@ -750,7 +757,10 @@ int main(int argc, char **argv)
 	lp_set_logfile(logfile);
 
 	setup_logging("winbindd", interactive);
-	reopen_logs();
+	if (!reopen_logs()) {
+		fprintf(stderr, "Could not open logfile: %s\n", logfile);
+		fprintf(stderr, "Continuing in the hope that that is OK\n");
+	}
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
 	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );

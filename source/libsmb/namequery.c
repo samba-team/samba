@@ -1267,7 +1267,7 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
-		int num_adresses = 0;
+		int num_addresses = 0;
 		struct in_addr *return_iplist = NULL;
 
 		if (! *pserver)
@@ -1284,12 +1284,12 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 					return True;
 				return internal_resolve_name(group, 0x1B, ip_list, count);
 			}
-			num_adresses++;
+			num_addresses++;
 		}
-		if (num_adresses == 0)
+		if (num_addresses == 0)
 			return internal_resolve_name(group, name_type, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
+		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
 		if(return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
