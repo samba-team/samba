@@ -404,7 +404,7 @@ Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
       p += 32;
       *p++ = ':';
       for( i = 0; i < 16; i++)
-        sprintf(&p[i*2], "%02X", old_p16[i]);
+        sprintf(&p[i*2], "%02X", new_nt_p16[i]);
       p += 32;
       *p++ = ':';
       sprintf(p, "%s:%s:%s\n", pwd->pw_gecos, 
