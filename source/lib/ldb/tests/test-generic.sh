@@ -25,6 +25,14 @@ time $VALGRIND bin/ldbtest -r 1000 -s 10  || exit 1
 echo "Adding index"
 $VALGRIND bin/ldbadd tests/test-index.ldif  || exit 1
 
+echo "testing indexed search"
+$VALGRIND bin/ldbsearch '(uid=uham)'  || exit 1
+$VALGRIND bin/ldbsearch '(&(uid=uham)(uid=uham))'  || exit 1
+$VALGRIND bin/ldbsearch '(|(uid=uham)(uid=uham))'  || exit 1
+$VALGRIND bin/ldbsearch '(|(uid=uham)(uid=uham)(objectclass=OpenLDAPperson))'  || exit 1
+$VALGRIND bin/ldbsearch '(&(uid=uham)(uid=uham)(!(objectclass=xxx)))'  || exit 1
+$VALGRIND bin/ldbsearch '(&(uid=uham)(!(uid=uhamxx)))'  || exit 1
+
 echo "Starting ldbtest indexed"
 time $VALGRIND bin/ldbtest -r 1000 -s 5000  || exit 1
 

@@ -71,7 +71,7 @@ static int do_search(struct ldb_context *ldb,
 		printf("# record %d\n", i+1);
 
 		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = *msgs[i];
+		ldif.msg = msgs[i];
 
 		ldb_ldif_write_file(ldb, stdout, &ldif);
 	}

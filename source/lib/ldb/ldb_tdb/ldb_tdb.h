@@ -13,17 +13,17 @@ struct ltdb_private {
 	   handling. It has plenty of digits of precision */
 	double sequence_number;
 
-	struct {
-		struct ldb_message baseinfo;
-		struct ldb_message indexlist;
-		struct ldb_message attributes;
-		struct ldb_message subclasses;
+	struct ltdb_cache {
+		struct ldb_message *baseinfo;
+		struct ldb_message *indexlist;
+		struct ldb_message *attributes;
+		struct ldb_message *subclasses;
 
 		struct {
 			char *name;
 			int flags;
 		} last_attribute;
-	} cache;
+	} *cache;
 
 	/* error if an internal ldb+tdb error */
 	const char *last_err_string;
@@ -51,7 +51,7 @@ struct ltdb_private {
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
-void ltdb_cache_free(struct ldb_module *module);
+int ltdb_cache_reload(struct ldb_module *module);
 int ltdb_cache_load(struct ldb_module *module);
 int ltdb_increase_sequence_number(struct ldb_module *module);
 int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name);

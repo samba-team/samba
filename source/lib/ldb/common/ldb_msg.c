@@ -36,6 +36,13 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
+/*
+  create a new ldb_message in a given memory context (NULL for top level)
+*/
+struct ldb_message *ldb_msg_new(void *mem_ctx)
+{
+	return talloc_zero_p(mem_ctx, struct ldb_message);
+}
 
 /*
   find an element in a message by attribute name
@@ -88,7 +95,7 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 /*
   duplicate a ldb_val structure
 */
-struct ldb_val ldb_val_dup(struct ldb_context *ldb,
+struct ldb_val ldb_val_dup(TALLOC_CTX *mem_ctx, 
 			   const struct ldb_val *v)
 {
 	struct ldb_val v2;
@@ -100,7 +107,7 @@ struct ldb_val ldb_val_dup(struct ldb_context *ldb,
 
 	/* the +1 is to cope with buggy C library routines like strndup
 	   that look one byte beyond */
-	v2.data = ldb_malloc(ldb, v->length+1);
+	v2.data = talloc_array_p(mem_ctx, char, v->length+1);
 	if (!v2.data) {
 		v2.length = 0;
 		return v2;
@@ -119,8 +126,8 @@ int ldb_msg_add_empty(struct ldb_context *ldb,
 {
 	struct ldb_message_element *els;
 
-	els = ldb_realloc_p(ldb, msg->elements, 
-			    struct ldb_message_element, msg->num_elements+1);
+	els = talloc_realloc_p(msg, msg->elements, 
+			       struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
 		errno = ENOMEM;
 		return -1;
@@ -129,7 +136,7 @@ int ldb_msg_add_empty(struct ldb_context *ldb,
 	els[msg->num_elements].values = NULL;
 	els[msg->num_elements].num_values = 0;
 	els[msg->num_elements].flags = flags;
-	els[msg->num_elements].name = ldb_strdup(ldb, attr_name);
+	els[msg->num_elements].name = talloc_strdup(els, attr_name);
 	if (!els[msg->num_elements].name) {
 		return -1;
 	}
@@ -178,7 +185,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 		return -1;
 	}
 
-	vals = ldb_realloc_p(ldb, el->values, struct ldb_val, el->num_values+1);
+	vals = talloc_realloc_p(msg, el->values, struct ldb_val, el->num_values+1);
 	if (!vals) {
 		errno = ENOMEM;
 		return -1;
@@ -332,19 +339,7 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 */
 void ldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	int i, j;
-
-	for (i=0;i<msg->num_elements;i++) {
-		struct ldb_message_element *el = &msg->elements[i];
-		for (j=0;j<el->num_values;j++) {
-			ldb_free(ldb, el->values[j].data);
-		}
-		if (el->values) ldb_free(ldb, el->values);
-		ldb_free(ldb, el->name);
-	}
-	if (msg->elements) ldb_free(ldb, msg->elements);
-	ldb_free(ldb, msg->dn);
-	ldb_free(ldb, msg);
+	talloc_free(msg);
 }
 
 /*
@@ -356,17 +351,17 @@ struct ldb_message *ldb_msg_copy(struct ldb_context *ldb,
 	struct ldb_message *msg2;
 	int i, j;
 
-	msg2 = ldb_malloc_p(ldb, struct ldb_message);
+	msg2 = talloc_p(ldb, struct ldb_message);
 	if (msg2 == NULL) return NULL;
 
 	msg2->elements = NULL;
 	msg2->num_elements = 0;
 	msg2->private_data = NULL;
 
-	msg2->dn = ldb_strdup(ldb, msg->dn);
+	msg2->dn = talloc_strdup(msg2, msg->dn);
 	if (msg2->dn == NULL) goto failed;
 
-	msg2->elements = ldb_malloc_array_p(ldb, struct ldb_message_element, msg->num_elements);
+	msg2->elements = talloc_array_p(msg2, struct ldb_message_element, msg->num_elements);
 	if (msg2->elements == NULL) goto failed;
 
 	for (i=0;i<msg->num_elements;i++) {
@@ -376,15 +371,16 @@ struct ldb_message *ldb_msg_copy(struct ldb_context *ldb,
 		el2->flags = el1->flags;
 		el2->num_values = 0;
 		el2->values = NULL;
-		el2->name = ldb_strdup(ldb, el1->name);
+		el2->name = talloc_strdup(msg2->elements, el1->name);
 		if (el2->name == NULL) goto failed;
-		el2->values = ldb_malloc_array_p(ldb, struct ldb_val, el1->num_values);
+		el2->values = talloc_array_p(msg2->elements, struct ldb_val, el1->num_values);
 		for (j=0;j<el1->num_values;j++) {
 			el2->values[j] = ldb_val_dup(ldb, &el1->values[j]);
 			if (el2->values[j].data == NULL &&
 			    el1->values[j].length != 0) {
 				goto failed;
 			}
+			el2->values[j].data = talloc_steal(el2->values, el2->values[j].data);
 			el2->num_values++;
 		}
 
@@ -394,7 +390,7 @@ struct ldb_message *ldb_msg_copy(struct ldb_context *ldb,
 	return msg2;
 
 failed:
-	ldb_msg_free(ldb, msg2);
+	talloc_free(msg2);
 	return NULL;
 }
 
@@ -417,8 +413,8 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 		struct ldb_message_element *el1 = &msg2->elements[i-1];
 		struct ldb_message_element *el2 = &msg2->elements[i];
 		if (ldb_msg_element_compare_name(el1, el2) == 0) {
-			el1->values = ldb_realloc_p(ldb, el1->values, struct ldb_val, 
-						    el1->num_values + el2->num_values);
+			el1->values = talloc_realloc_p(msg2->elements, el1->values, struct ldb_val, 
+						       el1->num_values + el2->num_values);
 			if (el1->values == NULL) {
 				return NULL;
 			}
@@ -426,8 +422,8 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 			       el2->values,
 			       sizeof(struct ldb_val) * el2->num_values);
 			el1->num_values += el2->num_values;
-			ldb_free(ldb, el2->name);
-			ldb_free(ldb, el2->values);
+			talloc_free(el2->name);
+			talloc_free(el2->values);
 			if (i+1<msg2->num_elements) {
 				memmove(el2, el2+1, sizeof(struct ldb_message_element) * 
 					(msg2->num_elements - (i+1)));

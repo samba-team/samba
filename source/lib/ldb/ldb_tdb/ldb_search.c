@@ -39,25 +39,6 @@
 #include "ldb/include/ldb_parse.h"
 
 /*
-  free a message that has all parts separately allocated
-*/
-static void msg_free_all_parts(struct ldb_context *ldb, struct ldb_message *msg)
-{
-	unsigned int i, j;
-	ldb_free(ldb, msg->dn);
-	for (i=0;i<msg->num_elements;i++) {
-		ldb_free(ldb, msg->elements[i].name);
-		for (j=0;j<msg->elements[i].num_values;j++) {
-			ldb_free(ldb, msg->elements[i].values[j].data);
-		}
-		ldb_free(ldb, msg->elements[i].values);
-	}
-	ldb_free(ldb, msg->elements);
-	ldb_free(ldb, msg);
-}
-
-
-/*
   add one element to a message
 */
 static int msg_add_element(struct ldb_context *ldb, 
@@ -66,7 +47,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	unsigned int i;
 	struct ldb_message_element *e2, *elnew;
 
-	e2 = ldb_realloc_p(ldb, ret->elements, struct ldb_message_element, ret->num_elements+1);
+	e2 = talloc_realloc_p(ret, ret->elements, struct ldb_message_element, ret->num_elements+1);
 	if (!e2) {
 		return -1;
 	}
@@ -74,13 +55,13 @@ static int msg_add_element(struct ldb_context *ldb,
 	
 	elnew = &e2[ret->num_elements];
 
-	elnew->name = ldb_strdup(ldb, el->name);
+	elnew->name = talloc_strdup(ret->elements, el->name);
 	if (!elnew->name) {
 		return -1;
 	}
 
 	if (el->num_values) {
-		elnew->values = ldb_malloc_array_p(ldb, struct ldb_val, el->num_values);
+		elnew->values = talloc_array_p(ret->elements, struct ldb_val, el->num_values);
 		if (!elnew->values) {
 			return -1;
 		}
@@ -89,7 +70,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		elnew->values[i] = ldb_val_dup(ldb, &el->values[i]);
+		elnew->values[i] = ldb_val_dup(elnew->values, &el->values[i]);
 		if (elnew->values[i].length != el->values[i].length) {
 			return -1;
 		}
@@ -136,24 +117,23 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 	struct ldb_message *ret;
 	int i;
 
-	ret = ldb_malloc_p(ldb, struct ldb_message);
+	ret = talloc_p(ldb, struct ldb_message);
 	if (!ret) {
 		return NULL;
 	}
 
-	ret->dn = ldb_strdup(ldb, msg->dn);
+	ret->dn = talloc_strdup(ret, msg->dn);
 	if (!ret->dn) {
-		ldb_free(ldb, ret);
+		talloc_free(ret);
 		return NULL;
 	}
 
 	ret->num_elements = 0;
 	ret->elements = NULL;
-	ret->private_data = NULL;
 
 	if (!attrs) {
 		if (msg_add_all_elements(module, ret, msg) != 0) {
-			msg_free_all_parts(ldb, ret);
+			talloc_free(ret);
 			return NULL;
 		}
 		return ret;
@@ -164,7 +144,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 
 		if (strcmp(attrs[i], "*") == 0) {
 			if (msg_add_all_elements(module, ret, msg) != 0) {
-				msg_free_all_parts(ldb, ret);
+				talloc_free(ret);
 				return NULL;
 			}
 			continue;
@@ -175,10 +155,9 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			struct ldb_val val;
 
 			el2.flags = 0;
-			el2.name = ldb_strdup(ldb, "dn");
+			el2.name = talloc_strdup(ret, "dn");
 			if (!el2.name) {
-				msg_free_all_parts(ldb, ret);
-				ldb_free(ldb, el2.name);
+				talloc_free(ret);
 				return NULL;				
 			}
 			el2.num_values = 1;
@@ -187,11 +166,10 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			val.length = strlen(ret->dn);
 
 			if (msg_add_element(ldb, ret, &el2) != 0) {
-				msg_free_all_parts(ldb, ret);
-				ldb_free(ldb, el2.name);
+				talloc_free(ret);
 				return NULL;				
 			}
-			ldb_free(ldb, el2.name);
+			talloc_free(el2.name);
 			continue;
 		}
 
@@ -200,7 +178,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			continue;
 		}
 		if (msg_add_element(ldb, ret, el) != 0) {
-			msg_free_all_parts(ldb, ret);
+			talloc_free(ret);
 			return NULL;				
 		}
 	}
@@ -238,22 +216,6 @@ int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name,
 
 
 /*
-  free the results of a ltdb_search_dn1 search
-*/
-void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg)
-{
-	struct ldb_context *ldb = module->ldb;
-	unsigned int i;
-	ldb_free(ldb, msg->private_data);
-	for (i=0;i<msg->num_elements;i++) {
-		ldb_free(ldb, msg->elements[i].values);
-	}
-	ldb_free(ldb, msg->elements);
-	memset(msg, 0, sizeof(*msg));
-}
-
-
-/*
   search the database for a single simple dn, returning all attributes
   in a single message
 
@@ -261,7 +223,6 @@ void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg)
 */
 int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	TDB_DATA tdb_key, tdb_data, tdb_data2;
@@ -275,35 +236,32 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 	}
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	ldb_free(ldb, tdb_key.dptr);
+	talloc_free(tdb_key.dptr);
 	if (!tdb_data.dptr) {
 		return 0;
 	}
 
-	tdb_data2.dptr = ldb_malloc(ldb, tdb_data.dsize);
+	tdb_data2.dptr = talloc_memdup(msg, tdb_data.dptr, tdb_data.dsize);
+	free(tdb_data.dptr);
 	if (!tdb_data2.dptr) {
-		free(tdb_data.dptr);
 		return -1;
 	}
-	memcpy(tdb_data2.dptr, tdb_data.dptr, tdb_data.dsize);
-	free(tdb_data.dptr);
 	tdb_data2.dsize = tdb_data.dsize;
 
-	msg->private_data = tdb_data2.dptr;
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
 	ret = ltdb_unpack_data(module, &tdb_data2, msg);
 	if (ret == -1) {
-		ldb_free(ldb, tdb_data2.dptr);
+		talloc_free(tdb_data2.dptr);
 		return -1;		
 	}
 
 	if (!msg->dn) {
-		msg->dn = ldb_strdup(ldb, dn);
+		msg->dn = talloc_strdup(tdb_data2.dptr, dn);
 	}
 	if (!msg->dn) {
-		ldb_free(ldb, tdb_data2.dptr);
+		talloc_free(tdb_data2.dptr);
 		return -1;
 	}
 
@@ -319,24 +277,32 @@ int ltdb_search_dn(struct ldb_module *module, char *dn,
 {
 	struct ldb_context *ldb = module->ldb;
 	int ret;
-	struct ldb_message msg, *msg2;
+	struct ldb_message *msg, *msg2;
 
-	ret = ltdb_search_dn1(module, dn, &msg);
-	if (ret != 1) {
-		return ret;
-	}
-
-	msg2 = ltdb_pull_attrs(module, &msg, attrs);
-
-	ltdb_search_dn1_free(module, &msg);
-
-	if (!msg2) {
+	*res = talloc_array_p(ldb, struct ldb_message *, 2);
+	if (! *res) {
 		return -1;		
 	}
 
-	*res = ldb_malloc_array_p(ldb, struct ldb_message *, 2);
-	if (! *res) {
-		msg_free_all_parts(ldb, msg2);
+	msg = talloc_p(*res, struct ldb_message);
+	if (msg == NULL) {
+		talloc_free(*res);
+		*res = NULL;
+		return -1;
+	}
+
+	ret = ltdb_search_dn1(module, dn, msg);
+	if (ret != 1) {
+		talloc_free(*res);
+		*res = NULL;
+		return ret;
+	}
+
+	msg2 = ltdb_pull_attrs(module, msg, attrs);
+
+	talloc_free(msg);
+
+	if (!msg2) {
 		return -1;		
 	}
 
@@ -367,9 +333,9 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 	}
 
 	/* add to the results list */
-	res2 = ldb_realloc_p(ldb, *res, struct ldb_message *, (*count)+2);
+	res2 = talloc_realloc_p(ldb, *res, struct ldb_message *, (*count)+2);
 	if (!res2) {
-		msg_free_all_parts(ldb, msg2);
+		talloc_free(msg2);
 		return -1;
 	}
 
@@ -404,7 +370,7 @@ struct ltdb_search_info {
 static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct ltdb_search_info *sinfo = state;
-	struct ldb_message msg;
+	struct ldb_message *msg;
 	int ret;
 
 	if (key.dsize < 4 || 
@@ -412,31 +378,37 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
+	msg = talloc_p(sinfo, struct ldb_message);
+	if (msg == NULL) {
+		return -1;
+	}
+
 	/* unpack the record */
-	ret = ltdb_unpack_data(sinfo->module, &data, &msg);
+	ret = ltdb_unpack_data(sinfo->module, &data, msg);
 	if (ret == -1) {
 		sinfo->failures++;
+		talloc_free(msg);
 		return 0;
 	}
 
-	if (!msg.dn) {
-		msg.dn = key.dptr + 3;
+	if (!msg->dn) {
+		msg->dn = key.dptr + 3;
 	}
 
 	/* see if it matches the given expression */
-	if (!ltdb_message_match(sinfo->module, &msg, sinfo->tree, 
-			       sinfo->base, sinfo->scope)) {
-		ltdb_unpack_data_free(sinfo->module, &msg);
+	if (!ltdb_message_match(sinfo->module, msg, sinfo->tree, 
+				sinfo->base, sinfo->scope)) {
+		talloc_free(msg);
 		return 0;
 	}
 
-	ret = ltdb_add_attr_results(sinfo->module, &msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
+	ret = ltdb_add_attr_results(sinfo->module, msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
 
 	if (ret == -1) {
 		sinfo->failures++;
 	}
 
-	ltdb_unpack_data_free(sinfo->module, &msg);
+	talloc_free(msg);
 
 	return ret;
 }
@@ -447,19 +419,11 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 */
 int ltdb_search_free(struct ldb_module *module, struct ldb_message **msgs)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
-	int i;
 
 	ltdb->last_err_string = NULL;
 	
-	if (!msgs) return 0;
-
-	for (i=0;msgs[i];i++) {
-		msg_free_all_parts(ldb, msgs[i]);
-	}
-
-	ldb_free(ldb, msgs);
+	talloc_free(msgs);
 
 	return 0;
 }
@@ -475,27 +439,36 @@ static int ltdb_search_full(struct ldb_module *module,
 			    const char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	int ret;
-	struct ltdb_search_info sinfo;
+	int ret, count;
+	struct ltdb_search_info *sinfo;
 
-	sinfo.tree = tree;
-	sinfo.module = module;
-	sinfo.scope = scope;
-	sinfo.base = base;
-	sinfo.attrs = attrs;
-	sinfo.msgs = NULL;
-	sinfo.count = 0;
-	sinfo.failures = 0;
-
-	ret = tdb_traverse(ltdb->tdb, search_func, &sinfo);
-
-	if (ret == -1) {
-		ltdb_search_free(module, sinfo.msgs);
+	sinfo = talloc_p(ltdb, struct ltdb_search_info);
+	if (sinfo == NULL) {
 		return -1;
 	}
 
-	*res = sinfo.msgs;
-	return sinfo.count;
+	sinfo->tree = tree;
+	sinfo->module = module;
+	sinfo->scope = scope;
+	sinfo->base = base;
+	sinfo->attrs = attrs;
+	sinfo->msgs = NULL;
+	sinfo->count = 0;
+	sinfo->failures = 0;
+
+	ret = tdb_traverse(ltdb->tdb, search_func, sinfo);
+
+	if (ret == -1) {
+		talloc_free(sinfo);
+		return -1;
+	}
+
+	*res = talloc_steal(ltdb, sinfo->msgs);
+	count = sinfo->count;
+
+	talloc_free(sinfo);
+
+	return count;
 }
 
 

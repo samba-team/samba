@@ -57,7 +57,8 @@ static int timestamps_search_free(struct ldb_module *module, struct ldb_message 
 	return ldb_next_search_free(module, res);
 }
 
-static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, const char *attr_name, const char *time_string, unsigned int flags)
+static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, 
+			    const char *attr_name, const char *time_string, unsigned int flags)
 {
 	struct ldb_val *values;
 	char *name, *timestr;
@@ -69,10 +70,11 @@ static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, co
 		}
 	}
 
-	msg->elements = ldb_realloc_array(ldb, msg->elements, sizeof(struct ldb_message_element), msg->num_elements + 1);
-	name = ldb_strdup(ldb, attr_name);
-	timestr = ldb_strdup(ldb, time_string);
-	values = ldb_malloc(ldb, sizeof(struct ldb_val));
+	msg->elements = talloc_realloc_p(msg, msg->elements, 
+					 struct ldb_message_element, msg->num_elements + 1);
+	name = talloc_strdup(msg->elements, attr_name);
+	timestr = talloc_strdup(msg->elements, time_string);
+	values = talloc_p(msg->elements, struct ldb_val);
 	if (!msg->elements || !name || !timestr || !values) {
 		return -1;
 	}
@@ -87,19 +89,6 @@ static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, co
 	msg->num_elements += 1;
 
 	return 0;
-}
-
-static void free_elements(struct ldb_context *ldb, struct ldb_message *msg, int real_el_num)
-{
-	int i;
-
-	for (i = real_el_num; i < msg->num_elements; i++) {
-		ldb_free(ldb, msg->elements[i].name);
-		ldb_free(ldb, msg->elements[i].values[0].data);
-		ldb_free(ldb, msg->elements[i].values);
-	}
-	ldb_free(ldb, msg->elements);
-	ldb_free(ldb, msg);
 }
 
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
@@ -120,25 +109,24 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 			return -1;
 		}
 
-		/* formatted like: 20040408072012.0Z */
-		ldb_asprintf(module->ldb, &timestr,
-					"%04u%02u%02u%02u%02u%02u.0Z",
-					tm->tm_year+1900, tm->tm_mon+1,
-					tm->tm_mday, tm->tm_hour, tm->tm_min,
-					tm->tm_sec);
+		msg2 = talloc_p(module, struct ldb_message);
+		if (!msg2) {
+			return -1;
+		}
 
+		/* formatted like: 20040408072012.0Z */
+		timestr = talloc_asprintf(msg2, "%04u%02u%02u%02u%02u%02u.0Z",
+					  tm->tm_year+1900, tm->tm_mon+1,
+					  tm->tm_mday, tm->tm_hour, tm->tm_min,
+					  tm->tm_sec);
 		if (!timestr) {
 			return -1;
 		}
 
-		msg2 = ldb_malloc_p(module->ldb, struct ldb_message);
-		if (!msg2) {
-			return -1;
-		}
 		msg2->dn = msg->dn;
 		msg2->num_elements = msg->num_elements;
 		msg2->private_data = msg->private_data;
-		msg2->elements = ldb_malloc_array_p(module->ldb, struct ldb_message_element, msg2->num_elements);
+		msg2->elements = talloc_array_p(msg2, struct ldb_message_element, msg2->num_elements);
 		for (i = 0; i < msg2->num_elements; i++) {
 			msg2->elements[i] = msg->elements[i];
 		}
@@ -147,13 +135,11 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 		add_time_element(module->ldb, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_ADD);
 		add_time_element(module->ldb, msg2, "whenCreated", timestr, LDB_FLAG_MOD_ADD);
 		add_time_element(module->ldb, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
-
-		ldb_free(module->ldb, timestr);
 	}
 
 	if (msg2) {
 		ret = ldb_next_add_record(module, msg2);
-		free_elements(module->ldb, msg2, msg->num_elements);
+		talloc_free(msg2);
 	} else {
 		ret = ldb_next_add_record(module, msg);
 	}
@@ -179,38 +165,36 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 			return -1;
 		}
 
+		msg2 = talloc_p(module, struct ldb_message);
+		if (!msg2) {
+			return -1;
+		}
+
 		/* formatted like: 20040408072012.0Z */
-		ldb_asprintf(module->ldb, &timestr,
+		timestr = talloc_asprintf(msg2, 
 					"%04u%02u%02u%02u%02u%02u.0Z",
 					tm->tm_year+1900, tm->tm_mon+1,
 					tm->tm_mday, tm->tm_hour, tm->tm_min,
 					tm->tm_sec);
-
 		if (!timestr) {
 			return -1;
 		}
 
-		msg2 = ldb_malloc_p(module->ldb, struct ldb_message);
-		if (!msg2) {
-			return -1;
-		}
 		msg2->dn = msg->dn;
 		msg2->num_elements = msg->num_elements;
 		msg2->private_data = msg->private_data;
-		msg2->elements = ldb_malloc_array_p(module->ldb, struct ldb_message_element, msg2->num_elements);
+		msg2->elements = talloc_array_p(msg2, struct ldb_message_element, msg2->num_elements);
 		for (i = 0; i < msg2->num_elements; i++) {
 			msg2->elements[i] = msg->elements[i];
 		}
 
 		add_time_element(module->ldb, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
 		add_time_element(module->ldb, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
-
-		ldb_free(module->ldb, timestr);
 	}
 
 	if (msg2) {
 		ret = ldb_next_modify_record(module, msg2);
-		free_elements(module->ldb, msg2, msg->num_elements);
+		talloc_free(msg2);
 	} else {
 		ret = ldb_next_modify_record(module, msg);
 	}
@@ -249,12 +233,6 @@ static const char *timestamps_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
-static void timestamps_cache_free(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_cache_free\n");
-	ldb_next_cache_free(module);
-}
-
 static const struct ldb_module_ops timestamps_ops = {
 	"timestamps",
 	timestamps_close, 
@@ -266,8 +244,7 @@ static const struct ldb_module_ops timestamps_ops = {
 	timestamps_rename_record,
 	timestamps_lock,
 	timestamps_unlock,
-	timestamps_errstring,
-	timestamps_cache_free
+	timestamps_errstring
 };
 
 
@@ -280,7 +257,7 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 {
 	struct ldb_module *ctx;
 
-	ctx = (struct ldb_module *)malloc(sizeof(struct ldb_module));
+	ctx = talloc_p(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
