@@ -497,7 +497,7 @@ static NTSTATUS smb_raw_session_setup_generic(struct cli_session *session,
 	}
 
 	/* see if we should use the NT1 interface */
-	if (!(session->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY)) {
+	if (!(parms->generic.in.capabilities & CAP_EXTENDED_SECURITY)) {
 		return smb_raw_session_setup_generic_nt1(session, mem_ctx, parms);
 	}
 
