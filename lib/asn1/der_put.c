@@ -320,7 +320,8 @@ encode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_tag (p, len, UNIV, PRIM, UT_GeneralizedTime, &l);
+    e = der_put_length_and_tag (p, len, k.length, UNIV, PRIM, 
+				UT_GeneralizedTime, &l);
     if (e)
 	return e;
     p -= l;
