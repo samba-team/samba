@@ -308,6 +308,12 @@ static int talktochild(int master, char *seq)
 
 		pwd_sub(issue);
 	}
+	if (!strequal(issue, ".")) {
+		/* we have one final issue to send */
+		fstrcpy(expected, ".");
+		/* always does a return True when only sending */
+		(void)expect(master, issue, expected);
+	}
 
 	return (count > 0);
 }
