@@ -107,43 +107,41 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
-static void push_positive_bigendian(ASN1_DATA *data, int i)
-{
-	uint8 lowest = i & 0xFF;
-
-	i = i >> 8;
-	if (i != 0)
-		push_positive_bigendian(data, i);
-
-	if (lowest & 0x80)
-		asn1_write_uint8(data, 0);
-
-	asn1_write_uint8(data, lowest);
-}
-
 /* "i" is the one's complement representation, as is the normal result of an
  * implicit signed->unsigned conversion */
 
-static void push_negative_bigendian(ASN1_DATA *data, unsigned int i)
+static void push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
 {
 	uint8 lowest = i & 0xFF;
 
 	i = i >> 8;
 	if (i != 0)
-		push_negative_bigendian(data, i);
+		push_int_bigendian(data, i, negative);
 
 	if (data->nesting->start+1 == data->ofs) {
 
-		/* We did not yet write anything yet. */
+		/* We did not write anything yet, looking at the highest
+		 * valued byte */
 
-		/* Don't write leading 0xff's */
-		if (lowest == 0xFF)
-			return;
+		if (negative) {
+			/* Don't write leading 0xff's */
+			if (lowest == 0xFF)
+				return;
 
-		/* The only exception for a leading 0xff is if the highest bit
-		 * is 0, which would indicate a positive value */
-		if ((lowest & 0x80) == 0)
-			asn1_write_uint8(data, 0xff);
+			if ((lowest & 0x80) == 0) {
+				/* The only exception for a leading 0xff is if
+				 * the highest bit is 0, which would indicate
+				 * a positive value */
+				asn1_write_uint8(data, 0xff);
+			}
+		} else {
+			if (lowest & 0x80) {
+				/* The highest bit of a positive integer is 1,
+				 * this would indicate a negative number. Push
+				 * a 0 to indicate a positive one */
+				asn1_write_uint8(data, 0);
+			}
+		}
 	}
 
 	asn1_write_uint8(data, lowest);
@@ -153,12 +151,7 @@ static void push_negative_bigendian(ASN1_DATA *data, unsigned int i)
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-
-	if (i >= 0)
-		push_positive_bigendian(data, i);
-	else
-		push_negative_bigendian(data, i);
-
+	push_int_bigendian(data, i, i<0);
 	return asn1_pop_tag(data);
 }
 
