@@ -762,16 +762,21 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	set_posix_case_semantics(conn, file_attributes);
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		restore_case_semantics(conn, file_attributes);
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	}
-	/* All file access must go through check_name() */
-	if (!check_name(fname,conn)) {
-		restore_case_semantics(conn, file_attributes);
-		END_PROFILE(SMBntcreateX);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+
+	/* FAKE_FILE is a special case */
+	if (fake_file_type == FAKE_FILE_TYPE_NONE) {
+		/* Normal file. */
+		if (bad_path) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		}
+		/* All file access must go through check_name() */
+		if (!check_name(fname,conn)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		}
 	}
 
 	/* 
