@@ -1269,6 +1269,7 @@ noport:
 	char *cmd;
 	char addr_str[256];
 	int inet_af;
+	int overbose;
 
 	if (inet_ntop (data_addr->sa_family, socket_get_address (data_addr),
 		       addr_str, sizeof(addr_str)) == NULL)
@@ -1289,7 +1290,13 @@ noport:
 	asprintf (&cmd, "EPRT |%d|%s|%d|",
 		  inet_af, addr_str, ntohs(socket_get_port (data_addr)));
 
+	overbose = verbose;
+	if (debug == 0)
+	    verbose  = -1;
+
 	result = command (cmd);
+
+	verbose = overbose;
 
 	if (result == ERROR) {
 	    struct sockaddr_in *sin = (struct sockaddr_in *)data_addr;
