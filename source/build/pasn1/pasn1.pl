@@ -1,4 +1,4 @@
-#!/usr/bin/perl -W
+#!/usr/bin/perl -w
 
 ###################################################
 # package to parse ASN.1 files and generate code for
@@ -19,9 +19,6 @@ use asn1;
 use util;
 
 my($opt_help) = 0;
-my($opt_parse) = 0;
-my($opt_dump) = 0;
-my($opt_keep) = 0;
 my($opt_output);
 
 my $asn1_parser = new asn1;
@@ -50,22 +47,15 @@ sub ShowHelp()
 
            Options:
              --help                this help page
-             --output OUTNAME      put output in OUTNAME.*
-             --parse               parse a asn1 file to a .pasn1 file
-             --dump                dump a pasn1 file back to asn1
-             --parser              create a C parser
-             --keep                keep the .pasn1 file
+             --output OUTNAME      put output in OUTNAME
            \n";
     exit(0);
 }
 
 # main program
 GetOptions (
-	    'help|h|?' => \$opt_help, 
-	    'output=s' => \$opt_output,
-	    'parse' => \$opt_parse,
-	    'dump' => \$opt_dump,
-	    'keep' => \$opt_keep
+	    'help|h|?' => \$opt_help,
+	    'output|o=s' => \$opt_output,
 	    );
 
 if ($opt_help) {
@@ -75,39 +65,28 @@ if ($opt_help) {
 
 sub process_file($)
 {
-	my $asn1_file = shift;
-	my $output;
+	my $input_file = shift;
+	my $output_file;
 	my $pasn1;
 
-	my $basename = basename($asn1_file, ".asn1");
+	my $basename = basename($input_file, ".asn1");
 
 	if (!defined($opt_output)) {
-		$output = $asn1_file;
+		$output_file = util::ChangeExtension($input_file, ".pasn1");
 	} else {
-		$output = $opt_output . $basename;
+		$output_file = $opt_output;
 	}
 
-	my($pasn1_file) = util::ChangeExtension($output, ".pasn1");
-
-	print "Compiling $asn1_file\n";
-
-	if ($opt_parse) {
-		$pasn1 = ASN1Parse($asn1_file);
-		defined $pasn1 || die "Failed to parse $asn1_file";
-		#ASN1Validator::Validate($pasn1);
-		if ($opt_keep && !util::SaveStructure($pasn1_file, $pasn1)) {
-			    die "Failed to save $pasn1_file\n";
-		}
-	} else {
-		$pasn1 = util::LoadStructure($pasn1_file);
-		defined $pasn1 || die "Failed to load $pasn1_file - maybe you need --parse\n";
-	}
-
-	if ($opt_dump) {
-		print ASN1Dump::Dump($pasn1);
-	}
+#	if (file is .pasn1) {
+#		$pasn1 = util::LoadStructure($pasn1_file);
+#		defined $pasn1 || die "Failed to load $pasn1_file - maybe you need --parse\n";
+#       } else {
+		$pasn1 = ASN1Parse($input_file);
+		defined $pasn1 || die "Failed to parse $input_file";
+		util::SaveStructure($output_file, $pasn1) ||
+		    die "Failed to save $output_file\n";
+	#}
 }
-
 
 foreach my $filename (@ARGV) {
 	process_file($filename);
