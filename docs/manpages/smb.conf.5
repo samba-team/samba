@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "17 June 2002" "" ""
+.TH "SMB.CONF" "5" "27 July 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -2923,7 +2923,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory  security mode (S)\fR
+\fBforce directory\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -6833,9 +6833,9 @@ Example: \fBtotal print jobs = 5000\fR
 .TP
 \fBunix extensions(G)\fR
 This boolean parameter controls whether Samba 
-implments the CIFS UNIX extensions, as defined by HP. These
-extensions enable CIFS to server UNIX clients to UNIX servers
-better, and allow such things as symbolic links, hard links etc.
+implments the CIFS UNIX extensions, as defined by HP. 
+These extensions enable Samba to better serve UNIX CIFS clients
+by supporting features such as symbolic links, hard links, etc...
 These extensions require a similarly enabled client, and are of
 no current use to Windows clients.
 
