@@ -3,10 +3,10 @@
 ##############################
 # Start SUBSYSTEM GTKSMB
 [SUBSYSTEM::GTKSMB]
-INIT_OBJ_FILES = gtk/common/gtk-smb.o
+INIT_OBJ_FILES = gtk/common/gtk-smb.o 
+ADD_OBJ_FILES = gtk/common/select.o
 REQUIRED_LIBRARIES = gtk
-REQUIRED_SUBSYSTEMS = \
-		CHARSET LIBBASIC
+REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC
 # End SUBSYSTEM GTKSMB
 ##############################
 
@@ -24,4 +24,12 @@ REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE REGISTRY GTKSMB
 OBJ_FILES = gtk/tools/gwcrontab.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE LIBRPC LIBSMB GTKSMB
 # End BINARY gwcrontab
+################################################
+
+################################################
+# Start BINARY gwsam
+[BINARY::gwsam]
+OBJ_FILES = gtk/tools/gwsam.o gtk/tools/gwsam_user.o
+REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE LIBRPC LIBSMB GTKSMB
+# End BINARY gwsam
 ################################################

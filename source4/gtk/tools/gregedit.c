@@ -19,26 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-
-#include <gdk/gdkkeysyms.h>
-#include <gtk/gtk.h>
 #include "includes.h"
+#include "gtk/common/gtk-smb.h"
 
 GtkWidget *openfilewin;
 GtkWidget *savefilewin;
 GtkTreeStore *store_keys;
 GtkListStore *store_vals;
 GtkWidget *tree_keys;
-GtkWidget *aboutwin;
 GtkWidget *mainwin;
 
 GtkWidget *save;
@@ -265,7 +253,7 @@ static void on_delete_activate                     (GtkMenuItem     *menuitem,
 static void on_about_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-        GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog());
+        GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gregedit"));
         gtk_dialog_run(aboutwin);
         gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
