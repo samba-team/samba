@@ -69,6 +69,7 @@ void cli_shutdown(struct cli_state *cli);
 char *cli_errstr(struct cli_state *cli);
 void cli_error(struct cli_state *cli, int *eclass, int *num);
 void cli_sockopt(struct cli_state *cli, char *options);
+int cli_setpid(struct cli_state *cli, int pid);
 
 /*The following definitions come from  clientutil.c  */
 
