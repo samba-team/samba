@@ -873,11 +873,16 @@ BOOL posix_locking_end(void);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
+BOOL remove_msdfs_link(struct junction_map* jn);
+BOOL create_msdfs_link(struct junction_map* jn, BOOL exists);
 BOOL is_msdfs_volume(connection_struct* conn, char* path);
+BOOL get_referred_path(struct junction_map* junction);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
+BOOL create_junction(char* pathname, struct junction_map* jn);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 			char** ppdata);
+int enum_msdfs_junctions(struct junction_map* jn);
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
@@ -1731,7 +1736,7 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 				uint32 *sec_desc, NTTIME *mod_time);
 BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
 BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
-				char *type, uint32 *unk_0, uint32 *unk_1);
+				char *key_value, uint32* key_type);
 BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd, SEC_DESC_BUF *sec_desc_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_size, SEC_DESC_BUF **ppsec_desc_buf);
 BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
@@ -1868,6 +1873,36 @@ BOOL create_user_creds( prs_struct *ps,
 				uint16 version, uint16 command,
 				uint32 pid,
 				const struct user_creds *usr);
+
+/*The following definitions come from  rpc_parse/parse_dfs.c  */
+
+BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps,
+			int depth);
+BOOL make_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
+			   char *servername, char *sharename);
+BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps,
+			 int depth);
+BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps,
+		      int depth);
+BOOL make_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
+			char *sharename, char *comment, uint32 flags);
+BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps,
+		      int depth);
+BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps,
+		      int depth);
+BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, 
+			   prs_struct* ps, int depth);
+BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i,
+			   prs_struct* ps, int depth);
+BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr);
+BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps,
+		      int depth);
+BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
+			 uint32 level,
+			 prs_struct* ps, int depth);
+BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth);
+BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
+			     prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
@@ -2685,6 +2720,10 @@ void init_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				uint32 switch_value, WKS_INFO_100 *wks100,
 				int status)  ;
 BOOL wks_io_r_query_info(char *desc, WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_server/srv_dfs.c  */
+
+BOOL api_netdfs_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 

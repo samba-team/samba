@@ -389,7 +389,7 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
 do a REG Query Info
 ****************************************************************************/
 BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
-				char *type, uint32 *unk_0, uint32 *unk_1)
+				char *key_value, uint32* key_type)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -438,7 +438,8 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	fstrcpy(type, dos_buffer2_to_str(r_o.uni_val));
+	fstrcpy(key_value, dos_buffer2_to_str(r_o.uni_val));
+	*key_type = r_o.type;
 
 	prs_mem_free(&rbuf);
 

@@ -38,7 +38,7 @@
 
 struct referral
 {
-	pstring alternate_path; /* contains the path referred (UNICODE?) */
+	pstring alternate_path; /* contains the path referred */
 	uint32 proximity;
 	uint32 ttl; /* how long should client cache referral */
 };

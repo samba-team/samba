@@ -278,6 +278,7 @@ typedef smb_ucs2_t wfstring[128];
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 #define PIPE_SPOOLSS  "\\PIPE\\spoolss"
+#define PIPE_NETDFS   "\\PIPE\\netdfs"
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info

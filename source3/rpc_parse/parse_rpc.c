@@ -123,6 +123,15 @@ interface/version dce/rpc pipe identification
 	}, 0x00                             \
 }
 
+#define SYNT_NETDFS_V3                      \
+{                                           \
+        {                                   \
+                0x4fc742e0, 0x4a10, 0x11cf, \
+                { 0x82, 0x73, 0x00, 0xaa,   \
+                  0x00, 0x4a, 0xe6, 0x73 }  \
+        }, 0x03                             \
+}
+
 struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
@@ -133,6 +142,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
 	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
+	{ PIPE_NETDFS  , SYNT_NETDFS_V3  , PIPE_NETDFS   , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 
