@@ -39,12 +39,6 @@
 #include "kpasswd_locl.h"
 RCSID("$Id$");
 
-static void
-usage (void)
-{
-    errx (1, "Usage: %s [-p] [principal]", __progname);
-}
-
 static struct sockaddr_in
 get_kdc_address (krb5_context context,
 		 krb5_realm realm)
@@ -281,78 +275,30 @@ process_reply (krb5_context context,
 static int
 change_password (krb5_context context,
 		 krb5_principal principal,
-		 krb5_preauthtype *pre_auth_types)
+		 krb5_get_init_creds_opt *opt)
 {
     krb5_error_code ret;
-    krb5_ccache ccache;
-    char *residual;
     krb5_auth_context auth_context = NULL;
-    krb5_creds cred, cred_out;
-    krb5_principal server;
+    krb5_creds cred;
     char pwbuf[BUFSIZ];
     int sock;
     struct sockaddr_in addr;
     int i;
 
-    asprintf (&residual, "FILE:/tmp/krb5cc_passwd_%u", (unsigned)getuid());
-
-    ret = krb5_cc_resolve (context, residual, &ccache);
-    if (ret)
-	errx (1, "krb5_cc_resolve: %s", krb5_get_err_text(context, ret));
-    free (residual);
-  
-    ret = krb5_cc_initialize (context, ccache, principal);
-    if (ret)
-	errx (1, "krb5_cc_initialize: %s",
-	      krb5_get_err_text(context, ret));
-
     memset(&cred, 0, sizeof(cred));
 
-    ret = krb5_build_principal_ext (context,
-				    &server,
-				    strlen(principal->realm),
-				    principal->realm,
-				    strlen("kadmin"),
-				    "kadmin",
-				    strlen("changepw"),
-				    "changepw",
-				    NULL);
+    ret = krb5_get_init_creds_password (context,
+					&cred,
+					principal,
+					NULL,
+					krb5_prompter_posix,
+					NULL,
+					0,
+					"kadmin/changepw",
+					opt);
     if (ret)
-	errx (1, "krb5_build_principal_ext: %s",
-	      krb5_get_err_text(context, ret));
+	errx (1, "krb5_get_init_creds: %s", krb5_get_err_text(context, ret));
 
-    server->name.name_type = KRB5_NT_SRV_INST;
-
-    cred.client = principal;
-    cred.server = server;
-    cred.times.endtime = time(NULL) + 300;
-
-    {
-	char *p;
-	char *prompt;
-	
-	krb5_unparse_name(context, principal, &p);
-	asprintf (&prompt, "%s's old Password: ", p);
-	free (p);
-	if (des_read_pw_string (pwbuf, sizeof(pwbuf), prompt, 0) != 0)
-	    return 1;
-	free (prompt);
-    }
-
-    ret = krb5_get_in_tkt_with_password (context,
-					 0,
-					 NULL,
-					 NULL,
-					 pre_auth_types,
-					 pwbuf,
-					 ccache,
-					 &cred,
-					 NULL);
-    memset (pwbuf, 0, sizeof(pwbuf));
-    if (ret)
-	errx (1, "krb5_get_in_tkt_with_password: %s",
-	      krb5_get_err_text(context, ret));
-  
     if(des_read_pw_string (pwbuf, sizeof(pwbuf), "New password: ", 1) != 0)
 	return 1;
 
@@ -360,21 +306,7 @@ change_password (krb5_context context,
     if (sock < 0)
 	err (1, "socket");
 
-    addr = get_kdc_address (context, principal->realm);
-
-    cred.client = principal;
-    cred.server = server;
-
-    ret = krb5_cc_retrieve_cred (context,
-				 ccache,
-				 0, /* ignored */
-				 &cred,
-				 &cred_out);
-    krb5_free_principal (context, server);
-    if (ret)
-	errx (1, "krb5_cc_retrieve_cred: %s",
-	      krb5_get_err_text(context, ret));
-
+    addr = get_kdc_address (context, cred.client->realm);
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
@@ -390,7 +322,7 @@ change_password (krb5_context context,
 
 	send_request (context,
 		      &auth_context,
-		      &cred_out,
+		      &cred,
 		      sock,
 		      addr,
 		      pwbuf);
@@ -409,7 +341,7 @@ change_password (krb5_context context,
     if (i == 5)
 	errx (1, "Did not manage to contact kdc");
 
-    krb5_free_creds_contents (context, &cred_out);
+    krb5_free_creds_contents (context, &cred);
 
     ret = process_reply (context,
 			 auth_context,
@@ -417,9 +349,29 @@ change_password (krb5_context context,
 
     krb5_auth_con_free (context, auth_context);
 
-    krb5_cc_destroy (context, ccache);
-
     return ret;
+}
+
+static int preauth = 1;
+static int version_flag;
+static int help_flag;
+
+static struct getargs args[] = {
+    { "preauthentication",	'p', arg_negative_flag, &preauth, 
+      "disable preauthentication", NULL },
+    { "version", 		0,   arg_flag, &version_flag, 
+      "print version", NULL },
+    { "help",			0,   arg_flag, &help_flag, 
+      NULL, NULL}
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    "[principal]");
+    exit (ret);
 }
 
 int
@@ -429,20 +381,31 @@ main (int argc, char **argv)
     krb5_context context;
     krb5_principal principal;
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
-    int c;
-    int preauth = 1;
+    int optind = 0;
+    krb5_get_init_creds_opt opt;
 
     set_progname (argv[0]);
 
-    while ((c = getopt (argc, argv, "p")) != EOF) {
-	switch (c) {
-	case 'p':
-	    preauth = 0;
-	    break;
-	default:
-	    usage ();
-	}
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	exit(0);
     }
+
+    krb5_get_init_creds_opt_init (&opt);
+    
+    if (preauth)
+	krb5_get_init_creds_opt_set_preauth_list (&opt,
+						  pre_auth_types,
+						  1);
+
+    krb5_get_init_creds_opt_set_tkt_life (&opt, 300);
+
     argc -= optind;
     argv += optind;
 
@@ -454,31 +417,14 @@ main (int argc, char **argv)
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
 	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
-    } else {
-	struct passwd *pw;
-	char *realm;
-
-	pw = getpwuid(getuid());
-
-	ret = krb5_get_default_realm (context, &realm);
-	if (ret)
-	    errx (1, "krb5_get_default_realm: %s",
-		  krb5_get_err_text(context, ret));
-
-	ret = krb5_build_principal(context, &principal,
-				   strlen(realm), realm,
-				   pw->pw_name, NULL);
-	if (ret)
-	    errx (1, "krb5_build_principal: %s",
-		  krb5_get_err_text(context, ret));
-	free (realm);
-    }
+    } else
+	principal = NULL;
 
     ret = change_password (context,
 			   principal,
-			   preauth ? pre_auth_types : NULL);
+			   &opt);
 
     krb5_free_principal (context, principal);
     krb5_free_context (context);
-    return 0;
+    return ret;
 }
