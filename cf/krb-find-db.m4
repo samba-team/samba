@@ -58,10 +58,11 @@ int main()
 done
 
 AC_MSG_CHECKING(for NDBM library)
+ac_ndbm=no
 if test "$lib_db" != no; then
 	LIB_DBM="$lib_db"
-	AC_DEFINE(NDBM)dnl
-	AC_DEFINE(HAVE_NEW_DB)
+	ac_ndbm=yes
+	AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files ending in .db).])
 	if test "$LIB_DBM"; then
 		ac_res="yes, $LIB_DBM"
 	else
@@ -69,7 +70,7 @@ if test "$lib_db" != no; then
 	fi
 elif test "$lib_dbm" != no; then
 	LIB_DBM="$lib_dbm"
-	AC_DEFINE(NDBM)dnl
+	ac_ndbm=yes
 	if test "$LIB_DBM"; then
 		ac_res="yes, $LIB_DBM"
 	else
@@ -79,6 +80,7 @@ else
 	LIB_DBM=""
 	ac_res=no
 fi
+test "$ac_ndbm" = yes && AC_DEFINE(NDBM, 1, [Define if you have NDBM (and not DBM)])dnl
 AC_SUBST(LIB_DBM)
 AC_MSG_RESULT($ac_res)
 
