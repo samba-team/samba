@@ -116,7 +116,7 @@ a simple DHCP server that matches the DNS configuration.
 	</para>
 
 	<para>
-	The master configuration file for <filename>/etc/named.conf</filename>
+	The master configuration file <filename>/etc/named.conf</filename>
 	determines the location of all further configuration files used.
 	The location and name of this file is specified in the start-up script
 	that is part of the operating system.
