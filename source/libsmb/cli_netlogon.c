@@ -392,3 +392,75 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/* Logon domain user */
+
+NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                char *username, char *password,
+                                int validation_level)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_SAM_LOGON q;
+	NET_R_SAM_LOGON r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        DOM_CRED clnt_creds, dummy_rtn_creds;
+        extern pstring global_myname;
+        NET_ID_INFO_CTR ctr;
+        uint8 chal[8];
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+        /* Initialise input parameters */
+
+        gen_next_creds(cli, &clnt_creds);
+
+        q.validation_level = validation_level;
+
+	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+	dummy_rtn_creds.timestamp.time = time(NULL);
+
+	generate_random_buffer(chal, 8, False);
+
+        SMBencrypt(password, chal, local_lm_response);
+        SMBNTencrypt(password, chal, local_nt_response);
+
+        ctr.switch_value = NET_LOGON_TYPE;
+        init_id_info2(&ctr.auth.id2, lp_workgroup(), 0, 
+                      0xdead, 0xbeef, /* LUID? */
+                      username, global_myname, chal,
+                      local_lm_response, 24, local_nt_response, 24);
+
+        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
+                      &clnt_creds, &dummy_rtn_creds, ctr.switch_value,
+                      &ctr);
+
+        /* Marshall data and send request */
+
+	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+        /* Return results */
+
+	result = r.status;
+
+ done:
+        return result;
+}

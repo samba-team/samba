@@ -258,6 +258,63 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
         return result;
 }
 
+/* Log on a domain user */
+
+static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx, int argc,
+                                       char **argv)
+{
+        unsigned char trust_passwd[16];
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        int validation_level = 3;
+        char *username, *password;
+
+        /* Check arguments */
+
+        if (argc < 3 || argc > 4) {
+                fprintf(stderr, "Usage: samlogon <username> <password> "
+                        "[validation level]\n");
+                return NT_STATUS_OK;
+        }
+
+        username = argv[1];
+        password = argv[2];
+
+        if (argc == 4)
+                sscanf(argv[3], "%i", &validation_level);
+
+        /* Authenticate ourselves with the domain controller */
+
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                return result;
+        }
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
+        /* Perform the sam logon */
+
+        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password,
+                                        validation_level);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+ done:
+        return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
@@ -268,6 +325,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "logonctrl",  cmd_netlogon_logon_ctrl,  PIPE_NETLOGON, "Logon Control",       "" },
 	{ "samsync",    cmd_netlogon_sam_sync,    PIPE_NETLOGON, "Sam Synchronisation", "" },
 	{ "samdeltas",  cmd_netlogon_sam_deltas,  PIPE_NETLOGON, "Query Sam Deltas",    "" },
+        { "samlogon",   cmd_netlogon_sam_logon,   PIPE_NETLOGON, "Sam Logon",           "" },
 
 	{ NULL }
 };
