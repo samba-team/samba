@@ -429,7 +429,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       break;
 
     case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-      was_8_3 = is_8_3(fname);
+      was_8_3 = is_8_3(fname, True);
       len = 94+strlen(fname);
       len = (len + 3) & ~3;
       SIVAL(p,0,len); p += 4;

@@ -37,6 +37,7 @@ extern connection_struct Connections[];
 extern files_struct Files[];
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
+extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
 extern int Client;
 
@@ -605,7 +606,7 @@ int reply_getatr(char *inbuf,char *outbuf)
     char *p = strrchr(fname,'/');
     uint16 flg2 = SVAL(outbuf,smb_flg2);
     if (!p) p = fname;
-    if (!is_8_3(fname))
+    if (!is_8_3(fname, True))
       SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
   }
   
@@ -2582,7 +2583,8 @@ int reply_mv(char *inbuf,char *outbuf)
      * the rename (user is trying to change the case of the
      * filename).
      */
-    if((case_sensitive == False) && (case_preserve == True) &&
+    if((case_sensitive == False) && ((case_preserve == True) || 
+            ((short_case_preserve == True) && is_8_3(name, True))) &&
        strcsequal(name, newname)) {
       pstring newname_modified_last_component;
 
