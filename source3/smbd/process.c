@@ -1018,6 +1018,9 @@ void smbd_process(void)
 
     errno = 0;      
 
+    /* free up temporary memory */
+    lp_talloc_free();
+
     while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
       if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
