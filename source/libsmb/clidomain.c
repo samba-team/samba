@@ -488,6 +488,8 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	pstring remote_machine;
 	char *p;
 
+	DEBUG(3, ("looking up dc name for domain %s\n", domain));
+
 	p = lp_passwordserver();
 
 	if (!*p) 
