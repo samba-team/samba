@@ -817,9 +817,8 @@ sub ParseEnumPull($)
 	my($enum) = shift;
 	my($type_fn) = util::enum_type_fn($enum);
 
-	start_flags($enum);
-
 	pidl "\t$type_fn v;\n";
+	start_flags($enum);
 	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
 
@@ -832,9 +831,9 @@ sub ParseEnumPrint($)
 {
 	my($enum) = shift;
 
-	start_flags($enum);
-
 	pidl "\tconst char *val = NULL;\n\n";
+
+	start_flags($enum);
 
 	pidl "\tswitch (r) {\n";
 	my $els = \@{$enum->{ELEMENTS}};
@@ -874,9 +873,8 @@ sub ParseBitmapPull($)
 	my($bitmap) = shift;
 	my($type_fn) = util::bitmap_type_fn($bitmap);
 
-	start_flags($bitmap);
-
 	pidl "\t$type_fn v;\n";
+	start_flags($bitmap);
 	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
 
