@@ -1,3 +1,7 @@
+2000-05-24  Assar Westerlund  <assar@sics.se>
+
+	* ss.c: check allocation and return some other error codes too
+
 2000-04-29  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: add LIB_tgetent.  From Derrick J Brashear
