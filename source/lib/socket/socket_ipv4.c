@@ -228,6 +228,8 @@ static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 	ssize_t len;
 	int flgs = 0;
 
+	*sendlen = 0;
+
 	len = send(sock->fd, blob->data, blob->length, flgs);
 	if (len == -1) {
 		return map_nt_error_from_unix(errno);
