@@ -28,8 +28,8 @@ LIBNAME = libroken
 #LIBEXT = @LIBEXT@ Always build archive library and don't install!
 LIBEXT = a
 SHLIBEXT = @SHLIBEXT@
+SHARED = @SHARED@
 LIB = $(LIBNAME).$(LIBEXT)
-
 
 OBJECTS = k_getpwnam.o signal.o tm2time.o verify.o inaddr2str.o @LIBOBJS@
 
@@ -75,6 +75,6 @@ $(LIBNAME).a: $(OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS) -L../../util/et -lcom_err
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../util/et -lcom_err
 
 $(OBJECTS): ../../config.h

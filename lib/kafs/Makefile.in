@@ -26,6 +26,7 @@ PICFLAGS = @PICFLAGS@
 LIBNAME = libkafs
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
+SHARED = @SHARED@
 AFS_EXTRA_LIBS	= @AFS_EXTRA_LIBS@
 LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
@@ -78,7 +79,7 @@ $(LIBNAME).a: $(OBJECTS) @AFS_EXTRA_OBJS@
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS)
 
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead

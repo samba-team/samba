@@ -14,8 +14,6 @@ DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 
-PICFLAGS = @PICFLAGS@
-
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
@@ -29,6 +27,7 @@ PICFLAGS = @PICFLAGS@
 LIBNAME = libdes
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
+SHARED = @SHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
 # Generated with lorder *.o | tsort | xargs echo
@@ -85,7 +84,7 @@ $(LIBNAME).a: $(LIBOBJ)
 
 $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(LIBOBJ)
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIBOBJ)
 
 destest: destest.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
