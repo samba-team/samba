@@ -888,103 +888,93 @@ char *get_socket_addr(int fd)
 /*******************************************************************
  Create protected unix domain socket.
 
- some unixen cannot set permissions on a ux-dom-sock, so we
+ Some unixes cannot set permissions on a ux-dom-sock, so we
  have to make sure that the directory contains the protection
- permissions, instead.
+ permissions instead.
  ******************************************************************/
+
 int create_pipe_sock(const char *socket_dir,
 		     const char *socket_name,
 		     mode_t dir_perms)
 {
 #ifdef HAVE_UNIXSOCKET
-        struct sockaddr_un sunaddr;
-        struct stat st;
-        int sock;
-        mode_t old_umask;
-        pstring path;
+	struct sockaddr_un sunaddr;
+	struct stat st;
+	int sock;
+	mode_t old_umask;
+	pstring path;
         
-        /* Create the socket directory or reuse the existing one */
+	old_umask = umask(0);
         
-        if (lstat(socket_dir, &st) == -1) {
-                
-                if (errno == ENOENT) {
-                        
-                        /* Create directory */
-                        
-                        if (mkdir(socket_dir, dir_perms) == -1) {
-                                DEBUG(0, ("error creating socket directory "
-                                          "%s: %s\n", socket_dir, 
-                                          strerror(errno)));
-                                return -1;
-                        }
-                        
-                } else {
-                        
-                        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-                                  socket_dir, strerror(errno)));
-                        return -1;
-                }
-                
-        } else {
-                
-                /* Check ownership and permission on existing directory */
-                
-                if (!S_ISDIR(st.st_mode)) {
-                        DEBUG(0, ("socket directory %s isn't a directory\n",
-                                  socket_dir));
-                        return -1;
-                }
-                
-                if ((st.st_uid != sec_initial_uid()) || 
-                    ((st.st_mode & 0777) != dir_perms)) {
-                        DEBUG(0, ("invalid permissions on socket directory "
-                                  "%s\n", socket_dir));
-                        return -1;
-                }
-        }
+	/* Create the socket directory or reuse the existing one */
         
-        /* Create the socket file */
+	if (lstat(socket_dir, &st) == -1) {
+		if (errno == ENOENT) {
+			/* Create directory */
+			if (mkdir(socket_dir, dir_perms) == -1) {
+				DEBUG(0, ("error creating socket directory "
+					"%s: %s\n", socket_dir, 
+					strerror(errno)));
+				goto out_umask;
+			}
+		} else {
+			DEBUG(0, ("lstat failed on socket directory %s: %s\n",
+				socket_dir, strerror(errno)));
+			goto out_umask;
+		}
+	} else {
+		/* Check ownership and permission on existing directory */
+		if (!S_ISDIR(st.st_mode)) {
+			DEBUG(0, ("socket directory %s isn't a directory\n",
+				socket_dir));
+			goto out_umask;
+		}
+		if ((st.st_uid != sec_initial_uid()) || 
+				((st.st_mode & 0777) != dir_perms)) {
+			DEBUG(0, ("invalid permissions on socket directory "
+				"%s\n", socket_dir));
+			goto out_umask;
+		}
+	}
         
-        old_umask = umask(0);
+	/* Create the socket file */
         
-        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
         
-        if (sock == -1) {
-                perror("socket");
-		umask(old_umask);
-                return -1;
-        }
+	if (sock == -1) {
+		perror("socket");
+                goto out_umask;
+	}
         
-        snprintf(path, sizeof(path), "%s/%s", socket_dir, socket_name);
+	snprintf(path, sizeof(path), "%s/%s", socket_dir, socket_name);
         
-        unlink(path);
-        memset(&sunaddr, 0, sizeof(sunaddr));
-        sunaddr.sun_family = AF_UNIX;
-        safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+	unlink(path);
+	memset(&sunaddr, 0, sizeof(sunaddr));
+	sunaddr.sun_family = AF_UNIX;
+	safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
         
-        if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
-                DEBUG(0, ("bind failed on pipe socket %s: %s\n",
-                          path,
-                          strerror(errno)));
-                close(sock);
-		umask(old_umask);
-                return -1;
-        }
+	if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
+		DEBUG(0, ("bind failed on pipe socket %s: %s\n", path,
+			strerror(errno)));
+		goto out_close;
+	}
         
-        if (listen(sock, 5) == -1) {
-                DEBUG(0, ("listen failed on pipe socket %s: %s\n",
-                          path,
-                          strerror(errno)));
-                close(sock);
-		umask(old_umask);
-                return -1;
-        }
+	if (listen(sock, 5) == -1) {
+		DEBUG(0, ("listen failed on pipe socket %s: %s\n", path,
+			strerror(errno)));
+		goto out_close;
+	}
         
-        umask(old_umask);
-        
-        /* Success! */
-        
-        return sock;
+	umask(old_umask);
+	return sock;
+
+out_close:
+	close(sock);
+
+out_umask:
+	umask(old_umask);
+	return -1;
+
 #else
         DEBUG(0, ("create_pipe_sock: No Unix sockets on this system\n"));
         return -1;
