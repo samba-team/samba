@@ -62,7 +62,7 @@ int auth_wait (char *, size_t);
 void auth_disable_name (char *);
 void auth_finished (Authenticator *, int);
 void auth_gen_printsub (unsigned char *, int, unsigned char *, int);
-void auth_init (char *, int);
+void auth_init (const char *, int);
 void auth_is (unsigned char *, int);
 void auth_name(unsigned char*, int);
 void auth_reply (unsigned char *, int);
