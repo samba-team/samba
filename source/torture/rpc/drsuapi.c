@@ -919,7 +919,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req5.destination_dsa_guid		= GUID_random();
 			r.in.req.req5.source_dsa_guid			= null_guid;
 			r.in.req.req5.naming_context			= &nc;
-			r.in.req.req5.highwatermark.tmp_highest_usn	= 167997;
+			r.in.req.req5.highwatermark.tmp_highest_usn	= 0;
 			r.in.req.req5.highwatermark.reserved_usn	= 0;
 			r.in.req.req5.highwatermark.highest_usn		= 0;
 			r.in.req.req5.uptodateness_vector		= NULL;
