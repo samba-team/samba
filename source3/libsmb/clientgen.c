@@ -2287,6 +2287,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case NT_STATUS_ACCESS_DENIED: return EACCES;
 		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
 		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
+		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
 		}
 
 		/* for all other cases - a default code */
@@ -2303,6 +2304,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 	if (rcls == ERRDOS) {
 		switch (code) {
 		case ERRbadfile: return ENOENT;
+		case ERRbadpath: return ENOTDIR;
 		case ERRnoaccess: return EACCES;
 		}
 	}
