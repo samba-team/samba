@@ -1078,6 +1078,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	BOOL interactive = True;
 	char *cmd_str = NULL;
 	int opt;
+	int i;
 	extern FILE *dbf;
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
@@ -1420,8 +1421,14 @@ int command_main(int argc, char *argv[])
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
 	char progname[255], path[255], *s;
+	int i;
 
 	DEBUGLEVEL = 2;
+
+	for (i = 0; i < argc; i++)
+	{
+		DEBUG(2, ("arg %d: %s\n", i, argv[i]));
+	}
 
 	add_command_set(general_commands);
 
@@ -1433,11 +1440,11 @@ int command_main(int argc, char *argv[])
 	out_hnd = stdout;
 
 	strncpy(path, argv[0], 255);
-	for(s = strtok(path,"/");s;s = strtok(NULL,"/"))
-	  fstrcpy(progname, s);
+	for (s = strtok(path, "/"); s; s = strtok(NULL, "/"))
+		fstrcpy(progname, s);
 
 	slprintf(debugf, sizeof(debugf) - 1,
-                 "%s/log.%s", LOGFILEBASE, progname);
+		 "%s/log.%s", LOGFILEBASE, progname);
 
 	pstrcpy(usr.ntc.domain, "");
 	pstrcpy(usr.ntc.user_name, "");
@@ -1496,7 +1503,7 @@ int command_main(int argc, char *argv[])
 
 	free_cmd_set_array(num_commands, commands);
 	num_commands = 0;
-	commands = NULL; 
+	commands = NULL;
 
 	return (0);
 }

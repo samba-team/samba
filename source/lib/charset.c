@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 
 #if !defined(KANJI)
 /* lower->upper mapping for IBM Code Page 850 - MS-DOS Latin 1 */
-static unsigned char cp_850[][4] = {
+unsigned char cp_850[][4] = {
 /* dec col/row oct hex  description */
 /* 133  08/05  205  85  a grave */
 /* 183  11/07  267  B7  A grave */ 	{0x85,0xB7,1,1},
@@ -98,14 +98,14 @@ static unsigned char cp_850[][4] = {
 };
 #else /* KANJI */ 
 /* lower->upper mapping for IBM Code Page 932 - MS-DOS Japanese SJIS */
-static unsigned char cp_932[][4] = {
+unsigned char cp_932[][4] = {
   {0,0,0,0}
 };
 #endif /* KANJI */
 
-static char xx_dos_char_map[256];
-static char xx_upper_char_map[256];
-static char xx_lower_char_map[256];
+char xx_dos_char_map[256];
+char xx_upper_char_map[256];
+char xx_lower_char_map[256];
 
 char *dos_char_map = xx_dos_char_map;
 char *upper_char_map = xx_upper_char_map;
@@ -320,8 +320,9 @@ clean_and_exit:
 }
 
 /****************************************************************************
-initialise the client codepage.
+ Initialise the client codepage.
 ****************************************************************************/
+
 void codepage_initialise(int client_codepage)
 {
   int i;
@@ -369,6 +370,7 @@ for code page %d failed. Using default client codepage 850\n",
     for(i = 0; !((cp[i][0] == '\0') && (cp[i][1] == '\0')); i++)
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
+
 }
 
 /*******************************************************************
