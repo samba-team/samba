@@ -492,10 +492,18 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			(name[strlen(local_machine)+1] == '\\'))
 		name_offset = strlen(local_machine)+1;
 
-	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+	if (strnequal(&name[name_offset], "\\PIPE", strlen("\\PIPE"))) {
+		name_offset += strlen("\\PIPE");
+
+		/* Win9x weirdness.  When talking to a unicode server Win9x
+		   only sends \PIPE instead of \PIPE\ */
+
+		if (name[name_offset] == '\\')
+			name_offset++;
+
 		DEBUG(5,("calling named_pipe\n"));
 		outsize = named_pipe(conn,vuid,outbuf,
-				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
+				     name+name_offset,setup,data,params,
 				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 	} else {
 		DEBUG(3,("invalid pipe name\n"));
