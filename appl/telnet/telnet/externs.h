@@ -223,7 +223,7 @@ int 	EncryptStatus (void);
 #endif
 
 #ifdef SIGINFO
-void ayt_status(int);
+RETSIGTYPE ayt_status(int);
 #endif
 int tn(int argc, char **argv);
 void command(int top, char *tbuf, int cnt);
@@ -428,3 +428,8 @@ extern Ring
     ttyoring,
     ttyiring;
 
+extern int resettermname;
+extern int linemode;
+#ifdef KLUDGELINEMODE
+extern int kludgelinemode;
+#endif

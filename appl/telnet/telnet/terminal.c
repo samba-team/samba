@@ -151,11 +151,7 @@ ttyflush(int drop)
 int
 getconnmode(void)
 {
-    extern int linemode;
     int mode = 0;
-#ifdef	KLUDGELINEMODE
-    extern int kludgelinemode;
-#endif
 
     if (my_want_state_is_dont(TELOPT_ECHO))
 	mode |= MODE_ECHO;

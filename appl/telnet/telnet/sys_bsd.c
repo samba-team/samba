@@ -118,9 +118,6 @@ TerminalAutoFlush(void)
 #endif	/* LNOFLSH */
 }
 
-#ifdef	KLUDGELINEMODE
-extern int kludgelinemode;
-#endif
 /*
  * TerminalSpecialChars()
  *
