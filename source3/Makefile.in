@@ -4,6 +4,7 @@
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
 # Copyright Andrew Bartlett 2002
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
+# Copyright (C) 2002-2003 Jelmer Vernooij <jelmer@samba.org>
 ###########################################################################
 
 prefix=@prefix@
@@ -55,6 +56,8 @@ LIBDIR = @libdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
 RPCLIBDIR = $(LIBDIR)/rpc
+CHARSETLIBDIR = $(LIBDIR)/charset
+AUTHLIBDIR = $(LIBDIR)/auth
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -175,7 +178,7 @@ POPT_LIB_OBJ = lib/popt_common.o
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
-PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o
 
 KRBCLIENT_OBJ = libads/kerberos.o
 

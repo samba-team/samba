@@ -332,6 +332,17 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
 
+dnl Add modules that have to be built by default here
+dnl These have to be built static:
+default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
+
+if test "x$enable_developer" = xyes; then
+   default_static_modules="$default_static_modules rpc_echo"
+fi
+
+dnl These are preferably build shared, and static if dlopen() is not available
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -3451,6 +3462,91 @@ AC_ARG_WITH(python,
 	;;
   esac ])
 AC_SUBST(PYTHON)
+
+for i in `echo $default_static_modules | sed -e's/,/ /g'`
+do
+	eval MODULE_DEFAULT_$i=STATIC
+done
+
+for i in `echo $default_shared_modules | sed -e's/,/ /g'`
+do
+	dnl Fall back to static if dlopen() is not available
+	eval MODULE_DEFAULT_$i=STATIC
+
+	if test x"$ac_cv_func_dlopen" = xyes; then
+		eval MODULE_DEFAULT_$i=SHARED
+	fi
+done
+
+dnl Always built these modules static
+MODULE_pdb_guest=STATIC
+MODULE_rpc_spoolss=STATIC
+MODULE_rpc_srv=STATIC
+
+AC_ARG_WITH(static-modules,
+[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=STATIC
+	done
+fi ])
+
+AC_ARG_WITH(shared-modules,
+[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+			eval MODULE_$i=SHARED
+	done
+fi ])
+
+SMB_MODULE(pdb_xml, modules/xml.o, "bin/xml.$SHLIBEXT", PDB,
+		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
+SMB_MODULE(pdb_mysql, modules/mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
+		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
+SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
+		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
+SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_unix, passdb/pdb_unix.o, "bin/unixsam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
+SMB_SUBSYSTEM(PDB)
+
+SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
+SMB_SUBSYSTEM(RPC)
+
+SMB_MODULE(charset_weird, modules/developer.o, "bin/developer.$SHLIBEXT", CHARSET)
+SMB_SUBSYSTEM(CHARSET)
+
+SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/server.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
+SMB_SUBSYSTEM(AUTH)
+
+SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
+SMB_SUBSYSTEM(VFS)
+
+AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
+
+AC_SUBST(MODULES_CLEAN)
 
 #################################################
 # do extra things if we are running insure
