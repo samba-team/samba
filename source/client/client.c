@@ -1705,6 +1705,158 @@ static int cmd_chmod(void)
 	return 0;
 }
 
+static const char *filetype_to_str(mode_t mode)
+{
+	if (S_ISREG(mode)) {
+		return "regular file";
+	} else if (S_ISDIR(mode)) {
+		return "directory";
+	} else 
+#ifdef S_ISCHR
+	if (S_ISCHR(mode)) {
+		return "character device";
+	} else
+#endif
+#ifdef S_ISBLK
+	if (S_ISBLK(mode)) {
+		return "block device";
+	} else
+#endif
+#ifdef S_ISFIFO
+	if (S_ISFIFO(mode)) {
+		return "fifo";
+	} else
+#endif
+#ifdef S_ISLNK
+	if (S_ISLNK(mode)) {
+		return "symbolic link";
+	} else
+#endif
+#ifdef S_ISSOCK
+	if (S_ISSOCK(mode)) {
+		return "socket";
+	} else
+#endif
+	return "";
+}
+
+static char rwx_to_str(mode_t m, mode_t bt, char ret)
+{
+	if (m & bt) {
+		return ret;
+	} else {
+		return '-';
+	}
+}
+
+static char *unix_mode_to_str(char *s, mode_t m)
+{
+	char *p = s;
+	const char *str = filetype_to_str(m);
+
+	switch(str[0]) {
+		case 'd':
+			*p++ = 'd';
+			break;
+		case 'c':
+			*p++ = 'c';
+			break;
+		case 'b':
+			*p++ = 'b';
+			break;
+		case 'f':
+			*p++ = 'p';
+			break;
+		case 's':
+			*p++ = str[1] == 'y' ? 'l' : 's';
+			break;
+		case 'r':
+		default:
+			*p++ = '-';
+			break;
+	}
+	*p++ = rwx_to_str(m, S_IRUSR, 'r');
+	*p++ = rwx_to_str(m, S_IWUSR, 'w');
+	*p++ = rwx_to_str(m, S_IXUSR, 'x');
+	*p++ = rwx_to_str(m, S_IRGRP, 'r');
+	*p++ = rwx_to_str(m, S_IWGRP, 'w');
+	*p++ = rwx_to_str(m, S_IXGRP, 'x');
+	*p++ = rwx_to_str(m, S_IROTH, 'r');
+	*p++ = rwx_to_str(m, S_IWOTH, 'w');
+	*p++ = rwx_to_str(m, S_IXOTH, 'x');
+	*p++ = '\0';
+	return s;
+}
+
+/****************************************************************************
+ UNIX stat.
+****************************************************************************/
+
+static int cmd_stat(void)
+{
+	pstring src, name;
+	fstring mode_str;
+	SMB_STRUCT_STAT sbuf;
+ 
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
+		d_printf("stat file\n");
+		return 1;
+	}
+
+	pstrcat(src,name);
+
+	if (!cli_unix_stat(cli, src, &sbuf)) {
+		d_printf("%s stat file %s\n",
+			cli_errstr(cli), src);
+		return 1;
+	} 
+
+	/* Print out the stat values. */
+	d_printf("File: %s\n", src);
+	d_printf("Size: %-12.0f\tBlocks: %u\t%s\n",
+		(double)sbuf.st_size,
+		(unsigned int)sbuf.st_blocks,
+		filetype_to_str(sbuf.st_mode));
+
+#if defined(S_ISCHR) && defined(S_ISBLK)
+	if (S_ISCHR(sbuf.st_mode) || S_ISBLK(sbuf.st_mode)) {
+		d_printf("Inode: %.0f\tLinks: %u\tDevice type: %u,%u\n",
+			(double)sbuf.st_ino,
+			(unsigned int)sbuf.st_nlink,
+			unix_dev_major(sbuf.st_rdev),
+			unix_dev_minor(sbuf.st_rdev));
+	} else 
+#endif
+		d_printf("Inode: %.0f\tLinks: %u\n",
+			(double)sbuf.st_ino,
+			(unsigned int)sbuf.st_nlink);
+
+	d_printf("Access: (0%03o/%s)\tUid: %u\tGid: %u\n",
+		((int)sbuf.st_mode & 0777),
+		unix_mode_to_str(mode_str, sbuf.st_mode),
+		(unsigned int)sbuf.st_uid, 
+		(unsigned int)sbuf.st_gid);
+
+	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_atime));
+	d_printf("Access: %s\n", mode_str);
+
+	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_mtime));
+	d_printf("Modify: %s\n", mode_str);
+
+	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_ctime));
+	d_printf("Change: %s\n", mode_str);
+	
+	return 0;
+}
+
+
 /****************************************************************************
  UNIX chown.
 ****************************************************************************/
@@ -2234,6 +2386,7 @@ static struct
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
+  {"stat",cmd_stat,"filename Do a UNIX extensions stat call on a file",{COMPL_REMOTE,COMPL_REMOTE}},
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},

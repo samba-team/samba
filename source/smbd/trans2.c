@@ -757,32 +757,6 @@ static uint32 unix_filetype(mode_t mode)
 }
 
 /****************************************************************************
- Return the major devicenumber for UNIX extensions.
-****************************************************************************/
-
-static uint32 unix_dev_major(SMB_DEV_T dev)
-{
-#if defined(HAVE_DEVICE_MAJOR_FN)
-	return (uint32)major(dev);
-#else
-	return (uint32)(dev >> 8);
-#endif
-}
-
-/****************************************************************************
- Return the minor devicenumber for UNIX extensions.
-****************************************************************************/
-
-static uint32 unix_dev_minor(SMB_DEV_T dev)
-{
-#if defined(HAVE_DEVICE_MINOR_FN)
-	return (uint32)minor(dev);
-#else
-	return (uint32)(dev & 0xff);
-#endif
-}
-
-/****************************************************************************
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
