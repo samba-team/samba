@@ -36,9 +36,9 @@
 RCSID("$Id$");
 
 OM_uint32
-gssapi_krb5_verify_header(u_char **str,
-			  size_t total_len,
-			  char *type)
+_gssapi_verify_mech_header(u_char **str,
+			   size_t total_len,
+			   gss_OID oid)
 {
     size_t len, len_len, mech_len, foo;
     int e;
@@ -59,19 +59,43 @@ gssapi_krb5_verify_header(u_char **str,
     if (e)
 	return GSS_S_DEFECTIVE_TOKEN;
     p += foo;
-    if (mech_len != GSS_KRB5_MECHANISM->length)
+    if (mech_len != oid->length)
 	return GSS_S_BAD_MECH;
     if (memcmp(p,
-	       GSS_KRB5_MECHANISM->elements,
-	       GSS_KRB5_MECHANISM->length) != 0)
+	       oid->elements,
+	       oid->length) != 0)
 	return GSS_S_BAD_MECH;
     p += mech_len;
-    if (memcmp (p, type, 2) != 0)
-	return GSS_S_DEFECTIVE_TOKEN;
-    p += 2;
     *str = p;
     return GSS_S_COMPLETE;
 }
+
+OM_uint32
+gssapi_krb5_verify_header(u_char **str,
+			  size_t total_len,
+			  u_char *type,
+			  gss_OID oid)
+{
+    OM_uint32 ret;
+    size_t len;
+    u_char *p = *str;
+
+    ret = _gssapi_verify_mech_header(str, total_len, oid);
+    if (ret)
+	return ret;
+
+    len = total_len - (*str - p);
+
+    if (len < 2)
+	return GSS_S_DEFECTIVE_TOKEN;
+
+    if (memcmp (*str, type, 2) != 0)
+	return GSS_S_DEFECTIVE_TOKEN;
+    *str += 2;
+
+    return 0;
+}
+
 
 /*
  * Remove the GSS-API wrapping from `in_token' giving `out_data.
@@ -79,12 +103,11 @@ gssapi_krb5_verify_header(u_char **str,
  */
 
 OM_uint32
-gssapi_krb5_decapsulate(
-			OM_uint32 *minor_status,    
+gssapi_krb5_decapsulate(OM_uint32 *minor_status,    
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
-			char *type
-)
+			char *type,
+			gss_OID oid)
 {
     u_char *p;
     OM_uint32 ret;
@@ -92,7 +115,8 @@ gssapi_krb5_decapsulate(
     p = input_token_buffer->value;
     ret = gssapi_krb5_verify_header(&p,
 				    input_token_buffer->length,
-				    type);
+				    type,
+				    oid);
     if (ret) {
 	*minor_status = 0;
 	return ret;
