@@ -203,7 +203,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
  */
 static void usage(char *name)
 {
-	fprintf(stderr, "Usage is : %s [username]\n", name);
+	fprintf(stderr, "Usage is : %s [-add] [username]\n", name);
 	exit(1);
 }
 
@@ -222,6 +222,7 @@ static void usage(char *name)
   FILE           *fp;
   BOOL            valid_old_pwd = False;
   BOOL 			got_valid_nt_entry = False;
+  BOOL            add_user = False;
   long            seekpos;
   int             pwfd;
   char            ascii_p16[66];
@@ -250,16 +251,23 @@ static void usage(char *name)
   
   /* Deal with usage problems */
   if (real_uid == 0) {
-    /* As root we can change anothers password. */
-    if (argc != 1 && argc != 2)
+    /* As root we can change anothers password and add a user. */
+    if (argc > 3 )
       usage(argv[0]);
-  } else if (argc != 1)
+  } else if (argc != 1) {
+    fprintf(stderr, "%s: Only root can set anothers password.\n", argv[0]);
     usage(argv[0]);
+  }
   
-  
-  if (real_uid == 0 && argc == 2) {
+  if (real_uid == 0 && (argc > 1)) {
+    /* We are root - check if we should add the user */
+    if ((argv[1][0] == '-') && (argv[1][1] == 'a'))
+      add_user = True;
+    if(add_user && (argc != 3))
+      usage(argv[0]);
+
     /* If we are root we can change anothers password. */
-    strncpy(user_name, argv[1], sizeof(user_name) - 1);
+    strncpy(user_name, add_user ? argv[2] : argv[1], sizeof(user_name) - 1);
     user_name[sizeof(user_name) - 1] = '\0';
     pwd = getpwnam(user_name);
   } else {
@@ -347,26 +355,97 @@ static void usage(char *name)
   smb_pwent = _my_get_smbpwnam(fp, pwd->pw_name, &valid_old_pwd, 
 			       &got_valid_nt_entry, &seekpos);
   if (smb_pwent == NULL) {
-    fprintf(stderr, "%s: Failed to find entry for user %s in file %s.\n",
-	    argv[0], pwd->pw_name, pfile);
-    fclose(fp);
-    pw_file_unlock(lockfd);
-    exit(1);
+    if(add_user == False) {
+      fprintf(stderr, "%s: Failed to find entry for user %s in file %s.\n",
+  	      argv[0], pwd->pw_name, pfile);
+      fclose(fp);
+      pw_file_unlock(lockfd);
+      exit(1);
+    }
+
+    /* Create a new smb passwd entry and set it to the given password. */
+    {
+      int fd;
+      int i;
+      int new_entry_length;
+      char *new_entry;
+      char *p;
+      long offpos;
+
+      /* The add user write needs to be atomic - so get the fd from 
+         the fp and do a raw write() call.
+       */
+      fd = fileno(fp);
+
+      if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
+        fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
+        fclose(fp);
+        pw_file_unlock(lockfd);
+        exit(1);
+      }
+
+      new_entry_length = strlen(pwd->pw_name) + 1 + 15 + 1 + 
+                         32 + 1 + 32 + 1 + strlen(pwd->pw_gecos) + 
+                         1 + strlen(pwd->pw_dir) + 1 + 
+                         strlen(pwd->pw_shell) + 1;
+      if((new_entry = (char *)malloc( new_entry_length )) == 0) {
+        fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
+        fclose(fp);
+        pw_file_unlock(lockfd);
+        exit(1);
+      }
+
+      sprintf(new_entry, "%s:%u:", pwd->pw_name, pwd->pw_uid);
+      p = &new_entry[strlen(new_entry)];
+      for( i = 0; i < 16; i++)
+        sprintf(&p[i*2], "%02X", new_p16[i]);
+      p += 32;
+      *p++ = ':';
+      for( i = 0; i < 16; i++)
+        sprintf(&p[i*2], "%02X", old_p16[i]);
+      p += 32;
+      *p++ = ':';
+      sprintf(p, "%s:%s:%s\n", pwd->pw_gecos, 
+              pwd->pw_dir, pwd->pw_shell);
+      if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
+        fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
+        /* Remove the entry we just wrote. */
+        if(ftruncate(fd, offpos) == -1) {
+          fprintf(stderr, "%s: ERROR failed to ftruncate file %s. \
+Error was %d. Password file may be corrupt ! Please examine by hand !\n", 
+                   argv[0], pwd->pw_name, errno);
+        }
+        fclose(fp);
+        pw_file_unlock(lockfd);
+        exit(1);
+      }
+      
+      fclose(fp);  
+      pw_file_unlock(lockfd);  
+      exit(0);
+    }
   }
-  /* If we are root we don't need to check the old password. */
+
+  /* If we are root or the password is 'NO PASSWORD' then
+     we don't need to check the old password. */
   if (real_uid != 0) {
-    if ((valid_old_pwd == False) || (smb_pwent->smb_passwd == NULL)) {
+    if (valid_old_pwd == False) {
       fprintf(stderr, "%s: User %s is disabled, plase contact your administrator to enable it.\n", argv[0], pwd->pw_name);
       fclose(fp);
       pw_file_unlock(lockfd);
       exit(1);
     }
-    /* Check the old Lanman password */
-    if (memcmp(old_p16, smb_pwent->smb_passwd, 16)) {
-      fprintf(stderr, "%s: Couldn't change password.\n", argv[0]);
-      fclose(fp);
-      pw_file_unlock(lockfd);
-      exit(1);
+    /* Check the old Lanman password - NULL means 'NO PASSWORD' */
+    if (smb_pwent->smb_passwd != NULL) {
+      if (memcmp(old_p16, smb_pwent->smb_passwd, 16)) {
+        fprintf(stderr, "%s: Couldn't change password.\n", argv[0]);
+        fclose(fp);
+        pw_file_unlock(lockfd);
+        exit(1);
+      }
     }
     /* Check the NT password if it exists */
     if (smb_pwent->smb_nt_passwd != NULL) {
