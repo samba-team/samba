@@ -402,7 +402,7 @@ static void samr_reply_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			r_e.status = add_group_member(group_rid, q_u->rid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = add_group_member(group_rid, q_u->rid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else
@@ -460,7 +460,7 @@ static void samr_reply_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			r_e.status = del_group_member(group_rid, q_u->rid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = del_group_member(group_rid, q_u->rid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else
@@ -518,7 +518,7 @@ static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 			DEBUG(10,("add member on Domain SID\n"));
 
 			become_root(True);
-			r_e.status = add_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = add_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
@@ -526,7 +526,7 @@ static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 			DEBUG(10,("add member on BUILTIN SID\n"));
 
 			become_root(True);
-			r_e.status = add_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = add_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else
@@ -584,7 +584,7 @@ static void samr_reply_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 			DEBUG(10,("del member on Domain SID\n"));
 
 			become_root(True);
-			r_e.status = del_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = del_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
@@ -592,7 +592,7 @@ static void samr_reply_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 			DEBUG(10,("del member on BUILTIN SID\n"));
 
 			become_root(True);
-			r_e.status = del_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = del_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 			unbecome_root(True);
 		}
 		else
@@ -929,12 +929,12 @@ static void samr_reply_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			status = del_group_entry(group_rid) ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
+			status = del_group_entry(group_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_GROUP);
 			unbecome_root(True);
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
 		}
 	}
 
@@ -995,12 +995,12 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			status = getgrouprid(group_rid, &mem_grp, &num_rids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
+			status = getgrouprid(group_rid, &mem_grp, &num_rids) != NULL ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_GROUP);
 			unbecome_root(True);
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
 		}
 	}
 
@@ -1248,15 +1248,15 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 
 	if (status == 0x0 && num_rids > 0)
 	{
-			rid = malloc(num_rids * sizeof(uint32));
-			if (mem_grp != NULL && rid != NULL)
+		rid = malloc(num_rids * sizeof(uint32));
+		if (mem_grp != NULL && rid != NULL)
+		{
+			int i;
+			for (i = 0; i < num_rids; i++)
 			{
-				int i;
-				for (i = 0; i < num_rids; i++)
-				{
-					rid[i] = mem_grp[i].rid;
-				}
-				free(mem_grp);
+				rid[i] = mem_grp[i].rid;
+			}
+			free(mem_grp);
 		}
 	}
 
@@ -1320,12 +1320,12 @@ static void samr_reply_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			status = del_alias_entry(alias_rid) ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
+			status = del_alias_entry(alias_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_ALIAS);
 			unbecome_root(True);
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 		}
 	}
 
@@ -1385,7 +1385,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 			DEBUG(10,("lookup on S-1-5-20\n"));
 
 			become_root(True);
-			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
+			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sam_sid))
@@ -1393,12 +1393,12 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			status = getaliasrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
+			status = getaliasrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 			unbecome_root(True);
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 		}
 	}
 
@@ -1845,7 +1845,7 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 			case 0x10:
 			{
 				info = (void*)&id10;
-				status = get_user_info_10(&id10, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
+				status = get_user_info_10(&id10, rid) ? 0 : (0xC0000000 | NT_STATUS_NO_SUCH_USER);
 				break;
 			}
 #if 0
@@ -1866,7 +1866,7 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 			case 21:
 			{
 				info = (void*)&id21;
-				status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
+				status = get_user_info_21(&id21, rid) ? 0 : (0xC0000000 | NT_STATUS_NO_SUCH_USER);
 				break;
 			}
 
@@ -2063,7 +2063,7 @@ static void samr_reply_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 		grp.rid = 0xffffffff;
 
 		become_root(True);
-		status = add_alias_entry(&grp) ? 0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		status = add_alias_entry(&grp) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 		unbecome_root(True);
 	}
 
@@ -2175,7 +2175,7 @@ static void samr_reply_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 		grp.attr = 0x07;
 
 		become_root(True);
-		status = add_group_entry(&grp) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		status = add_group_entry(&grp) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 		unbecome_root(True);
 	}
 
