@@ -63,6 +63,16 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 }
 
 
+/*
+  receive an incoming dgram request
+*/
+static void dgram_request_handler(struct nbt_dgram_socket *dgmsock, 
+				  struct nbt_dgram_packet *packet, 
+				  const char *src_address, int src_port)
+{
+}
+
+
 
 /*
   find a registered name on an interface
@@ -93,7 +103,6 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 {
 	struct nbtd_interface *iface;
 	NTSTATUS status;
-	struct nbt_name_socket *bcast_nbtsock;
 
 	/*
 	  we actually create two sockets. One listens on the broadcast address
@@ -113,6 +122,10 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	iface->names         = NULL;
 
 	if (strcmp(netmask, "0.0.0.0") != 0) {
+		struct nbt_name_socket *bcast_nbtsock;
+		struct nbt_dgram_socket *bcast_dgmsock;
+
+		/* listen for broadcasts on port 137 */
 		bcast_nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(bcast_nbtsock);
 
@@ -125,10 +138,26 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		}
 
 		nbt_set_incoming_handler(bcast_nbtsock, nbtd_request_handler, iface);
+
+
+		/* listen for broadcasts on port 138 */
+		bcast_dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(bcast_dgmsock);
+
+		status = socket_listen(bcast_dgmsock->sock, bcast, lp_dgram_port(), 0, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
+				 bcast, lp_dgram_port(), nt_errstr(status)));
+			talloc_free(iface);
+			return status;
+		}
+
+		dgram_set_incoming_handler(bcast_dgmsock, dgram_request_handler, iface);
 	}
 
+	/* listen for unicasts on port 137 */
 	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(iface->ip_address);
+	NT_STATUS_HAVE_NO_MEMORY(iface->nbtsock);
 
 	status = socket_listen(iface->nbtsock->sock, bind_address, lp_nbt_port(), 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -137,8 +166,21 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		talloc_free(iface);
 		return status;
 	}
-
 	nbt_set_incoming_handler(iface->nbtsock, nbtd_request_handler, iface);
+
+
+	/* listen for unicasts on port 138 */
+	iface->dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(iface->dgmsock);
+
+	status = socket_listen(iface->dgmsock->sock, bind_address, lp_dgram_port(), 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
+			 address, lp_dgram_port(), nt_errstr(status)));
+		talloc_free(iface);
+		return status;
+	}
+	dgram_set_incoming_handler(iface->dgmsock, dgram_request_handler, iface);
 
 	if (strcmp(netmask, "0.0.0.0") == 0) {
 		DLIST_ADD(nbtsrv->bcast_interface, iface);

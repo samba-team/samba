@@ -21,6 +21,7 @@
 */
 
 #include "libcli/nbt/libnbt.h"
+#include "libcli/dgram/libdgram.h"
 
 /* 
    a list of our registered names on each interface
@@ -47,6 +48,7 @@ struct nbtd_interface {
 	const char *bcast_address;
 	const char *netmask;
 	struct nbt_name_socket *nbtsock;
+	struct nbt_dgram_socket *dgmsock;
 	struct nbtd_iface_name *names;
 };
 

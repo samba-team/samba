@@ -27,6 +27,7 @@
 #include "smbd/service_task.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);
@@ -262,6 +263,17 @@ void nbtd_register_names(struct nbtd_server *nbtsrv)
 		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_CLIENT, nb_flags);
 		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_SERVER, nb_flags);
 		aliases++;
+	}
+
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_PDC, nb_flags);
+		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags);
+		break;
+	case ROLE_DOMAIN_BDC:
+		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags);
+	default:
+		break;
 	}
 
 	nb_flags |= NBT_NM_GROUP;
