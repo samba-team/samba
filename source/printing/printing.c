@@ -156,6 +156,9 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	pstring printdb_path;
 
 	for (p = print_db_head, last_entry = print_db_head; p; p = p->next) {
+		/* Ensure the list terminates... JRA. */
+		SMB_ASSERT(p->next != print_db_head);
+
 		if (p->tdb && strequal(p->printer_name, printername)) {
 			DLIST_PROMOTE(print_db_head, p);
 			p->ref_count++;
