@@ -113,14 +113,14 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsmbpwuid: search by smb_userid: %x\n", (int)smb_userid));
+	DEBUG(10, ("search by smb_userid: %x\n", (int)smb_userid));
 
 	/* Open the smb password database - not for update. */
 	fp = startsmbpwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("iterate_getsmbpwuid: unable to open smb password database.\n"));
+		DEBUG(0, ("unable to open smb password database.\n"));
 		return NULL;
 	}
 
@@ -129,7 +129,7 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsmbpwuid: found by smb_userid: %x\n", (int)smb_userid));
+		DEBUG(10, ("found by smb_userid: %x\n", (int)smb_userid));
 	}
 
 	endsmbpwent(fp);
@@ -146,14 +146,14 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsmbpwnam: search by name: %s\n", name));
+	DEBUG(10, ("search by name: %s\n", name));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbpwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("iterate_getsmbpwnam: unable to open smb password database.\n"));
+		DEBUG(0, ("unable to open smb password database.\n"));
 		return NULL;
 	}
 
@@ -162,7 +162,7 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsmbpwnam: found by name: %s\n", name));
+		DEBUG(10, ("found by name: %s\n", name));
 	}
 
 	endsmbpwent(fp);
@@ -264,23 +264,25 @@ struct sam_passwd *iterate_getsam21pwnam(char *name)
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsam21pwnam: search by name: %s\n", name));
+	DEBUG(10, ("search by name: %s\n", name));
 
 	/* Open the smb password database - not for update. */
 	fp = startsmbpwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("iterate_getsam21pwnam: unable to open sam password database.\n"));
+		DEBUG(0, ("unable to open sam password database.\n"));
 		return NULL;
 	}
 
 	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->smb_name, name))
-      ;
+	{
+		DEBUG(10, ("iterate: %s 0x%x\n", pwd->smb_name, pwd->user_rid));
+	}
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsam21pwnam: found by name: %s\n", name));
+		DEBUG(10, ("found by name: %s\n", name));
 	}
 
 	endsmbpwent(fp);
@@ -301,23 +303,25 @@ struct sam_passwd *iterate_getsam21pwrid(uint32 rid)
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsam21pwrid: search by rid: %x\n", rid));
+	DEBUG(10, ("search by rid: %x\n", rid));
 
 	/* Open the smb password file - not for update. */
 	fp = startsmbpwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("iterate_getsam21pwrid: unable to open sam password database.\n"));
+		DEBUG(0, ("unable to open sam password database.\n"));
 		return NULL;
 	}
 
 	while ((pwd = getsam21pwent(fp)) != NULL && pwd->user_rid != rid)
-      ;
+	{
+		DEBUG(10, ("iterate: %s 0x%x\n", pwd->smb_name, pwd->user_rid));
+	}
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsam21pwrid: found by user_rid: %x\n", rid));
+		DEBUG(10, ("found by user_rid: %x\n", rid));
 	}
 
 	endsmbpwent(fp);
@@ -338,14 +342,14 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsam21pwuid: search by uid: %x\n", (int)uid));
+	DEBUG(10, ("search by uid: %x\n", (int)uid));
 
 	/* Open the smb password file - not for update. */
 	fp = startsmbpwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("iterate_getsam21pwuid: unable to open sam password database.\n"));
+		DEBUG(0, ("unable to open sam password database.\n"));
 		return NULL;
 	}
 
@@ -354,7 +358,7 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsam21pwuid: found by smb_userid: %x\n", (int)uid));
+		DEBUG(10, ("found by smb_userid: %x\n", (int)uid));
 	}
 
 	endsmbpwent(fp);
@@ -609,11 +613,11 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 		return False;
 	}
 
-    if (!pw)
+	if (!pw)
 	{
-      DEBUG(1,("Username %s is invalid on this system\n", user_name));
-      return False;
-    }
+		DEBUG(1,("Username %s is invalid on this system\n", user_name));
+		return False;
+	}
 
 	if (user_in_list(user_name, lp_domain_guest_users()))
 	{
@@ -647,7 +651,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
   memset(fline, '\0', sizeof(fline));
 
   if(read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("read_sid_from_file: unable to read file %s. Error was %s\n",
+    DEBUG(0,("unable to read file %s. Error was %s\n",
            sid_file, strerror(errno) ));
     return False;
   }
@@ -658,7 +662,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
 
   fline[sizeof(fline)-1] = '\0';
   if(!string_to_sid( &global_machine_sid, fline)) {
-    DEBUG(0,("read_sid_from_file: unable to generate machine SID.\n"));
+    DEBUG(0,("unable to generate machine SID.\n"));
     return False;
   }
 
@@ -686,7 +690,7 @@ BOOL pdb_generate_machine_sid(void)
 
 	if (!directory_exist(sid_file, NULL)) {
 		if (dos_mkdir(sid_file, 0700) != 0) {
-			DEBUG(0,("generate_machine_sid: can't create private directory %s : %s\n",
+			DEBUG(0,("can't create private directory %s : %s\n",
 				 sid_file, strerror(errno)));
 			return False;
 		}
@@ -695,7 +699,7 @@ BOOL pdb_generate_machine_sid(void)
 	pstrcat(sid_file, "MACHINE.SID");
     
 	if((fd = open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("generate_machine_sid: unable to open or create file %s. Error was %s\n",
+		DEBUG(0,("unable to open or create file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		return False;
 	} 
@@ -705,7 +709,7 @@ BOOL pdb_generate_machine_sid(void)
 	 */
 	
 	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+		DEBUG(0,("unable to stat file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);
 		return False;
@@ -716,7 +720,7 @@ BOOL pdb_generate_machine_sid(void)
 		 * We have a valid SID - read it.
 		 */
 		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+			DEBUG(0,("unable to read file %s. Error was %s\n",
 				 sid_file, strerror(errno) ));
 			close(fd);
 			return False;
@@ -754,7 +758,7 @@ BOOL pdb_generate_machine_sid(void)
 	 */
 	
 	if(!string_to_sid( &global_machine_sid, sid_string)) {
-		DEBUG(0,("generate_machine_sid: unable to generate machine SID.\n"));
+		DEBUG(0,("unable to generate machine SID.\n"));
 		return False;
 	} 
   
@@ -763,7 +767,7 @@ BOOL pdb_generate_machine_sid(void)
 	 */
 	
 	if(!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("generate_machine_sid: unable to lock file %s. Error was %s\n",
+		DEBUG(0,("unable to lock file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);
 		return False;
@@ -777,7 +781,7 @@ BOOL pdb_generate_machine_sid(void)
 	 */
 	
 	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+		DEBUG(0,("unable to stat file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);
 		return False;
@@ -795,7 +799,7 @@ BOOL pdb_generate_machine_sid(void)
 		 */
 		
 		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+			DEBUG(0,("unable to read file %s. Error was %s\n",
 				 sid_file, strerror(errno) ));
 			close(fd);
 			return False;
@@ -810,14 +814,14 @@ BOOL pdb_generate_machine_sid(void)
 	 */
 	
 	if(fchmod(fd, 0644) < 0) {
-		DEBUG(0,("generate_machine_sid: unable to set correct permissions on file %s. \
+		DEBUG(0,("unable to set correct permissions on file %s. \
 Error was %s\n", sid_file, strerror(errno) ));
 		close(fd);
 		return False;
 	} 
 	
 	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("generate_machine_sid: unable to write file %s. Error was %s\n",
+		DEBUG(0,("unable to write file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		close(fd);
 		return False;
