@@ -1,3 +1,8 @@
+2000-11-15  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: make libeditline and libel_compat into libtool
+	libraries but always make them static
+
 2000-03-01  Assar Westerlund  <assar@sics.se>
 
 	* edit_compat.c (readline): be more liberal in what we accept from
