@@ -46,11 +46,62 @@ DOM_SID global_machine_sid;
  * 
  * password database writers are recommended to implement the sam_passwd
  * functions in a first pass, as struct sam_passwd contains more
- * information, needed by the NT Domain support.  lkcl.
+ * information, needed by the NT Domain support.
  * 
+ * a full example set of derivative functions are listed below.  an API
+ * writer is expected to cut/paste these into their module, replace
+ * either one set (struct smb_passwd) or the other (struct sam_passwd)
+ * OR both, and optionally also to write display info routines
+ * (struct sam_disp_info).  lkcl
+ *
  */
 
+#if 0
+static struct smb_passwd    *getPDBpwent        (void *vp)                              { return pdb_sam_to_smb(getPDB21pwent(vp)); } 
+static BOOL                  add_PDBpwd_entry   (struct smb_passwd *newpwd)             { return add_PDB21pwd_entry(pdb_smb_to_sam(newpwd)); } 
+static BOOL                  mod_PDBpwd_entry   (struct smb_passwd* pwd, BOOL override) { return mod_PDB21pwd_entry(pdb_smb_to_sam(pwd), override); } 
+static struct smb_passwd    *getPDBpwnam        (char *name)                            { return pdb_sam_to_smb(getPDB21pwnam(name)); } 
+static struct smb_passwd    *getPDBpwuid        (uid_t smb_userid)                      { return pdb_sam_to_smb(getPDB21pwuid(pdb_uid_to_user_rid(smb_userid))); } 
+
+static struct sam_passwd    *getPDB21pwent      (void *vp)                              { return pdb_smb_to_sam(getPDBpwent(vp)); } 
+static BOOL                  add_PDB21pwd_entry (struct sam_passwd *newpwd)             { return add_PDBpwd_entry(pdb_sam_to_smb(newpwd)); } 
+static BOOL                  mod_PDB21pwd_entry (struct sam_passwd* pwd, BOOL override) { return mod_PDBpwd_entry(pdb_sam_to_smb(pwd), override); } 
+static struct sam_passwd    *getPDB21pwnam      (char *name)                            { return pdb_smb_to_sam(getPDBpwnam(name)); } 
+static struct sam_passwd    *getPDB21pwrid      (uint32 rid)                            { return pdb_smb_to_sam(getPDBpwuid(pdb_user_rid_to_uid(rid))); } 
+static struct sam_passwd    *getPDB21pwuid      (uid_t uid)                             { return pdb_smb_to_sam(getPDBpwuid(uid)); } 
+
+static struct sam_disp_info *getPDBdispnam      (char *name)                            { return pdb_sam_to_dispinfo(getPDB21pwnam(name)); } 
+static struct sam_disp_info *getPDBdisprid      (uint32 rid)                            { return pdb_sam_to_dispinfo(getPDB21pwrid(rid)); } 
+static struct sam_disp_info *getPDBdispent      (void *vp)                              { return pdb_sam_to_dispinfo(getPDB21pwent(vp)); } 
+#endif /* 0 */
+
 static struct passdb_ops *pdb_ops;
+
+/***************************************************************
+ Initialize the password db operations.
+***************************************************************/
+
+BOOL initialize_password_db(void)
+{
+  if (pdb_ops)
+  {
+    return True;
+  }
+
+#ifdef USE_NISPLUS_DB
+  pdb_ops =  nisplus_initialize_password_db();
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
+  pdb_ops = ldap_initialize_password_db();
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+  pdb_ops = file_initialize_password_db();
+#endif /* USE_SMBPASS_DB */
+
+  return (pdb_ops != NULL);
+}
 
 /*
  * Functions that return/manipulate a struct smb_passwd.
@@ -123,32 +174,6 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 }
 
 /***************************************************************
- Initialize the password db operations.
-***************************************************************/
-
-BOOL initialize_password_db(void)
-{
-  if (pdb_ops)
-  {
-    return True;
-  }
-
-#ifdef USE_NISPLUS_DB
-  pdb_ops =  nisplus_initialize_password_db();
-#endif /* USE_NISPLUS_DB */
-
-#ifdef USE_LDAP_DB
-  pdb_ops = ldap_initialize_password_db();
-#endif /* USE_LDAP_DB */
-
-#ifdef USE_SMBPASS_DB
-  pdb_ops = file_initialize_password_db();
-#endif /* USE_SMBPASS_DB */
-
-  return (pdb_ops != NULL);
-}
-
-/***************************************************************
  Start to enumerate the smb or sam passwd list. Returns a void pointer
  to ensure no modification outside this module.
 
@@ -185,19 +210,7 @@ void endsmbpwent(void *vp)
 
 struct smb_passwd *getsmbpwent(void *vp)
 {
-	if (pdb_ops->getsmbpwent == NULL && pdb_ops->getsam21pwent == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsmbpwent: getsmbpwent() and getsam21pwent() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsmbpwent != NULL)
-	{
-		return pdb_ops->getsmbpwent(vp);
-	}
-	return pdb_sam_to_smb(pdb_ops->getsam21pwent(vp));
+	return pdb_ops->getsmbpwent(vp);
 }
 
 /*************************************************************************
@@ -238,19 +251,7 @@ BOOL setsmbpwpos(void *vp, unsigned long tok)
 
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 {
-	if (pdb_ops->add_smbpwd_entry == NULL && pdb_ops->add_sam21pwd_entry == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("add_smbpwd_entry: add_smbpwd_entry() and add_sam21pwd_entry() not supported!\n"));
-		return False;
-	}
-	if (pdb_ops->add_smbpwd_entry != NULL)
-	{
- 	 	return pdb_ops->add_smbpwd_entry(newpwd);
-	}
- 	return pdb_ops->add_sam21pwd_entry(pdb_smb_to_sam(newpwd));
+ 	return pdb_ops->add_smbpwd_entry(newpwd);
 }
 
 /************************************************************************
@@ -264,19 +265,7 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
-	if (pdb_ops->mod_smbpwd_entry == NULL && pdb_ops->mod_sam21pwd_entry == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("mod_smbpwd_entry: mod_smbpwd_entry() and mod_sam21pwd_entry() not supported!\n"));
-		return False;
-	}
-	if (pdb_ops->mod_smbpwd_entry != NULL)
-	{
- 	 	return pdb_ops->mod_smbpwd_entry(pwd, override);
-	}
- 	return pdb_ops->mod_sam21pwd_entry(pdb_smb_to_sam(pwd), override);
+ 	return pdb_ops->mod_smbpwd_entry(pwd, override);
 }
 
 /************************************************************************
@@ -285,19 +274,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
 struct smb_passwd *getsmbpwnam(char *name)
 {
-	if (pdb_ops->getsmbpwnam == NULL && pdb_ops->getsam21pwnam == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsmbpwnam: getsmbpwnam() and getsam21pwnam() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsam21pwnam != NULL)
-	{
-		return pdb_ops->getsmbpwnam(name);
-	}
-	return pdb_sam_to_smb(getsam21pwnam(name));
+	return pdb_ops->getsmbpwnam(name);
 }
 
 /************************************************************************
@@ -306,19 +283,7 @@ struct smb_passwd *getsmbpwnam(char *name)
 
 struct smb_passwd *getsmbpwuid(uid_t smb_userid)
 {
-	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsmbpwuid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsmbpwuid != NULL)
-	{
-		return pdb_ops->getsmbpwuid(smb_userid);
-	}
-	return pdb_sam_to_smb(pdb_ops->getsam21pwuid(pdb_uid_to_user_rid(smb_userid)));
+	return pdb_ops->getsmbpwuid(smb_userid);
 }
 
 /*
@@ -433,15 +398,19 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 }
 
 /*************************************************************************
+ Routine to return a display info structure, by name
+ *************************************************************************/
+struct sam_disp_info *getsamdispnam(char *name)
+{
+	return pdb_ops->getsamdispnam(name);
+}
+
+/*************************************************************************
  Routine to return a display info structure, by rid
  *************************************************************************/
 struct sam_disp_info *getsamdisprid(uint32 rid)
 {
-	if (pdb_ops->getsamdisprid != NULL)
-	{
-		return pdb_ops->getsamdisprid(rid);
-	}
-	return pdb_sam_to_dispinfo(pdb_ops->getsam21pwrid(rid));
+	return pdb_ops->getsamdisprid(rid);
 }
 
 /*************************************************************************
@@ -449,11 +418,7 @@ struct sam_disp_info *getsamdisprid(uint32 rid)
  *************************************************************************/
 struct sam_disp_info *getsamdispent(void *vp)
 {
-	if (pdb_ops->getsamdispent != NULL)
-	{
-		return pdb_ops->getsamdispent(vp);
-	}
-	return pdb_sam_to_dispinfo(pdb_ops->getsam21pwent(vp));
+	return pdb_ops->getsamdispent(vp);
 }
 
 /*************************************************************************
@@ -462,19 +427,7 @@ struct sam_disp_info *getsamdispent(void *vp)
 
 struct sam_passwd *getsam21pwent(void *vp)
 {
-	if (pdb_ops->getsmbpwent == NULL && pdb_ops->getsam21pwent == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsmbpwent: getsmbpwent() and getsam21pwent() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsam21pwent != NULL)
-	{
-		return pdb_ops->getsam21pwent(vp);
-	}
-	return pdb_smb_to_sam(pdb_ops->getsmbpwent(vp));
+	return pdb_ops->getsam21pwent(vp);
 }
 
 /************************************************************************
@@ -483,19 +436,7 @@ struct sam_passwd *getsam21pwent(void *vp)
 
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 {
-	if (pdb_ops->add_smbpwd_entry == NULL && pdb_ops->add_sam21pwd_entry == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("add_smbpwd_entry: add_smbpwd_entry() and add_sam21pwd_entry() not supported!\n"));
-		return False;
-	}
-	if (pdb_ops->add_sam21pwd_entry != NULL)
-	{
-		return pdb_ops->add_sam21pwd_entry(newpwd);
-	}
- 	return pdb_ops->add_smbpwd_entry(pdb_sam_to_smb(newpwd));
+	return pdb_ops->add_sam21pwd_entry(newpwd);
 }
 
 /************************************************************************
@@ -509,19 +450,7 @@ BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
-	if (pdb_ops->mod_smbpwd_entry == NULL && pdb_ops->mod_sam21pwd_entry == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("mod_smbpwd_entry: mod_smbpwd_entry() and mod_sam21pwd_entry() not supported!\n"));
-		return False;
-	}
-	if (pdb_ops->mod_sam21pwd_entry != NULL)
-	{
-		return pdb_ops->mod_sam21pwd_entry(pwd, override);
-	}
- 	return pdb_ops->mod_smbpwd_entry(pdb_sam_to_smb(pwd), override);
+	return pdb_ops->mod_sam21pwd_entry(pwd, override);
 }
 
 
@@ -531,19 +460,7 @@ BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 
 struct sam_passwd *getsam21pwnam(char *name)
 {
-	if (pdb_ops->getsmbpwnam == NULL && pdb_ops->getsam21pwnam == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsam21pwnam: getsmbpwnam() and getsam21pwnam() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsam21pwnam != NULL)
-	{
-		return pdb_ops->getsam21pwnam(name);
-	}
-	return pdb_smb_to_sam(getsmbpwnam(name));
+	return pdb_ops->getsam21pwnam(name);
 }
 
 /************************************************************************
@@ -552,19 +469,7 @@ struct sam_passwd *getsam21pwnam(char *name)
 
 struct sam_passwd *getsam21pwrid(uint32 rid)
 {
-	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsam21pwrid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsam21pwrid != NULL)
-	{
-		return pdb_ops->getsam21pwrid(rid);
-	}
-	return pdb_smb_to_sam(pdb_ops->getsmbpwuid(pdb_user_rid_to_uid(rid)));
+	return pdb_ops->getsam21pwrid(rid);
 }
 
 /************************************************************************
@@ -573,20 +478,10 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 
 struct sam_passwd *getsam21pwuid(uid_t uid)
 {
-	if (pdb_ops->getsmbpwuid == NULL && pdb_ops->getsam21pwrid == NULL)
-	{
-		/* must have one or the other: this is an error by the password
-		   database implementor for the back-end you are using.
-		 */
-		DEBUG(0,("getsam21pwuid: getsmbpwuid() and getsam21pwrid() not supported!\n"));
-		return NULL;
-	}
-	if (pdb_ops->getsam21pwuid != NULL)
-	{
-		return pdb_ops->getsam21pwuid(uid);
-	}
-	return pdb_smb_to_sam(pdb_ops->getsmbpwuid(uid));
+	return pdb_ops->getsam21pwuid(uid);
 }
+
+
 
 
 /**********************************************************
@@ -1143,3 +1038,4 @@ BOOL pdb_rid_is_user(uint32 rid)
    */
   return True;
 }
+

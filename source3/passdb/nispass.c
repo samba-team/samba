@@ -509,24 +509,70 @@ static struct sam_passwd *getnisp21pwrid(uint32 rid)
  * Derived functions for NIS+.
  */
 
+static struct smb_passwd *getnisppwent(void *vp)
+{
+	return pdb_sam_to_smb(getnisp21pwent(vp));
+}
+
+static BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
+{
+ 	return add_nisp21pwd_entry(pdb_smb_to_sam(newpwd));
+}
+
+static BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override)
+{
+ 	return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
+}
+
+static struct smb_passwd *getnisppwnam(char *name)
+{
+	return pdb_sam_to_smb(getnisp21pwnam(name));
+}
+
+static struct sam_passwd *getnisp21pwuid(uid_t smb_userid)
+{
+	return getnisp21pwrid(pdb_uid_to_user_rid(smb_userid));
+}
+
+static struct smb_passwd *getnisppwuid(uid_t smb_userid)
+{
+	return pdb_sam_to_smb(getnisp21pwuid(smb_userid));
+}
+
+static struct sam_disp_info *getnispdispnam(char *name)
+{
+	return pdb_sam_to_dispinfo(getnisp21pwnam(name));
+}
+
+static struct sam_disp_info *getnispdisprid(uint32 rid)
+{
+	return pdb_sam_to_dispinfo(getnisp21pwrid(rid));
+}
+
+static struct sam_disp_info *getnispdispent(void *vp)
+{
+	return pdb_sam_to_dispinfo(getnisp21pwent(vp));
+}
+
 static struct passdb_ops nispasswd_ops = {
   startnisppwent,
   endnisppwent,
   getnisppwpos,
   setnisppwpos,
-  NULL, /* getnispwnam, */
-  NULL, /* getnispwuid, */
-  NULL, /* getnispwent, */
-  NULL, /* add_nispwd_entry, */
-  NULL, /* mod_nispwd_entry, */
+  getnisppwnam,
+  getnisppwuid,
+  getnisppwent,
+  add_nisppwd_entry,
+  mod_nisppwd_entry,
   getnisp21pwent,
   getnisp21pwnam,
-  NULL, /* getsam21pwuid */          
+  getnisp21pwuid,
   getnisp21pwrid, 
   add_nisp21pwd_entry,
   mod_nisp21pwd_entry,
-  NULL, /* getsamdisprid */
-  NULL /* getsamdispent */
+  getnispdispnam,
+  getnispdisprid,
+  getnispdispent
 };
 
 struct passdb_ops *nisplus_initialize_password_db(void)
