@@ -67,7 +67,7 @@ typedef struct auth_serversupplied_info
 	
 	NT_USER_TOKEN *ptok;
 	
-	DATA_BLOB nt_session_key;
+	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 	
 	uint32 sam_fill_level;  /* How far is this structure filled? */

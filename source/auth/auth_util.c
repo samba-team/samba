@@ -912,7 +912,7 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 		
 		/* annoying, but the Guest really does have a session key, 
 		   and it is all zeros! */
-		(*server_info)->nt_session_key = data_blob(zeros, sizeof(zeros));
+		(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 		(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 	}
 
@@ -1276,9 +1276,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* ensure we are never given NULL session keys */
 	
 	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
-		(*server_info)->nt_session_key = data_blob(NULL, 0);
+		(*server_info)->user_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->nt_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
+		(*server_info)->user_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
 	}
 
 	if (memcmp(info3->padding, zeros, sizeof(zeros)) == 0) {
@@ -1330,7 +1330,7 @@ void free_server_info(auth_serversupplied_info **server_info)
 		SAFE_FREE((*server_info)->groups);
 		SAFE_FREE((*server_info)->unix_name);
 		data_blob_free(&(*server_info)->lm_session_key);
-		data_blob_free(&(*server_info)->nt_session_key);
+		data_blob_free(&(*server_info)->user_session_key);
 		ZERO_STRUCT(**server_info);
 	}
 	SAFE_FREE(*server_info);
