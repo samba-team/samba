@@ -1,3 +1,13 @@
+Mon Mar 29 20:19:57 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kdc/524.c: check that the ticket came from a valid address; use
+ 	the address of the connection as the address to put in the v4
+ 	ticket (if this address is AF_INET)
+
+	* kdc/connect.c: pass addr to do_524
+
+	* kdc/kdc_locl.h: prototype for do_524
+
 Sat Mar 27 17:48:31 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: check for OSF C2; bind/bitypes.h, getudbnam,
