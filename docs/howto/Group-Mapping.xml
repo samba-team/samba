@@ -56,15 +56,15 @@
 
 	<figure id="idmap-sid2gid"><title>IDMAP: group SID to GID resolution.</title>
 	<mediaobject>
-	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap-sid2gid" scale="50" scalefit="1"/></imageobject>
-	<imageobject><imagedata fileref="projdoc/imagefiles/idmap-sid2gid.png" scale="50" scalefit="1"/></imageobject>
+	<imageobject role="latex"><imagedata fileref="howto/imagefiles/idmap-sid2gid" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="howto/imagefiles/idmap-sid2gid.png" scale="50" scalefit="1"/></imageobject>
 	</mediaobject>
 	</figure>
 
 	<figure id="idmap-gid2sid"><title>IDMAP: GID resolution to matching SID.</title>
 	<mediaobject>
-	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap-gid2sid" scale="50" scalefit="1"/></imageobject>
-	<imageobject><imagedata fileref="projdoc/imagefiles/idmap-gid2sid.png" scale="50" scalefit="1"/></imageobject>
+	<imageobject role="latex"><imagedata fileref="howto/imagefiles/idmap-gid2sid" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="howto/imagefiles/idmap-gid2sid.png" scale="50" scalefit="1"/></imageobject>
 	</mediaobject>
 	</figure>
 
@@ -77,8 +77,8 @@
 
 	<figure id="idmap-store-gid2sid"><title>IDMAP storing group mappings.</title>
 	<mediaobject>
-	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap-store-gid2sid" scale="50" scalefit="1"/></imageobject>
-	<imageobject><imagedata fileref="projdoc/imagefiles/idmap-store-gid2sid.png" scale="50" scalefit="1"/></imageobject>
+	<imageobject role="latex"><imagedata fileref="howto/imagefiles/idmap-store-gid2sid" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="howto/imagefiles/idmap-store-gid2sid.png" scale="50" scalefit="1"/></imageobject>
 	</mediaobject>
 	</figure>
 
