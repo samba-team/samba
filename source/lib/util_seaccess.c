@@ -51,6 +51,32 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
 {
 	uint32 mask = ace->info.mask;
 
+#if 0
+
+	/* I think there is some aspect of inheritable ACEs that we don't
+	   understand.  A 'Manage Documents' permission has the following
+	   ACE entries (after generic mapping has been applied):
+
+	   S-1-5-21-1067277791-1719175008-3000797951-1033 0 9 0x000f000c
+	   S-1-5-21-1067277791-1719175008-3000797951-1033 0 2 0x00020000
+
+	   Now a user wanting to print calls se_access_check() with desired
+	   access PRINTER_ACCESS_USE (0x00000008).  This is only allowed if
+	   the inherit only ACE, flags & SEC_ACE_FLAG_INHERIT_ONLY (0x8) is
+	   checked.  A similar argument is used to explain how a user with
+	   'Full Control' permission can print.
+
+	   Having both the flags SEC_ACE_FLAG_INHERIT_ONLY and
+	   SEC_ACE_FLAG_OBJECT_INHERIT set in an ACE doesn't seem to make
+	   sense.  According to the MSDN, an inherit only ACE "indicates an
+	   [...] ACE which does not control access to the object to which
+	   it is attached" and an object inherit ACE for "non-container
+	   child objects [they] inherit the ACE as an effective ACE".
+	   These two flags don't seem to make sense when combined.  Does
+	   the object inherit override the inherit only flag?  We are also
+	   talking about access to a printer object, not a printer job so
+	   inheritance shouldn't even be involved.  -tpot */
+
 	/*
 	 * Inherit only is ignored.
 	 */
@@ -59,6 +85,7 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
 		return acc_desired;
 	}
 
+#endif
 
 	/*
 	 * If this ACE has no SID in common with the token,
@@ -159,13 +186,48 @@ static BOOL get_max_access( SEC_ACL *acl, NT_USER_TOKEN *token, uint32 *granted,
 	return True;
 }
 
-/*********************************************************************************
+/* Map generic access rights to object specific rights.  This technique is
+   used to give meaning to assigning read, write, execute and all access to
+   objects.  Each type of object has its own mapping of generic to object
+   specific access rights. */
+
+void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
+{
+	uint32 old_mask = *access_mask;
+
+	if (*access_mask & GENERIC_READ_ACCESS) {
+		*access_mask &= ~GENERIC_READ_ACCESS;
+		*access_mask |= mapping->generic_read;
+	}
+
+	if (*access_mask & GENERIC_WRITE_ACCESS) {
+		*access_mask &= ~GENERIC_WRITE_ACCESS;
+		*access_mask |= mapping->generic_write;
+	}
+
+	if (*access_mask & GENERIC_EXECUTE_ACCESS) {
+		*access_mask &= ~GENERIC_EXECUTE_ACCESS;
+		*access_mask |= mapping->generic_execute;
+	}
+
+	if (*access_mask & GENERIC_ALL_ACCESS) {
+		*access_mask &= ~GENERIC_ALL_ACCESS;
+		*access_mask |= mapping->generic_all;
+	}
+
+	if (old_mask != *access_mask) {
+		DEBUG(10, ("se_map_generic(): mapped mask 0x%08x to 0x%08x\n",
+			   old_mask, *access_mask));
+	}
+}
+
+/*****************************************************************************
  Check access rights of a user against a security descriptor.  Look at
  each ACE in the security descriptor until an access denied ACE denies
  any of the desired rights to the user or any of the users groups, or one
  or more ACEs explicitly grant all requested access rights.  See
  "Access-Checking" document in MSDN.
-**********************************************************************************/ 
+*****************************************************************************/ 
 
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
@@ -204,6 +266,11 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[0]) ));
 
+	for (i = 1; i < token->num_sids; i++) {
+		DEBUG(3, ("se_access_check: also %s\n",
+			  sid_to_string(sid_str, &token->user_sids[i])));
+	}
+
 	/* Is the token the owner of the SID ? */
 
 	if (sd->owner_sid) {
@@ -230,8 +297,8 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	for ( i = 0 ; i < acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &acl->ace[i];
 
-		DEBUG(10,("se_access_check: ACE %u: type %d, SID = %s mask = %x, current desired = %x\n",
-			  (unsigned int)i, ace->type,
+		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
+			  (unsigned int)i, ace->type, ace->flags,
 			  sid_to_string(sid_str, &ace->sid),
 			  (unsigned int) ace->info.mask, 
 			  (unsigned int)tmp_acc_desired ));
