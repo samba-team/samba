@@ -35,7 +35,7 @@
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-s configfile</arg>
 		<arg choice="opt">-P account-policy</arg>
-		<arg choice="opt">-V value</arg>
+		<arg choice="opt">-C value</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -287,13 +287,13 @@ account policy value for bad lockout attempt is 0
 		</varlistentry>
 
 		<varlistentry>
-		<term>-V account-policy-value</term>
+		<term>-C account-policy-value</term>
 		<listitem><para>Sets an account policy to a specified value. 
 		This option may only be used in conjunction
 		with the <parameter>-P</parameter> option.
 		</para>
 
-		<para>Example: <command>pdbedit -P "bad lockout attempt" -V 3</command></para>
+		<para>Example: <command>pdbedit -P "bad lockout attempt" -C 3</command></para>
 <para><programlisting>
 account policy value for bad lockout attempt was 0
 account policy value for bad lockout attempt is now 3
