@@ -1785,10 +1785,10 @@ static NTSTATUS cmd_spoolss_enum_jobs(struct cli_state *cli,
 	for (i = 0; i < num_jobs; i++) {
 		switch(level) {
 		case 1:
-			display_job_info_1(ctr.job.job_info_1[i]);
+			display_job_info_1(&ctr.job.job_info_1[i]);
 			break;
 		case 2:
-			display_job_info_2(ctr.job.job_info_2[i]);
+			display_job_info_2(&ctr.job.job_info_2[i]);
 			break;
 		default:
 			d_printf("unknown info level %d\n", level);
