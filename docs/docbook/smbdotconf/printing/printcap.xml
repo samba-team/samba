@@ -1,9 +1,0 @@
-<samba:parameter name="printcap"
-                 context="G"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>	
-    <para>Synonym for <link linkend="PRINTCAPNAME"><parameter moreinfo="none">
-    printcap name</parameter></link>.</para>
-</listitem>
-</samba:parameter>

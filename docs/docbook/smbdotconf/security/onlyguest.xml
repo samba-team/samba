@@ -1,8 +1,0 @@
-<samba:parameter name="only guest"
-                 context="S"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>A synonym for <link linkend="GUESTONLY"><parameter moreinfo="none">
-    guest only</parameter></link>.</para>
-</listitem>
-</samba:parameter>

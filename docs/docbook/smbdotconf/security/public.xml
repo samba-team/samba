@@ -1,9 +1,0 @@
-<samba:parameter name="public"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="GUESTOK"><parameter moreinfo="none">guest 
-    ok</parameter></link>.</para>
-</listitem>
-</samba:parameter>

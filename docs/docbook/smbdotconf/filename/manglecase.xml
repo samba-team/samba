@@ -1,9 +1,0 @@
-<samba:parameter name="mangle case"
-                 context="S"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>See the section on <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link></para>
-		
-	<para>Default: <command moreinfo="none">mangle case = no</command></para>
-</listitem>
-</samba:parameter>

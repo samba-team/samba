@@ -1,9 +1,0 @@
-<samba:parameter name="browsable"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>See the <link linkend="BROWSEABLE">
-	<parameter moreinfo="none">browseable</parameter></link>.</para>
-</listitem>
-</samba:parameter>
