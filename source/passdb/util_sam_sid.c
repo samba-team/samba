@@ -338,5 +338,5 @@ void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
 			return;
 	}
 
-	return add_sid_to_array(sid, sids, num_sids);
+	add_sid_to_array(sid, sids, num_sids);
 }
