@@ -1581,16 +1581,26 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
-
+	int count;
+	
 	if (ldapsam_search_one_user_by_name(ldap_state, sname, &result) != LDAP_SUCCESS) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
+	
+	count = ldap_count_entries(ldap_state->ldap_struct, result);
+	
+	if (count < 1) {
 		DEBUG(4,
 		      ("We don't find this user [%s] count=%d\n", sname,
-		       ldap_count_entries(ldap_state->ldap_struct, result)));
+		       count));
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (count > 1) {
+		DEBUG(1,
+		      ("Duplicate entries for this user [%s] Failing. count=%d\n", sname,
+		       count));
 		return NT_STATUS_NO_SUCH_USER;
 	}
+
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	if (entry) {
 		if (!init_sam_from_ldap(ldap_state, user, entry)) {
@@ -1616,15 +1626,23 @@ static NTSTATUS ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		(struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
+	int count;
 
 	if (ldapsam_search_one_user_by_rid(ldap_state, rid, &result) != LDAP_SUCCESS) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
+	count = ldap_count_entries(ldap_state->ldap_struct, result);
+		
+	if (count < 1) {
 		DEBUG(4,
 		      ("We don't find this rid [%i] count=%d\n", rid,
-		       ldap_count_entries(ldap_state->ldap_struct, result)));
+		       count));
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (count > 1) {
+		DEBUG(1,
+		      ("More than one user with rid [%i]. Failing. count=%d\n", rid,
+		       count));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
