@@ -445,11 +445,7 @@ LSA SAM Logon - interactive or network.
 BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
 	BOOL ok = True;
-#if 0 /* JRATEST */
-	uint16 validation_level=2;
-#else
 	uint16 validation_level=3;
-#endif
 	uint32 ret_err_code;
 
 	ret_err_code = cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level);
