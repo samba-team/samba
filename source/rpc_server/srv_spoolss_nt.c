@@ -1033,7 +1033,7 @@ static void spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data,
 static void spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] =   PRINTER_ATTRIBUTE_SHARED   \
-	                             | PRINTER_ATTRIBUTE_NETWORK  \
+	                             | PRINTER_ATTRIBUTE_LOCAL  \
 				     | PRINTER_ATTRIBUTE_RAW_ONLY ;
 }
 
@@ -1796,10 +1796,10 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-#if 1 /* JRATEST */
-	snprintf(adevice, sizeof(adevice), "%s", ntdevmode->devicename);
+#if 0 /* JRATEST */
+	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, ntdevmode->devicename);
 #else /* JRATEST */
-	snprintf(adevice, sizeof(adevice), "%s", printer->info_2->printername);
+	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, printer->info_2->printername);
 #endif /* JRATEST */
 	init_unistr(&devmode->devicename, adevice);
 
