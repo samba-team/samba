@@ -1,5 +1,7 @@
 2003-12-07  Love Hörquist Åstrand  <lha@it.su.se>
 
+	* init.c (create_random_entry): print error message on failure
+	
 	* ank.c (add_one_principal): pass right argument to
 	kadm5_free_principal_ent From Panasas, Inc
 	
