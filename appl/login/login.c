@@ -142,9 +142,7 @@ otp_verify(struct passwd *pwd, const char *password)
 #endif /* OTP */
 
 
-#ifdef KRB4
 static int pag_set = 0;
-#endif
 
 #ifdef KRB5
 static krb5_context context;
