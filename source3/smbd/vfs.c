@@ -334,7 +334,7 @@ BOOL smbd_vfs_init(connection_struct *conn)
 		handle->handle = NULL;
 		DLIST_ADD(conn->vfs_private, handle);
 		vfs_module = NULL;
-		if (vfs_path) {
+		if (vfs_path && *vfs_path) {
 			asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[j]);
 		} else {
 			asprintf(&vfs_module, "%s", vfs_objects[j]);
