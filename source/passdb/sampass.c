@@ -68,6 +68,7 @@ static BOOL string_empty (const char *str)
   return str == NULL || *str == '\0';
 }
 
+  
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
  this function is a nice, messy combination of reading:
@@ -79,7 +80,10 @@ static BOOL string_empty (const char *str)
 static struct sam_passwd *getsamfile21pwent(void *vp)
 {
 	struct sam_passwd *user;
+	user_struct bogus_user_struct;
+#if 0
 	user_struct *vuser;
+#endif
 
 	static pstring full_name;
 	static pstring home_dir;
@@ -91,6 +95,8 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	DEBUG(5,("getsamfile21pwent\n"));
 
+        ZERO_STRUCT(bogus_user_struct);
+
 	user = pwdb_smb_to_sam(getsmbfilepwent(vp));
 	if (user == NULL)
 	{
@@ -101,17 +107,25 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	 * get all the other gubbins we need.  substitute unix name for %U
 	 */
 
+#if 0
 	vuser = get_valid_user_struct(get_sec_ctx());
+#endif
 
-	pstrcpy(full_name    , "");
-	pstrcpy(logon_script , lp_logon_script       (vuser));
-	pstrcpy(profile_path , lp_logon_path         (vuser));
-	pstrcpy(home_drive   , lp_logon_drive        (vuser));
-	pstrcpy(home_dir     , lp_logon_home         (vuser));
-	pstrcpy(acct_desc    , "");
-	pstrcpy(workstations , "");
+	/* HACK to make %U work in substitutions below */
+	fstrcpy(bogus_user_struct.requested_name, user->nt_name);
+	fstrcpy(bogus_user_struct.name          , user->unix_name);
+ 
+  	pstrcpy(full_name    , "");
+ 	pstrcpy(logon_script , lp_logon_script (&bogus_user_struct));
+ 	pstrcpy(profile_path , lp_logon_path (&bogus_user_struct));
+ 	pstrcpy(home_drive   , lp_logon_drive (&bogus_user_struct));
+ 	pstrcpy(home_dir     , lp_logon_home (&bogus_user_struct));
+  	pstrcpy(acct_desc    , "");
+  	pstrcpy(workstations , "");
 
+#if 0
 	vuid_free_user_struct(vuser);
+#endif
 
 	/* 
 	   only overwrite values with defaults IIF specific backend
