@@ -768,7 +768,7 @@ static void usage(void)
 					password, 0);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
+		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		return 1;
 	}
 
