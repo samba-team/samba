@@ -295,10 +295,6 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p,
 	struct fd_event fde;
 	NTSTATUS status;
 
-	if (port == 0) {
-		port = EPMAPPER_PORT;
-	}
-
 	if (!(*p = dcerpc_pipe_init())) {
                 return NT_STATUS_NO_MEMORY;
 	}
