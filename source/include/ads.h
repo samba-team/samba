@@ -17,6 +17,7 @@ typedef struct {
 	char *password;
 	char *user_name;
 	char *server_realm;
+	struct in_addr ldap_ip;
 } ADS_STRUCT;
 
 typedef struct {

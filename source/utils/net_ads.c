@@ -67,6 +67,7 @@ static int net_ads_info(int argc, const char **argv)
 	}
 
 	d_printf("LDAP server: %s\n", ads->ldap_server);
+	d_printf("LDAP server IP: %s\n", inet_ntoa(ads->ldap_ip));
 	d_printf("LDAP server name: %s\n", ads->ldap_server_name);
 	d_printf("Realm: %s\n", ads->realm);
 	d_printf("Bind Path: %s\n", ads->bind_path);

@@ -162,12 +162,18 @@ ADS_STRUCT *ads_init(const char *realm,
 			ads->ldap_server = strdup(lp_ads_server());
 		}
 		if (!ads->ldap_server || !ads->ldap_server[0]) {
+			SAFE_FREE(ads->ldap_server);
 			ads->ldap_server = find_ldap_server(ads);
 		}
 	}
 	if (!ads->kdc_server) {
 		/* assume its the same as LDAP */
 		ads->kdc_server = ads->ldap_server? strdup(ads->ldap_server) : NULL;
+	}
+
+	if (ads->ldap_server) {
+		/* its very useful knowing the IP of the ldap server */
+		ads->ldap_ip = *interpret_addr2(ads->ldap_server);
 	}
 
 	return ads;
