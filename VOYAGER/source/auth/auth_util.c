@@ -854,21 +854,22 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	SAM_ACCOUNT *sampass = NULL;
-	DOM_SID guest_sid;
+	const char *name = lp_guestaccount();
+	BOOL ret;
+
+	if ((name == NULL) || (*name == '\0'))
+		return NT_STATUS_NO_SUCH_USER;
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
 		return nt_status;
 	}
 
-	sid_copy(&guest_sid, get_global_sam_sid());
-	sid_append_rid(&guest_sid, DOMAIN_USER_RID_GUEST);
-
 	become_root();
-	if (!pdb_getsampwsid(sampass, &guest_sid)) {
-		unbecome_root();
-		return NT_STATUS_NO_SUCH_USER;
-	}
+	ret = pdb_getsampwnam(sampass, name);
 	unbecome_root();
+
+	if (!ret)
+		return NT_STATUS_NO_SUCH_USER;
 
 	nt_status = make_server_info_sam(server_info, sampass);
 

@@ -373,31 +373,6 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 	pdb_set_domain(account, lp_workgroup(), PDB_CHANGED);
 }
 
-static char *invent_username(TALLOC_CTX *mem_ctx, char *ntname)
-{
-	/* First attempt: Complete random stuff */
-	fstring username;
-	int attempts=5;
-	struct passwd *pwd;
-
-	do {
-		fstr_sprintf(username, "u%s", generate_random_alnum(7));
-		pwd = getpwnam(username);
-
-		d_printf("Trying user name %s -- %s\n",
-			 username, pwd == NULL ? "ok" : "exists - next one");
-
-		attempts -= 1;
-
-		if (attempts == 0) {
-			d_printf("Did not find user name\n");
-			return NULL;
-		}
-	} while (pwd != NULL);
-
-	return talloc_strdup(mem_ctx, username);
-}
-
 static BOOL fetch_account_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
 			       uint32 rid, SAM_ACCOUNT_INFO *delta)
 {
@@ -478,7 +453,7 @@ static BOOL fetch_account_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
 	}
 
 	if ((pwd = getpwnam(unix_name)) == NULL) {
-		d_printf("User created, but not there\n");
+		d_printf("User %s created, but not there\n", unix_name);
 		return False;
 	}
 
@@ -511,31 +486,6 @@ static BOOL fetch_account_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
 
 	pdb_free_sam(&sam_account);
 	return True;
-}
-
-static char *invent_groupname(TALLOC_CTX *mem_ctx, char *ntname)
-{
-	/* First attempt: Complete random stuff */
-	fstring groupname;
-	int attempts=5;
-	struct group *grp;
-
-	do {
-		fstr_sprintf(groupname, "g%s", generate_random_alnum(7));
-		grp = getgrnam(groupname);
-
-		d_printf("Trying group name %s -- %s\n",
-			 groupname, grp == NULL ? "ok" : "exists - next one");
-
-		attempts -= 1;
-
-		if (attempts == 0) {
-			d_printf("Did not find group name\n");
-			return NULL;
-		}
-	} while (grp != NULL);
-
-	return talloc_strdup(mem_ctx, groupname);
 }
 
 static BOOL fetch_group_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,

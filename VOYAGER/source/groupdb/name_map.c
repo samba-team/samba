@@ -74,10 +74,14 @@ BOOL nt_to_unix_name(TALLOC_CTX *mem_ctx, const char *nt_name,
 
 	asprintf(&key, "%s%s", NAME_PREFIX, lcname);
 
+	SAFE_FREE(lcname);
+
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb, kbuf);
+
+	SAFE_FREE(key);
 
 	if (!dbuf.dptr)
 		return False;
@@ -85,8 +89,6 @@ BOOL nt_to_unix_name(TALLOC_CTX *mem_ctx, const char *nt_name,
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", tmp_ntname,
 			 tmp_unixname, is_user);
 
-	SAFE_FREE(lcname);
-	SAFE_FREE(key);
 	SAFE_FREE(dbuf.dptr);
 
 	if (ret > 0) {
