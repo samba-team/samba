@@ -1032,6 +1032,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
 	char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	unsigned acct_control;
 
 	if (!(ctx = talloc_init_named("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1061,9 +1062,12 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 
 	if (!(samAccountName = talloc_asprintf(ctx, "%s$", hostname)))
 		goto done;
-	if (!(controlstr = talloc_asprintf(ctx, "%u", 
-		   UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT | 
-		   UF_TRUSTED_FOR_DELEGATION | UF_USE_DES_KEY_ONLY)))
+
+	acct_control = UF_WORKSTATION_TRUST_ACCOUNT | UF_DONT_EXPIRE_PASSWD;
+#ifndef ENCTYPE_ARCFOUR_HMAC
+	acct_control |= UF_USE_DES_KEY_ONLY;
+#endif
+	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control)))
 		goto done;
 
 	if (!(mods = ads_init_mods(ctx)))
