@@ -22,6 +22,7 @@ PROGS = telnet$(EXECSUFFIX)
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+libdir = @libdir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
 

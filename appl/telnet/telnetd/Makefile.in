@@ -22,6 +22,7 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+libdir = @libdir@
 libexecdir = @libexecdir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
