@@ -788,6 +788,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
+					file_free(fsp);
+					restore_case_semantics(file_attributes);
 					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
@@ -1111,6 +1113,8 @@ static int call_nt_transact_create(connection_struct *conn,
 			 */
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
 				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 			}
