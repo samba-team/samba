@@ -142,7 +142,7 @@ void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 	hdr->minor        = 0;               /* minor version 0 */
 	hdr->pkt_type     = 2;               /* RPC response packet */
 	hdr->frag         = 3;               /* first frag + last frag */
-	hdr->pack_type    = 1;               /* packed data representation */
+	hdr->pack_type    = 0x10;            /* packed data representation */
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = 0;               /* authentication length */
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
@@ -154,7 +154,7 @@ void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 
 int make_rpc_reply(char *inbuf, char *q, int data_len)
 {
-	uint32 callid = RIVAL(inbuf, 12);
+	uint32 callid = IVAL(inbuf, 12);
 	RPC_HDR hdr;
 
 	create_rpc_reply(&hdr, callid, data_len);

@@ -71,9 +71,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 	DEBUG(5,("%s%04x smb_io_dom_sid\n",  tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
-	q = align_offset(q, base, align);
-	
-	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
+	DBG_RW_IVAL("num_auths ", depth, base, io, q, sid->num_auths); q += 4;
 	DBG_RW_CVAL("sid_no    ", depth, base, io, q, sid->sid_no); q++; 
 	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
 
@@ -87,7 +85,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 	/* oops! XXXX should really issue a warning here... */
 	if (sid->num_auths > MAXSUBAUTHS) sid->num_auths = MAXSUBAUTHS;
 
-	DBG_RW_PSVAL("num_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 2;
+	DBG_RW_PIVAL("num_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 4;
 
 	return q;
 }
