@@ -483,6 +483,15 @@ AC_ARG_WITH(readline,
 AC_SUBST(TERMLIBS)
 AC_SUBST(TERMLDFLAGS)
 
+# The readline API changed slightly from readline3 to readline4, so
+# code will generate warnings on one of them unless we have a few
+# special cases.
+AC_CHECK_LIB(readline, rl_completion_matches,
+	     [AC_DEFINE(HAVE_NEW_LIBREADLINE, 1, 
+			[Do we have rl_completion_matches?])],
+	     [],
+	     [$TERMLIBS])
+
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 # The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
