@@ -1280,6 +1280,31 @@ static int net_ads_test(int argc, const char **argv)
 		return -1;
 	}
 
+	{
+		const char *mod =
+			"dn: cn=kuhlmann,dc=samba,dc=org\n"
+			"changetype: modify\n"
+			"replace: loginShell\n"
+			"loginShell: /bin/bash\n"
+			"-\n"
+			"add: telephoneNumber\n"
+			"telephoneNumber: 12345\n";
+
+		msg = ldap_ldif2msg(mod);
+
+		if (msg == NULL) {
+			d_printf("could not convert ldif\n");
+			return -1;
+		}
+
+		if ((result = ldap_transaction(conn, msg)) == NULL) {
+			d_printf("Could not modify\n");
+			return -1;
+		}
+		destroy_ldap_message(msg);
+		destroy_ldap_message(result);
+	}
+		
 	msg = new_ldap_message();
 
 	msg->type = LDAP_TAG_SearchRequest;
@@ -1312,7 +1337,8 @@ static int net_ads_test(int argc, const char **argv)
 			int j;
 			d_printf(" %s\n", r->attributes[i].name);
 			for (j=0; j<r->attributes[i].num_values; j++) {
-				d_printf("  %s\n", r->attributes[i].values[j]);
+				d_printf("  %s\n",
+					 r->attributes[i].values[j].data);
 			}
 		}
 	}

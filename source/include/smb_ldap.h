@@ -60,7 +60,7 @@ struct ldap_Result {
 struct ldap_attribute {
 	const char *name;
 	int num_values;
-	const char **values;
+	DATA_BLOB *values;
 };
 
 struct ldap_BindRequest {
@@ -123,6 +123,7 @@ struct ldap_SearchResRef {
 };
 
 enum ldap_modify_type {
+	LDAP_MODIFY_NONE = -1,
 	LDAP_MODIFY_ADD = 0,
 	LDAP_MODIFY_DELETE = 1,
 	LDAP_MODIFY_REPLACE = 2
@@ -130,9 +131,7 @@ enum ldap_modify_type {
 
 struct ldap_mod {
 	enum ldap_modify_type type;
-	const char *attribute;
-	int num_values;
-	const char **values;
+	struct ldap_attribute attrib;
 };
 
 struct ldap_ModifyRequest {
