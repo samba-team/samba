@@ -43,7 +43,7 @@ static BOOL masked_match(const char *tok, const char *slash, const char *s)
 		return (False);
 	}
 	
-	return ((addr & mask) == net);
+	return ((addr & mask) == (net & mask));
 }
 
 /* string_match - match string against token */
