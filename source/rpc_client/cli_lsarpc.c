@@ -264,7 +264,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 		if (p && r_l.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("LSA_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_l.status)));
+			DEBUG(1,("LSA_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_l.status)));
 			p = False;
 		}
 
@@ -390,10 +390,10 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 		lsa_io_r_lookup_sids("", &r_l, &rbuf, 0);
 		p = rbuf.offset != 0;
 		
-		if (p && r_l.status != 0)
+		if (p && r_l.status != 0 && r_l.status != 0x107)
 		{
 			/* report error code */
-			DEBUG(0,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
+			DEBUG(1,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
 			p = False;
 		}
 

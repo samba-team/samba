@@ -21,7 +21,6 @@
 */
 
 
-
 #ifdef SYSLOG
 #undef SYSLOG
 #endif
@@ -33,11 +32,10 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
-extern int smb_tidx;
-
 extern FILE* out_hnd;
 
+extern struct cli_state *smb_cli;
+extern int smb_tidx;
 
 /****************************************************************************
 nt lsa query
@@ -93,25 +91,25 @@ void cmd_lsa_query_info(struct client_info *info)
 		fstring sid;
 		DEBUG(5,("cmd_lsa_query_info: query succeeded\n"));
 
-		fprintf(out_hnd, "LSA Query Info Policy\n");
+		report(out_hnd, "LSA Query Info Policy\n");
 
 		if (info->dom.level3_dom[0] != 0)
 		{
 			sid_to_string(sid, &info->dom.level3_sid);
-			fprintf(out_hnd, "Domain Member     - Domain: %s SID: %s\n",
+			report(out_hnd, "Domain Member     - Domain: %s SID: %s\n",
 				info->dom.level3_dom, sid);
 			domain_something = True;
 		}
 		if (info->dom.level5_dom[0] != 0)
 		{
 			sid_to_string(sid, &info->dom.level5_sid);
-			fprintf(out_hnd, "Domain Controller - Domain: %s SID: %s\n",
+			report(out_hnd, "Domain Controller - Domain: %s SID: %s\n",
 				info->dom.level5_dom, sid);
 			domain_something = True;
 		}
 		if (!domain_something)
 		{
-			fprintf(out_hnd, "%s is not a Domain Member or Controller\n",
+			report(out_hnd, "%s is not a Domain Member or Controller\n",
 			    info->dest_host);
 		}
 	}
@@ -154,7 +152,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 
 	if (num_names == 0)
 	{
-		fprintf(out_hnd, "lookupnames <name> [<name> ...]\n");
+		report(out_hnd, "lookupnames <name> [<name> ...]\n");
 		return;
 	}
 
@@ -188,11 +186,11 @@ void cmd_lsa_lookup_names(struct client_info *info)
 
 	if (sids != NULL)
 	{
-		fprintf(out_hnd,"Lookup Names:\n");
+		report(out_hnd, "Lookup Names:\n");
 		for (i = 0; i < num_sids; i++)
 		{
 			sid_to_string(temp, &sids[i]);
-			fprintf(out_hnd, "SID: %s -> %s\n", names[i], temp);
+			report(out_hnd, "SID: %s -> %s\n", names[i], temp);
 #if 0
 			if (sids[i] != NULL)
 			{
@@ -248,7 +246,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 
 			if (sid_name[0] == 0)
 			{
-				fprintf(out_hnd, "please use lsaquery first or specify a complete SID\n");
+				report(out_hnd, "please use lsaquery first or specify a complete SID\n");
 				return;
 			}
 				
@@ -262,7 +260,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 
 	if (num_sids == 0)
 	{
-		fprintf(out_hnd, "lookupsid RID or SID\n");
+		report(out_hnd, "lookupsid RID or SID\n");
 		return;
 	}
 
@@ -295,11 +293,11 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	}
 	if (names != NULL)
 	{
-		fprintf(out_hnd,"Lookup SIDS:\n");
+		report(out_hnd, "Lookup SIDS:\n");
 		for (i = 0; i < num_names; i++)
 		{
 			sid_to_string(temp, sids[i]);
-			fprintf(out_hnd, "SID: %s -> %s\n", temp, names[i]);
+			report(out_hnd, "SID: %s -> %s\n", temp, names[i]);
 			if (names[i] != NULL)
 			{
 				free(names[i]);
@@ -329,7 +327,7 @@ void cmd_lsa_query_secret(struct client_info *info)
 
 	if (!next_token(NULL, secret_name, NULL, sizeof(secret_name)))
 	{
-		fprintf(out_hnd, "querysecret <secret name>\n");
+		report(out_hnd, "querysecret <secret name>\n");
 		return;
 	}
 
@@ -350,7 +348,7 @@ void cmd_lsa_query_secret(struct client_info *info)
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
 				&info->dom.lsa_info_pol,
-				secret_name, 0x20003, &hnd_secret) : False;
+				secret_name, 0xf003f, &hnd_secret) : False;
 
 	res2 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
 			       &hnd_secret, &enc_secret, &last_update) : False;
@@ -364,18 +362,18 @@ void cmd_lsa_query_secret(struct client_info *info)
 
 	if (res2 && nt_decrypt_string2(&secret, &enc_secret, smb_cli->pwd.smb_nt_pwd))
 	{
-		fprintf(out_hnd, "\tValue       : ");
+		report(out_hnd, "\tValue       : ");
 		for (i = 0; i < secret.str_str_len; i++)
 		{
-			fprintf(out_hnd, "%02X", secret.buffer[i]);
+			report(out_hnd, "%02X", secret.buffer[i]);
 		}
 
-		fprintf(out_hnd, "\n\tLast Updated: %s\n\n",
+		report(out_hnd, "\n\tLast Updated: %s\n\n",
 			http_timestring(nt_time_to_unix(&last_update)));
 	}
 	else
 	{
-		fprintf(out_hnd, "LSA Query Secret: failed\n");
+		report(out_hnd, "LSA Query Secret: failed\n");
 	}
 }
 

@@ -160,7 +160,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: %s\n", get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
