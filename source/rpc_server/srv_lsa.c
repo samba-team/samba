@@ -586,16 +586,14 @@ static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rda
 static BOOL api_lsa_close( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata)
 {
-	/* XXXX this is NOT good */
-	size_t i;
-	uint32 dummy = 0;
+	LSA_R_CLOSE r_c;
 
-	for(i =0; i < 5; i++) {
-		if(!prs_uint32("api_lsa_close", rdata, 1, &dummy)) {
-			DEBUG(0,("api_lsa_close: prs_uint32 %d failed.\n",
-				(int)i ));
-			return False;
-		}
+	ZERO_STRUCT(r_c);
+
+	/* store the response in the SMB stream */
+	if (!lsa_io_r_close("", &r_c, rdata, 0)) {
+		DEBUG(0,("api_lsa_close: lsa_io_r_close failed.\n"));
+		return False;
 	}
 
 	return True;
