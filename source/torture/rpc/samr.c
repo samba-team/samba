@@ -63,9 +63,26 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QuerySecurity r;
+	struct samr_SetSecurity s;
 
 	r.in.handle = handle;
 	r.in.sec_info = 7;
+
+	status = dcerpc_samr_QuerySecurity(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QuerySecurity failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	s.in.handle = handle;
+	s.in.sec_info = 7;
+	s.in.sdbuf = r.out.sdbuf;
+
+	status = dcerpc_samr_SetSecurity(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetSecurity failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	status = dcerpc_samr_QuerySecurity(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

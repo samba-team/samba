@@ -31,15 +31,20 @@
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS samr_SetSecurity ();
-
-	/******************/
-	/* Function: 0x03 */
 
 	typedef struct {
 		[value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} samr_SdBuf;
+
+	NTSTATUS samr_SetSecurity (
+		[in,ref]          policy_handle *handle,
+		[in]              uint32 sec_info,
+		[in,ref]          samr_SdBuf *sdbuf
+		);
+
+	/******************/
+	/* Function: 0x03 */
 
 	NTSTATUS samr_QuerySecurity (
 		[in,ref]          policy_handle *handle,
