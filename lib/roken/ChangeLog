@@ -1,3 +1,14 @@
+2003-04-14  Love  <lha@stacken.kth.se>
+
+	* strncasecmp.c: cast argument to toupper to unsigned char, from
+	Christian Biere <christianbiere@gmx.de> via NetBSD
+	
+	* strlwr.c: cast argument to tolower to unsigned char, from
+	Christian Biere <christianbiere@gmx.de> via NetBSD
+	
+	* strcasecmp.c: cast argument to toupper to unsigned char, from
+	Christian Biere <christianbiere@gmx.de> via NetBSD
+	
 2003-03-19  Love  <lha@stacken.kth.se>
 
 	* getarg.3: spelling, from <jmc@prioris.mini.pw.edu.pl>
