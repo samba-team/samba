@@ -115,7 +115,7 @@ krb5_string_to_key (char *str,
      memset (s, 0, len);
      strncpy (p, str, strlen(str));
      p += strlen(str);
-     strncpy (p, salt->data, salt->length);
+     memcpy (p, salt->data, salt->length);
      odd = 1;
      memset (tempkey, 0, sizeof(tempkey));
      for (i = 0; i < len; i += 8) {
@@ -139,6 +139,8 @@ krb5_string_to_key (char *str,
      if (des_is_weak_key (&tempkey))
 	 xor ((unsigned char *)&tempkey, (unsigned char*)"0x000x000x000x000x000x000x000xF0");
      memcpy (key->contents.data, &tempkey, sizeof(tempkey));
+     key->keytype = KEYTYPE_DES;
+     key->contents.length = sizeof(tempkey);
      return 0;
 }
 
