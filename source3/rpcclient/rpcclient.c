@@ -3,6 +3,7 @@
    RPC pipe client
 
    Copyright (C) Tim Potter 2000-2001
+   Copyright (C) Martin Pool 2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +25,12 @@
 
 DOM_SID domain_sid;
 
-/* List to hold groups of commands */
+
+/* List to hold groups of commands.
+ *
+ * Commands are defined in a list of arrays: arrays are easy to
+ * statically declare, and lists are easier to dynamically extend.
+ */
 
 static struct cmd_list {
 	struct cmd_list *prev, *next;
@@ -164,21 +170,31 @@ static char* next_command (char** cmdstr)
 	if (p)
 		*p = '\0';
 	pstrcpy(command, *cmdstr);
-	*cmdstr = p;
+	if (p)
+		*cmdstr = p + 1;
+	else
+		*cmdstr = NULL;
 	
 	return command;
 }
 
+
+/**
+ * Find default username from environment variables.
+ *
+ * @param username fstring to receive username; not touched if none is
+ * known.
+ **/
 static void get_username (char *username)
 {
         if (getenv("USER"))
-                pstrcpy(username,getenv("USER"));
+                fstrcpy(username,getenv("USER"));
  
         if (*username == 0 && getenv("LOGNAME"))
-                pstrcpy(username,getenv("LOGNAME"));
+                fstrcpy(username,getenv("LOGNAME"));
  
         if (*username == 0) {
-                pstrcpy(username,"GUEST");
+                fstrcpy(username,"GUEST");
         }
 
 	return;
@@ -243,7 +259,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 /* List the available commands on a given pipe */
 
 static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+				 int argc, const char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -288,7 +304,7 @@ static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Display help on commands */
 
 static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+                         int argc, const char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -348,7 +364,7 @@ static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Change the debug level */
 
 static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                               int argc, char **argv)
+                               int argc, const char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -365,13 +381,13 @@ static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+                         int argc, const char **argv)
 {
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
 }
 
-/* Build in rpcclient commands */
+/* Built in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
 
@@ -432,145 +448,105 @@ static void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, 
-                       char *cmd)
+
+/**
+ * Call an rpcclient function, passing an argv array.
+ *
+ * @param cmd Command to run, as a single string.
+ **/
+static NTSTATUS do_cmd(struct cli_state *cli,
+		       struct cmd_set *cmd_entry,
+		       int argc, char **argv)
 {
-	char **argv = NULL;
-	const char *p = cmd;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	pstring buf;
-	int argc = 0, i;
+	NTSTATUS result;
+	
+	TALLOC_CTX *mem_ctx;
 
-	/* Count number of arguments first time through the loop then
-	   allocate memory and strdup them. */
+	/* Create mem_ctx */
 
- again:
-	while(next_token(&p, buf, " ", sizeof(buf))) {
-		if (argv) {
-			argv[argc] = strdup(buf);
-		}
-		
-		argc++;
-	}
-				
-	if (!argv) {
-
-		/* Create argument list */
-
-		argv = (char **)malloc(sizeof(char *) * argc);
-                memset(argv, 0, sizeof(char *) * argc);
-
-		if (!argv) {
-			fprintf(stderr, "out of memory\n");
-			result = NT_STATUS_NO_MEMORY;
-                        goto done;
-		}
-					
-		p = cmd;
-		argc = 0;
-					
-		goto again;
+	if (!(mem_ctx = talloc_init("do_cmd"))) {
+		DEBUG(0, ("talloc_init() failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Call the function */
+	/* Open pipe */
 
-	if (cmd_entry->fn) {
-                TALLOC_CTX *mem_ctx;
+	if (cmd_entry->pipe_idx != -1)
+		if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
+			DEBUG(0, ("Could not initialize pipe\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
-                /* Create mem_ctx */
+	/* Run command */
 
-                if (!(mem_ctx = talloc_init("do_cmd"))) {
-                        DEBUG(0, ("talloc_init() failed\n"));
-                        goto done;
-                }
+	result = cmd_entry->fn(cli, mem_ctx, argc, (const char **) argv);
 
-                /* Open pipe */
-
-                if (cmd_entry->pipe_idx != -1)
-                        if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
-                                DEBUG(0, ("Could not initialise pipe\n"));
-                                goto done;
-                        }
-
-                /* Run command */
-
-                result = cmd_entry->fn(cli, mem_ctx, argc, argv);
-
-                /* Cleanup */
-
-                if (cmd_entry->pipe_idx != -1)
-                        cli_nt_session_close(cli);
-
-                talloc_destroy(mem_ctx);
-
-	} else {
-		fprintf (stderr, "Invalid command\n");
-                goto done;
-        }
-
- done:
-						
 	/* Cleanup */
 
-        if (argv) {
-                for (i = 0; i < argc; i++)
-                        SAFE_FREE(argv[i]);
-	
-                SAFE_FREE(argv);
-        }
-	
+	if (cmd_entry->pipe_idx != -1)
+		cli_nt_session_close(cli);
+
+	talloc_destroy(mem_ctx);
+
 	return result;
 }
 
-/* Process a command entered at the prompt or as part of -c */
 
+/**
+ * Process a command entered at the prompt or as part of -c
+ *
+ * @returns The NTSTATUS from running the command.
+ **/
 static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 {
 	struct cmd_list *temp_list;
-	BOOL found = False;
-	pstring buf;
-	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
-	int len = 0;
+	int ret;
+	int argc;
+	char **argv = NULL;
 
-	if (cmd[strlen(cmd) - 1] == '\n')
-		cmd[strlen(cmd) - 1] = '\0';
-
-	if (!next_token(&p, buf, " ", sizeof(buf))) {
-		return NT_STATUS_OK;
+	if ((ret = poptParseArgvString(cmd, &argc, (const char ***) &argv)) != 0) {
+		fprintf(stderr, "rpcclient: %s\n", poptStrerror(ret));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-        /* strip the trainly \n if it exsists */
-	len = strlen(buf);
-	if (buf[len-1] == '\n')
-		buf[len-1] = '\0';
 
-	/* Search for matching commands */
-
+	/* Walk through a dlist of arrays of commands. */
 	for (temp_list = cmd_list; temp_list; temp_list = temp_list->next) {
 		struct cmd_set *temp_set = temp_list->cmd_set;
 
-		while(temp_set->name) {
-			if (strequal(buf, temp_set->name)) {
-                                found = True;
-				result = do_cmd(cli, temp_set, cmd);
+		while (temp_set->name) {
+			if (strequal(argv[0], temp_set->name)) {
+				if (!temp_set->fn) {
+					fprintf (stderr, "Invalid command\n");
+					goto out_free;
+				}
 
-				goto done;
+				result = do_cmd(cli, temp_set, argc, argv);
+
+				goto out_free;
 			}
 			temp_set++;
 		}
 	}
 
- done:
-	if (!found && buf[0]) {
-		printf("command not found: %s\n", buf);
-		return NT_STATUS_OK;
+	if (argv[0]) {
+		printf("command not found: %s\n", argv[0]);
 	}
 
+out_free:
 	if (!NT_STATUS_IS_OK(result)) {
 		printf("result was %s\n", nt_errstr(result));
 	}
 
+	if (argv) {
+		/* NOTE: popt allocates the whole argv, including the
+		 * strings, as a single block.  So a single free is
+		 * enough to release it -- we don't free the
+		 * individual strings.  rtfm. */
+		free(argv);
+	}
+	
 	return result;
 }
 
@@ -612,6 +588,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ NULL }
 	};
 
