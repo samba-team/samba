@@ -85,7 +85,7 @@ SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef bin/pdbedit
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd
 
@@ -246,7 +246,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
-TDBEDIT_OBJ = utils/tdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
+PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o \
@@ -502,9 +502,9 @@ bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/tdbedit: $(TDBEDIT_OBJ) bin/.dummy
+bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TDBEDIT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
