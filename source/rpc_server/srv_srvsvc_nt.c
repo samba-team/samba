@@ -27,8 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern pstring global_myname;
-
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
  ********************************************************************/
@@ -1211,7 +1209,7 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 
 	case 102:
 		init_srv_info_102(&ctr->srv.sv102,
-		                  500, global_myname, 
+		                  500, global_myname(), 
 				  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
@@ -1225,13 +1223,13 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 		break;
 	case 101:
 		init_srv_info_101(&ctr->srv.sv101,
-		                  500, global_myname,
+		                  500, global_myname(),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
 		                  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 		break;
 	case 100:
-		init_srv_info_100(&ctr->srv.sv100, 500, global_myname);
+		init_srv_info_100(&ctr->srv.sv100, 500, global_myname());
 		break;
 	default:
 		status = WERR_UNKNOWN_LEVEL;

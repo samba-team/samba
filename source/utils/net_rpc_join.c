@@ -104,8 +104,6 @@ done:
 int net_rpc_join_newstyle(int argc, const char **argv) 
 {
 
-	extern pstring global_myname;
-
 	/* libsmb variables */
 
 	struct cli_state *cli;
@@ -187,7 +185,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		      "could not open domain");
 
 	/* Create domain user */
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname); 
+	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower(acct_name);
 	const_acct_name = acct_name;
 
@@ -347,9 +345,7 @@ done:
  **/
 int net_rpc_testjoin(int argc, const char **argv) 
 {
-	char *domain = lp_workgroup();
-
-	domain = smb_xstrdup(domain);
+	char *domain = smb_xstrdup(lp_workgroup());
 
 	/* Display success or failure */
 	if (net_rpc_join_ok(domain) != 0) {

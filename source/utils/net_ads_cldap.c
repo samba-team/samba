@@ -232,7 +232,6 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 {
 	int sock;
 	int ret;
-	extern pstring global_myname;
 	struct cldap_netlogon_reply reply;
 
 	sock = open_udp_socket(inet_ntoa(ads->ldap_ip), ads->ldap_port);
@@ -243,7 +242,7 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 		return -1;
 	}
 
-	ret = send_cldap_netlogon(sock, ads->config.realm, global_myname, 6);
+	ret = send_cldap_netlogon(sock, ads->config.realm, global_myname(), 6);
 	if (ret != 0) {
 		return ret;
 	}

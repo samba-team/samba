@@ -61,7 +61,7 @@ char *opt_host = NULL;
 char *opt_password = NULL;
 char *opt_user_name = NULL;
 BOOL opt_user_specified = False;
-char *opt_workgroup = NULL;
+const char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
 int opt_reboot = 0;
 int opt_force = 0;
@@ -77,7 +77,6 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
-extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
 /*
@@ -188,7 +187,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if (!lookup_dc_name(global_myname, opt_target_workgroup, &pdc_ip, dc_name))
+			if (!lookup_dc_name(global_myname(), opt_target_workgroup, &pdc_ip, dc_name))
 				return False;
 				
 			*server_name = strdup(dc_name);
@@ -238,7 +237,7 @@ BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *dom
 		if (is_zero_ip(*server_ip))
 			return False;
 		
-		if (!lookup_dc_name(global_myname, domain_name, server_ip, dc_name))
+		if (!lookup_dc_name(global_myname(), domain_name, server_ip, dc_name))
 			return False;
 			
 		safe_strcpy(server_name, dc_name, FSTRING_LEN);
@@ -335,7 +334,7 @@ static int net_getlocalsid(int argc, const char **argv)
 		name = argv[0];
         }
 	else {
-		name = global_myname;
+		name = global_myname();
 	}
 
 	if (!secrets_fetch_domain_sid(name, &sid)) {
@@ -359,7 +358,7 @@ static int net_setlocalsid(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!secrets_store_domain_sid(global_myname, &sid)) {
+	if (!secrets_store_domain_sid(global_myname(), &sid)) {
 		DEBUG(0,("Can't store domain SID as a pdc/bdc.\n"));
 		return 1;
 	}
@@ -372,12 +371,12 @@ static int net_getdomainsid(int argc, const char **argv)
 	DOM_SID domain_sid;
 	fstring sid_str;
 
-	if (!secrets_fetch_domain_sid(global_myname, &domain_sid)) {
+	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
 		d_printf("Could not fetch local SID\n");
 		return 1;
 	}
 	sid_to_string(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", global_myname, sid_str);
+	d_printf("SID for domain %s is: %s\n", global_myname(), sid_str);
 
 	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 		d_printf("Could not fetch domain SID\n");
@@ -528,19 +527,11 @@ static struct functable net_func[] = {
 	}
 	
 	if (!opt_target_workgroup) {
-		opt_target_workgroup = lp_workgroup();
+		opt_target_workgroup = strdup(lp_workgroup());
 	}
 	
-	if (!*global_myname) {
-		char *p2;
-
-		pstrcpy(global_myname, myhostname());
-		p2 = strchr_m(global_myname, '.');
-		if (p2) 
-                        *p2 = 0;
-	}
-	
-	strupper(global_myname);
+	if (!init_names())
+		exit(1);
 
 	load_interfaces();
 
@@ -553,7 +544,7 @@ static struct functable net_func[] = {
 			exit(1);
 		}
 
-		asprintf(&opt_user_name,"%s$", global_myname);
+		asprintf(&opt_user_name,"%s$", global_myname());
 		opt_password = secrets_fetch_machine_password();
 		if (!opt_password) {
 			d_printf("ERROR: Unable to fetch machine password\n");

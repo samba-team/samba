@@ -42,7 +42,6 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	krb5_keyblock * key;
 	krb5_principal host_princ;
 	char *host_princ_s;
-	extern pstring global_myname;
 	fstring myname;
 	char *password_s;
 	krb5_data password;
@@ -83,7 +82,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	fstrcpy(myname, global_myname);
+	fstrcpy(myname, global_myname());
 	strlower(myname);
 	asprintf(&host_princ_s, "HOST/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);

@@ -37,7 +37,6 @@ pstring cur_dir = "\\";
 static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
-extern pstring global_myname;
 static pstring password;
 static pstring username;
 static pstring workgroup;
@@ -2177,7 +2176,7 @@ process a -c command string
 static int process_command_string(char *cmd)
 {
 	pstring line;
-	char *ptr;
+	const char *ptr;
 	int rc = 0;
 
 	/* establish the connection if not already */
@@ -2297,7 +2296,7 @@ process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
-	char *ptr;
+	const char *ptr;
 
 	while (1) {
 		fstring tok;
@@ -2362,7 +2361,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
@@ -2635,7 +2634,7 @@ static int do_message_op(void)
 	fstring server_name;
 	char name_type_hex[10];
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
 	safe_strcpy(server_name, desthost, sizeof(server_name));
@@ -2845,17 +2844,13 @@ static void remember_query_host(const char *arg,
 			message = True;
 			break;
 		case 'i':
-			{
-				extern pstring global_scope;
-				pstrcpy(global_scope,optarg);
-				strupper(global_scope);
-			}
+			set_global_scope(optarg);
 			break;
 		case 'N':
 			got_pass = True;
 			break;
 		case 'n':
-			pstrcpy(global_myname,optarg);
+			set_global_myname(optarg);
 			break;
 		case 'd':
 			if (*optarg == 'A')
@@ -3000,7 +2995,7 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname);  
+	init_names();
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

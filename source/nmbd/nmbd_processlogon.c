@@ -27,9 +27,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 struct sam_database_info {
         uint32 index;
         uint32 serial_lo, serial_hi;
@@ -93,8 +90,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     return;
   }
 
-  pstrcpy(my_name, global_myname);
-  strupper(my_name);
+  pstrcpy(my_name, global_myname());
 
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
@@ -131,7 +127,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       send_mailslot(True, getdc, 
                     outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
+		    global_myname(), 0x0,
 					machine,
                     dgram->source_name.name_type,
                     p->ip, *iface_ip(p->ip), p->port);  
@@ -198,7 +194,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         q = ALIGN2(q, outbuf);
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
-        q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
+        q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True); /* Domain name*/
         SIVAL(q, 0, 1); /* our nt version */
         SSVAL(q, 4, 0xffff); /* our lmnttoken */
         SSVAL(q, 6, 0xffff); /* our lm20token */
@@ -209,7 +205,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
-            machine,inet_ntoa(p->ip), reply_name, global_myworkgroup,
+            machine,inet_ntoa(p->ip), reply_name, lp_workgroup(),
             QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
             (uint32)lm20token ));
 
@@ -217,7 +213,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                   outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
+		    global_myname(), 0x0,
                   dgram->source_name.name,
                   dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
@@ -280,7 +276,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name+2,my_name); 
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       asccomp,inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       asccomp,inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup(),
 	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */
@@ -299,7 +295,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 	q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
 	q += dos_PutUniCode(q, ascuser, sizeof(pstring), True);
-	q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True);
+	q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
       } 
 #ifdef HAVE_ADS
       else {
@@ -345,7 +341,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	q += 2;              /* it must follow the domain name. */
 
 	/* Push dns host name */
-	size = push_ascii(&q[1], global_myname, -1, 0);
+	size = push_ascii(&q[1], global_myname(), -1, 0);
 	SCVAL(q, 0, size);
 	q += (size + 1);
 	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
@@ -397,7 +393,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                    outbuf,PTR_DIFF(q,outbuf),
-		    global_myname, 0x0,
+		    global_myname(), 0x0,
                    dgram->source_name.name,
                    dgram->source_name.name_type,
                    p->ip, *iface_ip(p->ip), p->port);  

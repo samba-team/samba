@@ -28,7 +28,6 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 {
 	struct nmb_name calling, called;
 	time_t ret = 0;
-	extern pstring global_myname;
 	struct cli_state *cli = NULL;
 
 	cli = cli_initialise(NULL);
@@ -39,7 +38,7 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 		goto done;
 	}
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname(), 0x0);
 	if (host) {
 		make_nmb_name(&called, host, 0x20);
 	} else {

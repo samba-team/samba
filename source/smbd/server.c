@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
-
 int am_parent = 1;
 
 /* the last message the was processed */
@@ -200,7 +197,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 		for(i = 0; i < num_interfaces; i++) {
 			struct in_addr *ifip = iface_n_ip(i);
 			fstring tok;
-			char *ptr;
+			const char *ptr;
 
 			if(ifip == NULL) {
 				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
@@ -237,7 +234,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 		   from anywhere. */
 
 		fstring tok;
-		char *ptr;
+		const char *ptr;
 
 		num_interfaces = 1;
 		
@@ -582,22 +579,15 @@ void exit_server(char *reason)
  Initialise connect, service and file structs.
 ****************************************************************************/
 
-static void init_structs(void )
+static BOOL init_structs(void )
 {
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
 	 */
 
-	if (!*global_myname) {
-		char *p;
-		pstrcpy( global_myname, myhostname() );
-		p = strchr_m(global_myname, '.' );
-		if (p) 
-			*p = 0;
-	}
-
-	strupper(global_myname);
+	if (!init_names())
+		return False;
 
 	conn_init();
 
@@ -610,6 +600,7 @@ static void init_structs(void )
 
 	secrets_init();
 
+	return True;
 }
 
 /****************************************************************************
@@ -739,8 +730,6 @@ static void init_structs(void )
 		return -1;
 	}
 #endif
-
-	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	DEBUG(3,( "loaded services\n"));
 

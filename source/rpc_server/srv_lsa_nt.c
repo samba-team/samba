@@ -30,13 +30,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 extern PRIVS privs[];
 
 struct lsa_info {
-    DOM_SID sid;
-    uint32 access;
+	DOM_SID sid;
+	uint32 access;
 };
 
 struct generic_mapping lsa_generic_mapping = {
@@ -61,7 +59,7 @@ static void free_lsa_info(void *ptr)
 Init dom_query
  ***************************************************************************/
 
-static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
+static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_sid)
 {
 	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
 
@@ -343,10 +341,11 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 }
 
 /***************************************************************************
- init_dns_dom_info.
- ***************************************************************************/
-static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, char *nb_name,
-			      char *dns_name, char *forest_name,
+ Init_dns_dom_info.
+***************************************************************************/
+
+static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
+			      const char *dns_name, const char *forest_name,
 			      GUID *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
@@ -513,7 +512,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 	struct lsa_info *handle;
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
-	char *name = NULL;
+	const char *name;
 	DOM_SID *sid = NULL;
 
 	r_u->status = NT_STATUS_OK;
@@ -548,20 +547,19 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = lp_workgroup();
 				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myworkgroup;
+				name = lp_workgroup();
 				/* We need to return the Domain SID here. */
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-							     &domain_sid))
+				if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid))
 					sid = &domain_sid;
 				else
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
 			case ROLE_STANDALONE:
-				name = global_myworkgroup;
+				name = lp_workgroup();
 				sid = NULL;
 				break;
 			default:
@@ -578,15 +576,15 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = lp_workgroup();
 				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
+				name = global_myname();
 				sid = get_global_sam_sid();
 				break;
 			case ROLE_STANDALONE:
-				name = global_myname;
+				name = global_myname();
 				sid = get_global_sam_sid();
 				break;
 			default:
@@ -1214,7 +1212,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_INFO2 *r_u)
 {
 	struct lsa_info *handle;
-	char *nb_name = NULL;
+	const char *nb_name;
 	char *dns_name = NULL;
 	char *forest_name = NULL;
 	DOM_SID *sid = NULL;
@@ -1236,13 +1234,12 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				nb_name = global_myworkgroup;
+				nb_name = lp_workgroup();
 				/* ugly temp hack for these next two */
 				dns_name = lp_realm();
 				forest_name = lp_realm();
 				sid = get_global_sam_sid();
-				secrets_fetch_domain_guid(global_myworkgroup,
-							  &guid);
+				secrets_fetch_domain_guid(lp_workgroup(), &guid);
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

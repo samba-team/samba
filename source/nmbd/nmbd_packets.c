@@ -1080,15 +1080,14 @@ static void process_browse_packet(struct packet_struct *p, char *buf,int len)
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = CVAL(buf,0);
   struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
-  extern pstring global_scope;
 
   /* Drop the packet if it's a different NetBIOS scope, or
      the source is from one of our names. */
 
-  if (!strequal(dgram->dest_name.scope, global_scope))
+  if (!strequal(dgram->dest_name.scope, global_scope()))
   {
     DEBUG(7,("process_browse_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope()));
     return;
   }
 
@@ -1193,15 +1192,14 @@ static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
   struct dgram_packet *dgram = &p->packet.dgram;
   int command = SVAL(buf,0);
   struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
-  extern pstring global_scope;
 
   /* Drop the packet if it's a different NetBIOS scope, or
      the source is from one of our names. */
 
-  if (!strequal(dgram->dest_name.scope, global_scope))
+  if (!strequal(dgram->dest_name.scope, global_scope()))
   {
     DEBUG(7,("process_lanman_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope()));
     return;
   }
 
@@ -1932,8 +1930,8 @@ BOOL listen_for_packets(BOOL run_election)
   Construct and send a netbios DGRAM.
 **************************************************************************/
 BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
-                   char *srcname, int src_type,
-                   char *dstname, int dest_type,
+                   const char *srcname, int src_type,
+                   const char *dstname, int dest_type,
                    struct in_addr dest_ip,struct in_addr src_ip,
 		   int dest_port)
 {

@@ -24,13 +24,11 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
 /*********************************************************
  Change the domain password on the PDC.
 **********************************************************/
 
-static NTSTATUS modify_trust_password( char *domain, char *remote_machine, 
+static NTSTATUS modify_trust_password( const char *domain, const char *remote_machine, 
 				   unsigned char orig_trust_passwd_hash[16])
 {
   struct cli_state *cli;
@@ -46,7 +44,7 @@ static NTSTATUS modify_trust_password( char *domain, char *remote_machine,
     return NT_STATUS_UNSUCCESSFUL;
   }
 
-  if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname, remote_machine, 
+  if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname(), remote_machine, 
 					   NULL, 0,
 					   "IPC$", "IPC",  
 					   "", "",
@@ -82,7 +80,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli)));
  Change the trust account password for a domain.
 ************************************************************************/
 
-NTSTATUS change_trust_account_password( char *domain, char *remote_machine_list)
+NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine_list)
 {
   fstring remote_machine;
   unsigned char old_trust_passwd_hash[16];
@@ -117,7 +115,7 @@ account password for domain %s.\n", domain));
        * address used as a string.
        */
 
-        if(!lookup_dc_name(global_myname, domain, &pdc_ip, dc_name))
+        if(!lookup_dc_name(global_myname(), domain, &pdc_ip, dc_name))
           continue;
         if(NT_STATUS_IS_OK(res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash)))

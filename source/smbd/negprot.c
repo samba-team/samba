@@ -22,7 +22,6 @@
 
 extern int Protocol;
 extern int max_recv;
-extern fstring global_myworkgroup;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
@@ -168,7 +167,6 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 static int negprot_spnego(char *p)
 {
 	DATA_BLOB blob;
-	extern pstring global_myname;
 	uint8 guid[16];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
@@ -181,7 +179,7 @@ static int negprot_spnego(char *p)
 	global_spnego_negotiated = True;
 
 	memset(guid, 0, 16);
-	safe_strcpy((char *)guid, global_myname, 16);
+	safe_strcpy((char *)guid, global_myname(), 16);
 	strlower((char *)guid);
 
 #if 0
@@ -292,7 +290,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 			SSVALS(outbuf,smb_vwv16+1,8);
 			p += 8;
 		}
-		p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
+		p += srvstr_push(outbuf, p, lp_workgroup(), -1, 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {

@@ -42,9 +42,6 @@ enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 struct perm_value {
 	char *perm;
 	uint32 mask;
@@ -232,6 +229,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 static BOOL parse_ace(SEC_ACE *ace, char *str)
 {
 	char *p;
+	const char *cp;
 	fstring tok;
 	unsigned atype, aflags, amask;
 	DOM_SID sid;
@@ -243,7 +241,6 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	if (!p) return False;
 	*p = '\0';
 	p++;
-
 	/* Try to parse numeric form */
 
 	if (sscanf(p, "%i/%i/%i", &atype, &aflags, &amask) == 3 &&
@@ -257,7 +254,8 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 		return False;
 	}
 
-	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+	cp = p;
+	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 
@@ -271,12 +269,12 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(&p, tok, "/", sizeof(fstring)) &&
+	if (!(next_token(&cp, tok, "/", sizeof(fstring)) &&
 	      sscanf(tok, "%i", &aflags))) {
 		return False;
 	}
 
-	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 
@@ -342,7 +340,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 /* parse a ascii version of a security descriptor */
 static SEC_DESC *sec_desc_parse(char *str)
 {
-	char *p = str;
+	const char *p = str;
 	fstring tok;
 	SEC_DESC *ret;
 	size_t sd_size;
@@ -718,10 +716,10 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname, server, 
+	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname(), server, 
 							    &ip, 0,
 							    share, "?????",  
-							    username, global_myworkgroup,
+							    username, lp_workgroup(),
 							    password, 0, NULL))) {
 		return c;
 	} else {

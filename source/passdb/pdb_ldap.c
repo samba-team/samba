@@ -507,7 +507,7 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 }
 
 
-static int ldapsam_search(struct ldapsam_privates *ldap_state, char *base, int scope, char *filter, char *attrs[], int attrsonly, LDAPMessage **res)
+static int ldapsam_search(struct ldapsam_privates *ldap_state, const char *base, int scope, const char *filter, const char *attrs[], int attrsonly, LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
@@ -636,7 +636,7 @@ static int ldapsam_search_one_user (struct ldapsam_privates *ldap_state, const c
 
 	DEBUG(2, ("ldapsam_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldapsam_search(ldap_state, lp_ldap_suffix (), scope, (char *)filter, (char **)attr, 0, result);
+	rc = ldapsam_search(ldap_state, lp_ldap_suffix (), scope, filter, attr, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldapsam_search_one_user: Problem during the LDAP search: %s\n", 
@@ -1412,7 +1412,7 @@ static uint32 search_top_nua_rid(struct ldapsam_privates *ldap_state)
 	DEBUG(2, ("ldapsam_get_next_available_nua_rid: searching for:[%s]\n", final_filter));
 
 	rc = ldapsam_search(ldap_state, lp_ldap_suffix(),
-			   LDAP_SCOPE_SUBTREE, final_filter, (char **)attr, 0,
+			   LDAP_SCOPE_SUBTREE, final_filter, attr, 0,
 			   &result);
 
 	if (rc != LDAP_SUCCESS) {
@@ -1486,7 +1486,7 @@ static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
 	rc = ldapsam_search(ldap_state, lp_ldap_suffix(),
-			   LDAP_SCOPE_SUBTREE, filter, (char **)attr, 0,
+			   LDAP_SCOPE_SUBTREE, filter, attr, 0,
 			   &ldap_state->result);
 
 	if (rc != LDAP_SUCCESS) {

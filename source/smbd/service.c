@@ -271,7 +271,7 @@ static void set_read_only(connection_struct *conn)
 		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
 		}
-		if (user_in_list(conn->user, list))
+		if (user_in_list(conn->user, (const char **)list))
 			conn->read_only = True;
 		str_list_free(&list);
 	}
@@ -281,7 +281,7 @@ static void set_read_only(connection_struct *conn)
 		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
 		}
-		if (user_in_list(conn->user, list))
+		if (user_in_list(conn->user, (const char **)list))
 			conn->read_only = False;
 		str_list_free(&list);
 	}

@@ -513,19 +513,18 @@ static int net_ads_status(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	extern pstring global_myname;
 	void *res;
 
 	if (!(ads = ads_startup())) return -1;
 
-	rc = ads_find_machine_acct(ads, &res, global_myname);
+	rc = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_machine_acct: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("No machine account for '%s' found\n", global_myname);
+		d_printf("No machine account for '%s' found\n", global_myname());
 		return -1;
 	}
 
@@ -538,7 +537,6 @@ static int net_ads_leave(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
-	extern pstring global_myname;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -546,7 +544,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if (!opt_password) {
-		asprintf(&opt_user_name, "%s$", global_myname);
+		asprintf(&opt_user_name, "%s$", global_myname());
 		opt_password = secrets_fetch_machine_password();
 	}
 
@@ -554,14 +552,14 @@ static int net_ads_leave(int argc, const char **argv)
 		return -1;
 	}
 
-	rc = ads_leave_realm(ads, global_myname);
+	rc = ads_leave_realm(ads, global_myname());
 	if (!ADS_ERR_OK(rc)) {
 	    d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
-		     global_myname, ads->config.realm);
+		     global_myname(), ads->config.realm);
 	    return -1;
 	}
 
-	d_printf("Removed '%s' from realm '%s'\n", global_myname, ads->config.realm);
+	d_printf("Removed '%s' from realm '%s'\n", global_myname(), ads->config.realm);
 
 	return 0;
 }
@@ -569,14 +567,13 @@ static int net_ads_leave(int argc, const char **argv)
 static int net_ads_join_ok(void)
 {
 	ADS_STRUCT *ads = NULL;
-	extern pstring global_myname;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
 		return -1;
 	}
 
-	asprintf(&opt_user_name, "%s$", global_myname);
+	asprintf(&opt_user_name, "%s$", global_myname());
 	opt_password = secrets_fetch_machine_password();
 
 	if (!(ads = ads_startup())) {
@@ -611,7 +608,6 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STATUS rc;
 	char *password;
 	char *tmp_password;
-	extern pstring global_myname;
 	const char *org_unit = "Computers";
 	char *dn;
 	void *res;
@@ -649,7 +645,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}	
 
-	rc = ads_join_realm(ads, global_myname, org_unit);
+	rc = ads_join_realm(ads, global_myname(), org_unit);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
@@ -661,7 +657,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	rc = ads_set_machine_password(ads, global_myname, password);
+	rc = ads_set_machine_password(ads, global_myname(), password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
 		return -1;
@@ -677,7 +673,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Joined '%s' to realm '%s'\n", global_myname, ads->config.realm);
+	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
 	free(password);
 
@@ -704,7 +700,6 @@ static int net_ads_printer_info(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	const char *servername, *printername;
-	extern pstring global_myname;
 	void *res = NULL;
 
 	if (!(ads = ads_startup())) return -1;
@@ -717,7 +712,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 	if (argc > 1)
 		servername =  argv[1];
 	else
-		servername = global_myname;
+		servername = global_myname();
 
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
 
@@ -750,7 +745,6 @@ static int net_ads_printer_publish(int argc, const char **argv)
         ADS_STATUS rc;
 	char *uncname, *servername;
 	ADS_PRINTER_ENTRY prt;
-	extern pstring global_myname;
 	char *ports[2] = {"Samba", NULL};
 
 	/* 
@@ -772,11 +766,11 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	   get_a_printer, because the server name might be
 	   localhost or an ip address */
 	prt.printerName = argv[0];
-	asprintf(&servername, "%s.%s", global_myname, ads->config.realm);
+	asprintf(&servername, "%s.%s", global_myname(), ads->config.realm);
 	prt.serverName = servername;
-	prt.shortServerName = global_myname;
+	prt.shortServerName = global_myname();
 	prt.versionNumber = "4";
-	asprintf(&uncname, "\\\\%s\\%s", global_myname, argv[0]);
+	asprintf(&uncname, "\\\\%s\\%s", global_myname(), argv[0]);
 	prt.uNCName=uncname;
 	prt.printBinNames = (char **) bins;
 	prt.printMediaSupported = (char **) media;
@@ -799,8 +793,8 @@ static int net_ads_printer_remove(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	char *servername, *prt_dn;
-	extern pstring global_myname;
+	const char *servername;
+	char *prt_dn;
 	void *res = NULL;
 
 	if (!(ads = ads_startup())) return -1;
@@ -811,7 +805,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	if (argc > 1)
 		servername = argv[1];
 	else
-		servername = global_myname;
+		servername = global_myname();
 
 	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
 
@@ -902,7 +896,6 @@ static int net_ads_password(int argc, const char **argv)
 static int net_ads_change_localhost_pass(int argc, const char **argv)
 {    
     ADS_STRUCT *ads;
-    extern pstring global_myname;
     char *host_principal;
     char *hostname;
     ADS_STATUS ret;
@@ -912,14 +905,14 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
 	    return -1;
     }
 
-    asprintf(&opt_user_name, "%s$", global_myname);
+    asprintf(&opt_user_name, "%s$", global_myname());
     opt_password = secrets_fetch_machine_password();
 
     if (!(ads = ads_startup())) {
 	    return -1;
     }
 
-    hostname = strdup(global_myname);
+    hostname = strdup(global_myname());
     strlower(hostname);
     asprintf(&host_principal, "%s@%s", hostname, ads->config.realm);
     SAFE_FREE(hostname);

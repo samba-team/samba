@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern fstring global_myworkgroup;
-
 /* forward declarations */
 static void wins_next_registration(struct response_record *rrec);
 
@@ -87,7 +85,7 @@ static void register_name_response(struct subnet_record *subrec,
 		 */
 		
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-		if((nmb->header.rcode == ACT_ERR) && strequal(global_myworkgroup, answer_name->name) &&
+		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup(), answer_name->name) &&
 		   (answer_name->name_type == 0x1b)) {
 			/* Pretend we did not get this. */
 			rrec->num_msgs--;
@@ -463,7 +461,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
  Try and register one of our names.
 ****************************************************************************/
 void register_name(struct subnet_record *subrec,
-                   char *name, int type, uint16 nb_flags,
+                   const char *name, int type, uint16 nb_flags,
                    register_name_success_function success_fn,
                    register_name_fail_function fail_fn,
                    struct userdata_struct *userdata)

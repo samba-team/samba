@@ -21,9 +21,6 @@
 #include "includes.h"
 #include "wins_repl.h"
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
-
 extern pstring user_socket_options;
 
 extern WINS_OWNER *global_wins_table;
@@ -163,29 +160,9 @@ void exit_server(char *reason)
 }
 
 /****************************************************************************
-  initialise connect, service and file structs
+ Usage of the program.
 ****************************************************************************/
-static void init_structs(void )
-{
-	/*
-	 * Set the machine NETBIOS name if not already
-	 * set from the config file.
-	 */
 
-	if (!*global_myname) {
-		char *p;
-		fstrcpy( global_myname, myhostname() );
-		p = strchr_m( global_myname, '.' );
-		if (p) 
-			*p = 0;
-	}
-
-	strupper( global_myname );
-}
-
-/****************************************************************************
-usage on the program
-****************************************************************************/
 static void usage(char *pname)
 {
 
@@ -684,7 +661,8 @@ static void process(void)
 	if (!reload_services(False))
 		return(-1);	
 
-	init_structs();
+	if (!init_names())
+		return -1;
 	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
@@ -692,8 +670,6 @@ static void process(void)
 		return -1;
 	}
 #endif
-
-	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	

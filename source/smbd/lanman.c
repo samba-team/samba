@@ -33,8 +33,6 @@
 #define CHECK_TYPES 0
 
 extern fstring local_machine;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 
 #define NERR_Success 0
 #define NERR_badpass 86
@@ -960,7 +958,7 @@ struct srv_info_struct
   ******************************************************************/
 static int get_server_info(uint32 servertype, 
 			   struct srv_info_struct **servers,
-			   char *domain)
+			   const char *domain)
 {
   int count=0;
   int alloced=0;
@@ -985,7 +983,7 @@ static int get_server_info(uint32 servertype,
   for (i=0;lines[i];i++) {
     fstring stype;
     struct srv_info_struct *s;
-    char *ptr = lines[i];
+    const char *ptr = lines[i];
     BOOL ok = True;
 
     if (!*ptr) continue;
@@ -1010,7 +1008,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
     if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
-      pstrcpy(s->domain,global_myworkgroup); 
+      pstrcpy(s->domain,lp_workgroup()); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -1206,7 +1204,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   if (strcmp(str1, "WrLehDz") == 0) {
 	  pull_ascii_fstring(domain, p);
   } else {
-	  fstrcpy(domain, global_myworkgroup);
+	  fstrcpy(domain, lp_workgroup());
   }
 
   if (lp_browse_list())
@@ -2311,7 +2309,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
       pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,global_myworkgroup))>0) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine))
       {
@@ -2397,7 +2395,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
-  pstrcpy(p2,global_myworkgroup);
+  pstrcpy(p2,lp_workgroup());
   strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
@@ -2407,7 +2405,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  pstrcpy(p2,global_myworkgroup);	/* don't know.  login domain?? */
+  pstrcpy(p2,lp_workgroup());	/* don't know.  login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2810,7 +2808,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
       strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
-    PACKS(&desc,"z",global_myworkgroup);/* domain */
+    PACKS(&desc,"z",lp_workgroup());/* domain */
 
     PACKS(&desc,"z", vuser && vuser->logon_script ? vuser->logon_script :"");		/* script path */
 

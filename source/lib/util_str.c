@@ -28,9 +28,9 @@
  Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
 
-BOOL next_token(char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
-	char *s;
+	const char *s;
 	BOOL quoted;
 	size_t len=1;
 
@@ -75,11 +75,11 @@ but beware the fact that it is not re-entrant!
 
 static char *last_ptr=NULL;
 
-BOOL next_token_nr(char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = &last_ptr;
+		ptr = (const char **)&last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
@@ -613,7 +613,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 BOOL in_list(char *s,char *list,BOOL casesensitive)
 {
 	pstring tok;
-	char *p=list;
+	const char *p=list;
 
 	if (!list)
 		return(False);
@@ -1185,7 +1185,8 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 char **str_list_make(const char *string, const char *sep)
 {
 	char **list, **rlist;
-	char *str, *s;
+	const char *str;
+	char *s;
 	int num, lsize;
 	pstring tok;
 	
@@ -1231,7 +1232,7 @@ char **str_list_make(const char *string, const char *sep)
 	return list;
 }
 
-BOOL str_list_copy(char ***dest, char **src)
+BOOL str_list_copy(char ***dest, const char **src)
 {
 	char **list, **rlist;
 	int num, lsize;

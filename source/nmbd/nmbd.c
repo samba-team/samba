@@ -27,10 +27,6 @@ int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
-
 extern BOOL global_in_nmbd;
 
 /* are we running as a daemon ? */
@@ -565,98 +561,6 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 }
 
 /**************************************************************************** **
- Initialise connect, service and file structs.
- **************************************************************************** */
-
-static BOOL init_structs(void)
-{
-  extern fstring local_machine;
-  char *p, **ptr;
-  int namecount;
-  int n;
-  int nodup;
-  char *nbname;
-
-  if (! *global_myname)
-  {
-    fstrcpy( global_myname, myhostname() );
-    p = strchr_m( global_myname, '.' );
-    if (p)
-      *p = 0;
-  }
-  strupper( global_myname );
-
-  /* Add any NETBIOS name aliases. Ensure that the first entry
-     is equal to global_myname.
-   */
-  /* Work out the max number of netbios aliases that we have */
-  ptr = lp_netbios_aliases();
-  namecount = 0;
-  if (ptr)
-    for( ; *ptr; namecount++,ptr++ )
-      ;
-  if ( *global_myname )
-    namecount++;
-
-  /* Allocate space for the netbios aliases */
-  my_netbios_names = (char **)malloc( sizeof(char *) * (namecount+1) );
-  if( NULL == my_netbios_names )
-  {
-     DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
-     return( False );
-  }
- 
-  /* Use the global_myname string first */
-  namecount=0;
-  if ( *global_myname )
-    my_netbios_names[namecount++] = global_myname;
-  
-  ptr = lp_netbios_aliases();
-  if (ptr)
-  {
-    while ( *ptr )
-    {
-      nbname = strdup(*ptr);
-      if (nbname == NULL)
-      {
-        DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
-        return False;
-      }
-      strupper( nbname );
-      /* Look for duplicates */
-      nodup=1;
-      for( n=0; n<namecount; n++ )
-      {
-        if( 0 == strcmp( nbname, my_netbios_names[n] ) )
-          nodup=0;
-      }
-      if (nodup)
-        my_netbios_names[namecount++] = nbname;
-      else
-        SAFE_FREE(nbname);
-
-      ptr++;
-    }
-  }
-  
-  /* Terminate name list */
-  my_netbios_names[namecount++] = NULL;
-  
-  fstrcpy( local_machine, global_myname );
-  trim_string( local_machine, " ", " " );
-  p = strchr_m( local_machine, ' ' );
-  if (p)
-    *p = 0;
-  strlower( local_machine );
-
-  DEBUG( 5, ("Netbios name list:-\n") );
-  for( n=0; my_netbios_names[n]; n++ )
-    DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
-
-  return( True );
-}
-
-/**************************************************************************** **
  main program
  **************************************************************************** */
  int main(int argc, const char *argv[])
@@ -727,14 +631,12 @@ static BOOL init_structs(void)
   if ( !reload_nmbd_services(False) )
     return(-1);
 
-  if(!init_structs())
+  if(!init_names())
     return -1;
 
   reload_nmbd_services( True );
 
-  fstrcpy( global_myworkgroup, lp_workgroup() );
-
-  if (strequal(global_myworkgroup,"*"))
+  if (strequal(lp_workgroup(),"*"))
   {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);

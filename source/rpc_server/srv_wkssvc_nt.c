@@ -28,8 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern pstring global_myname;
-
 /*******************************************************************
  create_wks_info_100
  ********************************************************************/
@@ -41,7 +39,7 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
-	pstrcpy (my_name, global_myname);
+	pstrcpy (my_name, global_myname());
 	strupper(my_name);
 
 	pstrcpy (domain, lp_workgroup());

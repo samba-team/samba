@@ -169,7 +169,7 @@ BOOL map_username(char *user)
 			return False;
 		}
 
-		if (strchr_m(dosname,'*') || user_in_list(user, dosuserlist)) {
+		if (strchr_m(dosname,'*') || user_in_list(user, (const char **)dosuserlist)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
 			fstrcpy(last_from,user);
@@ -451,7 +451,7 @@ BOOL user_in_group_list(const char *user, const char *gname)
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(const char *user,char **list)
+BOOL user_in_list(const char *user,const char **list)
 {
 	if (!list || !*list)
 		return False;

@@ -26,9 +26,6 @@
 
 extern int ClientNMB;
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
 extern uint16 samba_nb_type;
 
 int workgroup_count = 0; /* unique index key: one for each workgroup */
@@ -226,7 +223,7 @@ void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_reco
 {
   int i;
 
-  if(!strequal(global_myworkgroup, work->work_group))
+  if(!strequal(lp_workgroup(), work->work_group))
     return;
 
   /* If this is a broadcast subnet then start elections on it
@@ -244,21 +241,21 @@ workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
   
   /* Register the WORKGROUP<0> and WORKGROUP<1e> names on the network. */
 
-  register_name(subrec,global_myworkgroup,0x0,samba_nb_type|NB_GROUP,
+  register_name(subrec,lp_workgroup(),0x0,samba_nb_type|NB_GROUP,
                 NULL,
                 fail_register,NULL);
      
-  register_name(subrec,global_myworkgroup,0x1e,samba_nb_type|NB_GROUP,
+  register_name(subrec,lp_workgroup(),0x1e,samba_nb_type|NB_GROUP,
                 NULL,
                 fail_register,NULL);
      
-  for( i = 0; my_netbios_names[i]; i++)
+  for( i = 0; my_netbios_names(i); i++)
   {
-    char *name = my_netbios_names[i];
+    const char *name = my_netbios_names(i);
     int stype = lp_default_server_announce() | (lp_local_master() ?
                         SV_TYPE_POTENTIAL_BROWSER : 0 );
    
-    if(!strequal(global_myname, name))
+    if(!strequal(global_myname(), name))
         stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|
                    SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    

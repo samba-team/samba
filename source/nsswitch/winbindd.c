@@ -744,8 +744,6 @@ static void usage(void)
  int main(int argc, char **argv)
 {
 	extern BOOL AllowDebugChange;
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
 	pstring logfile;
 	BOOL interactive = False;
 	int opt;
@@ -826,16 +824,8 @@ static void usage(void)
 
 	/* Setup names. */
 
-	if (!*global_myname) {
-		char *p;
-
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
-		if (p)
-			*p = 0;
-	}
-
-        fstrcpy(global_myworkgroup, lp_workgroup());
+	if (!init_names())
+		exit(1);
 
 	if (!interactive) {
 		become_daemon();

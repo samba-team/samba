@@ -21,8 +21,6 @@
 #include "includes.h"
 #include "../utils/net.h"
 
-extern pstring global_myname;
-
 /**
  * @file net_rpc.c
  *
@@ -240,12 +238,11 @@ static int rpc_changetrustpw(int argc, const char **argv)
 static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) {
 	
-	extern pstring global_myname;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	NTSTATUS result;
 
-	fstrcpy(trust_passwd, global_myname);
+	fstrcpy(trust_passwd, global_myname());
 	strlower(trust_passwd);
 
 	/*
@@ -432,7 +429,7 @@ rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	d_printf("Storing SID %s for Domain %s in secrets.tdb\n",
 		 sid_str, lp_workgroup());
 
-	if (!secrets_store_domain_sid(global_myname, domain_sid)) {
+	if (!secrets_store_domain_sid(global_myname(), domain_sid)) {
 		DEBUG(0,("Can't store domain SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1917,7 +1914,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		if (opt_target_workgroup) SAFE_FREE(opt_target_workgroup);
 		opt_target_workgroup = opt_workgroup;
 	} else {
-		safe_strcpy(pdc_name, global_myname, FSTRING_LEN);
+		safe_strcpy(pdc_name, global_myname(), FSTRING_LEN);
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 		if (opt_target_workgroup) SAFE_FREE(opt_target_workgroup);
 		opt_target_workgroup = domain_name;
@@ -2165,7 +2162,7 @@ BOOL net_rpc_check(unsigned flags)
 
 	if (!cli_connect(&cli, server_name, &server_ip))
 		goto done;
-	if (!attempt_netbios_session_request(&cli, global_myname, 
+	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     server_name, &server_ip))
 		goto done;
 	if (!cli_negprot(&cli))
