@@ -85,6 +85,7 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 	return NULL;
 }
 
+/* Check whether a certain backend is present */
 BOOL reg_has_backend(const char *backend)
 {
 	return reg_find_backend_entry(backend) != NULL?True:False;
@@ -129,6 +130,7 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 	return werr;
 }
 
+/* Open a key by name (including the hive name!) */
 WERROR reg_open_key_abs(REG_HANDLE *handle, const char *name, REG_KEY **result)
 {
 	REG_KEY *hive;
@@ -195,9 +197,13 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 
 	mem_ctx = talloc_init("mem_ctx");
 
-	fullname = talloc_asprintf(mem_ctx, "%s%s%s", reg_key_get_path(parent), strlen(reg_key_get_path(parent))?"\\":"", name);
+	fullname = talloc_asprintf(mem_ctx, "%s%s%s", 
+						reg_key_get_path(parent), 
+						strlen(reg_key_get_path(parent))?"\\":"", 
+						name);
 
-	error = parent->handle->functions->open_key(parent->handle, parent->hive, fullname, result);
+	error = parent->handle->functions->open_key(parent->handle, 
+												parent->hive, fullname, result);
 
 	if(!W_ERROR_IS_OK(error)) {
 		talloc_destroy(mem_ctx);
@@ -205,7 +211,8 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 	}
 		
 	(*result)->handle = parent->handle;
-	(*result)->path = talloc_asprintf((*result)->mem_ctx, "%s\\%s", reg_key_get_path_abs(parent), (*result)->name);
+	(*result)->path = talloc_asprintf((*result)->mem_ctx, "%s\\%s", 
+								 reg_key_get_path_abs(parent), (*result)->name);
 	(*result)->hive = parent->hive;
 	talloc_steal(mem_ctx, (*result)->mem_ctx, fullname);
 
@@ -225,7 +232,8 @@ WERROR reg_key_get_value_by_index(REG_KEY *key, int idx, REG_VAL **val)
 
 	} else if(key->handle->functions->fetch_values) {
 		if(!key->cache_values)
-			key->handle->functions->fetch_values(key, &key->cache_values_count, &key->cache_values);
+			key->handle->functions->fetch_values(key, 
+								&key->cache_values_count, &key->cache_values);
 		
 		if(idx < key->cache_values_count && idx >= 0) {
 			*val = reg_val_dup(key->cache_values[idx]);
@@ -251,7 +259,8 @@ WERROR reg_key_num_subkeys(REG_KEY *key, int *count)
 
 	if(key->handle->functions->fetch_subkeys) {
 		if(!key->cache_subkeys) 
-			key->handle->functions->fetch_subkeys(key, &key->cache_subkeys_count, &key->cache_subkeys);
+			key->handle->functions->fetch_subkeys(key, 
+							&key->cache_subkeys_count, &key->cache_subkeys);
 
 		*count = key->cache_subkeys_count;
 		return WERR_OK;
@@ -304,7 +313,8 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 		if(!NT_STATUS_IS_OK(status)) return status;
 	} else if(key->handle->functions->fetch_subkeys) {
 		if(!key->cache_subkeys) 
-			key->handle->functions->fetch_subkeys(key, &key->cache_subkeys_count, &key->cache_subkeys);
+			key->handle->functions->fetch_subkeys(key, 
+								&key->cache_subkeys_count, &key->cache_subkeys);
 
 		if(idx < key->cache_subkeys_count) {
 			*subkey = reg_key_dup(key->cache_subkeys[idx]);
@@ -315,7 +325,8 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 		return WERR_NOT_SUPPORTED;
 	}
 
-	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", reg_key_get_path_abs(key), (*subkey)->name);
+	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s\\%s", 
+									reg_key_get_path_abs(key), (*subkey)->name);
 	(*subkey)->handle = key->handle;
 	(*subkey)->hive = key->hive;
 
