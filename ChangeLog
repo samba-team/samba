@@ -1,5 +1,7 @@
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/gssapi/import_name.c (input_name): more names types.
+
 	* admin/load.c (parse_keys): handle the case of an empty salt
 
 	* kdc/kaserver.c: fix up memory deallocation
