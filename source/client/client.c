@@ -101,7 +101,7 @@ int put_total_size = 0;
 int put_total_time_ms = 0;
 
 /* totals globals */
-int dir_total = 0;
+SMB_BIG_UINT dir_total = 0;
 
 #define USENMB
 
@@ -430,7 +430,7 @@ static void cmd_dir(void)
 
 	do_dskattr();
 
-	DEBUG(3, ("Total bytes listed: %d\n", dir_total));
+	DEBUG(3, ("Total bytes listed: %llu\n", dir_total));
 }
 
 
