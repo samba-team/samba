@@ -1,9 +1,29 @@
-          WHATS NEW IN 1.9.18 - January 7th 1998.
-          =======================================
+          WHATS NEW IN 1.9.18p1 - January 12th 1998.
+          ==========================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+Bugfixes added since 1.9.18
+---------------------------
+
+1). Fix for oplock-break problem. If an open crossed
+with an oplock break on the wire it was possible for the 
+same fnum to be re-used. This caused a rare but fatal
+problem.
+2). Fix for adding printers to Windows NT 4.x. Now
+return correct "no space error" when buffer of zero 
+given.
+3). Fix for nmbd core dumps when running on architectures
+that cannot access structures on non-aligned boundaries
+(sparc, alpha etc).
+4). Compiler warnings in nmbd fixed.
+5). Makefile updated for Linux 2.0 versions (new smbmount
+commands should only be compiled for 2.1.x kernels).
+
+Changes in 1.9.18.
+------------------
 
 This release contains several major changes and much re-written 
 code.
