@@ -48,8 +48,7 @@
            </xsl:element>
         </xsl:element>
      </xsl:element>
-     <xsl:text>
-</xsl:text>     
+     <xsl:text>&#10;</xsl:text>     
   </xsl:if>
 </xsl:template>
 
