@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,17 +47,21 @@ krb5_aname_to_localname (krb5_context context,
 			 char *lname)
 {
     krb5_error_code ret;
-    char *lrealm;
-    int foo;
+    krb5_realm *lrealms, *r;
+    int foo = 1;
     size_t len;
     char *res;
 
-    ret = krb5_get_default_realm (context, &lrealm);
+    ret = krb5_get_default_realms (context, &lrealms);
     if (ret)
 	return ret;
 
-    foo = strcmp (lrealm, aname->realm);
-    free (lrealm);
+    for (r = lrealms; *r != NULL; ++r) {
+	foo = strcmp (*r, aname->realm);
+	if (foo == 0)
+	    break;
+    }
+    krb5_free_host_realm (context, lrealms);
     if (foo != 0)
 	return KRB5_NO_LOCALNAME;
 
