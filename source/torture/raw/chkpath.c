@@ -120,6 +120,11 @@ static BOOL test_chkpath(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 
+	io.in.path = BASEDIR "\\nt\\Visual Studio\\*\\vb6.exe\\3";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
 done:
 	cli_close(cli->tree, fnum);
 	return ret;
