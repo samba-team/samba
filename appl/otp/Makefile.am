@@ -16,5 +16,5 @@ LDADD = \
 
 ## XXX how should this be done?
 install-exec-hook:
-	@if chown 0:0 $(bindir)/otp && chmod u+s $(bindir)/otp; then :;else \
-	chmod 0 /usr/heimdal/bin/otp; fi
+	@if chown 0:0 $(DESTDIR)$(bindir)/otp && chmod u+s $(DESTDIR)$(bindir)/otp; then :;else \
+	chmod 0 $(DESTDIR)$(bindir)/otp; fi
