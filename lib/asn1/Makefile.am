@@ -1,6 +1,6 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies
+AUTOMAKE_OPTIONS = no-dependencies foreign
 
 lib_LIBRARIES = libasn1.a
 
@@ -30,7 +30,8 @@ libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
 noinst_PROGRAMS = asn1_compile
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
-	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c
+	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
+	gen_maybe.c
 
 asn1_compile_LDADD = @LEXLIB@
 
