@@ -1922,7 +1922,6 @@ BOOL domain_client_validate( char *user, char *domain,
   struct cli_state cli;
   uint32 smb_uid_low;
   BOOL connected_ok = False;
-  void *vp;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -1971,20 +1970,20 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password.
    */
-  if((vp = machine_password_lock( global_myworkgroup, global_myname, False)) == NULL) {
+  if(!machine_password_lock( global_myworkgroup, global_myname, False)) {
     DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
 machine %s in domain %s.\n", global_myname, global_myworkgroup ));
     return False;
   }
 
-  if(get_machine_account_password( vp, machine_passwd, &lct) == False) {
+  if(get_machine_account_password( machine_passwd, &lct) == False) {
     DEBUG(0,("domain_client_validate: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-    machine_password_unlock(vp);
+    machine_password_unlock();
     return False;
   }
 
-  machine_password_unlock(vp);
+  machine_password_unlock();
 
   unbecome_root(False);
 
