@@ -1566,8 +1566,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	pstring password; /* local copy only, if one is entered */
 	extern struct user_creds *usr_creds;
 
+	password[0] = 0;
 	usr_creds = &usr;
-
 	info->reuse = False;
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
@@ -1784,9 +1784,11 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	{
 		set_user_password(&usr.ntc, True, NULL);
 	}
-	else if (IS_BITS_SET_ALL(cmd_set_options, CMD_PASS))
+	else
 	{
-		set_user_password(&usr.ntc, True, password);
+		set_user_password(&usr.ntc,
+		                  IS_BITS_SET_ALL(cmd_set_options, CMD_PASS),
+		                  password);
 	}
 
 	/* paranoia: destroy the local copy of the password */
@@ -1916,6 +1918,8 @@ void readline_init(void)
 
 	cmd_set_options &= ~CMD_HELP;
 	cmd_set_options &= ~CMD_NOPW;
+	cmd_set_options &= ~CMD_USER;
+	cmd_set_options &= ~CMD_PASS;
 
 	codepage_initialise(lp_client_code_page());
 

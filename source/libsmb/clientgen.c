@@ -3116,11 +3116,13 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
+#if 0
 	if (cli->usr.domain[0] == 0)
 	{
 		safe_strcpy(cli->usr.domain, cli->server_domain,
 		            sizeof(cli->usr.domain));
 	}
+#endif
 
 	if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
 	{

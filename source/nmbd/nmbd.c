@@ -61,7 +61,7 @@ extern struct in_addr ipzero;
 /**************************************************************************** **
   reload the services file
  **************************************************************************** */
-static BOOL reload_services(BOOL test)
+static BOOL reload_nmbd_services(BOOL test)
 {
   BOOL ret;
   extern fstring remote_machine;
@@ -88,7 +88,7 @@ static BOOL reload_services(BOOL test)
   if ( !test )
   {
     DEBUG( 3, ( "services not loaded\n" ) );
-    reload_services( True );
+    reload_nmbd_services( True );
   }
 
   /* Do a sanity check for a misconfigured nmbd */
@@ -100,7 +100,7 @@ cannot be set in the smb.conf file. nmbd aborting.\n"));
   }
 
   return(ret);
-} /* reload_services */
+} /* reload_nmbd_services */
 
 /**************************************************************************** **
   catch a sigterm
@@ -139,7 +139,7 @@ static void sig_hup(int sig)
   write_browse_list( 0, True );
 
   dump_all_namelists();
-  reload_services( True );
+  reload_nmbd_services( True );
 
   set_samba_nb_type();
 
@@ -667,7 +667,7 @@ static void usage(char *pname)
     return -1;
   }
 
-  if ( !reload_services(False) )
+  if ( !reload_nmbd_services(False) )
     return(-1);
 
   codepage_initialise(lp_client_code_page());
@@ -675,7 +675,7 @@ static void usage(char *pname)
   if(!init_structs())
     return -1;
 
-  reload_services( True );
+  reload_nmbd_services( True );
 
 	if (!init_myworkgroup())
 	{

@@ -288,8 +288,10 @@ BOOL cli_net_use_del(const char* srv_name,
 	int i;
 	const char *sv_name = srv_name;
 
-	DEBUG(10,("cli_net_use_del: %s. force close: %s\n",
-	           srv_name, BOOLSTR(force_close)));
+	DEBUG(10,("cli_net_use_del: %s. %s. %s. force close: %s\n",
+	           srv_name,
+	           usr_creds->user_name, usr_creds->domain,
+	           BOOLSTR(force_close)));
 
 	if (strnequal("\\\\", sv_name, 2))
 	{
@@ -309,6 +311,11 @@ BOOL cli_net_use_del(const char* srv_name,
 		if (clis[i]->cli == NULL) continue;
 
 		cli_name = clis[i]->cli->desthost;
+
+		DEBUG(10,("connection: %s %s %s\n", cli_name,
+                             clis[i]->cli->usr.user_name,
+		             clis[i]->cli->usr.domain));
+
 		if (strnequal("\\\\", cli_name, 2))
 		{
 			cli_name = &cli_name[2];

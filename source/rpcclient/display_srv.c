@@ -51,13 +51,14 @@ char *get_file_mode_str(uint32 share_mode)
 {
 	static fstring mode;
 
-	switch ((share_mode>>4)&0xF)
+	switch (GET_DENY_MODE(share_mode))
 	{
 		case DENY_NONE : fstrcpy(mode, "DENY_NONE  "); break;
 		case DENY_ALL  : fstrcpy(mode, "DENY_ALL   "); break;
 		case DENY_DOS  : fstrcpy(mode, "DENY_DOS   "); break;
 		case DENY_READ : fstrcpy(mode, "DENY_READ  "); break;
 		case DENY_WRITE: fstrcpy(mode, "DENY_WRITE "); break;
+		case DENY_FCB:   fstrcpy(mode, "DENY_FCB "); break;
 		default        : fstrcpy(mode, "DENY_????  "); break;
 	}
 
@@ -71,7 +72,6 @@ char *get_file_mode_str(uint32 share_mode)
 
 	return mode;
 }
-
 /****************************************************************************
 convert an oplock mode to a string
 ****************************************************************************/
