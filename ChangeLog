@@ -1,3 +1,8 @@
+Thu Dec 25 17:03:25 1997  Assar Westerlund  <assar@sics.se>
+
+	* kadmin/ank.c (ank): don't zero password if --random-key was
+ 	given.
+
 Tue Dec 23 01:56:45 1997  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0m
