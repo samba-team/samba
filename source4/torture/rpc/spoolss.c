@@ -438,6 +438,43 @@ BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			   struct policy_handle *handle, char *key_name,
+			   char *value_name)
+{
+	NTSTATUS status;
+	struct spoolss_GetPrinterDataEx r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.key_name = key_name;
+	r.in.value_name = value_name;
+	buf_size = 0;
+	r.in.buf_size = r.out.buf_size = &buf_size;
+
+	printf("Testing GetPrinterDataEx\n");
+
+	status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetPrinterDataEx failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+
+		status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinterDataEx failed - %s/%s\n", 
+			       nt_errstr(status), win_errstr(r.out.result));
+			return False;
+		}
+	}
+
+	return True;
+}
+
 BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
@@ -474,6 +511,10 @@ BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		
 		test_GetPrinterData(p, mem_ctx, handle, r.out.value_name);
+
+		test_GetPrinterDataEx(
+			p, mem_ctx, handle, "PrinterDriverData", 
+			r.out.value_name);
 
 		r.in.enum_index++;
 
