@@ -85,6 +85,11 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 		struct timeval to;
 		int selrtn;
 		int maxfd = oplock_sock;
+		time_t starttime;
+
+  again:
+
+		starttime = time(NULL);
 
 		if (koplocks && koplocks->notification_fd != -1) {
 			FD_SET(koplocks->notification_fd, fds);
@@ -101,6 +106,12 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 			if (koplocks && koplocks->msg_waiting(fds)) {
 				return koplocks->receive_message(fds, buffer, buffer_len);
 			}
+			/* Not a kernel interrupt - could be a SIGUSR1 message. We must restart. */
+			/* We need to decrement the timeout here. */
+			timeout -= ((time(NULL) - starttime)*1000);
+			if (timeout < 0)
+				timeout = 0;
+			goto again;
 		}
 
 		/* Check if error */
