@@ -202,14 +202,14 @@ void standard_sub_basic(char *str)
 			if (*local_machine)
 				string_sub(p,"%L", local_machine,l); 
 			else {
-				char *s = p;
+				char *ns = p;
 
 				string_sub(p,"%L", global_myname,l); 
-				while (*s)
+				while (*ns)
 				{
-					if (isupper(*s))
-						*s = tolower(*s);
-					s++;
+					if (isupper(*ns))
+						*ns = tolower(*ns);
+					ns++;
 				}
 			}
 			break;

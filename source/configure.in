@@ -195,11 +195,6 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
 
-# I'm sure gcc supports -rdynamic
-if test "$ac_cv_prog_gcc" = yes; then
-    DYNEXP="-rdynamic"
-fi
-
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -2709,10 +2704,11 @@ AC_SUBST(FLAGS1)
 
 #################################################
 # final configure stuff
-echo "checking configure summary"
+AC_MSG_CHECKING([configure summary])
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
-           echo "configure OK";,
-	   AC_MSG_ERROR([summary failure. Aborting config]),:)
+	AC_MSG_RESULT(yes),
+	AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
+	AC_MSG_WARN([cannot run when cross-compiling]))
 
 builddir=`pwd`
 AC_SUBST(builddir)
