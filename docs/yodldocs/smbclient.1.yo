@@ -8,7 +8,7 @@ manpagename(smbclient)(ftp-like client to access SMB/CIFS resources on servers)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(nameresolveorder)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
+bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -42,7 +42,7 @@ which may or may not be the same as the IP hostname of the machine
 running the server.
 
 The server name is looked up according to either the
-link(bf(-R))(nameresolveorder) parameter to bf(smbclient) or using the
+link(bf(-R))(minusR) parameter to bf(smbclient) or using the
 url(bf(name resolve order))(smb.conf.5.html#nameresolveorder)
 parameter in the smb.conf file, allowing an administrator to change
 the order and methods by which server names are looked up.
@@ -80,7 +80,7 @@ socket. See the url(socket options)(smb.conf.5.html#socketoptions)
 parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) manpage for
 the list of valid options.
 
-label(nameresolveorder)
+label(minusR)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
 looking up the NetBIOS name of the host being connected to.
@@ -231,7 +231,7 @@ connect to. It should be specified in standard "a.b.c.d" notation.
 
 Normally the client would attempt to locate a named SMB/CIFS server by
 looking it up via the NetBIOS name resolution mechanism described
-above in the link(bf(name resolve order))(nameresolveorder) parameter
+above in the link(bf(name resolve order))(minusR) parameter
 above. Using this parameter will force the client to assume that the
 server is on the machine with the specified IP address and the NetBIOS
 name component of the resource being connected to will be ignored.
