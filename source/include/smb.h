@@ -623,19 +623,24 @@ typedef struct files_struct
 	struct timeval open_time;
 	int share_mode;
 	time_t pending_modtime;
+	int oplock_type;
+	int sent_oplock_break;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
 	BOOL print_file;
 	BOOL modified;
-	BOOL granted_oplock;
-	BOOL sent_oplock_break;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
 	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
+
+/* Defines for the sent_oplock_break field above. */
+#define NO_BREAK_SENT 0
+#define EXCLUSIVE_BREAK_SENT 1
+#define LEVEL_II_BREAK_SENT 2
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -717,7 +722,7 @@ struct interface
 /* struct returned by get_share_modes */
 typedef struct
 {
-  int pid;
+  pid_t pid;
   uint16 op_port;
   uint16 op_type;
   int share_mode;
@@ -822,7 +827,7 @@ struct passdb_ops {
 struct connect_record
 {
   int magic;
-  int pid;
+  pid_t pid;
   int cnum;
   uid_t uid;
   gid_t gid;
@@ -830,25 +835,6 @@ struct connect_record
   char addr[24];
   char machine[128];
   time_t start;
-};
-
-/* This is used by smbclient to send it to a smbfs mount point */
-struct connection_options {
-  int protocol;
-  /* Connection-Options */
-  uint32 max_xmit;
-  uint16 server_vuid;
-  uint16 tid;
-  /* The following are LANMAN 1.0 options */
-  uint16 sec_mode;
-  uint16 max_mux;
-  uint16 max_vcs;
-  uint16 rawmode;
-  uint32 sesskey;
-  /* The following are NT LM 0.12 options */
-  uint32 maxraw;
-  uint32 capabilities;
-  uint16 serverzone;
 };
 
 /* the following are used by loadparm for option lists */
@@ -1616,11 +1602,27 @@ extern int unix_ERR_code;
 /*
  * Bits we test with.
  */
+
+#define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
+#define LEVEL_II_OPLOCK 4
+
+#define EXLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+#define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
+
+/*
+ * Return values for oplock types.
+ */
+
+#define NO_OPLOCK_RETURN 0
+#define EXCLUSIVE_OPLOCK_RETURN 1
+#define BATCH_OPLOCK_RETURN 2
+#define LEVEL_II_OPLOCK_RETURN 3
 
 /*
  * Loopback command offsets.
@@ -1634,8 +1636,9 @@ extern int unix_ERR_code;
 
 /*
  * Oplock break command code to send over the udp socket.
+ * The same message is sent for both exlusive and level II breaks. 
  * 
- * Form of this is :
+ * The form of this is :
  *
  *  0     2       6        10       14    14+devsize 14+devsize+inodesize
  *  +----+--------+--------+--------+-------+--------+
@@ -1645,11 +1648,13 @@ extern int unix_ERR_code;
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_SEC_OFFSET 6
-#define OPLOCK_BREAK_USEC_OFFSET 10
-#define OPLOCK_BREAK_DEV_OFFSET 14
+#define OPLOCK_BREAK_SEC_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
+#define OPLOCK_BREAK_USEC_OFFSET (OPLOCK_BREAK_SEC_OFFSET + sizeof(time_t))
+#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_USEC_OFFSET + sizeof(long))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+
+#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 
 /*
  * Capabilities abstracted for different systems.

@@ -64,16 +64,9 @@
 #endif
 
 
-/* if we have both SYSV IPC and shared mmap then we need to choose. For most
-   systems it is much faster to use SYSV IPC, but under Linux it is
-   about 5 times faster to use fcntl, so for Linux systems we force
-   fcntl based locking */
+/* if we have both SYSV IPC and shared mmap then we need to choose */
 #if (defined(USE_SYSV_IPC) && defined(USE_SHARED_MMAP))
-# ifdef LINUX
-#  undef USE_SYSV_IPC
-# else
 #  undef USE_SHARED_MMAP
-# endif
 #endif
 
 #include <sys/types.h>
@@ -221,7 +214,7 @@
 #endif
 
 /*
- * The next two defines are needed to the IPTOS_* options
+ * The next three defines are needed to access the IPTOS_* options
  * on some systems.
  */
 
@@ -230,6 +223,10 @@
 #endif
 
 #ifdef HAVE_NETINET_IN_IP_H
+#include <netinet/in_ip.h>
+#endif
+
+#ifdef HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
 
@@ -842,5 +839,14 @@ int crypt(const char *key, const char *salt);
 
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
+
+/*
+ * glibc on linux doesn't seem to have MSG_WAITALL
+ * defined. I think the kernel has it though..
+ */
+
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
 
 #endif /* _INCLUDES_H */
