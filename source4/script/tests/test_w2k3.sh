@@ -9,7 +9,7 @@ ncacn_ip_tcp_tests="RPC-EPMAPPER RPC-SAMR RPC-NETLOGON RPC-LSA RPC-SAMLOGON RPC-
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_w2k3.sh SERVER USERNAME PASSWORD DOMAIN
+Usage: test_w2k3.sh SERVER USERNAME PASSWORD DOMAIN REALM
 EOF
 exit 1;
 fi
@@ -22,7 +22,8 @@ server="$1"
 username="$2"
 password="$3"
 domain="$4"
-shift 4
+realm="$5"
+shift 5
 
 testit() {
    trap "rm -f test.$$" EXIT
@@ -36,7 +37,7 @@ testit() {
    rm -f test.$$;
 }
 
-OPTIONS="-U$username%$password -W $domain --option realm=$domain"
+OPTIONS="-U$username%$password -W $domain --option realm=$realm"
 
 for transport in ncacn_ip_tcp ncacn_np; do
  for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate bigendian; do
