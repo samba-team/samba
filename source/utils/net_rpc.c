@@ -305,6 +305,80 @@ int net_rpc_join(int argc, const char **argv)
 }
 
 
+
+/** 
+ * display info about a rpc domain
+ *
+ * All paramaters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	SAM_UNK_CTR ctr;
+
+	/* Get sam policy handle */	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	ZERO_STRUCT(ctr);
+	result = cli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
+					 2, &ctr);
+	if (NT_STATUS_IS_OK(result)) {
+		TALLOC_CTX *ctx = talloc_init();
+		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
+		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num);
+		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
+		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
+		d_printf("Num local groups: %u\n", ctr.info.inf2.num_local_grps);
+		talloc_destroy(ctx);
+	}
+
+ done:
+	return result;
+}
+
+
+/** 
+ * 'net rpc info' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+int net_rpc_info(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_info_internals,
+			       argc, argv);
+}
+
+
+
+
 /****************************************************************************/
 
 /**
@@ -1786,6 +1860,7 @@ BOOL net_rpc_check(unsigned flags)
 
 int net_rpc_usage(int argc, const char **argv) 
 {
+	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
@@ -1847,6 +1922,7 @@ int net_rpc_help(int argc, const char **argv)
 int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
+		{"info", net_rpc_info},
 		{"join", net_rpc_join},
 		{"user", net_rpc_user},
 		{"group", net_rpc_group},
