@@ -209,6 +209,7 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
       if(rrec->repeat_interval > (5 * 60))
         rrec->repeat_interval = (5 * 60);
       rrec->repeat_time = time(NULL) + rrec->repeat_interval;
+      rrec->in_expiration_processing = False;
 
       DEBUG(5,("register_name_timeout_response: increasing WINS timeout to %d seconds.\n",
               (int)rrec->repeat_interval));
