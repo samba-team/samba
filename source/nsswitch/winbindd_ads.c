@@ -147,6 +147,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		primary_realm = strdup(ads->realm);
 	}
 
+	fstrcpy(domain->full_name, ads->server_realm);
+
 	domain->private = (void *)ads;
 	return ads;
 }

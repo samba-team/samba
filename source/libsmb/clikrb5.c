@@ -60,8 +60,8 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 
 	if ((retval = krb5_get_credentials(context, 0,
 					   ccache, &creds, &credsp))) {
-		DEBUG(1,("krb5_get_credentials failed (%s)\n", 
-			 error_message(retval)));
+		DEBUG(1,("krb5_get_credentials failed for %s (%s)\n", 
+			 principal, error_message(retval)));
 		goto cleanup_creds;
 	}
 
