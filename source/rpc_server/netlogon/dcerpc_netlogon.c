@@ -543,6 +543,16 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->user_sid);
 	sam->domain_sid->num_auths--;
 
+	sam->AccountControl = 0;
+
+	sam->unknown1 = 0;
+	sam->unknown2 = 0;
+	sam->unknown3 = 0;
+	sam->unknown4 = 0;
+	sam->unknown5 = 0;
+	sam->unknown6 = 0;
+	sam->unknown7 = 0;
+
 	sam->sidcount = 0;
 	sam->sids = NULL;
 	
@@ -552,9 +562,9 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 		ZERO_STRUCT(sam->key.key);
 	}
 	
+	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	if (memcmp(sam->key.key, zeros,  
 		   sizeof(sam->key.key)) != 0) {
-		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 		creds_arcfour_crypt(pipe_state->creds, 
 				    sam->key.key, 
 				    sizeof(sam->key.key));
@@ -567,6 +577,7 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 		ZERO_STRUCT(sam->LMSessKey.key);
 	}
 	
+	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	if (memcmp(sam->LMSessKey.key, zeros,  
 		   sizeof(sam->LMSessKey.key)) != 0) {
 		creds_arcfour_crypt(pipe_state->creds, 
@@ -584,11 +595,9 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 		sam2->acct_expiry = sam->acct_expiry;
 		
 		sam2->last_password_change = sam->last_password_change;
-		sam2->allow_password_change = 	sam->allow_password_change;
+		sam2->allow_password_change = sam->allow_password_change;
+		sam2->force_password_change = sam->force_password_change;
 
-		sam2->force_password_change = 	sam->force_password_change;
-
-	
 		sam2->account_name = sam->account_name;
 		sam2->full_name = sam->full_name;
 		sam2->logon_script = sam->logon_script;
@@ -617,8 +626,6 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 	
 		sam2->AccountControl = sam->AccountControl;
 
-		/* can we implicit memcpy an array? */
-		
 		sam2->unknown1 = sam->unknown1;
 		sam2->unknown2 = sam->unknown2;
 		sam2->unknown3 = sam->unknown3;
