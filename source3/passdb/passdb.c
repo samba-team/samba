@@ -347,6 +347,10 @@ static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 	data_blob_clear_free(&(user->private.nt_pw));
 	if (user->private.plaintext_pw!=NULL)
 		memset(user->private.plaintext_pw,'\0',strlen(user->private.plaintext_pw));
+
+	if (user->private.backend_private_data && user->private.backend_private_data_free_fn) {
+		user->private.backend_private_data_free_fn(&user->private.backend_private_data);
+	}
 }
 
 

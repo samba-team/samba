@@ -107,6 +107,7 @@ ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
 	{ LDAP_ATTR_DOM_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_ALGORITHMIC_RID_BASE,"sambaAlgorithmicRidBase"},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			},
 };
 
@@ -119,6 +120,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_CN,			"cn"			},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -135,6 +137,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
 ATTRIB_MAP_ENTRY idpool_attr_list[] = {
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -142,6 +145,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 

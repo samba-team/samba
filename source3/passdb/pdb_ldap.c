@@ -108,6 +108,16 @@ struct ldapsam_privates {
 };
 
 /**********************************************************************
+ Free a LDAPMessage (one is stored on the SAM_ACCOUNT)
+ **********************************************************************/
+ 
+static void private_data_free_fn(void **result) 
+{
+	ldap_memfree(*result);
+	*result = NULL;
+}
+
+/**********************************************************************
  get the attribute name given a user schame version 
  **********************************************************************/
  
@@ -1503,7 +1513,9 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 			ldap_msgfree(result);
 			return NT_STATUS_NO_SUCH_USER;
 		}
-		ldap_msgfree(result);
+		pdb_set_backend_private_data(user, result, 
+					     private_data_free_fn, 
+					     my_methods, PDB_CHANGED);
 		ret = NT_STATUS_OK;
 	} else {
 		ldap_msgfree(result);
@@ -1591,9 +1603,13 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 			ldap_msgfree(result);
 			return NT_STATUS_NO_SUCH_USER;
 		}
+		pdb_set_backend_private_data(user, result, 
+					     private_data_free_fn, 
+					     my_methods, PDB_CHANGED);
 		ret = NT_STATUS_OK;
+	} else {
+		ldap_msgfree(result);
 	}
-	ldap_msgfree(result);
 	return ret;
 }	
 
@@ -1789,15 +1805,18 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	LDAPMod **mods;
 	char **attr_list;
 
-	attr_list = get_userattr_list(ldap_state->schema_ver);
-	rc = ldapsam_search_suffix_by_name(ldap_state, pdb_get_username(newpwd), &result, attr_list );
-	free_attr_list( attr_list );
-	if (rc != LDAP_SUCCESS) 
-		return NT_STATUS_UNSUCCESSFUL;
+	result = pdb_get_backend_private_data(newpwd, my_methods);
+	if (!result) {
+		attr_list = get_userattr_list(ldap_state->schema_ver);
+		rc = ldapsam_search_suffix_by_name(ldap_state, pdb_get_username(newpwd), &result, attr_list );
+		free_attr_list( attr_list );
+		if (rc != LDAP_SUCCESS) 
+			return NT_STATUS_UNSUCCESSFUL;
+		pdb_set_backend_private_data(newpwd, result, private_data_free_fn, my_methods, PDB_CHANGED);
+	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
 		DEBUG(0, ("No user to modify!\n"));
-		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1807,11 +1826,8 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
 				element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
-		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-        ldap_msgfree(result);
 	
 	if (mods == NULL) {
 		DEBUG(4,("mods is empty: nothing to update for user: %s\n",
