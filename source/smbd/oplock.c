@@ -82,6 +82,7 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 	int selrtn = -1;
 
 	smb_read_error = 0;
+	FD_ZERO(&fds);
 
 	while (timeout > 0 && selrtn == -1) {
 		struct timeval to;
