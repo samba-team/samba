@@ -1181,13 +1181,9 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 		DEBUG(4,("pass %s %s\n", mach_acct, foo));
 	}
 
-	/* from client / server challenges and md4 password, generate sess key */
-	cred_session_key(&(dc->clnt_chal), &(dc->srv_chal),
-	                   dc->md4pw, dc->sess_key);
-
-	/* copy the client credentials for later use */
-	memcpy(dc->srv_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
-	memcpy(dc->srv_cred.data, clnt_chal->data, sizeof(clnt_chal->data));
+	/* copy the client credentials */
+	memcpy(dc->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc->clnt_cred.data, clnt_chal->data, sizeof(clnt_chal->data));
 
 	/* create a server challenge for the client */
 	/* PAXX: set these to random values. */
@@ -1196,6 +1192,10 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 	{
 		dc->srv_chal.data[i] = 0xA5;
 	}
+
+	/* from client / server challenges and md4 password, generate sess key */
+	cred_session_key(&(dc->clnt_chal), &(dc->srv_chal),
+	                   dc->md4pw, dc->sess_key);
 
 	DEBUG(6,("update_dcinfo: %d\n", __LINE__));
 
@@ -1218,9 +1218,10 @@ static void api_lsa_req_chal( int cnum, uint16 vuid,
 
 	strcat(mach_acct, "$");
 
-	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
+	DEBUG(6,("q_r.clnt_chal.data(%d) :", sizeof(q_r.clnt_chal.data)));
+	dump_data(6, q_r.clnt_chal.data, 8);
 
-	DEBUG(6,("api_lsa_req_chal: %d\n", __LINE__));
+	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
 
 	/* construct reply.  return status is always 0x0 */
 	*rdata_len = lsa_reply_req_chal(&q_r, *rdata + 0x18, *rdata,

@@ -130,7 +130,7 @@ int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
 	DEBUG(4,("cred_assert\n"));
 
 	DEBUG(5,("	challenge: "));
-	dump_data(5, cred->data, 16);
+	dump_data(5, cred->data, 8);
 
 	DEBUG(5,("	calculated: "));
 	dump_data(5, cred2.data, 8);
