@@ -3,6 +3,13 @@
 RCSID("$Id$");
 
 void
+krb5_data_zero(krb5_data *p)
+{
+    p->length = 0;
+    p->data   = NULL;
+}
+
+void
 krb5_data_free(krb5_data *p)
 {
   if(p->length && p->data)
