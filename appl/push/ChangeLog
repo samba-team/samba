@@ -1,3 +1,8 @@
+1999-12-28  Assar Westerlund  <assar@sics.se>
+
+	* push.c (main): call k_getportbyname with port number in
+ 	network-byte-order
+
 1999-12-14  Assar Westerlund  <assar@sics.se>
 
 	* push.c (do_connect): remove bogus local block variable
