@@ -113,7 +113,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	pw = smb_getpwnam(user,False);
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
 	}
 
 	if (!make_server_info_pw(&server_info,pw)) {
