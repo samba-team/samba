@@ -47,11 +47,13 @@ gss_import_sec_context (
     krb5_storage *sp;
     krb5_auth_context ac;
     krb5_address local, remote;
+    krb5_address *localp, *remotep;
     krb5_data data;
     gss_buffer_desc buffer;
     krb5_keyblock keyblock;
     size_t sz;
     int32_t tmp;
+    int32_t flags;
 
     gssapi_krb5_init ();
 
@@ -77,31 +79,49 @@ gss_import_sec_context (
 	goto failure;
     }
 
+    /* flags */
+
+    krb5_ret_int32 (sp, &flags);
+
     /* retrieve the auth context */
 
     ac = (*context_handle)->auth_context;
     krb5_ret_int32 (sp, &ac->flags);
-    krb5_ret_address (sp, &local);
-    krb5_ret_address (sp, &remote);
-    krb5_auth_con_setaddrs (gssapi_krb5_context, ac, &local, &remote);
-    krb5_free_address (gssapi_krb5_context, &local);
-    krb5_free_address (gssapi_krb5_context, &remote);
+    if (flags & SC_LOCAL_ADDRESS)
+	krb5_ret_address (sp, localp = &local);
+    else
+	localp = NULL;
+    if (flags & SC_REMOTE_ADDRESS)
+	krb5_ret_address (sp, remotep  = &remote);
+    else
+	remotep = NULL;
+    krb5_auth_con_setaddrs (gssapi_krb5_context, ac, localp, remotep);
+    if (localp)
+	krb5_free_address (gssapi_krb5_context, localp);
+    if (remotep)
+	krb5_free_address (gssapi_krb5_context, remotep);
     krb5_ret_int16 (sp, &ac->local_port);
     krb5_ret_int16 (sp, &ac->remote_port);
-    krb5_ret_keyblock (sp, &keyblock);
-    krb5_auth_con_setkey (gssapi_krb5_context, ac, &keyblock);
-    krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
-    krb5_ret_keyblock (sp, &keyblock);
-    krb5_auth_con_setlocalsubkey (gssapi_krb5_context, ac, &keyblock);
-    krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
-    krb5_ret_keyblock (sp, &keyblock);
-    krb5_auth_con_setremotesubkey (gssapi_krb5_context, ac, &keyblock);
-    krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+    if (flags & SC_KEYBLOCK) {
+	krb5_ret_keyblock (sp, &keyblock);
+	krb5_auth_con_setkey (gssapi_krb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+    }
+    if (flags & SC_LOCAL_SUBKEY) {
+	krb5_ret_keyblock (sp, &keyblock);
+	krb5_auth_con_setlocalsubkey (gssapi_krb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+    }
+    if (flags & SC_REMOTE_SUBKEY) {
+	krb5_ret_keyblock (sp, &keyblock);
+	krb5_auth_con_setremotesubkey (gssapi_krb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+    }
     krb5_ret_int32 (sp, &ac->local_seqnumber);
     krb5_ret_int32 (sp, &ac->remote_seqnumber);
 
+#if 0
     krb5_ret_data (sp, &data);
-
     ac->authenticator = malloc (sizeof (*ac->authenticator));
     if (ac->authenticator == NULL) {
 	*minor_status = ENOMEM;
@@ -117,6 +137,7 @@ gss_import_sec_context (
 	ret = GSS_S_FAILURE;
 	goto failure;
     }
+#endif
 
     krb5_ret_int32 (sp, &tmp);
     ac->keytype = tmp;
