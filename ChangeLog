@@ -1,3 +1,24 @@
+2000-04-06  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/parse.y: regonize INTEGER (0..UNIT_MAX).
+	(DOTDOT): add
+	* lib/asn1/lex.l (DOTDOT): add
+	* lib/asn1/k5.asn1 (UNSIGNED): add.  use UNSIGNED for all sequence
+	numbers.
+	* lib/asn1/gen_length.c (length_type): add TUInteger
+	* lib/asn1/gen_free.c (free_type): add TUInteger
+	* lib/asn1/gen_encode.c (encode_type, generate_type_encode): add
+	TUInteger
+	* lib/asn1/gen_decode.c (decode_type, generate_type_decode): add
+	TUInteger
+	* lib/asn1/gen_copy.c (copy_type): add TUInteger
+	* lib/asn1/gen.c (define_asn1): add TUInteger
+	* lib/asn1/der_put.c (encode_unsigned): add
+	* lib/asn1/der_length.c (length_unsigned): add
+	* lib/asn1/der_get.c (decode_unsigned): add
+	* lib/asn1/der.h (decode_unsigned, encode_unsigned,
+	length_unsigned): add prototypes
+
 2000-04-05  Assar Westerlund  <assar@sics.se>
 
 	* lib/hdb/hdb.c: add support for hdb methods (aka back-ends).
