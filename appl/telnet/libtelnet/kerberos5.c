@@ -123,10 +123,8 @@ static	krb5_data auth;
 /* telnetd gets session key from here */
 static	/*krb5_tkt_authent*/ void *authdat = NULL;
 /* telnet matches the AP_REQ and AP_REP with this */
-#if 0
 static	krb5_authenticator authenticator;
-#endif
-static	k5_Authenticator authenticator;
+static  krb5_ticket *ticket;
 
 static krb5_context context;
 static krb5_auth_context auth_context;
@@ -184,6 +182,7 @@ kerberos5_send(char *name, Authenticator *ap)
     krb5_error_code r;
     krb5_ccache ccache;
     int ap_opts;
+    krb5_data cksum_data;
     
     printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
@@ -207,9 +206,11 @@ kerberos5_send(char *name, Authenticator *ap)
     
     auth_context = NULL;
 
+    cksum_data.length = 0;
+    cksum_data.data   = NULL;
     r = krb5_mk_req(context, &auth_context, ap_opts, 
 		    "host", RemoteHostName, 
-		    NULL, ccache, &auth);
+		    &cksum_data, ccache, &auth);
 
     if (r) {
 	if (auth_debug_mode) {
@@ -252,7 +253,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 {
     int r;
     krb5_data outbuf;
-    krb5_ticket *ticket;
     krb5_keyblock *key_block;
     char *name;
 
@@ -449,7 +449,9 @@ kerberos5_status(Authenticator *ap, char *name, int level)
 	return(level);
 
     if (UserNameRequested &&
-	krb5_kuserok(context, authdat->ticket->enc_part2->client, UserNameRequested))
+	krb5_kuserok(context,
+		     ticket->enc_part2.client,
+		     UserNameRequested))
 	{
 	    strcpy(name, UserNameRequested);
 	    return(AUTH_VALID);
