@@ -44,8 +44,9 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 
 	status = nbt_name_refresh_recv(req, tmp_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		DEBUG(4,("Refreshed name %s<%02x> on %s\n", 
-			 iname->name.name, iname->name.type, iname->iface->ip_address));
+		DEBUG(4,("Refreshed name %s on %s\n", 
+			 nbt_name_string(tmp_ctx, &iname->name), 
+			 iname->iface->ip_address));
 		iname->registration_time = timeval_current();
 		nbtd_start_refresh_timer(iname);
 		talloc_free(tmp_ctx);
@@ -56,13 +57,14 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 	iname->nb_flags &= ~NBT_NM_ACTIVE;
 
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Name conflict from %s refreshing name %s<%02x> on %s - %s\n", 
-			 io.out.reply_addr, iname->name.name, iname->name.type, 
+		DEBUG(1,("Name conflict from %s refreshing name %s on %s - %s\n", 
+			 io.out.reply_addr, nbt_name_string(tmp_ctx, &iname->name),
 			 iname->iface->ip_address, 
 			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 	} else {
-		DEBUG(1,("Error refreshing name %s<%02x> on %s - %s\n", 
-			 iname->name.name, iname->name.type, iname->iface->ip_address,
+		DEBUG(1,("Error refreshing name %s on %s - %s\n", 
+			 nbt_name_string(tmp_ctx, &iname->name), 
+			 iname->iface->ip_address,
 			 nt_errstr(status)));
 	}
 
@@ -130,14 +132,17 @@ static void nbtd_register_handler(struct composite_context *req)
 	struct nbtd_iface_name *iname = talloc_get_type(req->async.private, 
 							struct nbtd_iface_name);
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(iname);
 
 	status = nbt_name_register_bcast_recv(req);
 	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
-		DEBUG(3,("Registered %s<%02x> on interface %s\n",
-			 iname->name.name, iname->name.type, iname->iface->bcast_address));
+		DEBUG(3,("Registered %s on interface %s\n",
+			 nbt_name_string(tmp_ctx, &iname->name), 
+			 iname->iface->bcast_address));
 		iname->registration_time = timeval_current();
+		talloc_free(tmp_ctx);
 		nbtd_start_refresh_timer(iname);
 		return;
 	}
@@ -145,9 +150,10 @@ static void nbtd_register_handler(struct composite_context *req)
 	/* someone must have replied with an objection! */
 	iname->nb_flags |= NBT_NM_CONFLICT;
 
-	DEBUG(1,("Error registering %s<%02x> on interface %s - %s\n",
-		 iname->name.name, iname->name.type, iname->iface->bcast_address,
+	DEBUG(1,("Error registering %s on interface %s - %s\n",
+		 nbt_name_string(tmp_ctx, &iname->name), iname->iface->bcast_address,
 		 nt_errstr(status)));
+	talloc_free(tmp_ctx);
 }
 
 

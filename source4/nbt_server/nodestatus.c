@@ -82,8 +82,8 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 	   it could lead to giving attackers too much information */
 	ZERO_STRUCT(packet->answers[0].rdata.status.statistics);
 
-	DEBUG(7,("Sending node status reply for %s<%02x> to %s:%d\n", 
-		 name->name, name->type, src_address, src_port));
+	DEBUG(7,("Sending node status reply for %s to %s:%d\n", 
+		 nbt_name_string(packet, name), src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
@@ -113,8 +113,8 @@ void nbtd_query_status(struct nbt_name_socket *nbtsock,
 
 	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
 	if (iname == NULL) {
-		DEBUG(7,("Node status query for %s<%02x> from %s - not found on %s\n",
-			 name->name, name->type, src_address, iface->ip_address));
+		DEBUG(7,("Node status query for %s from %s - not found on %s\n",
+			 nbt_name_string(packet, name), src_address, iface->ip_address));
 		return;
 	}
 
