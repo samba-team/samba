@@ -6,7 +6,7 @@ Samba. Being on this list does not imply any sort of endorsement by
 anyone, it is just provided in the hope that it will be useful.
 
 Note that the organisations listed below will expect you to pay for
-the support that they offer. I've been told that several people
+The support that they offer. I've been told that several people
 assumed this was a list of kindly companies offering free commercial
 support!
 
@@ -111,9 +111,15 @@ Samba experience: SVR3.2, SOLARIS, ULTRIX, LINUX <--> DOS LAN-MAN, WFW
 SYDNEY - AUSTRALIA
 
 John Terpstra - Aquasoft (jht@aquasoft.com.au)
-Business:  +612 524 4040
-Home:      +612 540 3154
-Shoephone: +612 414 334422  (aka 0414 334422)
+Business:  +612 9524 4040
+Home:      +612 9540 3154
+Mobile:    +612 414 334422  (aka 0414 334422)
+Samba Experience: Member of Samba-Team. Long term contributor to Samba
+                  Samba on BSD/OS, Solaris (Sparc & x86), ISC Unix, SCO Unix
+                  NCR SVR4, Linux, UnixWare, IBM, HP, DEC, Others.
+                  Training Instructor in Windows NT, wide area networking
+                  over TCP/IP. Providing paid-for support for Public Domain
+                  Software and Linux.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
