@@ -459,7 +459,7 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
 BOOL cli_session_setup(struct cli_state *cli, 
@@ -1292,6 +1292,7 @@ void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+BOOL del_smbpwd_entry(const char *name);
 struct smb_passwd *getsmbpwnam(char *name);
 struct smb_passwd *getsmbpwrid(uint32 user_rid);
 struct smb_passwd *getsmbpwuid(uid_t smb_userid);
@@ -1330,12 +1331,12 @@ BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name
 
 /*The following definitions come from  passdb/smbpass.c  */
 
+char *format_new_smbpasswd_entry(struct smb_passwd *newpwd);
 struct passdb_ops *file_initialize_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */
 
-BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
-			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
+BOOL local_password_change(char *user_name, int local_flags,
 			   char *new_passwd, 
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len);

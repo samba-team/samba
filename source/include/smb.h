@@ -813,6 +813,7 @@ struct passdb_ops {
    */
   BOOL (*add_smbpwd_entry)(struct smb_passwd *);
   BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
+  BOOL (*del_smbpwd_entry)(const char *);
 
   /*
    * Functions that manupulate a struct sam_passwd.
@@ -848,6 +849,17 @@ struct passdb_ops {
   struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
 #endif
 };
+
+/*
+ * Flags for local user manipulation.
+ */
+
+#define LOCAL_ADD_USER 0x1
+#define LOCAL_DELETE_USER 0x2
+#define LOCAL_DISABLE_USER 0x4
+#define LOCAL_ENABLE_USER 0x8
+#define LOCAL_TRUST_ACCOUNT 0x10
+#define LOCAL_SET_NO_PASSWORD 0x20
 
 /* this is used for smbstatus */
 
