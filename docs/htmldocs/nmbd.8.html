@@ -4,12 +4,12 @@
 	those produced by SMB/CIFS clients such as Windows 95/98/ME, 
 	Windows NT, Windows 2000, Windows XP and LanManager clients. It also
 	participates in the browsing protocols which make up the 
-	Windows &quot;Network Neighborhood&quot; view.</p><p>SMB/CIFS clients, when they start up, may wish to 
+	Windows "Network Neighborhood" view.</p><p>SMB/CIFS clients, when they start up, may wish to 
 	locate an SMB/CIFS server. That is, they wish to know what 
 	IP number a specified host is using.</p><p>Amongst other services, <b class="command">nmbd</b> will 
 	listen for such requests, and if its own NetBIOS name is 
 	specified it will respond with the IP number of the host it 
-	is running on.  Its &quot;own NetBIOS name&quot; is by
+	is running on.  Its "own NetBIOS name" is by
 	default the primary DNS name of the host it is running on, 
 	but this can be overridden with the <span class="emphasis"><em>-n</em></span> 
 	option (see OPTIONS below). Thus <b class="command">nmbd</b> will 
@@ -42,7 +42,7 @@
 		</p></dd><dt><span class="term">-S</span></dt><dd><p>If specified, this parameter causes
 		<b class="command">nmbd</b> to log to standard output rather
 		than a file.</p></dd><dt><span class="term">-i</span></dt><dd><p>If this parameter is specified it causes the
-		server to run &quot;interactively&quot;, not as a daemon, even if the
+		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit daemon mode when run from the
 		command line. <b class="command">nmbd</b> also logs to standard
@@ -51,7 +51,7 @@
 </p></dd><dt><span class="term">-H &lt;filename&gt;</span></dt><dd><p>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
-		resolution mechanism <a class="indexterm" name="id2796904"></a><i class="parameter"><tt>name resolve order</tt></i> described in <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> to resolve any 
+		resolution mechanism <a class="indexterm" name="id2797065"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a> described in <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> to resolve any 
 		NetBIOS name queries needed by the server. Note 
 		that the contents of this file are <span class="emphasis"><em>NOT</em></span> 
 		used by <b class="command">nmbd</b> to answer any name queries. 
@@ -80,9 +80,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2797084"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2797372"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-p &lt;UDP port number&gt;</span></dt><dd><p>UDP port number is a positive integer value.
 		This option changes the default UDP port number (normally 137)
@@ -104,13 +104,13 @@ never removed by the client.
 		configuration file. Other common places that systems
 		install this file are <tt class="filename">/usr/samba/lib/smb.conf</tt>
 		and <tt class="filename">/etc/samba/smb.conf</tt>.</p><p>When run as a WINS server (see the
-			<a class="indexterm" name="id2797295"></a><i class="parameter"><tt>wins support</tt></i>
+			<a class="indexterm" name="id2797588"></a><a href="#"><i class="parameter"><tt>wins support</tt></i></a>
 		parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> man page),
 		<b class="command">nmbd</b>
 		will store the WINS database in the file <tt class="filename">wins.dat</tt>
 		in the <tt class="filename">var/locks</tt> directory configured under
 		wherever Samba was configured to install itself.</p><p>If <b class="command">nmbd</b> is acting as a <span class="emphasis"><em>
-				browse master</em></span> (see the <a class="indexterm" name="id2797358"></a><i class="parameter"><tt>local master</tt></i>
+				browse master</em></span> (see the <a class="indexterm" name="id2797657"></a><a href="#"><i class="parameter"><tt>local master</tt></i></a>
 		parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> man page, <b class="command">nmbd</b>
 		will store the browsing database in the file <tt class="filename">browse.dat
 		</tt> in the <tt class="filename">var/locks</tt> directory

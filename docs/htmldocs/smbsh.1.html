@@ -33,7 +33,7 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2802215"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2796897"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used to determine what naming 
 services and in what order to resolve 
 host names to IP addresses. The option takes a space-separated 
@@ -66,9 +66,9 @@ resolution methods as it depends on the target host
 being on a locally connected subnet.
 </p></li></ul></div><p>If this parameter is not set then the name resolve order 
 defined in the <tt class="filename">smb.conf</tt> file parameter  
-(<a class="indexterm" name="id2796281"></a><i class="parameter"><tt>name resolve order</tt></i>) will be used.
+(<a class="indexterm" name="id2797172"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a>) will be used.
 </p><p>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <a class="indexterm" name="id2796300"></a><i class="parameter"><tt>name resolve order</tt></i> parameter of the <tt class="filename">smb.conf</tt> file, the name 
+this parameter or any entry in the <a class="indexterm" name="id2797198"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a> parameter of the <tt class="filename">smb.conf</tt> file, the name 
 resolution methods will be attempted in this order. </p></dd><dt><span class="term">-L libdir</span></dt><dd><p>This parameter specifies the location of the 
 		shared libraries used by <b class="command">smbsh</b>. The default
 		value is specified at compile time.

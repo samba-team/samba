@@ -508,6 +508,18 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIclient plaintext auth\fR
+
+.TP
+\(bu
+\fIclient schannel\fR
+
+.TP
+\(bu
+\fIclient signing\fR
+
+.TP
+\(bu
 \fIclient use spnego\fR
 
 .TP
@@ -540,11 +552,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIdefault service\fR
+\fIdefault\fR
 
 .TP
 \(bu
-\fIdefault\fR
+\fIdefault service\fR
 
 .TP
 \(bu
@@ -672,6 +684,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIkernel change notify\fR
+
+.TP
+\(bu
 \fIkernel oplocks\fR
 
 .TP
@@ -693,6 +709,14 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fIldap filter\fR
+
+.TP
+\(bu
+\fIldap group suffix\fR
+
+.TP
+\(bu
+\fIldap idmap suffix\fR
 
 .TP
 \(bu
@@ -720,10 +744,6 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIldap trust ids\fR
-
-.TP
-\(bu
 \fIldap user suffix\fR
 
 .TP
@@ -744,11 +764,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIlock directory\fR
+\fIlock dir\fR
 
 .TP
 \(bu
-\fIlock dir\fR
+\fIlock directory\fR
 
 .TP
 \(bu
@@ -936,11 +956,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIpasswd chat debug\fR
+\fIpasswd chat\fR
 
 .TP
 \(bu
-\fIpasswd chat\fR
+\fIpasswd chat debug\fR
 
 .TP
 \(bu
@@ -968,11 +988,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIpreload modules\fR
+\fIpreload\fR
 
 .TP
 \(bu
-\fIpreload\fR
+\fIpreload modules\fR
 
 .TP
 \(bu
@@ -1016,7 +1036,7 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIroot directory\fR
+\fIroot\fR
 
 .TP
 \(bu
@@ -1024,7 +1044,7 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIroot\fR
+\fIroot directory\fR
 
 .TP
 \(bu
@@ -1033,6 +1053,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fIserver schannel\fR
+
+.TP
+\(bu
+\fIserver signing\fR
 
 .TP
 \(bu
@@ -1084,11 +1108,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIsyslog only\fR
+\fIsyslog\fR
 
 .TP
 \(bu
-\fIsyslog\fR
+\fIsyslog only\fR
 
 .TP
 \(bu
@@ -1152,11 +1176,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIutmp directory\fR
+\fIutmp\fR
 
 .TP
 \(bu
-\fIutmp\fR
+\fIutmp directory\fR
 
 .TP
 \(bu
@@ -1235,6 +1259,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP 3
 \(bu
+\fIacl compatibility\fR
+
+.TP
+\(bu
 \fIadmin users\fR
 
 .TP
@@ -1311,6 +1339,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
+\fIdirectory\fR
+
+.TP
+\(bu
 \fIdirectory mask\fR
 
 .TP
@@ -1320,10 +1352,6 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 .TP
 \(bu
 \fIdirectory security mask\fR
-
-.TP
-\(bu
-\fIdirectory\fR
 
 .TP
 \(bu
@@ -1563,11 +1591,11 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
-\fIpreexec close\fR
+\fIpreexec\fR
 
 .TP
 \(bu
-\fIpreexec\fR
+\fIpreexec close\fR
 
 .TP
 \(bu
@@ -1587,15 +1615,15 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
+\fIprinter\fR
+
+.TP
+\(bu
 \fIprinter admin\fR
 
 .TP
 \(bu
 \fIprinter name\fR
-
-.TP
-\(bu
-\fIprinter\fR
 
 .TP
 \(bu
@@ -1635,11 +1663,11 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
-\fIroot preexec close\fR
+\fIroot preexec\fR
 
 .TP
 \(bu
-\fIroot preexec\fR
+\fIroot preexec close\fR
 
 .TP
 \(bu
@@ -1679,6 +1707,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
+\fIuser\fR
+
+.TP
+\(bu
 \fIusername\fR
 
 .TP
@@ -1687,19 +1719,15 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
-\fIuser\fR
-
-.TP
-\(bu
 \fIuse sendfile\fR
 
 .TP
 \(bu
-\fIvalid users\fR
+\fI-valid\fR
 
 .TP
 \(bu
-\fI-valid\fR
+\fIvalid users\fR
 
 .TP
 \(bu
@@ -1711,11 +1739,11 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
-\fIvfs objects\fR
+\fIvfs object\fR
 
 .TP
 \(bu
-\fIvfs object\fR
+\fIvfs objects\fR
 
 .TP
 \(bu
@@ -1761,6 +1789,17 @@ Default: \fBNone\fR\&.
 
 
 Example: \fBabort shutdown script = /sbin/shutdown -c\fR
+
+
+.TP
+acl compatibility (S)
+This parameter specifies what OS ACL semantics should be compatible with\&. Possible values are \fBwinnt\fR for Windows NT 4, \fBwin2k\fR for Windows 2000 and above and \fBauto\fR\&. If you specify \fBauto\fR, the value for this parameter will be based upon the version of the client\&. There should be no reason to change this parameter from the default\&.
+
+
+Default: \fBacl compatibility = Auto\fR
+
+
+Example: \fBacl compatibility = win2k\fR
 
 
 .TP
@@ -2146,6 +2185,36 @@ Default : \fBclient ntlmv2 auth = no\fR
 
 
 .TP
+client plaintext auth (G)
+Specifies whether a client should send a plaintext password if the server does not support encrypted passwords\&.
+
+
+Default: \fBclient plaintext auth = yes\fR
+
+
+.TP
+client schannel (G)
+This controls whether the client offers or even demands the use of the netlogon schannel\&. \fIclient schannel = no\fR does not offer the schannel, \fIserver schannel = auto\fR offers the schannel but does not enforce it, and \fIserver schannel = yes\fR denies access if the server is not able to speak netlogon schannel\&.
+
+
+Default: \fBclient schannel = auto\fR
+
+
+Example: \fBclient schannel = yes\fR
+
+
+.TP
+client signing (G)
+This controls whether the client offers or requires the server it talks to to use SMB signing\&. Possible values are \fBauto\fR, \fBmandatory\fR and \fBdisabled\fR\&.
+
+
+When set to auto, SMB signing is offered, but not enforced\&. When set to mandatory, SMB signing is required and if set to disabled, SMB signing is not offered either\&.
+
+
+Default: \fBclient signing = auto\fR
+
+
+.TP
 client use spnego (G)
 This variable controls controls whether samba clients will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000 servers to agree upon an authentication mechanism\&. SPNEGO client support for SMB Signing is currently broken, so you might want to turn this option off when operating with Windows 2003 domain controllers in particular\&.
 
@@ -2319,6 +2388,11 @@ Default: \fBdebug uid = no\fR
 
 
 .TP
+default (G)
+A synonym for \fI default service\fR\&.
+
+
+.TP
 default case (S)
 See the section on NAME MANGLING\&. Also note the \fIshort preserve case\fR parameter\&.
 
@@ -2371,11 +2445,6 @@ Example:
 [pub]
 	path = /%S
 .fi
-
-
-.TP
-default (G)
-A synonym for \fI default service\fR\&.
 
 
 .TP
@@ -2535,6 +2604,11 @@ Note that you may have to replace the command names with full path names on some
 
 
 .TP
+directory (S)
+Synonym for \fIpath\fR\&.
+
+
+.TP
 directory mask (S)
 This parameter is the octal modes which are used when converting DOS modes to UNIX modes when creating UNIX directories\&.
 
@@ -2592,11 +2666,6 @@ Default: \fBdirectory security mask = 0777\fR
 
 
 Example: \fBdirectory security mask = 0700\fR
-
-
-.TP
-directory (S)
-Synonym for \fIpath\fR\&.
 
 
 .TP
@@ -3270,7 +3339,7 @@ The purpose of the idmap backend parameter is to allow idmap to NOT use the loca
 Default: \fBidmap backend = <empty string>\fR
 
 
-Example: \fBidmap backend = ldapsam://ldapslave.example.com\fR
+Example: \fBidmap backend = ldap:ldap://ldapslave.example.com\fR
 
 
 .TP
@@ -3418,6 +3487,17 @@ Example: \fBkeepalive = 600\fR
 
 
 .TP
+kernel change notify (G)
+This parameter specifies whether Samba should ask the kernel for change notifications in directories so that SMB clients can refresh whenever the data on the server changes\&.
+
+
+This parameter is only usd when your kernel supports change notification to user programs, using the F_NOTIFY fcntl\&.
+
+
+Default: \fBYes\fR
+
+
+.TP
 kernel oplocks (G)
 For UNIXes that support kernel based \fIoplocks\fR (currently only IRIX and the Linux 2\&.4 kernel), this parameter allows the use of them to be turned on or off\&.
 
@@ -3478,6 +3558,28 @@ This parameter specifies the RFC 2254 compliant LDAP search filter\&. The defaul
 
 
 Default: \fBldap filter = (&(uid=%u)(objectclass=sambaAccount))\fR
+
+
+.TP
+ldap group suffix (G)
+This parameters specifies the suffix that is used for groups when these are added to the LDAP directory\&. If this parameter is unset, the value of \fIldap suffix\fR will be used instead\&.
+
+
+Default: \fBnone\fR
+
+
+Example: \fBdc=samba,ou=Groups\fR
+
+
+.TP
+ldap idmap suffix (G)
+This parameters specifies the suffix that is used when storing idmap mappings\&. If this parameter is unset, the value of \fIldap suffix\fR will be used instead\&.
+
+
+Default: \fBnone\fR
+
+
+Example: \fBdc=samba,ou=Idmap\fR
 
 
 .TP
@@ -3559,19 +3661,8 @@ Default: \fBnone\fR
 
 
 .TP
-ldap trust ids (G)
-Normally, Samba validates each entry in the LDAP server against getpwnam()\&. This allows LDAP to be used for Samba with the unix system using NIS (for example) and also ensures that Samba does not present accounts that do not otherwise exist\&.
-
-
-This option is used to disable this functionality, and instead to rely on the presence of the appropriate attributes in LDAP directly, which can result in a significant performance boost in some situations\&. Setting this option to yes effectivly assumes that the local machine is running \fBnss_ldap\fR against the same LDAP server\&.
-
-
-Default: \fBldap trust ids = No\fR
-
-
-.TP
 ldap user suffix (G)
-It specifies where users are added to the tree\&.
+This parameter specifies where users are added to the tree\&. If this parameter is not specified, the value from \fBldap suffix\fR\&.
 
 
 Default: \fBnone\fR
@@ -3651,6 +3742,11 @@ Default: \fBlocal master = yes\fR
 
 
 .TP
+lock dir (G)
+Synonym for \fI lock directory\fR\&.
+
+
+.TP
 lock directory (G)
 This option specifies the directory where lock files will be placed\&. The lock files are used to implement the \fImax connections\fR option\&.
 
@@ -3659,11 +3755,6 @@ Default: \fBlock directory = ${prefix}/var/locks\fR
 
 
 Example: \fBlock directory = /var/run/samba/locks\fR
-
-
-.TP
-lock dir (G)
-Synonym for \fI lock directory\fR\&.
 
 
 .TP
@@ -4797,17 +4888,6 @@ Example: \fBpassdb backend = mysql:my_plugin_args tdbsam\fR
 
 
 .TP
-passwd chat debug (G)
-This boolean specifies if the passwd chat script parameter is run in \fBdebug\fR mode\&. In this mode the strings passed to and received from the passwd chat are printed in the \fBsmbd\fR(8) log with a \fIdebug level\fR of 100\&. This is a dangerous option as it will allow plaintext passwords to be seen in the \fBsmbd\fR log\&. It is available to help Samba admins debug their \fIpasswd chat\fR scripts when calling the \fIpasswd program\fR and should be turned off after this has been done\&. This option has no effect if the \fIpam password change\fR paramter is set\&. This parameter is off by default\&.
-
-
-See also \fIpasswd chat\fR , \fIpam password change\fR , \fIpasswd program\fR \&.
-
-
-Default: \fBpasswd chat debug = no\fR
-
-
-.TP
 passwd chat (G)
 This string controls the \fB"chat"\fR conversation that takes places between \fBsmbd\fR(8) and the local password changing program to change the user's password\&. The string describes a sequence of response-receive pairs that \fBsmbd\fR(8) uses to determine what to send to the \fIpasswd program\fR and what to expect back\&. If the expected output is not received then the password is not changed\&.
 
@@ -4834,6 +4914,17 @@ Default: \fBpasswd chat = *new*password* %n\\n *new*password* %n\\n *changed*\fR
 
 
 Example: \fBpasswd chat = "*Enter OLD password*" %o\\n "*Enter NEW password*" %n\\n "*Reenter NEW password*" %n\\n "*Password changed*"\fR
+
+
+.TP
+passwd chat debug (G)
+This boolean specifies if the passwd chat script parameter is run in \fBdebug\fR mode\&. In this mode the strings passed to and received from the passwd chat are printed in the \fBsmbd\fR(8) log with a \fIdebug level\fR of 100\&. This is a dangerous option as it will allow plaintext passwords to be seen in the \fBsmbd\fR log\&. It is available to help Samba admins debug their \fIpasswd chat\fR scripts when calling the \fIpasswd program\fR and should be turned off after this has been done\&. This option has no effect if the \fIpam password change\fR paramter is set\&. This parameter is off by default\&.
+
+
+See also \fIpasswd chat\fR , \fIpam password change\fR , \fIpasswd program\fR \&.
+
+
+Default: \fBpasswd chat debug = no\fR
 
 
 .TP
@@ -5007,14 +5098,6 @@ Example: \fBpostexec = echo \"%u disconnected from %S from %m (%I)\" >> /tmp/log
 
 
 .TP
-preexec close (S)
-This boolean option controls whether a non-zero return code from \fIpreexec \fR should close the service being connected to\&.
-
-
-Default: \fBpreexec close = no\fR
-
-
-.TP
 preexec (S)
 This option specifies a command to be run whenever the service is connected to\&. It takes the usual substitutions\&.
 
@@ -5035,6 +5118,14 @@ Default: \fBnone (no command executed)\fR
 
 
 Example: \fBpreexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log\fR
+
+
+.TP
+preexec close (S)
+This boolean option controls whether a non-zero return code from \fIpreexec \fR should close the service being connected to\&.
+
+
+Default: \fBpreexec close = no\fR
 
 
 .TP
@@ -5060,20 +5151,6 @@ Default: \fBpreferred master = auto\fR
 
 
 .TP
-preload modules (G)
-This is a list of paths to modules that should be loaded into smbd before a client connects\&. This improves the speed of smbd when reacting to new connections somewhat\&.
-
-
-It is recommended to only use this option on heavy-performance servers\&.
-
-
-Default: \fBpreload modules = \fR
-
-
-Example: \fBpreload modules = /usr/lib/samba/passdb/mysql.so+++ \fR
-
-
-.TP
 preload (G)
 This is a list of services that you want to be automatically added to the browse lists\&. This is most useful for homes and printers services that would otherwise not be visible\&.
 
@@ -5085,6 +5162,17 @@ Default: \fBno preloaded services\fR
 
 
 Example: \fBpreload = fred lp colorlp\fR
+
+
+.TP
+preload modules (G)
+This is a list of paths to modules that should be loaded into smbd before a client connects\&. This improves the speed of smbd when reacting to new connections somewhat\&.
+
+
+Default: \fBpreload modules = \fR
+
+
+Example: \fBpreload modules = /usr/lib/samba/passdb/mysql.so+++ \fR
 
 
 .TP
@@ -5107,6 +5195,11 @@ Note that a printable service will ALWAYS allow writing to the service path (use
 
 
 Default: \fBprintable = no\fR
+
+
+.TP
+printcap (G)
+Synonym for \fI printcap name\fR\&.
 
 
 .TP
@@ -5142,11 +5235,6 @@ Default: \fBprintcap name = /etc/printcap\fR
 
 
 Example: \fBprintcap name = /etc/myprintcap\fR
-
-
-.TP
-printcap (G)
-Synonym for \fI printcap name\fR\&.
 
 
 .TP
@@ -5218,6 +5306,11 @@ Example: \fBprint command = /usr/local/samba/bin/myprintscript %p %s\fR
 
 
 .TP
+printer (S)
+Synonym for \fI printer name\fR\&.
+
+
+.TP
 printer admin (S)
 This is a list of users that can do anything to printers via the remote administration interfaces offered by MS-RPC (usually using a NT workstation)\&. Note that the root user always has admin rights\&.
 
@@ -5240,11 +5333,6 @@ Default: \fBnone (but may be \fBlp\fR on many systems)\fR
 
 
 Example: \fBprinter name = laserwriter\fR
-
-
-.TP
-printer (S)
-Synonym for \fI printer name\fR\&.
 
 
 .TP
@@ -5491,6 +5579,16 @@ Default: \fBrestrict anonymous = 0\fR
 
 
 .TP
+root (G)
+Synonym for \fIroot directory"\fR\&.
+
+
+.TP
+root dir (G)
+Synonym for \fIroot directory"\fR\&.
+
+
+.TP
 root directory (G)
 The server will \fBchroot()\fR (i\&.e\&. Change its root directory) to this directory on startup\&. This is not strictly necessary for secure operation\&. Even without it the server will deny access to files not in one of the service entries\&. It may also check for, and deny access to, soft links to other parts of the filesystem, or attempts to use "\&.\&." in file names to access other directories (depending on the setting of the \fIwide links\fR parameter)\&.
 
@@ -5505,11 +5603,6 @@ Example: \fBroot directory = /homes/smb\fR
 
 
 .TP
-root dir (G)
-Synonym for \fIroot directory"\fR\&.
-
-
-.TP
 root postexec (S)
 This is the same as the \fIpostexec\fR parameter except that the command is run as root\&. This is useful for unmounting filesystems (such as CDROMs) after a connection is closed\&.
 
@@ -5518,17 +5611,6 @@ See also \fI postexec\fR\&.
 
 
 Default: \fBroot postexec = <empty string>\fR
-
-
-.TP
-root preexec close (S)
-This is the same as the \fIpreexec close \fR parameter except that the command is run as root\&.
-
-
-See also \fI preexec\fR and \fIpreexec close\fR\&.
-
-
-Default: \fBroot preexec close = no\fR
 
 
 .TP
@@ -5543,31 +5625,14 @@ Default: \fBroot preexec = <empty string>\fR
 
 
 .TP
-root (G)
-Synonym for \fIroot directory"\fR\&.
+root preexec close (S)
+This is the same as the \fIpreexec close \fR parameter except that the command is run as root\&.
 
 
-.TP
-security mask (S)
-This parameter controls what UNIX permission bits can be modified when a Windows NT client is manipulating the UNIX permission on a file using the native NT security dialog box\&.
+See also \fI preexec\fR and \fIpreexec close\fR\&.
 
 
-This parameter is applied as a mask (AND'ed with) to the changed permission bits, thus preventing any bits not in this mask from being modified\&. Essentially, zero bits in this mask may be treated as a set of bits the user is not allowed to change\&.
-
-
-If not set explicitly this parameter is 0777, allowing a user to modify all the user/group/world permissions on a file\&.
-
-
-\fBNote\fR that users who can access the Samba server through other means can easily bypass this restriction, so it is primarily useful for standalone "appliance" systems\&. Administrators of most normal systems will probably want to leave it set to \fB0777\fR\&.
-
-
-See also the \fIforce directory security mode\fR, \fIdirectory security mask\fR, \fIforce security mode\fR parameters\&.
-
-
-Default: \fBsecurity mask = 0777\fR
-
-
-Example: \fBsecurity mask = 0770\fR
+Default: \fBroot preexec close = no\fR
 
 
 .TP
@@ -5715,6 +5780,29 @@ Example: \fBsecurity = DOMAIN\fR
 
 
 .TP
+security mask (S)
+This parameter controls what UNIX permission bits can be modified when a Windows NT client is manipulating the UNIX permission on a file using the native NT security dialog box\&.
+
+
+This parameter is applied as a mask (AND'ed with) to the changed permission bits, thus preventing any bits not in this mask from being modified\&. Essentially, zero bits in this mask may be treated as a set of bits the user is not allowed to change\&.
+
+
+If not set explicitly this parameter is 0777, allowing a user to modify all the user/group/world permissions on a file\&.
+
+
+\fBNote\fR that users who can access the Samba server through other means can easily bypass this restriction, so it is primarily useful for standalone "appliance" systems\&. Administrators of most normal systems will probably want to leave it set to \fB0777\fR\&.
+
+
+See also the \fIforce directory security mode\fR, \fIdirectory security mask\fR, \fIforce security mode\fR parameters\&.
+
+
+Default: \fBsecurity mask = 0777\fR
+
+
+Example: \fBsecurity mask = 0770\fR
+
+
+.TP
 server schannel (G)
 This controls whether the server offers or even demands the use of the netlogon schannel\&. \fIserver schannel = no\fR does not offer the schannel, \fIserver schannel = auto\fR offers the schannel but does not enforce it, and \fIserver schannel = yes\fR denies access if the client is not able to speak netlogon schannel\&. This is only the case for Windows NT4 before SP4\&.
 
@@ -5726,6 +5814,17 @@ Default: \fBserver schannel = auto\fR
 
 
 Example: \fBserver schannel = yes\fR
+
+
+.TP
+server signing (G)
+This controls whether the server offers or requires the client it talks to to use SMB signing\&. Possible values are \fBauto\fR, \fBmandatory\fR and \fBdisabled\fR\&.
+
+
+When set to auto, SMB signing is offered, but not enforced\&. When set to mandatory, SMB signing is required and if set to disabled, SMB signing is not offered either\&.
+
+
+Default: \fBclient signing = False\fR
 
 
 .TP
@@ -6093,14 +6192,6 @@ Default: \fBsync always = no\fR
 
 
 .TP
-syslog only (G)
-If this parameter is set then Samba debug messages are logged into the system syslog only, and not to the debug log files\&.
-
-
-Default: \fBsyslog only = no\fR
-
-
-.TP
 syslog (G)
 This parameter maps how Samba debug messages are logged onto the system syslog logging levels\&. Samba debug level zero maps onto syslog \fBLOG_ERR\fR, debug level one maps onto \fBLOG_WARNING\fR, debug level two maps onto \fBLOG_NOTICE\fR, debug level three maps onto LOG_INFO\&. All higher levels are mapped to \fB LOG_DEBUG\fR\&.
 
@@ -6109,6 +6200,14 @@ This parameter sets the threshold for sending messages to syslog\&. Only message
 
 
 Default: \fBsyslog = 1\fR
+
+
+.TP
+syslog only (G)
+If this parameter is set then Samba debug messages are logged into the system syslog only, and not to the debug log files\&.
+
+
+Default: \fBsyslog only = no\fR
 
 
 .TP
@@ -6183,7 +6282,7 @@ unix extensions (G)
 This boolean parameter controls whether Samba implments the CIFS UNIX extensions, as defined by HP\&. These extensions enable Samba to better serve UNIX CIFS clients by supporting features such as symbolic links, hard links, etc\&.\&.\&. These extensions require a similarly enabled client, and are of no current use to Windows clients\&.
 
 
-Default: \fBunix extensions = no\fR
+Default: \fBunix extensions = yes\fR
 
 
 .TP
@@ -6234,6 +6333,49 @@ This global parameter determines if the tdb internals of Samba can depend on mma
 
 
 Default: \fBuse mmap = yes\fR
+
+
+.TP
+user (S)
+Synonym for \fIusername\fR\&.
+
+
+.TP
+username (S)
+Multiple users may be specified in a comma-delimited list, in which case the supplied password will be tested against each username in turn (left to right)\&.
+
+
+The \fIusername\fR line is needed only when the PC is unable to supply its own username\&. This is the case for the COREPLUS protocol or where your users have different WfWg usernames to UNIX usernames\&. In both these cases you may also be better using the \\\\server\\share%user syntax instead\&.
+
+
+The \fIusername\fR line is not a great solution in many cases as it means Samba will try to validate the supplied password against each of the usernames in the \fIusername\fR line in turn\&. This is slow and a bad idea for lots of users in case of duplicate passwords\&. You may get timeouts or security breaches using this parameter unwisely\&.
+
+
+Samba relies on the underlying UNIX security\&. This parameter does not restrict who can login, it just offers hints to the Samba server as to what usernames might correspond to the supplied password\&. Users can login as whoever they please and they will be able to do no more damage than if they started a telnet session\&. The daemon runs as the user that they log in as, so they cannot do anything that user cannot do\&.
+
+
+To restrict a service to a particular set of users you can use the \fIvalid users \fR parameter\&.
+
+
+If any of the usernames begin with a '@' then the name will be looked up first in the NIS netgroups list (if Samba is compiled with netgroup support), followed by a lookup in the UNIX groups database and will expand to a list of all users in the group of that name\&.
+
+
+If any of the usernames begin with a '+' then the name will be looked up only in the UNIX groups database and will expand to a list of all users in the group of that name\&.
+
+
+If any of the usernames begin with a '&' then the name will be looked up only in the NIS netgroups database (if Samba is compiled with netgroup support) and will expand to a list of all users in the netgroup group of that name\&.
+
+
+Note that searching though a groups database can take quite some time, and some clients may time out during the search\&.
+
+
+See the section NOTE ABOUT USERNAME/PASSWORD VALIDATION for more information on how this parameter determines access to the services\&.
+
+
+Default: \fBThe guest account if a guest service, else <empty string>.\fR
+
+
+Examples:\fBusername = fred, mary, jack, jane, @users, @pcgroup\fR
 
 
 .TP
@@ -6317,51 +6459,8 @@ Example: \fBusername map = /usr/local/samba/lib/users.map\fR
 
 
 .TP
-username (S)
-Multiple users may be specified in a comma-delimited list, in which case the supplied password will be tested against each username in turn (left to right)\&.
-
-
-The \fIusername\fR line is needed only when the PC is unable to supply its own username\&. This is the case for the COREPLUS protocol or where your users have different WfWg usernames to UNIX usernames\&. In both these cases you may also be better using the \\\\server\\share%user syntax instead\&.
-
-
-The \fIusername\fR line is not a great solution in many cases as it means Samba will try to validate the supplied password against each of the usernames in the \fIusername\fR line in turn\&. This is slow and a bad idea for lots of users in case of duplicate passwords\&. You may get timeouts or security breaches using this parameter unwisely\&.
-
-
-Samba relies on the underlying UNIX security\&. This parameter does not restrict who can login, it just offers hints to the Samba server as to what usernames might correspond to the supplied password\&. Users can login as whoever they please and they will be able to do no more damage than if they started a telnet session\&. The daemon runs as the user that they log in as, so they cannot do anything that user cannot do\&.
-
-
-To restrict a service to a particular set of users you can use the \fIvalid users \fR parameter\&.
-
-
-If any of the usernames begin with a '@' then the name will be looked up first in the NIS netgroups list (if Samba is compiled with netgroup support), followed by a lookup in the UNIX groups database and will expand to a list of all users in the group of that name\&.
-
-
-If any of the usernames begin with a '+' then the name will be looked up only in the UNIX groups database and will expand to a list of all users in the group of that name\&.
-
-
-If any of the usernames begin with a '&' then the name will be looked up only in the NIS netgroups database (if Samba is compiled with netgroup support) and will expand to a list of all users in the netgroup group of that name\&.
-
-
-Note that searching though a groups database can take quite some time, and some clients may time out during the search\&.
-
-
-See the section NOTE ABOUT USERNAME/PASSWORD VALIDATION for more information on how this parameter determines access to the services\&.
-
-
-Default: \fBThe guest account if a guest service, else <empty string>.\fR
-
-
-Examples:\fBusername = fred, mary, jack, jane, @users, @pcgroup\fR
-
-
-.TP
 users (S)
 Synonym for \fI username\fR\&.
-
-
-.TP
-user (S)
-Synonym for \fIusername\fR\&.
 
 
 .TP
@@ -6381,17 +6480,6 @@ Default: \fBuse spnego = yes\fR
 
 
 .TP
-utmp directory (G)
-This parameter is only available if Samba has been configured and compiled with the option \fB --with-utmp\fR\&. It specifies a directory pathname that is used to store the utmp or utmpx files (depending on the UNIX system) that record user connections to a Samba server\&. See also the \fIutmp\fR parameter\&. By default this is not set, meaning the system will use whatever utmp file the native system is set to use (usually \fI/var/run/utmp\fR on Linux)\&.
-
-
-Default: \fBno utmp directory\fR
-
-
-Example: \fButmp directory = /var/run/utmp\fR
-
-
-.TP
 utmp (G)
 This boolean parameter is only available if Samba has been configured and compiled with the option \fB --with-utmp\fR\&. If set to \fByes\fR then Samba will attempt to add utmp or utmpx records (depending on the UNIX system) whenever a connection is made to a Samba server\&. Sites may use this to record the user connecting to a Samba share\&.
 
@@ -6403,6 +6491,28 @@ See also the \fI utmp directory\fR parameter\&.
 
 
 Default: \fButmp = no\fR
+
+
+.TP
+utmp directory (G)
+This parameter is only available if Samba has been configured and compiled with the option \fB --with-utmp\fR\&. It specifies a directory pathname that is used to store the utmp or utmpx files (depending on the UNIX system) that record user connections to a Samba server\&. See also the \fIutmp\fR parameter\&. By default this is not set, meaning the system will use whatever utmp file the native system is set to use (usually \fI/var/run/utmp\fR on Linux)\&.
+
+
+Default: \fBno utmp directory\fR
+
+
+Example: \fButmp directory = /var/run/utmp\fR
+
+
+.TP
+-valid (S)
+This parameter indicates whether a share is valid and thus can be used\&. When this parameter is set to false, the share will be in no way visible nor accessible\&.
+
+
+This option should not be used by regular users but might be of help to developers\&. Samba uses this option internally to mark shares as deleted\&.
+
+
+Default: \fBTrue\fR
 
 
 .TP
@@ -6423,17 +6533,6 @@ Default: \fBNo valid users list (anyone can login) \fR
 
 
 Example: \fBvalid users = greg, @pcusers\fR
-
-
-.TP
--valid (S)
-This parameter indicates whether a share is valid and thus can be used\&. When this parameter is set to false, the share will be in no way visible nor accessible\&.
-
-
-This option should not be used by regular users but might be of help to developers\&. Samba uses this option internally to mark shares as deleted\&.
-
-
-Default: \fBTrue\fR
 
 
 .TP
@@ -6488,6 +6587,11 @@ Example: \fBveto oplock files = /*.SEM/\fR
 
 
 .TP
+vfs object (S)
+Synonym for \fIvfs objects\fR \&.
+
+
+.TP
 vfs objects (S)
 This parameter specifies the backend names which are used for Samba VFS I/O operations\&. By default, normal disk I/O operations are used but these can be overloaded with one or more VFS objects\&.
 
@@ -6496,11 +6600,6 @@ Default: \fBno value\fR
 
 
 Example: \fBvfs objects = extd_audit recycle\fR
-
-
-.TP
-vfs object (S)
-Synonym for \fIvfs objects\fR \&.
 
 
 .TP
@@ -6527,7 +6626,7 @@ winbind cache time (G)
 This parameter specifies the number of seconds the \fBwinbindd\fR(8) daemon will cache user and group information before querying a Windows NT server again\&.
 
 
-Default: \fBwinbind cache type = 15\fR
+Default: \fBwinbind cache type = 300\fR
 
 
 .TP
