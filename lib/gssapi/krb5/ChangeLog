@@ -1,3 +1,11 @@
+2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: - EC and RRC are big-endian, not little-endian - The
+	default is now to rotate regardless of GSS_C_DCE_STYLE. There are
+	no longer any references to GSS_C_DCE_STYLE.  - rrc_rotate()
+	avoids allocating memory on the heap if rrc <= 256 From: Luke
+	Howard <lukeh@padl.com>
+	
 2003-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.[ch]: rrc_rotate() was untested and broken, fix it.
