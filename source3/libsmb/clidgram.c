@@ -26,7 +26,7 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot, 
+int cli_send_mailslot(int dgram_sock, BOOL unique, const char *mailslot, 
 		      char *buf, int len,
 		      const char *srcname, int src_type, 
 		      const char *dstname, int dest_type,
@@ -100,7 +100,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot,
 /*
  * cli_get_response: Get a response ...
  */
-int cli_get_response(int dgram_sock, BOOL unique, char *mailslot, char *buf, int bufsiz)
+int cli_get_response(int dgram_sock, BOOL unique, const char *mailslot, char *buf, int bufsiz)
 {
   struct packet_struct *packet;
 

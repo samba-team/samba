@@ -271,7 +271,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
-		char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
+		const char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 
 		set_message(outbuf,3,0,True);
 

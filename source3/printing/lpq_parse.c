@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+static const char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 			      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Err"};
 
 
@@ -947,9 +947,9 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
   return(True);
 }
 
-static char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
-static char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
-static char *stat2_strings[] = { "jam", "paper", "error", "responding", "not accepting", "not running", "turned off", NULL };
+static const char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
+static const char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
+static const char *stat2_strings[] = { "jam", "paper", "error", "responding", "not accepting", "not running", "turned off", NULL };
 
 #ifdef DEVELOPER
 

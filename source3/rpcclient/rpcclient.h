@@ -23,12 +23,12 @@
 #define RPCCLIENT_H
 
 struct cmd_set {
-	char *name;
+	const char *name;
 	NTSTATUS (*fn)(struct cli_state*, TALLOC_CTX *mem_ctx, int argc, 
                        char **argv);
         int pipe_idx;
-	char *description;
-	char *usage;
+	const char *description;
+	const char *usage;
 };
 
 #endif /* RPCCLIENT_H */

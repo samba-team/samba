@@ -521,29 +521,29 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_include(char *pszParmValue, char **ptr);
-static BOOL handle_copy(char *pszParmValue, char **ptr);
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
-static BOOL handle_source_env(char *pszParmValue, char **ptr);
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
-static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( char *pszParmValue, char **ptr );
-static BOOL handle_workgroup( char *pszParmValue, char **ptr );
-static BOOL handle_netbios_aliases( char *pszParmValue, char **ptr );
-static BOOL handle_netbios_scope( char *pszParmValue, char **ptr );
+static BOOL handle_include(const char *pszParmValue, char **ptr);
+static BOOL handle_copy(const char *pszParmValue, char **ptr);
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr);
+static BOOL handle_source_env(const char *pszParmValue, char **ptr);
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
+static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr);
+static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
+static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
 
-static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
-static BOOL handle_ldap_user_suffix ( char *pszParmValue, char **ptr );
-static BOOL handle_ldap_suffix ( char *pszParmValue, char **ptr );
+static BOOL handle_ldap_machine_suffix ( const char *pszParmValue, char **ptr );
+static BOOL handle_ldap_user_suffix ( const char *pszParmValue, char **ptr );
+static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
 
-static BOOL handle_acl_compatibility(char *pszParmValue, char **ptr);
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
 
-static struct enum_list enum_protocol[] = {
+static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
 	{PROTOCOL_LANMAN1, "LANMAN1"},
@@ -553,7 +553,7 @@ static struct enum_list enum_protocol[] = {
 	{-1, NULL}
 };
 
-static struct enum_list enum_security[] = {
+static const struct enum_list enum_security[] = {
 	{SEC_SHARE, "SHARE"},
 	{SEC_USER, "USER"},
 	{SEC_SERVER, "SERVER"},
@@ -564,7 +564,7 @@ static struct enum_list enum_security[] = {
 	{-1, NULL}
 };
 
-static struct enum_list enum_printing[] = {
+static const struct enum_list enum_printing[] = {
 	{PRINT_SYSV, "sysv"},
 	{PRINT_AIX, "aix"},
 	{PRINT_HPUX, "hpux"},
@@ -583,7 +583,7 @@ static struct enum_list enum_printing[] = {
 	{-1, NULL}
 };
 
-static struct enum_list enum_ldap_ssl[] = {
+static const struct enum_list enum_ldap_ssl[] = {
 #ifdef WITH_LDAP_SAMCONFIG
 	{LDAP_SSL_ON, "Yes"},
 	{LDAP_SSL_ON, "yes"},
@@ -599,7 +599,7 @@ static struct enum_list enum_ldap_ssl[] = {
 	{-1, NULL}
 };
 
-static struct enum_list enum_ldap_passwd_sync[] = {
+static const struct enum_list enum_ldap_passwd_sync[] = {
 	{LDAP_PASSWD_SYNC_ON, "Yes"},
 	{LDAP_PASSWD_SYNC_ON, "yes"},
 	{LDAP_PASSWD_SYNC_ON, "on"},
@@ -621,7 +621,7 @@ static struct enum_list enum_ldap_passwd_sync[] = {
 #define ANNOUNCE_AS_WFW 3
 #define ANNOUNCE_AS_NT_WORKSTATION 4
 
-static struct enum_list enum_announce_as[] = {
+static const struct enum_list enum_announce_as[] = {
 	{ANNOUNCE_AS_NT_SERVER, "NT"},
 	{ANNOUNCE_AS_NT_SERVER, "NT Server"},
 	{ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"},
@@ -630,13 +630,13 @@ static struct enum_list enum_announce_as[] = {
 	{-1, NULL}
 };
 
-static struct enum_list enum_case[] = {
+static const struct enum_list enum_case[] = {
 	{CASE_LOWER, "lower"},
 	{CASE_UPPER, "upper"},
 	{-1, NULL}
 };
 
-static struct enum_list enum_bool_auto[] = {
+static const struct enum_list enum_bool_auto[] = {
 	{False, "No"},
 	{False, "False"},
 	{False, "0"},
@@ -653,7 +653,7 @@ static struct enum_list enum_bool_auto[] = {
 #define CSC_POLICY_PROGRAMS 2
 #define CSC_POLICY_DISABLE 3
 
-static struct enum_list enum_csc_policy[] = {
+static const struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
 	{CSC_POLICY_DOCUMENTS, "documents"},
 	{CSC_POLICY_PROGRAMS, "programs"},
@@ -682,7 +682,7 @@ static struct enum_list enum_csc_policy[] = {
    level security.
 */
 
-static struct enum_list enum_map_to_guest[] = {
+static const struct enum_list enum_map_to_guest[] = {
 	{NEVER_MAP_TO_GUEST, "Never"},
 	{MAP_TO_GUEST_ON_BAD_USER, "Bad User"},
 	{MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"},
@@ -1846,15 +1846,15 @@ char *lp_parm_string(const char *servicename, const char *type, const char *opti
 
 /* local prototypes */
 
-static int map_parameter(char *pszParmName);
+static int map_parameter(const char *pszParmName);
 static BOOL set_boolean(BOOL *pb, char *pszParmValue);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, BOOL *pcopymapDest);
 static BOOL service_ok(int iService);
-static BOOL do_parameter(char *pszParmName, char *pszParmValue);
-static BOOL do_section(char *pszSectionName);
+static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
+static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
 
 
@@ -2017,7 +2017,7 @@ int lp_add_service(const char *pszService, int iDefaultService)
  Add the IPC service.
 ***************************************************************************/
 
-static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
+static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
 {
 	pstring comment;
 	int i = add_a_service(&sDefault, ipc_name);
@@ -2087,7 +2087,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
  Returns False if the parameter string is not recognised, else TRUE.
 ***************************************************************************/
 
-static int map_parameter(char *pszParmName)
+static int map_parameter(const char *pszParmName)
 {
 	int iIndex;
 
@@ -2349,7 +2349,7 @@ BOOL lp_file_list_changed(void)
  Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 {
 	pstring netbios_name;
 
@@ -2365,17 +2365,17 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	return (True);
 }
 
-static BOOL handle_workgroup(char *pszParmValue, char **ptr)
+static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
 {
 	return set_global_myworkgroup(pszParmValue);
 }
 
-static BOOL handle_netbios_scope(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr)
 {
 	return set_global_scope(pszParmValue);
 }
 
-static BOOL handle_netbios_aliases(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)
 {
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
@@ -2435,7 +2435,7 @@ static BOOL source_env(char **lines)
  Handle the source environment operation.
 ***************************************************************************/
 
-static BOOL handle_source_env(char *pszParmValue, char **ptr)
+static BOOL handle_source_env(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	char *p = fname;
@@ -2475,7 +2475,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
  Handle the interpretation of the vfs object parameter.
 *************************************************************************/
 
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr)
 {
 	/* Set string value */
 
@@ -2491,7 +2491,7 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
  Handle the include operation.
 ***************************************************************************/
 
-static BOOL handle_include(char *pszParmValue, char **ptr)
+static BOOL handle_include(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
@@ -2514,7 +2514,7 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static BOOL handle_copy(char *pszParmValue, char **ptr)
+static BOOL handle_copy(const char *pszParmValue, char **ptr)
 {
 	BOOL bRetval;
 	int iTemp;
@@ -2610,7 +2610,7 @@ BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
 
 /* Do some simple checks on "winbind [ug]id" parameter values */
 
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2627,7 +2627,7 @@ static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2648,7 +2648,7 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
  Do some simple checks on "non unix account range" parameter values.
 ***************************************************************************/
 
-static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr)
+static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2669,7 +2669,7 @@ static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr)
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
+static BOOL handle_debug_list( const char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
 
@@ -2682,7 +2682,7 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
  Handle the ldap machine suffix option.
 ***************************************************************************/
 
-static BOOL handle_ldap_machine_suffix( char *pszParmValue, char **ptr)
+static BOOL handle_ldap_machine_suffix( const char *pszParmValue, char **ptr)
 {
        pstring suffix;
        
@@ -2706,7 +2706,7 @@ static BOOL handle_ldap_machine_suffix( char *pszParmValue, char **ptr)
  Handle the ldap user suffix option.
 ***************************************************************************/
 
-static BOOL handle_ldap_user_suffix( char *pszParmValue, char **ptr)
+static BOOL handle_ldap_user_suffix( const char *pszParmValue, char **ptr)
 {
        pstring suffix;
        
@@ -2731,7 +2731,7 @@ static BOOL handle_ldap_user_suffix( char *pszParmValue, char **ptr)
  to be set as well.
 ***************************************************************************/
 
-static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
+static BOOL handle_ldap_suffix( const char *pszParmValue, char **ptr)
 {
        pstring suffix;
        pstring user_suffix;
@@ -2764,7 +2764,7 @@ static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
        return True;
 }
 
-static BOOL handle_acl_compatibility(char *pszParmValue, char **ptr)
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr)
 {
 	if (strequal(pszParmValue, "auto"))
 		string_set(ptr, "");
@@ -2810,7 +2810,7 @@ void *lp_local_ptr(int snum, void *ptr)
  then assume we are in the globals.
 ***************************************************************************/
 
-BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
+BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum, i, slen;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
@@ -2949,7 +2949,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
  Process a parameter.
 ***************************************************************************/
 
-static BOOL do_parameter(char *pszParmName, char *pszParmValue)
+static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 {
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
@@ -3090,7 +3090,7 @@ void init_locals(void)
  Returns True on success, False on failure. 
 ***************************************************************************/
 
-static BOOL do_section(char *pszSectionName)
+static BOOL do_section(const char *pszSectionName)
 {
 	BOOL bRetval;
 	BOOL isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
@@ -3839,7 +3839,7 @@ void lp_remove_service(int snum)
  Copy a service.
 ********************************************************************/
 
-void lp_copy_service(int snum, char *new_name)
+void lp_copy_service(int snum, const char *new_name)
 {
 	char *oldname = lp_servicename(snum);
 	do_section(new_name);

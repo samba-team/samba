@@ -24,7 +24,7 @@
 
 typedef const struct
 {
-	char *nt_errstr;
+	const char *nt_errstr;
 	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
@@ -575,7 +575,7 @@ nt_err_code_struct nt_err_desc[] =
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *nt_errstr(NTSTATUS nt_code)
+const char *nt_errstr(NTSTATUS nt_code)
 {
         static pstring msg;
         int idx = 0;
@@ -597,7 +597,7 @@ char *nt_errstr(NTSTATUS nt_code)
  Print friendler version fo NT error code
  ***********************************************************************/
  
-char *get_friendly_nt_error_msg(NTSTATUS nt_code)
+const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 {
         int idx = 0;
 
@@ -617,7 +617,7 @@ char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 /*****************************************************************************
  returns an NT_STATUS constant as a string for inclusion in autogen C code
  *****************************************************************************/
-char *get_nt_error_c_code(NTSTATUS nt_code)
+const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
         static pstring out;
         int idx = 0;

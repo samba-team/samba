@@ -55,7 +55,7 @@ typedef struct _GROUP_MAP {
 
 typedef struct _PRIVS {
 	uint32 se_priv;
-	char *priv;
-	char *description;
+	const char *priv;
+	const char *description;
 } PRIVS;
 

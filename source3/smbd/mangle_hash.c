@@ -361,15 +361,15 @@ done:
  */
 static void init_chartest( void )
 {
-	char          *illegalchars = "*\\/?<>|\":";
-	unsigned char *s;
+	const char          *illegalchars = "*\\/?<>|\":";
+	const unsigned char *s;
   
 	memset( (char *)chartest, '\0', 256 );
 
-	for( s = (unsigned char *)illegalchars; *s; s++ )
+	for( s = (const unsigned char *)illegalchars; *s; s++ )
 		chartest[*s] = ILLEGAL_MASK;
 
-	for( s = (unsigned char *)basechars; *s; s++ )
+	for( s = (const unsigned char *)basechars; *s; s++ )
 		chartest[*s] |= BASECHAR_MASK;
 
 	ct_initialized = True;

@@ -81,7 +81,7 @@ static void sig_usr1(void)
 
 static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	char *msg = buf ? buf : "none";
+	const char *msg = buf ? buf : "none";
 	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }

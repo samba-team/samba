@@ -40,7 +40,7 @@ void init_sec_access(SEC_ACCESS *t, uint32 mask)
  Reads or writes a SEC_ACCESS structure.
 ********************************************************************/
 
-BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
+BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 {
 	if (t == NULL)
 		return False;
@@ -103,7 +103,7 @@ void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 f
  Reads or writes a SEC_ACE structure.
 ********************************************************************/
 
-BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
+BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
@@ -281,7 +281,7 @@ SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
  for you as it reads them.
 ********************************************************************/
 
-BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
+BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 {
 	int i;
 	uint32 old_offset;
@@ -720,7 +720,7 @@ SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, DOM_SID *owner_sid, DOM_SID *g
  If reading and the *ppsd = NULL, allocates the structure.
 ********************************************************************/
 
-BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
+BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
@@ -890,7 +890,7 @@ SEC_DESC_BUF *dup_sec_desc_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *src)
  Reads or writes a SEC_DESC_BUF structure.
 ********************************************************************/
 
-BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth)
+BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth)
 {
 	uint32 off_len;
 	uint32 off_max_len;

@@ -105,7 +105,7 @@ void close_subnet(struct subnet_record *subrec)
   Create a subnet entry.
   ****************************************************************************/
 
-static struct subnet_record *make_subnet(char *name, enum subnet_type type,
+static struct subnet_record *make_subnet(const char *name, enum subnet_type type,
 					 struct in_addr myip, struct in_addr bcast_ip, 
 					 struct in_addr mask_ip)
 {

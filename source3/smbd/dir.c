@@ -327,15 +327,20 @@ void dptr_closepath(char *path,uint16 spid)
  Start a directory listing.
 ****************************************************************************/
 
-static BOOL start_dir(connection_struct *conn,char *directory)
+static BOOL start_dir(connection_struct *conn, pstring directory)
 {
+  const char *dir2;
+
   DEBUG(5,("start_dir dir=%s\n",directory));
 
   if (!check_name(directory,conn))
     return(False);
+
+  /* use a const pointer from here on */
+  dir2 = directory;
   
-  if (! *directory)
-    directory = ".";
+  if (! *dir2)
+    dir2 = ".";
 
   conn->dirptr = OpenDir(conn, directory, True);
   if (conn->dirptr) {    
@@ -392,7 +397,7 @@ static void dptr_close_oldest(BOOL old)
  me at Andrew's knee.... :-) :-). JRA.
 ****************************************************************************/
 
-int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,uint16 spid)
+int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid)
 {
   dptr_struct *dptr;
 
@@ -812,10 +817,10 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
  Open a directory.
 ********************************************************************/
 
-void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
+void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 {
 	Dir *dirp;
-	char *n;
+	const char *n;
 	DIR *p = conn->vfs_ops.opendir(conn,name);
 	int used=0;
 
@@ -1009,7 +1014,7 @@ static ubi_dlNewList( dir_cache );
  Output: None.
 *****************************************************************************/
 
-void DirCacheAdd( char *path, char *name, char *dname, int snum )
+void DirCacheAdd( const char *path, char *name, char *dname, int snum )
 {
   int               pathlen;
   int               namelen;
@@ -1056,7 +1061,7 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
          for large caches.
 *****************************************************************************/
 
-char *DirCacheCheck( char *path, char *name, int snum )
+char *DirCacheCheck( const char *path, const char *name, int snum )
 {
   dir_cache_entry *entry;
 

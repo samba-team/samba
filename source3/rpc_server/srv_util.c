@@ -455,7 +455,7 @@ NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
  ********************************************************************/
 NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
 {
-	char *grp_name;
+	const char *grp_name;
 	int i = -1; /* start do loop at -1 */
 
 	do /* find, if it exists, a group rid for the group name*/
@@ -472,9 +472,9 @@ NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
 /*******************************************************************
  Look up a local (BUILTIN) alias name and return a rid
  ********************************************************************/
-NTSTATUS local_lookup_alias_rid(char *alias_name, uint32 *rid)
+NTSTATUS local_lookup_alias_rid(const char *alias_name, uint32 *rid)
 {
-	char *als_name;
+	const char *als_name;
 	int i = -1; /* start do loop at -1 */
 
 	do /* find, if it exists, a alias rid for the alias name*/

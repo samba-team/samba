@@ -79,9 +79,9 @@ NT_USER_TOKEN system_token = {
  Lookup string names for SID types.
 ****************************************************************************/
 
-const static struct {
+static const struct {
 	enum SID_NAME_USE sid_type;
-	char *string;
+	const char *string;
 } sid_name_type[] = {
 	{SID_NAME_USER, "User"},
 	{SID_NAME_DOM_GRP, "Domain Group"},
@@ -181,7 +181,8 @@ NT_USER_TOKEN *get_system_token(void)
 void split_domain_name(const char *fullname, char *domain, char *name)
 {
 	pstring full_name;
-	char *p, *sep;
+	const char *sep;
+	char *p;
 
 	sep = lp_winbind_separator();
 

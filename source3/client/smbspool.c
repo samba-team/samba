@@ -52,8 +52,8 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   int		copies;		/* Number of copies */
   char		uri[1024],	/* URI */
 		*sep,		/* Pointer to separator */
-		*username,	/* Username */
-		*password,	/* Password */
+		*password;	/* Password */
+  const char	*username,	/* Username */
 		*server,	/* Server name */
 		*printer;	/* Printer name */
   const char	*workgroup;	/* Workgroup */

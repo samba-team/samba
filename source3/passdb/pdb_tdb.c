@@ -529,7 +529,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_DATA 	data;
-	char *prefix = USERPREFIX;
+	const char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
 
 

@@ -167,7 +167,7 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 struct valmap_to_ads {
-	char *valname;
+	const char *valname;
 	BOOL (*fn)(TALLOC_CTX *, ADS_MODLIST *, const REGISTRY_VALUE *);
 };
 
@@ -177,7 +177,7 @@ struct valmap_to_ads {
 static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			      REGISTRY_VALUE *value)
 {
-	struct valmap_to_ads map[] = {
+	const struct valmap_to_ads map[] = {
 		{SPOOL_REG_ASSETNUMBER, map_sz},
 		{SPOOL_REG_BYTESPERMINUTE, map_dword},
 		{SPOOL_REG_DEFAULTPRIORITY, map_dword},
@@ -250,7 +250,7 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 WERROR get_remote_printer_publishing_data(struct cli_state *cli, 
 					  TALLOC_CTX *mem_ctx,
 					  ADS_MODLIST *mods,
-					  char *printer)
+					  const char *printer)
 {
 	WERROR result;
 	char *printername, *servername;

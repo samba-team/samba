@@ -33,7 +33,7 @@ extern BOOL found_lm_clients;
  Send a browser reset packet.
 **************************************************************************/
 
-void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_addr to_ip)
+void send_browser_reset(int reset_type, const char *to_name, int to_type, struct in_addr to_ip)
 {
   pstring outbuf;
   char *p;

@@ -25,7 +25,7 @@ int num_good_sends = 0;
 int num_good_receives = 0;
 
 static const struct opcode_names {
-	char *nmb_opcode_name;
+	const char *nmb_opcode_name;
 	int opcode;
 } nmb_header_opcode_names[] = {
 	{"Query",           0 },
@@ -57,7 +57,7 @@ static const char *lookup_opcode_name( int opcode )
 /****************************************************************************
   print out a res_rec structure
   ****************************************************************************/
-static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
+static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
 {
   int i, j;
 
@@ -1005,7 +1005,7 @@ struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id)
   queue. The packet must be a reply packet and have the specified mailslot name
   The timeout is in milliseconds
   ***************************************************************************/
-struct packet_struct *receive_dgram_packet(int fd, int t, char *mailslot_name)
+struct packet_struct *receive_dgram_packet(int fd, int t, const char *mailslot_name)
 {
 	struct packet_struct *p;
 
@@ -1024,7 +1024,7 @@ struct packet_struct *receive_dgram_packet(int fd, int t, char *mailslot_name)
 /****************************************************************************
  see if a datagram has the right mailslot name
 ***************************************************************************/
-BOOL match_mailslot_name(struct packet_struct *p, char *mailslot_name)
+BOOL match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	char *buf;

@@ -23,7 +23,7 @@
 #include "build_env.h"
 #include "dynconfig.h"
 
-static void output(BOOL screen, char *format, ...) PRINTF_ATTRIBUTE(2,3);
+static void output(BOOL screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 
 /*
 #define OUTPUT(x) snprintf(outstring,sizeof(outstring),x); output(screen,outstring);
@@ -31,7 +31,7 @@ static void output(BOOL screen, char *format, ...) PRINTF_ATTRIBUTE(2,3);
 /****************************************************************************
 helper function for build_options
 ****************************************************************************/
-static void output(BOOL screen, char *format, ...)
+static void output(BOOL screen, const char *format, ...)
 {
        char *ptr;
        va_list ap;

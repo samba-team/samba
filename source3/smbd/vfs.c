@@ -781,7 +781,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
  Widelinks are allowed if widelinks is true.
 ********************************************************************/
 
-BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
+BOOL reduce_name(connection_struct *conn, pstring s, const char *dir,BOOL widelinks)
 {
 #ifndef REDUCE_PATHS
 	return True;

@@ -26,7 +26,7 @@
 /****************************************************************************
 Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
+BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
@@ -176,7 +176,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 					char *sname = p;
 					int type = SVAL(p,14);
 					int comment_offset = IVAL(p,16) & 0xFFFF;
-					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+					const char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
 					pstring s1, s2;
 
 					pull_ascii_pstring(s1, sname);
@@ -253,7 +253,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 			for (i = 0;i < count;i++, p += 26) {
 				char *sname = p;
 				int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
-				char *cmnt = comment_offset?(rdata+comment_offset):"";
+				const char *cmnt = comment_offset?(rdata+comment_offset):"";
 				pstring s1, s2;
 
 				if (comment_offset < 0 || comment_offset > rdrcnt) continue;

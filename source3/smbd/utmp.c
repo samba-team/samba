@@ -457,7 +457,7 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 static int ut_id_encode(int i, char *fourbyte)
 {
 	int nbase;
-	char *ut_id_encstr = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const char *ut_id_encstr = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	
 	fourbyte[0] = 'S';
 	fourbyte[1] = 'M';

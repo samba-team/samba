@@ -1007,7 +1007,7 @@ int get_pipe_index( const char *pipe_name )
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-char* get_pipe_name_from_index( const int pipe_index )
+const char* get_pipe_name_from_index( const int pipe_index )
 {
 
 	if ( (pipe_index < 0) || (pipe_index >= PI_MAX_PIPES) )

@@ -324,7 +324,7 @@ BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
  **/
 
 BOOL secrets_store_trusted_domain_password(const char* domain, smb_ucs2_t *uni_dom_name,
-					   size_t uni_name_len, char* pwd,
+					   size_t uni_name_len, const char* pwd,
 					   DOM_SID sid)
 {
 	struct trusted_dom_pass pass;

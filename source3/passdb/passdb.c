@@ -304,7 +304,7 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 /**
  * Free the contets of the SAM_ACCOUNT, but not the structure.
  *
- * Also wipes the LM and NT hashes and plaintext passwrod from 
+ * Also wipes the LM and NT hashes and plaintext password from 
  * memory.
  *
  * @param user SAM_ACCOUNT to free members of.
@@ -473,7 +473,7 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
+	const char      *hexchars = "0123456789ABCDEF";
 	char           *p1, *p2;
 	
 	if (!p)
