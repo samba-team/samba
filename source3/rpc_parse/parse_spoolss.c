@@ -659,7 +659,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		{ "panningheight",	NULL }
 	};
 
-	/* assign at run time to keep non-gcc vompilers happy */
+	/* assign at run time to keep non-gcc compilers happy */
 
 	opt_fields[0].field = &devmode->icmmethod;
 	opt_fields[1].field = &devmode->icmintent;
