@@ -346,9 +346,14 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	int sess_vuid;
 	BOOL as_guest;
 	uint32 auth_flags = AUTH_FLAG_NONE;
-
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+
+	/* we must have setup the auth context by now */
+	if (!ntlmssp_auth_context) {
+		DEBUG(2,("ntlmssp_auth_context is NULL in reply_spnego_auth\n"));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
