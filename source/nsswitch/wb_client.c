@@ -278,7 +278,7 @@ static int wb_getgroups(char *user, gid_t **groups)
 
 int winbind_initgroups(char *user, gid_t gid)
 {
-	gid_t *groups = NULL;
+	gid_t *tgr, *groups = NULL;
 	int result;
 	char *sep;
 
@@ -310,13 +310,14 @@ int winbind_initgroups(char *user, gid_t gid)
 		/* Add group to list if necessary */
 
 		if (!is_member) {
-			groups = Realloc(groups, sizeof(gid_t) * ngroups + 1);
+			tgr = (gid_t *)Realloc(groups, sizeof(gid_t) * ngroups + 1);
 			
-			if (!groups) {
+			if (!tgr) {
 				errno = ENOMEM;
 				result = -1;
 				goto done;
-			}
+			} else
+				groups = tgr;
 
 			groups[ngroups] = gid;
 			ngroups++;
