@@ -365,7 +365,7 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
  Change the struct type.
  ********************************************************************/
 
-BOOL prs_switch_type(prs_struct *ps, BOOL io)
+void prs_switch_type(prs_struct *ps, BOOL io)
 {
 	if ((ps->io ^ io) == True)
 		ps->io=io;
@@ -573,22 +573,22 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	unsigned char *p = (unsigned char *)str->buffer;
 	uint8 *start;
 	char *q;
+	char zero=0;
 
 	for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
 			   str->buffer[len] != 0; len++)
 		;
 
-	q = prs_mem_get(ps, len*2);
+	q = prs_mem_get(ps, (len+1)*2);
 	if (q == NULL)
 		return False;
 
 	start = (uint8*)q;
 
-	len = 0;
-	do 
-	{
+	for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+			   str->buffer[len] != 0; len++) {
 		if(ps->bigendian_data) {
-			RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0)
+			RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
 			p += 2;
 			q += 2;
 		} else {
@@ -599,10 +599,21 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 			p++;
 			q++;
 		}
-		len++;
-	} while ((len < (sizeof(str->buffer) / sizeof(str->buffer[0]))) &&
-		     (str->buffer[len] != 0));
+	}
+	
+	/*
+	 * even if the string is 'empty' (only an \0 char)
+	 * at this point the leading \0 hasn't been parsed.
+	 * so parse it now
+	 */
 
+	RW_CVAL(ps->io, q, zero, 0);
+	q++;
+	RW_CVAL(ps->io, q, zero, 0);
+	q++;
+
+	len++;
+		
 	ps->data_offset += len*2;
 
 	dump_data(5+depth, (char *)start, len * 2);

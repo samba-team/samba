@@ -317,7 +317,8 @@ struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 BOOL matchname(char *remotehost,struct in_addr  addr);
 void standard_sub_basic(char *str);
-void standard_sub(connection_struct *conn,char *str);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
+void standard_sub(connection_struct *conn, char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
@@ -1950,7 +1951,7 @@ BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
 void prs_set_bigendian_data(prs_struct *ps);
 BOOL prs_align(prs_struct *ps);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
-BOOL prs_switch_type(prs_struct *ps, BOOL io);
+void prs_switch_type(prs_struct *ps, BOOL io);
 void prs_force_dynamic(prs_struct *ps);
 BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
 BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
@@ -2303,6 +2304,8 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
+BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printername, fstring datatype, 
+					uint32 access_required, fstring client_name, fstring user_name);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
@@ -2366,6 +2369,9 @@ uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info);
 uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info);
 BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags, 
+				fstring servername, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth);
 BOOL new_spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
@@ -2381,7 +2387,8 @@ BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
 				uint32 firstjob,
 				uint32 numofjobs,
 				uint32 level,
-				uint32 buf_size);
+				NEW_BUFFER *buffer,
+				uint32 offered);
 BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);
@@ -2418,6 +2425,7 @@ BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, 
 BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 index, uint32 valuelen, uint32 datalen);
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,

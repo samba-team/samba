@@ -2173,7 +2173,7 @@ void standard_sub_basic(char *str)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub(connection_struct *conn,char *str)
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
 
@@ -2181,29 +2181,27 @@ void standard_sub(connection_struct *conn,char *str)
 		int l = sizeof(pstring) - (int)(p-str);
 
 		switch (*(p+1)) {
-		case 'H': 
-			if ((home = get_user_home_dir(conn->user))) {
-				string_sub(p,"%H",home,l);
+		case 'H':
+			if ((home = get_user_home_dir(user))) {
+				string_sub(p,"%H",home, l);
 			} else {
 				p += 2;
 			}
 			break;
 			
 		case 'P': 
-			string_sub(p,"%P",conn->connectpath,l); 
+			string_sub(p,"%P", connectpath, l); 
 			break;
 			
 		case 'S': 
-			string_sub(p,"%S",
-				   lp_servicename(SNUM(conn)),l); 
+			string_sub(p,"%S", lp_servicename(snum), l); 
 			break;
 			
 		case 'g': 
-			string_sub(p,"%g",
-				   gidtoname(conn->gid),l); 
+			string_sub(p,"%g", gidtoname(gid), l); 
 			break;
 		case 'u': 
-			string_sub(p,"%u",conn->user,l); 
+			string_sub(p,"%u", user, l); 
 			break;
 			
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
@@ -2214,13 +2212,11 @@ void standard_sub(connection_struct *conn,char *str)
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			string_sub(p,"%p",
-				   automount_path(lp_servicename(SNUM(conn))),l); 
+			string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
 			break;
 		case '\0': 
 			p++; 
-			break; /* don't run off the end of the string 
-				*/
+			break; /* don't run off the end of the string */
 			
 		default: p+=2; 
 			break;
@@ -2230,7 +2226,17 @@ void standard_sub(connection_struct *conn,char *str)
 	standard_sub_basic(str);
 }
 
+/****************************************************************************
+ Do some standard substitutions in a string.
+****************************************************************************/
 
+void standard_sub(connection_struct *conn, char *str)
+{
+	if (conn==NULL)
+		standard_sub_advanced(-1, "", "", -1, str);
+	else
+		standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
+}
 
 /*******************************************************************
 are two IPs on the same subnet?
