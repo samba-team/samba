@@ -342,10 +342,7 @@ writenet(ptr, len)
  */
 
 
-	void
-fatal(f, msg)
-	int f;
-	char *msg;
+void fatal(int f, char *msg)
 {
 	char buf[BUFSIZ];
 
