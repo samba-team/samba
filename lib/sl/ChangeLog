@@ -1,0 +1,4 @@
+Mon Oct 20 01:13:21 1997  Assar Westerlund  <assar@sics.se>
+
+	* sl.c (sl_help): actually use the `help' field of `SL_cmd'
+
