@@ -67,8 +67,10 @@ libroken_la_SOURCES =		\
 	strcollect.c		\
 	timeval.c		\
 	tm2time.c		\
+	unvis.c			\
 	verify.c		\
 	vis.c			\
+	vis.h			\
 	warnerr.c		\
 	write_pid.c		\
 	xdbm.h
@@ -157,7 +159,7 @@ BUILT_SOURCES = make-roken.c roken.h
 include_HEADERS = $(err_h) base64.h getarg.h		\
 	parse_bytes.h parse_time.h parse_units.h	\
 	resolve.h roken-common.h		\
-	$(err_h) $(fnmatch_h) $(glob_h) rtbl.h xdbm.h
+	$(err_h) $(fnmatch_h) $(glob_h) $(vis_h) rtbl.h xdbm.h
 nodist_include_HEADERS = roken.h
 
 if have_err_h
@@ -176,6 +178,12 @@ if have_glob_h
 glob_h =
 else
 glob_h = glob.h
+endif
+
+if have_vis_h
+vis_h = 
+else
+vis_h = vis_h
 endif
 
 roken.h: make-roken$(EXEEXT)
