@@ -1754,7 +1754,7 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	
 	if(!prs_uint32("unknown_0        ", ps, depth, &r_q->unknown_0))
 		return False;
-	if(!prs_uint32("asccess_desired  ", ps, depth, &r_q->access_desired))
+	if(!prs_uint32("access_desired  ", ps, depth, &r_q->access_desired))
 		return False;
 
 	return True;
