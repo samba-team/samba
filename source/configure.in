@@ -319,7 +319,8 @@ if test x"$ac_cv_func_crypt" = x"no"; then
 fi
 
 
-
+###############################################
+# test for where we get readline() from
 AC_CACHE_CHECK([for readline],samba_cv_HAVE_READLINE,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/readline.c"],
            samba_cv_HAVE_READLINE=yes,samba_cv_HAVE_READLINE=no,samba_cv_HAVE_READLINE=cross)])
@@ -378,7 +379,8 @@ AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid yp_get_default_domain getpwanam)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep mmap64 strcasecmp fcvt fcvtl)
+AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl)
+AC_CHECK_FUNCS(mmap64)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -727,13 +729,30 @@ if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
     AC_DEFINE(HAVE_UX_UT_SYSLEN)
 fi 
 
-AC_CACHE_CHECK([for kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS,[
+AC_CACHE_CHECK([for Linux kernel oplocks],samba_cv_HAVE_KERNEL_OPLOCKS_LINUX,[
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <fcntl.h>
+#ifndef F_GETLEASE
+#define F_GETLEASE	1025
+#endif
+main() {
+       int fd = open("/dev/null", O_RDONLY);
+       return fcntl(fd, F_GETLEASE, 0) == -1;
+}
+],
+samba_cv_HAVE_KERNEL_OPLOCKS_LINUX=yes,samba_cv_HAVE_KERNEL_OPLOCKS_LINUX=no,samba_cv_HAVE_KERNEL_OPLOCKS_LINUX=cross)])
+if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes"; then
+    AC_DEFINE(HAVE_KERNEL_OPLOCKS_LINUX)
+fi
+
+AC_CACHE_CHECK([for IRIX kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS_IRIX,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <fcntl.h>],
 [oplock_stat_t t; t.os_state = OP_REVOKE; t.os_dev = 1; t.os_ino = 1;],
-samba_cv_HAVE_KERNEL_OPLOCKS=yes,samba_cv_HAVE_KERNEL_OPLOCKS=no)])
-if test x"$samba_cv_HAVE_KERNEL_OPLOCKS" = x"yes"; then
-    AC_DEFINE(HAVE_KERNEL_OPLOCKS)
+samba_cv_HAVE_KERNEL_OPLOCKS_IRIX=yes,samba_cv_HAVE_KERNEL_OPLOCKS_IRIX=no)])
+if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" = x"yes"; then
+    AC_DEFINE(HAVE_KERNEL_OPLOCKS_IRIX)
 fi
 
 AC_CACHE_CHECK([for irix specific capabilities],samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES,[
@@ -1153,6 +1172,7 @@ AC_ARG_WITH(afs,
   AC_MSG_RESULT(no)
 )
 
+
 #################################################
 # check for the DFS auth system
 AC_MSG_CHECKING(whether to use DFS auth)
@@ -1303,6 +1323,7 @@ AC_ARG_WITH(pam,
   AC_MSG_RESULT(no)
 )
 AC_SUBST(pam_modules)
+
 
 #################################################
 # check for a LDAP password database
@@ -1598,7 +1619,7 @@ AC_ARG_WITH(utmp,
 #################################################
 # check for MS Dfs support
 
-AC_MSG_CHECKING(whether to support MS Dfs)
+AC_MSG_CHECKING(whether to support Microsoft Dfs)
 AC_ARG_WITH(msdfs,
 [  --with-msdfs		Include MS Dfs support
   --without-msdfs	Don't include MS Dfs support (default)],

@@ -149,7 +149,8 @@
 #undef STAT_STATVFS64
 #undef HAVE_LIBREADLINE
 #undef HAVE_READLINE
-#undef HAVE_KERNEL_OPLOCKS
+#undef HAVE_KERNEL_OPLOCKS_IRIX
+#undef HAVE_KERNEL_OPLOCKS_LINUX
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
 #undef HAVE_INT16_FROM_RPC_RPC_H
 #undef HAVE_UINT16_FROM_RPC_RPC_H
@@ -901,6 +902,9 @@
 
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
+
+/* Define if you have the curses library (-lcurses).  */
+#undef HAVE_LIBCURSES
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN

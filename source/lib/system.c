@@ -512,6 +512,17 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
   return True;
 }
 
+/****************************************************************************
+gain the oplock capability from the kernel if possible
+****************************************************************************/
+void oplock_set_capability(BOOL this_process, BOOL inherit)
+{
+#if HAVE_KERNEL_OPLOCKS_IRIX
+	set_process_capability(KERNEL_OPLOCK_CAPABILITY,this_process);
+	set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,inherit);
+#endif
+}
+
 /**************************************************************************
  Wrapper for random().
 ****************************************************************************/

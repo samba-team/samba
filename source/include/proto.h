@@ -462,6 +462,7 @@ int sys_chroot(const char *dname);
 struct hostent *sys_gethostbyname(const char *name);
 BOOL set_process_capability( uint32 cap_flag, BOOL enable );
 BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
+void oplock_set_capability(BOOL this_process, BOOL inherit);
 long sys_random(void);
 void sys_srandom(unsigned int seed);
 int groups_max(void);
@@ -3945,6 +3946,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
+BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
