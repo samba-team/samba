@@ -1321,8 +1321,9 @@ BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 #endif
 
   /* Remove any *? and ** as they are meaningless */
-  pstring_sub(t_pattern, "*?", "*");
-  pstring_sub(t_pattern, "**", "*");
+  for(p = t_pattern; *p; p++)
+    while( *p == '*' && (p[1] == '?' || p[1] == '*'))
+      (void)pstrcpy( &p[1], &p[2]);
 
   if (strequal(t_pattern,"*"))
     return(True);
