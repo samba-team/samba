@@ -112,11 +112,11 @@ DECL(merge);
 
 void timeval2str(time_t t, char *str, size_t len);
 void deltat2str(unsigned t, char *str, size_t len);
-unsigned str2deltat(const char *str);
+int str2deltat(const char *str, unsigned *delta);
 void attr2str(krb5_flags attributes, char *str, size_t len);
-krb5_flags str2attr(const char *str, krb5_flags orig);
+int str2attr(const char *str, krb5_flags *flags);
 void get_response(const char*, const char*, char*, size_t);
-unsigned get_deltat(const char*, const char*);
+int get_deltat(const char*, const char*, unsigned *);
 int edit_entry(kadm5_principal_ent_t ent, int *mask);
 
 #endif /* __ADMIN_LOCL_H__ */
