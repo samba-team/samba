@@ -3,6 +3,7 @@
    Version 3.0
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Jeremy Allison  2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +57,7 @@ TALLOC_CTX *talloc_init(void)
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
+	char *cp;
 	if (size == 0)
 	{
 		/* debugging value used to track down
@@ -66,7 +68,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	}
 
 	/* normal code path */
-	size = (size + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
+	size = (size + TALLOC_ALIGN + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
 
 	if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
 		struct talloc_chunk *c;
@@ -87,9 +89,17 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	}
 
 	p = ((char *)t->list->ptr) + t->list->alloc_size;
+
+	/* Ensure the prefix is recognisable. */
+	cp = (char *)p;
+	memset(cp + sizeof(size_t) + sizeof(t->list), 0xff, TALLOC_ALIGN - (sizeof(size_t) + sizeof(t->list)));
+	/* Setup the legth and back pointer prefix. */
+	memcpy(cp, &size, sizeof(size_t));
+	memcpy(cp + sizeof(size_t), &t->list, sizeof(t->list));
+
+	p = ((char *)t->list->ptr) + t->list->alloc_size + TALLOC_ALIGN;
 	t->list->alloc_size += size;
 
-	
 	return p;
 }
 
@@ -151,4 +161,64 @@ void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
 	memcpy(newp, p, size);
 
 	return newp;
+}
+
+/* simple talloc with realloc. */
+void *talloc_realloc(TALLOC_CTX *t, void *p, size_t size)
+{
+	char *base_p;
+	void *new_p;
+	struct talloc_chunk *c;
+	size_t internal_current_size;
+	size_t internal_new_size;
+
+	/* Freeing is easy. */
+
+	if (size == 0)
+		return NULL;
+
+	/* An ordinary allocation. */
+
+	if (!p)
+		return talloc(t, size);
+
+	/* Work with the real size including the TALLOC_ALIGN prefix. */
+
+	internal_new_size = (size + TALLOC_ALIGN + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
+
+	/* Get the legth and back pointer prefix. */
+
+	base_p = ((char *)p) - TALLOC_ALIGN;
+	memcpy(&internal_current_size, base_p, sizeof(size_t));
+	memcpy(&c, base_p + sizeof(size_t), sizeof(c));
+
+	/* Shrinking is also easy. */
+
+	if (internal_new_size <= internal_current_size)
+		return p;
+
+	/* Can we extend in place ? */
+
+	if ((base_p + internal_current_size == ((char *)c->ptr) + c->alloc_size) &&
+		(base_p + internal_new_size <= ((char *)c->ptr) + c->total_size)) {
+
+		/* Change the internal current size. */
+		memcpy(base_p, &internal_new_size, sizeof(size_t));
+		c->alloc_size += (internal_new_size - internal_current_size);
+
+#if 0 /* DEBUG */
+		DEBUG(0,("talloc_realloc: Extended in place : curr_size = %u, new_size = %u\n",
+				internal_current_size, internal_new_size ));
+#endif /* DEBUG */
+
+		return p;
+	}
+
+	/* Can't extend in place, alloc new size and copy. */
+
+	new_p = talloc(t, size);
+	if (new_p)
+		memcpy(new_p, p, internal_current_size - TALLOC_ALIGN);
+
+	return new_p;
 }

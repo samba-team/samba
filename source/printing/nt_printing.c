@@ -110,7 +110,7 @@ int get_ntforms(TALLOC_CTX *ctx, nt_forms_struct **list)
 
 		/* allocate space and populate the list in correct order */
 		if (i+1 > n) {
-			list_p = Realloc(list_p, sizeof(nt_forms_struct)*(i+1));
+			list_p = talloc_realloc(ctx, list_p, sizeof(nt_forms_struct)*(i+1));
 			if (!list_p)
 				return 0;
 			n = i+1;
@@ -120,20 +120,16 @@ int get_ntforms(TALLOC_CTX *ctx, nt_forms_struct **list)
 
 	/* we should never return a null forms list or NT gets unhappy */
 	if (n == 0) {
-		list_p = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		list_p = (nt_forms_struct *)talloc_memdup(ctx, &default_forms[0], sizeof(default_forms));
 		if (!list_p)
 			return 0;
 		n = sizeof(default_forms) / sizeof(default_forms[0]);
 	}
 	
-	*list = NULL;
-	if (list_p) {
-		*list = (nt_forms_struct *)talloc_memdup(ctx, list_p, n * sizeof(nt_forms_struct) );
-		free(list_p);
-	}
-
+	*list = list_p;
 	if (!*list)
 		return 0;
+
 	return n;
 }
 
@@ -303,7 +299,7 @@ get the nt drivers list
 traverse the database and look-up the matching names
 ****************************************************************************/
 
-int get_ntdrivers(fstring **list, char *architecture, uint32 version)
+int get_ntdrivers(TALLOC_CTX *ctx, fstring **list, char *architecture, uint32 version)
 {
 	int total=0;
 	fstring short_archi;
@@ -318,7 +314,7 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
-		if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
+		if((*list = talloc_realloc(ctx, *list, sizeof(fstring)*(total+1))) == NULL)
 			return -1;
 
 		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
