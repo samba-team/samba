@@ -328,17 +328,20 @@ krb5_kt_get_entry(krb5_context context,
     if (entry->vno) {
 	return 0;
     } else {
-	char princ[256], kt_name[256];
+	char princ[256], kt_name[256], kvno_str[25];
 
 	krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
 	krb5_kt_get_name (context, id, kt_name, sizeof(kt_name));
 
+	if (kvno)
+	    snprintf(kvno_str, sizeof(kvno_str), "(kvno %d)", kvno);
+	else
+	    kvno_str[0] = '\0';
+
 	krb5_set_error_string (context,
- 			       "failed to find %s%s%d%s in keytab %s",
+ 			       "failed to find %s%s in keytab %s",
 			       princ,
-			       kvno ? "(" : "",
-			       kvno,
-			       kvno ? ")" : "",
+			       kvno_str,
 			       kt_name);
 	return KRB5_KT_NOTFOUND;
     }
