@@ -2071,6 +2071,10 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   cnum = SVAL(inbuf,smb_tid);
 
+  /* If it's an IPC, pass off the pipe handler. */
+  if (IS_IPC(cnum))
+    return reply_pipe_read_and_X(inbuf,outbuf,length,bufsize);
+
   CHECK_FNUM(fnum,cnum);
   CHECK_READ(fnum);
   CHECK_ERROR(fnum);

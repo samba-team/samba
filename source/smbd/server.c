@@ -4493,7 +4493,7 @@ struct smb_message_struct
    {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE},
    
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC},
-   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER},
+   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC},
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
    

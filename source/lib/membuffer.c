@@ -79,9 +79,7 @@ BOOL buf_alloc(struct mem_buffer *buf, int size)
  ********************************************************************/
 void buf_take(struct mem_buffer *buf_to, struct mem_buffer *buf_from)
 {
-	buf_to  ->data      = buf_from->data     ;
-	buf_to  ->data_size = buf_from->data_size;
-	buf_to  ->data_used = buf_from->data_used;
+	memcpy(buf_to, buf_from, sizeof(*buf_to));
 
 	buf_init(buf_from, buf_from->align, buf_from->margin);
 }

@@ -122,6 +122,95 @@ void cmd_lsa_query_info(struct client_info *info)
 	}
 }
 
+/****************************************************************************
+ display group rid info
+ ****************************************************************************/
+static void display_group_info(uint32 num_gids, DOM_GID *gid)
+{
+	int i;
+
+	if (num_gids == 0)
+	{
+		fprintf(out_hnd, "\tNo Groups\n");
+	}
+	else
+	{
+		fprintf(out_hnd, "\tGroup Info\n");
+		fprintf(out_hnd, "\t----------\n");
+
+		for (i = 0; i < num_gids; i++)
+		{
+			fprintf(out_hnd, "\tGroup RID: %8x attr: %x\n",
+							  gid[i].g_rid, gid[i].attr);
+		}
+
+		fprintf(out_hnd, "\n");
+	}
+}
+
+
+/****************************************************************************
+ display user_info_15 structure
+ ****************************************************************************/
+static void display_user_info_15(USER_INFO_15 *usr)
+{
+	fprintf(out_hnd, "\tUser Info, Level 0x15\n");
+	fprintf(out_hnd, "\t---------------------\n");
+
+	fprintf(out_hnd, "\t\tUser Name   : %s\n", unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
+	fprintf(out_hnd, "\t\tFull Name   : %s\n", unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
+	fprintf(out_hnd, "\t\tHome Drive  : %s\n", unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
+	fprintf(out_hnd, "\t\tDir Drive   : %s\n", unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
+	fprintf(out_hnd, "\t\tProfile Path: %s\n", unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
+	fprintf(out_hnd, "\t\tLogon Script: %s\n", unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
+	fprintf(out_hnd, "\t\tDescription : %s\n", unistrn2(usr->uni_description .buffer, usr->uni_description .uni_str_len)); /* user description unicode string */
+
+	fprintf(out_hnd, "\t\tLogon Time               : %s\n", time_to_string(interpret_nt_time(&(usr->logon_time           ))));
+	fprintf(out_hnd, "\t\tLogoff Time              : %s\n", time_to_string(interpret_nt_time(&(usr->logoff_time          ))));
+	fprintf(out_hnd, "\t\tKickoff Time             : %s\n", time_to_string(interpret_nt_time(&(usr->kickoff_time         ))));
+	fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", time_to_string(interpret_nt_time(&(usr->pass_last_set_time   ))));
+	fprintf(out_hnd, "\t\tPassword can change Time : %s\n", time_to_string(interpret_nt_time(&(usr->pass_can_change_time ))));
+	fprintf(out_hnd, "\t\tPassword must change Time: %s\n", time_to_string(interpret_nt_time(&(usr->pass_must_change_time))));
+	
+	fprintf(out_hnd, "\t\tlogon_count : %d\n", usr->logon_count); /* logon count */
+	fprintf(out_hnd, "\t\tbad_pw_count: %d\n", usr->bad_pw_count); /* bad password count */
+	fprintf(out_hnd, "\t\tunknown_0: %08x\n", usr->unknown_0);
+	fprintf(out_hnd, "\t\tunknown_1: %08x\n", usr->unknown_1);
+
+	fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
+
+	fprintf(out_hnd, "\t\tuser_rid : %x\n"  , usr->user_rid ); /* User ID */
+	fprintf(out_hnd, "\t\tgroup_rid: %x\n"  , usr->group_rid); /* Group ID */
+	fprintf(out_hnd, "\t\tacb_info : %04x\n", usr->acb_info ); /* Account Control Info */
+
+	fprintf(out_hnd, "\t\tunknown_3: %08x\n", usr->unknown_3); /* 0x00ff ffff */
+	fprintf(out_hnd, "\t\tlogon_divs: %d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	fprintf(out_hnd, "\t\tunknown_5: %08x\n", usr->unknown_5); /* 0x0002 0000 */
+
+	fprintf(out_hnd, "\t\tpadding1[0..7]...\n");
+
+	if (usr->ptr_padding2)
+	{
+		fprintf(out_hnd, "\t\tpadding2[0..31]...\n");
+	}
+
+	if (usr->ptr_padding3)
+	{
+		fprintf(out_hnd, "\t\tpadding3: %x\n", usr->padding3);
+	}
+
+	if (usr->ptr_unknown6)
+	{
+		fprintf(out_hnd, "\t\tunknown_6,pad4: %08x %08x\n", usr->unknown_6, usr->padding4);
+	}
+
+	if (usr->ptr_logon_hrs)
+	{
+		fprintf(out_hnd, "\t\tlogon_hrs[0..%d]...\n", usr->logon_hrs.len);
+	}
+
+	fprintf(out_hnd, "\n");
+}
 
 /****************************************************************************
 experimental SAM user query.
@@ -135,6 +224,8 @@ void cmd_sam_query_users(struct client_info *info)
 	fstring domain;
 	int user_idx;
 	BOOL res = True;
+	BOOL request_user_info  = False;
+	BOOL request_group_info = False;
 	uint16 num_entries = 0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
@@ -154,6 +245,19 @@ void cmd_sam_query_users(struct client_info *info)
 	strcpy(srv_name, "\\\\");
 	strcat(srv_name, info->dest_host);
 	strupper(srv_name);
+
+	/* a bad way to do token parsing... */
+	if (next_token(NULL, tmp, NULL))
+	{
+		request_user_info  |= strequal(tmp, "-u");
+		request_group_info |= strequal(tmp, "-g");
+	}
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		request_user_info  |= strequal(tmp, "-u");
+		request_group_info |= strequal(tmp, "-g");
+	}
 
 #ifdef DEBUG_TESTING
 	if (next_token(NULL, tmp, NULL))
@@ -210,41 +314,47 @@ void cmd_sam_query_users(struct client_info *info)
 		fprintf(out_hnd, "No users\n");
 	}
 
-	/* query all the users */
-	user_idx = 0;
-
-	while (res && user_idx < info->dom.num_sam_entries)
+	if (request_user_info || request_group_info)
 	{
-		uint32 user_rid = info->dom.sam[user_idx].smb_userid;
-		fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
-		          user_rid,
-		          info->dom.sam[user_idx].acct_name);
+		/* query all the users */
+		user_idx = 0;
 
-		/* send open domain (on user sid) */
-		res = res ? do_samr_open_user(smb_cli, smb_tidx, info->dom.samr_fnum,
-					&info->dom.samr_pol_open_domain,
-		            0x02011b, user_rid,
-					&info->dom.samr_pol_open_user) : False;
-
-		if (res)
+		while (res && user_idx < info->dom.num_sam_entries)
 		{
+			uint32 user_rid = info->dom.sam[user_idx].smb_userid;
 			USER_INFO_15 usr;
-			bzero(&usr, sizeof(usr));
 
-			/* send user info query, level 0x15 */
-			if (do_samr_query_userinfo(smb_cli, smb_tidx, info->dom.samr_fnum,
-					&info->dom.samr_pol_open_user,
-		            0x15, (void*)(&usr)))
+			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
+					  user_rid,
+					  info->dom.sam[user_idx].acct_name);
+
+			if (request_user_info)
 			{
-				fprintf(out_hnd, "\tgot SAM info level 0x15\n");
+				/* send user info query, level 0x15 */
+				if (get_samr_query_userinfo_15(smb_cli, smb_tidx, info->dom.samr_fnum,
+							&info->dom.samr_pol_open_domain,
+							user_rid, &usr))
+				{
+					display_user_info_15(&usr);
+				}
 			}
+
+			if (request_group_info)
+			{
+				uint32 num_groups;
+				DOM_GID gid[LSA_MAX_GROUPS];
+
+				/* send user group query */
+				if (get_samr_query_usergroups(smb_cli, smb_tidx, info->dom.samr_fnum,
+							&info->dom.samr_pol_open_domain,
+							user_rid, &num_groups, gid))
+				{
+					display_group_info(num_groups, gid);
+				}
+			}
+
+			user_idx++;
 		}
-
-		res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
-	            &info->dom.samr_pol_open_user) : False;
-
-
-		user_idx++;
 	}
 
 	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,

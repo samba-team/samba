@@ -2735,6 +2735,8 @@ int cli_readx(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 o
 {
 	char *p;
 
+	DEBUG(5,("cli_readx: fnum:%4x offset:%d size:%d\n", fnum, offset, size));
+
 	cli_set_smb_cmd(cli, t_idx,  SMBreadX, 10,0,True);
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
@@ -2743,10 +2745,10 @@ int cli_readx(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 o
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
 
+	show_msg(cli->outbuf);
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
-		return -1;
-	}
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
+	show_msg(cli->inbuf);
 
     if (cli_error(cli, NULL, NULL)) return -1;
 
@@ -2754,6 +2756,8 @@ int cli_readx(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 o
 	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
 
 	memcpy(buf, p, size);
+
+	DEBUG(5,("cli_readx: returned size:%d\n", size));
 
 	return size;
 }
@@ -3105,7 +3109,8 @@ BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		/* 32 bit error codes detected */
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
-		return (nt_err != 0);
+		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
+		return (IS_BITS_SET_ALL(nt_err, 0xc0000000));
 	}
 	else
 	{

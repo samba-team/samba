@@ -222,6 +222,16 @@ struct tm *LocalTime(time_t *t)
   return(gmtime(&t2));
 }
 
+/****************************************************************************
+take an NTTIME structure, containing high / low time.  convert to unix time.
+lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
+****************************************************************************/
+time_t interpret_nt_time(NTTIME *t)
+{
+  char data[8];
+  memcpy(data, t, sizeof(data));
+  return interpret_long_date(data);
+}
 
 #define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
 
@@ -448,10 +458,9 @@ time_t make_unix_date3(void *date_ptr)
 /****************************************************************************
   return the date and time as a string
 ****************************************************************************/
-char *timestring(void )
+char *time_to_string(time_t t)
 {
   static fstring TimeBuf;
-  time_t t = time(NULL);
   struct tm *tm = LocalTime(&t);
 
 #ifdef NO_STRFTIME
@@ -472,5 +481,13 @@ char *timestring(void )
   strftime(TimeBuf,100,"%m/%d/%Y %T",tm);
 #endif
   return(TimeBuf);
+}
+
+/****************************************************************************
+  return the date and time as a string
+****************************************************************************/
+char *timestring(void )
+{
+  return time_to_string(time(NULL));
 }
 

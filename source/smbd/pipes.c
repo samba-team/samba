@@ -130,7 +130,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
+  int pnum = get_rpc_pipe_num(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_maxcnt = SVAL(inbuf,smb_vwv5);
   int smb_mincnt = SVAL(inbuf,smb_vwv6);

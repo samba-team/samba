@@ -81,7 +81,7 @@ x SamrEnumerateUsersInDomain
 SamrGetUserDomainPasswordInformation
 SamrLookupDomainInSamServer
 SamrLookupIdsInDomain
-SamrLookupNamesInDomain
+x SamrLookupNamesInDomain
 x SamrOpenAlias
 x SamrOpenDomain
 SamrOpenGroup
@@ -109,11 +109,12 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CLOSE_HND         0x01
 #define SAMR_OPEN_DOMAIN       0x07
-#define SAMR_LOOKUP_RIDS       0x11
+#define SAMR_LOOKUP_NAMES      0x11
 #define SAMR_UNKNOWN_3         0x03
 #define SAMR_QUERY_DISPINFO    0x28
 #define SAMR_OPEN_USER         0x22
 #define SAMR_QUERY_USERINFO    0x24
+#define SAMR_QUERY_USERGROUPS  0x27
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CONNECT           0x39
@@ -1547,6 +1548,28 @@ typedef struct r_samr_query_aliasinfo_info
 } SAMR_R_QUERY_ALIASINFO;
 
 
+/* SAMR_Q_QUERY_USERGROUPS - */
+typedef struct q_samr_query_usergroup_info
+{
+    POLICY_HND pol;          /* policy handle associated with unknown id */
+
+} SAMR_Q_QUERY_USERGROUPS;
+
+/* SAMR_R_QUERY_USERGROUPS - probably a get sam info */
+typedef struct r_samr_query_usergroup_info
+{
+	uint32 ptr_0;            /* pointer */
+	uint32 num_entries;      /* number of RID groups */
+	uint32 ptr_1;            /* pointer */
+	uint32 num_entries2;     /* number of RID groups */
+
+	DOM_GID *gid; /* group info */
+
+	uint32 status;         /* return status */
+
+} SAMR_R_QUERY_USERGROUPS;
+
+
 /* SAMR_Q_QUERY_USERINFO - probably a get sam info */
 typedef struct q_samr_query_user_info
 {
@@ -1577,29 +1600,29 @@ typedef struct r_samr_query_user_info
 
 
 /****************************************************************************
-SAMR_Q_LOOKUP_RIDS - do a conversion (only one!) from name to RID.
+SAMR_Q_LOOKUP_NAMES - do a conversion (only one!) from name to RID.
 
 the policy handle allocated by an "samr open secret" call is associated
 with a SID.  this policy handle is what is queried here, *not* the SID
 itself.  the response to the lookup rids is relative to this SID.
 *****************************************************************************/
-/* SAMR_Q_LOOKUP_RIDS - probably a "read SAM entry" */
+/* SAMR_Q_LOOKUP_NAMES */
 typedef struct q_samr_lookup_names_info
 {
     POLICY_HND pol;       /* policy handle */
 
-	uint32 num_rids1;      /* 1          - number of rids being looked up */
-	uint32 rid;            /* 0000 03e8  - RID of the server being queried? */
-	uint32 ptr;            /* 0          - 32 bit unknown */
-	uint32 num_rids2;      /* 1          - number of rids being looked up */
+	uint32 num_rids1;      /* number of rids being looked up */
+	uint32 rid;            /* 0x0000 03e8 - RID of the server doing the query? */
+	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
+	uint32 num_rids2;      /* number of rids being looked up */
 
-	UNIHDR  hdr_mach_acct; /* unicode machine account name header */
-	UNISTR2 uni_mach_acct; /* unicode machine account name */
+	UNIHDR  hdr_user_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
+	UNISTR2 uni_user_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
 
-} SAMR_Q_LOOKUP_RIDS;
+} SAMR_Q_LOOKUP_NAMES;
 
 
-/* SAMR_R_LOOKUP_RIDS - probably an open */
+/* SAMR_R_LOOKUP_NAMES */
 typedef struct r_samr_lookup_names_info
 {
 	uint32 num_entries;
@@ -1612,7 +1635,7 @@ typedef struct r_samr_lookup_names_info
 
 	uint32 status; /* return code */
 
-} SAMR_R_LOOKUP_RIDS;
+} SAMR_R_LOOKUP_NAMES;
 
 
 /* SAMR_Q_OPEN_USER - probably an open */

@@ -1069,6 +1069,11 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnu
 
 BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
+BOOL get_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol_open_domain, uint32 user_rid,
+				uint32 *num_groups, DOM_GID *gid);
+BOOL get_samr_query_userinfo_15(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol_open_domain, uint32 user_rid, USER_INFO_15 *usr);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
@@ -1083,6 +1088,8 @@ BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum,
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 rid, char *sid,
 				POLICY_HND *rtn_pol);
+BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
 BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd);
@@ -1109,30 +1116,29 @@ int get_rpc_pipe_num(char *buf, int where);
 /*The following definitions come from  rpc_pipes/pipenetlog.c  */
 
 BOOL api_netlog_rpc(int cnum, int uid,
-				struct mem_buffer *data, int *data_off, 
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data, 
+				struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipentlsa.c  */
 
 BOOL api_ntlsa_rpc(int cnum,int uid,
-				struct mem_buffer *data , int *data_off,
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data, struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipereg.c  */
 
 BOOL api_reg_rpc(int cnum,int uid,
-				struct mem_buffer *data, int *data_off,
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data,
+				struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipesamr.c  */
 
-BOOL api_samr_rpc(int cnum,int uid, struct mem_buffer *data, int *data_off, struct mem_buffer *rdata, int *rdata_off);
+BOOL api_samr_rpc(int cnum,int uid, struct mem_buffer *data, struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipesrvsvc.c  */
 
 BOOL api_srvsvc_rpc(int cnum,int uid,
-				struct mem_buffer *data, int *data_off,
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data,
+				struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipeutil.c  */
 
@@ -1145,16 +1151,20 @@ int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids);
 int make_dom_gids(char *gids_str, DOM_GID *gids);
 void create_rpc_request(struct mem_buffer *rdata, int *rdata_off, uint32 call_id, uint8 op_num, int data_len);
 void create_rpc_reply(struct mem_buffer *rdata, int *rdata_off, uint32 call_id, int data_len);
+BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
+				uint16 cmd, uint16 fnum,
+				struct mem_buffer *param , struct mem_buffer *data,
+				struct mem_buffer *rparam, struct mem_buffer *rdata);
 BOOL api_rpcTNP(char *rpc_name, struct api_struct *api_rpc_cmds,
 				int cnum, int uid,
-				struct mem_buffer *data , int *data_off,
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data ,
+				struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/pipewkssvc.c  */
 
 BOOL api_wkssvc_rpc(int cnum, int uid,
-				struct mem_buffer *data, int *data_off,
-				struct mem_buffer *rdata, int *rdata_off);
+				struct mem_buffer *data, 
+				struct mem_buffer *rdata);
 
 /*The following definitions come from  rpc_pipes/regparse.c  */
 
@@ -1247,15 +1257,21 @@ void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
 		uint16 switch_value, char *acct_desc,
 		uint32 status);
 void samr_io_r_query_aliasinfo(char *desc, BOOL io, SAMR_R_QUERY_ALIASINFO *r_u, struct mem_buffer *buf, int *q, int depth);
-void samr_io_q_lookup_rids(char *desc, BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, struct mem_buffer *buf, int *q, int depth);
-void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
-		uint32 num_rids, uint32 rid, uint32 status);
-void samr_io_r_lookup_rids(char *desc, BOOL io, SAMR_R_LOOKUP_RIDS *r_u, struct mem_buffer *buf, int *q, int depth);
+void samr_io_q_lookup_names(char *desc, BOOL io, SAMR_Q_LOOKUP_NAMES *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
+		uint32 num_rids, uint32 *rid, uint32 status);
+void samr_io_r_lookup_names(char *desc, BOOL io, SAMR_R_LOOKUP_NAMES *r_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				POLICY_HND *pol,
 				uint32 unk_0, uint32 rid);
 void samr_io_q_open_user(char *desc, BOOL io, SAMR_Q_OPEN_USER *q_u, struct mem_buffer *buf, int *q, int depth);
 void samr_io_r_open_user(char *desc, BOOL io, SAMR_R_OPEN_USER *r_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
+				POLICY_HND *hnd);
+void samr_io_q_query_usergroups(char *desc, BOOL io, SAMR_Q_QUERY_USERGROUPS *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
+		uint32 num_gids, DOM_GID *gid, uint32 status);
+void samr_io_r_query_usergroups(char *desc, BOOL io, SAMR_R_QUERY_USERGROUPS *r_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 void samr_io_q_query_userinfo(char *desc, BOOL io, SAMR_Q_QUERY_USERINFO *q_u, struct mem_buffer *buf, int *q, int depth);
@@ -1599,6 +1615,7 @@ void GetTimeOfDay(struct timeval *tval);
 void TimeInit(void);
 int TimeDiff(time_t t);
 struct tm *LocalTime(time_t *t);
+time_t interpret_nt_time(NTTIME *t);
 time_t interpret_long_date(char *p);
 void put_long_date(char *p,time_t t);
 BOOL null_mtime(time_t mtime);
@@ -1608,6 +1625,7 @@ void put_dos_date3(char *buf,int offset,time_t unixdate);
 time_t make_unix_date(void *date_ptr);
 time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
+char *time_to_string(time_t t);
 char *timestring(void );
 
 /*The following definitions come from  trans2.c  */

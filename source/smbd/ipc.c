@@ -143,7 +143,11 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   int align;
   BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
 
-  if (buffer_too_large) ldata = max_data_ret;
+  if (buffer_too_large)
+  {
+    DEBUG(5,("send_trans_reply: buffer %d too large %d\n", ldata, max_data_ret));
+    ldata = max_data_ret;
+  }
 
   this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
   this_ldata  = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
@@ -160,7 +164,8 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   if (buffer_too_large)
   {
     /* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-    SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_BUFFER_TOO_SMALL);
+    SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_ACCESS_VIOLATION);
   }
 
   if (this_lparam) memcpy(smb_buf(outbuf),param,this_lparam);
@@ -2878,7 +2883,7 @@ static struct
   char * pipe_clnt_name;
   char * pipe_srv_name;
   int subcommand;
-  BOOL (*fn) (int, int, struct mem_buffer*, int*, struct mem_buffer*, int*);
+  BOOL (*fn) (int, int, struct mem_buffer*, struct mem_buffer*);
 }
 api_fd_commands [] =
 {
@@ -3026,24 +3031,11 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 		else
 		{
 			/* reset the data pointer because it gets re-processed unnecessarily */
-			data_len  = 0x0;
-			rdata_len = 0x0;
-			reply = api_fd_commands[i].fn(cnum, vuid,
-			                              &data_buf, &data_len,
-			                              &rdata, &rdata_len);
+			reply = api_fd_commands[i].fn(cnum, vuid, &data_buf, &rdata);
+			rdata_len = rdata.data_used;
 		}
 
-		DEBUG(10,("called api_fd_command\n"));
-	}
-
-	if (rdata.data_used > mdrcnt)
-	{
-		/* data is too large.  keep it in case we get an SMBreadX on the pipe */
-		write_pipe(pnum, &rdata);
-	}
-	else
-	{
-		write_pipe(pnum, NULL);
+		DEBUG(10,("called api_fd_command.  data_len: %d\n", rdata_len));
 	}
 
 	if (rparam_len > mprcnt)
@@ -3067,6 +3059,12 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 	if (rdata.data_used <= mdrcnt)
 	{
 		buf_free(&rdata);
+		write_pipe(pnum, NULL); /* erase the previous (if there was one) data */
+	}
+	else
+	{
+		/* data is too large.  keep it in case we get an SMBreadX on the pipe */
+		write_pipe(pnum, &rdata);
 	}
 
 	if (rparam) free(rparam);
