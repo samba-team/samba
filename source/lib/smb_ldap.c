@@ -409,11 +409,11 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_BindResponse: {
-//		struct ldap_BindResponse *r = &msg->r.BindResponse;
+/*		struct ldap_BindResponse *r = &msg->r.BindResponse; */
 		break;
 	}
 	case LDAP_TAG_UnbindRequest: {
-//		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest;
+/*		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest; */
 		break;
 	}
 	case LDAP_TAG_SearchRequest: {
@@ -454,11 +454,11 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultEntry: {
-//		struct ldap_SearchResultEntry *r = &msg->r.SearchResultEntry;
+/*		struct ldap_SearchResultEntry *r = &msg->r.SearchResultEntry; */
 		break;
 	}
 	case LDAP_TAG_SearchResultDone: {
-//		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone;
+/*		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone; */
 		break;
 	}
 	case LDAP_TAG_ModifyRequest: {
@@ -488,7 +488,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyResponse: {
-//		struct ldap_ModifyResponse *r = &msg->r.ModifyResponse;
+/*		struct ldap_ModifyResponse *r = &msg->r.ModifyResponse; */
 		break;
 	}
 	case LDAP_TAG_AddRequest: {
@@ -514,7 +514,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_AddResponse: {
-//		struct ldap_AddResponse *r = &msg->r.AddResponse;
+/*		struct ldap_AddResponse *r = &msg->r.AddResponse; */
 		break;
 	}
 	case LDAP_TAG_DelRequest: {
@@ -525,7 +525,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_DelResponse: {
-//		struct ldap_DelResponse *r = &msg->r.DelResponse;
+/*		struct ldap_DelResponse *r = &msg->r.DelResponse; */
 		break;
 	}
 	case LDAP_TAG_ModifyDNRequest: {
@@ -544,7 +544,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyDNResponse: {
-//		struct ldap_ModifyDNResponse *r = &msg->r.ModifyDNResponse;
+/*		struct ldap_ModifyDNResponse *r = &msg->r.ModifyDNResponse; */
 		break;
 	}
 	case LDAP_TAG_CompareRequest: {
@@ -561,7 +561,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_CompareResponse: {
-//		struct ldap_CompareResponse *r = &msg->r.CompareResponse;
+/*		struct ldap_CompareResponse *r = &msg->r.CompareResponse; */
 		break;
 	}
 	case LDAP_TAG_AbandonRequest: {
@@ -572,7 +572,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultReference: {
-//		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference;
+/*		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference; */
 		break;
 	}
 	case LDAP_TAG_ExtendedRequest: {
@@ -588,7 +588,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ExtendedResponse: {
-//		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
+/*		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse; */
 		break;
 	}
 	default:
@@ -684,7 +684,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	switch(tag) {
 
 	case ASN1_APPLICATION(LDAP_TAG_BindRequest): {
-//		struct ldap_BindRequest *r = &msg->r.BindRequest;
+/*		struct ldap_BindRequest *r = &msg->r.BindRequest; */
 		msg->type = LDAP_TAG_BindRequest;
 		break;
 	}
@@ -699,13 +699,13 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_UnbindRequest): {
-//		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest;
+/*		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest; */
 		msg->type = LDAP_TAG_UnbindRequest;
 		break;
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchRequest): {
-//		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
+/*		struct ldap_SearchRequest *r = &msg->r.SearchRequest; */
 		msg->type = LDAP_TAG_SearchRequest;
 		break;
 	}
@@ -755,13 +755,13 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchResultReference): {
-//		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference;
+/*		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference; */
 		msg->type = LDAP_TAG_SearchResultReference;
 		break;
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyRequest): {
-//		struct ldap_ModifyRequest *r = &msg->r.ModifyRequest;
+/*		struct ldap_ModifyRequest *r = &msg->r.ModifyRequest; */
 		msg->type = LDAP_TAG_ModifyRequest;
 		break;
 	}
@@ -775,7 +775,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_AddRequest): {
-//		struct ldap_AddRequest *r = &msg->r.AddRequest;
+/*		struct ldap_AddRequest *r = &msg->r.AddRequest; */
 		msg->type = LDAP_TAG_AddRequest;
 		break;
 	}
@@ -789,7 +789,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_DelRequest): {
-//		struct ldap_DelRequest *r = &msg->r.DelRequest;
+/*		struct ldap_DelRequest *r = &msg->r.DelRequest; */
 		msg->type = LDAP_TAG_DelRequest;
 		break;
 	}
@@ -803,7 +803,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest): {
-//		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
+/*		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest; */
 		msg->type = LDAP_TAG_ModifyDNRequest;
 		break;
 	}
@@ -817,7 +817,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_CompareRequest): {
-//		struct ldap_CompareRequest *r = &msg->r.CompareRequest;
+/*		struct ldap_CompareRequest *r = &msg->r.CompareRequest; */
 		msg->type = LDAP_TAG_CompareRequest;
 		break;
 	}
@@ -831,13 +831,13 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_AbandonRequest): {
-//		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest;
+/*		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest; */
 		msg->type = LDAP_TAG_AbandonRequest;
 		break;
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedRequest): {
-//		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest;
+/*		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest; */
 		msg->type = LDAP_TAG_ExtendedRequest;
 		break;
 	}
