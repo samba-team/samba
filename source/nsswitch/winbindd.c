@@ -297,6 +297,9 @@ static void process_request(struct winbindd_cli_state *state)
 		if (state->request.cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n", table->winbindd_cmd_name ));
 			state->response.result = table->fn(state);
+			if (state->response.nt_status)
+				DEBUG(10, ("returning extended error 0x%08x\n",
+					   state->response.nt_status));
 			break;
 		}
 	}
@@ -658,6 +661,7 @@ static void process_loop(int accept_sock)
 			flush_caches();
 			reload_services_file(True);
 			namecache_flush();
+			winbindd_cm_flush();
 
 			do_sighup = False;
 		}
