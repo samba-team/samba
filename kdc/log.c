@@ -39,7 +39,6 @@
 #include "kdc_locl.h"
 RCSID("$Id$");
 
-extern int loglevel;
 static krb5_log_facility *logf;
 
 char*
