@@ -25,9 +25,10 @@
 
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
+ Creates new name (sym)linked to oldname.
 ****************************************************************************/
 
-static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, const char *fname_dst, BOOL hard_link)
+static BOOL cli_link_internal(struct cli_state *cli, const char *oldname, const char *newname, BOOL hard_link)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -36,18 +37,18 @@ static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, cons
 	pstring data;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
-	size_t srclen = 2*(strlen(fname_src)+1);
-	size_t destlen = 2*(strlen(fname_dst) + 1);
+	size_t oldlen = 2*(strlen(oldname)+1);
+	size_t newlen = 2*(strlen(newname)+1);
 
 	memset(param, 0, sizeof(param));
 	SSVAL(param,0,hard_link ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
 	p = &param[6];
 
-	p += clistr_push(cli, p, fname_src, MIN(srclen, sizeof(param)-6), STR_TERMINATE);
+	p += clistr_push(cli, p, newname, MIN(newlen, sizeof(param)-6), STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	p = data;
-	p += clistr_push(cli, p, fname_dst, MIN(destlen,sizeof(data)), STR_TERMINATE);
+	p += clistr_push(cli, p, oldname, MIN(oldlen,sizeof(data)), STR_TERMINATE);
 	data_len = PTR_DIFF(p, data);
 
 	if (!cli_send_trans(cli, SMBtrans2,
@@ -105,18 +106,18 @@ uint32  unix_perms_to_wire(mode_t perms)
  Symlink a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_symlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+BOOL cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname)
 {
-	return cli_link_internal(cli, fname_src, fname_dst, False);
+	return cli_link_internal(cli, oldname, newname, False);
 }
 
 /****************************************************************************
  Hard a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+BOOL cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname)
 {
-	return cli_link_internal(cli, fname_src, fname_dst, True);
+	return cli_link_internal(cli, oldname, newname, True);
 }
 
 /****************************************************************************
