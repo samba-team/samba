@@ -72,8 +72,9 @@ BOOL setup_kernel_oplock_pipe(void)
 }
 
 /****************************************************************************
-  open the oplock IPC socket communication
+ Open the oplock IPC socket communication.
 ****************************************************************************/
+
 BOOL open_oplock_ipc(void)
 {
   struct sockaddr_in sock_name;
@@ -221,14 +222,9 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
     buffer += OPBRK_CMD_HEADER_LEN;
 
     SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
-    SIVAL(buffer,KERNEL_OPLOCK_BREAK_DEV_OFFSET,dev);
 
-#ifdef LARGE_SMB_INO_T
-    SIVAL(buffer,KERNEL_OPLOCK_BREAK_INODE_OFFSET,inode & 0xFFFFFFFF);
-    SIVAL(buffer,KERNEL_OPLOCK_BREAK_INODE_OFFSET+4, (inode >> 32 ) & 0xFFFFFFFF );
-#else /* LARGE_SMB_INO_T */
-    SIVAL(buffer,KERNEL_OPLOCK_BREAK_INODE_OFFSET,inode);
-#endif /* LARGE_SMB_INO_T */
+    memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&dev, sizeof(dev));
+    memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&inode, sizeof(inode));	
 
     return True;
   }
@@ -338,7 +334,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
     }
 
     /*
-     * Remote the kernel oplock on this file.
+     * Remove the kernel oplock on this file.
      */
 
     if(fcntl(fsp->fd_ptr->fd, F_OPLKACK, OP_REVOKE) < 0)
@@ -424,18 +420,8 @@ should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
         return False;
       }
       {
-        /*
-         * Warning - beware of SMB_INO_T <> 4 bytes. !!
-         */
-#ifdef LARGE_SMB_INO_T
-        SMB_INO_T inode_low = IVAL(msg_start, KERNEL_OPLOCK_BREAK_INODE_OFFSET);
-        SMB_INO_T inode_high = IVAL(msg_start, KERNEL_OPLOCK_BREAK_INODE_OFFSET + 4);
-        inode = inode_low | (inode_high << 32);
-#else /* LARGE_SMB_INO_T */
-        inode = IVAL(msg_start, KERNEL_OPLOCK_BREAK_INODE_OFFSET);
-#endif /* LARGE_SMB_INO_T */
-
-        dev = IVAL(msg_start,KERNEL_OPLOCK_BREAK_DEV_OFFSET);
+        memcpy((char *)&inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(inode));
+        memcpy((char *)&dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(dev));
 
         ptval = NULL;
 
@@ -454,25 +440,19 @@ should be %d).\n", (int)msg_len, (int)OPLOCK_BREAK_MSG_LEN));
         return False;
       }
       {
-        /*
-         * Warning - beware of SMB_INO_T <> 4 bytes. !!
-         */
-#ifdef LARGE_SMB_INO_T
-        SMB_INO_T inode_low = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
-        SMB_INO_T inode_high = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET + 4);
-        inode = inode_low | (inode_high << 32);
-#else /* LARGE_SMB_INO_T */
-        inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
-#endif /* LARGE_SMB_INO_T */
+        long usec;
+        time_t sec;
 
-        dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
-
-        tval.tv_sec = (time_t)IVAL(msg_start, OPLOCK_BREAK_SEC_OFFSET);
-        tval.tv_usec = (long)IVAL(msg_start, OPLOCK_BREAK_USEC_OFFSET);
+        memcpy((char *)&inode, msg_start+OPLOCK_BREAK_INODE_OFFSET,sizeof(inode));
+        memcpy((char *)&dev, msg_start+OPLOCK_BREAK_DEV_OFFSET,sizeof(dev));
+        memcpy((char *)&sec, msg_start+OPLOCK_BREAK_SEC_OFFSET,sizeof(sec));
+        tval.tv_sec = sec;
+        memcpy((char *)&usec, msg_start+OPLOCK_BREAK_USEC_OFFSET, sizeof(usec));
+        tval.tv_usec = usec;
 
         ptval = &tval;
 
-        remotepid = (pid_t)IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
+        memcpy((char *)&remotepid, msg_start+OPLOCK_BREAK_PID_OFFSET,sizeof(remotepid));
 
         DEBUG(5,("process_local_message: oplock break request from \
 pid %d, port %d, dev = %x, inode = %.0f\n", (int)remotepid, from_port, (unsigned int)dev, (double)inode));
@@ -494,19 +474,9 @@ reply - dumping info.\n"));
       }
 
       {
-        /*
-         * Warning - beware of SMB_INO_T <> 4 bytes. !!
-         */
-#ifdef LARGE_SMB_INO_T
-        SMB_INO_T inode_low = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
-        SMB_INO_T inode_high = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET + 4);
-        inode = inode_low | (inode_high << 32);
-#else /* LARGE_SMB_INO_T */
-        inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
-#endif /* LARGE_SMB_INO_T */
-
-        remotepid = (pid_t)IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
-        dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        memcpy((char *)&inode, msg_start+OPLOCK_BREAK_INODE_OFFSET,sizeof(inode));
+        memcpy((char *)&remotepid, msg_start+OPLOCK_BREAK_PID_OFFSET,sizeof(remotepid));
+        memcpy((char *)&dev, msg_start+OPLOCK_BREAK_DEV_OFFSET,sizeof(dev));
 
         DEBUG(0,("process_local_message: unsolicited oplock break reply from \
 pid %d, port %d, dev = %x, inode = %.0f\n", (int)remotepid, from_port, (unsigned int)dev, (double)inode));
@@ -896,6 +866,8 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
   pid_t pid = getpid();
   time_t start_time;
   int time_left;
+  long usec;
+  time_t sec;
 
   if(pid == share_entry->pid)
   {
@@ -917,19 +889,13 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
      port in the share mode entry. */
 
   SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
-  SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,(uint32)pid);
-  SIVAL(op_break_msg,OPLOCK_BREAK_SEC_OFFSET,(uint32)share_entry->time.tv_sec);
-  SIVAL(op_break_msg,OPLOCK_BREAK_USEC_OFFSET,(uint32)share_entry->time.tv_usec);
-  SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
-  /*
-   * WARNING - beware of SMB_INO_T <> 4 bytes.
-   */
-#ifdef LARGE_SMB_INO_T
-  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,(inode & 0xFFFFFFFFL));
-  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET+4,((inode >> 32) & 0xFFFFFFFFL));
-#else /* LARGE_SMB_INO_T */
-  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
-#endif /* LARGE_SMB_INO_T */
+  memcpy(op_break_msg+OPLOCK_BREAK_PID_OFFSET,(char *)&pid,sizeof(pid));
+  sec = (time_t)share_entry->time.tv_sec;
+  memcpy(op_break_msg+OPLOCK_BREAK_SEC_OFFSET,(char *)&sec,sizeof(sec));
+  usec = (long)share_entry->time.tv_usec;
+  memcpy(op_break_msg+OPLOCK_BREAK_USEC_OFFSET,(char *)&usec,sizeof(usec));
+  memcpy(op_break_msg+OPLOCK_BREAK_DEV_OFFSET,(char *)&dev,sizeof(dev));
+  memcpy(op_break_msg+OPLOCK_BREAK_INODE_OFFSET,(char *)&inode,sizeof(inode));
 
   /* set the address and port */
   memset((char *)&addr_out,'\0',sizeof(addr_out));

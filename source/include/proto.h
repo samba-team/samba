@@ -443,7 +443,7 @@ ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
-		     int fnum, char *buf, off_t offset, size_t size);
+		     int fnum, char *buf, off_t offset, size_t size1);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
