@@ -365,7 +365,8 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
         memset(buf,'\0',18);
         slprintf(buf, 17, "%-15.15s",namerec->name.name);
         strupper_unix(buf);
-        
+        unix_to_dos(buf);
+
         /* Put the name type and netbios flags in the buffer. */
         buf[15] = name_type;
         set_nb_flags( &buf[16],namerec->data.nb_flags );
