@@ -145,11 +145,11 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_creds.o
 
 
-#RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
-#		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
-#		rpc_client/cli_use.o rpc_client/cli_login.o \
-#		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
-#		lib/util_list.o
+RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
+		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
+		rpc_client/cli_use.o rpc_client/cli_login.o \
+		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
+		lib/util_list.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -191,8 +191,9 @@ MSDFS_OBJ = msdfs/msdfs.o
 
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) $(NOTIFY_OBJ) $(GROUPDB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
+	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
+	   $(NOTIFY_OBJ) $(GROUPDB_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \

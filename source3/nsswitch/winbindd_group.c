@@ -502,13 +502,13 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		num_entries = 0;
 
 		status =
-			samr_enum_dom_groups(&ent->domain->
-					     sam_dom_handle,
-					     &start_ndx,
-					     0x8000, /* buffer size? */
-					     (struct acct_info **)
-					     &sam_grp_entries,
-					     &num_entries);
+			wb_samr_enum_dom_groups(&ent->domain->
+						sam_dom_handle,
+						&start_ndx,
+						0x8000, /* buffer size? */
+						(struct acct_info **)
+						&sam_grp_entries,
+						&num_entries);
 
 		/* Copy entries into return buffer */
 
