@@ -1,3 +1,10 @@
+1999-05-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* send_recv.c (_kadm5_client_recv): handle arbitrarily sized
+	packets, check for errors
+
+	* get_c.c: check for failure from _kadm5_client_{send,recv}
+
 1999-05-04  Assar Westerlund  <assar@sics.se>
 
 	* init_c.c (get_new_cache): don't abort when interrupted from
