@@ -161,8 +161,8 @@ else
 glob_h = glob.h
 endif
 
-roken.h: make-roken
-	@./make-roken > tmp.h ;\
+roken.h: make-roken$(EXEEXT)
+	@./make-roken$(EXEEXT) > tmp.h ;\
 	if [ -f roken.h ] && cmp -s tmp.h roken.h ; then rm -f tmp.h ; \
 	else rm -f roken.h; mv tmp.h roken.h; fi
 
