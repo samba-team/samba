@@ -1665,10 +1665,11 @@ open the client sockets
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 {
 	struct in_addr dest_ip;
+	extern struct in_addr ipzero;
 
 	fstrcpy(cli->desthost, host);
 	
-	if (!ip) {
+	if (!ip || ip_equal(*ip, ipzero)) {
                 if(!resolve_name( cli->desthost, &dest_ip)) {
                         return False;
                 }
