@@ -120,7 +120,7 @@ loop (int s, int errsock)
 }
 
 #ifdef KRB4
-static void
+static int
 send_krb4_auth(int s,
 	       struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
@@ -141,15 +141,22 @@ send_krb4_auth(int s,
 			   hostname, krb_realmofhost (hostname),
 			   getpid(), &msg, &cred, schedule,
 			   &thisaddr, &thataddr, KCMD_VERSION);
-    if (status != KSUCCESS)
-	errx (1, "%s: %s", hostname, krb_get_err_text(status));
+    if (status != KSUCCESS) {
+	warnx ("%s: %s", hostname, krb_get_err_text(status));
+	return 1;
+    }
     memcpy (iv, cred.session, sizeof(iv));
 
     len = strlen(remote_user) + 1;
-    if (net_write (s, remote_user, len) != len)
-	err (1, "write");
-    if (net_write (s, cmd, cmd_len) != cmd_len)
-	err (1, "write");
+    if (net_write (s, remote_user, len) != len) {
+	warn("write");
+	return 1;
+    }
+    if (net_write (s, cmd, cmd_len) != cmd_len) {
+	warn("write");
+	return 1;
+    }
+    return 0;
 }
 #endif /* KRB4 */
 
@@ -233,7 +240,7 @@ krb5_forward_cred (krb5_auth_context auth_context,
     return 0;
 }
 
-static void
+static int
 send_krb5_auth(int s,
 	       struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
@@ -259,8 +266,10 @@ send_krb5_auth(int s,
 				     "host",
 				     KRB5_NT_SRV_HST,
 				     &server);
-    if (status)
-	errx (1, "%s: %s", hostname, krb5_get_err_text(context, status));
+    if (status) {
+	warnx ("%s: %s", hostname, krb5_get_err_text(context, status));
+	return 1;
+    }
 
     cksum_data.length = asprintf ((char **)&cksum_data.data,
 				  "%u:%s%s%s",
@@ -282,29 +291,41 @@ send_krb5_auth(int s,
 			    NULL,
 			    NULL,
 			    NULL);
-    if (status)
-	errx (1, "%s: %s", hostname, krb5_get_err_text(context, status));
+    if (status) {
+	warnx ("%s: %s", hostname, krb5_get_err_text(context, status));
+	return 1;
+    }
 
     status = krb5_auth_con_getkey (context, auth_context, &keyblock);
-    if (status)
-      errx (1, "krb5_auth_con_getkey: %s",
-	    krb5_get_err_text(context, status));
+    if (status) {
+	warnx ("krb5_auth_con_getkey: %s", krb5_get_err_text(context, status));
+	return 1;
+    }
 
     krb5_crypto_init(context, keyblock, 0, &crypto);
-    if(status)
-	errx (1, "krb5_crypto_init: %s",
-	      krb5_get_err_text(context, status));
+    if(status) {
+	warnx ("krb5_crypto_init: %s", krb5_get_err_text(context, status));
+	return 1;
+    }
 
     len = strlen(remote_user) + 1;
-    if (net_write (s, remote_user, len) != len)
-	err (1, "write");
-    if (do_encrypt && net_write (s, "-x ", 3) != 3)
-	err (1, "write");
-    if (net_write (s, cmd, cmd_len) != cmd_len)
-	err (1, "write");
+    if (net_write (s, remote_user, len) != len) {
+	warn ("write");
+	return 1;
+    }
+    if (do_encrypt && net_write (s, "-x ", 3) != 3) {
+	warn ("write");
+	return 1;
+    }
+    if (net_write (s, cmd, cmd_len) != cmd_len) {
+	warn ("write");
+	return 1;
+    }
     len = strlen(local_user) + 1;
-    if (net_write (s, local_user, len) != len)
-	err (1, "write");
+    if (net_write (s, local_user, len) != len) {
+	warn ("write");
+	return 1;
+    }
 
     if (!do_forward
 	|| krb5_forward_cred (auth_context, s, hostname, do_forwardable)) {
@@ -314,10 +335,10 @@ send_krb5_auth(int s,
 	write (s, &zero, 4);
     }
     krb5_auth_con_free (context, auth_context);
-
+    return 0;
 }
 
-static void
+static int
 send_broken_auth(int s,
 		 struct sockaddr_in thisaddr,
 		 struct sockaddr_in thataddr,
@@ -330,13 +351,20 @@ send_broken_auth(int s,
     size_t len;
 
     len = strlen(local_user) + 1;
-    if (net_write (s, local_user, len) != len)
-	err (1, "write");
+    if (net_write (s, local_user, len) != len) {
+	warn ("write");
+	return 1;
+    }
     len = strlen(remote_user) + 1;
-    if (net_write (s, remote_user, len) != len)
-	err (1, "write");
-    if (net_write (s, cmd, cmd_len) != cmd_len)
-	err (1, "write");
+    if (net_write (s, remote_user, len) != len) {
+	warn ("write");
+	return 1;
+    }
+    if (net_write (s, cmd, cmd_len) != cmd_len) {
+	warn ("write");
+	return 1;
+    }
+    return 0;
 }
 
 static int
@@ -357,59 +385,84 @@ proto (int s, int errsock,
     addrlen = sizeof(thisaddr);
     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0
 	|| addrlen != sizeof(thisaddr)) {
-	err (1, "getsockname(%s)", hostname);
+	warn ("getsockname(%s)", hostname);
+	return 1;
     }
     addrlen = sizeof(thataddr);
     if (getpeername (s, (struct sockaddr *)&thataddr, &addrlen) < 0
 	|| addrlen != sizeof(thataddr)) {
-	err (1, "getpeername(%s)", hostname);
+	warn ("getpeername(%s)", hostname);
+	return 1;
     }
 
     addrlen = sizeof(erraddr);
-    if (getsockname (errsock, (struct sockaddr *)&erraddr, &addrlen) < 0)
-	err (1, "getsockname");
+    if (getsockname (errsock, (struct sockaddr *)&erraddr, &addrlen) < 0) {
+	warn ("getsockname");
+	return 1;
+    }
 
-    if (listen (errsock, 1) < 0)
-	err (1, "listen");
+    if (listen (errsock, 1) < 0) {
+	warn ("listen");
+	return 1;
+    }
 
     p = buf;
     snprintf (p, sizeof(buf), "%u", ntohs(erraddr.sin_port));
     len = strlen(buf) + 1;
-    if(net_write (s, buf, len) != len)
-	err (1, "write");
+    if(net_write (s, buf, len) != len) {
+	warn ("write");
+	close (errsock);
+	return 1;
+    }
 
     errsock2 = accept (errsock, NULL, NULL);
-    if (errsock2 < 0)
-	err (1, "accept");
+    if (errsock2 < 0) {
+	warn ("accept");
+	close (errsock);
+	return 1;
+    }
     close (errsock);
 
 #ifdef KRB4
-    if (auth_method == AUTH_KRB4)
-	send_krb4_auth (s, thisaddr, thataddr,
-			hostname, remote_user, local_user,
-			cmd_len, cmd);
-    else
+    if (auth_method == AUTH_KRB4) {
+	if(send_krb4_auth (s, thisaddr, thataddr,
+			   hostname, remote_user, local_user,
+			   cmd_len, cmd)){
+	    close (errsock2);
+	    return 1;
+	} 
+    } else
 #endif /* KRB4 */
-    if(auth_method == AUTH_KRB5)
-	send_krb5_auth (s, thisaddr, thataddr,
-			hostname, remote_user, local_user,
-			cmd_len, cmd);
-    else
-    if(auth_method == AUTH_BROKEN)
-	send_broken_auth (s, thisaddr, thataddr,
-			  hostname, remote_user, local_user,
-			  cmd_len, cmd);
-    else
+    if(auth_method == AUTH_KRB5) {
+	if(send_krb5_auth (s, thisaddr, thataddr,
+			   hostname, remote_user, local_user,
+			   cmd_len, cmd)) {
+	    close (errsock2);
+	    return 1;
+	}
+    } else
+    if(auth_method == AUTH_BROKEN) {
+	if(send_broken_auth (s, thisaddr, thataddr,
+			     hostname, remote_user, local_user,
+			     cmd_len, cmd)) {
+	    close (errsock2);
+	    return 1;
+	}
+    } else
 	abort ();
 
-    if (net_read (s, &reply, 1) != 1)
-	err (1, "read");
+    if (net_read (s, &reply, 1) != 1) {
+	warn ("read");
+	close (errsock2);
+	return 1;
+    }
     if (reply != 0) {
 
 	warnx ("Error from rshd at %s:", hostname);
 
 	while ((ret = read (s, buf, sizeof(buf))) > 0)
 	    write (STDOUT_FILENO, buf, ret);
+	close (errsock2);
 	return 1;
     }
 
@@ -460,13 +513,16 @@ doit_broken (int argc,
     struct hostent *hostent;
     struct sockaddr_in addr;
 
-    if (priv_socket1 < 0 || priv_socket2 < 0)
-	errx (1, "unable to bind reserved port: is rsh setuid root?");
+    if (priv_socket1 < 0 || priv_socket2 < 0) {
+	warnx ("unable to bind reserved port: is rsh setuid root?");
+	return 1;
+    }
 
     hostent = roken_gethostbyname (host);
-    if (hostent == NULL)
-	errx (1, "gethostbyname '%s' failed: %s",
-	      host, hstrerror(h_errno));
+    if (hostent == NULL) {
+	warn("gethostbyname '%s' failed: %s", host, hstrerror(h_errno));
+	return 1;
+    }
 
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -520,10 +576,13 @@ doit_broken (int argc,
 	}
 	return 1;
     } else {
-	return proto (priv_socket1, priv_socket2,
-		      argv[optind],
-		      local_user, remote_user,
-		      cmd, cmd_len);
+	int ret;
+
+	ret = proto (priv_socket1, priv_socket2,
+		     argv[optind],
+		     local_user, remote_user,
+		     cmd, cmd_len);
+	return ret;
     }
 }
 
@@ -550,6 +609,7 @@ doit (char *hostname,
 	struct sockaddr_in addr;
 	int errsock;
 	struct sockaddr_in erraddr;
+	int ret;
 
 	memset (&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -573,10 +633,12 @@ doit (char *hostname,
 	if (bind (errsock, (struct sockaddr *)&erraddr, sizeof(erraddr)) < 0)
 	    err (1, "bind");
     
-	return proto (s, errsock,
-		      hostname,
-		      local_user, remote_user,
-		      cmd, cmd_len);
+	ret = proto (s, errsock,
+		     hostname,
+		     local_user, remote_user,
+		     cmd, cmd_len);
+	close (s);
+	return ret;
     }
     return 1;
 }
