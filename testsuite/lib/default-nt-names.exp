@@ -1,0 +1,18 @@
+#
+# A list of default domain/local users/groups.  We assume that the variable
+# $domain has been initialised before this library is loaded.
+#
+
+# Domain users and groups
+
+set domain_users [list "$domain/Administrator" "$domain/Guest"]
+
+set domain_groups [list "$domain/Domain Admins" "$domain/Domain Guests" \
+        "$domain/Domain Users"]
+
+# Local groups
+
+set local_groups [list "BUILTIN/Replicator" "BUILTIN/Server Operators" \
+        "BUILTIN/Account Operators" "BUILTIN/Backup Operators" \
+        "BUILTIN/Print Operators" "BUILTIN/Guests" "BUILTIN/Users" \
+        "BUILTIN/Administrators"]
