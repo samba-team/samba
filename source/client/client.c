@@ -3724,28 +3724,32 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  DEBUG(0,("Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
-	   pname));
+  DEBUG(0,("Usage: %s service <password> ", pname));
 
   DEBUG(0,("\nVersion %s\n",VERSION));
-  DEBUG(0,("\t-p port               connect to the specified port\n"));
-  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
-  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
-  DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
-  DEBUG(0,("\t-N                    don't ask for a password\n"));
-  DEBUG(0,("\t-P                    connect to service as a printer\n"));
-  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
-  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
-  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
-  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
+  DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
+  DEBUG(0,("\t-B IP addr            broadcast IP address to use\n"));
+  DEBUG(0,("\t-O socket_options     socket options to use\n"));
   DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
+  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
+  DEBUG(0,("\t-i scope              use this NetBIOS scope\n"));
+  DEBUG(0,("\t-N                    don't ask for a password\n"));
+  DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
+  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
+  DEBUG(0,("\t-P                    connect to service as a printer\n"));
+  DEBUG(0,("\t-p port               connect to the specified port\n"));
+  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
+  DEBUG(0,("\t-h                    Print this help message.\n"));
+  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
   DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
   DEBUG(0,("\t-U username           set the network username\n"));
-  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
-  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
+  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
+  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
+  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
+  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
   DEBUG(0,("\n"));
 }
 
@@ -3763,7 +3767,6 @@ static void usage(char *pname)
   extern int optind;
   pstring query_host;
   BOOL message = False;
-  BOOL nt_domain_logon = False;
   BOOL explicit_user = False;
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
@@ -3947,118 +3950,120 @@ static void usage(char *pname)
     }
 
   while ((opt = 
-	  getopt(argc, argv,"s:B:O:R:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
-    switch (opt)
-      {
-      case 'm':
-	max_protocol = interpret_protocol(optarg,max_protocol);
-	break;
-      case 'O':
-	pstrcpy(user_socket_options,optarg);
-	break;	
-      case 'R':
-        pstrcpy(new_name_resolve_order, optarg);
-        break;
-      case 'S':
-	pstrcpy(desthost,optarg);
-	strupper(desthost);
-	nt_domain_logon = True;
-	break;
-      case 'M':
-	name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
-	pstrcpy(desthost,optarg);
-	strupper(desthost);
-	message = True;
-	break;
-      case 'B':
-	iface_set_default(NULL,optarg,NULL);
-	break;
-      case 'D':
-	pstrcpy(base_directory,optarg);
-	break;
-      case 'T':
-	if (!tar_parseargs(argc, argv, optarg, optind)) {
-	  usage(pname);
-	  exit(1);
-	}
-	break;
-      case 'i':
-	pstrcpy(scope,optarg);
-	break;
-      case 'L':
-	got_pass = True;
-	pstrcpy(query_host,optarg);
-    if(!explicit_user)
-      *username = '\0';
-	break;
-      case 'U':
+	  getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:")) != EOF)
+	switch (opt)
 	{
-	  char *lp;
-      explicit_user = True;
-      pstrcpy(username,optarg);
-      if ((lp=strchr(username,'%')))
-	  {
-	    *lp = 0;
-	    pstrcpy(password,lp+1);
-	    got_pass = True;
-	    memset(strchr(optarg,'%')+1,'X',strlen(password));
-	  }
+	case 's':
+		pstrcpy(servicesf, optarg);
+		break;
+	case 'B':
+		iface_set_default(NULL,optarg,NULL);
+		break;
+	case 'O':
+		pstrcpy(user_socket_options,optarg);
+		break;	
+	case 'R':
+		pstrcpy(new_name_resolve_order, optarg);
+		break;
+	case 'M':
+		name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
+		pstrcpy(desthost,optarg);
+		strupper(desthost);
+		message = True;
+		break;
+#if 0 /* This option doesn't seem to do anything - JRA. */
+	case 'S':
+		pstrcpy(desthost,optarg);
+		strupper(desthost);
+		nt_domain_logon = True;
+		break;
+#endif /* 0 */
+	case 'i':
+		pstrcpy(scope,optarg);
+		break;
+	case 'N':
+		got_pass = True;
+		no_pass = True;
+		break;
+	case 'n':
+		pstrcpy(global_myname,optarg);
+		break;
+	case 'd':
+		if (*optarg == 'A')
+			DEBUGLEVEL = 10000;
+		else
+			DEBUGLEVEL = atoi(optarg);
+		break;
+	case 'P':
+		connect_as_printer = True;
+		break;
+	case 'p':
+		port = atoi(optarg);
+		break;
+	case 'l':
+		slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
+		break;
+	case 'h':
+		usage(pname);
+		exit(0);
+		break;
+	case 'I':
+		{
+			dest_ip = *interpret_addr2(optarg);
+			if (zero_ip(dest_ip))
+				exit(1);
+			have_ip = True;
+		}
+		break;
+	case 'E':
+		dbf = stderr;
+		break;
+	case 'U':
+		{
+			char *lp;
+			explicit_user = True;
+			pstrcpy(username,optarg);
+			if ((lp=strchr(username,'%')))
+			{
+				*lp = 0;
+				pstrcpy(password,lp+1);
+				got_pass = True;
+				memset(strchr(optarg,'%')+1,'X',strlen(password));
+			}
+		}
+		break;
+	case 'L':
+		got_pass = True;
+		pstrcpy(query_host,optarg);
+		if(!explicit_user)
+			*username = '\0';
+		break;
+	case 't':
+		pstrcpy(term_code, optarg);
+		break;
+	case 'm':
+		max_protocol = interpret_protocol(optarg,max_protocol);
+		break;
+	case 'W':
+		pstrcpy(workgroup,optarg);
+		break;
+	case 'T':
+		if (!tar_parseargs(argc, argv, optarg, optind)) {
+			usage(pname);
+			exit(1);
+		}
+		break;
+	case 'D':
+		pstrcpy(base_directory,optarg);
+		break;
+	case 'c':
+		cmdstr = optarg;
+		got_pass = True;
+		break;
+	default:
+		usage(pname);
+		exit(1);
 	}
-	    
-	break;
-      case 'W':
-	pstrcpy(workgroup,optarg);
-	break;
-      case 'E':
-	dbf = stderr;
-	break;
-      case 'I':
-	{
-	  dest_ip = *interpret_addr2(optarg);
-	  if (zero_ip(dest_ip)) exit(1);
-	  have_ip = True;
-	}
-	break;
-      case 'n':
-	pstrcpy(global_myname,optarg);
-	break;
-      case 'N':
-	got_pass = True;
-	no_pass = True;
-	break;
-      case 'P':
-	connect_as_printer = True;
-	break;
-      case 'd':
-	if (*optarg == 'A')
-	  DEBUGLEVEL = 10000;
-	else
-	  DEBUGLEVEL = atoi(optarg);
-	break;
-      case 'l':
-	slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
-	break;
-      case 'p':
-	port = atoi(optarg);
-	break;
-      case 'c':
-	cmdstr = optarg;
-	got_pass = True;
-	break;
-      case 'h':
-	usage(pname);
-	exit(0);
-	break;
-      case 's':
-	pstrcpy(servicesf, optarg);
-	break;
-      case 't':
-        pstrcpy(term_code, optarg);
-	break;
-      default:
-	usage(pname);
-	exit(1);
-      }
 
   get_myname((*global_myname)?NULL:global_myname,NULL);  
   strupper(global_myname);
@@ -4120,7 +4125,11 @@ static void usage(char *pname)
 	  sscanf(p, "%x", &name_type);
   }
   
+#if 0 /* This seemed to be used with the unknown -S option. JRA */
   if (*query_host && !nt_domain_logon)
+#else
+  if (*query_host)
+#endif
     {
       int ret = 0;
       slprintf(service,sizeof(service)-1,
