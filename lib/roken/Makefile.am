@@ -34,6 +34,7 @@ libroken_la_SOURCES =		\
 	base64.c		\
 	concat.c		\
 	emalloc.c		\
+	environment.c		\
 	eread.c			\
 	erealloc.c		\
 	estrdup.c		\
@@ -64,6 +65,7 @@ libroken_la_SOURCES =		\
 	tm2time.c		\
 	verify.c		\
 	warnerr.c		\
+	write_pid.c		\
 	xdbm.h
 
 EXTRA_libroken_la_SOURCES =	\
