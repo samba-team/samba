@@ -1358,7 +1358,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	}
 
       /* check for a previously validated username/password pair */
-      if (!ok && !lp_revalidate(snum) &&
+      if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE) &&
 	  (vuser != 0) && !vuser->guest &&
 	  user_ok(vuser->name,snum)) {
 	pstrcpy(user,vuser->name);
