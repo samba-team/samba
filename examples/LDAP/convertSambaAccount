@@ -35,6 +35,7 @@ sub usage {
 
 	print "convertSambaAccount <options>\n";
 	print "Options:\n";
+	print "  --help         print this help message\n";
 	print "  --input        input LDIF filename\n";
 	print "  --output       output LDIF filename\n";
 	print "  --sid          domain SID\n";
@@ -77,7 +78,8 @@ sub usage {
 ## process command line args
 ##
 
-$result = GetOptions(\%options, 
+$result = GetOptions(\%options,
+			"help", 
 			"input=s", 
 			"output=s", 
 			"sid=s",
@@ -86,6 +88,11 @@ $result = GetOptions(\%options,
 if (!$result && ($#ARGV != -1)) {
 	usage();
 	exit 1;
+}
+
+if ( defined($options{'help'}) ) {
+	usage();
+	exit 0;
 }
 
 
