@@ -607,7 +607,7 @@ clients to begin using domain security!
 </sect2>
 
 <sect2>
-<title>Why is this better than <parameter>security = server</parameter>?</title>
+<title>Why is this better than security = server?</title>
 
 <para>
 Currently, domain security in Samba doesn't free you from 
