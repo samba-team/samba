@@ -302,9 +302,9 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
       last_iface->next = iface;
     }
     last_iface = iface;
-    DEBUG(1,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
-    DEBUG(1,("bcast=%s ",inet_ntoa(iface->bcast)));
-    DEBUG(1,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+    DEBUG(2,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
+    DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
+    DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
   }
 
   if (*interfaces) return;
