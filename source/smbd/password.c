@@ -137,14 +137,11 @@ void invalidate_vuid(uint16 vuid)
   /* same number of igroups as groups */
   vuser->n_groups = 0;
 
-  if (vuser->groups && (vuser->groups != (gid_t *)vuser->igroups))
-       free(vuser->groups);
+  if (vuser->groups) free(vuser->groups);
 
-  if (vuser->igroups) free(vuser->igroups);
-  if (vuser->sids   ) free(vuser->sids);
+  if (vuser->sids) free(vuser->sids);
 
   vuser->sids    = NULL;
-  vuser->igroups = NULL;
   vuser->groups  = NULL;
 }
 
@@ -164,78 +161,41 @@ char *validated_username(uint16 vuid)
 /****************************************************************************
 Setup the groups a user belongs to.
 ****************************************************************************/
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups)
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups)
 {
-  if (-1 == initgroups(user,gid))
-    {
-      if (getuid() == 0)
-	{
-	  DEBUG(0,("Unable to initgroups!\n"));
-	  if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
-	    DEBUG(0,("This is probably a problem with the account %s\n",user));
+	int i,ngroups;
+	GID_T *groups;
+	GID_T grp = 0;
+
+	if (-1 == initgroups(user,gid)) {
+		if (getuid() == 0) {
+			DEBUG(0,("Unable to initgroups!\n"));
+			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000) {
+				DEBUG(0,("This is probably a problem with the account %s\n",
+					 user));
+			}
+		}
+		return -1;
 	}
-    }
-  else
-    {
-      int i,ngroups;
-      int *igroups;
-      gid_t grp = 0;
-      ngroups = getgroups(0,&grp);
-      if (ngroups <= 0)
-        ngroups = 32;
-      igroups = (int *)malloc(sizeof(int)*ngroups);
-      for (i=0;i<ngroups;i++)
-        igroups[i] = 0x42424242;
-      ngroups = getgroups(ngroups,(gid_t *)igroups);
 
-      if (igroups[0] == 0x42424242)
-        ngroups = 0;
+	ngroups = getgroups(0,&grp);
+	if (ngroups <= 0) ngroups = 32;
 
-      *p_ngroups = ngroups;
+	groups = (GID_T *)malloc(sizeof(groups[0])*ngroups);
 
-      /* The following bit of code is very strange. It is due to the
-         fact that some OSes use int* and some use gid_t* for
-         getgroups, and some (like SunOS) use both, one in prototypes,
-         and one in man pages and the actual code. Thus we detect it
-         dynamically using some very ugly code */
-      if (ngroups > 0)
-        {
-	  /* does getgroups return ints or gid_t ?? */
-	  static BOOL groups_use_ints = True;
+	ngroups = getgroups(ngroups,(gid_t *)groups);
 
-	  if (groups_use_ints && 
-	      ngroups == 1 && 
-	      SVAL(igroups,2) == 0x4242)
-	    groups_use_ints = False;
-	  
-          for (i=0;groups_use_ints && i<ngroups;i++)
-            if (igroups[i] == 0x42424242)
-    	      groups_use_ints = False;
-	      
-          if (groups_use_ints)
-          {
-    	      *p_igroups = igroups;
-    	      *p_groups = (gid_t *)igroups;	  
-          }
-          else
-          {
-	      gid_t *groups = (gid_t *)igroups;
-	      igroups = (int *)malloc(sizeof(int)*ngroups);
-	      for (i=0;i<ngroups;i++)
-          {
-	        igroups[i] = groups[i];
-          }
-	      *p_igroups = igroups;
-	      *p_groups = (gid_t *)groups;
-	    }
+	(*p_ngroups) = ngroups;
+
+	(*p_groups) = groups;
+
+	DEBUG(3,("%s is in %d groups\n",user,ngroups));
+	for (i=0;i<ngroups;i++) {
+		DEBUG(3,("%d ",(int)groups[i]));
 	}
-      DEBUG(3,("%s is in %d groups\n",user,ngroups));
-      for (i=0;i<ngroups;i++)
-        DEBUG(3,("%d ",igroups[i]));
-      DEBUG(3,("\n"));
-    }
-  return 0;
+	DEBUG(3,("\n"));
+
+	return 0;
 }
 
 
@@ -299,13 +259,11 @@ uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOO
 
   vuser->n_groups = 0;
   vuser->groups  = NULL;
-  vuser->igroups = NULL;
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
   setup_groups(unix_name,uid,gid,
 	       &vuser->n_groups,
-	       &vuser->igroups,
 	       &vuser->groups);
 
   DEBUG(3,("uid %d registered to name %s\n",uid,unix_name));

@@ -1661,8 +1661,7 @@ BOOL last_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups);
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups);
 uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
 BOOL update_smbpassword_file( char *user, fstring password);
@@ -1984,7 +1983,7 @@ void *mem_dup( void *from, int size );
 void array_promote(char *array,int elsize,int element);
 void set_socket_options(int fd, char *options);
 void close_sockets(void );
-BOOL in_group(gid_t group, int current_gid, int ngroups, int *groups);
+BOOL in_group(gid_t group, int current_gid, int ngroups, GID_T *groups);
 char *StrCpy(char *dest,char *src);
 char *StrnCpy(char *dest,char *src,int n);
 void putip(void *dest,void *src);

@@ -211,6 +211,11 @@ if test "$ac_cv_lib_socket_connect" = "yes" ||
   AC_DEFINE(HAVE_CONNECT)
 fi])
 
+echo $ac_n "checking for broken getgroups ... $ac_c"
+AC_TRY_RUN([#include "tests/getgroups.c"],
+           echo yes;AC_DEFINE(HAVE_BROKEN_GETGROUPS), 
+	   echo no)
+
 
 echo $ac_n "checking for root ... $ac_c"
 AC_TRY_RUN([main() { exit(getuid() != 0); }],

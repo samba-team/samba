@@ -287,6 +287,12 @@ extern char *sys_errlist[];
 extern int errno;
 #endif
 
+#ifdef HAVE_BROKEN_GETGROUPS
+#define GID_T int
+#else
+#define GID_T gid_t
+#endif
+
 
 /* Lists, trees, caching, datbase... */
 #include "ubi_sLinkList.h"

@@ -386,11 +386,10 @@ struct cli_state {
 
 struct current_user
 {
-  int cnum, vuid;
-  int uid, gid;
-  int ngroups;
-  gid_t *groups;
-  int *igroups;
+	int cnum, vuid;
+	int uid, gid;
+	int ngroups;
+	GID_T *groups;
 };
 
 typedef struct
@@ -500,8 +499,7 @@ typedef struct
 
   /* This groups info is valid for the user that *opened* the connection */
   int ngroups;
-  gid_t *groups;
-  int *igroups; /* an integer version - some OSes are broken :-( */
+  GID_T *groups;
 
   time_t lastused;
   BOOL used;
@@ -537,8 +535,7 @@ typedef struct
   /* following groups stuff added by ih */
   /* This groups info is needed for when we become_user() for this uid */
   int n_groups;
-  gid_t *groups;
-  int *igroups; /* an integer version - some OSes are broken :-( */
+  GID_T *groups;
 
   int n_sids;
   int *sids;

@@ -104,6 +104,7 @@
 #undef WITH_NISPLUS
 #undef WITH_AUTOMOUNT
 #undef HAVE_PAM_AUTHENTICATE
+#undef HAVE_BROKEN_GETGROUPS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
