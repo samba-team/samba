@@ -1130,7 +1130,8 @@ uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 			   uint32 *num_doms, UNISTR2 **uni_names,
 			   DOM_SID ***sids);
 uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
-			uint32 num_entries, DOM_SID2 *sid, uint16 level,
+			uint32 num_entries, DOM_SID2 *sid,
+			const LOOKUP_LEVEL *level,
 			DOM_R_REF *ref,
 			LSA_TRANS_NAME_ENUM *trn,
 			uint32 *mapped_count);
@@ -1676,10 +1677,10 @@ int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_ldap_port(void);
 int lp_ldap_protocol_version(void);
-char *lp_logon_script(const user_struct* );
-char *lp_logon_path(const user_struct* );
-char *lp_logon_drive(const user_struct* );
-char *lp_logon_home(const user_struct* );
+char *lp_logon_script(const vuser_key* );
+char *lp_logon_path(const vuser_key* );
+char *lp_logon_drive(const vuser_key* );
+char *lp_logon_home(const vuser_key* );
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );

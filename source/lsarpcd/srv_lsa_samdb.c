@@ -247,7 +247,8 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 _lsa_lookup_sids
  ***************************************************************************/
 uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
-			uint32 num_entries, DOM_SID2 *sid, uint16 level,
+			uint32 num_entries, DOM_SID2 *sid,
+			const LOOKUP_LEVEL *level,
 			DOM_R_REF *ref,
 			LSA_TRANS_NAME_ENUM *trn,
 			uint32 *mapped_count)
@@ -257,6 +258,11 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 	uint32 status = 0x0;
 
 	(*mapped_count) = 0;
+
+	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
@@ -277,8 +283,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 		if (map_domain_sid_to_name(&find_sid, dom_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
-			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
-			safe_strcpy(name, dom_name, sizeof(name)-1);
+			name[0] = 0;
 		}
 		else if (sid_split_rid         (&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))
@@ -312,7 +317,6 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 		{
 			snprintf(name, sizeof(name), "%08x", rid);
 			sid_name_use = SID_NAME_UNKNOWN;
-
 		}
 		make_lsa_trans_name(&(trn->name    [total]),
 		                    &(trn->uni_name[total]),
