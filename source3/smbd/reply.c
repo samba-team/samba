@@ -48,8 +48,6 @@ int reply_special(char *inbuf,char *outbuf)
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	pstring name1,name2;
-
-	int len;
 	char name_type = 0;
 	
 	static BOOL already_got_session = False;
@@ -1274,6 +1272,16 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	
 	*directory = *mask = 0;
 	
+	/* We must check for wildcards in the name given
+	 * directly by the client - before any unmangling.
+	 * This prevents an unmangling of a UNIX name containing
+	 * a DOS wildcard like '*' or '?' from unmangling into
+	 * a wildcard delete which was not intended.
+	 * FIX for #226. JRA.
+	 */
+
+	has_wild = ms_has_wild(name);
+
 	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 	
 	p = strrchr_m(name,'/');
@@ -1298,13 +1306,12 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!rc && mangle_is_mangled(mask))
 		mangle_check_cache( mask );
 	
-	has_wild = ms_has_wild(mask);
-	
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
 		error = can_delete(directory,conn,dirtype);
-		if (!NT_STATUS_IS_OK(error)) return error;
+		if (!NT_STATUS_IS_OK(error))
+			return error;
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
@@ -1331,12 +1338,15 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				pstring fname;
 				pstrcpy(fname,dname);
 				
-				if(!mask_match(fname, mask, case_sensitive)) continue;
+				if(!mask_match(fname, mask, case_sensitive))
+					continue;
 				
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype);
-				if (!NT_STATUS_IS_OK(error)) continue;
-				if (SMB_VFS_UNLINK(conn,fname) == 0) count++;
+				if (!NT_STATUS_IS_OK(error))
+					continue;
+				if (SMB_VFS_UNLINK(conn,fname) == 0)
+					count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dirptr);
@@ -1372,7 +1382,8 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
 	status = unlink_internals(conn, dirtype, name);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	/*
 	 * Win2k needs a changenotify request response before it will
