@@ -45,7 +45,7 @@
  *
  **/
 
-int net_rpc_join(int argc, const char **argv) 
+int net_rpc_join_newstyle(int argc, const char **argv) 
 {
 
 	extern pstring global_myname;
