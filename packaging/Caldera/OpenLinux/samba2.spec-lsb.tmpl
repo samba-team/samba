@@ -28,7 +28,7 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}-%{date}.tar.gz
-Patch0: %{Name}-%{Version}-smbmount.patch
+#Patch0: %{Name}-%{Version}-smbmount.patch
 Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
 
@@ -194,7 +194,7 @@ server. Please use it with care. If you do not need it then do NOT install.
 
 %Prep
 %setup -n samba
-%patch0 -p1
+#%patch0 -p1
 %patch1 -p1
 #%patch2 -p1
 
@@ -233,11 +233,12 @@ done
   s:/usr/local/etc/:/etc/: +
   s:/usr/local/:/usr/:;
 '
-%{fixUP} -vT docs/textdocs/ENCRYPTION.txt -e '
-  s:/usr/local/samba/private:%{EtcSamba}:g +
-  s:mksmbpasswd.sh:mksmbpasswd:g +
-  s:the Samba source directory:/usr/bin:;
-'
+# ENCRYPTION.txt is gone.
+#%{fixUP} -vT docs/textdocs/ENCRYPTION.txt -e '
+#  s:/usr/local/samba/private:%{EtcSamba}:g +
+#  s:mksmbpasswd.sh:mksmbpasswd:g +
+#  s:the Samba source directory:/usr/bin:;
+#'
 # End of DirtyHack(TM)
 
 
@@ -251,7 +252,6 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--libdir='$(DESTDIR)%{EtcSamba}' \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
-	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--without-smbwrapper \
@@ -483,4 +483,4 @@ test "$1" = "0" || exit 0
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec-lsb.tmpl,v 1.1.2.8 2001/02/26 16:58:26 jht Exp $
+$Id: samba2.spec-lsb.tmpl,v 1.1.2.10 2001/03/28 01:33:43 jht Exp $
