@@ -111,7 +111,7 @@ as the default guest user (specified elsewhere):
 
  	[aprinter]
  		path = /usr/spool/public
- 		read only = true
+ 		writeable = false
  		printable = true
  		guest ok = true
 
@@ -201,7 +201,7 @@ make any auto home directories visible\&.
 .IP 
 This section works like \fB[homes]\fP, but for printers\&.
 .IP 
-If a [printers] section occurs in the configuration file, users are
+If a \fB[printers]\fP section occurs in the configuration file, users are
 able to connect to any printer specified in the local host\'s printcap
 file\&.
 .IP 
@@ -211,7 +211,7 @@ scanned\&. If a match is found, it is used\&. If no match is found, but a
 above\&. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
 requested section name is a valid printer share name\&. If a match is
-found, a new printer share is created by cloning the [printers]
+found, a new printer share is created by cloning the \fB[printers]\fP
 section\&.
 .IP 
 A few modifications are then made to the newly created share:
@@ -229,11 +229,11 @@ If the share does not permit guest access and no username was
 given, the username is set to the located printer name\&.
 .IP 
 .IP 
-Note that the [printers] service MUST be printable - if you specify
+Note that the \fB[printers]\fP service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file\&.
 .IP 
 Typically the path specified would be that of a world-writeable spool
-directory with the sticky bit set on it\&. A typical [printers] entry
+directory with the sticky bit set on it\&. A typical \fB[printers]\fP entry
 would look like this:
 .IP 
 
@@ -242,7 +242,6 @@ would look like this:
 
  	[printers]
  		path = /usr/spool/public
- 		writeable = no
  		guest ok = yes
  		printable = yes 
 
@@ -378,7 +377,7 @@ negotiation\&. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1\&.
 machine\&. Only some are recognized, and those may not be 100%
 reliable\&. It currently recognizes Samba, WfWg, WinNT and
 Win95\&. Anything else will be known as "UNKNOWN"\&. If it gets it wrong
-then sending a level 3 log to \fIsamba-bugs@samba\&.org\fP
+then sending a level 3 log to \fIsamba@samba\&.org\fP
 should allow it to be fixed\&.
 .IP 
 .IP o 
@@ -542,7 +541,7 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBdebug uid\fP
 .IP 
 .IP o 
-\fBdebuglevel\fP
+\fBdebug level\fP
 .IP 
 .IP o 
 \fBdefault\fP
@@ -564,9 +563,6 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBdomain admin users\fP
-.IP 
-.IP o 
-\fBdomain controller\fP
 .IP 
 .IP o 
 \fBdomain groups\fP
@@ -701,6 +697,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBmin passwd length\fP
 .IP 
 .IP o 
+\fBmin password length\fP
+.IP 
+.IP o 
 \fBmin wins ttl\fP
 .IP 
 .IP o 
@@ -711,6 +710,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBnetbios name\fP
+.IP 
+.IP o 
+\fBnetbios scope\fP
 .IP 
 .IP o 
 \fBnis homedir\fP
@@ -830,6 +832,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBsocket options\fP
 .IP 
 .IP o 
+\fBsource environment\fP
+.IP 
+.IP o 
 \fBssl\fP
 .IP 
 .IP o 
@@ -887,6 +892,12 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBsyslog only\fP
 .IP 
 .IP o 
+\fBtemplate homedir\fP
+.IP 
+.IP o 
+\fBtemplate shell\fP
+.IP 
+.IP o 
 \fBtime offset\fP
 .IP 
 .IP o 
@@ -914,16 +925,28 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBusername map\fP
 .IP 
 .IP o 
+\fButmp directory\fP
+.IP 
+.IP o 
 \fBvalid chars\fP
+.IP 
+.IP o 
+\fBwinbind cache time\fP
+.IP 
+.IP o 
+\fBwinbind gid\fP
+.IP 
+.IP o 
+\fBwinbind uid\fP
+.IP 
+.IP o 
+\fBwins hook\fP
 .IP 
 .IP o 
 \fBwins proxy\fP
 .IP 
 .IP o 
 \fBwins server\fP
-.IP 
-.IP o 
-\fBwins hook\fP
 .IP 
 .IP o 
 \fBwins support\fP
@@ -1074,6 +1097,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBinclude\fP
 .IP 
 .IP o 
+\fBinherit permissions\fP
+.IP 
+.IP o 
 \fBinvalid users\fP
 .IP 
 .IP o 
@@ -1137,10 +1163,10 @@ parameter for details\&. Note that some are synonyms\&.
 \fBonly user\fP
 .IP 
 .IP o 
-\fBoplocks\fP
+\fBoplock contention limit\fP
 .IP 
 .IP o 
-\fBoplock contention limit\fP
+\fBoplocks\fP
 .IP 
 .IP o 
 \fBpath\fP
@@ -1209,10 +1235,10 @@ parameter for details\&. Note that some are synonyms\&.
 \fBroot preexec\fP
 .IP 
 .IP o 
-\fBsecurity mask\fP
+\fBroot preexec close\fP
 .IP 
 .IP o 
-\fBroot preexec close\fP
+\fBsecurity mask\fP
 .IP 
 .IP o 
 \fBset directory\fP
@@ -1245,6 +1271,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBusers\fP
 .IP 
 .IP o 
+\fButmp\fP
+.IP 
+.IP o 
 \fBvalid users\fP
 .IP 
 .IP o 
@@ -1261,6 +1290,9 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBwritable\fP
+.IP 
+.IP o 
+\fBwrite cache size\fP
 .IP 
 .IP o 
 \fBwrite list\fP
@@ -1545,11 +1577,11 @@ shares in a net view and in the browse list\&.
 \fBExample:\fP
 \f(CW	browseable = No\fP
 .IP 
-.IP "\fBcase sensitive (G)\fP" 
+.IP "\fBcase sensitive (S)\fP" 
 .IP 
 See the discussion in the section \fBNAME MANGLING\fP\&.
 .IP 
-.IP "\fBcasesignames (G)\fP" 
+.IP "\fBcasesignames (S)\fP" 
 .IP 
 Synonym for \fB"case sensitive"\fP\&.
 .IP 
@@ -1820,6 +1852,7 @@ See also the \fB"force create mode"\fP parameter
 for forcing particular mode bits to be set on created files\&. See also
 the \fB"directory mode"\fP parameter for masking
 mode bits on created directories\&.
+See also the \fB"inherit permissions"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 \f(CW	create mask = 0744\fP
@@ -1875,7 +1908,7 @@ must be on for this to have an effect\&.
 .IP 
 Samba2\&.0 debug log messages are timestamped by default\&. If you are
 running at a high \fB"debug level"\fP these timestamps
-can be distracting\&. This boolean parameter allows them to be turned
+can be distracting\&. This boolean parameter allows timestamping to be turned
 off\&.
 .IP 
 \fBDefault:\fP
@@ -2163,6 +2196,8 @@ See also the \fB"create mode"\fP parameter for masking
 mode bits on created files, and the \fB"directory security mask"\fP
 parameter\&.
 .IP 
+See also the \fB"inherit permissions"\fP parameter\&.
+.IP 
 \fBDefault:\fP
 \f(CW	directory mask = 0755\fP
 .IP 
@@ -2242,12 +2277,6 @@ To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
 \fIlistproc@samba\&.org\fP
-.IP 
-.IP "\fBdomain controller (G)\fP" 
-.IP 
-This is a \fBDEPRECATED\fP parameter\&. It is currently not used within
-the Samba source and should be removed from all current smb\&.conf
-files\&. It is left behind for compatibility reasons\&.
 .IP 
 .IP "\fBdomain groups (G)\fP" 
 .IP 
@@ -2474,14 +2503,17 @@ symbolic links) by default\&.
 .IP "\fBforce create mode (S)\fP" 
 .IP 
 This parameter specifies a set of UNIX mode bit permissions that will
-\fI*always*\fP be set on a file created by Samba\&. This is done by
-bitwise \'OR\'ing these bits onto the mode bits of a file that is being
-created\&. The default for this parameter is (in octal) 000\&. The modes
-in this parameter are bitwise \'OR\'ed onto the file mode after the mask
-set in the \fB"create mask"\fP parameter is applied\&.
+\fI*always*\fP be set on a file by Samba\&. This is done by bitwise
+\'OR\'ing these bits onto the mode bits of a file that is being created
+or having its permissions changed\&. The default for this parameter is
+(in octal) 000\&. The modes in this parameter are bitwise \'OR\'ed onto
+the file mode after the mask set in the \fB"create
+mask"\fP parameter is applied\&.
 .IP 
 See also the parameter \fB"create mask"\fP for details
-on masking mode bits on created files\&.
+on masking mode bits on files\&.
+.IP 
+See also the \fB"inherit permissions"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 \f(CW	force create mode = 000\fP
@@ -2505,6 +2537,8 @@ operation is done after the mode mask in the parameter
 .IP 
 See also the parameter \fB"directory mask"\fP for
 details on masking mode bits on created directories\&.
+.IP 
+See also the \fB"inherit permissions"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 \f(CW	force directory mode = 000\fP
@@ -2906,6 +2940,41 @@ is included literally, as though typed in place\&.
 It takes the standard substitutions, except \fB%u\fP,
 \fB%P\fP and \fB%S\fP\&.
 .IP 
+.IP "\fBinherit permissions (S)\fP" 
+.IP 
+The permissions on new files and directories are normally governed by
+\fB"create mask"\fP,
+\fB"directory mask"\fP,
+\fB"force create mode"\fP and
+\fB"force directory mode"\fP
+but the boolean inherit permissions parameter overrides this\&.
+.IP 
+New directories inherit the mode of the parent directory,
+including bits such as setgid\&.
+.IP 
+New files inherit their read/write bits from the parent directory\&.
+Their execute bits continue to be determined by
+\fB"map archive"\fP,
+\fB"map hidden"\fP and
+\fB"map system"\fP as usual\&.
+.IP 
+Note that the setuid bit is *never* set via inheritance
+(the code explicitly prohibits this)\&.
+.IP 
+This can be particularly useful on large systems with many users,
+perhaps several thousand,
+to allow a single \fB[homes]\fP share to be used flexibly by each user\&.
+.IP 
+See also \fB"create mask"\fP, \fB"directory mask"\fP,
+\fB"force create mode"\fP and
+\fB"force directory mode"\fP\&.
+.IP 
+\fBDefault\fP
+\f(CW   inherit permissions = no\fP
+.IP 
+\fBExample\fP
+\f(CW   inherit permissions = yes\fP
+.IP 
 .IP "\fBinterfaces (G)\fP" 
 .IP 
 This option allows you to override the default network interfaces list
@@ -2921,10 +2990,13 @@ any of the following forms:
 a network interface name (such as eth0)\&. This may include
 shell-like wildcards so eth* will match any interface starting
 with the substring "eth"
-if() a IP address\&. In this case the netmask is determined
+.IP o 
+an IP address\&. In this case the netmask is determined
 from the list of interfaces obtained from the kernel
-if() a IP/mask pair\&. 
-if() a broadcast/mask pair\&. 
+.IP o 
+an IP/mask pair\&. 
+.IP o 
+a broadcast/mask pair\&. 
 .IP 
 The "mask" parameters can either be a bit length (such as 24 for a C
 class network) or a full netmask in dotted decmal form\&.
@@ -3106,7 +3178,7 @@ for an entry in the LDAP password database\&.
 .IP "\fBlevel2 oplocks (S)\fP" 
 .IP 
 This parameter (new in Samba 2\&.0\&.5) controls whether Samba supports
-level2 (read-only) oplocks on a share\&. In Samba 2\&.0\&.4 this parameter
+level2 (read-only) oplocks on a share\&. In Samba 2\&.0\&.5 this parameter
 defaults to "False" as the code is new, but will default to "True"
 in a later release\&.
 .IP 
@@ -3291,6 +3363,22 @@ from a command prompt, for example\&.
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine\&.
 .IP 
+This parameter can be used with Win9X workstations to ensure that
+roaming profiles are stored in a subdirectory of the user\'s home
+directory\&.  This is done in the following way:
+.IP 
+\f(CW"     logon home = \e\e%L\e%U\eprofile"\fP
+.IP 
+This tells Samba to return the above string, with substitutions made
+when a client requests the info, generally in a NetUserGetInfo request\&.
+Win9X clients truncate the info to \e\eserver\eshare when a user does \f(CW"net use /home"\fP,
+but use the whole string when dealing with profiles\&.
+.IP 
+Note that in prior versions of Samba, the \f(CW"logon path"\fP was returned rather than
+\f(CW"logon home"\fP\&.  This broke \f(CW"net use /home"\fP but allowed profiles outside the 
+home directory\&.  The current implementation is correct, and can be used for profiles
+if you use the above trick\&.
+.IP 
 Note that this option is only useful if Samba is set up as a
 \fBlogon server\fP\&.
 .IP 
@@ -3303,24 +3391,27 @@ Note that this option is only useful if Samba is set up as a
 .IP "\fBlogon path (G)\fP" 
 .IP 
 This parameter specifies the home directory where roaming profiles
-(USER\&.DAT / USER\&.MAN files for Windows 95/98) are stored\&.
+(NTuser\&.dat etc files for Windows NT) are stored\&.  Contrary to previous 
+versions of these manual pages, it has nothing to do with Win 9X roaming
+profiles\&.  To find out how to handle roaming profiles for Win 9X system, see 
+the \f(CW"logon home"\fP parameter\&.
 .IP 
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine\&.  It also specifies
-the directory from which the \f(CW"desktop"\fP, \f(CW"start menu"\fP,
-\f(CW"network neighborhood"\fP and \f(CW"programs"\fP folders, and their
-contents, are loaded and displayed on your Windows 95/98 client\&.
+the directory from which the \f(CW"application data"\fP, (\f(CW"desktop"\fP, \f(CW"start menu"\fP,
+\f(CW"network neighborhood"\fP, \f(CW"programs"\fP and other folders, and their
+contents, are loaded and displayed on your Windows NT client\&.
 .IP 
 The share and the path must be readable by the user for the
-preferences and directories to be loaded onto the Windows 95/98
+preferences and directories to be loaded onto the Windows NT
 client\&.  The share must be writeable when the logs in for the first
-time, in order that the Windows 95/98 client can create the user\&.dat
+time, in order that the Windows NT client can create the NTuser\&.dat
 and other directories\&.
 .IP 
 Thereafter, the directories and any of the contents can, if required, be
-made read-only\&.  It is not advisable that the USER\&.DAT file be made
-read-only - rename it to USER\&.MAN to achieve the desired effect (a
-\fIMAN\fPdatory profile)\&.
+made read-only\&.  It is not advisable that the NTuser\&.dat file be made
+read-only - rename it to NTuser\&.man to achieve the desired effect (a
+\fIMAN\fPdatory profile)\&. 
 .IP 
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in\&.  Therefore, it is vital
@@ -3912,7 +4003,7 @@ so you should never need to touch this parameter\&.
 .IP 
 .IP "\fBmax packet (G)\fP" 
 .IP 
-Synonym for (packetsize)\&.
+Synonym for \fB"packet size"\fP\&.
 .IP 
 .IP "\fBmax ttl (G)\fP" 
 .IP 
@@ -4027,6 +4118,10 @@ See also the \fBprinting\fP parameter\&.
 .IP 
 .IP "\fBmin passwd length (G)\fP" 
 .IP 
+Synonym for \fB"min password length"\fP\&.
+.IP 
+.IP "\fBmin password length (G)\fP" 
+.IP 
 This option sets the minimum length in characters of a plaintext password
 than smbd will accept when performing UNIX password changing\&.
 .IP 
@@ -4035,7 +4130,7 @@ See also \fB"unix password sync"\fP,
 debug"\fP\&.
 .IP 
 \fBDefault:\fP
-\f(CW	min passwd length = 5\fP
+\f(CW	min password length = 5\fP
 .IP 
 .IP "\fBmin wins ttl (G)\fP" 
 .IP 
@@ -4128,6 +4223,11 @@ See also \fB"netbios aliases"\fP\&.
 .IP 
 \fBExample:\fP
 \f(CW	netbios name = MYNAME\fP
+.IP 
+.IP "\fBnetbios scope (G)\fP" 
+.IP 
+This sets the NetBIOS scope that Samba will operate under\&. This should
+not be set unless every machine on your LAN also sets this value\&.
 .IP 
 .IP "\fBnis homedir (G)\fP" 
 .IP 
@@ -4326,7 +4426,7 @@ docs/ directory for details\&.
 .IP 
 .IP "\fBpacket size (G)\fP" 
 .IP 
-This is a deprecated parameter that how no effect on the current
+This is a deprecated parameter that has no effect on the current
 Samba code\&. It is left in the parameter list to prevent breaking
 old \fBsmb\&.conf\fP files\&.
 .IP 
@@ -4732,16 +4832,11 @@ command you specify should remove the spool file when it has been
 processed, otherwise you will need to manually remove old spool files\&.
 .IP 
 The print command is simply a text string\&. It will be used verbatim,
-with two exceptions: All occurrences of \f(CW"%s"\fP will be replaced by
-the appropriate spool file name, and all occurrences of \f(CW"%p"\fP will
-be replaced by the appropriate printer name\&. The spool file name is
-generated automatically by the server, the printer name is discussed
-below\&.
-.IP 
-The full path name will be used for the filename if \f(CW"%s"\fP is not
-preceded by a \f(CW\'/\'\fP\&. If you don\'t like this (it can stuff up some
-lpq output) then use \f(CW"%f"\fP instead\&. Any occurrences of \f(CW"%f"\fP get
-replaced by the spool filename without the full path at the front\&.
+with two exceptions: All occurrences of \f(CW"%s"\fP and \f(CW"%f"\fP will be
+replaced by the appropriate spool file name, and all occurrences of
+\f(CW"%p"\fP will be replaced by the appropriate printer name\&. The spool
+file name is generated automatically by the server, the printer name
+is discussed below\&.
 .IP 
 The print command \fIMUST\fP contain at least one occurrence of \f(CW"%s"\fP
 or \f(CW"%f"\fP - the \f(CW"%p"\fP is optional\&. At the time a job is
@@ -4797,7 +4892,7 @@ submit spool files on the directory specified for the service\&.
 .IP 
 Note that a printable service will ALWAYS allow writing to the service
 path (user privileges permitting) via the spooling of print data\&. The
-\fB"read only"\fP parameter controls only non-printing
+\fB"writeable"\fP parameter controls only non-printing
 access to the resource\&.
 .IP 
 \fBDefault:\fP
@@ -4917,7 +5012,7 @@ find the printer driver files for the automatic installation of
 drivers for Windows 95 machines\&. If Samba is set up to serve printer
 drivers to Windows 95 machines, this should be set to
 .IP 
-\f(CW\e\eMACHINE\eaPRINTER$\fP
+\f(CW\e\eMACHINE\ePRINTER$\fP
 .IP 
 Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
 is a share you set up for serving printer driver files\&. For more
@@ -4939,20 +5034,21 @@ Synonym for \fBprinter\fP\&.
 .IP "\fBprinting (S)\fP" 
 .IP 
 This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the
+on your system\&. It also affects the default values for the
 \fB"print command"\fP, \fB"lpq
 command"\fP \fB"lppause command"\fP,
 \fB"lpresume command"\fP, and \fB"lprm
-command"\fP\&.
+command"\fP if specified in the \fB[global]\fP
+section\&.
 .IP 
 Currently eight printing styles are supported\&. They are
-\fB"printing=BSD"\fP, \fB"printing=AIX"\fP, \fB"printing=LPRNG"\fP,
-\fB"printing=PLP"\fP,
-\fB"printing=SYSV"\fP,\fB"printing="HPUX"\fP,\fB"printing=QNX"\fP and
-\fB"printing=SOFTQ"\fP\&.
+\fB"printing=BSD"\fP, \fB"printing=AIX"\fP, 
+\fB"printing=LPRNG"\fP, \fB"printing=PLP"\fP, \fB"printing=SYSV"\fP, 
+\fB"printing="HPUX"\fP, \fB"printing=QNX"\fP, \fB"printing=SOFTQ"\fP,
+and \fB"printing=CUPS"\fP\&.
 .IP 
 To see what the defaults are for the other print commands when using
-these three options use the \fB"testparm"\fP program\&.
+the various options use the \fB"testparm"\fP program\&.
 .IP 
 This option can be set on a per printer basis
 .IP 
@@ -5061,7 +5157,7 @@ read bmpx = No
 .IP 
 This is a list of users that are given read-only access to a
 service\&. If the connecting user is in this list then they will not be
-given write access, no matter what the \fB"read only"\fP
+given write access, no matter what the \fB"writeable"\fP
 option is set to\&. The list can include group names using the syntax
 described in the \fB"invalid users"\fP parameter\&.
 .IP 
@@ -5077,10 +5173,7 @@ the \fB"invalid users"\fP parameter\&.
 .IP "\fBread only (S)\fP" 
 .IP 
 Note that this is an inverted synonym for
-\fB"writeable"\fP and \fB"write ok"\fP\&.
-.IP 
-See also \fB"writeable"\fP and \fB"write
-ok"\fP\&.
+\fB"writeable"\fP\&.
 .IP 
 .IP "\fBread prediction (G)\fP" 
 .IP 
@@ -5643,7 +5736,7 @@ smaller size, reducing by a factor of 0\&.8 until the OS accepts it\&.
 \fBExample:\fP
 \f(CW	shared mem size = 5242880 ; Set to 5mb for a large number of files\&.\fP
 .IP 
-.IP "\fBshort preserve case (G)\fP" 
+.IP "\fBshort preserve case (S)\fP" 
 .IP 
 This boolean parameter controls if new files which conform to 8\&.3
 syntax, that is all in upper case and of suitable length, are created
@@ -5714,7 +5807,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option\&. This means you either incorrectly 
 typed it or you need to add an include file to includes\&.h for your OS\&. 
 If the latter is the case please send the patch to
-\fIsamba-bugs@samba\&.org\fP\&.
+\fIsamba@samba\&.org\fP\&.
 .IP 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it\&.
@@ -5781,6 +5874,34 @@ completely\&. Use these options with caution!
 .IP 
 \fBExample:\fP
 \f(CW	socket options = IPTOS_LOWDELAY\fP
+.IP 
+.IP "\fBsource environment (G)\fP" 
+.IP 
+This parameter causes Samba to set environment variables as per the
+content of the file named\&.
+.IP 
+The file \fBmust\fP be owned by root and not world writable in order
+to be read (this is a security check)\&.
+.IP 
+If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe\&. This command must not be world writable
+and must reside in a directory that is not world writable\&.
+.IP 
+The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command\&. This is of the form :
+.IP 
+Example environment entry:
+\f(CW SAMBA_NETBIOS_NAME=myhostname \fP
+.IP 
+\fBDefault:\fP
+\f(CWNo default value\fP
+.IP 
+\fBExamples:\fP
+.IP 
+\f(CW	source environment = |/etc/smb\&.conf\&.sh\fP
+.IP 
+\f(CW	source environment = /usr/local/smb_env_vars\fP
 .IP 
 .IP "\fBssl (G)\fP" 
 .IP 
@@ -6157,6 +6278,30 @@ system syslog only, and not to the debug log files\&.
 \fBDefault:\fP
 \f(CW	syslog only = no\fP
 .IP 
+.IP "\fBtemplate homedir (G)\fP" 
+.IP 
+NOTE: this parameter is only available in Samba 3\&.0\&.
+.IP 
+When filling out the user information for a Windows NT user, the
+\fBwinbindd\fP daemon uses this parameter to fill in
+the home directory for that user\&.  If the string \f(CW%D\fP is present it is
+substituted with the user\'s Windows NT domain name\&.  If the string \f(CW%U\fP
+is present it is substituted with the user\'s Windows NT user name\&.
+.IP 
+\fBDefault:\fP
+\f(CW     template homedir = /home/%D/%U\fP
+.IP 
+.IP "\fBtemplate shell (G)\fP" 
+.IP 
+NOTE: this parameter is only available in Samba 3\&.0\&.
+.IP 
+When filling out the user information for a Windows NT user, the
+\fBwinbindd\fP daemon uses this parameter to fill in
+the login shell for that user\&.
+.IP 
+\fBDefault:\fP
+\f(CW     template shell = /bin/false\fP
+.IP 
 .IP "\fBtime offset (G)\fP" 
 .IP 
 This parameter is a setting in minutes to add to the normal GMT to
@@ -6183,15 +6328,7 @@ itself as a time server to Windows clients\&. The default is False\&.
 .IP 
 .IP "\fBtimestamp logs (G)\fP" 
 .IP 
-Samba2\&.0 will a timestamps to all log entries by default\&. This
-can be distracting if you are attempting to debug a problem\&. This
-parameter allows the timestamping to be turned off\&.
-.IP 
-\fBDefault:\fP
-\f(CW	timestamp logs = True\fP
-.IP 
-\fBExample:\fP
-\f(CW	timestamp logs = False\fP
+Synonym for \fB"debug timestamp"\fP\&.
 .IP 
 .IP "\fBunix password sync (G)\fP" 
 .IP 
@@ -6457,7 +6594,79 @@ print job\&.
 \fBExample:\fP
 \f(CW	username map = /usr/local/samba/lib/users\&.map\fP
 .IP 
-.IP "\fBvalid chars (S)\fP" 
+.IP "\fButmp (S)\fP" 
+.IP 
+This boolean parameter is only available if Samba has been configured and compiled 
+with the option \f(CW--with-utmp\fP\&. If set to True then Samba will attempt
+to add utmp or utmpx records (depending on the UNIX system) whenever a
+connection is made to a Samba server\&. Sites may use this to record the
+user connecting to a Samba share\&.
+.IP 
+See also the \fB"utmp directory"\fP parameter\&.
+.IP 
+\fBDefault:\fP
+\f(CWutmp = False\fP
+.IP 
+\fBExample:\fP
+\f(CWutmp = True\fP
+.IP 
+.IP "\fButmp directory(G)\fP" 
+.IP 
+This parameter is only available if Samba has been configured and compiled
+with the option \f(CW--with-utmp\fP\&. It specifies a directory pathname that is
+used to store the utmp or utmpx files (depending on the UNIX system) that
+record user connections to a Samba server\&. See also the \fB"utmp"\fP
+parameter\&. By default this is not set, meaning the system will use whatever
+utmp file the native system is set to use (usually /var/run/utmp on Linux)\&.
+.IP 
+\fBDefault:\fP
+\f(CWno utmp directory\fP
+.IP 
+\fBExample:\fP
+\f(CWutmp directory = /var/adm/\fP
+.IP 
+.IP "winbind cache time" 
+.IP 
+NOTE: this parameter is only available in Samba 3\&.0\&.
+.IP 
+This parameter specifies the number of seconds the
+\fBwinbindd\fP daemon will cache user and group
+information before querying a Windows NT server again\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind cache type = 15\fP
+.IP 
+.IP "winbind gid" 
+.IP 
+NOTE: this parameter is only available in Samba 3\&.0\&.
+.IP 
+The winbind gid parameter specifies the range of group ids that are
+allocated by the \fBwinbindd\fP daemon\&.  This range of
+group ids should have no existing local or nis groups within it as strange
+conflicts can occur otherwise\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind gid = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW     winbind gid = 10000-20000\fP
+.IP 
+.IP "winbind uid" 
+.IP 
+NOTE: this parameter is only available in Samba 3\&.0\&.
+.IP 
+The winbind uid parameter specifies the range of user ids that are
+allocated by the \fBwinbindd\fP daemon\&.  This range of
+ids should have no existing local or nis users within it as strange
+conflicts can occur otherwise\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind uid = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW     winbind uid = 10000-20000\fP
+.IP 
+.IP "\fBvalid chars (G)\fP" 
 .IP 
 The option allows you to specify additional characters that should be
 considered valid by the server in filenames\&. This is particularly
@@ -6759,7 +6968,7 @@ Synonym for \fB"writeable"\fP for people who can\'t spell :-)\&.
 .IP 
 This is a list of users that are given read-write access to a
 service\&. If the connecting user is in this list then they will be
-given write access, no matter what the \fB"read only"\fP
+given write access, no matter what the \fB"writeable"\fP
 option is set to\&. The list can include group names using the @group
 syntax\&.
 .IP 
@@ -6773,6 +6982,31 @@ See also the \fB"read list"\fP option\&.
 .IP 
 \fBExample:\fP
 \f(CW	write list = admin, root, @staff\fP
+.IP 
+.IP "\fBwrite cache size (S)\fP" 
+.IP 
+This integer parameter (new with Samba 2\&.0\&.7) if set to non-zero causes Samba to create an in-memory
+cache for each oplocked file (it does \fBnot\fP do this for non-oplocked files)\&. All
+writes that the client does not request to be flushed directly to disk will be
+stored in this cache if possible\&. The cache is flushed onto disk when a write
+comes in whose offset would not fit into the cache or when the file is closed
+by the client\&. Reads for the file are also served from this cache if the data
+is stored within it\&.
+.IP 
+This cache allows Samba to batch client writes into a more efficient write
+size for RAID disks (ie\&. writes may be tuned to be the RAID stripe size) and
+can improve performance on systems where the disk subsystem is a bottleneck
+but there is free memory for userspace programs\&.
+.IP 
+The integer parameter specifies the size of this cache (per oplocked file)
+in bytes\&.
+.IP 
+\fBDefault:\fP
+\f(CW     write cache size = 0\fP
+.IP 
+\fBExample:\fP
+\f(CW	     write cache size = 262144\fP
+for a 256k cache size per file\&.
 .IP 
 .IP "\fBwrite ok (S)\fP" 
 .IP 
@@ -6849,7 +7083,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell \fIsamba-bugs@samba\&.org\fP\&. Samba is now developed
+Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -6858,7 +7092,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-\fIsamba-bugs@samba\&.org\fP\&.
+\fIsamba@samba\&.org\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,

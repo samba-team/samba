@@ -4880,10 +4880,10 @@ command"))(lprmcommand) if specified in the link(bf([global]))(global)
 section.
 
 Currently eight printing styles are supported. They are
-bf("printing=BSD"), bf("printing=AIX"), bf("printing=LPRNG"),
-bf("printing=PLP"),
-bf("printing=SYSV"),bf("printing="HPUX"),bf("printing=QNX") and
-bf("printing=SOFTQ").
+bf("printing=BSD"), bf("printing=AIX"), 
+bf("printing=LPRNG"), bf("printing=PLP"), bf("printing=SYSV"), 
+bf("printing="HPUX"), bf("printing=QNX"), bf("printing=SOFTQ"),
+and bf("printing=CUPS").
 
 To see what the defaults are for the other print commands when using
 the various options use the url(bf("testparm"))(testparm.1.html) program.
