@@ -321,13 +321,13 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(const char *principal)
+DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
 {
 	DATA_BLOB tkt, tkt_wrapped, targ;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
 	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(principal);
+	tkt = krb5_get_ticket(principal, time_offset);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt);

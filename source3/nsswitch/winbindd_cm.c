@@ -109,7 +109,7 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	}
 
 	/* we don't need to bind, just connect */
-	ads->auth.no_bind = 1;
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
 
