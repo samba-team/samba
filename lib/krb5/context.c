@@ -62,6 +62,12 @@ krb5_init_context(krb5_context *context)
     val = krb5_config_get_time (p->cf, "libdefaults", "kdc_timeout", NULL);
     if(val >= 0) 
 	p->kdc_timeout = val;
+
+    p->max_retries = 3;
+    val = krb5_config_get_int (p->cf, "libdefaults", "max_retries", NULL);
+    if (val >= 0)
+	p->max_retries = val;
+
     krb5_set_default_realm(p, NULL);
     *context = p;
     return 0;
