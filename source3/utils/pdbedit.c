@@ -365,6 +365,7 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 			passwd_free(&pwd);
 			return -1;
 		}
+		passwd_free(&pwd);
 	} else {
 		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 			fprintf(stderr, "Could not init sam from pw\n");
