@@ -318,7 +318,7 @@ static time_t get_time_from_string(const char *p)
 
 time_t pwdb_get_last_set_time(const char *p)
 {
-	if (*p && StrnCaseCmp(p, "LCT-", 4))
+	if (*p && !StrnCaseCmp(p, "LCT-", 4))
 	{
 		return get_time_from_string(p + 4);
 	}

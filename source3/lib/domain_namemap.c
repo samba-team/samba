@@ -1026,6 +1026,7 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 	{
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
+		gmep->nt_domain = nt_domain;
 
 		gmep->unix_id = (uint32)uid;
 
@@ -1279,6 +1280,7 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 	{
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
+		gmep->nt_domain = nt_domain;
 
 		gmep->unix_id = (uint32)gid;
 
