@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -104,7 +104,9 @@
 #include <krb5.h>
 #include <krb5-private.h> /* for _krb5_{get,put}_int */
 #endif
+#if defined(KRB4) || defined(KRB5)
 #include <kafs.h>
+#endif
 
 #ifndef _PATH_NOLOGIN
 #define _PATH_NOLOGIN   "/etc/nologin"
