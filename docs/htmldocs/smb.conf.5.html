@@ -1561,6 +1561,21 @@ use the named group for their permissions checking. Thus, by assigning
 permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files.
+<p><br>In Samba 2.0.5 and above this parameter has extended functionality in the following
+way. If the group name listed here has a '+' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group. This gives a finer granularity of ownership
+assignment. For example, the setting <code>force group = +sys</code> means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share. All
+other users will retain their ordinary primary group.
+<p><br>If the <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a> parameter is also set the
+group specified in <strong>force group</strong> will override the primary group
+set in <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced group</code>
 <p><br><strong>Example:</strong>
@@ -1576,6 +1591,11 @@ clients still need to connect as a valid user and supply a valid
 password. Once connected, all file operations will be performed as the
 <code>"forced user"</code>, no matter what username the client connected as.
 <p><br>This can be very useful.
+<p><br>In Samba 2.0.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity. Prior to 2.0.5 the primary group was left as the
+primary group of the connecting user (this was a bug).
+<p><br>See also <a href="smb.conf.5.html#forcegroup"><strong>"force group"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced user</code>
 <p><br><strong>Example:</strong>
