@@ -1290,9 +1290,10 @@ out:
 }
 
 static Realm 
-is_krbtgt(PrincipalName *p)
+get_krbtgt_realm(const PrincipalName *p)
 {
-    if(p->name_string.len == 2 && strcmp(p->name_string.val[0], "krbtgt") == 0)
+    if(p->name_string.len == 2
+       && strcmp(p->name_string.val[0], KRB5_TGS_NAME) == 0)
 	return p->name_string.val[1];
     else
 	return NULL;
@@ -1346,7 +1347,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	goto out2;
     }
     
-    if(!is_krbtgt(&ap_req.ticket.sname)){
+    if(!get_krbtgt_realm(&ap_req.ticket.sname)){
 	/* XXX check for ticket.sname == req.sname */
 	kdc_log(0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
@@ -1525,7 +1526,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 		goto out;
 	    }
 	    t = &b->additional_tickets->val[0];
-	    if(!is_krbtgt(&t->sname)){
+	    if(!get_krbtgt_realm(&t->sname)){
 		kdc_log(0, "Additional ticket is not a ticket-granting ticket");
 		ret = KRB5KDC_ERR_POLICY;
 		goto out2;
@@ -1567,7 +1568,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 
 	if(ret){
 	    Realm req_rlm, new_rlm;
-	    if(loop++ < 2 && (req_rlm = is_krbtgt(&sp->name))){
+	    if(loop++ < 2 && (req_rlm = get_krbtgt_realm(&sp->name))){
 		new_rlm = find_rpath(req_rlm);
 		if(new_rlm) {
 		    kdc_log(5, "krbtgt for realm %s not found, trying %s", 
