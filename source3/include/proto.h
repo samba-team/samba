@@ -279,7 +279,6 @@ pid_t sys_fork(void);
 pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
-int fcntl64(int fd, int cmd, struct flock * lock);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -3993,13 +3992,13 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
-int tdb_writelock(TDB_CONTEXT *tdb);
-int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
+int tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
