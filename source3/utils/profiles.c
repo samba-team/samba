@@ -393,8 +393,12 @@ typedef struct acl_struct {
 
 void print_sid(DOM_SID *sid);
 
+int verbose = 1;
+DOM_SID old_sid, new_sid;
+int change = 0, new = 0;
+
 /* Compare two SIDs for equality */
-int compare_sid(DOM_SID *s1, DOM_SID *s2)
+int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
 {
   int sa1, sa2;
 
@@ -475,16 +479,32 @@ void print_sid(DOM_SID *sid)
   fprintf(stdout, "\n");
 }
 
-void print_acl(ACL *acl, char *prefix)
+void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid) 
+{
+  int i;
+  if (my_sid_equal(sid, o_sid)) {
+
+    for (i=0; i<sid->num_auths; i++) {
+      sid->sub_auths[i] = n_sid->sub_auths[i];
+
+    }
+
+  }
+
+}
+
+void process_acl(ACL *acl, char *prefix)
 {
   int ace_cnt, i;
   ACE *ace;
 
   ace_cnt = acl->num_aces;
   ace = (ACE *)&acl->aces;
-  fprintf(stdout, "%sACEs: %u\n", prefix, ace_cnt);
+  if (verbose) fprintf(stdout, "%sACEs: %u\n", prefix, ace_cnt);
   for (i=0; i<ace_cnt; i++) {
-    fprintf(stdout, "%s  Perms: %08X, SID: ", prefix, ace->perms);
+    if (verbose) fprintf(stdout, "%s  Perms: %08X, SID: ", prefix, ace->perms);
+    if (change)
+      process_sid(&ace->trustee, &old_sid, &new_sid);
     print_sid(&ace->trustee);
     ace = (ACE *)((char *)ace + ace->length);
   }
@@ -500,15 +520,12 @@ void usage(voi)
   fprintf(stderr, "\n\t\tIf neither present, just report the SIDs found\n");
 }
 
-DOM_SID old_sid, new_sid;
-
 int main(int argc, char *argv[])
 {
   extern char *optarg;
   extern int optind;
   int opt;
-  int i, fd, aces, start = 0, change = 0, new = 0;
-  int verbose = 0;
+  int i, fd, aces, start = 0;
   int process_sids = 0;
   void *base;
   struct stat sbuf;
@@ -582,7 +599,7 @@ int main(int argc, char *argv[])
    * dealing with the records. We are interested in the sk record
    */
   start = 0;
-  base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
   if ((int)base == -1) {
     fprintf(stderr, "Could not mmap file: %s, %s\n", argv[optind],
@@ -648,21 +665,30 @@ int main(int argc, char *argv[])
     group_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] + sec_desc->group_off);
     sacl = (ACL *)(&sk_hdr->sec_desc[0] + sec_desc->sacl_off);
     dacl = (ACL *)(&sk_hdr->sec_desc[0] + sec_desc->dacl_off);
-    fprintf(stdout, "  Owner SID: "); print_sid(owner_sid);
-    fprintf(stdout, "  Group SID: "); print_sid(group_sid);
+    if (verbose)fprintf(stdout, "  Owner SID: "); 
+    if (change) process_sid(owner_sid, &old_sid, &new_sid);
+    if (verbose) print_sid(owner_sid);
+    if (verbose) fprintf(stdout, "  Group SID: "); 
+    if (change) process_sid(group_sid, &old_sid, &new_sid);
+    if (verbose) print_sid(group_sid);
     fprintf(stdout, "  SACL: ");
-    if (!sec_desc->sacl_off)
-      fprintf(stdout, "NONE\n");
+    if (!sec_desc->sacl_off) {
+      if (verbose) fprintf(stdout, "NONE\n");
+    }
     else 
-      print_acl(sacl, "    ");
-    fprintf(stdout, "  DACL: ");
-    if (!sec_desc->dacl_off)
-      fprintf(stdout, "NONE\n");
+      process_acl(sacl, "    ");
+    if (verbose) fprintf(stdout, "  DACL: ");
+    if (!sec_desc->dacl_off) {
+      if (verbose) fprintf(stdout, "NONE\n");
+    }
     else 
-      print_acl(dacl, "    ");
+      process_acl(dacl, "    ");
     sk_off = sk_hdr->prev_off;
     sk_hdr = (SK_HDR *)(base + OFF(sk_hdr->prev_off));
   } while (sk_off != first_sk_off);
 
-}
+  munmap(base, sbuf.st_size); 
 
+  close(fd);
+
+}
