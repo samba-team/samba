@@ -45,7 +45,7 @@ all: telnet
 	-I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
 
 telnet: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS) @LIB_tgetent@ @LIB_setupterm@
 
 install: all
 	$(MKINSTALLDIRS) $(prefix)/bin
