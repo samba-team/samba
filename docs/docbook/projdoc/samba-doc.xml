@@ -67,6 +67,7 @@ PLEASE read this.</para>
 </partintro>
 &IntroSMB;
 &UNIX-INSTALL;
+&FastStart;
 </part>
 
 <part id="type">
@@ -84,6 +85,7 @@ section carefully.
 &Samba-BDC-HOWTO;
 &DOMAIN-MEMBER;
 &StandAloneServer;
+&ClientConfig;
 </part>
 
 <part id="optional">
@@ -112,6 +114,15 @@ Samba has several features that you might want or might not want to use. The cha
 &Samba-PAM;
 &IntegratingWithWindows;
 &unicode;
+&Backup;
+&HighAvailability;
+</part>
+
+<part id="migration">
+<title>Migration and Updating</title>
+&upgrading;
+&NT4Migration;
+&SWAT;
 </part>
 
 <part id="troubleshooting">
@@ -124,11 +135,10 @@ Samba has several features that you might want or might not want to use. The cha
 <part id="Appendixes">
 <title>Appendixes</title>
 &Compiling;
-&NT4Migration;
 &Portability;
 &Other-Clients;
-&SWAT;
 &SPEED;
+&DNS-DHCP-Configuration;
 &Further-Resources;
 </part>
 
