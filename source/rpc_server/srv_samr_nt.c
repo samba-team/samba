@@ -3414,19 +3414,21 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 
 	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
-	} else {
-		passwd_free(&pwd);
 	}
 
-	if ((grp=getgrgid(map.gid)) == NULL)
+	if ((grp=getgrgid(map.gid)) == NULL) {
+		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_ALIAS;
+	}
 
 	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name))
+	if(user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_ALIAS;
+	}
 
 	/* 
 	 * ok, the group exist, the user exist, the user is not in the group,
@@ -3435,9 +3437,12 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name))
+	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
+	}
 
+	passwd_free(&pwd);
 	return NT_STATUS_OK;
 }
 
