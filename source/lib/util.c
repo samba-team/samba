@@ -1611,6 +1611,30 @@ int set_maxfiles(int requested_max)
 	 * which always returns RLIM_INFINITY for rlp.rlim_max.
 	 */
 
+	/* Try raising the hard (max) limit to the requested amount. */
+
+#if defined(RLIM_INFINITY)
+	if (rlp.rlim_max != RLIM_INFINITY) {
+		int orig_max = rlp.rlim_max;
+
+		if ( rlp.rlim_max < requested_max )
+			rlp.rlim_max = requested_max;
+
+		/* This failing is not an error - many systems (Linux) don't
+			support our default request of 10,000 open files. JRA. */
+
+		if(setrlimit(RLIMIT_NOFILE, &rlp)) {
+			DEBUG(3,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d max files failed with error %s\n", 
+				(int)rlp.rlim_max, strerror(errno) ));
+
+			/* Set failed - restore original value from get. */
+			rlp.rlim_max = orig_max;
+		}
+	}
+#endif
+
+	/* Now try setting the soft (current) limit. */
+
 	saved_current_limit = rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 
 	if(setrlimit(RLIMIT_NOFILE, &rlp)) {

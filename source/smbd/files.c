@@ -134,7 +134,7 @@ initialise file structures
 
 void file_init(void)
 {
-        int request_max_open_files = lp_max_open_files();
+	int request_max_open_files = lp_max_open_files();
 	int real_lim;
 
 	/*
@@ -146,8 +146,8 @@ void file_init(void)
 
 	real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
 
-        if(real_max_open_files != request_max_open_files) {
-        	DEBUG(1,("file_init: Information only: requested %d \
+	if(real_max_open_files != request_max_open_files) {
+		DEBUG(1,("file_init: Information only: requested %d \
 open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	}
 
