@@ -1,3 +1,9 @@
+2003-03-03  Love  <lha@stacken.kth.se>
+
+	* inquire_context.c: (gss_inquire_context): rename argument open to open_context
+
+	* gssapi.h (gss_inquire_context): rename argument open to open_context
+
 2003-02-27  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* init_sec_context.c (do_delegation): remove unused variable
