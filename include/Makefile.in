@@ -9,13 +9,13 @@ CC	= @CC@
 CFLAGS	= @CFLAGS@
 DEFS	= -DHOST=\"@CANONICAL_HOST@\" 
 
-LN_S = ln -s
+LN_S = @LN_S@
 
 all:
 	for i in $(HEADERS); do \
 	if test ! -h $$i -a ! -f $$i ; then X="$$X $$i"; fi \
 	done; \
-	if test ! -z "$$X" ; then $(MAKE) $$X; fi
+	if test -n "$$X" ; then $(MAKE) $$X; fi
 
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) -c $< 
