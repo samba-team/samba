@@ -5148,3 +5148,14 @@ int str_checksum(char *s)
 	}
 	return(res);
 } /* str_checksum */
+
+
+
+/*****************************************************************
+zero a memory area then free it. Used to catch bugs faster
+*****************************************************************/  
+void zero_free(void *p, int size)
+{
+	memset(p, 0, size);
+	free(p);
+}
