@@ -1,3 +1,10 @@
+2003-10-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/fcache.c: Sleep forever waiting for lock. Previous
+	method doesn't work well with a large number of clients accessing
+	the cache at the same time, and there is no simple way to add a
+	timeout to the lock.
+
 2003-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_krb5_conf.c: print the error value
