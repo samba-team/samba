@@ -1,3 +1,13 @@
+1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/misc.c: update for multi-database code
+
+	* kdc/main.c: update for multi-database code
+
+	* kdc/kdc_locl.h: update
+
+	* kdc/config.c: allow us to have more than one database
+
 1999-11-04  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2d

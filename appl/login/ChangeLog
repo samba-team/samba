@@ -1,3 +1,7 @@
+1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* conf.c: remove case for not having cgetent, since it's in roken
+
 1999-11-05  Assar Westerlund  <assar@sics.se>
 
 	* login.c (do_login): conditionalize shadow stuff on getspnam

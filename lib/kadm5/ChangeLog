@@ -1,3 +1,32 @@
+1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* randkey_s.c: always bail out if the fetch fails
+
+	* admin.h (kadm5_config_params): remove fields we're not using
+
+	* ipropd_slave.c: allow passing a realm
+
+	* ipropd_master.c: allow passing a realm
+
+	* dump_log.c: allow passing a realm
+
+	* acl.c: correctly get acl file
+
+	* private.h (kadm5_server_context): add config_params struct and
+	remove acl_file; bump protocol version number
+
+	* marshall.c: marshalling of config parameters
+
+	* init_c.c (kadm5_c_init_with_context): try to cope with old
+	servers
+
+	* init_s.c (kadm5_s_init_with_context): actually use some passed
+	values
+
+	* context_s.c (_kadm5_s_init_context): get dbname, acl_file, and
+	stash_file from the config parameters, try to figure out these if
+	they're not provided
+
 1999-11-05  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (install-build-headers): use `cp' instead of
@@ -108,6 +137,10 @@
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
 	* init_c.c (get_cred_cache): use $USERNAME
+
+1999-05-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* init_c.c (get_cred_cache): figure out principal
 
 1999-05-05  Johan Danielsson  <joda@pdc.kth.se>
 
