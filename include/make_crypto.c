@@ -71,6 +71,7 @@ main(int argc, char **argv)
 #if ENABLE_AES
     fputs("#include <openssl/aes.h>\n", f);
 #endif    
+    fputs("#include <openssl/ui.h>\n", f);
 #else
     fputs("#include <des.h>\n", f);
     fputs("#include <md4.h>\n", f);
