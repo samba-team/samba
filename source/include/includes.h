@@ -625,6 +625,9 @@ extern int errno;
 #define GID_T gid_t
 #endif
 
+#ifndef NGROUPS_MAX
+#define NGROUPS_MAX 32 /* Guess... */
+#endif
 
 /* Lists, trees, caching, datbase... */
 #include "ubi_sLinkList.h"

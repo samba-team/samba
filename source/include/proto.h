@@ -186,6 +186,7 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable );
 BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
 long sys_random(void);
 void sys_srandom(unsigned int seed);
+int groups_max(void);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
 struct passwd *sys_getpwnam(const char *name);

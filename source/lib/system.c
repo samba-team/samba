@@ -562,6 +562,20 @@ void sys_srandom(unsigned int seed)
 }
 
 /**************************************************************************
+ Returns equivalent to NGROUPS_MAX - using sysconf if needed.
+****************************************************************************/
+
+int groups_max(void)
+{
+#if defined(SYSCONF_SC_NGROUPS_MAX)
+  int ret = sysconf(_SC_NGROUPS_MAX);
+  return (ret == -1) ? NGROUPS_MAX : ret;
+#else
+  return NGROUPS_MAX;
+#endif
+}
+
+/**************************************************************************
  Wrapper for getgroups. Deals with broken (int) case.
 ****************************************************************************/
 
@@ -590,7 +604,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
   } 
 
   if (setlen == 0)
-    setlen = 1;
+    setlen = groups_max();
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -631,20 +645,15 @@ int sys_setgroups(int setlen, gid_t *gidset)
   if (setlen == 0)
     return 0 ;
 
-#ifdef NGROUPS_MAX
-  if (setlen > NGROUPS_MAX) {
+  if (setlen < 0 || setlen > groups_max()) {
     errno = EINVAL; 
     return -1;   
   }
-#endif
 
   /*
    * Broken case. We need to allocate a
    * GID_T array of size setlen.
    */
-
-  if (setlen == 0)
-    setlen = 1;
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_setgroups: Malloc fail.\n"));

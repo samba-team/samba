@@ -180,6 +180,7 @@
 #undef USE_SETREUID
 #undef USE_SETUIDX
 #undef NEED_SGI_SEMUN_HACK
+#undef SYSCONF_SC_NGROUPS_MAX
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -654,6 +655,9 @@
 
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
+
+/* Define if you have the sysconf function.  */
+#undef HAVE_SYSCONF
 
 /* Define if you have the usleep function.  */
 #undef HAVE_USLEEP
