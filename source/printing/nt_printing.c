@@ -2037,9 +2037,6 @@ uint32 del_a_printer(char *sharename)
 	return 0;
 }
 
-/* FIXME!!!  Reorder so this forward declaration is not necessary --jerry */
-static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **, const char* sharename);
-static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **);
 /****************************************************************************
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
