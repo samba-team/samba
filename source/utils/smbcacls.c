@@ -407,7 +407,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 static void sec_desc_print(FILE *f, SEC_DESC *sd)
 {
 	fstring sidstr;
-	int i;
+	uint32 i;
 
 	printf("REVISION:%d\n", sd->revision);
 
@@ -553,7 +553,7 @@ static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 
 static void sort_acl(SEC_ACL *the_acl)
 {
-	int i;
+	uint32 i;
 	if (!the_acl) return;
 
 	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]), QSORT_CAST ace_compare);
@@ -579,7 +579,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 {
 	int fnum;
 	SEC_DESC *sd, *old;
-	int i, j;
+	uint32 i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
 
@@ -616,7 +616,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
-					int k;
+					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
 						old->dacl->ace[k] = old->dacl->ace[k+1];
 					}
