@@ -1278,6 +1278,9 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct
 	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_users");
 	depth++;
 
+	r_u->sam = NULL;
+	r_u->uni_acct_name = NULL;
+
 	prs_align(ps);
 
 	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
