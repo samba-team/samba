@@ -121,7 +121,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	*r->out.negotiate_flags = *r->in.negotiate_flags;
 
 	if (!pipe_state) {
-		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -306,7 +306,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	if (!pipe_state) {
-		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
