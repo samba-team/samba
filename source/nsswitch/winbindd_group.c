@@ -252,7 +252,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
             } else {
                 name_dom = current_group->domain->name;
-                name_user = name_part1;
+                name_user = name_part2;
                 name_domain = current_group->domain;
             }
 
