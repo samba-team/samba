@@ -320,7 +320,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 /****************************************************************************
   return the snum of a printer corresponding to an handle
 ****************************************************************************/
-static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
+static BOOL get_printer_snum(const POLICY_HND *hnd, int *number)
 {
 	int snum;
 	int pnum = find_printer_index_by_hnd(hnd);
@@ -369,7 +369,7 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 
 /********************************************************************
  ********************************************************************/
-static BOOL handle_is_printserver(POLICY_HND *handle)
+static BOOL handle_is_printserver(const POLICY_HND *handle)
 {
 	int pnum=find_printer_index_by_hnd(handle);
 
@@ -377,12 +377,14 @@ static BOOL handle_is_printserver(POLICY_HND *handle)
 	{
 		switch (Printer[pnum].printer_type)
 		{
-		case PRINTER_HANDLE_IS_PRINTSERVER:
-			return True;
-			break;
-		case PRINTER_HANDLE_IS_PRINTER:
-			return False;
-			break;
+			case PRINTER_HANDLE_IS_PRINTSERVER:
+			{
+				return True;
+			}
+			case PRINTER_HANDLE_IS_PRINTER:
+			{
+				return False;
+			}
 		}		
 	}
 	return False;
@@ -458,8 +460,6 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 	}
 	return NT_STATUS_INVALID_HANDLE;	
 }
-
-#if 0
 
 /********************************************************************
  ********************************************************************/
@@ -560,8 +560,10 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *ty
 
 /********************************************************************
  ********************************************************************/
-static BOOL getprinterdata_printer(POLICY_HND *handle, fstring value, uint32 size, uint32 *type, 
-                                          uint32 *numeric_data, uint8 **data, uint32 *needed )
+static BOOL getprinterdata_printer(const POLICY_HND *handle,
+				fstring value, uint32 size, uint32 *type, 
+                        	uint32 *numeric_data, uint8 **data,
+                        	uint32 *needed )
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	int pnum=0;
@@ -605,12 +607,16 @@ static BOOL getprinterdata_printer(POLICY_HND *handle, fstring value, uint32 siz
 /********************************************************************
  * spoolss_reply_getprinterdata
  ********************************************************************/
-uint32 _spoolss_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *rdata)                                
+uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
+				uint32 *type,
+				uint32 *size,
+				uint8 **data,
+				uint32 *numeric_data,
+				uint32 *needed)
 {
-	SPOOL_R_GETPRINTERDATA r_u;
 	fstring value;
 	BOOL found;
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 	
 	/* 
 	 * Reminder: when it's a string, the length is in BYTES
@@ -626,47 +632,47 @@ uint32 _spoolss_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *rdata)
 	 * JFM, 4/19/1999
 	 */
 
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		size  = size;
-		status = 0x0;
-		type   = 0x4;
-		needed = 0x0;
-		data   = NULL;
-		numeric_data=0x0;
-		
-		unistr2_to_ascii(value, &(valuename), sizeof(value)-1);
-		
-		if (handle_is_printserver(&(handle)))
-		{		
-			found=getprinterdata_printer_server(value, size, 
-			                                    &(type), &(numeric_data),
-			                                    &(data), &(needed));
-		}
-		else
-		{
-			found=getprinterdata_printer(&(handle), value, size, 
-			                             &(type), &(numeric_data),
-			                             &(data), &(needed));
-		}
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-		if (found==False)
-		{
-			/* reply this param doesn't exist */
-			type   = 0x4;
-			size   = 0x0;
-			data   = NULL;
-			numeric_data=0x0;
-			needed = 0x0;
-			status = ERROR_INVALID_PARAMETER;
-		}
-			
-		spoolss_io_r_getprinterdata("", &r_u, rdata, 0);
-		DEBUG(3,("freeing memory\n"));
-		if (data) free(data);
-		DEBUG(3,("freeing memory:ok\n"));
-	}	
+	(*type)   = 0x4;
+	(*needed) = 0x0;
+	(*data) = NULL;
+	(*numeric_data) =0x0;
+	
+	unistr2_to_ascii(value, valuename, sizeof(value)-1);
+	
+	if (handle_is_printserver(handle))
+	{		
+		found=getprinterdata_printer_server(value, *size, 
+						    type, numeric_data,
+						    data, needed);
+	}
+	else
+	{
+		found=getprinterdata_printer(handle, value, *size, 
+					     type, numeric_data,
+					     data, needed);
+	}
+
+	if (found==False)
+	{
+		safe_free(data);
+		/* reply this param doesn't exist */
+		(*type)   = 0x4;
+		(*size)   = 0x0;
+		(*data)   = NULL;
+		(*numeric_data)=0x0;
+		(*needed) = 0x0;
+		return ERROR_INVALID_PARAMETER;
+	}
+
+	return 0x0;
 }
+
+#if 0
 
 /********************************************************************
  * spoolss_reply_rffpcnex
@@ -704,7 +710,7 @@ static void api_spoolss_rffpcnex(rpcsrv_struct *p, prs_struct *data,
 
 	/* store the notify value in the printer struct */
 
-	i=find_printer_index_by_hnd(&(handle));
+	i=find_printer_index_by_hnd(handle);
 
 	Printer[i].number_of_notify=option.count;
 
@@ -1356,7 +1362,7 @@ static void printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 uint32 _spoolss_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
 {
 	SPOOL_R_RFNPCNEX r_u;
-	int pnum=find_printer_index_by_hnd(&(handle));
+	int pnum=find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -1364,10 +1370,10 @@ uint32 _spoolss_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
 		switch (Printer[pnum].printer_type)
 		{
 		case PRINTER_HANDLE_IS_PRINTSERVER:
-			printserver_notify_info(&(handle), &(info));
+			printserver_notify_info(handle, &(info));
 			break;
 		case PRINTER_HANDLE_IS_PRINTER:
-			printer_notify_info(&(handle), &(info));
+			printer_notify_info(handle, &(info));
 			break;
 		}
 		
@@ -1749,7 +1755,7 @@ uint32 _spoolss_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata)
 	
 	pstrcpy(servername, global_myname);
 
-	get_printer_snum(&(handle),&snum);
+	get_printer_snum(handle,&snum);
 	
 	switch (level)
 	{
@@ -2000,7 +2006,7 @@ uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rd
 	DRIVER_INFO_3 *info3=NULL;
 
 	pstrcpy(servername, global_myname);
-	get_printer_snum(&(handle),&snum);
+	get_printer_snum(handle,&snum);
 
 	offered=buf_size;
 	level=level;
@@ -2060,7 +2066,7 @@ uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rd
 uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata)
 {
 	SPOOL_R_STARTPAGEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2080,7 +2086,7 @@ uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdat
 uint32 _spoolss_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata)
 {
 	SPOOL_R_ENDPAGEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2119,7 +2125,7 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 	
 	info_1=&(doc_info_container.docinfo.doc_info_1);
 	status=0x0;
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
@@ -2142,7 +2148,7 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 	if (status==0 && OPEN_HANDLE(pnum))
 	{
 		/* get the share number of the printer */
-		get_printer_snum(&(handle),&snum);
+		get_printer_snum(handle,&snum);
 
 		/* Create a temporary file in the printer spool directory
 		 * and open it
@@ -2176,7 +2182,7 @@ static void api_spoolss_startdocprinter(rpcsrv_struct *p, prs_struct *data,
 uint32 _spoolss_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *rdata)
 {
 	SPOOL_R_ENDDOCPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2211,7 +2217,7 @@ static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
 	
 	*syscmd=0;
 	
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 	
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2222,7 +2228,7 @@ static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
 		pstrcpy(filename1, Printer[pnum].document_name);
 		pstrcpy(job_name, Printer[pnum].job_name);
 		
-		get_printer_snum(&(handle),&snum);
+		get_printer_snum(handle,&snum);
 		
 		/* copy the command into the buffer for extensive meddling. */
 		StrnCpy(syscmd, lp_printcommand(snum), sizeof(pstring) - 1);
@@ -2275,7 +2281,7 @@ static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
 uint32 _spoolss_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rdata)
 {
 	SPOOL_R_WRITEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2304,7 +2310,7 @@ static void api_spoolss_writeprinter(rpcsrv_struct *p, prs_struct *data,
 	int size;
 	spoolss_io_q_writeprinter("", &q_u, data, 0);
 	
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 	
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2326,7 +2332,7 @@ static void control_printer(POLICY_HND handle, uint32 command)
 {
 	int pnum;
 	int snum;
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 
 	if ( get_printer_snum(&handle, &snum) )
 	{		 
@@ -2444,7 +2450,7 @@ static void api_spoolss_setprinter(rpcsrv_struct *p, prs_struct *data,
 	int pnum;
 	spoolss_io_q_setprinter("", &q_u, data, 0);
 	
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 	
 	if (OPEN_HANDLE(pnum))
 	{
@@ -2590,7 +2596,7 @@ uint32 _spoolss_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
 	offered=buf_size;
 
 
-	if (get_printer_snum(&(handle), &snum))
+	if (get_printer_snum(handle, &snum))
 	{
 		count=get_printqueue(snum, NULL, &queue, &status);
 		numofjobs=0;
@@ -2662,7 +2668,7 @@ uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata)
 		
 	bzero(&status,sizeof(status));
 
-	if (get_printer_snum(&(handle), &snum))
+	if (get_printer_snum(handle, &snum))
 	{
 		count=get_printqueue(snum, NULL, &queue, &status);		
 		while ( (i<count) && found==False )
@@ -2960,9 +2966,9 @@ uint32 _spoolss_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *rdata)
 	slprintf(ascii_name, sizeof(ascii_name)-1, "\\\\%s\\%s", 
 	         server_name, share_name);
 		
-	printer_open = open_printer_hnd(&(handle));
-	set_printer_hnd_printertype(&(handle), ascii_name);
-	set_printer_hnd_printername(&(handle), ascii_name);
+	printer_open = open_printer_hnd(handle);
+	set_printer_hnd_printertype(handle, ascii_name);
+	set_printer_hnd_printername(handle, ascii_name);
 
 	spoolss_io_r_addprinterex("", &r_u, rdata, 0);
 }
@@ -3063,14 +3069,14 @@ uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata)
 	uint32 biggest_datasize;
 	uint32 data_len;
 	
-	int pnum = find_printer_index_by_hnd(&(handle));
+	int pnum = find_printer_index_by_hnd(handle);
 	int snum;
 	
 	DEBUG(5,("spoolss_reply_enumprinterdata\n"));
 
 	if (OPEN_HANDLE(pnum))
 	{
-		get_printer_snum(&(handle), &snum);
+		get_printer_snum(handle, &snum);
 		get_a_printer(&printer, 2, lp_servicename(snum));
 
 		/* The NT machine wants to know the biggest size of value and data */	
@@ -3158,11 +3164,11 @@ uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata)
 	
 	DEBUG(5,("spoolss_reply_setprinterdata\n"));
 
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 	
 	if (OPEN_HANDLE(pnum))
 	{
-		get_printer_snum(&(handle), &snum);		
+		get_printer_snum(handle, &snum);		
 		get_a_printer(&printer, 2, lp_servicename(snum));
 		convert_specific_param(&param, value , type, data, real_len);
 
@@ -3190,7 +3196,7 @@ uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
 
        DEBUG(5,("spoolss_reply_addform\n"));
 
-       pnum = find_printer_index_by_hnd(&(handle));
+       pnum = find_printer_index_by_hnd(handle);
 
        if (OPEN_HANDLE(pnum))
        {
@@ -3218,7 +3224,7 @@ uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
 
  	DEBUG(5,("spoolss_reply_setform\n"));
 
-	pnum = find_printer_index_by_hnd(&(handle));
+	pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
@@ -3331,7 +3337,7 @@ uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
 
 	offered=buf_size;
 
-	if (get_printer_snum(&(handle), &snum))
+	if (get_printer_snum(handle, &snum))
 	{
 		count=get_printqueue(snum, NULL, &queue, &status);
 		

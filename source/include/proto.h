@@ -3913,7 +3913,6 @@ BOOL api_samr_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
-void init_printer_hnd(void);
 uint32 size_of_notify_info_data(uint16 type, uint16 field);
 BOOL type_of_notify_info_data(uint16 type, uint16 field);
 BOOL api_spoolss_rpc(rpcsrv_struct *p);
@@ -4858,7 +4857,12 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				const UNISTR2 *station, const UNISTR2 *username,
 				POLICY_HND *handle);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
-uint32 _spoolss_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *rdata)                                ;
+uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
+				uint32 *type,
+				uint32 *size,
+				uint8 **data,
+				uint32 *numeric_data,
+				uint32 *needed);
 uint32 _spoolss_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, prs_struct *rdata);
 uint32 _spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 uint32 _spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);

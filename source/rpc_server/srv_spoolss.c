@@ -302,36 +302,6 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 }
 
 /********************************************************************
- ********************************************************************/
-static BOOL handle_is_printserver(POLICY_HND *handle)
-{
-	int pnum=find_printer_index_by_hnd(handle);
-
-	if (OPEN_HANDLE(pnum))
-	{
-		switch (Printer[pnum].printer_type)
-		{
-		case PRINTER_HANDLE_IS_PRINTSERVER:
-			return True;
-			break;
-		case PRINTER_HANDLE_IS_PRINTER:
-			return False;
-			break;
-		}		
-	}
-	return False;
-}
-
-/********************************************************************
- ********************************************************************/
-/*
-static BOOL handle_is_printer(POLICY_HND *handle)
-{
-	return (!handle_is_printserver(handle));
-}
-*/
-
-/********************************************************************
  * api_spoolss_open_printer
  *
  * called from the spoolss dispatcher
@@ -363,214 +333,6 @@ static void api_spoolss_open_printer_ex(rpcsrv_struct *p, prs_struct *data, prs_
 	spoolss_io_r_open_printer_ex("",&r_u,rdata,0);
 }
 
-/********************************************************************
- ********************************************************************/
-static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *type, 
-                                          uint32 *numeric_data, uint8 **data, uint32 *needed)
-{		
-	int i;
-		
-	if (!strcmp(value, "BeepEnabled"))
-	{
-		*type          = 0x4;
-		*data  = (uint8 *)malloc( 4*sizeof(uint8) );
-		ZERO_STRUCTP(*data);
-		(*data)[0]=0x01;
-		(*data)[1]=0x00;
-		(*data)[2]=0x00;
-		(*data)[3]=0x00;
-		*numeric_data  = 0x1; /* beep enabled */	
-		*needed        = 0x4;			
-		return True;
-	}
-
-	if (!strcmp(value, "EventLog"))
-	{
-		*type          = 0x4;
-		*data  = (uint8 *)malloc( 4*sizeof(uint8) );
-		ZERO_STRUCTP(*data);
-		(*data)[0]=0x1B;
-		(*data)[1]=0x00;
-		(*data)[2]=0x00;
-		(*data)[3]=0x00;
-		*numeric_data  = 0x1B; /* Don't know ??? */	
-		*needed        = 0x4;			
-		return True;
-	}
-
-	if (!strcmp(value, "NetPopup"))
-	{
-		*type          = 0x4;
-		*data  = (uint8 *)malloc( 4*sizeof(uint8) );
-		ZERO_STRUCTP(*data);
-		(*data)[0]=0x01;
-		(*data)[1]=0x00;
-		(*data)[2]=0x00;
-		(*data)[3]=0x00;
-		*numeric_data  = 0x1; /* popup enabled */	
-		*needed        = 0x4;
-		return True;
-	}
-
-	if (!strcmp(value, "MajorVersion"))
-	{
-		*type          = 0x4;
-		*data  = (uint8 *)malloc( 4*sizeof(uint8) );
-		(*data)[0]=0x02;
-		(*data)[1]=0x00;
-		(*data)[2]=0x00;
-		(*data)[3]=0x00;
-		*numeric_data  = 0x2; /* it's 2, period. */	
-		*needed        = 0x4;
-		return True;
-	}
-
-	if (!strcmp(value, "DefaultSpoolDirectory"))
-	{
-		pstring directory="You are using a Samba server";
-		*type = 0x1;			
-		*data  = (uint8 *)malloc( size*sizeof(uint8) );
-		ZERO_STRUCTP(*data);
-		
-		/* it's done by hand ready to go on the wire */
-		for (i=0; i<strlen(directory); i++)
-		{
-			(*data)[2*i]=directory[i];
-			(*data)[2*i+1]='\0';
-		}			
-		*needed = 2*(strlen(directory)+1);
-		return True;
-	}
-
-	if (!strcmp(value, "Architecture"))
-	{			
-		pstring directory="Windows NT x86";
-		*type = 0x1;			
-		*data  = (uint8 *)malloc( size*sizeof(uint8) );
-		ZERO_STRUCTP(*data);
-		for (i=0; i<strlen(directory); i++)
-		{
-			(*data)[2*i]=directory[i];
-			(*data)[2*i+1]='\0';
-		}			
-		*needed = 2*(strlen(directory)+1);	
-		return True;
-	}
-	
-	return False;
-}
-
-/********************************************************************
- ********************************************************************/
-static BOOL getprinterdata_printer(POLICY_HND *handle, fstring value, uint32 size, uint32 *type, 
-                                          uint32 *numeric_data, uint8 **data, uint32 *needed )
-{
-	NT_PRINTER_INFO_LEVEL printer;
-	int pnum=0;
-	int snum=0;
-	uint8 *idata=NULL;
-	uint32 len;
-	
-	DEBUG(5,("getprinterdata_printer\n"));
-
-	pnum = find_printer_index_by_hnd(handle);
-	if (OPEN_HANDLE(pnum))
-	{
-		get_printer_snum(handle, &snum);		
-		get_a_printer(&printer, 2, lp_servicename(snum));
-		
-		if (get_specific_param(printer, 2, value, &idata, type, &len)) 
-		{
-			/*switch (*type)
-			{
-				case 1:
-				case 3:
-				case 4:*/
-					*data  = (uint8 *)malloc( size*sizeof(uint8) );
-					bzero(*data, sizeof(uint8)*size);
-					memcpy(*data, idata, len>size?size:len);
-					*needed = len;
-					if (idata) free(idata);
-					/*break;*/
-				/*case 4:
-					*numeric_data=atoi(idata);
-					break;*/
-			/*}*/
-			return (True);
-		}
-		free_a_printer(printer, 2);
-	}
-
-	return (False);
-}	
-
-/********************************************************************
- * api_spoolss_reply_getprinterdata
- *
- * called from api_spoolss_getprinterdata
- ********************************************************************/
-static void spoolss_reply_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *rdata)                                
-{
-	SPOOL_R_GETPRINTERDATA r_u;
-	fstring value;
-	BOOL found;
-	int pnum = find_printer_index_by_hnd(&(q_u->handle));
-	
-	/* 
-	 * Reminder: when it's a string, the length is in BYTES
-	 * even if UNICODE is negociated.
-	 *
-	 * r_u.type is the kind of data
-	 * 1 is a string
-	 * 4 is a uint32
-	 *
-	 * I think it's documented in MSDN somewhere in
-	 * the registry data type (yep it's linked ...)
-	 * 
-	 * JFM, 4/19/1999
-	 */
-
-	if (OPEN_HANDLE(pnum))
-	{
-		r_u.size  = q_u->size;
-		r_u.status = 0x0;
-		r_u.type   = 0x4;
-		r_u.needed = 0x0;
-		r_u.data   = NULL;
-		r_u.numeric_data=0x0;
-		
-		unistr2_to_ascii(value, &(q_u->valuename), sizeof(value)-1);
-		
-		if (handle_is_printserver(&(q_u->handle)))
-		{		
-			found=getprinterdata_printer_server(value, r_u.size, 
-			                                    &(r_u.type), &(r_u.numeric_data),
-			                                    &(r_u.data), &(r_u.needed));
-		}
-		else
-		{
-			found=getprinterdata_printer(&(q_u->handle), value, r_u.size, 
-			                             &(r_u.type), &(r_u.numeric_data),
-			                             &(r_u.data), &(r_u.needed));
-		}
-
-		if (found==False)
-		{
-			/* reply this param doesn't exist */
-			r_u.type   = 0x4;
-			r_u.size   = 0x0;
-			r_u.data   = NULL;
-			r_u.numeric_data=0x0;
-			r_u.needed = 0x0;
-			r_u.status = ERROR_INVALID_PARAMETER;
-		}
-			
-		spoolss_io_r_getprinterdata("", &r_u, rdata, 0);
-		DEBUG(3,("freeing memory\n"));
-		if (r_u.data) free(r_u.data);
-		DEBUG(3,("freeing memory:ok\n"));
-	}	
-}
 
 /********************************************************************
  * api_spoolss_getprinterdata
@@ -581,11 +343,22 @@ static void api_spoolss_getprinterdata(rpcsrv_struct *p, prs_struct *data,
                                         prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDATA q_u;
+	SPOOL_R_GETPRINTERDATA r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	/* read the stream and fill the struct */
 	spoolss_io_q_getprinterdata("", &q_u, data, 0);
 
-	spoolss_reply_getprinterdata(&q_u,rdata);
+	r_u.size = q_u.size;
+	r_u.status = _spoolss_getprinterdata( &q_u.handle, &q_u.valuename,
+	                                      &r_u.type, &r_u.size,
+	                                      &r_u.data, &r_u.numeric_data,
+	                                      &r_u.needed);
+
+	spoolss_io_r_getprinterdata("", &r_u, rdata, 0);
+	safe_free(r_u.data);
 }
 
 /********************************************************************
