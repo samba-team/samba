@@ -1664,7 +1664,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       tvs.actime = interpret_long_date(pdata+8);
 
       /* write time + changed time, combined. */
-      tvs.modtime=MAX(interpret_long_date(pdata+16),
+      tvs.modtime=MIN(interpret_long_date(pdata+16),
                       interpret_long_date(pdata+24));
 
 #if 0 /* Needs more testing... */
