@@ -376,58 +376,21 @@ int main(int argc, char **argv)
 	argv += optind;
 
 	if (debug) {
-	    int s, ns, foo;
+	    int port;
 	    struct servent *sp;
-	    static struct sockaddr_in sin = { AF_INET };
 
 	    if (argc > 1) {
-		usage();
-		/* NOT REACHED */
+		usage ();
 	    } else if (argc == 1) {
-		    if (sp = getservbyname(*argv, "tcp")) {
-			sin.sin_port = sp->s_port;
-		    } else {
-			sin.sin_port = atoi(*argv);
-			if ((int)sin.sin_port <= 0) {
-			    fprintf(stderr, "telnetd: %s: bad port #\n", *argv);
-			    usage();
-			    /* NOT REACHED */
-			}
-			sin.sin_port = htons((u_short)sin.sin_port);
-		   }
+		sp = getservbyname (*argv, "tcp");
+		if (sp)
+		    port = sp->s_port;
+		else
+		    port = htons(atoi(*argv));
 	    } else {
-		sp = getservbyname("telnet", "tcp");
-		if (sp == 0) {
-		    fprintf(stderr, "telnetd: tcp/telnet: unknown service\n");
-		    exit(1);
-		}
-		sin.sin_port = sp->s_port;
+		port = k_getportbyname ("telnet", "tcp", htons(23));
 	    }
-
-	    s = socket(AF_INET, SOCK_STREAM, 0);
-	    if (s < 0) {
-		    perror("telnetd: socket");;
-		    exit(1);
-	    }
-	    (void) setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-				(void *)&on, sizeof(on));
-	    if (bind(s, (struct sockaddr *)&sin, sizeof sin) < 0) {
-		perror("bind");
-		exit(1);
-	    }
-	    if (listen(s, 1) < 0) {
-		perror("listen");
-		exit(1);
-	    }
-	    foo = sizeof sin;
-	    ns = accept(s, (struct sockaddr *)&sin, &foo);
-	    if (ns < 0) {
-		perror("accept");
-		exit(1);
-	    }
-	    (void) dup2(ns, 0);
-	    (void) close(ns);
-	    (void) close(s);
+	    mini_inetd (port);
 	} else if (argc > 0) {
 		usage();
 		/* NOT REACHED */
