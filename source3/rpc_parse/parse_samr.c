@@ -4931,7 +4931,7 @@ static BOOL sam_io_user_info24(char *desc,  SAM_USER_INFO_24 *usr, prs_struct *p
 {
 	if (usr == NULL) return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_user_info");
+	prs_debug(ps, depth, desc, "sam_io_user_info24");
 	depth++;
 
 	prs_align(ps);
@@ -5169,11 +5169,29 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static BOOL sam_io_user_info16(char *desc,  SAM_USER_INFO_16 *usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL) return False;
+
+	prs_debug(ps, depth, desc, "sam_io_user_info16");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint16("acb_info", ps, depth, &(usr->acb_info));
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 static BOOL sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *ps, int depth)
 {
 	if (usr == NULL) return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_user_info");
+	prs_debug(ps, depth, desc, "sam_io_user_info23");
 	depth++;
 
 	prs_align(ps);
@@ -5364,7 +5382,7 @@ static BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *p
 {
 	if (usr == NULL) return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_user_info");
+	prs_debug(ps, depth, desc, "sam_io_user_info21");
 	depth++;
 
 	prs_align(ps);
@@ -5758,6 +5776,143 @@ BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *p
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_set_userinfo");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
+}
+
+/*******************************************************************
+makes a SAMR_Q_SET_USERINFO2 structure.
+********************************************************************/
+BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
+				POLICY_HND *hnd,
+				uint16 switch_value, void *info)
+{
+	if (q_u == NULL || hnd == NULL) return False;
+
+	DEBUG(5,("make_samr_q_set_userinfo2\n"));
+
+	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->switch_value  = switch_value;
+	q_u->switch_value2 = switch_value;
+	q_u->info.id = info;
+
+	switch (switch_value)
+	{
+		case 0x10:
+		{
+			break;
+		}
+		default:
+		{
+			DEBUG(4,("make_samr_q_set_userinfo2: unsupported switch level\n"));
+			return False;
+		}
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_set_userinfo2");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value )); 
+	prs_uint16("switch_value2", ps, depth, &(q_u->switch_value2)); 
+
+	prs_align(ps);
+
+	switch (q_u->switch_value)
+	{
+		case 0:
+		{
+			break;
+		}
+		case 16:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				q_u->info.id = (SAM_USER_INFO_16*)Realloc(NULL,
+						 sizeof(*q_u->info.id16));
+			}
+			if (q_u->info.id == NULL)
+			{
+				DEBUG(2,("samr_io_q_query_userinfo2: info pointer not initialised\n"));
+				return False;
+			}
+			sam_io_user_info16("", q_u->info.id16, ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("samr_io_q_query_userinfo2: unknown switch level\n"));
+			break;
+		}
+			
+	}
+	prs_align(ps);
+
+	if (!ps->io)
+	{
+		/* writing */
+		free_samr_q_set_userinfo2(q_u);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u)
+{
+	if (q_u->info.id == NULL)
+	{
+		free(q_u->info.id);
+	}
+	q_u->info.id = NULL;
+}
+
+/*******************************************************************
+makes a SAMR_R_SET_USERINFO2 structure.
+********************************************************************/
+BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,
+				uint32 status)
+{
+	if (r_u == NULL) return False;
+
+	DEBUG(5,("make_samr_r_set_userinfo2\n"));
+
+	r_u->status = status;         /* return status */
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_set_userinfo2(char *desc,  SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_set_userinfo2");
 	depth++;
 
 	prs_align(ps);

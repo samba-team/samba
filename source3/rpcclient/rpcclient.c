@@ -442,6 +442,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"samuserset2",
+		cmd_sam_set_userinfo2,
+		"<username> [-s acb_bits] SAM User Set Info 2 (experimental!)",
+		{COMPL_SAMUSR, COMPL_NONE}
+	},
+	{
 		"samuserset",
 		cmd_sam_set_userinfo,
 		"<username> [-p password] SAM User Set Info (experimental!)",

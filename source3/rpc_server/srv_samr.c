@@ -2122,6 +2122,31 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 }
 
 /*******************************************************************
+ set_user_info_16
+ ********************************************************************/
+static BOOL set_user_info_16(SAM_USER_INFO_16 *id16, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+
+	if (id16 == NULL)
+	{
+		DEBUG(5, ("set_user_info_16: NULL id16\n"));
+		return False;
+	}
+	if (pwd == NULL)
+	{
+		return False;
+	}
+
+	copy_sam_passwd(&new_pwd, pwd);
+
+	new_pwd.acct_ctrl = id16->acb_info;
+
+	return mod_sam21pwd_entry(&new_pwd, True);
+}
+
+/*******************************************************************
  api_samr_query_userinfo
  ********************************************************************/
 static void api_samr_query_userinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
@@ -2129,6 +2154,87 @@ static void api_samr_query_userinfo( pipes_struct *p, prs_struct *data, prs_stru
 	SAMR_Q_QUERY_USERINFO q_u;
 	samr_io_q_query_userinfo("", &q_u, data, 0);
 	samr_reply_query_userinfo(&q_u, rdata);
+}
+
+
+/*******************************************************************
+ samr_reply_set_userinfo2
+ ********************************************************************/
+static void samr_reply_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
+				prs_struct *rdata, uchar user_sess_key[16])
+{
+	SAMR_R_SET_USERINFO2 r_u;
+
+	uint32 status = 0x0;
+	uint32 rid = 0x0;
+
+	DEBUG(5,("samr_reply_set_userinfo2: %d\n", __LINE__));
+
+	/* search for the handle */
+	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* find the user's rid */
+	if (status == 0x0 && (rid = get_lsa_policy_samr_rid(&(q_u->pol))) == 0xffffffff)
+	{
+		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	DEBUG(5,("samr_reply_set_userinfo2: rid:0x%x\n", rid));
+
+	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
+	if (status == 0x0 && q_u->info.id == NULL)
+	{
+		DEBUG(5,("samr_reply_set_userinfo2: NULL info level\n"));
+		status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if (status == 0x0)
+	{
+		switch (q_u->switch_value)
+		{
+			case 16:
+			{
+				SAM_USER_INFO_16 *id16 = q_u->info.id16;
+				status = set_user_info_16(id16, rid) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
+				break;
+			}
+			default:
+			{
+				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+
+				break;
+			}
+		}
+	}
+
+	make_samr_r_set_userinfo2(&r_u, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_set_userinfo2("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_reply_set_userinfo2: %d\n", __LINE__));
+
+}
+
+/*******************************************************************
+ api_samr_set_userinfo2
+ ********************************************************************/
+static void api_samr_set_userinfo2( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+{
+	user_struct *vuser = get_valid_user_struct(p->vuid);
+	SAMR_Q_SET_USERINFO2 q_u;
+	ZERO_STRUCT(q_u);
+
+	samr_io_q_set_userinfo2("", &q_u, data, 0);
+	samr_reply_set_userinfo2(&q_u, rdata, vuser->dc.user_sess_key);
+
+	if (q_u.info.id != NULL)
+	{
+		free(q_u.info.id);
+	}
 }
 
 
@@ -3038,6 +3144,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },
 	{ "SAMR_SET_USERINFO"     , SAMR_SET_USERINFO     , api_samr_set_userinfo     },
+	{ "SAMR_SET_USERINFO2"    , SAMR_SET_USERINFO2    , api_samr_set_userinfo2    },
 	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info   },
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },

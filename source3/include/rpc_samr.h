@@ -114,11 +114,12 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
+#define SAMR_QUERY_USERINFO    0x24
+#define SAMR_SET_USERINFO2     0x25
+#define SAMR_QUERY_USERGROUPS  0x27
 #define SAMR_CREATE_USER       0x32
 #define SAMR_SET_USERINFO      0x3A
 
-#define SAMR_QUERY_USERINFO    0x24
-#define SAMR_QUERY_USERGROUPS  0x27
 #define SAMR_QUERY_DISPINFO    0x28
 
 #define SAMR_GET_USRDOM_PWINFO 0x2c
@@ -140,6 +141,13 @@ typedef struct logon_hours_info
 	uint8 hours[32];
 
 } LOGON_HRS;
+
+/* SAM_USER_INFO_16 */
+typedef struct sam_user_info_16
+{
+	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
+
+} SAM_USER_INFO_16;
 
 /* SAM_USER_INFO_23 */
 typedef struct sam_user_info_23
@@ -1151,6 +1159,29 @@ typedef struct r_samr_query_usergroup_info
 
 } SAMR_R_QUERY_USERGROUPS;
 
+
+/* SAMR_Q_SET_USERINFO2 - set sam info */
+typedef struct q_samr_set_user_info2
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;      /* 0x0010 */
+	uint16 switch_value2;      /* 0x0010 */
+
+	union
+	{
+		SAM_USER_INFO_16 *id16; /* auth-level 0x10 */
+		void* id; /* to make typecasting easy */
+
+	} info;
+
+} SAMR_Q_SET_USERINFO2;
+
+/* SAMR_R_SET_USERINFO2 - set sam info */
+typedef struct r_samr_set_user_info2
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_SET_USERINFO2;
 
 /* SAMR_Q_SET_USERINFO - set sam info */
 typedef struct q_samr_set_user_info
