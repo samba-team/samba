@@ -276,18 +276,44 @@ krb5_get_init_creds_opt_set_anonymous(krb5_get_init_creds_opt *opt,
     opt->anonymous = anonymous;
 }
 
+static krb5_error_code
+require_ext_opt(krb5_context context,
+		krb5_get_init_creds_opt *opt,
+		const char *type)
+{
+    if (opt->private == NULL) {
+	krb5_set_error_string(context, "%s on non extendable opt", type);
+	return EINVAL;
+    }
+    return 0;
+}
+
 krb5_error_code
 krb5_get_init_creds_opt_set_pa_password(krb5_context context,
 					krb5_get_init_creds_opt *opt,
 					const char *password,
 					krb5_s2k_proc key_proc)
 {
-    if (opt->private == NULL) {
-	krb5_set_error_string(context, 
-			      "set_pa_password on non extendable opt");
-	return EINVAL;
-    }
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_pa_password");
+    if (ret)
+	return ret;
     opt->private->password = password;
     opt->private->key_proc = key_proc;
+    return 0;
+}
+
+krb5_error_code
+krb5_get_init_creds_opt_set_paq_request(krb5_context context,
+					krb5_get_init_creds_opt *opt,
+					krb5_boolean req_pac)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_pac_req");
+    if (ret)
+	return ret;
+    opt->private->req_pac = req_pac ?
+	KRB5_PA_PAC_REQ_TRUE :
+	KRB5_PA_PAC_REQ_FALSE;
     return 0;
 }
