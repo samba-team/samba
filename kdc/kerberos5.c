@@ -72,10 +72,23 @@ as_rep(krb5_context context,
 	krb5_data ts_data;
 	PA_ENC_TS_ENC p;
 	int len;
+	EncryptedData enc_data;
+
+	len = decode_EncryptedData(req->padata->val->padata_value.data,
+				   req->padata->val->padata_value.length,
+				   &enc_data);
+	if (len < 0) {
+	    krb5_mk_error (client_princ,
+			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
+			   "Couldn't decode",
+			   NULL,
+			   data);
+	    return 0;
+	}
 
 	krb5_decrypt (context,
-		      req->padata->val->padata_value.data,
-		      req->padata->val->padata_value.length,
+		      enc_data.cipher.data,
+		      enc_data.cipher.length,
 		      &client->keyblock,
 		      &ts_data);
 	len = decode_PA_ENC_TS_ENC(ts_data.data,
