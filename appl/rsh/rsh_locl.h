@@ -78,6 +78,9 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 #include <errno.h>
 
 #ifdef HAVE_SYS_PARAM_H
