@@ -182,7 +182,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0], "objectSid", 0);
 
 	nt_status = samdb_result_passwords(mem_ctx, msgs[0], NULL, &mach_pwd);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(nt_status) || mach_pwd == NULL) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -336,6 +336,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
 		samdb_close(sam_ctx);
+		DEBUG(1,("no objectSid in user record\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
