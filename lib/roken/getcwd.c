@@ -41,13 +41,14 @@
 RCSID("$Id$");
 #endif
 
+#include <unistd.h>
 #include <sys/param.h>
 
 #include "protos.h"
 #include "roken.h"
 
 char*
-getcwd(char *path, int size)
+getcwd(char *path, size_t size)
 {
     char xxx[MaxPathLen];
     char *ret;

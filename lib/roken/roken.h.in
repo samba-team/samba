@@ -120,8 +120,8 @@ int inet_aton(const char *cp, struct in_addr *adr);
 #endif
 #endif
 
-#if !defined(HAVE_GETCWD) || defined(BROKEN_GETCWD)
-char* getcwd(char *path, int size);
+#if !defined(HAVE_GETCWD)
+char* getcwd(char *path, size_t size);
 #endif
 
 #ifndef HAVE_GETENT
