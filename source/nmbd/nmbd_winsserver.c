@@ -120,7 +120,7 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
 		      cmd,
 		      operation, 
-		      namerec->name.name,
+		      nmb_namestr(&namerec->name),
 		      namerec->name.name_type,
 		      ttl);
 
