@@ -1,55 +1,16 @@
 README for Samba Password Database (PDB) examples
 ====================================================
-8-8-2002 Jelmer Vernooij <jelmer@samba.org>
-
-Added mysql and xml modules. See README in xml/ and mysql/ for details.
-
-21-6-2002 Stefan (metze) Metzmacher <metze@metzemix.de>
-
-I have added an interface versioning.
-
-Every module MUST have a pdb_version() function.
-
-this is defined in include/passdb.h:
-#define PDB_MODULE_VERSIONING_MAGIC \
-int pdb_version(void)\
-{\
-	return PASSDB_INTERFACE_VERSION;\
-}
-
-You MUST add this line inside a module:
-PDB_MODULE_VERSIONING_MAGIC
-
-21-6-2002 Stefan (metze) Metzmacher <metze@metzemix.de>
-
-The pdb_interface was changed:
-
-this function are deleted:
-static BOOL testsam_getsampwrid (struct pdb_methods *methods, SAM_ACCOUNT *user, uint32 rid)
-
-this function are added:
-static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, DOM_SID sid)
-
-In the SAM_ACCOUNT struct:
-
-this fields are deleted:
-uint32 user_rid;
-uint32 group_rid;
-
-this fields are added:
-DOM_SID user_sid;
-DOM_SID group_sid; 
-
-15-2-2002 Jelmer Vernooij <jelmer@nl.linux.org>
+Jelmer Vernooij <jelmer@nl.linux.org>
+Stefan (metze) Metzmacher <metze@metzemix.de>
 
 The pdb_test.c file in this directory contains a very basic example of 
 a pdb plugin. It just prints the name of the function that is executed using
 DEBUG. Maybe it's nice to include some of the arguments to the function in the 
 future too..
 
-To debug passdb backends, try to run gdb on the 'pdbedit' executable. That's really much easier than restarting smbd constantly and attaching with your debugger.
+To debug passdb backends, try to run gdb on the 'pdbedit' executable. That's
+really much easier than restarting smbd constantly and attaching with your 
+debugger.
 
-New passdb plugins should go into the samba lib directory, (/usr/lib/samba/ for
-most distributions) and should be prefixed with 'pdb_'. An example would be: 
-/usr/lib/samba/pdb_test.so
-
+New passdb plugins should go into the samba lib directory, (/usr/lib/samba/pdb/
+for most distributions). An example would be: /usr/lib/samba/pdb/test.so
