@@ -331,6 +331,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 static int verbose = 0;
 static int print_security = 0;
 static int full_print = 0;
+static char *def_owner_sid_str = NULL;
 
 /* 
  * These definitions are for the in-memory registry structure.
@@ -594,6 +595,7 @@ struct regf_struct_s {
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
   SK_MAP *sk_map;
+  char *owner_sid_str;
   SEC_DESC *def_sec_desc;
 };
 
@@ -1173,19 +1175,61 @@ int string_to_sid(DOM_SID **sid, char *sid_str)
 }
 
 /*
+ * Create an ACE
+ */
+ACE *nt_create_ace(int type, int flags, unsigned int perms, char *sid)
+{
+  ACE *ace;
+
+  ace = (ACE *)malloc(sizeof(ACE));
+  if (!ace) goto error;
+  ace->type = type;
+  ace->flags = flags;
+  ace->perms = perms;
+  if (!string_to_sid(&ace->trustee, sid))
+    goto error;
+  return ace;
+
+ error:
+  if (ace) nt_delete_ace(ace);
+  return NULL;
+}
+
+/*
  * Create a default ACL
  */
 ACL *nt_create_default_acl(REGF *regf)
 {
   ACL *acl;
 
-  acl = (ACL *)malloc(sizeof(ACL));
+  acl = (ACL *)malloc(sizeof(ACL) + 7*sizeof(ACE *));
   if (!acl) goto error;
 
+  acl->rev = 2;
+  acl->refcnt = 1;
+  acl->num_aces = 8;
+
+  acl->aces[0] = nt_create_ace(0x00, 0x0, 0xF003F, regf->owner_sid_str);
+  if (!acl->aces[0]) goto error;
+  acl->aces[1] = nt_create_ace(0x00, 0x0, 0xF003F, "S-1-5-18");
+  if (!acl->aces[1]) goto error;
+  acl->aces[2] = nt_create_ace(0x00, 0x0, 0xF003F, "S-1-5-32-544");
+  if (!acl->aces[2]) goto error;
+  acl->aces[3] = nt_create_ace(0x00, 0x0, 0x20019, "S-1-5-12");
+  if (!acl->aces[3]) goto error;
+  acl->aces[4] = nt_create_ace(0x00, 0x0B, 0x10000000, regf->owner_sid_str);
+  if (!acl->aces[4]) goto error;
+  acl->aces[5] = nt_create_ace(0x00, 0x0B, 0x10000000, "S-1-5-18");
+  if (!acl->aces[5]) goto error;
+  acl->aces[6] = nt_create_ace(0x00, 0x0B, 0x10000000, "S-1-5-32-544");
+  if (!acl->aces[6]) goto error;
+  acl->aces[7] = nt_create_ace(0x00, 0x0B, 0x80000000, "S-1-5-12");
+  if (!acl->aces[7]) goto error;
   return acl;
 
  error:
   if (acl) nt_delete_acl(acl);
+  return NULL;
 }
 
 /*
@@ -1556,6 +1600,7 @@ REGF *nt_create_regf(void)
   REGF *tmp = (REGF *)malloc(sizeof(REGF));
   if (!tmp) return tmp;
   bzero(tmp, sizeof(REGF));
+  tmp->owner_sid_str = def_owner_sid_str;
   return tmp;
 } 
 
@@ -2350,6 +2395,33 @@ int nt_load_registry(REGF *regf)
   close(regf->fd);    /* Ignore the error :-) */
 
   return 1;
+}
+
+/*
+ * These structures keep track of the output format of the registry
+ */
+typedef struct hbin_blk_s {
+  struct hbin_blk_s *next;
+  unsigned int file_offset;  /* Offset in file                */
+  unsigned int free_space;    /* Amount of free space in block */
+  unsigned int fsp_off;      /* Start of free space in block  */
+} HBIN_BLK;
+
+/*
+ * Store a KEY in the file ...
+ */
+int nt_store_reg_key(REGF *regf, REG_KEY *key)
+{
+
+  return 0;
+}
+
+/*
+ * Store the registry header ...
+ */
+int nt_store_reg_header(REGF *regf){
+
+  return 0;
 }
 
 /*
@@ -3243,6 +3315,7 @@ int main(int argc, char *argv[])
   char *cmd_file_name = NULL;
   char *out_file_name = NULL;
   CMD_FILE *cmd_file = NULL;
+  DOM_SID *lsid;
 
   if (argc < 2) {
     usage();
@@ -3253,7 +3326,7 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "fspvko:c:")) != EOF) {
+  while ((opt = getopt(argc, argv, "fspvko:O:c:")) != EOF) {
     switch (opt) {
     case 'c':
       commands = 1;
@@ -3269,6 +3342,19 @@ int main(int argc, char *argv[])
     case 'o':
       out_file_name = optarg;
       regf_opt += 2;
+      break;
+
+    case 'O':
+      def_owner_sid_str = strdup(optarg);
+      regf_opt += 2;
+      if (!string_to_sid(&lsid, def_owner_sid_str)) {
+	fprintf(stderr, "Default Owner SID: %s is incorrectly formatted\n",
+		def_owner_sid_str);
+	free(def_owner_sid_str);
+	def_owner_sid_str = NULL;
+      }
+      else 
+	nt_delete_sid(lsid);
       break;
 
     case 'p':
@@ -3296,6 +3382,17 @@ int main(int argc, char *argv[])
       exit(1);
       break;
     }
+  }
+
+  /*
+   * We only want to complain about the lack of a default owner SID if
+   * we need one. This approximates that need 
+   */
+  if (!def_owner_sid_str) {
+    def_owner_sid_str = "S-1-5-21-1-2-3-4";
+    if (out_file_name || verbose)
+      fprintf(stderr, "Warning, default owner SID not set. Setting to %s\n",
+	      def_owner_sid_str);
   }
 
   if ((regf = nt_create_regf()) == NULL) {
