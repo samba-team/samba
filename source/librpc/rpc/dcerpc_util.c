@@ -487,7 +487,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */
 	talloc_free(cli->tree);
-	
+	talloc_steal(*p, cli);
+
 	(*p)->flags = binding->flags;
 
 	/* remember the binding string for possible secondary connections */
