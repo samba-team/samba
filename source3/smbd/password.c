@@ -160,27 +160,6 @@ char *validated_domain(uint16 vuid)
 
 
 /****************************************************************************
- Initialize the groups a user belongs to.
-****************************************************************************/
-
-BOOL initialize_groups(char *user, uid_t uid, gid_t gid)
-{
-	become_root();
-	if (initgroups(user,gid) == -1) {
-		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0) {
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		unbecome_root();
-		return False;
-	}
-	unbecome_root();
-	return True;
-}
-
-/****************************************************************************
  Create the SID list for this user.
 ****************************************************************************/
 
@@ -260,7 +239,6 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
   initialise_groups(unix_name, uid, gid);
-  initialize_groups(unix_name, uid, gid);
   get_current_groups( &vuser->n_groups, &vuser->groups);
 
   /* Create an NT_USER_TOKEN struct for this user. */
