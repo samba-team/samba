@@ -23,145 +23,6 @@
 #include "sids.h"
 #include "lib/surs.h"
 
-struct winbind_domain_uid *domain_uid_list = NULL;
-struct winbind_domain_gid *domain_gid_list = NULL;
-struct winbind_domain *domain_list = NULL;
-
-int num_domain_uid = 0;
-int num_domain_gid = 0;
-int num_domain = 0;
-
-/* Given a domain name, return the struct winbindd domain info for it */
-
-struct winbind_domain *find_domain_from_name(char *domain_name)
-{
-    struct winbind_domain *tmp;
-
-    /* Search through list */
-
-    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if (strcmp(domain_name, tmp->domain_name) == 0) {
-            return tmp;
-        }
-    }
-
-    /* Not found */
-
-    return NULL;
-}
-
-/* Given a domain name, return the domain sid and domain controller we
-   found in winbindd_surs_init(). */
-
-BOOL find_domain_sid_from_name(char *domain_name, DOM_SID *domain_sid, 
-                               char *domain_controller)
-{
-    struct winbind_domain *tmp;
-
-    /* Search through list */
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if (strcmp(domain_name, tmp->domain_name) == 0) {
-
-            /* Copy domain sid */
-
-            if (domain_sid != NULL) {
-                sid_copy(domain_sid, &tmp->domain_sid);
-            }
-            
-            /* Copy domain controller */
-
-            if (domain_controller != NULL) {
-                fstrcpy(domain_controller, tmp->domain_controller);
-            }
-
-            return True;
-        }
-    }
-
-    /* Not found */
-
-    return False;
-}
-
-/* Given a uid, return the domain sid and domain controller */
-
-BOOL find_domain_sid_from_uid(uid_t uid, DOM_SID *domain_sid,
-                              char *domain_name,
-                              char *domain_controller)
-{
-    struct winbind_domain_uid *tmp;
-
-    for(tmp = domain_uid_list; tmp != NULL; tmp = tmp->next) {
-        if ((uid >= tmp->uid_low) && (uid <= tmp->uid_high) &&
-            (tmp->domain != NULL)) {
-
-            /* Copy domain sid */
-
-            if (domain_sid != NULL) {
-                sid_copy(domain_sid, &tmp->domain->domain_sid);
-            }
-            
-            /* Copy domain controller */
-
-            if (domain_controller != NULL) {
-                fstrcpy(domain_controller, tmp->domain->domain_controller);
-            }
-
-            /* Copy domain name */
-
-            if (domain_name != NULL) {
-                fstrcpy(domain_name, tmp->domain->domain_name);
-            }
-
-            return True;
-        }
-    }
-
-    /* Not found */
-
-    return False;
-}
-
-/* Given a uid, return the domain sid and domain controller */
-
-BOOL find_domain_sid_from_gid(gid_t gid, DOM_SID *domain_sid,
-                              char *domain_controller,
-                              char *domain_name)
-{
-    struct winbind_domain_gid *tmp;
-
-    for(tmp = domain_gid_list; tmp != NULL; tmp = tmp->next) {
-        if ((gid >= tmp->gid_low) && (gid <= tmp->gid_high) &&
-            (tmp->domain != NULL)) {
-
-            /* Copy domain sid */
-
-            if (domain_sid != NULL) {
-                sid_copy(domain_sid, &tmp->domain->domain_sid);
-            }
-            
-            /* Copy domain controller */
-
-            if (domain_controller != NULL) {
-                fstrcpy(domain_controller, tmp->domain->domain_controller);
-            }
-
-            /* Copy domain name */
-
-            if (domain_name != NULL) {
-                fstrcpy(domain_name, tmp->domain->domain_name);
-            }
-
-            return True;
-        }
-    }
-
-    /* Not found */
-
-    return False;
-}
-
 /* Initialise winbindd_surs database */
 
 BOOL winbindd_surs_init(void)
@@ -174,13 +35,13 @@ BOOL winbindd_surs_init(void)
     fstrcpy(value, lp_winbind_uid());
 
     for (p = strtok(value, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-        struct winbind_domain_uid *uid;
-        struct winbind_domain *domain;
+        struct winbindd_domain_uid *uid;
+        struct winbindd_domain *domain;
         fstring domain_name;
 
         /* Create new domain uid entry */
 
-        if ((uid = (struct winbind_domain_uid *)
+        if ((uid = (struct winbindd_domain_uid *) 
              malloc(sizeof(*uid))) == NULL) {
 
             return False;
@@ -208,7 +69,7 @@ BOOL winbindd_surs_init(void)
 
             /* Create new domain entry */
 
-            if ((domain = (struct winbind_domain *)malloc(sizeof(*domain)))
+            if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain)))
                 == NULL) {
                 return False;
             }
@@ -235,7 +96,6 @@ BOOL winbindd_surs_init(void)
                       domain->domain_controller));
 
             DLIST_ADD(domain_list, domain);
-            num_domain++;
         }
 
         uid->domain = domain;
@@ -243,7 +103,6 @@ BOOL winbindd_surs_init(void)
         /* Add to list */
 
         DLIST_ADD(domain_uid_list, uid);
-        num_domain_uid++;
     }
     
     /* Parse list of domains and gid ranges from "winbind gid" parameter */
@@ -251,13 +110,13 @@ BOOL winbindd_surs_init(void)
     fstrcpy(value, lp_winbind_gid());
 
     for (p = strtok(value, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-        struct winbind_domain_gid *gid;
-        struct winbind_domain *domain;
+        struct winbindd_domain_gid *gid;
+        struct winbindd_domain *domain;
         fstring domain_name;
 
         /* Create new domain entry */
 
-        if ((gid = (struct winbind_domain_gid *)
+        if ((gid = (struct winbindd_domain_gid *)
              malloc(sizeof(*gid))) == NULL) {
 
             return False;
@@ -285,7 +144,7 @@ BOOL winbindd_surs_init(void)
 
             /* Create new domain entry */
 
-            if ((domain = (struct winbind_domain *)malloc(sizeof(*domain)))
+            if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain)))
                 == NULL) {
                 return False;
             }
@@ -307,7 +166,6 @@ BOOL winbindd_surs_init(void)
             }
 
             DLIST_ADD(domain_list, domain);
-            num_domain++;
         }
 
         gid->domain = domain;
@@ -315,7 +173,6 @@ BOOL winbindd_surs_init(void)
         /* Add to list */
 
         DLIST_ADD(domain_gid_list, gid);
-        num_domain_gid++;
     }
 
     return True;
@@ -339,7 +196,7 @@ BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid,
     /* User names */
 
     if (name_type == SID_NAME_USER) {
-        struct winbind_domain_uid *uid;
+        struct winbindd_domain_uid *uid;
 
         for(uid = domain_uid_list; uid != NULL; uid = uid->next) {
 
@@ -361,7 +218,7 @@ BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid,
     /* Domain groups */
 
     if ((name_type == SID_NAME_DOM_GRP) || (name_type == SID_NAME_ALIAS)) {
-        struct winbind_domain_gid *gid;
+        struct winbindd_domain_gid *gid;
         
         for(gid = domain_gid_list; gid != NULL; gid = gid->next) {
 
@@ -390,7 +247,7 @@ BOOL winbindd_surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create)
     /* Process user uid */
 
     if (id->type == SURS_POSIX_UID_AS_USR) {
-        struct winbind_domain_uid *uid;
+        struct winbindd_domain_uid *uid;
 
         for(uid = domain_uid_list; uid != NULL; uid = uid->next) {
             if ((id->id >= uid->uid_low) && (id->id <= uid->uid_high)) {
@@ -412,7 +269,7 @@ BOOL winbindd_surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create)
     if ((id->type == SURS_POSIX_GID_AS_GRP) ||
         (id->type == SURS_POSIX_GID_AS_ALS)) {
         
-        struct winbind_domain_gid *gid;
+        struct winbindd_domain_gid *gid;
 
         for(gid = domain_gid_list; gid != NULL; gid = gid->next) {
             if ((id->id >= gid->gid_low) && (id->id <= gid->gid_high)) {
