@@ -1285,6 +1285,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     {
       CVAL(outbuf,smb_rcls) = ERRDOS;
       SSVAL(outbuf,smb_err,ERRnofiles);
+      if(dptr_num != -1) 
+      {
+        dptr_close(dptr_num);
+        dptr_num = -1;
+      }
     }
 
   /* If we were called as SMBffirst with smb_search_id == NULL
@@ -1297,6 +1302,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       SSVAL(outbuf,smb_err,ERRnofiles);
       /* Also close the dptr - we know it's gone */
       dptr_close(dptr_num);
+      dptr_num = -1;
     }
 
   /* If we were called as SMBfunique, then we can close the dirptr now ! */

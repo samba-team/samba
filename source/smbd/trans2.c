@@ -292,7 +292,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 /****************************************************************************
   get a level dependent lanman2 dir entry.
 ****************************************************************************/
-static int get_lanman2_dir_entry(connection_struct *conn,
+static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 char *path_mask,int dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
@@ -623,8 +623,9 @@ void mask_convert( char *mask)
 }
 
 /****************************************************************************
-  reply to a TRANS2_FINDFIRST
+ Reply to a TRANS2_FINDFIRST.
 ****************************************************************************/
+
 static int call_trans2findfirst(connection_struct *conn,
 				char *inbuf, char *outbuf, int bufsize,  
 				char **pparams, char **ppdata)
@@ -757,39 +758,38 @@ static int call_trans2findfirst(connection_struct *conn,
   out_of_space = False;
 
   for (i=0;(i<maxentries) && !finished && !out_of_space;i++)
+  {
+
+    /* this is a heuristic to avoid seeking the dirptr except when 
+       absolutely necessary. It allows for a filename of about 40 chars */
+    if (space_remaining < DIRLEN_GUESS && numentries > 0)
     {
-
-      /* this is a heuristic to avoid seeking the dirptr except when 
-	 absolutely necessary. It allows for a filename of about 40 chars */
-      if (space_remaining < DIRLEN_GUESS && numentries > 0)
-	{
-	  out_of_space = True;
-	  finished = False;
-	}
-      else
-	{
-	  finished = 
-	    !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-				   requires_resume_key,dont_descend,
-				   &p,pdata,space_remaining, &out_of_space,
-				   &last_name_off);
-	}
-
-      if (finished && out_of_space)
-	finished = False;
-
-      if (!finished && !out_of_space)
-	numentries++;
-      space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+      out_of_space = True;
+      finished = False;
     }
+    else
+    {
+      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
+                   requires_resume_key,dont_descend,
+                   &p,pdata,space_remaining, &out_of_space,
+                   &last_name_off);
+    }
+
+    if (finished && out_of_space)
+      finished = False;
+
+    if (!finished && !out_of_space)
+      numentries++;
+    space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+  }
   
   /* Check if we can close the dirptr */
   if(close_after_first || (finished && close_if_end))
-    {
-      dptr_close(dptr_num);
-      DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-      dptr_num = -1;
-    }
+  {
+    dptr_close(dptr_num);
+    DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
+    dptr_num = -1;
+  }
 
   /* 
    * If there are no matching entries we must return ERRDOS/ERRbadfile - 
@@ -797,7 +797,10 @@ static int call_trans2findfirst(connection_struct *conn,
    */
 
   if(numentries == 0)
+  {
+    dptr_close(dptr_num);
     return(ERROR(ERRDOS,ERRbadfile));
+  }
 
   /* At this point pdata points to numentries directory entries. */
 
@@ -1003,38 +1006,37 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   } /* end if requires_resume_key && !continue_bit */
 
   for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
+  {
+    /* this is a heuristic to avoid seeking the dirptr except when 
+       absolutely necessary. It allows for a filename of about 40 chars */
+    if (space_remaining < DIRLEN_GUESS && numentries > 0)
     {
-      /* this is a heuristic to avoid seeking the dirptr except when 
-	 absolutely necessary. It allows for a filename of about 40 chars */
-      if (space_remaining < DIRLEN_GUESS && numentries > 0)
-	{
-	  out_of_space = True;
-	  finished = False;
-	}
-      else
-	{
-	  finished = 
-	    !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-				   requires_resume_key,dont_descend,
-				   &p,pdata,space_remaining, &out_of_space,
-				   &last_name_off);
-	}
-
-      if (finished && out_of_space)
-	finished = False;
-
-      if (!finished && !out_of_space)
-	numentries++;
-      space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+      out_of_space = True;
+      finished = False;
     }
+    else
+    {
+      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
+                   requires_resume_key,dont_descend,
+                   &p,pdata,space_remaining, &out_of_space,
+                   &last_name_off);
+    }
+
+    if (finished && out_of_space)
+      finished = False;
+
+    if (!finished && !out_of_space)
+      numentries++;
+    space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+  }
   
   /* Check if we can close the dirptr */
   if(close_after_request || (finished && close_if_end))
-    {
-      dptr_close(dptr_num); /* This frees up the saved mask */
-      DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-      dptr_num = -1;
-    }
+  {
+    dptr_close(dptr_num); /* This frees up the saved mask */
+    DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
+    dptr_num = -1;
+  }
 
 
   /* Set up the return parameter block */
@@ -1251,6 +1253,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);
 
+    DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
+
     if(fsp && fsp->open && fsp->is_directory) {
       /*
        * This is actually a QFILEINFO on a directory
@@ -1288,6 +1292,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
+
+    DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
+
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
     unix_convert(fname,conn,0,&bad_path,&sbuf);
