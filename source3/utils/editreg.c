@@ -459,7 +459,8 @@ int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
   return 1;
 }
 
-int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
+int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, 
+			 const char *path,
 			 key_print_f key_print, sec_print_f sec_print, 
 			 val_print_f val_print)
 {
@@ -500,6 +501,7 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
 
   /*
    * If we have a security print routine, call it
+   * If the security print routine returns false, stop.
    */
   if (sec_print) {
     if (key_tree->security && !(*sec_print)(key_tree->security->sec_desc))
@@ -543,23 +545,38 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
 
 /* Make, delete keys */
 
-
-
-int nt_delete_val_list(VAL_LIST *vl)
-{
-
-  return 1;
-}
-
 int nt_delete_val_key(VAL_KEY *val_key)
 {
 
+  if (val_key) {
+    if (val_key->data_blk) free(val_key->data_blk);
+    free(val_key);
+  };
   return 1;
 }
 
+int nt_delete_val_list(VAL_LIST *vl)
+{
+  int i;
+
+  if (vl) {
+    for (i=0; i<vl->val_count; i++)
+      nt_delete_val_key(vl->vals[i]);
+    free(vl);
+  }
+  return 1;
+}
+
+int nt_delete_reg_key(REG_KEY *key);
 int nt_delete_key_list(KEY_LIST *key_list)
 {
+  int i;
 
+  if (key_list) {
+    for (i=0; i<key_list->key_count; i++) 
+      nt_delete_reg_key(key_list->keys[i]);
+    free(key_list);
+  }
   return 1;
 }
 
@@ -631,6 +648,19 @@ int nt_delete_key_sec_desc(KEY_SEC_DESC *key_sec_desc)
 int nt_delete_reg_key(REG_KEY *key)
 {
 
+  if (key) {
+    if (key->name) free(key->name);
+    if (key->class_name) free(key->class_name);
+
+    /*
+     * Do not delete the owner ...
+     */
+
+    if (key->sub_keys) nt_delete_key_list(key->sub_keys);
+    if (key->values) nt_delete_val_list(key->values);
+    if (key->security) nt_delete_key_sec_desc(key->security);
+    free(key);
+  }
   return 1;
 }
 
@@ -1744,6 +1774,163 @@ int nt_load_registry(REGF *regf)
 }
 
 /*
+ * Routines to parse a REGEDIT4 file
+ * 
+ * The file consists of:
+ * 
+ * REGEDIT4
+ * \[[-]key-path\]\n
+ * <value-spec>*
+ *
+ * There can be more than one key-path and value-spec.
+ *
+ * Since we want to support more than one type of file format, we
+ * construct a command-file structure that keeps info about the command file
+ */
+
+#define FMT_UNREC -1
+#define FMT_REGEDIT4 0
+#define FMT_EDITREG1_1 1
+
+typedef struct command_s {
+  int cmd;
+  char *key;
+  void *val_spec_list;
+} CMD;
+
+/*
+ * We seek to offset 0, read in the required number of bytes, 
+ * and compare to the correct value.
+ * We then seek back to the original location
+ */
+int regedit4_file_type(int fd)
+{
+  int cur_ofs = 0;
+
+  cur_ofs = lseek(fd, 0, SEEK_CUR); /* Get current offset */
+  if (cur_ofs < 0) {
+    fprintf(stderr, "Unable to get current offset: %s\n", strerror(errno));
+    exit(1);
+  }
+
+  if (cur_ofs) {
+    lseek(fd, 0, SEEK_SET);
+  }
+
+  return FMT_UNREC;
+}
+
+CMD *regedit4_get_cmd(int fd)
+{
+  return NULL;
+}
+
+int regedit4_exec_cmd(CMD *cmd)
+{
+
+  return 0;
+}
+
+int editreg_1_1_file_type(int fd)
+{
+
+  return FMT_UNREC;
+}
+
+CMD *editreg_1_1_get_cmd(int fd)
+{
+  return NULL;
+}
+
+int editreg_1_1_exec_cmd(CMD *cmd)
+{
+
+  return -1;
+}
+
+typedef struct command_ops_s {
+  int type;
+  int (*file_type)(int fd);
+  CMD *(*get_cmd)(int fd);
+  int (*exec_cmd)(CMD *cmd);
+} CMD_OPS;
+
+CMD_OPS default_cmd_ops[] = {
+  {0, regedit4_file_type, regedit4_get_cmd, regedit4_exec_cmd},
+  {1, editreg_1_1_file_type, editreg_1_1_get_cmd, editreg_1_1_exec_cmd},
+  {-1,  NULL, NULL, NULL}
+}; 
+
+typedef struct command_file_s {
+  char *name;
+  int type, fd;
+  CMD_OPS cmd_ops;
+} CMD_FILE;
+
+/*
+ * Create a new command file structure
+ */
+
+CMD_FILE *cmd_file_create(char *file)
+{
+  CMD_FILE *tmp;
+  struct stat sbuf;
+  int i = 0;
+
+  /*
+   * Let's check if the file exists ...
+   * No use creating the cmd_file structure if the file does not exist
+   */
+
+  if (stat(file, &sbuf) < 0) { /* Not able to access file */
+
+    return NULL;
+  }
+
+  tmp = (CMD_FILE *)malloc(sizeof(CMD_FILE)); 
+  if (!tmp) {
+    return NULL;
+  }
+
+  /*
+   * Let's fill in some of the fields;
+   */
+
+  tmp->name = strdup(file);
+
+  if ((tmp->fd = open(file, O_RDONLY, 666)) < 0) {
+    free(tmp);
+    return NULL;
+  }
+
+  /*
+   * Now, try to find the format by indexing through the table
+   */
+  while (default_cmd_ops[i].type != -1) {
+    if ((tmp->type = default_cmd_ops[i].file_type(tmp->fd)) >= 0) {
+      tmp->cmd_ops = default_cmd_ops[i];
+      return tmp;
+    }
+    i++;
+  }
+
+  /* 
+   * If we got here, return NULL, as we could not figure out the type
+   * of command file.
+   *
+   * What about errors? 
+   */
+
+  free(tmp);
+  return NULL;
+}
+
+/*
+ * Extract commands from the command file, and execute them.
+ * We pass a table of command callbacks for that 
+ */
+
+/*
  * Main code from here on ...
  */
 
@@ -1808,9 +1995,11 @@ int print_val(const char *path, char *val_name, int val_type, int data_len,
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: editreg [-v] [-k] <registryfile>\n");
+  fprintf(stderr, "Usage: editreg [-v] [-k] [-c <command-file>] <registryfile>\n");
   fprintf(stderr, "Version: 0.1\n\n");
   fprintf(stderr, "\n\t-v\t sets verbose mode");
+  fprintf(stderr, "\n\t-c <command-file>\t specifies a command file");
+  fprintf(stderr, "\n");
 }
 
 int main(int argc, char *argv[])
@@ -1819,6 +2008,8 @@ int main(int argc, char *argv[])
   extern char *optarg;
   extern int optind;
   int opt;
+  int commands = 0;
+  char *cmd_file = NULL;
 
   if (argc < 2) {
     usage();
@@ -1829,8 +2020,13 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "vk")) != EOF) {
+  while ((opt = getopt(argc, argv, "vkc:")) != EOF) {
     switch (opt) {
+    case 'c':
+      commands = 1;
+      cmd_file = optarg;
+      break;
+
     case 'v':
       verbose++;
       break;
@@ -1871,4 +2067,3 @@ int main(int argc, char *argv[])
   nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
   return 0;
 }
-
