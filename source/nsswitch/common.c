@@ -242,7 +242,7 @@ static int read_sock(void *buffer, int count)
 
 int read_reply(struct winbindd_response *response)
 {
-    int result1, result2;
+    int result1, result2 = 0;
 
     if (!response) {
         return -1;
