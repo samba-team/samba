@@ -32,7 +32,7 @@ extern pstring global_myname;
 extern fstring global_myworkgroup;
 
 /* This is our local master browser list database. */
-extern struct ubi_dlList lmb_browserlist[];
+extern ubi_dlList lmb_browserlist[];
 
 /****************************************************************************
 As a domain master browser, do a sync with a local master browser.
