@@ -17,8 +17,9 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
     configdir="${sysconfdir}/samba"
-    lockdir="\${VARDIR}/cache/samba"
-    piddir="\${VARDIR}/run/samba"
+    lockdir="\${VARDIR}/lib/samba"
+    piddir="\${VARDIR}/run"
+    mandir="\${prefix}/share/man"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
@@ -27,6 +28,7 @@ AC_ARG_WITH(fhs,
     logfilebase="\${VARDIR}"
     lockdir="\${VARDIR}/locks"
     piddir="\${VARDIR}/locks"
+    mandir="\${prefix}/man"
     privatedir="\${prefix}/private"
     swatdir="\${prefix}/swat")
 
@@ -77,6 +79,23 @@ AC_ARG_WITH(piddir,
     piddir="$withval"
     ;;
   esac])
+
+#################################################
+# set pid directory location
+AC_ARG_WITH(piddir,
+[  --with-mandir=DIR       Where to put man pages ($ac_default_prefix/man)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-mandir called without argument - will use default])
+  ;;
+  * )
+    piddir="$withval"
+    ;;
+  esac])
+
 
 #################################################
 # set SWAT directory location
@@ -148,6 +167,7 @@ done
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
+AC_SUBST(mandir)
 AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(swatdir)
@@ -1991,6 +2011,14 @@ main() { exit(sysconf(_SC_NGROUPS_MAX) == -1 ? 1 : 0); }],
 samba_cv_SYSCONF_SC_NGROUPS_MAX=yes,samba_cv_SYSCONF_SC_NGROUPS_MAX=no,samba_cv_SYSCONF_SC_NGROUPS_MAX=cross)])
 if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
     AC_DEFINE(SYSCONF_SC_NGROUPS_MAX,1,[Whether sysconf(_SC_NGROUPS_MAX) is available])
+fi
+
+AC_CACHE_CHECK([for sysconf(_SC_NPROC_ONLN)],samba_cv_SYSCONF_SC_NPROC_ONLN,[
+AC_TRY_RUN([#include <unistd.h>
+main() { exit(sysconf(_SC_NPROC_ONLN) == -1 ? 1 : 0); }],
+samba_cv_SYSCONF_SC_NPROC_ONLN=yes,samba_cv_SYSCONF_SC_NPROC_ONLN=no,samba_cv_SYSCONF_SC_NPROC_ONLN=cross)])
+if test x"$samba_cv_SYSCONF_SC_NPROC_ONLN" = x"yes"; then
+    AC_DEFINE(SYSCONF_SC_NPROC_ONLN,1,[Whether sysconf(_SC_NPROC_ONLN) is available])
 fi
 
 AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[

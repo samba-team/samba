@@ -494,6 +494,13 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 	struct passwd *pass;
 	const char *local_machine_name = get_local_machine_name();
 
+	/* workaround to prevent a crash while lookinf at bug #687 */
+	
+	if ( !str ) {
+		DEBUG(0,("alloc_sub_basic: NULL source string!  This should not happen\n"));
+		return NULL;
+	}
+	
 	a_string = strdup(str);
 	if (a_string == NULL) {
 		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));

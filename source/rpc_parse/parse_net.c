@@ -2283,12 +2283,12 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 	if (!prs_uint32("ptr_members", ps, depth, &info->ptr_members))
                 return False;
 
+	if (ps->data_offset + 16 > ps->buffer_size)
+		return False;
+	ps->data_offset += 16;
+
 	if (info->ptr_members != 0)
 	{
-                if (ps->data_offset + 16 > ps->buffer_size)
-                        return False;
-                ps->data_offset += 16;
-
 		if (!prs_uint32("num_sids", ps, depth, &info->num_sids))
                         return False;
 		if (info->num_sids != info->num_members)
