@@ -926,14 +926,12 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	int               cversion;
 	int               access_mode;
 	int               action;
-	NTSTATUS          ecode;
+	NTSTATUS          nt_status;
 	pstring           driverpath;
-	fstring           user_name;
 	fstring           null_pw;
 	files_struct      *fsp = NULL;
 	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
-	struct passwd *pass;
 	connection_struct *conn;
 
 	ZERO_STRUCT(st);
@@ -944,29 +942,14 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		return 0;
 	}
 
-	become_root();
-	pass = sys_getpwuid(user->uid);
-	if(pass == NULL) {
-		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
-				(unsigned int)user->uid ));
-		unbecome_root();
-		*perr = WERR_ACCESS_DENIED;
-		return -1;
-	}
-	unbecome_root();
-
-	/* connect to the print$ share under the same account as the user connected
-	 * to the rpc pipe */	
-	fstrcpy(user_name, pass->pw_name );
-	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
-
+	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	conn = make_connection("print$", null_pw, 0, "A:", user->vuid, &nt_status);
 
 	if (conn == NULL) {
 		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
-		*perr = ntstatus_to_werror(ecode);
+		*perr = ntstatus_to_werror(nt_status);
 		return -1;
 	}
 
@@ -974,7 +957,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	push_sec_ctx();
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("get_correct_cversion: Can't become user %s\n", user_name ));
+		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
 		*perr = WERR_ACCESS_DENIED;
 		pop_sec_ctx();
 		return -1;
@@ -1249,11 +1232,9 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
-	fstring user_name;
 	fstring null_pw;
 	connection_struct *conn;
-	struct passwd *pass;
-	NTSTATUS ecode;
+	NTSTATUS nt_status;
 	int ver = 0;
 	int i;
 
@@ -1271,27 +1252,14 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	get_short_archi(architecture, driver->environment);
 
-	become_root();
-	pass = sys_getpwuid(user->uid);
-	if(pass == NULL) {
-		DEBUG(0,("move_driver_to_download_area: Unable to get passwd entry for uid %u\n",
-				(unsigned int)user->uid ));
-		unbecome_root();
-		return False;
-	}
-	unbecome_root();
-
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
-	fstrcpy(user_name, pass->pw_name );
-	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
-
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	conn = make_connection("print$", null_pw, 0, "A:", user->vuid, &nt_status);
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
-		*perr = ntstatus_to_werror(ecode);
+		*perr = ntstatus_to_werror(nt_status);
 		return False;
 	}
 
@@ -1302,7 +1270,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	push_sec_ctx();
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("move_driver_to_download_area: Can't become user %s\n", user_name ));
+		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
 		pop_sec_ctx();
 		return False;
 	}
