@@ -195,19 +195,10 @@ gsskrb5_accept_sec_context
 	}
     }
   
-
-
-    {
-	int32_t tmp;
-
-	krb5_auth_con_getflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       &tmp);
-	tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
-	krb5_auth_con_setflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       tmp);
-    }
+    krb5_auth_con_addflags(gssapi_krb5_context,
+			   (*context_handle)->auth_context,
+			   KRB5_AUTH_CONTEXT_DO_SEQUENCE,
+			   NULL);
 
     ret = gssapi_krb5_decapsulate (minor_status,
 				   input_token_buffer,
