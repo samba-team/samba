@@ -122,7 +122,6 @@ krb5_get_credentials (krb5_context context,
     {
 	unsigned char buf[1024];
 	int len;
-	struct md4 m;
 	Checksum c;
 	krb5_creds cred, mcred;
 	
@@ -135,17 +134,20 @@ krb5_get_credentials (krb5_context context,
 
 	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				  &a.req_body);
-	md4_init(&m);
-	md4_update(&m, buf + sizeof(buf) - len, len);
-	c.cksumtype = rsa_md4;
-	c.checksum.length = 16;
-	c.checksum.data = malloc(16);
-	md4_finito(&m, c.checksum.data);
-	krb5_build_authenticator (context, NULL,
-				  &cred,
-				  &c,
-				  NULL,
-				  &authenticator);
+	err = krb5_create_checksum (context,
+				    CKSUMTYPE_RSA_MD4,
+				    buf + sizeof(buf) - len,
+				    len,
+				    &c);
+	if (err)
+	  return err;
+	err = krb5_build_authenticator (context, NULL,
+					&cred,
+					&c,
+					NULL,
+					&authenticator);
+	if (err)
+	  return err;
 
 	foo.padata_type = pa_tgs_req;
 	err = krb5_build_ap_req(context, &cred, 
