@@ -247,7 +247,7 @@ static const char *timestamps_errstring(struct ldb_module *module)
 
 static int timestamps_destructor(void *module_ctx)
 {
-	struct ldb_module *ctx = module_ctx;
+	/* struct ldb_module *ctx = module_ctx; */
 	/* put your clean-up functions here */
 	return 0;
 }
