@@ -43,6 +43,7 @@ main(int argc, char **argv)
 	int ch, top;
 	struct passwd *pw = NULL;
 	char *cp, homedir[MAXPATHLEN];
+	struct servent *sp;
 
 	sp = getservbyname("ftp", "tcp");
 	if (sp == 0)
@@ -98,12 +99,7 @@ main(int argc, char **argv)
 	/*
 	 * Set up the home directory in case we're globbing.
 	 */
-	cp = getlogin();
-	if (cp != NULL) {
-		pw = getpwnam(cp);
-	}
-	if (pw == NULL)
-		pw = getpwuid(getuid());
+	pw = getpwuid(getuid());
 	if (pw != NULL) {
 		home = homedir;
 		(void) strcpy(home, pw->pw_dir);
