@@ -224,9 +224,9 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbcacls smbcontrol wbinfo smbmnt
+      smbcacls smbcontrol wbinfo smbmnt tdbbackup
 do
-install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
+	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 for i in mksmbpasswd.sh smbtar findsmb
 do
@@ -549,9 +549,6 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
-%{prefix}/bin/pam_smbpass.so
-%{prefix}/bin/smbmount
-%{prefix}/bin/smbumount
 %{prefix}/bin/tdbbackup
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
