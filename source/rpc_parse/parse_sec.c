@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Copyright (C) Jeremy R. Allison            1995-1998
@@ -46,9 +47,6 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	if(!prs_uint32("mask", ps, depth, &(t->mask)))
 		return False;
@@ -115,9 +113,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_ace");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -296,6 +291,13 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	uint32 offset_acl_size;
 	SEC_ACL *psa;
 
+	/*
+	 * Note that the size is always a multiple of 4 bytes due to the
+	 * nature of the data structure.  Therefore the prs_align() calls
+	 * have been removed as they through us off when doing two-layer
+	 * marshalling such as in the printing code (NEW_BUFFER).  --jerry
+	 */
+
 	if (ppsa == NULL)
 		return False;
 
@@ -312,9 +314,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_acl");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -343,9 +342,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		if(!sec_io_ace(tmp, &psa->ace[i], ps, depth))
 			return False;
 	}
-
-	if(!prs_align(ps))
-		return False;
 
 	if(!prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset))
 		return False;
