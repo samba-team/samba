@@ -105,24 +105,59 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 }
 
 krb5_error_code
-hdb_etype2key(krb5_context context, 
-	      hdb_entry *e, 
-	      krb5_enctype etype, 
-	      Key **key)
+hdb_next_keytype2key(krb5_context context,
+		     hdb_entry *e,
+		     krb5_keytype keytype,
+		     Key **key)
 {
-    krb5_keytype keytype;
     krb5_error_code ret;
     int i;
-    ret = krb5_etype2keytype(context, etype, &keytype);
-    if(ret)
-	return ret;
-    for(i = 0; i < e->keys.len; i++)
+    if(*key) 
+	i = *key - e->keys.val + 1;
+    else
+	i = 0;
+    for(; i < e->keys.len; i++)
 	if(e->keys.val[i].key.keytype == keytype){
 	    *key = &e->keys.val[i];
 	    return 0;
 	}
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
+
+krb5_error_code
+hdb_keytype2key(krb5_context context, 
+		hdb_entry *e, 
+		krb5_keytype keytype, 
+		Key **key)
+{
+    *key = NULL;
+    return hdb_next_keytype2key(context,e, keytype, key);
+}
+
+krb5_error_code
+hdb_next_etype2key(krb5_context context,
+		   hdb_entry *e,
+		   krb5_enctype etype,
+		   Key **key)
+{
+    krb5_keytype keytype;
+    krb5_error_code ret;
+    ret = krb5_etype2keytype(context, etype, &keytype);
+    if(ret)
+	return ret;
+    return hdb_next_keytype2key(context, e, keytype, key);
+}
+
+krb5_error_code
+hdb_etype2key(krb5_context context, 
+	      hdb_entry *e, 
+	      krb5_enctype etype, 
+	      Key **key)
+{
+    *key = NULL;
+    return hdb_next_etype2key(context,e, etype, key);
+}
+
 
 void
 hdb_free_entry(krb5_context context, hdb_entry *ent)
