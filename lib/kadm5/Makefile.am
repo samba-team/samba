@@ -106,7 +106,8 @@ LDADD = \
 	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB) \
-	$(LIB_dlopen)
+	$(LIB_dlopen) \
+	$(LIB_pidfile)
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
