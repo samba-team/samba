@@ -19,7 +19,7 @@ PNGTOPNM = @PNGTOPNM@
 EPSTOPNM = @EPSTOPNM@
 PNMTOPNG = @PNMTOPNG@
 PNMTOPS = @PNMTOPS@
-XMLTO = @XMLTO@
+HTML2TEXT = @HTML2TEXT@
 PLUCKERBUILD = @PLUCKERBUILD@
 PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@
 LATEX = TEXINPUTS=xslt/latex:.: @LATEX@
@@ -161,8 +161,8 @@ clean:
 $(TXTDIR):
 	mkdir $(TXTDIR)
 
-$(TXTDIR)/%.txt: %.xml
-	$(XMLTO) txt -o $(TXTDIR) $< > $@
+$(TXTDIR)/%.txt: $(HTMLDIR)/%.html
+	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
 # Tex files
 %.tex: %.xml
