@@ -52,7 +52,7 @@ BEGIN {
 
 END {
 	while ( val < 65536 ) {
-		printf("{ 0, 0x%04X, 0x%04X }, \t\t\t/* %s NOMAP */\n", val, val, strval);
+		printf("{ 0x%04X, 0x%04X, 0 }, \t\t\t/* %s NOMAP */\n", val, val, strval);
 		val++;
 		strval=sprintf("%04X", val);
 	}

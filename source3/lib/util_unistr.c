@@ -905,3 +905,59 @@ smb_ucs2_t *wstrdup(const smb_ucs2_t *s)
     safe_wstrcpy(newstr, s, newlen);
     return newstr;
 }
+
+/*******************************************************************
+ Mapping tables for UNICODE character. Allows toupper/tolower and
+ isXXX functions to work.
+********************************************************************/
+
+typedef struct {
+	smb_ucs2_t lower;
+	smb_ucs2_t upper;
+	unsigned char flags;
+} smb_unicode_table_t;
+
+static smb_unicode_table_t map_table[] = {
+#include "unicode_map_table.h"
+};
+
+/*******************************************************************
+ Is an upper case wchar.
+********************************************************************/
+
+int wisupper( smb_ucs2_t val)
+{
+	return (map_table[val].flags & UNI_UPPER);
+}
+/*******************************************************************
+ Is a lower case wchar.
+********************************************************************/
+
+int wislower( smb_ucs2_t val)
+{
+	return (map_table[val].flags & UNI_LOWER);
+}
+/*******************************************************************
+ Is a digit wchar.
+********************************************************************/
+
+int wisdigit( smb_ucs2_t val)
+{
+	return (map_table[val].flags & UNI_DIGIT);
+}
+/*******************************************************************
+ Is a hex digit wchar.
+********************************************************************/
+
+int wisxdigit( smb_ucs2_t val)
+{
+	return (map_table[val].flags & UNI_XDIGIT);
+}
+/*******************************************************************
+ Is a space wchar.
+********************************************************************/
+
+int wisspace( smb_ucs2_t val)
+{
+	return (map_table[val].flags & UNI_SPACE);
+}

@@ -672,6 +672,13 @@ typedef struct smb_wpasswd {
 	wpstring       pw_shell;
 } SMB_STRUCT_WPASSWD;
 
+/* Defines for wisXXX functions. */
+#define UNI_UPPER    0x1
+#define UNI_LOWER    0x2
+#define UNI_DIGIT    0x4
+#define UNI_XDIGIT   0x8
+#define UNI_SPACE    0x10
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
@@ -694,6 +701,12 @@ typedef struct smb_wpasswd {
 #define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
+
+/* smb_ucs2_t versions of the above. */
+#define wpstrcpy(d,s) safe_wstrcpy((d),(s),sizeof(wpstring))
+#define wpstrcat(d,s) safe_wstrcat((d),(s),sizeof(wpstring))
+#define wfstrcpy(d,s) safe_wstrcpy((d),(s),sizeof(wfstring))
+#define wfstrcat(d,s) safe_wstrcat((d),(s),sizeof(wfstring))
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
