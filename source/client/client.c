@@ -41,6 +41,7 @@ static pstring username;
 static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
+static int io_bufsize = 65520;
 extern struct in_addr ipzero;
 extern pstring scope;
 
@@ -149,7 +150,7 @@ static int readfile(char *b, int size, int n, FILE *f)
 		return(fread(b,size,n,f));
   
 	i = 0;
-	while (i < n) {
+	while (i < (n - 1)) {
 		if ((c = getc(f)) == EOF) {
 			break;
 		}
@@ -158,8 +159,7 @@ static int readfile(char *b, int size, int n, FILE *f)
 			b[i++] = '\r';
 		}
       
-		if(i < n)
-			b[i++] = c;
+		b[i++] = c;
 	}
   
 	return(i);
@@ -634,7 +634,7 @@ static void do_get(char *rname,char *lname)
 	BOOL newhandle = False;
 	char *data;
 	struct timeval tp_start;
-	int read_size = 65520;
+	int read_size = io_bufsize;
 	uint16 attr;
 	size_t size;
 	off_t nread = 0;
@@ -692,6 +692,11 @@ static void do_get(char *rname,char *lname)
 		}
       
 		nread += n;
+	}
+
+	if (nread < size) {
+		DEBUG (0, ("Short read when getting file %s. Only got %d bytes.\n",
+               CNV_LANG(rname), nread));
 	}
 
 	free(data);
@@ -965,7 +970,7 @@ static void do_put(char *rname,char *lname)
 	FILE *f;
 	int nread=0;
 	char *buf=NULL;
-	int maxwrite=65520;
+	int maxwrite=io_bufsize;
 	
 	struct timeval tp_start;
 	GetTimeOfDay(&tp_start);
@@ -1950,6 +1955,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
+  DEBUG(0,("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n"));
   DEBUG(0,("\n"));
 }
 
@@ -2235,7 +2241,7 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:")) != EOF) {
+		getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
@@ -2337,6 +2343,9 @@ static int do_message_op(void)
 			cmdstr = optarg;
 			got_pass = True;
 			break;
+		case 'b':
+			io_bufsize = MAX(1, atoi(optarg));
+			break;
 		default:
 			usage(pname);
 			exit(1);
@@ -2377,10 +2386,8 @@ static int do_message_op(void)
 	}
 
 	if (!process(base_directory)) {
-		close_sockets();
 		return(1);
 	}
-	close_sockets();
 
 	return(0);
 }
