@@ -28,13 +28,13 @@ NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     value = dbm_fetch(d, key);
     krb5_data_free(&data);
     if(value.dptr == NULL)
-	return errno;
+	return KRB5_HDB_NOENTRY;
     
     data.data = value.dptr;
     data.length = value.dsize;
     
     hdb_value2entry(context, &data, entry);
-    krb5_data_free(&data);
+    /* krb5_data_free(&data); */
     return 0;
 }
 
@@ -96,11 +96,11 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
     data.length = key.dsize;
     hdb_key2principal(context, &data, &entry->principal);
     value = dbm_fetch(d, key);
-    krb5_data_free(&data);
+    /* krb5_data_free(&data); */
     data.data = value.dptr;
     data.length = value.dsize;
     hdb_value2entry(context, &data, entry);
-    krb5_data_free(&data);
+    /* krb5_data_free(&data); */
     return 0;
 }
 
@@ -123,10 +123,7 @@ hdb_ndbm_open(krb5_context context, HDB **db,
 	      const char *filename, int flags, mode_t mode)
 {
     DBM *d;
-    char *fn = malloc(strlen(filename) + 4);
-    sprintf(fn, "%s.db", filename);
-    d = dbm_open(fn, flags, mode);
-    free(fn);
+    d = dbm_open((char*)filename, flags, mode);
     if(d == NULL)
 	return errno;
     *db = malloc(sizeof(**db));
