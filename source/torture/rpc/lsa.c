@@ -271,6 +271,40 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p, 
+				  TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *acct_handle)
+{
+	NTSTATUS status;
+	struct lsa_EnumPrivsAccount r;
+
+	printf("Testing EnumPrivsAccount\n");
+
+	r.in.handle = acct_handle;
+
+	status = dcerpc_lsa_EnumPrivsAccount(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumPrivsAccount failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("received %d privileges with unknown=0x%x\n", 
+	       r.out.privs?r.out.privs->count:0, r.out.unknown);
+
+	if (r.out.privs) {
+		struct lsa_PrivilegeSet *privs = r.out.privs;
+		int i;
+		for (i=0;i<privs->count;i++) {
+			printf("luid=%08x-%08x  attribute=0x%08x\n", 
+			       privs->set[i].luid.low,
+			       privs->set[i].luid.high,
+			       privs->set[i].attribute);
+		}
+	}
+
+	return True;
+}
+
 static BOOL test_OpenAccount(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle,
@@ -280,7 +314,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 	struct lsa_OpenAccount r;
 	struct policy_handle acct_handle;
 
-	printf("Testing account %s\n", lsa_sid_string_talloc(mem_ctx, sid));
+	printf("Testing OpenAccount(%s)\n", lsa_sid_string_talloc(mem_ctx, sid));
 
 	r.in.handle = handle;
 	r.in.sid = sid;
@@ -290,6 +324,10 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_OpenAccount(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenAccount failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_EnumPrivsAccount(p, mem_ctx, &acct_handle)) {
 		return False;
 	}
 
@@ -407,7 +445,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	uint32 resume_handle = 0;
-	struct lsa_RefDomainList domains;
+	struct lsa_DomainList domains;
 
 	printf("\nTesting EnumTrustDom\n");
 
@@ -423,9 +461,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("lookup gave %d domains (max_count=%d)\n", 
-	       domains.count,
-	       domains.max_count);
+	printf("lookup gave %d domains\n", domains.count);
 	for (i=0;i<r.out.domains->count;i++) {
 		printf("name='%s' sid=%s\n", 
 		       domains.domains[i].name.name,

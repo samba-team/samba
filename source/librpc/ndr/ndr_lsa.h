@@ -306,11 +306,29 @@ struct lsa_OpenAccount {
 
 };
 
-struct ENUMPRIVSACCOUNT {
+struct lsa_LUID {
+	uint32 low;
+	uint32 high;
+};
+
+struct lsa_LUIDAttribute {
+	struct lsa_LUID luid;
+	uint32 attribute;
+};
+
+struct lsa_PrivilegeSet {
+	uint32 count;
+	struct lsa_LUIDAttribute *set;
+};
+
+struct lsa_EnumPrivsAccount {
 	struct {
+		struct policy_handle *handle;
 	} in;
 
 	struct {
+		struct lsa_PrivilegeSet *privs;
+		uint32 unknown;
 		NTSTATUS result;
 	} out;
 
@@ -618,7 +636,7 @@ struct QUERYINFO2 {
 #define DCERPC_LSA_LOOKUPSIDS 15
 #define DCERPC_CREATESECRET 16
 #define DCERPC_LSA_OPENACCOUNT 17
-#define DCERPC_ENUMPRIVSACCOUNT 18
+#define DCERPC_LSA_ENUMPRIVSACCOUNT 18
 #define DCERPC_ADDPRIVS 19
 #define DCERPC_REMOVEPRIVS 20
 #define DCERPC_GETQUOTAS 21
