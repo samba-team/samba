@@ -368,24 +368,9 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
 
 	return NT_STATUS_OK;	
-}
-
-
-/*
-  return a dcerpc fault from a ntstatus code
-*/
-static NTSTATUS dcesrv_fault_nt(struct dcesrv_call_state *call, NTSTATUS status)
-{
-	uint32 fault_code = DCERPC_FAULT_OTHER;
-
-	/* TODO: we need to expand this table to include more mappings */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
-		fault_code = DCERPC_FAULT_CONTEXT_MISMATCH;
-	}
-
-	return dcesrv_fault(call, fault_code);
 }
 
 
@@ -592,10 +577,12 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
+	call->fault_code = 0;
+
 	/* call the dispatch function */
 	status = call->conn->iface->dispatch(call, call->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault_nt(call, status);
+		return dcesrv_fault(call, call->fault_code);
 	}
 
 	/* form the reply NDR */

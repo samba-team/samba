@@ -70,11 +70,8 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 {
 	r->out.info = talloc(mem_ctx, sizeof(*r->out.info));
 	if (!r->out.info) {
-		r->out.result = NT_STATUS_NO_MEMORY;
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MEMORY;
 	}
-
-	r->out.result = NT_STATUS_OK;
 
 	switch (r->in.level) {
 	case 1:
@@ -105,8 +102,7 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		r->out.info->info7.info4.v.high = 0;
 		break;
 	default:
-		r->out.result = NT_STATUS_INVALID_LEVEL;
-		break;
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_OK;

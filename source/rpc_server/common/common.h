@@ -4,6 +4,7 @@
    common macros for the dcerpc server interfaces
 
    Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,8 +22,15 @@
 */
 
 #define WERR_TALLOC_CHECK(x) do {\
-	if (!(x)) {\
-		r->out.result = WERR_NOMEM;\
-		return NT_STATUS_OK;\
-	}\
+	if (!(x)) return WERR_NOMEM;\
 } while (0)
+
+/* a useful macro for generating a RPC fault in the backend code */
+#define DCESRV_FAULT(code) do { \
+	dce_call->fault_code = code; \
+	return r->out.result; \
+} while(0)
+
+/* a useful macro for checking the validity of a dcerpc policy handle
+   and giving the right fault code if invalid */
+#define DCESRV_CHECK_HANDLE(h) do {if (!(h)) DCESRV_FAULT(DCERPC_FAULT_CONTEXT_MISMATCH); } while (0)

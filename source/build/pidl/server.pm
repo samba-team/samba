@@ -15,6 +15,30 @@ sub pidl($)
 	$res .= shift;
 }
 
+
+#####################################################
+# generate the switch statement for function dispatch
+sub gen_dispatch_switch($)
+{
+	my $data = shift;
+
+	my $count = 0;
+	foreach my $d (@{$data}) {
+		next if ($d->{TYPE} ne "FUNCTION");
+
+		pidl "\tcase $count: {\n";
+		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
+		if ($d->{RETURN_TYPE} && $d->{RETURN_TYPE} ne "void") {
+			pidl "\t\tr2->out.result = $d->{NAME}(dce_call, mem_ctx, r2);\n";
+		} else {
+			pidl "\t\t$d->{NAME}(dce_call, mem_ctx, r2);\n";
+		}
+		pidl "\t\tbreak;\n\t}\n";
+		$count++; 
+	}
+}
+
+
 #####################################################################
 # produce boilerplate code for a interface
 sub Boilerplate_Iface($)
@@ -32,14 +56,6 @@ sub Boilerplate_Iface($)
 	if ($count == 0) {
 		return;
 	}
-
-	pidl "static const dcesrv_dispatch_fn_t $name\_dispatch_table[] = {\n";
-	foreach my $d (@{$data}) {
-		if ($d->{TYPE} eq "FUNCTION") {
-			pidl "\t(dcesrv_dispatch_fn_t)$d->{NAME},\n";
-		}
-	}
-	pidl "\tNULL};\n\n";
 
 	pidl "
 static NTSTATUS $name\__op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
@@ -64,7 +80,22 @@ static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_C
 {
 	uint16 opnum = dce_call->pkt.u.request.opnum;
 
-	return $name\_dispatch_table[opnum](dce_call, mem_ctx, r);	
+	dce_call->fault_code = 0;
+
+	switch (opnum) {
+";
+	gen_dispatch_switch($data);
+
+pidl "
+	default:
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		break;
+	}
+
+	if (dce_call->fault_code != 0) {
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+	return NT_STATUS_OK;
 }
 
 static const struct dcesrv_interface $name\_interface = {

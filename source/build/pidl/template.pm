@@ -52,10 +52,10 @@ sub Template($)
 /* 
   $fname 
 */
-static NTSTATUS $fname(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static $d->{RETURN_TYPE} $fname(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct $fname *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 ";
