@@ -61,4 +61,5 @@ AC_OUTPUT(Makefile 		\
 	lib/asn1/Makefile	\
 	lib/des/Makefile	\
 	lib/krb5/Makefile	\
+	lib/krb5/error/Makefile	\
 	kuser/Makefile)

@@ -2,6 +2,8 @@
 
 AUTOMAKE_OPTIONS = no-dependencies
 
+SUBDIRS = error
+
 INCLUDES = -I$(top_builddir)/include 
 
 lib_LIBRARIES = krb5
