@@ -227,8 +227,13 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
     {
       pstring str;
       dfs3[i].ptr_entrypath = 1;
-      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
-	       j[i].service_name, j[i].volume_name);
+      if (j[i].volume_name[0] == '\0')
+	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s",
+		       global_myname, j[i].service_name);
+      else
+	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
+		       j[i].service_name, j[i].volume_name);
+
       init_unistr2(&dfs3[i].entrypath, str, strlen(str)+1);
       dfs3[i].ptr_comment = 1;
       init_unistr2(&dfs3[i].comment, "", 1); 

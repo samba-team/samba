@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   $Id: msdfs.c,v 1.10.4.12 2001/08/28 00:47:32 kalele Exp $
+   $Id: msdfs.c,v 1.10.4.13 2001/08/28 01:47:51 kalele Exp $
 */
 
 #include "includes.h"
@@ -772,15 +772,30 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	if (!create_conn_struct(conn, snum))
 		return False;
 
-	/* form a junction for the msdfs root - convention */ 
-	/*
-		pstrpcy(jn[cnt].service_name, service_name);
+	{ 
+		/* form a junction for the msdfs root - convention 
+		   DO NOT REMOVE THIS: NT clients will not work with us
+		   if this is not present
+		*/ 
+		struct referral *ref = NULL;
+		pstring alt_path;
+		pstrcpy(jn[cnt].service_name, service_name);
 		jn[cnt].volume_name[0] = '\0';
 		jn[cnt].referral_count = 1;
-  
-		slprintf(alt_path,sizeof(alt_path)-1"\\\\%s\\%s", global_myname, service_name);
-		jn[cnt].referral_l
-	*/
+	
+		slprintf(alt_path,sizeof(alt_path)-1,"\\\\%s\\%s", 
+			 global_myname, service_name);
+		ref = jn[cnt].referral_list = (struct referral*) malloc(sizeof(struct referral));
+		if (jn[cnt].referral_list == NULL) {
+			DEBUG(0, ("Malloc failed!\n"));
+			return False;
+		}
+
+		safe_strcpy(ref->alternate_path, alt_path, sizeof(pstring));
+		ref->proximity = 0;
+		ref->ttl = REFERRAL_TTL;
+		cnt++;
+	}
 
 	dirp = conn->vfs_ops.opendir(conn, dos_to_unix(connect_path,False));
 	if(!dirp)
