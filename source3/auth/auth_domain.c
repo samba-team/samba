@@ -401,14 +401,14 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	char *p, *pserver;
+	char *password_server;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 	char *domain = lp_workgroup();
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* 
@@ -430,7 +430,6 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
 	{
 		DEBUG(0, ("check_domain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
-		unbecome_root();
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -445,13 +444,12 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 * PDC/BDC. Contact each in turn and try and authenticate.
 	 */
 
-	pserver = lp_passwordserver();
-	p = pserver;
+	password_server = lp_passwordserver();
 
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
 					   (uchar *)auth_context->challenge.data, 
 					   server_info, 
-					   p, trust_passwd, last_change_time);
+					   password_server, trust_passwd, last_change_time);
 	
 	return nt_status;
 }
