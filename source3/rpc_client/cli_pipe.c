@@ -264,13 +264,16 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 			   later use */
 
 			DATA_BLOB ntlmssp_verf = data_blob(NULL, auth_len);
-			
+			BOOL store_ok;
+
 			/* save the reply away, for use a little later */
 			prs_copy_data_out((char *)ntlmssp_verf.data, &auth_verf, auth_len);
 
+			store_ok = (NT_STATUS_IS_OK(ntlmssp_store_response(cli->ntlmssp_pipe_state, 
+									   ntlmssp_verf)));
 
-			return (NT_STATUS_IS_OK(ntlmssp_client_store_response(cli->ntlmssp_pipe_state, 
-									      ntlmssp_verf)));
+			data_blob_free(&ntlmssp_verf);
+			return store_ok;
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
 			/* nothing to do here - we don't seem to be able to 
@@ -307,12 +310,12 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				DEBUG(1, ("Can't unseal - data_len < 0!!\n"));
 				return False;
 			}
-			nt_status = ntlmssp_client_unseal_packet(cli->ntlmssp_pipe_state, 
+			nt_status = ntlmssp_unseal_packet(cli->ntlmssp_pipe_state, 
 								 (unsigned char *)reply_data, data_len,
 								 &sig);
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
-			nt_status = ntlmssp_client_check_packet(cli->ntlmssp_pipe_state, 
+			nt_status = ntlmssp_check_packet(cli->ntlmssp_pipe_state, 
 								(const unsigned char *)reply_data, data_len,
 								&sig);
 		}
@@ -674,9 +677,9 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 		DATA_BLOB request;
 
 		DEBUG(5, ("Processing NTLMSSP Negotiate\n"));
-		nt_status = ntlmssp_client_update(cli->ntlmssp_pipe_state,
-						  null_blob,
-						  &request);
+		nt_status = ntlmssp_update(cli->ntlmssp_pipe_state,
+					   null_blob,
+					   &request);
 
 		if (!NT_STATUS_EQUAL(nt_status, 
 				     NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -777,9 +780,9 @@ static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
 
 	/* The response is picked up from the internal cache,
 	   where it was placed by the rpc_auth_pipe() code */
-	nt_status = ntlmssp_client_update(cli->ntlmssp_pipe_state,
-					  ntlmssp_null_response,
-					  &ntlmssp_reply);
+	nt_status = ntlmssp_update(cli->ntlmssp_pipe_state,
+				   ntlmssp_null_response,
+				   &ntlmssp_reply);
 	
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return nt_status;
@@ -820,7 +823,7 @@ static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
 	}
 
 	if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
-		nt_status = ntlmssp_client_sign_init(cli->ntlmssp_pipe_state);
+		nt_status = ntlmssp_sign_init(cli->ntlmssp_pipe_state);
 		
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
@@ -994,7 +997,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				 */
 				if (cli->pipe_auth_flags & AUTH_PIPE_SEAL) {
 					
-					nt_status = ntlmssp_client_seal_packet(cli->ntlmssp_pipe_state,
+					nt_status = ntlmssp_seal_packet(cli->ntlmssp_pipe_state,
 									       (unsigned char*)prs_data_p(&sec_blob),
 									       data_and_padding_size,
 									       &sign_blob);
@@ -1005,7 +1008,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				} 
 				else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 					
-					nt_status = ntlmssp_client_sign_packet(cli->ntlmssp_pipe_state,
+					nt_status = ntlmssp_sign_packet(cli->ntlmssp_pipe_state,
 									       (unsigned char*)prs_data_p(&sec_blob),
 									       data_and_padding_size, &sign_blob);
 					if (!NT_STATUS_IS_OK(nt_status)) {

@@ -30,6 +30,7 @@ enum NTLMSSP_ROLE
 /* NTLMSSP message types */
 enum NTLM_MESSAGE_TYPE
 {
+	NTLMSSP_INITIAL = 0 /* samba internal state */,
 	NTLMSSP_NEGOTIATE = 1,
 	NTLMSSP_CHALLENGE = 2,
 	NTLMSSP_AUTH      = 3,
@@ -70,29 +71,10 @@ enum NTLM_MESSAGE_TYPE
 typedef struct ntlmssp_state 
 {
 	TALLOC_CTX *mem_ctx;
-	enum NTLMSSP_ROLE role;
-	BOOL unicode;
-	char *user;
-	char *domain;
-	char *workstation;
- 	DATA_BLOB lm_resp;
-	DATA_BLOB nt_resp;
-	DATA_BLOB chal;
-	void *auth_context;
-	const uint8 *(*get_challenge)(struct ntlmssp_state *ntlmssp_state);
-	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state);
-
-	const char *(*get_global_myname)(void);
-	const char *(*get_domain)(void);
-
-	int server_role;
-	uint32 expected_state;
-} NTLMSSP_STATE;
-
-typedef struct ntlmssp_client_state 
-{
-	TALLOC_CTX *mem_ctx;
 	unsigned int ref_count;
+	enum NTLMSSP_ROLE role;
+	enum server_types server_role;
+	uint32 expected_state;
 
 	BOOL unicode;
 	BOOL use_ntlmv2;
@@ -102,30 +84,78 @@ typedef struct ntlmssp_client_state
 	char *password;
 	char *server_domain;
 
-	const char *(*get_global_myname)(void);
-	const char *(*get_domain)(void);
+	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
-	DATA_BLOB chal;
+	DATA_BLOB chal; /* Random challenge as input into the actual NTLM (or NTLM2) authentication */
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 	
-	uint32 neg_flags;
+	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 	
+	void *auth_context;
+
+	/**
+	 * Callback to get the 'challenge' used for NTLM authentication.  
+	 *
+	 * @param ntlmssp_state This structure
+	 * @return 8 bytes of challnege data, determined by the server to be the challenge for NTLM authentication
+	 *
+	 */
+	const uint8 *(*get_challenge)(const struct ntlmssp_state *ntlmssp_state);
+
+	/**
+	 * Callback to find if the challenge used by NTLM authentication may be modified 
+	 *
+	 * The NTLM2 authentication scheme modifies the effective challenge, but this is not compatiable with the
+	 * current 'security=server' implementation..  
+	 *
+	 * @param ntlmssp_state This structure
+	 * @return Can the challenge be set to arbitary values?
+	 *
+	 */
+	BOOL (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
+
+	/**
+	 * Callback to set the 'challenge' used for NTLM authentication.  
+	 *
+	 * The callback may use the void *auth_context to store state information, but the same value is always available
+	 * from the DATA_BLOB chal on this structure.
+	 *
+	 * @param ntlmssp_state This structure
+	 * @param challange 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
+	 *
+	 */
+	NTSTATUS (*set_challenge)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
+
+	/**
+	 * Callback to check the user's password.  
+	 *
+	 * The callback must reads the feilds of this structure for the information it needs on the user 
+	 * @param ntlmssp_state This structure
+	 * @param nt_session_key If an NT session key is returned by the authentication process, return it here
+	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
+	 *
+	 */
+	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+
+	const char *(*get_global_myname)(void);
+	const char *(*get_domain)(void);
+
 	/* SMB Signing */
 	
 	uint32 ntlmssp_seq_num;
 
 	/* ntlmv2 */
-	char cli_sign_const[16];
-	char cli_seal_const[16];
-	char srv_sign_const[16];
-	char srv_seal_const[16];
+	char send_sign_const[16];
+	char send_seal_const[16];
+	char recv_sign_const[16];
+	char recv_seal_const[16];
 
-	unsigned char cli_sign_hash[258];
-	unsigned char cli_seal_hash[258];
-	unsigned char srv_sign_hash[258];
-	unsigned char srv_seal_hash[258];
+	unsigned char send_sign_hash[258];
+	unsigned char send_seal_hash[258];
+	unsigned char recv_sign_hash[258];
+	unsigned char recv_seal_hash[258];
 
 	/* ntlmv1 */
 	unsigned char ntlmssp_hash[258];
@@ -135,5 +165,5 @@ typedef struct ntlmssp_client_state
 	   Store it here, until we need it */
 	DATA_BLOB stored_response; 
 	
-} NTLMSSP_CLIENT_STATE;
+} NTLMSSP_STATE;
 

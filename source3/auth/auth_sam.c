@@ -33,7 +33,7 @@
 static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
-				 uint8 user_sess_key[16])
+				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
 	uchar p24[24];
@@ -56,7 +56,8 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
 	if (user_sess_key != NULL) {
-		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
+		*user_sess_key = data_blob(NULL, 16);
+		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key->data);
 	}
 	
 	
@@ -83,7 +84,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
-				 uint8 user_sess_key[16])
+				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
 	uchar kr[16];
@@ -120,7 +121,8 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 
 	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
 	if (user_sess_key != NULL) {
-		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);
+		*user_sess_key = data_blob(NULL, 16);
+		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key->data);
 	}
 
 #if DEBUG_PASSWORD
@@ -148,7 +150,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
 				SAM_ACCOUNT *sampass, 
 				const auth_usersupplied_info *user_info, 
-				uint8 user_sess_key[16])
+				DATA_BLOB *user_sess_key, 
+				DATA_BLOB *lm_sess_key)
 {
 	uint16 acct_ctrl;
 	const uint8 *nt_pw, *lm_pw;
@@ -225,6 +228,16 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			if (smb_pwd_check_ntlmv1(&user_info->nt_resp, 
 						 nt_pw, &auth_context->challenge,
 						 user_sess_key)) {
+				/* The LM session key for this response is not very secure, 
+				   so use it only if we otherwise allow LM authentication */
+				lm_pw = pdb_get_lanman_passwd(sampass);
+
+				if (lp_lanman_auth() && lm_pw) {
+					uint8 first_8_lm_hash[16];
+					memcpy(first_8_lm_hash, lm_pw, 8);
+					memset(first_8_lm_hash + 8, '\0', 8);
+					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				}
 				return NT_STATUS_OK;
 			} else {
 				DEBUG(3,("sam_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
@@ -252,7 +265,12 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			DEBUG(4,("sam_password_ok: Checking LM password\n"));
 			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
 						 lm_pw, &auth_context->challenge,
-						 user_sess_key)) {
+						 NULL)) {
+				uint8 first_8_lm_hash[16];
+				memcpy(first_8_lm_hash, lm_pw, 8);
+				memset(first_8_lm_hash + 8, '\0', 8);
+				*user_sess_key = data_blob(first_8_lm_hash, 16);
+				*lm_sess_key = data_blob(first_8_lm_hash, 16);
 				return NT_STATUS_OK;
 			}
 		}
@@ -272,7 +290,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
-					  user_sess_key)) {
+					  NULL)) {
 			return NT_STATUS_OK;
 		}
 
@@ -281,7 +299,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  "",
-					  user_sess_key)) {
+					  NULL)) {
 			return NT_STATUS_OK;
 		}
 
@@ -292,7 +310,19 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		if (lp_ntlm_auth()) {
 			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
 						 nt_pw, &auth_context->challenge,
-						 user_sess_key)) {
+						 NULL)) {
+				/* The session key for this response is still very odd.  
+				   It not very secure, so use it only if we otherwise 
+				   allow LM authentication */
+				lm_pw = pdb_get_lanman_passwd(sampass);
+			
+				if (lp_lanman_auth() && lm_pw) {
+					uint8 first_8_lm_hash[16];
+					memcpy(first_8_lm_hash, lm_pw, 8);
+					memset(first_8_lm_hash + 8, '\0', 8);
+					*user_sess_key = data_blob(first_8_lm_hash, 16);
+					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				}
 				return NT_STATUS_OK;
 			}
 			DEBUG(3,("sam_password_ok: LM password, NT MD4 password in LM field and LMv2 failed for user %s\n",pdb_get_username(sampass)));
@@ -301,7 +331,6 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			DEBUG(3,("sam_password_ok: LM password and LMv2 failed for user %s, and NT MD4 password in LM field not permitted\n",pdb_get_username(sampass)));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
-			
 	}
 		
 	/* Should not be reached, but if they send nothing... */
@@ -421,8 +450,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
-	uint8 user_sess_key[16];
-	const uint8* lm_hash;
+	DATA_BLOB user_sess_key = data_blob(NULL, 0);
+	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -446,7 +475,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
+	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, 
+				    user_info, &user_sess_key, &lm_sess_key);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
@@ -465,12 +495,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	lm_hash = pdb_get_lanman_passwd((*server_info)->sam_account);
-	if (lm_hash) {
-		memcpy((*server_info)->first_8_lm_hash, lm_hash, 8);
-	}
-	
-	memcpy((*server_info)->session_key, user_sess_key, sizeof(user_sess_key));
+	(*server_info)->nt_session_key = user_sess_key;
+	(*server_info)->lm_session_key = lm_sess_key;
 
 	return nt_status;
 }

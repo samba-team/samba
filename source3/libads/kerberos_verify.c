@@ -162,7 +162,7 @@ static BOOL setup_keytab(krb5_context context,
 NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep,
-			   uint8 session_key[16])
+			   DATA_BLOB *session_key)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_context context = NULL;
