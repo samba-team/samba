@@ -155,10 +155,29 @@ update_utmp(const char *username, const char *hostname)
 }
 
 static void
+checknologin(void)
+{
+    FILE *f;
+    char buf[1024];
+
+    f = fopen(_PATH_NOLOGIN, "r");
+    if(f == NULL)
+	return;
+    while(fgets(buf, sizeof(buf), f))
+	fputs(buf, stdout);
+    fclose(f);
+    exit(0);
+}
+
+
+static void
 do_login(struct passwd *pwd)
 {
     int rootlogin = (pwd->pw_uid == 0);
 
+    if(pwd->pw_uid != 0)
+	checknologin();
+    
     update_utmp(pwd->pw_name, remote_host ? remote_host : "");
 #ifdef HAVE_SETLOGIN
     if(setlogin(pwd->pw_name)){
