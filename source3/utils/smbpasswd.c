@@ -100,7 +100,7 @@ static int join_domain(char *domain, char *remote)
 	 * Write the old machine account password.
 	 */
 	
-	if(!set_trust_account_password(domain,  orig_trust_passwd_hash)) {              
+	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
 		fprintf(stderr, "Unable to write the machine account password for \
 machine %s in domain %s.\n", global_myname, domain);
 		return 1;
