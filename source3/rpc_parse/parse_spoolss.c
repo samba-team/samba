@@ -5832,7 +5832,7 @@ BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps
 
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
 	depth++;
 
@@ -6672,5 +6672,46 @@ BOOL smb_io_printprocessordirectory_1(char *desc, NEW_BUFFER *buffer, PRINTPROCE
 	if (!smb_io_unistr(desc, &info->name, ps, depth))
 		return False;
 
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle, 
+			    int level, FORM *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->level = level;
+	q_u->level2 = level;
+	memcpy(&q_u->form, form, sizeof(FORM));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
+			    int level, FORM *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->level = level;
+	q_u->level2 = level;
+	memcpy(&q_u->form, form, sizeof(FORM));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, char *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	init_unistr2(&q_u->name, form, strlen(form) + 1);
 	return True;
 }
