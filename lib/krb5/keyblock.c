@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,8 +42,9 @@ void
 krb5_free_keyblock_contents(krb5_context context,
 			    krb5_keyblock *keyblock)
 {
-    if(keyblock){
-	memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
+    if(keyblock) {
+	if (keyblock->keyvalue.data != NULL)
+	    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
 	krb5_data_free (&keyblock->keyvalue);
     }
 }
