@@ -302,7 +302,7 @@ static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn,
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
 static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
-			       struct winbindd_cm_conn *new_conn, BOOL keep_mutex)
+			       struct winbindd_cm_conn *new_conn)
 {
 	struct failed_connection_cache *fcc;
 	NTSTATUS result;
@@ -310,7 +310,6 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	struct in_addr dc_ip;
 	int i;
 	BOOL retry = True;
-	BOOL got_mutex = False;
 
 	ZERO_STRUCT(dc_ip);
 
@@ -366,24 +365,21 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	      new_conn->controller, global_myname(), ipc_domain, ipc_username));
 
 	for (i = 0; retry && (i < 3); i++) {
-		
-		if (!secrets_named_mutex(new_conn->controller, WINBIND_SERVER_MUTEX_WAIT_TIME, &new_conn->mutex_ref_count)) {
+		BOOL got_mutex;
+		if (!(got_mutex = secrets_named_mutex(new_conn->controller, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
 			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
 			result = NT_STATUS_POSSIBLE_DEADLOCK;
 			continue;
 		}
 
-		got_mutex = True;
-
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
 			&dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
-			ipc_password, 0, &retry);
+					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, &retry);
+		
+		secrets_named_mutex_release(new_conn->controller);
 
 		if (NT_STATUS_IS_OK(result))
 			break;
-
-		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
-		got_mutex = False;
 	}
 
 	SAFE_FREE(ipc_username);
@@ -391,8 +387,6 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		if (got_mutex)
-			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		add_failed_connection_entry(new_conn, result);
 		return result;
 	}
@@ -407,16 +401,12 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * if the PDC is an NT4 box.   but since there is only one 2k 
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
-		if (got_mutex)
-			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		if ( !is_win2k_pipe(pipe_index) )
 			add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
 
-	if ((got_mutex) && !keep_mutex)
-		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 	return NT_STATUS_OK;
 }
 
@@ -455,7 +445,7 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 /* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
 
 static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_name,
-		struct winbindd_cm_conn **conn_out, BOOL keep_mutex) 
+		struct winbindd_cm_conn **conn_out) 
 {
 	struct winbindd_cm_conn *conn, conn_temp;
 	NTSTATUS result;
@@ -472,12 +462,6 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 				SAFE_FREE(conn);
 				conn = &conn_temp;  /* Just to keep the loop moving */
 			} else {
-				if (keep_mutex) {
-					if (!secrets_named_mutex(conn->controller,
-							WINBIND_SERVER_MUTEX_WAIT_TIME, &conn->mutex_ref_count))
-						DEBUG(0,("get_connection_from_cache: mutex grab failed for %s\n",
-							conn->controller));
-				}
 				break;
 			}
 		}
@@ -489,7 +473,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 		
 		ZERO_STRUCTP(conn);
 		
-		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn, keep_mutex))) {
+		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
 			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
 				  domain, pipe_name, nt_errstr(result)));
 		        SAFE_FREE(conn);
@@ -517,7 +501,7 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	ZERO_STRUCT( ctr );
 	
 	
-	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn, False)) ) {
+	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
 		DEBUG(5, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
 			  domain, nt_errstr(result)));
 		return False;
@@ -555,7 +539,7 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn, False)))
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
 		return NULL;
 
 	/* This *shitty* code needs scrapping ! JRA */
@@ -571,7 +555,7 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn, False)))
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
 				return NULL;
 
 			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
@@ -603,7 +587,7 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn, False)))
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
 		return NULL;
 	
 	/* This *shitty* code needs scrapping ! JRA */
@@ -618,7 +602,7 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn, False)))
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
 				return NULL;
 
 			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
@@ -875,19 +859,27 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct winbindd_cm_conn *conn;
 	uint32 neg_flags = 0x000001ff;
+	fstring lock_name;
+	BOOL got_mutex;
 
 	if (!cli)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	/* Open an initial conection - keep the mutex. */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn, True)))
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
 		return result;
 	
+	snprintf(lock_name, sizeof(lock_name), "NETLOGON\\%s", conn->controller);
+
+	if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
+		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
+	}
+			
 	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
 
-	if (conn->mutex_ref_count)
-		secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
+	if (got_mutex)
+		secrets_named_mutex_release(lock_name);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
@@ -895,15 +887,19 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 		
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) {
-
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn, True)))
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
 				return result;
+			
+			snprintf(lock_name, sizeof(lock_name), "NETLOGON\\%s", conn->controller);
+			if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
+				DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
+			}
 			
 			/* Try again */
 			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
 
-			if (conn->mutex_ref_count)
-				secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
+			if (got_mutex)
+				secrets_named_mutex_release(lock_name);
 		}
 		
 		if (!NT_STATUS_IS_OK(result)) {
