@@ -2,6 +2,7 @@
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+# Copyright Andrew Barteltt 2002
 ###########################################################################
 
 prefix=@prefix@
@@ -144,8 +145,12 @@ PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/kerberos.o libads/ldap_user.o \
-	     libads/ads_struct.o libads/ads_status.o passdb/secrets.o \
-             libads/util.o libads/disp_sec.o
+	     libads/ads_struct.o libads/ads_status.o \
+             libads/disp_sec.o
+
+LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
+
+SECRETS_OBJ = passdb/secrets.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
@@ -157,7 +162,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/unexpected.o libsmb/doserr.o \
-	     $(RPC_PARSE_OBJ1) $(LIBADS_OBJ)
+	     $(RPC_PARSE_OBJ1)
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_wkssvc.o \
@@ -169,7 +174,8 @@ LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
-                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
+                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
+		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
                  rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
@@ -191,10 +197,12 @@ RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
-PASSDB_OBJ = passdb/passdb.o passdb/pdb_interface.o passdb/pdb_get_set.o \
+PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
+
+PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
-		passdb/pdb_nisplus.o passdb/pdb_unix.o passdb/util_sam_sid.o
+		passdb/pdb_nisplus.o passdb/pdb_unix.o passdb/util_sam_sid.o 
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -243,10 +251,11 @@ PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
 MSDFS_OBJ = msdfs/msdfs.o 
 
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-           $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
+           $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
-	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) $(LIBMSRPC_OBJ)
+	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) $(LIBMSRPC_OBJ) \
+	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -271,11 +280,12 @@ WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
 WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
 	    $(PROFILE_OBJ) $(LIB_OBJ)
 
-SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
-           web/swat.o web/neg_lang.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) \
+SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
+           web/swat.o web/neg_lang.o 
+
+SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
-	   smbwrapper/shared.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -290,7 +300,7 @@ SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ)
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) 
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -298,15 +308,15 @@ TESTPARM_OBJ = utils/testparm.o \
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
                $(LIB_OBJ)
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
+SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
-		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ)
+		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
 
 SMBGROUPEDIT_OBJ = utils/smbgroupedit.o $(GROUPDB_OBJ) $(PARAM_OBJ) \
-		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
@@ -317,55 +327,65 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
-             $(READLINE_OBJ) $(GROUPDB_OBJ)
+             $(READLINE_OBJ) $(GROUPDB_OBJ) \
+	     $(LIBADS_OBJ) $(SECRETS_OBJ)
 
 SAMSYNC_OBJ1 = rpcclient/samsync.o rpcclient/display_sec.o
 
 SAMSYNC_OBJ = $(SAMSYNC_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
-             $(GROUPDB_OBJ)
+             $(GROUPDB_OBJ) $(SECRETS_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
 
-SMBW_OBJ = smbwrapper/smbw.o \
+SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
-		smbwrapper/smbw_cache.o \
-		$(LIBSMB_OBJ) $(PARAM_OBJ) \
+		smbwrapper/smbw_cache.o
+
+SMBW_OBJ = $(SMBW_OBJ1) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
-SMBWRAPPER_OBJ = $(SMBW_OBJ) smbwrapper/wrapped.o
+SMBWRAPPER_OBJ1 = smbwrapper/wrapped.o
+
+SMBWRAPPER_OBJ = $(SMBW_OBJ) $(SMBWRAPPER_OBJ1)
 
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
-CLIENT_OBJ = client/client.o client/clitar.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(READLINE_OBJ)
+CLIENT_OBJ1 = client/client.o client/clitar.o 
 
-NET_OBJ = utils/net.o utils/net_ads.o utils/net_help.o \
-          utils/net_rap.o utils/net_rpc.o \
-	utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
-	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-	$(GROUPDB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+             $(READLINE_OBJ) 
+
+NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
+	   utils/net_rap.o utils/net_rpc.o \
+	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o
+
+NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+	  $(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
+	  $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
 
 
-CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
 
 MOUNT_OBJ = client/smbmount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
 
 MNT_OBJ = client/smbmnt.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(LIB_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(LIB_OBJ)
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
-SMBTORTURE_OBJ = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
-		torture/denytest.o torture/mangle_test.o \
+SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
+		torture/denytest.o torture/mangle_test.o 
+
+SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) \
 	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
@@ -385,7 +405,7 @@ LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-		 $(LIBMSRPC_OBJ) $(GROUPDB_OBJ)
+		 $(LIBMSRPC_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
 
 TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
@@ -397,16 +417,20 @@ RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ)
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 
 SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(AUTH_OBJ) $(NET_OBJ)
+PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
+	    $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
+	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
+	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
+	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
+	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) $(READLINE_OBJ) \
+	    $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -447,13 +471,13 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_dual.o
 
 WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
+		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(GROUPDB_OBJ) $(PROFILE_OBJ) $(UNIGRP_OBJ)
+		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
+		$(SECRETS_OBJ) $(LIBADS_OBJ)
 
-WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
-	passdb/secrets.o
+WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
 
@@ -754,11 +778,11 @@ nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
-		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
+bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) $(SECRETS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
-		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
@@ -844,17 +868,26 @@ clean: delheaders
 # exist, not necessarily that they are up to date.  Since they're
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h nsswitch/winbindd_proto.h
+proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
+	nsswitch/winbindd_proto.h web/swat_proto.h \
+	client/client_proto.h utils/net_proto.h
 
 delheaders:
 	@echo Removing prototype headers
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
 	@/bin/rm -f $(srcdir)/include/wrepld_proto.h $(srcdir)/nsswitch/winbindd_proto.h 
-	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h nsswitch/winbindd_proto.h 
+	@/bin/rm -f $(srcdir)/web/swat_proto.h
+	@/bin/rm -f $(srcdir)/client/client_proto.h $(srcdir)/utils/net_proto.h
+
+	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h \
+	            nsswitch/winbindd_proto.h web/swat_proto.h \
+		    client/client_proto.h utils/net_proto.h
 
 include/proto.h:
 	@echo Building include/proto.h
-	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _PROTO_H_ $(builddir)/include/proto.h \
+	  $(PROTO_OBJ)
 
 include/build_env.h:
 	@echo Building include/build_env.h
@@ -871,15 +904,31 @@ nsswitch/winbindd_proto.h:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
+web/swat_proto.h: 
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _SWAT_PROTO_H_ web/swat_proto.h \
+	  $(SWAT_OBJ1)
+
+client/client_proto.h: 
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _CLIENT_PROTO_H_ client/client_proto.h \
+	  $(CLIENT_OBJ1)
+
+utils/net_proto.h: 
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
+	  $(NET_OBJ1)
+
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
 headers: 
-	$(MAKE) delheaders include/proto.h include/build_env.h include/wrepld_proto.h nsswitch/winbindd_proto.h
+	$(MAKE) delheaders include/proto.h include/build_env.h \
+	include/wrepld_proto.h nsswitch/winbindd_proto.h \
+	web/swat_proto.h client/client_proto.h \
+	utils/net_proto.h
 
-proto: headers winbindd_proto 
-
-winbindd_proto: headers
+proto: headers 
 
 .PHONY: headers proto
 

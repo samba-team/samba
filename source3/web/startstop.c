@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "smb.h"
+#include "../web/swat_proto.h"
 #include "dynconfig.h"
 
 /** Need to wait for daemons to startup */
