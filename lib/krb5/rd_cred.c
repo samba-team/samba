@@ -64,16 +64,27 @@ krb5_rd_cred (krb5_context      context,
 	goto out;
     }
 
-    krb5_crypto_init(context, auth_context->remote_subkey, 0, &crypto);
-    ret = krb5_decrypt_EncryptedData(context,
-				     crypto,
-				     KRB5_KU_KRB_CRED,
-				     &cred.enc_part,
-				     &enc_krb_cred_part_data);
-    krb5_crypto_destroy(context, crypto);
-    if (ret)
-	goto out;
-    
+    if (cred.enc_part.etype == ETYPE_NULL) {  
+       /* DK: MIT GSS-API Compatibility */
+       enc_krb_cred_part_data.length = cred.enc_part.cipher.length;
+       enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;
+    } else {
+	if (auth_context->remote_subkey)
+	    krb5_crypto_init(context, auth_context->remote_subkey, 0, &crypto);
+	else
+	    krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+          /* DK: MIT rsh */
+       
+	ret = krb5_decrypt_EncryptedData(context,
+					 crypto,
+					 KRB5_KU_KRB_CRED,
+					 &cred.enc_part,
+					 &enc_krb_cred_part_data);
+       
+	krb5_crypto_destroy(context, crypto);
+	if (ret)
+	    goto out;
+    }
 
     ret = krb5_decode_EncKrbCredPart (context,
 				      enc_krb_cred_part_data.data,
@@ -86,7 +97,8 @@ krb5_rd_cred (krb5_context      context,
     /* check sender address */
 
     if (enc_krb_cred_part.s_address
-	&& auth_context->remote_address) {
+	&& auth_context->remote_address
+	&& auth_context->remote_port) {
 	krb5_address *a;
 	int cmp;
 
@@ -113,6 +125,7 @@ krb5_rd_cred (krb5_context      context,
     /* check receiver address */
 
     if (enc_krb_cred_part.r_address
+	&& auth_context->local_address
 	&& !krb5_address_compare (context,
 				  auth_context->local_address,
 				  enc_krb_cred_part.r_address)) {
