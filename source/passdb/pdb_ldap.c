@@ -1106,6 +1106,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 		       pdb_get_username(newpwd), ldap_err2string(rc),
 		       ld_error));
 		free(ld_error);
+		ldap_mods_free(mods, 1);
 		ldap_unbind(ldap_struct);
 		return False;
 	}
