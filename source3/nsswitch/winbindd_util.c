@@ -619,7 +619,9 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 void parse_domain_user(char *domuser, fstring domain, fstring user)
 {
 	char *p;
-	p = strchr(domuser,'/');
+	char *sep = lp_winbind_separator();
+	if (!sep) sep = "\\";
+	p = strchr(domuser,*sep);
 	if (!p) p = strchr(domuser,'\\');
 	if (!p) {
 		fstrcpy(domain,"");
