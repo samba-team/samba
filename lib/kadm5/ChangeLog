@@ -1,3 +1,7 @@
+2000-06-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* get_s.c: pa_* -> KRB5_PADATA_*
+
 2000-06-16  Assar Westerlund  <assar@sics.se>
 
 	* ipropd_slave.c: change default keytab to default keytab (as in

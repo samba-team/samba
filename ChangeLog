@@ -1,5 +1,7 @@
 2000-06-19  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/kerberos5.c: pa_* -> KRB5_PADATA_*
+
 	* kdc/hpropd.c: add realm override flag
 	
 	* kdc/v4_dump.c: code for reading krb4 dump files
