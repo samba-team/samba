@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    GTK+ registry frontend
    
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -752,6 +752,10 @@ static GtkWidget* create_mainwindow(void)
 				 G_CALLBACK (on_open_file_activate),
 				 discard_const_p(char, "ldb"));
 	}
+
+	separatormenuitem1 = gtk_menu_item_new ();
+	gtk_container_add (GTK_CONTAINER (menu_file_menu), separatormenuitem1);
+	gtk_widget_set_sensitive (separatormenuitem1, FALSE);
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
 	gtk_widget_set_sensitive( save, False );
