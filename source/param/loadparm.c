@@ -1753,10 +1753,24 @@ static int add_a_service(service * pservice, char *name)
 	/* if not, then create one */
 	if (i == iNumServices)
 	{
+#ifdef __INSURE__
+		service **oldservices = iNumServices ? malloc(sizeof(service *) * iNumServices) : NULL;
+
+		if (iNumServices)
+			memcpy(oldservices, ServicePtrs, sizeof(service *) * iNumServices);
+#endif
+
 		ServicePtrs =
 			(service **) Realloc(ServicePtrs,
 					     sizeof(service *) *
 					     num_to_alloc);
+#ifdef __INSURE__
+		if (iNumServices && (memcmp(oldservices, ServicePtrs, sizeof(service *) * iNumServices) != 0)) {
+			smb_panic("add_a_service: Realloc corrupted ptrs...\n");
+		}
+		safe_free(oldservices);
+#endif
+
 		if (ServicePtrs)
 			ServicePtrs[iNumServices] =
 				(service *) malloc(sizeof(service));
