@@ -589,7 +589,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 		num_written = 0;
  
 		while (num_written < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + num_written, read_ret);
+			write_ret = (*write_fn)(outfd,buf + num_written, read_ret - num_written);
  
 			if (write_ret == -1) {
 				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
