@@ -1614,7 +1614,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			}
 
 			/* write the string */
-			if (!smb_io_unistr(desc, &chaine, ps, depth)) {
+			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth)) {
 				free(chaine.buffer);
 				return False;
 			}
@@ -1669,7 +1669,10 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		
 		/* the end should be bould NULL terminated so add 
 		   the second one here */
-		chaine2[l_chaine2] = '\0';
+		if (chaine2)
+		{
+			chaine2[l_chaine2] = '\0';
+		}
 		*string=chaine2;
 
 		if(!prs_set_offset(ps, old_offset))
