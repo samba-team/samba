@@ -66,6 +66,7 @@ void *talloc(void *context, size_t size)
 		if (parent->magic != TALLOC_MAGIC) {
 			DEBUG(0,("Bad magic in context - 0x%08x\n", parent->magic));
 			free(tc);
+			smb_panic("Bad magic in talloc context");
 			return NULL;
 		}
 
@@ -172,6 +173,7 @@ void talloc_free(void *ptr)
 
 	if (tc->magic != TALLOC_MAGIC) {
 		DEBUG(0,("Bad talloc magic 0x%08x in talloc_free\n", tc->magic));
+		smb_panic("Bad talloc magic in talloc_realloc");
 		return;
 	}
 
@@ -219,8 +221,14 @@ void *talloc_realloc(void *ptr, size_t size)
 	tc = ((struct talloc_chunk *)ptr)-1;
 
 	if (tc->magic != TALLOC_MAGIC) {
-		DEBUG(0,("Bad talloc magic 0x%08x in talloc_realloc\n", tc->magic));
-		return NULL;
+		if (tc->magic == TALLOC_MAGIC_FREE) {
+			
+			DEBUG(0,("Bad talloc magic - magic 0x%08x indicates double-free in talloc_realloc\n", tc->magic));
+			smb_panic("Bad talloc magic - double-free - in talloc_realloc");
+		} else {
+			DEBUG(0,("Bad talloc magic 0x%08x in talloc_realloc\n", tc->magic));
+			smb_panic("Bad talloc magic in talloc_realloc");
+		}
 	}
 
 	/* by resetting magic we catch users of the old memory */
@@ -267,10 +275,12 @@ void *talloc_steal(void *new_ctx, void *ptr)
 
 	if (tc->magic != TALLOC_MAGIC) {
 		DEBUG(0,("Bad talloc magic 0x%08x in talloc_steal\n", tc->magic));
+		smb_panic("Bad talloc magic in talloc_steal");
 		return NULL;
 	}
 	if (new_tc->magic != TALLOC_MAGIC) {
 		DEBUG(0,("Bad new talloc magic 0x%08x in talloc_steal\n", new_tc->magic));
+		smb_panic("Bad new talloc magic in talloc_steal");
 		return NULL;
 	}
 
