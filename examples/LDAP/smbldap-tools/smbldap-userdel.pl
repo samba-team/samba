@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# $Id: smbldap-userdel.pl,v 1.1.8.3 2003/12/04 22:02:05 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -37,9 +39,9 @@ my %Options;
 my $ok = getopts('r?', \%Options);
 
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-r?] username\n";
-	print "  -r	remove home directory\n";
-	exit (1);
+  print "Usage: $0 [-r?] username\n";
+  print "  -r	remove home directory\n";
+  exit (1);
 }
 
 # Read only first @ARGV
@@ -48,34 +50,34 @@ my $user = $ARGV[0];
 my $dn;
 # user must not exist in LDAP
 if (!defined($dn=get_user_dn($user))) {
-    print "$0: user $user does not exist\n";
-    exit (6);
+  print "$0: user $user does not exist\n";
+  exit (6);
 }
 
 if ($< != 0) {
-    print "You must be root to delete an user\n";
-    exit (1);
+  print "You must be root to delete an user\n";
+  exit (1);
 }
 
 my $homedir;
 if (defined($Options{'r'})) {
-    $homedir=get_homedir($user);
+  $homedir=get_homedir($user);
 }
 
 # remove user from groups
 my $groups = find_groups_of $user;
-my @grplines = split(/\n/, $groups);
+my @grplines = split(/\n/,$groups);
 
 my $grp;
 foreach $grp (@grplines) {
-    my $gname = "";
-    if ( $grp =~ /dn: cn=([^,]+),/) {
+  my $gname = "";
+  if ( $grp =~ /dn: cn=([^,]+),/) {
 	$gname = $1;
 	#print "xx $gname\n";
-    }
-    if ($gname ne "") {
+  }
+  if ($gname ne "") {
 	group_remove_member($gname, $user);
-    }
+  }
 }
 
 # XXX
@@ -83,9 +85,9 @@ delete_user($user);
 
 # delete dir -- be sure that homeDir is not a strange value
 if (defined($Options{'r'})) {
-    if ($homedir !~ /^\/dev/ and $homedir !~ /^\/$/) {
+  if ($homedir !~ /^\/dev/ and $homedir !~ /^\/$/) {
 	system "rm -rf $homedir";
-    }
+  }
 }
 
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";

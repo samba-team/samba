@@ -1,5 +1,7 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 
+# $Id: smbldap-usermod.pl,v 1.1.8.3 2003/12/04 22:02:05 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -29,48 +31,48 @@ use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
-
 #####################
 
 use Getopt::Std;
 my %Options;
 my $nscd_status;
 
-my $ok = getopts('A:B:C:D:E:F:H:IJN:S:xme:f:u:g:G:d:l:s:c:ok:?h', \%Options);
+my $ok = getopts('A:B:C:D:E:F:H:IJN:S:Pame:f:u:g:G:d:l:s:c:ok:?h', \%Options);
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) || ($Options{'h'}) ) {
   print "Usage: $0 [-awmugdsckxABCDEFGHI?h] username\n";
   print "Available options are:\n";
-	print "  -c	gecos\n";
-	print "  -d	home directory\n";
-	#print "  -m	move home directory\n";
-	#print "  -f	inactive days\n";
-	print "  -u	uid\n";
-	print "  -o	uid can be non unique\n";
-	print "  -g	gid\n";
-	print "  -G	supplementary groups (comma separated)\n";
-	print "  -l	login name\n";
-	print "  -s	shell\n";
+  print "  -c    gecos\n";
+  print "  -d    home directory\n";
+  #print "  -m    move home directory\n";
+  #print "  -f    inactive days\n";
+  print "  -u    uid\n";
+  print "  -o    uid can be non unique\n";
+  print "  -g    gid\n";
+  print "  -G    supplementary groups (comma separated)\n";
+  print "  -l    login name\n";
+  print "  -s    shell\n";
   print "  -N    canonical name\n";
   print "  -S    surname\n";
+  print "  -P    ends by invoking smbldap-passwd.pl\n";
   print " For samba users:\n";
+  print "  -a    add sambaSAMAccount objectclass\n";
   print "  -e    expire date (\"YYYY-MM-DD HH:MM:SS\")\n";
-	print "  -x	creates rid and primaryGroupID in hex instead of decimal (for Samba 2.2.2 unpatched only)\n";
-	print "  -A	can change password ? 0 if no, 1 if yes\n";
-	print "  -B	must change password ? 0 if no, 1 if yes\n";
-	print "  -C	sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
-	print "  -D	sambaHomeDrive (letter associated with home share, like 'H:')\n";
-	print "  -E	sambaLogonScript (DOS script to execute on login)\n";
-	print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
-	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
-	print "  -I	disable an user. Can't be used with -H or -J\n";
-	print "  -J	enable an user. Can't be used with -H or -I\n";
+  print "  -A    can change password ? 0 if no, 1 if yes\n";
+  print "  -B    must change password ? 0 if no, 1 if yes\n";
+  print "  -C    sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
+  print "  -D    sambaHomeDrive (letter associated with home share, like 'H:')\n";
+  print "  -E    sambaLogonScript (DOS script to execute on login)\n";
+  print "  -F    sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
+  print "  -H    sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
+  print "  -I    disable an user. Can't be used with -H or -J\n";
+  print "  -J    enable an user. Can't be used with -H or -I\n";
   print "  -?|-h show this help message\n";
-	exit (1);
+  exit (1);
 }
 
 if ($< != 0) {
-    print "You must be root to modify an user\n";
-    exit (1);
+  print "You must be root to modify an user\n";
+  exit (1);
 }
 
 # Read only first @ARGV
@@ -79,13 +81,13 @@ my $user = $ARGV[0];
 # Read user data
 my $user_entry = read_user_entry($user);
 if (!defined($user_entry)) {
-    print "$0: user $user doesn't exist\n";
-    exit (1);
+  print "$0: user $user doesn't exist\n";
+  exit (1);
 }
 
 my $samba = 0;
 if (grep ($_ =~ /^sambaSamAccount$/i, $user_entry->get_value('objectClass'))) {
-    $samba = 1;
+  $samba = 1;
 }
 
 # get the dn of the user
@@ -93,64 +95,94 @@ my $dn= $user_entry->dn();
 
 my $tmp;
 my @mods;
+if (defined($tmp = $Options{'a'})) {
+	# Let's connect to the directory first
+	my $ldap_master=connect_ldap_master();
+        my $winmagic = 2147483647;
+        my $valpwdcanchange = 0;
+        my $valpwdmustchange = $winmagic;
+        my $valpwdlastset = 0; 
+        my $valacctflags = "[UX]";
+	my $user_entry=read_user_entry($user);
+	my $uidNumber = $user_entry->get_value('uidNumber');
+	my $userRid = 2 * $uidNumber + 1000;
+	# apply changes
+	my $modify = $ldap_master->modify ( "$dn",
+                                                                                changes => [
+                                                                                                        add => [objectClass => 'sambaSAMAccount'],
+                                                                                                        add => [sambaPwdLastSet => "$valpwdlastset"],
+                                                                                                        add => [sambaLogonTime => '0'],
+                                                                                                        add => [sambaLogoffTime => '2147483647'],
+                                                                                                        add => [sambaKickoffTime => '2147483647'],
+                                                                                                        add => [sambaPwdCanChange => "$valpwdcanchange"],
+                                                                                                        add => [sambaPwdMustChange => "$valpwdmustchange"],
+                                                                                                        add => [displayName => "$_userGecos"],
+                                                                                                        add => [sambaSID=> "$SID-$userRid"],
+                                                                                                        add => [sambaAcctFlags => "$valacctflags"],
+                                                                                                   ]
+								  );
+	$modify->code && warn "failed to modify entry: ", $modify->error ;
+}
 
 # Process options
 my $changed_uid;
 my $_userUidNumber;
 my $_userRid;
 if (defined($tmp = $Options{'u'})) {
-    if (defined($Options{'o'})) {
+  if (defined($Options{'o'})) {
 	$nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 	
 	if ($nscd_status == 0) {
-	    system "/etc/init.d/nscd stop > /dev/null 2>&1";
+	  system "/etc/init.d/nscd stop > /dev/null 2>&1";
 	}
 
 	if (getpwuid($tmp)) {
-	    if ($nscd_status == 0) {
+	  if ($nscd_status == 0) {
 		system "/etc/init.d/nscd start > /dev/null 2>&1";
-	    }
+	  }
 
-	    print "$0: uid number $tmp exists\n";
-	    exit (6);
+	  print "$0: uid number $tmp exists\n";
+	  exit (6);
 	}
 	if ($nscd_status == 0) {
-	    system "/etc/init.d/nscd start > /dev/null 2>&1";
+	  system "/etc/init.d/nscd start > /dev/null 2>&1";
 	}
 
-    }
+  }
   push(@mods, 'uidNumber', $tmp);
-    $_userUidNumber = $tmp;
+  $_userUidNumber = $tmp;
   if ($samba) {
     # as rid we use 2 * uid + 1000
     my $_userRid = 2 * $_userUidNumber + 1000;
     if (defined($Options{'x'})) {
-	$_userRid= sprint("%x", $_userRid);
+      $_userRid= sprint("%x", $_userRid);
     }
     push(@mods, 'sambaSID', $SID.'-'.$_userRid);
-    }
-    $changed_uid = 1;
+  }
+  $changed_uid = 1;
 }
 
 my $changed_gid;
 my $_userGidNumber;
-my $_userGroupRid;
+my $_userGroupSID;
 if (defined($tmp = $Options{'g'})) {
-    $_userGidNumber = parse_group($tmp);
-    if ($_userGidNumber < 0) {
+  $_userGidNumber = parse_group($tmp);
+  if ($_userGidNumber < 0) {
 	print "$0: group $tmp doesn't exist\n";
 	exit (6);
-    }
+  }
   push(@mods, 'gidNumber', $_userGidNumber);
   if ($samba) {
-# as grouprid we use 2 * gid + 1001
-    my $_userGroupRid = 2 * $_userGidNumber + 1001;
-    if (defined($Options{'x'})) {
-	$_userGroupRid = sprint("%x", $_userGroupRid);
+    # as grouprid we use the sambaSID attribute's value of the group
+    my $group_entry = read_group_entry_gid($_userGidNumber);
+    my $_userGroupSID = $group_entry->get_value('sambaSID');
+    unless ($_userGroupSID) {
+      print "$0: unknown group SID not set for unix group $_userGidNumber\n";
+      exit (7);
     }
-    push(@mods, 'sambaPrimaryGroupSid', $SID.'-'.$_userGroupRid);
-    }
-    $changed_gid = 1;
+    push(@mods, 'sambaPrimaryGroupSid', $_userGroupSID);
+  }
+  $changed_gid = 1;
 }
 
 if (defined($tmp = $Options{'s'})) {
@@ -158,7 +190,7 @@ if (defined($tmp = $Options{'s'})) {
 }
 
 
-if (defined($tmp = $Options{'c'})) { 
+if (defined($tmp = $Options{'c'})) {
   push(@mods, 'gecos' => $tmp,
 	   'description' => $tmp);
   if ($samba == 1) {
@@ -180,24 +212,24 @@ if (defined($tmp = $Options{'S'})) {
 
 if (defined($tmp = $Options{'G'})) {
 
-    # remove user from old groups
-    my $groups = find_groups_of $user;
-    my @grplines = split(/\n/, $groups);
+  # remove user from old groups
+  my $groups = find_groups_of $user;
+  my @grplines = split(/\n/,$groups);
 
-    my $grp;
-    foreach $grp (@grplines) {
+  my $grp;
+  foreach $grp (@grplines) {
 	my $gname = "";
 	if ( $grp =~ /dn: cn=([^,]+),/) {
-	    $gname = $1;
-	    #print "xx $gname\n";
+	  $gname = $1;
+	  #print "xx $gname\n";
 	}
 	if ($gname ne "") {
-	    group_remove_member($gname, $user);
+	  group_remove_member($gname, $user);
 	}
-    }
+  }
 
-    # add user to new groups
-    add_grouplist_user($tmp, $user);
+  # add user to new groups
+  add_grouplist_user($tmp, $user);
 }
 
 #
@@ -212,7 +244,7 @@ if (defined($tmp = $Options{'G'})) {
 my $attr;
 my $winmagic = 2147483647;
 
-my $samba = is_samba_user($user);
+$samba = is_samba_user($user);
 
 if (defined($tmp = $Options{'e'})) {
   if ($samba == 1) {
@@ -234,9 +266,9 @@ if (defined($tmp = $Options{'A'})) {
       $_sambaPwdCanChange=$winmagic;
     }
     push(@mods, 'sambaPwdCanChange' => $_sambaPwdCanChange);
-    } else {
+  } else {
   	print "User $user is not a samba user\n";
-    }
+  }
 }
 
 my $_sambaPwdMustChange;
@@ -244,13 +276,31 @@ if (defined($tmp = $Options{'B'})) {
   if ($samba == 1) {
     if ($tmp != 0) {
       $_sambaPwdMustChange=0;
+      # To force a user to change his password:
+      # . the attribut sambaPwdLastSet must be != 0
+      # . the attribut sambaAcctFlags must not match the 'X' flag
+      my $_sambaAcctFlags;
+      my $flags = $user_entry->get_value('sambaAcctFlags');
+      if ( $flags =~ /X/ ) {
+      	my $letters;
+      	if ($flags =~ /(\w+)/) {
+  		$letters = $1;
+      	}
+      	$letters =~ s/X//;
+  	$_sambaAcctFlags="\[$letters\]";
+      	push(@mods, 'sambaAcctFlags' => $_sambaAcctFlags);
+      }
+      my $_sambaPwdLastSet = $user_entry->get_value('sambaPwdLastSet');
+      if ($_sambaPwdLastSet == 0) {
+	push(@mods, 'sambaPwdLastSet' => $winmagic);
+      }
     } else {
       $_sambaPwdMustChange=$winmagic;
     }
     push(@mods, 'sambaPwdMustChange' => $_sambaPwdMustChange);
-    } else {
+  } else {
   	print "User $user is not a samba user\n";
-    }
+  }
 }
 
 if (defined($tmp = $Options{'C'})) {
@@ -292,7 +342,7 @@ if (defined($tmp = $Options{'F'})) {
 
 if ($samba == 1 and (defined $Options{'H'} or defined $Options{'I'} or defined $Options{'J'})) {
   my $_sambaAcctFlags;
-if (defined($tmp = $Options{'H'})) {
+  if (defined($tmp = $Options{'H'})) {
     #$tmp =~ s/\\/\\\\/g;
     $_sambaAcctFlags=$tmp;
   } else {
@@ -301,24 +351,24 @@ if (defined($tmp = $Options{'H'})) {
     $flags = $user_entry->get_value('sambaAcctFlags');
 
     if (defined($tmp = $Options{'I'})) {
-    if ( !($flags =~ /D/) ) {
-	my $letters;
-	if ($flags =~ /(\w+)/) {
-	    $letters = $1;
-	}
+      if ( !($flags =~ /D/) ) {
+		my $letters;
+		if ($flags =~ /(\w+)/) {
+		  $letters = $1;
+		}
 		$_sambaAcctFlags="\[D$letters\]";
-    }
-} elsif (defined($tmp = $Options{'J'})) {
-    if ( $flags =~ /D/ ) {
-	my $letters;
-	if ($flags =~ /(\w+)/) {
-	    $letters = $1;
-	}
-	$letters =~ s/D//;
+      }
+    } elsif (defined($tmp = $Options{'J'})) {
+	  if ( $flags =~ /D/ ) {
+		my $letters;
+		if ($flags =~ /(\w+)/) {
+		  $letters = $1;
+		}
+		$letters =~ s/D//;
 		$_sambaAcctFlags="\[$letters\]";
 	  }
-    }
-}
+	}
+  }
 
 
   if ("$_sambaAcctFlags" ne '') {
@@ -344,7 +394,11 @@ $ldap_master->unbind;
 $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd restart > /dev/null 2>&1";
+  system "/etc/init.d/nscd restart > /dev/null 2>&1";
+}
+
+if (defined($Options{'P'})) {
+  exec "/usr/local/sbin/smbldap-passwd.pl $user"
 }
 
 
@@ -352,32 +406,32 @@ if ($nscd_status == 0) {
 
 =head1 NAME
 
-       smbldap-usermod.pl - Modify a user account
+smbldap-usermod.pl - Modify a user account
 
 =head1 SYNOPSIS
 
-       smbldap-usermod.pl [-c comment] [-d home_dir]
-               [-g initial_group] [-G group[,...]]
-               [-l login_name] [-p passwd]
-               [-s shell] [-u uid [ -o]] [-x]
-               [-A canchange] [-B mustchange] [-C smbhome]
-               [-D homedrive] [-E scriptpath] [-F profilepath]
-               [-H acctflags] login
+smbldap-usermod.pl [-c comment] [-d home_dir]
+  [-g initial_group] [-G group[,...]]
+  [-l login_name] [-p passwd]
+  [-s shell] [-u uid [ -o]] [-x]
+  [-A canchange] [-B mustchange] [-C smbhome]
+  [-D homedrive] [-E scriptpath] [-F profilepath]
+  [-H acctflags] login
 
 =head1 DESCRIPTION
 
-       The  smbldap-usermod.pl  command  modifies the system account files
-       to reflect the changes that are specified on the  command  line.
-       The  options  which apply to the usermod command are
+The  smbldap-usermod.pl  command  modifies the system account files
+  to reflect the changes that are specified on the  command  line.
+  The  options  which apply to the usermod command are
 
-       -c comment
-              The new value of the user's comment field (gecos).
+  -c comment
+  The new value of the user's comment field (gecos).
 
        -d home_dir
               The user's new login directory.
 
-       -g initial_group
-              The group name or number of the user's new initial login  group.
+  -g initial_group
+  The group name or number of the user's new initial login  group.
               The  group  name  must  exist.   A group number must refer to an
               already existing group.  The default group number is 1.
 
@@ -391,18 +445,18 @@ if ($nscd_status == 0) {
 
        -l login_name
               The  name  of the user will be changed from login to login_name.
-              Nothing else is changed.  In particular, the user's home  direcÂ­
-              tory  name  should  probably be changed to reflect the new login
-              name.
+              Nothing else is changed.  In particular, the user's home  direc­
+  tory  name  should  probably be changed to reflect the new login
+  name.
 
-       -s shell
-              The name of the user's new login shell.  Setting this  field  to
+  -s shell
+  The name of the user's new login shell.  Setting this  field  to
               blank causes the system to select the default login shell.
 
        -u uid The  numerical  value  of  the  user's  ID.   This value must be
-              unique, unless the -o option is used.  The value  must  be  non-
-              negative.  Any files which the user owns  and  which  are
-              located  in  the directory tree rooted at the user's home direcÂ­
+  unique, unless the -o option is used.  The value  must  be  non-
+  negative.  Any files which the user owns  and  which  are
+  located  in  the directory tree rooted at the user's home direc­
               tory will have the file user ID  changed  automatically.   Files
               outside of the user's home directory must be altered manually.
 

@@ -1,4 +1,7 @@
 #!/usr/bin/perl -w
+
+# $Id: smbldap-groupmod.pl,v 1.1.8.5 2003/12/04 22:02:05 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -29,29 +32,33 @@ use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
-
 #####################
 
 use Getopt::Std;
 my %Options;
 
-my $ok = getopts('og:n:m:x:?', \%Options);
+my $ok = getopts('ag:n:m:or:s:t:x:?', \%Options);
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-g gid [-o]] [-n name] [-m members(,)] [-x members (,)] groupname\n";
-	print "  -g	new gid\n";
-	print "  -o	gid is not unique\n";
-	print "  -n	new group name\n";
-	print "  -m	add members (comma delimited)\n";
-	print "  -x	delete members (comma delimted)\n";
-	print "  -?	show this help message\n";
-	exit (1);
+  print "Usage: $0 [-a] [-g gid [-o]] [-n name] [-m members(,)] [-x members (,)] [-r rid] [-s sid] [-t type] groupname\n";
+  print "  -a   add automatic group mapping entry\n";
+  print "  -g   new gid\n";
+  print "  -o   gid is not unique\n";
+  print "  -n   new group name\n";
+  print "  -m   add members (comma delimited)\n";
+  print "  -r   group-rid\n";
+  print "  -s   group-sid\n";
+  print "  -t   group-type\n"; 
+  print "  -x   delete members (comma delimted)\n";
+  print "  -?   show this help message\n";
+  exit (1);
 }
 
 my $groupName = $ARGV[0];
+my $group_entry;
 
-if (!defined(get_group_dn($groupName))) {
-    print "$0: group $groupName doesn't exist\n";
-    exit (6);
+if (! ($group_entry = read_group_entry($groupName))) {
+  print "$0: group $groupName doesn't exist\n";
+  exit (6);
 }
 
 my $newname = $Options{'n'};
@@ -59,20 +66,24 @@ my $newname = $Options{'n'};
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd restart > /dev/null 2>&1";
+  system "/etc/init.d/nscd restart > /dev/null 2>&1";
 }
 
 my $gid = getgrnam($groupName);
+unless (defined ($gid)) {
+  print "$0: group $groupName not found!\n";
+  exit(6);
+}
 
 my $tmp;
 if (defined($tmp = $Options{'g'}) and $tmp =~ /\d+/) {
-    if (!defined($Options{'o'})) {
+  if (!defined($Options{'o'})) {
 	if (defined(getgrgid($tmp))) {
-	    print "$0: gid $tmp exists\n";
-	    exit (6);
+	  print "$0: gid $tmp exists\n";
+	  exit (6);
 	}
-    }
-    if (!($gid == $tmp)) {
+  }
+  if (!($gid == $tmp)) {
 	my $ldap_master=connect_ldap_master();
 	my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
 										changes => [
@@ -82,7 +93,7 @@ if (defined($tmp = $Options{'g'}) and $tmp =~ /\d+/) {
 	$modify->code && die "failed to modify entry: ", $modify->error ;
 	# take down session
 	$ldap_master->unbind
-    }
+  }
 }
 
 
@@ -101,17 +112,19 @@ if (defined($newname)) {
 
 # Add members
 if (defined($Options{'m'})) {
-	my $members = $Options{'m'};
-	my @members = split( /,/, $members );
-	my $member;
-	foreach $member ( @members ) {
+  my $members = $Options{'m'};
+  my @members = split( /,/, $members );
+  my $member;
+  foreach $member ( @members ) {
+	my $group_entry=read_group_entry($groupName);
+	$groupsdn=$group_entry->dn;
 	if (is_unix_user($member)) {
-	  if (is_group_member("cn=$groupName,$groupsdn",$member)) {
+	  if (is_group_member($groupsdn,$member)) {
 		print "User $member already in the group\n";
 	  } else {
 	  	print "adding user $member to group $groupName\n";
 		my $ldap_master=connect_ldap_master();
-		my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+		my $modify = $ldap_master->modify ($groupsdn,
 											changes => [
 														add => [memberUid => $member]
 													   ]
@@ -123,19 +136,21 @@ if (defined($Options{'m'})) {
 	} else {
 	  print "User $member does not exist: create it first !\n";
 	}
-	}
+  }
 }
 
 # Delete members
 if (defined($Options{'x'})) {
-        my $members = $Options{'x'};
-        my @members = split( /,/, $members );
-        my $member;
-        foreach $member ( @members ) {
-	if (is_group_member("cn=$groupName,$groupsdn",$member)) {
+  my $members = $Options{'x'};
+  my @members = split( /,/, $members );
+  my $member;
+  foreach $member ( @members ) {
+        my $group_entry=read_group_entry($groupName);
+        $groupsdn=$group_entry->dn;
+	if (is_group_member("$groupsdn",$member)) {
 	  print "deleting user $member from group $groupName\n";
 	  my $ldap_master=connect_ldap_master();
-	  my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+	  my $modify = $ldap_master->modify ($groupsdn,
 										  changes => [
 													  delete => [memberUid => $member]
 													 ]
@@ -146,13 +161,73 @@ if (defined($Options{'x'})) {
 	} else {
 	  print "User $member is not in the group $groupName!\n";
 	}
-        }
+  }
+}
+
+my $group_sid;
+if ($tmp= $Options{'s'}) {
+  if ($tmp =~ /^S-(?:\d+-)+\d+$/) {
+    $group_sid = $tmp;
+  } else {
+    print "$0: illegal group-rid $tmp\n";
+    exit(7);
+  }
+} elsif ($Options{'r'} || $Options{'a'}) {
+  my $group_rid;
+  if ($tmp= $Options{'r'}) {
+    if ($tmp =~ /^\d+$/) {
+      $group_rid = $tmp;
+    } else {
+      print "$0: illegal group-rid $tmp\n";
+      exit(7);
+    }
+  } else {
+    # algorithmic mapping
+    $group_rid = 2*$gid+1001;
+  }
+  $group_sid = $SID.'-'.$group_rid;
+}
+
+if ($group_sid) {
+  my @adds;
+  my @mods;
+  push(@mods, 'sambaSID' => $group_sid);
+
+  if ($tmp= $Options{'t'}) {
+    my $group_type;
+    if (defined($group_type = &group_type_by_name($tmp))) {
+      push(@mods, 'sambaGroupType' => $group_type);
+    } else {
+      print "$0: unknown group type $tmp\n";
+      exit(8);
+    }
+  } else {
+    if (! defined($group_entry->get_value('sambaGroupType'))) {
+      push(@mods, 'sambaGroupType' => group_type_by_name('domain'));
+    }
+  }
+
+  my @oc = $group_entry->get_value('objectClass');
+  unless (grep($_ =~ /^sambaGroupMapping$/i, @oc)) {
+    push (@adds, 'objectClass' => 'sambaGroupMapping');
+  }
+
+  my $ldap_master=connect_ldap_master();
+  my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+									  changes => [
+												  'add' => [ @adds ],
+												  'replace' => [ @mods ]
+												 ]
+									);
+  $modify->code && warn "failed to delete entry: ", $modify->error ;
+  # take down session
+  $ldap_master->unbind
 }
 
 $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd restart > /dev/null 2>&1";
+  system "/etc/init.d/nscd restart > /dev/null 2>&1";
 }
 
 exit (0);
@@ -161,19 +236,19 @@ exit (0);
 
 =head1 NAME
 
-       smbldap-groupmod.pl - Modify a group
+smbldap-groupmod.pl - Modify a group
 
 =head1 SYNOPSIS
 
-       smbldap-groupmod.pl [-g gid [-o]] [-n group_name ] group
+smbldap-groupmod.pl [-g gid [-o]] [-n group_name ] group
 
 =head1 DESCRIPTION
 
-       The smbldap-groupmod.pl command modifies the system account files to
-       reflect the changes that are specified on the command line.
-       The options which apply to the smbldap-groupmod command are
+The smbldap-groupmod.pl command modifies the system account files to
+  reflect the changes that are specified on the command line.
+  The options which apply to the smbldap-groupmod command are
 
-       -g gid The numerical value of the group's ID. This value must be
+  -g gid The numerical value of the group's ID. This value must be
               unique, unless the -o option is used. The value must be non-
               negative. Any files which the old group ID is the file
               group ID must have the file group ID changed manually.

@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
 # LDAP to unix password sync script for samba
-#
+# $Id: smbldap-passwd.pl,v 1.1.8.3 2003/12/04 22:02:05 jerry Exp $
+
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -23,7 +24,7 @@
 #  USA.
 
 #  Purpose :
-#       . ldap-unix passwd sync for SAMBA-2.2.2 + LDAP
+#       . ldap-unix passwd sync for SAMBA>2.2.2 + LDAP
 #       . may also replace /bin/passwd
 
 use strict;
@@ -40,29 +41,29 @@ my $ret;
 my $arg;
 
 foreach $arg (@ARGV) {
-	if ($< != 0) {
-		die "Only root can specify parameters\n";
-	} else {
-		if ( ($arg eq '-?') || ($arg eq '--help') ) {
-			print "Usage: $0 [username]\n";
-			print "  -?, --help			show this help message\n";
-			exit (6);
-		} elsif (substr($arg,0) ne '-')  {
-			$user = $arg;
-		}
-		$oldpass = 1;
+  if ($< != 0) {
+	die "Only root can specify parameters\n";
+  } else {
+	if ( ($arg eq '-?') || ($arg eq '--help') ) {
+	  print "Usage: $0 [username]\n";
+	  print "  -?, --help			show this help message\n";
+	  exit (6);
+	} elsif (substr($arg,0) ne '-') {
+	  $user = $arg;
 	}
+	$oldpass = 1;
+  }
 }
 
 if (!defined($user)) {
-	$user=$ENV{"USER"};
+  $user=$ENV{"USER"};
 }
 
 # test existence of user in LDAP
 my $dn_line;
 if (!defined($dn_line = get_user_dn($user))) {
-    print "$0: user $user doesn't exist\n";
-    exit (10);
+  print "$0: user $user doesn't exist\n";
+  exit (10);
 }
 
 my $dn = get_dn_from_line($dn_line);
@@ -73,17 +74,17 @@ print "Changing password for $user\n";
 
 # non-root user
 if (!defined($oldpass)) {
-    # prompt for current password
-	system "stty -echo";
-	print "(current) UNIX password: ";
-	chomp($oldpass=<STDIN>);
-	print "\n";
-	system "stty echo";
+  # prompt for current password
+  system "stty -echo";
+  print "(current) UNIX password: ";
+  chomp($oldpass=<STDIN>);
+  print "\n";
+  system "stty echo";
 
-	if (!is_user_valid($user, $dn, $oldpass)) {
-	    print "Authentication failure\n";
-	    exit (10);
-	}
+  if (!is_user_valid($user, $dn, $oldpass)) {
+	print "Authentication failure\n";
+	exit (10);
+  }
 }
 
 # prompt for new password
@@ -104,8 +105,8 @@ print "\n";
 system "stty echo";
 
 if ($pass ne $pass2) {
-    print "New passwords don't match!\n";
-    exit (10);
+  print "New passwords don't match!\n";
+  exit (10);
 }
 
 # First, connecting to the directory
@@ -113,59 +114,64 @@ my $ldap_master=connect_ldap_master();
 
 # only modify smb passwords if smb user
 if ($samba == 1) {
-    if (!$with_smbpasswd) {
-# generate LanManager and NT clear text passwords
+  if (!$with_smbpasswd) {
+	# generate LanManager and NT clear text passwords
 	if ($mk_ntpasswd eq '') {
-	    print "Either set \$with_smbpasswd = 1 or specify \$mk_ntpasswd\n";
-	    exit(1);
+	  print "Either set \$with_smbpasswd = 1 or specify \$mk_ntpasswd\n";
+	  exit(1);
 	}
 	my $ntpwd = `$mk_ntpasswd '$pass'`;
-        chomp(my $sambaLMPassword = substr($ntpwd, 0, index($ntpwd, ':')));
-        chomp(my $sambaNTPassword = substr($ntpwd, index($ntpwd, ':')+1));
+	chomp(my $sambaLMPassword = substr($ntpwd, 0, index($ntpwd, ':')));
+	chomp(my $sambaNTPassword = substr($ntpwd, index($ntpwd, ':')+1));
 	# the sambaPwdLastSet must be updating
 	my $date=time;
+	my @mods;
+	push(@mods, 'sambaLMPassword' => $sambaLMPassword);
+	push(@mods, 'sambaNTPassword' => $sambaNTPassword);
+	push(@mods, 'sambaPwdLastSet' => $date);
+	if (defined $_defaultMaxPasswordAge) {
+	  my $new_sambaPwdMustChange=$date+$_defaultMaxPasswordAge*24*60*60;
+	  push(@mods, 'sambaPwdMustChange' => $new_sambaPwdMustChange);
+	  push(@mods, 'sambaAcctFlags' => '[U]');
+	}
 	# Let's change nt/lm passwords
 	my $modify = $ldap_master->modify ( "$dn",
-										changes => [
-													replace => [sambaLMPassword => "$sambaLMPassword"],
-													replace => [sambaNTPassword => "$sambaNTPassword"],
-													replace => [sambaPwdLastSet => "$date"]
-												   ]
+										'replace' => { @mods }
 									  );
 	$modify->code && warn "failed to modify entry: ", $modify->error ;
 
   } else {
 	if ($< != 0) {
-	    my $FILE="|$smbpasswd -s >/dev/null";
-	    open (FILE, $FILE) || die "$!\n";
-	    print FILE <<EOF;
+	  my $FILE="|$smbpasswd -s >/dev/null";
+	  open (FILE, $FILE) || die "$!\n";
+	  print FILE <<EOF;
 '$oldpass'
 '$pass'
 '$pass'
 EOF
-    ;
-	    close FILE;
+	  ;
+	  close FILE;
 	} else {
-	    my $FILE="|$smbpasswd $user -s >/dev/null";
-	    open (FILE, $FILE) || die "$!\n";
-	    print FILE <<EOF;
+	  my $FILE="|$smbpasswd $user -s >/dev/null";
+	  open (FILE, $FILE) || die "$!\n";
+	  print FILE <<EOF;
 '$pass'
 '$pass'
 EOF
-    ;
-	    close FILE;
+	  ;
+	  close FILE;
 	}
-    }
+  }
 }
 
 # change unix password
 my $hash_password = `slappasswd -h {$hash_encrypt} -s '$pass'`;
 chomp($hash_password);
 my $modify = $ldap_master->modify ( "$dn",
-	changes => [
-			replace => [userPassword => "$hash_password"]
-		   ]
-	  );
+									changes => [
+												replace => [userPassword => "$hash_password"]
+											   ]
+								  );
 $modify->code && warn "Unable to change password : ", $modify->error ;
 
 # take down session
@@ -186,7 +192,7 @@ smbldap-passwd.pl - change user password
 
 =head1 DESCRIPTION
 
-       smbldap-passwd.pl changes passwords for user accounts. A normal user
+smbldap-passwd.pl changes passwords for user accounts. A normal user
        may only change the password for their own account, the super user may
        change the password for any account.
 

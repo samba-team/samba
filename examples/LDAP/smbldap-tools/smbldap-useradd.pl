@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# $Id: smbldap-useradd.pl,v 1.1.8.3 2003/12/04 22:02:05 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -35,102 +37,92 @@ use smbldap_conf;
 use Getopt::Std;
 my %Options;
 
-my $ok = getopts('axnmwPG:u:g:d:s:c:k:A:B:C:D:E:F:H:N:S:?', \%Options);
+my $ok = getopts('anmwPG:u:g:d:s:c:k:A:B:C:D:E:F:H:N:S:?', \%Options);
 
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-awmugdsckGPABCDEFH?] username\n";
-	print "  -a	is a Windows User (otherwise, Posix stuff only)\n";
-	print "  -w	is a Windows Workstation (otherwise, Posix stuff only)\n";
-	print "  -x	creates rid and primaryGroupID in hex instead of decimal\n";
-	print "  -u	uid\n";
-	print "  -g	gid\n";
-	print "  -G	supplementary comma-separated groups\n";
-	print "  -n	do not create a group\n";
-	print "  -d	home\n";
-	print "  -s	shell\n";
-	print "  -c	gecos\n";
-	print "  -m	creates home directory and copies /etc/skel\n";
-	print "  -k	skeleton dir (with -m)\n";
-	print "  -P     ends by invoking smbldap-passwd.pl\n";
-	print "  -A	can change password ? 0 if no, 1 if yes\n";
-	print "  -B	must change password ? 0 if no, 1 if yes\n";
-	print "  -C	sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
-	print "  -D	sambaHomeDrive (letter associated with home share, like 'H:')\n";
-	print "  -E	sambaLogonScript (DOS script to execute on login)\n";
-	print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
-	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
-  print "  -N   canonical name\n";
-  print "  -S   surname\n";
-	print "  -?	show this help message\n";
-	exit (1);
+  print "Usage: $0 [-awmugdsckGPABCDEFH?] username\n";
+  print "  -a	is a Windows User (otherwise, Posix stuff only)\n";
+  print "  -w	is a Windows Workstation (otherwise, Posix stuff only)\n";
+  print "  -u	uid\n";
+  print "  -g	gid\n";
+  print "  -G	supplementary comma-separated groups\n";
+  print "  -n	do not create a group\n";
+  print "  -d	home\n";
+  print "  -s	shell\n";
+  print "  -c	gecos\n";
+  print "  -m	creates home directory and copies /etc/skel\n";
+  print "  -k	skeleton dir (with -m)\n";
+  print "  -P	ends by invoking smbldap-passwd.pl\n";
+  print "  -A	can change password ? 0 if no, 1 if yes\n";
+  print "  -B	must change password ? 0 if no, 1 if yes\n";
+  print "  -C	sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
+  print "  -D	sambaHomeDrive (letter associated with home share, like 'H:')\n";
+  print "  -E	sambaLogonScript (DOS script to execute on login)\n";
+  print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
+  print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
+  print "  -N	canonical name\n";
+  print "  -S	surname\n";
+  print "  -?	show this help message\n";
+  exit (1);
 }
+
 
 # cause problems when dealing with getpwuid because of the
 # negative ttl and ldap modification
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd stop > /dev/null 2>&1";
+  system "/etc/init.d/nscd stop > /dev/null 2>&1";
 }
+
 
 # Read options
 my $userUidNumber = $Options{'u'};
 if (!defined($userUidNumber)) { 
-	# find first unused uid starting from $UID_START
-	while (defined(getpwuid($UID_START))) {
-		$UID_START++;
-	}
-	$userUidNumber = $UID_START;
+  # find first unused uid starting from $UID_START
+  while (defined(getpwuid($UID_START))) {
+	$UID_START++;
+  }
+  $userUidNumber = $UID_START;
 } elsif (getpwuid($userUidNumber)) {
   die "Uid already exists.\n";
 }
 
 if ($nscd_status == 0) {
-   system "/etc/init.d/nscd start > /dev/null 2>&1";
+  system "/etc/init.d/nscd start > /dev/null 2>&1";
 }
 
-
-# as rid we use 2 * uid + 1000
-my $userRid = 2 * $userUidNumber + 1000;
-if (defined($Options{'x'})) {
-    $userRid= sprint("%x", $userRid);
-}
 
 my $createGroup = 0;
 my $userGidNumber = $Options{'g'};
 # gid not specified ? 
 if (!defined($userGidNumber)) {
-    # windows machine => $_defaultComputerGid
-    if (defined($Options{'w'})) {
+  # windows machine => $_defaultComputerGid
+  if (defined($Options{'w'})) {
 	$userGidNumber = $_defaultComputerGid;
-#    } elsif (!defined($Options{'n'})) {
+	#    } elsif (!defined($Options{'n'})) {
 	# create new group (redhat style)
 	# find first unused gid starting from $GID_START
-#	while (defined(getgrgid($GID_START))) {
-#		$GID_START++;
-#	}
-#	$userGidNumber = $GID_START;
+	#	while (defined(getgrgid($GID_START))) {
+	#		$GID_START++;
+	#	}
+	#	$userGidNumber = $GID_START;
 
-#	$createGroup = 1;
+	#	$createGroup = 1;
 
-    } else {
+  } else {
 	# user will have gid = $_defaultUserGid
 	$userGidNumber = $_defaultUserGid;
-    }
+  }
 } else {
-    my $gid;
-    if (($gid = parse_group($userGidNumber)) < 0) {
+  my $gid;
+  if (($gid = parse_group($userGidNumber)) < 0) {
 	print "$0: unknown group $userGidNumber\n";
 	exit (6);
-    }
-    $userGidNumber = $gid;
+  }
+  $userGidNumber = $gid;
 }
 
-# as grouprid we use 2 * gid + 1001
-my $userGroupRid = 2 * $userGidNumber + 1001;
-if (defined($Options{'x'})) {
-    $userGroupRid = sprint("%x", $userGroupRid);
-}
 # Read only first @ARGV
 my $userName = $ARGV[0];
 
@@ -145,18 +137,49 @@ if ($userName =~ /^([\w -]+\$?)$/) {
 # user must not exist in LDAP (should it be nss-wide ?)
 my ($rc, $dn) = get_user_dn2($userName);
 if ($rc and defined($dn)) {
-    print "$0: user $userName exists\n";
-    exit (9);
+  print "$0: user $userName exists\n";
+  exit (9);
 } elsif (!$rc) {
-    print "$0: error in get_user_dn2\n";
-    exit(10);
+  print "$0: error in get_user_dn2\n";
+  exit(10);
+}
+
+my $group_entry;
+my $userGroupSID;
+my $userRid;
+if ($Options{'a'}) {
+	# as grouprid we use the value of the sambaSID attribute for
+	# group of gidNumber=$userGidNumber
+	$group_entry = read_group_entry_gid($userGidNumber);
+	$userGroupSID = $group_entry->get_value('sambaSID');
+	unless ($userGroupSID) {
+	  print "$0: unknown group SID not set for unix group $userGidNumber\n";
+	  print "check if your unix group is mapped to an NT group\n";
+	  exit (7);
+	}
+
+	# as rid we use 2 * uid + 1000
+	$userRid = 2 * $userUidNumber + 1000;
+        # let's test if this SID already exist
+	my $user_sid="$SID-$userRid";
+        my $test_exist_sid=does_sid_exist($user_sid,$usersdn);
+        if ($test_exist_sid->count == 1) {
+                print "User SID already owned by\n";
+                # there should not exist more than one entry, but ...
+                foreach my $entry ($test_exist_sid->all_entries) {
+                        my $dn= $entry->dn;
+                        chomp($dn);
+                        print "$dn\n";
+                }
+                exit(7);
+        }
 }
 
 my $userHomeDirectory;
 my ($userCN, $userSN);
 my $tmp;
 if (!defined($userHomeDirectory = $Options{'d'})) {
-    $userHomeDirectory = $_userHomePrefix."/".$userName;
+  $userHomeDirectory = $_userHomePrefix."/".$userName;
 }
 $_userLoginShell = $tmp if (defined($tmp = $Options{'s'}));
 $_userGecos = $tmp if (defined($tmp = $Options{'c'}));
@@ -174,26 +197,26 @@ my $ldap_master=connect_ldap_master();
 # MACHINE ACCOUNT
 if (defined($tmp = $Options{'w'})) {
    
-    # add a trailing dollar if missing
-    if ($userName =~ /[^\$]$/s) {
+  # add a trailing dollar if missing
+  if ($userName =~ /[^\$]$/s) {
 	$userName .= "\$";
-    }
+  }
 
-    #print "About to create machine $userName:\n";
+  #print "About to create machine $userName:\n";
 
-    if (!add_posix_machine ($userName, $userUidNumber, $userGidNumber)) {
+  if (!add_posix_machine ($userName, $userUidNumber, $userGidNumber)) {
 	die "$0: error while adding posix account\n";
-    }
+  }
 
-    if (!$with_smbpasswd) {
+  if (!$with_smbpasswd) {
 	# (jtournier)
 	# Objectclass sambaSAMAccount is now added directly by samba when joigning the domain (for samba3)
 	#if (!add_samba_machine_mkntpwd($userName, $userUidNumber)) {
 	#  die "$0: error while adding samba account\n";
 	#}
-    } else {
+  } else {
 	if (!add_samba_machine($userName)) {
-	    die "$0: error while adding samba account\n";
+	  die "$0: error while adding samba account\n";
 	}
 	my $modify = $ldap_master->modify ( "$dn",
 										changes => [
@@ -201,9 +224,9 @@ if (defined($tmp = $Options{'w'})) {
 												   ]
 									  );
 	$modify->code && warn "failed to modify entry: ", $modify->error ;
-    }
+  }
 
-    exit 0;
+  exit 0;
 }
 
 # USER ACCOUNT
@@ -237,56 +260,62 @@ group_add_user($userGidNumber, $userName);
 my $grouplist;
 # adds to supplementary groups
 if (defined($grouplist = $Options{'G'})) {
-    add_grouplist_user($grouplist, $userName);
+  add_grouplist_user($grouplist, $userName);
 }
 
 # If user was created successfully then we should create his/her home dir
 if (defined($tmp = $Options{'m'})) {
-   unless ( $userName =~ /\$$/ ) {
+  unless ( $userName =~ /\$$/ ) {
     if ( !(-e $userHomeDirectory) ) {
-	system "mkdir $userHomeDirectory 2>/dev/null";
-	system "cp -a $_skeletonDir/.[a-z,A-Z]* $_skeletonDir/* $userHomeDirectory 2>/dev/null";
-	system "chown -R $userUidNumber:$userGidNumber $userHomeDirectory 2>/dev/null";
-	system "chmod 700 $userHomeDirectory 2>/dev/null"; 
+	  system "mkdir $userHomeDirectory 2>/dev/null";
+	  system "cp -a $_skeletonDir/.[a-z,A-Z]* $_skeletonDir/* $userHomeDirectory 2>/dev/null";
+	  system "chown -R $userUidNumber:$userGidNumber $userHomeDirectory 2>/dev/null";
+	  system "chmod 700 $userHomeDirectory 2>/dev/null"; 
     }
-   }
+  }
 }
 
 
 # Add Samba user infos
 if (defined($Options{'a'})) {
-    if (!$with_smbpasswd) {
+  if (!$with_smbpasswd) {
 
 	my $winmagic = 2147483647;
 	my $valpwdcanchange = 0;
 	my $valpwdmustchange = $winmagic;
+	my $valpwdlastset = 0;
 	my $valacctflags = "[UX]";
 
 	if (defined($tmp = $Options{'A'})) {
-	    if ($tmp != 0) {
+	  if ($tmp != 0) {
 		$valpwdcanchange = "0";
-	    } else {
+	  } else {
 		$valpwdcanchange = "$winmagic";
-	    }
+	  }
 	}
 
 	if (defined($tmp = $Options{'B'})) {
-	    if ($tmp != 0) {
+	  if ($tmp != 0) {
 		$valpwdmustchange = "0";
-	    } else {
+		# To force a user to change his password:
+		# . the attribut sambaPwdLastSet must be != 0
+		# . the attribut sambaAcctFlags must not match the 'X' flag
+		$valpwdlastset=$winmagic;
+		$valacctflags = "[U]";
+	  } else {
 		$valpwdmustchange = "$winmagic";
-	    }
+	  }
 	}
 
 	if (defined($tmp = $Options{'H'})) {
-	    $valacctflags = "$tmp";
+	  $valacctflags = "$tmp";
 	}
 
 
 	my $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
 										changes => [
 													add => [objectClass => 'sambaSAMAccount'],
-													add => [sambaPwdLastSet => '0'],
+													add => [sambaPwdLastSet => "$valpwdlastset"],
 													add => [sambaLogonTime => '0'],
 													add => [sambaLogoffTime => '2147483647'],
 													add => [sambaKickoffTime => '2147483647'],
@@ -300,7 +329,7 @@ if (defined($Options{'a'})) {
 	
 	$modify->code && die "failed to add entry: ", $modify->error ;
 
-    } else {
+  } else {
 	my $FILE="|smbpasswd -s -a $userName >/dev/null" ;
 	open (FILE, $FILE) || die "$!\n";
 	print FILE <<EOF;
@@ -310,45 +339,64 @@ EOF
     ;
 	close FILE;
 	if ($?) {
-	    print "$0: error adding samba account\n";
-	    exit (10);
+	  print "$0: error adding samba account\n";
+	  exit (10);
 	}
-    } # with_smbpasswd
+  }								# with_smbpasswd
 
-    my $valscriptpath = "$userName.cmd";
-    my $valprofilepath = "$_userProfile$userName";
-    my $valsmbhome = "$_userSmbHome";
-    my $valhomedrive = "$_userHomeDrive";
+  my @mods;
+  my $valscriptpath;
+  if (defined $_userScript) {
+        $valscriptpath="$_userScript";
+  } else {
+        $valscriptpath = "$userName.cmd";
+  }
+  if (defined($tmp = $Options{'E'})) {
+    $valscriptpath = "$tmp";
+  }
 
-if (defined($tmp = $Options{'C'})) {
+  my $valsmbhome;
+  if (defined $_userSmbHome) {
+       $valsmbhome = "$_userSmbHome";
+  }
+  if (defined($tmp = $Options{'C'})) {
     $valsmbhome = "$tmp";
-}
+  }
+  if (defined $valsmbhome) {
+       push(@mods, 'sambaHomePath', $valsmbhome);
+  }
 
-if (defined($tmp = $Options{'D'})) {
+  my $valhomedrive = "$_userHomeDrive";
+  if (defined($tmp = $Options{'D'})) {
     $tmp = $tmp.":" unless ($tmp =~ /:/);
     $valhomedrive = "$tmp";
-}
+  }
 
-if (defined($tmp = $Options{'E'})) {
-    $valscriptpath = "$tmp";
-}
+  my $valprofilepath;
+  if (defined $_userProfile) {
+       $valprofilepath = "$_userProfile$userName";
+  }
 
-if (defined($tmp = $Options{'F'})) {
+  if (defined($tmp = $Options{'F'})) {
     $valprofilepath = "$tmp";
-}
+  }
+  if (defined $valprofilepath) {
+       push(@mods, 'sambaProfilePath', $valprofilepath);
+  }
 
-	
   my $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
 									  changes => [
-												  add => [sambaPrimaryGroupSID => "$SID-$userGroupRid"],
+												  add => [sambaPrimaryGroupSID => "$userGroupSID"],
 												  add => [sambaHomeDrive => "$valhomedrive"],
-												  add => [sambaHomePath => "$valsmbhome"],
-												  add => [sambaProfilePath => "$valprofilepath"],
 												  add => [sambaLogonScript => "$valscriptpath"],
 												  add => [sambaLMPassword => 'XXX'],
 												  add => [sambaNTPassword => 'XXX']
 												 ]
 									);
+  $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
+                                                                       'replace' => { @mods }
+                                                                       );
+
 
   $modify->code && die "failed to add entry: ", $modify->error ;
 
@@ -357,7 +405,7 @@ $ldap_master->unbind;			# take down session
 
 
 if (defined($Options{'P'})) {
-    exec "/usr/local/sbin/smbldap-passwd.pl $userName"
+  exec "/usr/local/sbin/smbldap-passwd.pl $userName"
 }
 
 exit 0;
@@ -366,57 +414,57 @@ exit 0;
 
 =head1 NAME
 
-       smbldap-useradd.pl - Create a new user or update default new 
-                            user information
+smbldap-useradd.pl - Create a new user or update default new 
+  user information
 
 =head1 SYNOPSIS
 
-       smbldap-useradd.pl [-c comment] [-d home_dir]
-               [-g initial_group] [-G group[,...]]
-               [-m [-k skeleton_dir]]
-               [-s shell] [-u uid [ -o]] [-P]
-               [-A canchange] [-B mustchange] [-C smbhome]
-               [-D homedrive] [-E scriptpath] [-F profilepath]
-               [-H acctflags] login
+smbldap-useradd.pl [-c comment] [-d home_dir]
+  [-g initial_group] [-G group[,...]]
+  [-m [-k skeleton_dir]]
+  [-s shell] [-u uid [ -o]] [-P]
+  [-A canchange] [-B mustchange] [-C smbhome]
+  [-D homedrive] [-E scriptpath] [-F profilepath]
+  [-H acctflags] login
 
 =head1 DESCRIPTION
 
-   Creating New Users
-       The smbldap-useradd.pl command creates a new user account using
-       the values specified on the  command  line  and  the default
-       values from the system.
-       The new user account will be entered into the system
-       files as needed, the home directory  will  be  created, and 
-       initial  files copied, depending on the command line options.
+Creating New Users
+  The smbldap-useradd.pl command creates a new user account using
+  the values specified on the  command  line  and  the default
+  values from the system.
+  The new user account will be entered into the system
+  files as needed, the home directory  will  be  created, and 
+  initial  files copied, depending on the command line options.
 
-       You have to use smbldap-passwd to set the user password.
-       For Samba users, rid is 2*uidNumber+1000, and primaryGroupID
-       is 2*gidNumber+1001. Thus you may want to use
-       smbldap-useradd.pl -a -g "Domain Admins" -u 500 Administrator
-       to create a sambaDomainName administrator (admin rid is 0x1F4 = 500 and
-       grouprid is 0x200 = 512)
+  You have to use smbldap-passwd to set the user password.
+  For Samba users, rid is 2*uidNumber+1000, and primaryGroupID
+  is 2*gidNumber+1001. Thus you may want to use
+  smbldap-useradd.pl -a -g "Domain Admins" -u 500 Administrator
+  to create a sambaDomainName administrator (admin rid is 0x1F4 = 500 and
+											 grouprid is 0x200 = 512)
 
-       Without any option, the account created will be an Unix (Posix)
-       account. The following options may be used to add information:
+  Without any option, the account created will be an Unix (Posix)
+  account. The following options may be used to add information:
 
-       -a     The user will have a Samba account (and Unix).
+-a     The user will have a Samba account (and Unix).
 
-       -w     Creates an account for a Samba machine (Workstation), so that 
-              it can join a sambaDomainName.
+  -w     Creates an account for a Samba machine (Workstation), so that 
+  it can join a sambaDomainName.
 
-       -x     Creates rid and primaryGroupID in hex (for Samba 2.2.2 bug). Else
-              decimal (2.2.2 patched from cvs or 2.2.x, x > 2)
+  -x     Creates rid and primaryGroupID in hex (for Samba 2.2.2 bug). Else
+  decimal (2.2.2 patched from cvs or 2.2.x, x > 2)
 
-       -c comment
-              The new user's comment field (gecos).
+  -c comment
+  The new user's comment field (gecos).
 
        -d home_dir
               The new user will be created using home_dir as the value for the
               user's login directory.  The default is to append the login name
-              to default_home and use that as the login directory name.
+  to default_home and use that as the login directory name.
 
-       -g initial_group
-              The group name or number of the user's initial login group.  The
+  -g initial_group
+  The group name or number of the user's initial login group.  The
               group  name must exist.  A group number must refer to an already
               existing group.  The default group number is 1.
 
@@ -428,20 +476,20 @@ exit 0;
               is for the user to belong only to the initial group.
 
        -m     The user's home directory will be created if it does not  exist.
-              The  files  contained in skeleton_dir will be copied to the home
-              directory if the -k option is used,  otherwise  the  files  conÂ­
-              tained  in /etc/skel will be used instead.  Any directories conÂ­
-              tained in skeleton_dir or  /etc/skel  will  be  created  in  the
-              user's  home  directory as well.  The -k option is only valid in
+  The  files  contained in skeleton_dir will be copied to the home
+  directory if the -k option is used,  otherwise  the  files  con­
+  tained  in /etc/skel will be used instead.  Any directories con­
+  tained in skeleton_dir or  /etc/skel  will  be  created  in  the
+  user's  home  directory as well.  The -k option is only valid in
               conjunction with the -m option.  The default is  to  not  create
               the directory and to not copy any files.
 
        -s shell
               The name of the user's login shell.  The  default  is  to  leave
-              this  field blank, which causes the system to select the default
-              login shell.
+  this  field blank, which causes the system to select the default
+  login shell.
 
-       -u uid The numerical value of  the  user's  ID.   This  value  must  be
+  -u uid The numerical value of  the  user's  ID.   This  value  must  be
               unique,  unless  the  -o option is used.  The value must be non-
               negative.  The default is to use the smallest ID  value  greater
               than 1000 and greater than every other user.

@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# $Id: smbldap-groupshow.pl,v 1.1.8.3 2003/12/04 22:02:05 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -36,8 +38,8 @@ my %Options;
 my $ok = getopts('?', \%Options);
 
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-?] group\n";
-	print "  -?	show this help message\n";
+  print "Usage: $0 [-?] group\n";
+  print "  -?	show this help message\n";
 	exit (1);
 }
 
