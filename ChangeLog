@@ -1,3 +1,7 @@
+2000-03-13  Assar Westerlund  <assar@sics.se>
+
+	* kuser/klist.c: add support for display v4 tickets
+
 2000-03-11  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kaserver.c (do_authenticate, do_getticket): call check_flags
