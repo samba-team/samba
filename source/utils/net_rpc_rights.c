@@ -133,6 +133,36 @@ static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli,
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS check_privilege_for_user( TALLOC_CTX *ctx, struct cli_state *cli,
+                                          POLICY_HND *pol, DOM_SID *sid, const char *right)
+{
+	NTSTATUS result;
+	uint32 count;
+	char **rights;
+	int i;
+
+	result = cli_lsa_enum_account_rights(cli, ctx, pol, sid, &count, &rights);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	if (count == 0) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+		
+	for (i = 0; i < count; i++) {
+		if (StrCaseCmp(rights[i], right) == 0) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+/********************************************************************
+********************************************************************/
+
 static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli,
                                           POLICY_HND *pol, DOM_SID *sid )
 {
@@ -151,6 +181,52 @@ static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli
 		
 	for (i = 0; i < count; i++) {
 		printf("%s\n", rights[i]);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *cli,
+					    POLICY_HND *pol, const char *privilege)
+{
+	NTSTATUS result;
+	uint32 enum_context=0;
+	uint32 pref_max_length=0x1000;
+	DOM_SID *sids;
+	uint32 count=0;
+	int i;
+	fstring name;
+
+	result = cli_lsa_enum_sids(cli, ctx, pol, &enum_context, 
+		pref_max_length, &count, &sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+		
+	d_printf("%s:\n", privilege);
+
+	for ( i=0; i<count; i++ ) {
+	
+		   
+		result = check_privilege_for_user( ctx, cli, pol, &sids[i], privilege);
+		
+		if ( ! NT_STATUS_IS_OK(result)) {
+			if ( ! NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				return result;
+			}
+			continue;
+		}
+
+		/* try to convert the SID to a name.  Fall back to 
+		   printing the raw SID if necessary */
+		result = sid_to_name( cli, ctx, &sids[i], name );
+		if ( !NT_STATUS_IS_OK (result) )
+			fstrcpy( name, sid_string_static(&sids[i]) );
+			
+		d_printf("  %s\n", name);
 	}
 
 	return NT_STATUS_OK;
@@ -215,36 +291,68 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 		
-	switch (argc) {
-	case 0:
-		result = enum_privileges( mem_ctx, cli, &pol );
-		break;
-			
-	case 1:
-		/* special case to enuemrate all privileged SIDs 
-		   with associated rights */
-		
-		if ( strequal( argv[0], "accounts" ) ) {
-			result = enum_privileges_for_accounts( mem_ctx, cli, &pol );
-		}
-		else {
-
-			result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
-			if (!NT_STATUS_IS_OK(result))
-				goto done;	
-			result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
-		}
-		break;
-			
-	default:		
-		if ( argc > 1 ) {
-			d_printf("Usage: net rpc rights list [name|SID]\n");
-			result = NT_STATUS_OK;
-		}
+	if (argc == 0) {
+		d_printf("Usage: net rpc rights list [accounts|privileges] [name|SID]\n");
+		result = NT_STATUS_OK;
+		goto done;
 	}
 
-	
+	if (strequal(argv[0], "privileges")) {
+		int i = 1;
 
+		if (argv[1] == NULL) {
+			result = enum_privileges( mem_ctx, cli, &pol );
+			goto done;
+		}
+
+		while (argv[i] != NULL) {
+			result = enum_accounts_for_privilege(mem_ctx, cli, &pol, argv[i]);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
+			i++;
+		}
+		goto done;
+	}
+
+	/* special case to enuemrate all privileged SIDs 
+	   with associated rights */
+	
+	if (strequal( argv[0], "accounts")) {
+		int i = 1;
+
+		if (argv[1] == NULL) {
+			result = enum_privileges_for_accounts(mem_ctx, cli, &pol);
+			goto done;
+		}
+
+		while (argv[i] != NULL) {
+			result = name_to_sid(cli, mem_ctx, &sid, argv[i]);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
+			result = enum_privileges_for_user(mem_ctx, cli, &pol, &sid);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
+			i++;
+		}
+		goto done;
+	}
+
+	/* backward comaptibility: if no keyword provided, treat the key
+	   as an account name */
+	if (argc > 1) {
+		d_printf("Usage: net rpc rights list [accounts|privileges] [name|SID]\n");
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
 
 done:
 	cli_lsa_close(cli, mem_ctx, &pol);
