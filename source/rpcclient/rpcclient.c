@@ -432,7 +432,7 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *c
 
 		if (!argv) {
 			fprintf(stderr, "out of memory\n");
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MEMORY;
 		}
 					
 		p = cmd;
