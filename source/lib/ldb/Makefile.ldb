@@ -15,6 +15,8 @@ TALLOCDIR=../talloc
 CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
        -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. \
        -I$(TDBDIR)/include -I$(TALLOCDIR) -DUSE_MMAP=1 $(LDAP_FLAGS)
+
+# enable the following two lines to build with gcov code coverage support
 #GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
 #GCOV_LIBS = -lgcov
 
@@ -99,6 +101,6 @@ test: test-tdb test-ldap
 gcov:
 	gcov -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
 	gcov -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
-	gcov -po common common/*.c 2| tee ldb_common.report.gcov
-	gcov -po modules modules/*.c 2| tee ldb_modules.report.gcov
-	gcov -po tools tools/*.c 2| tee ldb_tools.report.gcov
+	gcov -po common common/*.c 2| tee common.report.gcov
+	gcov -po modules modules/*.c 2| tee modules.report.gcov
+	gcov -po tools tools/*.c 2| tee tools.report.gcov

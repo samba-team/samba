@@ -153,7 +153,7 @@ static int do_search(struct ldb_context *ldb,
 		attrs = (const char * const *)(argv+1);
 	}
 
-	ldb = ldb_connect(ldb_url, 0, options);
+	ldb = ldb_connect(ldb_url, LDB_FLG_RDONLY, options);
 	if (!ldb) {
 		perror("ldb_connect");
 		exit(1);

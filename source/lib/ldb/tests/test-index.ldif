@@ -1,6 +1,11 @@
 dn: @INDEXLIST
 @IDXATTR: uid
-# it is much better not to index on objectclass if nearly
-# all the records are the same class (the index is expensive
-# to maintain, and doesn't really gain anything)
-# @IDXATTR: objectclass
+@IDXATTR: objectclass
+
+dn: @ATTRIBUTES
+uid: CASE_INSENSITIVE WILDCARD
+
+dn: @SUBCLASSES
+top: person
+person: organizationalPerson
+organizationalPerson: OpenLDAPperson
