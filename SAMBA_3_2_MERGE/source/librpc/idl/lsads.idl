@@ -1,0 +1,16 @@
+#include "idl_types.h"
+
+[ 
+  uuid(3919286a-b10c-11d0-9ba8-00c04fd92ef5),
+  version(0.0),
+  endpoints(lsarpc,lsass),
+  pointer_default(unique)
+] 
+interface lsads
+{
+
+	/*****************/
+        /* Function 0x00 */
+	void lsads_Unknown0();
+
+}

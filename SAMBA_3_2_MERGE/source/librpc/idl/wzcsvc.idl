@@ -1,0 +1,15 @@
+/*
+  windows zero-configuration service
+*/
+
+[
+  uuid(378e52b0-c0a9-11cf-822d-00aa0051e40f),
+  version(1.0)
+]
+interface wzcsvc
+{
+
+	/*****************/
+	/* Function 0x00 */
+	WERROR wzcsvc_Unknown0();
+}

@@ -1,0 +1,74 @@
+#include "idl_types.h"
+
+/*
+  dcerpc remote management interface
+*/
+
+
+[
+  uuid(afa8bd80-7d8a-11c9-bef4-08002b102989), 
+  version(1)
+] 
+interface mgmt
+{
+	typedef struct {
+		dcerpc_syntax_id *id;
+	} dcerpc_syntax_id_p;
+
+	typedef struct {
+		uint32              count;
+		[size_is(count)] dcerpc_syntax_id_p if_id[*];
+	} rpc_if_id_vector_t;
+
+
+	/***********************/
+	/* Function 0x00       */
+	WERROR mgmt_inq_if_ids (
+		[out]       rpc_if_id_vector_t      *if_id_vector
+		);
+
+
+
+	/***********************/
+	/* Function 0x01       */
+
+
+	/* these are the array indexes in the statistics array */
+	const int MGMT_STATS_CALLS_IN       = 0;
+	const int MGMT_STATS_CALLS_OUT      = 1;
+	const int MGMT_STATS_PKTS_IN        = 2;
+	const int MGMT_STATS_PKTS_OUT       = 3;
+	const int MGMT_STATS_ARRAY_MAX_SIZE = 4;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] uint32 statistics[*];
+	} mgmt_statistics;
+
+	WERROR mgmt_inq_stats (
+		[in]        uint32             max_count,
+		[in]        uint32             unknown,
+		[out]       mgmt_statistics        statistics
+		);
+
+
+	/***********************/
+	/* Function 0x02       */
+	boolean32 mgmt_is_server_listening (
+		[out]       error_status_t          status
+		);
+
+
+	/***********************/
+	/* Function 0x03       */
+	WERROR mgmt_stop_server_listening ();
+
+
+	/***********************/
+	/* Function 0x04       */
+	WERROR mgmt_inq_princ_name (
+		[in]        uint32                  authn_proto,
+		[in]        uint32                  princ_name_size,
+		[out]       ascstr                  princ_name
+		);
+}
