@@ -126,6 +126,11 @@ ipv4_h_addr2addr (const char *addr,
 static krb5_boolean
 ipv4_uninteresting (const struct sockaddr *sa)
 {
+    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+
+    if (sin->sin_addr.s_addr == INADDR_ANY)
+	return TRUE;
+
     return FALSE;
 }
 
@@ -270,10 +275,6 @@ ipv6_h_addr2addr (const char *addr,
 static krb5_boolean
 ipv6_uninteresting (const struct sockaddr *sa)
 {
-#ifndef IN6_IS_ADDR_LOOPBACK
-#define IN6_IS_ADDR_LOOPBACK(x) IN6_IS_LOOPBACK(*x)
-#endif
-
     const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
     const struct in6_addr *in6 = (const struct in6_addr *)&sin6->sin6_addr;
     
