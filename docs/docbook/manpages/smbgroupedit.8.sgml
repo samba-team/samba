@@ -182,7 +182,7 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> -1
 <para><programlisting>
 <prompt>root# </prompt><command>smbgroupedit \
 -c S-1-5-21-1108995562-3116817432-1375597819-512 \
--u domadm</command>
+-u domadm -td</command>
 </programlisting></para>
 
 		<para>
