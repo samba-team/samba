@@ -8,7 +8,8 @@ noinst_PROGRAMS = otptest
 
 otptest_LDADD = libotp.la \
 	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/roken/libroken.la
+	$(top_builddir)/lib/roken/libroken.la \
+	$(DBLIB)
 
 lib_LTLIBRARIES = libotp.la
 
