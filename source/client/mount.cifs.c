@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
+#include <mntent.h>
 
 #define MOUNT_CIFS_VERSION "1"
 
@@ -22,6 +23,11 @@ char * thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
 static int got_user = 0;
+static int got_domain = 0;
+static int got_ip = 0;
+static int got_unc = 0;
+static int got_uid = 0;
+static int got_gid = 0;
 static char * user_name = NULL;
 char * mountpassword = NULL;
 
@@ -32,7 +38,7 @@ void mount_cifs_usage()
 	printf("\nMount the remotetarget, specified as either a UNC name or ");
 	printf(" CIFS URL, to the local directory, dir.\n");
 
-	return;
+	exit(1);
 }
 
 /* caller frees username if necessary */
@@ -51,9 +57,137 @@ char * parse_cifs_url(unc_name)
 	printf("\ncifs url %s\n",unc_name);
 }
 
-char * parse_options(char * options)
+int parse_options(char * options)
 {
-	/* BB add missing code BB */
+	char * data;
+	char * value = 0;
+
+	if (!options)
+		return 1;
+
+	while ((data = strsep(&options, ",")) != NULL) {
+		if (!*data)
+			continue;
+		if ((value = strchr(data, '=')) != NULL) {
+			*value++ = '\0';
+		}
+		if (strncmp(data, "user", 4) == 0) {
+			if (!value || !*value) {
+				printf("invalid or missing username\n");
+				return 1;	/* needs_arg; */
+			}
+			if (strnlen(value, 260) < 260) {
+				got_user=1;
+				/* BB add check for format user%pass */
+				/* if(strchr(username%passw) got_password = 1) */
+			} else {
+				printf("username too long\n");
+				return 1;
+			}
+	} else if (strncmp(data, "pass", 4) == 0) {
+		if (!value || !*value) {
+			if(got_password) {
+				printf("password specified twice, ignoring second\n");
+			} else
+				got_password = 1;
+		} else if (strnlen(value, 17) < 17) {
+			got_password = 1;
+		} else {
+			printf("password too long\n");
+			return 1;
+		}
+	} else if (strncmp(data, "ip", 2) == 0) {
+		if (!value || !*value) {
+			printf("target ip address argument missing");
+		} else if (strnlen(value, 35) < 35) {
+			got_ip = 1;
+		} else {
+			printf("ip address too long\n");
+			return 1;
+		}
+	} else if ((strncmp(data, "unc", 3) == 0)
+		   || (strncmp(data, "target", 6) == 0)
+		   || (strncmp(data, "path", 4) == 0)) {
+		if (!value || !*value) {
+			printf("invalid path to network resource\n");
+			return 1;  /* needs_arg; */
+		} else if(strnlen(value,5) < 5) {
+			printf("UNC name too short");
+		}
+
+		if (strnlen(value, 300) < 300) {
+			got_unc = 1;
+			if (strncmp(value, "//", 2) == 0) {
+				if(got_unc)
+					printf("unc name specified twice, ignoring second\n");
+				else
+					got_unc = 1;
+			} else if (strncmp(value, "\\\\", 2) != 0) {	                   
+				printf("UNC Path does not begin with // or \\\\ \n");
+				return 1;
+			} else {
+				if(got_unc)
+					printf("unc name specified twice, ignoring second\n");
+				else
+					got_unc = 1;
+			}
+		} else {
+			printf("CIFS: UNC name too long\n");
+			return 1;
+		}
+	} else if ((strncmp(data, "domain", 3) == 0)
+		   || (strncmp(data, "workgroup", 5) == 0)) {
+		if (!value || !*value) {
+			printf("CIFS: invalid domain name\n");
+			return 1;	/* needs_arg; */
+		}
+		if (strnlen(value, 65) < 65) {
+			got_domain = 1;
+		} else {
+			printf("domain name too long\n");
+			return 1;
+		}
+	} else if (strncmp(data, "uid", 3) == 0) {
+		if (value && *value) {
+			got_uid = 1;
+		}
+	} else if (strncmp(data, "gid", 3) == 0) {
+		if (value && *value) {
+			got_gid = 1;
+		}
+	} /* else if (strnicmp(data, "file_mode", 4) == 0) {
+		if (value && *value) {
+			vol->file_mode =
+				simple_strtoul(value, &value, 0);
+		}
+	} else if (strnicmp(data, "dir_mode", 3) == 0) {
+		if (value && *value) {
+			vol->dir_mode =
+				simple_strtoul(value, &value, 0);
+		}
+	} else if (strnicmp(data, "port", 4) == 0) {
+		if (value && *value) {
+			vol->port =
+				simple_strtoul(value, &value, 0);
+		}
+	} else if (strnicmp(data, "rsize", 5) == 0) {
+		if (value && *value) {
+			vol->rsize =
+				simple_strtoul(value, &value, 0);
+		}
+	} else if (strnicmp(data, "wsize", 5) == 0) {
+		if (value && *value) {
+			vol->wsize =
+				simple_strtoul(value, &value, 0);
+		}
+	} else if (strnicmp(data, "version", 3) == 0) {
+		
+	} else if (strnicmp(data, "rw", 2) == 0) {
+		
+	} else
+		printf("CIFS: Unknown mount option %s\n",data); */
+	}
+	return 0;
 }
 
 /* Note that caller frees the returned buffer if necessary */
@@ -66,7 +200,6 @@ char * parse_server(char * unc_name)
 	struct in_addr server_ipaddr;
 	int rc,j;
 	char temp[64];
-
 
 	if(length > 1023) {
 		printf("mount error: UNC name too long");
@@ -89,8 +222,11 @@ char * parse_server(char * unc_name)
 			printf(" %s does not begin with \\\\ or //\n",unc_name);
 			return 0;
 		} else {
+			unc_name[0] = '\\';
+			unc_name[1] = '\\';
 			unc_name += 2;
-			if (share = strchr(unc_name, '/')) {
+			if ((share = strchr(unc_name, '/')) || 
+				(share = strchr(unc_name,'\\'))) {
 				*share = 0;  /* temporarily terminate the string */
 				share += 1;
 				host_entry = gethostbyname(unc_name);
@@ -102,7 +238,6 @@ char * parse_server(char * unc_name)
 					return 0;
 				}
 				else {
-					printf("Target server %s %x found\n",host_entry->h_name,host_entry->h_addr);	/* BB removeme */
 					/* BB should we pass an alternate version of the share name as Unicode */
 					/* BB what about ipv6? BB */
 					/* BB add retries with alternate servers in list */
@@ -159,12 +294,12 @@ int main(int argc, char ** argv)
 	int c;
 	int flags = MS_MANDLOCK | MS_MGC_VAL;
 	char * orgoptions = NULL;
-	char * options;
-	char * share_name;
+	char * share_name = NULL;
 	char * domain_name = NULL;
-	char * ipaddr;
-	char * mount_point;
+	char * ipaddr = NULL;
 	char * uuid = NULL;
+	char * mountpoint;
+	char * options;
 	int rc,i;
 	int rsize = 0;
 	int wsize = 0;
@@ -174,6 +309,8 @@ int main(int argc, char ** argv)
 	int optlen = 0;
 	struct stat statbuf;
 	struct utsname sysinfo;
+	struct mntent mountent;
+	FILE * pmntfile;
 
 	/* setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -186,12 +323,14 @@ int main(int argc, char ** argv)
 		thisprogram = "mount.cifs";
 
 	uname(&sysinfo);
-#ifdef _GNU_SOURCE
+	/* BB add workstation name and domain and pass down */
+/*#ifdef _GNU_SOURCE
 	printf(" node: %s machine: %s\n", sysinfo.nodename,sysinfo.machine);
-#endif
-	mount_cifs_usage();
+#endif*/
+	if(argc < 3)
+		mount_cifs_usage();
 	share_name = argv[1];
-	mount_point = argv[2];
+	mountpoint = argv[2];
 	/* add sharename in opts string as unc= parm */
 
 	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsU:vVwt:",
@@ -291,7 +430,7 @@ int main(int argc, char ** argv)
 			user_name = optarg;
 			break;
 		case 141:
-			 domain_name = optarg;
+			domain_name = optarg;
 			break;
 		case 142:
 			got_password = 1;
@@ -303,18 +442,14 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	for(i = 0;i < argc;i++)  /* BB remove */
-		printf("\narg %d is %s",i,argv[i]);  /* BB remove */
-	printf("\n");  /* BB removeme */
-
 	/* canonicalize the path in argv[1]? */
 
-	if(stat (mount_point, &statbuf)) {
-		printf("mount error: mount point %s does not exist\n",mount_point);
+	if(stat (mountpoint, &statbuf)) {
+		printf("mount error: mount point %s does not exist\n",mountpoint);
 		return -1;
 	}
 	if (S_ISDIR(statbuf.st_mode) == 0) {
-		printf("mount error: mount point %s is not a directory\n",mount_point);
+		printf("mount error: mount point %s is not a directory\n",mountpoint);
 		return -1;
 	}
 
@@ -326,7 +461,8 @@ int main(int argc, char ** argv)
 	ipaddr = parse_server(share_name);
 /*	if(share_name == NULL)
 		return 1; */
-	parse_options(orgoptions);
+	if (parse_options(strdup(orgoptions)))
+		return 1;
 
 	if(got_user == 0)
 		user_name = getusername();
@@ -348,32 +484,50 @@ int main(int argc, char ** argv)
 			got_password = 1;
 		}
 	}
-
-	/* launch daemon (handles dfs name resolution and credential change) */
-	if(orgoptions)
+	/* FIXME launch daemon (handles dfs name resolution and credential change) 
+	   remember to clear parms and overwrite password field before launching */
+	if(orgoptions) {
 		optlen = strlen(orgoptions);
-	else
+	} else
 		optlen = 0;
-	options = malloc(optlen + 25 + strlen(share_name) + strlen(user_name)
-			+ strlen(ipaddr) + 1);
-	strcpy(options,"unc=");
+	if(share_name)
+		optlen += strlen(share_name) + 4;
+	if(user_name)
+		optlen += strlen(user_name) + 6;
+	if(ipaddr)
+		optlen += strlen(ipaddr) + 4;
+	if(mountpassword)
+		optlen += strlen(mountpassword) + 6;
+	options = malloc(optlen + 10);
+
+    options[0] = 0;
+	strncat(options,"unc=",4);
 	strcat(options,share_name);
-	strncat(options,",ip=",4);
-	strcat(options,ipaddr);
-	strncat(options,",user=",6);
-	strcat(options,user_name);
-	strncat(options,",pass=",6);
-	strcat(options,mountpassword);
+	if(ipaddr) {
+		strncat(options,",ip=",4);
+		strcat(options,ipaddr);
+	} 
+	if(user_name) {
+		strncat(options,",user=",6);
+		strcat(options,user_name);
+	} 
+	if(mountpassword) {
+		strncat(options,",pass=",6);
+		strcat(options,mountpassword);
+	}
 	strncat(options,",ver=",5);
 	strcat(options,MOUNT_CIFS_VERSION);
-	if(optlen)
+
+	if(orgoptions) {
+		strcat(options,",");
 		strcat(options,orgoptions);
-	printf("\noptions %s \n",options);
-	if(mount(share_name, mount_point, "cifs", flags, options)) {
+	}
+	/* printf("\noptions %s \n",options);*/
+	if(mount(share_name, mountpoint, "cifs", flags, options)) {
 	/* remember to kill daemon on error */
 		switch (errno) {
 		case 0:
-			printf(" success\n"); /* BB removeme */
+			printf("mount failed but no error number set\n");
 			return 0;
 		case ENODEV:
 			printf("mount error: cifs filesystem not supported by the system\n");
@@ -381,9 +535,23 @@ int main(int argc, char ** argv)
 		default:
 			printf("mount error %d = %s",errno,strerror(errno));
 		}
-		printf("\nRefer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
+		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
 		return -1;
-	} else
-		printf(" mount succeeded\n"); /* BB removeme */
+	} else {
+		pmntfile = setmntent(MOUNTED, "a+");
+		if(pmntfile) {
+			mountent.mnt_fsname = share_name;
+			mountent.mnt_dir = mountpoint; 
+			mountent.mnt_type = "cifs"; 
+			mountent.mnt_opts = "";
+			mountent.mnt_freq = 0;
+			mountent.mnt_passno = 0;
+			rc = addmntent(pmntfile,&mountent);
+			endmntent(pmntfile);
+		} else {
+		    printf("could not update mount table\n");
+		}
+	}
+	return 0;
 }
 
