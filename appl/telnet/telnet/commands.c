@@ -1581,7 +1581,7 @@ env_init(void)
 
 		/* If this is not the full name, try to get it via DNS */
 		if (strchr(hbuf, '.') == 0) {
-			struct addrinfo hints, *ai;
+			struct addrinfo hints, *ai, *a;
 			int error;
 
 			memset (&hints, 0, sizeof(hints));
@@ -1589,8 +1589,13 @@ env_init(void)
 
 			error = getaddrinfo (hbuf, NULL, &hints, &ai);
 			if (error == 0) {
-				if (ai->ai_canonname != NULL)
-					strlcpy (hbuf, ai->ai_canonname, 256);
+				for (a = ai; a != NULL; a = a->ai_next)
+					if (a->ai_canonname != NULL) {
+						strlcpy (hbuf,
+							 ai->ai_canonname,
+							 256);
+						break;
+					}
 				freeaddrinfo (ai);
 			}
 		}
@@ -2057,14 +2062,7 @@ cmdrc(char *m1, char *m2)
 int
 tn(int argc, char **argv)
 {
-#ifdef HAVE_IPV6
-    struct sockaddr_in6 sin6;
-#endif
-    struct sockaddr_in sin;
-    struct sockaddr *sa = NULL;
-    int sa_size = 0;
     struct servent *sp = 0;
-    unsigned long temp;
     extern char *inet_ntoa();
 #if defined(IP_OPTIONS) && defined(IPPROTO_IP)
     char *srp = 0;
@@ -2072,8 +2070,7 @@ tn(int argc, char **argv)
 #endif
     char *cmd, *hostp = 0, *portp = 0;
     char *user = 0;
-    int family, port = 0;
-    char **addr_list;
+    int port = 0;
 
     /* clear the socket address prior to use */
 
@@ -2176,14 +2173,14 @@ tn(int argc, char **argv)
 	    setuid (getuid ());
 	    return 0;
 	}
-	if (ai->ai_canonname != NULL)
-		strlcpy (_hostname, ai->ai_canonname, sizeof(_hostname));
-	else
-		strlcpy (_hostname, hostp, sizeof(_hostname));
+	strlcpy (_hostname, hostp, sizeof(_hostname));
 	hostname = _hostname;
 
 	for (a = ai; a != NULL && connected == 0; a = a->ai_next) {
 	    char addrstr[256];
+
+	    if (a->ai_canonname != NULL)
+		strlcpy (_hostname, a->ai_canonname, sizeof(_hostname));
 
 	    if (getnameinfo (a->ai_addr, a->ai_addrlen,
 			     addrstr, sizeof(addrstr),
