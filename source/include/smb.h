@@ -926,14 +926,16 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #endif 
 
+/* Defines needed for multi-codepage support. */
+#define KANJI_CODEPAGE 932
+
 #ifdef KANJI
-/* Default client code page - 932 - Japanese */
-#define DEFAULT_CLIENT_CODE_PAGE 932
+/* Default client code page - Japanese */
+#define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
 #else /* KANJI */
 /* Default client code page - 850 - Western European */
 #define DEFAULT_CLIENT_CODE_PAGE 850
 #endif /* KANJI */
-
 /* Size of buffer to use when moving files across filesystems. */
 #define COPYBUF_SIZE (8*1024)
 

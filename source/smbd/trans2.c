@@ -1347,6 +1347,14 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
       tvs.modtime=MAX(interpret_long_date(pdata+16),
                       interpret_long_date(pdata+24));
 
+#if 0 /* Needs more testing... */
+      /* Test from Luke to prevent Win95 from
+         setting incorrect values here.
+       */
+      if (tvs.actime < tvs.modtime)
+        return(ERROR(ERRDOS,ERRnoaccess));
+#endif /* Needs more testing... */
+
       /* attributes */
       mode = IVAL(pdata,32);
       break;

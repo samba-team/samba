@@ -306,27 +306,35 @@ static void fixtarname(char *tptr, char *fp, int l)
    * to lovely unix /'s :-} */
 
   *tptr++='.';
-#ifdef KANJI
-  while (l > 0) {
-    if (is_shift_jis (*fp)) {
-      *tptr++ = *fp++;
-      *tptr++ = *fp++;
-      l -= 2;
-    } else if (is_kana (*fp)) {
-      *tptr++ = *fp++;
-      l--;
-    } else if (*fp == '\\') {
-      *tptr++ = '/';
-      fp++;
-      l--;
-    } else {
-      *tptr++ = *fp++;
-      l--;
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    while (l > 0) {
+      if (is_shift_jis (*fp)) {
+        *tptr++ = *fp++;
+        *tptr++ = *fp++;
+        l -= 2;
+      } else if (is_kana (*fp)) {
+        *tptr++ = *fp++;
+        l--;
+      } else if (*fp == '\\') {
+        *tptr++ = '/';
+        fp++;
+        l--;
+      } else {
+        *tptr++ = *fp++;
+        l--;
+      }
     }
   }
-#else
-  while (l--) { *tptr=(*fp == '\\') ? '/' : *fp; tptr++; fp++; }
-#endif
+  else
+  {
+    while (l--)
+    {
+      *tptr=(*fp == '\\') ? '/' : *fp;
+      tptr++;
+      fp++;
+    }
+  }
 }
 
 /****************************************************************************
@@ -1203,27 +1211,35 @@ static void unfixtarname(char *tptr, char *fp, int l)
   if (*fp == '.') fp++;
   if (*fp == '\\' || *fp == '/') fp++;
 
-#ifdef KANJI
-  while (l > 0) {
-    if (is_shift_jis (*fp)) {
-      *tptr++ = *fp++;
-      *tptr++ = *fp++;
-      l -= 2;
-    } else if (is_kana (*fp)) {
-      *tptr++ = *fp++;
-      l--;
-    } else if (*fp == '/') {
-      *tptr++ = '\\';
-      fp++;
-      l--;
-    } else {
-      *tptr++ = *fp++;
-      l--;
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    while (l > 0) {
+      if (is_shift_jis (*fp)) {
+        *tptr++ = *fp++;
+        *tptr++ = *fp++;
+        l -= 2;
+      } else if (is_kana (*fp)) {
+        *tptr++ = *fp++;
+        l--;
+      } else if (*fp == '/') {
+        *tptr++ = '\\';
+        fp++;
+        l--;
+      } else {
+        *tptr++ = *fp++;
+        l--;
+      }
     }
   }
-#else
-  while (l--) { *tptr=(*fp == '/') ? '\\' : *fp; tptr++; fp++; }
-#endif
+  else
+  {
+    while (l--)
+    {
+      *tptr=(*fp == '/') ? '\\' : *fp;
+      tptr++;
+      fp++;
+    }
+  }
 }
 
 static void do_tarput()

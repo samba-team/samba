@@ -143,12 +143,8 @@ extern int Client;
 
 #define USENMB
 
-#ifdef KANJI
 extern int coding_system;
-#define CNV_LANG(s) (coding_system == DOSV_CODE?s:dos_to_unix(s, False))
-#define CNV_INPUT(s) (coding_system == DOSV_CODE?s:unix_to_dos(s, True))
-static BOOL
-setup_term_code (char *code)
+static BOOL setup_term_code (char *code)
 {
     int new;
     new = interpret_coding_system (code, UNKNOWN_CODE);
@@ -158,10 +154,8 @@ setup_term_code (char *code)
     }
     return False;
 }
-#else
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
-#endif
 
 /****************************************************************************
 setup basics in a outgoing packet
@@ -4392,10 +4386,6 @@ static void usage(char *pname)
   DEBUG(0,("Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
 	   pname));
 
-#ifdef KANJI
-  DEBUG(0,("[-t termcode] "));
-#endif /* KANJI */
-
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-p port               listen on the specified port\n"));
   DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
@@ -4411,9 +4401,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-U username           set the network username\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
-#ifdef KANJI
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-#endif /* KANJI */
   DEBUG(0,("\t-T<c|x>IXgbNa          command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\n"));
@@ -4435,6 +4423,13 @@ static void usage(char *pname)
   BOOL message = False;
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
+  pstring term_code;
+
+#ifdef KANJI
+  strcpy(term_code, KANJI);
+#else /* KANJI */
+  *term_code = 0;
+#endif /* KANJI */
 
   *query_host = 0;
   *base_directory = 0;
@@ -4506,9 +4501,6 @@ static void usage(char *pname)
 	}
     }
 
-#ifdef KANJI
-  setup_term_code (KANJI);
-#endif
   while ((opt = 
 	  getopt(argc, argv,"s:B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
@@ -4604,13 +4596,7 @@ static void usage(char *pname)
 	strcpy(servicesf, optarg);
 	break;
       case 't':
-#ifdef KANJI
-	if (!setup_term_code (optarg)) {
-	    DEBUG(0, ("%s: unknown terminal code name\n", optarg));
-	    usage (pname);
-	    exit (1);
-	}
-#endif
+        strcpy(term_code, optarg);
 	break;
       default:
 	usage(pname);
@@ -4633,6 +4619,18 @@ static void usage(char *pname)
 
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+  }
+
+  codepage_initialise(lp_client_code_page());
+
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+        if (!setup_term_code (term_code))
+    {
+            DEBUG(0, ("%s: unknown terminal code name\n", optarg));
+            usage (pname);
+            exit (1);
+        }
   }
 
   if (*workgroup == 0)
