@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -64,6 +64,10 @@ RCSID("$Id$");
 #include <roken.h>
 #include <getarg.h>
 
+#ifndef TKT_ROOT
+#define TKT_ROOT "/tmp/tkt"
+#endif
+
 static int help_flag;
 static int version_flag;
 static int c_flag;
@@ -113,20 +117,22 @@ main(int argc, char **argv)
   argv += optind;
 
 #ifdef KRB5
-  snprintf (tf, sizeof(tf), "%sXXXXXX", KRB5_DEFAULT_CCROOT);
+  snprintf (tf, sizeof(tf), "%sXXXXXXXXXX", KRB5_DEFAULT_CCROOT);
   f = mkstemp (tf + 5);
+  if (f < 0)
+      err(1, "mkstemp failed");
   close (f);
   unlink (tf + 5);
   esetenv("KRB5CCNAME", tf, 1);
 #endif
 
-#ifdef KRB4
-  snprintf (tf, sizeof(tf), "%s_XXXXXX", TKT_ROOT);
+  snprintf (tf, sizeof(tf), "%s_XXXXXXXXXX", TKT_ROOT);
   f = mkstemp (tf);
+  if (f < 0)
+      err(1, "mkstemp failed");
   close (f);
   unlink (tf);
   esetenv("KRBTKFILE", tf, 1);
-#endif
 
   i = 0;
 
