@@ -21,6 +21,7 @@ ftpd_SOURCES =		\
 	ftpd.c		\
 	ftpd_locl.h	\
 	logwtmp.c	\
+	ls.c		\
 	pathnames.h	\
 	popen.c		\
 	security.c	\
