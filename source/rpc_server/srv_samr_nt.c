@@ -124,7 +124,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	}
 
 	if (!pdb_setsampwent(False)) {
-		DEBUG(0, ("get_sampwd_entries: Unable to open passdb.\n"));
+		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -142,7 +142,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
 		if (info->disp_info.num_account % MAX_SAM_ENTRIES == 0) {
 		
-			DEBUG(0,("load_sampwd_entries: allocating more memory\n"));
+			DEBUG(10,("load_sampwd_entries: allocating more memory\n"));
 		
 		
 			pwd_array=(DISP_USER_INFO *)Realloc(info->disp_info.disp_user_info, 
@@ -172,7 +172,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 		 * note: the size calculated are smaller than the size sent on the wire
 		 * we add the SAM_ENTRY_x size later
 		 */
-		DEBUG(0,("load_sampwd_entries: entry: %d size: %d total: %d\n", info->disp_info.num_account, info->disp_info.disp_user_info[info->disp_info.num_account].size,info->disp_info.total_size));
+		DEBUG(10,("load_sampwd_entries: entry: %d size: %d total: %d\n", info->disp_info.num_account, info->disp_info.disp_user_info[info->disp_info.num_account].size,info->disp_info.total_size));
 
 		info->disp_info.num_account++;	
 	}
