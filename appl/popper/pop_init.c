@@ -210,7 +210,15 @@ static struct getargs args[] = {
 #if defined(KRB4) || defined(KRB5)
     { "kerberos", 'k', arg_flag, &kerberos_flag, "use kerberos" },
 #endif
-    { "auth-mode", 'a', arg_string, &auth_str, "required authentication" },
+    { "auth-mode", 'a', arg_string, &auth_str, "required authentication", 
+      "plaintext"
+#ifdef OTP
+      "|otp"
+#endif
+#ifdef SASL
+      "|sasl"
+#endif
+    },
     { "debug", 'd', arg_flag, &debug_flag },
     { "interactive", 'i', arg_flag, &interactive_flag, "create new socket" },
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
@@ -302,14 +310,27 @@ pop_init(POP *p,int argcount,char **argmessage)
     }
 
     if(auth_str){
-	if (strcmp (auth_str, "none") == 0)
+	if (strcasecmp (auth_str, "plaintext") == 0 || 
+	    strcasecmp (auth_str, "none") == 0)
 	    p->auth_level = AUTH_NONE;
-	else if(strcmp(auth_str, "otp") == 0)
+	else if(strcasecmp(auth_str, "otp") == 0) {
+#ifdef OTP
 	    p->auth_level = AUTH_OTP;
-	else if(strcmp(auth_str, "sasl") == 0)
+#else
+	    pop_log (p, POP_PRIORITY, "support for OTP not enabled");
+	    exit(1);
+#endif
+	} else if(strcasecmp(auth_str, "sasl") == 0) {
+#ifdef SASL
 	    p->auth_level = AUTH_SASL;
-	else
-	    warnx ("bad value for -a: %s", optarg);
+#else
+	    pop_log (p, POP_PRIORITY, "support for SASL not enabled");
+	    exit(1);
+#endif
+	} else {
+	    pop_log (p, POP_PRIORITY, "bad value for -a: %s", auth_str);
+	    exit(1);
+	}
     }
     /*  Debugging requested */
     p->debug = debug_flag;
