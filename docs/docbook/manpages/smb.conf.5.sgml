@@ -847,7 +847,6 @@
 		<listitem><para><link linkend="QUEUERESUMECOMMAND"><parameter>queueresume command</parameter></link></para></listitem>
 		<listitem><para><link linkend="READLIST"><parameter>read list</parameter></link></para></listitem>
 		<listitem><para><link linkend="READONLY"><parameter>read only</parameter></link></para></listitem>
-		<listitem><para><link linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="ROOTPOSTEXEC"><parameter>root postexec</parameter></link></para></listitem>
 		<listitem><para><link linkend="ROOTPREEXEC"><parameter>root preexec</parameter></link></para></listitem>
 		<listitem><para><link linkend="ROOTPREEXECCLOSE"><parameter>root preexec close</parameter></link></para></listitem>
@@ -1657,11 +1656,10 @@
 		mode bits on created directories.  See also the <link linkend="INHERITPERMISSIONS">
 		<parameter>inherit permissions</parameter></link> parameter.</para>
 
-		<para>Note that by default this parameter does not apply to permissions
+		<para>Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link 
-		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
-		mask</parameter></link> to true.</para>
+		a mask on access control lists also, they need to set the <link 
+		linkend="SECURITYMASK"><parameter>security mask</parameter></link>.</para>
 
 		<para>Default: <command>create mask = 0744</command></para>
 		<para>Example: <command>create mask = 0775</command></para></listitem>
@@ -2129,11 +2127,10 @@
 		</parameter></link> parameter. This parameter is set to 000 by 
 		default (i.e. no extra mode bits are added).</para>
 
-		<para>Note that by default this parameter does not apply to permissions
+		<para>Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link 
-		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
-		mask</parameter></link> to true.</para>
+		a mask on access control lists also, they need to set the <link 
+		linkend="DIRECTORYSECURITYMASK"><parameter>directory security mask</parameter></link>.</para>
 
 		<para>See the <link linkend="FORCEDIRECTORYMODE"><parameter>force 
 		directory mode</parameter></link> parameter to cause particular mode 
@@ -2175,17 +2172,15 @@
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</para>
 
-		<para>If not set explicitly this parameter is set to the same 
-		value as the <link linkend="DIRECTORYMASK"><parameter>directory 
-		mask</parameter></link> parameter. To allow a user to
-		modify all the user/group/world permissions on a directory, set 
-		this parameter to 0777.</para>
+		<para>If not set explicitly this parameter is set to 0777
+		meaning a user is allowed to modify all the user/group/world
+		permissions on a directory.</para>
 
 		<para><emphasis>Note</emphasis> that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0777.</para>
+		Administrators of most normal systems will probably want to leave
+		it as the default of 0777.</para>
 
 		<para>See also the <link linkend="FORCEDIRECTORYSECURITYMODE"><parameter>
 		force directory security mode</parameter></link>, <link
@@ -2193,9 +2188,8 @@
 		<link linkend="FORCESECURITYMODE"><parameter>force security mode
 		</parameter></link> parameters.</para>
 
-		<para>Default: <command>directory security mask = &lt;same as 
-		directory mask&gt;</command></para>
-		<para>Example: <command>directory security mask = 0777</command></para>
+		<para>Default: <command>directory security mask = 0777</command></para>
+		<para>Example: <command>directory security mask = 0700</command></para>
 		</listitem>
 		</varlistentry>
 		
@@ -2655,17 +2649,15 @@
 		mask may be treated as a set of bits that, when modifying security 
 		on a directory, the user has always set to be 'on'.</para>
 
-		<para>If not set explicitly this parameter is set to the same 
-		value as the <link linkend="FORCEDIRECTORYMODE"><parameter>force 
-		directory mode</parameter></link> parameter. To allow
-		a user to modify all the user/group/world permissions on a 
-		directory without restrictions, set this parameter to 000.</para>
+		<para>If not set explicitly this parameter is 000, which 
+		allows a user to modify all the user/group/world permissions on a 
+		directory without restrictions.</para>
 
 		<para><emphasis>Note</emphasis> that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</para>
+		Administrators of most normal systems will probably want to leave
+		it set as 0000.</para>
 
 		<para>See also the <link linkend="DIRECTORYSECURITYMASK"><parameter>
 		directory security mask</parameter></link>, <link linkend="SECURITYMASK">
@@ -2673,9 +2665,8 @@
 		<link linkend="FORCESECURITYMODE"><parameter>force security mode
 		</parameter></link> parameters.</para>
 
-		<para>Default: <command>force directory security mode = &lt;same as 
-		force directory mode&gt;</command></para>
-		<para>Example: <command>force directory security mode = 0</command></para>
+		<para>Default: <command>force directory security mode = 0</command></para>
+		<para>Example: <command>force directory security mode = 700</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -2733,17 +2724,15 @@
 		mask may be treated as a set of bits that, when modifying security 
 		on a file, the user has always set to be 'on'.</para>
 
-		<para>If not set explicitly this parameter is set to the same 
-		value as the <link linkend="FORCECREATEMODE"><parameter>force 
-		create mode</parameter></link> parameter. To allow a user to 
-		modify all the user/group/world permissions on a file, with no 
-		restrictions set this parameter to 000.</para>
+		<para>If not set explicitly this parameter is set to 0,
+		and allows a user to modify all the user/group/world permissions on a file,
+		with no restrictions.</para>
 		
 		<para><emphasis>Note</emphasis> that users who can access 
 		the Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</para>
+		Administrators of most normal systems will probably want to leave
+		this set to 0000.</para>
 
 		<para>See also the <link linkend="FORCEDIRECTORYSECURITYMODE"><parameter>
 		force directory security mode</parameter></link>,
@@ -2751,9 +2740,8 @@
 		mask</parameter></link>, <link linkend="SECURITYMASK"><parameter>
 		security mask</parameter></link> parameters.</para>
 
-		<para>Default: <command>force security mode = &lt;same as force 
-		create mode&gt;</command></para>
-		<para>Example: <command>force security mode = 0</command></para>
+		<para>Default: <command>force security mode = 0</command></para>
+		<para>Example: <command>force security mode = 700</command></para>
 		</listitem>
 		</varlistentry>
 		
@@ -6389,17 +6377,15 @@
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</para>
 
-		<para>If not set explicitly this parameter is set to the same
-		value as the <link linkend="CREATEMASK"><parameter>create mask
-		</parameter></link> parameter. To allow a user to modify all the 
-		user/group/world permissions on a file, set this parameter to 
-		0777.</para>
+		<para>If not set explicitly this parameter is 0777, allowing
+		a user to modify all the user/group/world permissions on a file.
+		</para>
 
 		<para><emphasis>Note</emphasis> that users who can access the 
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
 		"appliance" systems.  Administrators of most normal systems will 
-		probably want to set it to 0777.</para>
+		probably want to leave it set to 0777.</para>
 		
 		<para>See also the <link linkend="FORCEDIRECTORYSECURITYMODE">
 		<parameter>force directory security mode</parameter></link>, 
@@ -6407,9 +6393,8 @@
 		security mask</parameter></link>, <link linkend="FORCESECURITYMODE">
 		<parameter>force security mode</parameter></link> parameters.</para>
 
-		<para>Default: <command>security mask = &lt;same as create mask&gt;
-		</command></para>
-		<para>Example: <command>security mask = 0777</command></para>
+		<para>Default: <command>security mask = 0777</command></para>
+		<para>Example: <command>security mask = 0770</command></para>
 		</listitem>
 		</varlistentry>
 
