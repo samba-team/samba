@@ -44,9 +44,7 @@
 #include <gssapi.h>
 #include <assert.h>
 
-#ifdef HAVE_GSSAPI_CFX
 #include "cfx.h"
-#endif
 
 /*
  *
@@ -179,6 +177,12 @@ gssapi_krb5_verify_header(u_char **str,
 			  size_t total_len,
 			  u_char *type,
 			  gss_OID oid);
+
+OM_uint32
+_gssapi_decapsulate(OM_uint32 *minor_status,
+		    gss_buffer_t input_token_buffer,
+		    krb5_data *out_data,
+		    const gss_OID mech);
 
 
 OM_uint32
