@@ -352,22 +352,27 @@ SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ)  \
+           $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ)
 
 WKSSVCD_OBJ = $(MSRPCD_OBJ) $(WKSSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
+           $(SIDDB_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
 BROWSERD_OBJ = $(MSRPCD_OBJ) $(BROWSERD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
+           $(SIDDB_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
 WINREGD_OBJ = $(MSRPCD_OBJ) $(WINREGD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
+           $(SIDDB_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
 SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
+           $(SIDDB_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
 LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
@@ -378,6 +383,7 @@ LSARPCD_LIBS = $(SAMBA_LIBS)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
+           $(SIDDB_OBJ) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
