@@ -716,7 +716,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 
 	if (srv_name == NULL || strequal("\\\\.", srv_name))
 	{
-		extern fstring global_myname;
+		extern pstring global_myname;
 		fstrcpy(dest_host, global_myname);
 		ip = interpret_addr2("127.0.0.1");
 		return True;
@@ -728,7 +728,14 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 	}
 
 	fstrcpy(dest_host, sv_name);
-	ret = resolve_name(dest_host, ip, 0x20);
+	/* treat the '*' name specially - it is a magic name for the PDC */
+	if (strcmp(dest_host,"*") == 0) {
+		extern pstring global_myname;
+		ret = resolve_name(lp_workgroup(), ip, 0x1B);
+		lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+	} else {
+		ret = resolve_name(dest_host, ip, 0x20);
+	}
 	
 	if (is_ip_address(dest_host))
 	{
