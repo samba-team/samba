@@ -73,20 +73,23 @@ static void map_nt_and_unix_username(const char *domain, char *user)
 	 * function.
 	 */
    
-	memset(nt_username, 0, sizeof(nt_username));
-	if (domain != NULL)
+	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
-		slprintf(nt_username, sizeof(nt_username)-1, "%s\\%s",
-		         domain, user);
-	}
-	else
-	{
-		fstrcpy(nt_username, user);
-	}
+		memset(nt_username, 0, sizeof(nt_username));
+		if (domain != NULL)
+		{
+			slprintf(nt_username, sizeof(nt_username)-1, "%s\\%s",
+				 domain, user);
+		}
+		else
+		{
+			fstrcpy(nt_username, user);
+		}
 
-	if (lookupsmbpwntnam(nt_username, &gmep))
-	{
-		fstrcpy(user, gmep.unix_name);
+		if (lookupsmbpwntnam(nt_username, &gmep))
+		{
+			fstrcpy(user, gmep.unix_name);
+		}
 	}
 
 	/*
