@@ -40,6 +40,30 @@
 
 RCSID("$Id$");
 
+/* This is a bit XXX, but used quite many places */
+
+size_t
+k_put_int(void *buffer, unsiged long value, size_t size)
+{
+    unsiged char *p = buffer;
+    for (i = size - 1; i >= 0; i--) {
+	p[i] = value & 0xff;
+	value >>= 8;
+    }
+    return size;
+}
+
+size_t
+k_get_int(void *buffer, unsiged long *value, size_t size)
+{
+    unsiged char *p = buffer;
+    unsigned long v = 0;
+    for (i = 0; i < size; i++)
+	v = (v << 8) + p[i];
+    *value = v;
+    return size;
+}
+
 krb5_error_code
 krb5_storage_free(krb5_storage *sp)
 {
@@ -70,58 +94,63 @@ krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
     return 0;
 }
 
-krb5_error_code
-krb5_store_int32(krb5_storage *sp,
-		 int32_t value)
+static krb5_error_code
+krb5_store_int(krb5_storage *sp,
+	       int32_t value,
+	       size_t len)
 {
     int ret;
+    unsigned char v[4];
 
-    value = htonl(value);
-    ret = sp->store(sp, &value, sizeof(value));
-    if (ret != sizeof(value))
+    k_put_int(v, value, len);
+    ret = sp->store(sp, v, len);
+    if (ret != len)
 	return (ret<0)?errno:KRB5_CC_END;
     return 0;
 }
 
 krb5_error_code
+krb5_store_int32(krb5_storage *sp,
+		 int32_t value)
+{
+    return krb5_store_int(sp, value, 4);
+}
+
+static krb5_error_code
+krb5_ret_int(krb5_storage *sp,
+	     int32_t *value,
+	     size_t len)
+{
+    int ret;
+    unsigned char v[4];
+    unsigned long w;
+    ret = sp->fetch(sp, v, len);
+    if(ret != len)
+	return (ret<0)?errno:KRB5_CC_END;
+    k_get_int(v, &w, len);
+    *value = w;
+    return 0;
+}
+
+static krb5_error_code
 krb5_ret_int32(krb5_storage *sp,
 	       int32_t *value)
 {
-    int32_t v;
-    int ret;
-    ret = sp->fetch(sp, &v, sizeof(v));
-    if(ret != sizeof(v))
-	return (ret<0)?errno:KRB5_CC_END;
-
-    *value = ntohl(v);
-    return 0;
+    return krb5_ret_int(sp, value, 4);
 }
 
 krb5_error_code
 krb5_store_int16(krb5_storage *sp,
 		 int16_t value)
 {
-    int ret;
-
-    value = htons(value);
-    ret = sp->store(sp, &value, sizeof(value));
-    if (ret != sizeof(value))
-	return (ret<0)?errno:KRB5_CC_END;
-    return 0;
+    return krb5_store_int(sp, value, 2);
 }
 
 krb5_error_code
 krb5_ret_int16(krb5_storage *sp,
 	       int16_t *value)
 {
-    int16_t v;
-    int ret;
-    ret = sp->fetch(sp, &v, sizeof(v));
-    if(ret != sizeof(v))
-	return (ret<0)?errno:KRB5_CC_END; /* XXX */
-  
-    *value = ntohs(v);
-    return 0;
+    return krb5_ret_int(sp, value, 2);
 }
 
 krb5_error_code
