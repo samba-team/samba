@@ -67,7 +67,7 @@
 
 	<para>In addition, <command>nmbd</command> can act as a WINS 
 	proxy, relaying broadcast queries from clients that do 
-	not understand how to talk the WINS protocol to a WIN 
+	not understand how to talk the WINS protocol to a WINS 
 	server.</para>
 </refsect1>
 
@@ -99,7 +99,7 @@
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
-		parameter negates the implicit deamon mode when run from the
+		parameter negates the implicit daemon mode when run from the
 		command line.
 		</para></listitem>
 		</varlistentry>
@@ -136,9 +136,9 @@
 		Samba as part of the build process. Common defaults 
 		are <filename>/usr/local/samba/lib/lmhosts</filename>,
 		<filename>/usr/samba/lib/lmhosts</filename> or
-		<filename>/etc/lmhosts</filename>. See the <ulink url="lmhosts.5.html">
-		<filename>lmhosts(5)</filename></ulink> man page for details on the 
-		contents of this file.</para></listitem>
+		<filename>/etc/lmhosts</filename>. See the
+		<ulink url="lmhosts.5.html"><filename>lmhosts(5)</filename></ulink>
+		man page for details on the contents of this file.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -169,15 +169,15 @@
 		<para>Note that specifying this parameter here will override 
 		the <ulink url="smb.conf.5.html#loglevel">log level</ulink> 
 		parameter in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf</filename></ulink> file.</para></listitem>
+		smb.conf(5)</filename></ulink> file.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
 		<term>-l &lt;log directory&gt;</term>
 		<listitem><para>The -l parameter specifies a directory 
 		into which the "log.nmbd" log file will be created
-		for operational data from the running
-		<command>nmbd</command> server. The default log directory is compiled into Samba
+		for operational data from the running <command>nmbd</command>
+		server. The default log directory is compiled into Samba
 		as part of the build process. Common defaults are <filename>
 		/usr/local/samba/var/log.nmb</filename>, <filename>
 		/usr/samba/var/log.nmb</filename> or

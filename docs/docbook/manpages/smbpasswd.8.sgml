@@ -24,7 +24,6 @@
 		<arg choice="opt">-r &lt;remote machine&gt;</arg>	
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>	
 		<arg choice="opt">-m</arg>	
-		<arg choice="opt">-j DOMAIN</arg>	
 		<arg choice="opt">-U username[%password]</arg>	
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
@@ -56,7 +55,7 @@
 	UNIX machine the encrypted SMB passwords are usually stored in 
 	the <filename>smbpasswd(5)</filename> file. </para>
 
-	<para>When run by an ordinary user with no options. smbpasswd 
+	<para>When run by an ordinary user with no options, smbpasswd 
 	will prompt them for their old SMB password and then ask them 
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
@@ -89,7 +88,7 @@
 		password command.  Note that the default passdb backends require 
                 the user to already exist in the system password file (usually 
                 <filename>/etc/passwd</filename>), else the request to add the 
-                user will fail.  </para>
+                user will fail. </para>
 		
 		<para>This option is only available when running smbpasswd 
 		as root. </para></listitem>
@@ -220,12 +219,12 @@
 		
 		<varlistentry>
 		<term>-R name resolve order</term>
-		<listitem><para>This option allows the user of smbpasswd to determine 
+		<listitem><para>This option allows the user of smbpasswd to determine
 		what name resolution services to use when looking up the NetBIOS
 		name of the host being connected to. </para>
 
-		<para>The options are :"lmhosts", "host", "wins" and "bcast". They cause 
-		names to be resolved as follows : </para>
+		<para>The options are :"lmhosts", "host", "wins" and "bcast". They
+		 cause names to be resolved as follows : </para>
 			<itemizedlist>
 				<listitem><para><constant>lmhosts</constant> : Lookup an IP 
             address in the Samba lmhosts file. If the line in lmhosts has 
@@ -244,14 +243,14 @@
 
             <listitem><para><constant>wins</constant> : Query a name with 
             the IP address listed in the <parameter>wins server</parameter> 
-				parameter.  If no WINS server has been specified this method 
-				will be ignored.</para></listitem>
+	    parameter.  If no WINS server has been specified this method 
+	    will be ignored.</para></listitem>
 
             <listitem><para><constant>bcast</constant> : Do a broadcast on 
             each of the known local interfaces listed in the
             <parameter>interfaces</parameter> parameter. This is the least 
-				reliable of the name resolution methods as it depends on the 
-				target host being on a locally connected subnet.</para></listitem>
+	    reliable of the name resolution methods as it depends on the 
+	    target host being on a locally connected subnet.</para></listitem>
 		</itemizedlist>
 		
 		<para>The default order is <command>lmhosts, host, wins, bcast</command> 
@@ -267,7 +266,7 @@
 		being changed is a MACHINE account. Currently this is used 
 		when Samba is being used as an NT Primary Domain Controller.</para>
 
-		<para>This option is only available when running smbpasswd as root. 	
+		<para>This option is only available when running smbpasswd as root.
 		</para></listitem>
 		</varlistentry>
 		
@@ -305,15 +304,15 @@
 
 		<varlistentry>
 		<term>-w password</term>
-		<listitem><para>This parameter is only available is Samba
-		has been configured to use the experiemental
+		<listitem><para>This parameter is only available if Samba
+		has been configured to use the experimental
 		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
 		switch is used to specify the password to be used with the 
 		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
 		dn</parameter></ulink>.  Note that the password is stored in
 		the <filename>private/secrets.tdb</filename> and is keyed off 
 		of the admin's DN.  This means that if the value of <parameter>ldap
-		admin dn</parameter> ever changes, the password will beed to be 
+		admin dn</parameter> ever changes, the password will need to be 
 		manually updated as well.
 		</para>
 		</listitem>

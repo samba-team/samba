@@ -62,7 +62,7 @@
 		<command>swat</command> in demo mode. In that mode anyone will be able to modify 
 		the <filename>smb.conf</filename> file. </para>
 		
-		<para><emphasis>Do NOT enable this option on a production 
+		<para><emphasis>WARNING: Do NOT enable this option on a production 
 		server. </emphasis></para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -168,7 +168,7 @@
 
 	<para><command>swat</command> will rewrite your <filename>smb.conf
 	</filename> file. It will rearrange the entries and delete all 
-	comments, <parameter>include=</parameter> and <parameter>copy="
+	comments, <parameter>include=</parameter> and <parameter>copy=
 	</parameter> options. If you have a carefully crafted <filename>
 	smb.conf</filename> then back it up or don't use swat! </para>
 </refsect1>

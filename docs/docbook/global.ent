@@ -21,7 +21,7 @@
 <!ENTITY url.samba 'http://samba.org'>
 <!ENTITY url.samba-ldap-howto 'http://www.unav.es/cti/ldap-smb-howto.html'>
 <!ENTITY url.samba-tng.home 'http://www.kneschke.de/projekte/samba_tng/'>
-<!ENTITY url.samba.mailinglist.ntdom 'http://lists.samba.org/mailman/roster/samba-ntdom'>
+<!ENTITY url.samba.mailinglist.ntdom 'http://lists.samba.org/mailman/samba-ntdom'>
 <!ENTITY url.samba.cifs 'http://samba.org/cifs/'>
 <!ENTITY url.ntdomains-for-unix 'http://mailhost.cb1.com/~lkcl/ntdom/'>
 <!ENTITY url.samba.specs.old 'ftp://ftp.microsoft.com/developr/drg/CIFS/'>

@@ -35,8 +35,8 @@
 	<para>This tool is part of the <ulink url="samba.7.html">
 	Samba</ulink> suite.</para>
 	
-	<para>The <command>smbcacls</command> program manipulates NT Access Control Lists 
-	(ACLs) on SMB file shares. </para>
+	<para>The <command>smbcacls</command> program manipulates NT Access Control
+	Lists (ACLs) on SMB file shares. </para>
 </refsect1>
 
 
@@ -79,7 +79,7 @@
 		<term>-S acls</term>
 		<listitem><para>This command sets the ACLs on the file with 
 		only the ones specified on the command line.  All other ACLs are 
-		erased.  Note that the ACL specified must contain at least a revision, 
+		erased. Note that the ACL specified must contain at least a revision,
 		type, owner and group for the call to succeed. </para></listitem>
 		</varlistentry>
 		

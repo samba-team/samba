@@ -46,10 +46,10 @@
 	<para>
 	The <filename>pam_winbind</filename> module in the 2.2.2 release only 
 	supports the <parameter>auth</parameter> and <parameter>account</parameter> 
-	module-types.  The latter is simply
+	module-types.  The latter simply
 	performs a getpwnam() to verify that the system can obtain a uid for the
 	user.  If the <filename>libnss_winbind</filename> library has been correctly 
-	installed, this should always suceed.
+	installed, this should always succeed.
 	</para>
 
 	<para>The following nsswitch databases are implemented by 
@@ -156,156 +156,26 @@ group:          files winbind
 	</filename> file.  All parameters should be specified in the 
 	[global] section of smb.conf. </para>
 
-	<variablelist>
-		<varlistentry>
-		<term>winbind separator</term>
-		<listitem><para>The winbind separator option allows you 
-		to specify how NT domain names and user names are combined 
-		into unix user names when presented to users. By default, 
-		<command>winbindd</command> will use the traditional '\' 
-		separator so that the unix user names look like 
-		DOMAIN\username. In some cases this separator character may 
-		cause problems as the '\' character has special meaning in 
-		unix shells.  In that case you can use the winbind separator 
-		option to specify an alternative separator character. Good 
-		alternatives may be '/' (although that conflicts
-		with the unix directory separator) or a '+ 'character. 
-		The '+' character appears to be the best choice for 100% 
-		compatibility with existing unix utilities, but may be an 
-		aesthetically bad choice depending on your taste. </para>
-		
-		<para>Default: <command>winbind separator = \ </command>
-		</para>
-		<para>Example: <command>winbind separator = + </command></para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>winbind uid</term>
-		<listitem><para>The winbind uid parameter specifies the 
-		range of user ids that are allocated by the winbindd daemon.  
-		This range of ids should have no existing local or NIS users 
-		within it as strange conflicts can occur otherwise. </para>
-
-		<para>Default: <command>winbind uid = &lt;empty string&gt; 
-		</command></para>
-		<para>Example: <command>winbind uid = 10000-20000</command></para>
-		</listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term>winbind gid</term>
-		<listitem><para>The winbind gid parameter specifies the 
-		range of group ids that are allocated by the winbindd daemon.  
-		This range of group ids should have no existing local or NIS 
-		groups within it as strange conflicts can occur otherwise.</para> 
-
-		<para>Default: <command>winbind gid = &lt;empty string&gt;
-		</command></para> 	
-		<para>Example: <command>winbind gid = 10000-20000
-		</command> </para></listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term>winbind cache time</term>
-		<listitem><para>This parameter specifies the number of 
-		seconds the winbindd daemon will cache user and group information 
-		before querying a Windows NT server again. When a item in the 
-		cache is older than this time winbindd will ask the domain 
-		controller for the sequence number of the server's account database. 
-		If the sequence number has not changed then the cached item is 
-		marked as valid for a further <parameter>winbind cache time
-		</parameter> seconds.  Otherwise the item is fetched from the 
-		server. This means that as long as the account database is not 
-		actively changing winbindd will only have to send one sequence 
-		number query packet every <parameter>winbind cache time
-		</parameter> seconds. </para>
-
-		<para>Default: <command>winbind cache time = 15</command>
-		</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>winbind enum users</term>
-		<listitem><para>On large installations it may be necessary 
-		to suppress the enumeration of users through the <command>
-		setpwent()</command>, <command>getpwent()</command> and 
-		<command>endpwent()</command> group of system calls.  If 
-		the <parameter>winbind enum users</parameter> parameter is false, 
-		calls to the <command>getpwent</command> system call will not 
-		return any data. </para>
-
-		<para><emphasis>Warning:</emphasis> Turning off user enumeration 
-		may cause some programs to behave oddly.  For example, the <command>finger</command> 
-		program relies on having access to the full user list when 
-		searching  for matching usernames. </para>
-
-		<para>Default: <command>winbind enum users = yes </command></para>
-		</listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>winbind enum groups</term>
-		<listitem><para>On large installations it may be necessary 
-		to suppress the enumeration of groups through the <command>
-		setgrent()</command>, <command>getgrent()</command> and 
-		<command>endgrent()</command> group of system calls.  If 
-		the <parameter>winbind enum groups</parameter> parameter is 
-		false, calls to the <command>getgrent()</command> system 
-		call will not return any data. </para>
-
-		<para><emphasis>Warning:</emphasis> Turning off group 
-		enumeration may cause some programs to behave oddly. 
-		</para>
-
-		<para>Default: <command>winbind enum groups = no </command>
-		</para></listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term>template homedir</term>
-		<listitem><para>When filling out the user information 
-		for a Windows NT user, the <command>winbindd</command> daemon 
-		uses this parameter to fill in the home directory for that user.  
-		If the string <parameter>%D</parameter> is present it is 
-		substituted with the user's Windows NT domain name.  If the 
-		string <parameter>%U</parameter> is present it is substituted
-		with the user's Windows NT user name. </para>
-
-		<para>Default: <command>template homedir = /home/%D/%U </command>
-		</para></listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term>template shell</term>
-		<listitem><para>When filling out the user information for 
- 		a Windows NT user, the <command>winbindd</command> daemon 
-		uses this parameter to fill in the shell for that user. 
-		</para>
-
-		<para>Default: <command>template shell = /bin/false </command>
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>winbind use default domain</term>
-		<listitem><para>This parameter specifies whether the <command>winbindd</command>
-		daemon should operate on users without domain component in their username.  
-                Users without a domain component are treated as is part of the winbindd server's 
-                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
-                function in a way much closer to the way they would in a native unix system.</para>
-		
-		<para>Default: <command>winbind use default domain = &lt;falseg&gt; 
-		</command></para>
-		<para>Example: <command>winbind use default domain = true</command></para>
-		</listitem>
-		</varlistentry>
-	</variablelist>
+	<itemizedlist>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDSEPARATOR">
+		<parameter>winbind separator</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDUID">
+		<parameter>winbind uid</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDGID">
+		<parameter>winbind gid</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDCACHETIME">
+		<parameter>winbind cache time</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDENUMUSERS">
+		<parameter>winbind enum users</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDENUMGROUPS">
+		<parameter>winbind enum groups</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#TEMPLATEHOMEDIR">
+		<parameter>template homedir</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#TEMPLATESHELL">
+		<parameter>template shell</parameter></ulink></para></listitem>
+		<listitem><para><ulink url="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN">
+		<parameter>winbind use default domain</parameter></ulink></para></listitem>
+	</itemizedlist>
 </refsect1>
 
 

@@ -41,11 +41,11 @@
 	Samba</ulink> suite.</para>
 
 	<para>The pdbedit program is used to manage the users accounts
-	stored in the sam database and can be run only by root.</para>
+	stored in the sam database and can only be run by root.</para>
 
-	<para>The pdbedit tool use the passdb modular interface and is
+	<para>The pdbedit tool uses the passdb modular interface and is
 	independent from the kind of users database used (currently there
-	are smbpasswd, ldap, nis+ and tdb based and more can be addedd
+	are smbpasswd, ldap, nis+ and tdb based and more can be added
 	without changing the tool).</para>
 
 	<para>There are five main ways to use pdbedit: adding a user account,
@@ -58,7 +58,7 @@
 	<variablelist>
 		<varlistentry>
 		<term>-l</term>
-		<listitem><para>This option list all the user accounts
+		<listitem><para>This option lists all the user accounts
 		present in the users database.
 		This option prints a list of user/uid pairs separated by
 		the ':' character.</para>
@@ -75,8 +75,8 @@
 		
 		<varlistentry>
 		<term>-v</term>
-		<listitem><para>This option sets the verbose listing format.
-		It will make pdbedit list the users in the database printing
+		<listitem><para>This option enables the verbose listing format.
+		It causes pdbedit to list the users in the database, printing
 		out the account fields in a descriptive format.</para>
 
 		<para>Example: <command>pdbedit -l -v</command></para>
@@ -108,7 +108,7 @@
 		<varlistentry>
 		<term>-w</term>
 		<listitem><para>This option sets the "smbpasswd" listing format.
-		It will make pdbedit list the users in the database printing
+		It will make pdbedit list the users in the database, printing
 		out the account fields in a format compatible with the
 		<filename>smbpasswd</filename> file format. (see the <ulink
 		url="smbpasswd.5.html"><filename>smbpasswd(5)</filename></ulink> for details)</para>
@@ -124,8 +124,8 @@
 		
 		<varlistentry>
 		<term>-u username</term>
-		<listitem><para>This option specifies that the username to be
-		used for the operation requested (listing, adding, removing)
+		<listitem><para>This option specifies the username to be
+		used for the operation requested (listing, adding, removing).
 		It is <emphasis>required</emphasis> in add, remove and modify
 		operations and <emphasis>optional</emphasis> in list
 		operations.</para>
@@ -198,9 +198,9 @@
 		<varlistentry>
 		<term>-a</term>
 		<listitem><para>This option is used to add a user into the
-		database. This command need the user name be specified with
-		the -u switch. When adding a new user pdbedit will also
-		ask for the password to be used</para>
+		database. This command needs a user name specified with
+		the -u switch. When adding a new user, pdbedit will also
+		ask for the password to be used.</para>
 
 		<para>Example: <command>pdbedit -a -u sorce</command>
 		<programlisting>new password:
@@ -227,7 +227,7 @@
 		<varlistentry>
 		<term>-x</term>
 		<listitem><para>This option causes pdbedit to delete an account
-		from the database. It need the username be specified with the
+		from the database. It needs a username specified with the
 		-u switch.</para>
 
 		<para>Example: <command>pdbedit -x -u bob</command></para>
@@ -237,22 +237,25 @@
 
 		<varlistentry>
 		<term>-i passdb-backend</term>
-		<listitem><para>Use a different passdb backend to retrieve users than the one specified in smb.conf. Can be used to import data into your 
-		local user database.</para>
+		<listitem><para>Use a different passdb backend to retrieve users
+                than the one specified in smb.conf. Can be used to import data into
+                your local user database.</para>
 
-		<para>This option will ease migration from one passdb backend to another.
-		</para>
+		<para>This option will ease migration from one passdb backend to
+		another.</para>
 
-		<para>Example: <command>pdbedit -i smbpasswd:/etc/smbpasswd.old</command>
-		</para>
+		<para>Example: <command>pdbedit -i smbpasswd:/etc/smbpasswd.old
+                </command></para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>-e passdb-backend</term>
-		<listitem><para>Export all currently available users to the specified password database backend.</para>
+		<listitem><para>Exports all currently available users to the
+		specified password database backend.</para>
 
-		<para>This option will ease migration from one passdb backend to another and will ease backupping</para>
+		<para>This option will ease migration from one passdb backend to
+		another and will ease backing up.</para>
 		
 		<para>Example: <command>pdbedit -e smbpasswd:/root/samba-users.backup</command></para>
 		</listitem>
