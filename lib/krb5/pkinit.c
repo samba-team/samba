@@ -183,7 +183,9 @@ set_digest_alg(DigestAlgorithmIdentifier *id,
 	    return ENOMEM;
 	}
 	memcpy(id->parameters->data, param, length);
-    }
+	id->parameters->length = length;
+    } else
+	id->parameters = NULL;
     ret = copy_oid(oid, &id->algorithm);
     if (ret) {
 	if (id->parameters) {
@@ -301,14 +303,8 @@ _krb5_pk_create_sign(krb5_context context,
 	}
     }
 
-    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0)
-	ret = set_digest_alg(&signer_info->digestAlgorithm,
-			     &heim_sha1_oid,
-			     "\x05\x00", 2);
-    else
-	ret = set_digest_alg(&signer_info->digestAlgorithm,
-			     &heim_sha1_oid,
-			     NULL, 0);
+    ret = set_digest_alg(&signer_info->digestAlgorithm,
+			 &heim_sha1_oid, "\x05\x00", 2);
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto out;
@@ -352,14 +348,8 @@ _krb5_pk_create_sign(krb5_context context,
 	goto out;
     }
 
-    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0)
-	ret = set_digest_alg(&sd.digestAlgorithms.val[0],
-			     &heim_sha1_oid,
-			     "\x05\x00", 2);
-    else
-	ret = set_digest_alg(&sd.digestAlgorithms.val[0],
-			     &heim_sha1_oid,
-			     NULL, 0);
+    ret = set_digest_alg(&sd.digestAlgorithms.val[0],
+			 &heim_sha1_oid, "\x05\x00", 2);
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto out;
@@ -593,6 +583,7 @@ _krb5_pk_mk_padata(krb5_context context,
     krb5_data buf, sd_buf;
     int pa_type;
     const char *provisioning_server = NULL;
+    int win2k_compat;
 
     if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE) {
 	provisioning_server =
@@ -606,7 +597,16 @@ _krb5_pk_mk_padata(krb5_context context,
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
     memset(&req, 0, sizeof(req));
-  
+
+    win2k_compat = krb5_config_get_bool_default(context, NULL,
+						FALSE,
+						"realms",
+						req_body->realm,
+						"win2k_pkinit",
+						NULL);
+    if (win2k_compat)
+	context->pkinit_flags |= KRB5_PKINIT_WIN2K;
+
     if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	AuthPack_Win2k ap;
 
@@ -1544,6 +1544,53 @@ pk_rd_pa_reply_dh(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+_krb5_pk_convert_rep(krb5_context context,
+		     PA_PK_AS_REP_Win2k *r_win2k,
+		     PA_PK_AS_REP *r)
+{
+    krb5_error_code ret;
+    ContentInfo ci;
+    size_t size;
+
+    switch (r_win2k->element) {
+    case choice_PA_PK_AS_REP_Win2k_dhSignedData:
+	r->element = choice_PA_PK_AS_REP_dhSignedData;
+
+	ret = decode_ContentInfo(r_win2k->u.dhSignedData.data,
+				 r_win2k->u.dhSignedData.length,
+				 &ci,
+				 &size);
+	if (ret) {
+	    krb5_set_error_string(context,
+				  "decoding failed ContentInfo: %d", ret);
+	    return ret;
+	}
+	r->u.dhSignedData = ci;
+
+	break;
+    case choice_PA_PK_AS_REP_Win2k_encKeyPack:
+	r->element = choice_PA_PK_AS_REP_encKeyPack;
+
+	ret = decode_ContentInfo(r_win2k->u.encKeyPack.data,
+				 r_win2k->u.encKeyPack.length,
+				 &ci,
+				 &size);
+	if (ret) {
+	    krb5_set_error_string(context,
+				  "decoding failed ContentInfo: %d", ret);
+	    return ret;
+	}
+	r->u.encKeyPack = ci;
+
+	break;
+    default:
+	krb5_set_error_string(context, "pkinit reply invalid content type");
+	return EINVAL;
+    }
+    return ret;
+}
+
 krb5_error_code
 _krb5_pk_rd_pa_reply(krb5_context context,
 		     void *c,
@@ -1567,6 +1614,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	PA_PK_AS_REP_Win2k w2krep;
 
 	free_PA_PK_AS_REP(&rep);
+	memset(&rep, 0, sizeof(rep));
 
 	ret = decode_PA_PK_AS_REP_Win2k(pa->padata_value.data,
 					pa->padata_value.length,
@@ -1577,13 +1625,10 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  "pkinit reply %d", ret);
 	    return ret;
 	}
-#if 0
-	convert_rep(&w2krep, &rep);
-	printf("decoing of win reply succeded\n");
-#endif
-	krb5_set_error_string(context, "w2k pkinit support missing");
+	ret = _krb5_pk_convert_rep(context, &w2krep, &rep);
 	free_PA_PK_AS_REP_Win2k(&w2krep);
-	return EINVAL;
+	if (ret)
+	    return ret;
     }
 
     switch(rep.element) {
