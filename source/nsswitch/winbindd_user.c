@@ -65,7 +65,10 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	   defaults are /tmp for the home directory and /bin/false for
 	   shell. */
 	
-	parse_domain_user(name, name_domain, name_user);
+	if (!parse_domain_user(name, name_domain, name_user)) {
+		DEBUG(1, ("error parsing domain user for %s\n", name_user ));
+		return False;
+	}
 	
 	/* The substitution of %U and %D in the 'template homedir' is done
 	   by lp_string() calling standard_sub_basic(). */
@@ -113,13 +116,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.username, name_domain, 
-			  name_user);
-
-	/* Reject names that don't have a domain - i.e name_domain contains 
-	   the entire name. */
- 
-	if (strequal(name_domain, ""))
+	if (!parse_domain_user(state->request.data.username, name_domain, 
+			  name_user))
 		return WINBINDD_ERROR;
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {

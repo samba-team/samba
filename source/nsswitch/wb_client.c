@@ -32,20 +32,18 @@ NSS_STATUS winbindd_request(int req_type,
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static void parse_domain_user(const char *domuser, fstring domain, fstring user)
+static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
-        char *p = strchr(domuser,*lp_winbind_separator());
+	char *p = strchr(domuser,*lp_winbind_separator());
 
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
+	if (!p)
+		return False;
         
-        fstrcpy(user, p+1);
-        fstrcpy(domain, domuser);
-        domain[PTR_DIFF(p, domuser)] = 0;
-        strupper(domain);
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper(domain);
+	return True;
 }
 
 /* Call winbindd to convert a name to a sid */

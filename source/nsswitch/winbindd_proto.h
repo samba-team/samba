@@ -153,5 +153,5 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 BOOL check_domain_env(char *domain_env, char *domain);
-void parse_domain_user(const char *domuser, fstring domain, fstring user);
+BOOL parse_domain_user(const char *domuser, fstring domain, fstring user);
 #endif /* _PROTO_H_ */

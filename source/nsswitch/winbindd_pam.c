@@ -47,12 +47,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.auth.user, name_domain, 
-                          name_user);
-
-	/* don't allow the null domain */
-
-	if (strcmp(name_domain,"") == 0) 
+	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
+                          name_user))
 		return WINBINDD_ERROR;
 
 	passlen = strlen(state->request.data.auth.pass);
@@ -120,8 +116,9 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.auth_crap.user, name_domain, 
-                          name_user);
+	if (!parse_domain_user(state->request.data.auth_crap.user, name_domain, 
+                          name_user))
+		return WINBINDD_ERROR;
 
        	make_user_info_winbind_crap(
                 &user_info, name_user, 
@@ -170,37 +167,39 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
-    char *oldpass, *newpass;
-    fstring domain, user;
-    uchar nt_oldhash[16];
-    uchar lm_oldhash[16];
+	char *oldpass, *newpass;
+	fstring domain, user;
+	uchar nt_oldhash[16];
+	uchar lm_oldhash[16];
 
-    DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
-	      state->request.data.chauthtok.user));
+	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
+		state->request.data.chauthtok.user));
 
-    /* Setup crap */
+	/* Setup crap */
 
-    if (state == NULL) return WINBINDD_ERROR;
+	if (state == NULL)
+		return WINBINDD_ERROR;
 
-    parse_domain_user(state->request.data.chauthtok.user, domain, user);
+	if (!parse_domain_user(state->request.data.chauthtok.user, domain, user))
+		return WINBINDD_ERROR;
 
-    oldpass = state->request.data.chauthtok.oldpass;
-    newpass = state->request.data.chauthtok.newpass;
+	oldpass = state->request.data.chauthtok.oldpass;
+	newpass = state->request.data.chauthtok.newpass;
 
-    nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
+	nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
 
-    /* Change password */
+	/* Change password */
 
 #if 0
 
-    /* XXX */
+	/* XXX */
 
-    if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
-                               lm_oldhash, nt_oldhash, newpass)) {
-        DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
-        return WINBINDD_ERROR;
-    }
+	if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
+		lm_oldhash, nt_oldhash, newpass)) {
+		DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
+		return WINBINDD_ERROR;
+	}
 #endif
     
-    return WINBINDD_OK;
+	return WINBINDD_OK;
 }
