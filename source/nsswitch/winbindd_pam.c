@@ -25,8 +25,7 @@
 
 #include "winbindd.h"
 
-/* Return a password structure from a username.  Specify whether cached data 
-   can be returned. */
+/* Return a password structure from a username.  */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
