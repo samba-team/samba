@@ -430,7 +430,7 @@ main(int argc, char **argv)
     int port = 0;
 
     set_progname (argv[0]);
-    openlog ("rshd", LOG_ODELAY, LOG_AUTH);
+    openlog ("rshd", LOG_ODELAY | LOG_PID, LOG_AUTH);
 
     while ((c = getopt(argc, argv, "ixp:")) != EOF) {
 	switch (c) {
