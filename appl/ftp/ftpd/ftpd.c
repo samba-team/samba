@@ -1232,7 +1232,7 @@ statfilecmd(char *filename)
 	int c;
 	char line[LINE_MAX];
 
-	(void)snprintf(line, sizeof(line), "/bin/ls -lgA %s", filename);
+	(void)snprintf(line, sizeof(line), "/bin/ls -lA %s", filename);
 	fin = ftpd_popen(line, "r");
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {

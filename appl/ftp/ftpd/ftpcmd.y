@@ -327,12 +327,12 @@ cmd
 	| LIST check_login CRLF
 		{
 			if ($2)
-				retrieve("/bin/ls -lgA", "");
+				retrieve("/bin/ls -lA", "");
 		}
 	| LIST check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
-				retrieve("/bin/ls -lgA %s", $4);
+				retrieve("/bin/ls -lA %s", $4);
 			if ($4 != NULL)
 				free($4);
 		}
