@@ -7,6 +7,7 @@
 package IdlEParser;
 
 use strict;
+use dump;
 
 my($name);
 
