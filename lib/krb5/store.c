@@ -316,7 +316,10 @@ krb5_error_code
 krb5_store_keyblock(krb5_storage *sp, krb5_keyblock p)
 {
     int ret;
-    ret =krb5_store_int32(sp, p.keytype);
+    ret = krb5_store_int16(sp, p.keytype);
+    if(ret) return ret;
+    /* yes, this should be stored twice... */
+    ret = krb5_store_int16(sp, p.keytype);
     if(ret) return ret;
     ret = krb5_store_data(sp, p.keyvalue);
     return ret;
@@ -326,7 +329,12 @@ krb5_error_code
 krb5_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
 {
     int ret;
-    ret = krb5_ret_int32(sp, (int32_t*)&p->keytype); /* keytype + etype */
+    int16_t tmp;
+    ret = krb5_ret_int16(sp, &tmp);
+    if(ret) return ret;
+    p->keytype = tmp;
+    /* XXX only if cache-type >= 3 */
+    ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
     ret = krb5_ret_data(sp, &p->keyvalue);
     return ret;
