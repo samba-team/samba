@@ -172,6 +172,16 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 
+	io.in.path = "..\\..\\..";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
+	io.in.path = "\\..";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
 	io.in.path = "\\.\\\\\\\\\\\\xxx";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
