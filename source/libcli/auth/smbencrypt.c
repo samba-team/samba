@@ -121,6 +121,14 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 		return False;
 	}
 
+	if (!user_in) {
+		user_in = "";
+	}
+
+	if (!domain_in) {
+		domain_in = "";
+	}
+
 	user_in = strupper_talloc(mem_ctx, user_in);
 	if (user_in == NULL) {
 		talloc_free(mem_ctx);

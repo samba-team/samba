@@ -68,7 +68,9 @@ static NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(user_info->account_name);
 
 	user_info->client.domain_name = talloc_strdup(user_info, c_domain_name);
-	NT_STATUS_HAVE_NO_MEMORY(user_info->client.domain_name);
+	if (c_domain_name && !user_info->client.domain_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	user_info->domain_name = talloc_strdup(user_info, domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(user_info->domain_name);
@@ -141,21 +143,38 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 			    struct auth_usersupplied_info **user_info)
 {
 	const char *domain;
-
+	const char *account_name;
+	char *d;
 	DEBUG(5,("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
 		c_domain_name, c_account_name, workstation_name));
+
+	account_name = c_account_name;
 
 	/* don't allow "" as a domain, fixes a Win9X bug 
 	   where it doens't supply a domain for logon script
 	   'net use' commands.                                 */
-	if (*c_domain_name) {
+
+	/* Split user@realm names into user and realm components.  This is TODO to fix with proper userprincipalname support */
+	if (c_domain_name && *c_domain_name) {
 		domain = c_domain_name;
+	} else if (strchr_m(c_account_name, '@')) {
+		account_name = talloc_strdup(mem_ctx, c_account_name);
+		if (!account_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		d = strchr_m(account_name, '@');
+		if (!d) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		d[0] = '\0';
+		d++;
+		domain = d;
 	} else {
 		domain = lp_workgroup();
 	}
 
 	return make_user_info(mem_ctx,
-			      c_account_name, c_account_name, 
+			      c_account_name, account_name, 
 			      c_domain_name, domain,
 			      workstation_name,
 			      lm_password, nt_password,
