@@ -183,13 +183,13 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 		DEBUG(1,("server %s refused IPC$ connect with NT password\n", clnt->full_dest_host_name));
 	}
 
-	if (!pwd_ok)
+	if (pwd_ok)
 	{
-		DEBUG(3,("server %s rejected the password\n", clnt->full_dest_host_name));
+		DEBUG(3,("server %s accepted the password\n", clnt->full_dest_host_name));
 	}
 	else
 	{
-		DEBUG(3,("server %s accepted the password\n", clnt->full_dest_host_name));
+		DEBUG(3,("server %s rejected the password\n", clnt->full_dest_host_name));
 	}
 
 	cli_tdis(clnt);

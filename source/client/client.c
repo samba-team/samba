@@ -3900,7 +3900,7 @@ static void usage(char *pname)
 
 		do_nt_login_test(dest_ip, desthost, myhostname,
 			                 username, workgroup,
-			                 mach_acct, NULL);
+			                 mach_acct);
 
 		return(0);
 	}

@@ -799,10 +799,10 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
   unsigned char p24[24];
 
   if (part_passwd == NULL)
+  {
     DEBUG(10,("No password set - allowing access\n"));
-  /* No password set - always true ! */
-  if (part_passwd == NULL)
-    return 1;
+    return True;
+  }
 
   memset(p21,'\0',21);
   memcpy(p21,part_passwd,16);

@@ -639,7 +639,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 				char *username, char *workgroup,
-				char *mach_acct, char *new_mach_pwd);
+				char *mach_acct);
 
 /*The following definitions come from  nterr.c  */
 
@@ -933,7 +933,7 @@ BOOL do_nt_status_check(struct in_addr dest_ip, char *dest_host, char *myhostnam
 
 BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 				char *myhostname, char *domain, fstring mach_acct,
-				fstring mach_pwd, fstring new_mach_pwd);
+				fstring new_mach_pwd);
 
 /*The following definitions come from  rpc_pipes/pipe_hnd.c  */
 

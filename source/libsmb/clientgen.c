@@ -466,19 +466,22 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	if ((cli->sec_mode & USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
+	if (BIT_SET(cli->sec_mode, USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
 	{
+		DEBUG(5,("cli_session_setup: using challenge-response mode\n"));
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
 	}
 	else
 	{
+		DEBUG(5,("cli_session_setup: using given password, directly\n"));
 		memcpy(pword, pass, passlen);
 	}
 
 	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & USE_USER_LEVEL_SECURITY))
+	if (!BIT_SET(cli->sec_mode, USE_USER_LEVEL_SECURITY))
 	{
+		DEBUG(5,("cli_session_setup: using share-level security mode\n"));
 		fstrcpy(pword, "");
 		passlen=1;
 	} 
@@ -486,7 +489,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 	/* send a session setup command */
 	bzero(cli->outbuf,smb_size);
 
-	if (cli->protocol < PROTOCOL_NT1) {
+	if (cli->protocol < PROTOCOL_NT1)
+	{
 		set_message(cli->outbuf,10,1 + strlen(user) + passlen,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -556,19 +560,31 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
-	if (cli->sec_mode & USE_USER_LEVEL_SECURITY) {
+	DEBUG(3,("cli_send_tconX: share:%s dev:%s passlen:%d\n",
+			share, dev, passlen));
+
+	if (!BIT_SET(cli->sec_mode, USE_USER_LEVEL_SECURITY))
+	{
+		DEBUG(5,("cli_send_tconX: using share-level security mode\n"));
 		passlen = 1;
 		pass = "";
 	}
 
-	if ((cli->sec_mode & USE_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
+	if (BIT_SET(cli->sec_mode, USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
+	{
+		DEBUG(5,("cli_send_tconX: using challenge-response mode\n"));
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-	} else {
+	}
+	else
+	{
+		DEBUG(5,("cli_send_tconX: using given password, directly\n"));
 		memcpy(pword, pass, passlen);
 	}
 
 	sprintf(fullshare, "\\\\%s\\%s", cli->called_netbios_name, share);
+
+	DEBUG(5,("cli_send_tconX: full share name:%s\n", fullshare));
 
 	set_message(cli->outbuf,4,
 		    2 + strlen(fullshare) + passlen + strlen(dev),True);

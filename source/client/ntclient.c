@@ -39,7 +39,7 @@ experimental nt login.
 ****************************************************************************/
 BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 				char *username, char *workgroup,
-				char *mach_acct, char *new_mach_pwd)
+				char *mach_acct)
 {
 	/* client connection state */
 	struct cli_state cli;
@@ -57,6 +57,11 @@ BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 
 	BOOL res = True;
 
+	/* machine account passwords */
+	pstring new_mach_pwd;
+
+	/* initialisation */
+	new_mach_pwd[0] = 0;
 	bzero(&cli, sizeof(cli));
 
 	DEBUG(5,("do_nt_login_test: %d\n", __LINE__));
@@ -68,8 +73,12 @@ BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 	                          username, workgroup,
 	                          sess_key, &clnt_cred) : False;
 
+	/* check whether the user wants to change their machine password */
+	res = res ? trust_account_check(dest_ip, dest_host, myhostname, workgroup,
+	                                mach_acct, new_mach_pwd) : False;
+
 	/* change the machine password? */
-	if (new_mach_pwd != NULL)
+	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
 	{
 		res = res ? do_nt_srv_pwset(&cli, fnum,
 		                   sess_key, &clnt_cred, &rtn_cred,
