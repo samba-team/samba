@@ -1,3 +1,8 @@
+Wed Nov 12 01:36:01 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/get_addrs.c: Fall back to hostname's addresses if other
+ 	methods fail.
+
 Tue Nov 11 22:22:12 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kadmin/kadmin.c: Add `-l' flag to use local database.
