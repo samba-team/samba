@@ -497,8 +497,8 @@ fkt_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     d->filename = strdup(name);
     if(d->filename == NULL) {
-	return ENOMEM;
 	free(d);
+	return ENOMEM;
     }
     id->data = d;
     return 0;
@@ -545,9 +545,9 @@ fkt_start_seq_get_int(krb5_context context,
 	return ret;
     }
     if (tag != 0x0502) {
-	return KRB5_KT_UNKNOWN_TYPE;
 	krb5_storage_free(c->sp);
 	close(c->fd);
+	return KRB5_KT_UNKNOWN_TYPE;
     }
     c->offset = c->sp->seek(c->sp, 0, SEEK_CUR);
     return 0;
