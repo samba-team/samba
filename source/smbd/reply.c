@@ -400,7 +400,7 @@ static int session_trust_account(connection_struct *conn,
 	}
 
 	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-	return status;
+	return ERROR(0, status);
 }
 
 /****************************************************************************
