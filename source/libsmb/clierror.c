@@ -73,11 +73,17 @@ char *cli_errstr(struct cli_state *cli)
         int i;
 
         /* Case #1: RAP error */
-	for (i = 0; rap_errmap[i].message != NULL; i++) {
-		if (rap_errmap[i].err == cli->rap_error) {
-			return rap_errmap[i].message;
-		}
-	} 
+	if (cli->rap_error) {
+		for (i = 0; rap_errmap[i].message != NULL; i++) {
+			if (rap_errmap[i].err == cli->rap_error) {
+				return rap_errmap[i].message;
+			}
+			slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d", 
+				cli->rap_error);
+
+			return cli_error_message;
+		} 
+	}
 
         /* Case #2: 32-bit NT errors */
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
@@ -90,13 +96,7 @@ char *cli_errstr(struct cli_state *cli)
 
         /* Case #3: SMB error */
 
-        if (errclass != 0)
-                return cli_smb_errstr(cli);
-
-	slprintf(cli_error_message, sizeof(cli_error_message) - 1, "code %d", 
-                 cli->rap_error);
-
-	return cli_error_message;
+	return cli_smb_errstr(cli);
 }
 
 
