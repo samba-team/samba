@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 /*
  * Globals...
  */

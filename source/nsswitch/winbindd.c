@@ -24,6 +24,7 @@
 
 #include "winbindd.h"
 
+#define HAVE_SMB_REGISTER_PASSDB
 #include "module_dummy.h"
 
 BOOL opt_nocache = False;

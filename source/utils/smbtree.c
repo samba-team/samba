@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 static BOOL use_bcast;
 
 /* How low can we go? */

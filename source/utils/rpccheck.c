@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 main()
 {
 	char filter[]="0123456789ABCDEF";

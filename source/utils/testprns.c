@@ -32,8 +32,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 int main(int argc, char *argv[])
 {
    const char *pszTemp;
