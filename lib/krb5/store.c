@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,15 +40,23 @@
 
 RCSID("$Id$");
 
-krb5_boolean
-krb5_storage_set_host_byteorder(krb5_storage *sp, krb5_boolean host_byteorder)
+void
+krb5_storage_set_flags(krb5_storage *sp, krb5_flags flags)
 {
-    krb5_boolean save = sp->host_byteorder;
-    sp->host_byteorder = host_byteorder;
-    return save;
+    sp->flags |= flags;
 }
 
-/* This is a bit XXX, but used quite many places */
+void
+krb5_storage_clear_flags(krb5_storage *sp, krb5_flags flags)
+{
+    sp->flags &= ~flags;
+}
+
+krb5_boolean
+krb5_storage_is_flags(krb5_storage *sp, krb5_flags flags)
+{
+    return (sp->flags & flags) == flags;
+}
 
 size_t
 _krb5_put_int(void *buffer, unsigned long value, size_t size)
@@ -125,7 +133,7 @@ krb5_error_code
 krb5_store_int32(krb5_storage *sp,
 		 int32_t value)
 {
-    if(sp->host_byteorder)
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_HOST_BYTEORDER))
 	value = htonl(value);
     return krb5_store_int(sp, value, 4);
 }
@@ -153,7 +161,7 @@ krb5_ret_int32(krb5_storage *sp,
     krb5_error_code ret = krb5_ret_int(sp, value, 4);
     if(ret)
 	return ret;
-    if(sp->host_byteorder)
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_HOST_BYTEORDER))
 	*value = ntohl(*value);
     return 0;
 }
@@ -162,7 +170,7 @@ krb5_error_code
 krb5_store_int16(krb5_storage *sp,
 		 int16_t value)
 {
-    if(sp->host_byteorder)
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_HOST_BYTEORDER))
 	value = htons(value);
     return krb5_store_int(sp, value, 2);
 }
@@ -177,7 +185,7 @@ krb5_ret_int16(krb5_storage *sp,
     if(ret)
 	return ret;
     *value = v;
-    if(sp->host_byteorder)
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_HOST_BYTEORDER))
 	*value = ntohs(*value);
     return 0;
 }
@@ -319,9 +327,16 @@ krb5_store_principal(krb5_storage *sp,
 {
     int i;
     int ret;
+
+    if(!krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE)) {
     ret = krb5_store_int32(sp, p->name.name_type);
     if(ret) return ret;
+    }
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
+	ret = krb5_store_int32(sp, p->name.name_string.len + 1);
+    else
     ret = krb5_store_int32(sp, p->name.name_string.len);
+    
     if(ret) return ret;
     ret = krb5_store_string(sp, p->realm);
     if(ret) return ret;
@@ -346,7 +361,9 @@ krb5_ret_principal(krb5_storage *sp,
     if(p == NULL)
 	return ENOMEM;
 
-    if((ret = krb5_ret_int32(sp, &type))){
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE))
+	type = KRB5_NT_UNKNOWN;
+    else 	if((ret = krb5_ret_int32(sp, &type))){
 	free(p);
 	return ret;
     }
@@ -354,8 +371,8 @@ krb5_ret_principal(krb5_storage *sp,
 	free(p);
 	return ret;
     }
-    /* XXX cache version 1 supposedly counts the realm as a component
-       so we should decrement ncomp by one here */
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
+	ncomp--;
     p->name.name_type = type;
     p->name.name_string.len = ncomp;
     ret = krb5_ret_string(sp, &p->realm);
@@ -379,11 +396,14 @@ krb5_store_keyblock(krb5_storage *sp, krb5_keyblock p)
     int ret;
     ret = krb5_store_int16(sp, p.keytype);
     if(ret) return ret;
-#if 0
-    /* this should be stored twice iff cache version == 3 */
+
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE)){
+	/* this should really be enctype, but it is the same as
+           keytype nowadays */
     ret = krb5_store_int16(sp, p.keytype);
-#endif
     if(ret) return ret;
+    }
+
     ret = krb5_store_data(sp, p.keyvalue);
     return ret;
 }
@@ -393,14 +413,16 @@ krb5_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
 {
     int ret;
     int16_t tmp;
+
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
     p->keytype = tmp;
-#if 0
-    /* XXX only if cache-type == 3 */
+
+    if(krb5_storage_is_flags(sp, KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE)){
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
-#endif
+    }
+
     ret = krb5_ret_data(sp, &p->keyvalue);
     return ret;
 }
