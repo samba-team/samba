@@ -12,16 +12,9 @@
 # Note: Under this directory rpm expects to find the same directories that are under the
 #   /usr/src/redhat directory
 #
-if [ -r ~/.rpmmacros ]; then
-	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
-	if [ z$TOPDIR != "z" ]; then
-		SPECDIR=${TOPDIR}/SPECS
-		SRCDIR=${TOPDIR}/SOURCES
-	fi
-fi
 
-SPECDIR=${SPECDIR:-/usr/src/redhat/SPECS}
-SRCDIR=${SRCDIR:-/usr/src/redhat/SOURCES}
+SPECDIR=`rpm --eval %_specdir`
+SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR vaiables must have a value!
 
@@ -29,6 +22,7 @@ USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
 SPECFILE="samba3.spec"
+REQUIRESCMD="find-requires"
 
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpm"
@@ -36,26 +30,28 @@ echo The RPM Version on this machine is: $RPMVER
 
 case $RPMVER in
     2*)
-       echo Building for RPM v2.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
-       ;;
-    3*)
-       echo Building for RPM v3.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
+       echo Building for RPM v2.x or v3.x
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec |\
+          sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
        ;;
     4.0*)
        ## catch rpm v4.0.x first
        echo Building for RPM v4.0
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
+         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
        ;;
-    4.*)
-       echo Building for RPM v4.1 or later
-       ## we can do a little better here on the spec and
-       ## source directories
-       SPECDIR=`rpm -E %_specdir`
-       SOURCEDIR=`rpm -E %_sourcedir`
+    4.1*)
+       echo Building for RPM v4.1
        RPM="rpmbuild"
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
+         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
+       ;;
+    4.2*)
+       echo Building for RPM v4.2
+       RPM="rpmbuild"
+       REQUIRESCMD="perl.req"
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec |\
+         sed -e "s/REQUIRES_MACRO/__find_requires/g" > $SPECFILE
        ;;
     *)
        echo "Unknown RPM version: `rpm --version`"
@@ -67,6 +63,16 @@ esac
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
 ( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
+
+## build the filter script
+
+cat << EOR > filter-requires-samba.sh
+#!/bin/sh
+/usr/lib/rpm/$REQUIRESCMD $* | grep -v "Net::LDAP"
+EOR
+
+chmod 755 filter-requires-samba.sh
+
 /bin/cp -p filter-requires-samba.sh ${SRCDIR}
 /bin/cp -av $SPECFILE ${SPECDIR}
 
