@@ -282,6 +282,28 @@ static BOOL initiate_name_query_packet( struct packet_struct *packet)
 }
 
 /***************************************************************************
+ Sends out a name query - from a WINS server. 
+**************************************************************************/
+
+static BOOL initiate_name_query_packet_from_wins_server( struct packet_struct *packet)
+{   
+  struct nmb_packet *nmb = NULL;
+  
+  nmb = &packet->packet.nmb;
+
+  nmb->header.opcode = NMB_NAME_QUERY_OPCODE;
+  nmb->header.arcount = 0;
+    
+  nmb->header.nm_flags.recursion_desired = False;
+  
+  DEBUG(4,("initiate_name_query_packet_from_wins_server: sending query for name %s (bcast=%s) to IP %s\n",
+           namestr(&nmb->question.question_name),
+           BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
+    
+  return send_netbios_packet( packet );
+} 
+
+/***************************************************************************
  Sends out a name register.
 **************************************************************************/
 
@@ -664,6 +686,48 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
   }
 
   if((rrec = make_response_record(subrec,           /* subnet record. */
+               p,                     /* packet we sent. */
+               resp_fn,               /* function to call on response. */
+               timeout_fn,            /* function to call on timeout. */
+               (success_function)success_fn,            /* function to call on operation success. */
+               (fail_function)fail_fn,               /* function to call on operation fail. */
+               userdata)) == NULL)
+  {
+    p->locked = False;
+    free_packet(p);
+    return NULL;
+  }
+
+  return rrec;
+}
+
+/****************************************************************************
+ Queue a query name packet to a given address from the WINS subnet.
+****************************************************************************/
+ 
+struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          query_name_success_function success_fn,
+                          query_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname)
+{
+  struct packet_struct *p;
+  struct response_record *rrec;
+  BOOL bcast = False;
+
+  if(( p = create_and_init_netbios_packet(nmbname, bcast, to_ip)) == NULL)
+    return NULL;
+
+  if(initiate_name_query_packet_from_wins_server( p ) == False)
+  {
+    p->locked = False;
+    free_packet(p);
+    return NULL;
+  }
+
+  if((rrec = make_response_record(wins_server_subnet,           /* subnet record. */
                p,                     /* packet we sent. */
                resp_fn,               /* function to call on response. */
                timeout_fn,            /* function to call on timeout. */
