@@ -204,7 +204,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->first_entry, r->entries_read, sizeof(r->first_entry[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->first_entry, sizeof(r->first_entry[0]), r->entries_read, (ndr_pull_flags_fn_t)ndr_pull_atsvc_JobEnumInfo));
+	}
 	}
 done:
 	return NT_STATUS_OK;

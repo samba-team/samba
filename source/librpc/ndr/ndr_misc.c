@@ -90,14 +90,22 @@ NTSTATUS ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *r
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->sid_rev_num));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->num_auths));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->sub_auths, r->num_auths, sizeof(r->sub_auths[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS, r->sub_auths, r->num_auths));
+	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_BUFFERS, r->id_auth, 6));
+	}
+	{
 		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_BUFFERS, r->sub_auths, r->num_auths));
+	}
 done:
 	return NT_STATUS_OK;
 }
@@ -127,11 +135,15 @@ NTSTATUS ndr_pull_security_acl(struct ndr_pull *ndr, int ndr_flags, struct secur
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->revision));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aces));
 		NDR_ALLOC_N_SIZE(ndr, r->aces, r->num_aces, sizeof(r->aces[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS, (void **)r->aces, sizeof(r->aces[0]), r->num_aces, (ndr_pull_flags_fn_t)ndr_pull_security_ace));
+	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_BUFFERS, (void **)r->aces, sizeof(r->aces[0]), r->num_aces, (ndr_pull_flags_fn_t)ndr_pull_security_ace));
+	}
 done:
 	return NT_STATUS_OK;
 }

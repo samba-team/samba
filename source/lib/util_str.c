@@ -1074,13 +1074,18 @@ size_t strlen_m(const char *s)
 {
 	size_t count = 0;
 
+	if (!s) {
+		return 0;
+	}
+
 	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
 		s++;
 		count++;
 	}
 
-	if (!*s)
-		return;
+	if (!*s) {
+		return count;
+	}
 
 	push_ucs2(NULL,tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	return count + strlen_w(tmpbuf);

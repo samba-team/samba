@@ -347,14 +347,14 @@ NTSTATUS ndr_push_samr_UserInfo2(struct ndr_push *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->comment));
-	NDR_CHECK(ndr_push_uint32(ndr, r->unknown1));
-	NDR_CHECK(ndr_push_uint32(ndr, r->unknown2));
+	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->unknown));
 	NDR_CHECK(ndr_push_uint16(ndr, r->country_code));
 	NDR_CHECK(ndr_push_uint16(ndr, r->code_page));
 	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_push_samr_Name(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_push_samr_Name(ndr, NDR_BUFFERS, &r->unknown));
 done:
 	return NT_STATUS_OK;
 }
@@ -1225,7 +1225,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->entries, r->count, sizeof(r->entries[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->entries, sizeof(r->entries[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_samr_SamEntry));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1705,7 +1707,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->ids, r->count, sizeof(r->ids[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->ids, r->count));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -1762,7 +1766,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_samr_Name));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2155,14 +2161,14 @@ NTSTATUS ndr_pull_samr_UserInfo2(struct ndr_pull *ndr, int ndr_flags, struct sam
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->comment));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown1));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->country_code));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->code_page));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown));
 done:
 	return NT_STATUS_OK;
 }
@@ -2216,12 +2222,15 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->logon_hours, 1260, sizeof(r->logon_hours[0]));
+	{
 		uint32 _offset, _length;
 		NDR_CHECK(ndr_pull_uint32(ndr, &_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
+
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2252,12 +2261,15 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->logon_hours, 1260, sizeof(r->logon_hours[0]));
+	{
 		uint32 _offset, _length;
 		NDR_CHECK(ndr_pull_uint32(ndr, &_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
+
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2313,12 +2325,15 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->logon_hours, 1260, sizeof(r->logon_hours[0]));
+	{
 		uint32 _offset, _length;
 		NDR_CHECK(ndr_pull_uint32(ndr, &_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
+
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -2570,7 +2585,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->buffer, r->buf_count, sizeof(r->buffer[0]));
+	{
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->buffer, r->buf_count));
+	}
 	}
 	if (r->logon_hours) {
 	{
@@ -2581,12 +2598,15 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->logon_hours, 1260, sizeof(r->logon_hours[0]));
+	{
 		uint32 _offset, _length;
 		NDR_CHECK(ndr_pull_uint32(ndr, &_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
+
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
+	}
 	}
 done:
 	return NT_STATUS_OK;
@@ -4314,8 +4334,7 @@ void ndr_print_samr_UserInfo2(struct ndr_print *ndr, const char *name, struct sa
 	ndr_print_struct(ndr, name, "samr_UserInfo2");
 	ndr->depth++;
 	ndr_print_samr_Name(ndr, "comment", &r->comment);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_samr_Name(ndr, "unknown", &r->unknown);
 	ndr_print_uint16(ndr, "country_code", r->country_code);
 	ndr_print_uint16(ndr, "code_page", r->code_page);
 	ndr->depth--;

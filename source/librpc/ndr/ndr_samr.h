@@ -703,8 +703,7 @@ struct samr_UserInfo1 {
 
 struct samr_UserInfo2 {
 	struct samr_Name comment;
-	uint32 unknown1;
-	uint32 unknown2;
+	struct samr_Name unknown;
 	uint16 country_code;
 	uint16 code_page;
 };

@@ -634,7 +634,9 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->transports, r->count, sizeof(r->transports[0]));
+	{
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->transports, sizeof(r->transports[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_TransportInfo0));
+	}
 	}
 done:
 	return NT_STATUS_OK;
