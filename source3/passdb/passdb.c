@@ -79,7 +79,7 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->private.logoff_time           = 
 	user->private.kickoff_time          = 
 	user->private.pass_must_change_time = get_time_t_max();
-	user->private.fields_present = 0x00ffffff; 	/* don't know */
+	user->private.fields_present        = 0x00ffffff;
 	user->private.logon_divs = 168; 	/* hours per week */
 	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
 	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
@@ -128,7 +128,7 @@ static void destroy_pdb_talloc(SAM_ACCOUNT **user)
 
 
 /**********************************************************************
- Alloc memory and initialises a struct sam_passwd on supplied mem_ctx.
+ Allocates memory and initialises a struct sam_passwd on supplied mem_ctx.
 ***********************************************************************/
 
 NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
@@ -475,9 +475,9 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
 	static fstring acct_str;
 
-	SMB_ASSERT(length <= sizeof(acct_str));
-
 	size_t i = 0;
+
+	SMB_ASSERT(length <= sizeof(acct_str));
 
 	acct_str[i++] = '[';
 
@@ -1742,7 +1742,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32	logon_time,
 		logoff_time,
 		kickoff_time,
-		lockout_time,
+		bad_password_time,
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
@@ -1782,7 +1782,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		&logon_time,
 		&logoff_time,
 		&kickoff_time,
-		&lockout_time,
+		&bad_password_time,
 		&pass_last_set_time,
 		&pass_can_change_time,
 		&pass_must_change_time,
@@ -1919,7 +1919,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	uint32	logon_time,
 		logoff_time,
 		kickoff_time,
-		lockout_time,
+		bad_password_time,
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
@@ -1960,7 +1960,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	logon_time = (uint32)pdb_get_logon_time(sampass);
 	logoff_time = (uint32)pdb_get_logoff_time(sampass);
 	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
-	lockout_time = (uint32)0;
+	bad_password_time = (uint32)0;
 	pass_can_change_time = (uint32)pdb_get_pass_can_change_time(sampass);
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
@@ -2066,7 +2066,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		logon_time,
 		logoff_time,
 		kickoff_time,
-		lockout_time,
+		bad_password_time,
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time,
@@ -2110,7 +2110,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		logon_time,
 		logoff_time,
 		kickoff_time,
-		lockout_time,
+		bad_password_time,
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time,
