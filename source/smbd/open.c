@@ -1046,7 +1046,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
+files_struct *open_file_fchmod(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
 	BOOL fsp_open;
@@ -1058,7 +1058,9 @@ files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_
 	if(!fsp)
 		return NULL;
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,0);
+	/* note! we must use a non-zero desired access or we don't get
+           a real file descriptor. Oh what a twisted web we weave. */
+	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
