@@ -533,3 +533,104 @@ struct hostent *sys_gethostbyname(char *name)
   return(gethostbyname(name));
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
+
+
+/**************************************************************************
+ Try and abstract process capabilities (for systems that have them).
+****************************************************************************/
+
+BOOL set_process_capability( uint32 cap_flag, BOOL enable )
+{
+#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
+  if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
+  {
+    cap_t cap = cap_get_proc();
+
+    if (cap == NULL) {
+      DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
+            strerror(errno)));
+      return False;
+    }
+
+    if(enable)
+      cap->cap_effective |= CAP_NETWORK_MGT;
+    else
+      cap->cap_effective &= ~CAP_NETWORK_MGT;
+
+    if (cap_set_proc(cap) == -1) {
+      DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
+            strerror(errno)));
+      return False;
+    }
+
+    DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+  }
+#endif
+  return True;
+}
+
+/**************************************************************************
+ Try and abstract inherited process capabilities (for systems that have them).
+****************************************************************************/
+
+BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
+{
+#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
+  if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
+  {
+    cap_t cap = cap_get_proc();
+
+    if (cap == NULL) {
+      DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
+            strerror(errno)));
+      return False;
+    }
+
+    if(enable)
+      cap->cap_inheritable |= CAP_NETWORK_MGT;
+    else
+      cap->cap_inheritable &= ~CAP_NETWORK_MGT;
+
+    if (cap_set_proc(cap) == -1) {
+      DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
+            strerror(errno)));
+      return False;
+    }
+
+    DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+  }
+#endif
+  return True;
+}
+
+/**************************************************************************
+ Wrapper for random().
+****************************************************************************/
+
+long sys_random(void)
+{
+#if defined(HAVE_RANDOM)
+  return (long)random();
+#elif defined(HAVE_RAND)
+  return (long)rand();
+#else
+  DEBUG(0,("Error - no random function available !\n"));
+  exit(1);
+#endif
+}
+
+/**************************************************************************
+ Wrapper for srandom().
+****************************************************************************/
+
+void sys_srandom(unsigned int seed)
+{
+#if defined(HAVE_SRANDOM)
+  srandom(seed);
+#elif defined(HAVE_SRAND)
+  srand(seed);
+#else
+  DEBUG(0,("Error - no srandom function available !\n"));
+  exit(1);
+#endif
+}

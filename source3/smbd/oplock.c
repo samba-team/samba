@@ -240,39 +240,9 @@ BOOL set_file_oplock(files_struct *fsp)
 {
 #if defined(HAVE_KERNEL_OPLOCKS)
   if(lp_kernel_oplocks()) {
-#if 0 /* for now. */
-    extern struct current_user current_user;
-#endif
-    int saved_errno;
-    int fcntl_ret;
 
-#if 0 /* for now. */
-    /*
-     * Go back to being root.
-     */
-
-    unbecome_user();
-#endif
-
-    fcntl_ret = fcntl(fsp->fd_ptr->fd, F_OPLKREG, oplock_pipe_write);
-    saved_errno = errno;
-
-#if 0 /* for now. */
-    /*
-     * Go back to being the correct user.
-     */
-    if(!become_user(fsp->conn, current_user.vuid))
-    {
-      DEBUG( 0, ( "set_file_oplock: unable to re-become user!" ) );
-      DEBUGADD( 0, ( "Shutting down server\n" ) );
-      close_sockets();
-      close(oplock_sock);
-      exit_server("unable to re-become user");
-    }
-#endif
-
-    if(fcntl_ret < 0) {
-      if(saved_errno != EAGAIN) {
+    if(fcntl(fsp->fd_ptr->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
+      if(errno != EAGAIN) {
         DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f. Error was %s\n", 
               fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
@@ -284,6 +254,10 @@ inode = %.0f. Another process had the file open.\n",
       }
       return False;
     }
+
+    DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
+          fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode));
+
   }
 #endif /* HAVE_KERNEL_OPLOCKS */
 
@@ -305,7 +279,8 @@ inode = %.0f. Another process had the file open.\n",
 static void release_file_oplock(files_struct *fsp)
 {
 #if defined(HAVE_KERNEL_OPLOCKS)
-  if(fsp->granted_oplock && lp_kernel_oplocks())
+
+  if(lp_kernel_oplocks())
   {
     if( DEBUGLVL( 10 ))
     {
@@ -320,7 +295,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
     }
 
     /*
-     * Remove the kernel oplock on this file.
+     * Remote the kernel oplock on this file.
      */
 
     if(fcntl(fsp->fd_ptr->fd, F_OPLKACK, OP_REVOKE) < 0)
@@ -1056,6 +1031,9 @@ void check_kernel_oplocks(void)
     int fd;
     int pfd[2];
     pstring tmpname;
+
+    set_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
+    set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
 
     slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", (unsigned int)getpid());
     mktemp(tmpname);

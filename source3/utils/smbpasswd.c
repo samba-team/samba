@@ -639,9 +639,13 @@ int main(int argc, char **argv)
       smb_pwent->smb_nt_passwd = new_nt_p16;
     }
     smb_pwent->acct_ctrl &= ~ACB_DISABLED;
-  } else if (set_no_password)
+  } else if (set_no_password) {
     smb_pwent->acct_ctrl |= ACB_PWNOTREQ;
-  else {
+    /* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
+    smb_pwent->smb_passwd = NULL;
+    smb_pwent->smb_nt_passwd = NULL;
+  } else {
+    smb_pwent->acct_ctrl &= ~ACB_PWNOTREQ;
     smb_pwent->smb_passwd = new_p16;
     smb_pwent->smb_nt_passwd = new_nt_p16;
   }

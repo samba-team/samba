@@ -535,25 +535,36 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 	     conn->num_files_open));
 
   }
+}
 
+/****************************************************************************
+ If it's a read-only file, and we were compiled with mmap enabled,
+ try and mmap the file. This is split out from open_file() above
+ as mmap'ing the file can cause the kernel reference count to
+ be incremented, which can cause kernel oplocks to be refused.
+ Splitting this call off allows the kernel oplock to be granted, then
+ the file mmap'ed.
+****************************************************************************/
+
+static void mmap_open_file(files_struct *fsp)
+{
 #if WITH_MMAP
   /* mmap it if read-only */
   if (!fsp->can_write) {
-	  fsp->mmap_size = file_size(fname);
+	  fsp->mmap_size = file_size(fsp->fsp_name);
 	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
 		  fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
 					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
 
 		  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
 			  DEBUG(3,("Failed to mmap() %s - %s\n",
-				   fname,strerror(errno)));
+				   fsp->fsp_name,strerror(errno)));
 			  fsp->mmap_ptr = NULL;
 		  }
 	  }
   }
 #endif
 }
-
 
 /****************************************************************************
   C. Hoch 11/22/95
@@ -938,6 +949,13 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fsp,conn,token,&share_locked);
+
+    /*
+     * Attempt to mmap a read only file.
+     * Moved until after a kernel oplock may
+     * be granted due to reference count issues. JRA.
+     */
+    mmap_open_file(fsp);
   }
 
   if (share_locked && lp_share_modes(SNUM(conn)))

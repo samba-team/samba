@@ -593,7 +593,7 @@ void sync_all_dmbs(time_t t)
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
 		if (strcmp(global_myworkgroup, work->work_group)) {
-			if (((unsigned)random()) % count != 0) continue;
+			if (((unsigned)sys_random()) % count != 0) continue;
 
 			lastrun = t;
 

@@ -122,5 +122,11 @@ typedef struct
 
 } rid_name;
 
+struct acct_info
+{
+    fstring acct_name; /* account name */
+    uint32 smb_userid; /* domain-relative RID */
+};
+
 #endif /* _NT_DOMAIN_H */
 

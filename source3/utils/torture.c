@@ -130,7 +130,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 
 
 	for (i=0;i<numops;i++) {
-		unsigned n = (unsigned)random()%10;
+		unsigned n = (unsigned)sys_random()%10;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -611,7 +611,7 @@ static void run_unlinktest(void)
 static void rand_buf(char *buf, int len)
 {
 	while (len--) {
-		*buf = random();
+		*buf = sys_random();
 		buf++;
 	}
 }
@@ -639,8 +639,8 @@ static void run_randomipc(void)
 	}
 
 	for (i=0;i<1000;i++) {
-		api = random() % 500;
-		param_len = random() % 64;
+		api = sys_random() % 500;
+		param_len = sys_random() % 64;
 
 		rand_buf(param, param_len);
   
@@ -860,7 +860,7 @@ static void create_procs(int nprocs, int numops)
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
 			int mypid = getpid();
-			srandom(mypid ^ time(NULL));
+			sys_srandom(mypid ^ time(NULL));
 			run_torture(numops);
 			_exit(0);
 		}

@@ -192,7 +192,7 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
   unsigned char *p;
 
   if(!done_reseed || re_seed) {
-	  srandom(do_reseed(md4_buf));
+	  sys_srandom(do_reseed(md4_buf));
 	  done_reseed = True;
   }
 
@@ -218,7 +218,7 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
     memcpy(md4_buf, tmp_buf, sizeof(md4_buf));
     /* XOR in output from random(). */
     for(i = 0; i < 4; i++)
-      SIVAL(tmp_buf, i*4, (IVAL(tmp_buf, i*4) ^ (uint32)random()));
+      SIVAL(tmp_buf, i*4, (IVAL(tmp_buf, i*4) ^ (uint32)sys_random()));
     memcpy(p, tmp_buf, copy_len);
     p += copy_len;
     len -= copy_len;

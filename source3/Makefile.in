@@ -186,7 +186,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 #             rpcclient/cmd_netlogon.o \
-#             rpcclient/cmd_srvsvc.o \
+#             rpcclient/cmd_srvsvc.o
 
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -319,7 +319,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o
+	-rm -f core */*~ *~ */*.o $(PROGS) $(SPROGS)
 
 proto:
 	@echo rebuilding include/proto.h

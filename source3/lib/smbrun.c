@@ -89,6 +89,12 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	int uid = current_user.uid;
 	int gid = current_user.gid;
 
+    /*
+     * Lose any kernel oplock capabilities we may have.
+     */
+    set_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+    set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+
 #ifndef HAVE_EXECL
 	int ret;
 	pstring syscmd;  

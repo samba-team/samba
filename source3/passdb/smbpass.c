@@ -770,6 +770,16 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   p += 33; /* Move to the first character of the line after
               the NT password. */
 
+  /*
+   * If both NT and lanman passwords are provided - reset password
+   * not required flag.
+   */
+
+  if(pwd->smb_passwd != NULL || pwd->smb_nt_passwd != NULL) {
+    /* Reqiure password in the future (should ACB_DISABLED also be reset?) */
+    pwd->acct_ctrl &= ~(ACB_PWNOTREQ);
+  }
+
   if (*p == '[') {
 
     i = 0;

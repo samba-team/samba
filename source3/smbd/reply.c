@@ -3544,7 +3544,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 #endif
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_OFF_T count, offset;
+  SMB_OFF_T count = 0, offset = 0;
   int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int i;
   char *data;

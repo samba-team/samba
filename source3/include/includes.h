@@ -265,6 +265,10 @@
 #include <poll.h>
 #endif
 
+#ifdef HAVE_SYS_CAPABILITY_H
+#include <sys/capability.h>
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
