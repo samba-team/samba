@@ -393,13 +393,14 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info,
 
 /*******************************************************************
  * write a structure.
- * called from spoolss_r_open_printer (srv_spoolss.c)
+ * called from static spoolss_r_open_printer_ex (srv_spoolss.c)
+ * called from spoolss_open_printer_ex (cli_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "spoolss_io_r_open_printer");
+	prs_debug(ps, depth, desc, "spoolss_io_r_open_printer_ex");
 	depth++;
 	prs_align(ps);
 
@@ -413,73 +414,67 @@ BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct
 	return True;
 }
 
-#if 0
 /*******************************************************************
  * make a structure.
  ********************************************************************/
-BOOL make_spoolss_io_q_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, 
-		uint32 unk_0,
+BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		char *printername,
-		uint32 unk_1, uint32 cbbuf, uint32 devmod, uint32 des_access,
+		uint32 cbbuf, uint32 devmod, uint32 des_access,
 		char *station,
 		char *username)
 {
 	int len_name = printername != NULL ? strlen(printername) : 0;
+	int len_sta  = station     != NULL ? strlen(station    ) : 0;
+	int len_user = username    != NULL ? strlen(username   ) : 0;
 
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("make_spoolss_io_q_open_printer\n"));
+	DEBUG(5,("make_spoolss_io_q_open_printer_ex\n"));
 
-	q_u->unknown0 = unk_0;
-	make_unistr2(&(q_u->uni_domain), dom_name, len_name);
+	q_u->ptr = 1;
+	make_unistr2(&(q_u->printername), printername, len_name);
 
+	q_u->unknown0 = 0x0; /* 0x0000 0000 */
+	q_u->cbbuf = cbbuf; /* 0x0000 0000 */
+	q_u->devmod = devmod; /* 0x0000 0000 */
+	q_u->access_required = des_access;
 
-	prs_uint32("unknown1", ps, depth, &(q_u->unknown1));
-	prs_uint32("cbbuf", ps, depth, &(q_u->cbbuf));
-	prs_uint32("devmod", ps, depth, &(q_u->devmod));
-	prs_uint32("access required", ps, depth, &(q_u->access_required));
+	q_u->unknown1 = 0x1;
+	q_u->unknown2 = 0x1;
+	q_u->unknown3 = 0x149f7d8; /* looks like a pointer */
+	q_u->unknown4 = 0x1c;
+	q_u->unknown5 = 0x00b94dd0;
+	q_u->unknown6 = 0x0149f5cc; /* looks like _another_ pointer */
+	q_u->unknown7 = 0x00000565;
+	q_u->unknown8  = 0x2;
+	q_u->unknown9 = 0x0;
+	q_u->unknown10 = 0x0;
 
-	/* don't care to decode end of packet by now */
-	/* but when acl will be implemented, it will be useful */
-
-	prs_uint32("unknown2", ps, depth, &(q_u->unknown2));
-	prs_uint32("unknown3", ps, depth, &(q_u->unknown3));
-	prs_uint32("unknown4", ps, depth, &(q_u->unknown4));
-	prs_uint32("unknown5", ps, depth, &(q_u->unknown5));
-	prs_uint32("unknown6", ps, depth, &(q_u->unknown6));
-	prs_uint32("unknown7", ps, depth, &(q_u->unknown7));
-	prs_uint32("unknown8", ps, depth, &(q_u->unknown8));
-	prs_uint32("unknown9", ps, depth, &(q_u->unknown9));
-	prs_uint32("unknown10", ps, depth, &(q_u->unknown10));
-	prs_uint32("unknown11", ps, depth, &(q_u->unknown11));
-
-	smb_io_unistr2("", &(q_u->station),True,ps,depth);
-	prs_align(ps);
-	smb_io_unistr2("", &(q_u->username),True,ps,depth);
+	make_unistr2(&(q_u->station), station, len_sta);
+	make_unistr2(&(q_u->username), username, len_user);
 
 	return True;
 }
-#endif
 
 /*******************************************************************
  * read a structure.
- * called from spoolss_q_open_printer (srv_spoolss.c)
+ * called from spoolss_q_open_printer_ex (srv_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "spoolss_io_q_open_printer");
+	prs_debug(ps, depth, desc, "spoolss_io_q_open_printer_ex");
 	depth++;
 
 	prs_align(ps);
 
-	prs_uint32("unknown0", ps, depth, &(q_u->unknown0));
+	prs_uint32("ptr", ps, depth, &(q_u->ptr));
 	smb_io_unistr2("", &(q_u->printername),True,ps,depth);
 	
 	prs_align(ps);
 
-	prs_uint32("unknown1", ps, depth, &(q_u->unknown1));
+	prs_uint32("unknown0", ps, depth, &(q_u->unknown0));
 	prs_uint32("cbbuf", ps, depth, &(q_u->cbbuf));
 	prs_uint32("devmod", ps, depth, &(q_u->devmod));
 	prs_uint32("access required", ps, depth, &(q_u->access_required));
@@ -487,6 +482,7 @@ BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct
 	/* don't care to decode end of packet by now */
 	/* but when acl will be implemented, it will be useful */
 
+	prs_uint32("unknown1", ps, depth, &(q_u->unknown1));
 	prs_uint32("unknown2", ps, depth, &(q_u->unknown2));
 	prs_uint32("unknown3", ps, depth, &(q_u->unknown3));
 	prs_uint32("unknown4", ps, depth, &(q_u->unknown4));
@@ -496,11 +492,11 @@ BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct
 	prs_uint32("unknown8", ps, depth, &(q_u->unknown8));
 	prs_uint32("unknown9", ps, depth, &(q_u->unknown9));
 	prs_uint32("unknown10", ps, depth, &(q_u->unknown10));
-	prs_uint32("unknown11", ps, depth, &(q_u->unknown11));
 
 	smb_io_unistr2("", &(q_u->station),True,ps,depth);
 	prs_align(ps);
 	smb_io_unistr2("", &(q_u->username),True,ps,depth);
+	prs_align(ps);
 
 	return True;
 }
@@ -576,8 +572,23 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 }
 
 /*******************************************************************
+ * make a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, PRINTER_HND *hnd)
+{
+	if (q_u == NULL) return False;
+
+	DEBUG(5,("make_spoolss_q_closeprinter\n"));
+
+	memcpy(&(q_u->handle), hnd, sizeof(q_u->handle));
+
+	return True;
+}
+
+/*******************************************************************
  * read a structure.
- * called from spoolss_q_closeprinter (srv_spoolss.c)
+ * called from static spoolss_q_closeprinter (srv_spoolss.c)
+ * called from spoolss_closeprinter (cli_spoolss.c)
  ********************************************************************/
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth)
 {
@@ -595,7 +606,8 @@ BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct
 
 /*******************************************************************
  * write a structure.
- * called from spoolss_r_closeprinter (srv_spoolss.c)
+ * called from static spoolss_r_closeprinter (srv_spoolss.c)
+ * called from spoolss_closeprinter (cli_spoolss.c)
  ********************************************************************/
 BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth)
 {

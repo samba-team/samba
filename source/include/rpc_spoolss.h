@@ -506,37 +506,40 @@ typedef struct s_buffer
 typedef struct printer_policy_info
 {
   uint8 data[PRINTER_HND_SIZE]; /* printer handle */
+
 } PRINTER_HND;
 
-/* SPOOL_Q_OPEN_PRINTER request to open a printer */
-typedef struct spool_q_open_printer
+/* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
+typedef struct spool_q_open_printer_ex
 {
-	uint32  unknown0;
+	uint32  ptr;
 	UNISTR2 printername;
-	uint32  unknown1;
+	uint32  unknown0;
 	uint32  cbbuf;
 	uint32  devmod;
 	uint32  access_required;
+	uint32  unknown1;	/* 0x0000 0001 */
 	uint32  unknown2;	/* 0x0000 0001 */
-	uint32  unknown3;	/* 0x0000 0001 */
-	uint32  unknown4;	/* ??? */
-	uint32  unknown5;	/* 0x0000 001c */
-	uint32  unknown6;	/* ??? */
-	uint32  unknown7;	/* ??? */
-	uint32  unknown8;	/* 0x0000 0565 */
-	uint32  unknown9;	/* 0x0000 0002 */
+	uint32  unknown3;	/* ??? pointer? */
+	uint32  unknown4;	/* 0x0000 001c */
+	uint32  unknown5;	/* ??? e.g 0xb94dd0 */
+	uint32  unknown6;	/* ??? pointer? */
+	uint32  unknown7;	/* 0x0000 0565 */
+	uint32  unknown8;	/* 0x0000 0002 */
+	uint32  unknown9;	/* 0x0000 0000 */
 	uint32  unknown10;	/* 0x0000 0000 */
-	uint32  unknown11;	/* ??? */
 	UNISTR2 station;
 	UNISTR2 username;
-} SPOOL_Q_OPEN_PRINTER;
 
-/* SPOOL_Q_OPEN_PRINTER reply to an open printer */ 
-typedef struct spool_r_open_printer
+} SPOOL_Q_OPEN_PRINTER_EX;
+
+/* SPOOL_Q_OPEN_PRINTER_EX reply to an open printer */ 
+typedef struct spool_r_open_printer_ex
 {	
 	PRINTER_HND handle; /* handle used along all transactions (20*uint8) */
 	uint32 status;
-} SPOOL_R_OPEN_PRINTER;
+
+} SPOOL_R_OPEN_PRINTER_EX;
 
 typedef struct spool_q_getprinterdata
 {

@@ -2037,12 +2037,13 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
-BOOL spoolss_get_printer_data(struct cli_state *cli, uint16 fnum, 
-			PRINTER_HND *hnd,
-			char *value_name, uint32 size);
-BOOL spoolss_get_printer(struct cli_state *cli, uint16 fnum, 
-			PRINTER_HND *hnd, uint32 level,
-			uint32 buf_size);
+BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
+			char *printername,
+			uint32 cbbuf, uint32 devmod, uint32 des_access,
+			char *station,
+			char *username,
+			PRINTER_HND *hnd);
+BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -2926,20 +2927,20 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
 BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
-BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_io_q_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, 
-		uint32 unk_0,
+BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		char *printername,
-		uint32 unk_1, uint32 cbbuf, uint32 devmod, uint32 des_access,
+		uint32 cbbuf, uint32 devmod, uint32 des_access,
 		char *station,
 		char *username);
-BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				PRINTER_HND *handle,
 				char *valuename,
 				uint32 size);
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, PRINTER_HND *hnd);
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
@@ -3414,8 +3415,7 @@ void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
-void cmd_spoolss_getprinterdata(struct client_info *info);
-void cmd_spoolss_getprinter(struct client_info *info);
+void cmd_spoolss_open_printer_ex(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
