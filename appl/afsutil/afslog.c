@@ -206,10 +206,12 @@ main(int argc, char **argv)
     for(i = 0; i < files.num_strings; i++){
 	afslog_file(context, id, files.strings[i]);
 	num++;
+	free_getarg_strings (&files);
     }
     for(i = 0; i < cells.num_strings; i++){
 	afslog_cell(context, id, cells.strings[i], 1);
 	num++;
+	free_getarg_strings (&cells);
     }
     for(i = optind; i < argc; i++){
 	num++;
