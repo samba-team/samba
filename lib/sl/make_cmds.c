@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,6 +37,7 @@
  */
 
 #include "make_cmds.h"
+#include <getarg.h>
 
 RCSID("$Id$");
 
@@ -197,16 +198,39 @@ generate_commands(void)
     free(cfn);
 }
 
+int version_flag;
+int help_flag;
+struct getargs args[] = {
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 0, arg_flag, &help_flag }
+};
+int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int code)
+{
+    arg_printusage(args, num_args, NULL, "command-table");
+    exit(code);
+}
+
 int
 main(int argc, char **argv)
 {
-    set_progname(argv[0]);
+    int optind = 0;
 
-    if(argc != 2) {
-	fprintf(stderr, "Usage: %s command_table\n", __progname);
-	exit(1);
+    set_progname(argv[0]);
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+    if(help_flag)
+	usage(0);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
     }
-    filename = argv[1];
+    
+    if(argc == optind)
+	usage(1);
+    filename = argv[optind];
     yyin = fopen(filename, "r");
     if(yyin == NULL)
 	err(1, "%s", filename);

@@ -208,6 +208,14 @@ receive (krb5_context context,
 	krb5_err (context, 1, ret, "db->close");
 }
 
+int version_flag;
+int help_flag;
+struct getargs args[] = {
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 0, arg_flag, &help_flag }
+};
+int num_args = sizeof(args) / sizeof(args[0]);
+
 int
 main(int argc, char **argv)
 {
@@ -221,9 +229,16 @@ main(int argc, char **argv)
     krb5_ccache ccache;
     krb5_principal server;
 
-    set_progname(argv[0]);
-
-    krb5_init_context(&context);
+    int optind;
+    
+    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    
+    if(help_flag)
+	krb5_std_usage(0, args, num_args);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
 
     memset(&conf, 0, sizeof(conf));
     ret = kadm5_init_with_password_ctx (context,
