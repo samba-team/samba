@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -193,9 +193,11 @@ verify_krb5(struct passwd *pwd,
     if (!pag_set && k_hasafs()) {
 	k_setpag();
 	pag_set = 1;
+    }
+
+    if (pag_set)
 	krb5_afslog_uid_home(context, ccache, NULL, NULL, 
 			     pwd->pw_uid, pwd->pw_dir);
-    }
 #endif
 out:
     if(ret && !quiet)
@@ -222,8 +224,9 @@ verify_krb4(struct passwd *pwd,
 	    if (!pag_set && k_hasafs()) {
 		k_setpag ();
 		pag_set = 1;
+            }
+            if (pag_set)
 		krb_afslog_uid_home (0, 0, pwd->pw_uid, pwd->pw_dir);
-	    }
 	} else if (!quiet)
 	    printf ("%s\n", krb_get_err_text (ret));
     }
@@ -242,6 +245,12 @@ afs_verify(char *name,
 
     if(pwd == NULL)
 	return 1;
+
+    if (!pag_set) && k_hasafs()) {
+        k_setpag();
+        pag_set=1;
+    }
+
     if (ret)
 	ret = unix_verify_user (name, password);
 #ifdef KRB5
