@@ -30,6 +30,13 @@ a potential security hole. As a side effect of this change smbpasswd
 can now be used on a UNIX machine to change users passwords on an NT
 machine.
 
+The new password changing code can also synchronize a users UNIX
+password at the same time a SMB password is being changed, if Samba
+is compiled with password changing enabled, and the new parameter
+'unix password sync' is set to True. By default this is off, as
+it allows the password change program to be called as root, which
+may be considered a security problem at some sites.
+
 Name resolution order now user selectable
 -----------------------------------------
 
@@ -75,6 +82,20 @@ using Microsoft NMAKE make tool, saving files onto a Samba share.
 Setting this parameter to true causes Samba to lie to the client
 about the creation time of a directory, so NMAKE commands don't
 re-compile every file.
+
+unix password sync
+
+This parameter is set to False by default. When set to True, it
+causes Samba to attempt to synchronize the users UNIX password
+when a user is changing their SMB password. This causes the
+password change program to be run as root (as the new password
+change code has no access to the plaintext of the old password).
+Because of this, it is set off by default to allow sites to
+set their own security policy regarding UNIX and SMB password
+synchronization.
+
+This parameter has no effect if Samba has been compiled without
+password changing enabled.
 
 Changed compile-time default in 1.9.18p4
 ----------------------------------------

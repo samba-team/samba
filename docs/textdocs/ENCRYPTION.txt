@@ -247,6 +247,14 @@ on Windows NT servers (this only works when the request is
 sent to the NT Primary Domain Controller if you are changing 
 an NT Domain users password).
 
+3). smbpasswd can use smbd to change the UNIX password at
+the same time as the SMB password is being changed. For details
+on this see the parameters 'passwd program', 'passwd chat', and
+'unix password sync' in the smb.conf man page. Note that Samba
+must have been compiled with -DALLOW_CHANGE_PASSWORD for this
+to work (and the system must be one in which UNIX password changing
+is supported).
+
 To run smbpasswd as a normal user just type :
 
 smbpasswd

@@ -511,6 +511,8 @@ time offset
 
 time server
 
+unix password sync
+
 unix realname
 
 username level
@@ -2594,6 +2596,14 @@ If the send string in any part of the chat sequence is a fullstop "."
 then no string is sent. Similarly, is the expect string is a fullstop
 then no string is expected.
 
+Note that if the 'unix password sync' parameter is set to true,
+then this sequence is called *AS ROOT* when the SMB password in the
+smbpasswd file is being changed, without access to the old password
+cleartext. In this case the old password cleartext is set to ""
+(the empty string).
+
+See also 'unix password sync'
+
 .B Example:
         passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en \e
                        "*Reenter NEW password*" %n\en "*Password changed*"
@@ -2605,14 +2615,24 @@ then no string is expected.
 .SS passwd program (G)
 The name of a program that can be used to set user passwords.
 
-This is only necessary if you have enabled remote password changing at
-compile time. Any occurrences of %u will be replaced with the user
-name.
+This is only available if you have enabled remote password changing at
+compile time (see the comments in the Makefile for details). Any occurrences 
+of %u will be replaced with the user name. The user name is checked
+for existance before calling the password changing program.
 
 Also note that many passwd programs insist in "reasonable" passwords,
 such as a minimum length, or the inclusion of mixed case chars and
 digits. This can pose a problem as some clients (such as Windows for
 Workgroups) uppercase the password before sending it. 
+
+Note that if the 'unix password sync' parameter is set to true,
+then this sequence is called *AS ROOT* when the SMB password in the
+smbpasswd file is being changed. If the 'unix passwd sync' parameter
+is set this parameter MUST USE ABSOLUTE PATHS for ALL programs called,
+and must be examined for security implications. Note that by default
+'unix password sync' is set to False.
+
+See also 'unix password sync'
 
 .B Default:
 	passwd program = /bin/passwd
@@ -3553,6 +3573,23 @@ to Windows clients. The default is False.
 
 .B Example:
 	time server = True
+
+.SS unix password sync (G)
+This boolean parameter controlls whether Samba attempts to synchronise
+the UNIX password with the SMB password when the encrypted SMB password
+in the smbpasswd file is changed. If this is set to true the 'passwd program'
+program is called *AS ROOT* - to allow the new UNIX password to be set
+without access to the old UNIX password (as the SMB password has change
+code has no access to the old password cleartext, only the new). By
+default this is set to false.
+
+See also 'passwd program', 'passwd chat'
+
+.B Default:
+         unix password sync = False
+
+.B Example:
+         unix password sync = True
 
 .SS unix realname (G)
 This boolean parameter when set causes samba to supply the real name field
