@@ -89,8 +89,6 @@ BOOL torture_rpc_drsuapi(int dummy)
 
 	printf("Connected to DRAUAPI pipe\n");
 
-	event_loop_once(p->transport.event_context(p));
-
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
 	if (!test_Bind(p, mem_ctx, &handle)) {
