@@ -198,6 +198,13 @@
 	or prompts for one.</para>
         </listitem>
         </varlistentry>
+	
+	<varlistentry>
+	    <term>--require-membership-of={SID|Name}</term>
+	    <listitem><para>Require that a user be a member of specified 
+	    group (either name or SID) for authentication to succeed.</para>
+	    </listitem>
+	</varlistentry>
 
 	  &popt.common.samba;
 	  &stdarg.help;
@@ -223,6 +230,13 @@ auth_param basic credentialsttl 2 hours
       path, and that the group permissions on
       <filename>winbindd_privileged</filename> are as described above.</para></note>
 
+	<para>To setup ntlm_auth for use by squid 2.5 with group limitation in addition to the above
+	example, the following should be added to the <filename>squid.conf</filename> file.
+<programlisting>
+auth_param ntlm program ntlm_auth --helper-protocol=squid-2.5-ntlmssp --require-membership-of='WORKGROUP\Domain Users'
+auth_param basic program ntlm_auth --helper-protocol=squid-2.5-basic --require-membership-of='WORKGROUP\Domain Users'
+</programlisting></para>
+	
 </refsect1>
 
 <refsect1>
