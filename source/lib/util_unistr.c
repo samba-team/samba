@@ -764,3 +764,130 @@ smb_ucs2_t *safe_wstrcat(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxleng
     dest[ucs2_dest_len + ucs2_src_len] = 0;
     return dest;
 }
+
+/*******************************************************************
+ Compare the two strings s1 and s2. len is in ucs2 units.
+********************************************************************/
+
+int wstrcmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	smb_ucs2_t c1, c2;
+
+	for (;;) {
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (c1 != c2)
+			return c1 - c2;
+
+		if (c1 == 0)
+            return 0;
+    }
+	return 0;
+}
+
+/*******************************************************************
+ Compare the first n characters of s1 to s2. len is in ucs2 units.
+********************************************************************/
+
+int wstrncmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len)
+{
+	smb_ucs2_t c1, c2;
+
+	for (; len != 0; --len) {
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (c1 != c2)
+			return c1 - c2;
+
+		if (c1 == 0)
+			return 0;
+
+    }
+	return 0;
+}
+
+/*******************************************************************
+ Search string s2 from s1.
+********************************************************************/
+
+smb_ucs2_t *wstrstr(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	size_t len = wstrlen(s2);
+
+	if (!*s2)
+		return (smb_ucs2_t *)s1;
+
+	for(;*s1; s1++) {
+		if (*s1 == *s2) {
+			if (wstrncmp(s1, s2, len) == 0)
+				return (smb_ucs2_t *)s1;
+		}
+	}
+	return NULL; 
+}
+
+/*******************************************************************
+ Search for ucs2 char c from the beginning of s.
+********************************************************************/ 
+
+smb_ucs2_t *wstrchr(const smb_ucs2_t *s, smb_ucs2_t c)
+{
+	do {
+		if (*s == c)
+			return (smb_ucs2_t *)s;
+	} while (*s++);
+
+	return NULL;
+}
+
+/*******************************************************************
+ Search for ucs2 char c from the end of s.
+********************************************************************/ 
+
+smb_ucs2_t *wstrrchr(const smb_ucs2_t *s, smb_ucs2_t c)
+{
+	smb_ucs2_t *retval = 0;
+
+	do {
+		if (*s == c)
+			retval = (smb_ucs2_t *)s;
+	} while (*s++);
+
+	return retval;
+}
+
+/*******************************************************************
+ Search token from s1 separated by any ucs2 char of s2.
+********************************************************************/
+
+smb_ucs2_t *wstrtok(smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	static smb_ucs2_t *s = NULL;
+	smb_ucs2_t *q;
+
+	if (!s1) {
+		if (!s)
+			return NULL;
+		s1 = s;
+	}
+
+	for (q = s1; *s1; s1++) {
+		smb_ucs2_t *p = wstrchr(s2, *s1);
+		if (p) {
+			if (s1 != q) {
+				s = s1 + 1;
+				*s1 = '\0';
+				return q;
+			}
+			q = s1 + 1;
+		}
+	}
+
+	s = NULL;
+	if (*q)
+		return q;
+
+	return NULL;
+}
