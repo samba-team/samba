@@ -321,7 +321,7 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
   }
 
   if (smb_open_mode == -1) {
-    if(desired_access & DELETE_ACCESS)
+    if(desired_access & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES))
       smb_open_mode = 2;
     else if( desired_access & FILE_EXECUTE)
       smb_open_mode = 0;
@@ -909,12 +909,11 @@ int reply_ntcancel(connection_struct *conn,
 {
 	/*
 	 * Go through and cancel any pending change notifies.
-	 * TODO: When we add blocking locks we will add cancel
-	 * for them here too.
 	 */
 	
 	int mid = SVAL(inbuf,smb_mid);
 	remove_pending_change_notify_requests_by_mid(mid);
+	remove_pending_lock_requests_by_mid(mid);
 	
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", mid));
 

@@ -1051,14 +1051,24 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   mask_convert(mask);
 
   {
-    for (p=mask; *p; p++)
+    int skip;
+    p = mask;
+    while(*p)
+    {
+      if((skip = skip_multibyte_char( *p )) != 0 )
       {
-	if (*p != '?' && *p != '*' && !isdoschar(*p))
-	  {
-	    DEBUG(5,("Invalid char [%c] in search mask?\n",*p));
-	    *p = '?';
-	  }
+        p += skip;
       }
+      else
+      {
+        if (*p != '?' && *p != '*' && !isdoschar(*p))
+        {
+          DEBUG(5,("Invalid char [%c] in search mask?\n",*p));
+          *p = '?';
+        }
+        p++;
+      }
+    }
   }
 
   if (!strchr(mask,'.') && strlen(mask)>8)
@@ -3569,8 +3579,8 @@ dev = %x, inode = %x\n",
     count = IVAL(data,SMB_LKLEN_OFFSET(i)); 
     offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
-                &eclass, &ecode))
-#if 0 /* JRATEST - blocking lock code. */
+                &eclass, &ecode)) {
+#if 0 /* JRATEST */
       if((ecode == ERRlock) && (lock_timeout != 0)) {
         /*
          * A blocking lock was requested. Package up
@@ -3579,8 +3589,10 @@ dev = %x, inode = %x\n",
          */
         if(push_blocking_lock_request(inbuf, length, lock_timeout, i))
           return -1;
+      }
 #endif /* JRATEST */
       break;
+    }
   }
 
   /* If any of the above locks failed, then we must unlock

@@ -102,6 +102,7 @@ used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
 ****************************************************************************/
+
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path)
 {
   struct stat st;
@@ -115,17 +116,24 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   if(saved_last_component)
     *saved_last_component = 0;
 
-  /* convert to basic unix format - removing \ chars and cleaning it up */
+  /* 
+   * Convert to basic unix format - removing \ chars and cleaning it up.
+   */
+
   unix_format(name);
   unix_clean_name(name);
 
-  /* names must be relative to the root of the service - trim any leading /.
-   also trim trailing /'s */
+  /* 
+   * Names must be relative to the root of the service - trim any leading /.
+   * also trim trailing /'s.
+   */
+
   trim_string(name,"/","/");
 
   /*
    * Ensure saved_last_component is valid even if file exists.
    */
+
   if(saved_last_component) {
     end = strrchr(name, '/');
     if(end)
@@ -138,23 +146,30 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       (!case_preserve || (is_8_3(name, False) && !short_case_preserve)))
     strnorm(name);
 
-  /* check if it's a printer file */
-  if (conn->printer)
-    {
-      if ((! *name) || strchr(name,'/') || !is_8_3(name, True))
-	{
-	  char *s;
-	  fstring name2;
-	  slprintf(name2,sizeof(name2)-1,"%.6s.XXXXXX",remote_machine);
-	  /* sanitise the name */
-	  for (s=name2 ; *s ; s++)
-	    if (!issafe(*s)) *s = '_';
-	  pstrcpy(name,(char *)mktemp(name2));	  
-	}      
-      return(True);
-    }
+  /* 
+   * Check if it's a printer file.
+   */
+  if (conn->printer) {
+    if ((! *name) || strchr(name,'/') || !is_8_3(name, True)) {
+      char *s;
+      fstring name2;
+      slprintf(name2,sizeof(name2)-1,"%.6s.XXXXXX",remote_machine);
 
-  /* stat the name - if it exists then we are all done! */
+      /* 
+       * Sanitise the name.
+       */
+
+      for (s=name2 ; *s ; s++)
+        if (!issafe(*s)) *s = '_';
+          pstrcpy(name,(char *)mktemp(name2));	  
+    }      
+    return(True);
+  }
+
+  /* 
+   * stat the name - if it exists then we are all done!
+   */
+
   if (sys_stat(name,&st) == 0)
     return(True);
 
@@ -162,109 +177,144 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
   DEBUG(5,("unix_convert(%s)\n",name));
 
-  /* a special case - if we don't have any mangling chars and are case
-     sensitive then searching won't help */
+  /* 
+   * A special case - if we don't have any mangling chars and are case
+   * sensitive then searching won't help.
+   */
+
   if (case_sensitive && !is_mangled(name) && 
       !lp_strip_dot() && !use_mangled_map && (saved_errno != ENOENT))
     return(False);
 
-  /* now we need to recursively match the name against the real 
-     directory structure */
+  /* 
+   * Now we need to recursively match the name against the real 
+   * directory structure.
+   */
 
   start = name;
   while (strncmp(start,"./",2) == 0)
     start += 2;
 
-  /* now match each part of the path name separately, trying the names
-     as is first, then trying to scan the directory for matching names */
-  for (;start;start = (end?end+1:(char *)NULL)) 
-    {
-      /* pinpoint the end of this section of the filename */
+  /* 
+   * Match each part of the path name separately, trying the names
+   * as is first, then trying to scan the directory for matching names.
+   */
+
+  for (;start;start = (end?end+1:(char *)NULL)) {
+      /* 
+       * Pinpoint the end of this section of the filename.
+       */
       end = strchr(start, '/');
 
-      /* chop the name at this point */
-      if (end) 	*end = 0;
+      /* 
+       * Chop the name at this point.
+       */
+      if (end) 
+        *end = 0;
 
       if(saved_last_component != 0)
         pstrcpy(saved_last_component, end ? end + 1 : start);
 
-      /* check if the name exists up to this point */
-      if (sys_stat(name, &st) == 0) 
-	{
-	  /* it exists. it must either be a directory or this must be
-	     the last part of the path for it to be OK */
-	  if (end && !(st.st_mode & S_IFDIR)) 
-	    {
-	      /* an intermediate part of the name isn't a directory */
-	      DEBUG(5,("Not a dir %s\n",start));
-	      *end = '/';
-	      return(False);
-	    }
-	}
-      else 
-	{
-	  pstring rest;
+      /* 
+       * Check if the name exists up to this point.
+       */
+      if (sys_stat(name, &st) == 0) {
+        /*
+         * It exists. it must either be a directory or this must be
+         * the last part of the path for it to be OK.
+         */
+        if (end && !(st.st_mode & S_IFDIR)) {
+          /*
+           * An intermediate part of the name isn't a directory.
+            */
+          DEBUG(5,("Not a dir %s\n",start));
+          *end = '/';
+          return(False);
+        }
+      } else {
+        pstring rest;
 
-	  *rest = 0;
+        *rest = 0;
 
-	  /* remember the rest of the pathname so it can be restored
-	     later */
-	  if (end) pstrcpy(rest,end+1);
+        /*
+         * Remember the rest of the pathname so it can be restored
+         * later.
+         */
 
-	  /* try to find this part of the path in the directory */
-	  if (strchr(start,'?') || strchr(start,'*') ||
-	      !scan_directory(dirpath, start, conn, end?True:False))
-	    {
-	      if (end) 
-		{
-		  /* an intermediate part of the name can't be found */
-		  DEBUG(5,("Intermediate not found %s\n",start));
-		  *end = '/';
-                  /* We need to return the fact that the intermediate
-                     name resolution failed. This is used to return an
-                     error of ERRbadpath rather than ERRbadfile. Some
-                     Windows applications depend on the difference between
-                     these two errors.
-                   */
-                  *bad_path = True;
-		  return(False);
-		}
+        if (end)
+          pstrcpy(rest,end+1);
+
+        /*
+         * Try to find this part of the path in the directory.
+         */
+        if (strchr(start,'?') || strchr(start,'*') ||
+            !scan_directory(dirpath, start, conn, end?True:False)) {
+          if (end) {
+            /*
+             * An intermediate part of the name can't be found.
+             */
+            DEBUG(5,("Intermediate not found %s\n",start));
+            *end = '/';
+
+            /* 
+             * We need to return the fact that the intermediate
+             * name resolution failed. This is used to return an
+             * error of ERRbadpath rather than ERRbadfile. Some
+             * Windows applications depend on the difference between
+             * these two errors.
+             */
+            *bad_path = True;
+            return(False);
+          }
 	      
-	      /* just the last part of the name doesn't exist */
-	      /* we may need to strupper() or strlower() it in case
-		 this conversion is being used for file creation 
-		 purposes */
-	      /* if the filename is of mixed case then don't normalise it */
-	      if (!case_preserve && 
-		  (!strhasupper(start) || !strhaslower(start)))		
-		strnorm(start);
+          /* 
+           * Just the last part of the name doesn't exist.
+	       * We may need to strupper() or strlower() it in case
+           * this conversion is being used for file creation 
+           * purposes. If the filename is of mixed case then 
+           * don't normalise it.
+           */
 
-	      /* check on the mangled stack to see if we can recover the 
-		 base of the filename */
-	      if (is_mangled(start))
-		check_mangled_cache( start );
+          if (!case_preserve && (!strhasupper(start) || !strhaslower(start)))		
+            strnorm(start);
 
-	      DEBUG(5,("New file %s\n",start));
-	      return(True); 
-	    }
+          /*
+           * check on the mangled stack to see if we can recover the 
+           * base of the filename.
+           */
 
-	  /* restore the rest of the string */
-	  if (end) 
-	    {
-	      pstrcpy(start+strlen(start)+1,rest);
-	      end = start + strlen(start);
-	    }
-	}
+          if (is_mangled(start))
+            check_mangled_cache( start );
 
-      /* add to the dirpath that we have resolved so far */
-      if (*dirpath) pstrcat(dirpath,"/");
+          DEBUG(5,("New file %s\n",start));
+          return(True); 
+        }
+
+      /* 
+       * Restore the rest of the string.
+       */
+      if (end) {
+        pstrcpy(start+strlen(start)+1,rest);
+        end = start + strlen(start);
+      }
+    } /* end else */
+
+    /* 
+     * Add to the dirpath that we have resolved so far.
+     */
+    if (*dirpath) pstrcat(dirpath,"/");
       pstrcat(dirpath,start);
 
-      /* restore the / that we wiped out earlier */
-      if (end) *end = '/';
-    }
+    /* 
+     * Restore the / that we wiped out earlier.
+     */
+    if (end)
+      *end = '/';
+  }
   
-  /* the name has been resolved */
+  /* 
+   * The name has been resolved.
+   */
   DEBUG(5,("conversion finished %s\n",name));
   return(True);
 }
