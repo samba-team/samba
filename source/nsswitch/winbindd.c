@@ -570,15 +570,9 @@ static void process_loop(void)
 
 		message_dispatch();
 
-#if 0
-		/* not needed any more since we use a single RPC to
-		   get transitive trusts   --jerry                 
+		/* refresh the trusted domain cache */
 		   
-		   rescan the trusted domains list. This must be done
-		   regularly to cope with transitive trusts */
-		   
-		rescan_trusted_domains(False);
-#endif
+		rescan_trusted_domains();
 
 		/* Free up temporary memory */
 
@@ -835,7 +829,7 @@ int main(int argc, char **argv)
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
-	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
 	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2003\n" ) );
 
 	if (!reload_services_file(False)) {

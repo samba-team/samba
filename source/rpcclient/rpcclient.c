@@ -522,6 +522,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* some of the DsXXX commands use the netlogon pipe */
 
 	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
+		/* The 7 here seems to be required to get Win2k not to downgrade us
+		   to NT4.  Actually, anything other than 1ff would seem to do... */
 		uint32 neg_flags = 0x000001ff;
 		uint32 sec_channel_type;
 	

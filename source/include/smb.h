@@ -392,6 +392,7 @@ typedef struct files_struct
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
 	SMB_BIG_UINT position_information;
 	mode_t mode;
+	uint16 file_pid;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
@@ -1483,17 +1484,19 @@ struct cnotify_fns {
 
 #include "smb_macros.h"
 
+typedef char nstring[16];
+
 /* A netbios name structure. */
 struct nmb_name {
-  char         name[17];
-  char         scope[64];
-  unsigned int name_type;
+	nstring      name;
+	char         scope[64];
+	unsigned int name_type;
 };
 
 
 /* A netbios node status array element. */
 struct node_status {
-	char name[16];
+	nstring name;
 	unsigned char type;
 	unsigned char flags;
 };

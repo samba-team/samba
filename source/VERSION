@@ -1,0 +1,123 @@
+########################################################
+# SAMBA Version                                        #
+#                                                      #
+# script/mkversion.sh                                  #
+# will use this file to create                         #
+# include/version.h                                    #
+#                                                      #
+########################################################
+
+########################################################
+# This are the main SAMBA version numbers              #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>                            #
+#                                                      #
+# e.g. SAMBA_VERSION_MAJOR=3                           #
+#      SAMBA_VERSION_MINOR=0                           #
+#      SAMBA_VERSION_RELEASE=0                         #
+#  ->  "3.0.0"                                         #
+########################################################
+SAMBA_VERSION_MAJOR=3
+SAMBA_VERSION_MINOR=0
+SAMBA_VERSION_RELEASE=0
+
+########################################################
+# If a official release has a serious bug              #
+# a security release will have 'a' sufffix             #
+#                                                      #
+# so SAMBA's version will be                           #
+# <MAJOR>.<MINOR>.<RELEASE><REVISION>                  #
+#                                                      #
+# e.g. SAMBA_VERSION_PRE_RELEASE=a                     #
+#  ->  "2.2.8a"                                        #
+########################################################
+SAMBA_VERSION_REVISION=
+
+########################################################
+# For 'pre' releases the version will be               #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>pre<PRE_RELEASE>            #
+#                                                      #
+# e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
+#  ->  "2.2.9pre1"                                     #
+########################################################
+SAMBA_VERSION_PRE_RELEASE=
+
+########################################################
+# For 'rc' releases the version will be                #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>rc<RC_RELEASE>              #
+#                                                      #
+# e.g. SAMBA_VERSION_RC_RELEASE=1                      #
+#  ->  "3.0.0rc1"                                      #
+########################################################
+SAMBA_VERSION_RC_RELEASE=2
+
+########################################################
+# For 'beta' releases the version will be              #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>beta<BETA_RELEASE>          #
+#                                                      #
+# e.g. SAMBA_VERSION_BETA_RELEASE=3                    #
+#  ->  "3.0.0beta3"                                    #
+########################################################
+SAMBA_VERSION_BETA_RELEASE=
+
+########################################################
+# For 'alpha' releases the version will be             #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>alpha<ALPHA_RELEASE>        #
+#                                                      #
+# e.g. SAMBA_VERSION_ALPHA_RELEASE=1                   #
+#  ->  "4.0.0alpha1"                                   #
+########################################################
+SAMBA_VERSION_ALPHA_RELEASE=
+
+########################################################
+# For 'test' releases the version will be              #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>test<TEST_RELEASE>          #
+#                                                      #
+# e.g. SAMBA_VERSION_TEST_RELEASE=1                    #
+#  ->  "4.0.0test1"                                    #
+########################################################
+SAMBA_VERSION_TEST_RELEASE=
+
+########################################################
+# To mark CVS snapshots this should be set to 'yes'    #
+# in the development BRANCH, and set to 'no' only in   #
+# the SAMBA_X_X_RELEASE BRANCH                         #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>[...]cvs                    #
+#                                                      #
+# e.g. SAMBA_VERSION_IS_CVS_SNAPSHOT=yes               #
+#  ->  "CVS 3.0.0rc2"                                  #
+########################################################
+SAMBA_VERSION_IS_CVS_SNAPSHOT=yes
+
+########################################################
+# This can be set by vendors if they want...           #
+# This can be a string constant or a function which    #
+# returns a string (const char *)                      #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>[...]-<VENDOR_SUFFIX>       #
+#                                                      #
+# Note the '-' is automaticaly added                   #
+#                                                      #
+# e.g. SAMBA_VERSION_VENDOR_SUFFIX="VendorVersion"     #
+#  ->  "CVS 3.0.0rc2-VendorVersion"                    #
+#                                                      #
+# Note: If you want to use a function,                 #
+#       then patch lib/version.c and add this function #
+#       there, because the symbol must be available in #
+#       binary.                                        #
+#                                                      #
+# const char *vendor_version(void)                     #
+# {                                                    #
+#	return "VendorVersion";                        #
+# }                                                    #
+#                                                      #
+# e.g. SAMBA_VERSION_VENDOR_SUFFIX=vendor_version()    #
+#  ->  "CVS 3.0.0rc2-VendorVersion"                    #
+########################################################
+SAMBA_VERSION_VENDOR_SUFFIX=

@@ -23,6 +23,7 @@
 
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
+extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
 
 /****************************************************************************
@@ -226,6 +227,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
+	fsp->file_pid = global_smbpid;
 	fsp->size = psbuf->st_size;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
@@ -1361,6 +1363,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
+	fsp->file_pid = global_smbpid;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -1423,6 +1426,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = (SMB_DEV_T)0;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
+	fsp->file_pid = global_smbpid;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;

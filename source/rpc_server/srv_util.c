@@ -307,8 +307,17 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	 */
 	gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) *  num_entries);	
 
-	/* for each group, check if the user is a member of*/
+	/* for each group, check if the user is a member of.  Only include groups 
+	   from this domain */
+	
 	for(i=0; i<num_entries; i++) {
+	
+		if ( !sid_check_is_in_our_domain(&map[i].sid) ) {
+			DEBUG(10,("get_domain_user_groups: skipping check of %s since it is not in our domain\n",
+				map[i].nt_name));
+			continue;
+		}
+			
 		if ((grp=getgrgid(map[i].gid)) == NULL) {
 			/* very weird !!! */
 			DEBUG(5,("get_domain_user_groups: gid %d doesn't exist anymore !\n", (int)map[i].gid));

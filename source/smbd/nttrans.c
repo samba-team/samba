@@ -762,9 +762,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		restore_case_semantics(file_attributes);
 
 		if(!fsp) {
-			set_bad_path_error(errno, bad_path);
 			END_PROFILE(SMBntcreateX);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
 	} else {
 		/*
@@ -838,16 +837,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
-					set_bad_path_error(errno, bad_path);
 					END_PROFILE(SMBntcreateX);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
 
 				restore_case_semantics(file_attributes);
-				set_bad_path_error(errno, bad_path);
 				END_PROFILE(SMBntcreateX);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
+				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
 	}
@@ -1279,8 +1276,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		if(!fsp) {
 			restore_case_semantics(file_attributes);
-			set_bad_path_error(errno, bad_path);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
 
 	} else {
@@ -1312,13 +1308,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
-					set_bad_path_error(errno, bad_path);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
 				restore_case_semantics(file_attributes);
-				set_bad_path_error(errno, bad_path);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
+				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
   

@@ -910,6 +910,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 	
 	while ((p = strstr(s,pattern))) {
 		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
 			char *t = Realloc(string, ls + ld + 1);
 			if (!t) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
@@ -917,7 +918,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 				return NULL;
 			}
 			string = t;
-			p = t + (p - s);
+			p = t + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);

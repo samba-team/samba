@@ -1,0 +1,201 @@
+--
+-- Submitted by Bruno Gimenes Pereti <pereti@ut mp dot edu dot br>
+--
+-- schema file for Novell's eDirectory 8.6
+--
+
+SambaAccountSchemaExtensions DEFINITIONS ::=
+BEGIN
+
+-- Password hashes
+"lmPassword" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 1 }
+}
+
+"ntPassword" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 2 }
+}
+
+-- Account flags in string format ([UWDX     ])
+"acctFlags" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 4 }
+}
+
+-- Password timestamps & policies
+"pwdLastSet" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 3 }
+}
+
+"logonTime" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 5 }
+}
+
+"logoffTime" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 6 }
+}
+
+"kickoffTime" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 7 }
+}
+
+"pwdCanChange" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 8 }
+}
+
+"pwdMustChange" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 9 }
+}
+
+-- string settings
+"homeDrive" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 10 }
+}
+
+"scriptPath" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 5 1 4 1 7165 2 1 11 }
+}
+
+"profilePath" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 12 }
+}
+
+"userWorkstations" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 13 }
+}
+
+"smbHome" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 17 }
+}
+
+"domain" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_CI_STRING,
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 18 }
+}
+
+-- user and group RID
+"rid" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 14 }
+}
+
+"primaryGroupID" ATTRIBUTE ::=
+{
+	Operation		ADD,
+	SyntaxID		SYN_INTEGER,
+	Flags			{ DS_SINGLE_VALUED_ATTR },
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 1 15 }
+}
+
+"sambaAccount" OBJECT-CLASS ::=
+{
+	Operation		ADD,
+	Flags			{DS_AUXILIARY_CLASS},
+	SubClassOf		{"TOP"},
+	MustContain		{	"uid"},
+	MustContain		{	"rid"},
+	MayContain		{	"CN"},
+	MayContain		{	"lmPassword"},
+	MayContain		{	"ntPassword"},
+	MayContain		{	"pwdLastSet"},
+	MayContain		{	"logonTime"},
+	MayContain		{	"logoffTime"},
+	MayContain		{	"kickoffTime"},
+	MayContain		{	"pwdCanChange"},
+	MayContain		{	"pwdMustChange"},
+	MayContain		{	"acctFlags"},
+	MayContain		{	"displayName"},
+	MayContain		{	"smbHome"},
+	MayContain		{	"homeDrive"},
+	MayContain		{	"scriptPath"},
+	MayContain		{	"profilePath"},
+	MayContain		{	"description"},
+	MayContain		{	"userWorkstations"},
+	MayContain		{	"primaryGroupID"},
+	MayContain		{	"domain"},
+	ASN1ObjID { 1 3 6 1 4 1 7165 2 2 3 }
+}
+
+-- Used for Winbind experimentation
+"uidPool" OBJECT-CLASS ::=
+{
+	Operation		ADD,
+	Flags			{DS_AUXILIARY_CLASS},
+	SubClassOf		{"TOP"},
+	MustContain		{	"uidNumber"},
+	MustContain		{	"CN"},
+	ASN1ObjID { 1 3 6 1 4 1 7165 1 2 2 3 }
+}
+
+"gidPool" OBJECT-CLASS ::=
+{
+	Operation		ADD,
+	Flags			{DS_AUXILIARY_CLASS},
+	SubClassOf		{"TOP"},
+	MustContain		{	"gidNumber"},
+	MustContain		{	"CN"},
+	ASN1ObjID { 1 3 6 1 4 1 7165 1 2 2 4 }
+}
+
+END
+
+

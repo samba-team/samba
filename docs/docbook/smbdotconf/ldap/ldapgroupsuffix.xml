@@ -4,7 +4,8 @@
                  xmlns:samba="http://samba.org/common">
 <listitem>
 	<para>This parameters specifies the suffix that is 
-	used for groups when these are added to the LDAP directory.</para>
+	used for groups when these are added to the LDAP directory.
+	If this parameter is unset, the value of <parameter>ldap suffix</parameter> will be used instead.</para>
 
 	<para>Default: <emphasis>none</emphasis></para>
 

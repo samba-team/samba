@@ -776,6 +776,8 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
 			 (unsigned int)rid ));
 			 
+		*psid_name_use = SID_NAME_USER;
+		
 		return ( pw != NULL );
 	} else {
 		gid_t gid;
@@ -798,7 +800,11 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			 (unsigned int)rid ));
-			 
+		
+		/* assume fallback groups aer domain global groups */
+		
+		*psid_name_use = SID_NAME_DOM_GRP;
+		
 		return ( gr != NULL );
 	}
 }

@@ -73,7 +73,10 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 	}
 	free(bp);
 
-	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(status)));
+	if (!ADS_ERR_OK(status))
+		DEBUG(1,("ads reopen failed after error %s\n", 
+			 ads_errstr(status)));
+
 	return status;
 }
 

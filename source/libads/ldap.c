@@ -1045,7 +1045,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
-	ads_mod_str(ctx, &mods, "operatingSystemVersion", VERSION);
+	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
 
 	ret = ads_gen_add(ads, new_dn, mods);
 

@@ -62,7 +62,7 @@ static int add_signature(char *outbuf, char *p)
 	char *start = p;
 	fstring lanman;
 
-	fstr_sprintf( lanman, "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);
@@ -165,13 +165,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, session_key);
+
+	data_blob_free(&ticket);
+
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	data_blob_free(&auth_data);
-	data_blob_free(&ticket);
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
@@ -215,7 +217,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		data_blob_free(&ap_rep);
-		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {

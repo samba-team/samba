@@ -145,6 +145,7 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(INSTALLCLIENT)
 AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
@@ -287,7 +288,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -359,7 +360,10 @@ case "$host_os" in
 # compile work using gcc 2.7 and 2.8, whereas using the Sun
 # recommendation makes the compile fail on gcc2.7. JRA.
 #
+# Solaris uses SYSV printing.  Make sure to set that here.  --jerry
+#
 	*solaris*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		case `uname -r` in
 			5.0*|5.1*|5.2*|5.3*|5.5*)
 	  			AC_MSG_RESULT([no large file support])
@@ -388,6 +392,12 @@ case "$host_os" in
 			fi
 			;;
 		esac
+		;;
+#
+# IRIX uses SYSV printing.  Make sure to set that here
+#
+	*irix*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
 #
 # VOS may need to have POSIX support and System V compatibility enabled.
@@ -2535,6 +2545,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
   fi
 
+  AC_CACHE_CHECK([for AP_OPTS_USE_SUBKEY],
+                 samba_cv_HAVE_AP_OPTS_USE_SUBKEY,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_flags ap_options; ap_options = AP_OPTS_USE_SUBKEY;],
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=yes,
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=no)])
+
+  if test x"$samba_cv_HAVE_AP_OPTS_USE_SUBKEY" = x"yes"; then
+    AC_DEFINE(HAVE_AP_OPTS_USE_SUBKEY,1,
+              [Whether the AP_OPTS_USE_SUBKEY ap option is available])
+  fi
+
   AC_CACHE_CHECK([for the krb5_princ_component macro],
                 samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
     AC_TRY_LINK([#include <krb5.h>],
@@ -3143,6 +3165,7 @@ AC_ARG_WITH(manpages-langs,
 
 INSTALLCLIENTCMD_SH=:
 INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -3155,6 +3178,8 @@ AC_ARG_WITH(libsmbclient,
   *)
      if test $BLDSHARED = true; then
         INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	## build the static version of libsmbclient as well
+	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
         LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
@@ -3166,6 +3191,7 @@ AC_ARG_WITH(libsmbclient,
         INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT=libsmbclient
      fi
+     INSTALLCLIENT=installclientlib
      ;;
   esac ],
 [
@@ -3183,6 +3209,7 @@ AC_ARG_WITH(libsmbclient,
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
   fi]
+  INSTALLCLIENT=installclientlib
 )
 
 
@@ -3999,6 +4026,7 @@ SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP,sam/idmap.c)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
+SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.c)
 
 SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
@@ -4017,6 +4045,7 @@ SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.c)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
@@ -4060,7 +4089,7 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser)
 
 #################################################
 # Print very concise instructions on building/use

@@ -349,8 +349,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		</varlistentry>
 
 		<varlistentry>
-		<term>SIGUSR1</term>
-		<listitem><para>The SIGUSR1 signal will cause <command>
+		<term>SIGUSR2</term>
+		<listitem><para>The SIGUSR2 signal will cause <command>
 		winbindd</command> to write status information to the winbind 
 		log file including information about the number of user and 
 		group ids allocated by <command>winbindd</command>.</para>

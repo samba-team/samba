@@ -143,6 +143,22 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
+ Close all open files for a pid.
+****************************************************************************/
+
+void file_close_pid(uint16 smbpid)
+{
+	files_struct *fsp, *next;
+	
+	for (fsp=Files;fsp;fsp=next) {
+		next = fsp->next;
+		if (fsp->file_pid == smbpid) {
+			close_file(fsp,False); 
+		}
+	}
+}
+
+/****************************************************************************
  Initialise file structures.
 ****************************************************************************/
 
@@ -197,6 +213,18 @@ void file_close_user(int vuid)
 		if (fsp->vuid == vuid) {
 			close_file(fsp,False);
 		}
+	}
+}
+
+void file_dump_open_table(void)
+{
+	int count=0;
+	files_struct *fsp;
+
+	for (fsp=Files;fsp;fsp=fsp->next,count++) {
+		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
+			count, fsp->fnum, fsp->fsp_name, fsp->fd, (unsigned long)fsp->file_id,
+			(unsigned int)fsp->dev, (double)fsp->inode ));
 	}
 }
 

@@ -80,8 +80,8 @@ void update_browser_death_time( struct browse_cache_record *browc )
  *
  * ************************************************************************** **
  */
-struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
-                                                         char *browser_name, 
+struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name, 
+                                                         const char *browser_name, 
                                                          struct in_addr ip )
 {
 	struct browse_cache_record *browc;
@@ -106,8 +106,8 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
 	/* Allow the new lmb to miss an announce period before we remove it. */
 	browc->death_time = now + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
 
-	pstrcpy(  browc->lmb_name, browser_name);
-	pstrcpy(  browc->work_group, work_name);
+	nstrcpy(  browc->lmb_name, browser_name);
+	nstrcpy(  browc->work_group, work_name);
 	strupper_m( browc->lmb_name );
 	strupper_m( browc->work_group );
   
@@ -134,7 +134,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
  *
  * ************************************************************************** **
  */
-struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
+struct browse_cache_record *find_browser_in_lmb_cache( const char *browser_name )
 {
 	struct browse_cache_record *browc;
 

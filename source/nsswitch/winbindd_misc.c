@@ -206,7 +206,7 @@ enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
 	state->response.data.info.winbind_separator = *lp_winbind_separator();
-	fstrcpy(state->response.data.info.samba_version, VERSION);
+	fstrcpy(state->response.data.info.samba_version, SAMBA_VERSION_STRING);
 
 	return WINBINDD_OK;
 }

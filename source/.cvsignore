@@ -28,3 +28,4 @@ testtmp
 trace.out
 typescript*
 configure
+smbadduser

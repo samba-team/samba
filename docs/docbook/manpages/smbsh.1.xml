@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>smbsh</refname>
-	<refpurpose>Allows access to Windows NT filesystem 
+	<refpurpose>Allows access to remote SMB shares
 	using UNIX commands</refpurpose>
 </refnamediv>
 

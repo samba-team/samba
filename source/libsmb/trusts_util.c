@@ -35,16 +35,15 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
 
-	result = cli_nt_setup_creds(cli, sec_channel_type, orig_trust_passwd_hash, &neg_flags, 2);
-	
-	if (!NT_STATUS_IS_OK(result)) {
+	/* ensure that schannel uses the right domain */
+	fstrcpy(cli->domain, lp_workgroup());
+	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, sec_channel_type, orig_trust_passwd_hash))) {
 		DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
 			 nt_errstr(result)));
 		return result;
 	}
-
+	
 	result = cli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
 
 	if (!NT_STATUS_IS_OK(result)) {

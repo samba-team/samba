@@ -384,7 +384,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			string_sub(p,"%m", get_remote_machine_name(),l);
 			break;
 		case 'v' :
-			string_sub(p,"%v", VERSION,l);
+			string_sub(p,"%v", SAMBA_VERSION_STRING,l);
 			break;
 		case '$' :
 			p += expand_env_var(p,l);
@@ -539,7 +539,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			t = realloc_string_sub(t, "%m", remote_machine);
 			break;
 		case 'v' :
-			t = realloc_string_sub(t, "%v", VERSION);
+			t = realloc_string_sub(t, "%v", SAMBA_VERSION_STRING);
 			break;
 		case '$' :
 			t = realloc_expand_env_var(t, p); /* Expand environment variables */
