@@ -100,13 +100,11 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_pending_close_tdb, kbuf);
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
 	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!dbuf.dptr) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
-		tdb_unlockchain(posix_pending_close_tdb, kbuf);
 		return False;
 	}
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fd, sizeof(int));
@@ -117,7 +115,6 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 	}
 
 	free(dbuf.dptr);
-	tdb_unlockchain(posix_pending_close_tdb, kbuf);
 	return True;
 }
 
@@ -129,10 +126,8 @@ static void delete_close_entries(files_struct *fsp)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 
-	tdb_lockchain(posix_pending_close_tdb, kbuf);
 	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1)
 		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
-	tdb_unlockchain(posix_pending_close_tdb, kbuf);
 }
 
 /****************************************************************************
@@ -149,18 +144,14 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 	*entries = NULL;
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_pending_close_tdb, kbuf);
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
     if (!dbuf.dptr) {
-		tdb_unlockchain(posix_pending_close_tdb, kbuf);
 		return 0;
 	}
 
 	*entries = (int *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(int));
-
-	tdb_unlockchain(posix_pending_close_tdb, kbuf);
 
 	return count;
 }
@@ -180,18 +171,14 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_lock_tdb, kbuf);
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
     if (!dbuf.dptr) {
-		tdb_unlockchain(posix_lock_tdb, kbuf);
 		return 0;
 	}
 
 	*entries = (struct posix_lock *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
-
-    tdb_unlockchain(posix_lock_tdb, kbuf);
 
 	return count;
 }
@@ -319,7 +306,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_lock_tdb, kbuf);
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
 	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
@@ -337,7 +323,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	}
 
     free(dbuf.dptr);
-    tdb_unlockchain(posix_lock_tdb, kbuf);
 
 	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f:dev=%.0f inode=%.0f\n",
 			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
@@ -348,7 +333,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    tdb_unlockchain(posix_lock_tdb, kbuf);
     return False;
 }
 
@@ -365,7 +349,6 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_lock_tdb, kbuf);
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
 	if (!dbuf.dptr) {
@@ -395,7 +378,6 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 			}
 
 			free(dbuf.dptr);
-			tdb_unlockchain(posix_lock_tdb, kbuf);
 			return True;
 		}
 	}
@@ -405,7 +387,6 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    tdb_unlockchain(posix_lock_tdb, kbuf);
     return False;
 }
 
@@ -730,11 +711,9 @@ static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(posix_lock_tdb, kbuf);
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
 	if (!dbuf.dptr) {
-		tdb_unlockchain(posix_lock_tdb, kbuf);
 		return ulhead;
 	}
 	
@@ -924,8 +903,6 @@ new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 		} /* end for ( ul_curr = ulhead; ul_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
 
-	tdb_unlockchain(posix_lock_tdb, kbuf);
-
 	if (dbuf.dptr)
 		free(dbuf.dptr);
 	
@@ -1035,10 +1012,18 @@ static void delete_posix_lock_entries(files_struct *fsp)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 
-	tdb_lockchain(posix_lock_tdb, kbuf);
 	if (tdb_delete(posix_lock_tdb, kbuf) == -1)
 		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
-	tdb_unlockchain(posix_lock_tdb, kbuf);
+}
+
+/****************************************************************************
+ Debug function.
+****************************************************************************/
+
+void dump_entry(struct posix_lock *pl)
+{
+	DEBUG(10,("entry: start=%.0f, size=%.0f, type=%d, fd=%i\n",
+		(double)pl->start, (double)pl->size, (int)pl->lock_type, pl->fd ));
 }
 
 /****************************************************************************
@@ -1068,6 +1053,8 @@ void posix_locking_close_file(files_struct *fsp)
 	for (i = 0; i < count; i++) {
 		if (entries[i].fd != fsp->fd )
 			break;
+
+		dump_entry(&entries[i]);
 	}
 
 	if (i == count) {
