@@ -423,7 +423,8 @@ typedef struct files_struct
 #include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
-typedef struct data_blob {
+typedef struct data_blob
+{
 	uint8 *data;
 	size_t length;
 	void (*free)(struct data_blob *data_blob);
@@ -436,19 +437,27 @@ typedef struct data_blob {
 
 typedef struct
 {
-  time_t modify_time;
-  time_t status_time;
+	time_t modify_time;
+	time_t status_time;
 } dir_status_struct;
 
-struct vuid_cache {
-  unsigned int entries;
-  uint16 list[VUID_CACHE_SIZE];
+struct vuid_cache_entry
+{
+	uint16 vuid;
+	BOOL read_only;
+	BOOL admin_user;
+};
+
+struct vuid_cache
+{
+	unsigned int entries;
+	struct vuid_cache_entry array[VUID_CACHE_SIZE];
 };
 
 typedef struct
 {
-  char *name;
-  BOOL is_wild;
+	char *name;
+	BOOL is_wild;
 } name_compare_entry;
 
 /* Include VFS stuff */
@@ -468,8 +477,8 @@ typedef struct connection_struct
 	void *dirptr;
 	BOOL printer;
 	BOOL ipc;
-	BOOL read_only;
-	BOOL admin_user;
+	BOOL read_only; /* Attributes for the current user of the share. */
+	BOOL admin_user; /* Attributes for the current user of the share. */
 	char *dirpath;
 	char *connectpath;
 	char *origpath;

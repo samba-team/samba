@@ -260,78 +260,6 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 }
 
 /****************************************************************************
- readonly share?
-****************************************************************************/
-
-static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_groups)
-{
-	char **list;
-	const char *service = lp_servicename(conn->service);
-	conn->read_only = lp_readonly(conn->service);
-
-	if (!service)
-		return;
-
-	str_list_copy(&list, lp_readlist(conn->service));
-	if (list) {
-		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
-			DEBUG(0, ("ERROR: read list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("ERROR: read list service substitution failed\n"));
-		}
-		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
-			conn->read_only = True;
-		str_list_free(&list);
-	}
-	
-	str_list_copy(&list, lp_writelist(conn->service));
-	if (list) {
-		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
-			DEBUG(0, ("ERROR: write list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("ERROR: write list service substitution failed\n"));
-		}
-		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
-			conn->read_only = False;
-		str_list_free(&list);
-	}
-}
-
-/****************************************************************************
-  admin user check
-****************************************************************************/
-
-static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_groups)
-{
-	/* admin user check */
-	
-	/* JRA - original code denied admin user if the share was
-	   marked read_only. Changed as I don't think this is needed,
-	   but old code left in case there is a problem here.
-	*/
-	if (user_in_list(conn->user,lp_admin_users(conn->service), groups, n_groups) 
-#if 0
-	    && !conn->read_only
-#endif
-	    ) {
-		conn->admin_user = True;
-		conn->force_user = True;  /* Admin users are effectivly 'forced' */
-		DEBUG(0,("%s logged in as admin user (root privileges)\n",conn->user));
-	} else {
-		conn->admin_user = False;
-	}
-
-#if 0 /* This done later, for now */    
-	/* admin users always run as uid=0 */
-	if (conn->admin_user) {
-		conn->uid = 0;
-	}
-#endif
-}
-
-/****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
 ****************************************************************************/
@@ -443,10 +371,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
-	
-	set_read_only(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
-	
-	set_admin_user(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
+
+	conn->read_only = lp_readonly(conn->service);
+	conn->admin_user = False;
 
 	/*
 	 * If force user is true, then store the
@@ -476,11 +403,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-	}
-
-	/* admin users always run as uid=0 */
-	if (conn->admin_user) {
-		conn->uid = 0;
 	}
 
 #ifdef HAVE_GETGRNAM 
