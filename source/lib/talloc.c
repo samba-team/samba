@@ -33,19 +33,10 @@
    3) when _all_ of the memory allocated using this context is no longer needed
    use talloc_destroy()
 
-   talloc does not zero the memory. It guarantees memory of a
-   TALLOC_ALIGN alignment
+   talloc does not zero the memory. 
 
    @sa talloc.h
 */
-
-/**
- * @todo We could allocate both the talloc_chunk structure, and the
- * memory it contains all in one allocation, which might be a bit
- * faster and perhaps use less memory overhead.
- *
- * That smells like a premature optimization, though.  -- mbp
- **/
 
 /**
  * If you want testing for memory corruption use valgrind
@@ -54,11 +45,15 @@
 #include "includes.h"
 
 #define MAX_TALLOC_SIZE 0x10000000
+#define TALLOC_MAGIC 0x06052004
+#define TALLOC_MAGIC_FREE 0x3421abcd
 
 struct talloc_chunk {
-	struct talloc_chunk *next;
+	struct talloc_chunk *next, *prev;
+	TALLOC_CTX *context;
 	size_t size;
 	void *ptr;
+	unsigned magic;
 };
 
 
@@ -160,26 +155,26 @@ static TALLOC_CTX *talloc_init_internal(void)
 /** Allocate a bit of memory from the specified pool **/
 void *talloc(TALLOC_CTX *t, size_t size)
 {
-	void *p;
 	struct talloc_chunk *tc;
 
-	if (!t || size == 0) return NULL;
-
-	p = malloc(size);
-	if (p) {
-		tc = malloc(sizeof(*tc));
-		if (tc) {
-			tc->ptr = p;
-			tc->size = size;
-			tc->next = t->list;
-			t->list = tc;
-			t->total_alloc_size += size;
-		}
-		else {
-			SAFE_FREE(p);
-		}
+	if (!t || size == 0) {
+		return NULL;
 	}
-	return p;
+
+	tc = malloc(sizeof(*tc)+size);
+	if (!tc) {
+		return NULL;
+	}
+
+	tc->context = t;
+	tc->size = size;
+	tc->magic = TALLOC_MAGIC;
+
+	DLIST_ADD(t->list, tc);
+
+	t->total_alloc_size += size;
+
+	return (void *)(tc+1);
 }
 
 /** A talloc version of realloc */
@@ -199,37 +194,134 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 	}
 
 	/* realloc(NULL) is equavalent to malloc() */
-	if (ptr == NULL)
+	if (ptr == NULL) {
 		return talloc(t, size);
-
-	for (tc=t->list; tc; tc=tc->next) {
-		if (tc->ptr == ptr) {
-			new_ptr = Realloc(ptr, size);
-			if (new_ptr) {
-				t->total_alloc_size += (size - tc->size);
-				tc->size = size;
-				tc->ptr = new_ptr;
-			}
-			return new_ptr;
-		}
 	}
-	return NULL;
+
+	tc = ((struct talloc_chunk *)ptr)-1;
+
+	if (tc->context != t) {
+		DEBUG(0,("Bad talloc context passed to talloc_realloc\n"));
+		return NULL;
+	}
+
+	if (tc->magic != TALLOC_MAGIC) {
+		DEBUG(0,("Bad talloc magic 0x%08x in talloc_realloc\n", tc->magic));
+		return NULL;
+	}
+
+	/* by resetting magic we catch users of the old memory */
+	tc->magic = TALLOC_MAGIC_FREE;
+
+	new_ptr = realloc(tc, size + sizeof(*tc));
+	if (!new_ptr) {
+		tc->magic = TALLOC_MAGIC;
+		return NULL;
+	}
+
+	if (tc == t->list) {
+		t->list = new_ptr;
+	}
+	tc = new_ptr;
+	tc->magic = TALLOC_MAGIC;
+
+	if (tc->prev) {
+		tc->prev->next = tc;
+	}
+	if (tc->next) {
+		tc->next->prev = tc;
+	}
+
+	t->total_alloc_size += (size - tc->size);
+	tc->size = size;
+
+	return (void *)(tc+1);
 }
+
+/* 
+   free a lump from a pool. Use sparingly please.
+*/
+void talloc_free(TALLOC_CTX *ctx, void *ptr)
+{
+	struct talloc_chunk *tc;
+
+	if (!ptr || !ctx->list) return;
+
+	tc = ((struct talloc_chunk *)ptr)-1;
+
+	if (tc->context != ctx) {
+		DEBUG(0,("Bad talloc context passed to talloc_free\n"));
+	}
+
+	if (tc->magic != TALLOC_MAGIC) {
+		DEBUG(0,("Bad talloc magic 0x%08x in talloc_free\n", tc->magic));
+	}
+
+	DLIST_REMOVE(ctx->list, tc);
+
+	ctx->total_alloc_size -= tc->size;
+	tc->magic = TALLOC_MAGIC_FREE;
+
+	free(tc);
+}
+
+
+/* 
+   move a lump of memory from one talloc context to another
+   return the ptr on success, or NULL if it could not be found
+   in the old context or could not be transferred
+*/
+void *talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx, void *ptr)
+{
+	struct talloc_chunk *tc;
+
+	if (!ptr) {
+		return NULL;
+	}
+
+	tc = ((struct talloc_chunk *)ptr)-1;
+
+	if (tc->context != old_ctx) {
+		DEBUG(0,("Bad talloc context passed to talloc_steal\n"));
+		return NULL;
+	}
+
+	if (tc->magic != TALLOC_MAGIC) {
+		DEBUG(0,("Bad talloc magic 0x%08x in talloc_steal\n", tc->magic));
+		return NULL;
+	}
+
+	DLIST_REMOVE(old_ctx->list, tc);
+	DLIST_ADD(new_ctx->list, tc);
+
+	tc->context = new_ctx;
+
+	old_ctx->total_alloc_size -= tc->size;
+	new_ctx->total_alloc_size += tc->size;
+	
+	return ptr;
+}
+
+
 
 /** Destroy all the memory allocated inside @p t, but not @p t
  * itself. */
 void talloc_destroy_pool(TALLOC_CTX *t)
 {
-	struct talloc_chunk *c;
-	
-	if (!t)
+	if (!t) {
 		return;
+	}
 
 	while (t->list) {
-		c = t->list->next;
-		SAFE_FREE(t->list->ptr);
-		SAFE_FREE(t->list);
-		t->list = c;
+		struct talloc_chunk *tc = t->list;
+		if (tc->magic != TALLOC_MAGIC) {
+			DEBUG(0,("Bad magic 0x%08x in talloc_destroy_pool\n", 
+				 tc->magic));
+			return;
+		}
+		DLIST_REMOVE(t->list, tc);
+		tc->magic = TALLOC_MAGIC_FREE;
+		free(tc);
 	}
 
 	t->total_alloc_size = 0;
@@ -303,14 +395,6 @@ char *talloc_strndup(TALLOC_CTX *t, const char *p, size_t n)
 	memcpy(ret, p, len);
 	ret[len] = 0;
 	return ret;
-}
-
-/** strdup_w with a talloc */
-smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
-{
-	if (p)
-		return talloc_memdup(t, p, (strlen_w(p) + 1) * sizeof(smb_ucs2_t));
-	return NULL;
 }
 
 /**
@@ -463,97 +547,17 @@ void talloc_get_allocation(TALLOC_CTX *t,
 			   size_t *total_bytes,
 			   int *n_chunks)
 {
-	struct talloc_chunk *chunk;
+	struct talloc_chunk *tc;
 
 	if (t) {
 		*total_bytes = 0;
 		*n_chunks = 0;
 
-		for (chunk = t->list; chunk; chunk = chunk->next) {
+		for (tc = t->list; tc; tc = tc->next) {
 			n_chunks[0]++;
-			*total_bytes += chunk->size;
+			*total_bytes += tc->size;
 		}
 	}
-}
-
-
-/* 
-   free a lump from a pool. Use sparingly please.
-*/
-void talloc_free(TALLOC_CTX *ctx, void *ptr)
-{
-	struct talloc_chunk *tc;
-
-	if (!ptr || !ctx->list) return;
-
-	/* as a special case, see if its the first element in the
-	   list */
-	if (ctx->list->ptr == ptr) {
-		ctx->total_alloc_size -= ctx->list->size;
-		tc = ctx->list;
-		ctx->list = ctx->list->next;
-		free(tc);
-		free(ptr);
-		return;
-	}
-
-	/* find it in the context */
-	for (tc=ctx->list; tc->next; tc=tc->next) {
-		if (tc->next->ptr == ptr) break;
-	}
-
-	if (tc->next) {
-		struct talloc_chunk *tc2 = tc->next;
-		ctx->total_alloc_size -= tc->next->size;
-		tc->next = tc->next->next;
-		free(tc2);
-		free(ptr);
-	} else {
-		DEBUG(0,("Attempt to free non-allocated chunk in context '%s'\n", 
-			 ctx->name));
-	}
-}
-
-
-/* 
-   move a lump of memory from one talloc context to another
-   return the ptr on success, or NULL if it could not be found
-   in the old context or could not be transferred
-*/
-const void *talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx, const void *ptr)
-{
-	struct talloc_chunk *tc, *tc2;
-
-	if (!ptr || !old_ctx->list) return NULL;
-
-	/* as a special case, see if its the first element in the
-	   list */
-	if (old_ctx->list->ptr == ptr) {
-		tc = old_ctx->list;
-		old_ctx->list = old_ctx->list->next;
-		tc->next = new_ctx->list;
-		new_ctx->list = tc;
-		old_ctx->total_alloc_size -= tc->size;
-		new_ctx->total_alloc_size += tc->size;
-		return ptr;
-	}
-
-	/* find it in the old context */
-	for (tc=old_ctx->list; tc->next; tc=tc->next) {
-		if (tc->next->ptr == ptr) break;
-	}
-
-	if (!tc->next) return NULL;
-
-	/* move it to the new context */
-	tc2 = tc->next;
-	tc->next = tc->next->next;
-	tc2->next = new_ctx->list;
-	new_ctx->list = tc2;
-	old_ctx->total_alloc_size -= tc2->size;
-	new_ctx->total_alloc_size += tc2->size;
-	
-	return ptr;
 }
 
 /*
@@ -566,6 +570,16 @@ void *talloc_realloc_array(TALLOC_CTX *ctx, void *ptr, size_t el_size, unsigned 
 		return NULL;
 	}
 	return talloc_realloc(ctx, ptr, el_size * count);
+}
+
+
+/*
+  we really should get rid of this
+*/
+void *talloc_strdup_w(TALLOC_CTX *mem_ctx, void *s)
+{
+	size_t len = strlen_w(s);
+	return talloc_memdup(mem_ctx, s, (len+1)*2);
 }
 
 /** @} */
