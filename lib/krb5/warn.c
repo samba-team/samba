@@ -60,8 +60,15 @@ _warnerr(krb5_context context, int doexit, int eval, int do_errtext,
 	*arg++ = msg;
     }
     if(context && do_errtext){
+	const char *err_msg;
+
 	strcat(xfmt, "%s");
-	*arg++ = krb5_get_err_text(context, code);
+
+	err_msg = krb5_get_err_text(context, code);
+	if (err_msg)
+	    *arg++ = err_msg;
+	else
+	    *arg++ = "<unknown error>";
     }
 	
     if(context && context->warn_dest)
