@@ -471,10 +471,13 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	new_pw_len = push_string(NULL, new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
+	if (new_pw_len > 512) {
+		return False;
+	}
 	
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 
-	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, True);
+	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, False);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of
@@ -484,6 +487,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	ZERO_STRUCT(new_pw);
 	return True;
 }
+
 
 /***********************************************************
  decode a password buffer
