@@ -1,3 +1,113 @@
+2003-03-16  Love  <lha@stacken.kth.se>
+
+	* Makefile.am (libgssapi_la_LDFLAGS): bump to 3:6:2
+	(libgssapi_la_SOURCES): add all new functions
+
+	* gssapi.3: now that we have a functions, uncomment the missing
+	ones
+
+	* gss_acquire_cred.3: now that we have a functions, uncomment the
+	missing ones
+
+	* process_context_token.c: implement gss_process_context_token
+	
+	* inquire_names_for_mech.c: implement gss_inquire_names_for_mech
+	
+	* inquire_mechs_for_name.c: implement gss_inquire_mechs_for_name
+	
+	* inquire_cred_by_mech.c: implement gss_inquire_cred_by_mech
+	
+	* add_cred.c: implement gss_add_cred
+	
+	* acquire_cred.c (gss_acquire_cred): more testing of input
+	argument, make sure output arguments are ok, since we don't know
+	the time_rec (for now), set it to time_req
+	
+	* export_sec_context.c: send lifetime, also set minor_status
+	
+	* get_mic.c: set minor_status
+	
+	* import_sec_context.c (gss_import_sec_context): add error
+	checking, pick up lifetime (if there is no lifetime, use
+	GSS_C_INDEFINITE)
+
+	* init_sec_context.c: take care to set export value to something
+	sane before we start so caller will have harmless values in them
+	if then function fails
+
+	* release_buffer.c (gss_release_buffer): set minor_status
+	
+	* wrap.c: make sure minor_status get set
+	
+	* verify_mic.c (gss_verify_mic_internal): rename verify_mic to
+	gss_verify_mic_internal and let it take the type as an argument,
+	(gss_verify_mic): call gss_verify_mic_internal
+	set minor_status
+	
+	* unwrap.c: set minor_status
+	
+	* test_oid_set_member.c (gss_test_oid_set_member): use
+	gss_oid_equal
+
+	* release_oid_set.c (gss_release_oid_set): set minor_status
+	
+	* release_name.c (gss_release_name): set minor_status
+	
+	* release_cred.c (gss_release_cred): set minor_status
+	
+	* add_oid_set_member.c (gss_add_oid_set_member): set minor_status
+	
+	* compare_name.c (gss_compare_name): set minor_status
+	
+	* compat.c (check_compat): make sure ret have a defined value
+	
+	* context_time.c (gss_context_time): set minor_status
+	
+	* copy_ccache.c (gss_krb5_copy_ccache): set minor_status
+	
+	* create_emtpy_oid_set.c (gss_create_empty_oid_set): set
+	minor_status
+
+	* delete_sec_context.c (gss_delete_sec_context): set minor_status
+	
+	* display_name.c (gss_display_name): set minor_status
+	
+	* display_status.c (gss_display_status): use gss_oid_equal, handle
+	supplementary errors
+
+	* duplicate_name.c (gss_duplicate_name): set minor_status
+	
+	* inquire_context.c (gss_inquire_context): set lifetime_rec now
+	when we know it, set minor_status
+
+	* inquire_cred.c (gss_inquire_cred): take care to set export value
+	to something sane before we start so caller will have harmless
+	values in them if the function fails
+	
+	* accept_sec_context.c (gss_accept_sec_context): take care to set
+	export value to something sane before we start so caller will have
+	harmless values in them if then function fails, set lifetime from
+	ticket expiration date
+
+	* indicate_mechs.c (gss_indicate_mechs): use
+	gss_create_empty_oid_set and gss_add_oid_set_member
+
+	* gssapi.h (gss_ctx_id_t_desc): store the lifetime in the cred,
+	since there is no ticket transfered in the exported context
+	
+	* export_name.c (gss_export_name): export name with
+	GSS_C_NT_EXPORT_NAME wrapping, not just the principal
+	
+	* import_name.c (import_export_name): new function, parses a
+	GSS_C_NT_EXPORT_NAME
+	(import_krb5_name): factor out common code of parsing krb5 name
+	(gss_oid_equal): rename from oid_equal
+
+	* gssapi_locl.h: add prototypes for gss_oid_equal and
+	gss_verify_mic_internal
+
+	* gssapi.h: comment out the argument names
+	
 2003-03-15  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* gssapi.3: add LIST OF FUNCTIONS and copyright/license
