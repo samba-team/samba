@@ -2,7 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB client
-   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Tridgell 		1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 	1998-2000
+   Copyright (C) Gerald Carter			     2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -65,9 +67,8 @@ FILE *out_hnd;
 static void cmd_set_free(struct command_set *item)
 {
 	if (item != NULL)
-	{
 		safe_free(item->name);
-	}
+
 	safe_free(item);
 }
 
@@ -75,16 +76,14 @@ static struct command_set *cmd_set_dup(const struct command_set *from)
 {
 	if (from != NULL)
 	{
-		struct command_set *copy =
-			(struct command_set
-			 *)malloc(sizeof(struct command_set));
+		struct command_set *copy;
+		
+		copy = (struct command_set*)malloc(sizeof(struct command_set));
 		if (copy != NULL)
 		{
 			memcpy(copy, from, sizeof(struct command_set));
 			if (from->name != NULL)
-			{
 				copy->name = strdup(from->name);
-			}
 		}
 		return copy;
 	}
@@ -97,13 +96,11 @@ void free_cmd_set_array(uint32 num_entries, struct command_set **entries)
 	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-struct command_set *add_cmd_set_to_array(uint32 *len,
-					 struct command_set ***array,
+struct command_set *add_cmd_set_to_array(uint32 *len, struct command_set ***array,
 					 const struct command_set *cmd)
 {
 	void *(*fn) (const void *) = (void *(*)(const void *))&cmd_set_dup;
-	return (struct command_set *)add_copy_to_array(len,
-						       (void ***)array,
+	return (struct command_set *)add_copy_to_array(len, (void ***)array,
 						       (const void *)cmd, *fn,
 						       False);
 
@@ -214,6 +211,7 @@ static uint32 cmd_quit(struct client_info *info, int argc, char *argv[])
 
 	free_connections();
 	exit(0);
+	
 	/* NOTREACHED */
 	return 0;
 }
@@ -226,12 +224,12 @@ static uint32 cmd_help(struct client_info *info, int argc, char *argv[])
 	int i = 0;
 
 	/* get help on a specific command */
-	if (argc > 0)
+	if (argc > 1)
 	{
-		if ((i = process_tok(argv[1])) >= 0)
+		if ((i = process_tok(argv[0])) >= 0)
 		{
-			fprintf(out_hnd, "HELP %s:\n\t%s\n\n",
-				commands[i]->name, commands[i]->description);
+			fprintf(out_hnd, "HELP %s:\n\t%s\n\n", commands[i]->name, 
+			        commands[i]->description);
 		}
 
 		return 0;
@@ -296,9 +294,7 @@ static BOOL get_cmd_args(char *line)
 
 	/* get the first part of the command */
 	if (!next_token(&ptr, tok, NULL, sizeof(tok)))
-	{
 		return False;
-	}
 
 	do
 	{
@@ -326,14 +322,12 @@ static uint32 do_command(struct client_info *info, char *line)
 		return False;
 
 	if (cmd_argc == 0)
-	{
 		return False;
-	}
 	
 	i = process_tok(cmd_argv[0]);
 	if (i >= 0)
 	{
-		int argc = ((int)cmd_argc)-1;
+		int argc = ((int)cmd_argc);
 		char **argv = cmd_argv;
 		optind = 0;
 
@@ -539,9 +533,7 @@ static char *complete_cmd(char *text, int state)
 	/* Initialise */
 
 	if (state == 0)
-	{
 		cmd_index = 0;
-	}
 
 	/* Return the next name which partially matches the list of commands */
 
@@ -549,9 +541,7 @@ static char *complete_cmd(char *text, int state)
 	       && (strlen(name = commands[cmd_index++]->name) > 0))
 	{
 		if (strncmp(name, text, strlen(text)) == 0)
-		{
 			return strdup(name);
-		}
 	}
 
 	return NULL;
@@ -576,9 +566,7 @@ static char **completion_fn(char *text, int start, int end)
 	/* Complete rpcclient command */
 
 	if (start == 0)
-	{
 		return completion_matches(text, complete_cmd);
-	}
 
 	/* Count # of words in command */
 
@@ -586,9 +574,7 @@ static char **completion_fn(char *text, int start, int end)
 	for (i = 0; i <= end; i++)
 	{
 		if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
-		{
 			num_words++;
-		}
 		lastch = rl_line_buffer[i];
 	}
 
@@ -605,25 +591,19 @@ static char **completion_fn(char *text, int start, int end)
 		if (strncmp(rl_line_buffer, commands[cmd_index]->name,
 			    strlen(commands[cmd_index]->name)) == 0)
 		{
-
 			/* Call appropriate completion function */
 
 			if (num_words == 2 || num_words == 3)
 			{
 				char *(*fn) (char *, int);
-				fn =
-					commands[cmd_index]->compl_args
-					[num_words - 2];
+				fn = commands[cmd_index]->compl_args[num_words - 2];
 				if (fn != NULL)
-				{
 					return completion_matches(text, fn);
-				}
 			}
 		}
 	}
 
 	/* Eeek! */
-
 	return NULL;
 }
 
@@ -680,13 +660,9 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 
 
 	if (usr_creds != NULL)
-	{
 		copy_nt_creds(&usr.ntc, &usr_creds->ntc);
-	}
 	else
-	{
 		copy_nt_creds(&usr.ntc, NULL);
-	}
 
 	pstrcpy(dest_host, cli_info.dest_host);
 	pstrcpy(usr.ntc.user_name, optarg);
@@ -805,15 +781,10 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 			{
 				if (use[i] != NULL && use[i]->connected)
 				{
-					report(out_hnd, "Server:\t%s\t",
-					       use[i]->srv_name);
-					report(out_hnd, "Key:\t[%d,%x]\t",
-					       use[i]->key.pid,
-					       use[i]->key.vuid);
-					report(out_hnd, "User:\t%s\t",
-					       use[i]->user_name);
-					report(out_hnd, "Domain:\t%s\n",
-					       use[i]->domain);
+					report(out_hnd, "Server:\t%s\t",use[i]->srv_name);
+					report(out_hnd, "Key:\t[%d,%x]\t",use[i]->key.pid, use[i]->key.vuid);
+					report(out_hnd, "User:\t%s\t", use[i]->user_name);
+					report(out_hnd, "Domain:\t%s\n", use[i]->domain);
 				}
 			}
 		}
@@ -822,13 +793,9 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 	{
 		BOOL isnew;
 		if (null_pwd)
-		{
 			set_user_password(&usr.ntc, True, NULL);
-		}
 		else
-		{
 			set_user_password(&usr.ntc, got_pwd, password);
-		}
 
 		/* paranoia: destroy the local copy of the password */
 		ZERO_STRUCT(password);
@@ -837,15 +804,10 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &usr.ntc, 
-				    info->reuse, &isnew) != NULL)
-		{
+		if (cli_net_use_add(srv_name, &usr.ntc, info->reuse, &isnew) != NULL)
 			report(out_hnd, "OK\n");
-		}
 		else
-		{
 			report(out_hnd, "FAILED\n");
-		}
 	}
 	else
 	{
@@ -854,23 +816,14 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (!cli_net_use_del(srv_name, &usr.ntc,
-				     force_close, &closed))
-		{
+		if (!cli_net_use_del(srv_name, &usr.ntc, force_close, &closed))
 			report(out_hnd, ": Does not exist\n");
-		}
 		else if (force_close && closed)
-		{
 			report(out_hnd, ": Forcibly terminated\n");
-		}
 		else if (closed)
-		{
 			report(out_hnd, ": Terminated\n");
-		}
 		else
-		{
 			report(out_hnd, ": Unlinked\n");
-		}
 	}
 
 	/* paranoia: destroy the local copy of the password */
@@ -909,7 +862,68 @@ void cmd_set_no_autoconnect(void)
 #define CMD_SCOPE 0x10000
 #define CMD_INTER 0x20000
 
-static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
+static void read_authfile (char *filename, char* username, char* password)
+{
+	FILE *auth;
+        fstring buf;
+        uint16 len = 0;
+	char *ptr, *val, *param;
+                               
+	if ((auth=sys_fopen(filename, "r")) == NULL)
+	{
+		/* fail if we can't open the credentials file */
+		DEBUG(0,("ERROR: Unable to open credentials file!\n"));
+		return;
+	}
+                                
+	while (!feof(auth))
+	{  
+		/* get a line from the file */
+		if (!fgets (buf, sizeof(buf), auth))
+			continue;
+		
+		len = strlen(buf);
+		
+		/* skip empty lines */			
+		if ((len) && (buf[len-1]=='\n'))
+		{
+			buf[len-1] = '\0';
+			len--;
+		}	
+		if (len == 0)
+			continue;
+					
+		/* break up the line into parameter & value.
+		   will need to eat a little whitespace possibly */
+		param = buf;
+		if (!(ptr = strchr (buf, '=')))
+			continue;
+		val = ptr+1;
+		*ptr = '\0';
+					
+		/* eat leading white space */
+		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
+			val++;
+					
+		if (strwicmp("password", param) == 0)
+		{
+			pstrcpy(password, val);
+			cmd_set_options |= CMD_PASS;
+		}
+		else if (strwicmp("username", param) == 0)
+		{
+			pstrcpy(username, val);
+			cmd_set_options |= CMD_USER;
+		}
+						
+		memset(buf, 0, sizeof(buf));
+	}
+	fclose(auth);
+	
+	return;
+}
+
+static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 {
 	BOOL interactive = True;
 	char *cmd_str = NULL;
@@ -920,6 +934,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	pstring term_code;
 	pstring password;	/* local copy only, if one is entered */
 	fstring srv_name;
+	int new_debuglevel = -1;
 
 	password[0] = 0;
 	usr_creds = &usr;
@@ -942,6 +957,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		argc--;
 		argv++;
 	}
+	
 	if (argc > 1 && (*argv[1] != '-'))
 	{
 		cmd_set_options |= CMD_PASS;
@@ -951,31 +967,29 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		argv++;
 	}
 
-	while ((opt = getopt(argc, argv,
-			     "PRs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:A:")) !=
-	       EOF)
+	while ((opt = getopt(argc, argv,"PRs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:A:")) != EOF)
 	{
 		switch (opt)
 		{
+			/* reuse connections in the case of a previous authentication */
 			case 'R':
 			{
 				info->reuse = True;
 				break;
 			}
 
+			/* max protocol */
 			case 'm':
 			{
 				/* FIXME ... max_protocol seems to be funny here */
 
 				int max_protocol = 0;
-				max_protocol =
-					interpret_protocol(optarg,
-							   max_protocol);
-				fprintf(stderr,
-					"max protocol not currently supported\n");
+				max_protocol = interpret_protocol(optarg, max_protocol);
+				fprintf(stderr, "max protocol not currently supported\n");
 				break;
 			}
 
+			/* socket options */
 			case 'O':
 			{
 				cmd_set_options |= CMD_SOCK;
@@ -983,6 +997,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* define the server to connect to */
 			case 'S':
 			{
 				cmd_set_options |= CMD_HOST;
@@ -991,6 +1006,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* username for the connection -- support the 
+			   username%password format as well */
 			case 'U':
 			{
 				char *lp;
@@ -1005,64 +1022,15 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				}
 				break;
 			}
+			
+			/* authfile -- only get the username and password from the file */
 			case 'A':
 			{
- 	 			FILE *auth;
-        	                fstring buf;
-                        	uint16 len = 0;
-				char *ptr, *val, *param;
-                               
-	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
-				{
-					/* fail if we can't open the credentials file */
-					DEBUG(0,("ERROR: Unable to open credentials file!\n"));
-					exit (-1);
-				}
-                                
-				while (!feof(auth))
-				{  
-					/* get a line from the file */
-					if (!fgets (buf, sizeof(buf), auth))
-						continue;
-					len = strlen(buf);
-					
-					if ((len) && (buf[len-1]=='\n'))
-					{
-						buf[len-1] = '\0';
-						len--;
-					}	
-					if (len == 0)
-						continue;
-					
-					/* break up the line into parameter & value.
-					   will need to eat a little whitespace possibly */
-					param = buf;
-					if (!(ptr = strchr (buf, '=')))
-						continue;
-					val = ptr+1;
-					*ptr = '\0';
-					
-					/* eat leading white space */
-					while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
-						val++;
-					
-					if (strwicmp("password", param) == 0)
-					{
-						pstrcpy(password, val);
-						cmd_set_options |= CMD_PASS;
-					}
-					else if (strwicmp("username", param) == 0)
-					{
-						pstrcpy(usr.ntc.user_name, val);
-						cmd_set_options |= CMD_USER;
-					}
-						
-					memset(buf, 0, sizeof(buf));
-				}
-				fclose(auth);
+				read_authfile (optarg, usr.ntc.user_name, password);
 				break;
 			}
 
+			/* define the workgroup/domain name */
 			case 'W':
 			{
 				cmd_set_options |= CMD_DOM;
@@ -1070,12 +1038,14 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 			
+			/* should we display a command prompt at all */
 			case 'P':
 			{ /* optarg == prompt string ? */
 				info->show_prompt = False;
 				break;
 			}
 
+			/* send to stderr instaed of stdout */
 			case 'E':
 			{
 				cmd_set_options |= CMD_DBG;
@@ -1083,6 +1053,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* IP address of destination host */
 			case 'I':
 			{
 				cmd_set_options |= CMD_IP;
@@ -1095,6 +1066,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* define netbios name of client machine we are on */
 			case 'n':
 			{
 				cmd_set_options |= CMD_NAME;
@@ -1102,31 +1074,35 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* do not prompt for a password.  Implies anonymous connection
+			   unless the password was passed in username%password form */
 			case 'N':
 			{
 				cmd_set_options |= CMD_NOPW | CMD_PASS;
 				break;
 			}
 
+			/* debug level */
 			case 'd':
 			{
 				cmd_set_options |= CMD_DBLV;
 				if (*optarg == 'A')
-					DEBUGLEVEL = 10000;
+					new_debuglevel = 10000;
 				else
-					DEBUGLEVEL = atoi(optarg);
+					new_debuglevel = atoi(optarg);
 				break;
 			}
 
+			/* log file name */
 			case 'l':
 			{
 				cmd_set_options |= CMD_INTER;
-				slprintf(debugf, sizeof(debugf) - 1,
-					 "%s.client", optarg);
+				slprintf(debugf, sizeof(debugf) - 1, "%s.client", optarg);
 				interactive = False;
 				break;
 			}
 
+			/* command string to be executed */
 			case 'c':
 			{
 				cmd_set_options |= CMD_STR;
@@ -1134,6 +1110,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* program usage/help screen */
 			case 'h':
 			{
 				cmd_set_options |= CMD_HELP;
@@ -1141,6 +1118,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* config file to use */
 			case 's':
 			{
 				cmd_set_options |= CMD_SVC;
@@ -1148,6 +1126,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			/* terminal code */
 			case 't':
 			{
 				cmd_set_options |= CMD_TERM;
@@ -1164,7 +1143,9 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	if (cmd_set_options & CMD_INTER) {
+	
+	if (cmd_set_options & CMD_INTER)
+	{
 		setup_logging(debugf, interactive);
 		if (!interactive)
 			reopen_logs();
@@ -1173,17 +1154,22 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	strupper(global_myname);
 	fstrcpy(cli_info.myhostname, global_myname);
 
-	if (cmd_set_options & CMD_SVC) {
+	if (cmd_set_options & CMD_SVC) 
+	{
 		if (!lp_load(servicesf, True, False, False))
 		{
-			fprintf(stderr,
-				"Can't load %s - run testparm to debug it\n",
+			fprintf(stderr, "Can't load %s - run testparm to debug it\n",
 				servicesf);
 		}
 
 	}
 
-	if (cmd_set_options & CMD_INTER) {
+	if (new_debuglevel != -1) {
+		DEBUGLEVEL = new_debuglevel;
+	}
+
+	if (cmd_set_options & CMD_INTER) 
+	{
 		load_interfaces();
 	}
 
@@ -1194,20 +1180,16 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* NULL password if specified or is username is empty */
-	if ((cmd_set_options & CMD_NOPW) || (strlen(usr.ntc.user_name) == 0)) {
+	if ((cmd_set_options & CMD_NOPW) || (strlen(usr.ntc.user_name) == 0)) 
 		set_user_password(&usr.ntc, True, NULL);
-	}
 	else
-	{
-		set_user_password(&usr.ntc,
-				  ((cmd_set_options & CMD_PASS) != 0),
-				  password);
-	}
+		set_user_password(&usr.ntc, ((cmd_set_options & CMD_PASS) != 0), password);
 
 	/* paranoia: destroy the local copy of the password */
 	ZERO_STRUCT(password);
 
-	if (strcmp(cli_info.dest_host, "*") == 0) {
+	if (strcmp(cli_info.dest_host, "*") == 0) 
+	{
 		/* special case - we want the PDC */
 		struct in_addr ip;
 		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host, &ip)) {
@@ -1221,7 +1203,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	strupper(srv_name);
 
 
-	if (auto_connect && !strequal(srv_name, "\\\\."))
+	if (auto_connect)
 	{
 		BOOL isnew;
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
@@ -1239,10 +1221,9 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		/* ???? --jerry
 		usr_creds = NULL; */
 	}
+	
 	if (cmd_str != NULL)
-	{
 		return process(&cli_info, cmd_str);
-	}
 
 	return 0;
 }
@@ -1268,21 +1249,15 @@ static void read_user_env(struct ntuser_creds *u)
 			memset(strchr(getenv("USER"), '%') + 1, 'X',
 			       strlen(password));
 		}
-		strupper(u->user_name);
 	}
 
 	/* modification to support PASSWD environmental var
 	   25.Aug.97, jdblair@uab.edu */
 	if (getenv("PASSWD"))
-	{
 		pstrcpy(password, getenv("PASSWD"));
-	}
 
 	if (*u->user_name == 0 && getenv("LOGNAME"))
-	{
 		pstrcpy(u->user_name, getenv("LOGNAME"));
-		strupper(u->user_name);
-	}
 
 	set_user_password(u, True, password);
 
@@ -1320,15 +1295,21 @@ int command_main(int argc, char *argv[])
 	DEBUGLEVEL = 2;
 
 	charset_initialise();
+
+	/* add in the internal command set and the various
+	   client RPC groups--spoolss, lsa, etc... */
 	add_command_set(general_commands);
 
+	/* usr_creds is a global most recently used set of user credentials
+	   retrieved from the connection list. */
 	copy_user_creds(&usr, NULL);
-
 	usr_creds = &usr;
 	usr.ptr_ntc = 1;
-
+	
 	out_hnd = stdout;
 
+	/* retrieve the binary name used when invoking the program
+	   for instances like samedit, etc... */
 	strncpy(path, argv[0], 255);
 	for (s = strtok(path, "/"); s; s = strtok(NULL, "/"))
 		fstrcpy(progname, s);
@@ -1336,15 +1317,15 @@ int command_main(int argc, char *argv[])
 	slprintf(debugf, sizeof(debugf) - 1,
 		 "%s/log.%s", LOGFILEBASE, progname);
 
+	/* initialize usr */
 	pstrcpy(usr.ntc.domain, "");
 	pstrcpy(usr.ntc.user_name, "");
-
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
-	cli_info.dest_ip.s_addr = 0;
 	
+	/* init client_info struct */
+	cli_info.dest_ip.s_addr = 0;
 	cli_info.show_prompt = True;
-
 	ZERO_STRUCT(cli_info.dom.level3_sid);
 	ZERO_STRUCT(cli_info.dom.level5_sid);
 	fstrcpy(cli_info.dom.level3_dom, "");
@@ -1379,8 +1360,12 @@ int command_main(int argc, char *argv[])
 
 	codepage_initialise(lp_client_code_page());
 
+	/*  parse the command line args
+	    init the first connection if possible
+	    process a command if passed in on the command line */
 	status = cmd_set(&cli_info, argc, argv);
 
+	/* Should we exit?  Are we done? */
 	if (cmd_set_options & (CMD_HELP|CMD_STR)) {
 		free_connections();
 		get_safe_nt_error_msg(status, msg, sizeof(msg));
@@ -1393,16 +1378,17 @@ int command_main(int argc, char *argv[])
 	DEBUG(3, ("%s client started (version %s)\n",
 		  timestring(False), VERSION));
 
+	/* enter shell mode */
 	status = process(&cli_info, NULL);
 
+	/* cleanup */
 	free_connections();
-
 	free_cmd_set_array(num_commands, commands);
 	num_commands = 0;
 	commands = NULL;
 	
+	/* report and exit */
 	get_safe_nt_error_msg(status, msg, sizeof(msg));
 	report(out_hnd, "Exit Status: %s\n", msg);
-
 	return status;
 }

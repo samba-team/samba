@@ -144,6 +144,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[i].name);
+        dos_to_unix(key, True);            /* Convert key to unix-codepage */
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
@@ -235,6 +236,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 	}
 
 	slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[n].name);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 	if (tdb_delete(tdb, kbuf) != 0) {
@@ -1301,27 +1303,41 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	slprintf(directory, sizeof(directory), "\\print$\\%s\\%d\\", architecture, driver->cversion);
 
-	
-	fstrcpy(temp_name, driver->driverpath);
-	slprintf(driver->driverpath, sizeof(driver->driverpath), "%s%s", directory, temp_name);
+    /* .inf files do not always list a file for each of the four standard files. 
+     * Don't prepend a path to a null filename, or client claims:
+     *   "The server on which the printer resides does not have a suitable 
+     *   <printer driver name> printer driver installed. Click OK if you 
+     *   wish to install the driver on your local machine."
+     */
+	if (strlen(driver->driverpath)) {
+    	fstrcpy(temp_name, driver->driverpath);
+    	slprintf(driver->driverpath, sizeof(driver->driverpath), "%s%s", directory, temp_name);
+    }
 
-	fstrcpy(temp_name, driver->datafile);
-	slprintf(driver->datafile, sizeof(driver->datafile), "%s%s", directory, temp_name);
+	if (strlen(driver->datafile)) {
+    	fstrcpy(temp_name, driver->datafile);
+    	slprintf(driver->datafile, sizeof(driver->datafile), "%s%s", directory, temp_name);
+    }
 
-	fstrcpy(temp_name, driver->configfile);
-	slprintf(driver->configfile, sizeof(driver->configfile), "%s%s", directory, temp_name);
+	if (strlen(driver->configfile)) {
+    	fstrcpy(temp_name, driver->configfile);
+    	slprintf(driver->configfile, sizeof(driver->configfile), "%s%s", directory, temp_name);
+    }
 
-	fstrcpy(temp_name, driver->helpfile);
-	slprintf(driver->helpfile, sizeof(driver->helpfile), "%s%s", directory, temp_name);
+	if (strlen(driver->helpfile)) {
+    	fstrcpy(temp_name, driver->helpfile);
+    	slprintf(driver->helpfile, sizeof(driver->helpfile), "%s%s", directory, temp_name);
+    }
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-			fstrcpy(temp_name, driver->dependentfiles[i]);
-			slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i]), "%s%s", directory, temp_name);
+            fstrcpy(temp_name, driver->dependentfiles[i]);
+            slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i]), "%s%s", directory, temp_name);
 		}
 	}
 
 	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	DEBUG(5,("add_a_printer_driver_3: Adding driver with key %s\n", key ));
 
@@ -1685,8 +1701,8 @@ uint32 del_a_printer(char *sharename)
 	pstring key;
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key), "%s%s",
-		 PRINTERS_PREFIX, sharename);
+	slprintf(key, sizeof(key), "%s%s", PRINTERS_PREFIX, sharename);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -1768,8 +1784,8 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	}
 	
 
-	slprintf(key, sizeof(key), "%s%s",
-		 PRINTERS_PREFIX, info->sharename);
+	slprintf(key, sizeof(key), "%s%s", PRINTERS_PREFIX, info->sharename);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2196,6 +2212,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key), "%s%s", PRINTERS_PREFIX, sharename);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;

@@ -169,8 +169,8 @@ static int print_run_command(int snum,char *command,
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
 
-    /* Convert script args to unix-codepage */
-    dos_to_unix(syscmd, True);
+	/* Convert script args to unix-codepage */
+	dos_to_unix(syscmd, True);
 	ret = smbrun(syscmd,outfile,False);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -304,6 +304,7 @@ static void print_cache_flush(int snum)
 {
 	fstring key;
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	tdb_store_int(tdb, key, -1);
 }
 
@@ -324,8 +325,11 @@ static void print_queue_update(int snum)
 	struct traverse_struct tstruct;
 	fstring keystr, printer_name;
 	TDB_DATA data, key;
- 
+              
+	/* Convert printer name (i.e. share name) to unix-codepage for all of the 
+	 * following tdb key generation */
 	fstrcpy(printer_name, lp_servicename(snum));
+	dos_to_unix(printer_name, True);
 	
 	/*
 	 * Update the cache time FIRST ! Stops others doing this
@@ -428,7 +432,7 @@ static void print_queue_update(int snum)
 
 	/* store the new queue status structure */
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", printer_name);
-	key.dptr = keystr;
+    key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
 	status.qcount = qcount;
@@ -722,6 +726,7 @@ static BOOL print_cache_expired(int snum)
 	time_t t2, t = time(NULL);
 
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	t2 = tdb_fetch_int(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
 		DEBUG(3, ("print cache expired\n"));
@@ -741,6 +746,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);
@@ -1065,6 +1071,7 @@ int print_queue_status(int snum,
 	 */
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);
@@ -1203,8 +1210,9 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	int njobs, i;
 
 	njobs = print_queue_status(snum, &queue, &status);
-	for (i=0;i<njobs;i++) {
-		if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
+
+	if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
+		for (i=0;i<njobs;i++) {
 			print_job_delete1(queue[i].job);
 		}
 	}

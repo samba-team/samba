@@ -176,10 +176,11 @@ static struct passwd *_Get_Pwnam(char *s)
     - using the lp_usernamelevel() for permutations
  Note that this can change user!
 ****************************************************************************/
+
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
 	fstring 	user2, orig_username;
-	int 		usernamelevel = lp_usernamelevel();
+  	int 		usernamelevel = lp_usernamelevel();
 	struct 		passwd *ret;  
 
 	if (!user || !(*user))

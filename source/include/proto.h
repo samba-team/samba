@@ -46,8 +46,7 @@ void add_char_string(char *s);
 /*The following definitions come from  lib/cmd_interp.c  */
 
 void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
-struct command_set *add_cmd_set_to_array(uint32 *len,
-					 struct command_set ***array,
+struct command_set *add_cmd_set_to_array(uint32 *len, struct command_set ***array,
 					 const struct command_set *cmd);
 void add_command_set(const struct command_set *cmds);
 void cmd_set_no_autoconnect(void);
@@ -634,17 +633,20 @@ struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds);
 void cli_lsa_shutdown(struct cli_state *cli);
 uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
-			   uint32 des_access, POLICY_HND *hnd);
-uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
+			   uint32 des_access, POLICY_HND *pol);
+uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol);
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 			   int num_sids, DOM_SID *sids, char ***names, 
 			   uint32 **types, int *num_names);
-uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
+uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 			    int num_names, char **names, DOM_SID **sids,
 			    uint32 **types, int *num_sids);
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd, 
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol, 
 				 uint16 info_class, fstring domain_name, 
 				 DOM_SID * domain_sid);
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol, 
+			      uint32 *enum_ctx, uint32 *num_domains,
+			      char ***domain_names, DOM_SID **domain_sids);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 

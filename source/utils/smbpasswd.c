@@ -326,6 +326,12 @@ static int process_root(int argc, char *argv[])
 		usage();
 	}
 	
+	/* Only load interfaces if we are doing network operations. */
+
+	if (joining_domain || remote_machine) {
+		load_interfaces();
+	}
+
 	if(joining_domain) {
 		if (argc != 0)
 			usage();
@@ -501,10 +507,12 @@ static int process_nonroot(int argc, char *argv[])
 	 * via a remote machine (even if that machine is
 	 * localhost).
 	 */	
+
+	load_interfaces(); /* Delayed from main() */
+
 	if (remote_machine == NULL) {
 		remote_machine = "127.0.0.1";
 	}
-
 
 	if (remote_machine != NULL) {
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
@@ -580,7 +588,6 @@ int main(int argc, char **argv)
 
 	codepage_initialise(lp_client_code_page());
 
-	load_interfaces();
 	secrets_init();
 
 	/* Check the effective uid - make sure we are not setuid */
