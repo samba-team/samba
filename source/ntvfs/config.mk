@@ -32,7 +32,10 @@ INIT_OBJ_FILES = \
 # Start MODULE ntvfs_ipc
 [MODULE::ntvfs_ipc]
 INIT_OBJ_FILES = \
-		ntvfs/ipc/vfs_ipc.o
+		ntvfs/ipc/vfs_ipc.o \
+		ntvfs/ipc/ipc_rap.o \
+		ntvfs/ipc/rap_server.o
+
 # End MODULE ntvfs_ipc
 ################################################
 

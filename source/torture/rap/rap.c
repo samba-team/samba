@@ -26,10 +26,10 @@ struct rap_call {
 	char *paramdesc;
 	const char *datadesc;
 
-	struct smb_trans2 trans;
-
 	uint16 status;
 	uint16 convert;
+	
+	uint16 rcv_paramlen, rcv_datalen;
 
 	struct ndr_push *ndr_push_param;
 	struct ndr_push *ndr_push_data;
@@ -55,7 +55,7 @@ static struct rap_call *new_rap_cli_call(uint16 callno)
 	ZERO_STRUCTP(call);
 
 	call->callno = callno;
-	call->trans.in.max_param = 4;	/* uint16 error, uint16 "convert" */
+	call->rcv_paramlen = 4;
 	call->mem_ctx = mem_ctx;
 
 	call->ndr_push_param = ndr_push_init_ctx(mem_ctx);
@@ -102,14 +102,14 @@ static void rap_cli_push_rcvbuf(struct rap_call *call, int len)
 	rap_cli_push_paramdesc(call, 'r');
 	rap_cli_push_paramdesc(call, 'L');
 	ndr_push_uint16(call->ndr_push_param, len);
-	call->trans.in.max_data = len;
+	call->rcv_datalen = len;
 }
 
 static void rap_cli_expect_multiple_entries(struct rap_call *call)
 {
 	rap_cli_push_paramdesc(call, 'e');
 	rap_cli_push_paramdesc(call, 'h');
-	call->trans.in.max_param += 4;	/* uint16 entry count, uint16 total */
+	call->rcv_paramlen += 4; /* uint16 entry count, uint16 total */
 }
 
 static void rap_cli_push_string(struct rap_call *call, const char *str)
@@ -161,6 +161,7 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	DATA_BLOB param_blob;
 	struct ndr_push *params;
+	struct smb_trans2 trans;
 
 	params = ndr_push_init_ctx(mem_ctx);
 
@@ -169,12 +170,14 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	params->flags = RAPNDR_FLAGS;
 
-	call->trans.in.max_setup = 0;
-	call->trans.in.flags = 0;
-	call->trans.in.timeout = 0;
-	call->trans.in.setup_count = 0;
-	call->trans.in.setup = NULL;
-	call->trans.in.trans_name = "\\PIPE\\LANMAN";
+	trans.in.max_param = call->rcv_paramlen;
+	trans.in.max_data = call->rcv_datalen;
+	trans.in.max_setup = 0;
+	trans.in.flags = 0;
+	trans.in.timeout = 0;
+	trans.in.setup_count = 0;
+	trans.in.setup = NULL;
+	trans.in.trans_name = "\\PIPE\\LANMAN";
 
 	NDR_CHECK(ndr_push_uint16(params, call->callno));
 	NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
@@ -184,19 +187,19 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NDR_CHECK(ndr_push_bytes(params, param_blob.data,
 				 param_blob.length));
 
-	call->trans.in.params = ndr_push_blob(params);
-	call->trans.in.data = data_blob(NULL, 0);
+	trans.in.params = ndr_push_blob(params);
+	trans.in.data = data_blob(NULL, 0);
 
-	result = smb_raw_trans(cli->tree, call->mem_ctx, &call->trans);
+	result = smb_raw_trans(cli->tree, call->mem_ctx, &trans);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	call->ndr_pull_param = ndr_pull_init_blob(&call->trans.out.params,
+	call->ndr_pull_param = ndr_pull_init_blob(&trans.out.params,
 						  call->mem_ctx);
 	call->ndr_pull_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_pull_data = ndr_pull_init_blob(&call->trans.out.data,
+	call->ndr_pull_data = ndr_pull_init_blob(&trans.out.data,
 						 call->mem_ctx);
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 

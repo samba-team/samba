@@ -4195,6 +4195,7 @@ static struct {
 	{"RAW-CONTEXT", torture_raw_context, 0},
 	{"RAW-RENAME", torture_raw_rename, 0},
 	{"RAW-SEEK", torture_raw_seek, 0},
+	{"RAW-RAP", torture_raw_rap, 0},
 	{"SCAN-TRANS2", torture_trans2_scan, 0},
 	{"SCAN-NTTRANS", torture_nttrans_scan, 0},
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
