@@ -542,6 +542,8 @@ it() link(bf(domain master))(domainmaster)
 
 it() link(bf(encrypt passwords))(encryptpasswords)
 
+it() link(bf(enhanced browsing))(enhancedbrowsing)
+
 it() link(bf(getwd cache))(getwdcache)
 
 it() link(bf(hide local users))(hidelocalusers)
@@ -2178,6 +2180,28 @@ link(bf(security=))(security) parameter to either
 link(bf("server"))(securityequalserver) or
 link(bf("domain"))(securityequaldomain) which causes
 url(bf(smbd))(smbd.8.html) to authenticate against another server.
+
+label(enhancedbrowsing)
+dit(bf(enhanced browsing (G)))
+
+This option enables a couple of enhancements to cross-subnet browse
+propogation that have been added in Samba but which are not standard
+in Microsoft implementations.  Enhanced browsing is enabled by
+default, and can be diabled using "enhanced browsing = No".
+
+The first enhancement to browse propogation consists of a regular
+wildcard query to a Samba WINS server for all Domain Master Browsers,
+followed by a browse synchronisation with each of the returned
+DMBs. The second enhancement consists of a regular randomised browse
+synchronisation with all currently known DMBs.
+
+You may wish to disable this option if you have a problem with empty
+workgroups not disappearing from browse lists. Due to the restrictions
+of the browse protocols these enhancements can cause a empty workgroup
+to stay around forever which can be annoying.
+
+In general you should leave this option enabled as it makes
+cross-subnet browse propogation much more reliable.
 
 label(exec)
 dit(bf(exec (S)))
