@@ -40,7 +40,7 @@ struct spnego_state {
 	TALLOC_CTX *mem_ctx;
 	uint_t ref_count;
 	enum spnego_message_type expected_packet;
-	enum spnego_message_type state_position;
+	enum spnego_state_position state_position;
 	enum spnego_negResult result;
 	struct gensec_security *sub_sec_security;
 };
@@ -314,8 +314,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		} else {
 			/* server needs to send NegTargetInit */
 		}
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	
 	case SPNEGO_CLIENT_START:
 	{
 		/* The server offers a list of mechanisms */
@@ -534,11 +535,10 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		
 		return nt_status;
 	}
-	default:
-		spnego_free_data(&spnego);
-		DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
-		return NT_STATUS_INVALID_PARAMETER;
+	case SPNEGO_DONE:
+		return NT_STATUS_OK;
 	}
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 static void gensec_spnego_end(struct gensec_security *gensec_security)
