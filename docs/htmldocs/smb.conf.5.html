@@ -427,6 +427,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#domainguestusers"><strong>domain guest users</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainlogons"><strong>domain logons</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainmaster"><strong>domain master</strong></a>
+<p><br><li > <a href="smb.conf.5.html#domainusermap"><strong>domain user map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#encryptpasswords"><strong>encrypt passwords</strong></a>
 <p><br><li > <a href="smb.conf.5.html#getwdcache"><strong>getwd cache</strong></a>
 <p><br><li > <a href="smb.conf.5.html#homedirmap"><strong>homedir map</strong></a>
@@ -822,7 +823,7 @@ request immediately if the lock range cannot be obtained.
 <p><br><strong>Example:</strong>
 <code>	blocking locks = False</code>
 <p><br><a name="browsable"></a>
-<li><strong><strong>browseable (S)</strong></strong>
+<li><strong><strong>browsable (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#browseable"><strong>browseable</strong></a>.
 <p><br><a name="browselist"></a>
 <li><strong><strong>browse list(G)</strong></strong>
@@ -1263,13 +1264,15 @@ NT users, despite the lack of native support for the NT Security model
 (based on VAX/VMS) in UNIX.  The reader is advised to become familiar
 with the NT Domain system and its administration.
 <p><br>This option is used in conjunction with <a href="smb.conf.5.html#localgroupmap"><strong>'local group map'</strong></a>
-and <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>.  The use of these three
+and <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.  The use of these three
 options is trivial and often unnecessary in the case where Samba is
 not expected to interact with any other SAM databases (whether local
 workstations or Domain Controllers).
 <p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
 or a <code>';'</code> then it is ignored.  Each line should contain a single UNIX
-group name on the left then an NT Domain Group name on the right.
+group name on the left then a single NT Domain Group name on the right,
+separated by a tabstop or <code>'='</code>.  If either name contains spaces then
+it should be enclosed in quotes.
 The line can be either of the form:
 <p><br><code>  UNIXgroupname	\\DOMAIN_NAME\\DomainGroupName </code>
 <p><br>or:
@@ -1279,28 +1282,39 @@ or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"
 the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
 <p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are assumed
-to be Domain Groups.
-<p><br>In this case, when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
+to be Domain Groups, but it depends on the role of the Samba Server.
+<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
 will present <em>ALL</em> such unspecified UNIX groups as its own NT Domain
 Groups, with the same name.
 <p><br>In the case where Samba is member of a domain using
 <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
 its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
-as if it was an NT Domain Group.  If the UNIX group is not an NT Group,
+as if it was an NT Domain Group.  If the Domain Controller says that it is not,
 such unspecified (unmapped) UNIX groups which also are not NT Domain
 Groups are treated as Local Groups in the Samba Server's local SAM database.
 NT Administrators will recognise these as Workstation Local Groups,
 which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
 Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
 a local Workstation.
+<p><br>This may sound complicated, but it means that a Samba Server as
+either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
+will act like an NT Workstation (with a local SAM database) or an NT PDC
+(with a Domain SAM database) respectively, without the need for any of
+the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
 <p><br>Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group requires the following: that the UNIX
-group exists on the UNIX server; that the NT Domain Group exists in the
-specified NT Domain; that the UNIX Server knows about the specified Domain; 
-that all the UNIX users (who are expecting to access the Samba
+Domain to an arbitrary UNIX group <em>REQUIRES</em> the following:
+<p><br><ul>
+<p><br><li > that the UNIX group exists on the UNIX server.
+<p><br><li > that the NT Domain Group exists in the specified NT Domain
+<p><br><li > that the UNIX Server knows about the specified Domain; 
+<p><br><li > that all the UNIX users (who are expecting to access the Samba
 Server as the correct NT user and with the correct NT group permissions)
 in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>.
+NT Domain using <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.
+<p><br></ul>
+<p><br>Failure to meet any of these requirements may result in either (or
+both) errors reported in the log files or (and) incorrect or missing
+access rights granted to users.
 <p><br><a name="domaingroups"></a>
 <li><strong><strong>domain groups (G)</strong></strong>
 <p><br>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
@@ -1362,6 +1376,66 @@ PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
 <p><br><strong>Default:</strong>
 <code>	domain master = no</code>
+<p><br><a name="domainusermap"></a>
+<li><strong><strong>domain user map (G)</strong></strong>
+<p><br>This option allows you to specify a file containing unique mappings
+of individual NT Domain User names (in any domain) to UNIX user
+names.  This allows NT domain users to be presented correctly to
+NT systems, despite the lack of native support for the NT Security model
+(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
+with the NT Domain system and its administration.
+<p><br>This option is used in conjunction with <a href="smb.conf.5.html#localgroupmap"><strong>'local group map'</strong></a>
+and <a href="smb.conf.5.html#domaingroupmap"><strong>'domain group map'</strong></a>.  The use of these three
+options is trivial and often unnecessary in the case where Samba is
+not expected to interact with any other SAM databases (whether local
+workstations or Domain Controllers).
+<p><br>This option, which provides (and maintains) a one-to-one link between
+UNIX and NT users, is <em>DIFFERENT</em> from <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>, which does <em>NOT</em> maintain a distinction between the
+name(s) it can map to and the name it maps.
+<p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
+or a <code>';'</code> then the line is ignored.  Each line should contain a single UNIX
+user name on the left then a single NT Domain User name on the right,
+separated by a tabstop or <code>'='</code>.  If either name contains spaces then
+it should be enclosed in quotes.
+The line can be either of the form:
+<p><br><code>  UNIXusername	\\DOMAIN_NAME\\DomainUserName </code>
+<p><br>or:
+<p><br><code>  UNIXusername	DomainUserName </code>
+<p><br>In the case where Samba is either an <strong>EXPERIMENTAL</strong> Domain Controller
+or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>,
+the latter format can be used: the default Domain name is the Samba Server's
+Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
+<p><br>Any UNIX users that are <em>NOT</em> specified in this map file are assumed
+to be either Domain or Workstation Users, depending on the role of the
+Samba Server.
+<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
+will present <em>ALL</em> such unspecified UNIX users as its own NT Domain
+Users, with the same name.
+<p><br>In the case where Samba is member of a domain using
+<a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
+its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
+as if it was an NT Domain User.  If the Domain Controller says that it is not,
+such unspecified (unmapped) UNIX users which also are not NT Domain
+Users are treated as Local Users in the Samba Server's local SAM database.
+NT Administrators will recognise these as Workstation Users,
+which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
+Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
+a local Workstation.
+<p><br>This may sound complicated, but it means that a Samba Server as
+either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
+will act like an NT Workstation (with a local SAM database) or an NT PDC
+(with a Domain SAM database) respectively, without the need for any of
+the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
+<p><br>Note that adding an entry to map an arbitrary NT User in an arbitrary
+Domain to an arbitrary UNIX user <em>REQUIRES</em> the following:
+<p><br><ul>
+<p><br><li > that the UNIX user exists on the UNIX server.
+<p><br><li > that the NT Domain User exists in the specified NT Domain.
+<p><br><li > that the UNIX Server knows about the specified Domain.
+<p><br></ul>
+<p><br>Failure to meet any of these requirements may result in either (or
+both) errors reported in the log files or (and) incorrect or missing
+access rights granted to users.
 <p><br><a name="dontdescend"></a>
 <li><strong><strong>dont descend (S)</strong></strong>
 <p><br>There are certain directories on some systems (e.g., the <code>/proc</code> tree
@@ -1892,13 +1966,15 @@ NT users, despite the lack of native support for the NT Security model
 (based on VAX/VMS) in UNIX.  The reader is advised to become familiar
 with the NT Domain system and its administration.
 <p><br>This option is used in conjunction with <a href="smb.conf.5.html#domaingroupmap"><strong>'domain group map'</strong></a>
-and <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>.  The use of these three
+and <a href="smb.conf.5.html#domainusermap"><strong>'domain name map'</strong></a>.  The use of these three
 options is trivial and often unnecessary in the case where Samba
 is not expected to interact with any other SAM databases (whether local
 workstations or Domain Controllers).
 <p><br>The map file is parsed line by line.  If any line begins with a <code>'#'</code>
 or a <code>';'</code> then it is ignored.  Each line should contain a single UNIX
-group name on the left then an NT Local Group name on the right.
+group name on the left then a single NT Local Group name on the right,
+separated by a tabstop or <code>'='</code>.  If either name contains spaces then
+it should be enclosed in quotes.
 The line can be either of the form:
 <p><br><code>  UNIXgroupname	\\DOMAIN_NAME\\LocalGroupName </code>
 <p><br>or:
@@ -1909,27 +1985,38 @@ the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
 <p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are treated
 as Local Groups depending on the role of the Samba Server.
-<p><br>When Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
+<p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
 will present <em>ALL</em> unspecified UNIX groups as its own NT Domain
 Groups, with the same name, and <em>NOT</em> as Local Groups.
 <p><br>In the case where Samba is member of a domain using
 <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
 its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
-as if it was an NT Domain Group.  If the UNIX group is not an NT Group,
+as if it was an NT Domain Group.  If the Domain Controller says that it is not,
 such unspecified (unmapped) UNIX groups which also are not NT Domain
 Groups are treated as Local Groups in the Samba Server's local SAM database.
 NT Administrators will recognise these as Workstation Local Groups,
 which are managed by running <strong>USRMGR.EXE</strong> and selecting a remote
 Domain named "\\WORKSTATION_NAME", or by running <strong>MUSRMGR.EXE</strong> on
 a local Workstation.
+<p><br>This may sound complicated, but it means that a Samba Server as
+either a member of a domain or as an <strong>EXPERIMENTAL</strong> Domain Controller
+will act like an NT Workstation (with a local SAM database) or an NT PDC
+(with a Domain SAM database) respectively, without the need for any of
+the map files at all.  If you <strong>want</strong> to get fancy, however, you can.
 <p><br>Note that adding an entry to map an arbitrary NT group in an arbitrary
-Domain to an arbitrary UNIX group requires the following: that the UNIX
-group exists on the UNIX server; that the NT Local Group exists in the
-specified NT Domain; that the UNIX Server knows about the specified Domain; 
-that all the UNIX users (who are expecting to access the Samba
+Domain to an arbitrary UNIX group <em>REQUIRES</em> the following:
+<p><br><ul>
+<p><br><li > that the UNIX group exists on the UNIX server.
+<p><br><li > that the NT Domain Group exists in the specified NT Domain
+<p><br><li > that the UNIX Server knows about the specified Domain; 
+<p><br><li > that all the UNIX users (who are expecting to access the Samba
 Server as the correct NT user and with the correct NT group permissions)
 in the UNIX group be mapped to the correct NT Domain users in the specified
-NT Domain using <a href="smb.conf.5.html#usernamemap"><strong>'username map'</strong></a>.
+NT Domain using <a href="smb.conf.5.html#domainusermap"><strong>'domain user map'</strong></a>.
+<p><br></ul>
+<p><br>Failure to meet any of these requirements may result in either (or
+both) errors reported in the log files or (and) incorrect or missing
+access rights granted to users.
 <p><br><a name="localmaster"></a>
 <li><strong><strong>local master (G)</strong></strong>
 <p><br>This option allows <a href="nmbd.8.html"><strong>nmbd</strong></a> to try and become a
@@ -4203,6 +4290,15 @@ purposes. The most common is to map usernames that users use on DOS or
 Windows machines to those that the UNIX box uses. The other is to map
 multiple users to a single username so that they can more easily share
 files.
+<p><br>The use of this option, therefore, relates to UNIX usernames
+and not Windows (specifically NT Domain) usernames.  In other words,
+once a name has been mapped using this option, the Samba server uses
+the mapped name for internal <em>AND</em> external purposes.
+<p><br>This option is <em>DIFFERENT</em> from the <a href="smb.conf.5.html#domainusermap"><strong>"domain user map"</strong></a> 
+parameter, which maintains a one-to-one mapping between UNIX usernames
+and NT Domain Usernames: more specifically, the Samba server maintains
+a link between <em>BOTH</em> usernames, presenting the NT username to the
+external NT world, and using the UNIX username internally.
 <p><br>The map file is parsed line by line. Each line should contain a single
 UNIX username on the left then a <code>'='</code> followed by a list of
 usernames on the right. The list of usernames on the right may contain
