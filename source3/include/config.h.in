@@ -1256,9 +1256,6 @@
 /* Whether we have CUPS */
 #undef HAVE_CUPS
 
-/* Whether we have dlopen() */
-#undef HAVE_DLOPEN
-
 /* Whether the compiler supports immediate structures */
 #undef HAVE_IMMEDIATE_STRUCTURES
 
@@ -1312,9 +1309,6 @@
 
 /* Whether the system has connect() */
 #undef HAVE_CONNECT
-
-/* Whether the system has yp_get_default_domain() */
-#undef HAVE_YP_GET_DEFAULT_DOMAIN
 
 /* Whether stat64() is available */
 #undef HAVE_STAT64
