@@ -653,8 +653,8 @@ AC_DEFUN(jm_ICONV,
 ])
 
 AC_DEFUN(rjs_CHARSET,[
-  dnl Find out if we can convert from $1 to UCS2-LE
-  AC_MSG_CHECKING([can we convert from $1 to UCS2-LE?])
+  dnl Find out if we can convert from $1 to UCS-2LE
+  AC_MSG_CHECKING([can we convert from $1 to UCS-2LE?])
   AC_TRY_RUN([
 #include <$jm_cv_include>
 main(){
