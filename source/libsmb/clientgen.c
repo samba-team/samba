@@ -245,6 +245,7 @@ void cli_setup_signing_state(struct cli_state *cli, int signing_state)
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
+	int i;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -315,7 +316,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	/* initialise signing */
 	cli_null_set_signing(cli);
 
-	cli->nt_pipe_fnum = 0;
+	for (i=0; i<PI_MAX_PIPES; i++)
+		cli->nt_pipe_fnum[i] = 0;
+
 	cli->saved_netlogon_pipe_fnum = 0;
 
 	cli->initialised = 1;
@@ -344,14 +347,17 @@ close the session
 
 void cli_nt_session_close(struct cli_state *cli)
 {
+	int i;
+
 	if (cli->ntlmssp_pipe_state) {
 		ntlmssp_end(&cli->ntlmssp_pipe_state);
 	}
 
-	if (cli->nt_pipe_fnum != 0)
-		cli_close(cli, cli->nt_pipe_fnum);
-
-	cli->nt_pipe_fnum = 0;
+	for (i=0; i<PI_MAX_PIPES; i++) {
+		if (cli->nt_pipe_fnum[i] != 0)
+			cli_close(cli, cli->nt_pipe_fnum[i]);
+		cli->nt_pipe_fnum[i] = 0;
+	}
 	cli->pipe_idx = -1;
 }
 
