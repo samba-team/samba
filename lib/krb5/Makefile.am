@@ -169,6 +169,7 @@ man_MANS =					\
 	krb5_auth_context.3			\
 	krb5_c_make_checksum.3			\
 	krb5_ccache.3				\
+	krb5_compare_creds.3			\
 	krb5_config.3				\
 	krb5_context.3				\
 	krb5_create_checksum.3			\
