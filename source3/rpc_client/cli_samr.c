@@ -371,6 +371,94 @@ NTSTATUS cli_samr_create_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Add a domain group member */
+
+NTSTATUS cli_samr_add_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ADD_GROUPMEM q;
+	SAMR_R_ADD_GROUPMEM r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_add_groupmem\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_add_groupmem(&q, group_pol, rid);
+
+	if (!samr_io_q_add_groupmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ADD_GROUPMEM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_add_groupmem("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete a domain group member */
+
+NTSTATUS cli_samr_del_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DEL_GROUPMEM q;
+	SAMR_R_DEL_GROUPMEM r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_del_groupmem\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_del_groupmem(&q, group_pol, rid);
+
+	if (!samr_io_q_del_groupmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DEL_GROUPMEM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_del_groupmem("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user info */
 
 NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -548,6 +636,50 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		*num_groups = r.num_entries;
 		*gid = r.gid;
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set alias info */
+
+NTSTATUS cli_samr_set_aliasinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_ALIASINFO q;
+	SAMR_R_SET_ALIASINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_aliasinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_aliasinfo(&q, alias_pol, ctr);
+
+	if (!samr_io_q_set_aliasinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_ALIASINFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_aliasinfo("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
@@ -1026,6 +1158,149 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		alias_pol->marker = malloc(1);
 #endif
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Create an alias */
+
+NTSTATUS cli_samr_create_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				   POLICY_HND *domain_pol, const char *name,
+				   POLICY_HND *alias_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CREATE_DOM_ALIAS q;
+	SAMR_R_CREATE_DOM_ALIAS r;
+	NTSTATUS result;
+
+	DEBUG(10,("cli_samr_create_dom_alias named %s\n", name));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_create_dom_alias(&q, domain_pol, name);
+
+	if (!samr_io_q_create_dom_alias("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_ALIAS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_create_dom_alias("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*alias_pol = r.alias_pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Add an alias member */
+
+NTSTATUS cli_samr_add_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *alias_pol, DOM_SID *member)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ADD_ALIASMEM q;
+	SAMR_R_ADD_ALIASMEM r;
+	NTSTATUS result;
+
+	DEBUG(10,("cli_samr_add_aliasmem"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_add_aliasmem(&q, alias_pol, member);
+
+	if (!samr_io_q_add_aliasmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ADD_ALIASMEM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_add_aliasmem("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete an alias member */
+
+NTSTATUS cli_samr_del_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *alias_pol, DOM_SID *member)
+{
+	prs_struct qbuf, rbuf;
+ 	SAMR_Q_DEL_ALIASMEM q;
+ 	SAMR_R_DEL_ALIASMEM r;
+ 	NTSTATUS result;
+
+ 	DEBUG(10,("cli_samr_del_aliasmem"));
+
+ 	ZERO_STRUCT(q);
+ 	ZERO_STRUCT(r);
+
+ 	/* Initialise parse structures */
+
+ 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+ 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+ 	/* Marshall data and send request */
+
+ 	init_samr_q_del_aliasmem(&q, alias_pol, member);
+
+	if (!samr_io_q_del_aliasmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DEL_ALIASMEM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_del_aliasmem("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
