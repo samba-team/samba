@@ -36,6 +36,8 @@
 
 #include "includes.h"
 
+extern BOOL AllowDebugChange;
+
 struct session_record{
   pid_t pid;
   uid_t uid;
@@ -550,6 +552,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
 	setup_logging(argv[0],True);
 	
+	AllowDebugChange = False;
 	DEBUGLEVEL = 0;
 	dbf = x_stderr;
 	

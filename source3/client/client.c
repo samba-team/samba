@@ -32,6 +32,7 @@ const char prog_name[] = "smbclient";
 
 struct cli_state *cli;
 extern BOOL in_client;
+extern BOOL AllowDebugChange;
 static int port = 0;
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -2411,6 +2412,7 @@ static int do_message_op(void)
 	*new_name_resolve_order = 0;
 
 	DEBUGLEVEL = 2;
+	AllowDebugChange = False;
  
 	setup_logging(pname,True);
 
