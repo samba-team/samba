@@ -109,7 +109,6 @@ BOOL pipe_init_outgoing_data(output_data *o_data)
 static void attempt_remote_rpc_connect(pipes_struct *p)
 {
 	struct user_creds usr;
-	struct msrpc_state *m;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
 
 	p->m = NULL;
