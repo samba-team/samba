@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -202,13 +202,13 @@ krb5_verify_ap_req(krb5_context context,
     krb5_auth_context ac;
     krb5_error_code ret;
     
-    if(auth_context){
+    if(auth_context) {
 	if(*auth_context == NULL){
 	    krb5_auth_con_init(context, &ac);
 	    *auth_context = ac;
 	}else
 	    ac = *auth_context;
-    }else
+    } else
 	krb5_auth_con_init(context, &ac);
 	
     if (ap_req->ap_options.use_session_key && ac->keyblock){
@@ -343,7 +343,7 @@ get_key_from_keytab(krb5_context context,
 		    krb5_ap_req *ap_req,
 		    krb5_const_principal server,
 		    krb5_keytab keytab,
-		    krb5_keyblock **out)
+		    krb5_keyblock **out_key)
 {
     krb5_keytab_entry entry;
     krb5_error_code ret;
@@ -368,7 +368,7 @@ get_key_from_keytab(krb5_context context,
 			     &entry);
     if(ret)
 	goto out;
-    ret = krb5_copy_keyblock(context, &entry.keyblock, out);
+    ret = krb5_copy_keyblock(context, &entry.keyblock, out_key);
     krb5_kt_free_entry (context, &entry);
 out:    
     if(keytab == NULL)
