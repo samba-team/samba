@@ -75,11 +75,11 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
 	return -1;
     
-    ret = krb5_sname_to_principal (p->context,
-				   p->myhost,
-				   "pop",
-				   KRB5_NT_SRV_HST,
-				   &server);
+    ret = krb5_sock_to_principal (p->context,
+				  s,
+				  "pop",
+				  KRB5_NT_SRV_HST,
+				  &server);
     if (ret) {
 	pop_log (p, POP_FAILURE,
 		 "krb5_sname_to_principal: %s",
