@@ -74,7 +74,7 @@
 {
 	pkaddr->addrtype = ADDRTYPE_INET;
 	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
-	pkaddr->contents = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+	pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
 }
 #else
  __ERROR__XX__UNKNOWN_ADDRTYPE
