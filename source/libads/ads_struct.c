@@ -148,6 +148,12 @@ ADS_STRUCT *ads_init(const char *realm,
 			SAFE_FREE(ads->realm);
 		}
 	}
+
+	if (!ads->realm && strchr_m(ads->workgroup, '.')) {
+		/* the smb.conf has specified the realm in 'workgroup =' */
+		ads->realm = strdup(ads->workgroup);
+	}
+
 	if (!ads->bind_path && ads->realm) {
 		ads->bind_path = ads_build_dn(ads->realm);
 	}

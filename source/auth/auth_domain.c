@@ -37,8 +37,7 @@ extern userdom_struct current_user_info;
   Note that we ignore the 'server' parameter here. That has the effect of using
   the 'ADS server' smb.conf parameter, which is what we really want anyway
  */
-static NTSTATUS ads_resolve_dc(const char *server, 
-			       fstring remote_machine, 
+static NTSTATUS ads_resolve_dc(fstring remote_machine, 
 			       struct in_addr *dest_ip)
 {
 	ADS_STRUCT *ads;
@@ -132,7 +131,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
         NTSTATUS result;
 
 	if (lp_security() == SEC_ADS) {
-		result = ads_resolve_dc(server, remote_machine, &dest_ip);
+		result = ads_resolve_dc(remote_machine, &dest_ip);
 	} else {
 		result = rpc_resolve_dc(server, remote_machine, &dest_ip);
 	}
@@ -366,7 +365,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	while (!NT_STATUS_IS_OK(nt_status) &&
 	       next_token(&server,remote_machine,LIST_SEP,sizeof(remote_machine))) {
-		if(strequal(remote_machine, "*")) {
+		if(lp_security() != SEC_ADS && strequal(remote_machine, "*")) {
 			nt_status = find_connect_pdc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
 		} else {
 			nt_status = connect_to_domain_password_server(&cli, remote_machine, setup_creds_as, sec_chan, trust_passwd);
