@@ -203,6 +203,10 @@ int setegid(int egid);
 int lstat(const char *path, struct stat *buf);
 #endif
 
+#ifndef HAVE_MKSTEMP
+int mkstemp(char *);
+#endif
+
 #ifndef HAVE_INITGROUPS
 int initgroups(const char *name, gid_t basegid);
 #endif
