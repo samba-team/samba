@@ -67,8 +67,6 @@ void status_page(void)
 	struct connect_record crec;
 	pstring fname;
 	FILE *f;
-	int i, pid;
-	char *v;
 
 	if (cgi_variable("smbd_start")) {
 		start_smbd();
@@ -86,6 +84,12 @@ void status_page(void)
 		stop_nmbd();
 	}
 
+	pstrcpy(fname,lp_lockdir());
+	standard_sub_basic(fname);
+	trim_string(fname,"","/");
+	strcat(fname,"/STATUS..LCK");
+
+
 	f = fopen(fname,"r");
 	if (f) {
 		while (!feof(f)) {
@@ -95,7 +99,7 @@ void status_page(void)
 				char buf[30];
 				sprintf(buf,"kill_%d", crec.pid);
 				if (cgi_variable(buf)) {
-					kill_pid(pid);
+					kill_pid(crec.pid);
 				}
 			}
 		}
@@ -105,11 +109,6 @@ void status_page(void)
 	printf("<H2>Server Status</H2>\n");
 
 	printf("<FORM method=post>\n");
-
-	pstrcpy(fname,lp_lockdir());
-	standard_sub_basic(fname);
-	trim_string(fname,"","/");
-	strcat(fname,"/STATUS..LCK");
 
 	f = fopen(fname,"r");
 	if (!f) {
@@ -152,7 +151,9 @@ void status_page(void)
 	while (!feof(f)) {
 		if (fread(&crec,sizeof(crec),1,f) != 1)
 			break;
-		if (crec.magic == 0x280267 && process_exists(crec.pid)) {
+		if (crec.magic == 0x280267 && 
+		    crec.cnum == -1 &&
+		    process_exists(crec.pid)) {
 			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td><input type=submit value=\"X\" name=\"kill_%d\"></td></tr>\n",
 			       crec.pid,
 			       crec.machine,crec.addr,

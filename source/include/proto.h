@@ -123,6 +123,11 @@ int process_tar(char *inbuf, char *outbuf);
 int clipfind(char **aret, int ret, char *tok);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
+/*The following definitions come from  connection.c  */
+
+BOOL yield_connection(int cnum,char *name,int max_connections);
+BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
+
 /*The following definitions come from  credentials.c  */
 
 char *credstr(uchar *cred);
@@ -1631,8 +1636,6 @@ int reply_lanman1(char *outbuf);
 int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
 void close_cnum(int cnum, uint16 vuid);
-BOOL yield_connection(int cnum,char *name,int max_connections);
-BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
 void standard_sub(int cnum,char *str);
 char *smb_fn_name(int type);
@@ -1929,6 +1932,11 @@ void start_smbd(void);
 void start_nmbd(void);
 void stop_smbd(void);
 void stop_nmbd(void);
+void kill_pid(int pid);
+
+/*The following definitions come from  web/statuspage.c  */
+
+void status_page(void);
 
 /*The following definitions come from  web/swat.c  */
 
