@@ -248,6 +248,7 @@
 #undef HAVE_PASSWD_PW_AGE
 #undef HAVE_STAT_ST_BLKSIZE
 #undef WITH_WINBIND_AUTH_CRAP
+#undef HAVE_RESOLVER_INTERNALS
 
 /*
  * Add these definitions to allow VFS modules to

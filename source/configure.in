@@ -2769,6 +2769,34 @@ if test x"$samba_cv_have_getgroups_too_many_egids" = x"yes"; then
     AC_DEFINE(HAVE_GETGROUPS_TOO_MANY_EGIDS)
 fi
 
+# Check for internals of resolver library available.
+# Used for dns lookup failure messages.
+AC_CACHE_CHECK([for DNS resolver internals], samba_cv_HAVE_RESOLVER_INTERNALS,[
+AC_TRY_LINK([#include <unistd.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <resolv.h>],[
+        extern struct __res_state _res;
+        struct hostent *hp;
+        int i;
+
+        h_errno = 0;
+        res_init();
+        printf("%x\n", _res.options );
+        printf("Num nameservers = %d\n", _res.nscount );
+        for (i = 0; i < _res.nscount; i++) {
+                printf("Nameserver [%d] = %s\n", i, inet_ntoa(_res.nsaddr_list[i].sin_addr));
+        }
+        if (((hp = gethostbyname("testme")) != NULL) && (hp->h_addr != NULL))
+                printf("got name\n");
+        else
+                printf("failed to get name: h_errno = %d\n", h_errno);
+
+],samba_cv_HAVE_RESOLVER_INTERNALS=yes,samba_cv_HAVE_RESOLVER_INTERNALS=no)])
+if test x"$samba_cv_HAVE_RESOLVER_INTERNALS" = x"yes"; then
+    AC_DEFINE(HAVE_RESOLVER_INTERNALS)
+fi
+
 # Substitution time!
 
 AC_SUBST(WINBIND_TARGETS)
