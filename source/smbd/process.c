@@ -46,11 +46,6 @@ void smbd_process_init(void)
 	/* possibly reload the services file. */
 	reload_services(NULL, True);
 
-	if (!init_account_policy()) {
-		DEBUG(0,("Could not open account policy tdb.\n"));
-		exit(1);
-	}
-
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
