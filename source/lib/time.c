@@ -1,8 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    time handling functions
-   Copyright (C) Andrew Tridgell 1992-1998
-   
+   Copyright (C) Andrew Tridgell 		1992-1998
+   Copyright (C) Stefan (metze) Metzmacher	2002   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -747,4 +747,14 @@ void init_nt_time(NTTIME *nt)
 {
 	nt->high = 0x7FFFFFFF;
 	nt->low = 0xFFFFFFFF;
+}
+
+/****************************************************************************
+check if NTTIME is 0
+****************************************************************************/
+BOOL nt_time_is_zero(NTTIME *nt)
+{
+	if(nt->high==0) 
+		return True;
+	return False;
 }

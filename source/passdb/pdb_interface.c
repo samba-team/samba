@@ -39,26 +39,28 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ NULL, NULL}
 };
 
-static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
+static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 
 	context->pwent_methods = context->pdb_methods;
 
 	if (!context->pwent_methods) {
 		/* No passdbs at all */
-		return True;
+		return ret;
 	}
 
-	while (!(context->pwent_methods->setsampwent) || !(context->pwent_methods->setsampwent(context->pwent_methods, update))) {
+	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->setsampwent(context->pwent_methods, update))) {
 		context->pwent_methods = context->pwent_methods->next;
 		if (context->pwent_methods == NULL) 
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 	}
-	return True;
+	return ret;
 }
 
 static void context_endsampwent(struct pdb_context *context)
@@ -75,81 +77,82 @@ static void context_endsampwent(struct pdb_context *context)
 	context->pwent_methods = NULL;
 }
 
-static BOOL context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
+static NTSTATUS context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	if ((!context) || (!context->pwent_methods)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 	/* Loop until we find something useful */
-	while ((!context->pwent_methods->getsampwent) || 
-		  context->pwent_methods->getsampwent(context->pwent_methods, user) == False){
+	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->getsampwent(context->pwent_methods, user))) {
 
-		if (context->pwent_methods->endsampwent)
-			context->pwent_methods->endsampwent(context->pwent_methods);
+		context->pwent_methods->endsampwent(context->pwent_methods);
 
 		context->pwent_methods = context->pwent_methods->next;
 
 		/* All methods are checked now. There are no more entries */
 		if (context->pwent_methods == NULL)
-			return False;
+			return ret;
 	
-		if (!context->pwent_methods->setsampwent){
-			DEBUG(5, ("next backend does not implment setsampwent\n"));
-			return False;
-		}
-
 		context->pwent_methods->setsampwent(context->pwent_methods, False);
 	}
 	user->methods = context->pwent_methods;
-	return True;
+	return ret;
 }
 
-static BOOL context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const char *username)
+static NTSTATUS context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const char *username)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	struct pdb_methods *curmethods;
 	if ((!context)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 	curmethods = context->pdb_methods;
 	while (curmethods){
-		if (curmethods->getsampwnam && curmethods->getsampwnam(curmethods, sam_acct, username) == True){
+		if (NT_STATUS_IS_OK(ret = curmethods->getsampwnam(curmethods, sam_acct, username))) {
 			sam_acct->methods = curmethods;
-			return True;
+			return ret;
 		}
 		curmethods = curmethods->next;
 	}
 
-	return False;
+	return ret;
 }
 
-static BOOL context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
+static NTSTATUS context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	struct pdb_methods *curmethods;
 	if ((!context)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 	
 	curmethods = context->pdb_methods;
 
 	while (curmethods){
-		if (curmethods->getsampwsid && curmethods->getsampwsid(curmethods, sam_acct, sid) == True){
+		if (NT_STATUS_IS_OK(ret = curmethods->getsampwsid(curmethods, sam_acct, sid))) {
 			sam_acct->methods = curmethods;
-			return True;
+			return ret;
 		}
 		curmethods = curmethods->next;
 	}
 
-	return False;
+	return ret;
 }
 
-static BOOL context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
+static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
-	if ((!context) || (!context->pdb_methods) || (!context->pdb_methods->add_sam_account)) {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 
 	/** @todo  This is where a 're-read on add' should be done */
@@ -159,21 +162,18 @@ static BOOL context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sa
 	return context->pdb_methods->add_sam_account(context->pdb_methods, sam_acct);
 }
 
-static BOOL context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
+static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 
 	if (!sam_acct || !sam_acct->methods){
 		DEBUG(0, ("invalid sam_acct specified\n"));
-		return False;
-	}
-
-	if (!sam_acct->methods->update_sam_account){
-		DEBUG(0, ("invalid sam_acct->methods\n"));
-		return False;
+		return ret;
 	}
 
 	/** @todo  This is where a 're-read on update' should be done */
@@ -181,12 +181,14 @@ static BOOL context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 	return sam_acct->methods->update_sam_account(sam_acct->methods, sam_acct);
 }
 
-static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
+static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
 	struct pdb_methods *pdb_selected;
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
+		return ret;
 	}
 
 	if (!sam_acct->methods){
@@ -197,17 +199,17 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 		 * in /etc/passwd.
 		 */
 		while (pdb_selected){
-			if (pdb_selected->delete_sam_account && pdb_selected->delete_sam_account(pdb_selected, sam_acct)){
-				return True;
+			if (NT_STATUS_IS_OK(ret = pdb_selected->delete_sam_account(pdb_selected, sam_acct))) {
+				return ret;
 			}
 			pdb_selected = pdb_selected->next;
 		}
-		return False;
+		return ret;
 	}
 
 	if (!sam_acct->methods->delete_sam_account){
 		DEBUG(0,("invalid sam_acct->methods->delete_sam_account\n"));
-		return False;
+		return ret;
 	}
 	
 	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
@@ -223,9 +225,7 @@ static void free_pdb_context(struct pdb_context **context)
 	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
 
 	while (pdb_selected){
-		if (pdb_selected->free_private_data) {
-			pdb_selected->free_private_data(&(pdb_selected->private_data));
-		}
+		pdb_selected->free_private_data(&(pdb_selected->private_data));
 		pdb_selected = pdb_selected->next;
 	}
 
@@ -371,13 +371,13 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 
 	if ((pdb_context) && (reload)) {
 		pdb_context->free_fn(&pdb_context);
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+		if (NT_STATUS_IS_ERR(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
 
 	if (!pdb_context) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+		if (NT_STATUS_IS_ERR(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
@@ -399,7 +399,7 @@ BOOL pdb_setsampwent(BOOL update)
 		return False;
 	}
 
-	return pdb_context->pdb_setsampwent(pdb_context, update);
+	return NT_STATUS_IS_OK(pdb_context->pdb_setsampwent(pdb_context, update));
 }
 
 void pdb_endsampwent(void) 
@@ -421,7 +421,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	return pdb_context->pdb_getsampwent(pdb_context, user);
+	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwent(pdb_context, user));
 }
 
 BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
@@ -432,7 +432,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 		return False;
 	}
 
-	return pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username);
+	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username));
 }
 
 BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
@@ -443,7 +443,7 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 		return False;
 	}
 
-	return pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid);
+	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid));
 }
 
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -454,7 +454,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
-	return pdb_context->pdb_add_sam_account(pdb_context, sam_acct);
+	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
 }
 
 BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -465,7 +465,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
-	return pdb_context->pdb_update_sam_account(pdb_context, sam_acct);
+	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
 }
 
 BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -476,7 +476,7 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
-	return pdb_context->pdb_delete_sam_account(pdb_context, sam_acct);
+	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
 }
 
 #endif /* !defined(WITH_NISPLUS_SAM) */

@@ -978,7 +978,7 @@ const char *pdb_unistr2_convert(const UNISTR2 *from)
 	static pstring convert_buffer;
 	*convert_buffer = 0;
 	if (!from) {
-		return convert_buffer;
+		return NULL;
 	}
 
 	unistr2_to_ascii(convert_buffer, from, sizeof(pstring));

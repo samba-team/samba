@@ -964,6 +964,7 @@ BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const char *password)
 	if (password) { 
 		if (sampass->private.plaintext_pw!=NULL) 
 			memset(sampass->private.plaintext_pw,'\0',strlen(sampass->private.plaintext_pw)+1);
+
 		sampass->private.plaintext_pw = talloc_strdup(sampass->mem_ctx, password);
 		
 		if (!sampass->private.plaintext_pw) {
