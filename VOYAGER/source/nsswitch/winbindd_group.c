@@ -111,7 +111,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	 * from more than one domain, ie aliases. Thus we have to work it out
 	 * ourselves in a special routine. */
 
-	if (domain->internal)
+	if ( domain->internal || domain->loopback )
 		return fill_passdb_alias_grmem(domain, group_sid,
 					       num_gr_mem,
 					       gr_mem, gr_mem_len);
@@ -528,10 +528,10 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		goto done;
 	}
 
-	/* always get the domain global groups */
+	status = domain->methods->enum_dom_groups(domain, mem_ctx,
+						  &num_entries,
+						  &sam_grp_entries);
 
-	status = domain->methods->enum_dom_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
-	
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("get_sam_group_entries: could not enumerate domain groups! Error: %s\n", nt_errstr(status)));
 		result = False;
@@ -555,8 +555,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	/* get the domain local groups if we are a member of a native win2k domain
 	   and are not using LDAP to get the groups */
 	   
-	if ( ( lp_security() != SEC_ADS && domain->native_mode 
-		&& domain->primary) || domain->internal )
+	if ( ( lp_security() != SEC_ADS && domain->native_mode && domain->primary) ||
+	     domain->internal || domain->loopback )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
 		

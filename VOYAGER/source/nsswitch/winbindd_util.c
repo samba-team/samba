@@ -163,6 +163,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	domain->initialized = False;
+	domain->loopback = False;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
@@ -299,17 +300,21 @@ BOOL init_domain_list(void)
 
 	/* Add ourselves as the first entry. */
 
+	domain = add_trusted_domain( lp_workgroup(), lp_realm(),
+				     &cache_methods, NULL);
+
 	if (IS_DC) {
-		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods, get_global_sam_sid());
+		domain->loopback = True;
 	} else {
-	
-		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
-					     &cache_methods, NULL);
-	
-		/* set flags about native_mode, active_directory */
-		set_dc_type_and_flags(domain);
+		struct winbindd_domain *local_sam;
+		local_sam = add_trusted_domain(get_global_sam_name(), NULL,
+					       &cache_methods, get_global_sam_sid());
+		
+		local_sam->loopback = True;
 	}
+
+	/* set flags about native_mode, active_directory */
+	set_dc_type_and_flags(domain);
 
 	domain->primary = True;
 
@@ -337,11 +342,6 @@ BOOL init_domain_list(void)
 	add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 			   &global_sid_Builtin);
 
-	if (!IS_DC) {
-		add_trusted_domain(get_global_sam_name(), NULL,
-				   &passdb_methods, get_global_sam_sid());
-	}
-	
 	/* avoid rescanning this right away */
 	last_trustdom_scan = time(NULL);
 	return True;

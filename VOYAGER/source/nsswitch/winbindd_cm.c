@@ -199,7 +199,11 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 
 	fstrcpy(new_conn->domain, domain->name);
 
-	if (!get_dc_name_via_netlogon(domain, new_conn->controller, &dc_ip)) {
+	if (domain->loopback) {
+		fstrcpy(new_conn->controller, global_myname());
+		dc_ip = *interpret_addr2("127.0.0.1");
+	} else if (!get_dc_name_via_netlogon(domain, new_conn->controller,
+					     &dc_ip)) {
 
 		/* connection failure cache has been moved inside of
 		   get_dc_name so we can deal with half dead DC's --jerry */
@@ -228,6 +232,7 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 
 	for (i = 0; retry && (i < 3); i++) {
 		BOOL got_mutex;
+		int flags;
 		if (!(got_mutex = secrets_named_mutex(new_conn->controller, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
 			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
 			result = NT_STATUS_POSSIBLE_DEADLOCK;
@@ -235,11 +240,15 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 		}
 		
 		new_conn->cli = NULL;
+
+		flags = CLI_FULL_CONNECTION_USE_KERBEROS;
+		if (domain->loopback)
+			flags |= CLI_FULL_CONNECTION_OFFER_WINBIND;
+
 		result = cli_start_connection(&new_conn->cli, global_myname(), 
 					      new_conn->controller, 
-					      &dc_ip, 0, Undefined, 
-					      CLI_FULL_CONNECTION_USE_KERBEROS, 
-					      &retry);
+					      &dc_ip, 0, Undefined,
+					      flags, &retry);
 
 		if (NT_STATUS_IS_OK(result)) {
 

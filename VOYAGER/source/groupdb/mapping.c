@@ -1526,6 +1526,9 @@ static BOOL find_name_entry(TDB_CONTEXT *ctx, TDB_DATA key, TDB_DATA dbuf,
 	BOOL is_user;
 	int ret;
 
+	if (strncmp(key.dptr, NAME_PREFIX, strlen(NAME_PREFIX)) != 0)
+		return False;
+
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", ntname, unixname,
 			 &is_user);
 

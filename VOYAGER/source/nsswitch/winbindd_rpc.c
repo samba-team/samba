@@ -49,6 +49,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	if (domain->loopback)
+		return NT_STATUS_OK;
+
 	retry = 0;
 	do {
 		/* Get sam handle */
@@ -158,6 +161,9 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	*num_entries = 0;
 	*info = NULL;
+
+	if (domain->loopback)
+		return NT_STATUS_OK;
 
 	DEBUG(3,("rpc: enum_dom_groups\n"));
 
@@ -290,6 +296,15 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
 
+	if (domain->loopback) {
+		/* Is this an alias? */
+		result = passdb_name_to_sid(domain, mem_ctx, domain_name,
+					    name, sid, type);
+
+		if (NT_STATUS_IS_OK(result))
+			return result;
+	}
+
 	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
 	
 	if (!full_name) {
@@ -339,6 +354,15 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 
 	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_static(sid),
 			domain->name ));
+
+	if (domain->loopback) {
+		/* Is this an alias? */
+		result = passdb_sid_to_name(domain, mem_ctx, sid, domain_name,
+					    name, type);
+
+		if (NT_STATUS_IS_OK(result))
+			return result;
+	}
 
 	retry = 0;
 	do {

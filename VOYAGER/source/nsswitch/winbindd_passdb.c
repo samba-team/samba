@@ -134,6 +134,18 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 			continue;
 		}
 
+		if (domain->loopback) {
+			/* Ok, we just got the members from our own DC. This
+			 * has gone through the unix to NT name map. Revert
+			 * that. */
+			char *unix_name;
+			BOOL is_user;
+			if (nt_to_unix_name(names[i], &unix_name, &is_user)) {
+				names[i] = talloc_strdup(mem_ctx, unix_name);
+				SAFE_FREE(unix_name);
+			}
+		}
+
 		add_member(domain->name, names[i], members, num_members);
 	}
 
@@ -228,7 +240,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 }
 
 /* convert a single name to a sid in a domain */
-static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+NTSTATUS passdb_name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const char *domain_name,
 			    const char *name,
@@ -247,7 +259,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 /*
   convert a domain SID to a user or group name
 */
-static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+NTSTATUS passdb_sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
 			    char **domain_name,
@@ -312,45 +324,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
-	NTSTATUS nt_status;
-	int enum_ctx = 0;
-	int num_sec_domains;
-	TRUSTDOM **domains;
 	*num_domains = 0;
-	*names = NULL;
-	*alt_names = NULL;
-	*dom_sids = NULL;
-	do {
-		int i;
-		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
-							&num_sec_domains,
-							&domains);
-		*names = talloc_realloc(mem_ctx, *names,
-					sizeof(*names) *
-					(num_sec_domains + *num_domains));
-		*alt_names = talloc_realloc(mem_ctx, *alt_names,
-					    sizeof(*alt_names) *
-					    (num_sec_domains + *num_domains));
-		*dom_sids = talloc_realloc(mem_ctx, *dom_sids,
-					   sizeof(**dom_sids) *
-					   (num_sec_domains + *num_domains));
-
-		for (i=0; i< num_sec_domains; i++) {
-			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],
-					     domains[i]->name) == -1) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			(*alt_names)[*num_domains] = NULL;
-			(*dom_sids)[*num_domains] = domains[i]->sid;
-			(*num_domains)++;
-		}
-
-	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
-
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
-		return NT_STATUS_OK;
-	}
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /* find the domain sid for a domain */
@@ -377,8 +352,8 @@ struct winbindd_methods passdb_methods = {
 	query_user_list,
 	enum_dom_groups,
 	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
+	passdb_name_to_sid,
+	passdb_sid_to_name,
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,
