@@ -6,7 +6,7 @@ key: services
 
 dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=
 value: ProductType
-data:: VwBpAG4ATgBUAA=
+data: WinNT
 type: 1
 
 dn: key=productoptions,key=control,key=currentcontrolset,key=system,hive=
