@@ -165,6 +165,9 @@ static const struct {
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_IPX },
 	},
 	{ "ncacn_spx", NCACN_SPX, 3,
+		/* I guess some MS programmer confused the identifier for 
+		 * EPM_PROTOCOL_UUID (0x0D or 13) with the one for 
+		 * EPM_PROTOCOL_SPX (0x13) here. -- jelmer*/
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID },
 	},
 };

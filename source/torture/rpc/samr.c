@@ -2894,7 +2894,7 @@ static BOOL test_RemoveMemberFromForeignDomain(struct dcerpc_pipe *p,
 	struct samr_RemoveMemberFromForeignDomain r;
 
 	r.in.domain_handle = domain_handle;
-	r.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-12-34-56-78-9");
+	r.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-12-34-56-78");
 
 	status = dcerpc_samr_RemoveMemberFromForeignDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
