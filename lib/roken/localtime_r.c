@@ -36,7 +36,9 @@
 RCSID("$Id$");
 #endif
 
+#include <stdio.h>
 #include <time.h>
+#include "roken.h"
 
 #ifndef HAVE_LOCALTIME_R
 
