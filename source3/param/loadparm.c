@@ -316,6 +316,7 @@ typedef struct
 	char *szVfsObjectFile;
 	char *szVfsOptions;
 	int iMinPrintSpace;
+	int iMaxPrintJobs;
 	int iWriteCacheSize;
 	int iCreate_mask;
 	int iCreate_force_mode;
@@ -429,6 +430,7 @@ static service sDefault = {
 	NULL,			/* vfs object */
 	NULL,			/* vfs options */
 	0,			/* iMinPrintSpace */
+	1000,			/* iMaxPrintJobs */
 	0,			/* iWriteCacheSize */
 	0744,			/* iCreate_mask */
 	0000,			/* iCreate_force_mode */
@@ -793,6 +795,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
+	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_PRINT},
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_PRINT},
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, 0},
@@ -1578,6 +1581,7 @@ FN_LOCAL_INTEGER(_lp_force_dir_security_mode, iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
+FN_LOCAL_INTEGER(lp_maxprintjobs, iMaxPrintJobs)
 FN_LOCAL_INTEGER(lp_printing, iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)

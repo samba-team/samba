@@ -660,6 +660,7 @@ enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
 typedef struct
 {
   fstring message;
+  int qcount;
   int status;
 }  print_status_struct;
 
