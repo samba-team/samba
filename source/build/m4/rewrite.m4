@@ -323,15 +323,22 @@ case "$host_os" in
 		fi
 	;;
 esac
+
+AC_CHECK_SIZEOF(int,cross)
+AC_CHECK_SIZEOF(short,cross)
+AC_CHECK_SIZEOF(long,cross)
+AC_CHECK_SIZEOF(long long,cross)
+AC_CHECK_HEADERS(stdint.h)
+AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_SIZEOF(_Bool,cross)
+AC_CHECK_HEADERS(stdbool.h)
+
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h)
 
-AC_CHECK_SIZEOF(int,cross)
-AC_CHECK_SIZEOF(long,cross)
-AC_CHECK_SIZEOF(short,cross)
 
 AC_C_CONST
 AC_C_INLINE
