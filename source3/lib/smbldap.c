@@ -100,6 +100,8 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_MUNGED_DIAL,	"sambaMungedDial"	},
 	{ LDAP_ATTR_BAD_PASSWORD_COUNT,	"sambaBadPasswordCount" },
 	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
+	{ LDAP_ATTR_PWD_HISTORY,	"sambaPasswordHistory"  },
+	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
 
@@ -345,19 +347,19 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 
 	/* sanity checks on the mod values */
 
-	if (attribute == NULL || *attribute == '\0')
+	if (attribute == NULL || *attribute == '\0') {
 		return;	
+	}
+
 #if 0	/* commented out after discussion with abartlet.  Do not reenable.
 	   left here so other so re-add similar code   --jerry */
        	if (value == NULL || *value == '\0')
 		return;
 #endif
 
-	if (mods == NULL) 
-	{
+	if (mods == NULL) {
 		mods = (LDAPMod **) malloc(sizeof(LDAPMod *));
-		if (mods == NULL)
-		{
+		if (mods == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
 		}
@@ -369,17 +371,14 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 			break;
 	}
 
-	if (mods[i] == NULL)
-	{
+	if (mods[i] == NULL) {
 		mods = (LDAPMod **) Realloc (mods, (i + 2) * sizeof (LDAPMod *));
-		if (mods == NULL)
-		{
+		if (mods == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
 		}
 		mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
-		if (mods[i] == NULL)
-		{
+		if (mods[i] == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
 		}
@@ -389,8 +388,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 		mods[i + 1] = NULL;
 	}
 
-	if (value != NULL)
-	{
+	if (value != NULL) {
 		char *utf8_value = NULL;
 
 		j = 0;
