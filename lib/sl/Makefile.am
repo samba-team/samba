@@ -7,8 +7,8 @@ YFLAGS = -d
 include_HEADERS = sl.h
 
 lib_LTLIBRARIES = libsl.la libss.la
-libsl_la_LDFLAGS = -version-info 0:1:0
-libss_la_LDFLAGS = -version-info 0:1:0
+libsl_la_LDFLAGS = -version-info 1:0:1
+libss_la_LDFLAGS = -version-info 1:0:1
 
 RENAME_SRC = roken_rename.h strtok_r.c snprintf.c
 
