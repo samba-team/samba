@@ -22,6 +22,11 @@
 
 #include "includes.h"
 
+
+NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, struct lsa_OpenPolicy *r);
+NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, struct lsa_OpenPolicy2 *r);
+NTSTATUS ndr_push_lsa_EnumSids(struct ndr_push *ndr, struct lsa_EnumSids *r);
+
 /*
   OpenPolicy interface
 */
@@ -34,6 +39,7 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	struct lsa_OpenPolicy r;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	uint16 s;
 
 	mem_ctx = talloc_init("dcerpc_lsa_openpolicy");
 	if (!mem_ctx) {
@@ -41,7 +47,8 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	}
 
 	/* fill the .in side of the call */
-	r.in.system_name = server;
+	s = server[0];
+	r.in.system_name = &s;
 	r.in.attr = attr;
 	r.in.desired_access = access_mask;
 
@@ -55,8 +62,8 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*handle = r.out.handle;
-	status = r.out.status;
+	*handle = *r.out.handle;
+	status = r.out.result;
 
 done:
 	talloc_destroy(mem_ctx);
@@ -97,8 +104,8 @@ NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*handle = r.out.handle;
-	status = r.out.status;
+	*handle = *r.out.handle;
+	status = r.out.result;
 
 done:
 	talloc_destroy(mem_ctx);
@@ -135,7 +142,7 @@ NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 	/* and extract the .out parameters */
 	*num_entries = r.out.num_entries;
 	*sids = r.out.sids;
-	status = r.out.status;
+	status = r.out.result;
 
 done:
 	return status;

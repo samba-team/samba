@@ -34,16 +34,16 @@ NTSTATUS ndr_pull_security_ace(struct ndr_pull *ndr, struct security_ace *ace)
 
 	ndr_pull_save(ndr, &save);
 
-	NDR_CHECK(ndr_pull_u8(ndr, &ace->type));
-	NDR_CHECK(ndr_pull_u8(ndr, &ace->flags));
-	NDR_CHECK(ndr_pull_u16(ndr, &size));
+	NDR_CHECK(ndr_pull_uint8(ndr, &ace->type));
+	NDR_CHECK(ndr_pull_uint8(ndr, &ace->flags));
+	NDR_CHECK(ndr_pull_uint16(ndr, &size));
 	NDR_CHECK(ndr_pull_limit_size(ndr, size, 4));
 
-	NDR_CHECK(ndr_pull_u32(ndr, &ace->access_mask));
+	NDR_CHECK(ndr_pull_uint32(ndr, &ace->access_mask));
 
 	if (sec_ace_object(ace->type)) {
 		NDR_ALLOC(ndr, ace->obj);
-		NDR_CHECK(ndr_pull_u32(ndr, &ace->obj->flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, &ace->obj->flags));
 		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
 			NDR_CHECK(ndr_pull_guid(ndr, &ace->obj->object_guid));
 		}
@@ -72,10 +72,10 @@ NTSTATUS ndr_pull_security_acl(struct ndr_pull *ndr, struct security_acl *acl)
 
 	ndr_pull_save(ndr, &save);
 
-	NDR_CHECK(ndr_pull_u16(ndr, &acl->revision));
-	NDR_CHECK(ndr_pull_u16(ndr, &size));
+	NDR_CHECK(ndr_pull_uint16(ndr, &acl->revision));
+	NDR_CHECK(ndr_pull_uint16(ndr, &size));
 	NDR_CHECK(ndr_pull_limit_size(ndr, size, 4));
-	NDR_CHECK(ndr_pull_u32(ndr, &acl->num_aces));
+	NDR_CHECK(ndr_pull_uint32(ndr, &acl->num_aces));
 
 	NDR_ALLOC_N(ndr, acl->aces, acl->num_aces);
 
@@ -97,7 +97,7 @@ NTSTATUS ndr_pull_security_acl_ofs(struct ndr_pull *ndr, struct security_acl **a
 	uint32 ofs;
 	struct ndr_pull_save save;
 
-	NDR_CHECK(ndr_pull_u32(ndr, &ofs));
+	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 	if (ofs == 0) {
 		/* it is valid for an acl ptr to be NULL */
 		*acl = NULL;
@@ -121,16 +121,16 @@ NTSTATUS ndr_pull_dom_sid(struct ndr_pull *ndr, struct dom_sid *sid)
 {
 	int i;
 
-	NDR_CHECK(ndr_pull_u8(ndr, &sid->sid_rev_num));
-	NDR_CHECK(ndr_pull_u8(ndr, &sid->num_auths));
+	NDR_CHECK(ndr_pull_uint8(ndr, &sid->sid_rev_num));
+	NDR_CHECK(ndr_pull_uint8(ndr, &sid->num_auths));
 	for (i=0;i<6;i++) {
-		NDR_CHECK(ndr_pull_u8(ndr, &sid->id_auth[i]));
+		NDR_CHECK(ndr_pull_uint8(ndr, &sid->id_auth[i]));
 	}
 
 	NDR_ALLOC_N(ndr, sid->sub_auths, sid->num_auths);
 
 	for (i=0;i<sid->num_auths;i++) {
-		NDR_CHECK(ndr_pull_u32(ndr, &sid->sub_auths[i]));
+		NDR_CHECK(ndr_pull_uint32(ndr, &sid->sub_auths[i]));
 	}
 
 	return NT_STATUS_OK;
@@ -142,7 +142,7 @@ NTSTATUS ndr_pull_dom_sid(struct ndr_pull *ndr, struct dom_sid *sid)
 NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, struct dom_sid *sid)
 {
 	uint32 num_auths;
-	NDR_CHECK(ndr_pull_u32(ndr, &num_auths));
+	NDR_CHECK(ndr_pull_uint32(ndr, &num_auths));
 	return ndr_pull_dom_sid(ndr, sid);
 }
 
@@ -154,7 +154,7 @@ NTSTATUS ndr_pull_dom_sid_ofs(struct ndr_pull *ndr, struct dom_sid **sid)
 	uint32 ofs;
 	struct ndr_pull_save save;
 
-	NDR_CHECK(ndr_pull_u32(ndr, &ofs));
+	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 	if (ofs == 0) {
 		/* it is valid for a dom_sid ptr to be NULL */
 		*sid = NULL;
@@ -178,8 +178,8 @@ NTSTATUS ndr_pull_security_descriptor(struct ndr_pull *ndr,
 {
 	NDR_ALLOC(ndr, *sd);
 
-	NDR_CHECK(ndr_pull_u8(ndr, &(*sd)->revision));
-	NDR_CHECK(ndr_pull_u16(ndr, &(*sd)->type));
+	NDR_CHECK(ndr_pull_uint8(ndr, &(*sd)->revision));
+	NDR_CHECK(ndr_pull_uint16(ndr, &(*sd)->type));
 	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &(*sd)->owner_sid));
 	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &(*sd)->group_sid));
 	NDR_CHECK(ndr_pull_security_acl_ofs(ndr, &(*sd)->sacl));
@@ -196,14 +196,14 @@ NTSTATUS ndr_push_security_ace(struct ndr_push *ndr, struct security_ace *ace)
 {
 	struct ndr_push_save save1, save2;
 
-	NDR_CHECK(ndr_push_u8(ndr, ace->type));
-	NDR_CHECK(ndr_push_u8(ndr, ace->flags));
+	NDR_CHECK(ndr_push_uint8(ndr, ace->type));
+	NDR_CHECK(ndr_push_uint8(ndr, ace->flags));
 	ndr_push_save(ndr, &save1);
-	NDR_CHECK(ndr_push_u16(ndr, 0));
-	NDR_CHECK(ndr_push_u32(ndr, ace->access_mask));
+	NDR_CHECK(ndr_push_uint16(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, ace->access_mask));
 
 	if (sec_ace_object(ace->type)) {
-		NDR_CHECK(ndr_push_u32(ndr, ace->obj->flags));
+		NDR_CHECK(ndr_push_uint32(ndr, ace->obj->flags));
 		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
 			NDR_CHECK(ndr_push_guid(ndr, &ace->obj->object_guid));
 		}
@@ -216,7 +216,7 @@ NTSTATUS ndr_push_security_ace(struct ndr_push *ndr, struct security_ace *ace)
 
 	ndr_push_save(ndr, &save2);
 	ndr_push_restore(ndr, &save1);
-	NDR_CHECK(ndr_push_u16(ndr, 2 + save2.offset - save1.offset));
+	NDR_CHECK(ndr_push_uint16(ndr, 2 + save2.offset - save1.offset));
 	ndr_push_restore(ndr, &save2);
 
 	return NT_STATUS_OK;	
@@ -231,16 +231,16 @@ NTSTATUS ndr_push_security_acl(struct ndr_push *ndr, struct security_acl *acl)
 	int i;
 	struct ndr_push_save save1, save2;
 
-	NDR_CHECK(ndr_push_u16(ndr, acl->revision));
+	NDR_CHECK(ndr_push_uint16(ndr, acl->revision));
 	ndr_push_save(ndr, &save1);
-	NDR_CHECK(ndr_push_u16(ndr, 0));
-	NDR_CHECK(ndr_push_u32(ndr, acl->num_aces));
+	NDR_CHECK(ndr_push_uint16(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, acl->num_aces));
 	for (i=0;i<acl->num_aces;i++) {
 		NDR_CHECK(ndr_push_security_ace(ndr, &acl->aces[i]));
 	}
 	ndr_push_save(ndr, &save2);
 	ndr_push_restore(ndr, &save1);
-	NDR_CHECK(ndr_push_u16(ndr, 2 + save2.offset - save1.offset));
+	NDR_CHECK(ndr_push_uint16(ndr, 2 + save2.offset - save1.offset));
 	ndr_push_restore(ndr, &save2);
 
 	return NT_STATUS_OK;
@@ -253,13 +253,13 @@ NTSTATUS ndr_push_dom_sid(struct ndr_push *ndr, struct dom_sid *sid)
 {
 	int i;
 
-	NDR_CHECK(ndr_push_u8(ndr, sid->sid_rev_num));
-	NDR_CHECK(ndr_push_u8(ndr, sid->num_auths));
+	NDR_CHECK(ndr_push_uint8(ndr, sid->sid_rev_num));
+	NDR_CHECK(ndr_push_uint8(ndr, sid->num_auths));
 	for (i=0;i<6;i++) {
-		NDR_CHECK(ndr_push_u8(ndr, sid->id_auth[i]));
+		NDR_CHECK(ndr_push_uint8(ndr, sid->id_auth[i]));
 	}
 	for (i=0;i<sid->num_auths;i++) {
-		NDR_CHECK(ndr_push_u32(ndr, sid->sub_auths[i]));
+		NDR_CHECK(ndr_push_uint32(ndr, sid->sub_auths[i]));
 	}
 
 	return NT_STATUS_OK;
@@ -277,8 +277,8 @@ NTSTATUS ndr_push_security_descriptor(struct ndr_push *ndr,
 
 	ndr_push_save(ndr, &save);
 
-	NDR_CHECK(ndr_push_u8(ndr, sd->revision));
-	NDR_CHECK(ndr_push_u16(ndr, sd->type));
+	NDR_CHECK(ndr_push_uint8(ndr, sd->revision));
+	NDR_CHECK(ndr_push_uint16(ndr, sd->type));
 
 	NDR_CHECK(ndr_push_offset(ndr, &ofs1));
 	NDR_CHECK(ndr_push_offset(ndr, &ofs2));

@@ -1,0 +1,48 @@
+/*
+  lsa interface definition
+*/
+
+[ uuid(12345778-1234-abcd-ef00-0123456789ab),
+  version(0.0),
+  pointer_default(unique)
+] interface lsarpc
+{
+
+  typedef struct {
+	  [struct_len] uint32 _len;
+	  uint16  impersonation_level;
+	  uint8   context_mode;
+	  uint8   effective_only;
+  } lsa_QosInfo;
+
+  typedef struct {
+	  [struct_len] uint32 _len;
+	  uint8 *root_dir;
+	  unistr *object_name;
+	  uint32 attributes;
+	  security_descriptor *sec_desc;
+	  lsa_QosInfo *sec_qos;
+  } lsa_ObjectAttribute;
+
+  NTSTATUS lsa_OpenPolicy (
+	  [in]       uint16 *system_name,
+	  [in] [ref] lsa_ObjectAttribute *attr,
+	  [in]       uint32 desired_access,
+	  [out]      policy_handle *handle
+  );
+
+  NTSTATUS lsa_OpenPolicy2 (
+	  [in]        unistr *system_name,
+	  [in] [ref]  lsa_ObjectAttribute *attr,
+	  [in]        uint32 desired_access,
+	  [out] [ref] policy_handle *handle
+  );
+
+  NTSTATUS lsa_EnumSids(
+	  [in] [ref] policy_handle *handle,
+	  [in]       uint32 start_at,
+	  [in] [out] [ref] uint32 *num_entries,
+	  [out]      dom_sid **sids
+  );
+
+}
