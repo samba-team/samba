@@ -105,19 +105,30 @@ BOOL idmap_init(void)
 			return False;
 		}
 		
-		if (NT_STATUS_IS_ERR(local_map->init())) {
+		if (NT_STATUS_IS_ERR(local_map->init( NULL ))) {
 			DEBUG(0, ("idmap_init: could not load or create local backend!\n"));
 			return False;
 		}
 	}
 	
 	if (!remote_map && remote_backend && *remote_backend != 0) {
+		fstring params = "";
+		char *pparams;
+		
+		/* get any mode parameters passed in */
+		
+		if ( (pparams = strchr( remote_backend, ':' )) != NULL ) {
+			pparams = '\0';
+			pparams++;
+			fstrcpy( params, pparams );
+		}
+		
 		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", remote_backend));
 		
 		if((remote_map = get_methods(remote_backend)) ||
 		    (NT_STATUS_IS_OK(smb_probe_module("idmap", remote_backend)) && 
 		    (remote_map = get_methods(remote_backend)))) {
-			remote_map->init();
+			remote_map->init(params);
 		} else {
 			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", remote_backend));
 			return False;

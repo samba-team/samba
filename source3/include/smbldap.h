@@ -39,6 +39,7 @@
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
 #define LDAP_OBJ_POSIXGROUP		"posixGroup"
+#define LDAP_OBJ_OU			"organizationalUnit"
 
 /* some generic attributes that get reused a lot */
 
@@ -81,6 +82,7 @@
 #define LDAP_ATTR_HOME_DRIVE		29
 #define LDAP_ATTR_GROUP_SID		30
 #define LDAP_ATTR_GROUP_TYPE		31
+#define LDAP_ATTR_SID			32
 
 
 typedef struct _attrib_map_entry {

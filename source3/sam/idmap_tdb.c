@@ -263,7 +263,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS db_idmap_init(void)
+static NTSTATUS db_idmap_init( char *params )
 {
 	SMB_STRUCT_STAT stbuf;
 	char *tdbfile = NULL;

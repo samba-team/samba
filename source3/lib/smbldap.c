@@ -74,7 +74,7 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_USER_WKS,		"sambaUserWorkstations"	},
-	{ LDAP_ATTR_USER_SID,		"sambaSID"		},
+	{ LDAP_ATTR_USER_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_PRIMARY_GROUP_SID,	"sambaPrimaryGroupSID"	},
 	{ LDAP_ATTR_LMPW,		"sambaLMPassword"	},
 	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
@@ -90,7 +90,7 @@ ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
 	{ LDAP_ATTR_NEXT_USERRID,	"sambaNextUserRid"	},
 	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
-	{ LDAP_ATTR_DOM_SID,		"sambaSID"		},
+	{ LDAP_ATTR_DOM_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_LIST_END,		NULL			},
 };
 
@@ -98,7 +98,7 @@ ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 
 ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
+	{ LDAP_ATTR_GROUP_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
@@ -107,14 +107,14 @@ ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 };
 
 ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
+	{ LDAP_ATTR_GROUP_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
-/* idmap_ldap samba[U|G]idPool */
+/* idmap_ldap sambaUnixIdPool */
 
 ATTRIB_MAP_ENTRY idpool_attr_list[] = {
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
@@ -123,7 +123,7 @@ ATTRIB_MAP_ENTRY idpool_attr_list[] = {
 };
 
 ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
+	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
@@ -255,5 +255,92 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	}
 	
 	return True;
+}
+
+/************************************************************************
+ Routine to manage the LDAPMod structure array
+ manage memory used by the array, by each struct, and values
+ ***********************************************************************/
+
+void ldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value)
+{
+	LDAPMod **mods;
+	int i;
+	int j;
+
+	mods = *modlist;
+
+	/* sanity checks on the mod values */
+
+	if (attribute == NULL || *attribute == '\0')
+		return;	
+#if 0	/* commented out after discussion with abartlet.  Do not reenable.
+	   left here so other so re-add similar code   --jerry */
+       	if (value == NULL || *value == '\0')
+		return;
+#endif
+
+	if (mods == NULL) 
+	{
+		mods = (LDAPMod **) malloc(sizeof(LDAPMod *));
+		if (mods == NULL)
+		{
+			DEBUG(0, ("make_a_mod: out of memory!\n"));
+			return;
+		}
+		mods[0] = NULL;
+	}
+
+	for (i = 0; mods[i] != NULL; ++i) {
+		if (mods[i]->mod_op == modop && !strcasecmp(mods[i]->mod_type, attribute))
+			break;
+	}
+
+	if (mods[i] == NULL)
+	{
+		mods = (LDAPMod **) Realloc (mods, (i + 2) * sizeof (LDAPMod *));
+		if (mods == NULL)
+		{
+			DEBUG(0, ("make_a_mod: out of memory!\n"));
+			return;
+		}
+		mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
+		if (mods[i] == NULL)
+		{
+			DEBUG(0, ("make_a_mod: out of memory!\n"));
+			return;
+		}
+		mods[i]->mod_op = modop;
+		mods[i]->mod_values = NULL;
+		mods[i]->mod_type = strdup(attribute);
+		mods[i + 1] = NULL;
+	}
+
+	if (value != NULL)
+	{
+		char *utf8_value = NULL;
+
+		j = 0;
+		if (mods[i]->mod_values != NULL) {
+			for (; mods[i]->mod_values[j] != NULL; j++);
+		}
+		mods[i]->mod_values = (char **)Realloc(mods[i]->mod_values,
+					       (j + 2) * sizeof (char *));
+					       
+		if (mods[i]->mod_values == NULL) {
+			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
+			return;
+		}
+
+		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
+			DEBUG (0, ("make_a_mod: String conversion failure!\n"));
+			return;
+		}
+
+		mods[i]->mod_values[j] = utf8_value;
+
+		mods[i]->mod_values[j + 1] = NULL;
+	}
+	*modlist = mods;
 }
 
