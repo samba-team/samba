@@ -6,8 +6,8 @@
 
 /* The following definitions come from python/py_lsa.c  */
 
-PyObject *new_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				POLICY_HND *pol);
+PyObject *new_lsa_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol);
 void initlsa(void);
 
 #endif /*  _PY_LSA_PROTO_H  */
