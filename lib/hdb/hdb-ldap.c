@@ -62,69 +62,101 @@ static char *krb5principal_attrs[] =
     NULL
 };
 
-/* based on samba: source/passdb/ldap.c */
 static krb5_error_code
-LDAP_addmod_len(LDAPMod *** modlist, int modop, const char *attribute,
-		unsigned char *value, size_t len)
+LDAP__setmod(LDAPMod *** modlist, int modop, const char *attribute,
+	int *pIndex)
 {
-    LDAPMod **mods = *modlist;
-    int i, j;
+    int cMods;
 
-    if (mods == NULL) {
-	mods = (LDAPMod **) calloc(1, sizeof(LDAPMod *));
-	if (mods == NULL) {
+    if (*modlist == NULL) {
+	*modlist = (LDAPMod **)ber_memcalloc(1, sizeof(LDAPMod *));
+	if (*modlist == NULL) {
 	    return ENOMEM;
 	}
-	mods[0] = NULL;
     }
 
-    for (i = 0; mods[i] != NULL; ++i) {
-	if ((mods[i]->mod_op & (~LDAP_MOD_BVALUES)) == modop
-	    && (!strcasecmp(mods[i]->mod_type, attribute))) {
+    for (cMods = 0; (*modlist)[cMods] != NULL; cMods++) {
+	if ((*modlist)[cMods]->mod_op == modop &&
+	    strcasecmp((*modlist)[cMods]->mod_type, attribute) == 0) {
 	    break;
 	}
     }
 
-    if (mods[i] == NULL) {
-	mods = (LDAPMod **) realloc(mods, (i + 2) * sizeof(LDAPMod *));
-	if (mods == NULL) {
+    *pIndex = cMods;
+
+    if ((*modlist)[cMods] == NULL) {
+	LDAPMod *mod;
+
+	*modlist = (LDAPMod **)ber_memrealloc(*modlist,
+					      (cMods + 2) * sizeof(LDAPMod *));
+	if (*modlist == NULL) {
 	    return ENOMEM;
 	}
-	mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
-	if (mods[i] == NULL) {
+	(*modlist)[cMods] = (LDAPMod *)ber_memalloc(sizeof(LDAPMod));
+	if ((*modlist)[cMods] == NULL) {
 	    return ENOMEM;
 	}
-	mods[i]->mod_op = modop | LDAP_MOD_BVALUES;
-	mods[i]->mod_bvalues = NULL;
-	mods[i]->mod_type = strdup(attribute);
-	if (mods[i]->mod_type == NULL) {
+
+	mod = (*modlist)[cMods];
+	mod->mod_op = modop;
+	mod->mod_type = ber_strdup(attribute);
+	if (mod->mod_type == NULL) {
+	    ber_memfree(mod);
+	    (*modlist)[cMods] = NULL;
 	    return ENOMEM;
 	}
-	mods[i + 1] = NULL;
+
+	if (modop & LDAP_MOD_BVALUES) {
+	    mod->mod_bvalues = NULL;
+	} else {
+	    mod->mod_values = NULL;
+	}
+
+	(*modlist)[cMods + 1] = NULL;
+    }
+
+    return 0;
+}
+
+static krb5_error_code
+LDAP_addmod_len(LDAPMod *** modlist, int modop, const char *attribute,
+		unsigned char *value, size_t len)
+{
+    int cMods, cValues = 0;
+    krb5_error_code ret;
+
+    ret = LDAP__setmod(modlist, modop | LDAP_MOD_BVALUES, attribute, &cMods);
+    if (ret != 0) {
+	return ret;
     }
 
     if (value != NULL) {
-	j = 0;
-	if (mods[i]->mod_bvalues != NULL) {
-	    for (; mods[i]->mod_bvalues[j] != NULL; j++);
+	struct berval *bValue;
+	struct berval ***pbValues = &((*modlist)[cMods]->mod_bvalues);
+
+	if (*pbValues != NULL) {
+	    for (cValues = 0; (*pbValues)[cValues] != NULL; cValues++)
+		;
+	    *pbValues = (struct berval **)ber_memrealloc(*pbValues, (cValues + 2)
+							 * sizeof(struct berval *));
+	} else {
+	    *pbValues = (struct berval **)ber_memalloc(2 * sizeof(struct berval *));
 	}
-	mods[i]->mod_bvalues =
-	    (struct berval **) realloc(mods[i]->mod_bvalues,
-				       (j + 2) * sizeof(struct berval *));
-	if (mods[i]->mod_bvalues == NULL) {
+	if (*pbValues == NULL) {
 	    return ENOMEM;
 	}
-	/* Caller allocates memory on our behalf, unlike LDAP_addmod. */
-	mods[i]->mod_bvalues[j] =
-	    (struct berval *) malloc(sizeof(struct berval));
-	if (mods[i]->mod_bvalues[j] == NULL) {
+	(*pbValues)[cValues] = (struct berval *)ber_memalloc(sizeof(struct berval));;
+	if ((*pbValues)[cValues] == NULL) {
 	    return ENOMEM;
 	}
-	mods[i]->mod_bvalues[j]->bv_val = value;
-	mods[i]->mod_bvalues[j]->bv_len = len;
-	mods[i]->mod_bvalues[j + 1] = NULL;
+
+	bValue = (*pbValues)[cValues];
+	bValue->bv_val = value;
+	bValue->bv_len = len;
+
+	(*pbValues)[cValues + 1] = NULL;
     }
-    *modlist = mods;
+
     return 0;
 }
 
@@ -132,59 +164,34 @@ static krb5_error_code
 LDAP_addmod(LDAPMod *** modlist, int modop, const char *attribute,
 	    const char *value)
 {
-    LDAPMod **mods = *modlist;
-    int i, j;
+    int cMods, cValues = 0;
+    krb5_error_code ret;
 
-    if (mods == NULL) {
-	mods = (LDAPMod **) calloc(1, sizeof(LDAPMod *));
-	if (mods == NULL) {
-	    return ENOMEM;
-	}
-	mods[0] = NULL;
-    }
-
-    for (i = 0; mods[i] != NULL; ++i) {
-	if (mods[i]->mod_op == modop
-	    && (!strcasecmp(mods[i]->mod_type, attribute))) {
-	    break;
-	}
-    }
-
-    if (mods[i] == NULL) {
-	mods = (LDAPMod **) realloc(mods, (i + 2) * sizeof(LDAPMod *));
-	if (mods == NULL) {
-	    return ENOMEM;
-	}
-	mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
-	if (mods[i] == NULL) {
-	    return ENOMEM;
-	}
-	mods[i]->mod_op = modop;
-	mods[i]->mod_values = NULL;
-	mods[i]->mod_type = strdup(attribute);
-	if (mods[i]->mod_type == NULL) {
-	    return ENOMEM;
-	}
-	mods[i + 1] = NULL;
+    ret = LDAP__setmod(modlist, modop, attribute, &cMods);
+    if (ret != 0) {
+	return ret;
     }
 
     if (value != NULL) {
-	j = 0;
-	if (mods[i]->mod_values != NULL) {
-	    for (; mods[i]->mod_values[j] != NULL; j++);
+	char ***pValues = &((*modlist)[cMods]->mod_values);
+
+	if (*pValues != NULL) {
+	    for (cValues = 0; (*pValues)[cValues] != NULL; cValues++)
+		;
+	    *pValues = (char **)ber_memrealloc(*pValues, (cValues + 2) * sizeof(char *));
+	} else {
+	    *pValues = (char **)ber_memalloc(2 * sizeof(char *));
 	}
-	mods[i]->mod_values = (char **) realloc(mods[i]->mod_values,
-						(j + 2) * sizeof(char *));
-	if (mods[i]->mod_values == NULL) {
+	if (*pValues == NULL) {
 	    return ENOMEM;
 	}
-	mods[i]->mod_values[j] = strdup(value);
-	if (mods[i]->mod_values[j] == NULL) {
+	(*pValues)[cValues] = ber_strdup(value);
+	if ((*pValues)[cValues] == NULL) {
 	    return ENOMEM;
 	}
-	mods[i]->mod_values[j + 1] = NULL;
+	(*pValues)[cValues + 1] = NULL;
     }
-    *modlist = mods;
+
     return 0;
 }
 
