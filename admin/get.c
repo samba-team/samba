@@ -125,7 +125,7 @@ get_entry(int argc, char **argv)
 		   ent.keys.val[i].key.keyvalue.length);
 	}
 	printf("\nFlags: ");
-	print_flags (stdout, &ent.flags);
+	print_hdbflags (stdout, ent.flags);
 	printf("\n");
 	break;
     }
