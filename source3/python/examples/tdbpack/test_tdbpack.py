@@ -239,6 +239,15 @@ class PackTests(unittest.TestCase):
                     raise AssertionError("didn't get exception: format %s, values %s, unpacker %s"
                                          % (`format`, `values`, `unpacker`))
 
+    def test_unpack_repeated(self):
+        cases = [(('df$',
+                  '\x00\x00\x00\x00HP C LaserJet 4500-PS\x00Windows 4.0\x00\\print$\\WIN40\\0\\PSCRIPT.DRV\x00\\print$\\WIN40\\0\\PSCRIPT.DRV\x00\\print$\\WIN40\\0\\PSCRIPT.DRV\x00\\print$\\WIN40\\0\\PSCRIPT.HLP\x00\x00RAW\x00\\print$\\WIN40\\0\\readme.wri\x00\\print$\\WIN40\\0\\pscript.drv\x00\\print$\\WIN40\\0\\pscript.hlp\x00'),
+                 ([0L, 'HP C LaserJet 4500-PS', 'Windows 4.0', '\\print$\\WIN40\\0\\PSCRIPT.DRV', '\\print$\\WIN40\\0\\PSCRIPT.DRV', '\\print$\\WIN40\\0\\PSCRIPT.DRV', '\\print$\\WIN40\\0\\PSCRIPT.HLP', '', 'RAW', '\\print$\\WIN40\\0\\readme.wri', '\\print$\\WIN40\\0\\pscript.drv', '\\print$\\WIN40\\0\\pscript.hlp'], ''))]
+        for unpacker in both_unpackers:
+            for input, expected in cases:
+                result = apply(unpacker, input)
+                if result != expected:
+                    raise AssertionError("%s:\n     input: %s\n    output: %s\n  expected: %s" % (`unpacker`, `input`, `result`, `expected`))
         
 
 if __name__ == '__main__':
