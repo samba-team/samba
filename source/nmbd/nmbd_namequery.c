@@ -82,6 +82,14 @@ static void query_name_response( struct subnet_record   *subrec,
     }
     else
     {
+      if (!nmb->answers)
+      {
+        dbgtext( "query_name_response: On subnet %s ", subrec->subnet_name );
+	dbgtext( "IP %s ", inet_ntoa(p->ip) );
+	dbgtext( "returned a success response with no answer\n" );
+	return;
+      }
+
       success = True;
 
       putip((char *)&answer_ip,&nmb->answers->rdata[2]);
@@ -103,7 +111,8 @@ static void query_name_response( struct subnet_record   *subrec,
   {
     if( DEBUGLVL( 0 ) )
       {
-      putip( (char *)&answer_ip, &nmb->answers->rdata[2] );
+      if (nmb->answers)
+        putip( (char *)&answer_ip, &nmb->answers->rdata[2] );
       dbgtext( "query_name_response: " );
       dbgtext( "Multiple (%d) responses ", rrec->num_msgs );
       dbgtext( "received for a query on subnet %s ", subrec->subnet_name );
