@@ -156,7 +156,8 @@ reply for the nt protocol
 static int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS |CAP_NT_SMBS;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS |
+                     lp_nt_smb_support() ? CAP_NT_SMBS : 0;
 
 /*
   other valid capabilities which we may support at some time...
