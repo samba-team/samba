@@ -207,7 +207,8 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 BOOL init_change_notify(void)
 {
 #if HAVE_KERNEL_CHANGE_NOTIFY
-	cnotify = kernel_notify_init();
+	if (lp_kernel_change_notify())
+		cnotify = kernel_notify_init();
 #endif
 	if (!cnotify) cnotify = hash_notify_init();
 	
