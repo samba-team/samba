@@ -113,6 +113,7 @@ static int
 get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
 {
   int k_errno = krb_get_cred(princ, inst, krealm, c);
+
   if (k_errno != KSUCCESS)
     {
       k_errno = krb_mk_req(tkt, princ, inst, krealm, 0);
@@ -127,10 +128,12 @@ get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
    Return 0 on error
    */
 
-static u_int32_t ip_aton(char *ip)
+static u_int32_t
+ip_aton(char *ip)
 {
   u_int32_t addr;
   unsigned int a, b, c, d;
+
   if(sscanf(ip, "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
       return 0;
   if((a | b | c | d) > 255)

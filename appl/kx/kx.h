@@ -130,6 +130,6 @@ int suspicious_address (int sock, struct sockaddr_in addr);
 
 #define KX_PORT 2111
 
-#define KXVERSION "KXSERV.1"
+#define KX_VERSION "KXSERV.1"
 
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
