@@ -21,7 +21,8 @@ ftpd_SOURCES =		\
 	popen.c		\
 	security.c	\
 	$(krb4_sources) \
-	gssapi.c
+	gssapi.c	\
+	gss_userok.c
 
 EXTRA_ftpd_SOURCES = krb4.c kauth.c
 
