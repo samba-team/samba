@@ -1,3 +1,7 @@
+Sat Feb 21 15:18:54 1998  assar westerlund  <assar@sics.se>
+
+	* Makefile.in: set YACC and LEX
+
 Tue Feb 17 22:20:27 1998  Bjoern Groenvall  <bg@sics.se>
 
 	* com_right.h: Change typedefs so that one may mix MIT compile_et

@@ -1,3 +1,13 @@
+Sat Feb 21 15:18:36 1998  assar westerlund  <assar@sics.se>
+
+	* parse_time.c (unparse_time_approx): new function that calls
+ 	`unparse_units_approx'
+
+	* parse_units.c (unparse_units_approx): new function that will
+ 	only print the first unit.
+
+	* Makefile.in: include parse_{time,units}
+
 Thu Feb 12 03:30:08 1998  Assar Westerlund  <assar@sics.se>
 
 	* parse_time.c (print_time_table): don't return a void value.
