@@ -300,6 +300,71 @@ typedef struct _Q_DSKATTR {
 } Q_DSKATTR;
 
 typedef struct {
+	ANDX_INFO andx;
+
+	uint16 bcount;
+	uint8 none[bcount];
+
+} R_LOCKING_2;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 2 R_LOCKING_2 r2;
+	}
+} R_LOCKING_ANDX;
+
+/* XXXX must do a switch on bit 0x10 to do large locks XXXX */
+/*      LockType Flag Name            Value Description */
+
+#define LOCKING_ANDX_SHARED_LOCK      0x01  /* Read-only lock */
+#define LOCKING_ANDX_OPLOCK_RELEASE   0x02  /* Oplock break notification */
+#define LOCKING_ANDX_CHANGE_LOCKTYPE  0x04  /* Change lock type */
+#define LOCKING_ANDX_CANCEL_LOCK      0x08  /* Cancel outstanding request */
+#define LOCKING_ANDX_LARGE_FILES      0x10  /* Large file locking format */
+
+typedef struct {
+	USHORT Pid;      /* PID of process "owning" lock */
+	ULONG Offset;    /* Offset to bytes to [un]lock */
+	ULONG Length;    /* Number of bytes to [un]lock */
+} LOCKING_ANDX_RANGE;
+
+typedef struct {
+	USHORT Pid;       /* PID of process "owning" lock */
+	USHORT Pad;       /* Pad to DWORD align (mbz) */
+	ULONG OffsetHigh; /* Offset to bytes to [un]lock (high) */
+	ULONG OffsetLow;  /* Offset to bytes to [un]lock (low) */
+	ULONG LengthHigh; /* Number of bytes to [un]lock (high) */
+	ULONG LengthLow;  /* Number of bytes to [un]lock (low) */
+
+} LOCKING_ANDX_RANGE_LARGE;
+
+typedef struct {
+	ANDX_INFO andx;
+
+	USHORT Fid;             /* File handle */
+	UCHAR LockType;         /* See LockType table below */
+	UCHAR OplockLevel;      /* The new oplock level */
+	ULONG Timeout;          /* Milliseconds to wait for unlock */
+	USHORT NumberOfUnlocks; /* Num. unlock range structs following */
+	USHORT NumberOfLocks;   /* Num. lock range structs following */
+
+	USHORT ByteCount;       /* Count of data bytes */
+	LOCKING_ANDX_RANGE Unlocks[NumberOfUnlocks];      /* Unlock ranges */
+	LOCKING_ANDX_RANGE Locks[NumberOfLocks];        /* Lock ranges */
+
+} Q_LOCKING_8;
+
+typedef struct _Q_LOCKING {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 8 Q_LOCKING_8 q8;
+	}
+
+} Q_LOCKING_ANDX;
+
+
+typedef struct {
 	uint16 bcount;
 	uint8 protocols[bcount];
 
@@ -540,13 +605,14 @@ typedef struct _R_SMB {
 	union ctr[com] {
 		case 4   R_CLOSE      r4;
 		case 6   R_UNLINK     r6;
+		case 36  R_LOCKING_ANDX r36;
 		case 45  R_OPEN_ANDX r45;
 		case 46  R_READ_ANDX r46;
 		case 47  R_WRITE_ANDX r47;
 		case 113 R_TDIS    r113;
 		case 114 R_NEGPROT r114;
 		case 115 R_SESSION_SETUP_ANDX r115;
-		case 117 R_TCON_ANDX q117;
+		case 117 R_TCON_ANDX r117;
 		case 128 R_DSKATTR    r128;
 	}
 } R_SMB;
@@ -570,6 +636,7 @@ typedef struct _Q_SMB {
 	union ctr[com] {
 		case 4   Q_CLOSE      q4;
 		case 6   Q_UNLINK     q6;
+		case 36  Q_LOCKING_ANDX q36;
 		case 45  Q_OPEN_ANDX q45;
 		case 46  Q_READ_ANDX q46;
 		case 47  Q_WRITE_ANDX q47;
