@@ -93,13 +93,13 @@ static BOOL wbinfo_get_usergroups(char *user)
 
 	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
 
-	if (result != NSS_STATUS_SUCCESS) {
+	if (result != NSS_STATUS_SUCCESS)
 		return False;
-	}
 
-	for (i = 0; i < response.data.num_entries; i++) {
+	for (i = 0; i < response.data.num_entries; i++)
 		printf("%d\n", (int)((gid_t *)response.extra_data)[i]);
-	}
+
+	SAFE_FREE(response.extra_data);
 
 	return True;
 }
@@ -123,10 +123,12 @@ static BOOL wbinfo_list_domains(void)
 	/* Display response */
 
 	if (response.extra_data) {
-		while(next_token((char **)&response.extra_data, name, ",", 
-				 sizeof(fstring))) {
+		char *extra_data = (char *)response.extra_data;
+
+		while(next_token(&extra_data, name, ",", sizeof(fstring)))
 			printf("%s\n", name);
-		}
+
+		SAFE_FREE(response.extra_data);
 	}
 
 	return True;
@@ -413,6 +415,7 @@ static BOOL wbinfo_auth_crap(char *username)
 static BOOL print_domain_users(void)
 {
 	struct winbindd_response response;
+	char *extra_data;
 	fstring name;
 
 	/* Send request to winbind daemon */
@@ -426,15 +429,16 @@ static BOOL print_domain_users(void)
 
 	/* Look through extra data */
 
-	if (!response.extra_data) {
+	if (!response.extra_data)
 		return False;
-	}
 
-	while(next_token((char **)&response.extra_data, name, ",", 
-			 sizeof(fstring))) {
+	extra_data = (char *)response.extra_data;
+
+	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		printf("%s\n", name);
-	}
 	
+	SAFE_FREE(response.extra_data);
+
 	return True;
 }
 
@@ -443,6 +447,7 @@ static BOOL print_domain_users(void)
 static BOOL print_domain_groups(void)
 {
 	struct winbindd_response response;
+	char *extra_data;
 	fstring name;
 
 	ZERO_STRUCT(response);
@@ -454,14 +459,15 @@ static BOOL print_domain_groups(void)
 
 	/* Look through extra data */
 
-	if (!response.extra_data) {
+	if (!response.extra_data)
 		return False;
-	}
 
-	while(next_token((char **)&response.extra_data, name, ",", 
-			 sizeof(fstring))) {
+	extra_data = (char *)response.extra_data;
+
+	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		printf("%s\n", name);
-	}
+
+	SAFE_FREE(response.extra_data);
 	
 	return True;
 }
