@@ -31,8 +31,34 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-static NTSTATUS pass_check_smb(char *smb_name,
-			       char *domain, 
+NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_password, auth_serversupplied_info **server_info)
+{
+	struct auth_context *plaintext_auth_context = NULL;
+	auth_usersupplied_info *user_info = NULL;
+	const uint8 *chal;
+	NTSTATUS nt_status;
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
+		return nt_status;
+	}
+	
+	chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
+	
+	if (!make_user_info_for_reply(&user_info, 
+				      smb_name, lp_workgroup(), chal,
+				      plaintext_password)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
+								user_info, server_info); 
+	
+	(plaintext_auth_context->free)(&plaintext_auth_context);
+	free_user_info(&user_info);
+	return nt_status;
+}
+
+static NTSTATUS pass_check_smb(const char *smb_name,
+			       const char *domain, 
 			       DATA_BLOB lm_pwd,
 			       DATA_BLOB nt_pwd,
 			       DATA_BLOB plaintext_password,
@@ -40,37 +66,20 @@ static NTSTATUS pass_check_smb(char *smb_name,
 
 {
 	NTSTATUS nt_status;
-	auth_usersupplied_info *user_info = NULL;
 	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 	if (encrypted) {		
+		auth_usersupplied_info *user_info = NULL;
 		make_user_info_for_reply_enc(&user_info, smb_name, 
 					     domain,
 					     lm_pwd, 
 					     nt_pwd);
 		nt_status = negprot_global_auth_context->check_ntlm_password(negprot_global_auth_context, 
 									     user_info, &server_info);
+		free_user_info(&user_info);
 	} else {
-		struct auth_context *plaintext_auth_context = NULL;
-		const uint8 *chal;
-		if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
-			return nt_status;
-		}
-
-		chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
-
-		if (!make_user_info_for_reply(&user_info, 
-					      smb_name, domain, chal,
-					      plaintext_password)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
-									user_info, &server_info); 
-		
-		(plaintext_auth_context->free)(&plaintext_auth_context);
+		nt_status = check_plaintext_password(smb_name, plaintext_password, &server_info);
 	}		
-	free_user_info(&user_info);
 	free_server_info(&server_info);
 	return nt_status;
 }
