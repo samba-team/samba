@@ -173,6 +173,7 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 		talloc_free(tmp_blob.data);
 		return False;
 	}
+	tmp_blob.length = nread;
 
 	ret = ldapsrv_append_to_buf(buf, tmp_blob.data, tmp_blob.length);
 
@@ -188,7 +189,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	DATA_BLOB creds;
 	BOOL ret;
 	uint8_t *buf;
-	int buf_length, sasl_length;
+	size_t buf_length, sasl_length;
 	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 	size_t nread;
@@ -445,7 +446,7 @@ static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 {
 	struct ldapsrv_connection *ldap_conn = conn->private_data;
 	uint8_t *buf;
-	int buf_length, msg_length;
+	size_t buf_length, msg_length;
 	DATA_BLOB blob;
 	struct asn1_data data;
 	struct ldapsrv_call *call;
