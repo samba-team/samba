@@ -446,13 +446,14 @@ char *ads_pull_string(ADS_STRUCT *ads,
 		      TALLOC_CTX *mem_ctx, void *msg, const char *field)
 {
 	char **values;
-	char *ret;
+	char *ret = NULL;
 
 	values = ldap_get_values(ads->ld, msg, field);
-
-	if (!values || !values[0]) return NULL;
-
-	ret = talloc_strdup(mem_ctx, values[0]);
+	if (!values) return NULL;
+	
+	if (values[0]) {
+		ret = talloc_strdup(mem_ctx, values[0]);
+	}
 	ldap_value_free(values);
 	return ret;
 }
@@ -466,8 +467,11 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
 	char **values;
 
 	values = ldap_get_values(ads->ld, msg, field);
-
-	if (!values || !values[0]) return False;
+	if (!values) return False;
+	if (!values[0]) {
+		ldap_value_free(values);
+		return False;
+	}
 
 	*v = atoi(values[0]);
 	ldap_value_free(values);
@@ -481,13 +485,15 @@ BOOL ads_pull_sid(ADS_STRUCT *ads,
 		  void *msg, const char *field, DOM_SID *sid)
 {
 	struct berval **values;
-	BOOL ret;
+	BOOL ret = False;
 
 	values = ldap_get_values_len(ads->ld, msg, field);
 
-	if (!values || !values[0]) return False;
+	if (!values) return False;
 
-	ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
+	if (values[0]) {
+		ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
+	}
 	
 	ldap_value_free_len(values);
 	return ret;
