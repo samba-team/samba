@@ -1273,6 +1273,12 @@ void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
 					DEBUG(5,("reset_all_printerdata: Error resetting printer data for printer [%s], driver [%s]!\n",
 						printer->info_2->printername, printer->info_2->drivername));
 				}	
+				
+				result = mod_a_printer( *printer, 2 );
+				if ( !W_ERROR_IS_OK(result) ) {
+					DEBUG(3,("reset_all_printerdata: mod_a_printer() failed!  (%s)\n", 
+						get_dos_error_msg(result)));
+				}
 			}
 			
 			free_a_printer( &printer, 2 );
