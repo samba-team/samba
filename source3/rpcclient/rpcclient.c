@@ -651,7 +651,7 @@ static void usage(void)
 	argc -= optind;
 
 	/* Parse options */
-	if (argc > 1) {
+	if (argc < 2) {
 		usage();
 		return 0;
 	}
