@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <netdb.h>
 
+#ifndef HAVE_H_ERRLIST
 static
 const
 char *const h_errlist[] = {
@@ -22,8 +23,8 @@ char *const h_errlist[] = {
 static
 const
 int h_nerr = { sizeof h_errlist / sizeof h_errlist[0] };
+#endif
 
-const
 char *
 hstrerror(int herr)
 {
