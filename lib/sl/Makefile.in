@@ -52,11 +52,11 @@ LDSHARED = @LDSHARED@
 PROGS = mk_cmds$(EXECSUFFIX)
 
 LIB_SOURCES = sl.c ss.c
-EXTRA_SOURCES = strtok_r.c
+EXTRA_SOURCES = strtok_r.c snprintf.c
 
 SOURCES = $(LIB_SOURCES) make_cmds.c $(EXTRA_SOURCES)
 
-LIBADD = strtok_r.o
+LIBADD = strtok_r.o snprintf.o
 
 LIB_OBJECTS = sl.o ss.o $(LIBADD)
 
@@ -133,5 +133,7 @@ lex.c: $(srcdir)/lex.l
 
 strtok_r.c:
 	$(LN_S) $(srcdir)/../roken/strtok_r.c .
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
