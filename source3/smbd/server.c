@@ -5243,7 +5243,18 @@ static void usage(char *pname)
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
-  
+
+  /* Setup the signals that allow the debug log level
+     to by dynamically changed. */
+ 
+#if defined(SIGUSR1)
+  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+#endif /* SIGUSR1 */
+   
+#if defined(SIGUSR2)
+  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+#endif /* SIGUSR2 */
+
   DEBUG(3,("%s loaded services\n",timestring()));
 
   if (!is_daemon && !is_a_socket(0))

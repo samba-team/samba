@@ -92,6 +92,53 @@ static BOOL stdout_logging = False;
 
 static char *filename_dos(char *path,char *buf);
 
+#if defined(SIGUSR2)
+/**************************************************************************** **
+ catch a sigusr2 - decrease the debug log level.
+ **************************************************************************** */
+int sig_usr2(void)
+{  
+  BlockSignals( True, SIGUSR2);
+ 
+  DEBUGLEVEL--; 
+   
+  if(DEBUGLEVEL < 0) 
+    DEBUGLEVEL = 0; 
+
+  DEBUG( 0, ( "Got SIGUSR2 set debug level to %d.\n", DEBUGLEVEL ) );
+   
+  BlockSignals( False, SIGUSR2);
+#ifndef DONT_REINSTALL_SIG
+  signal(SIGUSR2, SIGNAL_CAST sig_usr2);
+#endif 
+  return(0);
+}  
+#endif /* SIGUSR1 */
+   
+#if defined(SIGUSR1)
+/**************************************************************************** **
+ catch a sigusr1 - increase the debug log level. 
+ **************************************************************************** */
+int sig_usr1(void)
+{
+  BlockSignals( True, SIGUSR1);
+ 
+  DEBUGLEVEL++;
+
+  if(DEBUGLEVEL > 10)
+    DEBUGLEVEL = 10;
+
+  DEBUG( 0, ( "Got SIGUSR1 set debug level to %d.\n", DEBUGLEVEL ) );
+
+  BlockSignals( False, SIGUSR1);
+#ifndef DONT_REINSTALL_SIG
+  signal(SIGUSR1, SIGNAL_CAST sig_usr1);
+#endif
+  return(0);
+}
+#endif /* SIGUSR1 */
+
+
 /*******************************************************************
   get ready for syslog stuff
   ******************************************************************/

@@ -1368,6 +1368,8 @@ BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  util.c  */
 
+int sig_usr2(void);
+int sig_usr1(void);
 void setup_logging(char *pname,BOOL interactive);
 void reopen_logs(void);
 char *tmpdir(void);

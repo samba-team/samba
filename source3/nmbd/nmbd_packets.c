@@ -1650,10 +1650,27 @@ BOOL listen_for_packets(BOOL run_election)
   timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
   timeout.tv_usec = 0;
 
-  /* We can only take term signals when we are in the select. */
+  /* Prepare for the select - allow certain signals. */
+
   BlockSignals(False, SIGTERM);
+#if defined(SIGUSR1)
+  BlockSignals(False, SIGUSR1);
+#endif /* SIGUSR1 */
+#if defined(SIGUSR2)
+  BlockSignals(False, SIGUSR2);
+#endif /* SIGUSR2 */
+
   selrtn = sys_select(&fds,&timeout);
+
+  /* We can only take signals when we are in the select - block them again here. */
+
   BlockSignals(True, SIGTERM);
+#if defined(SIGUSR1)
+  BlockSignals(True, SIGUSR1);
+#endif /* SIGUSR1 */
+#if defined(SIGUSR2)
+  BlockSignals(True, SIGUSR2);
+#endif /* SIGUSR2 */
 
   if(selrtn > 0)
   {
