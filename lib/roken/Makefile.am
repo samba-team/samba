@@ -16,6 +16,7 @@ libroken_a_SOURCES =				\
 	get_window_size.c			\
 	getarg.c				\
 	inaddr2str.c				\
+	issuid.c				\
 	k_getpwnam.c				\
 	k_getpwuid.c				\
 	mini_inetd.c				\

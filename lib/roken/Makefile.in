@@ -54,6 +54,7 @@ SOURCES = \
 	inet_aton.c \
 	initgroups.c \
 	iruserok.c \
+	issuid.c \
 	k_getpwnam.c \
 	k_getpwuid.c \
 	lstat.c \
@@ -100,6 +101,7 @@ OBJECTS = \
 	get_window_size.o \
 	getarg.o \
 	inaddr2str.o \
+	issuid.o \
 	k_getpwnam.o \
 	k_getpwuid.o \
 	mini_inetd.o \
