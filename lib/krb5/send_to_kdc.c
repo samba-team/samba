@@ -180,7 +180,7 @@ krb5_sendto_kdc (krb5_context context,
 	     if (hostent == NULL)
 		 hostent = gethostbyname2 (p, AF_INET);
 #else
-	     hostent = gethostbyname (p);
+	     hostent = roken_gethostbyname (p);
 #endif
 	     if(hostent == NULL)
 		 continue;

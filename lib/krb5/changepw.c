@@ -69,7 +69,7 @@ get_kdc_address (krb5_context context,
     if (hostent == NULL)
 	hostent = gethostbyname2 (p, AF_INET);
 #else
-    hostent = gethostbyname (p);
+    hostent = roken_gethostbyname (p);
 #endif
     krb5_free_krbhst (context, hostlist);
     if (hostent == NULL)

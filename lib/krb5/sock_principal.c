@@ -70,9 +70,9 @@ krb5_sock_to_principal (krb5_context context,
     if (ret)
 	return ret;
 
-    hostent = gethostbyaddr (address.address.data,
-			     address.address.length,
-			     family);
+    hostent = roken_gethostbyaddr (address.address.data,
+				   address.address.length,
+				   family);
 
     if (hostent == NULL)
 	return h_errno;

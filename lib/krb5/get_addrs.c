@@ -66,7 +66,7 @@ gethostname_fallback (krb5_addresses *res)
 
      if (gethostname (hostname, sizeof(hostname)))
 	  return errno;
-     hostent = gethostbyname (hostname);
+     hostent = roken_gethostbyname (hostname);
      if (hostent == NULL)
 	  return errno;
      res->len = 1;

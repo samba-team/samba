@@ -48,7 +48,7 @@ krb5_getportbyname (krb5_context context,
 {
     struct servent *sp;
 
-    if ((sp = getservbyname (service, proto)) == NULL) {
+    if ((sp = roken_getservbyname (service, proto)) == NULL) {
 	krb5_warnx(context, "%s/%s unknown service, using default port %d", 
 		   service, proto, default_port);
 	 return htons(default_port);

@@ -179,7 +179,8 @@ close_syslog(void *data)
 }
 
 static krb5_error_code
-open_syslog(krb5_context context, krb5_log_facility *facility, int min, int max,
+open_syslog(krb5_context context,
+	    krb5_log_facility *facility, int min, int max,
 	    const char *sev, const char *fac)
 {
     struct syslog_data *sd = malloc(sizeof(*sd));
@@ -195,8 +196,9 @@ open_syslog(krb5_context context, krb5_log_facility *facility, int min, int max,
     if(i == -1)
 	i = LOG_AUTH;
     sd->priority |= i;
-    openlog(facility->program, LOG_PID | LOG_NDELAY, i);
-    return krb5_addlog_func(context, facility, min, max, log_syslog, close_syslog, sd);
+    roken_openlog(facility->program, LOG_PID | LOG_NDELAY, i);
+    return krb5_addlog_func(context, facility, min, max,
+			    log_syslog, close_syslog, sd);
 }
 
 struct file_data{

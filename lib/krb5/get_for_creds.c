@@ -78,7 +78,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     if (out_creds == NULL)
 	return ENOMEM;
 
-    hostent = gethostbyname (hostname);
+    hostent = roken_gethostbyname (hostname);
     if (hostent == NULL)
 	return h_errno;		/* XXX */
 

@@ -494,7 +494,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
     if(resolve){
-	struct hostent *hp = gethostbyname(instance);
+	struct hostent *hp = roken_gethostbyname(instance);
 	if(hp){
 	    instance = hp->h_name;
 	    ret = krb5_make_principal(context, &pr, 
@@ -696,7 +696,7 @@ krb5_sname_to_principal (krb5_context context,
 	sname = "host";
     if(type == KRB5_NT_SRV_HST){
 	struct hostent *hp;
-	hp = gethostbyname(hostname);
+	hp = roken_gethostbyname(hostname);
 	if(hp != NULL)
 	    hostname = hp->h_name;
     }
