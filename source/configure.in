@@ -898,6 +898,7 @@ case "$host_os" in
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*freebsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -955,22 +956,32 @@ case "$host_os" in
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 		;;
-		*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx]);;
+		*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx])
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*osf*) AC_DEFINE(OSF1,1,[Whether the host os is osf1])
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-		*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix]);;
+		*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*unixware*) AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-KPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-		*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2]);;
-		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
+		*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
+		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man])
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*sysv4*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
 			case "$host" in
 				*-univel-*)     if [ test "$GCC" != yes ]; then
@@ -981,6 +992,7 @@ case "$host_os" in
 				;;
 				*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX,1,[Whether the host os is reliantunix]);;
 			esac
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 
 		*sysv5*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
@@ -988,6 +1000,7 @@ case "$host_os" in
 				AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
 			fi
 			LDSHFLAGS="-G"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 esac
 AC_SUBST(DYNEXP)
