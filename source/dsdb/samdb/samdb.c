@@ -36,14 +36,13 @@ void *samdb_connect(TALLOC_CTX *mem_ctx)
 /*
   search the sam for the specified attributes - varargs variant
 */
-int samdb_search(void *ctx,
+int samdb_search(struct ldb_wrap *sam_ctx,
 		 TALLOC_CTX *mem_ctx, 
 		 const char *basedn,
 		 struct ldb_message ***res,
 		 const char * const *attrs,
 		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	va_list ap;
 	int count;
 
@@ -58,7 +57,7 @@ int samdb_search(void *ctx,
   search the sam for the specified attributes in a specific domain, filter on
   objectSid being in domain_sid.
 */
-int samdb_search_domain(void *ctx,
+int samdb_search_domain(struct ldb_wrap *sam_ctx,
 			TALLOC_CTX *mem_ctx, 
 			const char *basedn,
 			struct ldb_message ***res,
@@ -66,7 +65,6 @@ int samdb_search_domain(void *ctx,
 			const struct dom_sid *domain_sid,
 			const char *format, ...)  _PRINTF_ATTRIBUTE(7,8)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	va_list ap;
 	int i, count;
 
@@ -100,23 +98,21 @@ int samdb_search_domain(void *ctx,
 /*
   free up a search result
 */
-int samdb_search_free(void *ctx,
+int samdb_search_free(struct ldb_wrap *sam_ctx,
 		      TALLOC_CTX *mem_ctx, struct ldb_message **res)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	return ldb_search_free(sam_ctx->ldb, res);
 }
 
 /*
   search the sam for a single string attribute in exactly 1 record
 */
-const char *samdb_search_string_v(void *ctx,
+const char *samdb_search_string_v(struct ldb_wrap *sam_ctx,
 				  TALLOC_CTX *mem_ctx,
 				  const char *basedn,
 				  const char *attr_name,
 				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	int count;
 	const char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
@@ -127,7 +123,7 @@ const char *samdb_search_string_v(void *ctx,
 			 attr_name, format, count));
 	}
 	if (count != 1) {
-		samdb_search_free(ctx, mem_ctx, res);
+		samdb_search_free(sam_ctx, mem_ctx, res);
 		return NULL;
 	}
 
@@ -138,7 +134,7 @@ const char *samdb_search_string_v(void *ctx,
 /*
   search the sam for a single string attribute in exactly 1 record
 */
-const char *samdb_search_string(void *ctx,
+const char *samdb_search_string(struct ldb_wrap *sam_ctx,
 				TALLOC_CTX *mem_ctx,
 				const char *basedn,
 				const char *attr_name,
@@ -148,7 +144,7 @@ const char *samdb_search_string(void *ctx,
 	const char *str;
 
 	va_start(ap, format);
-	str = samdb_search_string_v(ctx, mem_ctx, basedn, attr_name, format, ap);
+	str = samdb_search_string_v(sam_ctx, mem_ctx, basedn, attr_name, format, ap);
 	va_end(ap);
 
 	return str;
@@ -157,19 +153,18 @@ const char *samdb_search_string(void *ctx,
 /*
   return the count of the number of records in the sam matching the query
 */
-int samdb_search_count(void *ctx,
+int samdb_search_count(struct ldb_wrap *sam_ctx,
 		       TALLOC_CTX *mem_ctx,
 		       const char *basedn,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
-	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	struct ldb_message **res;
 	const char * const attrs[] = { NULL };
 	int ret;
 
 	va_start(ap, format);
-	ret = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	ret = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	return ret;
@@ -179,21 +174,20 @@ int samdb_search_count(void *ctx,
 /*
   search the sam for a single integer attribute in exactly 1 record
 */
-uint_t samdb_search_uint(void *ctx,
+uint_t samdb_search_uint(struct ldb_wrap *sam_ctx,
 			 TALLOC_CTX *mem_ctx,
 			 uint_t default_value,
 			 const char *basedn,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
 	const char * const attrs[2] = { attr_name, NULL };
 
 	va_start(ap, format);
-	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count != 1) {
@@ -206,21 +200,20 @@ uint_t samdb_search_uint(void *ctx,
 /*
   search the sam for a single signed 64 bit integer attribute in exactly 1 record
 */
-int64_t samdb_search_int64(void *ctx,
+int64_t samdb_search_int64(struct ldb_wrap *sam_ctx,
 			   TALLOC_CTX *mem_ctx,
 			   int64_t default_value,
 			   const char *basedn,
 			   const char *attr_name,
 			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
 	const char * const attrs[2] = { attr_name, NULL };
 
 	va_start(ap, format);
-	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count != 1) {
@@ -234,21 +227,20 @@ int64_t samdb_search_int64(void *ctx,
   search the sam for multipe records each giving a single string attribute
   return the number of matches, or -1 on error
 */
-int samdb_search_string_multiple(void *ctx,
+int samdb_search_string_multiple(struct ldb_wrap *sam_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const char *basedn,
 				 const char ***strs,
 				 const char *attr_name,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count, i;
 	const char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
 
 	va_start(ap, format);
-	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count <= 0) {
@@ -260,14 +252,14 @@ int samdb_search_string_multiple(void *ctx,
 		if (res[i]->num_elements != 1) {
 			DEBUG(1,("samdb: search for %s %s not single valued\n", 
 				 attr_name, format));
-			samdb_search_free(ctx, mem_ctx, res);
+			samdb_search_free(sam_ctx, mem_ctx, res);
 			return -1;
 		}
 	}
 
 	*strs = talloc_array_p(mem_ctx, const char *, count+1);
 	if (! *strs) {
-		samdb_search_free(ctx, mem_ctx, res);
+		samdb_search_free(sam_ctx, mem_ctx, res);
 		return -1;
 	}
 
@@ -391,7 +383,8 @@ uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t
   construct the allow_password_change field from the PwdLastSet attribute and the 
   domain password settings
 */
-NTTIME samdb_result_allow_password_change(void *ctx, TALLOC_CTX *mem_ctx, 
+NTTIME samdb_result_allow_password_change(struct ldb_wrap *sam_ctx, 
+					  TALLOC_CTX *mem_ctx, 
 					  const char *domain_dn, 
 					  struct ldb_message *msg, 
 					  const char *attr)
@@ -403,7 +396,7 @@ NTTIME samdb_result_allow_password_change(void *ctx, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, 
+	minPwdAge = samdb_search_int64(sam_ctx, mem_ctx, 0, NULL, 
 				       "minPwdAge", "dn=%s", domain_dn);
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
@@ -417,7 +410,8 @@ NTTIME samdb_result_allow_password_change(void *ctx, TALLOC_CTX *mem_ctx,
   construct the force_password_change field from the PwdLastSet attribute and the 
   domain password settings
 */
-NTTIME samdb_result_force_password_change(void *ctx, TALLOC_CTX *mem_ctx, 
+NTTIME samdb_result_force_password_change(struct ldb_wrap *sam_ctx, 
+					  TALLOC_CTX *mem_ctx, 
 					  const char *domain_dn, 
 					  struct ldb_message *msg, 
 					  const char *attr)
@@ -429,7 +423,7 @@ NTTIME samdb_result_force_password_change(void *ctx, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	maxPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, "maxPwdAge", "dn=%s", domain_dn);
+	maxPwdAge = samdb_search_int64(sam_ctx, mem_ctx, 0, NULL, "maxPwdAge", "dn=%s", domain_dn);
 	if (maxPwdAge == 0) {
 		return 0;
 	} else {
@@ -580,7 +574,7 @@ uint16_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
 /*
   copy from a template record to a message
 */
-int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx, 
+int samdb_copy_template(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, 
 			struct ldb_message *msg, const char *expression)
 {
 	struct ldb_message **res, *t;
@@ -588,7 +582,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 	
 
 	/* pull the template record */
-	ret = samdb_search(ctx, mem_ctx, NULL, &res, NULL, "%s", expression);
+	ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, NULL, "%s", expression);
 	if (ret != 1) {
 		DEBUG(1,("samdb: ERROR: template '%s' matched %d records\n", 
 			 expression, ret));
@@ -613,7 +607,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0)) {
 				continue;
 			}
-			samdb_msg_add_string(ctx, mem_ctx, msg, el->name, 
+			samdb_msg_add_string(sam_ctx, mem_ctx, msg, el->name, 
 					     (char *)el->values[j].data);
 		}
 	}
@@ -626,17 +620,16 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
 */
-static NTSTATUS _samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
+static NTSTATUS _samdb_allocate_next_id(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, const char *dn, 
 					const char *attr, uint32_t *id)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_message msg;
 	int ret;
 	const char *str;
 	struct ldb_val vals[2];
 	struct ldb_message_element els[2];
 
-	str = samdb_search_string(ctx, mem_ctx, NULL, attr, "dn=%s", dn);
+	str = samdb_search_string(sam_ctx, mem_ctx, NULL, attr, "dn=%s", dn);
 	if (!str) {
 		DEBUG(1,("id not found at %s %s\n", dn, attr));
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -697,7 +690,7 @@ static NTSTATUS _samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const ch
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
 */
-NTSTATUS samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, const char *attr,
+NTSTATUS samdb_allocate_next_id(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, const char *dn, const char *attr,
 				uint32_t *id)
 {
 	int tries = 10;
@@ -706,7 +699,7 @@ NTSTATUS samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
 	/* we need to try multiple times to cope with two account
 	   creations at the same time */
 	while (tries--) {
-		status = _samdb_allocate_next_id(ctx, mem_ctx, dn, attr, id);
+		status = _samdb_allocate_next_id(sam_ctx, mem_ctx, dn, attr, id);
 		if (!NT_STATUS_EQUAL(NT_STATUS_UNEXPECTED_IO_ERROR, status)) {
 			break;
 		}
@@ -723,10 +716,9 @@ NTSTATUS samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
 /*
   add a string element to a message
 */
-int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_string(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *str)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	char *s = talloc_strdup(mem_ctx, str);
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (s == NULL || a == NULL) {
@@ -738,10 +730,9 @@ int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 /*
   add a delete element operation to a message
 */
-int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_delete(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (a == NULL) {
 		return -1;
@@ -754,10 +745,9 @@ int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 /*
   add a add attribute value to a message
 */
-int samdb_msg_add_addval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_addval(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *value)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_message_element *el;
 	char *a, *v;
 	int ret;
@@ -780,10 +770,9 @@ int samdb_msg_add_addval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 /*
   add a delete attribute value to a message
 */
-int samdb_msg_add_delval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_delval(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *value)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_message_element *el;
 	char *a, *v;
 	int ret;
@@ -806,40 +795,39 @@ int samdb_msg_add_delval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 /*
   add a uint_t element to a message
 */
-int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_uint(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		       const char *attr_name, uint_t v)
 {
 	const char *s = talloc_asprintf(mem_ctx, "%u", v);
-	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+	return samdb_msg_add_string(sam_ctx, mem_ctx, msg, attr_name, s);
 }
 
 /*
   add a (signed) int64_t element to a message
 */
-int samdb_msg_add_int64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_int64(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, int64_t v)
 {
 	const char *s = talloc_asprintf(mem_ctx, "%lld", v);
-	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+	return samdb_msg_add_string(sam_ctx, mem_ctx, msg, attr_name, s);
 }
 
 /*
   add a uint64_t element to a message
 */
-int samdb_msg_add_uint64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_uint64(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, uint64_t v)
 {
 	const char *s = talloc_asprintf(mem_ctx, "%llu", v);
-	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+	return samdb_msg_add_string(sam_ctx, mem_ctx, msg, attr_name, s);
 }
 
 /*
   add a samr_Password element to a message
 */
-int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_hash(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		       const char *attr_name, struct samr_Password *hash)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	val.data = talloc_memdup(mem_ctx, hash->hash, 16);
 	if (!val.data) {
@@ -852,10 +840,9 @@ int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 /*
   add a samr_Password array to a message
 */
-int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_hashes(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, struct samr_Password *hashes, uint_t count)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	int i;
 	val.data = talloc_array_size(mem_ctx, 16, count);
@@ -872,19 +859,18 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 /*
   add a acct_flags element to a message
 */
-int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_acct_flags(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			     const char *attr_name, uint32_t v)
 {
-	return samdb_msg_add_uint(ctx, mem_ctx, msg, attr_name, samdb_acb2uf(v));
+	return samdb_msg_add_uint(sam_ctx, mem_ctx, msg, attr_name, samdb_acb2uf(v));
 }
 
 /*
   add a logon_hours element to a message
 */
-int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_logon_hours(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			      const char *attr_name, struct samr_LogonHours *hours)
 {
-	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	val.length = hours->units_per_week / 8;
 	val.data = hours->bits;
@@ -892,9 +878,18 @@ int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message
 }
 
 /*
+  add a general value element to a message
+*/
+int samdb_msg_add_value(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			      const char *attr_name, const struct ldb_val *val)
+{
+	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, val);
+}
+
+/*
   set a string element in a message
 */
-int samdb_msg_set_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_set_string(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *str)
 {
 	struct ldb_message_element *el;
@@ -903,56 +898,50 @@ int samdb_msg_set_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	if (el) {
 		el->num_values = 0;
 	}
-	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, str);
+	return samdb_msg_add_string(sam_ctx, mem_ctx, msg, attr_name, str);
 }
 
 /*
   set a ldaptime element in a message
 */
-int samdb_msg_set_ldaptime(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_set_ldaptime(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			   const char *attr_name, time_t t)
 {
 	char *str = ldap_timestring(mem_ctx, t);
 	if (!str) {
 		return -1;
 	}
-	return samdb_msg_set_string(ctx, mem_ctx, msg, attr_name, str);
+	return samdb_msg_set_string(sam_ctx, mem_ctx, msg, attr_name, str);
 }
 
 /*
   add a record
 */
-int samdb_add(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
+int samdb_add(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	struct ldb_wrap *sam_ctx = ctx;
-
 	return ldb_add(sam_ctx->ldb, msg);
 }
 
 /*
   delete a record
 */
-int samdb_delete(void *ctx, TALLOC_CTX *mem_ctx, const char *dn)
+int samdb_delete(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, const char *dn)
 {
-	struct ldb_wrap *sam_ctx = ctx;
-
 	return ldb_delete(sam_ctx->ldb, dn);
 }
 
 /*
   modify a record
 */
-int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
+int samdb_modify(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	struct ldb_wrap *sam_ctx = ctx;
-
 	return ldb_modify(sam_ctx->ldb, msg);
 }
 
 /*
   replace elements in a record
 */
-int samdb_replace(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
+int samdb_replace(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
 	int i;
 
@@ -962,7 +951,7 @@ int samdb_replace(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 	}
 
 	/* modify the samdb record */
-	return samdb_modify(ctx, mem_ctx, msg);
+	return samdb_modify(sam_ctx, mem_ctx, msg);
 }
 
 /*
