@@ -41,7 +41,7 @@ struct cli_socket *cli_sock_init(void)
 
 	sock->mem_ctx = mem_ctx;
 	sock->fd = -1;
-	sock->port = 445;
+	sock->port = 0;
 	/* 20 second default timeout */
 	sock->timeout = 20000;
 
