@@ -134,6 +134,15 @@ static void terminate_connection(struct server_context *server, const char *reas
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }
 
+/* called when a rpc connection goes down */
+static void terminate_rpc_connection(void *r, const char *reason) 
+{
+	rpc_server_terminate(r);
+
+	/* terminate this thread */
+	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
+}
+
 /*
   mutex init function for thread model
 */
@@ -457,6 +466,7 @@ void process_model_thread_init(void)
 	ops.accept_connection = accept_connection;
 	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
+	ops.terminate_rpc_connection = terminate_rpc_connection;
 	ops.exit_server = NULL;
 	ops.get_id = get_id;
 	

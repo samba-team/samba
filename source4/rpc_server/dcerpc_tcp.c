@@ -22,11 +22,36 @@
 
 #include "includes.h"
 
-struct rpc_listen {
-	struct dce_endpoint *e;
-	struct model_ops *model_ops;
+struct rpc_server_context {
+	struct dcesrv_endpoint *endpoint;
+	const struct dcesrv_endpoint_ops *endpoint_ops;
+	const struct model_ops *model_ops;
+	struct dcesrv_state *dce;
+	struct dcesrv_context dcesrv_context;
+	int socket_fd;
+	struct event_context *events;	
 };
 
+/*
+  a callback from the process model termination routine 
+*/
+void rpc_server_terminate(void *rr)
+{
+	struct rpc_server_context *r = rr;
+
+	dcesrv_endpoint_disconnect(r->dce);
+	close(r->socket_fd);
+	event_remove_fd_all(r->events, r->socket_fd);
+	free(r);
+}
+
+/*
+  called when a rpc session needs to be shutdown
+*/
+static void terminate_rpc_session(struct rpc_server_context *r, const char *reason)
+{
+	r->model_ops->terminate_rpc_connection(r, reason);
+}
 
 /*
   called when a RPC socket becomes writable
@@ -34,20 +59,24 @@ struct rpc_listen {
 static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde, 
 				 time_t t, uint16 flags)
 {
-	struct dcesrv_state *dce = fde->private;
+	struct rpc_server_context *r = fde->private;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	blob = data_blob(NULL, 3);
+	blob = data_blob(NULL, 0x4000);
 	if (!blob.data) {
-		smb_panic("out of memory in rpc write handler");
+		terminate_rpc_session(r, "out of memory");
+		return;
 	}
 
-	status = dcesrv_output(dce, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		fde->flags &= ~EVENT_FD_WRITE;
-	} else {
+	status = dcesrv_output(r->dce, &blob);
+
+	if (NT_STATUS_IS_OK(status)) {
 		write_data(fde->fd, blob.data, blob.length);
+	}
+
+	if (!r->dce->call_list || !r->dce->call_list->replies) {
+		fde->flags &= ~EVENT_FD_WRITE;
 	}
 
 	data_blob_free(&blob);
@@ -59,31 +88,32 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
 static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde, 
 				time_t t, uint16 flags)
 {
-	struct dcesrv_state *dce = fde->private;
+	struct rpc_server_context *r = fde->private;
 	DATA_BLOB blob;
 	ssize_t ret;
 
-	blob = data_blob(NULL, 3);
+	blob = data_blob(NULL, 0x4000);
 	if (!blob.data) {
-		smb_panic("out of memory in rpc read handler");
+		terminate_rpc_session(r, "out of memory");
+		return;
 	}
 
 	ret = read(fde->fd, blob.data, blob.length);
-	if (ret == 0) {
-		smb_panic("need a shutdown routine");
-	}
-	if (ret == -1 && errno != EINTR) {
-		smb_panic("need a shutdown routine");
+	if (ret == 0 || (ret == -1 && errno != EINTR)) {
+		terminate_rpc_session(r, "eof on socket");
+		return;
 	}
 	if (ret == -1) {
 		return;
 	}
 
-	dcesrv_input(dce, &blob);
+	dcesrv_input(r->dce, &blob);
 
 	data_blob_free(&blob);
 
-	fde->flags |= EVENT_FD_WRITE;
+	if (r->dce->call_list && r->dce->call_list->replies) {
+		fde->flags |= EVENT_FD_WRITE;
+	}
 }
 
 
@@ -93,7 +123,7 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
   called when a RPC socket becomes readable
 */
 static void dcerpc_io_handler(struct event_context *ev, struct fd_event *fde, 
-				time_t t, uint16 flags)
+			      time_t t, uint16 flags)
 {
 	if (flags & EVENT_FD_WRITE) {
 		dcerpc_write_handler(ev, fde, t, flags);
@@ -110,25 +140,20 @@ static void dcerpc_io_handler(struct event_context *ev, struct fd_event *fde,
 */
 void init_rpc_session(struct event_context *ev, void *private, int fd)
 {
-	struct dcesrv_context context;
-	struct dcesrv_state *dce;
 	struct fd_event fde;
-	struct rpc_listen *r = private;
-	struct dcesrv_endpoint endpoint;
+	struct rpc_server_context *r = private;
+
+	r = memdup(r, sizeof(struct rpc_server_context));
+
+	r->events = ev;
+	r->socket_fd = fd;
 
 	set_socket_options(fd,"SO_KEEPALIVE");
 	set_socket_options(fd, lp_socket_options());
 
-	context.endpoint_list = NULL;
-	dcesrv_init(&context);
+	dcesrv_endpoint_connect_ops(&r->dcesrv_context, r->endpoint, r->endpoint_ops, &r->dce);
 
-	endpoint.type = ENDPOINT_TCP;
-	endpoint.info.tcp_port = 0;
-
-	dcesrv_endpoint_connect_ops(&context, &endpoint, r->e->endpoint_ops, &dce);
-
-	dce->dce = talloc_p(dce->mem_ctx, struct dcesrv_context);
-	*dce->dce = context;
+	r->dce->dce = &r->dcesrv_context;
 
 	set_blocking(fd, False);
 
@@ -136,7 +161,7 @@ void init_rpc_session(struct event_context *ev, void *private, int fd)
 	   only interested in reading from the socket */
 	fde.fd = fd;
 	fde.handler = dcerpc_io_handler;
-	fde.private = dce;
+	fde.private = r;
 	fde.flags = EVENT_FD_READ;
 
 	event_add_fd(ev, &fde);
@@ -148,18 +173,46 @@ void init_rpc_session(struct event_context *ev, void *private, int fd)
  */
 static void setup_listen_rpc(struct event_context *events,
 			     struct model_ops *model_ops, 
-			     struct in_addr *ifip, unsigned port,
-			     struct dce_endpoint *e)
+			     struct in_addr *ifip, uint32 *port,
+			     struct rpc_server_context *r,
+			     const struct dcesrv_endpoint_ops *endpoint_ops)
 {
 	struct fd_event fde;
-	struct rpc_listen *r;
+	int i;
 
-	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+	if (*port == 0) {
+		fde.fd = -1;
+		for (i=DCERPC_TCP_LOW_PORT;i<= DCERPC_TCP_HIGH_PORT;i++) {
+			fde.fd = open_socket_in(SOCK_STREAM, i, 0, ifip->s_addr, True);			
+			if (fde.fd != -1) break;
+		}
+		if (fde.fd != -1) {
+			*port = i;
+		}
+	} else {
+		fde.fd = open_socket_in(SOCK_STREAM, *port, 0, ifip->s_addr, True);
+	}
+
 	if (fde.fd == -1) {
 		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
+			 inet_ntoa(*ifip), *port, strerror(errno)));
 		return;
 	}
+
+	/* each listening socket has separate state, so must use a different context */
+	r = memdup(r, sizeof(struct rpc_server_context));
+	if (!r) {
+		smb_panic("out of memory");
+	}
+
+	r->endpoint_ops = endpoint_ops;
+
+	r->endpoint = malloc(sizeof(struct dcesrv_endpoint));
+	if (!r->endpoint) {
+		smb_panic("out of memory");
+	}
+	r->endpoint->type = ENDPOINT_TCP;
+	r->endpoint->info.tcp_port = *port;
 
 	/* ready to listen */
 	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
@@ -167,18 +220,10 @@ static void setup_listen_rpc(struct event_context *events,
       
 	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
 		DEBUG(0,("Failed to listen on %s:%d - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
+			 inet_ntoa(*ifip), *port, strerror(errno)));
 		close(fde.fd);
 		return;
 	}
-
-	r = malloc(sizeof(*r));
-	if (!r) {
-		return;
-	}
-
-	r->e = e;
-	r->model_ops = model_ops;
 
 	/* we are only interested in read events on the listen socket */
 	fde.flags = EVENT_FD_READ;
@@ -195,37 +240,29 @@ static void add_socket_rpc(struct event_context *events,
 			   struct model_ops *model_ops, 
 			   struct in_addr *ifip)
 {
-	struct dcesrv_context dce;
-	TALLOC_CTX *mem_ctx;
-	
-	mem_ctx = talloc_init("add_socket_rpc");
-	if (!mem_ctx) {
-		smb_panic("out of memory in add_socket_rpc");
+	struct dce_endpoint *e;
+	struct rpc_server_context *r;
+
+	r = malloc(sizeof(struct rpc_server_context));
+	if (!r) {
+		smb_panic("out of memory");
 	}
+
+	r->dcesrv_context.endpoint_list = NULL;
+	dcesrv_init(&r->dcesrv_context);
+	r->endpoint = NULL;
+	r->model_ops = model_ops;
+	r->dce = NULL;
+	r->socket_fd = -1;
+	r->events = NULL;
 	
-	dce.endpoint_list = NULL;
-
-	dcesrv_init(&dce);
-
-	while (dce.endpoint_list) {
-		struct dce_endpoint *e = dce.endpoint_list;
-		struct dcesrv_ep_iface *ifaces;
-		int count, i;
-
-		count = e->endpoint_ops->lookup_endpoints(mem_ctx, &ifaces);
-		for (i=0;i<count;i++) {
-			if (ifaces[i].endpoint.type == ENDPOINT_TCP) {
-				setup_listen_rpc(events, model_ops, ifip, 
-						 ifaces[i].endpoint.info.tcp_port,
-						 e);
-				break;
-			}
+	for (e=r->dcesrv_context.endpoint_list;e;e=e->next) {
+		if (e->endpoint.type == ENDPOINT_TCP) {
+			setup_listen_rpc(events, model_ops, ifip, 
+					 &e->endpoint.info.tcp_port, 
+					 r, e->endpoint_ops);
 		}
-
-		DLIST_REMOVE(dce.endpoint_list, e);
 	}
-
-	talloc_destroy(mem_ctx);
 }
 
 /****************************************************************************

@@ -2,8 +2,9 @@
 
 
 [
-uuid(60a15ec5-4de8-11d7-a637-005056a20182),
-version(1.0)
+  uuid(60a15ec5-4de8-11d7-a637-005056a20182),
+  endpoints(rpcecho, TCP-0),
+  version(1.0)
 ]
 interface rpcecho
 {

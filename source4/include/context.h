@@ -341,6 +341,9 @@ struct model_ops {
 				
 	/* function to terminate a connection */
 	void (*terminate_connection)(struct server_context *smb, const char *reason);
+
+	/* function to terminate a connection */
+	void (*terminate_rpc_connection)(void *r, const char *reason);
 	
 	/* function to exit server */
 	void (*exit_server)(struct server_context *smb, const char *reason);

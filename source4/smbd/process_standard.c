@@ -121,6 +121,14 @@ static void terminate_connection(struct server_context *server, const char *reas
 	exit(0);
 }
 
+/* called when a rpc connection goes down */
+static void terminate_rpc_connection(void *r, const char *reason) 
+{
+	rpc_server_terminate(r);
+	/* terminate this process */
+	exit(0);
+}
+
 static int get_id(struct request_context *req)
 {
 	return (int)req->smb->pid;
@@ -140,6 +148,7 @@ void process_model_standard_init(void)
 	ops.accept_connection = accept_connection;
 	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
+	ops.terminate_rpc_connection = terminate_rpc_connection;
 	ops.get_id = get_id;
 
 	/* register ourselves with the process model subsystem. We register under the name 'standard'. */

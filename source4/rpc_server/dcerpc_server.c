@@ -55,15 +55,44 @@ static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_state *dce, uint
   register an endpoint server
 */
 BOOL dcesrv_endpoint_register(struct dcesrv_context *dce, 
-			      const struct dcesrv_endpoint_ops *ops)
+			      const struct dcesrv_endpoint_ops *ops,
+			      const struct dcerpc_interface_table *table)
 {
-	struct dce_endpoint *ep;
-	ep = malloc(sizeof(*ep));
-	if (!ep) {
-		return False;
+	BOOL done_smb=False;
+	BOOL done_tcp=False;
+	int i;
+
+	for (i=0;i<table->endpoints->count;i++) {
+		struct dce_endpoint *ep;
+		BOOL tcp;
+
+		tcp = (strncasecmp(table->endpoints->names[i], "TCP-", 4) == 0);
+
+		if (tcp) {
+			if (done_tcp) continue;
+			done_tcp = True;
+		} else {
+			if (done_smb) continue;
+			done_smb = True;
+		}
+
+		ep = malloc(sizeof(*ep));
+		if (!ep) {
+			return False;
+		}
+
+		if (tcp) {
+			ep->endpoint.type = ENDPOINT_TCP;
+			ep->endpoint.info.tcp_port = atoi(table->endpoints->names[i]+4);
+		} else {
+			ep->endpoint.type = ENDPOINT_SMB;
+			ep->endpoint.info.smb_pipe = table->endpoints->names[i];
+		}
+
+		ep->endpoint_ops = ops;
+		DLIST_ADD(dce->endpoint_list, ep);
 	}
-	ep->endpoint_ops = ops;
-	DLIST_ADD(dce->endpoint_list, ep);
+
 	return True;
 }
 
