@@ -468,13 +468,9 @@ void reply_name_status(struct packet_struct *p)
   
   SCVAL(countptr,0,names_added);
   
-  /* XXXXXXX we should fill in more fields of the statistics structure */
+  /* we don't send any stats as they could be used to attack
+     the protocol */
   bzero(buf,64);
-  {
-    extern int num_good_sends,num_good_receives;
-    SIVAL(buf,20,num_good_sends);
-    SIVAL(buf,24,num_good_receives);
-  }
   
   buf += 46;
   
