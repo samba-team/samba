@@ -63,7 +63,7 @@ uint32 lookup_lsa_name(const char *domain,
 
 	res3 = res3 ? lsa_close(&lsa_pol) : False;
 
-	res4 = num_sids < 2 ? False : res4;
+	res4 = num_sids != 1 ? False : res4;
 
 	if (!res4)
 	{
