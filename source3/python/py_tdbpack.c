@@ -28,7 +28,9 @@
 #include "Python.h"
 
 static PyObject * pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list);
-static PyObject * pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list);
+static PyObject * pytdbpack_str(char ch,
+				PyObject *val_iter, PyObject *packed_list,
+				const char *encoding);
 static PyObject * pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list);
 
 static PyObject *pytdbunpack_item(char, char **pbuf, int *plen, PyObject *);
@@ -36,6 +38,9 @@ static PyObject *pytdbunpack_item(char, char **pbuf, int *plen, PyObject *);
 static PyObject *pytdbpack_data(const char *format_str,
 				     PyObject *val_seq,
 				     PyObject *val_list);
+
+static PyObject *
+pytdbunpack_string(char **pbuf, int *plen, const char *encoding);
 
 static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf);
 
@@ -58,19 +63,17 @@ tdb/tdbutil module, with appropriate adjustments for Python datatypes.
 Python strings are used to specify the format of data to be packed or
 unpacked.
 
-Strings are always stored in codepage 850.  Unicode objects are translated
-to cp850; plain strings are assumed to be in latin-1 and are also
-translated.
-
-This may be a problem in the future if it is different to the Samba codepage.
-It might be better to have the caller do the conversion, but that would conflict
-with existing CMI code.
+String encodings are implied by the database format: they may be either DOS
+codepage (currently hardcoded to 850), or Unix codepage (currently hardcoded
+to be the same as the default Python encoding).
 
 tdbpack format strings:
 
-    'f':  NULL-terminated string in codepage 850
+    'f': NUL-terminated string in codepage 850
+   
+    'P': same as 'f'
 
-    'P':  same as 'f'
+    'F': NUL-terminated string in iso-8859-1
 
     'd':  4 byte little-endian unsigned number
 
@@ -145,7 +148,11 @@ notes:
 ";
 
 
-const char *pytdb_string_encoding = "cp850";
+const char *pytdb_dos_encoding = "cp850";
+
+/* NULL, meaning that the Samba default encoding *must* be the same as the
+   Python default encoding. */
+const char *pytdb_unix_encoding = NULL;
 
 
 /*
@@ -228,7 +235,14 @@ pytdbpack_data(const char *format_str,
 
 		case 'f':
 		case 'P':
-			if (!(packed_list = pytdbpack_str_850(val_iter, packed_list)))
+			if (!(packed_list = pytdbpack_str(ch, val_iter, packed_list, pytdb_dos_encoding)))
+				return NULL;
+			break;
+
+		case 'F':
+			/* We specify NULL encoding: Samba databases in this
+			   form are written in the default Python encoding. */
+			if (!(packed_list = pytdbpack_str(ch, val_iter, packed_list, pytdb_unix_encoding)))
 				return NULL;
 			break;
 
@@ -287,27 +301,29 @@ pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list)
 
 
 /*
- * Take one string from the iterator val_iter, convert it to 8-bit CP850, and
- * return it.
+ * Take one string from the iterator val_iter, convert it to 8-bit, and return
+ * it.
  *
  * If the input is neither a string nor Unicode, an exception is raised.
  *
- * If the input is Unicode, then it is converted to CP850.
+ * If the input is Unicode, then it is converted to the appropriate encoding.
  *
- * If the input is a String, then it is converted to Unicode using the default
- * decoding method, and then converted to CP850.  This in effect gives
- * conversion from latin-1 (currently the PSA's default) to CP850, without
- * needing a custom translation table.
+ * If the input is a String, and encoding is not null, then it is converted to
+ * Unicode using the default decoding method, and then converted to the
+ * encoding.  If the encoding is NULL, then the string is written out as-is --
+ * this is used when the default Python encoding is the same as the Samba
+ * encoding.
  *
  * I hope this approach avoids being too fragile w.r.t. being passed either
  * Unicode or String objects.
  */
 static PyObject *
-pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list)
+pytdbpack_str(char ch,
+	      PyObject *val_iter, PyObject *packed_list, const char *encoding)
 {
 	PyObject *val_obj = NULL;
 	PyObject *unicode_obj = NULL;
-	PyObject *cp850_str = NULL;
+	PyObject *coded_str = NULL;
 	PyObject *nul_str = NULL;
 	PyObject *new_list = NULL;
 
@@ -315,31 +331,41 @@ pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list)
 		goto out;
 
 	if (PyUnicode_Check(val_obj)) {
-		unicode_obj = val_obj;
+		if (!(coded_str = PyUnicode_AsEncodedString(val_obj, encoding, NULL)))
+			goto out;
 	}
-	else {
-		/* string */
+	else if (PyString_Check(val_obj) && !encoding) {
+		/* For efficiency, we assume that the Python interpreter has
+		   the same default string encoding as Samba's native string
+		   encoding.  On the PSA, both are always 8859-1. */
+		coded_str = val_obj;
+		Py_INCREF(coded_str);
+	}
+	else if (PyString_Check(val_obj)) {
+		/* String, but needs to be converted */
 		if (!(unicode_obj = PyString_AsDecodedObject(val_obj, NULL, NULL)))
 			goto out;
-		Py_XDECREF(val_obj);
-		val_obj = NULL;
+		if (!(coded_str = PyUnicode_AsEncodedString(unicode_obj, encoding, NULL)))
+			goto out;
 	}
-
-	if (!(cp850_str = PyUnicode_AsEncodedString(unicode_obj, pytdb_string_encoding, NULL)))
+	else {
+		pytdbpack_bad_type(ch, "String or Unicode", val_obj);
 		goto out;
+	}
 
 	if (!nul_str)
 		/* this is constant and often-used; hold it forever */
 		if (!(nul_str = PyString_FromStringAndSize("", 1)))
 			goto out;
 
-	if ((PyList_Append(packed_list, cp850_str) != -1)
+	if ((PyList_Append(packed_list, coded_str) != -1)
 	    && (PyList_Append(packed_list, nul_str) != -1))
 		new_list = packed_list;
 
   out:
+	Py_XDECREF(val_obj);
 	Py_XDECREF(unicode_obj);
-	Py_XDECREF(cp850_str);
+	Py_XDECREF(coded_str);
 
 	return new_list;
 }
@@ -361,7 +387,8 @@ pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list)
 	if (!(packed_list = pytdbpack_number('d', val_iter, packed_list)))
 		return NULL;
 
-	/* this assumes that the string is the right length; the old code did the same. */
+	/* this assumes that the string is the right length; the old code did
+	   the same. */
 	if (!(val_obj = PyIter_Next(val_iter)))
 		return NULL;
 
@@ -537,7 +564,7 @@ static PyObject *pytdbunpack_int16(char **pbuf, int *plen)
 
 
 static PyObject *
-pytdbunpack_string(char **pbuf, int *plen)
+pytdbunpack_string(char **pbuf, int *plen, const char *encoding)
 {
 	int len;
 	char *nul_ptr, *start;
@@ -555,7 +582,7 @@ pytdbunpack_string(char **pbuf, int *plen)
 	*pbuf += len + 1;	/* skip \0 */
 	*plen -= len + 1;
 
-	return PyString_Decode(start, len, pytdb_string_encoding, NULL);
+	return PyString_Decode(start, len, encoding, NULL);
 }
 
 
@@ -641,7 +668,10 @@ static PyObject *pytdbunpack_item(char ch,
 		result = pytdbunpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		result = pytdbunpack_string(pbuf, plen);
+		result = pytdbunpack_string(pbuf, plen, pytdb_dos_encoding);
+	}
+	else if (ch == 'F') { /* nul-term string  */
+		result = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
 	}
 	else if (ch == 'B') { /* length, buffer */
 		return pytdbunpack_buffer(pbuf, plen, val_list);
