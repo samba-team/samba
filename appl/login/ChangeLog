@@ -1,3 +1,7 @@
+1999-08-07  Assar Westerlund  <assar@sics.se>
+
+	* shadow.c (check_shadow): check for a NULL sp
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* login.c (main): move down login incorrect to disallow account
