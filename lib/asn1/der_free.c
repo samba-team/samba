@@ -1,8 +1,7 @@
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,19 +12,19 @@ free_integer (unsigned *num)
 {
 }
 
-int
+void
 free_general_string (char **str)
 {
     free(*str);
 }
 
-int
+void
 free_octet_string (krb5_data *k)
 {
     free(k->data);
 }
 
-int
-free_generalized_time (unsigned char *p, int len, time_t *t)
+void
+free_generalized_time (time_t *t)
 {
 }
