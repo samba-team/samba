@@ -2317,44 +2317,57 @@ BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
-			uint16 sid_name_use, char *name, uint32 idx);
+			 uint16 sid_name_use, char *name, uint32 idx);
 void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
-				uint32 unknown);
+		      uint32 unknown);
 void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
 void init_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
-			uint32 attributes,
-			uint32 desired_access,
-			LSA_SEC_QOS *qos);
-BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
+		     uint32 attributes, uint32 desired_access,
+		     LSA_SEC_QOS *qos);
+BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, 
+		       int depth);
+BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, 
+		       int depth);
 void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
-			uint32 attributes,
-			uint32 desired_access,
+			uint32 attributes, uint32 desired_access,
 			LSA_SEC_QOS *qos);
-BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
-void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint32 sec_info);
-BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
+BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, 
+			int depth);
+BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, 
+			int depth);
+void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, 
+			  uint32 sec_info);
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, 
+			    prs_struct *ps, int depth);
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, 
+			    prs_struct *ps, int depth);
 void init_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
-BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
-BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
-void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
-                           uint32 status);
-BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
-BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
+BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, 
+		    int depth);
+BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
+			   uint32 enum_context, uint32 preferred_len);
+BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
+			     prs_struct *ps, int depth);
+BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
+			     prs_struct *ps, int depth);
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
+BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
+		    int depth);
 void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
 		       int num_entries, DOM_SID *sids);
 void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
 			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			uint16 level);
-BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
+BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps,
+			  int depth);
+BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, 
+			  prs_struct *ps, int depth);
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, char **names);
-BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
+BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
+			   prs_struct *ps, int depth);
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, 
+			   prs_struct *ps, int depth);
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -2658,9 +2671,9 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 void init_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
-void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid,
-				DOM_SID *sid);
+void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u, 
+			     POLICY_HND *connect_pol, 
+			     uint32 access_mask, DOM_SID *sid);
 BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
 void init_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol);
@@ -2745,10 +2758,10 @@ void init_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
 		uint32 status);
 BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
-void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
-				POLICY_HND *pol,
-				uint32 unk_0, uint32 rid);
-BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
+void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u, POLICY_HND *pol,
+			   uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER *q_u, 
+			 prs_struct *ps, int depth);
 BOOL samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
 void init_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
@@ -2772,11 +2785,12 @@ BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 void init_sam_user_info21(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw);
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
-BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
+BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO *r_u, 
+			      prs_struct *ps, int depth);
 BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
-void init_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				char *srv_name, uint32 unknown_0);
+void init_samr_q_connect(SAMR_Q_CONNECT *q_u, char *srv_name, 
+			 uint32 access_mask);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
 void init_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
@@ -3398,27 +3412,9 @@ BOOL api_wkssvc_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
-uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
-void add_lsa_commands(void);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
-uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *argv[]);
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
-BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args);
-void free_drv_info_3 (DRIVER_INFO_3 *info);
 
 /*The following definitions come from  rpcclient/display_sec.c  */
 
@@ -3454,6 +3450,8 @@ void display_printerdriverdir_info_ctr(FILE *out_hnd, enum action_type action, u
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
+void init_rpcclient_creds(struct ntuser_creds *creds);
+void add_command_set(struct cmd_set *cmd_set);
 
 /*The following definitions come from  rpcclient/spoolss_cmds.c  */
 
