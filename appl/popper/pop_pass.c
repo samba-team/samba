@@ -53,7 +53,7 @@ pop_pass (POP *p)
 	 krb_set_tkt_string (tkt);
 	 if (otp_verify_user (&p->otp_ctx, p->pop_parm[1]) == 0)
 	     ;
-	 else if(p->no_passwd)
+	 else if(p->auth_level != AUTH_NONE)
 	     return pop_msg(p, POP_FAILURE,
 			    "Password supplied for \"%s\" is incorrect.",
 			    p->user);
