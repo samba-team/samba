@@ -481,14 +481,12 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 	if(is_user) {
 		if(rid == DOMAIN_USER_RID_ADMIN) {
-			pstring admin_users;
-			char *p = admin_users;
+			char *p = lp_admin_users(-1);
 			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Administrator");
 		} else if (rid == DOMAIN_USER_RID_GUEST) {
-			pstring guest_users;
-			char *p = guest_users;
+			char *p = lp_guestaccount(-1);
 			*psid_name_use = SID_NAME_USER;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Guest");
