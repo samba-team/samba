@@ -1,3 +1,8 @@
+2003-02-18  Love Hörquist Åstrand <lha@it.su.se>
+
+	* dlfcn.h: s/intialize/initialize, from
+	<jmc@prioris.mini.pw.edu.pl>
+
 2003-02-08  Assar Westerlund  <assar@kth.se>
 
 	* afssysdefs.h: fix FreeBSD section

@@ -1,3 +1,8 @@
+2003-02-18 Love Hörquist Åstrand <lha@it.su.se>
+
+	* kdc/connect.c: s/intialize/initialize, from
+	<jmc@prioris.mini.pw.edu.pl>
+
 2003-02-17 Love Hörquist Åstrand <lha@it.su.se>
 
 	* configure.in: add AM_MAINTAINER_MODE
