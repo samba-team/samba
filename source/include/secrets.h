@@ -59,4 +59,7 @@ struct machine_acct_pass {
 
 #define SECRETS_PRIMARY_DOMAIN_DN "cn=Primary Domains"
 
+#define SECRETS_PRIMARY_DOMAIN_FILTER "(&(flatname=%s)(objectclass=primaryDomain))"
+#define SECRETS_PRIMARY_REALM_FILTER "(&(realm=%s)(objectclass=primaryDomain))"
+
 #endif /* _SECRETS_H */

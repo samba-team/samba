@@ -22,11 +22,23 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/cmdline/popt_common.h"
+#include "include/secrets.h"
+#include "lib/ldb/include/ldb.h"
 
 /* Create a new credentials structure, on the specified TALLOC_CTX */
 struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
-	return talloc_zero(mem_ctx, struct cli_credentials);
+	struct cli_credentails *cred = talloc_zero(mem_ctx, struct cli_credentials);
+	if (!cred) {
+		return cred;
+	}
+
+	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
+	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_GUESSED);
+	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
+	
+	return cred;
 }
 
 const char *cli_credentials_get_username(struct cli_credentials *cred)
@@ -279,10 +291,6 @@ void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
 
-	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
-	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_GUESSED);
-	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
-
 	if (getenv("LOGNAME")) {
 		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESSED);
 	}
@@ -309,6 +317,67 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	if (getenv("PASSWD_FILE")) {
 		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESSED);
 	}
+}
+
+NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(creds, 0, "cli_credentials fetch machine password");
+	
+	struct ldb_context *ldb;
+	int ldb_ret;
+	struct ldb_message **msgs;
+	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
+	const char *attrs[] = {
+		"secret",
+		"samAccountName",
+		NULL
+	};
+	
+	const char *machine_account;
+	const char *password;
+	
+	/* Local secrets are stored in secrets.ldb */
+	ldb = secrets_db_connect(mem_ctx);
+	if (!ldb) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	/* search for the secret record */
+	ldb_ret = gendb_search(ldb,
+			       mem_ctx, base_dn, &msgs, attrs,
+			       SECRETS_PRIMARY_DOMAIN_FILTER, 
+			       cli_credentials_get_domain(creds));
+	if (ldb_ret == 0) {
+		DEBUG(1, ("Could not find join record to domain: %s\n",
+			  lp_workgroup()));
+		talloc_free(mem_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	} else if (ldb_ret != 1) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	
+	password = ldb_msg_find_string(msgs[0], "secret", NULL);
+	if (!password) {
+		DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
+			  cli_credentials_get_domain(creds)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	
+	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
+	if (!machine_account) {
+		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
+			  cli_credentials_get_domain(creds)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	
+	cli_credentials_set_username(creds, machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
+	talloc_free(mem_ctx);
+	
+	return NT_STATUS_OK;
 }
 
 /* Fill in a credentails structure as anonymous */

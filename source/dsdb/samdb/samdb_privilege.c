@@ -44,7 +44,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_search(samctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
+	ret = gendb_search(samctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
 	if (ret != 1) {
 		talloc_free(sidstr);
 		/* not an error to not match */

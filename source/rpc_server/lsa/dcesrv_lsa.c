@@ -359,7 +359,7 @@ static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CT
 	int ret;
 	struct ldb_message **res;
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "dn=%s", state->domain_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -381,7 +381,7 @@ static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx
 	int ret;
 	struct ldb_message **res;
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "dn=%s", state->domain_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -496,7 +496,7 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	state = h->data;
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, state->builtin_dn, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->builtin_dn, &res, attrs, 
 			   "privilege=*");
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -600,7 +600,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* search for the trusted_domain record */
-	ret = samdb_search(trusted_domain_state->policy->sam_ldb,
+	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
 			   "(&(cn=%s)(objectclass=trustedDomain))", 
 			   r->in.info->name.string);
@@ -700,7 +700,7 @@ static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* search for the trusted_domain record */
-	ret = samdb_search(trusted_domain_state->policy->sam_ldb,
+	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
 			   "(&(securityIdentifier=%s)(objectclass=trustedDomain))", 
 			   sid_string);
@@ -765,7 +765,7 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 	trusted_domain_state->policy = policy_state;
 
 	/* search for the trusted_domain record */
-	ret = samdb_search(trusted_domain_state->policy->sam_ldb,
+	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
 			   "(&(flatname=%s)(objectclass=trustedDomain))", 
 			   r->in.name.string);
@@ -850,7 +850,7 @@ static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, T
 	trusted_domain_state = h->data;
 
 	/* pull all the user attributes */
-	ret = samdb_search(trusted_domain_state->policy->sam_ldb, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(trusted_domain_state->policy->sam_ldb, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", trusted_domain_state->trusted_domain_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -970,7 +970,7 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* search for all users in this domain. This could possibly be cached and 
 	   resumed based on resume_key */
-	count = samdb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs, 
+	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs, 
 			     "objectclass=trustedDomain");
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1105,7 +1105,7 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", "name", NULL};
 	NTSTATUS status;
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sid_str);
 	if (ret == 1) {
 		*name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
@@ -1373,7 +1373,7 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	r->out.privs->unknown = 0;
 	r->out.privs->set = NULL;
 
-	ret = samdb_search(astate->policy->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(astate->policy->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "dn=%s", astate->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_OK;
@@ -1429,7 +1429,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
 	if (ret != 1) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1746,7 +1746,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 		name2 = talloc_asprintf(mem_ctx, "%s Secret", name);
 		/* search for the secret record */
-		ret = samdb_search(secret_state->sam_ldb,
+		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, policy_state->system_dn, &msgs, attrs,
 				   "(&(cn=%s)(objectclass=secret))", 
 				   name2);
@@ -1776,7 +1776,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
 		/* search for the secret record */
-		ret = samdb_search(secret_state->sam_ldb,
+		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
 				   "(&(cn=%s)(objectclass=secret))", 
 				   name);
@@ -1872,7 +1872,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		}
 
 		/* search for the secret record */
-		ret = samdb_search(secret_state->sam_ldb,
+		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, policy_state->system_dn, &msgs, attrs,
 				   "(&(cn=%s Secret)(objectclass=secret))", 
 				   name);
@@ -1895,7 +1895,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		}
 
 		/* search for the secret record */
-		ret = samdb_search(secret_state->sam_ldb,
+		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
 				   "(&(cn=%s)(objectclass=secret))", 
 				   name);
@@ -2048,7 +2048,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			};
 			
 			/* search for the secret record */
-			ret = samdb_search(secret_state->sam_ldb,
+			ret = gendb_search(secret_state->sam_ldb,
 					   mem_ctx, NULL, &res, attrs,
 					   "(dn=%s)", secret_state->secret_dn);
 			if (ret == 0) {
@@ -2121,7 +2121,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	secret_state = h->data;
 
 	/* pull all the user attributes */
-	ret = samdb_search(secret_state->sam_ldb, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(secret_state->sam_ldb, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", secret_state->secret_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2340,7 +2340,7 @@ static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "privilege=%s", privname);
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -2541,7 +2541,7 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 		name = p + 1;
 	}
 
-	ret = samdb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
 	if (ret == 1) {
 		const char *sid_str = ldb_msg_find_string(res[0], "objectSid", NULL);
 		if (sid_str == NULL) {
