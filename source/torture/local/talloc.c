@@ -22,20 +22,6 @@
 
 #include "includes.h"
 
-static struct timeval tp1,tp2;
-
-static void start_timer(void)
-{
-	gettimeofday(&tp1,NULL);
-}
-
-static double end_timer(void)
-{
-	gettimeofday(&tp2,NULL);
-	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
-}
-
 /*
   test references 
 */
@@ -68,7 +54,7 @@ static BOOL test_ref1(void)
 	talloc_report_full(NULL, stdout);
 
 	if (talloc_total_size(NULL) != 0) {
-		printf("non-zero total size\n");
+		printf("failed: non-zero total size\n");
 		return False;
 	}
 
@@ -93,21 +79,134 @@ static BOOL test_ref2(void)
 	r1 = talloc_named_const(NULL, 1, "r1");	
 	ref = talloc_reference(r1, p2);
 	talloc_report_full(NULL, stdout);
+
 	printf("Freeing ref\n");
 	talloc_free(ref);
 	talloc_report_full(NULL, stdout);
+
 	printf("Freeing p2\n");
 	talloc_free(p2);
 	talloc_report_full(NULL, stdout);
+
 	printf("Freeing p1\n");
 	talloc_free(p1);
 	talloc_report_full(NULL, stdout);
+
 	printf("Freeing r1\n");
 	talloc_free(r1);
 	talloc_report_full(NULL, stdout);
 
 	if (talloc_total_size(NULL) != 0) {
-		printf("non-zero total size\n");
+		printf("failed: non-zero total size\n");
+		return False;
+	}
+
+	return True;
+}
+
+/*
+  test references 
+*/
+static BOOL test_ref3(void)
+{
+	void *p1, *p2, *ref, *r1;
+
+	printf("TESTING PARENT REFERENCE FREE\n");
+
+	p1 = talloc_named_const(NULL, 1, "p1");
+	p2 = talloc_named_const(NULL, 1, "p2");
+
+	r1 = talloc_named_const(p1, 1, "r1");
+
+	ref = talloc_reference(p2, r1);
+
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing p1\n");
+	talloc_free(p1);
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing p2\n");
+	talloc_free(p2);
+	talloc_report_full(NULL, stdout);
+
+	if (talloc_total_size(NULL) != 0) {
+		printf("failed: non-zero total size\n");
+		return False;
+	}
+
+	return True;
+}
+
+/*
+  test references 
+*/
+static BOOL test_ref4(void)
+{
+	void *p1, *p2, *ref, *r1;
+
+	printf("TESTING REFERRER REFERENCE FREE\n");
+
+	p1 = talloc_named_const(NULL, 1, "p1");
+	talloc_named_const(p1, 1, "x1");
+	talloc_named_const(p1, 1, "x2");
+	talloc_named_const(p1, 1, "x3");
+	p2 = talloc_named_const(p1, 1, "p2");
+
+	r1 = talloc_named_const(NULL, 1, "r1");	
+	ref = talloc_reference(r1, p2);
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing r1\n");
+	talloc_free(r1);
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing p2\n");
+	talloc_free(p2);
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing p1\n");
+	talloc_free(p1);
+	talloc_report_full(NULL, stdout);
+
+	if (talloc_total_size(NULL) != 0) {
+		printf("failed: non-zero total size\n");
+		return False;
+	}
+
+	return True;
+}
+
+
+/*
+  test references 
+*/
+static BOOL test_unref1(void)
+{
+	void *p1, *p2, *ref, *r1;
+
+	printf("TESTING UNREFERENCE\n");
+
+	p1 = talloc_named_const(NULL, 1, "p1");
+	talloc_named_const(p1, 1, "x1");
+	talloc_named_const(p1, 1, "x2");
+	talloc_named_const(p1, 1, "x3");
+	p2 = talloc_named_const(p1, 1, "p2");
+
+	r1 = talloc_named_const(p1, 1, "r1");	
+	ref = talloc_reference(r1, p2);
+	talloc_report_full(NULL, stdout);
+
+	printf("Unreferencing r1\n");
+	talloc_unreference(r1, p2);
+	talloc_report_full(NULL, stdout);
+
+	printf("Freeing p1\n");
+	talloc_free(p1);
+	talloc_report_full(NULL, stdout);
+
+	if (talloc_total_size(NULL) != 0) {
+		printf("failed: non-zero total size\n");
 		return False;
 	}
 
@@ -137,6 +236,8 @@ static BOOL test_speed(void)
 
 	printf("talloc: %.0f ops/sec\n", count/end_timer());
 
+	talloc_free(ctx);
+
 	start_timer();
 	count = 0;
 	do {
@@ -164,7 +265,10 @@ BOOL torture_local_talloc(int dummy)
 
 	ret &= test_ref1();
 	ret &= test_ref2();
+	ret &= test_ref3();
+	ret &= test_ref4();
+	ret &= test_unref1();
 	ret &= test_speed();
 
-	return True;
+	return ret;
 }
