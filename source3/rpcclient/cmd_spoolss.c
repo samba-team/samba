@@ -149,7 +149,7 @@ uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[])
 	uint32 level;
 	fstring srv_name;
 	
-	if (argc < 1)
+	if (argc < 2)
 	{
 		report (out_hnd, "spoolenumports <level>\n");
 		return NT_STATUS_INVALID_PARAMETER;
@@ -179,7 +179,7 @@ uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *ar
 	fstring station;
 	char *printer_name;
 
-	if (argc < 1) {
+	if (argc < 2) {
 		report(out_hnd, "spoolenumdata <printer name>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -224,7 +224,7 @@ uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
         char *printer_name;
         uint32 level;
 
-        if (argc < 1) {
+        if (argc < 2) {
                 report(out_hnd, "spoolgetprinter <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -246,7 +246,7 @@ uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
                 printer_name = srv_name;
         }
 
-        if (argc < 3)
+        if (argc < 4)
                 level=2;
         else
                 level = atoi(argv[2]);
@@ -282,7 +282,7 @@ uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
         void **ctr = NULL;
         uint32 level = 1;
 
-        if (argc < 1) {
+        if (argc < 2) {
                 report(out_hnd, "spooljobs <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -330,7 +330,7 @@ uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *arg
 
         BOOL res = True;
 
-        if (argc < 1)
+        if (argc < 2)
         {
                 report(out_hnd, "spoolopen <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
@@ -385,7 +385,7 @@ uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv
         uint32 status;
         uint32 type = 1;
 
-        if (argc < 2) {
+        if (argc < 3) {
                 report(out_hnd, "spoolgetdata <printer name> <value name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -441,7 +441,7 @@ uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *ar
         fstring environment;
         uint32 level;
 
-        if (argc < 1) {
+        if (argc < 2) {
                 report(out_hnd, "spoolgetprinterdriver <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -524,14 +524,14 @@ uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char 
         fstrcat(srv_name, info->dest_host);
         strupper(srv_name);
 
-        if (argc < 1) {
+        if (argc < 2) {
                 report(out_hnd, "spoolgetprinterdriverdir <arch>\n");
                 return NT_STATUS_NOPROBLEMO;
         }
 
         fstrcpy(env, argv[1]);
 
-        for (i=2; i<=argc; i++) {
+        for (i=3; i<=argc; i++) {
                 fstrcat(env, " ");
                 fstrcat(env, argv[i]);
         }
@@ -571,7 +571,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
         strupper(srv_name);
 
 	/* check (and copy) the command line arguments */
-        if (argc < 4) {
+        if (argc < 5) {
                 report(out_hnd, "spooladdprinterex <name> <shared name> <driver> <port>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -701,7 +701,7 @@ uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *ar
 	uint32			result = NT_STATUS_NO_PROBLEMO;
 	
 	/* parse the command arguements */
-	if (argc < 2)
+	if (argc < 3)
 	{
 		report (out_hnd, "spooladdprinterdriver <arch>\\\n");
 		report (out_hnd, "\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
