@@ -1,7 +1,7 @@
 diff -uNr samba-2.2.5pre1.orig/source/Makefile.in samba-2.2.5pre1/source/Makefile.in
 --- samba-2.2.5pre1.orig/source/Makefile.in	Wed Jun 12 15:26:50 2002
 +++ samba-2.2.5pre1/source/Makefile.in	Wed Jun 12 15:30:29 2002
-@@ -83,7 +83,7 @@
+@@ -84,7 +84,7 @@
  FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
  FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
  FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
@@ -53,9 +53,9 @@ diff -uNr samba-2.2.5pre1.orig/source/include/config.h.in samba-2.2.5pre1/source
 diff -uNr samba-2.2.5pre1.orig/source/include/local.h samba-2.2.5pre1/source/include/local.h
 --- samba-2.2.5pre1.orig/source/include/local.h	Tue Jan 15 10:02:37 2002
 +++ samba-2.2.5pre1/source/include/local.h	Wed Jun 12 15:30:29 2002
-@@ -189,4 +189,20 @@
- /* Allocation roundup. */
- #define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
+@@ -191,4 +191,20 @@
+ /* Max number of jobs per print queue. */
+ #define PRINT_MAX_JOBID 10000
  
 +/* FHS-compatible directory defines */
 +#ifdef FHS_COMPATIBLE
@@ -77,7 +77,7 @@ diff -uNr samba-2.2.5pre1.orig/source/include/local.h samba-2.2.5pre1/source/inc
 diff -uNr samba-2.2.5pre1.orig/source/lib/util.c samba-2.2.5pre1/source/lib/util.c
 --- samba-2.2.5pre1.orig/source/lib/util.c	Mon Jun  3 21:11:11 2002
 +++ samba-2.2.5pre1/source/lib/util.c	Wed Jun 12 15:30:29 2002
-@@ -1860,6 +1860,46 @@
+@@ -1862,6 +1862,46 @@
  	return fname;
  }
  
@@ -180,9 +180,8 @@ diff -uNr samba-2.2.5pre1.orig/source/nsswitch/winbindd_idmap.c samba-2.2.5pre1/
  		DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
  		return False;
  	}
-diff -uNr samba-2.2.5pre1.orig/source/param/loadparm.c samba-2.2.5pre1/source/param/loadparm.c
---- samba-2.2.5pre1.orig/source/param/loadparm.c	Thu May 30 23:13:00 2002
-+++ samba-2.2.5pre1/source/param/loadparm.c	Wed Jun 12 15:30:29 2002
+--- samba-2.2.5/source/param/loadparm.c.orig	Tue Jun 18 21:13:45 2002
++++ samba-2.2.5/source/param/loadparm.c	Tue Jun 18 23:24:14 2002
 @@ -107,6 +107,9 @@
  	char *szAddPrinterCommand;
  	char *szDeletePrinterCommand;
@@ -193,7 +192,7 @@ diff -uNr samba-2.2.5pre1.orig/source/param/loadparm.c samba-2.2.5pre1/source/pa
  	char *szLockDir;
  	char *szPidDir;
  	char *szRootdir;
-@@ -1025,8 +1028,13 @@
+@@ -1046,8 +1046,13 @@
  	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
  	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
  	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
@@ -210,7 +209,7 @@ diff -uNr samba-2.2.5pre1.orig/source/param/loadparm.c samba-2.2.5pre1/source/pa
 diff -uNr samba-2.2.5pre1.orig/source/printing/nt_printing.c samba-2.2.5pre1/source/printing/nt_printing.c
 --- samba-2.2.5pre1.orig/source/printing/nt_printing.c	Thu Jun  6 08:15:02 2002
 +++ samba-2.2.5pre1/source/printing/nt_printing.c	Wed Jun 12 15:30:29 2002
-@@ -263,24 +263,24 @@
+@@ -262,24 +262,24 @@
  	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
  		return True;
   
