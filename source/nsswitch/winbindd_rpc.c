@@ -692,7 +692,7 @@ static LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int t
 	return ldp;
 }
 
-int get_ldap_seq(const char *server, uint32 *seq)
+static int get_ldap_seq(const char *server, uint32 *seq)
 {
 	int ret = -1;
 	struct timeval to;
@@ -744,6 +744,80 @@ int get_ldap_seq(const char *server, uint32 *seq)
 		ldap_unbind(ldp);
 	return ret;
 }
+
+/**********************************************************************
+ Get the sequence number for a Windows AD native mode domain using
+ LDAP queries
+**********************************************************************/
+
+int get_ldap_sequence_number( const char* domain, uint32 *seq)
+{
+	int ret = -1;
+	int i;
+	struct in_addr *ip_list = NULL;
+	int count;
+	BOOL list_ordered;
+	
+	if ( !get_dc_list( domain, &ip_list, &count, &list_ordered ) ) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		return False;
+	}
+
+	if ( !list_ordered )
+	{
+		/* 
+		 * Pick a nice close server. Look for DC on local net 
+		 * (assuming we don't have a list of preferred DC's)
+		 */
+
+		for (i = 0; i < count; i++) {
+			if (is_zero_ip(ip_list[i]))
+				continue;
+
+			if ( !is_local_net(ip_list[i]) )
+				continue;
+		
+			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+				goto done;
+		
+			zero_ip(&ip_list[i]);
+		}
+	
+
+		/*
+		 * Secondly try and contact a random PDC/BDC.
+		 */
+
+		i = (sys_random() % count);
+
+		if ( !is_zero_ip(ip_list[i]) ) {
+			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+				goto done;
+		}
+		zero_ip(&ip_list[i]); /* Tried and failed. */
+	}
+
+	/* Finally return first DC that we can contact */
+
+	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
+		if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+			goto done;
+	}
+
+done:
+	if ( ret == 0 ) {
+		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence number for Domain (%s) from DC (%s)\n", 
+			domain, inet_ntoa(ip_list[i])));
+	}
+
+	SAFE_FREE(ip_list);
+
+	return ret;
+}
+
 #endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
@@ -771,20 +845,15 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 #ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 		if ( domain->native_mode ) 
 		{
-			fstring dcname;
-			struct in_addr dc_ip;
-			
-			if (!get_dc_name(domain->name, dcname, &dc_ip) )
-				goto done;
-				
 			DEBUG(8,("using get_ldap_seq() to retrieve the sequence number\n"));
-			if (get_ldap_seq( inet_ntoa(dc_ip), seq) == 0) {
-			result = NT_STATUS_OK;
-			seqnum = *seq;
-			DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
+
+			if ( get_ldap_sequence_number( domain->name, seq ) == 0 ) {			
+				result = NT_STATUS_OK;
+				seqnum = *seq;
+				DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
 					domain->name, (unsigned)seqnum ));
-			goto done;
-		}
+				goto done;
+			}
 
 		DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number (%u) for domain %s\n",
 		(unsigned)seqnum, domain->name ));

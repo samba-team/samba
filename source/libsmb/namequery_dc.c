@@ -65,39 +65,42 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 		}
 	}
 
-	/* 
-	 * Pick a nice close server. Look for DC on local net 
-	 * (assuming we don't have a list of preferred DC's)
-	 */
+	if ( !list_ordered ) 
+	{
+		/* 
+		 * Pick a nice close server. Look for DC on local net 
+		 * (assuming we don't have a list of preferred DC's)
+		 */
+		 
+		for (i = 0; i < count; i++) {
+			if (is_zero_ip(ip_list[i]))
+				continue;
 
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if ( !list_ordered && !is_local_net(ip_list[i]) )
-			continue;
+			if ( !is_local_net(ip_list[i]) )
+				continue;
 		
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+				dc_ip = ip_list[i];
+				goto done;
+			}
+		
+			zero_ip(&ip_list[i]);
+		}
+
+		/*
+		 * Secondly try and contact a random PDC/BDC.
+		 */
+
+		i = (sys_random() % count);
+
+		if (!is_zero_ip(ip_list[i]) && 
+			name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) 
+		{
 			dc_ip = ip_list[i];
 			goto done;
 		}
-		
-		zero_ip(&ip_list[i]);
+		zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
-
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-
-	i = (sys_random() % count);
-
-	if (!is_zero_ip(ip_list[i]) &&
-	    name_status_find(domain, 0x1c, 0x20,
-			     ip_list[i], srv_name)) {
-		dc_ip = ip_list[i];
-		goto done;
-	}
-	zero_ip(&ip_list[i]); /* Tried and failed. */
 
 	/* Finally return first DC that we can contact */
 
