@@ -180,9 +180,10 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 done:
 	/* cleanup */
-
-	cli_nt_session_close( cli );
-	cli_shutdown( cli );
+	if (cli) {
+		cli_nt_session_close( cli );
+		cli_shutdown( cli );
+	}
 
 	return NT_STATUS_IS_OK(result);
 }
