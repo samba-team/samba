@@ -645,8 +645,7 @@ krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
     ret = krb5_store_times(sp, creds->times);
     if(ret)
 	return ret;
-    ret = krb5_store_int8(sp, 0);  /* this is probably the
-				enc-tkt-in-skey bit from KDCOptions */
+    ret = krb5_store_int8(sp, creds->second_ticket.length != 0); /* is_skey */
     if(ret)
 	return ret;
 
