@@ -351,8 +351,9 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
-	       printing/printfsp.o \
-               lib/sysquotas.o smbd/change_trust_pw.o smbd/fake_file.o \
+	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
+	       lib/sysquotas_xfs.o \
+	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o lib/afs.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
