@@ -242,7 +242,6 @@ GtkWidget* create_rpcwin (void)
   return rpcwin;
 }
 
-
 static void on_open_nt4_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
@@ -254,7 +253,7 @@ static void on_open_nt4_activate (GtkMenuItem *menuitem, gpointer user_data)
 		error = reg_open("nt4", filename, NULL, &registry);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(error);
-			return;
+			break;
 		}
 		registry_load_root();
 		break;
@@ -291,7 +290,7 @@ on_open_remote_activate                (GtkMenuItem     *menuitem,
 		error = reg_open("rpc", location, credentials, &registry);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(error);
-			return;
+			break;
 		}
 		free(location); free(credentials);
 		registry_load_root();
