@@ -284,6 +284,13 @@ static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 		return False;
 	}
 
+	/* This is the wrong place for this check I think.  The correct
+	   place should be in the code that decides to use this server
+	   for authentication rather than attempting to connect to it to
+	   determine whether it is OK. */
+
+#if 0
+
 	/* Don't attempt connect if the password server parameter does
 	   not list this controller */
 
@@ -293,6 +300,7 @@ static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 			  remote_machine));
 		return False;
 	}
+#endif
 
 	/* Attempt connect */
 
