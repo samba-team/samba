@@ -314,7 +314,7 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 
      for(dpy = 4; dpy < 256; ++dpy) {
 	 char **path;
-	 int tmp;
+	 int tmp = 0;
 
 	 n = 0;
 	 for (path = x_sockets; *path; ++path) {
