@@ -2050,11 +2050,3 @@ void nmbd_wins_new_entry(int msg_type, pid_t src, void *buf, size_t len)
 
 	}
 }
-
-
-
-
-
-
-
-

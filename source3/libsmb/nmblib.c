@@ -310,21 +310,24 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 }
 
 /*******************************************************************
-  useful for debugging messages
-  ******************************************************************/
+ Useful for debugging messages.
+******************************************************************/
+
 char *nmb_namestr(struct nmb_name *n)
 {
-  static int i=0;
-  static fstring ret[4];
-  char *p = ret[i];
+	static int i=0;
+	static fstring ret[4];
+	fstring name;
+	char *p = ret[i];
 
-  if (!n->scope[0])
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
-  else
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
+	pull_ascii_fstring(name, n->name);
+	if (!n->scope[0])
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>",name,n->name_type);
+	else
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",name,n->name_type,n->scope);
 
-  i = (i+1)%4;
-  return(p);
+	i = (i+1)%4;
+	return(p);
 }
 
 /*******************************************************************
