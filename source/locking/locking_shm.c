@@ -692,12 +692,12 @@ struct share_ops *locking_shm_init(int ronly)
 {
 	read_only = ronly;
 
-#ifdef HAVE_SYSV_IPC
+#ifdef USE_SYSV_IPC
 	shmops = sysv_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif
 
-#ifdef HAVE_SHARED_MMAP
+#ifdef USE_SHARED_MMAP
 	shmops = smb_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif

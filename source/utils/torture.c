@@ -27,6 +27,8 @@ static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
+static pid_t master_pid;
+static struct cli_state current_cli;
 
 static double create_procs(void (*fn)(void));
 
@@ -43,6 +45,43 @@ static double end_timer(void)
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
 	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+}
+
+
+/* return a pointer to a anonymous shared memory segment of size "size"
+   which will persist across fork() but will disappear when all processes
+   exit 
+
+   The memory is not zeroed 
+
+   This function uses system5 shared memory. It takes advantage of a property
+   that the memory is not destroyed if it is attached when the id is removed
+   */
+static void *shm_setup(int size)
+{
+	int shmid;
+	void *ret;
+
+	shmid = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
+	if (shmid == -1) {
+		printf("can't get shared memory\n");
+		exit(1);
+	}
+	ret = (void *)shmat(shmid, 0, 0);
+	if (!ret || ret == (void *)-1) {
+		printf("can't attach to shared memory\n");
+		return NULL;
+	}
+	/* the following releases the ipc, but note that this process
+	   and all its children will still have access to the memory, its
+	   just that the shmid is no longer valid for other shm calls. This
+	   means we don't leave behind lots of shm segments after we exit 
+
+	   See Stevens "advanced programming in unix env" for details
+	   */
+	shmctl(shmid, IPC_RMID, 0);
+	
+	return ret;
 }
 
 
@@ -214,17 +253,15 @@ static BOOL rw_torture(struct cli_state *c)
 
 static void run_torture(void)
 {
-	static struct cli_state cli;
+	struct cli_state cli;
 
-	if (open_connection(&cli)) {
-		cli_sockopt(&cli, sockops);
+	cli = current_cli;
 
-		printf("pid %d OK\n", getpid());
+	cli_sockopt(&cli, sockops);
 
-		rw_torture(&cli);
-
-		close_connection(&cli);
-	}
+	rw_torture(&cli);
+	
+	close_connection(&cli);
 }
 
 static int nbsize1, nbsize2, nbprob1;
@@ -238,18 +275,8 @@ static void run_netbench(void)
 	size_t size;
 	char buf[8192];
 	fstring fname;
-	int tries=4;
 
-	while (1) {
-		memset(&cli, 0, sizeof(cli));
-		if (open_connection(&cli)) break;
-		if (tries-- == 0) {
-			printf("pid %d failed to start\n", pid);
-			return;
-		}
-	}
-
-	printf("pid %d OK\n", pid);
+	cli = current_cli;
 
 	cli_sockopt(&cli, sockops);
 
@@ -283,8 +310,6 @@ static void run_netbench(void)
 	}
 
 	close_connection(&cli);
-
-	printf("\npid %d done\n", pid);
 }
 
 
@@ -733,7 +758,7 @@ static void run_maxfidtest(void)
 	int retries=4;
 	int n = numops;
 
-	while (!open_connection(&cli) && retries--) msleep(random() % 2000);
+	cli = current_cli;
 
 	if (retries <= 0) {
 		printf("failed to connect\n");
@@ -741,8 +766,6 @@ static void run_maxfidtest(void)
 	}
 
 	cli_sockopt(&cli, sockops);
-
-	printf("starting maxfid test\n");
 
 	fnum = 0;
 	while (1) {
@@ -1013,24 +1036,76 @@ static void run_trans2test(void)
 	printf("trans2 test finished\n");
 }
 
-
 static double create_procs(void (*fn)(void))
 {
 	int i, status;
+	volatile int *child_status;
+	int synccount;
+	int tries = 8;
 
 	start_timer();
+
+	master_pid = getpid();
+	synccount = 0;
+
+	child_status = (volatile int *)shm_setup(sizeof(int)*nprocs);
+	if (!child_status) {
+		printf("Failed to setup shared memory\n");
+		return end_timer();
+	}
+
+	memset(child_status, 0, sizeof(int)*nprocs);
 
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
 			int mypid = getpid();
 			sys_srandom(mypid ^ time(NULL));
+
+			while (1) {
+				memset(&current_cli, 0, sizeof(current_cli));
+				if (open_connection(&current_cli)) break;
+				if (tries-- == 0) {
+					printf("pid %d failed to start\n", getpid());
+					_exit(1);
+				}
+				msleep(10);
+			}
+
+			child_status[i] = getpid();
+			kill(getpid(), SIGSTOP);
 			fn();
 			_exit(0);
 		}
 	}
 
-	for (i=0;i<nprocs;i++)
+	do {
+		synccount = 0;
+		for (i=0;i<nprocs;i++) {
+			if (child_status[i]) synccount++;
+		}
+		if (synccount == nprocs) break;
+		msleep(10);
+	} while (end_timer() < 30);
+
+	if (synccount != nprocs) {
+		printf("FAILED TO START %d CLIENTS (started %d)\n", nprocs, synccount);
+		return end_timer();
+	}
+
+	/* start the client load */
+	start_timer();
+
+	for (i=0;i<nprocs;i++) {
+		kill(child_status[i], SIGCONT);
+	}
+
+	printf("%d clients started\n", nprocs);
+
+	for (i=0;i<nprocs;i++) {
 		waitpid(0, &status, 0);
+		printf("*");
+	}
+	printf("\n");
 	return end_timer();
 }
 
@@ -1220,5 +1295,3 @@ static void usage(void)
 
 	return(0);
 }
-
-

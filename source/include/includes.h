@@ -55,15 +55,24 @@
 #endif
 #endif /* RELIANTUNIX */
 
+#ifdef HAVE_SYSV_IPC
+#define USE_SYSV_IPC
+#endif
+
+#ifdef HAVE_SHARED_MMAP
+#define USE_SHARED_MMAP
+#endif
+
+
 /* if we have both SYSV IPC and shared mmap then we need to choose. For most
    systems it is much faster to use SYSV IPC, but under Linux it is
    about 5 times faster to use fcntl, so for Linux systems we force
    fcntl based locking */
-#if (defined(HAVE_SYSV_IPC) && defined(HAVE_SHARED_MMAP))
+#if (defined(USE_SYSV_IPC) && defined(USE_SHARED_MMAP))
 # ifdef LINUX
-#  undef HAVE_SYSV_IPC
+#  undef USE_SYSV_IPC
 # else
-#  undef HAVE_SHARED_MMAP
+#  undef USE_SHARED_MMAP
 # endif
 #endif
 

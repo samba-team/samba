@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-#ifdef HAVE_SYSV_IPC
+#ifdef USE_SYSV_IPC
 
 extern int DEBUGLEVEL;
 
