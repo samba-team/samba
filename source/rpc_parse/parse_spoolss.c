@@ -3752,6 +3752,9 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 	q_u->info.level = level;
 	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
 	switch (level) {
+
+	  /* There's no such thing as a setprinter level 1 */
+
 	case 2:
 		secdesc = info->printers_2->secdesc;
 		devmode = info->printers_2->devmode;
@@ -4032,6 +4035,9 @@ BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, in
 
 	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;	
+
+	if(!prs_align(ps))
+		return False;
 
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
