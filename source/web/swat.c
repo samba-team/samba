@@ -1010,6 +1010,7 @@ static void printers_page(void)
 		}
 	}
 
+	setup_logging(argv[0],False);
 	charset_initialise();
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
