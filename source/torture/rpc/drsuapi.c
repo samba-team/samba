@@ -56,6 +56,7 @@ static BOOL test_Unbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 
 	r.in.handle = handle;
+	r.out.handle = handle;
 
 	status = dcerpc_drsuapi_Unbind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
