@@ -323,7 +323,7 @@ unparse_name(krb5_context context,
     }
     len++;
     *name = malloc(len);
-    if(len != 0 && *name == NULL) {
+    if(*name == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
