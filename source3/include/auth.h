@@ -85,7 +85,7 @@ typedef struct auth_serversupplied_info
 	
 	NT_USER_TOKEN *ptok;
 	
-	uchar session_key[16];
+	uint8 session_key[16];
 	
 	uint8 first_8_lm_hash[8];
 

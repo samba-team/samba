@@ -265,6 +265,8 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 		}
 	}
 
+	memcpy(vuser->session_key, server_info->session_key, sizeof(vuser->session_key));
+
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 
 		  (unsigned int)vuser->gid,
