@@ -51,3 +51,6 @@ $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
 .et.c:
 	$(COMPILE_ET) $<
 
+hdb_err.h: hdb_err.et
+
+hdb_err.c: hdb_err.et
