@@ -24,6 +24,54 @@
 #include "vfs_posix.h"
 
 /*
+  create a directory with EAs
+*/
+static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
+			     struct smbsrv_request *req, union smb_mkdir *md)
+{
+	NTSTATUS status;
+	struct pvfs_filename *name;
+	mode_t mode;
+	int i;
+
+	/* resolve the cifs name to a posix name */
+	status = pvfs_resolve_name(pvfs, req, md->t2mkdir.in.path, 0, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (name->exists) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
+
+	if (mkdir(name->full_name, mode) == -1) {
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	status = pvfs_resolve_name(pvfs, req, md->t2mkdir.in.path, 0, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!name->exists ||
+	    !(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/* setup any EAs that were asked for */
+	for (i=0;i<md->t2mkdir.in.num_eas;i++) {
+		status = pvfs_setfileinfo_ea_set(pvfs, name, -1, &md->t2mkdir.in.eas[i]);
+		if (!NT_STATUS_IS_OK(status)) {
+			rmdir(name->full_name);
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
   create a directory
 */
 NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
@@ -33,6 +81,10 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct pvfs_filename *name;
 	mode_t mode;
+
+	if (md->generic.level == RAW_MKDIR_T2MKDIR) {
+		return pvfs_t2mkdir(pvfs, req, md);
+	}
 
 	if (md->generic.level != RAW_MKDIR_MKDIR) {
 		return NT_STATUS_INVALID_LEVEL;

@@ -122,7 +122,7 @@ static struct smbcli_request *smb_raw_t2mkdir_send(struct smbcli_tree *tree,
 
 	data_total = ea_list_size(parms->t2mkdir.in.num_eas, parms->t2mkdir.in.eas);
 
-	t2.in.max_param = 0;
+	t2.in.max_param = 2;
 	t2.in.max_data = 0;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
@@ -135,7 +135,7 @@ static struct smbcli_request *smb_raw_t2mkdir_send(struct smbcli_tree *tree,
 	SIVAL(t2.in.params.data, VWV(0), 0); /* reserved */
 
 	smbcli_blob_append_string(tree->session, mem_ctx, 
-			       &t2.in.params, parms->t2mkdir.in.path, 0);
+				  &t2.in.params, parms->t2mkdir.in.path, STR_TERMINATE);
 
 	ea_put_list(t2.in.data.data, parms->t2mkdir.in.num_eas, parms->t2mkdir.in.eas);
 
