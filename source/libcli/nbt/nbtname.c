@@ -160,8 +160,6 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	uint32_t max_offset = offset;
 	uint8_t *components[MAX_COMPONENTS];
 	int i;
-	ssize_t ret;
-	void *p;
 	uint8_t *scope;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -192,12 +190,7 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	status = decompress_name(components[0], &r->type);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	ret = convert_string_talloc(ndr, CH_DOS, CH_UNIX, components[0], 
-				    strlen(components[0])+1, &p);
-	if (ret <= 0) {
-		return NT_STATUS_BAD_NETWORK_NAME;
-	}
-	r->name = p;
+	r->name = components[0];
 
 	/* combine the remaining components into the scope */
 	scope = components[1];
@@ -206,16 +199,7 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 		NT_STATUS_HAVE_NO_MEMORY(scope);
 	}
 
-	if (scope) {
-		ret = convert_string_talloc(ndr, CH_DOS, CH_UNIX, scope, 
-					    strlen(scope)+1, &p);
-		if (ret <= 0) {
-			return NT_STATUS_BAD_NETWORK_NAME;
-		}
-		r->scope = p;
-	} else {
-		r->scope = NULL;
-	}
+	r->scope = scope;
 
 	return NT_STATUS_OK;
 }
@@ -227,31 +211,18 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 {
 	uint_t num_components;
 	uint8_t *components[MAX_COMPONENTS];
-	void *ptr;
 	char *dname, *dscope=NULL, *p;
 	uint8_t *cname;
-	ssize_t ret;
 	int i;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	/* convert to DOS format */
-	ret = convert_string_talloc(ndr, CH_UNIX, CH_DOS, r->name, 
-				    strlen(r->name)+1, &ptr);
-	if (ret <= 0) {
-		return NT_STATUS_BAD_NETWORK_NAME;
-	}
-	dname = strupper_talloc(ndr, ptr);
+	dname = strupper_talloc(ndr, r->name);
 	NT_STATUS_HAVE_NO_MEMORY(dname);
 	if (r->scope) {
-		ret = convert_string_talloc(ndr, CH_UNIX, CH_DOS, r->scope, 
-					    strlen(r->scope)+1, &ptr);
-		if (ret <= 0) {
-			return NT_STATUS_BAD_NETWORK_NAME;
-		}
-		dscope = strupper_talloc(ndr, ptr);
+		dscope = strupper_talloc(ndr, r->scope);
 		NT_STATUS_HAVE_NO_MEMORY(dscope);
 	}
 
