@@ -286,7 +286,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			break;
 		case 'b':
 			b = (DATA_BLOB *)va_arg(ap, void *);
-			len1 = va_arg(ap, unsigned);
+			len1 = va_arg(ap, uint_t);
 			/* make sure its in the right format - be strict */
 			NEED_DATA(len1);
 			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)

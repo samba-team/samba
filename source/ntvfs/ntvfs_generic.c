@@ -273,7 +273,7 @@ NTSTATUS ntvfs_map_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 
 	case RAW_QFS_DSKATTR: {
 		/* map from generic to DSKATTR */
-		unsigned bpunit = 64;
+		uint_t bpunit = 64;
 
 		/* we need to scale the sizes to fit */
 		for (bpunit=64; bpunit<0x10000; bpunit *= 2) {

@@ -32,7 +32,7 @@ pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];
-	unsigned ret;
+	uint_t ret;
 	pstring pidFile;
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);

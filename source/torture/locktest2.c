@@ -54,7 +54,7 @@ static BOOL use_oplocks;
 struct record {
 	char r1, r2;
 	char conn, f, fstype;
-	unsigned start, len;
+	uint_t start, len;
 	char needed;
 };
 
@@ -91,7 +91,7 @@ static BOOL try_close(struct cli_state *c, int fstype, int fd)
 }
 
 static BOOL try_lock(struct cli_state *c, int fstype, 
-		     int fd, unsigned start, unsigned len,
+		     int fd, uint_t start, uint_t len,
 		     enum brl_type op)
 {
 	struct flock lock;
@@ -113,7 +113,7 @@ static BOOL try_lock(struct cli_state *c, int fstype,
 }
 
 static BOOL try_unlock(struct cli_state *c, int fstype, 
-		       int fd, unsigned start, unsigned len)
+		       int fd, uint_t start, uint_t len)
 {
 	struct flock lock;
 
@@ -224,13 +224,13 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
-	unsigned conn = rec->conn;
-	unsigned f = rec->f;
-	unsigned fstype = rec->fstype;
-	unsigned start = rec->start;
-	unsigned len = rec->len;
-	unsigned r1 = rec->r1;
-	unsigned r2 = rec->r2;
+	uint_t conn = rec->conn;
+	uint_t f = rec->f;
+	uint_t fstype = rec->fstype;
+	uint_t start = rec->start;
+	uint_t len = rec->len;
+	uint_t r1 = rec->r1;
+	uint_t r2 = rec->r2;
 	enum brl_type op;
 	int server;
 	BOOL ret[NSERVERS];
@@ -377,7 +377,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		recorded[n].conn = random() % NCONNECTIONS;
 		recorded[n].fstype = random() % NUMFSTYPES;
 		recorded[n].f = random() % NFILES;
-		recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
+		recorded[n].start = LOCKBASE + ((uint_t)random() % (LOCKRANGE-1));
 		recorded[n].len = 1 + 
 			random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 		recorded[n].start *= RANGE_MULTIPLE;

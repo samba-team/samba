@@ -53,7 +53,7 @@ struct talloc_chunk {
 	TALLOC_CTX *context;
 	size_t size;
 	void *ptr;
-	unsigned magic;
+	uint_t magic;
 };
 
 
@@ -492,7 +492,7 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 	if (!rt) return NULL;
 
 	s = talloc_asprintf(rt, "global talloc allocations in pid: %u\n",
-			    (unsigned) getpid());
+			    (uint_t) getpid());
 	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
 				   "name", "chunks", "bytes");
 	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
@@ -517,8 +517,8 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 		
 		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
 					   what,
-					   (unsigned) n_chunks,
-					   (unsigned) bytes);
+					   (uint_t) n_chunks,
+					   (uint_t) bytes);
 		total_bytes += bytes;
 		total_chunks += n_chunks;
 	}
@@ -532,7 +532,7 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 
 	s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
 				   "TOTAL",
-				   (unsigned) total_chunks, (unsigned) total_bytes);
+				   (uint_t) total_chunks, (uint_t) total_bytes);
 
 	return s;
 }
@@ -563,7 +563,7 @@ void talloc_get_allocation(TALLOC_CTX *t,
 /*
   realloc an array, checking for integer overflow in the array size
 */
-void *talloc_realloc_array(TALLOC_CTX *ctx, void *ptr, size_t el_size, unsigned count)
+void *talloc_realloc_array(TALLOC_CTX *ctx, void *ptr, size_t el_size, uint_t count)
 {
 	if (count == 0 ||
 	    count >= MAX_TALLOC_SIZE/el_size) {

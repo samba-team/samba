@@ -163,7 +163,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
   is the domain trust password
 */
 NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
-				       const char *uuid, unsigned version,
+				       const char *uuid, uint_t version,
 				       const char *domain,
 				       const char *username,
 				       const uint8_t session_key[8])
@@ -261,7 +261,7 @@ done:
   of the form HOSTNAME$ and the password is the domain trust password
 */
 NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
-				   const char *uuid, unsigned version,
+				   const char *uuid, uint_t version,
 				   const char *domain,
 				   const char *username,
 				   const char *password)

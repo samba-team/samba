@@ -1393,7 +1393,7 @@ static struct {
 };
 
 
-static void progress_bar(unsigned i, unsigned total)
+static void progress_bar(uint_t i, uint_t total)
 {
 	if (i % 10 != 0) return;
 	printf("%5d/%5d\r", i, total);

@@ -118,9 +118,9 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 }
 
 
-static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
+static void dump_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds)
 {
-	unsigned sync_context = 0;
+	uint_t sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -635,10 +635,10 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 }
 
 static void
-fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
+fetch_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
-	unsigned sync_context = 0;
+	uint_t sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;

@@ -30,9 +30,9 @@ static BOOL showall;
 static BOOL analyze;
 static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
-static unsigned lock_range = 100;
-static unsigned lock_base = 0;
-static unsigned min_length = 0;
+static uint_t lock_range = 100;
+static uint_t lock_base = 0;
+static uint_t min_length = 0;
 static BOOL exact_error_codes;
 static BOOL zero_zero;
 
@@ -164,8 +164,8 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
-	unsigned conn = rec->conn;
-	unsigned f = rec->f;
+	uint_t conn = rec->conn;
+	uint_t f = rec->f;
 	uint64_t start = rec->start;
 	uint64_t len = rec->len;
 	enum brl_type op = rec->lock_type;
@@ -322,7 +322,7 @@ static void test_locks(char *share[NSERVERS])
 #endif
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
-			recorded[n].start = lock_base + ((unsigned)random() % (lock_range-1));
+			recorded[n].start = lock_base + ((uint_t)random() % (lock_range-1));
 			recorded[n].len =  min_length +
 				random() % (lock_range-(recorded[n].start-lock_base));
 			recorded[n].start *= RANGE_MULTIPLE;

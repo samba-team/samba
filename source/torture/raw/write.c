@@ -61,7 +61,7 @@
 /*
   setup a random buffer based on a seed
 */
-static void setup_buffer(char *buf, unsigned seed, int len)
+static void setup_buffer(char *buf, uint_t seed, int len)
 {
 	int i;
 	srandom(seed);
@@ -71,7 +71,7 @@ static void setup_buffer(char *buf, unsigned seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(char *buf, unsigned seed, int len, int line)
+static BOOL check_buffer(char *buf, uint_t seed, int len, int line)
 {
 	int i;
 	srandom(seed);
@@ -98,7 +98,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	char *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
 	buf = talloc_zero(mem_ctx, maxsize);
@@ -217,7 +217,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	char *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
 	buf = talloc_zero(mem_ctx, maxsize);
@@ -391,7 +391,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	char *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
 	buf = talloc_zero(mem_ctx, maxsize);
@@ -530,7 +530,7 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	char *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
 	buf = talloc_zero(mem_ctx, maxsize);

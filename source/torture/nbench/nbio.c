@@ -207,14 +207,14 @@ void nb_unlink(const char *fname, int attr, NTSTATUS status)
 
 
 void nb_createx(const char *fname, 
-		unsigned create_options, unsigned create_disposition, int handle,
+		uint_t create_options, uint_t create_disposition, int handle,
 		NTSTATUS status)
 {
 	union smb_open io;	
 	uint32_t desired_access;
 	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
-	unsigned flags = 0;
+	uint_t flags = 0;
 	struct ftable *f;
 
 	mem_ctx = talloc_init("raw_open");
@@ -335,7 +335,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 }
 
 
-void nb_lockx(int handle, unsigned offset, int size, NTSTATUS status)
+void nb_lockx(int handle, uint_t offset, int size, NTSTATUS status)
 {
 	union smb_lock io;
 	int i;
@@ -361,7 +361,7 @@ void nb_lockx(int handle, unsigned offset, int size, NTSTATUS status)
 	check_status("LockX", status, ret);
 }
 
-void nb_unlockx(int handle, unsigned offset, int size, NTSTATUS status)
+void nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
 {
 	union smb_lock io;
 	int i;

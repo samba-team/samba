@@ -44,7 +44,7 @@ typedef struct {
 		char *password;
 		char *user_name;
 		char *kdc_server;
-		unsigned flags;
+		uint_t flags;
 		int time_offset;
 	} auth;
 

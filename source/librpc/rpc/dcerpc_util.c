@@ -52,7 +52,7 @@ size_t ndr_size_epm_towers(struct epm_towers *towers)
   work out what TCP port to use for a given interface on a given host
 */
 NTSTATUS dcerpc_epm_map_tcp_port(const char *server, 
-				 const char *uuid, unsigned version,
+				 const char *uuid, uint_t version,
 				 uint32_t *port)
 {
 	struct dcerpc_pipe *p;

@@ -139,7 +139,7 @@ void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 /*
   return the total number of wins servers, dead or not
 */
-unsigned wins_srv_count(void)
+uint_t wins_srv_count(void)
 {
 	const char **list;
 	int count = 0;
@@ -327,7 +327,7 @@ exit:
   return a count of the number of IPs for a particular tag, including
   dead ones
 */
-unsigned wins_srv_count_tag(const char *tag)
+uint_t wins_srv_count_tag(const char *tag)
 {
 	const char **list;
 	int i, count=0;

@@ -37,7 +37,7 @@ static int generate_trn_id(void)
 
 	trn_id = sys_random();
 
-	return trn_id % (unsigned)0x7FFF;
+	return trn_id % (uint_t)0x7FFF;
 }
 
 
