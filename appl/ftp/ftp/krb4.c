@@ -120,14 +120,14 @@ sec_prot_internal(int level)
     verbose = 0;
 
     if(!auth_complete){
-	fprintf(stderr, "No security data exchange has taken place.\n");
+	printf("No security data exchange has taken place.\n");
 	return -1;
     }
 
     if(level){
 	ret = command("PBSZ %d", s);
 	if(ret != COMPLETE){
-	    fprintf(stderr, "Failed to set protection buffer size.\n");
+	    printf("Failed to set protection buffer size.\n");
 	    return -1;
 	}
 	auth_pbsz = s;
@@ -143,7 +143,7 @@ sec_prot_internal(int level)
     verbose = old_verbose;
     ret = command("PROT %c", level["CSEP"]); /* XXX :-) */
     if(ret != COMPLETE){
-	fprintf(stderr, "Failed to set protection level.\n");
+	printf("Failed to set protection level.\n");
 	return -1;
     }
     
@@ -152,28 +152,27 @@ sec_prot_internal(int level)
 }
 
 
-void sec_prot(int argc, char **argv)
+void
+sec_prot(int argc, char **argv)
 {
     int level = -1;
 
     if(argc != 2){
-	fprintf(stderr,
-		"usage: %s (clear | safe | confidential | private)\n",
-		argv[0]);
+	printf("usage: %s (clear | safe | confidential | private)\n",
+	       argv[0]);
 	code = -1;
 	return;
     }
     if(!auth_complete){
-	fprintf(stderr, "No security data exchange has taken place.\n");
+	printf("No security data exchange has taken place.\n");
 	code = -1;
 	return;
     }
     level = name_to_level(argv[1]);
     
     if(level == -1){
-	fprintf(stderr,
-		"usage: %s (clear | safe | confidential | private)\n",
-		argv[0]);
+	printf("usage: %s (clear | safe | confidential | private)\n",
+	       argv[0]);
 	code = -1;
 	return;
     }
@@ -431,12 +430,12 @@ do_klogin(char *host)
     ret = command("AUTH KERBEROS_V4");
     if(ret != CONTINUE){
 	if(code == 504){
-	    fprintf(stderr, "Kerberos is not supported by the server.\n");
+	    printf("Kerberos 4 is not supported by the server.\n");
 	}else if(code == 534){
-	    fprintf(stderr, "KERBEROS_V4 rejected as security mechanism.\n");
+	    printf("KERBEROS_V4 rejected as security mechanism.\n");
 	}else if(ret == ERROR)
-	    fprintf(stderr, "The server doesn't understand the FTP "
-		    "security extensions.\n");
+	    printf("The server doesn't understand the FTP "
+		   "security extensions.\n");
 	verbose = old_verbose;
 	return -1;
     }
@@ -446,7 +445,7 @@ do_klogin(char *host)
     if(ret == KDC_PR_UNKNOWN)
 	ret = do_auth("rcmd", host, checksum);
     if(ret){
-	fprintf(stderr, "%s\n", krb_get_err_text(ret));
+	printf("%s\n", krb_get_err_text(ret));
 	verbose = old_verbose;
 	return ret;
     }
@@ -456,29 +455,29 @@ do_klogin(char *host)
     free(p);
 
     if(ret != COMPLETE){
-	fprintf(stderr, "Server didn't accept auth data.");
+	printf("Server didn't accept auth data.\n");
 	verbose = old_verbose;
 	return -1;
     }
 
     p = strstr(reply_string, "ADAT=");
     if(!p){
-	fprintf(stderr, "Remote host didn't send adat reply.");
+	printf("Remote host didn't send adat reply.\n");
 	verbose = old_verbose;
 	return -1;
     }
     p+=5;
     len = base64_decode(p, adat);
     if(len < 0){
-	fprintf(stderr, "Failed to decode base64 from server.");
+	printf("Failed to decode base64 from server.\n");
 	verbose = old_verbose;
 	return -1;
     }
     ret = krb_rd_safe(adat, len, &key, 
 		      &hisctladdr, &myctladdr, &msg_data);
     if(ret){
-	fprintf(stderr, "Error reading reply from server: %s.", 
-	      krb_get_err_text(ret));
+	printf("Error reading reply from server: %s.\n", 
+	       krb_get_err_text(ret));
 	verbose = old_verbose;
 	return -1;
     }
@@ -489,7 +488,7 @@ do_klogin(char *host)
 	for(i = 0; i < msg_data.app_length; i++)
 	    cs = (cs<<8) + msg_data.app_data[i];
 	if(cs - checksum != 1){
-	    fprintf(stderr, "Bad checksum returned from server.");
+	    printf("Bad checksum returned from server.\n");
 	    verbose = old_verbose;
 	    return -1;
 	}
@@ -536,8 +535,8 @@ int krb4_read_msg(char *s, int priv)
     else
 	ret = krb_rd_safe(buf, len, &key, &hisctladdr, &myctladdr, &m);
     if(ret){
-      fprintf(stderr, "%s\n", krb_get_err_text(ret));
-      return -1;
+	printf("%s\n", krb_get_err_text(ret));
+	return -1;
     }
 	
     m.app_data[m.app_length] = 0;
