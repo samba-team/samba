@@ -53,58 +53,71 @@ a packet to ensure chaining works correctly */
 ****************************************************************************/
 int reply_special(char *inbuf,char *outbuf)
 {
-  int outsize = 4;
-  int msg_type = CVAL(inbuf,0);
-  int msg_flags = CVAL(inbuf,1);
-  pstring name1,name2;
-  extern fstring remote_machine;
-  extern fstring local_machine;
-  char *p;
-
-  *name1 = *name2 = 0;
-
-  smb_setlen(outbuf,0);
-
-  switch (msg_type)
-    {
-    case 0x81: /* session request */
-      CVAL(outbuf,0) = 0x82;
-      CVAL(outbuf,3) = 0;
-      if (name_len(inbuf+4) > 50)
-	{
-	  DEBUG(0,("Invalid name length in session request\n"));
-	  return(0);
+	int outsize = 4;
+	int msg_type = CVAL(inbuf,0);
+	int msg_flags = CVAL(inbuf,1);
+	pstring name1,name2;
+	extern fstring remote_machine;
+	extern fstring local_machine;
+	char *p;
+	
+	*name1 = *name2 = 0;
+	
+	smb_setlen(outbuf,0);
+	
+	switch (msg_type) {
+	case 0x81: /* session request */
+		CVAL(outbuf,0) = 0x82;
+		CVAL(outbuf,3) = 0;
+		if (name_len(inbuf+4) > 50) {
+			DEBUG(0,("Invalid name length in session request\n"));
+			return(0);
+		}
+		name_extract(inbuf,4,name1);
+		name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
+			 name1,name2));      
+		
+		strcpy(remote_machine,name2);
+		trim_string(remote_machine," "," ");
+		p = strchr(remote_machine,' ');
+		strlower(remote_machine);
+		if (p) *p = 0;
+		
+		strcpy(local_machine,name1);
+		trim_string(local_machine," "," ");
+		p = strchr(local_machine,' ');
+		strlower(local_machine);
+		if (p) *p = 0;
+		
+		add_session_user(remote_machine);
+		
+		reload_services(True);
+		reopen_logs();
+		
+		break;
+		
+	case 0x89: /* session keepalive request 
+		      (some old clients produce this?) */
+		CVAL(outbuf,0) = 0x85;
+		CVAL(outbuf,3) = 0;
+		break;
+		
+	case 0x82: /* positive session response */
+	case 0x83: /* negative session response */
+	case 0x84: /* retarget session response */
+		DEBUG(0,("Unexpected session response\n"));
+		break;
+		
+	case 0x85: /* session keepalive */
+	default:
+		return(0);
 	}
-      name_extract(inbuf,4,name1);
-      name_extract(inbuf,4 + name_len(inbuf + 4),name2);
-      DEBUG(2,("netbios connect: name1=%s name2=%s\n",name1,name2));      
-
-      strcpy(remote_machine,name2);
-      trim_string(remote_machine," "," ");
-      p = strchr(remote_machine,' ');
-      strlower(remote_machine);
-      if (p) *p = 0;
-
-      strcpy(local_machine,name1);
-      trim_string(local_machine," "," ");
-      p = strchr(local_machine,' ');
-      strlower(local_machine);
-      if (p) *p = 0;
-
-      add_session_user(remote_machine);
-
-      reload_services(True);
-      reopen_logs();
-
-      break;
-    case 0x85: /* session keepalive */
-    default:
-      return(0);
-    }
-  
-  DEBUG(5,("%s init msg_type=0x%x msg_flags=0x%x\n",timestring(),msg_type,msg_flags));
-  
-  return(outsize);
+	
+	DEBUG(5,("%s init msg_type=0x%x msg_flags=0x%x\n",
+		 timestring(),msg_type,msg_flags));
+	
+	return(outsize);
 }
 
 
