@@ -11,6 +11,7 @@
 * Testing clients and servers::  
 * Slave Servers::               
 * Incremental propagation::     
+* Salting::
 @end menu
 
 A
@@ -217,6 +218,20 @@ the principal to only apply for the subjects that match the pattern.
 The patters are of the same type as those used in shell globbing, see
 @url{none,,fnmatch(3)}.
 
+In the example below @samp{lha/admin} can change every principal in the
+database. @samp{jimmy/admin} can only modify principals that belong to
+the realm @samp{E.KTH.SE}. @samp{mille/admin} is working at the
+helpdesk, so he should only be able to change the passwords for single
+component principals (ordinary users). He will not be able to change any
+@samp{/admin} principal.
+
+@example
+lha/admin@E.KTH.SE	all
+jimmy/admin@E.KTH.SE	all		*@E.KTH.SE
+jimmy/admin@E.KTH.SE	all		*/*@E.KTH.SE
+mille/admin@E.KTH.SE	change-password	*@E.KTH.SE
+@end example
+
 @node Password changing, Testing clients and servers, Remote administration, Setting up a realm
 @section Password changing
 
@@ -320,7 +335,7 @@ automate this you will want to start
 Starting the propagation once an hour from @code{cron} is probably a
 good idea.
 
-@node Incremental propagation,  , Slave Servers, Setting up a realm
+@node Incremental propagation, Salting , Slave Servers, Setting up a realm
 @section Incremental propagation
 
 There is also a newer and still somewhat experimental mechanism for
@@ -375,3 +390,44 @@ this signal.  Then, start @code{ipropd-slave} on all the slaves:
 master# /usr/heimdal/libexec/ipropd-master &
 slave#  /usr/heimdal/libexec/ipropd-slave master &
 @end example
+
+@node Salting, , Incremental propagation, Setting up a realm
+@section Salting
+@cindex Salting
+
+Salting is used to make it harder to precalculate all possible
+keys. Using a salt increases the search space to make it almost
+impossible to precalculate all keys. In salting you just append the salt
+to the password, or somehow merge the password with the salt.
+
+In Kerberos 5 the salting is determined by the encryption-type, except
+in case of @code{des}. In @code{des} there is the kerberos 4 salting
+(none at all) or the afs-salting (using the cell (realm in
+afs-lingo)). @code{[kadmin]default_keys} in @file{krb5.conf} controls
+what salting to use,
+
+The syntax of @code{[kadmin]default_keys} is
+@samp{[etype:]salt-type[:salt-string]}. @samp{etype} is the encryption
+type (des, des3, arcfour), @code{salt-type} is the type of salt (pw-salt
+or afs3-salt), and the salt-string is the string that will be used as
+salt (remember that if the salt is appened/prepended, the empty salt ""
+is the same thing as no salt at all).
+
+Common types of salting includes
+
+@itemize
+@item @code{v4} (or @code{des:pw-salt:})
+
+The Kerberos 4 salting is using no salt att all. Reson there is colon
+that the end is that 
+
+@item @code{v5} (or @code{pw-salt})
+
+@code{pw-salt} means all regular encryption-types that is regular 
+
+@item @code{afs3-salt}
+
+@code{afs3-salt} is the salting that is used with Transarc kaserver. Its
+the cell appended to the password.
+
+@end itemize
