@@ -113,6 +113,9 @@ static int net_groupmap_list(int argc, const char **argv)
 	int i;
 	fstring ntgroup = "";
 	fstring sid_string = "";
+
+	if (opt_verbose || opt_long_list_entries)
+		long_list = True;
 	
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
