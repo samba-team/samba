@@ -510,7 +510,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	a_state->account_sid = talloc_steal(a_state, sidstr);
 	a_state->account_name = talloc_strdup(a_state, groupname);
 	if (!a_state->account_name) {
-		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -693,14 +692,12 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->account_sid = talloc_steal(a_state, sidstr);
 	a_state->account_name = talloc_strdup(a_state, account_name);
 	if (!a_state->account_name) {
-		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* create the policy handle */
 	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
 	if (!u_handle) {
-		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -932,9 +929,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state->account_dn = talloc_steal(a_state, msg.dn);
 	a_state->account_sid = talloc_steal(a_state, sidstr);
 	a_state->account_name = talloc_strdup(a_state, aliasname);
-
-	if (a_state->account_name == NULL) {
-		talloc_free(a_state);
+	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1119,9 +1114,9 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
-	a_state->account_sid = talloc_strdup(a_state, sidstr);
+	a_state->account_sid = talloc_steal(a_state, sidstr);
 	a_state->account_name = talloc_strdup(a_state, groupname);
-	if (!a_state->account_name || !a_state->account_sid) {
+	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1486,10 +1481,10 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
-	a_state->account_dn = talloc_steal(d_state, msgs[0]->dn);
-	a_state->account_sid = talloc_strdup(d_state, sidstr);
-	a_state->account_name = talloc_strdup(d_state, account_name);
-	if (!a_state->account_name || !a_state->account_sid) {
+	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
+	a_state->account_sid = talloc_steal(a_state, sidstr);
+	a_state->account_name = talloc_strdup(a_state, account_name);
+	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
