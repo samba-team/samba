@@ -53,10 +53,11 @@ a packet to ensure chaining works correctly */
 
 char * known_pipes [] =
 {
-  "lsarpc",
 #if NTDOMAIN
   "NETLOGON",
+  "srvsvc",
 #endif
+  "lsarpc",
   NULL
 };
 
@@ -494,17 +495,18 @@ static void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 
 static int make_rpc_reply(char *inbuf, char *q, int data_len)
 {
-	uint32 callid = RIVAL(inbuf, 12);
+	uint32 callid = IVAL(inbuf, 12);
 	RPC_HDR hdr;
 
+	DEBUG(5,("make_rpc_reply.  callid: %x\n", callid));
+
 	create_rpc_reply(&hdr, callid, data_len);
-	return smb_io_rpc_hdr(False, &hdr, q, q, 4) - q;
+	return PTR_DIFF(smb_io_rpc_hdr(False, &hdr, q, q, 4), q);
 }
 
 static int lsa_reply_open_policy(char *q, char *base)
 {
 	int i;
-	char *start = q;
 	LSA_R_OPEN_POL r_o;
 
 	static char handle[20] =
@@ -526,7 +528,7 @@ static int lsa_reply_open_policy(char *q, char *base)
 	q = lsa_io_r_open_pol(False, &r_o, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
@@ -600,7 +602,6 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 				char *dom_name, char *dom_sid)
 {
-	char *start = q;
 	LSA_R_QUERY_INFO r_q;
 
 	/* set up the LSA QUERY INFO response */
@@ -616,7 +617,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	q = lsa_io_r_query(False, &r_q, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 /* pretty much hard-coded choice of "other" sids, unfortunately... */
@@ -700,7 +701,6 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
-	char *start = q;
 	LSA_R_LOOKUP_SIDS r_l;
 
 	/* set up the LSA Lookup SIDs response */
@@ -712,7 +712,7 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static int lsa_reply_lookup_rids(char *q, char *base,
@@ -720,7 +720,6 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
-	char *start = q;
 	LSA_R_LOOKUP_RIDS r_l;
 
 	/* set up the LSA Lookup RIDs response */
@@ -732,7 +731,7 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 	q = lsa_io_r_lookup_rids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static void make_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c,
@@ -745,7 +744,6 @@ static void make_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c,
 static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 					DOM_CHAL *srv_chal)
 {
-	char *start = q;
 	LSA_R_REQ_CHAL r_c;
 
 	/* set up the LSA REQUEST CHALLENGE response */
@@ -756,7 +754,7 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 	q = lsa_io_r_req_chal(False, &r_c, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
@@ -770,7 +768,6 @@ static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
 static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 				DOM_CHAL *resp_cred, int status)
 {
-	char *start = q;
 	LSA_R_AUTH_2 r_a;
 
 	/* set up the LSA AUTH 2 response */
@@ -781,7 +778,7 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	q = lsa_io_r_auth_2(False, &r_a, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
@@ -794,7 +791,6 @@ static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
 static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, int status)
 {
-	char *start = q;
 	LSA_R_SRV_PWSET r_s;
 
 	/* set up the LSA Server Password Set response */
@@ -804,7 +800,7 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 static void make_lsa_user_info(LSA_USER_INFO *usr,
@@ -923,7 +919,6 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, LSA_USER_INFO *user_info)
 {
-	char *start = q;
 	LSA_R_SAM_LOGON r_s;
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
@@ -939,7 +934,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 
@@ -947,7 +942,6 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, 
 				uint32 status)
 {
-	char *start = q;
 	LSA_R_SAM_LOGOFF r_s;
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
@@ -960,7 +954,7 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 	q = lsa_io_r_sam_logoff(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base); 
 }
 
 

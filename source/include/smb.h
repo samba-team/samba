@@ -477,7 +477,7 @@ typedef struct rpc_hdr_info
   uint8  minor; /* 0 - RPC minor version */
   uint8  pkt_type; /* 2 - RPC response packet */
   uint8  frag; /* 3 - first frag + last frag */
-  uint32 pack_type; /* 0x0000 0010 - packed data representation */
+  uint32 pack_type; /* 0x1000 0000 - packed data representation */
   uint16 frag_len; /* fragment length - data size (bytes) inc header and tail. */
   uint16 auth_len; /* 0 - authentication length  */
   uint32 call_id; /* call identifier.  matches 12th uint32 of incoming RPC data. */
