@@ -245,7 +245,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		if (*user && Get_Pwnam(user,True)) {
 			fstring dos_username;
 			fstrcpy(dos_username, user);
-			unix_to_dos(dos_username, True);
 			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
 		}
@@ -255,7 +254,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,validated_username(vuid));
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
@@ -265,7 +263,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}

@@ -682,8 +682,6 @@ static void usage(char *pname)
   slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", LOGFILEBASE);
   setup_logging( argv[0], False );
 
-  charset_initialise();
-
 #ifdef LMHOSTSFILE
   pstrcpy( host_file, LMHOSTSFILE );
 #endif
@@ -782,8 +780,6 @@ static void usage(char *pname)
 
   if ( !reload_nmbd_services(False) )
     return(-1);
-
-  codepage_initialise(lp_client_code_page());
 
   if(!init_structs())
     return -1;

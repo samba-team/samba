@@ -163,7 +163,6 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
-
         SIVAL(q, 0, 1); /* our nt version */
         SSVAL(q, 4, 0xffff); /* our lmnttoken */
         SSVAL(q, 6, 0xffff); /* our lm20token */
@@ -192,6 +191,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     case SAMLOGON:
     {
       char *q = buf + 2;
+      fstring asccomp;
 
       q += 2;
       unicomp = q;
@@ -236,15 +236,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * database. If it isn't then we let smbd send an appropriate error.
        * Let's ignore the SID.
        */
-
-      pstrcpy(ascuser, dos_unistr(uniuser));
+      pull_ucs2_pstring(ascuser, uniuser);
+      pull_ucs2_fstring(asccomp, unicomp);
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       asccomp,inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
 	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */

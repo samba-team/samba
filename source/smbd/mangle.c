@@ -244,7 +244,6 @@ static BOOL is_reserved_msdos( char *fname )
 static BOOL is_illegal_name( char *name )
   {
   unsigned char *s;
-  int            skip;
 
   if( !name )
     return( True );
@@ -255,18 +254,10 @@ static BOOL is_illegal_name( char *name )
   s = (unsigned char *)name;
   while( *s )
     {
-    skip = get_character_len( *s );
-    if( skip != 0 )
-      {
-      s += skip;
-      }
-    else
-      {
-      if( isillegal( *s ) )
+      if( *s>0x7F && isillegal( *s ) )
         return( True );
       else
         s++;
-      }
     }
 
   return( False );
@@ -325,7 +316,6 @@ BOOL is_8_3( char *fname, BOOL check_case )
   {
   int   len;
   int   l;
-  int   skip;
   char *p;
   char *dot_pos;
   char *slash_pos = strrchr( fname, '/' );
@@ -374,17 +364,12 @@ BOOL is_8_3( char *fname, BOOL check_case )
   dot_pos = NULL;
   while( *p )
     {
-    if( (skip = get_character_len( *p )) != 0 )
-      p += skip;
-    else 
-      {
       if( *p == '.' && !dot_pos )
         dot_pos = (char *)p;
-      else
+      /*else
         if( !isdoschar( *p ) )
-          return( False );
+          return( False );*/
       p++;
-      }
     }
 
   /* no dot and less than 9 means OK */
@@ -844,7 +829,6 @@ void mangle_name_83( char *s)
   char base[9];
   int baselen = 0;
   int extlen = 0;
-  int skip;
 
   extension[0] = 0;
   base[0] = 0;
@@ -879,31 +863,9 @@ void mangle_name_83( char *s)
       *p++ = 0;
       while( *p && extlen < 3 )
         {
-        skip = get_character_len( *p );
-        switch( skip )
-          {
-          case 2: 
-            if( extlen < 2 )
-              {
-              extension[extlen++] = p[0];
-              extension[extlen++] = p[1];
-              }
-            else 
-              {
-              extension[extlen++] = mangle( (unsigned char)*p );
-              }
-            p += 2;
-            break;
-          case 1:
-            extension[extlen++] = p[0];
-            p++;
-            break;
-          default:
-            if( isdoschar (*p) && *p != '.' )
+            if( /*isdoschar (*p) &&*/ *p != '.' )
               extension[extlen++] = p[0];
             p++;
-            break;
-          }
         }
       extension[extlen] = 0;
       }
@@ -913,31 +875,9 @@ void mangle_name_83( char *s)
 
   while( *p && baselen < 5 )
     {
-    skip = get_character_len(*p);
-    switch( skip )
-      {
-      case 2:
-        if( baselen < 4 )
-          {
-          base[baselen++] = p[0];
-          base[baselen++] = p[1];
-          }
-        else 
-          {
-          base[baselen++] = mangle( (unsigned char)*p );
-          }
-        p += 2;
-        break;
-      case 1:
-        base[baselen++] = p[0];
-        p++;
-        break;
-      default:
-        if( isdoschar( *p ) && *p != '.' )
+        if( /*isdoschar( *p ) &&*/ *p != '.' )
           base[baselen++] = p[0];
         p++;
-        break;
-      }
     }
   base[baselen] = 0;
 

@@ -540,7 +540,6 @@ static void usage(char *pname)
 				server;
 	struct cmd_set **cmd_set;
 
-	charset_initialise();
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
@@ -623,7 +622,6 @@ static void usage(char *pname)
 	}
 	DEBUGLEVEL = olddebug;
 
-	codepage_initialise(lp_client_code_page());
 	load_interfaces();
 
 	TimeInit();

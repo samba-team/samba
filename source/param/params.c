@@ -195,25 +195,12 @@ static int EatComment( myFILE *InFile )
 
 static int Continuation( char *line, int pos )
 {
-  int pos2 = 0;
+	pos--;
+	while( (pos >= 0) && isspace(line[pos]) )
+		pos--;
 
-  pos--;
-  while( (pos >= 0) && isspace(line[pos]) )
-     pos--;
-
-  /* we should recognize if `\` is part of a multibyte character or not. */
-  while(pos2 <= pos) {
-    size_t skip = 0;
-    skip = get_character_len(line[pos2]);
-    if (skip) {
-        pos2 += skip;
-    } else if (pos == pos2) {
-        return( ((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
-    } else  {
-        pos2++;
-    }
-  }
-  return (-1);
+	return (((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
+	return (-1);
 }
 
 
@@ -271,7 +258,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc( unix_to_dos(bufr,True) ) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc(bufr) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );

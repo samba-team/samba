@@ -202,8 +202,7 @@ uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	fstrcpy(mach_acct, dos_unistrn2(q_u->uni_logon_clnt.buffer,
-	                            q_u->uni_logon_clnt.uni_str_len));
+	rpcstr_pull(mach_acct,q_u->uni_logon_clnt.buffer,sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
 	strlower(mach_acct);
 	fstrcat(mach_acct, "$");
@@ -357,8 +356,8 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
-	pstrcpy(mach_acct, dos_unistrn2(q_u->clnt_id.login.uni_acct_name.buffer,
-	                            q_u->clnt_id.login.uni_acct_name.uni_str_len));
+	rpcstr_pull(mach_acct,q_u->clnt_id.login.uni_acct_name.buffer,
+			sizeof(mach_acct),q_u->clnt_id.login.uni_acct_name.uni_str_len*2,0);
 
 	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 	
@@ -592,7 +591,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	/* check username exists */
 
-	pstrcpy(nt_username, dos_unistrn2(uni_samlogon_user->buffer, uni_samlogon_user->uni_str_len));
+	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
 
 	DEBUG(3,("User:[%s]\n", nt_username));
         

@@ -180,8 +180,6 @@ int main(int argc, char *argv[])
 
   setup_logging(argv[0],True);
   
-  charset_initialise();
-
   while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {
   switch (opt) {
     case 's':
@@ -270,16 +268,13 @@ Level II oplocks can only be set if oplocks are also set.\n",
     }
   }
 
-  if (*term_code)
-    interpret_coding_system(term_code);
-
   if (argc < 3) {
     if (!silent_mode) {
       printf("Press enter to see a dump of your service definitions\n");
       fflush(stdout);
       getc(stdin);
     }
-    lp_dump(stdout,True, lp_numservices(), _dos_to_unix);
+    lp_dump(stdout,True, lp_numservices());
   }
   
   if (argc >= 3) {

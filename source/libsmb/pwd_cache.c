@@ -145,8 +145,7 @@ void pwd_set_nullpwd(struct pwd_info *pwd)
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 {
 	pwd_init(pwd);
-	fstrcpy(pwd->password, clr);
-	unix_to_dos(pwd->password,True);
+	push_ascii_fstring(pwd->password, clr);
 	pwd->cleartext = True;
 	pwd->null_pwd  = False;
 	pwd->crypted   = False;
@@ -157,13 +156,9 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
  ****************************************************************************/
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 {
-	if (pwd->cleartext)
-	{
+	if (pwd->cleartext) {
 		fstrcpy(clr, pwd->password);
-		dos_to_unix(clr, True);
-	}
-	else
-	{
+	} else {
 		clr[0] = 0;
 	}
 }
@@ -222,8 +217,7 @@ void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 
 	pwd_init(pwd);
 
-	pstrcpy(dos_passwd, clr);
-	unix_to_dos(dos_passwd, True);
+	push_ascii_pstring(dos_passwd, clr);
 
 	nt_lm_owf_gen(dos_passwd, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
 	pwd->null_pwd  = False;

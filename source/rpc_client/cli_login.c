@@ -165,14 +165,11 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   /* indicate a "network" login */
   ctr->switch_value = NET_LOGON_TYPE;
 
-  fstrcpy(dos_wksta_name, cli->clnt_name_slash);
-  unix_to_dos(dos_wksta_name, True);
+  clistr_pull(cli, dos_wksta_name, cli->clnt_name_slash, sizeof(dos_wksta_name), 0, STR_TERMINATE);
 
-  fstrcpy(dos_username, username);
-  unix_to_dos(dos_username, True);
+  clistr_pull(cli, dos_username, username, sizeof(dos_username), 0, STR_TERMINATE);
 
-  fstrcpy(dos_domain, domain);
-  unix_to_dos(dos_domain, True);
+  clistr_pull(cli, dos_domain, username, sizeof(dos_domain), 0, STR_TERMINATE);
 
   /* Create the structure needed for SAM logon. */
   init_id_info2(&ctr->auth.id2, dos_domain, 0, smb_userid_low, 0,

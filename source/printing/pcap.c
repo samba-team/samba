@@ -296,8 +296,6 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
       if (*line == '#' || *line == 0)
 	continue;
 
-      unix_to_dos(line,True);
-
       /* now we have a real printer line - cut it off at the first : */      
       p = strchr(line,':');
       if (p) *p = 0;
@@ -383,8 +381,6 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       p = strchr(line,':');
       if (p) *p = 0;
       
-      unix_to_dos(line,True);
-
       /* now find the most likely printer name and comment 
        this is pure guesswork, but it's better than nothing */
       *name = 0;

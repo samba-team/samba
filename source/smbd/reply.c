@@ -178,7 +178,6 @@ static int connection_error(char *inbuf,char *outbuf,int ecode)
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	BOOL doencrypt = SMBENCRYPT();
 	pstring service;
 	pstring user;
 	pstring password;
@@ -194,9 +193,9 @@ int reply_tcon(connection_struct *conn,
 	*service = *user = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE|STR_CONVERT) + 1;
-	p += srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE|STR_CONVERT) + 1;
-	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE|STR_CONVERT) + 1;
+	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE) + 1;
+	p += srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE) + 1;
+	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE) + 1;
 
 	*user = 0;
 	p = strchr(service,'%');
@@ -217,14 +216,6 @@ int reply_tcon(connection_struct *conn,
 	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
 		pstrcpy(user,validated_username(vuid));
 	}
-
-	/*
-	 * Ensure the user and password names are in UNIX codepage format.
-	 */
-	
-	pstrcpy(user,dos_to_unix(user,False));
-	if (!doencrypt)
-    	pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -289,7 +280,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	memcpy(password,smb_buf(inbuf),passlen);
 	password[passlen]=0;    
 	p = smb_buf(inbuf) + passlen;
-	p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE|STR_CONVERT);
+	p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
 
 	if (passlen != 24) {
 		if (strequal(password," "))
@@ -308,7 +299,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		*q++ = 0;
 		fstrcpy(user,q);
 	}
-	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_CONVERT|STR_ASCII);
+	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_ASCII);
 
 	DEBUG(4,("Got device type %s\n",devicename));
 
@@ -343,7 +334,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message(outbuf,2,0,True);
 		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, devicename, -1, 
-				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
+				 STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
@@ -353,9 +344,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, devicename, -1, 
-				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
+				 STR_TERMINATE|STR_ASCII);
 		p += srvstr_push(outbuf, p, fsname, -1, 
-				 STR_CONVERT|STR_TERMINATE);
+				 STR_TERMINATE);
 		
 		set_message_end(outbuf,p);
 		
@@ -430,8 +421,8 @@ int reply_ioctl(connection_struct *conn,
 	{
 	    case IOCTL_QUERY_JOB_INFO:		    
 		SSVAL(p,0,fsp->print_jobid);             /* Job number */
-		srvstr_push(outbuf, p+2, global_myname, 15, STR_TERMINATE|STR_CONVERT|STR_ASCII);
-		srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_CONVERT|STR_ASCII);
+		srvstr_push(outbuf, p+2, global_myname, 15, STR_TERMINATE|STR_ASCII);
+		srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
 		break;
 	}
 
@@ -731,9 +722,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 	    return(ERROR(ERRDOS,ERRbuftoosmall));
     }
 
-    memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
-    smb_apasswd[smb_apasslen] = 0;
-    srvstr_pull(inbuf, user, smb_buf(inbuf)+smb_apasslen, sizeof(user), -1, STR_TERMINATE|STR_CONVERT);
+    srvstr_pull(inbuf, smb_apasswd, smb_buf(inbuf), sizeof(smb_apasswd), smb_apasslen, 0);
+    srvstr_pull(inbuf, user, smb_buf(inbuf)+smb_apasslen, sizeof(user), -1, STR_TERMINATE);
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -814,23 +804,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
       smb_ntpasswd[smb_ntpasslen] = 0;
-
-      /*
-       * Ensure the plaintext passwords are in UNIX format.
-       */
-      if(!doencrypt) {
-        pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
-        pstrcpy(smb_ntpasswd,dos_to_unix(smb_ntpasswd,False));
-      }
-
     } else {
       /* we use the first password that they gave */
       smb_apasslen = passlen1;
       StrnCpy(smb_apasswd,p,smb_apasslen);      
-      /*
-       * Ensure the plaintext password is in UNIX format.
-       */
-      pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
@@ -843,19 +820,26 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
     
     p += passlen1 + passlen2;
-    p += srvstr_pull(inbuf, user, p, sizeof(user), -1, STR_CONVERT|STR_TERMINATE);
+    p += srvstr_pull(inbuf, user, p, sizeof(user), -1,
+    		STR_TERMINATE);
     /*
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
     p += srvstr_pull(inbuf, domain, p, sizeof(domain), 
-		     -1, STR_CONVERT|STR_TERMINATE);
+		     -1, STR_TERMINATE);
     p += srvstr_pull(inbuf, native_os, p, sizeof(native_os), 
-		     -1, STR_CONVERT|STR_TERMINATE);
+		     -1, STR_TERMINATE);
     p += srvstr_pull(inbuf, native_lanman, p, sizeof(native_lanman),
-		     -1, STR_CONVERT|STR_TERMINATE);
+		     -1, STR_TERMINATE);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,native_os,native_lanman));
+  }
+  
+  /* don't allow for weird usernames */
+  alpha_strcpy(user, user, ". _-", sizeof(user));
+  if (strstr(user, "..")) {
+	  return bad_password_error(inbuf, outbuf);
   }
 
   /* don't allow for weird usernames */
@@ -923,7 +907,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     /* Work out who's who */
  
     slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
-               dos_to_unix(domain, False), lp_winbind_separator(), user);
+	     domain, lp_winbind_separator(), user);
  
     if (sys_getpwnam(dom_user) != NULL) {
       pstrcpy(user, dom_user);
@@ -1050,9 +1034,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     char *p;
     set_message(outbuf,3,0,True);
     p = smb_buf(outbuf);
-    p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
-    p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
-    p += srvstr_push(outbuf, p, global_myworkgroup, -1, STR_TERMINATE|STR_CONVERT);
+    p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+    p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+    p += srvstr_push(outbuf, p, global_myworkgroup, -1, STR_TERMINATE);
     set_message_end(outbuf,p);
     /* perhaps grab OS version here?? */
   }
@@ -1544,7 +1528,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   outsize = set_message(outbuf,1,0,True);
   p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE|STR_CONVERT);
+  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
   p++;
   status_len = SVAL(p,0);
   p += 2;
@@ -1886,7 +1870,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE);
   pstrcat(fname,"/TMXXXXXX");
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1928,7 +1912,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
   p = smb_buf(outbuf) + 1;
-  p += srvstr_push(outbuf, p, fname2, -1, STR_TERMINATE|STR_CONVERT);
+  p += srvstr_push(outbuf, p, fname2, -1, STR_TERMINATE);
   set_message_end(outbuf, p);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -1957,7 +1941,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -3333,7 +3317,7 @@ int reply_printqueue(connection_struct *conn,
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
 			CVAL(p,11) = 0;
-			srvstr_push(outbuf, p+12, queue[i].user, 16, STR_CONVERT|STR_ASCII);
+			srvstr_push(outbuf, p+12, queue[i].user, 16, STR_ASCII);
 			p += 28;
 		}
 
@@ -3472,7 +3456,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname,False), &st) != 0)
+    if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
     {
       ret = True;
       break;
@@ -3556,7 +3540,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
           pstrcat(fullname, "/");
           pstrcat(fullname, dname);
                      
-          if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname, False), &st) != 0)
+          if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
             break;
           if(st.st_mode & S_IFDIR)
           {
@@ -3707,7 +3691,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
   return(True);
 }
@@ -3732,7 +3716,6 @@ int rename_internals(connection_struct *conn,
 	BOOL exists=False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	pstring zdirectory;
 
 	*directory = *mask = 0;
 
@@ -3830,7 +3813,6 @@ int rename_internals(connection_struct *conn,
 			}
 		}
 		
-                pstrcpy(zdirectory, dos_to_unix(directory, False));
 		if(replace_if_exists) {
 			/*
 			 * NT SMB specific flag - rename can overwrite
@@ -3840,15 +3822,13 @@ int rename_internals(connection_struct *conn,
 
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(conn,zdirectory,
-						 dos_to_unix(newname,False)))
+			   !conn->vfs_ops.rename(conn,directory,newname))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
 			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(conn,zdirectory,
-						  dos_to_unix(newname,False)))
+			    !conn->vfs_ops.rename(conn,directory,newname))
 				count++;
 		}
 
@@ -3906,8 +3886,7 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(conn,dos_to_unix(fname,False),
-                                                          dos_to_unix(destname,False)))
+				if (!conn->vfs_ops.rename(conn,fname,destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -4228,7 +4207,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
-  srvstr_pull(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), -1, STR_TERMINATE|STR_CONVERT);
+  srvstr_pull(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), -1, STR_TERMINATE);
   
   if (strlen(newdir) == 0) {
 	  ok = True;

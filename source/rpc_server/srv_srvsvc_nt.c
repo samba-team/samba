@@ -1229,9 +1229,7 @@ static char *valid_share_pathname(char *dos_pathname)
 	if (getcwd(saved_pathname, sizeof(saved_pathname)) == NULL)
 		return False;
 
-	/* Convert to UNIX charset. */
 	pstrcpy(unix_pathname, ptr);
-	dos_to_unix(unix_pathname, True);
 	
 	ret = chdir(unix_pathname);
 
@@ -1338,7 +1336,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
-		dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
@@ -1455,7 +1452,6 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 			lp_add_share_cmd(), CONFIGFILE, share_name, ptr, comment);
-	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
@@ -1522,7 +1518,6 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
-	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {

@@ -46,8 +46,6 @@ int main(int argc, char *argv[])
 
    setup_logging(argv[0],True);
 
-   charset_initialise();
-
    if (argc < 2 || argc > 3)
       printf("Usage: testprns printername [printcapfile]\n");
    else

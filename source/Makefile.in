@@ -72,7 +72,7 @@ CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859
 PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
-FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
+FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" 
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
@@ -80,7 +80,7 @@ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
-PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
+PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 WINBIND_PROGS = nsswitch/libnss_winbind.so bin/winbindd bin/wbinfo
 WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
@@ -98,10 +98,10 @@ QUOTAOBJS=@QUOTAOBJS@
 
 TDB_OBJ = tdb/tdb.o tdb/spinlock.o tdb/tdbutil.o 
 
-LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
-          lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
+LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
+          lib/getsmbpass.o lib/interface.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
-          lib/signal.o lib/system.o lib/doscalls.o lib/time.o \
+          lib/signal.o lib/system.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/wins_srv.o \
 	  lib/util_array.o lib/util_str.o lib/util_sid.o \
@@ -109,7 +109,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
-	  nsswitch/wb_client.o nsswitch/wb_common.o $(TDB_OBJ)
+	  lib/iconv.o \
+	  nsswitch/wb_client.o nsswitch/wb_common.o $(TDB_OBJ) 
 
 READLINE_OBJ = lib/readline.o
 
@@ -228,12 +229,6 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
-
-MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
-                       $(UBIQX_OBJ) $(LIB_OBJ)
-
-MAKE_UNICODEMAP_OBJ = utils/make_unicodemap.o $(PARAM_OBJ) \
-                       $(UBIQX_OBJ) $(LIB_OBJ)
 
 MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
@@ -354,10 +349,10 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                lib/debug.o lib/util_sid.o lib/messages.o lib/util_str.o \
                lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
                nsswitch/wb_client.o nsswitch/wb_common.o \
-               lib/system.o lib/charset.o lib/util_file.o lib/kanji.o \
+               lib/system.o lib/util_file.o \
                lib/genrand.o lib/username.o lib/charcnv.o lib/time.o \
                lib/md4.o lib/util_unistr.o lib/signal.o lib/talloc.o \
-               lib/ms_fnmatch.o lib/util_sock.o lib/doscalls.o lib/smbrun.o \
+               lib/ms_fnmatch.o lib/util_sock.o lib/smbrun.o \
                lib/util_sec.o \
                ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
                $(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
@@ -548,14 +543,6 @@ bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/make_unicodemap: $(MAKE_UNICODEMAP_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_UNICODEMAP_OBJ) $(LDFLAGS) $(LIBS)
-
 bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
@@ -650,11 +637,11 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	$(LD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
 
-install: installbin installman installscripts installcp installswat
+install: installbin installman installscripts installswat
 
 installdirs:
 	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
-	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
+	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
@@ -665,9 +652,6 @@ installbin: all installdirs
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
-
-installcp: installdirs
-	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
@@ -685,7 +669,7 @@ revert:
 installman:
 	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) "@ROFF@"
 
-uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
+uninstall: uninstallman uninstallbin uninstallscripts
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir)
@@ -696,9 +680,6 @@ uninstallbin:
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
-
-uninstallcp:
-	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS)

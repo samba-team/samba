@@ -170,8 +170,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 			fstring name;
 			fstring comment;
 
-			fstrcpy(name    , dos_unistrn2(sv101->uni_name    .buffer, sv101->uni_name    .uni_str_len));
-			fstrcpy(comment , dos_unistrn2(sv101->uni_comment .buffer, sv101->uni_comment .uni_str_len));
+			rpcstr_pull(name, sv101->uni_name.buffer,  sizeof(name), sv101->uni_name.uni_str_len*2, 0);
+			rpcstr_pull(comment, sv101->uni_comment.buffer,  sizeof(comment), sv101->uni_comment.uni_str_len*2, 0);
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
@@ -212,9 +212,9 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 			fstring comment;
 			fstring usr_path;
 
-			fstrcpy(name    , dos_unistrn2(sv102->uni_name    .buffer, sv102->uni_name    .uni_str_len));
-			fstrcpy(comment , dos_unistrn2(sv102->uni_comment .buffer, sv102->uni_comment .uni_str_len));
-			fstrcpy(usr_path, dos_unistrn2(sv102->uni_usr_path.buffer, sv102->uni_usr_path.uni_str_len));
+			rpcstr_pull(name, sv102->uni_name.buffer,  sizeof(name), sv102->uni_name.uni_str_len*2, 0);
+			rpcstr_pull(comment, sv102->uni_comment.buffer,  sizeof(comment), sv102->uni_comment.uni_str_len*2, 0);
+			rpcstr_pull(usr_path, sv102->uni_usr_path.buffer,  sizeof(usr_path), sv102->uni_usr_path.uni_str_len*2, 0);
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
@@ -325,8 +325,8 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			fstring usr_name;
 			fstring net_name;
 
-			fstrcpy(usr_name, dos_unistrn2(str1->uni_usr_name.buffer, str1->uni_usr_name.uni_str_len));
-			fstrcpy(net_name, dos_unistrn2(str1->uni_net_name.buffer, str1->uni_net_name.uni_str_len));
+			rpcstr_pull(usr_name, str1->uni_usr_name.buffer, sizeof(usr_name), str1->uni_usr_name.uni_str_len*2,0);
+			rpcstr_pull(net_name, str1->uni_net_name.buffer, sizeof(net_name), str1->uni_net_name.uni_str_len*2,0);
 
 			fprintf(out_hnd, "\tid       : %d\n", info1->id);
 			fprintf(out_hnd, "\ttype     : %s\n", get_share_type_str(info1->type));
@@ -481,8 +481,8 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 
-			fstrcpy(net_name, dos_unistrn2(info1->info_1_str.uni_netname.buffer, info1->info_1_str.uni_netname.uni_str_len));
-			fstrcpy(remark  , dos_unistrn2(info1->info_1_str.uni_remark .buffer, info1->info_1_str.uni_remark .uni_str_len));
+			rpcstr_pull(net_name, info1->info_1_str.uni_netname.buffer, sizeof(net_name), info1->info_1_str.uni_netname.uni_str_len*2, 0);
+			rpcstr_pull(remark, info1->info_1_str.uni_remark.buffer, sizeof(remark), info1->info_1_str.uni_remark.uni_str_len*2, 0);
 
 			display_share(out_hnd, action, net_name, info1->info_1.type, remark);
 
@@ -523,10 +523,10 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring path    ;
 			fstring passwd  ;
 
-			fstrcpy(net_name, dos_unistrn2(info2->info_2_str.uni_netname.buffer, info2->info_2_str.uni_netname.uni_str_len));
-			fstrcpy(remark  , dos_unistrn2(info2->info_2_str.uni_remark .buffer, info2->info_2_str.uni_remark .uni_str_len));
-			fstrcpy(path    , dos_unistrn2(info2->info_2_str.uni_path   .buffer, info2->info_2_str.uni_path   .uni_str_len));
-			fstrcpy(passwd  , dos_unistrn2(info2->info_2_str.uni_passwd .buffer, info2->info_2_str.uni_passwd .uni_str_len));
+			rpcstr_pull(net_name, info2->info_2_str.uni_netname.buffer, sizeof(net_name), info2->info_2_str.uni_netname.uni_str_len*2, 0);
+			rpcstr_pull(remark, info2->info_2_str.uni_remark.buffer, sizeof(remark), info2->info_2_str.uni_remark.uni_str_len*2, 0);
+			rpcstr_pull(path, info2->info_2_str.uni_path.buffer, sizeof(path), info2->info_2_str.uni_path.uni_str_len*2, 0);
+			rpcstr_pull(passwd, info2->info_2_str.uni_passwd.buffer, sizeof(passwd), info2->info_2_str.uni_passwd.uni_str_len*2, 0);
 
 			display_share2(out_hnd, action, net_name,
 			      info2->info_2.type, remark, info2->info_2.perms,
@@ -617,8 +617,8 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			fstring path_name;
 			fstring user_name;
 
-			fstrcpy(path_name, dos_unistrn2(str3->uni_path_name.buffer, str3->uni_path_name.uni_str_len));
-			fstrcpy(user_name, dos_unistrn2(str3->uni_user_name.buffer, str3->uni_user_name.uni_str_len));
+			rpcstr_pull(path_name, str3->uni_path_name.buffer, sizeof(path_name), str3->uni_path_name.uni_str_len*2, 0);
+			rpcstr_pull(user_name, str3->uni_user_name.buffer, sizeof(user_name), str3->uni_user_name.uni_str_len*2, 0);
 
 			fprintf(out_hnd, "\tid       : %d\n", info3->id);
 			fprintf(out_hnd, "\tperms    : %s\n", get_file_mode_str(info3->perms));
@@ -908,16 +908,27 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tUser Name   : %s\n", dos_unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
-			fprintf(out_hnd, "\t\tFull Name   : %s\n", dos_unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
-			fprintf(out_hnd, "\t\tHome Drive  : %s\n", dos_unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
-			fprintf(out_hnd, "\t\tDir Drive   : %s\n", dos_unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
-			fprintf(out_hnd, "\t\tProfile Path: %s\n", dos_unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
-			fprintf(out_hnd, "\t\tLogon Script: %s\n", dos_unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
-			fprintf(out_hnd, "\t\tDescription : %s\n", dos_unistrn2(usr->uni_acct_desc   .buffer, usr->uni_acct_desc   .uni_str_len)); /* user description unicode string */
-			fprintf(out_hnd, "\t\tWorkstations: %s\n", dos_unistrn2(usr->uni_workstations.buffer, usr->uni_workstations.uni_str_len)); /* workstaions unicode string */
-			fprintf(out_hnd, "\t\tUnknown Str : %s\n", dos_unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
-			fprintf(out_hnd, "\t\tRemote Dial : %s\n", dos_unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
+			pstring tmp;
+			rpcstr_pull(tmp, usr->uni_user_name.buffer, sizeof(tmp),usr->uni_user_name.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tUser Name   : %s\n", tmp); /* username unicode string */
+			rpcstr_pull(tmp, usr->uni_full_name.buffer, sizeof(tmp),usr->uni_full_name.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tFull Name   : %s\n", tmp); /* user's full name unicode string */
+			rpcstr_pull(tmp, usr->uni_home_dir.buffer, sizeof(tmp),usr->uni_home_dir.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tHome Drive  : %s\n", tmp); /* home directory unicode string */
+			rpcstr_pull(tmp, usr->uni_dir_drive.buffer, sizeof(tmp),usr->uni_dir_drive.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tDir Drive   : %s\n", tmp); /* home directory drive unicode string */
+			rpcstr_pull(tmp, usr->uni_profile_path.buffer, sizeof(tmp),usr->uni_profile_path.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tProfile Path: %s\n", tmp); /* profile path unicode string */
+			rpcstr_pull(tmp, usr->uni_logon_script.buffer, sizeof(tmp),usr->uni_logon_script.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tLogon Script: %s\n", tmp); /* logon script unicode string */
+			rpcstr_pull(tmp, usr->uni_acct_desc.buffer, sizeof(tmp),usr->uni_acct_desc.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tDescription : %s\n", tmp); /* user description unicode string */
+			rpcstr_pull(tmp, usr->uni_workstations.buffer, sizeof(tmp),usr->uni_workstations.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tWorkstations: %s\n", tmp); /* workstaions unicode string */
+			rpcstr_pull(tmp, usr->uni_unknows_str.buffer, sizeof(tmp),usr->uni_unknown_str.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tUnknown Str : %s\n", tmp); /* unknown string unicode string */
+			rpcstr_pull(tmp, usr->uni_munged_dial.buffer, sizeof(tmp),usr->uni_munged_dial.uni_str_len*2, 0);
+			fprintf(out_hnd, "\t\tRemote Dial : %s\n", tmp); /* munged remote access unicode string */
 
 			fprintf(out_hnd, "\t\tLogon Time               : %s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
 			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
@@ -1206,13 +1217,16 @@ char *get_reg_val_type_str(uint32 type)
 static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFFER2 *value)
 {
 	fstring type;
+	pstring	intvalue;
 	fstrcpy(type, get_reg_val_type_str(val_type));
 
 	switch (val_type)
 	{
 		case 0x01: /* unistr */
 		{
-			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, dos_buffer2_to_str(value));
+			rpcstr_pull(intvalue, value->buffer, sizeof(intvalue), value->buf_len, 0);	
+			/*fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, dos_buffer2_to_str(value));*/
+			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, value);
 			break;
 		}
 

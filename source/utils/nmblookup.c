@@ -206,8 +206,6 @@ int main(int argc,char *argv[])
 
   setup_logging(argv[0],True);
 
-  charset_initialise();
-
   while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhART")) != EOF)
     switch (opt)
       {

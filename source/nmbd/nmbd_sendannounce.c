@@ -80,9 +80,7 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
 
   CVAL(p,0) = work->token; /* (local) Unique workgroup token id. */
   p++;
-  StrnCpy(p,global_myname,15);
-  strupper(p);
-  p = skip_string(p,1);
+  p +=  push_string(NULL, p+1, global_myname, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
                 global_myname, 0x0, work->work_group,0x1e, subrec->bcast_ip, 
@@ -110,8 +108,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   CVAL(p,0) = updatecount;
   SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
-  StrnCpy(p+5,server_name,15);
-  strupper(p+5);
+  push_string(NULL, p+5, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
 
   CVAL(p,21) = lp_major_announce_version(); /* Major version. */
   CVAL(p,22) = lp_minor_announce_version(); /* Minor version. */
@@ -121,9 +118,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   SSVAL(p,27,BROWSER_ELECTION_VERSION);
   SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
 
-  pstrcpy(p+31,server_comment);
-  p += 31;
-  p = skip_string(p,1);
+  p += 31 + push_string(NULL, p+31, server_comment, -1, STR_ASCII|STR_TERMINATE);
 
   send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
                 from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
@@ -151,11 +146,13 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
   SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
 
   p += 10;
-  StrnCpy(p,server_name,15);
+  /*StrnCpy(p,server_name,15);
   strupper(p);
   p = skip_string(p,1);
   pstrcpy(p,server_comment);
-  p = skip_string(p,1);
+  p = skip_string(p,1);*/
+  p += push_string(NULL, p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+  p += push_string(NULL, p, server_comment, sizeof(pstring)-15, STR_ASCII|STR_UPPER|STR_TERMINATE);
 
   send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
                 from_name, 0x0, to_name, to_type, to_ip, subrec->myip,

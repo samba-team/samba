@@ -161,7 +161,7 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return acl_valid(theacl);
 }
 
-int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return acl_set_file(name, acltype, theacl);
 }

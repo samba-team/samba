@@ -793,14 +793,12 @@ BOOL check_oem_password(char *user,
 		/*
 		 * nt passwords are in unicode
 		 */
-		int uni_pw_len = new_pw_len;
-		char *pw;
-		new_pw_len /= 2;
-		pw = dos_unistrn2((uint16 *)(&lmdata[512 - uni_pw_len]),new_pw_len);
-		memcpy(new_passwd, pw, new_pw_len + 1);
+		pull_ucs2(NULL, new_passwd, 
+			  (const smb_ucs2_t *)&lmdata[512 - new_pw_len],
+			  new_passwd_size, new_pw_len, 0);
 	} else {
 		memcpy(new_passwd, &lmdata[512 - new_pw_len], new_pw_len);
-		new_passwd[new_pw_len] = '\0';
+		new_passwd[new_pw_len] = 0;
 	}
 
 	/*

@@ -164,18 +164,14 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 	switch (r_q.info_class) {
 	case 3:
 		if (r_q.dom.id3.buffer_dom_name != 0) {
-			char *dom_name = dos_unistrn2(r_q.dom.id3.uni_domain_name.buffer,
-						  r_q.dom.id3.uni_domain_name.uni_str_len);
-			fstrcpy(domain_name, dom_name);
+			rpcstr_pull(domain_name, r_q.dom.id3.uni_domain_name.buffer, sizeof(domain_name), r_q.dom.id3.uni_domain_name.uni_str_len*2, 0);
 		}
 		if (r_q.dom.id3.buffer_dom_sid != 0)
 			*domain_sid = r_q.dom.id3.dom_sid.sid;
 		break;
 	case 5:
 		if (r_q.dom.id5.buffer_dom_name != 0) {
-			char *dom_name = dos_unistrn2(r_q.dom.id5.uni_domain_name.buffer,
-						  r_q.dom.id5.uni_domain_name.uni_str_len);
-			fstrcpy(domain_name, dom_name);
+			rpcstr_pull(domain_name, r_q.dom.id5.uni_domain_name.buffer, sizeof(domain_name), r_q.dom.id5.uni_domain_name.uni_str_len*2, 0);
 		}
 		if (r_q.dom.id5.buffer_dom_sid != 0)
 			*domain_sid = r_q.dom.id5.dom_sid.sid;

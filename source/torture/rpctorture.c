@@ -258,8 +258,6 @@ enum client_action
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
 	}
 
-	codepage_initialise(lp_client_code_page());
-
 	DEBUGLEVEL = 0;
 
 	cli_info.put_total_size = 0;
@@ -303,7 +301,6 @@ enum client_action
 	setup_logging(pname, True);
 
 	TimeInit();
-	charset_initialise();
 
 	myumask = umask(0);
 	umask(myumask);

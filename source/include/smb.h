@@ -53,11 +53,10 @@ typedef int BOOL;
 
 /* string manipulation flags - see clistr.c and srvstr.c */
 #define STR_TERMINATE 1
-#define STR_CONVERT 2
-#define STR_UPPER 4
-#define STR_ASCII 8
-#define STR_UNICODE 16
-#define STR_NOALIGN 32
+#define STR_UPPER 2
+#define STR_ASCII 4
+#define STR_UNICODE 8
+#define STR_NOALIGN 16
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
@@ -288,6 +287,16 @@ typedef uint16 smb_ucs2_t;
 /* ucs2 string types. */
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
 typedef smb_ucs2_t wfstring[FSTRING_LEN];
+
+
+#ifdef WORDS_BIGENDIAN
+#define UCS2_SHIFT 8
+#else
+#define UCS2_SHIFT 0
+#endif
+
+/* turn a 7 bit character into a ucs2 character */
+#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -790,7 +799,6 @@ struct bitmap {
 #define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
 #define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
 #define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
-#define FLAG_DOS_STRING 0x40 /* convert from UNIX to DOS codepage when reading this string. */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
@@ -1675,5 +1683,19 @@ typedef struct {
 	POLICY_HND handle;
 	TALLOC_CTX *mem_ctx;
 } CLI_POLICY_HND;
+
+
+/* generic iconv conversion structure */
+typedef struct {
+	size_t (*direct)(char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft);
+	size_t (*pull)(char **inbuf, size_t *inbytesleft,
+		       char **outbuf, size_t *outbytesleft);
+	size_t (*push)(char **inbuf, size_t *inbytesleft,
+		       char **outbuf, size_t *outbytesleft);
+#ifdef HAVE_NATIVE_ICONV
+	iconv_t cd;
+#endif
+} *smb_iconv_t;
 
 #endif /* _SMB_H */

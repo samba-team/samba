@@ -31,37 +31,37 @@
 #include "includes.h"
 #endif
 
-
-
 /* 
    bugger. we need a separate wildcard routine for older versions
    of the protocol. This is not yet perfect, but its a lot
-   better thaan what we had */
-static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
+   better than what we had */
+static int ms_fnmatch_lanman_core(const smb_ucs2_t *pattern, 
+				  const smb_ucs2_t *string)
 {
-	const char *p = pattern, *n = string;
-	char c;
+	const smb_ucs2_t *p = pattern, *n = string;
+	smb_ucs2_t c;
 
-	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
+	if (strcmp_wa(p, "?")==0 && strcmp_wa(n, ".")) goto match;
 
 	while ((c = *p++)) {
 		switch (c) {
-		case '.':
+		case UCS2_CHAR('.'):
 			if (! *n) goto next;
-			/* if (! *n && ! *p) goto match; */
-			if (*n != '.') goto nomatch;
+			if (*n != UCS2_CHAR('.')) goto nomatch;
 			n++;
 			break;
 
-		case '?':
+		case UCS2_CHAR('?'):
 			if (! *n) goto next;
-			if ((*n == '.' && n[1] != '.') || ! *n) goto next;
+			if ((*n == UCS2_CHAR('.') && 
+			     n[1] != UCS2_CHAR('.')) || ! *n) 
+				goto next;
 			n++;
 			break;
 
-		case '>':
+		case UCS2_CHAR('>'):
 			if (! *n) goto next;
-			if (n[0] == '.') {
+			if (n[0] == UCS2_CHAR('.')) {
 				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
 				goto nomatch;
@@ -69,7 +69,7 @@ static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 			n++;
 			break;
 
-		case '*':
+		case UCS2_CHAR('*'):
 			if (! *n) goto next;
 			if (! *p) goto match;
 			for (; *n; n++) {
@@ -77,19 +77,20 @@ static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 			}
 			break;
 
-		case '<':
+		case UCS2_CHAR('<'):
 			for (; *n; n++) {
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				if (*n == '.' && !strchr(n+1,'.')) {
+				if (*n == UCS2_CHAR('.') && 
+				    !strchr_w(n+1,UCS2_CHAR('.'))) {
 					n++;
 					break;
 				}
 			}
 			break;
 
-		case '"':
+		case UCS2_CHAR('"'):
 			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) goto match;
-			if (*n != '.') goto nomatch;
+			if (*n != UCS2_CHAR('.')) goto nomatch;
 			n++;
 			break;
 
@@ -118,16 +119,19 @@ next:
 	return 0;
 }
 
-static int ms_fnmatch_lanman1(const char *pattern, const char *string)
+static int ms_fnmatch_lanman1(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
 {
-	if (!strpbrk(pattern, "?*<>\"")) {
-		if (strcmp(string,"..") == 0) string = ".";
-		return strcasecmp(pattern, string);
+	if (!strpbrk_wa(pattern, "?*<>\"")) {
+		smb_ucs2_t s[] = {UCS2_CHAR('.'), 0};
+		if (strcmp_wa(string,"..") == 0) string = s;
+		return strcasecmp_w(pattern, string);
 	}
 
-	if (strcmp(string,"..") == 0 || strcmp(string,".") == 0) {
-		return ms_fnmatch_lanman_core(pattern, "..") &&
-			ms_fnmatch_lanman_core(pattern, ".");
+	if (strcmp_wa(string,"..") == 0 || strcmp_wa(string,".") == 0) {
+		smb_ucs2_t dot[] = {UCS2_CHAR('.'), 0};
+		smb_ucs2_t dotdot[] = {UCS2_CHAR('.'), UCS2_CHAR('.'), 0};
+		return ms_fnmatch_lanman_core(pattern, dotdot) &&
+			ms_fnmatch_lanman_core(pattern, dot);
 	}
 
 	return ms_fnmatch_lanman_core(pattern, string);
@@ -142,10 +146,10 @@ static int ms_fnmatch_lanman1(const char *pattern, const char *string)
 
    Returns 0 on match, -1 on fail.
 */
-int ms_fnmatch(const char *pattern, const char *string)
+static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
 {
-	const char *p = pattern, *n = string;
-	char c;
+	const smb_ucs2_t *p = pattern, *n = string;
+	smb_ucs2_t c;
 	extern int Protocol;
 
 	if (Protocol <= PROTOCOL_LANMAN2) {
@@ -154,40 +158,40 @@ int ms_fnmatch(const char *pattern, const char *string)
 
 	while ((c = *p++)) {
 		switch (c) {
-		case '?':
+		case UCS2_CHAR('?'):
 			if (! *n) return -1;
 			n++;
 			break;
 
-		case '>':
-			if (n[0] == '.') {
-				if (! n[1] && ms_fnmatch(p, n+1) == 0) return 0;
-				if (ms_fnmatch(p, n) == 0) return 0;
+		case UCS2_CHAR('>'):
+			if (n[0] == UCS2_CHAR('.')) {
+				if (! n[1] && ms_fnmatch_w(p, n+1) == 0) return 0;
+				if (ms_fnmatch_w(p, n) == 0) return 0;
 				return -1;
 			}
-			if (! *n) return ms_fnmatch(p, n);
+			if (! *n) return ms_fnmatch_w(p, n);
 			n++;
 			break;
 
-		case '*':
+		case UCS2_CHAR('*'):
 			for (; *n; n++) {
-				if (ms_fnmatch(p, n) == 0) return 0;
+				if (ms_fnmatch_w(p, n) == 0) return 0;
 			}
 			break;
 
-		case '<':
+		case UCS2_CHAR('<'):
 			for (; *n; n++) {
-				if (ms_fnmatch(p, n) == 0) return 0;
-				if (*n == '.' && !strchr(n+1,'.')) {
+				if (ms_fnmatch_w(p, n) == 0) return 0;
+				if (*n == UCS2_CHAR('.') && !strchr_wa(n+1,'.')) {
 					n++;
 					break;
 				}
 			}
 			break;
 
-		case '"':
-			if (*n == 0 && ms_fnmatch(p, n) == 0) return 0;
-			if (*n != '.') return -1;
+		case UCS2_CHAR('"'):
+			if (*n == 0 && ms_fnmatch_w(p, n) == 0) return 0;
+			if (*n != UCS2_CHAR('.')) return -1;
 			n++;
 			break;
 
@@ -203,57 +207,12 @@ int ms_fnmatch(const char *pattern, const char *string)
 }
 
 
-#if FNMATCH_TEST
-
-static int match_one(char *pattern, char *file)
+int ms_fnmatch(const char *pattern, const char *string)
 {
-	if (strcmp(file,"..") == 0) file = ".";
-	if (strcmp(pattern,".") == 0) return -1;
+	wpstring p, s;
 
-	return ms_fnmatch(pattern, file);
+	pstrcpy_wa(p, pattern);
+	pstrcpy_wa(s, string);
+
+	return ms_fnmatch_w(p, s);
 }
-
-static char *match_test(char *pattern, char *file, char *short_name)
-{
-	static char ret[4];
-	strncpy(ret, "---", 3);
-
-	if (match_one(pattern, ".") == 0) ret[0] = '+';
-	if (match_one(pattern, "..") == 0) ret[1] = '+';
-	if (match_one(pattern, file) == 0 || 
-	    (*short_name && match_one(pattern, short_name)==0)) ret[2] = '+';
-	return ret;
-}
-
- int main(int argc, char *argv[])
-{
-	int ret;
-	char ans[4], mask[100], file[100], mfile[100];
-	char *ans2;
-	int n, i=0;
-	char line[200];
-
-	if (argc == 3) {
-		ret = ms_fnmatch(argv[1], argv[2]);
-		if (ret == 0) 
-			printf("YES\n");
-		else printf("NO\n");
-		return ret;
-	}
-	mfile[0] = 0;
-
-	while (fgets(line, sizeof(line)-1, stdin)) {
-		n = sscanf(line, "%3s %s %s %s\n", ans, mask, file, mfile);
-		if (n < 3) continue;
-		ans2 = match_test(mask, file, mfile);
-		if (strcmp(ans2, ans)) {
-			printf("%s %s %d mask=[%s]  file=[%s]  mfile=[%s]\n",
-			       ans, ans2, i, mask, file, mfile);
-		}
-		i++;
-		mfile[0] = 0;
-	}
-	return 0;
-}
-#endif /* FNMATCH_TEST */
-

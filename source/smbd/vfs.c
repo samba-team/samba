@@ -1,6 +1,6 @@
 /*
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 3.0
    VFS initialisation and support functions
    Copyright (C) Tim Potter 1999
 
@@ -109,156 +109,46 @@ static BOOL vfs_init_default(connection_struct *conn)
 static BOOL vfs_init_custom(connection_struct *conn)
 {
 	int vfs_version = -1;
-    struct vfs_ops *ops, *(*init_fptr)(int *);
+	struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
 
-    DEBUG(3, ("Initialising custom vfs hooks from %s\n",
-	      lp_vfsobj(SNUM(conn))));
-
-    /* Open object file */
-
-    if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
-		return False;
-    }
-
-    /* Get handle on vfs_init() symbol */
-
-    init_fptr = (struct vfs_ops *(*)(int *))sys_dlsym(conn->dl_handle, "vfs_init");
-
-    if (init_fptr == NULL) {
-		DEBUG(0, ("No vfs_init() symbol found in %s\n",
+	DEBUG(3, ("Initialising custom vfs hooks from %s\n",
 		  lp_vfsobj(SNUM(conn))));
-		return False;
-    }
 
-    /* Initialise vfs_ops structure */
-
-    if ((ops = init_fptr(&vfs_version)) == NULL) {
-        DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
-		return False;
-    }
-
-	if (vfs_version != SMB_VFS_INTERFACE_VERSION) {
-		DEBUG(0, ("vfs_init returned wrong interface version info (was %d, should be %d)\n",
-			vfs_version, SMB_VFS_INTERFACE_VERSION ));
+	/* Open object file */
+	if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), 
+					  RTLD_NOW | RTLD_GLOBAL)) == NULL) {
+		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
 		return False;
 	}
 
-    /* Fill in unused operations with default (disk based) ones.
-       There's probably a neater way to do this then a whole bunch of
-       if statements. */
+	/* Get handle on vfs_init() symbol */
+	init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
 
-    memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
+	if (init_fptr == NULL) {
+		DEBUG(0, ("No vfs_init() symbol found in %s\n",
+			  lp_vfsobj(SNUM(conn))));
+		return False;
+	}
 
-    if (conn->vfs_ops.connect == NULL)
-		conn->vfs_ops.connect = default_vfs_ops.connect;
+	/* Initialise vfs_ops structure */
+	conn->vfs_ops = default_vfs_ops;
 
-    if (conn->vfs_ops.disconnect == NULL)
-		conn->vfs_ops.disconnect = default_vfs_ops.disconnect;
+	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops)) == NULL) {
+		DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
+		return False;
+	}
+	
+	if (vfs_version != SMB_VFS_INTERFACE_VERSION) {
+		DEBUG(0, ("vfs_init returned wrong interface version info (was %d, should be %d)\n",
+			  vfs_version, SMB_VFS_INTERFACE_VERSION ));
+		return False;
+	}
+	
+	if (ops != &conn->vfs_ops) {
+		memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
+	}
 
-    if (conn->vfs_ops.disk_free == NULL)
-		conn->vfs_ops.disk_free = default_vfs_ops.disk_free;
-
-    if (conn->vfs_ops.opendir == NULL)
-		conn->vfs_ops.opendir = default_vfs_ops.opendir;
-
-    if (conn->vfs_ops.readdir == NULL)
-		conn->vfs_ops.readdir = default_vfs_ops.readdir;
-
-    if (conn->vfs_ops.mkdir == NULL)
-		conn->vfs_ops.mkdir = default_vfs_ops.mkdir;
-
-    if (conn->vfs_ops.rmdir == NULL)
-		conn->vfs_ops.rmdir = default_vfs_ops.rmdir;
-
-    if (conn->vfs_ops.closedir == NULL)
-		conn->vfs_ops.closedir = default_vfs_ops.closedir;
-
-    if (conn->vfs_ops.open == NULL)
-		conn->vfs_ops.open = default_vfs_ops.open;
-
-    if (conn->vfs_ops.close == NULL)
-		conn->vfs_ops.close = default_vfs_ops.close;
-
-    if (conn->vfs_ops.read == NULL)
-		conn->vfs_ops.read = default_vfs_ops.read;
-
-    if (conn->vfs_ops.write == NULL)
-		conn->vfs_ops.write = default_vfs_ops.write;
-
-    if (conn->vfs_ops.lseek == NULL)
-		conn->vfs_ops.lseek = default_vfs_ops.lseek;
-
-    if (conn->vfs_ops.rename == NULL)
-		conn->vfs_ops.rename = default_vfs_ops.rename;
-
-    if (conn->vfs_ops.fsync == NULL)
-		conn->vfs_ops.fsync = default_vfs_ops.fsync;
-
-    if (conn->vfs_ops.stat == NULL)
-		conn->vfs_ops.stat = default_vfs_ops.stat;
-
-    if (conn->vfs_ops.fstat == NULL)
-		conn->vfs_ops.fstat = default_vfs_ops.fstat;
-
-    if (conn->vfs_ops.lstat == NULL)
-		conn->vfs_ops.lstat = default_vfs_ops.lstat;
-
-    if (conn->vfs_ops.unlink == NULL)
-		conn->vfs_ops.unlink = default_vfs_ops.unlink;
-
-    if (conn->vfs_ops.chmod == NULL)
-		conn->vfs_ops.chmod = default_vfs_ops.chmod;
-
-    if (conn->vfs_ops.fchmod == NULL)
-		conn->vfs_ops.fchmod = default_vfs_ops.fchmod;
-
-    if (conn->vfs_ops.chown == NULL)
-		conn->vfs_ops.chown = default_vfs_ops.chown;
-
-    if (conn->vfs_ops.fchown == NULL)
-		conn->vfs_ops.fchown = default_vfs_ops.fchown;
-
-    if (conn->vfs_ops.chdir == NULL)
-		conn->vfs_ops.chdir = default_vfs_ops.chdir;
-
-    if (conn->vfs_ops.getwd == NULL)
-		conn->vfs_ops.getwd = default_vfs_ops.getwd;
-
-    if (conn->vfs_ops.utime == NULL)
-		conn->vfs_ops.utime = default_vfs_ops.utime;
-
-    if (conn->vfs_ops.ftruncate == NULL)
-		conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
-
-    if (conn->vfs_ops.lock == NULL)
-		conn->vfs_ops.lock = default_vfs_ops.lock;
-
-    if (conn->vfs_ops.symlink == NULL)
-		conn->vfs_ops.symlink = default_vfs_ops.symlink;
-
-    if (conn->vfs_ops.readlink == NULL)
-		conn->vfs_ops.readlink = default_vfs_ops.readlink;
-
-    if (conn->vfs_ops.fget_nt_acl == NULL)
-		conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
-
-    if (conn->vfs_ops.get_nt_acl == NULL)
-		conn->vfs_ops.get_nt_acl = default_vfs_ops.get_nt_acl;
-
-    if (conn->vfs_ops.fset_nt_acl == NULL)
-		conn->vfs_ops.fset_nt_acl = default_vfs_ops.fset_nt_acl;
-
-    if (conn->vfs_ops.set_nt_acl == NULL)
-		conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
-
-    if (conn->vfs_ops.chmod_acl == NULL)
-		conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
-
-    if (conn->vfs_ops.fchmod_acl == NULL)
-		conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
-
-    return True;
+	return True;
 }
 #endif
 
@@ -294,7 +184,7 @@ BOOL vfs_init(connection_struct *conn)
  Check if directory exists.
 ********************************************************************/
 
-BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st)
+BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	BOOL ret;
@@ -309,20 +199,26 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *
 	if(!ret)
 		errno = ENOTDIR;
 
-  return ret;
+	return ret;
 }
 
 /*******************************************************************
- vfs mkdir wrapper that calls dos_to_unix.
+ vfs getwd wrapper 
+********************************************************************/
+char *vfs_getwd(connection_struct *conn, char *path)
+{
+	return conn->vfs_ops.getwd(conn,path);
+}
+
+/*******************************************************************
+ vfs mkdir wrapper 
 ********************************************************************/
 
-int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
+int vfs_mkdir(connection_struct *conn, const char *name, mode_t mode)
 {
 	int ret;
-	pstring name;
 	SMB_STRUCT_STAT sbuf;
 
-	pstrcpy(name,dos_to_unix(fname,False)); /* paranoia copy */
 	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
 		/*
 		 * Check if high bits should have been set,
@@ -337,23 +233,10 @@ int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
 }
 
 /*******************************************************************
- vfs getwd wrapper that calls dos_to_unix.
-********************************************************************/
-
-char *vfs_getwd(connection_struct *conn, char *unix_path)
-{
-    char *wd;
-    wd = conn->vfs_ops.getwd(conn,unix_path);
-    if (wd)
-        unix_to_dos(wd, True);
-    return wd;
-}
-
-/*******************************************************************
  Check if a vfs file exists.
 ********************************************************************/
 
-BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL vfs_file_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 
@@ -397,7 +280,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
  Write data to a fd on the vfs.
 ****************************************************************************/
 
-ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
+ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 {
   size_t total=0;
   ssize_t ret;
@@ -548,13 +431,6 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	/* using /usr/ucb/cc is BAD */
 	dname = dname - 2;
 #endif
-
-	{
-		static pstring buf;
-		memcpy(buf, dname, NAMLEN(ptr)+1);
-		unix_to_dos(buf, True);
-		dname = buf;
-	}
 
 	return(dname);
 }

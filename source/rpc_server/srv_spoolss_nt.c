@@ -300,7 +300,6 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
-		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
 
 		DEBUG(10,("Running [%s]\n", command));
 		ret = smbrun(command, NULL);
@@ -944,8 +943,8 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 			return False;
 	}
 
-	unistr_to_dos(nt_devmode->devicename, (const char *)devmode->devicename.buffer, 31);
-	unistr_to_dos(nt_devmode->formname, (const char *)devmode->formname.buffer, 31);
+	rpcstr_pull(nt_devmode->devicename,devmode->devicename.buffer, 31, -1, 0);
+	rpcstr_pull(nt_devmode->formname,devmode->formname.buffer, 31, -1, 0);
 
 	nt_devmode->specversion=devmode->specversion;
 	nt_devmode->driverversion=devmode->driverversion;
@@ -1356,7 +1355,6 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
-		dos_to_unix(unix_printer, True);
 
 		if(!spoolss_connect_to_client(&cli, unix_printer))
 			return False;
@@ -1437,7 +1435,7 @@ static void spoolss_notify_server_name(int snum,
 
 	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
-	len = (uint32)dos_PutUniCode(temp, temp_name, sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1471,8 +1469,7 @@ static void spoolss_notify_printer_name(int snum,
 		p++;
 	}
 
-	len = (uint32)dos_PutUniCode(temp, p, sizeof(temp) - 2, True);
-
+	len = rpcstr_push(temp, p, sizeof(temp)-2, 0);
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
@@ -1496,8 +1493,7 @@ static void spoolss_notify_share_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, lp_servicename(snum), 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, lp_servicename(snum),  sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1524,8 +1520,7 @@ static void spoolss_notify_port_name(int snum,
 
 	/* even if it's strange, that's consistant in all the code */
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->portname, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, printer->info_2->portname,  sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1552,9 +1547,7 @@ static void spoolss_notify_driver_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->drivername, 
-				     sizeof(temp) - 2, True);
-
+	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp) - 2, 0);
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
@@ -1579,11 +1572,10 @@ static void spoolss_notify_comment(int snum,
 	uint32 len;
 
 	if (*printer->info_2->comment == '\0')
-		len = (uint32)dos_PutUniCode(temp, lp_comment(snum), 
-					     sizeof(temp) - 2, True);
+		len = rpcstr_push(temp, lp_comment(snum), sizeof(temp) - 2, 0);
+
 	else
-		len = (uint32)dos_PutUniCode(temp, printer->info_2->comment, 
-					     sizeof(temp) - 2, True);
+		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1610,8 +1602,7 @@ static void spoolss_notify_location(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->location, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1650,8 +1641,7 @@ static void spoolss_notify_sepfile(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->sepfile, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1677,8 +1667,7 @@ static void spoolss_notify_print_processor(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->printprocessor, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1704,8 +1693,8 @@ static void spoolss_notify_parameters(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->parameters, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp) -
+			 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1731,8 +1720,7 @@ static void spoolss_notify_datatype(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, printer->info_2->datatype, 
-				     sizeof(pstring) - 2, True);
+	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1882,8 +1870,8 @@ static void spoolss_notify_username(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, queue->user, 
-				     sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, queue->user, sizeof(temp) - 2, 0);
+
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -1920,9 +1908,8 @@ static void spoolss_notify_job_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = (uint32)dos_PutUniCode(temp, queue->file, sizeof(temp) - 2, 
-				     True);
-
+	len = rpcstr_push(temp, queue->file, sizeof(temp) - 2, 0);
+	
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
@@ -1970,7 +1957,7 @@ static void spoolss_notify_job_status_string(int snum,
 	}
 #endif /* NO LONGER NEEDED. */
 
-	len = (uint32)dos_PutUniCode(temp, p, sizeof(temp) - 2, True);
+	len = rpcstr_push(temp, p, sizeof(temp) - 2, 0);
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
@@ -3487,7 +3474,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
 			return;
 		}
-		j += (dos_PutUniCode((char *)(*uni_array+j), line , sizeof(uint16)*strlen(line), True) / sizeof(uint16) );
+		j += (rpcstr_push((*uni_array+j), line, sizeof(uint16)*strlen(line)+2, 0)/ sizeof(uint16));
 		i++;
 	}
 	
@@ -4231,8 +4218,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
 
-	/* Convert script args to unix-codepage */
-	dos_to_unix(command, True);
 	DEBUG(10,("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
 	DEBUGADD(10,("returned [%d]\n", ret));
@@ -4245,7 +4230,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
-	qlines = fd_lines_load(fd, &numlines, True);
+	qlines = fd_lines_load(fd, &numlines);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
 
@@ -5507,7 +5492,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines,True);
+		qlines = fd_lines_load(fd, &numlines);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 
@@ -5605,7 +5590,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines,True);
+		qlines = fd_lines_load(fd, &numlines);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 
@@ -6061,7 +6046,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	
-	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
+	*out_value_len = rpcstr_push((char *)*out_value,value, in_value_len, 0);
 
 	*out_type=type;
 

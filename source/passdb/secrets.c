@@ -99,7 +99,6 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	size_t size;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
@@ -123,13 +122,9 @@ form a key for fetching a domain trust password
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
-	fstring dos_domain;
-
-	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain, True);
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
-		 SECRETS_MACHINE_ACCT_PASS, dos_domain);
+		 SECRETS_MACHINE_ACCT_PASS, domain);
 
 	return keystr;
 }

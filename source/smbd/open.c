@@ -38,14 +38,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 #ifdef O_NONBLOCK
 	flags |= O_NONBLOCK;
 #endif
-
-	fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+	fd = conn->vfs_ops.open(conn,fname,flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+		fd = conn->vfs_ops.open(conn,fname,flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
@@ -199,13 +198,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
-	/*
-	 * Note that the file name here is the *untranslated* name
-	 * ie. it is still in the DOS codepage sent from the client.
-	 * All use of this filename will pass though the sys_xxxx
-	 * functions which will do the dos_to_unix translation before
-	 * mapping into a UNIX filename. JRA.
-	 */
 	string_set(&fsp->fsp_name,fname);
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; /* Write cache pointer. */
@@ -923,13 +915,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	fsp->stat_open = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
-	/*
-	 * Note that the file name here is the *untranslated* name
-	 * ie. it is still in the DOS codepage sent from the client.
-	 * All use of this filename will pass though the sys_xxxx
-	 * functions which will do the dos_to_unix translation before
-	 * mapping into a UNIX filename. JRA.
-	 */
 	string_set(&fsp->fsp_name,fname);
 	fsp->wbmpx_ptr = NULL;
     fsp->wcp = NULL; /* Write cache pointer. */
@@ -1094,13 +1079,6 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
-	/*
-	 * Note that the file name here is the *untranslated* name
-	 * ie. it is still in the DOS codepage sent from the client.
-	 * All use of this filename will pass though the sys_xxxx
-	 * functions which will do the dos_to_unix translation before
-	 * mapping into a UNIX filename. JRA.
-	 */
 	string_set(&fsp->fsp_name,fname);
 	fsp->wbmpx_ptr = NULL;
 

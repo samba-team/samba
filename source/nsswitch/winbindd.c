@@ -700,7 +700,6 @@ int main(int argc, char **argv)
 	}
 
 	TimeInit();
-	charset_initialise();
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
@@ -710,8 +709,6 @@ int main(int argc, char **argv)
 	if (new_debuglevel != -1) {
 		DEBUGLEVEL = new_debuglevel;
 	}
-
-	codepage_initialise(lp_client_code_page());
 
 	if (!interactive) {
 		become_daemon();

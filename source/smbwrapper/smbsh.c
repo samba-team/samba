@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
 	extern FILE *dbf;
 
 	dbf = stdout;
-	charset_initialise();
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {

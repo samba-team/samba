@@ -77,7 +77,6 @@ struct in_addr *lookup_backend(const char *name, int *count)
 		DEBUGLEVEL = 0;
 		TimeInit();
 		setup_logging("nss_wins",True);
-		charset_initialise();
 		lp_load(CONFIGFILE,True,False,False);
 		load_interfaces();
 	}

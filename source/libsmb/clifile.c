@@ -44,10 +44,10 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         p = smb_buf(cli->outbuf);
         *p++ = 4;
 	p += clistr_push(cli, p, fname_src, -1, 
-			 STR_TERMINATE | STR_CONVERT);
+			 STR_TERMINATE);
         *p++ = 4;
 	p += clistr_push(cli, p, fname_dst, -1, 
-			 STR_TERMINATE | STR_CONVERT);
+			 STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -83,7 +83,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
   
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
@@ -116,7 +116,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	p += clistr_push(cli, p, dname, -1, STR_CONVERT|STR_TERMINATE);
+	p += clistr_push(cli, p, dname, -1, 0);
 
 	cli_setup_bcc(cli, p);
 
@@ -150,7 +150,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	p += clistr_push(cli, p, dname, -1, STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, dname, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -243,8 +243,8 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 
 	p = smb_buf(cli->outbuf);
 	/* this alignment and termination is critical for netapp filers. Don't change */
-	p += clistr_align_out(cli, p, STR_CONVERT);
-	len = clistr_push(cli, p, fname, -1, STR_CONVERT);
+	p += clistr_align_out(cli, p, 0);
+	len = clistr_push(cli, p, fname, -1, 0);
 	p += len;
 	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
 	/* sigh. this copes with broken netapp filer behaviour */
@@ -336,7 +336,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	}
   
 	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -648,7 +648,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -699,7 +699,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
 	*p++ = 4;
 
 	cli_setup_bcc(cli, p);
@@ -736,7 +736,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	cli_setup_packet(cli);
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, path2, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, path2, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -796,7 +796,7 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, path, -1, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, path, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
@@ -812,7 +812,7 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 	if (tmp_path) {
 		pstring path2;
 		clistr_pull(cli, path2, smb_buf(cli->inbuf)+1, 
-			    sizeof(path2), -1, STR_TERMINATE | STR_CONVERT);
+			    sizeof(path2), -1, STR_TERMINATE);
 		*tmp_path = strdup(path2);
 	}
 

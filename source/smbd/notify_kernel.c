@@ -125,7 +125,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = dos_open(path, O_RDONLY, 0);
+	fd = conn->vfs_ops.open(conn, path, O_RDONLY, 0);
 
 	if (fd == -1) {
 		DEBUG(3,("Failed to open directory %s for change notify\n", path));

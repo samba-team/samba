@@ -51,7 +51,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+27,
 					    sizeof(finfo->name),
 					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
+					    STR_TERMINATE);
 			}
 			return(28 + CVAL(p,26));
 
@@ -66,7 +66,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+31,
 					    sizeof(finfo->name),
 					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
+					    STR_TERMINATE);
 			}
 			return(32 + CVAL(p,30));
 
@@ -82,7 +82,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+33,
 					    sizeof(finfo->name),
 					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
+					    STR_TERMINATE);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -97,7 +97,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+37,
 					    sizeof(finfo->name),
 					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
+					    STR_TERMINATE);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -135,7 +135,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 2; 
 				{
 					/* stupid NT bugs. grr */
-					int flags = STR_CONVERT;
+					int flags = 0;
 					if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
 					clistr_pull(cli, finfo->short_name, p,
 						    sizeof(finfo->short_name),
@@ -144,8 +144,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 24; /* short name? */	  
 				clistr_pull(cli, finfo->name, p,
 					    sizeof(finfo->name),
-					    namelen, 
-					    STR_CONVERT);
+					    namelen, 0);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -203,7 +202,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,8,0);
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE | STR_CONVERT);
+					 STR_TERMINATE);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -213,7 +212,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE | STR_CONVERT);
+					 STR_TERMINATE);
 		}
 
 		param_len = PTR_DIFF(p, param);
@@ -271,15 +270,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 					clistr_pull(cli, mask, p+ff_lastname,
 						    sizeof(mask), 
 						    data_len-ff_lastname,
-						    STR_TERMINATE |
-						    STR_CONVERT);
+						    STR_TERMINATE);
 					break;
 				case 1:
 					clistr_pull(cli, mask, p+ff_lastname+1,
 						    sizeof(mask), 
 						    -1,
-						    STR_TERMINATE |
-						    STR_CONVERT);
+						    STR_TERMINATE);
 					break;
 				}
 		} else {
@@ -345,7 +342,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
-	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_CONVERT|STR_ASCII);
+	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
 		fstrcpy(finfo->short_name,finfo->name);
 	
@@ -392,7 +389,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);      
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE);
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);

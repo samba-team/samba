@@ -73,8 +73,6 @@ void smbw_init(void)
 		exit(1);
 	}
 
-	charset_initialise();
-
 	in_client = True;
 
 	load_interfaces();

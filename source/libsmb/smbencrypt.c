@@ -207,16 +207,8 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	 * decrypt. JRA.
 	 */
 	generate_random_buffer((unsigned char *)data, 516, False);
-	if (unicode)
-	{
-		/* Note that passwd should be in DOS oem character set. */
-		dos_struni2( &data[512 - new_pw_len], passwd, 512);
-	}
-	else
-	{
-		/* Note that passwd should be in DOS oem character set. */
-		fstrcpy( &data[512 - new_pw_len], passwd);
-	}
+	push_string(NULL, &data[512 - new_pw_len], passwd, new_pw_len, 
+		    STR_NOALIGN | (unicode?STR_UNICODE:STR_ASCII));
 	SIVAL(data, 512, new_pw_len);
 
 #ifdef DEBUG_PASSWORD
@@ -236,26 +228,19 @@ BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 {
 	generate_random_buffer(buffer, 516, True);
 
-	if (nt_pass_set)
-	{
-		/*
-		 * nt passwords are in unicode.  last char overwrites NULL
-		 * in ascii_to_unibuf, so use SIVAL *afterwards*.
-		 */
+	if (nt_pass_set) {
 		new_pw_len *= 2;
-		ascii_to_unistr((uint16 *)&buffer[512 - new_pw_len], new_pass,
-				new_pw_len);
-	}
-	else
-	{
-		memcpy(&buffer[512 - new_pw_len], new_pass, new_pw_len);
+		push_ucs2(NULL, &buffer[512 - new_pw_len], new_pass,
+			  new_pw_len, 0);
+	} else {
+		push_ascii(&buffer[512 - new_pw_len], new_pass,
+			   new_pw_len, 0);
 	}
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
-
 	SIVAL(buffer, 512, new_pw_len);
 
 	return True;
@@ -268,8 +253,6 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      uchar nt_p16[16], uchar p16[16])
 {
-	char *pw;
-
 	int uni_pw_len=0;
 	int byte_len=0;
 	char unicode_passwd[514];
@@ -304,9 +287,8 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		return False;
 	}
 	
+ 	pull_string(NULL, passwd, &in_buffer[512 - byte_len], -1, byte_len, STR_UNICODE);
 	uni_pw_len = byte_len/2;
-	pw = dos_unistrn2((uint16 *)(&in_buffer[512 - byte_len]), byte_len);
-	memcpy(passwd, pw, uni_pw_len);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: passwd: "));
@@ -324,7 +306,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 #endif
 	
 	/* Mangle the passwords into Lanman format */
-	memcpy(lm_ascii_passwd, passwd, uni_pw_len);
+	memcpy(lm_ascii_passwd, passwd, byte_len/2);
 	lm_ascii_passwd[14] = '\0';
 	strupper(lm_ascii_passwd);
 
@@ -338,10 +320,9 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 #endif
 
 	/* copy the password and it's length to the return buffer */	
-	*new_pw_len=uni_pw_len;
+	*new_pw_len = byte_len/2;
 	memcpy(new_pwrd, passwd, uni_pw_len);
 	new_pwrd[uni_pw_len]='\0';
-	
 	
 	/* clear out local copy of user's password (just being paranoid). */
 	ZERO_STRUCT(unicode_passwd);

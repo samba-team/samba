@@ -471,8 +471,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SSVAL(p,l1_attrFile,mode);
       p += l1_achName;
       nameptr = p;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SCVAL(p, -1, len);
       p += len;
       break;
@@ -493,7 +492,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += l2_achName;
       nameptr = p;
       len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+			STR_TERMINATE);
       SCVAL(p, -1, len);
       p += len;
       break;
@@ -509,8 +508,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,26,4);
       p += 31;
       nameptr = p;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SCVAL(p, -1, len);
       p += len;
       break;
@@ -529,8 +527,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SSVAL(p,24,mode);
       p += 33;
       nameptr = p;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SCVAL(p, -1, len);
       p += len;
       SIVAL(q,4,PTR_DIFF(p, q));
@@ -556,16 +553,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	      pstrcpy(mangled_name, fname);
 	      name_map_mangle(mangled_name,True,True,SNUM(conn));
 	      mangled_name[12] = 0;
-	      len = srvstr_push(outbuf, p+2, mangled_name, 24, 
-				STR_CONVERT|STR_UPPER);
+	      len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER);
 	      SSVAL(p, 0, len);
       } else {
 	      SSVAL(p,0,0);
 	      *(p+2) = 0;
       }
       p += 2 + 24;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SIVAL(q,0,len);
       p += len;
       len = PTR_DIFF(p, pdata);
@@ -586,8 +581,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       p += 4;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SIVAL(p, -4, len);
       p += len;
       len = PTR_DIFF(p, pdata);
@@ -611,8 +605,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 4;
       SIVAL(p,0,0); p += 4;
 
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SIVAL(p, -4, len);
       p += len;
 
@@ -626,8 +619,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 4;
       SIVAL(p,0,reskey); p += 4;
       p += 4;
-      len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
       SIVAL(p, -4, len);
       p += len;
       len = PTR_DIFF(p, pdata);
@@ -923,7 +915,7 @@ static int call_trans2findnext(connection_struct *conn,
 
   *mask = *directory = *resume_name = 0;
 
-  srvstr_pull(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE|STR_CONVERT);
+  srvstr_pull(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE);
 
   DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
 close_after_request=%d, close_if_end = %d requires_resume_key = %d \
@@ -1194,7 +1186,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	     */
 	    SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
 	    len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, 
-			      STR_TERMINATE|STR_CONVERT);
+			      STR_TERMINATE);
 	    SCVAL(pdata,l2_vol_cch,len);
 	    data_len = l2_vol_szVolLabel + len;
 	    DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
@@ -1206,13 +1198,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
 		  FILE_DEVICE_IS_MOUNTED|
 		  (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 	    SIVAL(pdata,4,255); /* Max filename component length */
-	    len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_TERMINATE|STR_CONVERT);
+	    len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_TERMINATE);
 	    SIVAL(pdata,8,len);
 	    data_len = 12 + len;
 	    break;
 
     case SMB_QUERY_FS_LABEL_INFO:
-	    len = srvstr_push(outbuf, pdata+4, vname, -1, STR_TERMINATE|STR_CONVERT);
+	    len = srvstr_push(outbuf, pdata+4, vname, -1, STR_TERMINATE);
 	    data_len = 4 + len;
 	    SIVAL(pdata,0,len);
 	    break;
@@ -1224,7 +1216,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
 		  (str_checksum(local_machine)<<16));
 
-	    len = srvstr_push(outbuf, pdata+18, vname, -1, STR_TERMINATE|STR_CONVERT);
+	    len = srvstr_push(outbuf, pdata+18, vname, -1, STR_TERMINATE);
 	    SIVAL(pdata,12,len);
 	    data_len = 18+len;
 	    DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n", 
@@ -1517,7 +1509,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
             *short_name = '\0';
         }
 	len = srvstr_push(outbuf, pdata+4, short_name, -1, 
-			  STR_TERMINATE|STR_CONVERT|STR_UPPER);
+			  STR_TERMINATE|STR_UPPER);
         data_size = 4 + len;
         SIVAL(pdata,0,len);
       }
@@ -1531,9 +1523,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	     * you like hearing about me suffering.... :-). JRA.
 	     */
 	    if(strequal(".", fname)) {
-		    len = srvstr_push(outbuf, pdata+4, "\\", -1, STR_TERMINATE|STR_CONVERT);
+		    len = srvstr_push(outbuf, pdata+4, "\\", -1, STR_TERMINATE);
 	    } else {
-		    len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE|STR_CONVERT);
+		    len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE);
 	    }
 	    data_size = 4 + len;
 	    SIVAL(pdata,0,len);
@@ -1571,7 +1563,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
       pdata += 4;
       pdata += 4; /* alignment */
-      len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE);
       SIVAL(pdata,0,len);
       pdata += 4 + len;
       data_size = PTR_DIFF(pdata,(*ppdata));
@@ -1722,7 +1714,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       SIVAL(pdata,0,pos);
       SIVAL(pdata,4,size);
       SIVAL(pdata,12,size);
-      len = srvstr_push(outbuf, pdata+24, fname, -1, STR_TERMINATE|STR_CONVERT);
+      len = srvstr_push(outbuf, pdata+24, fname, -1, STR_TERMINATE);
       SIVAL(pdata,20,len);
       data_size = 24 + len;
       break;
@@ -2294,7 +2286,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   if(!lp_host_msdfs())
     return(ERROR(ERRDOS,ERRbadfunc));
 
-  srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE|STR_CONVERT);
+  srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
 
   if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
     return(ERROR(ERRDOS,ERRbadfile));
@@ -2331,8 +2323,8 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 	   CAN ACCEPT THIS IN UNICODE. JRA. */
 
     SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
-	srvstr_push( outbuf, pdata + 2, global_myname, 15, STR_CONVERT|STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
-    srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_CONVERT|STR_ASCII|STR_TERMINATE); /* Service name */
+	srvstr_push( outbuf, pdata + 2, global_myname, 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
+    srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
     send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
     return(-1);
   } else {

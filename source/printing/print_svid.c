@@ -50,7 +50,7 @@ static void populate_printers(void)
 	char **lines;
 	int i;
 
-	lines = file_lines_pload("/usr/bin/lpstat -v", NULL, False);
+	lines = file_lines_pload("/usr/bin/lpstat -v", NULL);
 	if (!lines) return;
 
 	for (i=0;lines[i];i++) {
@@ -107,7 +107,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
 	if (printers == NULL)
 		populate_printers();
 	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		(fn)(unix_to_dos(tmp->name,False), "");
+		(fn)(tmp->name, "");
 }
 
 

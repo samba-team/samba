@@ -75,8 +75,7 @@ static int CopyExpanded(connection_struct *conn,
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub_conn(conn,buf);
-	StrnCpy(*dst,buf,*n-1);
-	l = strlen(*dst) + 1;
+	l = push_ascii(*dst,buf,*n-1, STR_TERMINATE);
 	(*dst) += l;
 	(*n) -= l;
 	return l;
@@ -86,8 +85,7 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 {
   int l;
   if (!src || !dst || !n || !(*dst)) return(0);
-  StrnCpy(*dst,src,*n-1);
-  l = strlen(*dst) + 1;
+  l = push_ascii(*dst,src,*n-1, STR_TERMINATE);
   (*dst) += l;
   (*n) -= l;
   return l;
@@ -356,7 +354,7 @@ static void PackDriverData(struct pack_desc* desc)
   SIVAL(drivdata,0,sizeof drivdata); /* cb */
   SIVAL(drivdata,4,1000);	/* lVersion */
   memset(drivdata+8,0,32);	/* szDeviceName */
-  srvstr_push_ascii(drivdata+8,"NULL",-1);
+  push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
   PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
@@ -563,7 +561,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
 			   snum, drivername, lp_driverfile(snum)));
 
-		lines = file_lines_load(lp_driverfile(snum),NULL, False);
+		lines = file_lines_load(lp_driverfile(snum),NULL);
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),
@@ -795,7 +793,7 @@ static int get_printerdrivernumber(int snum)
 		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, drivername, lp_driverfile(snum)));
 		
-		lines = file_lines_load(lp_driverfile(snum), NULL, False);
+		lines = file_lines_load(lp_driverfile(snum), NULL);
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
@@ -1110,7 +1108,7 @@ static int get_server_info(uint32 servertype,
   BOOL local_list_only;
   int i;
 
-  lines = file_lines_load(lock_path(SERVER_LIST), NULL, False);
+  lines = file_lines_load(lock_path(SERVER_LIST), NULL);
   if (!lines) {
     DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
     return(0);
@@ -1255,15 +1253,15 @@ static int fill_srv_info(struct srv_info_struct *service,
   switch (uLevel)
     {
     case 0:
-      srvstr_push_ascii(p,service->name,15);
-      break;
+	    push_ascii(p,service->name, 15, STR_TERMINATE);
+	    break;
 
     case 1:
-      srvstr_push_ascii(p,service->name,15);
-      SIVAL(p,18,service->type);
-      SIVAL(p,22,PTR_DIFF(p2,baseaddr));
-      len += CopyAndAdvance(&p2,service->comment,&l2);
-      break;
+	    push_ascii(p,service->name,15, STR_TERMINATE);
+	    SIVAL(p,18,service->type);
+	    SIVAL(p,22,PTR_DIFF(p2,baseaddr));
+	    len += CopyAndAdvance(&p2,service->comment,&l2);
+	    break;
     }
 
   if (stringbuf)
@@ -1340,7 +1338,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
   if (strcmp(str1, "WrLehDz") == 0) {
-	  srvstr_pull_ascii(domain, p, sizeof(fstring));
+	  pull_ascii_fstring(domain, p);
   } else {
 	  fstrcpy(domain, global_myworkgroup);
   }
@@ -1515,7 +1513,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
     }
   if (!baseaddr) baseaddr = p;
   
-  srvstr_push_ascii(p,lp_servicename(snum),13);
+  push_ascii(p,lp_servicename(snum),13, STR_TERMINATE);
   
   if (uLevel > 0)
     {
@@ -1727,7 +1725,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   fstring user;
   fstring pass1,pass2;
 
-  srvstr_pull_ascii(user,p,sizeof(user));
+  pull_ascii_fstring(user,p);
 
   p = skip_string(p,1);
 
@@ -1868,7 +1866,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
   }
   p = skip_string(p,1);
 
-  p += srvstr_pull_ascii(user,p,sizeof(user));
+  p += pull_ascii_fstring(user,p);
 
   DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
@@ -2138,7 +2136,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   p2 = p + struct_len;
   if (uLevel != 20) {
     srvstr_push(NULL, p,local_machine,16, 
-		STR_ASCII|STR_UPPER|STR_TERMINATE|STR_CONVERT);
+		STR_ASCII|STR_UPPER|STR_TERMINATE);
   }
   p += 16;
   if (uLevel > 0)

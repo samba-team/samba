@@ -188,7 +188,6 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   setup_logging("smbspool", True);
 
   TimeInit();
-  charset_initialise();
 
   in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -200,8 +199,6 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   if (workgroup == NULL)
     workgroup = lp_workgroup();
-
-  codepage_initialise(lp_client_code_page());
 
   load_interfaces();
 

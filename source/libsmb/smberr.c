@@ -164,10 +164,12 @@ char *smb_errstr(char *inbuf)
 	      if (num == err[j].code)
 		{
 		  if (DEBUGLEVEL > 0)
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",err_classes[i].class,
-			    err[j].name,err[j].message);
+		    slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
+			     err_classes[i].class,
+			     err[j].name,err[j].message);
 		  else
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s",err_classes[i].class,err[j].name);
+		    slprintf(ret, sizeof(ret) - 1, "%s - %s",
+			     err_classes[i].class,err[j].name);
 		  return ret;
 		}
 	  }

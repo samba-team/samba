@@ -26,7 +26,7 @@
 
 static  struct {
     int prot;
-    char *name;
+    const char *name;
   }
 prots[] = 
     {
@@ -84,8 +84,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 			 */
 			passlen = 24;
 			ntpasslen = 24;
-			fstrcpy(pword, pass);
-			unix_to_dos(pword,True);
+			clistr_push(cli, pword, pass, -1, STR_TERMINATE);
 			fstrcpy(ntpword, ntpass);;
 			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
 			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
@@ -104,7 +103,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 			/*
 			 * Plaintext mode needed, assume plaintext supplied.
 			 */
-			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
+			passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
 			fstrcpy(ntpword, "");
 			ntpasslen = 0;
 		}
@@ -136,7 +135,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen);
 		p += passlen;
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_UPPER|STR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, STR_UPPER|STR_TERMINATE);
 		cli_setup_bcc(cli, p);
 	}
 	else
@@ -167,10 +166,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, workgroup, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, "Unix", -1, STR_CONVERT|STR_TERMINATE);
-		p += clistr_push(cli, p, "Samba", -1, STR_CONVERT|STR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+		p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 		cli_setup_bcc(cli, p);
 	}
 
@@ -193,9 +192,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 	       * info.
 	       */
 	      char *q = smb_buf(cli->inbuf);
-	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
-	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
-	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
+	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE);
+	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE);
+	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE);
       }
 
       fstrcpy(cli->user_name, user);
@@ -227,7 +226,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 send a tconX
 ****************************************************************************/
 BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pass, int passlen)
+		    const char *share, const char *dev, const char *pass, int passlen)
 {
 	fstring fullshare, pword, dos_pword;
 	char *p;
@@ -247,15 +246,15 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
 		passlen = 24;
-		fstrcpy(dos_pword,pass);
-		unix_to_dos(dos_pword,True);
+		clistr_push(cli, dos_pword, pass, -1, STR_TERMINATE);
+		
 		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & 3) == 0) {
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
-			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
+			passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
 		} else {
 			memcpy(pword, pass, passlen);
 		}
@@ -263,8 +262,6 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
-	unix_to_dos(fullshare, True);
-	strupper(fullshare);
 
 	set_message(cli->outbuf,4, 0, True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
@@ -276,7 +273,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p += clistr_push(cli, p, fullshare, -1, STR_CONVERT | STR_TERMINATE);
+	p += clistr_push(cli, p, fullshare, -1, STR_TERMINATE |STR_UPPER);
 	fstrcpy(p, dev); p += strlen(dev)+1;
 
 	cli_setup_bcc(cli, p);
@@ -294,7 +291,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	fstrcpy(cli->dev, "A:");
 
 	if (cli->protocol >= PROTOCOL_NT1) {
-		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE | STR_CONVERT);
+		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE);
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
@@ -350,9 +347,7 @@ void cli_negprot_send(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++) {
 		*p++ = 2;
-		pstrcpy(p,prots[numprots].name);
-		unix_to_dos(p,True);
-		p += strlen(p) + 1;
+		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
 
 	CVAL(cli->outbuf,smb_com) = SMBnegprot;
@@ -389,9 +384,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++) {
 		*p++ = 2;
-		pstrcpy(p,prots[numprots].name);
-		unix_to_dos(p,True);
-		p += strlen(p) + 1;
+		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
 
 	CVAL(cli->outbuf,smb_com) = SMBnegprot;
@@ -433,7 +426,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (smb_buflen(cli->inbuf) > 8) {
 			clistr_pull(cli, cli->server_domain, 
 				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
-				    smb_buflen(cli->inbuf)-8, STR_CONVERT|STR_UNICODE|STR_NOALIGN);
+				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
@@ -762,9 +755,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
     		if (*cli->server_domain || *cli->server_os || *cli->server_type)
     		{
     			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-    			     cli->server_domain,
-    		             cli->server_os,
-    		             cli->server_type));
+				 cli->server_domain,
+				 cli->server_os,
+				 cli->server_type));
     		}
 		
 		if (do_tcon)

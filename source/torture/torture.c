@@ -3217,12 +3217,6 @@ static void usage(void)
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	charset_initialise();
-
-	codepage_initialise(lp_client_code_page());
-
-	codepage_initialise(lp_client_code_page());
-
 	lp_load(servicesf,True,False,False);
 	load_interfaces();
 
