@@ -1662,7 +1662,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	 * depend on the last file name instead.
 	 */
 
-	if(requires_resume_key && *resume_name && !continue_bit) {
+	if(*resume_name && !continue_bit) {
 
 		/*
 		 * Fix for NT redirector problem triggered by resume key indexes
@@ -1714,7 +1714,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		if(current_pos < 0) {
 			DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
 			SeekDir(dirptr, start_pos);
-			for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos)) {
+			for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; ++current_pos) {
 
 				/*
 				 * Remember, mangle_map is called by
@@ -1737,7 +1737,11 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 				}
 			} /* end for */
 		} /* end if current_pos */
-	} /* end if requires_resume_key && !continue_bit */
+		/* Can't find the name. Just resume from where we were... */
+		if (dname == 0) {
+			SeekDir(dirptr, start_pos);
+		}
+	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 		BOOL got_exact_match = False;
