@@ -178,6 +178,7 @@ if test -f /etc/ibmcxx.cfg; then
 else
 	dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
 	dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
+	dpagaix_LDFLAGS="-Wl,-bI:dfspag.exp"
 fi
 AC_SUBST(dpagaix_CFLAGS)
 AC_SUBST(dpagaix_LDADD)
