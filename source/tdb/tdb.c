@@ -87,7 +87,13 @@ static void tdb_mmap(TDB_CONTEXT *tdb)
 		tdb->map_ptr = mmap(NULL, tdb->map_size, 
 				    PROT_READ|(tdb->read_only? 0:PROT_WRITE), 
 				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
-		if (!tdb->map_ptr) {
+
+		/*
+		 * NB. When mmap fails it returns -1 *NOT* NULL !!!!
+		 */
+
+		if (tdb->map_ptr == (void *)-1) {
+			tdb->map_ptr = NULL;
 			TDB_LOG((tdb, 2, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
 		}
