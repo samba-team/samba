@@ -375,9 +375,11 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
  Used in smbtorture.
 ****************************************************************************/
 
-int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredAccess,
+int cli_nt_create_full(struct cli_state *cli, const char *fname, 
+		 uint32 CreatFlags, uint32 DesiredAccess,
 		 uint32 FileAttributes, uint32 ShareAccess,
-		 uint32 CreateDisposition, uint32 CreateOptions)
+		 uint32 CreateDisposition, uint32 CreateOptions,
+		 uint8 SecuityFlags)
 {
 	char *p;
 	int len;
@@ -393,9 +395,9 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredA
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	if (cli->use_oplocks)
-		SIVAL(cli->outbuf,smb_ntcreate_Flags, REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
-	else
-		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
+		CreatFlags |= (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
+	
+	SIVAL(cli->outbuf,smb_ntcreate_Flags, CreatFlags);
 	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
 	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
 	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, FileAttributes);
@@ -403,6 +405,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredA
 	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, CreateDisposition);
 	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, CreateOptions);
 	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
+	SCVAL(cli->outbuf,smb_ntcreate_SecurityFlags, SecuityFlags);
 
 	p = smb_buf(cli->outbuf);
 	/* this alignment and termination is critical for netapp filers. Don't change */
@@ -433,8 +436,8 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredA
 
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
 {
-	return cli_nt_create_full(cli, fname, DesiredAccess, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0);
+	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0, 0x0);
 }
 
 /****************************************************************************

@@ -85,7 +85,7 @@ static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,20) != 0)&&
 		((qt.usedspace != 0xFFFFFFFF)||
-		 (IVAL(rdata,20)!=0xFFFFFFFF))) {
+		(IVAL(rdata,20)!=0xFFFFFFFF)))) {
 		/* more than 32 bits? */
 		return False;
 	}
@@ -98,7 +98,7 @@ static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,28)!=0xFFFFFFFF))) {
+		(IVAL(rdata,28)!=0xFFFFFFFF)))) {
 		/* more than 32 bits? */
 		return False;
 	}
@@ -111,7 +111,7 @@ static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,36)!=0xFFFFFFFF))) {
+		(IVAL(rdata,36)!=0xFFFFFFFF)))) {
 		/* more than 32 bits? */
 		return False;
 	}
@@ -459,7 +459,7 @@ BOOL cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,28)!=0xFFFFFFFF))) {
+		(IVAL(rdata,28)!=0xFFFFFFFF)))) {
 		/* more than 32 bits? */
 		goto cleanup;
 	}
@@ -472,7 +472,7 @@ BOOL cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,36)!=0xFFFFFFFF))) {
+		(IVAL(rdata,36)!=0xFFFFFFFF)))) {
 		/* more than 32 bits? */
 		goto cleanup;
 	}

@@ -47,3 +47,4 @@ vfstest
 wbinfo
 winbindd
 wrepld
+smbcquotas
