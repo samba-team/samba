@@ -74,7 +74,11 @@ static BOOL init_afs_acl(struct afs_acl *acl)
 
 static void free_afs_acl(struct afs_acl *acl)
 {
-	talloc_destroy(acl->ctx);
+	if (acl->ctx != NULL)
+		talloc_destroy(acl->ctx);
+	acl->ctx = NULL;
+	acl->num_aces = 0;
+	acl->acelist = NULL;
 }
 
 static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
@@ -190,6 +194,14 @@ static void add_afs_ace(struct afs_acl *acl,
 			const char *name, uint32 rights)
 {
 	struct afs_ace *ace;
+
+	for (ace = acl->acelist; ace != NULL; ace = ace->next) {
+		if ((ace->positive == positive) &&
+		    (strequal(ace->name, name))) {
+			ace->rights |= rights;
+			return;
+		}
+	}
 
 	ace = new_afs_ace(acl->ctx, positive, name, rights);
 
@@ -331,40 +343,192 @@ static uint32 afs_to_nt_file_rights(uint32 rights)
 	return result;
 }
 
-static uint32 afs_to_nt_dir_rights(uint32 rights)
+static void afs_to_nt_dir_rights(uint32 afs_rights, uint32 *nt_rights,
+				 uint8 *flag)
 {
-	uint32 result = 0;
+	*nt_rights = 0;
+	*flag = SEC_ACE_FLAG_OBJECT_INHERIT |
+		SEC_ACE_FLAG_CONTAINER_INHERIT;
 
-	if (rights & PRSFS_INSERT)
-		result |= FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY;
+	if (afs_rights & PRSFS_INSERT)
+		*nt_rights |= FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY;
 
-	if (rights & PRSFS_LOOKUP)
-		result |= FILE_READ_DATA | FILE_READ_EA | 
+	if (afs_rights & PRSFS_LOOKUP)
+		*nt_rights |= FILE_READ_DATA | FILE_READ_EA | 
 			FILE_EXECUTE | FILE_READ_ATTRIBUTES |
 			READ_CONTROL_ACCESS | SYNCHRONIZE_ACCESS;
 
-	if (rights & PRSFS_WRITE)
-		result |= FILE_WRITE_ATTRIBUTES | FILE_WRITE_DATA |
+	if (afs_rights & PRSFS_WRITE)
+		*nt_rights |= FILE_WRITE_ATTRIBUTES | FILE_WRITE_DATA |
 			FILE_APPEND_DATA | FILE_WRITE_EA;
 
-	if ((rights & (PRSFS_INSERT|PRSFS_LOOKUP|PRSFS_DELETE)) ==
+	if ((afs_rights & (PRSFS_INSERT|PRSFS_LOOKUP|PRSFS_DELETE)) ==
 	    (PRSFS_INSERT|PRSFS_LOOKUP|PRSFS_DELETE))
-		result |= FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA |
+		*nt_rights |= FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA |
 			GENERIC_WRITE_ACCESS;
 
-	if (rights & PRSFS_DELETE)
-		result |= DELETE_ACCESS;
+	if (afs_rights & PRSFS_DELETE)
+		*nt_rights |= DELETE_ACCESS;
 
-	if (rights & PRSFS_ADMINISTER)
-		result |= FILE_DELETE_CHILD | WRITE_DAC_ACCESS |
+	if (afs_rights & PRSFS_ADMINISTER)
+		*nt_rights |= FILE_DELETE_CHILD | WRITE_DAC_ACCESS |
 			WRITE_OWNER_ACCESS;
 
-	return result;
+	if ( (afs_rights & PRSFS_LOOKUP) ==
+	     (afs_rights & (PRSFS_LOOKUP|PRSFS_READ)) ) {
+		/* Only lookup right */
+		*flag = SEC_ACE_FLAG_CONTAINER_INHERIT;
+	}
+
+	return;
 }
 
-static uint32 nt_to_afs_dir_rights(uint32 rights)
+#define AFS_FILE_RIGHTS (PRSFS_READ|PRSFS_WRITE|PRSFS_LOCK)
+#define AFS_DIR_RIGHTS  (PRSFS_INSERT|PRSFS_LOOKUP|PRSFS_DELETE|PRSFS_ADMINISTER)
+
+static void split_afs_acl(struct afs_acl *acl,
+			  struct afs_acl *dir_acl,
+			  struct afs_acl *file_acl)
+{
+	struct afs_ace *ace;
+
+	init_afs_acl(dir_acl);
+	init_afs_acl(file_acl);
+
+	for (ace = acl->acelist; ace != NULL; ace = ace->next) {
+		if (ace->rights & AFS_FILE_RIGHTS) {
+			add_afs_ace(file_acl, ace->positive, ace->name,
+				    ace->rights & AFS_FILE_RIGHTS);
+		}
+
+		if (ace->rights & AFS_DIR_RIGHTS) {
+			add_afs_ace(dir_acl, ace->positive, ace->name,
+				    ace->rights & AFS_DIR_RIGHTS);
+		}
+	}
+	return;
+}
+
+static BOOL same_principal(struct afs_ace *x, struct afs_ace *y)
+{
+	return ( (x->positive == y->positive) &&
+		 (sid_compare(&x->sid, &y->sid) == 0) );
+}
+
+static void merge_afs_acls(struct afs_acl *dir_acl,
+			   struct afs_acl *file_acl,
+			   struct afs_acl *target)
+{
+	struct afs_ace *ace;
+
+	init_afs_acl(target);
+
+	for (ace = dir_acl->acelist; ace != NULL; ace = ace->next) {
+		struct afs_ace *file_ace;
+		BOOL found = False;
+
+		for (file_ace = file_acl->acelist;
+		     file_ace != NULL;
+		     file_ace = file_ace->next) {
+			if (!same_principal(ace, file_ace))
+				continue;
+
+			add_afs_ace(target, ace->positive, ace->name,
+				    ace->rights | file_ace->rights);
+			found = True;
+			break;
+		}
+		if (!found)
+			add_afs_ace(target, ace->positive, ace->name,
+				    ace->rights);
+	}
+
+	for (ace = file_acl->acelist; ace != NULL; ace = ace->next) {
+		struct afs_ace *dir_ace;
+		BOOL already_seen = False;
+
+		for (dir_ace = dir_acl->acelist;
+		     dir_ace != NULL;
+		     dir_ace = dir_ace->next) {
+			if (!same_principal(ace, dir_ace))
+				continue;
+			already_seen = True;
+			break;
+		}
+		if (!already_seen)
+			add_afs_ace(target, ace->positive, ace->name,
+				    ace->rights);
+	}
+}
+
+#define PERMS_READ   0x001200a9
+#define PERMS_CHANGE 0x001301bf
+#define PERMS_FULL   0x001f01ff
+
+static struct static_dir_ace_mapping {
+	uint8 type;
+	uint8 flags;
+	uint32 mask;
+	uint32 afs_rights;
+} ace_mappings[] = {
+
+	/* Full control */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  PERMS_FULL, 127 /* rlidwka */ },
+
+	/* Change (write) */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  PERMS_CHANGE, 63 /* rlidwk */ },
+
+	/* Read (including list folder content) */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  PERMS_READ, 9 /* rl */ },
+
+	/* Read without list folder content -- same as "l" */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  0x00120089, 8 /* l */ },
+
+	/* List folder */
+	{ 0, SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  PERMS_READ, 8 /* l */ },
+
+	/* FULL without inheritance -- in all cases here we also get
+	   the corresponding INHERIT_ONLY ACE in the same ACL */
+	{ 0, 0, PERMS_FULL, 127 /* rlidwka */ },
+
+	/* FULL inherit only -- counterpart to previous one */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY,
+	  PERMS_FULL | GENERIC_RIGHT_WRITE_ACCESS, 127 /* rlidwka */ },
+
+	/* CHANGE without inheritance -- in all cases here we also get
+	   the corresponding INHERIT_ONLY ACE in the same ACL */
+	{ 0, 0, PERMS_CHANGE, 63 /* rlidwk */ },
+
+	/* CHANGE inherit only -- counterpart to previous one */
+	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY,
+	  PERMS_CHANGE | GENERIC_RIGHT_WRITE_ACCESS, 63 /* rlidwk */ },
+
+	/* End marker, hopefully there's no afs right 9999 :-) */
+	{ 0, 0, 0, 9999 }
+};
+
+static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 {
 	uint32 result = 0;
+	uint32 rights = ace->info.mask;
+	uint8 flags = ace->flags;
+
+	struct static_dir_ace_mapping *m;
+
+	for (m = &ace_mappings[0]; m->afs_rights != 9999; m++) {
+		if ( (ace->type == m->type) &&
+		     (ace->flags == m->flags) &&
+		     (ace->info.mask == m->mask) )
+			return m->afs_rights;
+	}
+
+	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s\n",
+		  ace->type, ace->flags, ace->info.mask, filename));
 
 	if (rights & (GENERIC_ALL_ACCESS|WRITE_DAC_ACCESS)) {
 		result |= PRSFS_READ | PRSFS_WRITE | PRSFS_INSERT |
@@ -373,12 +537,33 @@ static uint32 nt_to_afs_dir_rights(uint32 rights)
 	}
 
 	if (rights & (GENERIC_READ_ACCESS|FILE_READ_DATA)) {
-		result |= PRSFS_READ | PRSFS_LOOKUP;
+		result |= PRSFS_LOOKUP;
+		if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+			result |= PRSFS_READ;
+		}
 	}
 
 	if (rights & (GENERIC_WRITE_ACCESS|FILE_WRITE_DATA)) {
-		result |= PRSFS_WRITE | PRSFS_INSERT | PRSFS_DELETE |
-			PRSFS_LOCK;
+		result |= PRSFS_INSERT | PRSFS_DELETE;
+		if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+			result |= PRSFS_WRITE | PRSFS_LOCK;
+		}
+	}
+
+	return result;
+}
+
+static uint32 nt_to_afs_file_rights(const char *filename, const SEC_ACE *ace)
+{
+	uint32 result = 0;
+	uint32 rights = ace->info.mask;
+
+	if (rights & (GENERIC_READ_ACCESS|FILE_READ_DATA)) {
+		result |= PRSFS_READ;
+	}
+
+	if (rights & (GENERIC_WRITE_ACCESS|FILE_WRITE_DATA)) {
+		result |= PRSFS_WRITE | PRSFS_LOCK;
 	}
 
 	return result;
@@ -424,6 +609,8 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 
 	while (afs_ace != NULL) {
 		uint32 nt_rights;
+		uint8 flag = SEC_ACE_FLAG_OBJECT_INHERIT |
+			SEC_ACE_FLAG_CONTAINER_INHERIT;
 
 		if (afs_ace->type == SID_NAME_UNKNOWN) {
 			DEBUG(10, ("Ignoring unknown name %s\n",
@@ -433,15 +620,14 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 		}
 
 		if (fsp->is_directory)
-			nt_rights = afs_to_nt_dir_rights(afs_ace->rights);
+			afs_to_nt_dir_rights(afs_ace->rights, &nt_rights,
+					     &flag);
 		else
 			nt_rights = afs_to_nt_file_rights(afs_ace->rights);
 
 		init_sec_access(&mask, nt_rights);
 		init_sec_ace(&nt_ace_list[good_aces++], &(afs_ace->sid),
-			     SEC_ACE_TYPE_ACCESS_ALLOWED, mask,
-			     SEC_ACE_FLAG_OBJECT_INHERIT |
-			     SEC_ACE_FLAG_CONTAINER_INHERIT);
+			     SEC_ACE_TYPE_ACCESS_ALLOWED, mask, flag);
 		afs_ace = afs_ace->next;
 	}
 
@@ -462,8 +648,35 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	return sd_size;
 }
 
-static BOOL nt_to_afs_acl(uint32 security_info_sent,
+static BOOL mappable_sid(const DOM_SID *sid)
+{
+	DOM_SID domain_sid;
+	
+	if (sid_compare(sid, &global_sid_Builtin_Administrators) == 0)
+		return True;
+
+	if (sid_compare(sid, &global_sid_World) == 0)
+		return True;
+
+	if (sid_compare(sid, &global_sid_Authenticated_Users) == 0)
+		return True;
+
+	if (sid_compare(sid, &global_sid_Builtin_Backup_Operators) == 0)
+		return True;
+
+	string_to_sid(&domain_sid, "S-1-5-21");
+
+	if (sid_compare_domain(sid, &domain_sid) == 0)
+		return True;
+
+	return False;
+}
+
+static BOOL nt_to_afs_acl(const char *filename,
+			  uint32 security_info_sent,
 			  struct security_descriptor_info *psd,
+			  uint32 (*nt_to_afs_rights)(const char *filename,
+						     const SEC_ACE *ace),
 			  struct afs_acl *afs_acl)
 {
 	SEC_ACL *dacl;
@@ -491,6 +704,12 @@ static BOOL nt_to_afs_acl(uint32 security_info_sent,
 			return False;
 		}
 
+		if (!mappable_sid(&ace->trustee)) {
+			DEBUG(10, ("Ignoring unmappable SID %s\n",
+				   sid_string_static(&ace->trustee)));
+			continue;
+		}
+
 		if (sid_compare(&ace->trustee,
 				&global_sid_Builtin_Administrators) == 0) {
 
@@ -516,19 +735,14 @@ static BOOL nt_to_afs_acl(uint32 security_info_sent,
 
 			if (!lookup_sid(&ace->trustee,
 					dom_name, name, &name_type)) {
-				DEBUG(3, ("Could not lookup sid %s\n",
-					  sid_string_static(&ace->trustee)));
-				return False;
-			}
-
-			if (strcmp(dom_name, lp_workgroup()) != 0) {
-				DEBUG(3, ("Got SID for domain %s, not mine\n",
-					  dom_name));
-				return False;
+				DEBUG(1, ("AFSACL: Could not lookup SID %s on file %s\n",
+					  sid_string_static(&ace->trustee), filename));
+				continue;
 			}
 
 			if ( (name_type == SID_NAME_USER) ||
-			     (name_type == SID_NAME_DOM_GRP) ) { 
+			     (name_type == SID_NAME_DOM_GRP) ||
+			     (name_type == SID_NAME_ALIAS) ) { 
 				fstring only_username;
 				fstrcpy(only_username, name);
 				fstr_sprintf(name, "%s%s%s",
@@ -539,7 +753,7 @@ static BOOL nt_to_afs_acl(uint32 security_info_sent,
 		}
 
 		add_afs_ace(afs_acl, True, name,
-			    nt_to_afs_dir_rights(ace->info.mask));
+			    nt_to_afs_rights(filename, ace));
 	}
 
 	return True;
@@ -630,50 +844,98 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 	}
 }
 
-static BOOL afs_set_nt_acl(files_struct *fsp, uint32 security_info_sent,
+static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+			   uint32 security_info_sent,
 			   struct security_descriptor_info *psd)
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
+	struct afs_acl dir_acl, file_acl;
 	char acl_string[2049];
 	struct afs_iob iob;
-	int ret;
+	int ret = -1;
+	pstring name;
+	const char *fileacls;
+
+	fileacls = lp_parm_const_string(SNUM(handle->conn), "afsacl", "fileacls",
+					"yes");
+
+	ZERO_STRUCT(old_afs_acl);
+	ZERO_STRUCT(new_afs_acl);
+	ZERO_STRUCT(dir_acl);
+	ZERO_STRUCT(file_acl);
+
+	pstr_sprintf(name, fsp->fsp_name);
 
 	if (!fsp->is_directory) {
-		/* AFS only supports ACLs on directories... */
-		return False;
+		char *p = strrchr(name, '/');
+		if (p == NULL) {
+			DEBUG(3, ("No / in file string\n"));
+			return False;
+		}
+		*p = '\0';
 	}
 
-	if (!afs_get_afs_acl(fsp->fsp_name, &old_afs_acl)) {
+	if (!afs_get_afs_acl(name, &old_afs_acl)) {
 		DEBUG(3, ("Could not get old ACL of %s\n", fsp->fsp_name));
-		return False;
+		goto done;
 	}
 
-	if (!nt_to_afs_acl(security_info_sent, psd, &new_afs_acl)) {
-		free_afs_acl(&old_afs_acl);
-		return False;
+	split_afs_acl(&old_afs_acl, &dir_acl, &file_acl);
+
+	if (fsp->is_directory) {
+
+		if (!strequal(fileacls, "yes")) {
+			/* Throw away file acls, we depend on the
+			 * inheritance ACEs that also give us file
+			 * permissions */
+			free_afs_acl(&file_acl);
+		}
+
+		free_afs_acl(&dir_acl);
+		if (!nt_to_afs_acl(fsp->fsp_name, security_info_sent, psd,
+				   nt_to_afs_dir_rights, &dir_acl))
+			goto done;
+	} else {
+		if (strequal(fileacls, "no")) {
+			ret = -1;
+			goto done;
+		}
+
+		if (strequal(fileacls, "ignore")) {
+			ret = 0;
+			goto done;
+		}
+
+		free_afs_acl(&file_acl);
+		if (!nt_to_afs_acl(fsp->fsp_name, security_info_sent, psd,
+				   nt_to_afs_file_rights, &file_acl))
+			goto done;
 	}
+
+	merge_afs_acls(&dir_acl, &file_acl, &new_afs_acl);
 
 	merge_unknown_aces(&old_afs_acl, &new_afs_acl);
 
 	unparse_afs_acl(&new_afs_acl, acl_string);
-
-	free_afs_acl(&old_afs_acl);
-	free_afs_acl(&new_afs_acl);
 
 	iob.in = acl_string;
 	iob.in_size = 1+strlen(iob.in);
 	iob.out = NULL;
 	iob.out_size = 0;
 
-	DEBUG(10, ("trying to set acl '%s' on file %s\n",
-		   iob.in, fsp->fsp_name));
+	DEBUG(10, ("trying to set acl '%s' on file %s\n", iob.in, name));
 
-	ret = afs_syscall(AFSCALL_PIOCTL, fsp->fsp_name, VIOCSETAL,
-			  (char *)&iob, 0);
+	ret = afs_syscall(AFSCALL_PIOCTL, name, VIOCSETAL, (char *)&iob, 0);
 
 	if (ret != 0) {
 		DEBUG(10, ("VIOCSETAL returned %d\n", ret));
 	}
+
+ done:
+	free_afs_acl(&dir_acl);
+	free_afs_acl(&file_acl);
+	free_afs_acl(&old_afs_acl);
+	free_afs_acl(&new_afs_acl);
 
 	return (ret == 0);
 }
@@ -698,7 +960,7 @@ BOOL afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 int fd, uint32 security_info_sent,
 			 SEC_DESC *psd)
 {
-	return afs_set_nt_acl(fsp, security_info_sent, psd);
+	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
 BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
@@ -706,7 +968,7 @@ BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
 		       const char *name, uint32 security_info_sent,
 		       SEC_DESC *psd)
 {
-	return afs_set_nt_acl(fsp, security_info_sent, psd);
+	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
 /* VFS operations structure */
