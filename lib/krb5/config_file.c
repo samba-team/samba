@@ -49,21 +49,32 @@ RCSID("$Id$");
 static ni_status
 ni_proplist2binding(ni_proplist *pl, krb5_config_section **ret)
 {
-    int i;
-    
+    int i, j;
+    krb5_config_section **next = NULL;
+
     for (i = 0; i < pl->ni_proplist_len; i++) {
-	krb5_config_binding *b;
-	if (!strcmp(pl->nipl_val[i].nip_name, "name")) continue;
-	b = malloc(sizeof(*b));
-	if (b == NULL) return NI_FAILED;
-	if (i == pl->ni_proplist_len)
+	if (!strcmp(pl->nipl_val[i].nip_name, "name"))
+	    continue;
+
+	for (j = 0; j < pl->nipl_val[i].nip_val.ni_namelist_len; j++) {
+	    krb5_config_binding *b;
+
+	    b = malloc(sizeof(*b));
+	    if (b == NULL)
+		return NI_FAILED;
+	
 	    b->next = NULL;
-	else
-	    b->next = *ret;
-	b->type = STRING;
-	b->name = ni_name_dup(pl->nipl_val[i].nip_name);
-	b->u.string = ni_name_dup(pl->nipl_val[i].nip_val.ninl_val[0]);
-	*ret = b;
+	    b->type = STRING;
+	    b->name = ni_name_dup(pl->nipl_val[i].nip_name);
+	    b->u.string = ni_name_dup(pl->nipl_val[i].nip_val.ninl_val[j]);
+
+	    if (next == NULL) {
+		*ret = b;
+	    } else {
+		*next = b;
+	    }
+	    next = &b->next;
+	}
     }
     return NI_OK;
 }
@@ -104,18 +115,20 @@ ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
 	b->name = ni_name_dup(pl.nipl_val[index].nip_val.ninl_val[0]);
 	b->next = NULL;
 	b->u.list = NULL;
-	nis = ni_proplist2binding(&pl, &b->u.list);
-	ni_proplist_free(&pl);
-	if (nis != NI_OK) return nis;
 
+	/* get the child directories */
 	nis = ni_children(ni, &nid, &children);
 	if (nis == NI_OK) {
-	    krb5_config_binding **node;
-	    if (b->u.list == NULL)
-		node = &b->u.list;
-	    else
-		node = &b->u.list->next;
-	    nis = ni_idlist2binding(ni, &children, node);
+	    nis = ni_idlist2binding(ni, &children, &b->u.list);
+	    if (nis != NI_OK) {
+		return nis;
+	    }
+	}
+
+	nis = ni_proplist2binding(&pl, b->u.list == NULL ? &b->u.list : &b->u.list->next);
+	ni_proplist_free(&pl);
+	if (nis != NI_OK) {
+	    return nis;
 	}
 	next = &b->next;
     }
