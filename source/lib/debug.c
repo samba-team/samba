@@ -214,8 +214,12 @@ BOOL debug_parse_levels(char *params_str)
 	char *params[DBGC_LAST];
 	int  debuglevel_class[DBGC_LAST];	
 
-	if (AllowDebugChange == False)
+	if (AllowDebugChange == False) {
+		DEBUG(1,("INFO: Debug class %s level = %d\n",
+			classname_table[DBGC_ALL],
+			DEBUGLEVEL_CLASS[DBGC_ALL]));
 		return True;
+	}
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
 
