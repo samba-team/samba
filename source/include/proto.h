@@ -3130,7 +3130,8 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   uint32 command, pipes_struct *p);
 uint32 _spoolss_fcpn(POLICY_HND *handle);
 uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered);
+		       NEW_BUFFER *buffer, uint32 offered,
+		       uint32 *needed);
 uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			  
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);

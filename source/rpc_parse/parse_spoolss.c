@@ -3291,6 +3291,15 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
+	if(!new_spoolss_io_buffer("", ps, depth, r_u->buffer))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
