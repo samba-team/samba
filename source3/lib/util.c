@@ -1741,6 +1741,22 @@ BOOL is_myworkgroup(const char *s)
 }
 
 /*******************************************************************
+ we distinguish between 2K and XP by the "Native Lan Manager" string
+   WinXP => "Windows 2002 5.1"
+   Win2k => "Windows 2000 5.0"
+   NT4   => "Windows NT 4.0" 
+   Win9x => "Windows 4.0"
+********************************************************************/
+
+void ra_lanman_string( const char *native_lanman )
+{		 
+	if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
+		set_remote_arch( RA_WINXP );
+	else if ( 0 == strcmp( native_lanman, "Windows .NET 5.2" ) )
+		set_remote_arch( RA_WIN2K3 );
+}
+
+/*******************************************************************
  Set the horrid remote_arch string based on an enum.
 ********************************************************************/
 
