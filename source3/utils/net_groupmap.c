@@ -277,8 +277,22 @@ static int net_groupmap_add(int argc, const char **argv)
 		sid_to_string(string_sid, &sid);
 	}
 
-	if (!ntcomment[0])
-		fstrcpy(ntcomment, "Local Unix group");
+	if (!ntcomment[0]) {
+		switch (sid_type) {
+		case SID_NAME_WKN_GRP:
+			fstrcpy(ntcomment, "Wellknown Unix group");
+			break;
+		case SID_NAME_DOM_GRP:
+			fstrcpy(ntcomment, "Domain Unix group");
+			break;
+		case SID_NAME_ALIAS:
+			fstrcpy(ntcomment, "Local Unix group");
+			break;
+		default:
+			fstrcpy(ntcomment, "Unix group");
+			break;
+		}
+	}
 		
 	if (!ntgroup[0] )
 		fstrcpy( ntgroup, unixgrp );
