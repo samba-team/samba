@@ -59,7 +59,7 @@ typedef struct _Printer{
 		fstring printerservername;
 	} dev;
 	uint32 type;
-	uint32 access;
+	uint32 access_granted;
 	struct {
 		uint32 flags;
 		uint32 options;
@@ -328,8 +328,9 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 }
 
 /****************************************************************************
-  return the snum of a printer corresponding to an handle
+ Return the snum of a printer corresponding to an handle.
 ****************************************************************************/
+
 static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
@@ -349,23 +350,6 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 	default:
 		return False;
 	}
-}
-
-/****************************************************************************
-  set printer handle type.
-****************************************************************************/
-static BOOL set_printer_hnd_accesstype(pipes_struct *p, POLICY_HND *hnd, uint32 access_required)
-{
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
-
-	if (!Printer) {
-		DEBUG(2,("set_printer_hnd_accesstype: Invalid handle (%s:%u:%u)", OUR_HANDLE(hnd)));
-		return False;
-	}
-
-	DEBUG(4,("Setting printer access=%x\n", access_required));
-	Printer->access = access_required;
-	return True;		
 }
 
 /****************************************************************************
@@ -469,10 +453,10 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 }
 
 /****************************************************************************
-  find first available printer slot. creates a printer handle for you.
+ Find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
+static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint32 access_granted)
 {
 	Printer_entry *new_printer;
 
@@ -503,31 +487,17 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 		return False;
 	}
 
+	new_printer->access_granted = access_granted;
+
 	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
 
 	return True;
 }
 
-/********************************************************************
- Return True if the handle is a print server.
- ********************************************************************/
-
-static BOOL handle_is_printserver(pipes_struct *p, POLICY_HND *handle)
-{
-	Printer_entry *Printer=find_printer_index_by_hnd(p,handle);
-
-	if (!Printer)
-		return False;
-		
-	if (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
-		return False;
-	
-	return True;
-}
-
 /****************************************************************************
- allocate more memory for a BUFFER.
+ Allocate more memory for a BUFFER.
 ****************************************************************************/
+
 static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 {
 	prs_struct *ps;
@@ -830,6 +800,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	fstring name;
 	int snum;
 	struct current_user user;
+	Printer_entry *Printer=NULL;
 
 	if (q_u->printername_ptr != 0)
 		printername = &q_u->printername;
@@ -843,9 +814,17 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(p, handle, name))
+	if (!open_printer_hnd(p, handle, name, 0))
 		return WERR_INVALID_PRINTER_NAME;
 	
+	Printer=find_printer_index_by_hnd(p, handle);
+	if (!Printer) {
+		DEBUG(0,(" _spoolss_open_printer_ex: logic error. \
+Can't find printer handle we created for priunter %s\n", name ));
+		close_printer_handle(p,handle);
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
 /*
 	if (printer_default->datatype_ptr != NULL)
 	{
@@ -856,11 +835,6 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		set_printer_hnd_datatype(handle, "");
 */
 	
-	if (!set_printer_hnd_accesstype(p, handle, printer_default->access_required)) {
-		close_printer_handle(p, handle);
-		return WERR_ACCESS_DENIED;
-	}
-		
 	/*
 	   First case: the user is opening the print server:
 
@@ -886,7 +860,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	get_current_user(&user, p);
 
-	if (handle_is_printserver(p, handle)) {
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
 		if (printer_default->access_required == 0) {
 			return WERR_OK;
 		}
@@ -938,6 +912,21 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
+
+		/*
+		 * An admin user always has access.
+		 */
+
+		if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum)))
+			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
+
+		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
+			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
+		else
+			printer_default->access_required = PRINTER_ACCESS_USE;
+
+		DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
+		Printer->access_granted = printer_default->access_required;
 
 		/*
 		 * If we have a default device pointer in the
@@ -1020,6 +1009,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 				NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
@@ -1206,6 +1196,7 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
  * static function to lookup the version id corresponding to an
  * long architecture string
  ******************************************************************/
+
 static int get_version_id (char * arch)
 {
 	int i;
@@ -1274,10 +1265,10 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	return delete_printer_driver(info.info_3);	 
 }
 
-
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
+
 static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
 {		
 	int i;
@@ -1367,6 +1358,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 /********************************************************************
  GetPrinterData on a printer Handle.
 ********************************************************************/
+
 static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND *handle,
 				fstring value, uint32 *type,
                         	uint8 **data, uint32 *needed, uint32 in_size )
@@ -1487,8 +1479,9 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 }
 
 /***************************************************************************
- connect to the client
+ Connect to the client.
 ****************************************************************************/
+
 static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
 {
 	WERROR status;
@@ -1598,6 +1591,7 @@ static void spoolss_notify_server_name(int snum,
 /*******************************************************************
  * fill a notify_info_data with the printername (not including the servername).
  ********************************************************************/
+
 static void spoolss_notify_printer_name(int snum, 
 					SPOOL_NOTIFY_INFO_DATA *data, 
 					print_queue_struct *queue,
@@ -1632,6 +1626,7 @@ static void spoolss_notify_printer_name(int snum,
 /*******************************************************************
  * fill a notify_info_data with the servicename
  ********************************************************************/
+
 static void spoolss_notify_share_name(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data, 
 				      print_queue_struct *queue,
@@ -1658,6 +1653,7 @@ static void spoolss_notify_share_name(int snum,
 /*******************************************************************
  * fill a notify_info_data with the port name
  ********************************************************************/
+
 static void spoolss_notify_port_name(int snum, 
 				     SPOOL_NOTIFY_INFO_DATA *data, 
 				     print_queue_struct *queue,
@@ -1687,6 +1683,7 @@ static void spoolss_notify_port_name(int snum,
  * fill a notify_info_data with the printername
  * but it doesn't exist, have to see what to do
  ********************************************************************/
+
 void spoolss_notify_driver_name(int snum, 
 				       SPOOL_NOTIFY_INFO_DATA *data,
 				       print_queue_struct *queue,
@@ -1713,6 +1710,7 @@ void spoolss_notify_driver_name(int snum,
 /*******************************************************************
  * fill a notify_info_data with the comment
  ********************************************************************/
+
 static void spoolss_notify_comment(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data,
 				   print_queue_struct *queue,
@@ -1744,6 +1742,7 @@ static void spoolss_notify_comment(int snum,
  * fill a notify_info_data with the comment
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
+
 static void spoolss_notify_location(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -1771,6 +1770,7 @@ static void spoolss_notify_location(int snum,
  * fill a notify_info_data with the device mode
  * jfm:xxxx don't to it for know but that's a real problem !!!
  ********************************************************************/
+
 static void spoolss_notify_devmode(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data,
 				   print_queue_struct *queue,
@@ -1782,6 +1782,7 @@ static void spoolss_notify_devmode(int snum,
 /*******************************************************************
  * fill a notify_info_data with the separator file name
  ********************************************************************/
+
 static void spoolss_notify_sepfile(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data, 
 				   print_queue_struct *queue,
@@ -1809,6 +1810,7 @@ static void spoolss_notify_sepfile(int snum,
  * fill a notify_info_data with the print processor
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
+
 static void spoolss_notify_print_processor(int snum, 
 					   SPOOL_NOTIFY_INFO_DATA *data,
 					   print_queue_struct *queue,
@@ -1836,6 +1838,7 @@ static void spoolss_notify_print_processor(int snum,
  * fill a notify_info_data with the print processor options
  * jfm:xxxx send an empty string
  ********************************************************************/
+
 static void spoolss_notify_parameters(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
@@ -1863,6 +1866,7 @@ static void spoolss_notify_parameters(int snum,
  * fill a notify_info_data with the data type
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
+
 static void spoolss_notify_datatype(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -1891,6 +1895,7 @@ static void spoolss_notify_datatype(int snum,
  * jfm:xxxx send an null pointer to say no security desc
  * have to implement security before !
  ********************************************************************/
+
 static void spoolss_notify_security_desc(int snum, 
 					 SPOOL_NOTIFY_INFO_DATA *data,
 					 print_queue_struct *queue,
@@ -1905,6 +1910,7 @@ static void spoolss_notify_security_desc(int snum,
  * fill a notify_info_data with the attributes
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
+
 static void spoolss_notify_attributes(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
@@ -1918,6 +1924,7 @@ static void spoolss_notify_attributes(int snum,
 /*******************************************************************
  * fill a notify_info_data with the priority
  ********************************************************************/
+
 static void spoolss_notify_priority(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -1931,6 +1938,7 @@ static void spoolss_notify_priority(int snum,
 /*******************************************************************
  * fill a notify_info_data with the default priority
  ********************************************************************/
+
 static void spoolss_notify_default_priority(int snum, 
 					    SPOOL_NOTIFY_INFO_DATA *data,
 					    print_queue_struct *queue,
@@ -1944,6 +1952,7 @@ static void spoolss_notify_default_priority(int snum,
 /*******************************************************************
  * fill a notify_info_data with the start time
  ********************************************************************/
+
 static void spoolss_notify_start_time(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
@@ -1957,6 +1966,7 @@ static void spoolss_notify_start_time(int snum,
 /*******************************************************************
  * fill a notify_info_data with the until time
  ********************************************************************/
+
 static void spoolss_notify_until_time(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
@@ -1970,6 +1980,7 @@ static void spoolss_notify_until_time(int snum,
 /*******************************************************************
  * fill a notify_info_data with the status
  ********************************************************************/
+
 static void spoolss_notify_status(int snum, 
 				  SPOOL_NOTIFY_INFO_DATA *data,
 				  print_queue_struct *queue,
@@ -1986,6 +1997,7 @@ static void spoolss_notify_status(int snum,
 /*******************************************************************
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
+
 static void spoolss_notify_cjobs(int snum, 
 				 SPOOL_NOTIFY_INFO_DATA *data,
 				 print_queue_struct *queue,
@@ -1999,6 +2011,7 @@ static void spoolss_notify_cjobs(int snum,
 /*******************************************************************
  * fill a notify_info_data with the average ppm
  ********************************************************************/
+
 static void spoolss_notify_average_ppm(int snum, 
 				       SPOOL_NOTIFY_INFO_DATA *data,
 				       print_queue_struct *queue,
@@ -2014,6 +2027,7 @@ static void spoolss_notify_average_ppm(int snum,
 /*******************************************************************
  * fill a notify_info_data with username
  ********************************************************************/
+
 static void spoolss_notify_username(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -2040,6 +2054,7 @@ static void spoolss_notify_username(int snum,
 /*******************************************************************
  * fill a notify_info_data with job status
  ********************************************************************/
+
 static void spoolss_notify_job_status(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
@@ -2053,6 +2068,7 @@ static void spoolss_notify_job_status(int snum,
 /*******************************************************************
  * fill a notify_info_data with job name
  ********************************************************************/
+
 static void spoolss_notify_job_name(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -2079,6 +2095,7 @@ static void spoolss_notify_job_name(int snum,
 /*******************************************************************
  * fill a notify_info_data with job status
  ********************************************************************/
+
 static void spoolss_notify_job_status_string(int snum, 
 					     SPOOL_NOTIFY_INFO_DATA *data,
 					     print_queue_struct *queue,
@@ -2128,6 +2145,7 @@ static void spoolss_notify_job_status_string(int snum,
 /*******************************************************************
  * fill a notify_info_data with job time
  ********************************************************************/
+
 static void spoolss_notify_job_time(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -2141,6 +2159,7 @@ static void spoolss_notify_job_time(int snum,
 /*******************************************************************
  * fill a notify_info_data with job size
  ********************************************************************/
+
 static void spoolss_notify_job_size(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
@@ -2279,8 +2298,9 @@ struct s_notify_info_data_table notify_info_data_table[] =
 };
 
 /*******************************************************************
-return the size of info_data structure
+ Return the size of info_data structure.
 ********************************************************************/
+
 static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
@@ -2298,8 +2318,9 @@ static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 }
 
 /*******************************************************************
-return the type of notify_info_data
+ Return the type of notify_info_data.
 ********************************************************************/
+
 static BOOL type_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
@@ -2325,6 +2346,7 @@ static BOOL type_of_notify_info_data(uint16 type, uint16 field)
 
 /****************************************************************************
 ****************************************************************************/
+
 static int search_notify(uint16 type, uint16 field, int *value)
 {	
 	int j;
@@ -2346,6 +2368,7 @@ static int search_notify(uint16 type, uint16 field, int *value)
 
 /****************************************************************************
 ****************************************************************************/
+
 void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id)
 {
 	info_data->type     = type;
@@ -2362,6 +2385,7 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 					  snum, SPOOL_NOTIFY_OPTION_TYPE
 					  *option_type, uint32 id,
@@ -2419,6 +2443,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 				       SPOOL_NOTIFY_INFO *info,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -2552,6 +2577,7 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 				  TALLOC_CTX *mem_ctx)
 {
@@ -2688,6 +2714,7 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
  * construct_printer_info_0
  * fill a printer_info_0 struct
  ********************************************************************/
+
 static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 {
 	pstring chaine;
@@ -2792,6 +2819,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
  * construct_printer_info_1
  * fill a printer_info_1 struct
  ********************************************************************/
+
 static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int snum)
 {
 	pstring chaine;
@@ -2989,6 +3017,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
  * construct_printer_info_3
  * fill a printer_info_3 struct
  ********************************************************************/
+
 static BOOL construct_printer_info_3(PRINTER_INFO_3 **pp_printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
@@ -3081,10 +3110,10 @@ static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
 	return True;
 }
 
-
 /********************************************************************
  Spoolss_enumprinters.
 ********************************************************************/
+
 static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int snum;
@@ -3139,6 +3168,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 /********************************************************************
  enum_all_printers_info_1_local.
 *********************************************************************/
+
 static WERROR enum_all_printers_info_1_local(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));	
@@ -3149,6 +3179,7 @@ static WERROR enum_all_printers_info_1_local(NEW_BUFFER *buffer, uint32 offered,
 /********************************************************************
  enum_all_printers_info_1_name.
 *********************************************************************/
+
 static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	char *s = name;
@@ -3168,6 +3199,7 @@ static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, ui
 /********************************************************************
  enum_all_printers_info_1_remote.
 *********************************************************************/
+
 static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTER_INFO_1 *printer;
@@ -3296,6 +3328,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 /********************************************************************
  * handle enumeration of printers at level 1
  ********************************************************************/
+
 static WERROR enumprinters_level1( uint32 flags, fstring name,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
@@ -3320,6 +3353,7 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
 /********************************************************************
  * handle enumeration of printers at level 2
  ********************************************************************/
+
 static WERROR enumprinters_level2( uint32 flags, fstring servername,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
@@ -3348,6 +3382,7 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
 /********************************************************************
  * handle enumeration of printers at level 5
  ********************************************************************/
+
 static WERROR enumprinters_level5( uint32 flags, fstring servername,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
@@ -3415,6 +3450,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_0 *printer=NULL;
@@ -3447,6 +3483,7 @@ static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_1 *printer=NULL;
@@ -3479,6 +3516,7 @@ static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
@@ -3514,6 +3552,7 @@ static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_3 *printer=NULL;
@@ -3544,6 +3583,7 @@ static WERROR getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_4(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_4 *printer=NULL;
@@ -3577,6 +3617,7 @@ static WERROR getprinter_level_4(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinter_level_5(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_5 *printer=NULL;
@@ -3650,6 +3691,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 /********************************************************************
  * fill a DRIVER_INFO_1 struct
  ********************************************************************/
+
 static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername, fstring architecture)
 {
 	init_unistr( &info->name, driver.info_3->name);
@@ -3658,6 +3700,7 @@ static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_IN
 /********************************************************************
  * construct_printer_driver_info_1
  ********************************************************************/
+
 static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fstring servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -3682,6 +3725,7 @@ static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
  * construct_printer_driver_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
+
 static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
 	pstring temp;
@@ -3715,6 +3759,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
  * construct_printer_driver_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
+
 static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstring servername, fstring architecture, uint32 version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -3741,6 +3786,7 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
  *
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
+
 static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
 {
 	int i=0;
@@ -3782,6 +3828,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
  * construct_printer_info_3
  * fill a printer_info_3 struct
  ********************************************************************/
+
 static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
 	pstring temp;
@@ -3828,6 +3875,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
  * construct_printer_info_3
  * fill a printer_info_3 struct
  ********************************************************************/
+
 static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fstring servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -3950,6 +3998,7 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
  * construct_printer_info_6
  * fill a printer_info_6 struct
  ********************************************************************/
+
 static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fstring servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -4010,6 +4059,7 @@ static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinterdriver2_level1(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_1 *info=NULL;
@@ -4046,6 +4096,7 @@ static WERROR getprinterdriver2_level1(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinterdriver2_level2(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_2 *info=NULL;
@@ -4082,6 +4133,7 @@ static WERROR getprinterdriver2_level2(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinterdriver2_level3(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_3 info;
@@ -4115,6 +4167,7 @@ static WERROR getprinterdriver2_level3(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinterdriver2_level6(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_6 info;
@@ -4346,6 +4399,7 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static WERROR control_printer(POLICY_HND *handle, uint32 command,
 			      pipes_struct *p)
 {
@@ -4403,6 +4457,7 @@ WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R
  * called by spoolss_api_setprinter
  * when updating a printer description
  ********************************************************************/
+
 static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 				 const SPOOL_PRINTER_INFO_LEVEL *info,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
@@ -4516,6 +4571,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
@@ -4910,8 +4966,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	/* Check calling user has permission to update printer description */
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("update_printer: printer property change denied by security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("update_printer: printer property change denied by handle\n"));
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -5067,6 +5123,7 @@ WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
                             int position, int snum)
 {
@@ -5095,6 +5152,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
                             int position, int snum, 
 			    NT_PRINTER_INFO_LEVEL *ntprinter,
@@ -5144,6 +5202,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 /****************************************************************************
  Enumjobs at level 1.
 ****************************************************************************/
+
 static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
@@ -5190,6 +5249,7 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 /****************************************************************************
  Enumjobs at level 2.
 ****************************************************************************/
+
 static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
@@ -5370,6 +5430,7 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 /****************************************************************************
  Enumerates all printer drivers at level 1.
 ****************************************************************************/
+
 static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
@@ -5450,6 +5511,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 /****************************************************************************
  Enumerates all printer drivers at level 2.
 ****************************************************************************/
+
 static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
@@ -5531,6 +5593,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 /****************************************************************************
  Enumerates all printer drivers at level 3.
 ****************************************************************************/
+
 static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
@@ -5859,6 +5922,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_port_1(PORT_INFO_1 *port, char *name)
 {
 	init_unistr(&port->port_name, name);
@@ -5866,6 +5930,7 @@ static void fill_port_1(PORT_INFO_1 *port, char *name)
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_port_2(PORT_INFO_2 *port, char *name)
 {
 	init_unistr(&port->port_name, name);
@@ -5879,6 +5944,7 @@ static void fill_port_2(PORT_INFO_2 *port, char *name)
 /****************************************************************************
  enumports level 1.
 ****************************************************************************/
+
 static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PORT_INFO_1 *ports=NULL;
@@ -6097,6 +6163,7 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				DEVICEMODE *devmode, SEC_DESC_BUF *sec_desc_buf,
@@ -6186,7 +6253,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return err;
 	}
 
-	if (!open_printer_hnd(p, handle, name)) {
+	if (!open_printer_hnd(p, handle, name, PRINTER_ACCESS_ADMINISTER)) {
 		/* Handle open failed - remove addition. */
 		del_a_printer(printer->info_2->sharename);
 		free_a_printer(&printer,2);
@@ -6276,6 +6343,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 {
 	init_unistr(&info->name, name);
@@ -6283,6 +6351,7 @@ static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	pstring path;
@@ -6572,9 +6641,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_setprinterdata: change denied by handle access permissions\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6641,9 +6709,8 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties "
-			  "change denied by existing security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -6690,9 +6757,8 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	if (!get_printer_snum(p,handle, &snum))
                 return WERR_BADFID;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(2,("_spoolss_addform: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6752,9 +6818,8 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
  	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(2,("_spoolss_deleteform: denied by handle permissions\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -6814,9 +6879,8 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -6851,6 +6915,7 @@ done:
 /****************************************************************************
  enumprintprocessors level 1.
 ****************************************************************************/
+
 static WERROR enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCESSOR_1 *info_1=NULL;
@@ -6919,6 +6984,7 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 /****************************************************************************
  enumprintprocdatatypes level 1.
 ****************************************************************************/
+
 static WERROR enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
@@ -7012,6 +7078,7 @@ static WERROR enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 /****************************************************************************
  enumprintmonitors level 2.
 ****************************************************************************/
+
 static WERROR enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTMONITOR_2 *info_2=NULL;
@@ -7082,6 +7149,7 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
@@ -7128,9 +7196,9 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	return WERR_OK;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
