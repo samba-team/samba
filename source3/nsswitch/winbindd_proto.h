@@ -117,4 +117,6 @@ void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 BOOL check_domain_env(char *domain_env, char *domain);
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user);
+void strip_domain_name_if_needed(fstring *name);
+void fill_domain_username(fstring name, const char *domain, const char *user);
 #endif /* _PROTO_H_ */

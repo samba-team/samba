@@ -348,17 +348,65 @@ BOOL check_domain_env(char *domain_env, char *domain)
 }
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
+extern fstring global_myworkgroup;
 
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
 	char *p = strchr(domuser,*lp_winbind_separator());
 
-	if (!p)
+	if (!(p || lp_winbind_use_default_domain()))
 		return False;
 	
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
+	if(!p && lp_winbind_use_default_domain()) {
+		fstrcpy(user, domuser);
+		fstrcpy(domain, global_myworkgroup);
+	} else {
+		fstrcpy(user, p+1);
+		fstrcpy(domain, domuser);
+		domain[PTR_DIFF(p, domuser)] = 0;
+	}
 	strupper(domain);
 	return True;
+}
+
+/* 
+   Strip domain name if it is same as default domain name and 
+    winbind use default domain = true
+    
+   it assumes that name is actually fstring so that memory management
+   isn't needed.
+*/
+void strip_domain_name_if_needed(fstring *name)
+{
+	if(lp_winbind_use_default_domain()) {
+		char *sep = lp_winbind_separator();
+		char *new_name = strchr(*name, *sep);
+		if(new_name) {
+			*new_name = 0;
+			if (!strcmp(global_myworkgroup, *name)) {
+			    new_name++;
+			    safe_strcpy(*name, new_name, sizeof(fstring));
+			} else *new_name = *sep;
+		}
+	}
+}
+
+/*
+    Fill DOMAIN\\USERNAME entry accounting 'winbind use default domain' and
+    'winbind separator' options.
+    This means:
+	- omit DOMAIN when 'winbind use default domain = true' and DOMAIN is
+	global_myworkgroup
+	 
+*/
+void fill_domain_username(fstring name, const char *domain, const char *user)
+{
+	if(lp_winbind_use_default_domain() &&
+	    !strcmp(global_myworkgroup, domain)) {
+		strlcpy(name, user, sizeof(fstring));
+	} else {
+		slprintf(name, sizeof(fstring) - 1, "%s%s%s",
+			 domain, lp_winbind_separator(),
+			 user);
+	}
 }

@@ -762,6 +762,7 @@
 		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDUSEDEFAULTDOMAIN"><parameter>winbind use default domain</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSHOOK"><parameter>wins hook</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSPROXY"><parameter>wins proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSSERVER"><parameter>wins server</parameter></link></para></listitem>
@@ -8195,7 +8196,23 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</varlistentry>
 
 
-
+		<varlistentry>
+		<term>winbind use default domain</term>
+		
+		<varlistentry>
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain</term>
+		<listitem><para>This parameter specifies whether the <ulink url="winbindd.8.html">
+		winbindd(8)</ulink>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</para>
+		
+		<para>Default: <command>winbind use default domain = &lt;falseg&gt; 
+		</command></para>
+		<para>Example: <command>winbind use default domain = true</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>

@@ -66,8 +66,11 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, fstrin
 
 	char *p = strchr(domuser,get_winbind_separator());
 
-	if (!p)
-		return False;
+	if (!p) {
+		fstrcpy(user, domuser);
+		domain[0]=0;
+		return True;
+	}
         
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
@@ -361,17 +364,11 @@ static BOOL wbinfo_auth_crap(char *username)
         fstring name_domain;
         fstring pass;
         char *p;
-	char sep = get_winbind_separator();
 
 	/*
 	 * Don't do the lookup if the name has no separator.
 	 */
  
-	if (!strchr(username, sep)) {
-		printf("no domain seperator (%c) in username - failing\n", sep);
-		return False;
-	}
-
 	/* Send off request */
 
 	ZERO_STRUCT(request);

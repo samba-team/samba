@@ -276,6 +276,20 @@ group:          files winbind
 		<para>Default: <command>template shell = /bin/false </command>
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>winbind use default domain</term>
+		<listitem><para>This parameter specifies whether the <command>winbindd</command>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</para>
+		
+		<para>Default: <command>winbind use default domain = &lt;falseg&gt; 
+		</command></para>
+		<para>Example: <command>winbind use default domain = true</command></para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 

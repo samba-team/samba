@@ -217,6 +217,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	if (strcmp("\\", lp_winbind_separator()))
 		string_sub(user_name, "\\", lp_winbind_separator(), 
 			   sizeof(fstring));
+	strip_domain_name_if_needed(&user_name);
 
 	/* Get some user info */
 	
@@ -500,9 +501,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 		/* Lookup user info */
 		
-		slprintf(domain_user_name, sizeof(domain_user_name) - 1,
-			 "%s%s%s", ent->domain_name, sep,
-			 name_list[ent->sam_entry_index].name);
+		fill_domain_username(domain_user_name, ent->domain_name, 
+				     name_list[ent->sam_entry_index].name);
 		
 		result = winbindd_fill_pwent(
 			ent->domain_name, 
@@ -596,9 +596,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 				fstrcpy(acct_name, info[i].acct_name);
 			}
 			
-			slprintf(name, sizeof(name) - 1, "%s%s%s",
-				 domain->name, lp_winbind_separator(),
-				 acct_name);
+			fill_domain_username(name, domain->name, acct_name);
 			
 				/* Append to extra data */
 			memcpy(&extra_data[extra_data_len], name, 
