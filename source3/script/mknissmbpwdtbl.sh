@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+# Copyright (C) 1998 Benny Holmgren
+#
 # Creates smbpasswd table and smb group in NIS+
 #
 
