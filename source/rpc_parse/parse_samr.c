@@ -355,7 +355,7 @@ static void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx,
 {
 	if (sam == NULL) return;
 
-	DEBUG(5,("make_sam_entry1: %d\n", __LINE__));
+	DEBUG(5,("make_sam_entry1\n"));
 
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
@@ -415,7 +415,7 @@ static void make_sam_entry2(SAM_ENTRY2 *sam, uint32 user_idx,
 {
 	if (sam == NULL) return;
 
-	DEBUG(5,("make_sam_entry2: %d\n", __LINE__));
+	DEBUG(5,("make_sam_entry2\n"));
 
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
@@ -472,7 +472,7 @@ static void make_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx,
 {
 	if (sam == NULL) return;
 
-	DEBUG(5,("make_sam_entry3: %d\n", __LINE__));
+	DEBUG(5,("make_sam_entry3\n"));
 
 	sam->grp_idx = grp_idx;
 	sam->rid_grp = rid_grp;
@@ -510,7 +510,7 @@ static void make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
 {
 	if (sam == NULL) return;
 
-	DEBUG(5,("make_sam_entry: %d\n", __LINE__));
+	DEBUG(5,("make_sam_entry\n"));
 
 	sam->rid = rid;
 	make_uni_hdr(&(sam->hdr_name), len_sam_name, len_sam_name, len_sam_name != 0);
@@ -1743,8 +1743,6 @@ void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 		if (r_u->num_entries != 0)
 		{
 			prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
-
-			SMB_ASSERT_ARRAY(r_u->gid, r_u->num_entries2);
 
 			for (i = 0; i < r_u->num_entries2; i++)
 			{

@@ -46,7 +46,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
                                 uint16 acb_mask)
 {
 	void *vp = NULL;
-	struct smb_passwd *pwd = NULL;
+	struct sam_passwd *pwd = NULL;
 
 	(*num_entries) = 0;
 	(*total_entries) = 0;
@@ -60,13 +60,13 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		return False;
 	}
 
-	while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
+	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries)
 	{
 		int user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
 		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
 		               user_name_len-1, 1);
-		pw_buf[(*num_entries)].user_rid = pwd->smb_userid;
+		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
 		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
 
 		/* Now check if the NT compatible password is available. */
@@ -77,8 +77,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
-		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
-		(*num_entries), pwd->smb_name, pwd->smb_userid, pwd->acct_ctrl));
+		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
+		(*num_entries), pwd->smb_name, pwd->user_rid, pwd->acct_ctrl));
 
 		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
 		{
@@ -617,27 +617,26 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 
 	for (i = 0; i < num_rids && status == 0; i++)
 	{
-		struct smb_passwd *smb_pass;
+		struct sam_passwd *sam_pass;
 		fstring user_name;
 
 
 		fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
-									q_u->uni_user_name[i].uni_str_len));
+		                            q_u->uni_user_name[i].uni_str_len));
 
 		/* find the user account */
 		become_root(True);
-		smb_pass = get_sampwd_entry(user_name, 0);
+		sam_pass = get_smb21pwd_entry(user_name, 0);
 		unbecome_root(True);
 
-		if (smb_pass == NULL)
+		if (sam_pass == NULL)
 		{
 			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 			rid[i] = 0;
 		}
 		else
 		{
-			/* lkclXXXX SHOULD use name_to_rid() here! */
-			rid[i] = smb_pass->smb_userid;
+			rid[i] = sam_pass->user_rid;
 		}
 	}
 #endif
@@ -798,7 +797,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 				int status)
 {
 	SAMR_R_OPEN_USER r_u;
-	struct smb_passwd *smb_pass;
+	struct sam_passwd *sam_pass;
 	int pol_idx;
 	BOOL pol_open = False;
 
@@ -820,11 +819,11 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	}
 
 	become_root(True);
-	smb_pass = getsmbpwuid(q_u->user_rid);
+	sam_pass = getsam21pwrid(q_u->user_rid);
 	unbecome_root(True);
 
 	/* check that the RID exists in our domain. */
-	if (r_u.status == 0x0 && smb_pass == NULL)
+	if (r_u.status == 0x0 && sam_pass == NULL)
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 	}
@@ -853,7 +852,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 /*******************************************************************
  api_samr_open_user
  ********************************************************************/
-static void api_samr_open_user( int uid, prs_struct *data, prs_struct *rdata)
+static void api_samr_open_user( int rid, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_OPEN_USER q_u;
 
@@ -875,10 +874,13 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 	LOGON_HRS hrs;
 	int i;
 
+#ifdef DONT_CHECK_THIS_FOR_NOW
 	if (!pdb_rid_is_user(user_rid))
 	{
+		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
 		return False;
 	}
+#endif
 
 	become_root(True);
 	sam_pass = getsam21pwrid(user_rid);
@@ -886,6 +888,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	if (sam_pass == NULL)
 	{
+		DEBUG(4,("User 0x%x not found\n", user_rid));
 		return False;
 	}
 
@@ -968,6 +971,8 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
+	DEBUG(5,("samr_reply_query_userinfo: rid:0x%x\n", rid));
+
 	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
 	if (status == 0x0)
 	{
@@ -1037,7 +1042,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	SAMR_R_QUERY_USERGROUPS r_u;
 	uint32 status = 0x0;
 
-	struct smb_passwd *smb_pass;
+	struct sam_passwd *sam_pass;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	int pol_idx;
@@ -1060,10 +1065,10 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		become_root(True);
-		smb_pass = getsmbpwuid(rid);
+		sam_pass = getsam21pwrid(rid);
 		unbecome_root(True);
 
-		if (smb_pass == NULL)
+		if (sam_pass == NULL)
 		{
 			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 		}
@@ -1072,7 +1077,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		pstring groups;
-		get_domain_user_groups(groups, smb_pass->smb_name);
+		get_domain_user_groups(groups, sam_pass->smb_name);
                 gids = NULL;
 		num_groups = make_dom_gids(groups, &gids);
 	}
@@ -1083,8 +1088,11 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_query_usergroups("", &r_u, rdata, 0);
 
-        if(gids)
-          free((char *)gids);
+	if (gids)
+	{
+		free((char *)gids);
+	}
+
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
 
 }
@@ -1141,7 +1149,7 @@ static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
 static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 {
 	uint32 status = 0;
-	struct smb_passwd *smb_pass;
+	struct sam_passwd *sam_pass;
 	fstring mach_acct;
 
 	SAMR_Q_UNKNOWN_32 q_u;
@@ -1159,10 +1167,10 @@ static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);
-	smb_pass = getsmbpwnam(mach_acct);
+	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root(True);
 
-	if (smb_pass != NULL)
+	if (sam_pass != NULL)
 	{
 		/* machine account exists: say so */
 		status = 0xC0000000 | NT_STATUS_USER_EXISTS;
@@ -1170,6 +1178,7 @@ static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 	else
 	{
 		/* this could cause trouble... */
+		DEBUG(0,("trouble!\n"));
 		status = 0;
 	}
 

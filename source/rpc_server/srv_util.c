@@ -478,18 +478,17 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
  ********************************************************************/
 uint32 lookup_user_rid(char *user_name, uint32 *rid)
 {
-	struct smb_passwd *smb_pass;
+	struct sam_passwd *sam_pass;
 	(*rid) = 0;
 
 	/* find the user account */
 	become_root(True);
-	smb_pass = getsmbpwnam(user_name);
+	sam_pass = getsam21pwnam(user_name);
 	unbecome_root(True);
 
-	if (smb_pass != NULL)
+	if (sam_pass != NULL)
 	{
-		/* lkclXXXX SHOULD use name_to_rid() here! */
-		(*rid) = smb_pass->smb_userid;
+		(*rid) = sam_pass->user_rid;
 		return 0x0;
 	}
 
