@@ -16,8 +16,10 @@ krb5_auth_con_init(krb5_context context,
     if (!p->authenticator)
 	return ENOMEM;
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
-    p->cksumtype = CKSUMTYPE_RSA_MD4_DES;
+    p->cksumtype = CKSUMTYPE_RSA_MD4; /* XXX - CKSUMTYPE_RSA_MD4_DES */;
     p->enctype   = ETYPE_DES_CBC_CRC;
+    p->local_address = NULL;
+    p->remote_address = NULL;
     *auth_context = p;
     return 0;
 }
@@ -57,14 +59,16 @@ krb5_auth_con_setaddrs(krb5_context context,
 		       krb5_address *local_addr,
 		       krb5_address *remote_addr)
 {
-    auth_context->local_address.addr_type = local_addr->addr_type;
-    krb5_data_copy (&auth_context->local_address.address,
-		    local_addr->address.data,
-		    local_addr->address.length);
-    auth_context->remote_address.addr_type = remote_addr->addr_type;
-    krb5_data_copy (&auth_context->remote_address.address,
-		    remote_addr->address.data,
-		    remote_addr->address.length);
+    if (local_addr) {
+	if (auth_context->local_address)
+	    krb5_free_address (context, auth_context->local_address);
+	krb5_copy_address(context, local_addr, auth_context->local_address);
+    }
+    if (remote_addr) {
+	if (auth_context->remote_address)
+	    krb5_free_address (context, auth_context->remote_address);
+	krb5_copy_address(context, remote_addr, auth_context->remote_address);
+    }
     return 0;
 }
 
@@ -82,25 +86,18 @@ krb5_auth_con_getaddrs(krb5_context context,
     *local_addr = malloc (sizeof(**local_addr));
     if (*local_addr == NULL)
 	return ENOMEM;
-    (*local_addr)->addr_type = auth_context->local_address.addr_type;
-    ret = krb5_data_copy (&(*local_addr)->address,
-			  auth_context->local_address.address.data,
-			  auth_context->local_address.address.length);
-    if (ret)
-	return ret;
+    krb5_copy_address(context,
+		      auth_context->local_address,
+		      *local_addr);
 
     if(*remote_addr)
 	krb5_free_address (context, *remote_addr);
     *remote_addr = malloc (sizeof(**remote_addr));
     if (*remote_addr == NULL)
 	return ENOMEM;
-    (*remote_addr)->addr_type = auth_context->remote_address.addr_type;
-    ret = krb5_data_copy (&(*remote_addr)->address,
-			  auth_context->remote_address.address.data,
-			  auth_context->remote_address.address.length);
-    if (ret)
-	return ret;
-
+    krb5_copy_address(context,
+		      auth_context->remote_address,
+		      *remote_addr);
     return 0;
 }
 
