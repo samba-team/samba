@@ -1940,6 +1940,7 @@ struct
   {EPERM,ERRDOS,ERRnoaccess},
   {EACCES,ERRDOS,ERRnoaccess},
   {ENOENT,ERRDOS,ERRbadfile},
+  {ENOTDIR,ERRDOS,ERRbadpath},
   {EIO,ERRHRD,ERRgeneral},
   {EBADF,ERRSRV,ERRsrverror},
   {EINVAL,ERRSRV,ERRsrverror},

@@ -614,7 +614,11 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   dptr_num = dptr_create(cnum,directory, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
-    return(ERROR(ERRDOS,ERRbadpath));
+    {
+      if(dptr_num == -2)
+        return (UNIXERROR(ERRDOS,ERRbadpath));
+      return(ERROR(ERRDOS,ERRbadpath));
+    }
 
   /* convert the formatted masks */
   {
