@@ -38,11 +38,6 @@ static SMB_BIG_UINT cap_disk_free(vfs_handle_struct *handle, connection_struct *
 					 dfree, dsize);
 }
 
-static int cap_set_quota(vfs_handle_struct *handle, connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
-{
-	return SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, dq);
-}
-
 static DIR *cap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
 {
         pstring capname;
@@ -64,9 +59,9 @@ static struct dirent *cap_readdir(vfs_handle_struct *handle, connection_struct *
 
 static int cap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
 {
-  pstring cappath;
-  capencode(cappath, path);
-  return SMB_VFS_NEXT_MKDIR(handle, conn, cappath, mode);
+	pstring cappath;
+	capencode(cappath, path);
+	return SMB_VFS_NEXT_MKDIR(handle, conn, cappath, mode);
 }
 
 static int cap_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path)
