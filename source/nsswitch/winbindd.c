@@ -90,7 +90,7 @@ static void termination_handler(int signum)
 	
 	/* Remove socket file */
 	
-	slprintf(path, sizeof(path), "%s/%s", 
+	snprintf(path, sizeof(path), "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
 	
@@ -174,7 +174,7 @@ static int create_sock(void)
         return -1;
     }
 
-    slprintf(path, sizeof(path), "%s/%s", 
+    snprintf(path, sizeof(path), "%s/%s", 
 	     WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 
     unlink(path);
@@ -650,7 +650,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 

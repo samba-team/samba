@@ -123,7 +123,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 		return WINBINDD_OK;
 	}
 	
-	slprintf(name,sizeof(name),"%s\\%s", name_domain, name_user);
+	snprintf(name,sizeof(name),"%s\\%s", name_domain, name_user);
 	
 	/* Get rid and name type from name.  The following costs 1 packet */
 
@@ -466,7 +466,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 		
 		/* Prepend domain to name */
 		
-		slprintf(domain_user_name, sizeof(domain_user_name),
+		snprintf(domain_user_name, sizeof(domain_user_name),
 			 "%s%s%s", ent->domain->name, sep,
 			 name_list[ent->sam_entry_index].name);
 		
@@ -597,7 +597,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 				unistr2_to_ascii(acct_name, uni_acct_name,
 						 sizeof(acct_name) - 1);
                                                  
-				slprintf(name, sizeof(name), "%s%s%s",
+				snprintf(name, sizeof(name), "%s%s%s",
 					 domain->name, lp_winbind_separator(),
 					 acct_name);
 

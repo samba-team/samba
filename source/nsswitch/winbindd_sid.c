@@ -56,7 +56,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	
 	parse_domain_user(state->request.data.name, name_domain, name_user);
 
-	slprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
+	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
 
 	/* Lookup name from PDC using lsa_lookup_names() */
 

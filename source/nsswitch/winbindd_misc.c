@@ -29,7 +29,7 @@ form a key for fetching a domain trust password
 static char *trust_keystr(char *domain)
 {
 	static fstring keystr;
-	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
+	snprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
 	return keystr;
 }
 
@@ -71,7 +71,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
 
 	nt_lm_owf_gen("__dummy__", ntpw, lmpw);
 	
-	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+	snprintf(server, sizeof(server), "\\\\%s", server_state.controller);
 
 	ZERO_STRUCT(info3);
 

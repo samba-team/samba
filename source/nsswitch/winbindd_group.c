@@ -107,7 +107,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
 		/* Append domain name */
 
-		slprintf(name, sizeof(name), "%s%s%s", domain->name,
+		snprintf(name, sizeof(name), "%s%s%s", domain->name,
 			 lp_winbind_separator(), the_name);
 
 		len = strlen(name);
@@ -203,7 +203,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 		return WINBINDD_OK;
 	}
 
-	slprintf(name, sizeof(name), "%s\\%s", name_domain, name_group);
+	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_group);
 
 	/* Get rid and name type from name */
         
@@ -445,7 +445,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
    
             /* Prepend domain to name */
 
-	    slprintf(domain_group_name, sizeof(domain_group_name),
+	    snprintf(domain_group_name, sizeof(domain_group_name),
 		     "%s%s%s", ent->domain->name, lp_winbind_separator(), 
 		     group_name);
    
@@ -544,7 +544,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 			/* Convert unistring to ascii */
 
-			slprintf(name, sizeof(name), "%s%s%s",
+			snprintf(name, sizeof(name), "%s%s%s",
 				 domain->name, lp_winbind_separator(),
 				 group_name);
 
