@@ -301,7 +301,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 				lm_response = data_blob(NULL, 24);
 				SMBencrypt(pass,cli->secblob.data, lm_response.data);
 			} else {
-				/* LM disabled, place NT# in LM feild instead */
+				/* LM disabled, place NT# in LM field instead */
 				lm_response = data_blob(nt_response.data, nt_response.length);
 			}
 

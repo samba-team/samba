@@ -179,7 +179,7 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	MD5Update(&md5_ctx, buf + offset_end_of_sig, 
 		  smb_len(buf) - (offset_end_of_sig - 4));
 
-	/* caclulate the MD5 sig */ 
+	/* calculate the MD5 sig */ 
 	MD5Final(calc_md5_mac, &md5_ctx);
 }
 
@@ -426,7 +426,7 @@ void cli_free_signing_context(struct cli_state *cli)
  * Sign a packet with the current mechanism
  */
  
-void cli_caclulate_sign_mac(struct cli_state *cli)
+void cli_calculate_sign_mac(struct cli_state *cli)
 {
 	cli->sign_info.sign_outgoing_message(cli);
 }
