@@ -1691,7 +1691,14 @@ This is a list of users that should not be allowed to login to this
 service. This is really a "paranoid" check to absolutely ensure an
 improper setting does not breach your security.
 
-A name starting with @ is interpreted as a UNIX group.
+A name starting with @ is interpreted as a yp netgroup first (if this
+has been compiled into Samba), and then as a UNIX group if the name
+was not found in the yp netgroup database.
+
+A name starting with + is interpreted only by looking in the UNIX
+group database. A name starting with & is interpreted only by looking
+in the yp netgroup database (this has no effect if Samba is compiled
+without netgroup support).
 
 The current servicename is substituted for %S. This is useful in the
 [homes] section.
@@ -3695,8 +3702,19 @@ To restrict a service to a particular set of users you can use the
 "valid users=" line.
 
 If any of the usernames begin with a @ then the name will be looked up
-in the groups file and will expand to a list of all users in the group
-of that name. Note that searching though a groups file can take quite
+first in the yp netgroups list (if Samba is compiled with netgroup support),
+followed by a lookup in the UNIX groups database and will expand to a list of
+all users in the group of that name.
+
+If any of the usernames begin with a + then the name will be looked up only
+in the UNIX groups database and will expand to a list of all users in the 
+group of that name.
+
+If any of the usernames begin with a & then the name will be looked up only
+in the yp netgroups database (if Samba is compiled with netgroup support) and
+will expand to a list of all users in the netgroup group of that name.
+
+Note that searching though a groups database can take quite
 some time, and some clients may time out during the search.
 
 See the section below on username/password validation for more information
@@ -3743,7 +3761,7 @@ UNIX username on the left then a '=' followed by a list of usernames
 on the right. The list of usernames on the right may contain names of
 the form @group in which case they will match any UNIX username in
 that group. The special client name '*' is a wildcard and matches any
-name.
+name. Each line of the map file may be up to 1023 characters long.
 
 The file is processed on each line by taking the supplied username and
 comparing it with each username on the right hand side of the '='
@@ -3769,6 +3787,10 @@ would use
 	sys = @system
 
 You can have as many mappings as you like in a username map file.
+
+If Samba has been compiled with the -DNETGROUP compile option
+then the netgroup database is checked before the /etc/group
+database for matching groups.
 
 You can map Windows usernames that have spaces in them by using double
 quotes around the name. For example:
