@@ -11,7 +11,8 @@ ADD_OBJ_FILES = \
 		torture/basic/denytest.o \
 		torture/basic/aliases.o \
 		torture/basic/locking.o \
-		torture/basic/secleak.o 
+		torture/basic/secleak.o \
+		torture/basic/delete.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_BASIC
