@@ -2537,6 +2537,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize);
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);

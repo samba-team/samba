@@ -110,6 +110,39 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
+/****************************************************************************
+  reply to a write on a pipe
+****************************************************************************/
+int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
+{
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	size_t numtowrite = SVAL(inbuf,smb_vwv1);
+	int nwritten;
+	int outsize;
+	char *data;
+
+	if (!p)
+		return(ERROR(ERRDOS,ERRbadfid));
+
+	data = smb_buf(inbuf) + 3;
+
+	if (numtowrite == 0)
+		nwritten = 0;
+	else
+		nwritten = write_to_pipe(p, data, numtowrite);
+
+	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
+		return (UNIXERROR(ERRDOS,ERRnoaccess));
+  
+	outsize = set_message(outbuf,1,0,True);
+
+	SSVAL(outbuf,smb_vwv0,nwritten);
+  
+	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n",
+		 p->pnum, nwritten));
+
+	return(outsize);
+}
 
 /****************************************************************************
   reply to a write and X

@@ -329,7 +329,7 @@ struct smb_message_struct
 
    {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
    {SMBread,"SMBread",reply_read,AS_USER},
-   {SMBwrite,"SMBwrite",reply_write,AS_USER},
+   {SMBwrite,"SMBwrite",reply_write,AS_USER | CAN_IPC },
    {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC },
    {SMBmkdir,"SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
    {SMBrmdir,"SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
