@@ -1218,6 +1218,9 @@ krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_
 krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
 #endif
 
+/* Samba wrapper function for krb5 functionality. */
+void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
+
 #endif /* HAVE_KRB5 */
 
 #endif /* _INCLUDES_H */
