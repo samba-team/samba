@@ -2,6 +2,12 @@ Changes in release 0.2s:
 
  * add OpenLDAP support in hdb
 
+ * login will get v4 tickets when it receives forwarded tickets
+
+ * xnlock supports both v5 and v4
+
+ * repair source routing for telnet
+
  * fix building problems with krb4 (krb_mk_req)
 
  * bug fixes
