@@ -46,7 +46,7 @@ const DOM_SID *global_sid_everyone = &global_sid_World;
 
 typedef struct _known_sid_users {
 	uint32 rid;
-	uint8 sid_name_use;
+	enum SID_NAME_USE sid_name_use;
 	char *known_user_name;
 } known_sid_users;
 
@@ -134,7 +134,7 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
  Looks up a known username from one of the known domains.
 ***************************************************************************/
 
-BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, uint8 *psid_name_use)
+BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 	int i = 0;
 	struct sid_name_map_info *psnm;
