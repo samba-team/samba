@@ -34,7 +34,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 7
+#define PROF_SHM_VERSION 8
 
 /* time values in the following structure are in microseconds */
 
@@ -60,9 +60,15 @@ struct profile_stats {
 	unsigned syscall_read_count;
 	unsigned syscall_read_time;
 	unsigned syscall_read_bytes;	/* bytes read with read syscall */
+	unsigned syscall_pread_count;
+	unsigned syscall_pread_time;
+	unsigned syscall_pread_bytes;	/* bytes read with pread syscall */
 	unsigned syscall_write_count;
 	unsigned syscall_write_time;
 	unsigned syscall_write_bytes;	/* bytes written with write syscall */
+	unsigned syscall_pwrite_count;
+	unsigned syscall_pwrite_time;
+	unsigned syscall_pwrite_bytes;	/* bytes written with pwrite syscall */
 	unsigned syscall_lseek_count;
 	unsigned syscall_lseek_time;
 	unsigned syscall_sendfile_count;
