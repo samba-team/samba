@@ -293,14 +293,73 @@ check_for_tgt (krb5_context context,
     return expired;
 }
 
+/*
+ * Print a list of all AFS tokens
+ */
+
+static void
+display_tokens(int do_verbose)
+{
+    u_int32_t i;
+    unsigned char t[128];
+    struct ViceIoctl parms;
+
+    parms.in = (void *)&i;
+    parms.in_size = sizeof(i);
+    parms.out = (void *)t;
+    parms.out_size = sizeof(t);
+
+    for (i = 0; k_pioctl(NULL, VIOCGETTOK, &parms, 0) == 0; i++) {
+        int32_t size_secret_tok, size_public_tok;
+        char *cell;
+	struct ClearToken ct;
+	unsigned char *r = t;
+	struct timeval tv;
+	char buf1[20], buf2[20];
+
+	memcpy(&size_secret_tok, r, sizeof(size_secret_tok));
+	/* dont bother about the secret token */
+	r += size_secret_tok + sizeof(size_secret_tok);
+	memcpy(&size_public_tok, r, sizeof(size_public_tok));
+	r += sizeof(size_public_tok);
+	memcpy(&ct, r, size_public_tok);
+	r += size_public_tok;
+	/* there is a int32_t with length of cellname, but we dont read it */
+	r += sizeof(int32_t);
+	cell = r;
+
+	gettimeofday (&tv, NULL);
+	strcpy_truncate (buf1, printable_time(ct.BeginTimestamp),
+			 sizeof(buf1));
+	if (do_verbose || tv.tv_sec < ct.EndTimestamp)
+	    strcpy_truncate (buf2, printable_time(ct.EndTimestamp),
+			     sizeof(buf2));
+	else
+	    strcpy_truncate (buf2, ">>> Expired <<<", sizeof(buf2));
+
+	printf("%s  %s  ", buf1, buf2);
+
+	if ((ct.EndTimestamp - ct.BeginTimestamp) & 1)
+	  printf("User's (AFS ID %d) tokens for %s", ct.ViceId, cell);
+	else
+	  printf("Tokens for %s", cell);
+	if (do_verbose)
+	    printf(" (%d)", ct.AuthHandle);
+	putchar('\n');
+    }
+}
+
 static int version_flag = 0;
 static int help_flag	= 0;
 static int do_verbose	= 0;
 static int do_test	= 0;
+static int do_tokens	= 0;
 
 static struct getargs args[] = {
     { "test",			't', arg_flag, &do_test,
       "test for having tickets", NULL },
+    { "tokens",			'T',   arg_flag, &do_tokens,
+      "display AFS tokens", NULL },
     { "verbose",		'v', arg_flag, &do_verbose,
       "Verbose output", NULL },
     { "version", 		0,   arg_flag, &version_flag, 
@@ -357,11 +416,16 @@ main (int argc, char **argv)
 	krb5_err (context, 1, ret, "krb5_cc_default");
 
     ret = krb5_cc_get_principal (context, ccache, &principal);
-    if(ret == ENOENT && !do_test)
-	krb5_errx(context, 1, "No ticket file: %s", 
-		  krb5_cc_get_name(context, ccache));
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_get_principal");
+    if (ret) {
+	if(ret == ENOENT) {
+	    if (do_test)
+		return 1;
+	    else
+		krb5_errx(context, 1, "No ticket file: %s", 
+			  krb5_cc_get_name(context, ccache));
+	} else
+	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
+    }
 
     if (do_test)
 	exit_status = check_for_tgt (context, ccache, principal);
@@ -374,5 +438,9 @@ main (int argc, char **argv)
 
     krb5_free_principal (context, principal);
     krb5_free_context (context);
+
+    if (!do_test && do_tokens && k_hasafs ())
+	display_tokens (do_verbose);
+
     return exit_status;
 }
