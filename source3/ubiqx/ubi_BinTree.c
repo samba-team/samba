@@ -26,7 +26,14 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.c,v 
+ * Log: ubi_BinTree.c,v
+ * Revision 4.7  1998/10/21 06:14:42  crh
+ * Fixed bugs in FirstOf() and LastOf() reported by Massimo Campostrini.
+ * See function comments.
+ *
+ * Revision 4.6  1998/07/25 17:02:10  crh
+ * Added the ubi_trNewTree() macro.
+ *
  * Revision 4.5  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -155,9 +162,9 @@
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.5 \n\
-\tDate: 1998/06/04 21:29:27 \n\
-\tAuthor: crh \n";
+\tRevision: 4.7\n\
+\tDate: 1998/10/21 06:14:42\n\
+\tAuthor: crh\n";
 
 /* ========================================================================== **
  * Internal (private) functions.
@@ -899,11 +906,15 @@ ubi_btNodePtr ubi_btFirstOf( ubi_btRootPtr RootPtr,
    *          matching <FindMe>.
    *  Notes:  Node *p MUST be in the set of nodes with keys matching
    *          <FindMe>.  If not, this function will return NULL.
+   *
+   *          4.7: Bug found & fixed by Massimo Campostrini,
+   *               Istituto Nazionale di Fisica Nucleare, Sezione di Pisa.
+   *
    * ------------------------------------------------------------------------ **
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) != ubi_trEQUAL ) )
+  if( !p || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
     return( NULL );
   return( Border( RootPtr, MatchMe, p, ubi_trLEFT ) );
   } /* ubi_btFirstOf */
@@ -924,11 +935,15 @@ ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
    *          matching <FindMe>.
    *  Notes:  Node *p MUST be in the set of nodes with keys matching
    *          <FindMe>.  If not, this function will return NULL.
+   *
+   *          4.7: Bug found & fixed by Massimo Campostrini,
+   *               Istituto Nazionale di Fisica Nucleare, Sezione di Pisa.
+   *
    * ------------------------------------------------------------------------ **
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) != ubi_trEQUAL ) )
+  if( !p || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
     return( NULL );
   return( Border( RootPtr, MatchMe, p, ubi_trRIGHT ) );
   } /* ubi_btLastOf */
