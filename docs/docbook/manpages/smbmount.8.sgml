@@ -73,7 +73,7 @@
 		given. </para>
 
 		<para>
-		Note that password which contain the arguement delimiter
+		Note that passwords which contain the argument delimiter
 		character (i.e. a comma ',') will failed to be parsed correctly
 		on the command line.  However, the same password defined
 		in the PASSWD environment variable or a credentials file (see
@@ -222,7 +222,7 @@
 		<varlistentry>
 		<term>ttl=&lt;arg&gt;</term>
 		<listitem><para>
-		how long a directory listing is cached in milliseconds
+		sets how long a directory listing is cached in milliseconds
 		(also affects visibility of file size and date
 		changes). A higher value means that changes on the
 		server take longer to be noticed but it can give
