@@ -3,6 +3,7 @@
    Version 3.0
    client transaction calls
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,11 +29,11 @@
   send a SMB trans or trans2 request
   ****************************************************************************/
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *name, int pipe_name_len, 
-		    int fid, int flags,
-		    uint16 *setup, int lsetup, int msetup,
-		    char *param, int lparam, int mparam,
-		    char *data, int ldata, int mdata)
+                           char *name, int pipe_name_len, 
+                           int fid, int flags,
+                           uint16 *setup, int lsetup, int msetup,
+                           char *param, int lparam, int mparam,
+                           char *data, int ldata, int mdata)
 {
 	int i;
 	int this_ldata,this_lparam;
@@ -43,7 +44,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
 
-	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
 	CVAL(cli->outbuf,smb_com) = trans;
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
@@ -144,9 +145,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
-	uint8 eclass;
-	uint32 ecode;
-
+	
 	*data_len = *param_len = 0;
 
 	if (!cli_receive_smb(cli))
@@ -162,16 +161,9 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	/*
-	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
-	 * to a trans call. This is not an error and should not
-	 * be treated as such.
-	 */
-
-	if (cli_error(cli, &eclass, &ecode, NULL))
+	if (cli_error(cli, NULL, NULL))
 	{
-        if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
-			return(False);
+		return(False);
 	}
 
 	/* parse out the lengths */
@@ -222,10 +214,10 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_error(cli, &eclass, &ecode, NULL))
+
+		if (cli_error(cli, NULL, NULL))
 		{
-        	if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
-				return(False);
+			return(False);
 		}
 	}
 	

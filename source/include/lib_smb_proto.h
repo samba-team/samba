@@ -132,12 +132,6 @@ BOOL cli_send_smb(struct cli_state *cli);
 void cli_setup_packet(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
 void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
-BOOL cli_send_trans(struct cli_state *cli, int trans, 
-                           char *name, int pipe_name_len, 
-                           int fid, int flags,
-                           uint16 *setup, int lsetup, int msetup,
-                           char *param, int lparam, int mparam,
-                           char *data, int ldata, int mdata);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
@@ -153,24 +147,11 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
-int cli_nt_create(struct cli_state *cli, const char *fname);
-int cli_open(struct cli_state *cli, const char *fname,
-				int flags, int share_mode);
-BOOL cli_close(struct cli_state *cli, int fnum);
-BOOL cli_lock(struct cli_state *cli, int fnum, 
-	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
 size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size, size_t bytes_left);
-BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  uint16 *attr, size_t *size, 
-		  time_t *c_time, time_t *a_time, time_t *m_time);
-BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		uint16 *attr, size_t *size, time_t *t);
-BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint16 *mode);
@@ -182,8 +163,6 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *));
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
@@ -192,8 +171,6 @@ void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
-BOOL cli_chkpath(struct cli_state *cli, char *path);
-BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 
 /*The following definitions come from  libsmb/clierror.c  */
 
@@ -207,6 +184,26 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
+int cli_nt_create(struct cli_state *cli, const char *fname);
+int cli_open(struct cli_state *cli, const char *fname,
+				int flags, int share_mode);
+BOOL cli_close(struct cli_state *cli, int fnum);
+BOOL cli_lock(struct cli_state *cli, int fnum, 
+	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
+BOOL cli_getattrE(struct cli_state *cli, int fd, 
+		  uint16 *attr, size_t *size, 
+		  time_t *c_time, time_t *a_time, time_t *m_time);
+BOOL cli_getatr(struct cli_state *cli, char *fname, 
+		uint16 *attr, size_t *size, time_t *t);
+BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
+BOOL cli_chkpath(struct cli_state *cli, char *path);
+BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+
+/*The following definitions come from  libsmb/clilist.c  */
+
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *));
 
 /*The following definitions come from  libsmb/climessage.c  */
 
@@ -220,6 +217,18 @@ BOOL cli_message_end(struct cli_state *cli, int grp);
 int cli_print_queue(struct cli_state *cli, 
 		    void (*fn)(struct print_job_info *));
 int cli_printjob_del(struct cli_state *cli, int job);
+
+/*The following definitions come from  libsmb/clitrans.c  */
+
+BOOL cli_send_trans(struct cli_state *cli, int trans, 
+                           char *name, int pipe_name_len, 
+                           int fid, int flags,
+                           uint16 *setup, int lsetup, int msetup,
+                           char *param, int lparam, int mparam,
+                           char *data, int ldata, int mdata);
+BOOL cli_receive_trans(struct cli_state *cli,int trans,
+                              char **param, int *param_len,
+                              char **data, int *data_len);
 
 /*The following definitions come from  libsmb/credentials.c  */
 

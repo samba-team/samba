@@ -3,7 +3,6 @@
    Version 3.0
    client print routines
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,7 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-
 
 #define NO_SYSLOG
 
@@ -47,6 +45,7 @@ static char *fix_char_ptr(unsigned int datap, unsigned int converter,
 		}
 	}
 }
+
 
 /****************************************************************************
 call fn() on each entry in a print queue
@@ -155,3 +154,5 @@ int cli_printjob_del(struct cli_state *cli, int job)
 
 	return ret;
 }
+
+
