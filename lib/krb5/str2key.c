@@ -141,3 +141,29 @@ krb5_string_to_key (char *str,
      memcpy (key->contents.data, &tempkey, sizeof(tempkey));
      return 0;
 }
+
+krb5_error_code
+krb5_get_salt (krb5_principal princ,
+	       krb5_data *salt)
+{
+    size_t len;
+    int i;
+    krb5_error_code err;
+    char *p;
+     
+    len = princ->realm.length;
+    for (i = 0; i < princ->ncomp; ++i)
+	len += princ->comp[i].length;
+    err = krb5_data_alloc (salt, len);
+    if (err)
+	return err;
+    p = salt->data;
+    strncpy (p, princ->realm.data, princ->realm.length);
+    p += princ->realm.length;
+    for (i = 0; i < princ->ncomp; ++i) {
+	strncpy (p, princ->comp[i].data, princ->comp[i].length);
+	p += princ->comp[i].length;
+    }
+    return 0;
+}
+
