@@ -237,7 +237,7 @@
 	</para>
 
 	<sect3>
-	<title>Applicable Only to Version Earlier than 3.0.11</title>
+	<title>Applicable Only to Versions Earlier than 3.0.11</title>
 
 	<para>
 	Administrative tasks on UNIX/Linux systems, such as adding users or groups, requires <constant>root</constant>
