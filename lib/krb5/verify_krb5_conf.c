@@ -151,6 +151,15 @@ check_host(krb5_context context, const char *path, char *data)
     return 0;
 }
 
+#if 0
+static int
+mit_entry(krb5_context context, const char *path, char *data)
+{
+    krb5_warnx(context, "%s is only used by MIT Kerberos", path);
+    return 0;
+}
+#endif
+
 struct s2i {
     char *s;
     int val;
@@ -352,6 +361,23 @@ struct entry realms_entries[] = {
     { "v4_instance_convert", krb5_config_list, all_strings },
     { "v4_domains", krb5_config_string, NULL },
     { "default_domain", krb5_config_string, NULL },
+#if 0
+    /* MIT stuff */
+    { "admin_keytab", krb5_config_string, mit_entry },
+    { "acl_file", krb5_config_string, mit_entry },
+    { "dict_file", krb5_config_string, mit_entry },
+    { "kadmind_port", krb5_config_string, mit_entry },
+    { "kpasswd_port", krb5_config_string, mit_entry },
+    { "master_key_name", krb5_config_string, mit_entry },
+    { "master_key_type", krb5_config_string, mit_entry },
+    { "key_stash_file", krb5_config_string, mit_entry },
+    { "max_life", krb5_config_string, mit_entry },
+    { "max_renewable_life", krb5_config_string, mit_entry },
+    { "default_principal_expiration", krb5_config_string, mit_entry },
+    { "default_principal_flags", krb5_config_string, mit_entry },
+    { "supported_enctypes", krb5_config_string, mit_entry },
+    { "database_name", krb5_config_string, mit_entry },
+#endif
     { NULL }
 };
 
@@ -400,6 +426,15 @@ struct entry log_strings[] = {
     { NULL }
 };
 
+
+#if 0
+struct entry kdcdefaults_entries[] = {
+    { "kdc_ports, krb5_config_string, mit_entry },
+    { "v4_mode, krb5_config_string, mit_entry },
+    { NULL }
+};
+#endif
+
 struct entry toplevel_sections[] = {
     { "libdefaults" , krb5_config_list, libdefaults_entries },
     { "realms", krb5_config_list, realms_foobar },
@@ -408,6 +443,10 @@ struct entry toplevel_sections[] = {
     { "kdc", krb5_config_list, kdc_entries },
     { "kadmin", krb5_config_list, kadmin_entries },
     { "appdefaults", krb5_config_list, appdefaults_entries },
+#if 0
+    /* MIT stuff */
+    { "kdcdefaults", krb5_config_list, kdcdefaults_entries },
+#endif
     { NULL }
 };
 
@@ -506,10 +545,8 @@ main(int argc, char **argv)
 
     while(*argv) {
 	ret = krb5_config_parse_file_multi(context, *argv, &tmp_cf);
-	if (ret != 0) {
+	if (ret != 0)
 	    krb5_warn (context, ret, "krb5_config_parse_file");
-	    return 1;
-	}
 	argv++;
     }
 
