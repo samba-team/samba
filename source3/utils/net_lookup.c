@@ -128,6 +128,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	char *pdc_str = NULL;
 	const char *domain=opt_target_workgroup;
 	int count, i;
+	BOOL list_ordered;
 
 	if (argc > 0)
 		domain=argv[0];
@@ -139,7 +140,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_dc_list(domain, &ip_list, &count)) {
+	if (!get_dc_list(domain, &ip_list, &count, &list_ordered)) {
 		SAFE_FREE(pdc_str);
 		return 0;
 	}
