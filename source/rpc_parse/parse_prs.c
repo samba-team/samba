@@ -1210,3 +1210,27 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
 
     return 0;
 } 
+
+/*******************************************************************
+ hash a stream.
+ ********************************************************************/
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+{
+	char *q;
+
+	q = prs_data_p(ps);
+        q = &q[offset];
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("prs_hash1\n"));
+	dump_data(100, sess_key, 16);
+	dump_data(100, q, 68);
+#endif
+	SamOEMhash((uchar *) q, sess_key, 68);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, q, 68);
+#endif
+
+	return True;
+}
