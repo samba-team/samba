@@ -1949,7 +1949,7 @@ static struct encryption_type enctype_arcfour_hmac_md5 = {
     1,
     8,
     &keytype_arcfour,
-    &checksum_hmac_md5_enc,
+    &checksum_hmac_md5,
     &checksum_hmac_md5_enc,
     F_SPECIAL,
     ARCFOUR_encrypt
