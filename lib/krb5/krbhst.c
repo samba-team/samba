@@ -72,7 +72,7 @@ krb5_get_krb_admin_hst (krb5_context context,
 			const krb5_realm *realm,
 			char ***hostlist)
 {
-    return get_krbhst (context, realm, "admin_server", realm);
+    return get_krbhst (context, realm, "admin_server", hostlist);
 }
 
 krb5_error_code
@@ -80,7 +80,7 @@ krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
 		 char ***hostlist)
 {
-    return get_krbhst (context, realm, "kdc", realm);
+    return get_krbhst (context, realm, "kdc", hostlist);
 }
 
 krb5_error_code
