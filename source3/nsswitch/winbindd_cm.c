@@ -94,7 +94,7 @@ static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_n
 	/* we don't need to bind, just connect */
 	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
-	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
+	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
 
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need

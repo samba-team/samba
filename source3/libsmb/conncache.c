@@ -107,7 +107,7 @@ void add_failed_connection_entry(const char *domain, const char *server, NTSTATU
 	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {			
 		if ( strequal(fcc->domain_name, domain) && strequal(fcc->controller, server) ) 
 		{
-			DEBUG(10, ("add_failed_connection_entry_byname: domain %s (%s) already tried and failed\n",
+			DEBUG(10, ("add_failed_connection_entry: domain %s (%s) already tried and failed\n",
 				   domain, server ));
 			return;
 		}
