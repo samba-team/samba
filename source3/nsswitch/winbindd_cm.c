@@ -56,6 +56,7 @@
 
  */
 
+#include "includes.h"
 #include "winbindd.h"
 
 #undef DBGC_CLASS
@@ -183,8 +184,6 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 							      machine_password, 
 							      lp_workgroup()))) {
 					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
-					if (NT_STATUS_IS_OK(result)) 
-						result = NT_STATUS_UNSUCCESSFUL;
 				}
 			}
 			new_conn->cli->use_kerberos = False;

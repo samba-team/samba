@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
 #include "winbindd.h"
 
 #ifdef HAVE_ADS
@@ -553,8 +554,6 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 done:
 	if (res) 
 		ads_msgfree(ads, res);
-	if (msg) 
-		ads_msgfree(ads, msg);
 
 	return status;
 }

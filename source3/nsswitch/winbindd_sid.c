@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
 #include "winbindd.h"
 
 #undef DBGC_CLASS
@@ -83,6 +84,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	char *name_domain, *name_user;
 	DOM_SID sid;
 	struct winbindd_domain *domain;
+	char *p;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
@@ -90,13 +92,19 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
 
-	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
-		  state->request.data.name.dom_name, 
-		  lp_winbind_separator(),
-		  state->request.data.name.name));
+	/* cope with the name being a fully qualified name */
+	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	if (p) {
+		*p = 0;
+		name_domain = state->request.data.name.name;
+		name_user = p+1;
+	} else {
+		name_domain = state->request.data.name.dom_name;
+		name_user = state->request.data.name.name;
+	}
 
-	name_domain = state->request.data.name.dom_name;
-	name_user = state->request.data.name.name;
+	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
+		  name_domain, lp_winbind_separator(), name_user));
 
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 

@@ -121,6 +121,9 @@ enum winbindd_cmd {
 	/* find the location of our privileged pipe */
 	WINBINDD_PRIV_PIPE_DIR,
 
+	/* return a list of group sids for a user sid */
+	WINBINDD_GETUSERSIDS,	
+
 	WINBINDD_NUM_CMDS
 };
 
