@@ -1,5 +1,7 @@
 2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/keytab.c: use KRB5_KT_BADNAME
+
 	* lib/krb5/krb5_err.et: sync with mit krb5_err.et (require major
 	version bump) add KRB5_DELTAT_BADFORMAT
 	
