@@ -684,7 +684,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
           pstrcpy( expnd, p+1 );
           *p++ = '*';
           *p = '.';
-          safe_strcpy( p+1, expnd, p - mask - 1);
+          safe_strcpy( p+1, expnd, sizeof(mask) - (p - mask) - 2);
         } else
           *p = '*';
       }
