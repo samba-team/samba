@@ -468,9 +468,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	const char *name;
 	struct ldb_message *msg;
 	uint32_t rid;
-	const char *groupname, *sidstr, *guidstr;
-	struct GUID guid;
-	time_t now = time(NULL);
+	const char *groupname, *sidstr;
 	struct dcesrv_handle *g_handle;
 	int ret;
 	NTSTATUS status;
@@ -523,13 +521,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* a new GUID */
-	guid = GUID_random();
-	guidstr = GUID_string(mem_ctx, &guid);
-	if (!guidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* add core elements to the ldb_message for the user */
 	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", groupname,
 				  d_state->domain_dn);
@@ -541,9 +532,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", groupname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectGUID", guidstr);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenCreated", now);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenChanged", now);
 			     
 	/* create the group */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
@@ -703,9 +691,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char *name;
 	struct ldb_message *msg;
 	uint32_t rid;
-	const char *account_name, *sidstr, *guidstr;
-	struct GUID guid;
-	time_t now = time(NULL);
+	const char *account_name, *sidstr;
 	struct dcesrv_handle *u_handle;
 	int ret;
 	NTSTATUS status;
@@ -803,13 +789,6 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* a new GUID */
-	guid = GUID_random();
-	guidstr = GUID_string(mem_ctx, &guid);
-	if (!guidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* add core elements to the ldb_message for the user */
 	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", account_name, container, d_state->domain_dn);
 	if (!msg->dn) {
@@ -823,9 +802,6 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", additional_class);
 	}
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectGUID", guidstr);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenCreated", now);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenChanged", now);
 
 	/* create the user */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
@@ -973,9 +949,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *aliasname, *name, *sidstr, *guidstr;
-	struct GUID guid;
-	time_t now = time(NULL);
+	const char *aliasname, *name, *sidstr;
 	struct ldb_message *msg;
 	uint32_t rid;
 	struct dcesrv_handle *a_handle;
@@ -1032,13 +1006,6 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* a new GUID */
-	guid = GUID_random();
-	guidstr = GUID_string(mem_ctx, &guid);
-	if (!guidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* add core elements to the ldb_message for the alias */
 	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", aliasname,
 				 d_state->domain_dn);
@@ -1051,9 +1018,6 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", aliasname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectGUID", guidstr);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenCreated", now);
-	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, msg, "whenChanged", now);
 
 	/* create the alias */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
