@@ -211,7 +211,7 @@ install: build
 	# and lib.linux-i686-2.3 directories. Using only the stuff from
 	# the 2.3 directory for now. peloy.-
 	#cp source/build/lib.*/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
-	cp source/build/lib.linux-i686-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
+	cp source/build/lib.linux-*-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
 
 	dh_movefiles
 

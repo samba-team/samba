@@ -1,8 +1,19 @@
-samba (3.0.0beta2+3.0.0rc3-1) unstable; urgency=low
+samba (3.0.0beta2+3.0.0rc4-1) unstable; urgency=low
 
   * Local build.
 
- -- Debian User <user@somewhere.com>  Mon,  8 Sep 2003 13:33:21 -0400
+ -- Debian User <user@somewhere.com>  Thu, 11 Sep 2003 16:15:27 -0400
+
+samba (3.0.0beta2+3.0.0rc3-1) unstable; urgency=low
+
+  * New upstream release. Last Release Candidate according to the
+    Samba Team. Samba 3.0.0 is around the corner, in a week or so.
+    - Fixes use of non-PIC code in nss shared libraries (closes: #208773)
+    - 'unix password sync' option now runs the unix password program as
+      root again (closes: #209739).
+  * One-line patch to make packages buildable with distcc (closes: #210227)
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue,  9 Sep 2003 07:57:16 -0400
 
 samba (3.0.0beta2+3.0.0rc2-1) unstable; urgency=low
 
