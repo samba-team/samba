@@ -995,6 +995,62 @@ BOOL cli_qpathinfo(struct cli_state *cli, char *fname,
 	return True;
 }
 
+/****************************************************************************
+send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
+****************************************************************************/
+BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
+		    time_t *c_time, time_t *a_time, time_t *m_time, 
+		    time_t *w_time, uint32 *size)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	param_len = strlen(fname) + 7;
+
+	memset(param, 0, param_len);
+	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
+	pstrcpy(&param[6], fname);
+
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 10, 0)) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
+		return False;
+	}
+
+	if (!rdata || data_len < 22) {
+		return False;
+	}
+
+	if (c_time) {
+		*c_time = interpret_long_date(rdata+0) - cli->serverzone;
+	}
+	if (a_time) {
+		*a_time = interpret_long_date(rdata+8) - cli->serverzone;
+	}
+	if (m_time) {
+		*m_time = interpret_long_date(rdata+16) - cli->serverzone;
+	}
+	if (w_time) {
+		*w_time = interpret_long_date(rdata+24) - cli->serverzone;
+	}
+	if (size) {
+		*size = IVAL(rdata, 40);
+	}
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+	return True;
+}
+
 
 /****************************************************************************
 send a qfileinfo call
