@@ -454,7 +454,7 @@ interface netlogon
 		netr_String primarydomainname;
 		dom_sid2 *sid;
 		netr_QUOTA_LIMITS quota_limits;
-		NTTIME db_modify_time;
+		uint64 sequence_num;
 		NTTIME db_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
