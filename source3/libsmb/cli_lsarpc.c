@@ -75,7 +75,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol(&q, '\\', 0, des_access, &qos);
 	} else {
 		init_q_open_pol(&q, '\\', 0, des_access, NULL);
@@ -131,7 +131,7 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
                                  &qos);
 	} else {

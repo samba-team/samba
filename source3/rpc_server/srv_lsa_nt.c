@@ -36,6 +36,13 @@ struct lsa_info {
     uint32 access;
 };
 
+struct generic_mapping lsa_generic_mapping = {
+	POLICY_READ,
+	POLICY_WRITE,
+	POLICY_EXECUTE,
+	POLICY_ALL_ACCESS
+};
+
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
@@ -290,16 +297,73 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 		r_l->status = NT_STATUS_OK;
 }
 
+static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
+{
+	extern DOM_SID global_sid_World;
+	extern DOM_SID global_sid_Builtin;
+	DOM_SID local_adm_sid;
+	DOM_SID adm_sid;
+
+	SEC_ACE ace[3];
+	SEC_ACCESS mask;
+
+	SEC_ACL *psa = NULL;
+
+	init_sec_access(&mask, POLICY_EXECUTE);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	sid_copy(&adm_sid, &global_sam_sid);
+	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
+	init_sec_access(&mask, POLICY_ALL_ACCESS);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	sid_copy(&local_adm_sid, &global_sid_Builtin);
+	sid_append_rid(&local_adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+	init_sec_access(&mask, POLICY_ALL_ACCESS);
+	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if((*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION, &adm_sid, NULL, NULL, psa, sd_size)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	return NT_STATUS_OK;
+}
+
 /***************************************************************************
  _lsa_open_policy2.
  ***************************************************************************/
 
 NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
 {
-	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
+	struct lsa_info *info;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	uint32 des_access=q_u->des_access;
+	uint32 acc_granted;
+	NTSTATUS status;
+
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&des_access, &lsa_generic_mapping);
+
+	/* get the generic lsa policy SD until we store it */
+	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
+
+	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status))
+		return status;
+
+	/* associate the domain SID with the (unique) handle. */
+	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = global_sam_sid;
+	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
+	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -311,10 +375,33 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 
 NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u)
 {
-	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
+	struct lsa_info *info;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	uint32 des_access=q_u->des_access;
+	uint32 acc_granted;
+	NTSTATUS status;
+
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&des_access, &lsa_generic_mapping);
+
+	/* get the generic lsa policy SD until we store it */
+	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
+
+	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status))
+		return status;
+
+	/* associate the domain SID with the (unique) handle. */
+	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = global_sam_sid;
+	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
+	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -326,12 +413,17 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 
 NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
 {
+	struct lsa_info *info;
 	uint32 enum_context = 0;
 	char *dom_name = NULL;
 	DOM_SID *dom_sid = NULL;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* set up the LSA QUERY INFO response */
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
@@ -346,6 +438,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 
 NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
 {
+	struct lsa_info *handle;
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
 	char *name = NULL;
@@ -353,24 +446,32 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 
 	r_u->status = NT_STATUS_OK;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->info_class) {
 	case 0x02:
 		{
-			unsigned int i;
-			/* fake info: We audit everything. ;) */
-			info->id2.auditing_enabled = 1;
-            info->id2.count1 = 7;
-            info->id2.count2 = 7;
-			if ((info->id2.auditsettings = (uint32 *)talloc(p->mem_ctx,7*sizeof(uint32))) == NULL)
-				return NT_STATUS_NO_MEMORY;
-            for (i = 0; i < 7; i++)
-                info->id2.auditsettings[i] = 3;
-            break;
+		unsigned int i;
+		/* check if the user have enough rights */
+		if (!(handle->access & POLICY_VIEW_AUDIT_INFORMATION))
+			return NT_STATUS_ACCESS_DENIED;
+
+		/* fake info: We audit everything. ;) */
+		info->id2.auditing_enabled = 1;
+		info->id2.count1 = 7;
+		info->id2.count2 = 7;
+		if ((info->id2.auditsettings = (uint32 *)talloc(p->mem_ctx,7*sizeof(uint32))) == NULL)
+			return NT_STATUS_NO_MEMORY;
+		for (i = 0; i < 7; i++)
+			info->id2.auditsettings[i] = 3;
+		break;
 		}
 	case 0x03:
+		/* check if the user have enough rights */
+		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+			return NT_STATUS_ACCESS_DENIED;
+
 		/* Request PolicyPrimaryDomainInformation. */
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
@@ -397,6 +498,10 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		init_dom_query(&r_u->dom.id3, name, sid);
 		break;
 	case 0x05:
+		/* check if the user have enough rights */
+		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+			return NT_STATUS_ACCESS_DENIED;
+
 		/* Request PolicyAccountDomainInformation. */
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
@@ -418,6 +523,10 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
 	case 0x06:
+		/* check if the user have enough rights */
+		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+			return NT_STATUS_ACCESS_DENIED;
+
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_BDC:
 				/*
@@ -455,14 +564,19 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 
 NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SIDS *r_u)
 {
+	struct lsa_info *handle;
 	DOM_SID2 *sid = q_u->sids.sid;
 	int num_entries = q_u->sids.num_entries;
 	DOM_R_REF *ref = NULL;
 	LSA_TRANS_NAME_ENUM *names = NULL;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES))
+		return NT_STATUS_ACCESS_DENIED;
 
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
@@ -483,14 +597,19 @@ lsa_reply_lookup_names
 
 NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_NAMES *r_u)
 {
+	struct lsa_info *handle;
 	UNISTR2 *names = q_u->uni_name;
 	int num_entries = q_u->num_entries;
 	DOM_R_REF *ref;
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES))
+		return NT_STATUS_ACCESS_DENIED;
 
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
@@ -533,14 +652,23 @@ _lsa_enum_privs.
 
 NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIVS *r_u)
 {
+	struct lsa_info *handle;
 	uint32 i;
 
 	uint32 enum_context=q_u->enum_context;
 	LSA_PRIV_ENTRY *entry;
 	LSA_PRIV_ENTRY *entries=NULL;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 */
+	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	if (enum_context >= PRIV_ALL_INDEX)
 		return NT_STATUS_NO_MORE_ENTRIES;
@@ -579,11 +707,20 @@ _lsa_priv_get_dispname.
 
 NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, LSA_R_PRIV_GET_DISPNAME *r_u)
 {
+	struct lsa_info *handle;
 	fstring name_asc;
 	int i=1;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 */
+	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
 
@@ -613,13 +750,22 @@ _lsa_enum_accounts.
 
 NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
 {
+	struct lsa_info *handle;
 	GROUP_MAP *map=NULL;
 	int num_entries=0;
 	LSA_SID_ENUM *sids=&r_u->sids;
 	int i=0,j=0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 */
+	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* get the list of mapped groups (domain, local, builtin) */
 	if(!enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
@@ -652,32 +798,32 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 
 NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
-  fstring username, domname;
-  int ulen, dlen;
-  user_struct *vuser = get_valid_user_struct(p->vuid);
+	fstring username, domname;
+	int ulen, dlen;
+	user_struct *vuser = get_valid_user_struct(p->vuid);
   
-  if (vuser == NULL)
-    return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	if (vuser == NULL)
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
   
-  fstrcpy(username, vuser->user.smb_name);
-  fstrcpy(domname, vuser->user.domain);
+	fstrcpy(username, vuser->user.smb_name);
+	fstrcpy(domname, vuser->user.domain);
   
-  ulen = strlen(username) + 1;
-  dlen = strlen(domname) + 1;
+	ulen = strlen(username) + 1;
+	dlen = strlen(domname) + 1;
   
-  init_uni_hdr(&r_u->hdr_user_name, ulen);
-  r_u->ptr_user_name = 1;
-  init_unistr2(&r_u->uni2_user_name, username, ulen);
+	init_uni_hdr(&r_u->hdr_user_name, ulen);
+	r_u->ptr_user_name = 1;
+	init_unistr2(&r_u->uni2_user_name, username, ulen);
 
-  r_u->unk1 = 1;
+	r_u->unk1 = 1;
   
-  init_uni_hdr(&r_u->hdr_dom_name, dlen);
-  r_u->ptr_dom_name = 1;
-  init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+	init_uni_hdr(&r_u->hdr_dom_name, dlen);
+	r_u->ptr_dom_name = 1;
+	init_unistr2(&r_u->uni2_dom_name, domname, dlen);
 
-  r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
   
-  return r_u->status;
+	return r_u->status;
 }
 
 /***************************************************************************
@@ -686,13 +832,23 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 
 NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
 {
+	struct lsa_info *handle;
 	struct lsa_info *info;
 
 	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 * but guessed with rpcclient.
+	 */
+	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* associate the user/group SID with the (unique) handle. */
 	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
@@ -919,34 +1075,30 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 
 NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUERY_SEC_OBJ *r_u)
 {
-	struct lsa_info *info=NULL;
-	extern DOM_SID global_sid_World;
-	extern DOM_SID global_sid_Builtin;
-	DOM_SID adm_sid;
-
-	SEC_ACE ace[2];
-	SEC_ACCESS mask;
-
-	SEC_ACL *psa = NULL;
+	struct lsa_info *handle=NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
+	NTSTATUS status;
 
 	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 
 	switch (q_u->sec_info) {
 	case 1:
 		/* SD contains only the owner */
 
-		sid_copy(&adm_sid, &global_sid_Builtin);
-		sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-		if((psd = make_sec_desc(p->mem_ctx, SEC_DESC_REVISION, &adm_sid, NULL, NULL, NULL, &sd_size)) == NULL)
+		status=lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
+		if(!NT_STATUS_IS_OK(status))
 			return NT_STATUS_NO_MEMORY;
+
 
 		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -954,19 +1106,8 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 	case 4:
 		/* SD contains only the ACL */
 
-		init_sec_access(&mask, POLICY_EXECUTE);
-		init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-		sid_copy(&adm_sid, &global_sid_Builtin);
-		sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-		init_sec_access(&mask, POLICY_ALL_ACCESS);
-		init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-		if((psa = make_sec_acl(p->mem_ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		if((psd = make_sec_desc(p->mem_ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, &sd_size)) == NULL)
+		status=lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
+		if(!NT_STATUS_IS_OK(status))
 			return NT_STATUS_NO_MEMORY;
 
 		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)

@@ -131,7 +131,6 @@ typedef struct seq_qos_info
 	uint16 sec_imp_level; /* 0x02 - impersonation level */
 	uint8  sec_ctxt_mode; /* 0x01 - context tracking mode */
 	uint8  effective_only; /* 0x00 - effective only */
-	uint32 unknown;        /* 0x2000 0000 - not known */
 
 } LSA_SEC_QOS;
 
