@@ -1469,38 +1469,38 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
 
       /* now check the list of session users */
-      if (!ok)
-	{
-	  char *auser;
-	  char *user_list = strdup(session_users);
-	  if (!user_list) return(False);
+    if (!ok)
+    {
+      char *auser;
+      char *user_list = strdup(session_users);
+      if (!user_list) return(False);
 
-	  for (auser=strtok(user_list,LIST_SEP); 
-	       !ok && auser; 
-	       auser = strtok(NULL,LIST_SEP))
-	    {
-	      fstring user2;
-	      fstrcpy(user2,auser);
-	      if (!user_ok(user2,snum)) continue;
+      for (auser=strtok(user_list,LIST_SEP); 
+           !ok && auser; 
+           auser = strtok(NULL,LIST_SEP))
+      {
+        fstring user2;
+        fstrcpy(user2,auser);
+        if (!user_ok(user2,snum)) continue;
 		  
-	      if (password_ok(user2,password, pwlen, NULL)) {
-		ok = True;
-		fstrcpy(user,user2);
-		DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
-	      }
-	    }
-	  free(user_list);
-	}
-
-      /* check for a previously validated username/password pair */
-      if (!ok && !lp_revalidate(snum) &&
-	  (vuser != 0) && !vuser->guest &&
-	  user_ok(vuser->name,snum)) {
-	fstrcpy(user,vuser->name);
-	*guest = False;
-	DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
-	ok = True;
+        if (password_ok(user2,password, pwlen, NULL)) {
+          ok = True;
+          fstrcpy(user,user2);
+          DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
+        }
       }
+      free(user_list);
+    }
+
+    /* check for a previously validated username/password pair */
+    if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE) &&
+        (vuser != 0) && !vuser->guest &&
+        user_ok(vuser->name,snum)) {
+      fstrcpy(user,vuser->name);
+      *guest = False;
+      DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
+      ok = True;
+    }
 
       /* check for a rhosts entry */
       if (!ok && user_ok(user,snum) && check_hosts_equiv(user)) {
