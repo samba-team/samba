@@ -617,7 +617,7 @@ typedef struct r_samr_open_domain_info
 
 } SAMR_R_OPEN_DOMAIN;
 
-#define MAX_SAM_ENTRIES 250
+#define MAX_SAM_ENTRIES 50
 
 typedef struct samr_entry_info
 {
