@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -155,5 +155,10 @@ krb5_error_code krb5_afslog __P((krb5_context, krb5_ccache,
 #define _PATH_THISCELL 		_PATH_VICE "ThisCell"
 #define _PATH_CELLSERVDB 	_PATH_VICE "CellServDB"
 #define _PATH_THESECELLS	_PATH_VICE "TheseCells"
+
+#define _PATH_ARLA_VICE		"/usr/arla/etc/"
+#define _PATH_ARLA_THISCELL	_PATH_ARLA_VICE "ThisCell"
+#define _PATH_ARLA_CELLSERVDB 	_PATH_ARLA_VICE "CellServDB"
+#define _PATH_ARLA_THESECELLS	_PATH_ARLA_VICE "TheseCells"
 
 #endif /* __KAFS_H */
