@@ -1,5 +1,8 @@
 1999-08-03  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am (n_fold_test_LDADD): need to set this
+ 	otherwise it doesn't build with shared libraries
+
 	* kdc/hpropd.c: v6-ify
 
 	* kdc/hprop.c: v6-ify
