@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,8 +49,13 @@ krb5_read_message (krb5_context context,
     u_int32_t len;
     u_int8_t buf[4];
 
-    if (krb5_net_read (context, p_fd, buf, 4) != 4)
+    ret = krb5_net_read (context, p_fd, buf, 4);
+    if(ret == -1)
 	return errno;
+    if(ret < 4) {
+	data->length = 0;
+	return 0;
+    }
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     ret = krb5_data_alloc (data, len);
     if (ret)
