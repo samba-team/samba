@@ -74,10 +74,18 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_creds creds;
     char my_hostname[128];
     char *server;
+    const char keytab_buf[256];
     
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_register");
+
+    if (keytab_str == NULL) {
+	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_kt_default_name");
+	keytab_str = keytab_buf;
+    }
 
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
@@ -305,7 +313,7 @@ receive_everything (krb5_context context, int *fd,
 static char *realm;
 static int version_flag;
 static int help_flag;
-static char *keytab_str = "HDB:";
+static char *keytab_str;
 
 static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
