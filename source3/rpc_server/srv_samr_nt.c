@@ -1219,7 +1219,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
     uint32 rid[MAX_SAM_ENTRIES];
     enum SID_NAME_USE type[MAX_SAM_ENTRIES];
     int i;
-    int num_rids = q_u->num_names1;
+    int num_rids = q_u->num_names2;
     DOM_SID pol_sid;
 
     r_u->status = NT_STATUS_NOPROBLEMO;
@@ -1238,8 +1238,6 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         num_rids = MAX_SAM_ENTRIES;
         DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
     }
-
-    SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
 
     for (i = 0; i < num_rids; i++) {
         fstring name;
