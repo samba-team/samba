@@ -177,6 +177,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
 	int num_sids;
+	const char *domain_name = domain->name; 
 
 	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;
@@ -184,7 +185,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!(hnd = cm_get_lsa_handle(domain->name)))
 		return NT_STATUS_UNSUCCESSFUL;
         
-	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, &name, 
+	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, 
+				      &domain_name, &name, 
 				      &sids, &types, &num_sids);
         
 	/* Return rid and type if lookup successful */        
@@ -207,6 +209,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	CLI_POLICY_HND *hnd;
+	char **domains;
 	char **names;
 	uint32 *types;
 	int num_names;
@@ -216,15 +219,20 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
         
 	status = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
-				     1, sid, &names, &types, 
+				     1, sid, &domains, &names, &types, 
 				     &num_names);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*type = types[0];
 		*name = names[0];
-		DEBUG(5,("Mapped sid to %s\n", *name));
-	}
+		DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 
+		/* Parinoia */
+		if (strcasecmp(domain->name, domains[0]) != 0) {
+			DEBUG(1, ("domain name from domain param and PDC lookup return differ! (%s vs %s)\n", domain->name, domains[0]));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
 	return status;
 }
 

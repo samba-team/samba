@@ -82,7 +82,6 @@ rid_name domain_group_rids[] =
 NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, uint32 **prids, DOM_SID *q_sid)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
-	char *sep;
 	struct sys_grent *glist;
 	struct sys_grent *grp;
 	int i, num, cur_rid=0;
@@ -93,6 +92,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	fstring str_domsid, str_qsid;
 	uint32 rid,grid;
 	uint32 *rids=NULL, *new_rids=NULL;
+	gid_t winbind_gid_low, winbind_gid_high;
 	BOOL ret;
 
 	/*
@@ -109,7 +109,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	*prids=NULL;
 	*numgroups=0;
 
-	sep = lp_winbind_separator();
+	lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
 
 
 	DEBUG(10,("get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 
@@ -158,7 +158,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		}
 
 		/* Don't return winbind groups as they are not local! */
-		if (strchr_m(map.nt_name, *sep) != NULL) {
+		if ((grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
 			DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name));
 			continue;
 		}
@@ -227,7 +227,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	}
 
 	/* Don't return winbind groups as they are not local! */
-	if (strchr_m(map.nt_name, *sep) != NULL) {
+	if ((gid >= winbind_gid_low) && (gid <= winbind_gid_high)) {
 		DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name ));
 		goto done;
 	}
@@ -271,7 +271,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	uint32 grid;
 	uint32 tmp_rid;
 
-	*numgroups=0;
+	*numgroups= 0;
 
 	fstrcpy(user_name, pdb_get_username(sam_pass));
 	grid=pdb_get_group_rid(sam_pass);

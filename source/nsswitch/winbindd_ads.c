@@ -366,22 +366,14 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	void *res = NULL;
 	char *exp;
 	uint32 t;
-	fstring name2, dom2, fullname2;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
-	/* sigh. Need to fix interface to give us a raw name */
-	fstrcpy(fullname2, name);
-	fstring_sub(fullname2, "\\", lp_winbind_separator());
-	if (!parse_domain_user(fullname2, dom2, name2)) {
-		goto done;
-	}
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	asprintf(&exp, "(sAMAccountName=%s)", name2);
+	asprintf(&exp, "(sAMAccountName=%s)", name);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (!ADS_ERR_OK(rc)) {
@@ -454,7 +446,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	}
 
 	s = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
-	*name = talloc_asprintf(mem_ctx, "%s%s%s", domain->name, lp_winbind_separator(), s);
+	*name = talloc_strdup(mem_ctx, s);
 	*type = ads_atype_map(atype);
 
 	status = NT_STATUS_OK;

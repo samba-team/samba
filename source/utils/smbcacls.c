@@ -106,6 +106,7 @@ static BOOL cacls_open_policy_hnd(void)
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
+	char **domains = NULL;
 	char **names = NULL;
 	uint32 *types = NULL;
 	int num_names;
@@ -117,15 +118,19 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, 
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  
+						 &pol, 1, sid, &domains, &names, 
 						 &types, &num_names)) ||
-	    !names || !names[0]) {
+	    !domains || !domains[0] || !names || !names[0]) {
 		return;
 	}
 
 	/* Converted OK */
+
+	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
+		 domains[0], lp_winbind_separator(),
+		 names[0]);
 	
-	fstrcpy(str, names[0]);
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -135,14 +140,18 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	DOM_SID *sids = NULL;
 	int num_sids;
 	BOOL result = True;
+	fstring name, domain;
 	
 	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
 	}
 
+	split_domain_name(str, domain, name);
+
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, 
-						 &sids, &types, &num_sids))) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, 
+						  (const char **)&domain, (const char **)&name, 
+						  &sids, &types, &num_sids))) {
 		result = False;
 		goto done;
 	}

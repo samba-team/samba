@@ -294,13 +294,6 @@ static BOOL wbinfo_lookupname(char *name)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
-	/*
-	 * Don't do the lookup if the name has no separator.
-	 */
- 
-	if (!strchr(name, get_winbind_separator()))
-		return False;
-
 	/* Send off request */
 
 	ZERO_STRUCT(request);
@@ -365,10 +358,6 @@ static BOOL wbinfo_auth_crap(char *username)
         fstring pass;
         char *p;
 
-	/*
-	 * Don't do the lookup if the name has no separator.
-	 */
- 
 	/* Send off request */
 
 	ZERO_STRUCT(request);

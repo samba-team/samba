@@ -280,7 +280,7 @@ struct sys_userlist *get_users_in_group(const char *gname)
 	 * pointless (and slow).
 	 */
 
-	if (strchr(gname,*lp_winbind_separator())) {
+	if (strchr(gname,*lp_winbind_separator()) || lp_winbind_use_default_domain()) {
 		if ((gptr = (struct group *)getgrnam(gname)) == NULL)
 			return NULL;
 		return add_members_to_userlist(list_head, gptr);
