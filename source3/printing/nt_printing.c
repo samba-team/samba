@@ -677,7 +677,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	
 
 	slprintf(key, sizeof(key), "%s%s",
-		 PRINTERS_PREFIX, info->portname);
+		 PRINTERS_PREFIX, info->sharename);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -686,10 +686,13 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
+	if (ret == -1)
+		DEBUG(8, ("error updating printer to tdb on disk\n"));
+
 	safe_free(buf);
 
-	DEBUG(8,("packed printer [%s] with printprocessor [%s] parameters=[%s] len=%d\n", 
-		 info->portname, info->printprocessor, info->parameters, len));
+	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n", 
+		 info->portname, info->drivername, info->portname, len));
 
 	return ret;
 }
@@ -974,17 +977,14 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.panningheight,
 			  &devmode.private);
 	
-	if (devmode.private) {
-		devmode.private = (uint8 *)malloc(devmode.driverextra);
-		if (!devmode.private) return 2;
-		len += tdb_unpack(buf+len, buflen-len, "B",
-				  devmode.driverextra,
-				  devmode.private);
-	}
+	if (devmode.private)		
+		len += tdb_unpack(buf+len, buflen-len, "B", &devmode.driverextra, &devmode.private);
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
-	DEBUG(8,("Unpacked devicemode [%s]\n", devmode.formname));
+	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
+	if (devmode.private)
+		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
 
 	return len;
 }
@@ -1128,8 +1128,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 
-	DEBUG(9,("Unpacked printprocessor for [%s] of [%s]\n",
-		 sharename, info.printprocessor));
+	DEBUG(9,("Unpacked printer [%s] running drier [%s]\n",
+		 sharename, info.drivername));
 
 	
 	return 0;	
@@ -1414,8 +1414,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 	
 	param=printer.info_2->specific;
 	
-	while (param != NULL && i <= param_index)
-	{
+	while (param != NULL && i < param_index) {
 		param=param->next;
 		i++;
 	}
@@ -1429,6 +1428,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 	*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
 	if(*data == NULL)
 		return False;
+	ZERO_STRUCTP(*data);
 	memcpy(*data, param->data, param->data_len);
 	*len=param->data_len;
 	return True;

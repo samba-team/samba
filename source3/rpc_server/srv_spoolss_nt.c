@@ -1796,9 +1796,10 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 
 	if (printer->info_2->devmode)
 		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
+#if 0 /* JFMTEST */
 	else
 		ntdevmode = construct_nt_devicemode(printer->info_2->printername);
-
+#endif
 	if (ntdevmode == NULL)
 		goto fail;
 
@@ -1914,8 +1915,12 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter->info_2->averageppm;			/* average pages per minute */
 			
-	if((printer->devmode = construct_dev_mode(snum, servername)) == NULL)
+	if((printer->devmode = construct_dev_mode(snum, servername)) == NULL) {
+		DEBUG(8, ("Returning NULL Devicemode!\n"));
+#if 0 /* JFMTEST */
 		goto err;
+#endif
+	}
 
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
 		/* steal the printer info sec_desc structure.  [badly done]. */
@@ -3045,7 +3050,8 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	result = NT_STATUS_NO_PROBLEMO;
 
 	/* Check calling user has permission to update printer description */ 
-	
+
+#if 1 /* JFMTEST */
 	if (!nt_printing_getsec(Printer->dev.printername, &sd)) {
 		DEBUG(3, ("Could not get security descriptor for printer %s",
 			  Printer->dev.printername));
@@ -3061,7 +3067,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 			  "descriptor\n"));
 		goto done;
 	}
-
+#endif
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
@@ -3596,9 +3602,9 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	
-	/* fill the buffer with the form structures */
+	/* fill the buffer with the driver structures */
 	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding form [%d] to buffer\n",i));
+		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
 	}
 
@@ -3653,6 +3659,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 		return enumprinterdrivers_level3(list, servername, architecture, buffer, offered, needed, returned);
 		break;
 	default:
+		*returned=0;
 		return ERROR_INVALID_LEVEL;
 		break;
 	}
@@ -4264,6 +4271,8 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
+	
+	ZERO_STRUCTP(*out_value);
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
 
 	*out_type=type;
@@ -4274,6 +4283,8 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
+	
+	ZERO_STRUCTP(*data_out);
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
 
