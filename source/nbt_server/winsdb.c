@@ -40,7 +40,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	const char *expr;
 	int i;
 
-	expr = talloc_asprintf(tmp_ctx, "dn=%s", nbt_name_string(tmp_ctx, name));
+	expr = talloc_asprintf(tmp_ctx, "dn=NAME=%s", nbt_name_string(tmp_ctx, name));
 	if (expr == NULL) goto failed;
 
 	/* find the record in the WINS database */
@@ -93,7 +93,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
-	msg->dn = nbt_name_string(msg, rec->name);
+	msg->dn = talloc_asprintf(msg, "NAME=%s", nbt_name_string(msg, rec->name));
 	if (msg->dn == NULL) goto failed;
 	ret |= ldb_msg_add_fmt(ldb, msg, "active", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(ldb, msg, "nbFlags", "0x%04x", rec->nb_flags);
