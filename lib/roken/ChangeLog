@@ -1,3 +1,15 @@
+2001-06-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getarg.c: Grog tries to figure out if to use mdoc.old instead of
+	mdoc by looking at some macros that were only present in the old
+	version, and by looking at the number of .Oo's present. In
+	mdoc.old .Oo was a toggle, but in mdoc it's closed by .Oc, so if
+	the number of .Oo's is bigger than the number of .Oc's, it figures
+	it must be mdoc.old. This doesn't however account for called Oc's,
+	and thus grog thinks that valid pages are mdoc.old when they
+	infact are mdoc. So let's make sure that Oc's are not called by
+	other macros.
+
 2001-05-29  Assar Westerlund  <assar@sics.se>
 
 	* base64-test.c (main): initialize numerr

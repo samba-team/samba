@@ -1,3 +1,7 @@
+2001-06-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* fix some manpages for broken mdoc.old grog test
+
 2001-05-28  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.conf.5: add [appdefaults]
@@ -30,6 +34,10 @@
 	* lib/krb5/keytab_krb4.c: add SRVTAB as an alias for krb4
 	* lib/krb5/codec.c: remove dead code
 
+2001-05-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/config.c: actually check the ticket addresses
+
 2001-05-15  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_error.c (krb5_error_from_rd_error): use correct
@@ -40,6 +48,10 @@
 	pass the current and relevant value.  update callers
 
 2001-05-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/verify_user.c: krb5_verify_user_opt
+
+	* lib/krb5/krb5.h: verify_opt
 
 	* kdc/kerberos5.c: pass context to krb5_domain_x500_decode
 
