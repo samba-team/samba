@@ -579,6 +579,12 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
         state->getgrent_state = NULL;
     }
 
+    /* Ensure we have enumerated all trusted domains */
+
+    if (!server_state.got_trusted_domains) {
+        server_state.got_trusted_domains = get_trusted_domains();
+    }
+
     /* Create sam pipes for each domain we know about */
 
     for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
