@@ -37,7 +37,7 @@ struct smbcli_composite {
 	uint16_t stage;
 
 	/* the currently running sub-request */
-	struct smbcli_request *req;
+	void *req;
 
 	/* the current requests parameter block */
 	void *req_parms;
@@ -50,6 +50,9 @@ struct smbcli_composite {
 
 	/* status code when finished */
 	NTSTATUS status;
+
+	/* the event context we are using */
+	struct event_context *event_ctx;
 
 	/* information on what to do on completion */
 	struct {

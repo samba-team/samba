@@ -44,6 +44,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
 	union smb_close *io_close;
+	struct smbcli_request *req = c->req;
 
 	/* nothing to write, setup the close */
 	io_close = talloc(c, union smb_close);
@@ -53,14 +54,15 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	io_close->close.in.fnum = fnum;
 	io_close->close.in.write_time = 0;
 
-	c->req = smb_raw_close_send(tree, io_close);
-	NT_STATUS_HAVE_NO_MEMORY(c->req);
+	req = smb_raw_close_send(tree, io_close);
+	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	/* call the handler again when the close is done */
 	c->stage = SAVEFILE_CLOSE;
-	c->req->async.fn = savefile_handler;
-	c->req->async.private = c;
+	req->async.fn = savefile_handler;
+	req->async.private = c;
 	c->req_parms = io_close;
+	c->req = req;
 
 	return NT_STATUS_OK;
 }
@@ -73,7 +75,8 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 			      struct smb_composite_savefile *io)
 {
 	union smb_open *io_open = c->req_parms;
-	struct smbcli_tree *tree = c->req->tree;
+	struct smbcli_request *req = c->req;
+	struct smbcli_tree *tree = req->tree;
 	union smb_write *io_write;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
@@ -97,14 +100,15 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 	io_write->writex.in.count     = MIN(max_xmit - 100, io->in.size);
 	io_write->writex.in.data      = io->in.data;
 
-	c->req = smb_raw_write_send(tree, io_write);
-	NT_STATUS_HAVE_NO_MEMORY(c->req);
+	req = smb_raw_write_send(tree, io_write);
+	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	/* call the handler again when the first write is done */
 	c->stage = SAVEFILE_WRITE;
-	c->req->async.fn = savefile_handler;
-	c->req->async.private = c;
+	req->async.fn = savefile_handler;
+	req->async.private = c;
 	c->req_parms = io_write;
+	c->req = req;
 	talloc_free(io_open);
 
 	return NT_STATUS_OK;
@@ -119,7 +123,8 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 			      struct smb_composite_savefile *io)
 {
 	union smb_write *io_write = c->req_parms;
-	struct smbcli_tree *tree = c->req->tree;
+	struct smbcli_request *req = c->req;
+	struct smbcli_tree *tree = req->tree;
 	struct savefile_state *state = c->private;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
@@ -140,12 +145,13 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 	io_write->writex.in.count = MIN(max_xmit - 100, io->in.size - state->total_written);
 	io_write->writex.in.data = io->in.data + state->total_written;
 
-	c->req = smb_raw_write_send(tree, io_write);
-	NT_STATUS_HAVE_NO_MEMORY(c->req);
+	req = smb_raw_write_send(tree, io_write);
+	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	/* call the handler again when the write is done */
-	c->req->async.fn = savefile_handler;
-	c->req->async.private = c;
+	req->async.fn = savefile_handler;
+	req->async.private = c;
+	c->req = req;
 
 	return NT_STATUS_OK;
 }
@@ -217,6 +223,7 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 	struct smbcli_composite *c;
 	union smb_open *io_open;
 	struct savefile_state *state;
+	struct smbcli_request *req;
 
 	c = talloc_zero(tree, struct smbcli_composite);
 	if (c == NULL) goto failed;
@@ -224,6 +231,7 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 	c->state = SMBCLI_REQUEST_SEND;
 	c->stage = SAVEFILE_OPEN;
 	c->composite_parms = io;
+	c->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(c, struct savefile_state);
 	if (state == NULL) goto failed;
@@ -244,14 +252,15 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 	io_open->ntcreatex.in.fname            = io->in.fname;
 
 	/* send the open on its way */
-	c->req = smb_raw_open_send(tree, io_open);
-	if (c->req == NULL) goto failed;
+	req = smb_raw_open_send(tree, io_open);
+	if (req == NULL) goto failed;
 
 	/* setup the callback handler */
-	c->req->async.fn = savefile_handler;
-	c->req->async.private = c;
+	req->async.fn = savefile_handler;
+	req->async.private = c;
 	c->req_parms = io_open;
 	c->private = state;
+	c->req = req;
 
 	return c;
 
