@@ -95,16 +95,20 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
-void iface_set_default(char *ip,char *bcast,char *nmask);
 BOOL ismyip(struct in_addr ip);
 BOOL is_local_net(struct in_addr from);
 int iface_count(void);
 BOOL we_are_multihomed(void);
 struct interface *get_interface(int n);
 struct in_addr *iface_n_ip(int n);
+struct in_addr *iface_n_bcast(int n);
 unsigned iface_hash(void);
 struct in_addr *iface_bcast(struct in_addr ip);
 struct in_addr *iface_ip(struct in_addr ip);
+
+/*The following definitions come from  lib/interfaces.c  */
+
+int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
 
 /*The following definitions come from  lib/kanji.c  */
 
@@ -115,10 +119,6 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
-
-/*The following definitions come from  lib/netmask.c  */
-
-int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
 
 /*The following definitions come from  lib/pidfile.c  */
 

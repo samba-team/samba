@@ -18,6 +18,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef gid_t
 
+/* Define if your system has a working fnmatch function.  */
+#undef HAVE_FNMATCH
+
 /* Define if you have a working `mmap' system call.  */
 #undef HAVE_MMAP
 
@@ -103,7 +106,6 @@
 #undef HAVE_TRAPDOOR_UID
 #undef HAVE_ROOT
 #undef HAVE_UNION_SEMUN
-#undef HAVE_NETMASK_IFCONF
 #undef HAVE_GETTIMEOFDAY_TZ
 #undef HAVE_SOCK_SIN_LEN
 #undef STAT_READ_FILSYS
@@ -114,8 +116,9 @@
 #undef STAT_STATFS4
 #undef STAT_STATVFS
 #undef STAT_STATVFS64
-#undef HAVE_NETMASK_IFREQ
-#undef HAVE_NETMASK_AIX
+#undef HAVE_IFACE_AIX
+#undef HAVE_IFACE_IFCONF
+#undef HAVE_IFACE_IFREQ
 #undef HAVE_CRYPT
 #undef HAVE_PUTPRPWNAM
 #undef HAVE_SET_AUTH_PARAMETERS
@@ -170,6 +173,7 @@
 #undef HAVE_EXPLICIT_LARGEFILE_SUPPORT
 #undef USE_BOTH_CRYPT_CALLS
 #undef HAVE_BROKEN_FCNTL64_LOCKS
+#undef HAVE_FNMATCH
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

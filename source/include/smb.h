@@ -713,7 +713,7 @@ struct server_info_struct
 /* used for network interfaces */
 struct interface
 {
-	struct interface *next;
+	struct interface *next, *prev;
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
