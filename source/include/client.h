@@ -124,6 +124,8 @@ struct cli_state {
 	fstring clnt_name_slash;           /* \\local client. */
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
+	vuser_key key;
+	uint32 ntlmssp_flags;
 
 	BOOL use_oplocks; /* should we use oplocks? */
 };

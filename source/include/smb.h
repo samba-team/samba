@@ -363,10 +363,20 @@ struct sam_disp_info
 	char *full_name;    /* user's full name string */
 };
 
+typedef struct
+{
+        uint32 pid;
+        uint16 vuid;
+
+}
+vuser_key;
+
+
 struct use_info
 {
 	BOOL connected;
 	char *srv_name;
+	vuser_key key;
 	char *user_name;
 	char *domain;
 };
@@ -1647,6 +1657,31 @@ struct ntdom_info
 
 	int max_recv_frag;
 	int max_xmit_frag;
+
+	vuser_key key;
+};
+
+struct msrpc_local
+{
+        fstring pipe_name;
+        struct ntdom_info nt;
+#if 0
+        cli_auth_fns *auth;
+        void *auth_info;
+#endif
+
+        int fd;
+        BOOL initialised;
+        char *inbuf;
+        char *outbuf;
+};
+
+struct ncacn_np
+{
+        fstring pipe_name;
+        struct cli_state *smb;
+        uint16 fnum;
+        BOOL initialised;
 };
 
 #include "rpc_creds.h"
