@@ -38,13 +38,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		flags |= O_NOFOLLOW;
 #endif
 
-	fd = VFS_OPEN(conn,fname,flags,mode);
+	fd = SMB_VFS_OPEN(conn,fname,flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr_m(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = VFS_OPEN(conn,fname,flags,mode);
+		fd = SMB_VFS_OPEN(conn,fname,flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
@@ -186,9 +186,9 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		int ret;
 
 		if (fsp->fd == -1)
-			ret = VFS_STAT(conn, fname, psbuf);
+			ret = SMB_VFS_STAT(conn, fname, psbuf);
 		else {
-			ret = VFS_FSTAT(fsp,fsp->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp,fsp->fd,psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1)
 				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
@@ -259,7 +259,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 		unix_ERR_ntstatus = dos_to_ntstatus(ERRDOS, ERRlock);
 		return -1;
 	} else {
-		return VFS_FTRUNCATE(fsp,fsp->fd,0); 
+		return SMB_VFS_FTRUNCATE(fsp,fsp->fd,0); 
 	}
 }
 
@@ -1071,7 +1071,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/*
 		 * We are modifing the file after open - update the stat struct..
 		 */
-		if ((truncate_unless_locked(conn,fsp) == -1) || (VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
+		if ((truncate_unless_locked(conn,fsp) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1150,7 +1150,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 
-		if (VFS_FCHMOD_ACL(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
+		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */
 
 	} else if (new_mode) {
@@ -1161,7 +1161,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		{
 			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
-			ret = VFS_FCHMOD_ACL(fsp, fsp->fd, new_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, new_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
@@ -1172,7 +1172,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			}
 		}
 
-		if ((ret == -1) && (VFS_FCHMOD(fsp, fsp->fd, new_mode) == -1))
+		if ((ret == -1) && (SMB_VFS_FCHMOD(fsp, fsp->fd, new_mode) == -1))
 			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
 				fname, (int)new_mode));
 	}
@@ -1285,7 +1285,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				return NULL;
 			}
 
-			if(VFS_STAT(conn,fname, psbuf) != 0) {
+			if(SMB_VFS_STAT(conn,fname, psbuf) != 0) {
 				file_free(fsp);
 				return NULL;
 			}

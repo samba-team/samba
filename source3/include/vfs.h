@@ -393,14 +393,14 @@ typedef struct vfs_handle_struct {
 } vfs_handle_struct;
 
 
-#define VFS_HANDLE_GET_DATA(handle, datap, type, ret) { \
+#define SMB_VFS_HANDLE_GET_DATA(handle, datap, type, ret) { \
 	if (!(handle)||((datap=(type *)(handle)->data)==NULL)) { \
 		DEBUG(0,("%s() failed to get vfs_handle->data!\n",FUNCTION_MACRO)); \
 		ret; \
 	} \
 }
 
-#define VFS_HANDLE_SET_DATA(handle, datap, free_fn, type, ret) { \
+#define SMB_VFS_HANDLE_SET_DATA(handle, datap, free_fn, type, ret) { \
 	if (!(handle)) { \
 		DEBUG(0,("%s() failed to set handle->data!\n",FUNCTION_MACRO)); \
 		ret; \
@@ -413,13 +413,13 @@ typedef struct vfs_handle_struct {
 	} \
 }
 
-#define VFS_HANDLE_FREE_DATA(handle) { \
+#define SMB_VFS_HANDLE_FREE_DATA(handle) { \
 	if ((handle) && (handle)->free_data) { \
 		(handle)->free_data(&(handle)->data); \
 	} \
 }
 
-#define VFS_OP(x) ((void *) x)
+#define SMB_VFS_OP(x) ((void *) x)
 
 
 #include "vfs_macros.h"

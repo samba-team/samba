@@ -551,12 +551,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			pstrcat(pathreal,dname);
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
-				if (VFS_LSTAT(conn,pathreal,&sbuf) != 0) {
+				if (SMB_VFS_LSTAT(conn,pathreal,&sbuf) != 0) {
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					continue;
 				}
-			} else if (VFS_STAT(conn,pathreal,&sbuf) != 0) {
+			} else if (SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
 
 				/* Needed to show the msdfs symlinks as 
 				 * directories */
@@ -1324,7 +1324,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-	if(VFS_STAT(conn,".",&st)!=0) {
+	if(SMB_VFS_STAT(conn,".",&st)!=0) {
 		DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
@@ -1341,7 +1341,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		{
 			SMB_BIG_UINT dfree,dsize,bsize;
 			data_len = 18;
-			VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);	
+			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);	
 			SIVAL(pdata,l1_idFileSystem,st.st_dev);
 			SIVAL(pdata,l1_cSectorUnit,bsize/512);
 			SIVAL(pdata,l1_cUnit,dsize);
@@ -1416,7 +1416,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1446,7 +1446,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1793,13 +1793,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		  
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (VFS_LSTAT(conn,fname,&sbuf)) {
-					DEBUG(3,("call_trans2qfilepathinfo: VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
+					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
 					set_bad_path_error(errno, bad_path);
 					return(UNIXERROR(ERRDOS,ERRbadpath));
 				}
-			} else if (!VALID_STAT(sbuf) && VFS_STAT(conn,fname,&sbuf)) {
-				DEBUG(3,("call_trans2qfilepathinfo: VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
+				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
@@ -1812,11 +1812,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			if (VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
-			if((pos = VFS_LSEEK(fsp,fsp->fd,0,SEEK_CUR)) == -1)
+			if((pos = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_CUR)) == -1)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 			delete_pending = fsp->delete_on_close;
@@ -1843,13 +1843,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
-			if (VFS_LSTAT(conn,fname,&sbuf)) {
-				DEBUG(3,("call_trans2qfilepathinfo: VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
+				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
 				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
-		} else if (!VALID_STAT(sbuf) && VFS_STAT(conn,fname,&sbuf)) {
-			DEBUG(3,("call_trans2qfilepathinfo: VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
+			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
@@ -2242,7 +2242,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 #else
 				return(UNIXERROR(ERRDOS,ERRbadlink));
 #endif
-				len = VFS_READLINK(conn,fullpathname, buffer, sizeof(pstring)-1);     /* read link */
+				len = SMB_VFS_READLINK(conn,fullpathname, buffer, sizeof(pstring)-1);     /* read link */
 				if (len == -1)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				buffer[len] = 0;
@@ -2366,7 +2366,7 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 		pstrcpy(link_dest, "./");
 	}
 		
-	if (VFS_REALPATH(conn,link_dest,resolved_name) == NULL)
+	if (SMB_VFS_REALPATH(conn,link_dest,resolved_name) == NULL)
 		return -1;
 
 	pstrcpy(link_dest, resolved_name);
@@ -2463,7 +2463,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			pstrcpy(fname, fsp->fsp_name);
 			fd = fsp->fd;
 
-			if (VFS_FSTAT(fsp,fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp,fd,&sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
@@ -2655,7 +2655,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					if (new_fsp == NULL)
 						return(UNIXERROR(ERRDOS,ERRbadpath));
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
-					if (VFS_FSTAT(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
+					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
 						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
 									new_fsp->fnum, strerror(errno)));
 						ret = -1;
@@ -2663,7 +2663,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					close_file(new_fsp,True);
 				} else {
 					ret = vfs_allocate_file_space(fsp, allocation_size);
-					if (VFS_FSTAT(fsp,fd,&new_sbuf) != 0) {
+					if (SMB_VFS_FSTAT(fsp,fd,&new_sbuf) != 0) {
 						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
 									fsp->fnum, strerror(errno)));
 						ret = -1;
@@ -2803,7 +2803,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 0%o for file %s\n", (double)dev, unixmode, fname ));
 
 				/* Ok - do the mknod. */
-				if (VFS_MKNOD(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
+				if (SMB_VFS_MKNOD(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 				inherit_access_acl(conn, fname, unixmode);
@@ -2822,7 +2822,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (raw_unixmode != SMB_MODE_NO_CHANGE) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
 					(unsigned int)unixmode, fname ));
-				if (VFS_CHMOD(conn,fname,unixmode) != 0)
+				if (SMB_VFS_CHMOD(conn,fname,unixmode) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 
@@ -2833,7 +2833,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) && (sbuf.st_uid != set_owner)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing owner %u for file %s\n",
 					(unsigned int)set_owner, fname ));
-				if (VFS_CHOWN(conn,fname,set_owner, (gid_t)-1) != 0)
+				if (SMB_VFS_CHOWN(conn,fname,set_owner, (gid_t)-1) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 
@@ -2844,7 +2844,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) && (sbuf.st_gid != set_grp)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing group %u for file %s\n",
 					(unsigned int)set_owner, fname ));
-				if (VFS_CHOWN(conn,fname,(uid_t)-1, set_grp) != 0)
+				if (SMB_VFS_CHOWN(conn,fname,(uid_t)-1, set_grp) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 			break;
@@ -2871,7 +2871,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 				fname, link_dest ));
 
-			if (VFS_SYMLINK(conn,link_dest,fname) != 0)
+			if (SMB_VFS_SYMLINK(conn,link_dest,fname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
@@ -2896,7 +2896,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 				fname, link_dest ));
 
-			if (VFS_LINK(conn,link_dest,fname) != 0)
+			if (SMB_VFS_LINK(conn,link_dest,fname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);

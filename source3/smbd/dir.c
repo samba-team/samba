@@ -643,7 +643,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 			pstrcpy(pathreal,path);
 			pstrcat(path,fname);
 			pstrcat(pathreal,dname);
-			if (VFS_STAT(conn, pathreal, &sbuf) != 0) {
+			if (SMB_VFS_STAT(conn, pathreal, &sbuf) != 0) {
 				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
 				continue;
 			}
@@ -700,7 +700,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		return True;
 
 	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (VFS_STAT(conn, name, pst) != 0))
+	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
 		return False;
 
 	/* Pseudo-open the file (note - no fd's created). */
@@ -715,7 +715,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
 	close_file(fsp, True);
 
 	/* No access if SD get failed. */
@@ -753,7 +753,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return True;
 
 	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (VFS_STAT(conn, name, pst) != 0))
+	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
 		return False;
 
 	/* Pseudo-open the file (note - no fd's created). */
@@ -768,7 +768,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
 	close_file(fsp, False);
 
 	/* No access if SD get failed. */
@@ -794,7 +794,7 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 		return True;
 
 	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (VFS_STAT(conn, name, pst) != 0))
+	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
 		return True;
 
 	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
@@ -811,7 +811,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 {
 	Dir *dirp;
 	const char *n;
-	DIR *p = VFS_OPENDIR(conn,name);
+	DIR *p = SMB_VFS_OPENDIR(conn,name);
 	int used=0;
 
 	if (!p)
@@ -819,7 +819,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 	dirp = (Dir *)malloc(sizeof(Dir));
 	if (!dirp) {
 		DEBUG(0,("Out of memory in OpenDir\n"));
-		VFS_CLOSEDIR(conn,p);
+		SMB_VFS_CLOSEDIR(conn,p);
 		return(NULL);
 	}
 	dirp->pos = dirp->numentries = dirp->mallocsize = 0;
@@ -912,7 +912,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 		dirp->numentries++;
 	}
 
-	VFS_CLOSEDIR(conn,p);
+	SMB_VFS_CLOSEDIR(conn,p);
 	return((void *)dirp);
 }
 
