@@ -1,3 +1,7 @@
+2002-11-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rsh_locl.h: bump COMMAND_SZ to NCARGS+1
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.c: free some memory
