@@ -86,7 +86,7 @@ struct dcerpc_interface_call {
 
 struct dcerpc_endpoint_list {
 	uint32 count;
-	const char **names;
+	const char * const *names;
 };
 
 struct dcerpc_interface_table {
