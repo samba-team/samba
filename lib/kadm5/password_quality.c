@@ -57,8 +57,6 @@ typedef const char* (*passwd_quality_check_func)(krb5_context,
 static passwd_quality_check_func passwd_quality_check = simple_passwd_quality;
 
 #ifdef HAVE_DLOPEN
-extern const char *check_library;
-extern const char *check_function;
 
 #define PASSWD_VERSION 0
 
