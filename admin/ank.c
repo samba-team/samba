@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static void
-doit(const char *principal)
+doit(const char *principal, int (*func)(hdb_entry *))
 {
     hdb_entry ent;
     krb5_error_code ret;
@@ -70,7 +70,7 @@ doit(const char *principal)
     }
     init_entry (db, &ent);
     edit_entry (&ent);
-    if(set_password (&ent))
+    if((*func)(&ent))
 	goto cleanup;
     set_created_by (&ent);
     
@@ -91,6 +91,18 @@ add_new_key(int argc, char **argv)
 	return 0;
     }
 
-    doit(argv[1]);
+    doit(argv[1], set_password);
+    return 0;
+}
+
+int
+add_random_key(int argc, char **argv)
+{
+    if(argc != 2) {
+	krb5_warnx(context, "Usage: add_random_key principal");
+	return 0;
+    }
+
+    doit(argv[1], set_random_key);
     return 0;
 }
