@@ -928,7 +928,7 @@ BOOL cli_open_sockets(int port )
 
   if (!have_ip)
     {
-      if(!resolve_name( host, &dest_ip))
+      if(!resolve_name( host, &dest_ip, 0x20))
       {
 	  DEBUG(0,("cli_open_sockets: Unknown host %s.\n",host));
 	  return False;

@@ -484,7 +484,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
     return False;
   }
 
-  if(!resolve_name( remote_machine, &cli.dest_ip)) {
+  if(!resolve_name( remote_machine, &cli.dest_ip, 0x20)) {
     DEBUG(0,("modify_trust_password: Can't resolve address for %s\n", remote_machine));
     return False;
   }

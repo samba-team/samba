@@ -945,7 +945,7 @@ struct cli_state *server_cryptkey(void)
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
-                if(!resolve_name( desthost, &dest_ip)) {
+                if(!resolve_name( desthost, &dest_ip, 0x20)) {
                         DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
                         continue;
                 }
@@ -1232,7 +1232,7 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
     standard_sub_basic(remote_machine);
     strupper(remote_machine);
  
-    if(!resolve_name( remote_machine, &dest_ip)) {
+    if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
       DEBUG(1,("domain_client_validate: Can't resolve address for %s\n", remote_machine));
       continue;
     }   
