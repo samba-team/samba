@@ -261,10 +261,10 @@
 	<title>LIMITATIONS</title>
 	<para>On some systems <command>smbd</command> cannot change uid back 
 	to root after a setuid() call.  Such systems are called 
-	&quot;trapdoor&quot; uid systems. If you have such a system, 
+	trapdoor uid systems. If you have such a system, 
 	you will be unable to connect from a client (such as a PC) as 
 	two different users at once. Attempts to connect the
-	second user will result in &quot;access denied&quot; or 
+	second user will result in access denied or 
 	similar.</para>
 </refsect1>
 
@@ -276,7 +276,7 @@
 		<term>PRINTER</term>
 		<listitem><para>If no printer name is specified to 
 		printable services, most systems will use the value of 
-		this variable (or &quot;lp&quot; if this variable is 
+		this variable (or lp if this variable is 
 		not defined) as the name of the printer to use. This 
 		is not specific to the server, however.</para></listitem>
 		</varlistentry>
@@ -471,9 +471,9 @@
 	<command>inetd</command> will reread their configuration
 	tables if they receive a HUP signal.</para>
 
-	<para>If your machine's name is &quot;fred&quot; and your 
-	name is &quot;mary&quot;, you should now be able to connect 
-	to the service <filename>&bsol;&bsol;fred&bsol;mary</filename>.
+	<para>If your machine's name is fred and your 
+	name is mary, you should now be able to connect 
+	to the service <filename>\\fred\mary</filename>.
 	</para>
 
 	<para>To properly test and experiment with the server, we 
