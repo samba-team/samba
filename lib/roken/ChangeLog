@@ -1,3 +1,7 @@
+2003-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c: number-of fields no longer stored in network order
+	
 2003-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c: remove depency on c99 types in resolv.h
