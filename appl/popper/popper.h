@@ -96,11 +96,6 @@
 #define   K_LOCK_UN   LOCK_UN         /* Unlock */
 #endif
 
-#ifndef TRUE
-#define TRUE            1
-#define FALSE           0
-#endif
-
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
 #define MAXLINELEN      1024
