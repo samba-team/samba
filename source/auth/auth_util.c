@@ -531,50 +531,6 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	return nt_status;
 }
 
-/****************************************************************************
- Create the SID list for this user.
-****************************************************************************/
-
-struct nt_user_token *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
-{
-	DOM_SID user_sid;
-	DOM_SID group_sid;
-	DOM_SID *group_sids;
-	NT_USER_TOKEN *token;
-	int i;
-
-	if (!uid_to_sid(&user_sid, uid)) {
-		return NULL;
-	}
-	if (!gid_to_sid(&group_sid, gid)) {
-		return NULL;
-	}
-
-	group_sids = malloc(sizeof(DOM_SID) * ngroups);
-	if (!group_sids) {
-		DEBUG(0, ("create_nt_token: malloc() failed for DOM_SID list!\n"));
-		return NULL;
-	}
-
-	for (i = 0; i < ngroups; i++) {
-		if (!gid_to_sid(&(group_sids)[i], (groups)[i])) {
-			DEBUG(1, ("create_nt_token: failed to convert gid %ld to a sid!\n", (long int)groups[i]));
-			SAFE_FREE(group_sids);
-			return NULL;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(create_nt_user_token(&user_sid, &group_sid, 
-						  ngroups, group_sids, is_guest, &token))) {
-		SAFE_FREE(group_sids);
-		return NULL;
-	}
-
-	SAFE_FREE(group_sids);
-
-	return token;
-}
-
 /***************************************************************************
  Make a user_info struct
 ***************************************************************************/

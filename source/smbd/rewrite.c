@@ -59,19 +59,6 @@ BOOL share_access_check(struct request_context *req, struct tcon_context *conn, 
 BOOL init_names(void)
 { return True; }
 
-BOOL uid_to_sid(DOM_SID *sid, uid_t uid)
-{
-	ZERO_STRUCTP(sid);
-	return True;
-}
-
-BOOL gid_to_sid(DOM_SID *sid, gid_t gid)
-{
-	ZERO_STRUCTP(sid);
-	return True;
-}
-
-
 BOOL become_user_permanently(uid_t uid, gid_t gid)
 { return True; }
 
