@@ -358,8 +358,16 @@ pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
 
 -- checksumtypes
 
-CRC32 			INTEGER ::= 1 -- 
-rsa-md4 		INTEGER ::= 2 --
+CRC32 			INTEGER ::= 1
+rsa-md4 		INTEGER ::= 2
+rsa-md4-des		INTEGER ::= 3
+des-mac			INTEGER ::= 4
+des-mac-k 		INTEGER ::= 5
+rsa-md4-des-k		INTEGER ::= 6
+rsa-md5			INTEGER ::= 7
+rsa-md5-des		INTEGER ::= 8
+rsa-md5-des3		INTEGER ::= 9
+hmac-sha1-des3		INTEGER ::= 10 -- should this be 12?
 
 -- transited encodings
 
