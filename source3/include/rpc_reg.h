@@ -442,10 +442,10 @@ typedef struct q_reg_info_info
 typedef struct r_reg_info_info
 { 
 	uint32 ptr_type;            /* buffer pointer */
-	uint32 type;          /* 0x1 - info level? */
+	uint32 *type;          /* 0x1 - info level? */
 
 	uint32 ptr_uni_type;       /* pointer to o/s type */
-	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
+	BUFFER2 *uni_type;      /* unicode string o/s type - "LanmanNT" */
 
 	uint32 ptr_max_len;    /* pointer to unknown_0 */
 	uint32 buf_max_len;    /* 0x12 */

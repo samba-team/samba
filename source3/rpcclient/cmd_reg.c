@@ -97,24 +97,6 @@ static void reg_display_key(int val, const char *full_keyname, int num)
 	}
 }
 
-static void reg_display_key_info(const char *full_name,
-				const char *name, time_t key_mod_time)
-{
-	display_reg_key_info(out_hnd, ACTION_HEADER   , name, key_mod_time);
-	display_reg_key_info(out_hnd, ACTION_ENUMERATE, name, key_mod_time);
-	display_reg_key_info(out_hnd, ACTION_FOOTER   , name, key_mod_time);
-}
-
-static void reg_display_val_info(const char *full_name,
-				const char* name,
-				uint32 type,
-				const BUFFER2 *const value)
-{
-	display_reg_value_info(out_hnd, ACTION_HEADER   , name, type, value);
-	display_reg_value_info(out_hnd, ACTION_ENUMERATE, name, type, value);
-	display_reg_value_info(out_hnd, ACTION_FOOTER   , name, type, value);
-}
-
 
 /****************************************************************************
 nt registry enum
@@ -283,6 +265,24 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 	return res1;
 }
 
+static void reg_display_key_info(const char *full_name,
+				const char *name, time_t key_mod_time)
+{
+	display_reg_key_info(out_hnd, ACTION_HEADER   , name, key_mod_time);
+	display_reg_key_info(out_hnd, ACTION_ENUMERATE, name, key_mod_time);
+	display_reg_key_info(out_hnd, ACTION_FOOTER   , name, key_mod_time);
+}
+
+static void reg_display_val_info(const char *full_name,
+				const char* name,
+				uint32 type,
+				const BUFFER2 *const value)
+{
+	display_reg_value_info(out_hnd, ACTION_HEADER   , name, type, value);
+	display_reg_value_info(out_hnd, ACTION_ENUMERATE, name, type, value);
+	display_reg_value_info(out_hnd, ACTION_FOOTER   , name, type, value);
+}
+
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
@@ -325,9 +325,9 @@ void cmd_reg_query_info(struct client_info *info)
 	 * query value info
 	 */
 
-	fstring type;
+	BUFFER2 buf;
+	uint32 type;
 
-	type[0] = 0;
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
@@ -364,11 +364,11 @@ void cmd_reg_query_info(struct client_info *info)
 
 	/* query it */
 	res1 = res1 ? do_reg_query_info(smb_cli, fnum, &key_pol,
-	                        val_name, type) : False;
+	                        val_name, &type, &buf) : False;
 
 	if (res1)
 	{
-		report(out_hnd, "type:\t%s\n", type);
+		reg_display_val_info(full_keyname, val_name, type, &buf);
 	}
 
 	/* close the handles */
