@@ -909,6 +909,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#ADDMACHINESCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>add machine script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#ALLOWTRUSTEDDOMAINS"
 ><TT
 CLASS="PARAMETER"
@@ -2855,7 +2867,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN922"
+NAME="AEN926"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4262,7 +4274,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1390"
+NAME="AEN1394"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4275,10 +4287,13 @@ CLASS="VARIABLELIST"
 ><A
 NAME="ABORTSHUTDOWNSCRIPT"
 ></A
->abort shutdown script (G) - ONLY IN HEAD</DT
+>abort shutdown script (G)</DT
 ><DD
 ><P
->This a full path name to a script called by
+><EM
+>This parameter only exists in the HEAD cvs branch</EM
+>
+		This a full path name to a script called by
 		<A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -4614,6 +4629,37 @@ CLASS="PARAMETER"
 >Example: <B
 CLASS="COMMAND"
 >add share command = /usr/local/bin/addshare</B
+></P
+></DD
+><DT
+><A
+NAME="ADDMACHINESCRIPT"
+></A
+>add machine script (G)</DT
+><DD
+><P
+>This is the full pathname to a script that will 
+		be run by <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+>  when a machine is added
+                to it's domain using the administrator username and password method. </P
+><P
+>This option is only required when using sam back-ends tied to the
+                Unix uid method of RID calculation such as smbpasswd.  This option is only
+                available in Samba 3.0.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>add machine script = &#60;empty string&#62;
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
+                </B
 ></P
 ></DD
 ><DT
@@ -9421,12 +9467,9 @@ CLASS="COMMAND"
 >This parameter defaults to <TT
 CLASS="CONSTANT"
 >on</TT
-> on systems 
-		that have the support, and <TT
-CLASS="CONSTANT"
->off</TT
-> on systems that 
-		don't. You should never need to touch this parameter.</P
+>, but is translated
+		to a no-op on systems that no not have the necessary kernel support.
+		You should never need to touch this parameter.</P
 ><P
 >See also the <A
 HREF="#OPLOCKS"
@@ -15888,10 +15931,13 @@ CLASS="COMMAND"
 ><A
 NAME="SHUTDOWNSCRIPT"
 ></A
->shutdown script (G) - ONLY IN HEAD</DT
+>shutdown script (G)</DT
 ><DD
 ><P
->This a full path name to a script called by
+><EM
+>This parameter only exists in the HEAD cvs branch</EM
+>
+		This a full path name to a script called by
 		<A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -18743,7 +18789,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5913"
+NAME="AEN5929"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18773,7 +18819,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5919"
+NAME="AEN5935"
 ></A
 ><H2
 >VERSION</H2
@@ -18784,7 +18830,7 @@ NAME="AEN5919"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5922"
+NAME="AEN5938"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18863,7 +18909,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5942"
+NAME="AEN5958"
 ></A
 ><H2
 >AUTHOR</H2

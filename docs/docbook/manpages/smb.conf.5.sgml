@@ -890,10 +890,12 @@
 	<variablelist>
 
 		<varlistentry>
-		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G) - ONLY IN HEAD</term>
-		<listitem><para>This a full path name to a script called by
+		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G)</term>
+		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+		This a full path name to a script called by
 		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>  that
-		should stop a shutdown procedure issued by the <link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
+		should stop a shutdown procedure issued by the <link 
+		linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
 		
 		<para>This command will be run as user.</para>
 
@@ -3336,9 +3338,9 @@
 		SMB/CIFS, NFS and local file access (and is a <emphasis>very</emphasis> 
 		cool feature :-).</para>
 
-		<para>This parameter defaults to <constant>on</constant> on systems 
-		that have the support, and <constant>off</constant> on systems that 
-		don't. You should never need to touch this parameter.</para>
+		<para>This parameter defaults to <constant>on</constant>, but is translated
+		to a no-op on systems that no not have the necessary kernel support.
+		You should never need to touch this parameter.</para>
 
 		<para>See also the <link linkend="OPLOCKS"><parameter>oplocks</parameter>
 		</link> and <link linkend="LEVEL2OPLOCKS"><parameter>level2 oplocks
@@ -6600,8 +6602,9 @@
 
 
 		<varlistentry>
-		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G) - ONLY IN HEAD</term>
-		<listitem><para>This a full path name to a script called by
+		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G)</term>
+		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+		This a full path name to a script called by
 		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> that
 		should start a shutdown procedure.</para>
 

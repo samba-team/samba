@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "13 September 2001" "" ""
+.TH "SMB.CONF" "5" "17 September 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -513,6 +513,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIadd user script\fR
+.TP 0.2i
+\(bu
+\fIadd machine script\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -1353,7 +1356,8 @@ each parameter for details. Note that some are synonyms.
 \fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
 .TP
-\fBabort shutdown script (G) - ONLY IN HEAD\fR
+\fBabort shutdown script (G)\fR
+\fBThis parameter only exists in the HEAD cvs branch\fR
 This a full path name to a script called by
 \fBsmbd(8)\fRthat
 should stop a shutdown procedure issued by the \fIshutdown script\fR.
@@ -1476,6 +1480,19 @@ Default: \fBnone\fR
 Example: \fBadd share command = /usr/local/bin/addshare\fR
 .PP
 .TP
+\fBadd machine script (G)\fR
+This is the full pathname to a script that will 
+be run by smbd(8)when a machine is added
+to it's domain using the administrator username and password method. 
+
+This option is only required when using sam back-ends tied to the
+Unix uid method of RID calculation such as smbpasswd. This option is only
+available in Samba 3.0.
+
+Default: \fBadd machine script = <empty string>
+\fR
+Example: \fBadd machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
+\fR.TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
 be run \fBAS ROOT\fR by smbd(8)
@@ -2799,7 +2816,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory\fR
+\fBforce directory  security mode (S)\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -3315,9 +3332,9 @@ has oplocked. This allows complete data consistency between
 SMB/CIFS, NFS and local file access (and is a \fBvery\fR 
 cool feature :-).
 
-This parameter defaults to on on systems 
-that have the support, and off on systems that 
-don't. You should never need to touch this parameter.
+This parameter defaults to on, but is translated
+to a no-op on systems that no not have the necessary kernel support.
+You should never need to touch this parameter.
 
 See also the \fIoplocks\fR
 and \fIlevel2 oplocks
@@ -5903,7 +5920,8 @@ command\fR,  \fIdeleteprinter command\fR, \fIprinter admin\fR
 
 Default :\fBshow add printer wizard = yes\fR
 .TP
-\fBshutdown script (G) - ONLY IN HEAD\fR
+\fBshutdown script (G)\fR
+\fBThis parameter only exists in the HEAD cvs branch\fR
 This a full path name to a script called by
 \fBsmbd(8)\fRthat
 should start a shutdown procedure.
