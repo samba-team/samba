@@ -5867,11 +5867,6 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-	if (status != 0x0)
-		return ERROR_INVALID_NAME;
-
-	convert_specific_param(&param, value , type, data, real_len);
 
 	ZERO_STRUCT(old_param);
 
@@ -5895,6 +5890,12 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	   nothing is actually changing.  This is not needed anymore but
 	   has been left in as an optimization to keep from from
 	   writing to disk as often  --jerry  */
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (status != 0x0)
+		return ERROR_INVALID_NAME;
+
+	convert_specific_param(&param, value , type, data, real_len);
 	
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 			       &old_param.type, (unsigned int *)&old_param.data_len)) {
