@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -270,7 +270,7 @@ getit(const char *name, int terse_flag, int argc, char **argv)
     argv += optind;
 
     for(i = 0; i < argc; i++)
-	ret = foreach_principal(argv[i], do_get_entry, &data);
+	ret = foreach_principal(argv[i], do_get_entry, "get", &data);
     return 0;
 usage:
     arg_printusage (args, num_args, name, "principal...");
