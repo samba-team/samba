@@ -5,31 +5,8 @@
 
 /*The following definitions come from  client/client.c  */
 
-void do_list(const char *mask,int attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
+void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
 struct cli_state *do_connect(char *server, char *share);
-
-/*The following definitions come from  client/clientutil.c  */
-
-void cli_setup_pkt(char *outbuf);
-BOOL cli_call_api(char *pipe_name, int pipe_name_len,
-			int prcnt,int drcnt, int srcnt,
-		     int mprcnt,int mdrcnt,
-		     int *rprcnt,int *rdrcnt,
-		     char *param,char *data, uint16 *setup,
-		     char **rparam,char **rdata);
-BOOL cli_receive_trans_response(char *inbuf,int trans,
-                                   int *data_len,int *param_len,
-				   char **data,char **param);
-BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int namelen, int fid,int flags,
-			       char *data,char *param,uint16 *setup,
-			       int ldata,int lparam,int lsetup,
-			       int mdata,int mparam,int msetup);
-BOOL cli_send_session_request(char *inbuf,char *outbuf);
-BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, struct connection_options *options);
-void cli_send_logout(char *dum_in, char *dum_out);
-BOOL cli_open_sockets(int port );
-BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 
 /*The following definitions come from  client/clitar.c  */
 
@@ -245,7 +222,7 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T file_size(char *file_name);
-char *attrib_string(int mode);
+char *attrib_string(uint16 mode);
 int StrCaseCmp(char *s, char *t);
 int StrnCaseCmp(char *s, char *t, int n);
 BOOL strequal(char *s1, char *s2);
@@ -396,23 +373,23 @@ ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  uint32 *attr, size_t *size, 
+		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		uint32 *attr, size_t *size, time_t *t);
-BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
+		uint16 *attr, size_t *size, time_t *t);
+BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   size_t *size, uint32 *mode);
+		   size_t *size, uint16 *mode);
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint32 *mode,
+		    time_t *w_time, size_t *size, uint16 *mode,
 		    SMB_INO_T *ino);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   uint32 *mode, size_t *size,
+		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
-int cli_list(struct cli_state *cli,const char *Mask,int attribute, 
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *));
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
@@ -1880,10 +1857,6 @@ void make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				int status)  ;
 void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
-/*The following definitions come from  rpc_server/srv_ldap_helpers.c  */
-
-void ldap_helper_dummy(void);
-
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
@@ -2465,7 +2438,7 @@ off_t smbw_telldir(DIR *dirp);
 
 void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode);
 BOOL smbw_getatr(struct smbw_server *srv, char *path, 
-		 uint32 *mode, size_t *size, 
+		 uint16 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino);
 int smbw_stat_printjob(struct smbw_server *srv,char *path,

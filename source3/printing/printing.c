@@ -207,7 +207,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 #define	USERTOK 2
 #define	JOBTOK	3
 #define	FILETOK	4
-#define	TOTALTOK (count - 1)
+#define	TOTALTOK (count - 2)
 #define	NTOK	6
 #define	MAXTOK	128
 #else	/* OSF1 */
@@ -215,7 +215,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 #define	USERTOK 1
 #define	JOBTOK	2
 #define	FILETOK	3
-#define	TOTALTOK (count - 1)
+#define	TOTALTOK (count - 2)
 #define	NTOK	5
 #define	MAXTOK	128
 #endif	/* OSF1 */

@@ -36,7 +36,7 @@
 typedef struct file_info
 {
 	SMB_OFF_T size;
-	int mode;
+	uint16 mode;
 	uid_t uid;
 	gid_t gid;
 	/* these times are normally kept in GMT */

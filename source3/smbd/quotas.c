@@ -239,7 +239,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 
 /****************************************************************************
 try to get the disk space from disk quotas (SunOS & Solaris2 version)
-/* Quota code by Peter Urbanec (amiga@cse.unsw.edu.au) */
+Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)

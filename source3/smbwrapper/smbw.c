@@ -1014,7 +1014,7 @@ static int smbw_settime(const char *fname, time_t t)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-	uint32 mode;
+	uint16 mode;
 
 	if (!fname) {
 		errno = EINVAL;
@@ -1083,7 +1083,7 @@ int smbw_chown(const char *fname, uid_t owner, gid_t group)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-	uint32 mode;
+	uint16 mode;
 
 	if (!fname) {
 		errno = EINVAL;

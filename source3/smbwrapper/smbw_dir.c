@@ -361,7 +361,7 @@ int smbw_chdir(const char *name)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-	uint32 mode = aDIR;
+	uint16 mode = aDIR;
 	char *cwd;
 	int len;
 
