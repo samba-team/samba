@@ -57,12 +57,6 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 	if (S_ISDIR(st->st_mode))
 		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
 
-#if defined (HAVE_STAT_ST_BLOCKS) && defined (HAVE_STAT_ST_BLKSIZE)
-	if (st->st_size > st->st_blocks * (off_t)st->st_blksize) {
-		result |= FILE_ATTRIBUTE_SPARSE;
-	}
-#endif
-
 	if (!(result & 
 	      (FILE_ATTRIBUTE_READONLY|
 	       FILE_ATTRIBUTE_ARCHIVE|
@@ -82,6 +76,11 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 */
 NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name)
 {
+	/* make directories appear as size 0 */
+	if (S_ISDIR(name->st.st_mode)) {
+		name->st.st_size = 0;
+	}
+
 	/* for now just use the simple samba mapping */
 	unix_to_nt_time(&name->dos.create_time, name->st.st_ctime);
 	unix_to_nt_time(&name->dos.access_time, name->st.st_atime);

@@ -180,8 +180,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	io->generic.out.write_time    = name->dos.write_time;
 	io->generic.out.change_time   = name->dos.change_time;
 	io->generic.out.attrib        = name->dos.attrib;
-	io->generic.out.alloc_size    = 0;
-	io->generic.out.size          = 0;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
 	io->generic.out.file_type     = FILE_TYPE_DISK;
 	io->generic.out.ipc_state     = 0;
 	io->generic.out.is_directory  = 1;
@@ -457,9 +457,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
-		if (!name->exists) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
 		flags = O_TRUNC;
 		break;
 
