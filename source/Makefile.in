@@ -627,6 +627,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_wins.o \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o \
+		nsswitch/winbindd_passdb.o \
 		nsswitch/winbindd_dual.o \
 		nsswitch/winbindd_acct.o
 

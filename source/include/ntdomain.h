@@ -366,13 +366,6 @@ typedef struct
 
 } rid_name;
 
-struct acct_info
-{
-    fstring acct_name; /* account name */
-    fstring acct_desc; /* account name */
-    uint32 rid; /* domain-relative RID */
-};
-
 /*
  * higher order functions for use with msrpc client code
  */

@@ -1989,8 +1989,8 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))", 
-		LDAP_OBJ_POSIXGROUP,
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%lu))", 
+		LDAP_OBJ_POSIXGROUP, LDAP_OBJ_IDMAP_ENTRY,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
 		(unsigned long)gid);
 
@@ -2031,6 +2031,37 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 
+	if ( count == 0 ) {
+		/* There's no posixGroup account, let's try to find an
+		 * appropriate idmap entry for aliases */
+
+		pstring suffix;
+		pstring filter;
+		char **attr_list;
+
+		ldap_msgfree(result);
+
+		pstrcpy( suffix, lp_ldap_idmap_suffix() );
+		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%u))",
+			     LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_GIDNUMBER,
+			     map->gid);
+		
+		attr_list = get_attr_list( sidmap_attr_list );
+		rc = smbldap_search(ldap_state->smbldap_state, suffix,
+				    LDAP_SCOPE_SUBTREE, filter, attr_list,
+				    0, &result);
+
+		free_attr_list(attr_list);
+
+		if (rc != LDAP_SUCCESS) {
+			DEBUG(3,("Failure looking up entry (%s)\n",
+				 ldap_err2string(rc) ));
+			ldap_msgfree(result);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+			   
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 	if ( count == 0 ) {
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -2306,6 +2337,254 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
+					const DOM_SID *alias,
+					const DOM_SID *member,
+					int modop)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	char *dn;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int count;
+	LDAPMod **mods = NULL;
+	int rc;
+
+	pstring filter;
+
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%s))",
+		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
+		     get_attr_key2string(groupmap_attr_list,
+					 LDAP_ATTR_GROUP_SID),
+		     sid_string_static(alias));
+
+	if (ldapsam_search_one_group(ldap_state, filter,
+				     &result) != LDAP_SUCCESS)
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
+
+	if (count < 1) {
+		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if (count > 1) {
+		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+			  "count=%d\n", filter, count));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
+
+	if (!entry) {
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	if (!dn) {
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	smbldap_set_mod(&mods, modop,
+			get_attr_key2string(groupmap_attr_list,
+					    LDAP_ATTR_SID_LIST),
+			sid_string_static(member));
+
+	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+
+	ldap_mods_free(mods, True);
+	ldap_msgfree(result);
+
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING,&ld_error);
+		
+		DEBUG(0, ("ldapsam_delete_entry: Could not delete attributes "
+			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
+			  ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		SAFE_FREE(dn);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	SAFE_FREE(dn);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_add_aliasmem(struct pdb_methods *methods,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	return ldapsam_modify_aliasmem(methods, alias, member, LDAP_MOD_ADD);
+}
+
+static NTSTATUS ldapsam_del_aliasmem(struct pdb_methods *methods,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	return ldapsam_modify_aliasmem(methods, alias, member,
+				       LDAP_MOD_DELETE);
+}
+
+static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
+				      const DOM_SID *alias, DOM_SID **members,
+				      int *num_members)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int count;
+	char **values;
+	int i;
+	pstring filter;
+
+	*members = NULL;
+	*num_members = 0;
+
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%s))",
+		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
+		     get_attr_key2string(groupmap_attr_list,
+					 LDAP_ATTR_GROUP_SID),
+		     sid_string_static(alias));
+
+	if (ldapsam_search_one_group(ldap_state, filter,
+				     &result) != LDAP_SUCCESS)
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
+
+	if (count < 1) {
+		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if (count > 1) {
+		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+			  "count=%d\n", filter, count));
+		ldap_msgfree(result);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
+
+	if (!entry) {
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	values = ldap_get_values(ldap_state->smbldap_state->ldap_struct,
+				 entry,
+				 get_attr_key2string(groupmap_attr_list,
+						     LDAP_ATTR_SID_LIST));
+
+	if (values == NULL) {
+		ldap_msgfree(result);
+		return NT_STATUS_OK;
+	}
+
+	count = ldap_count_values(values);
+
+	for (i=0; i<count; i++) {
+		DOM_SID member;
+
+		if (!string_to_sid(&member, values[i]))
+			continue;
+
+		add_sid_to_array(&member, members, num_members);
+	}
+
+	ldap_value_free(values);
+	ldap_msgfree(result);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
+					  const DOM_SID *sid,
+					  DOM_SID **aliases, int *num)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+
+	fstring sid_string;
+	const char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
+
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int count;
+	int rc;
+	pstring filter;
+
+	sid_to_string(sid_string, sid);
+	pstr_sprintf(filter, "(&(|(objectclass=%s)(objectclass=%s))(%s=%s))",
+		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
+		     get_attr_key2string(groupmap_attr_list,
+					 LDAP_ATTR_SID_LIST), sid_string);
+
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+
+	if (rc != LDAP_SUCCESS)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*aliases = NULL;
+	*num = 0;
+
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
+
+	if (count < 1) {
+		ldap_msgfree(result);
+		return NT_STATUS_OK;
+	}
+
+
+	for (entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				      result);
+	     entry != NULL;
+	     entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
+				     entry))
+	{
+		DOM_SID alias;
+		char **vals;
+		vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct,
+				       entry, LDAP_ATTRIBUTE_SID);
+
+		if (vals == NULL)
+			continue;
+
+		if (vals[0] == NULL) {
+			ldap_value_free(vals);
+			continue;
+		}
+
+		if (!string_to_sid(&alias, vals[0])) {
+			ldap_value_free(vals);
+			continue;
+		}
+
+		add_sid_to_array(&alias, aliases, num);
+		ldap_value_free(vals);
+	}
+
+	ldap_msgfree(result);
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -2443,6 +2722,11 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	}
 
 	(*pdb_method)->name = "ldapsam";
+
+	(*pdb_method)->add_aliasmem = ldapsam_add_aliasmem;
+	(*pdb_method)->del_aliasmem = ldapsam_del_aliasmem;
+	(*pdb_method)->enum_aliasmem = ldapsam_enum_aliasmem;
+	(*pdb_method)->enum_alias_memberships = ldapsam_alias_memberships;
 
 	ldap_state = (*pdb_method)->private_data;
 	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;

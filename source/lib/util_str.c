@@ -2038,3 +2038,21 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 
 	return val;
 }
+
+void string_append(char **left, const char *right)
+{
+	int new_len = strlen(right) + 1;
+
+	if (*left == NULL) {
+		*left = malloc(new_len);
+		*left[0] = '\0';
+	} else {
+		new_len += strlen(*left);
+		*left = Realloc(*left, new_len);
+	}
+
+	if (*left == NULL)
+		return;
+
+	safe_strcat(*left, right, new_len-1);
+}

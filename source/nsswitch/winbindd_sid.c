@@ -30,10 +30,8 @@
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
-	extern DOM_SID global_sid_Builtin;
 	enum SID_NAME_USE type;
-	DOM_SID sid, tmp_sid;
-	uint32 rid;
+	DOM_SID sid;
 	fstring name;
 	fstring dom_name;
 
@@ -47,15 +45,6 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	/* Don't look up BUILTIN sids */
-
-	sid_copy(&tmp_sid, &sid);
-	sid_split_rid(&tmp_sid, &rid);
-
-	if (sid_equal(&tmp_sid, &global_sid_Builtin)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -442,6 +431,26 @@ done:
 	/* Construct sid and return it */
 	sid_to_string(state->response.data.sid.sid, &sid);
 	state->response.data.sid.type = SID_NAME_DOM_GRP;
+
+	return WINBINDD_OK;
+}
+
+enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+{
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+			  "denied!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	/* We tell idmap to always allocate a user RID. There might be a good
+	 * reason to keep RID allocation for users to even and groups to
+	 * odd. This needs discussion I think. For now only allocate user
+	 * rids. */
+
+	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid,
+						USER_RID_TYPE)))
+		return WINBINDD_ERROR;
 
 	return WINBINDD_OK;
 }

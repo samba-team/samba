@@ -452,6 +452,156 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_find_alias(struct pdb_context *context,
+				   const char *name, DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->find_alias(context->pdb_methods,
+						name, sid);
+}
+
+static NTSTATUS context_create_alias(struct pdb_context *context,
+				     const char *name, uint32 *rid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->create_alias(context->pdb_methods,
+						  name, rid);
+}
+
+static NTSTATUS context_delete_alias(struct pdb_context *context,
+				     const DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->delete_alias(context->pdb_methods, sid);
+}
+
+static NTSTATUS context_enum_aliases(struct pdb_context *context,
+				     const DOM_SID *sid,
+				     uint32 start_idx, uint32 max_entries,
+				     uint32 *num_aliases,
+				     struct acct_info **info)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->enum_aliases(context->pdb_methods,
+						  sid, start_idx, max_entries,
+						  num_aliases, info);
+}
+
+static NTSTATUS context_get_aliasinfo(struct pdb_context *context,
+				      const DOM_SID *sid,
+				      struct acct_info *info)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->get_aliasinfo(context->pdb_methods,
+						   sid, info);
+}
+
+static NTSTATUS context_set_aliasinfo(struct pdb_context *context,
+				      const DOM_SID *sid,
+				      struct acct_info *info)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->set_aliasinfo(context->pdb_methods,
+						   sid, info);
+}
+
+static NTSTATUS context_add_aliasmem(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->add_aliasmem(context->pdb_methods,
+						  alias, member);
+}
+	
+static NTSTATUS context_del_aliasmem(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->del_aliasmem(context->pdb_methods,
+						  alias, member);
+}
+	
+static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
+				      const DOM_SID *alias, DOM_SID **members,
+				      int *num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->enum_aliasmem(context->pdb_methods,
+						   alias, members, num);
+}
+	
+static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
+					       const DOM_SID *sid,
+					       DOM_SID **aliases, int *num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->
+		enum_alias_memberships(context->pdb_methods, sid, aliases,
+				       num);
+}
+	
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
   that the attached modules might have associated.
@@ -567,6 +717,17 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+
+	(*context)->pdb_find_alias = context_find_alias;
+	(*context)->pdb_create_alias = context_create_alias;
+	(*context)->pdb_delete_alias = context_delete_alias;
+	(*context)->pdb_enum_aliases = context_enum_aliases;
+	(*context)->pdb_get_aliasinfo = context_get_aliasinfo;
+	(*context)->pdb_set_aliasinfo = context_set_aliasinfo;
+	(*context)->pdb_add_aliasmem = context_add_aliasmem;
+	(*context)->pdb_del_aliasmem = context_del_aliasmem;
+	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
+	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -850,6 +1011,135 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 						      rmap, num_entries, unix_only));
 }
 
+BOOL pdb_find_alias(const char *name, DOM_SID *sid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_find_alias(pdb_context,
+							     name, sid));
+}
+
+BOOL pdb_create_alias(const char *name, uint32 *rid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_create_alias(pdb_context,
+							     name, rid));
+}
+
+BOOL pdb_delete_alias(const DOM_SID *sid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_delete_alias(pdb_context,
+							     sid));
+							    
+}
+
+BOOL pdb_enum_aliases(const DOM_SID *sid, uint32 start_idx, uint32 max_entries,
+		      uint32 *num_aliases, struct acct_info **info)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_enum_aliases(pdb_context, sid,
+							     start_idx,
+							     max_entries,
+							     num_aliases,
+							     info));
+}
+
+BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_get_aliasinfo(pdb_context, sid,
+							      info));
+}
+
+BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->pdb_set_aliasinfo(pdb_context, sid,
+							      info));
+}
+
+BOOL pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_add_aliasmem(pdb_context, alias, member));
+}
+
+BOOL pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_del_aliasmem(pdb_context, alias, member));
+}
+
+BOOL pdb_enum_aliasmem(const DOM_SID *alias,
+		       DOM_SID **members, int *num_members)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_enum_aliasmem(pdb_context, alias,
+						 members, num_members));
+}
+
+BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
+				DOM_SID **aliases, int *num)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_enum_alias_memberships(pdb_context, sid,
+							  aliases, num));
+}
+
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -933,6 +1223,16 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	(*methods)->find_alias = pdb_default_find_alias;
+	(*methods)->create_alias = pdb_default_create_alias;
+	(*methods)->delete_alias = pdb_default_delete_alias;
+	(*methods)->enum_aliases = pdb_default_enum_aliases;
+	(*methods)->get_aliasinfo = pdb_default_get_aliasinfo;
+	(*methods)->set_aliasinfo = pdb_default_set_aliasinfo;
+	(*methods)->add_aliasmem = pdb_default_add_aliasmem;
+	(*methods)->del_aliasmem = pdb_default_del_aliasmem;
+	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
+	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
 
 	return NT_STATUS_OK;
 }
