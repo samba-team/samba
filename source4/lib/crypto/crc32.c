@@ -55,7 +55,7 @@ static const unsigned long CRCTable[256] =
         0xB40BBE37,0xC30C8EA1,0x5A05DF1B,0x2D02EF8D
 };
 
-uint32_t crc32_calc_buffer( const char *buffer, uint32_t count)
+uint32_t crc32_calc_buffer(const uint8_t *buffer, uint32_t count)
 {
 	uint32_t crc=0xffffffff, i;
         for(i=0;i<count;i++)
