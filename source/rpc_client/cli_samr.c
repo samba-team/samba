@@ -655,7 +655,7 @@ done:
 	prs_mem_free(&rbuf);
 	
 	return result;
-};
+}
 
 /* Enumerate domain groups */
 

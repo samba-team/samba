@@ -841,5 +841,5 @@ UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src)
 	strncpy_w(dst->buffer, src, dst->uni_max_len);
 	
 	return dst;
-};
+}
 
