@@ -35,17 +35,15 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "dlinklist.h"
 
-#define LDB_MODULE_PREFIX		"modules"
+#define LDB_MODULE_PREFIX	"modules"
 #define LDB_MODULE_PREFIX_LEN	7
 #define LDB_MODULE_SEP		':'
 
-int register_ldb_modules(struct ldb_context *ldb, const char *options[])
+int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
-	void *handle;
-	init_ldb_module_function init;
 	struct ldb_module *current;
-	struct stat st;
 	char **modules;
 	char *p, *q;
 	int pn, i;
@@ -75,7 +73,7 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 						return -1;
 					}
 					modules[pn - 1] = q;
-				} while (p = strchr(q, LDB_MODULE_SEP));
+				} while ((p = strchr(q, LDB_MODULE_SEP)));
 			}
 		}
 	}
@@ -120,18 +118,26 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 	if (modules) {
 
 		for (i = 0; i < pn; i++) {
-			const char *errstr;
 
 			if (strcmp(modules[i], "timestamps") == 0) {
 				current = timestamps_module_init(ldb, options);
-				current->next = ldb->module;
-				ldb->module = current;
+				if (!current) {
+					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+					return -1;
+				}
+				DLIST_ADD(ldb->modules, current);
 				continue;
 			}
 
 #ifdef HAVE_DLOPEN_DISABLED
+		{
+			void *handle;
+			init_ldb_module_function init;
+			struct stat st;
+			const char *errstr;
+
 			if (stat(modules[i], &st) < 0) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module not found, bailing out!\n");
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
 				return -1;
 			}
 
@@ -151,9 +157,15 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 			}
 
 			current = init(ldb, options);
-			current->next = ldb->module;
-			ldb->module = current;
-
+			if (!current) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+				return -1;
+			}
+			DLIST_ADD(ldb->modules, current);
+		}
+#else
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
+		return -1;
 #endif
 		}
 	}
@@ -166,7 +178,7 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 */
 int ldb_next_close(struct ldb_module *module)
 {
-	if (!module->next || !module->next->ops->close) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->close(module->next);
@@ -178,7 +190,7 @@ int ldb_next_search(struct ldb_module *module,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res)
 {
-	if (!module->next || !module->next->ops->search) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->search(module->next, base, scope, expression, attrs, res);
@@ -186,7 +198,7 @@ int ldb_next_search(struct ldb_module *module,
 
 int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msgs)
 {
-	if (!module->next || !module->next->ops->search_free) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->search_free(module->next, msgs);
@@ -194,7 +206,7 @@ int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msgs)
 
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
 {
-	if (!module->next || !module->next->ops->add_record) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->add_record(module->next, message);
@@ -202,7 +214,7 @@ int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *mes
 
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message)
 {
-	if (!module->next || !module->next->ops->modify_record) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->modify_record(module->next, message);
@@ -210,7 +222,7 @@ int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *
 
 int ldb_next_delete_record(struct ldb_module *module, const char *dn)
 {
-	if (!module->next || !module->next->ops->delete_record) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->delete_record(module->next, dn);
@@ -218,7 +230,7 @@ int ldb_next_delete_record(struct ldb_module *module, const char *dn)
 
 int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
 {
-	if (!module->next || !module->next->ops->rename_record) {
+	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->rename_record(module->next, olddn, newdn);
@@ -226,7 +238,7 @@ int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const c
 
 const char *ldb_next_errstring(struct ldb_module *module)
 {
-	if (!module->next || !module->next->ops->errstring) {
+	if (!module->next) {
 		return NULL;
 	}
 	return module->next->ops->errstring(module->next);
@@ -234,9 +246,8 @@ const char *ldb_next_errstring(struct ldb_module *module)
 
 void ldb_next_cache_free(struct ldb_module *module)
 {
-	if (!module->next || !module->next->ops->cache_free) {
+	if (!module->next) {
 		return;
 	}
 	module->next->ops->cache_free(module->next);
 }
-

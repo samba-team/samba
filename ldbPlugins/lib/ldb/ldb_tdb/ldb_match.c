@@ -140,7 +140,6 @@ static int ldb_val_equal_wildcard(struct ldb_context *ldb,
 static int ldb_val_equal_objectclass(struct ldb_module *module, 
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	unsigned int i;
 

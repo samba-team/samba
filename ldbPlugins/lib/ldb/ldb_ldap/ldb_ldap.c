@@ -133,7 +133,6 @@ static int lldb_rename(struct ldb_module *module, const char *olddn, const char 
 */
 static int lldb_delete(struct ldb_module *module, const char *dn)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
 
@@ -497,13 +496,13 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 */
 static const char *lldb_errstring(struct ldb_module *module)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
 	return ldap_err2string(lldb->last_rc);
 }
 
 
 static const struct ldb_module_ops lldb_ops = {
+	"ldap",
 	lldb_close, 
 	lldb_search,
 	lldb_search_free,
@@ -552,17 +551,16 @@ struct ldb_context *lldb_connect(const char *url,
 		goto failed;
 	}
 
-	ldb->module = ldb_malloc_p(ldb, struct ldb_module);
-	if (!ldb->module) {
+	ldb->modules = ldb_malloc_p(ldb, struct ldb_module);
+	if (!ldb->modules) {
 		ldb_free(ldb, ldb);
 		errno = ENOMEM;
 		goto failed;
 	}
-	ldb->module->name = "ldap";
-	ldb->module->private_data = lldb;
-	ldb->module->ldb = ldb;
-	ldb->module->next = NULL;
-	ldb->module->ops = &lldb_ops;
+	ldb->modules->ldb = ldb;
+	ldb->modules->prev = ldb->modules->next = NULL;
+	ldb->modules->private_data = lldb;
+	ldb->modules->ops = &lldb_ops;
 
 	if (options) {
 		/* take a copy of the options array, so we don't have to rely

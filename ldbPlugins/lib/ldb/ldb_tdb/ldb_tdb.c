@@ -165,7 +165,6 @@ static void ltdb_unlock(struct ldb_module *module)
 */
 static int ltdb_modified(struct ldb_module *module, const char *dn)
 {
-	struct ldb_context *ldb = module->ldb;
 	int ret = 0;
 
 	if (strcmp(dn, LTDB_INDEXLIST) == 0 ||
@@ -225,7 +224,6 @@ done:
 */
 static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
@@ -278,7 +276,6 @@ int ltdb_delete_noindex(struct ldb_module *module, const char *dn)
 */
 static int ltdb_delete(struct ldb_module *module, const char *dn)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ldb_message msg;
@@ -569,7 +566,6 @@ failed:
 */
 static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
@@ -677,7 +673,6 @@ static int ltdb_close(struct ldb_module *module)
 */
 static const char *ltdb_errstring(struct ldb_module *module)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	if (ltdb->last_err_string) {
 		return ltdb->last_err_string;
@@ -687,6 +682,7 @@ static const char *ltdb_errstring(struct ldb_module *module)
 
 
 static const struct ldb_module_ops ltdb_ops = {
+	"tdb",
 	ltdb_close, 
 	ltdb_search,
 	ltdb_search_free,
@@ -757,18 +753,17 @@ struct ldb_context *ltdb_connect(const char *url,
 
 	memset(&ltdb->cache, 0, sizeof(ltdb->cache));
 
-	ldb->module = ldb_malloc_p(ldb, struct ldb_module);
-	if (!ldb->module) {
+	ldb->modules = ldb_malloc_p(ldb, struct ldb_module);
+	if (!ldb->modules) {
 		tdb_close(tdb);
 		free(ldb);
 		errno = ENOMEM;
 		return NULL;
 	}
-	ldb->module->name = "tdb";
-	ldb->module->private_data = ltdb;
-	ldb->module->ldb = ldb;
-	ldb->module->next = NULL;
-	ldb->module->ops = &ltdb_ops;
+	ldb->modules->ldb = ldb;
+	ldb->modules->prev = ldb->modules->next = NULL;
+	ldb->modules->private_data = ltdb;
+	ldb->modules->ops = &ltdb_ops;
 
 	return ldb;
 }

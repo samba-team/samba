@@ -90,6 +90,7 @@ static const char *skel_cache_free(struct ldb_module *module)
 }
 
 static const struct ldb_module skel_ops = {
+	"skel",
 	skel_close, 
 	skel_search,
 	skel_search_free,
@@ -102,7 +103,7 @@ static const struct ldb_module skel_ops = {
 };
 
 #ifdef HAVE_DLOPEN
-struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+ struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
 struct ldb_module *skel_plugin_init(struct ldb_context *ldb, const char *options[])
 #endif
@@ -113,10 +114,9 @@ struct ldb_module *skel_plugin_init(struct ldb_context *ldb, const char *options
 	if (!ctx)
 		return NULL;
 
-	ctx->name = "skel";
-	ctx->private_data = NULL;
 	ctx->ldb = ldb;
-	ctx->next = NULL;
+	ctx->prev = ctx->next = NULL;
+	ctx->private_data = NULL;
 	ctx->ops = &skel_ops;
 
 	return ctx;

@@ -60,14 +60,19 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 	}
 #endif
 
-	if (ldb_ctx) {
-		if (register_ldb_modules(ldb_ctx, options) == 0) {
-			return ldb_ctx;
-		}
+
+	if (!ldb_ctx) {
+		errno = EINVAL;
+		return NULL;
 	}
 
-	errno = EINVAL;
-	return NULL;
+	if (ldb_load_modules(ldb_ctx, options) != 0) {
+		ldb_close(ldb_ctx);
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return ldb_ctx;
 }
 
 /*
@@ -75,11 +80,7 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 */
 int ldb_close(struct ldb_context *ldb)
 {
-	int ret;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_close");
-
-	return ldb->module->ops->close(ldb->module);
+	return ldb->modules->ops->close(ldb->modules);
 }
 
 
@@ -94,14 +95,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res)
 {
-	int ret, count;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_search(%s)\n", expression);
-
-	count = ldb->module->ops->search(ldb->module, base, scope, expression, attrs, res);
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_search found %d records\n", ret);
-	return count;
+	return ldb->modules->ops->search(ldb->modules, base, scope, expression, attrs, res);
 }
 
 /* 
@@ -109,7 +103,7 @@ int ldb_search(struct ldb_context *ldb,
 */
 int ldb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 {
-	return ldb->module->ops->search_free(ldb->module, msgs);
+	return ldb->modules->ops->search_free(ldb->modules, msgs);
 }
 
 
@@ -120,15 +114,7 @@ int ldb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	int ret;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_add(%s)\n", message->dn);
-
-	ret = ldb->module->ops->add_record(ldb->module, message);
-
-done:
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "return: %d\n", ret);
-	return ret;
+	return ldb->modules->ops->add_record(ldb->modules, message);
 }
 
 /*
@@ -137,15 +123,7 @@ done:
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	int ret;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_modify(%s)\n", message->dn);
-
-	ret = ldb->module->ops->modify_record(ldb->module, message);
-
-done:
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "return: %d\n", ret);
-	return ret;
+	return ldb->modules->ops->modify_record(ldb->modules, message);
 }
 
 
@@ -154,15 +132,7 @@ done:
 */
 int ldb_delete(struct ldb_context *ldb, const char *dn)
 {
-	int ret;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_delete(%s)\n", dn);
-
-	ret = ldb->module->ops->delete_record(ldb->module, dn);
-
-done:
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "return: %d\n", ret);
-	return ret;
+	return ldb->modules->ops->delete_record(ldb->modules, dn);
 }
 
 /*
@@ -170,10 +140,7 @@ done:
 */
 int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
 {
-	int ret;
-	ret = ldb->module->ops->rename_record(ldb->module, olddn, newdn);
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_rename(%s,%s) -> %d\n", olddn, newdn);
-	return ret;
+	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
 }
 
 /*
@@ -181,13 +148,6 @@ int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
 */
 const char *ldb_errstring(struct ldb_context *ldb)
 {
-	const char *err;
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_errstring\n");
-
-	err = ldb->module->ops->errstring(ldb->module);
-
-done:
-	return err;
+	return ldb->modules->ops->errstring(ldb->modules);
 }
 

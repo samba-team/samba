@@ -125,10 +125,9 @@ struct ldb_module_ops;
 
 /* basic module structure */
 struct ldb_module {
-	const char *name;
-	void *private_data;
+	struct ldb_module *prev, *next;
 	struct ldb_context *ldb;
-	struct ldb_module *next;
+	void *private_data;
 	const struct ldb_module_ops *ops;
 };
 
@@ -137,6 +136,7 @@ struct ldb_module {
    they correspond exactly to the ldb_*() interface 
 */
 struct ldb_module_ops {
+	const char *name;
 	int (*close)(struct ldb_module *);
 	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
 		      const char *, const char * const [], struct ldb_message ***);
@@ -186,7 +186,7 @@ struct ldb_debug_ops {
 */
 struct ldb_context {
 	/* the operations provided by the backend */
-	struct ldb_module *module;
+	struct ldb_module *modules;
 
 	/* memory allocation info */
 	struct ldb_alloc_ops alloc_ops;

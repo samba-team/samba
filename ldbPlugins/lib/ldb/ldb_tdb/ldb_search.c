@@ -500,7 +500,6 @@ static int ltdb_search_full(struct ldb_module *module,
 			    struct ldb_parse_tree *tree,
 			    const char * const attrs[], struct ldb_message ***res)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ltdb_search_info sinfo;

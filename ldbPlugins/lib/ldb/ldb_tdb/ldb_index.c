@@ -474,7 +474,6 @@ static int ltdb_index_dn(struct ldb_module *module,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list)
 {
-	struct ldb_context *ldb = module->ldb;
 	int ret = -1;
 
 	switch (tree->operation) {
@@ -508,7 +507,6 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 			    const struct dn_list *dn_list, 
 			    const char * const attrs[], struct ldb_message ***res)
 {
-	struct ldb_context *ldb = module->ldb;
 	unsigned int count = 0, i;
 
 	for (i=0;i<dn_list->count;i++) {
@@ -715,7 +713,6 @@ static int ltdb_index_add1(struct ldb_module *module, char *dn,
 */
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	unsigned int i, j;
@@ -809,7 +806,6 @@ static int ltdb_index_del1(struct ldb_module *module, const char *dn,
 */
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	unsigned int i, j;

@@ -55,10 +55,10 @@ static int timestamps_search_free(struct ldb_module *module, struct ldb_message 
 	return ldb_next_search_free(module, res);
 }
 
-static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, char *attr_name, char *time_string, unsigned int flags)
+static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, const char *attr_name, const char *time_string, unsigned int flags)
 {
 	struct ldb_val *values;
-	char *name, *time;
+	char *name, *timestr;
 	int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -69,9 +69,9 @@ static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, ch
 
 	msg->elements = ldb_realloc_array(ldb, msg->elements, sizeof(struct ldb_message_element), msg->num_elements + 1);
 	name = ldb_strdup(ldb, attr_name);
-	time = ldb_strdup(ldb, time_string);
+	timestr = ldb_strdup(ldb, time_string);
 	values = ldb_malloc(ldb, sizeof(struct ldb_val));
-	if (!msg->elements || !name || !time || !values) {
+	if (!msg->elements || !name || !timestr || !values) {
 		return -1;
 	}
 
@@ -79,8 +79,8 @@ static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, ch
 	msg->elements[msg->num_elements].flags = flags;
 	msg->elements[msg->num_elements].num_values = 1;
 	msg->elements[msg->num_elements].values = values;
-	msg->elements[msg->num_elements].values[0].data = time;
-	msg->elements[msg->num_elements].values[0].length = strlen(time);
+	msg->elements[msg->num_elements].values[0].data = timestr;
+	msg->elements[msg->num_elements].values[0].length = strlen(timestr);
 
 	msg->num_elements += 1;
 
@@ -232,6 +232,7 @@ static void timestamps_cache_free(struct ldb_module *module)
 }
 
 static const struct ldb_module_ops timestamps_ops = {
+	"timestamps",
 	timestamps_close, 
 	timestamps_search,
 	timestamps_search_free,
@@ -246,7 +247,7 @@ static const struct ldb_module_ops timestamps_ops = {
 
 /* the init function */
 #ifdef HAVE_DLOPEN_DISABLED
-struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+ struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[])
 #endif
@@ -257,10 +258,9 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 	if (!ctx)
 		return NULL;
 
-	ctx->name = "timestamps";
-	ctx->private_data = NULL;
-	ctx->next = NULL;
 	ctx->ldb = ldb;
+	ctx->prev = ctx->next = NULL;
+	ctx->private_data = NULL;
 	ctx->ops = &timestamps_ops;
 
 	return ctx;
