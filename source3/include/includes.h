@@ -214,9 +214,6 @@ Here come some platform specific sections
 #include <dirent.h>
 #include <string.h>
 #include <sys/vfs.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
 #include <netinet/in.h>
 #ifndef NO_ASMSIGNALH
 #include <asm/signal.h>
@@ -297,9 +294,6 @@ typedef unsigned short mode_t;
 #include <sys/statvfs.h>
 #include <sys/filio.h>
 #include <sys/sockio.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
 #include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
@@ -362,6 +356,7 @@ char *getwd(char *);
 #define USE_WAITPID
 #define USE_DIRECT
 #define USE_SETSID
+#define USE_SYSV_IPC
 #endif
 
 #if defined(SGI5) || defined(SGI6)
@@ -382,6 +377,7 @@ char *getwd(char *);
 #define USE_STATVFS
 #define USE_WAITPID
 #define USE_SETSID
+#define USE_SYSV_IPC
 #endif
 
 
@@ -438,6 +434,7 @@ extern struct passwd *getpwnam();
 #define USE_STATVFS
 #define USE_GETCWD
 #define USE_SETSID
+#define USE_SYSV_IPC
 #endif
 
 
@@ -556,9 +553,6 @@ char *mktemp(char *); /* No standard include */
 #include <sys/types.h>
 #include <sys/termios.h>
 #include <netinet/tcp.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>
@@ -1077,6 +1071,11 @@ struct spwd { /* fake shadow password structure */
 #endif
 #endif
 
+#ifdef USE_SYSV_IPC
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#endif
 
 #ifdef AFS_AUTH
 #include <afs/stds.h>
