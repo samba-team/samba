@@ -41,7 +41,7 @@ FILE *headerfile, *codefile, *logfile;
 
 static const char *orig_filename;
 static char *header;
-static char *headerbase = STEM;
+static char *headerbase;
 
 /*
  * list of all IMPORTs
@@ -76,6 +76,8 @@ init_generate (const char *filename, const char *base)
     orig_filename = filename;
     if(base)
 	asprintf(&headerbase, "%s", base);
+    else
+	headerbase = strdup(STEM);
     asprintf(&header, "%s.h", headerbase);
     headerfile = fopen (header, "w");
     if (headerfile == NULL)
@@ -288,7 +290,7 @@ define_asn1 (int level, Type *t)
 }
 
 static void
-define_type (int level, char *name, Type *t, int typedefp)
+define_type (int level, const char *name, Type *t, int typedefp)
 {
     switch (t->type) {
     case TType:
