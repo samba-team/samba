@@ -2626,13 +2626,12 @@ allowing break to succeed.\n", dev, inode, fnum));
      have been broken due to another udp request, and yet there are
      still oplock break messages being sent in the udp message
      queue for this file. So return true if we don't have an oplock,
-     as we may have just freed it. But this is an unusual case so
-     we should log a message at low debug priority (1).
+     as we may have just freed it.
    */
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(1,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
+    DEBUG(3,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
 Allowing break to succeed regardless.\n", fsp->name, fnum, dev, inode));
     return True;
   }
