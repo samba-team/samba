@@ -45,15 +45,6 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#ifdef LINUX
-#ifndef DEFAULT_PRINTING
-#define DEFAULT_PRINTING PRINT_BSD
-#endif
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
 #ifdef __GNUC__
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
