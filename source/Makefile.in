@@ -267,7 +267,8 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 				rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
 				rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
 				rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
-				rpc_client/cli_login.o rpc_client/cli_netlogon.o
+				rpc_client/cli_login.o rpc_client/cli_netlogon.o \
+				rpcclient/display_sec.o
  
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 				$(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
