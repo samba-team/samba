@@ -41,54 +41,16 @@
 	}} while (0)
 
 /*
-  extract a nbt_name from a name buffer
-*/
-static struct nbt_name *wrepl_extract_name(TALLOC_CTX *mem_ctx, 
-					   uint8_t *name, uint32_t len)
-{
-	struct nbt_name *ret = talloc_zero(mem_ctx, struct nbt_name);
-
-	/* oh wow, what a nasty bug in windows ... */
-	if (name[0] == 0x1b && len >= 16) {
-		name[0] = name[15];
-		name[15] = 0x1b;
-	}
-
-	if (ret == NULL) return NULL;
-	if (len < 17) {
-		ret->name = talloc_strndup(ret, name, len);
-	} else {
-		char *s = talloc_strndup(ret, name, 15);
-		trim_string(s, NULL, " ");
-		ret->name = s;
-		ret->type = name[15];
-		if (len > 18) {
-			ret->scope = talloc_strndup(ret, name+17, len-17);
-		}
-	}
-	return ret;
-}
-
-/*
   display a replication entry
 */
-static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_wins_name *wname)
+static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
 {
-	struct nbt_name *name = wrepl_extract_name(mem_ctx, 
-						   wname->name,
-						   wname->name_len);
 	int i;
-	printf("%s\n", nbt_name_string(mem_ctx, name));
-	if (wname->flags & 2) {
-		for (i=0;i<wname->addresses.addresses.num_ips;i++) {
-			printf("\t%s %s\n", 
-			       wname->addresses.addresses.ips[i].owner,
-			       wname->addresses.addresses.ips[i].ip);
-		}
-	} else {
+
+	printf("%s\n", nbt_name_string(mem_ctx, &name->name));
+	for (i=0;i<name->num_addresses;i++) {
 		printf("\t%s %s\n", 
-		       wname->addresses.address.owner,
-		       wname->addresses.address.ip);
+		       name->addresses[i].owner, name->addresses[i].address);
 	}
 }
 
@@ -100,9 +62,10 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 	BOOL ret = True;
 	struct wrepl_socket *wrepl_socket;
 	NTSTATUS status;
-	struct wrepl_packet request, *reply;
 	int i, j;
-	struct wrepl_table *table;
+	struct wrepl_associate associate;
+	struct wrepl_pull_table pull_table;
+	struct wrepl_pull_names pull_names;
 
 	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
 	
@@ -111,60 +74,37 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 
 	printf("Send a start association request\n");
 
-	ZERO_STRUCT(request);
-	request.opcode                      = WREPL_OPCODE_BITS;
-	request.mess_type                   = WREPL_START_ASSOCIATION;
-	request.message.start.minor_version = 2;
-	request.message.start.major_version = 5;
-	request.padding                     = data_blob_talloc_zero(mem_ctx, 0);
-
-	status = wrepl_request(wrepl_socket, mem_ctx, &request, &reply);
+	status = wrepl_associate(wrepl_socket, &associate);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(reply->mess_type, WREPL_START_ASSOCIATION_REPLY);
 
-	request.assoc_ctx = reply->message.start_reply.assoc_ctx;
-	printf("association context: 0x%x\n", request.assoc_ctx);
+	printf("association context: 0x%x\n", associate.out.assoc_ctx);
 
 	printf("Send a replication table query\n");
-	request.mess_type = WREPL_REPLICATION;
-	request.message.replication.command = WREPL_REPL_TABLE_QUERY;
+	pull_table.in.assoc_ctx = associate.out.assoc_ctx;
 
-	status = wrepl_request(wrepl_socket, mem_ctx, &request, &reply);
+	status = wrepl_pull_table(wrepl_socket, mem_ctx, &pull_table);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (reply->mess_type == WREPL_STOP_ASSOCIATION) {
-		printf("server refused table query - reason %d\n",
-		       reply->message.stop.reason);
-		ret = False;
-		goto done;
-	}
-	CHECK_VALUE(reply->mess_type, WREPL_REPLICATION);
-	CHECK_VALUE(reply->message.replication.command, WREPL_REPL_TABLE_REPLY);	
 
-	table = &reply->message.replication.info.table;
+	printf("Found %d replication partners\n", pull_table.out.num_partners);
 
-	printf("Found %d replication partners\n", table->partner_count);
-
-	for (i=0;i<table->partner_count;i++) {
+	for (i=0;i<pull_table.out.num_partners;i++) {
+		struct wrepl_wins_owner *partner = &pull_table.out.partners[i];
 		printf("%s   max_version=%6llu   min_version=%6llu type=%d\n",
-		       table->partners[i].address, 
-		       table->partners[i].max_version, 
-		       table->partners[i].min_version, 
-		       table->partners[i].type);
+		       partner->address, 
+		       partner->max_version, 
+		       partner->min_version, 
+		       partner->type);
 
-		request.message.replication.command = WREPL_REPL_SEND_REQUEST;
-		request.message.replication.info.owner = table->partners[i];
-
-		status = wrepl_request(wrepl_socket, mem_ctx, &request, &reply);
+		pull_names.in.assoc_ctx = associate.out.assoc_ctx;
+		pull_names.in.partner = *partner;
+		
+		status = wrepl_pull_names(wrepl_socket, mem_ctx, &pull_names);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_VALUE(reply->mess_type, WREPL_REPLICATION);
-		CHECK_VALUE(reply->message.replication.command, WREPL_REPL_SEND_REPLY);
 
-		printf("Received %d names\n", 
-		       reply->message.replication.info.reply.num_names);
+		printf("Received %d names\n", pull_names.out.num_names);
 
-		for (j=0;j<reply->message.replication.info.reply.num_names;j++) {
-			display_entry(mem_ctx,
-				      &reply->message.replication.info.reply.names[j]);
+		for (j=0;j<pull_names.out.num_names;j++) {
+			display_entry(mem_ctx, &pull_names.out.names[j]);
 		}
 	}
 
