@@ -243,7 +243,6 @@ shown in <link linkend="simpleprc">the example above</link>:
  [global]
         smb ports = 445 139
         lpq cache time = 10
-        total print jobs = 0
         load printers = Yes
         printcap name = /etc/printcap
         disable spoolss = No
@@ -368,7 +367,6 @@ configuration. Here is what you can expect to find:
  No path in service printers - using /tmp
 
         lpq cache time = 10
-        total print jobs = 0
         load printers = Yes
         printcap name = /etc/printcap
         disable spoolss = No
@@ -417,7 +415,7 @@ This means that a line consisting of, for example:
 
 <para><smbconfblock>
 <smbconfcomment>This defines LPRng as the printing system</smbconfcomment>
-<smbconfoption><name>printing</name><value>lprng</value></smbconfoption>
+<smbconfoption><name>printing</name><value> lprng</value></smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -454,7 +452,7 @@ file to remove all parameters that are set at default.
 <smbconfoption><name>show add printer wizard</name><value>yes</value></smbconfoption>
 <smbconfoption><name>printcap name</name><value>/etc/printcap</value></smbconfoption>
 <smbconfoption><name>printer admin</name><value>@ntadmin, root</value></smbconfoption>
-<smbconfoption><name>total print jobs</name><value>100</value></smbconfoption>
+<smbconfoption><name>max print jobs</name><value>100</value></smbconfoption>
 <smbconfoption><name>lpq cache time</name><value>20</value></smbconfoption>
 <smbconfoption><name>use client driver</name><value>no</value></smbconfoption>
 
@@ -556,7 +554,7 @@ share settings and specify other values).
 		uploaded driver.</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term><smbconfoption><name>total print jobs</name><value>100 </value></smbconfoption></term>
+	<varlistentry><term><smbconfoption><name>max print jobs</name><value>100 </value></smbconfoption></term>
 		<listitem><para>Sets the upper limit to 100 print jobs
 		being active on the Samba server at any one time. Should a client
 		submit a job that exceeds this number, a <quote>no more space
