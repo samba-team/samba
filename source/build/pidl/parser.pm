@@ -547,6 +547,11 @@ sub ParseElementPullScalar($$$)
 	} else {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
+	if (my $range = util::has_property($e, "range")) {
+		my ($low, $high) = split(/ /, $range, 2);
+		pidl "\tif ($var_prefix$e->{NAME} < $low || $var_prefix$e->{NAME} > $high) {\n";
+		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_RANGE, \"value out of range\");\n\t}\n";
+	}
 
 	end_flags($e);
 }
