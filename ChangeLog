@@ -1,5 +1,9 @@
 2003-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kuser/kdestroy.c: destroy tokens even if there isn't v4 support
 
+	* kuser/kinit.c: get token even if there isn't v4 support
+	
 	* kuser/klist.c: print tokens even if there isn't v4 support
 	
 2003-05-06  Johan Danielsson  <joda@pdc.kth.se>
