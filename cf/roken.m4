@@ -32,13 +32,13 @@ AC_MSG_CHECKING(for roken in $i)
 
 CPPFLAGS="-I$i/include ${CPPFLAGS}"
 
-AC_TRY_CPP(
-[#include <roken.h>
+AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
+#include <roken.h>
 #if ROKEN_VERSION < $1
 #error old roken version, should be $1
 fail
 #endif
-],[roken_installed=yes; break])
+]])],[roken_installed=yes; break])
 
 AC_MSG_RESULT($roken_installed)
 
