@@ -229,37 +229,42 @@ AC_SUBST(OLD_ENVIRON)
 #
 if test -f /lib/pse.exp ; then LIBS="$LIBS -bI:/lib/pse.exp"; fi
 
+AC_CHECK_LIB(termcap, tgetent)
+AC_CHECK_LIB(curses, setupterm)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
+	
+
 AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror strftime)
 AC_CHECK_FUNCS(cgetent getstr cgetstr uname vhangup)
 AC_CHECK_FUNCS(frevoke revoke setsid setpgid getmsg)
 AC_CHECK_FUNCS(tgetent setupterm mktime ptsname ttyname unlockpt grantpt)
 
-if test $ac_cv_func_tgetent = no; then
-  # tgetent is not in the default libraries.  See if it's in some other.
-  for lib in termcap; do
-    AC_CHECK_LIB($lib, tgetent, [AC_DEFINE(HAVE_TGETENT)
-      LIBS="$LIBS -l$lib"; break])
-  done
-fi
+dnl if test $ac_cv_func_tgetent = no; then
+dnl   # tgetent is not in the default libraries.  See if it's in some other.
+dnl   for lib in termcap; do
+dnl     AC_CHECK_LIB($lib, tgetent, [AC_DEFINE(HAVE_TGETENT)
+dnl       LIBS="$LIBS -l$lib"; break])
+dnl   done
+dnl fi
+dnl 
+dnl if test $ac_cv_func_setupterm = no; then
+dnl   # setupterm is not in the default libraries.  See if it's in some other.
+dnl   for lib in curses; do
+dnl     AC_CHECK_LIB($lib, setupterm, [AC_DEFINE(HAVE_SETUPTERM)
+dnl       LIBS="$LIBS -l$lib"; break])
+dnl   done
+dnl fi
 
-if test $ac_cv_func_setupterm = no; then
-  # setupterm is not in the default libraries.  See if it's in some other.
-  for lib in curses; do
-    AC_CHECK_LIB($lib, setupterm, [AC_DEFINE(HAVE_SETUPTERM)
-      LIBS="$LIBS -l$lib"; break])
-  done
-fi
-
-
-# these two are mainly here for solaris
-AC_CHECK_FUNCS(socket)
-if test "$ac_cv_func_socket" = no; then
-	AC_CHECK_LIB(socket, socket)
-fi
-AC_CHECK_FUNCS(gethostbyname)
-if test "$ac_cv_func_gethostbyname" = no; then
-	AC_CHECK_LIB(nsl, gethostbyname)
-fi
+dnl # these two are mainly here for solaris
+dnl AC_CHECK_FUNCS(socket)
+dnl if test "$ac_cv_func_socket" = no; then
+dnl 	AC_CHECK_LIB(socket, socket)
+dnl fi
+dnl AC_CHECK_FUNCS(gethostbyname)
+dnl if test "$ac_cv_func_gethostbyname" = no; then
+dnl 	AC_CHECK_LIB(nsl, gethostbyname)
+dnl fi
 
 AC_CHECK_LIB(util, logout)
 
