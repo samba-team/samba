@@ -1625,6 +1625,7 @@ BOOL lp_bind_interfaces_only(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_nt_smb_support(void);
+BOOL lp_unicode(void);
 BOOL lp_nt_pipe_support(void);
 BOOL lp_nt_acl_support(void);
 BOOL lp_stat_cache(void);

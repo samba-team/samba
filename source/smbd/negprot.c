@@ -200,8 +200,8 @@ static int reply_nt1(char *outbuf)
   }
 
 
-  /* until the unicode conversion is complete have it disabled by default */
-  if (getenv("SMBD_USE_UNICODE")) {
+  /* allow for disabling unicode */
+  if (lp_unicode()) {
 	  capabilities |= CAP_UNICODE;
   }
 

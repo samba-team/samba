@@ -268,6 +268,7 @@ typedef struct
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
 	BOOL bHideLocalUsers;
+	BOOL bUnicode;
 }
 global;
 
@@ -775,6 +776,7 @@ static struct parm_struct parm_table[] = {
 	{"protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, 0},
+	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, 0},
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, 0},
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, 0},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, 0},
@@ -1251,6 +1253,7 @@ static void init_globals(void)
 	Globals.bBindInterfacesOnly = False;
 	Globals.bUnixPasswdSync = False;
 	Globals.bPasswdChatDebug = False;
+	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTSmbSupport = True;	/* Do NT SMB's by default. */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTAclSupport = True;	/* Use NT ACLs by default. */
@@ -1508,6 +1511,7 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_nt_smb_support, &Globals.bNTSmbSupport)
+FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_acl_support, &Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
