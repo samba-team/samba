@@ -80,6 +80,7 @@ struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session
 		SSVAL(req->out.vwv,VWV(4),parms->old.in.vc_num);
 		SIVAL(req->out.vwv,VWV(5),parms->old.in.sesskey);
 		SSVAL(req->out.vwv,VWV(7),parms->old.in.password.length);
+		SIVAL(req->out.vwv,VWV(8), 0); /* reserved */
 		smbcli_req_append_blob(req, &parms->old.in.password);
 		smbcli_req_append_string(req, parms->old.in.user, STR_TERMINATE);
 		smbcli_req_append_string(req, parms->old.in.domain, STR_TERMINATE|STR_UPPER);
