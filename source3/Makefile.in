@@ -160,7 +160,8 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/vfs.o smbd/vfs-wrap.o \
             lib/msrpc-client.o lib/msrpc_use.o \
             rpc_parse/parse_creds.o \
-	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o 
+	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o \
+	    printing/printfsp.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o printing/load.o
 
