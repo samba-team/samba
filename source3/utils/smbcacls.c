@@ -4,6 +4,7 @@
    Version 3.0
    
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Tim Potter      2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,72 +59,84 @@ static struct perm_value standard_values[] = {
 	{ NULL, 0 },
 };
 
+struct cli_state lsa_cli;
+POLICY_HND pol;
+struct ntuser_creds creds;
+BOOL got_policy_hnd;
+
+/* Open cli connection and policy handle */
+
+static BOOL open_policy_hnd(void)
+{
+	creds.pwd.null_pwd = 1;
+
+	/* Initialise cli LSA connection */
+
+	if (!lsa_cli.initialised && 
+	    !cli_lsa_initialise(&lsa_cli, server, &creds)) {
+		return False;
+	}
+
+	/* Open policy handle */
+
+	if (!got_policy_hnd) {
+		if (cli_lsa_open_policy(&lsa_cli, True, 
+					SEC_RIGHTS_MAXIMUM_ALLOWED, &pol)
+		    != NT_STATUS_NOPROBLEMO) {
+			return False;
+		}
+
+		got_policy_hnd = True;
+	}
+	
+	return True;
+}
+
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
-	struct cli_state cli;
-	POLICY_HND pol;
-	struct ntuser_creds creds;
-	char **names;
-	uint32 *types;
+	char **names = NULL;
+	uint32 *types = NULL;
 	int num_names;
 
-        ZERO_STRUCT(creds);             
-	ZERO_STRUCT(cli);
-	ZERO_STRUCT(pol);
+	sid_to_string(str, sid);
 
-        creds.pwd.null_pwd = 1;
+	if (numeric) return;
 
-	if (numeric || !cli_lsa_initialise(&cli, server, &creds) ||
-	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&pol) != NT_STATUS_NOPROBLEMO ||
-	    cli_lsa_lookup_sids(&cli, &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_NOPROBLEMO) {
-		sid_to_string(str, sid);
-		goto done;
-	}
+	/* Ask LSA to convert the sid to a name */
 
-	fstrcpy(str, names[0]);
+	if (open_policy_hnd() &&
+	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
+				&num_names) == NT_STATUS_NOPROBLEMO) {
 
-	safe_free(names[0]);
-	safe_free(names);
-	safe_free(types);
+		/* Converted OK */
 
- done:
-	if (cli.initialised) {
-		cli_lsa_close(&cli, &pol);
-		cli_lsa_shutdown(&cli);
+		fstrcpy(str, names[0]);
+
+		safe_free(names[0]);
+		safe_free(names);
+		safe_free(types);
 	}
 }
 
 /* convert a string to a SID, either numeric or username/group */
 static BOOL StringToSid(DOM_SID *sid, fstring str)
 {
-	uint32 *types;
-	struct cli_state cli;
-	struct ntuser_creds creds;
-	POLICY_HND pol;
+	uint32 *types = NULL;
+	DOM_SID *sids = NULL;
 	int num_sids;
-	BOOL result = True;
-	DOM_SID *sids;
+	BOOL result = False;
 	
 	/* Short cut */
 
 	if (strncmp(str, "S-", 2) == 0) {
-		return string_to_sid(sid, str);
+		result = string_to_sid(sid, str);
+		goto done;
 	}
 
-	ZERO_STRUCT(creds);
-	ZERO_STRUCT(cli);
-	ZERO_STRUCT(pol);
-
-	creds.pwd.null_pwd = 1;      
-
-	if (!cli_lsa_initialise(&cli, server, &creds) ||
-	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&pol) != NT_STATUS_NOPROBLEMO ||
-	    cli_lsa_lookup_names(&cli, &pol, 1, &str, &sids, &types, 
-				 &num_sids) != NT_STATUS_NOPROBLEMO) {
+	if (open_policy_hnd() &&
+	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
+				 &num_sids) == NT_STATUS_NOPROBLEMO) {
 		result = string_to_sid(sid, str);
 		goto done;
 	}
@@ -134,11 +147,6 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 	safe_free(types);
 
  done:
-	if (cli.initialised) {
-		cli_lsa_close(&cli, &pol);
-		cli_lsa_shutdown(&cli);
-	}
-
 	return result;
 }
 
