@@ -51,7 +51,7 @@ LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 DRIVERFILE = $(CONFIGDIR)/printers.def
-PASSWD_PROGRAM = /bin/passwd
+PASSWD_PROGRAM = @passwd_program@
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
