@@ -3167,8 +3167,17 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   }
 
   /* admin user check */
-  if (user_in_list(user,lp_admin_users(snum)) &&
-      !pcon->read_only)
+
+  /* JRA - original code denied admin user if the share was
+     marked read_only. Changed as I don't think this is needed,
+     but old code left in case there is a problem here.
+   */
+  if (user_in_list(user,lp_admin_users(snum)) 
+#if 0
+      && !pcon->read_only)
+#else
+      )
+#endif
     {
       pcon->admin_user = True;
       DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
