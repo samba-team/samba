@@ -74,79 +74,24 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
-/* Get a domain controller name.  Cache positive and negative lookups so we
-   don't go to the network too often when something is badly broken. */
-
-#define GET_DC_NAME_CACHE_TIMEOUT 30 /* Seconds between dc lookups */
-
-struct get_dc_name_cache {
-	fstring domain_name;
-	fstring srv_name;
-	time_t lookup_time;
-	struct get_dc_name_cache *prev, *next;
-};
+/* Get a domain controller name */
 
 static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
-	static struct get_dc_name_cache *get_dc_name_cache;
-	struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
 	int count, i;
 
-	/* Check the cache for previous lookups */
-
-	for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
-
-		if (!strequal(domain, dcc->domain_name))
-			continue; /* Not our domain */
-
-		if ((time(NULL) - dcc->lookup_time) > 
-		    GET_DC_NAME_CACHE_TIMEOUT) {
-
-			/* Cache entry has expired, delete it */
-
-			DEBUG(10, ("get_dc_name_cache entry expired for %s\n", domain));
-
-			DLIST_REMOVE(get_dc_name_cache, dcc);
-			SAFE_FREE(dcc);
-
-			break;
-		}
-
-		/* Return a positive or negative lookup for this domain */
-
-		if (dcc->srv_name[0]) {
-			DEBUG(10, ("returning positive get_dc_name_cache entry for %s\n", domain));
-			fstrcpy(srv_name, dcc->srv_name);
-			return True;
-		} else {
-			DEBUG(10, ("returning negative get_dc_name_cache entry for %s\n", domain));
-			return False;
-		}
-	}
-
-	/* Add cache entry for this lookup. */
-
-	DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
-
-	if (!(dcc = (struct get_dc_name_cache *) 
-	      malloc(sizeof(struct get_dc_name_cache))))
-		return False;
-
-	ZERO_STRUCTP(dcc);
-
-	fstrcpy(dcc->domain_name, domain);
-	dcc->lookup_time = time(NULL);
-
-	DLIST_ADD(get_dc_name_cache, dcc);
-
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (!get_dc_list(True, domain, &ip_list, &count)) {
-		if (!get_dc_list(False, domain, &ip_list, &count)) {
-			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-			return False;
-		}
+	if (get_dc_list(True, domain, &ip_list, &count) &&
+	    name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
+		dc_ip = ip_list[0];
+		goto done;
+	}
+
+	if (!get_dc_list(False, domain, &ip_list, &count)) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		return False;
 	}
 
 	/* Pick a nice close server */
@@ -197,10 +142,6 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 	   Ideally we should sent a SAMLOGON request to determine whether
 	   the DC is alive and kicking.  If we can catch a dead DC before
 	   performing a cli_connect() we can avoid a 30-second timeout. */
-
-	/* We have a name so make the cache entry positive now */
-
-	fstrcpy(dcc->srv_name, srv_name);
 
 	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
