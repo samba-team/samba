@@ -105,7 +105,7 @@ static char *decode_account_policy_name(int field)
 
 /****************************************************************************
 ****************************************************************************/
-BOOL account_policy_get(int field, int *value)
+BOOL account_policy_get(int field, uint32 *value)
 {
 	fstring name;
 
@@ -120,7 +120,7 @@ BOOL account_policy_get(int field, int *value)
 
 /****************************************************************************
 ****************************************************************************/
-BOOL account_policy_set(int field, int value)
+BOOL account_policy_set(int field, uint32 value)
 {
 	fstring name;
 

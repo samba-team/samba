@@ -86,7 +86,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	struct sys_grent *glist;
 	struct sys_grent *grp;
 	int i, num, cur_rid=0;
-	gid_t *gid;
+	gid_t gid;
 	GROUP_MAP map;
 	DOM_SID tmp_sid;
 	fstring user_name;
@@ -204,9 +204,9 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		goto done;
 	}
 
-	DEBUG(10,("get_alias_user_groups: looking for gid %d of user %s\n", (int)*gid, user_name));
+	DEBUG(10,("get_alias_user_groups: looking for gid %d of user %s\n", (int)gid, user_name));
 
-	if(!get_group_from_gid(*gid, &map, MAPPING_WITHOUT_PRIV)) {
+	if(!get_group_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
 		DEBUG(0,("get_alias_user_groups: gid of user %s doesn't exist. Check your /etc/passwd and /etc/group files\n", user_name));
 		goto done;
 	}	
