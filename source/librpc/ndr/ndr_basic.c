@@ -804,7 +804,7 @@ const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
-	ndr->print(ndr, "%-25s: %s", GUID_string(ndr->mem_ctx, guid));
+	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr->mem_ctx, guid));
 }
 
 void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
