@@ -1844,8 +1844,10 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 
 	/* the printer name is set to the service name. */
 	string_set(&iSERVICE(i).szPrintername, pszPrintername);
-	string_set(&iSERVICE(i).comment, comment);
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	unix_to_dos(iSERVICE(i).szPrintername, True);
+    string_set(&iSERVICE(i).comment, comment);
+	unix_to_dos(iSERVICE(i).comment, True);
+    iSERVICE(i).bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	iSERVICE(i).bRead_only = False;
 	/* No share modes on printer services. */
@@ -3039,7 +3041,7 @@ void lp_add_one_printer(char *name, char *comment)
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
 
-	if (lp_servicenumber(name) < 0)
+    if (lp_servicenumber(name) < 0)
 	{
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0)
