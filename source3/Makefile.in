@@ -396,11 +396,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 ######################################################################
 # now the rules...
 ######################################################################
-
-all : CHECK include/proto.h $(SPROGS) $(PROGS) bin/libsmbclient.so 
-
-# removed SHLIBS until it compiles on more platforms (tridge)
-# $(SHLIBS)
+all : CHECK include/proto.h $(SPROGS) $(PROGS) $(SHLIBS)
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
@@ -616,11 +612,11 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 
 bin/libsmbclient.so: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
+	-$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
 
 client/testsmbc: client/testsmbc.o bin/libsmbclient.so
 	@echo Linking testsmbc
-	@$(CC) $(CFLAGS) -o $@ client/testsmbc.o -Lbin -lsmbclient
+	-$(CC) $(CFLAGS) -o $@ client/testsmbc.o -Lbin -lsmbclient
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
@@ -674,9 +670,9 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	@$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
-	@$(INSTALLCMD) -d ${prefix}/include
-	@$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
+	-$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
+	-$(INSTALLCMD) -d ${prefix}/include
+	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
 # revert to the previously installed version
 revert:
