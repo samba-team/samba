@@ -404,6 +404,9 @@ loop (int from0, int to0,
     int max_fd;
     int count = 2;
 
+    if(from0 >= FD_SETSIZE || from1 >= FD_SETSIZE || from2 >= FD_SETSIZE)
+	errx (1, "fd too large");
+
     FD_ZERO(&real_readset);
     FD_SET(from0, &real_readset);
     FD_SET(from1, &real_readset);
