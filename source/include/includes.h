@@ -653,8 +653,6 @@ extern int errno;
 
 #include "asn_1.h"
 
-#include "popt.h"
-
 #include "mutex.h"
 
 #include "librpc/rpc/dcerpc.h"
