@@ -1177,8 +1177,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	int outsize2;
 	char inbuf_saved[smb_wct];
 	char outbuf_saved[smb_wct];
-	int wct = CVAL(outbuf,smb_wct);
-	int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
+	int outsize = smb_len(outbuf);
 
 	/* maybe its not chained */
 	if (smb_com2 == 0xFF) {
