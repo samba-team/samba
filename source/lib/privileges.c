@@ -739,3 +739,12 @@ BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
 	return True;
 }
 
+/*******************************************************************
+*******************************************************************/
+
+BOOL is_privileged_sid( DOM_SID *sid )
+{
+	SE_PRIV mask;
+	
+	return get_privileges( sid, &mask );
+}
