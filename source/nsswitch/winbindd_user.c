@@ -166,6 +166,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
     
@@ -183,6 +184,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 				 user_rid, group_rid, gecos_name,
 				 &state->response.data.pw)) {
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 	
@@ -264,6 +266,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
 		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 	
