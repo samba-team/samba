@@ -249,7 +249,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
     
   size = sbuf.st_size;
@@ -681,7 +681,7 @@ static int call_trans2findfirst(connection_struct *conn,
     }
 #endif 
 
-    return(ERROR(ERRDOS,ERRbadpath));
+    return(UNIXERROR(ERRDOS,ERRbadpath));
   }
 
   p = strrchr(directory,'/');
@@ -707,7 +707,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   dptr_num = dptr_create(conn,directory, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
-    return(ERROR(ERRDOS,ERRbadfile));
+    return(UNIXERROR(ERRDOS,ERRbadfile));
 
   /* Convert the formatted mask. */
   mask_convert(mask);
@@ -1475,7 +1475,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     if(sys_fstat(fd,&st)!=0) {
       DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));
-      return(ERROR(ERRDOS,ERRbadpath));
+      return(UNIXERROR(ERRDOS,ERRbadpath));
     }
   } else {
     /* set path info */
@@ -1639,7 +1639,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   {
     if(file_utime(conn, fname, &tvs)!=0)
     {
-      return(ERROR(ERRDOS,ERRnoaccess));
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   }
 
@@ -1647,7 +1647,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   if (mode != dos_mode(conn, fname, &st) && file_chmod(conn, fname, mode, NULL))
   {
     DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
-    return(ERROR(ERRDOS,ERRnoaccess));
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if(size != st.st_size)
@@ -1657,7 +1657,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       fd = dos_open(fname,O_RDWR,0);
       if (fd == -1)
       {
-        return(ERROR(ERRDOS,ERRbadpath));
+        return(UNIXERROR(ERRDOS,ERRbadpath));
       }
       set_filelen(fd, size);
       close(fd);

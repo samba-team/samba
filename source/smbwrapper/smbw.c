@@ -390,8 +390,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	if (!cli_send_tconX(&c, share, 
-			    strstr(share,"IPC$")?"IPC":"A:", 
+	if (!cli_send_tconX(&c, share, "?????",
 			    password, strlen(password)+1)) {
 		errno = smbw_errno(&c);
 		cli_shutdown(&c);

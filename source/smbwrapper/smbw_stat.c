@@ -74,6 +74,38 @@ BOOL smbw_getatr(struct smbw_server *srv, char *path,
 	return False;
 }
 
+
+static struct print_job_info printjob;
+
+/***************************************************** 
+gather info from a printjob listing
+*******************************************************/
+static void smbw_printjob_stat(struct print_job_info *job)
+{
+	if (strcmp(job->name, printjob.name) == 0) {
+		printjob = *job;
+	}
+}
+
+/***************************************************** 
+stat a printjob
+*******************************************************/
+int smbw_stat_printjob(struct smbw_server *srv,char *path,
+		       size_t *size, time_t *m_time)
+{
+	if (path[0] == '\\') path++;
+
+	ZERO_STRUCT(printjob);
+
+	fstrcpy(printjob.name, path);
+	cli_print_queue(&srv->cli, smbw_printjob_stat);
+
+	*size = printjob.size;
+	*m_time = printjob.t;
+	return 0;
+}
+
+
 /***************************************************** 
 a wrapper for fstat()
 *******************************************************/
@@ -151,8 +183,16 @@ int smbw_stat(const char *fname, struct stat *st)
 		goto failed;
 	}
 
-	if (strcmp(share,"IPC$") == 0) {
+	if (strncmp(srv->cli.dev,"IPC",3) == 0) {
 		mode = aDIR | aRONLY;
+	} else if (strncmp(srv->cli.dev,"LPT",3) == 0) {
+		if (strcmp(path,"\\") == 0) {
+			mode = aDIR | aRONLY;
+		} else {
+			mode = aRONLY;
+			smbw_stat_printjob(srv, path, &size, &m_time);
+			c_time = a_time = m_time;
+		}
 	} else {
 		if (!smbw_getatr(srv, path, 
 				 &mode, &size, &c_time, &a_time, &m_time)) {
@@ -163,8 +203,8 @@ int smbw_stat(const char *fname, struct stat *st)
 
 	smbw_setup_stat(st, path, size, mode);
 
-	st->st_atime = time(NULL);
-	st->st_ctime = m_time;
+	st->st_atime = a_time;
+	st->st_ctime = c_time;
 	st->st_mtime = m_time;
 	st->st_dev = srv->dev;
 

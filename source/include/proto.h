@@ -321,6 +321,7 @@ struct hostent *Get_Hostbyname(char *name);
 BOOL process_exists(int pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
+uid_t nametouid(const char *name);
 void smb_panic(char *why);
 char *readdirname(void *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
@@ -417,6 +418,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon);
+int cli_print_queue(struct cli_state *cli, 
+		    void (*fn)(struct print_job_info *));
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -2294,6 +2297,8 @@ int smbw_utime(const char *fname, void *buf);
 int smbw_chown(const char *fname, uid_t owner, gid_t group);
 int smbw_chmod(const char *fname, mode_t newmode);
 off_t smbw_lseek(int fd, off_t offset, int whence);
+int smbw_dup(int fd);
+int smbw_dup2(int fd, int fd2);
 
 /*The following definitions come from  smbwrapper/smbw_dir.c  */
 
@@ -2321,6 +2326,8 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode);
 BOOL smbw_getatr(struct smbw_server *srv, char *path, 
 		 uint32 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time);
+int smbw_stat_printjob(struct smbw_server *srv,char *path,
+		       size_t *size, time_t *m_time);
 int smbw_fstat(int fd, struct stat *st);
 int smbw_stat(const char *fname, struct stat *st);
 

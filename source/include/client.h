@@ -25,8 +25,9 @@
 #define _CLIENT_H
 
 /* the client asks for a smaller buffer to save ram and also to get more
-   overlap on the wire */
-#define CLI_BUFFER_SIZE (0x4000)
+   overlap on the wire. This size gives us a nice read/write size, which
+   will be a multiple of the page size on almost any system */
+#define CLI_BUFFER_SIZE (0x4400)
 
 /*
  * These definitions depend on smb.h
@@ -44,6 +45,16 @@ typedef struct file_info
   time_t ctime;
   pstring name;
 } file_info;
+
+struct print_job_info
+{
+	uint16 id;
+	uint16 priority;
+	size_t size;
+	fstring user;
+	fstring name;
+	time_t t;
+};
 
 struct pwd_info
 {

@@ -4044,7 +4044,6 @@ BOOL process_exists(int pid)
 /*******************************************************************
 turn a uid into a user name
 ********************************************************************/
-
 char *uidtoname(uid_t uid)
 {
   static char name[40];
@@ -4053,6 +4052,7 @@ char *uidtoname(uid_t uid)
   slprintf(name, sizeof(name) - 1, "%d",(int)uid);
   return(name);
 }
+
 
 /*******************************************************************
 turn a gid into a group name
@@ -4065,6 +4065,16 @@ char *gidtoname(gid_t gid)
 	if (grp) return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
+}
+
+/*******************************************************************
+turn a user name into a uid
+********************************************************************/
+uid_t nametouid(const char *name)
+{
+	struct passwd *pass = getpwnam(name);
+	if (pass) return(pass->pw_uid);
+	return (uid_t)-1;
 }
 
 /*******************************************************************
