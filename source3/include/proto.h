@@ -1097,6 +1097,12 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 
+/* The following definitions come from libsmb/clioplock.c  */
+
+BOOL cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level);
+void cli_oplock_handler(struct cli_state *cli, 
+			BOOL (*handler)(struct cli_state *, int, unsigned char));
+
 /* The following definitions come from libsmb/cliprint.c  */
 
 int cli_print_queue(struct cli_state *cli, 
