@@ -1373,7 +1373,7 @@ BOOL pm_process( char *FileName,
 /*The following definitions come from  passdb/ldap.c  */
 
 BOOL ldap_open_connection(BOOL modify);
-void ldap_close_connection();
+void ldap_close_connection(void);
 BOOL ldap_search_for(char *filter);
 BOOL ldap_search_by_name(const char *user);
 BOOL ldap_search_by_uid(int uid);

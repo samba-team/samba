@@ -40,7 +40,7 @@ static pstring ldap_secret;
 
 
 /*******************************************************************
-  Open/close connections to the LDAP server.
+  Open connections to the LDAP server.
  ******************************************************************/	
 
 BOOL ldap_open_connection(BOOL modify)
@@ -62,7 +62,11 @@ BOOL ldap_open_connection(BOOL modify)
 	return (True);
 }
 
-void ldap_close_connection()
+/*******************************************************************
+  close connections to the LDAP server.
+ ******************************************************************/	
+
+void ldap_close_connection(void)
 {
 	if(!ldap_struct)
 		return;
