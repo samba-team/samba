@@ -964,7 +964,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	int len = 0;
 	UNISTR2 upw;
 
-	BOOL res = False;
+	BOOL res = True;
 	POLICY_HND lsa_pol;
 
 	fstring wks_name;

@@ -4328,6 +4328,54 @@ void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l)
 	r_l->num_rids2 = 0;
 }
 
+/*******************************************************************
+makes a SAMR_Q_DELETE_DOM_USER structure.
+********************************************************************/
+BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER *q_c, POLICY_HND *hnd)
+{
+	if (q_c == NULL || hnd == NULL) return False;
+
+	DEBUG(5,("make_samr_q_delete_dom_user\n"));
+
+	memcpy(&(q_c->user_pol), hnd, sizeof(q_c->user_pol));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_q_delete_dom_user(char *desc,  SAMR_Q_DELETE_DOM_USER *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_delete_dom_user");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth); 
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_delete_dom_user(char *desc,  SAMR_R_DELETE_DOM_USER *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_delete_dom_user");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
+}
+
 
 /*******************************************************************
 reads or writes a structure.

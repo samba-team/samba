@@ -494,6 +494,9 @@ BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 			      uint32 status);
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
 void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l);
+BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER *q_c, POLICY_HND *hnd);
+BOOL samr_io_q_delete_dom_user(char *desc,  SAMR_Q_DELETE_DOM_USER *q_u, prs_struct *ps, int depth);
+BOOL samr_io_r_delete_dom_user(char *desc,  SAMR_R_DELETE_DOM_USER *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				const POLICY_HND *pol,
 				uint32 access_mask, uint32 rid);

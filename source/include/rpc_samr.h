@@ -43,7 +43,7 @@ x SamrCreateGroupInDomain
 x SamrCreateUserInDomain
 ? SamrDeleteAlias
 SamrDeleteGroup
-SamrDeleteUser
+x SamrDeleteUser
 x SamrEnumerateAliasesInDomain
 SamrEnumerateDomainsInSamServer
 x SamrEnumerateGroupsInDomain
@@ -116,7 +116,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
-#define SAMR_UNKNOWN_23        0x23
+#define SAMR_DELETE_USER       0x23
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_SET_USERINFO2     0x25
 #define SAMR_QUERY_USERGROUPS  0x27
@@ -126,6 +126,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2a        0x2a
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
+#define SAMR_UNKNOWN_2d        0x2d
 #define SAMR_UNKNOWN_2e        0x2e
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
@@ -1355,6 +1356,22 @@ typedef struct r_samr_create_user_info
 
 } SAMR_R_CREATE_USER;
 
+
+/* SAMR_Q_DELETE_DOM_USER - delete domain user */
+typedef struct q_samr_delete_dom_user_info
+{
+    POLICY_HND user_pol;          /* policy handle */
+
+} SAMR_Q_DELETE_DOM_USER;
+
+
+/* SAMR_R_DELETE_DOM_USER - delete domain user */
+typedef struct r_samr_delete_dom_user_info
+{
+	POLICY_HND pol;       /* policy handle */
+	uint32 status;        /* return status */
+
+} SAMR_R_DELETE_DOM_USER;
 
 
 /* SAMR_Q_QUERY_GROUPMEM - query group members */
