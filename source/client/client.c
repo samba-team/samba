@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB client
-   Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Simo Sorce 2001-2002
-   Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Andrew Tridgell          1994-1998
+   Copyright (C) Simo Sorce               2001-2002
+   Copyright (C) Jelmer Vernooij          2003
+   Copyright (C) Gerald (Jerry) Carter    2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +29,6 @@
 #define REGISTER 0
 #endif
 
-struct cli_state *cli;
 extern BOOL in_client;
 static int port = 0;
 pstring cur_dir = "\\";
@@ -36,10 +36,7 @@ static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
 static pstring username;
-static pstring password;
 static pstring calling_name;
-static BOOL use_kerberos;
-static BOOL got_pass;
 static BOOL grepable=False;
 static char *cmdstr = NULL;
 
@@ -62,7 +59,6 @@ time_t newer_than = 0;
 static int archive_level = 0;
 
 static BOOL translation = False;
-
 static BOOL have_ip;
 
 /* clitar bits insert */
@@ -98,10 +94,11 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
-#define USENMB
+/* root cli_state connection */
 
-/* some forward declarations */
-static struct cli_state *do_connect(const char *server, const char *share);
+struct cli_state *cli;
+
+
 
 /****************************************************************************
  Write to a local file with CR/LF->LF translation if appropriate. Return the 
@@ -217,9 +214,15 @@ static void send_message(void)
 static int do_dskattr(void)
 {
 	int total, bsize, avail;
+	struct cli_state *targetcli;
+	pstring targetpath;
 
-	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
+	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
+	}
+
+	if (!cli_dskattr(targetcli, &bsize, &total, &avail)) {
+		d_printf("Error in dskattr: %s\n",cli_errstr(targetcli)); 
 		return 1;
 	}
 
@@ -249,31 +252,67 @@ static int do_cd(char *newdir)
 	char *p = newdir;
 	pstring saved_dir;
 	pstring dname;
+	pstring targetpath;
+	struct cli_state *targetcli;
+	SMB_STRUCT_STAT sbuf;
+	uint32 attributes;
       
 	dos_format(newdir);
 
-	/* Save the current directory in case the
-	   new directory is invalid */
+	/* Save the current directory in case the new directory is invalid */
+
 	pstrcpy(saved_dir, cur_dir);
+
 	if (*p == '\\')
 		pstrcpy(cur_dir,p);
 	else
 		pstrcat(cur_dir,p);
+
 	if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
 		pstrcat(cur_dir, "\\");
 	}
+	
 	dos_clean_name(cur_dir);
-	pstrcpy(dname,cur_dir);
+	pstrcpy( dname, cur_dir );
 	pstrcat(cur_dir,"\\");
 	dos_clean_name(cur_dir);
 	
-	if (!strequal(cur_dir,"\\")) {
-		if (!cli_chkpath(cli, dname)) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+	if ( !cli_resolve_path( cli, dname, &targetcli, targetpath ) ) {
+		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+		pstrcpy(cur_dir,saved_dir);
+		goto out;
+	}
+
+	
+	if ( strequal(targetpath,"\\" ) )
+		return 0;   
+		
+	/* use a trans2_qpathinfo to test directories for modern servers */
+	
+	if ( targetcli->protocol >= PROTOCOL_LANMAN2 ) {
+		if ( !cli_qpathinfo_basic( targetcli, targetpath, &sbuf, &attributes ) ) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
+			pstrcpy(cur_dir,saved_dir);
+			goto out;
+		}
+		
+		if ( !(attributes&FILE_ATTRIBUTE_DIRECTORY) ) {
+			d_printf("cd %s: not a directory\n", dname);
+			pstrcpy(cur_dir,saved_dir);
+			goto out;
+		}		
+	}
+	else {
+		pstrcat( targetpath, "\\" );
+		dos_clean_name( targetpath );
+		
+		if ( !cli_chkpath(targetcli, targetpath) ) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
-	
+
+out:
 	pstrcpy(cd_path,cur_dir);
 
 	return 0;
@@ -287,7 +326,7 @@ static int cmd_cd(void)
 {
 	pstring buf;
 	int rc = 0;
-
+		
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
 		rc = do_cd(buf);
 	else
@@ -511,6 +550,8 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
+	struct cli_state *targetcli;
+	pstring targetpath;
 
 	if (in_do_list && rec) {
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
@@ -537,7 +578,15 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper, NULL);
+			
+			/* check for dfs */
+			
+			if ( !cli_resolve_path( cli, head, &targetcli, targetpath ) ) {
+				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
+				continue;
+			}
+			
+			cli_list(targetcli, targetpath, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
 				char* next_file = do_list_queue_head();
@@ -556,9 +605,15 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			}
 		}
 	} else {
-		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1) {
-			d_printf("%s listing %s\n", cli_errstr(cli), mask);
+		/* check for dfs */
+			
+		if ( cli_resolve_path( cli, mask, &targetcli, targetpath ) ) {
+			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) 
+				d_printf("%s listing %s\n", cli_errstr(targetcli), targetpath);
 		}
+		else
+			d_printf("do_list: [%s] %s\n", mask, cli_errstr(cli));
+		
 	}
 
 	in_do_list = 0;
@@ -657,14 +712,23 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	off_t start = 0;
 	off_t nread = 0;
 	int rc = 0;
+	struct cli_state *targetcli;
+	pstring targetname;
 
-	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
 		strlower_m(lname);
 	}
 
-	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
+	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
+		return 1;
+	}
+
+
+	GetTimeOfDay(&tp_start);
+	
+	fnum = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
 		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
@@ -694,11 +758,11 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	}
 
 
-	if (!cli_qfileinfo(cli, fnum, 
+	if (!cli_qfileinfo(targetcli, fnum, 
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(cli, fnum, 
+	    !cli_getattrE(targetcli, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
-		d_printf("getattrib: %s\n",cli_errstr(cli));
+		d_printf("getattrib: %s\n",cli_errstr(targetcli));
 		return 1;
 	}
 
@@ -707,12 +771,12 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	if(!(data = (char *)SMB_MALLOC(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
-		cli_close(cli, fnum);
+		cli_close(targetcli, fnum);
 		return 1;
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(targetcli, fnum, data, nread + start, read_size);
 
 		if (n <= 0)
 			break;
@@ -735,7 +799,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (!cli_close(cli, fnum)) {
+	if (!cli_close(targetcli, fnum)) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
 		rc = 1;
 	}
@@ -949,9 +1013,17 @@ static int cmd_mget(void)
 
 static BOOL do_mkdir(char *name)
 {
-	if (!cli_mkdir(cli, name)) {
+	struct cli_state *targetcli;
+	pstring targetname;
+	
+	if ( !cli_resolve_path( cli, name, &targetcli, targetname ) ) {
+		d_printf("mkdir %s: %s\n", name, cli_errstr(cli));
+		return False;
+	}
+
+	if (!cli_mkdir(targetcli, targetname)) {
 		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli),name);
+			 cli_errstr(targetcli),name);
 		return(False);
 	}
 
@@ -981,7 +1053,7 @@ static BOOL do_altname(char *name)
 
 static int cmd_quit(void)
 {
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1065,25 +1137,32 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	char *buf = NULL;
 	int maxwrite = io_bufsize;
 	int rc = 0;
-	
 	struct timeval tp_start;
+	struct cli_state *targetcli;
+	pstring targetname;
+	
+	if ( !cli_resolve_path( cli, rname, &targetcli, targetname ) ) {
+		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
+		return 1;
+	}
+	
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
+		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
+			if (!cli_qfileinfo(targetcli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
+			    !cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL)) {
 				d_printf("getattrib: %s\n",cli_errstr(cli));
 				return 1;
 			}
 		}
 	} else {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	}
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(targetcli),rname);
 		return 1;
 	}
 
@@ -1131,7 +1210,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
+		ret = cli_write(targetcli, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
 			d_printf("Error writing file: %s\n", cli_errstr(cli));
@@ -1142,7 +1221,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (!cli_close(cli, fnum)) {
+	if (!cli_close(targetcli, fnum)) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
@@ -1173,7 +1252,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	}
 
 	if (f == x_stdin) {
-		cli_shutdown(cli);
+		cli_cm_shutdown();
 		exit(0);
 	}
 	
@@ -1563,6 +1642,8 @@ static int cmd_open(void)
 {
 	pstring mask;
 	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1572,7 +1653,12 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_nt_create(cli, mask, FILE_READ_DATA);
+	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+		d_printf("open %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	cli_nt_create(targetcli, targetname, FILE_READ_DATA);
 
 	return 0;
 }
@@ -1586,6 +1672,8 @@ static int cmd_rmdir(void)
 {
 	pstring mask;
 	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	pstrcpy(mask,cur_dir);
 	
@@ -1595,9 +1683,14 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_rmdir(cli, mask)) {
+	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+		d_printf("rmdir %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_rmdir(targetcli, targetname)) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask);
+			 cli_errstr(targetcli),mask);
 	}
 	
 	return 0;
@@ -1611,12 +1704,9 @@ static int cmd_link(void)
 {
 	pstring oldname,newname;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(oldname,cur_dir);
 	pstrcpy(newname,cur_dir);
   
@@ -1629,8 +1719,18 @@ static int cmd_link(void)
 	pstrcat(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if (!cli_unix_hardlink(cli, oldname, newname)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), newname, oldname);
+	if ( !cli_resolve_path( cli, oldname, &targetcli, targetname ) ) {
+		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_hardlink(targetcli, targetname, newname)) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(targetcli), newname, oldname);
 		return 1;
 	}  
 
@@ -1680,12 +1780,9 @@ static int cmd_chmod(void)
 	pstring src;
 	mode_t mode;
 	pstring buf, buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
@@ -1697,9 +1794,19 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (!cli_unix_chmod(cli, src, mode)) {
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("chmod %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_chmod(targetcli, targetname, mode)) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli), src, (unsigned int)mode);
+			cli_errstr(targetcli), src, (unsigned int)mode);
 		return 1;
 	} 
 
@@ -1823,13 +1930,29 @@ static int cmd_getfacl(void)
 	uint16 num_file_acls = 0;
 	uint16 num_dir_acls = 0;
 	uint16 i;
+	struct cli_state *targetcli;
+	pstring targetname;
  
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
+		d_printf("stat file\n");
 		return 1;
 	}
 
-	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
+	pstrcat(src,name);
+	
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_extensions_version(targetcli, &major, &minor, &caplow, &caphigh)) {
 		d_printf("Can't get UNIX CIFS version from server.\n");
 		return 1;
 	}
@@ -1839,24 +1962,16 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	pstrcpy(src,cur_dir);
-	
-	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
-		d_printf("stat file\n");
-		return 1;
-	}
 
-	pstrcat(src,name);
-
-	if (!cli_unix_stat(cli, src, &sbuf)) {
+	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
 		d_printf("%s getfacl doing a stat on file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
-	if (!cli_unix_getfacl(cli, src, &rb_size, &retbuf)) {
+	if (!cli_unix_getfacl(targetcli, targetname, &rb_size, &retbuf)) {
 		d_printf("%s getfacl file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
@@ -1974,6 +2089,8 @@ static int cmd_stat(void)
 	pstring src, name;
 	fstring mode_str;
 	SMB_STRUCT_STAT sbuf;
+	struct cli_state *targetcli;
+	pstring targetname;
  
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1989,9 +2106,15 @@ static int cmd_stat(void)
 
 	pstrcat(src,name);
 
-	if (!cli_unix_stat(cli, src, &sbuf)) {
+	
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
 		d_printf("%s stat file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
@@ -2044,12 +2167,9 @@ static int cmd_chown(void)
 	uid_t uid;
 	gid_t gid;
 	pstring buf, buf2, buf3;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
@@ -2063,9 +2183,20 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (!cli_unix_chown(cli, src, uid, gid)) {
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_chown(targetcli, targetname, uid, gid)) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli), src, (int)uid, (int)gid);
+			cli_errstr(targetcli), src, (int)uid, (int)gid);
 		return 1;
 	} 
 
@@ -2109,6 +2240,8 @@ static int cmd_hardlink(void)
 {
 	pstring src,dest;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2122,8 +2255,18 @@ static int cmd_hardlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_nt_hardlink(cli, src, dest)) {
-		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("hardlink %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_nt_hardlink(targetcli, targetname, dest)) {
+		d_printf("%s doing an NT hard link of files\n",cli_errstr(targetcli));
 		return 1;
 	}
 	
@@ -2425,6 +2568,8 @@ static void server_fn(const char *name, uint32 m,
 
 static BOOL list_servers(const char *wk_grp)
 {
+	fstring state;
+
 	if (!cli->server_domain)
 		return False;
 
@@ -2432,16 +2577,18 @@ static BOOL list_servers(const char *wk_grp)
         	d_printf("\n\tServer               Comment\n");
         	d_printf("\t---------            -------\n");
 	};
+	fstrcpy( state, "Server" );
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn,
-			  "Server");
+			  state);
 
 	if (!grepable) {
 	        d_printf("\n\tWorkgroup            Master\n");
 	        d_printf("\t---------            -------\n");
 	}; 
 
+	fstrcpy( state, "Workgroup" );
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
-			  server_fn, "Workgroup");
+			  server_fn, state);
 	return True;
 }
 
@@ -2478,15 +2625,14 @@ static int cmd_logon(void)
 
 	pstrcpy(l_username, buf);
 
-	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) 
+	{
 		char *pass = getpass("Password: ");
-		if (pass) {
+		if (pass) 
 			pstrcpy(l_password, pass);
-			got_pass = 1;
-		}
-	} else {
+	} 
+	else
 		pstrcpy(l_password, buf2);
-	}
 
 	if (!cli_session_setup(cli, l_username, 
 			       l_password, strlen(l_password),
@@ -2497,6 +2643,36 @@ static int cmd_logon(void)
 	}
 
 	d_printf("Current VUID is %d\n", cli->vuid);
+	return 0;
+}
+
+
+/****************************************************************************
+ list active connections
+****************************************************************************/
+
+static int cmd_list_connect(void)
+{
+	cli_cm_display();
+
+	return 0;
+}
+
+/****************************************************************************
+ display the current active client connection
+****************************************************************************/
+
+static int cmd_show_connect( void )
+{
+	struct cli_state *targetcli;
+	pstring targetpath;
+	
+	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+		d_printf("showconnect %s: %s\n", cur_dir, cli_errstr(cli));
+		return 1;
+	}
+	
+	d_printf("//%s/%s\n", targetcli->desthost, targetcli->share);
 	return 0;
 }
 
@@ -2571,6 +2747,8 @@ static struct
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
+  {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
+  {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
@@ -2645,7 +2823,7 @@ static int process_command_string(char *cmd)
 	/* establish the connection if not already */
 	
 	if (!cli) {
-		cli = do_connect(desthost, service);
+		cli = cli_cm_open(desthost, service, True);
 		if (!cli)
 			return 0;
 	}
@@ -2953,123 +3131,6 @@ static int process_stdin(void)
 	return rc;
 }
 
-/***************************************************** 
- Return a connection to a server.
-*******************************************************/
-
-static struct cli_state *do_connect(const char *server, const char *share)
-{
-	struct cli_state *c;
-	struct nmb_name called, calling;
-	const char *server_n;
-	struct in_addr ip;
-	pstring servicename;
-	char *sharename;
-	
-	/* make a copy so we don't modify the global string 'service' */
-	pstrcpy(servicename, share);
-	sharename = servicename;
-	if (*sharename == '\\') {
-		server = sharename+2;
-		sharename = strchr_m(server,'\\');
-		if (!sharename) return NULL;
-		*sharename = 0;
-		sharename++;
-	}
-
-	server_n = server;
-	
-	zero_ip(&ip);
-
-	make_nmb_name(&calling, calling_name, 0x0);
-	make_nmb_name(&called , server, name_type);
-
- again:
-	zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
-	    !cli_connect(c, server_n, &ip)) {
-		d_printf("Connection to %s failed\n", server_n);
-		return NULL;
-	}
-
-	c->protocol = max_protocol;
-	c->use_kerberos = use_kerberos;
-	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
-		
-
-	if (!cli_session_request(c, &calling, &called)) {
-		char *p;
-		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c));
-		cli_shutdown(c);
-		if ((p=strchr_m(called.name, '.'))) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		d_printf("protocol negotiation failed\n");
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(password, pass);
-			got_pass = 1;
-		}
-	}
-
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
-		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c));
-			if (NT_STATUS_V(cli_nt_error(c)) == 
-			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
-				d_printf("did you forget to run kinit?\n");
-			cli_shutdown(c);
-			return NULL;
-		}
-		d_printf("Anonymous login successful\n");
-	}
-
-	if (*c->server_domain) {
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	} else if (*c->server_os || *c->server_type){
-		DEBUG(1,("OS=[%s] Server=[%s]\n",
-			 c->server_os,c->server_type));
-	}		
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, sharename, "?????",
-			    password, strlen(password)+1)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
-
-	return c;
-}
-
 /****************************************************************************
  Process commands from the client.
 ****************************************************************************/
@@ -3078,7 +3139,7 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = do_connect(desthost, service);
+	cli = cli_cm_open(desthost, service, True);
 	if (!cli) {
 		return 1;
 	}
@@ -3091,7 +3152,7 @@ static int process(char *base_directory)
 		process_stdin();
 	}
   
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	return rc;
 }
 
@@ -3101,7 +3162,7 @@ static int process(char *base_directory)
 
 static int do_host_query(char *query_host)
 {
-	cli = do_connect(query_host, "IPC$");
+	cli = cli_cm_open(query_host, "IPC$", True);
 	if (!cli)
 		return 1;
 
@@ -3112,9 +3173,9 @@ static int do_host_query(char *query_host)
 		/* Workgroups simply don't make sense over anything
 		   else but port 139... */
 
-		cli_shutdown(cli);
-		port = 139;
-		cli = do_connect(query_host, "IPC$");
+		cli_cm_shutdown();
+		cli_cm_set_port( 139 );
+		cli = cli_cm_open(query_host, "IPC$", True);
 	}
 
 	if (cli == NULL) {
@@ -3124,11 +3185,10 @@ static int do_host_query(char *query_host)
 
 	list_servers(lp_workgroup());
 
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	
 	return(0);
 }
-
 
 /****************************************************************************
  Handle a tar operation.
@@ -3140,7 +3200,7 @@ static int do_tar_op(char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = do_connect(desthost, service);	
+		cli = cli_cm_open(desthost, service, True);
 		if (!cli)
 			return 1;
 	}
@@ -3151,7 +3211,7 @@ static int do_tar_op(char *base_directory)
 	
 	ret=process_tar();
 
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 
 	return(ret);
 }
@@ -3175,7 +3235,8 @@ static int do_message_op(void)
 	fstrcat(server_name, name_type_hex);
 
         zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
+	if (have_ip) 
+		ip = dest_ip;
 
 	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
 	    !cli_connect(cli, server_name, &ip)) {
@@ -3185,12 +3246,12 @@ static int do_message_op(void)
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		cli_shutdown(cli);
+		cli_cm_shutdown();
 		return 1;
 	}
 
 	send_message();
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 
 	return 0;
 }
@@ -3273,9 +3334,10 @@ static int do_message_op(void)
 			 * to port 139 instead of port 445. srl,crh
 			 */
 			name_type = 0x03; 
+			cli_cm_set_dest_name_type( name_type );
 			pstrcpy(desthost,poptGetOptArg(pc));
-			if( 0 == port )
-				port = 139;
+			if( !port )
+				cli_cm_set_port( 139 );
  			message = True;
  			break;
 		case 'I':
@@ -3284,6 +3346,8 @@ static int do_message_op(void)
 				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
+
+				cli_cm_set_dest_ip( dest_ip );
 			}
 			break;
 		case 'E':
@@ -3332,6 +3396,8 @@ static int do_message_op(void)
 	}
 
 	poptGetArg(pc);
+
+	if ( have_ip )
 	
 	/*
 	 * Don't load debug level from smb.conf. It should be
@@ -3393,11 +3459,10 @@ static int do_message_op(void)
 
 	poptFreeContext(pc);
 
-	pstrcpy(username, cmdline_auth_info.username);
-	pstrcpy(password, cmdline_auth_info.password);
+	/* store the username an password for dfs support */
 
-	use_kerberos = cmdline_auth_info.use_kerberos;
-	got_pass = cmdline_auth_info.got_pass;
+	cli_cm_set_credentials( &cmdline_auth_info );
+	pstrcpy(username, cmdline_auth_info.username);
 
 	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
 
@@ -3423,8 +3488,9 @@ static int do_message_op(void)
 			*p = 0;
 			p++;
 			sscanf(p, "%x", &name_type);
+			cli_cm_set_dest_name_type( name_type );
 		}
-  
+
 		return do_host_query(qhost);
 	}
 

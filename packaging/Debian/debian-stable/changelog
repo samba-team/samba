@@ -1,3 +1,23 @@
+samba (3.0.11-1) stable; urgency=low
+
+  * samba 3.0.11 release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 07 February 2005 09:22:00 +0100
+
+samba (3.0.10-1) stable; urgency=low
+
+  * samba 3.0.10 release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 26 December 2004 13:50:00 +0100
+
+samba (3.0.9-1) stable; urgency=low
+
+  * samba 3.0.9 release
+  * added profiles utility to main .deb
+  * added mount.cifs .deb
+
+ -- Simo Sorce <idra@samba.org>  Mon, 26 November 2004 12:13:00 +0100
+
 samba (3.0.8-1) stable; urgency=low
 
   * samba 3.0.8 release

@@ -127,6 +127,7 @@ struct cli_state {
 	int initialised;
 	int win95;
 	uint32 capabilities;
+	BOOL dfsroot;
 
 	TALLOC_CTX *mem_ctx;
 

@@ -541,7 +541,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return 0;
 	}
 
-	d_printf("%-10.10s   %5d   %-12s  %s",
+	d_printf("%-10s   %5d   %-12s  %s",
 	       crec.name,(int)crec.pid,
 	       crec.machine,
 	       asctime(LocalTime(&crec.start)));

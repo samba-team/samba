@@ -671,7 +671,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
+AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
@@ -3960,7 +3960,7 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lpacl"
 		;;
-	*freebsd5*)
+	*freebsd5*|*freebsd6*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
 		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
@@ -4308,7 +4308,7 @@ case "$host_os" in
 	*linux*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
-	*freebsd5*)
+	*freebsd5*|*freebsd6*)
 		# FreeBSD winbind client is implemented as a wrapper around
 		# the Linux version.
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o \

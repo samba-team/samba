@@ -21,6 +21,7 @@
 /* Implementation of registry hook cache tree */
 
 #include "includes.h"
+#include "adt_tree.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -35,7 +36,7 @@ static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 BOOL reghook_cache_init( void )
 {
-	cache_tree = sorted_tree_init( &default_hook, NULL, NULL );
+	cache_tree = pathtree_init( &default_hook, NULL, NULL );
 
 	return ( cache_tree == NULL );
 }
@@ -59,7 +60,7 @@ BOOL reghook_cache_add( REGISTRY_HOOK *hook )
 
 	DEBUG(10,("reghook_cache_add: Adding key [%s]\n", key));
 		
-	return sorted_tree_add( cache_tree, key, hook );
+	return pathtree_add( cache_tree, key, hook );
 }
 
 /**********************************************************************
@@ -93,7 +94,7 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
-	hook = sorted_tree_find( cache_tree, key ) ;
+	hook = pathtree_find( cache_tree, key ) ;
 	
 	SAFE_FREE( key );
 	
@@ -108,5 +109,5 @@ void reghook_dump_cache( int debuglevel )
 {
 	DEBUG(debuglevel,("reghook_dump_cache: Starting cache dump now...\n"));
 	
-	sorted_tree_print_keys( cache_tree, debuglevel );
+	pathtree_print_keys( cache_tree, debuglevel );
 }

@@ -171,8 +171,14 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
-
-	pstrcpy(mask,Mask);
+	
+	/* when getting a directory listing from a 2k dfs root share, 
+	   we have to include the full path (\server\share\mask) here */
+	   
+	if ( cli->dfsroot )
+		pstr_sprintf( mask, "\\%s\\%s\\%s", cli->desthost, cli->share, Mask );
+	else
+		pstrcpy(mask,Mask);
 	
 	while (ff_eos == 0) {
 		loop_count++;
