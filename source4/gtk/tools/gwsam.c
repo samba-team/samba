@@ -406,7 +406,7 @@ create_mainwindow (void)
 
 
 
-int main(int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
