@@ -860,7 +860,7 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 	}
 
 	if (store) {
-		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!"));
+		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
 	}
 
@@ -877,7 +877,7 @@ BOOL pdb_set_unix_homedir (SAM_ACCOUNT *sampass, const char *unix_home_dir)
 		return False;
 
 	if (unix_home_dir) { 
-		DEBUG(10, ("pdb_set_homedir: setting home dir %s, was %s\n", unix_home_dir,
+		DEBUG(10, ("pdb_set_unix_homedir: setting home dir %s, was %s\n", unix_home_dir,
 			(sampass->private.unix_home_dir)?(sampass->private.unix_home_dir):"NULL"));
  
 		sampass->private.unix_home_dir = talloc_strdup(sampass->mem_ctx, 

@@ -308,7 +308,7 @@ void map_generic_share_sd_bits(SEC_DESC *psd)
  Can this user access with share with the required permissions ?
 ********************************************************************/
 
-BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 desired_access)
+BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, uint32 desired_access)
 {
 	uint32 granted;
 	NTSTATUS status;
@@ -316,7 +316,6 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	NT_USER_TOKEN *token = NULL;
-	user_struct *vuser = get_valid_user_struct(vuid);
 	BOOL ret = True;
 
 	mem_ctx = talloc_init();
@@ -969,7 +968,7 @@ static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
 	switch (switch_value) {
 	case 3: {
 		int i;
-		if (total_entries > 0) {
+		if (*total_entries > 0) {
 			ctr->ptr_entries = 1;
 			ctr->file.info3 = talloc(ctx, ctr->num_entries * 
 						 sizeof(SRV_FILE_INFO_3));

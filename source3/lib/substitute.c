@@ -226,7 +226,9 @@ void standard_sub_basic(const char *smb_name, char *str)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-static void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, const char *smb_name, char *str)
+static void standard_sub_advanced(int snum, const char *user, 
+				  const char *connectpath, gid_t gid, 
+				  const char *smb_name, char *str)
 {
 	char *p, *s, *home;
 
@@ -345,7 +347,8 @@ void standard_sub_conn(connection_struct *conn, char *str)
  share. No user specific snum created yet so servicename should be the username.
 ****************************************************************************/
 
-void standard_sub_home(int snum, const char *user, char *str)
+void standard_sub_home(int snum, const char *share, 
+		       const char *user, const char *homedir, pstring str)
 {
 	char *p, *s;
 
@@ -353,8 +356,12 @@ void standard_sub_home(int snum, const char *user, char *str)
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
+		case 'H': 
+			string_sub(p,"%H", homedir, l); 
+			break;
+			
 		case 'S': 
-			string_sub(p,"%S", user, l); 
+			string_sub(p,"%S", share, l); 
 			break;
 		case 'p': 
 			string_sub(p,"%p", automount_path(user), l); 
