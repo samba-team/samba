@@ -561,13 +561,20 @@ dump_database (krb5_context context, int type,
 	       const char *database, const char *afs_cell,
 	       HDB *db)
 {
+    krb5_error_code ret;
     struct prop_data pd;
+    krb5_data data;
 
     pd.context      = context;
     pd.auth_context = NULL;
     pd.sock         = STDOUT_FILENO;
 	
     iterate (context, database, afs_cell, db, type, &pd);
+    krb5_data_zero (&data);
+    ret = krb5_write_message (context, &pd.sock, &data);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_write_message");
+
     return 0;
 }
 
@@ -646,8 +653,7 @@ propagate_database (krb5_context context, int type,
 
 	iterate (context, database, afs_cell, db, type, &pd);
 
-	data.data = NULL;
-	data.length = 0;
+	krb5_data_zero (&data);
 	ret = krb5_write_priv_message(context, auth_context, &fd, &data);
 	if(ret)
 	    krb5_warn(context, ret, "krb5_write_priv_message");
