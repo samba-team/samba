@@ -1324,7 +1324,7 @@
 		<varlistentry>
 		<term><anchor id="BINDINTERFACESONLY">bind interfaces only (G)</term>
 		<listitem><para>This global parameter allows the Samba admin 
-		to limit what interfaces on a machine will serve SMB requests. If 
+		to limit what interfaces on a machine will serve SMB requests. It 
 		affects file service <ulink url="smbd.8.html">smbd(8)</ulink> and 
 		name service <ulink url="nmbd.8.html">nmbd(8)</ulink> in slightly 
 		different ways.</para>
@@ -1344,7 +1344,7 @@
 		<command>nmbd</command> to refuse to serve names to machines that 
 		send packets that arrive through any interfaces not listed in the
 		<parameter>interfaces</parameter> list.  IP Source address spoofing
-		does defeat this simple check, however so it must not be used
+		does defeat this simple check, however, so it must not be used
 		seriously as a security feature for <command>nmbd</command>.</para>
 
 		<para>For file service it causes <ulink url="smbd.8.html">smbd(8)</ulink>
