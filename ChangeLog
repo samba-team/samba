@@ -1,5 +1,8 @@
 Sat Feb 20 15:48:06 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/hdb/convert_db.c: convert DES3 keys to des3-cbc-sha1, and
+ 	des3-cbc-md5
+
 	* lib/krb5/crypto.c (DES3_string_to_key): make this actually do
  	what the draft said it should
 

@@ -1,3 +1,8 @@
+Changes in release 0.1b:
+
+ * some old -> new crypto conversion utils
+ * bug fixes
+
 Changes in release 0.1a:
 
  * new crypto code
