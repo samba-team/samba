@@ -142,7 +142,6 @@ usage(int ret)
 int
 main(int argc, char **argv)
 {
-    krb5_error_code ret;
     krb5_config_section *cf;
     int optind = 0;
     int e;
