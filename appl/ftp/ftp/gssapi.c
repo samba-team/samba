@@ -237,6 +237,23 @@ gss_auth(void *app_data, char *host)
 			       &name,
 			       GSS_C_NT_HOSTBASED_SERVICE,
 			       &target_name);
+    if (GSS_ERROR(maj_stat)) {
+	int new_stat;
+	int msg_ctx = 0;
+	gss_buffer_desc status_string;
+	    
+	gss_display_status(&new_stat,
+			   min_stat,
+			   GSS_C_MECH_CODE,
+			   GSS_C_NO_OID,
+			   &msg_ctx,
+			   &status_string);
+	printf("Error importing name %s: %s\n", 
+	       name.value,
+	       (char*)status_string.value);
+	gss_release_buffer(&new_stat, &status_string);
+	return AUTH_ERROR;
+    }
     free(name.value);
     
 
