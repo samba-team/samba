@@ -398,7 +398,7 @@ char *encode_acct_ctrl(uint16 acct_ctrl)
 int get_new_machine_uid(void)
 {
   int next_uid_start;
-  FILE *fp;
+  void *vp;
   struct smb_passwd *smbpw;
 
   if(sizeof(uid_t) == 2)
@@ -407,12 +407,12 @@ int get_new_machine_uid(void)
   if(sizeof(uid_t) == 4)
     next_uid_start = 0x7fffffff;
 
-  fp = startsmbpwent(False);
-  while((smbpw = getsmbpwent(fp)) != NULL) {
+  vp = startsmbpwent(False);
+  while((smbpw = getsmbpwent(vp)) != NULL) {
     if((smbpw->acct_ctrl & (ACB_SVRTRUST|ACB_WSTRUST)))
       next_uid_start = MIN(next_uid_start, (smbpw->smb_userid-1));
   }
-  endsmbpwent(fp);
+  endsmbpwent(vp);
   return next_uid_start;
 }
 
