@@ -39,6 +39,7 @@ static struct {
 static struct {
 	double bytes_in, bytes_out;
 	int line;
+	int done;
 } *children;
 
 double nbio_total(void)
@@ -54,14 +55,15 @@ double nbio_total(void)
 void nb_alarm(void)
 {
 	int i;
-	int lines=0;
+	int lines=0, num_clients=0;
 	if (nbio_id != -1) return;
 
 	for (i=0;i<nprocs;i++) {
 		lines += children[i].line;
+		if (!children[i].done) num_clients++;
 	}
 
-	printf("%8d  %.2f MB/sec\r", lines/nprocs, 1.0e-6 * nbio_total() / end_timer());
+	printf("%4d  %8d  %.2f MB/sec\r", num_clients, lines/nprocs, 1.0e-6 * nbio_total() / end_timer());
 
 	signal(SIGALRM, nb_alarm);
 	alarm(1);	
@@ -107,6 +109,7 @@ void nb_setup(struct cli_state *cli)
 	signal(SIGSEGV, sigsegv);
 	c = cli;
 	start_timer();
+	children[nbio_id].done = 0;
 }
 
 
@@ -262,7 +265,10 @@ static void delete_fn(file_info *finfo, const char *name, void *state)
 	n[strlen(n)-1] = 0;
 	asprintf(&s, "%s%s", n, finfo->name);
 	if (finfo->mode & aDIR) {
-		nb_deltree(s);
+		char *s2;
+		asprintf(&s2, "%s\\*", s);
+		cli_list(c, s2, aDIR, delete_fn, NULL);
+		nb_rmdir(s);
 	} else {
 		total_deleted++;
 		nb_unlink(s);
@@ -277,10 +283,16 @@ void nb_deltree(char *dname)
 	asprintf(&mask, "%s\\*", dname);
 
 	total_deleted = 0;
-
 	cli_list(c, mask, aDIR, delete_fn, NULL);
 	free(mask);
 	cli_rmdir(c, dname);
 
 	if (total_deleted) printf("WARNING: Cleaned up %d files\n", total_deleted);
+}
+
+
+void nb_cleanup(void)
+{
+	cli_rmdir(c, "clients");
+	children[nbio_id].done = 1;
 }
