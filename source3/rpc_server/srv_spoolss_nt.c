@@ -46,11 +46,7 @@ typedef struct _Printer{
 	BOOL open;
 	BOOL document_started;
 	BOOL page_started;
-	uint32 current_jobid;
-	uint32 document_fd;
-	uint32 document_lastwritten;
-	pstring document_name;
-	pstring job_name;
+	int jobid; /* jobid in printing backend */
 	POLICY_HND printer_hnd;
 	BOOL printer_type;
 	union {
@@ -183,11 +179,9 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 ****************************************************************************/
 static BOOL get_printer_snum(const POLICY_HND *hnd, int *number)
 {
-	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
-	int n_services=lp_numservices();
 		
-	if (!OPEN_HANDLE(Printer))	{
+	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(3,("Error getting printer - take a nap quickly !\n"));
 		return False;
 	}
@@ -195,22 +189,8 @@ static BOOL get_printer_snum(const POLICY_HND *hnd, int *number)
 	switch (Printer->printer_type) {
 	case PRINTER_HANDLE_IS_PRINTER:		   
 		DEBUG(4,("short name:%s\n", Printer->dev.printername));			
-		for (snum=0;snum<n_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
-				DEBUG(4,("share:%s\n",lp_servicename(snum)));
-				if (   ( strlen(lp_servicename(snum)) == strlen( Printer->dev.printername ) ) 
-				    && ( !strncasecmp(lp_servicename(snum), 
-				                      Printer->dev.printername,
-						      strlen( lp_servicename(snum) ))) ) {
-					DEBUG(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
-					*number=snum;
-					return True;
-					break;	
-				}
-			}
-		}
-		return False;
-		break;		
+		*number = print_queue_snum(Printer->dev.printername);
+		return (*number != -1);
 	case PRINTER_HANDLE_IS_PRINTSERVER:
 		return False;
 		break;
@@ -338,7 +318,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 
 	for (snum=0;snum<n_services && found==False;snum++) {
 	
-		if ( !(lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) )
+		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
 		
 		DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
@@ -378,7 +358,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 	
 		for (snum=0;snum<n_services && found==False;snum++) {
 	
-			if ( !(lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) )
+			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 				continue;
 		
 			DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
@@ -1051,7 +1031,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	count=get_printqueue(snum, NULL, &q, &status);
+	count = print_queue_status(snum, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
 	safe_free(q);
 }
@@ -1065,7 +1045,7 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
+	data->notify_data.value[0] = print_queue_status(snum, &q, &status);
 	safe_free(q);
 }
 
@@ -1499,7 +1479,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 			
 		case JOB_NOTIFY_TYPE:
 			memset(&status, 0, sizeof(status));	
-			count=get_printqueue(snum, NULL, &queue, &status);
+			count = print_queue_status(snum, &queue, &status);
 			for (j=0; j<count; j++)
 				construct_notify_jobs_info(&(queue[j]), info, snum, option_type, queue[j].job);
 			safe_free(queue);
@@ -1588,7 +1568,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
 		return False;
 
-	count=get_printqueue(snum, NULL, &queue, &status);
+	count = print_queue_status(snum, &queue, &status);
 
 	/* check if we already have a counter for this printer */	
 	session_counter = (counter_printer_0 *)ubi_dlFirst(&counter_list);
@@ -1789,7 +1769,7 @@ static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer
 		return False;
 		
 	memset(&status, 0, sizeof(status));		
-	count=get_printqueue(snum, NULL, &queue, &status);
+	count = print_queue_status(snum, &queue, &status);
 
 	snprintf(chaine, sizeof(chaine)-1, "%s", servername);
 
@@ -2660,12 +2640,9 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 				DOC_INFO *docinfo, uint32 *jobid)
 {
 	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
-	
-	pstring fname;
-	pstring tempname;
-	pstring datatype;
-	int fd = -1;
 	int snum;
+	pstring jobname;
+	fstring datatype;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer))
@@ -2701,24 +2678,18 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	/* Create a temporary file in the printer spool directory
-	 * and open it
-	 */
-
-	slprintf(tempname,sizeof(tempname)-1, "%s/smb_print.XXXXXX",lp_pathname(snum));  
-	pstrcpy(fname, (char *)mktemp(tempname));
-
-	fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, S_IRUSR|S_IWUSR );
-	DEBUG(4,("Temp spool file created: [%s]\n", fname));
-
-	Printer->current_jobid=fd;
-	pstrcpy(Printer->document_name, fname);
+	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	unistr2_to_ascii(Printer->job_name, &info_1->docname, sizeof(Printer->job_name));
+	Printer->jobid = print_job_start(snum, jobname);
+
+	/* need to map error codes properly - for now give out of
+	   memory as I don't know the correct codes (tridge) */
+	if (Printer->jobid == -1) {
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	
-	Printer->document_fd=fd;
 	Printer->document_started=True;
-	(*jobid) = Printer->current_jobid;
+	(*jobid) = Printer->jobid;
 
 	return 0x0;
 }
@@ -2730,15 +2701,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
  ********************************************************************/
 uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 {
-	int snum;
-	pstring filename;
-	pstring filename1;
-	pstring job_name;
-	pstring syscmd;
-	char *tstr;
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
-	
-	*syscmd=0;
 	
 	if (!OPEN_HANDLE(Printer))
 	{
@@ -2747,65 +2710,8 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	}
 	
 	Printer->document_started=False;
-	close(Printer->document_fd);
-	DEBUG(4,("Temp spool file closed, printing now ...\n"));
-
-	pstrcpy(filename1, Printer->document_name);
-	pstrcpy(job_name, Printer->job_name);
-	
-	if (!get_printer_snum(handle,&snum))
-	{
-		return ERROR_INVALID_HANDLE;
-	}
-	
-	/* copy the command into the buffer for extensive meddling. */
-	StrnCpy(syscmd, lp_printcommand(snum), sizeof(pstring) - 1);
-
-	/* look for "%s" in the string. If there is no %s, we cannot print. */   
-	if (!strstr(syscmd, "%s") && !strstr(syscmd, "%f"))
-	{
-		DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
-	}
-
-	if (strstr(syscmd,"%s"))
-	{
-		pstrcpy(filename,filename1);
-		pstring_sub(syscmd, "%s", filename);
-	}
-
-	pstring_sub(syscmd, "%f", filename1);
-
-	/* Does the service have a printername? If not, make a fake and empty
-	 * printer name. That way a %p is treated sanely if no printer
-	 * name was specified to replace it. This eventuality is logged.
-	 */
-
-	tstr = lp_printername(snum);
-	if (tstr == NULL || tstr[0] == '\0') {
-		DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
-		tstr = SERVICE(snum);
-	}
-
-	pstring_sub(syscmd, "%p", tstr);
-
-	/* If the lpr command support the 'Job' option replace here */
-	pstring_sub(syscmd, "%j", job_name);
-
-	if ( *syscmd != '\0') {
-		int ret = smbrun(syscmd, NULL, False);
-		DEBUG(3,("Running the command `%s' gave %d\n", syscmd, ret));
-		if (ret < 0) {
-			lpq_reset(snum);
-			return ERROR_ACCESS_DENIED;
-		}
-	}
-	else {
-		DEBUG(0,("Null print command?\n"));
-		lpq_reset(snum);
-		return ERROR_ACCESS_DENIED;
-	}
-
-	lpq_reset(snum);
+	print_job_end(Printer->jobid);
+	/* error codes unhandled so far ... */
 
 	return 0x0;
 }
@@ -2817,7 +2723,6 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 				const uint8 *buffer,
 				uint32 *buffer_written)
 {
-	int fd;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer))
@@ -2826,9 +2731,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	fd = Printer->document_fd;
-	(*buffer_written) = write(fd, buffer, buffer_size);
-	Printer->document_lastwritten = (*buffer_written);
+	(*buffer_written) = print_job_write(Printer->jobid, buffer, buffer_size);
 
 	return 0x0;
 }
@@ -2850,27 +2753,22 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 		return ERROR_INVALID_HANDLE;
 
 	switch (command) {
-		case PRINTER_CONTROL_PAUSE:
-			/* pause the printer here */
-			status_printqueue(NULL, snum, LPSTAT_STOPPED);
-			return 0x0;
-			break;
-		case PRINTER_CONTROL_RESUME:
-		case PRINTER_CONTROL_UNPAUSE:
-			/* UN-pause the printer here */
-			status_printqueue(NULL, snum, LPSTAT_OK);
-			return 0x0;
-			break;
-		case PRINTER_CONTROL_PURGE:
-			/*
-			 * It's not handled by samba
-			 * we need a smb.conf param to do
-			 * lprm -P%p - on BSD
-			 * lprm -P%p all on LPRNG
-			 * I don't know on SysV
-			 * we could do it by looping in the job's list...
-			 */
-			break;
+	case PRINTER_CONTROL_PAUSE:
+		if (print_queue_pause(snum)) {
+			return 0;
+		}
+		break;
+	case PRINTER_CONTROL_RESUME:
+	case PRINTER_CONTROL_UNPAUSE:
+		if (print_queue_resume(snum)) {
+			return 0;
+		}
+		break;
+	case PRINTER_CONTROL_PURGE:
+		if (print_queue_purge(snum)) {
+			return 0;
+		}
+		break;
 	}
 
 	return ERROR_INVALID_FUNCTION;
@@ -3201,7 +3099,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	*returned = get_printqueue(snum, NULL, &queue, &prt_status);
+	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
 	switch (level) {
@@ -3237,11 +3135,7 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 
 {
 	int snum;
-	print_queue_struct *queue=NULL;
 	print_status_struct prt_status;
-	int i=0;
-	BOOL found=False;
-	int count;
 		
 	memset(&prt_status, 0, sizeof(prt_status));
 
@@ -3249,44 +3143,26 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	count=get_printqueue(snum, NULL, &queue, &prt_status);		
-
-	while ( (i<count) && found==False ) {
-		if ( jobid == queue[i].job )
-			found=True;
-		i++;
+	if (!print_job_exists(jobid)) {
+		return ERROR_INVALID_PRINTER_NAME;
 	}
 	
-	if (found==True) {
-		switch (command) {
-		
-			case JOB_CONTROL_CANCEL:
-			case JOB_CONTROL_DELETE:
-			{
-				del_printqueue(NULL, snum, jobid);
-				safe_free(queue);
-				return 0x0;
-			}
-			case JOB_CONTROL_PAUSE:
-			{
-				status_printjob(NULL, snum, jobid, LPQ_PAUSED);
-				safe_free(queue);
-				return 0x0;
-			}
-			case JOB_CONTROL_RESUME:
-			{
-				status_printjob(NULL, snum, jobid, LPQ_QUEUED);
-				safe_free(queue);
-				return 0x0;
-			}
-		}
+	switch (command) {
+	case JOB_CONTROL_CANCEL:
+	case JOB_CONTROL_DELETE:
+		if (print_job_delete(jobid)) return 0x0;
+		break;
+	case JOB_CONTROL_PAUSE:
+		if (print_job_pause(jobid)) return 0x0;
+		break;
+	case JOB_CONTROL_RESUME:
+		if (print_job_resume(jobid)) return 0x0;
+		break;
+	default:
+		return ERROR_INVALID_LEVEL;
 	}
-	safe_free(queue);
-	
-	/* I really don't know what to return ! */
-	/* need to add code in rpcclient */
-	return ERROR_INVALID_PRINTER_NAME;
 
+	return ERROR_INVALID_HANDLE;
 }
 
 /****************************************************************************
@@ -4401,7 +4277,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 	
-	count=get_printqueue(snum, NULL, &queue, &prt_status);
+	count = print_queue_status(snum, &queue, &prt_status);
 	
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
