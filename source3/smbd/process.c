@@ -719,7 +719,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			if(session_tag != UID_FIELD_INVALID)
 				vuser = get_valid_user_struct(session_tag);           
 			if(vuser != NULL)
-				current_user_info = vuser->user;
+				set_current_user_info(&vuser->user);
 		}
 
 		/* does this protocol need to be run as root? */
