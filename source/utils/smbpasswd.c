@@ -254,6 +254,12 @@ handle password changing for root
 *************************************************************/
 static int process_root(int argc, char *argv[])
 {
+	/*
+	 * Next two lines needed for SunOS and don't
+	 * hurt anything else...
+	 */
+	extern char *optarg;
+	extern int optind;
 	struct passwd  *pwd;
 	int ch;
 	BOOL joining_domain = False;
@@ -359,27 +365,37 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (!remote_machine && !Get_Pwnam(user_name, True)) {
-		fprintf(stderr, "User \"%s\" was not found in system password file.\n", 
-			user_name);
-		exit(1);
-	}
-
-	if (user_name[strlen(user_name)-1] == '$') {
-		user_name[strlen(user_name)-1] = 0;
-	}
-
 	if (trust_account) {
 		/* add the $ automatically */
 		static fstring buf;
+
+		/*
+		 * Remove any trailing '$' before we
+		 * generate the initial machine password.
+		 */
+
+		if (user_name[strlen(user_name)-1] == '$') {
+			user_name[strlen(user_name)-1] = 0;
+		}
 
 		if (add_user) {
 			new_passwd = xstrdup(user_name);
 			strlower(new_passwd);
 		}
 
+		/*
+		 * Now ensure the username ends in '$' for
+		 * the machine add.
+		 */
+
 		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
 		user_name = buf;
+	}
+
+	if (!remote_machine && !Get_Pwnam(user_name, True)) {
+		fprintf(stderr, "User \"%s\" was not found in system password file.\n", 
+			user_name);
+		exit(1);
 	}
 
 	if (remote_machine != NULL) {
@@ -433,6 +449,12 @@ handle password changing for non-root
 *************************************************************/
 static int process_nonroot(int argc, char *argv[])
 {
+	/*
+	 * Next two lines needed for SunOS and don't
+	 * hurt anything else...
+	 */
+    extern char *optarg;
+    extern int optind;
 	struct passwd  *pwd = NULL;
 	int ch;
 	BOOL stdin_passwd_get = False;
