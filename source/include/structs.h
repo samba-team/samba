@@ -143,3 +143,10 @@ struct smb_composite_loadfile;
 struct smb_composite_savefile;
 struct smb_composite_connect;
 struct smb_composite_sesssetup;
+
+struct nbt_name;
+struct nbt_name_packet;
+struct nbt_name_socket;
+struct nbt_name_query;
+struct nbt_name_status;
+
