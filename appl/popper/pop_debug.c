@@ -108,7 +108,7 @@ doit_v4 (char *host, int port)
     ret = krb_sendauth(0,
 		       s,
 		       &ticket, 
-		       POP_TICKET_NAME,
+		       "pop",
 		       host,
 		       krb_realmofhost(host),
 		       getpid(),
@@ -143,7 +143,7 @@ doit_v5 (char *host, int port)
     
     ret = krb5_sname_to_principal (context,
 				   host,
-				   POP_TICKET_NAME,
+				   "pop",
 				   KRB5_NT_SRV_HST,
 				   &server);
     if (ret) {
