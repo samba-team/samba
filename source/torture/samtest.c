@@ -4,6 +4,7 @@
 
    Copyright (C) 2002 Jelmer Vernooij
 
+   Parts of the code stolen from vfstest by Simo Sorce and Eric Lorimer
    Parts of the code stolen from rpcclient by Tim Potter
 
    This program is free software; you can redistribute it and/or modify
