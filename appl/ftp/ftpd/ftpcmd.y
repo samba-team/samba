@@ -224,11 +224,6 @@ cmd
 			conf($3);
 			free($3);
 		}
-	| ENC SP STRING CRLF
-		{
-			enc($3);
-			free($3);
-		}
 	| PASS SP password CRLF
 		{
 			pass($3);
@@ -407,7 +402,8 @@ cmd
 					reply(503, "Bad sequence of commands.");
 				}
 			}
-			free($4);
+			if ($4 != NULL)
+				free($4);
 		}
 	| ABOR CRLF
 		{
@@ -513,7 +509,7 @@ cmd
 		}
 	| SITE SP CHMOD check_login_no_guest SP octal_number SP pathname CRLF
 		{
-			if ($4 && ($8 != NULL)) {
+			if ($4 && $8 != NULL) {
 				if ($6 > 0777)
 					reply(501,
 				"CHMOD: Mode value must be between 0 and 0777");
@@ -674,6 +670,11 @@ rcmd
 			reply(350, "Restarting at %ld. %s",
 			      (long)restart_point,
 			      "Send STORE or RETRIEVE to initiate transfer.");
+		}
+	| ENC SP STRING CRLF
+		{
+			enc($3);
+			free($3);
 		}
 	;
 
