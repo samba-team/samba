@@ -427,8 +427,8 @@ static void fixtarname(char *tptr, char *fp, int l)
   *tptr++='.';
 
   while (l > 0) {
-    int skip;
-    if((skip = skip_multibyte_char( *fp)) != 0) {
+    int skip = get_character_len(*fp);
+    if(skip != 0) {
       if (skip == 2) {
         *tptr++ = *fp++;
         *tptr++ = *fp++;
@@ -885,8 +885,8 @@ static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
   }
 
   while (l > 0) {
-    int skip;
-    if(( skip = skip_multibyte_char( *fp )) != 0) {
+    int skip = get_character_len(*fp);
+    if(skip != 0) {
       if (skip == 2) {
         *tptr++ = *fp++;
         *tptr++ = *fp++;
