@@ -1,3 +1,7 @@
+1999-11-22  Assar Westerlund  <assar@sics.se>
+
+	* afskrb5.c (afslog_uid_int): handle d->realm == NULL
+	
 1999-11-17  Assar Westerlund  <assar@sics.se>
 
 	* afskrb5.c (afslog_uid_int): don't look at the local realm at
