@@ -5109,7 +5109,7 @@ else
 fi
 done
 
-for ac_func in fseek64 fseeko64 ftell64 ftello64 setluid getpwanam
+for ac_func in fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:5116: checking for $ac_func" >&5
