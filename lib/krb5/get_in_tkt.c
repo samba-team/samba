@@ -162,6 +162,7 @@ krb5_get_in_tkt(krb5_context context,
     AS_REQ a;
     krb5_kdc_rep rep;
     krb5_data req, resp;
+    struct timeval tv;
     char buf[BUFSIZ];
 
     memset(&a, 0, sizeof(a));
@@ -189,6 +190,7 @@ krb5_get_in_tkt(krb5_context context,
 	a.req_body.etype.len = 1;
     }
     if (addrs){
+	abort ();
     } else {
 	a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
@@ -198,7 +200,26 @@ krb5_get_in_tkt(krb5_context context,
     }
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
-    a.padata = NULL;
+
+    /* not sure this is the way to use `ptypes' */
+    if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
+	a.padata = NULL;
+    else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
+	PA_ENC_TS_ENC p;
+	u_char buf[17];
+	struct timeval tv;
+	int len;
+
+	gettimeofday (&tv, NULL);
+	p.patimestamp = p.tv_sec;
+	p.pausec      = &p.tv_usec;
+
+	len = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
+				   sizeof(buf),
+				   &p);
+
+    } else
+	return KRB5_PREAUTH_BAD_TYPE;
 
     req.length = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
 				sizeof(buf),
@@ -215,6 +236,14 @@ krb5_get_in_tkt(krb5_context context,
 	return err;
     }
     if(decode_AS_REP(resp.data, resp.length, &rep.part1) < 0){
+	/* let's try to parse it as a KRB-ERROR */
+	KRB_ERROR error;
+
+	if (decode_KRB_ERROR(resp.data, resp.length, &error) >= 0) {
+	    /* XXX */
+	    fprintf (stderr, "get_in_tkt: KRB_ERROR: %s\n",
+		     *(error.e_text));
+	}
 	krb5_data_free(&resp);
 	return ASN1_PARSE_ERROR;
     }
