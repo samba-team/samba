@@ -203,10 +203,10 @@ get_init_creds_common(krb5_context context,
 		      krb5_addresses **addrs,
 		      krb5_enctype **etypes,
 		      krb5_creds *cred,
-		      krb5_preauthtype **pre_auth_types)
+		      krb5_preauthtype **pre_auth_types,
+		      krb5_kdc_flags *flags)
 {
     krb5_error_code ret;
-    krb5_kdc_flags flags;
     krb5_realm *client_realm;
 
     ret = init_cred (context, cred, client, start_time,
@@ -216,26 +216,26 @@ get_init_creds_common(krb5_context context,
 
     client_realm = krb5_princ_realm (context, cred->client);
 
-    flags.i = 0;
+    flags->i = 0;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
-	flags.b.forwardable = 1;
+	flags->b.forwardable = 1;
     else
-	flags.b.forwardable = ison(get_config_string (context,
+	flags->b.forwardable = ison(get_config_string (context,
 						      *client_realm,
 						      "forwardable",
 						      "no"));
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
-	flags.b.proxiable = 1;
+	flags->b.proxiable = 1;
     else
-	flags.b.proxiable = ison(get_config_string (context,
+	flags->b.proxiable = ison(get_config_string (context,
 						    *client_realm,
 						    "proxiable",
 						    "no"));
 
     if (cred->times.renew_till)
-	flags.b.renewable = 1;
+	flags->b.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST)
 	*addrs = options->address_list;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
@@ -248,13 +248,13 @@ get_init_creds_common(krb5_context context,
 	(*etypes)[options->etype_list_length] = 0;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST) {
-	pre_auth_types = malloc((options->preauth_list_length + 1)
-				* sizeof(krb5_preauthtype));
-	if (pre_auth_types == NULL)
+	*pre_auth_types = malloc((options->preauth_list_length + 1)
+				 * sizeof(krb5_preauthtype));
+	if (*pre_auth_types == NULL)
 	    return ENOMEM;
-	memcpy (pre_auth_types, options->preauth_list,
+	memcpy (*pre_auth_types, options->preauth_list,
 		options->preauth_list_length * sizeof(krb5_preauthtype));
-	pre_auth_types[options->preauth_list_length] = 0;
+	(*pre_auth_types)[options->preauth_list_length] = 0;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
 	;			/* XXX */
@@ -284,7 +284,8 @@ krb5_get_init_creds_password(krb5_context context,
 
     ret = get_init_creds_common(context, creds, client, start_time,
 				in_tkt_service, options,
-				&addrs, &etypes, &this_cred, &pre_auth_types);
+				&addrs, &etypes, &this_cred, &pre_auth_types,
+				&flags);
     if(ret)
 	goto out;
 
@@ -301,6 +302,7 @@ krb5_get_init_creds_password(krb5_context context,
 	prompt.reply  = &password_data;
 
 	ret = (*prompter) (context, data, NULL, 1, &prompt);
+	free (prompt.prompt);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
 	    goto out;
@@ -324,7 +326,7 @@ krb5_get_init_creds_password(krb5_context context,
 	goto out;
     if (prompter)
 	print_expire (context,
-		      krb5_princ_realm (context, creds->client),
+		      krb5_princ_realm (context, this_cred.client),
 		      &kdc_reply,
 		      prompter,
 		      data);
@@ -373,8 +375,10 @@ krb5_get_init_creds_keytab(krb5_context context,
     /* krb5_kdc_rep kdc_reply; */
     krb5_keytab_entry kt_ent;
     
-    ret = get_init_creds_common(context, creds, client, start_time, in_tkt_service, options,
-				&addrs, &etypes, &this_cred, &pre_auth_types);
+    ret = get_init_creds_common(context, creds, client, start_time,
+				in_tkt_service, options,
+				&addrs, &etypes, &this_cred, &pre_auth_types,
+				&flags);
     if(ret)
 	goto out;
 
