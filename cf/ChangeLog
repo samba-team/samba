@@ -1,3 +1,9 @@
+1999-05-14  Assar Westerlund  <assar@sics.se>
+
+	* check-xau.m4: we also need to check for XauFilename since it's
+ 	used by appl/kx.  And on Irix 6.5 that function requires linking
+ 	with -lX11.
+
 1999-05-08  Assar Westerlund  <assar@sics.se>
 
 	* krb-find-db.m4: try with more header files than ndbm.h
