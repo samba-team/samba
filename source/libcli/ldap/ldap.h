@@ -161,8 +161,7 @@ struct ldap_SearchResEntry {
 };
 
 struct ldap_SearchResRef {
-	int num_referrals;
-	const char **referrals;
+	const char *referral;
 };
 
 enum ldap_modify_type {

@@ -361,9 +361,12 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	asn1_write_OctetString(data, result->errormessage,
 			       (result->errormessage) ?
 			       strlen(result->errormessage) : 0);
-	if (result->referral != NULL)
+	if (result->referral) {
+		asn1_push_tag(data, ASN1_CONTEXT(3));
 		asn1_write_OctetString(data, result->referral,
 				       strlen(result->referral));
+		asn1_pop_tag(data);
+	}
 }
 
 BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
@@ -620,7 +623,10 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultReference: {
-/*		struct ldap_SearchResRef *r = &msg->r.SearchResultReference; */
+		struct ldap_SearchResRef *r = &msg->r.SearchResultReference;
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		asn1_write_OctetString(&data, r->referral, strlen(r->referral));
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_ExtendedRequest: {
@@ -957,8 +963,11 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchResultReference): {
-/*		struct ldap_SearchResRef *r = &msg->r.SearchResultReference; */
+		struct ldap_SearchResRef *r = &msg->r.SearchResultReference;
 		msg->type = LDAP_TAG_SearchResultReference;
+		asn1_start_tag(data, tag);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->referral);
+		asn1_end_tag(data);
 		break;
 	}
 
