@@ -277,11 +277,6 @@ BOOL create_next_pdu(pipes_struct *p)
 		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
 		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
 
-		if ((p->netsec_auth.seq_num & 1) == 0) {
-			DEBUG(0,("SCHANNEL ERROR: seq_num must be odd in server! (seq_num=%d)\n",
-					p->netsec_auth.seq_num));
-		}
-
 		init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes, nullbytes, nullbytes);
 
 		netsec_encode(&p->netsec_auth, 

@@ -1021,11 +1021,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
 				static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
 				size_t parse_offset_marker;
-				if ((cli->auth_info.seq_num & 1) != 0) {
-					DEBUG(0,("SCHANNEL ERROR: seq_num must be even in client (seq_num=%d)\n",
-						 cli->auth_info.seq_num));
-				}
-				
 				DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
 				
 				init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes,
