@@ -71,7 +71,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 
 	/* must be synchronous, or we won't be called to do the 
 	   translation */
-	req->control_flags &= ~REQ_CONTROL_MAY_ASYNC;
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	switch (io->generic.level) {
 	case RAW_OPEN_GENERIC:
@@ -692,7 +692,7 @@ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 
 	/* must be synchronous, or we won't be called to do the 
 	   translation */
-	req->control_flags &= ~REQ_CONTROL_MAY_ASYNC;
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	status = ntvfs->ops->qpathinfo(ntvfs, req, info2);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -768,7 +768,7 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 	wr2->generic.level = RAW_WRITE_GENERIC;
 
 	/* we can't map asynchronously */
-	req->control_flags &= ~REQ_CONTROL_MAY_ASYNC;
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
@@ -874,7 +874,7 @@ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 	rd2->generic.level = RAW_READ_GENERIC;
 
 	/* we can't map asynchronously */
-	req->control_flags &= ~REQ_CONTROL_MAY_ASYNC;
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	switch (rd->generic.level) {
 	case RAW_READ_READX:

@@ -134,12 +134,45 @@ struct ntvfs_context {
 	struct ntvfs_module_context *modules;
 };
 
+
+/* a set of flags to control handling of request structures */
+#define NTVFS_ASYNC_STATE_ASYNC     (1<<1) /* the backend will answer this one later */
+#define NTVFS_ASYNC_STATE_MAY_ASYNC (1<<2) /* the backend is allowed to answer async */
+
+/* the ntvfs_async_state structure allows backend functions to 
+   delay replying to requests. To use this, the front end must
+   set send_fn to a function to be called by the backend
+   when the reply is finally ready to be sent. The backend
+   must set status to the status it wants in the
+   reply. The backend must set the NTVFS_ASYNC_STATE_ASYNC
+   control_flag on the request to indicate that it wishes to
+   delay the reply
+
+   If NTVFS_ASYNC_STATE_MAY_ASYNC is not set then the backend cannot
+   ask for a delayed reply for this request
+
+   note that the private_data pointer is private to the layer which alloced this struct
+*/
+struct ntvfs_async_state {
+	struct ntvfs_async_state *prev, *next;
+	/* the async handling infos */
+	unsigned state;
+	void *private_data;
+	void (*send_fn)(struct smbsrv_request *);
+	NTSTATUS status;
+
+	/* the passthru module's per session private data */
+	struct ntvfs_module_context *ntvfs;
+};
+
 /* this structure is used by backends to determine the size of some critical types */
 struct ntvfs_critical_sizes {
 	int interface_version;
+	int sizeof_ntvfs_critical_sizes;
 	int sizeof_ntvfs_context;
 	int sizeof_ntvfs_module_context;
 	int sizeof_ntvfs_ops;
+	int sizeof_ntvfs_async_state;
 	int sizeof_smbsrv_tcon;
 	int sizeof_smbsrv_request;
 };

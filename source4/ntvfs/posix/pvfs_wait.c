@@ -149,7 +149,7 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 
 	/* tell the main smb server layer that we will be replying 
 	   asynchronously */
-	req->control_flags |= REQ_CONTROL_ASYNC;
+	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
 
 	/* make sure we cleanup the timer and message handler */
 	talloc_set_destructor(pwait, pvfs_wait_destructor);

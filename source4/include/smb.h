@@ -575,12 +575,6 @@ typedef struct nt_user_token {
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
 
-
-/* a set of flags to control handling of request structures */
-#define REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
-#define REQ_CONTROL_ASYNC     (1<<2) /* the backend will answer this one later */
-#define REQ_CONTROL_MAY_ASYNC (1<<3) /* the backend is allowed to answer async */
-
 /* passed to br lock code */
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 

@@ -100,9 +100,11 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
 	static const struct ntvfs_critical_sizes critical_sizes = {
 		NTVFS_INTERFACE_VERSION,
+		sizeof(struct ntvfs_critical_sizes),
 		sizeof(struct ntvfs_context),
 		sizeof(struct ntvfs_module_context),
 		sizeof(struct ntvfs_ops),
+		sizeof(struct ntvfs_async_state),
 		sizeof(struct smbsrv_tcon),
 		sizeof(struct smbsrv_request),
 	};

@@ -182,8 +182,8 @@ static void async_simple(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smbcli_request_simple_recv(c_req);
-	req->async.send_fn(req);
+	req->async_states->status = smbcli_request_simple_recv(c_req);
+	req->async_states->send_fn(req);
 }
 
 
@@ -199,7 +199,7 @@ static void async_simple(struct smbcli_request *c_req)
 		c_req->async.private = async; \
 	} \
 	c_req->async.fn = async_fn; \
-	req->control_flags |= REQ_CONTROL_ASYNC; \
+	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC; \
 	return NT_STATUS_OK; \
 } while (0)
 
@@ -219,7 +219,7 @@ static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs,
 
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_unlink(private->tree, unl);
 	}
 
@@ -235,8 +235,8 @@ static void async_ioctl(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_ioctl_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_ioctl_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -252,7 +252,7 @@ static NTSTATUS cvfs_ioctl(struct ntvfs_module_context *ntvfs,
 
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_ioctl(private->tree, req, io);
 	}
 
@@ -272,7 +272,7 @@ static NTSTATUS cvfs_chkpath(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_chkpath(private->tree, cp);
 	}
 
@@ -288,8 +288,8 @@ static void async_qpathinfo(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_pathinfo_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_pathinfo_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -303,7 +303,7 @@ static NTSTATUS cvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_pathinfo(private->tree, req, info);
 	}
 
@@ -319,8 +319,8 @@ static void async_qfileinfo(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_fileinfo_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_fileinfo_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -334,7 +334,7 @@ static NTSTATUS cvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_fileinfo(private->tree, req, info);
 	}
 
@@ -355,7 +355,7 @@ static NTSTATUS cvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_setpathinfo(private->tree, st);
 	}
 
@@ -372,8 +372,8 @@ static void async_open(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_open_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_open_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -392,7 +392,7 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_open(req, io, ntvfs);
 	}
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_open(private->tree, req, io);
 	}
 
@@ -412,7 +412,7 @@ static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_mkdir(private->tree, md);
 	}
 
@@ -432,7 +432,7 @@ static NTSTATUS cvfs_rmdir(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_rmdir(private->tree, rd);
 	}
 	c_req = smb_raw_rmdir_send(private->tree, rd);
@@ -451,7 +451,7 @@ static NTSTATUS cvfs_rename(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_rename(private->tree, ren);
 	}
 
@@ -476,8 +476,8 @@ static void async_read(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_read_recv(c_req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_read_recv(c_req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -496,7 +496,7 @@ static NTSTATUS cvfs_read(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_read(req, rd, ntvfs);
 	}
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_read(private->tree, rd);
 	}
 
@@ -512,8 +512,8 @@ static void async_write(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_write_recv(c_req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_write_recv(c_req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -532,7 +532,7 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_write(req, wr, ntvfs);
 	}
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_write(private->tree, wr);
 	}
 
@@ -552,7 +552,7 @@ static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_seek(private->tree, io);
 	}
 
@@ -572,7 +572,7 @@ static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_flush(private->tree, io);
 	}
 
@@ -597,7 +597,7 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_close(req, io, ntvfs);
 	}
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_close(private->tree, io);
 	}
 
@@ -617,7 +617,7 @@ static NTSTATUS cvfs_exit(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_exit(private->tree->session);
 	}
 
@@ -662,7 +662,7 @@ static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_lock(req, lck, ntvfs);
 	}
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_lock(private->tree, lck);
 	}
 
@@ -682,7 +682,7 @@ static NTSTATUS cvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_setfileinfo(private->tree, info);
 	}
 	c_req = smb_raw_setfileinfo_send(private->tree, info);
@@ -698,8 +698,8 @@ static void async_fsinfo(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_fsinfo_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_fsinfo_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /*
@@ -713,7 +713,7 @@ static NTSTATUS cvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_fsinfo(private->tree, req, fs);
 	}
 
@@ -777,8 +777,8 @@ static void async_trans2(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct smbsrv_request *req = async->req;
-	req->async.status = smb_raw_trans2_recv(c_req, req, async->parms);
-	req->async.send_fn(req);
+	req->async_states->status = smb_raw_trans2_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
 }
 
 /* raw trans2 */
@@ -790,7 +790,7 @@ static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
-	if (!(req->control_flags & REQ_CONTROL_MAY_ASYNC)) {
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_trans2(private->tree, req, trans2);
 	}
 
