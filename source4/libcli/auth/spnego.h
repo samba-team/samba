@@ -41,7 +41,7 @@ enum spnego_negResult {
 };
 
 struct spnego_negTokenInit {
-	char **mechTypes;
+	const char **mechTypes;
 	int reqFlags;
 	DATA_BLOB mechToken;
 	DATA_BLOB mechListMIC;

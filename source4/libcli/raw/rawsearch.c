@@ -42,6 +42,8 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 	p = req->in.data + 3;
 
 	for (i=0; i < count; i++) {
+		char *name;
+
 		search_data.search.id.reserved      = CVAL(p, 0);
 		memcpy(search_data.search.id.name,    p+1, 11);
 		search_data.search.id.handle        = CVAL(p, 12);
@@ -51,7 +53,8 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 		search_data.search.write_time       = raw_pull_dos_date(req->transport,
 									p + 22);
 		search_data.search.size             = IVAL(p, 26);
-		smbcli_req_pull_ascii(req, mem_ctx, &search_data.search.name, p+30, 13, STR_ASCII);
+		smbcli_req_pull_ascii(req, mem_ctx, &name, p+30, 13, STR_ASCII);
+		search_data.search.name = name;
 		if (!callback(private, &search_data)) {
 			break;
 		}

@@ -222,12 +222,12 @@ interface epmapper
 	   non-aligned. I wonder what sort of wicked substance these
 	   guys were smoking?
 	*/
-	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
+	typedef [gensize,flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
 		uint16 num_floors;
 		epm_floor floors[num_floors];
 	} epm_tower;
 
-	typedef [gensize] struct {
+	typedef struct {
 		[value(ndr_size_epm_tower(0, &r->tower,ndr->flags))] uint32  tower_length;
 		[subcontext(4)] epm_tower tower;
 	} epm_twr_t;

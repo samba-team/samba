@@ -494,7 +494,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 }
 
 /* read an object ID from a ASN1 buffer */
-BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
+BOOL asn1_read_OID(ASN1_DATA *data, const char **OID)
 {
 	uint8_t b;
 	char *tmp_oid = NULL;
@@ -525,7 +525,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 /* check that the next object ID is correct */
 BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 {
-	char *id;
+	const char *id;
 
 	if (!asn1_read_OID(data, &id)) return False;
 

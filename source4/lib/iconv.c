@@ -131,7 +131,6 @@ size_t smb_iconv(smb_iconv_t cd,
 		 char **outbuf, size_t *outbytesleft)
 {
 	char cvtbuf[2048];
-	char *bufp = cvtbuf;
 	size_t bufsize;
 
 	/* in many cases we can go direct */
@@ -143,18 +142,19 @@ size_t smb_iconv(smb_iconv_t cd,
 
 	/* otherwise we have to do it chunks at a time */
 	while (*inbytesleft > 0) {
-		bufp = cvtbuf;
+		char *bufp1 = cvtbuf;
+		const char *bufp2 = cvtbuf;
+
 		bufsize = sizeof(cvtbuf);
 		
 		if (cd->pull(cd->cd_pull, 
-			     inbuf, inbytesleft, &bufp, &bufsize) == -1
+			     inbuf, inbytesleft, &bufp1, &bufsize) == -1
 		    && errno != E2BIG) return -1;
 
-		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf) - bufsize;
 
 		if (cd->push(cd->cd_push, 
-			     &bufp, &bufsize, 
+			     &bufp2, &bufsize, 
 			     outbuf, outbytesleft) == -1) return -1;
 	}
 

@@ -483,7 +483,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	{
 		/* The server offers a list of mechanisms */
 		
-		char *my_mechs[] = {NULL, NULL};
+		const char *my_mechs[] = {NULL, NULL};
 		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 
 		if (!in.length) {
