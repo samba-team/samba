@@ -45,7 +45,7 @@ static uint32 str_len_uni(UNISTR *source)
 This should be moved in a more generic lib.
 ********************************************************************/  
 
-static BOOL spoolss_io_system_time(char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
+BOOL spoolss_io_system_time(char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
 {
 	if(!prs_uint16("year", ps, depth, &systime->year))
 		return False;
