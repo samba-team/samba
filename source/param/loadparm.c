@@ -1076,14 +1076,11 @@ static void init_locals(void)
       string_set(&sDefault.szLpqcommand,"lpstat -o%p");
       string_set(&sDefault.szLprmcommand,"cancel %p-%j");
       string_set(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef HPUX
       string_set(&sDefault.szQueuepausecommand, "disable %p");
       string_set(&sDefault.szQueueresumecommand, "enable %p");
-#else /* SYSV */
+#ifndef HPUX
       string_set(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
       string_set(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-      string_set(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_set(&sDefault.szQueueresumecommand, "lpc start %p");
 #endif /* SYSV */
       break;
 
