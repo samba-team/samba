@@ -30,9 +30,13 @@ extern struct current_user current_user;
 ****************************************************************************/
 BOOL become_user(connection_struct *conn, uint16 vuid)
 {
-	vuser_key key;
+	extern vuser_key *user_key;
+	static vuser_key key;
 	key.pid = getpid();
 	key.vuid = vuid;
+
+	user_key = &key;
+
 	return become_userk(conn, &key);
 }
 /****************************************************************************
@@ -151,6 +155,9 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 ****************************************************************************/
 BOOL unbecome_user(void )
 {
+	extern vuser_key *user_key;
+	user_key = NULL;
+
   if (!current_user.conn)
     return(False);
 

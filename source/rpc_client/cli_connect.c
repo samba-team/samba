@@ -26,7 +26,7 @@
 #include "rpc_parse.h"
 
 struct user_creds *usr_creds = NULL;
-vuser_key *key = NULL;
+vuser_key *user_key = NULL;
 
 extern int DEBUGLEVEL;
 extern pstring scope;
@@ -114,18 +114,28 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 	memset(con, 0, sizeof(*con));
 	con->type = MSRPC_NONE;
 
-	if (key != NULL)
+	copy_user_creds(&con->usr_creds, usr_creds);
+	con->usr_creds.reuse = reuse;
+
+	if (user_key != NULL)
 	{
-		con_key = *key;
+		con_key = *user_key;
 	}
 	else
 	{
-		con_key.pid = getpid();
-		con_key.vuid = 1;
-	}
+		NET_USER_INFO_3 usr;
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		char *name = uidtoname(uid);
 
-	copy_user_creds(&con->usr_creds, usr_creds);
-	con->usr_creds.reuse = reuse;
+		ZERO_STRUCT(usr);
+
+		con_key.pid = getpid();
+		con_key.vuid = register_vuid(con_key.pid,
+		                             uid, gid,
+		                             name, name, False,
+		                             &usr);
+	}
 
 	if (srv_name != NULL)
 	{
