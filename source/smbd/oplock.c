@@ -74,11 +74,12 @@ BOOL oplock_message_waiting(fd_set *fds)
 
 ****************************************************************************/
 
-BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout)
+BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 {
 	struct sockaddr_in from;
 	int fromlen = sizeof(from);
 	int32 msg_len = 0;
+	fd_set fds;
 
 	smb_read_error = 0;
 
@@ -92,26 +93,29 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 
 		starttime = time(NULL);
 
-		if (koplocks && koplocks->notification_fd != -1) {
-			FD_SET(koplocks->notification_fd, fds);
-			maxfd = MAX(maxfd, koplocks->notification_fd);
-		}
+                FD_ZERO(&fds);
+                maxfd = setup_oplock_select_set(&fds);
 
 		to.tv_sec = timeout / 1000;
 		to.tv_usec = (timeout % 1000) * 1000;
 
-		selrtn = sys_select(maxfd+1,fds,&to);
+		DEBUG(5,("receive_local_message: doing select with timeout of %d ms\n", timeout));
+
+		selrtn = sys_select(maxfd+1,&fds,&to);
 
 		if (selrtn == -1 && errno == EINTR) {
 			/* could be a kernel oplock interrupt */
-			if (koplocks && koplocks->msg_waiting(fds)) {
-				return koplocks->receive_message(fds, buffer, buffer_len);
+			if (koplocks && koplocks->msg_waiting(&fds)) {
+				return koplocks->receive_message(&fds, buffer, buffer_len);
 			}
 			/* Not a kernel interrupt - could be a SIGUSR1 message. We must restart. */
 			/* We need to decrement the timeout here. */
 			timeout -= ((time(NULL) - starttime)*1000);
 			if (timeout < 0)
 				timeout = 0;
+
+			DEBUG(5,("receive_local_message: EINTR : new timeout %d ms\n", timeout));
+
 			goto again;
 		}
 
@@ -129,11 +133,11 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 		}
 	}
 
-	if (koplocks && koplocks->msg_waiting(fds)) {
-		return koplocks->receive_message(fds, buffer, buffer_len);
+	if (koplocks && koplocks->msg_waiting(&fds)) {
+		return koplocks->receive_message(&fds, buffer, buffer_len);
 	}
 
-	if (!FD_ISSET(oplock_sock, fds))
+	if (!FD_ISSET(oplock_sock, &fds))
 		return False;
 
 	/*
@@ -978,16 +982,8 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 		char op_break_reply[OPBRK_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
 		uint16 reply_from_port;
 		char *reply_msg_start;
-		fd_set fds;
 
-		FD_ZERO(&fds);
-		FD_SET(oplock_sock,&fds);
-
-		if (koplocks && koplocks->notification_fd != -1) {
-			FD_SET(koplocks->notification_fd, &fds);
-		}
-
-		if(receive_local_message(&fds, op_break_reply, sizeof(op_break_reply),
+		if(receive_local_message(op_break_reply, sizeof(op_break_reply),
 				time_left ? time_left * 1000 : 1) == False) {
 			if(smb_read_error == READ_TIMEOUT) {
 				if( DEBUGLVL( 0 ) ) {

@@ -140,7 +140,7 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 		goto out;
 	}
 
-	DEBUG(3,("receive_local_message: kernel oplock break request received for \
+	DEBUG(3,("linux_receive_local_message: kernel oplock break request received for \
 dev = %x, inode = %.0f\n", (unsigned int)fsp->dev, (double)fsp->inode ));
      
 	/*
