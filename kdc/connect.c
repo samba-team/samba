@@ -512,6 +512,8 @@ loop(void)
     struct descr *d;
     int ndescr;
     ndescr = init_sockets(&d);
+    if(ndescr <= 0)
+	krb5_errx(context, 1, "No sockets!");
     while(exit_flag == 0){
 	struct timeval tmout;
 	struct fd_set fds;
