@@ -156,6 +156,8 @@ PA-DATA ::=        SEQUENCE {
                          -- might be encoded AP-REQ
 }
 
+METHOD-DATA ::=   SEQUENCE OF PA-DATA
+
 KDC-REQ-BODY ::=   SEQUENCE {
             kdc-options[0]       KDCOptions,
             cname[1]             PrincipalName OPTIONAL,
