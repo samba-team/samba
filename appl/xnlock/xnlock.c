@@ -20,6 +20,9 @@ RCSID("$Id$");
 #include <X11/keysym.h>
 #include <X11/Shell.h>
 #include <X11/Xos.h>
+#ifdef strerror
+#undef strerror
+#endif
 #include <ctype.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
