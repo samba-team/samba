@@ -80,7 +80,8 @@ SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef bin/pdbedit
+WINBIND_PROGS = nsswitch/pam_winbind.so nsswitch/libnss_winbind.so bin/winbindd bin/wbinfo
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef bin/pdbedit @WINBIND_TARGETS@
 SHLIBS = bin/libsmbclient.so
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd
@@ -624,9 +625,6 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bi
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 		$(UBIQX_OBJ) $(LIBS)
-
-nsswitch: nsswitch/pam_winbind.so nsswitch/libnss_winbind.so bin/winbindd \
-	bin/wbinfo
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
