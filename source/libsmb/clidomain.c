@@ -448,7 +448,9 @@ static BOOL find_connect_pdc(char *domain, struct in_addr *dc_ip)
 
 		i = sys_random() % count;
 
-		if (!(connected_ok = attempt_connect_dc(domain, ip_list[i]))) {
+		if ((connected_ok = attempt_connect_dc(domain, ip_list[i]))) {
+			*dc_ip = ip_list[i];
+		} else {
 			ip_list[i] = ipzero;
 		}
 	}
