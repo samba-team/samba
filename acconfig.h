@@ -3,6 +3,11 @@
 #undef VERSION
 #undef PACKAGE
 
+#undef BINDIR 
+#undef LIBDIR
+#undef LIBEXECDIR
+#undef SBINDIR
+
 #undef HAVE_INT8_T
 #undef HAVE_INT16_T
 #undef HAVE_INT32_T
@@ -41,6 +46,9 @@
 
 /*  Define this if struct utmpx have ut_syslen  */
 #undef HAVE_UT_SYSLEN
+
+/*  Define this if struct utmpx have ut_exit  */
+#undef HAVE_UT_EXIT
 
 /*  Define this if you have a struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
