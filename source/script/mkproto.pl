@@ -69,7 +69,7 @@ sub process_file($)
 		next unless ( $line =~ /
 			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
-			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_
+			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_|^REG_KEY|^REG_HANDLE|^REG_VAL
 			      /xo);
 
 		if ($line =~ /^FN_/) {
