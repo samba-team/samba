@@ -1,9 +1,25 @@
-          WHATS NEW IN 1.9.18p5 - May 8th 1998.
+          WHATS NEW IN 1.9.18p6 - May 8th 1998.
           =====================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+This release is a security hole patch fix for a security hole reported
+on BugTraq by Drago. The security hole may have allowed authenticated
+users to subvert security on the server by overflowing a buffer in a
+filename rename operation. It is as yet undetermined whether the
+security hole is actually exploitable because of existing buffer
+overflow checks in Samba and the limitations on available characters
+in filenames but the Samba Team considered the threat of a possible
+security hole to warrant an immediate patch release.
+
+It is highly recommended that all sites assume that the security hole
+is exploitable and upgrade to version 1.9.18p6 of Samba.
+
+
+Previous release notes for 1.9.18p5 follow.
+=========================================================================
 
 Note that most Samba Team effort is now going into working on the
 next major release which should contain some Windows NT Domain 
