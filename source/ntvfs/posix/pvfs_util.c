@@ -63,3 +63,19 @@ NTSTATUS pvfs_match_attrib(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	}
 	return NT_STATUS_OK;
 }
+
+
+/*
+  normalise a file attribute
+*/
+uint32_t pvfs_attrib_normalise(uint32_t attrib)
+{
+	if (attrib == 0) {
+		attrib = FILE_ATTRIBUTE_NORMAL;
+	}
+	if (attrib != FILE_ATTRIBUTE_NORMAL) {
+		attrib &= ~FILE_ATTRIBUTE_NORMAL;
+	}
+	return attrib;
+}
+
