@@ -43,6 +43,5 @@
 #include <string.h>
 
 #include <roken.h>
-#include <protos.h>
 
 #include <sl.h>
