@@ -80,6 +80,11 @@ typedef ENCTYPE krb5_enctype;
 
 typedef heim_octet_string krb5_data;
 
+/* PKINIT related forward declarations */
+struct ContentInfo;
+struct krb5_pk_identity;
+struct krb5_pk_cert;
+
 /* krb5_enc_data is a mit compat structure */
 typedef struct krb5_enc_data {
     krb5_enctype enctype;
@@ -99,6 +104,8 @@ enum {
     ENCTYPE_ENCRYPT_RSA_PRIV	= ETYPE_ENCRYPT_RSA_PRIV,
     ENCTYPE_ENCRYPT_RSA_PUB	= ETYPE_ENCRYPT_RSA_PUB,
     ENCTYPE_DES3_CBC_SHA1	= ETYPE_DES3_CBC_SHA1,
+    ENCTYPE_AES128_CTS_HMAC_SHA1_96 = ETYPE_AES128_CTS_HMAC_SHA1_96,
+    ENCTYPE_AES256_CTS_HMAC_SHA1_96 = ETYPE_AES256_CTS_HMAC_SHA1_96,
     ENCTYPE_ARCFOUR_HMAC_MD5	= ETYPE_ARCFOUR_HMAC_MD5,
     ENCTYPE_ARCFOUR_HMAC_MD5_56	= ETYPE_ARCFOUR_HMAC_MD5_56,
     ENCTYPE_ENCTYPE_PK_CROSS	= ETYPE_ENCTYPE_PK_CROSS,
@@ -508,7 +515,8 @@ enum {
     KRB5_AUTH_CONTEXT_RET_TIME     = 2,
     KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
     KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8,
-    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16
+    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16,
+    KRB5_AUTH_CONTEXT_USE_SUBKEY   = 32
 };
 
 /* flags for krb5_auth_con_genaddrs */
