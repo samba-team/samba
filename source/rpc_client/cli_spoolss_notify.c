@@ -21,10 +21,35 @@
  */
 
 #include "includes.h"
+#if 0
 #include "rpc_parse.h"
 #include "nterr.h"
-
+#endif
 extern pstring global_myname;
+
+struct msg_info_table {
+	uint32 msg;
+	uint32 field;
+	char*  name;
+	void (*construct_fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+		print_queue_struct *queue,
+		NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
+};
+
+struct msg_info_table msg_table[] = {
+{ PRINTER_MESSAGE_DRIVER,      PRINTER_NOTIFY_DRIVER_NAME,    "PRINTER_MESSAGE_DRIVER",      spoolss_notify_driver_name  },
+{ PRINTER_MESSAGE_ATTRIBUTES,  PRINTER_NOTIFY_ATTRIBUTES,     "PRINTER_MESSAGE_ATTRIBUTES",  spoolss_notify_attributes   },
+{ PRINTER_MESSAGE_COMMENT,     PRINTER_NOTIFY_COMMENT,        "PRINTER_MESSAGE_COMMENT",     spoolss_notify_comment      },
+{ PRINTER_MESSAGE_LOCATION,    PRINTER_NOTIFY_LOCATION,       "PRINTER_MESSAGE_LOCATION",    spoolss_notify_location     },
+{ PRINTER_MESSAGE_PRINTERNAME, PRINTER_NOTIFY_PRINTER_NAME,   "PRINTER_MESSAGE_PRINTERNAME", spoolss_notify_printer_name },
+{ PRINTER_MESSAGE_SHARENAME,   PRINTER_NOTIFY_SHARE_NAME,     "PRINTER_MESSAGE_SHARENAME",   spoolss_notify_share_name   },
+{ PRINTER_MESSAGE_PORT,        PRINTER_NOTIFY_PORT_NAME,      "PRINTER_MESSAGE_PORT",        spoolss_notify_port_name    },
+{ PRINTER_MESSAGE_CJOBS,       PRINTER_NOTIFY_CJOBS,          "PRINTER_MESSAGE_CJOBS",       spoolss_notify_cjobs        },
+{ PRINTER_MESSAGE_SEPFILE,     PRINTER_NOTIFY_SEPFILE,        "PRINTER_MESSAGE_SEPFILE",     spoolss_notify_sepfile      },
+{ PRINTER_MESSAGE_PARAMS,      PRINTER_NOTIFY_PARAMETERS,     "PRINTER_MESSAGE_PARAMETERS",  spoolss_notify_parameters   },
+{ PRINTER_MESSAGE_DATATYPE,    PRINTER_NOTIFY_DATATYPE,       "PRINTER_MESSAGE_DATATYPE",    spoolss_notify_datatype     },
+{ PRINTER_MESSAGE_NULL,        0x0,                           "",                            NULL                        },
+};
 
 /*********************************************************
  Disconnect from the client machine.
@@ -307,31 +332,36 @@ static int build_notify_data (TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, u
 {
 	SPOOL_NOTIFY_INFO_DATA *data;
 	uint32 idx = 0;
+	int i = 0;
+	
+	while ((msg_table[i].msg != PRINTER_MESSAGE_NULL) && flags)
+	{
+		if (flags & msg_table[i].msg) 
+		{
+			DEBUG(10,("build_notify_data: %s set on [%s][%d]\n", msg_table[i].name,
+				printer->info_2->printername, idx));
+			if ((data=Realloc(*notify_data, (idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+				DEBUG(0,("build_notify_data: Realloc() failed with size [%d]!\n",
+					(idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA)));
+				return -1;
+			}
+			*notify_data = data;
 
-	/* Changing the printer driver */
-		
-	if (flags & PRINTER_MESSAGE_DRIVER) {
-		DEBUG(10,("build_notify_data: PRINTER_MESSAGE_DRIVER set on [%s][%d]\n",
-			printer->info_2->printername, idx));
-		if ((data=Realloc(*notify_data, (idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
-			DEBUG(0,("build_notify_data: Realloc() failed with size [%d]!\n",
-				(idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA)));
-			return -1;
+			/* clear memory */
+			memset(*notify_data+idx, 0x0, sizeof(SPOOL_NOTIFY_INFO_DATA));
+
+			/*
+			 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE
+			 * See PRINTER_NOTIFY_INFO_DATA entries in MSDN
+			 * --jerry
+			 */
+			construct_info_data(*notify_data+idx, PRINTER_NOTIFY_TYPE, msg_table[i].field, 0x00);
+
+			msg_table[i].construct_fn(-1, *notify_data+idx, NULL, printer, ctx);
+			idx++;
 		}
-		*notify_data = data;
-
-		/* clear memory */
-		memset(*notify_data+idx, 0x0, sizeof(SPOOL_NOTIFY_INFO_DATA));
-
-		/*
-		 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE
-		 * See PRINTER_NOTIFY_INFO_DATA entries in MSDN
-		 * --jerry
-		 */
-		construct_info_data(*notify_data+idx, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME, 0x00);
-
-		spoolss_notify_driver_name(-1, *notify_data+idx, NULL, printer, ctx);
-		idx++;
+		
+		i++;
 	}
 	
 	return idx;

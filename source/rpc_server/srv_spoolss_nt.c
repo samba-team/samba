@@ -599,6 +599,8 @@ static NTSTATUS srv_spoolss_send_event_to_client(Printer_entry* Printer,
 	
 	if (valid_notify_options(Printer)) {
 		/* This is a single call that can send information about multiple changes */
+		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
 		result = cli_spoolss_reply_rrpcn(cli, cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
@@ -1545,7 +1547,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
  * fill a notify_info_data with the servername
  ********************************************************************/
 
-static void spoolss_notify_server_name(int snum, 
+void spoolss_notify_server_name(int snum, 
 				       SPOOL_NOTIFY_INFO_DATA *data, 
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -1573,7 +1575,7 @@ static void spoolss_notify_server_name(int snum,
  * fill a notify_info_data with the printername (not including the servername).
  ********************************************************************/
 
-static void spoolss_notify_printer_name(int snum, 
+void spoolss_notify_printer_name(int snum, 
 					SPOOL_NOTIFY_INFO_DATA *data, 
 					print_queue_struct *queue,
 					NT_PRINTER_INFO_LEVEL *printer,
@@ -1608,7 +1610,7 @@ static void spoolss_notify_printer_name(int snum,
  * fill a notify_info_data with the servicename
  ********************************************************************/
 
-static void spoolss_notify_share_name(int snum, 
+void spoolss_notify_share_name(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data, 
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -1635,7 +1637,7 @@ static void spoolss_notify_share_name(int snum,
  * fill a notify_info_data with the port name
  ********************************************************************/
 
-static void spoolss_notify_port_name(int snum, 
+void spoolss_notify_port_name(int snum, 
 				     SPOOL_NOTIFY_INFO_DATA *data, 
 				     print_queue_struct *queue,
 				     NT_PRINTER_INFO_LEVEL *printer,
@@ -1692,7 +1694,7 @@ void spoolss_notify_driver_name(int snum,
  * fill a notify_info_data with the comment
  ********************************************************************/
 
-static void spoolss_notify_comment(int snum, 
+void spoolss_notify_comment(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
@@ -1724,7 +1726,7 @@ static void spoolss_notify_comment(int snum,
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
 
-static void spoolss_notify_location(int snum, 
+void spoolss_notify_location(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
@@ -1764,7 +1766,7 @@ static void spoolss_notify_devmode(int snum,
  * fill a notify_info_data with the separator file name
  ********************************************************************/
 
-static void spoolss_notify_sepfile(int snum, 
+void spoolss_notify_sepfile(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data, 
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
@@ -1792,7 +1794,7 @@ static void spoolss_notify_sepfile(int snum,
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
 
-static void spoolss_notify_print_processor(int snum, 
+void spoolss_notify_print_processor(int snum, 
 					   SPOOL_NOTIFY_INFO_DATA *data,
 					   print_queue_struct *queue,
 					   NT_PRINTER_INFO_LEVEL *printer,
@@ -1820,7 +1822,7 @@ static void spoolss_notify_print_processor(int snum,
  * jfm:xxxx send an empty string
  ********************************************************************/
 
-static void spoolss_notify_parameters(int snum, 
+void spoolss_notify_parameters(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -1848,7 +1850,7 @@ static void spoolss_notify_parameters(int snum,
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
 
-static void spoolss_notify_datatype(int snum, 
+void spoolss_notify_datatype(int snum, 
 				    SPOOL_NOTIFY_INFO_DATA *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
@@ -1892,7 +1894,7 @@ static void spoolss_notify_security_desc(int snum,
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
 
-static void spoolss_notify_attributes(int snum, 
+void spoolss_notify_attributes(int snum, 
 				      SPOOL_NOTIFY_INFO_DATA *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -1979,7 +1981,7 @@ static void spoolss_notify_status(int snum,
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
 
-static void spoolss_notify_cjobs(int snum, 
+void spoolss_notify_cjobs(int snum, 
 				 SPOOL_NOTIFY_INFO_DATA *data,
 				 print_queue_struct *queue,
 				 NT_PRINTER_INFO_LEVEL *printer, 
@@ -2766,8 +2768,13 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	printer->global_counter = global_counter;
 	printer->total_pages = 0;
+#if 0	/* JERRY */
 	printer->major_version = 0x0004; 	/* NT 4 */
 	printer->build_version = 0x0565; 	/* build 1381 */
+#else
+	printer->major_version = 0x0005; 	/* NT 5 */
+	printer->build_version = 0x0893; 	/* build 2195 */
+#endif
 	printer->unknown7 = 0x1;
 	printer->unknown8 = 0x0;
 	printer->unknown9 = 0x0;
@@ -2816,6 +2823,7 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer,
 
 	printer->flags=flags;
 
+#if 0	/* JERRY - wrong */
 	/* Strip server name from printer name if we are doing an enum */
 
 	if (is_enum) {
@@ -2826,6 +2834,7 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer,
 		if (p)
 			fstrcpy(ntprinter->info_2->printername, p + 1);
 	}
+#endif
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
@@ -3123,7 +3132,11 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
+#if 0	/* JERRY */
 			if (construct_printer_info_1(flags, &current_prt, snum, True)) {
+#else
+			if (construct_printer_info_1(flags, &current_prt, snum, False)) {
+#endif
 				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
 					DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
@@ -4557,9 +4570,9 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 
 	/* we force some elements to "correct" values */
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", get_called_name());
-	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 get_called_name(), lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
+	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
+		 get_called_name(), info->sharename);
 	info->attributes = PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
 	
 	return True;
@@ -5023,9 +5036,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location))
 		change_flag |= PRINTER_MESSAGE_LOCATION;
-
-	if (!(change_flag & PRINTER_MESSAGE_DRIVER))
-		goto done;
 
 	ZERO_STRUCT(msg);
 	

@@ -318,6 +318,7 @@
  * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
  * when sending messages to other smbd's
  */
+#define PRINTER_MESSAGE_NULL            0x00000000
 #define PRINTER_MESSAGE_DRIVER		0x00000001
 #define PRINTER_MESSAGE_COMMENT		0x00000002
 #define PRINTER_MESSAGE_PRINTERNAME	0x00000004
@@ -331,6 +332,7 @@
 #define PRINTER_MESSAGE_CJOBS		0x00000400
 #define PRINTER_MESSAGE_PORT		0x00000800
 #define PRINTER_MESSAGE_SHARENAME	0x00001000
+#define PRINTER_MESSAGE_ATTRIBUTES	0x00002000
 
 typedef struct printer_message_info {
 	uint32 low;		/* PRINTER_CHANGE_XXX */
