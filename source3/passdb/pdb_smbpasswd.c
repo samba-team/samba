@@ -1559,7 +1559,7 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->free_private_data = free_private_data;
 
 	if (lp_idmap_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
 		privates->permit_non_unix_accounts = True;
 	}
 
