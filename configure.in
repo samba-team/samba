@@ -5,6 +5,8 @@ AM_CONFIG_HEADER(include/config.h)
 
 AM_INIT_AUTOMAKE(heimdal,0.0a)
 
+AC_PREFIX_DEFAULT(/usr/heimdal)
+
 AC_CANONICAL_HOST
 CANONICAL_HOST=$host
 AC_SUBST(CANONICAL_HOST)
@@ -318,3 +320,25 @@ AC_OUTPUT(Makefile 			\
 	appl/telnet/telnetd/Makefile	\
 	doc/Makefile			\
 )
+
+dnl
+dnl This is the release version name-number[beta]
+dnl
+HEIMDALVERSION="$PACKAGE-$VERSION"
+
+cat > include/newversion.h.in <<EOF
+char *heimdal_long_version = "@(#)\$Version: $HEIMDALVERSION by @USER@ on @HOST@ ($host) @DATE@ \$";
+char *heimdal_version = "$HEIMDALVERSION";
+EOF
+
+if test -f include/version.h && cmp -s include/newversion.h.in include/version.h.in; then
+	echo "include/version.h is unchanged"
+	rm -f include/newversion.h.in
+else
+ 	echo "creating include/version.h"
+ 	User=${USER-${LOGNAME}}
+ 	Host=`(hostname || uname -n) 2>/dev/null | sed 1q`
+ 	Date=`date`
+	mv -f include/newversion.h.in include/version.h.in
+	sed -e "s/@USER@/$User/" -e "s/@HOST@/$Host/" -e "s/@DATE@/$Date/" include/version.h.in > include/version.h
+fi
