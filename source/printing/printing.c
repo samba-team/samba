@@ -60,7 +60,7 @@ static pid_t local_pid;
 #define UNIX_JOB_START PRINT_MAX_JOBID
 
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 1
+#define PRINT_DATABASE_VERSION 2
 
 /****************************************************************************
 initialise the printing backend. Called once at startup. 
@@ -300,6 +300,14 @@ static void print_queue_update(int snum)
 	fstring keystr;
 	TDB_DATA data, key;
  
+	/*
+	 * Update the cache time FIRST ! Stops others doing this
+	 * if the lpq takes a long time.
+	 */
+
+	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
+	tdb_store_int(tdb, keystr, (int)time(NULL));
+
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
 	unlink(tmp_file);
@@ -373,6 +381,7 @@ static void print_queue_update(int snum)
 	safe_free(tstruct.queue);
 
 	/* store the queue status structure */
+	status.qcount = qcount;
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
 	data.dptr = (void *)&status;
 	data.dsize = sizeof(status);
@@ -380,7 +389,11 @@ static void print_queue_update(int snum)
 	key.dsize = strlen(keystr);
 	tdb_store(tdb, key, data, TDB_REPLACE);	
 
-	/* update the cache time */
+	/*
+	 * Update the cache time again. We want to do this call
+	 * as little as possible...
+	 */
+
 	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
 	tdb_store_int(tdb, keystr, (int)time(NULL));
 }
@@ -616,6 +629,49 @@ int print_job_write(int jobid, const char *buf, int size)
 	return write(fd, buf, size);
 }
 
+/****************************************************************************
+ Check if the print queue has been updated recently enough.
+****************************************************************************/
+
+static BOOL print_cache_expired(int snum)
+{
+	fstring key;
+	time_t t2, t = time(NULL);
+	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	t2 = tdb_fetch_int(tdb, key);
+	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
+		return True;
+	}
+	return False;
+}
+
+/****************************************************************************
+ Determine the number of jobs in a queue.
+****************************************************************************/
+
+static int print_queue_length(int snum)
+{
+	fstring keystr;
+	TDB_DATA data, key;
+	print_status_struct status;
+
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
+
+	/* also fetch the queue status */
+	ZERO_STRUCTP(&status);
+	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+	data = tdb_fetch(tdb, key);
+	if (data.dptr) {
+		if (data.dsize == sizeof(status)) {
+			memcpy(&status, data.dptr, sizeof(status));
+		}
+		free(data.dptr);
+	}
+	return status.qcount;
+}
 
 /***************************************************************************
 start spooling a job - return the jobid
@@ -655,6 +711,11 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* for autoloaded printers, check that the printcap entry still exists */
 	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_servicename(snum), NULL)) {
 		errno = ENOENT;
+		return -1;
+	}
+
+	if (print_queue_length(snum) > lp_maxprintjobs(snum)) {
+		errno = ENOSPC;
 		return -1;
 	}
 
@@ -808,22 +869,6 @@ BOOL print_job_end(int jobid)
 	print_cache_flush(snum);
 	
 	return True;
-}
-
-/****************************************************************************
- Check if the print queue has been updated recently enough.
-****************************************************************************/
-
-static BOOL print_cache_expired(int snum)
-{
-	fstring key;
-	time_t t2, t = time(NULL);
-	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
-	t2 = tdb_fetch_int(tdb, key);
-	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
-		return True;
-	}
-	return False;
 }
 
 /* utility fn to enumerate the print queue */
@@ -1008,6 +1053,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	}
 
 	print_cache_flush(snum);
+	safe_free(queue);
 
 	return True;
 }

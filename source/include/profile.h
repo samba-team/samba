@@ -37,7 +37,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 #define PROF_SHM_MAGIC 0x6349985
 #define PROF_SHM_VERSION 3
 
-/* time values in the following structure are in milliseconds */
+/* time values in the following structure are in microseconds */
 
 struct profile_stats {
 /* general counters */
@@ -322,6 +322,8 @@ extern struct profile_header *profile_h;
 extern struct profile_stats *profile_p;
 extern struct timeval profile_starttime;
 extern struct timeval profile_endtime;
+extern struct timeval profile_starttime_nested;
+extern struct timeval profile_endtime_nested;
 extern BOOL do_profile_flag;
 extern BOOL do_profile_times;
 
@@ -332,7 +334,12 @@ extern BOOL do_profile_times;
 #define INC_PROFILE_COUNT(x) profile_p->x++
 #define DEC_PROFILE_COUNT(x) profile_p->x--
 #define ADD_PROFILE_COUNT(x,y) profile_p->x += (y)
-#define PROFILE_TIME TvalDiff(&profile_starttime,&profile_endtime)
+#define PROFILE_TIME \
+	((profile_endtime.tv_sec - profile_starttime.tv_sec) *1000000 + \
+	((int)profile_endtime.tv_usec - (int)profile_starttime.tv_usec))
+#define PROFILE_TIME_NESTED \
+	((profile_endtime_nested.tv_sec - profile_starttime_nested.tv_sec) *1000000 + \
+	((int)profile_endtime_nested.tv_usec - (int)profile_starttime_nested.tv_usec))
 
 #ifdef WITH_PROFILE
 #define DO_PROFILE_INC(x) \
@@ -358,6 +365,12 @@ extern BOOL do_profile_times;
 			GetTimeOfDay(&profile_starttime); \
 		INC_PROFILE_COUNT(x##_count); \
 	}
+#define START_PROFILE_NESTED(x) \
+	if (do_profile_flag) { \
+		if (do_profile_times) \
+			GetTimeOfDay(&profile_starttime_nested); \
+		INC_PROFILE_COUNT(x##_count); \
+	}
 #define START_PROFILE_BYTES(x,n) \
 	if (do_profile_flag) { \
 		if (do_profile_times) \
@@ -370,14 +383,21 @@ extern BOOL do_profile_times;
 		GetTimeOfDay(&profile_endtime); \
 		ADD_PROFILE_COUNT(x##_time,PROFILE_TIME); \
 	}
+#define END_PROFILE_NESTED(x) \
+	if (do_profile_times) { \
+		GetTimeOfDay(&profile_endtime_nested); \
+		ADD_PROFILE_COUNT(x##_time,PROFILE_TIME_NESTED); \
+	}
 #else
 #define DO_PROFILE_INC(x)
 #define DO_PROFILE_DEC(x)
 #define DO_PROFILE_DEC_INC(x,y)
 #define DO_PROFILE_ADD(x,n)
 #define START_PROFILE(x)
+#define START_PROFILE_NESTED(x)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
+#define END_PROFILE_NESTED(x)
 #endif
 
 #endif
