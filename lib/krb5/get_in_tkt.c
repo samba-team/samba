@@ -50,7 +50,7 @@ decrypt_tkt (krb5_context context,
 		      DES_DECRYPT);
 				/* XXX: Check CRC */
 
-     i = decode_EncTGSRepPart(buf + 12, len - 12, &dec_rep->part2);
+     i = decode_EncTGSRepPart((unsigned char*)buf + 12, len - 12, &dec_rep->part2);
      free (buf);
      if (i < 0)
        return ASN1_PARSE_ERROR;
@@ -143,8 +143,8 @@ krb5_get_in_tkt(krb5_context context,
      if (etypes)
        abort ();
      else {
-	  err = krb5_get_default_in_tkt_etypes (context,
-						&a.req_body.etype.val);
+	 err = krb5_get_default_in_tkt_etypes (context,
+					       (krb5_enctype**)&a.req_body.etype.val);
 	  if (err)
 	       return err;
 	  a.req_body.etype.len = 1;
@@ -153,7 +153,7 @@ krb5_get_in_tkt(krb5_context context,
      } else {
           a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
-	  err = krb5_get_all_client_addrs (a.req_body.addresses);
+	  err = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
 	  if (err)
 	       return err;
      }
@@ -161,7 +161,7 @@ krb5_get_in_tkt(krb5_context context,
      a.req_body.additional_tickets = NULL;
      a.padata = NULL;
 
-     req.length = encode_AS_REQ (buf + sizeof(buf) - 1,
+     req.length = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
 				 sizeof(buf),
 				 &a);
      if (req.length < 0)
@@ -261,6 +261,8 @@ krb5_get_in_tkt(krb5_context context,
      memset (rep.part2.key.keyvalue.data, 0,
 	     rep.part2.key.keyvalue.length);
      krb5_data_free (&rep.part2.key.keyvalue);
+     creds->authdata.length = 0;
+     creds->authdata.data = NULL;
 
      if (err)
 	  return err;
