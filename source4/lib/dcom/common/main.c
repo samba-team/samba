@@ -27,13 +27,6 @@
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
-struct dcom_oxid_mapping {
-	struct dcom_oxid_mapping *prev, *next;	
-	struct DUALSTRINGARRAY bindings;
-	HYPER_T oxid;
-	struct dcerpc_pipe *pipe;
-};
-
 static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding *b, struct STRINGBINDING *bd)
 {
 	char *host, *endpoint;
@@ -109,53 +102,6 @@ static NTSTATUS dcom_connect_host(struct dcom_context *ctx, struct dcerpc_pipe *
 	}
 	
 	return status;
-}
-
-NTSTATUS dcerpc_IUnknown_AddRef(struct dcom_interface *p, TALLOC_CTX *mem_ctx, struct IUnknown_AddRef *rr) 
-{
-	struct RemAddRef r;
-	struct REMINTERFACEREF ref;
-	
-	/* This is rather inefficient, but we'll patch it up later */
-	r.in.cInterfaceRefs = 1;
-	r.in.InterfaceRefs = &ref;
-
-	return dcerpc_RemAddRef(p, mem_ctx, &r);
-}
-
-NTSTATUS dcerpc_IUnknown_Release(struct dcom_interface *p, TALLOC_CTX *mem_ctx, struct IUnknown_Release *rr)
-{
-	struct RemRelease r;
-	struct REMINTERFACEREF ref;
-
-	return NT_STATUS_NOT_SUPPORTED;
-	
-	p->private_references--;
-
-	/* Only do the remote version of this call when all local references have 
-	 * been released */
-	if (p->private_references == 0) {
-		NTSTATUS status;
-		r.in.cInterfaceRefs = 1;
-		r.in.InterfaceRefs = &ref;
-
-		status = dcerpc_RemRelease(p, mem_ctx, &r);
-		
-		if (NT_STATUS_IS_OK(status)) {
-			talloc_destroy(p);	
-		}
-
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS dcerpc_IUnknown_QueryInterface(struct dcom_interface *o, TALLOC_CTX *mem_ctx, struct IUnknown_QueryInterface *rr)
-{
-	/* FIXME: Ask local server for interface pointer. Local server can then 
-	 * call RemQueryInterface if necessary */
-	return NT_STATUS_NOT_SUPPORTED;
 }
 
 WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user, const char *pass)
@@ -303,6 +249,9 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 	struct GUID iid;
 	HYPER_T oxid;
 	NTSTATUS status;
+	int i;
+
+	*p = NULL;
 	
 	SMB_ASSERT(iface->objref->signature == OBJREF_SIGNATURE);
 
@@ -332,8 +281,11 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 		m = talloc_zero_p(iface->ctx, struct dcom_oxid_mapping);
 		m->oxid = oxid;	
 
-		/* FIXME: Check other string bindings as well, not just 0 */
-		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->objref->u_objref.u_standard.saResAddr.stringbindings[0]);
+		i = 0;
+		do {
+			status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
+			i++;
+		} while (!NT_STATUS_IS_OK(status) && iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(1, ("Error parsing string binding"));
@@ -364,13 +316,22 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 	}
 
 	if (m->pipe) {
+		if (!uuid_equal(&m->pipe->syntax.uuid, &iid)) {
+			m->pipe->syntax.uuid = iid;
+			status = dcerpc_alter(m->pipe, iface->ctx);
+			if (NT_STATUS_IS_ERR(status)) {
+				return status;
+			}
+		}
 		*p = m->pipe;
-		/* FIXME: Switch to correct IID using an alter context call */
 		return NT_STATUS_OK;
 	}
 
-	/* FIXME: Check other string bindings as well, not just 0 */
-	status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, m->bindings.stringbindings[0]);
+	i = 0;
+	do {
+		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, m->bindings.stringbindings[i]);
+		i++;
+	} while (NT_STATUS_IS_ERR(status) && m->bindings.stringbindings[i]);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Error parsing string binding"));
