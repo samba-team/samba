@@ -88,9 +88,10 @@ o   Guenther Deschner <gd@suse.com>
     * Install smbwrapper.so should be put into the $(libdir) 
       and not $(bindir).
     * Add the capability to specify the new user password 
-      for 'net ads password' on the command line.
-    * Correctly detect AFS headers on SuSE
+      for "net ads password" on the command line.
+    * Correctly detect AFS headers on SuSE.
 	
+
 o   James Flemer <jflemer@uvm.edu>
     * Fix AIX compile bug by linking HAVE_ATTR_LIST to HAVE_SYS_ATTRIBUTES_H.
     
@@ -115,7 +116,12 @@ o   Stefan Metzmacher <metze@metzemix.de>
     * Implement LDAP rebind sleep patch.
     * Revert to 2.2 quota code because of so many broken quota files 
       out there.
-    
+
+o   <ndb@theghet.to>
+    * Allow an existing LDAP machine account to be re-used when 
+      joining an AD domain.
+
+
 o   James Peach <jpeach@sgi.com>
     * BUG 889: Change smbd to use pread/pwrite on platforms that 
       support these calls. Can lead to a significant speed increase.
