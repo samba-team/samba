@@ -121,7 +121,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
   if (*p == '/') {
 
-    strncpy(server, (char *)lp_workgroup(), 16); /* FIXME: Danger here */
+    strncpy(server, lp_workgroup(), 16); /* FIXME: Danger here */
     return 0;
 
   }
@@ -133,7 +133,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
    * exists ...
    */
 
-  if (strchr_m(p, '@')) { 
+  if (strchr(p, '@')) { 
     pstring username, passwd, domain;
     char *u = userinfo;
 
@@ -141,13 +141,13 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
     username[0] = passwd[0] = domain[0] = 0;
 
-    if (strchr_m(u, ';')) {
+    if (strchr(u, ';')) {
       
       next_token(&u, domain, ";", sizeof(fstring));
 
     }
 
-    if (strchr_m(u, ':')) {
+    if (strchr(u, ':')) {
 
       next_token(&u, username, ":", sizeof(fstring));
 
@@ -276,11 +276,11 @@ struct smbc_server *smbc_server(char *server, char *share,
 
   DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
-  if ((p=strchr_m(server_n,'#')) && 
+  if ((p=strchr(server_n,'#')) && 
       (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
     
     fstrcpy(group, server_n);
-    p = strchr_m(group,'#');
+    p = strchr(group,'#');
     *p = 0;
 		
   }
@@ -412,11 +412,12 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   }
 
-  if (smbc_initialized) { /* Don't go through this if we have already done it */
+  if (smbc_initialized) { /* Already done, so don't do it again */
 
     return 0;
 
   }
+
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
@@ -446,6 +447,8 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   slprintf(my_netbios_name, 16, "smbc%s%d", user, pid);
 
+  charset_initialise();
+
   /* Here we would open the smb.conf file if needed ... */
 
   home = getenv("HOME");
@@ -468,6 +471,8 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
     return -1;
 
   }
+
+  codepage_initialise(lp_client_code_page()); /* Get a codepage */
 
   reopen_logs();  /* Get logging working ... */
 
