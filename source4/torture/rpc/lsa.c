@@ -230,6 +230,116 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_Delete(struct dcerpc_pipe *p, 
+		       TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_Delete r;
+
+	printf("\ntesting Delete\n");
+
+	r.in.handle = handle;
+	status = dcerpc_lsa_Delete(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Delete failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
+
+static BOOL find_domain_sid(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx,
+			    struct policy_handle *handle,
+			    struct dom_sid2 **sid)
+{
+	struct lsa_QueryInfoPolicy r;
+	NTSTATUS status;
+
+	r.in.handle = handle;
+	r.in.level = LSA_POLICY_INFO_DOMAIN;
+
+	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LSA_POLICY_INFO_DOMAIN failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	*sid = r.out.info->domain.sid;
+
+	return True;
+}
+
+static struct dom_sid *sid_add_auth(TALLOC_CTX *mem_ctx, 
+				    const struct dom_sid *sid,
+				    uint32 sub_auth)
+{
+	struct dom_sid *ret;
+
+	ret = talloc_p(mem_ctx, struct dom_sid);
+	if (!ret) {
+		return NULL;
+	}
+
+	*ret = *sid;
+
+	ret->sub_auths = talloc_array_p(mem_ctx, uint32, ret->num_auths+1);
+	if (!ret->sub_auths) {
+		return NULL;
+	}
+
+	memcpy(ret->sub_auths, sid->sub_auths, 
+	       ret->num_auths * sizeof(sid->sub_auths[0]));
+	ret->sub_auths[ret->num_auths] = sub_auth;
+	ret->num_auths++;
+
+	return ret;
+}
+
+static BOOL test_CreateAccount(struct dcerpc_pipe *p, 
+			       TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_CreateAccount r;
+	struct dom_sid2 *domsid, *newsid;
+	struct policy_handle acct_handle;
+
+	if (!find_domain_sid(p, mem_ctx, handle, &domsid)) {
+		return False;
+	}
+
+	newsid = sid_add_auth(mem_ctx, domsid, 0x1234abcd);
+	if (!newsid) {
+		printf("Failed to create newsid\n");
+		return False;
+	}
+
+	printf("Testing CreateAccount\n");
+
+	r.in.handle = handle;
+	r.in.sid = newsid;
+	r.in.access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.acct_handle = &acct_handle;
+
+	status = dcerpc_lsa_CreateAccount(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateAccount failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_Delete(p, mem_ctx, &acct_handle)) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_EnumAccountRights(struct dcerpc_pipe *p, 
 				   TALLOC_CTX *mem_ctx, 
 				   struct policy_handle *acct_handle,
@@ -464,27 +574,6 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static BOOL test_Delete(struct dcerpc_pipe *p, 
-		       TALLOC_CTX *mem_ctx, 
-		       struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct lsa_Delete r;
-
-	printf("\ntesting Delete - but what does it do?\n");
-
-	r.in.handle = handle;
-	status = dcerpc_lsa_Delete(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Delete failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	printf("\n");
-
-	return True;
-}
-
 static BOOL test_Close(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -539,6 +628,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_OpenPolicy2(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_CreateAccount(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
