@@ -57,7 +57,8 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
 	projdoc/UNIX_INSTALL.sgml projdoc/winbind.sgml projdoc/OS2-Client-HOWTO.sgml \
-	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml
+	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml \
+	projdoc/CVS-Access.sgml
 
 FAQSRC=faq/samba-pdc-faq.sgml
 
