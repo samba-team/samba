@@ -27,8 +27,8 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
                               uint32 smb_userid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-                          uint32 smb_userid_low, char lm_chal[8], char lm_chal_resp[24],
-                          char nt_chal_resp[24],
+                          uint32 smb_userid_low, char lm_chal[8], 
+			  char *lm_chal_resp, char *nt_chal_resp,
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 
