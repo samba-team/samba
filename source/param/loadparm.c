@@ -2061,7 +2061,7 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 		/*
 		 * Ensure this file is owned by root and not writable by world.
 		 */
-		if(fstat(fileno(env), &st) != 0) {
+		if(sys_fstat(fileno(env), &st) != 0) {
 			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
 			fclose(env);
 			return False;
