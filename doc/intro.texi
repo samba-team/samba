@@ -21,9 +21,9 @@ States
 be protocol compatible with existing implementations and, if not in
 conflict, with RFC 1510 (and any future updated RFC)
 @item
-be somewhat compatible with the M.I.T Kerberos V5 API
+be somewhat compatible with the M.I.T. Kerberos V5 API
 @item
-have support for Kerberos V5 over GSS-API
+have support for Kerberos V5 over GSS-API (RFC1964)
 @item
 include the most important and useful application programs (rsh, telnet,
 popper, etc.)
@@ -42,7 +42,7 @@ works):
 
 @itemize @bullet
 @item
-there is a stub generator and a library to encode/decode/whatever ASN.1/DER
+a stub generator and a library to encode/decode/whatever ASN.1/DER
 stuff
 @item
 a @code{libkrb5} library that should be possible to get to work with
