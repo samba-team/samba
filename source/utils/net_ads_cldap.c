@@ -26,11 +26,11 @@
 struct cldap_netlogon_reply {
 	uint32 version;
 	uint32 flags;
-	uint32 unknown[4];
+	GUID guid;
 	char *domain;
 	char *server_name;
-	char *flatname;
-	char *server_name2;
+	char *domain_flatname;
+	char *server_flatname;
 	char *dns_name;
 	uint32 unknown2[2];
 };
@@ -152,7 +152,6 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	DATA_BLOB os1, os2, os3;
 	uint32 i1;
 	char *p;
-	int i;
 
 	blob = data_blob(NULL, 8192);
 
@@ -187,17 +186,15 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	reply->version = IVAL(p, 0); p += 4;
 	reply->flags = IVAL(p, 0); p += 4;
-	for (i=0;i<4;i++) {
-		reply->unknown[i] = IVAL(p, 0);
-		p += 4;
-	}
+	memcpy(&reply->guid.info, p, GUID_SIZE);
+	p += GUID_SIZE;
 	p += pull_dotted_string(&reply->domain, p);
 	p += 2; /* 0xc018 - whats this? */
 	p += pull_len_string(&reply->server_name, p);
 	p += 2; /* 0xc018 - whats this? */
-	p += pull_len_string(&reply->flatname, p);
+	p += pull_len_string(&reply->domain_flatname, p);
 	p += 1;
-	p += pull_len_string(&reply->server_name2, p);
+	p += pull_len_string(&reply->server_flatname, p);
 	p += 2;
 	p += pull_len_string(&reply->dns_name, p);
 
@@ -237,11 +234,13 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	close(sock);
 
 	d_printf("Version: 0x%x\n", reply.version);
+	d_printf("GUID: "); 
+	print_guid(&reply.guid);
 	d_printf("Flags:   0x%x\n", reply.flags);
 	d_printf("Domain: %s\n", reply.domain);
 	d_printf("Server Name: %s\n", reply.server_name);
-	d_printf("Flatname: %s\n", reply.flatname);
-	d_printf("Server Name2: %s\n", reply.server_name2);
+	d_printf("Flatname: %s\n", reply.domain_flatname);
+	d_printf("Server Name2: %s\n", reply.server_flatname);
 	d_printf("DNS Name: %s\n", reply.dns_name);
 	
 	return ret;
