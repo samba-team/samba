@@ -63,10 +63,10 @@ void load_case_tables(void)
 	}
 
 	if (!valid_table) {
+		const char *allowed = "!#$%&'()_-.@^`{}~";
 		DEBUG(1,("creating lame valid table\n"));
 		valid_table = malloc(0x10000);
-		for (i=0;i<256;i++) valid_table[i] = 
-					    isalnum(i) && !strchr("*\\/?<>|\":", i);
+		for (i=0;i<256;i++) valid_table[i] = isalnum(i) || strchr(allowed,i);
 		for (;i<0x10000;i++) valid_table[i] = 0;
 	}
 }
