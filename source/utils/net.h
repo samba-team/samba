@@ -66,6 +66,7 @@ extern int opt_acls;
 extern int opt_attrs;
 extern int opt_timestamps;
 extern const char *opt_exclude;
+extern const char *opt_destination;
 
 extern BOOL opt_have_ip;
 extern struct in_addr opt_dest_ip;
