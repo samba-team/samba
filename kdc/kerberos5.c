@@ -354,9 +354,11 @@ as_rep(KDC_REQ *req,
 	    kdc_log(2, "Postdated ticket requested -- %s", 
 		    client_name);
 	}
-	if(b->till == 0)
-	    b->till = MAX_TIME;
-	t = b->till;
+	if(b->till == NULL){
+	    ALLOC(b->till);
+	    *b->till = MAX_TIME;
+	}
+	t = *b->till;
 	if(client->max_life)
 	    t = min(t, start + *client->max_life);
 	if(server->max_life)
@@ -365,14 +367,14 @@ as_rep(KDC_REQ *req,
 	t = min(t, start + realm->max_life);
 #endif
 	et.endtime = t;
-	if(f.renewable_ok && et.endtime < b->till){
+	if(f.renewable_ok && et.endtime < *b->till){
 	    f.renewable = 1;
 	    if(b->rtime == NULL){
 		ALLOC(b->rtime);
 		*b->rtime = 0;
 	    }
-	    if(*b->rtime < b->till)
-		*b->rtime = b->till;
+	    if(*b->rtime < *b->till)
+		*b->rtime = *b->till;
 	}
 	if(f.renewable && b->rtime){
 	    t = *b->rtime;
@@ -680,7 +682,11 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     rep.msg_type = krb_tgs_rep;
 
     et.authtime = tgt->authtime;
-    et.endtime = min(tgt->endtime, b->till);
+    if(b->till == NULL){
+	ALLOC(b->till);
+	*b->till = MAX_TIME;
+    }
+    et.endtime = min(tgt->endtime, *b->till);
     ALLOC(et.starttime);
     *et.starttime = kdc_time;
     
@@ -709,10 +715,10 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 	et.endtime = *et.starttime + life;
     }
     if(f.renewable_ok && tgt->flags.renewable && 
-       et.renew_till == NULL && et.endtime < b->till){
+       et.renew_till == NULL && et.endtime < *b->till){
 	et.flags.renewable = 1;
 	ALLOC(et.renew_till);
-	*et.renew_till = b->till;
+	*et.renew_till = *b->till;
     }
     if(et.renew_till){
 	time_t renew;

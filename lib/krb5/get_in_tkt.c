@@ -368,7 +368,10 @@ init_as_req (krb5_context context,
 	}
 	*a->req_body.from = creds->times.starttime;
     }
-    a->req_body.till = creds->times.endtime;
+    if(creds->times.endtime){
+	ALLOC(a->req_body.till, 1);
+	*a->req_body.till = creds->times.endtime;
+    }
     if(creds->times.renew_till){
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {

@@ -99,7 +99,10 @@ init_tgs_req (krb5_context context,
     if (ret)
 	goto fail;
 
-    t->req_body.till = in_creds->times.endtime;
+    if(in_creds->times.endtime){
+	ALLOC(t->req_body.till, 1);
+	*t->req_body.till = in_creds->times.endtime;
+    }
     
     t->req_body.nonce = nonce;
     if(second_ticket){
