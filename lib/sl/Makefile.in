@@ -111,7 +111,7 @@ $(OBJECTS): ../../include/config.h
 $(mk_cmds_OBJECTS): parse.h
 
 mk_cmds$(EXECSUFFIX): $(mk_cmds_OBJECTS)
-	$(CC) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
+	$(CC) $(CFLAGS) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
 
 parse.c parse.h: $(srcdir)/parse.y
 	$(YACC) -d $(srcdir)/parse.y

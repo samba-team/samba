@@ -168,7 +168,7 @@ roken.h: make-roken$(EXECSUFFIX)
 	else rm -f roken.h; mv tmp.h roken.h; fi
 
 make-roken$(EXECSUFFIX): make-roken.o
-	$(CC) -o $@ make-roken.o
+	$(CC) $(CFLAGS) -o $@ make-roken.o
 
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
@@ -179,7 +179,7 @@ print_version.h: make-print-version$(EXESUFFIX)
 	@./make-print-version$(EXESUFFIX) print_version.h
 
 make-print-version$(EXECSUFFIX): make-print-version.o
-	$(CC) -o $@ make-print-version.o
+	$(CC) $(CFLAGS) -o $@ make-print-version.o
 
 install-roken-h: roken.h
 	@if [ -f ../../include/roken.h ] && cmp -s ../../include/roken.h roken.h ; \

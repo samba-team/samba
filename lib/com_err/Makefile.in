@@ -126,7 +126,7 @@ COBJ = compile_et.o parse.o lex.o
 $(COBJ): parse.h
 
 compile_et$(EXECSUFFIX): $(COBJ)
-	$(CC) -o $@ $(COBJ) -L../roken -lroken
+	$(CC) $(CFLAGS) -o $@ $(COBJ) -L../roken -lroken
 
 parse.c parse.h: $(srcdir)/parse.y
 	$(YACC) -d $(srcdir)/parse.y
