@@ -125,6 +125,13 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	readonly_share = is_share_read_only_for_user(conn, vuser);
 
+	if (!readonly_share &&
+	    !share_access_check(conn, snum, vuser, FILE_WRITE_DATA)) {
+		/* smb.conf allows r/w, but the security descriptor denies
+		 * write. Fall back to looking at readonly. */
+		readonly_share = True;
+	}
+
 	if (!share_access_check(conn, snum, vuser, readonly_share ? FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
