@@ -31,9 +31,6 @@ extern int Protocol;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /* these are kept here to keep the string_combinations function simple */
 static char this_user[100]="";
 static char this_salt[100]="";
@@ -48,12 +45,6 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-#if 0
-        /* 
-         * Leave this ifdef'd out while we test
-         * the new crypto random number generator.
-         * JRA.
-         */
 	unsigned char buf[16];
 	static int counter = 0;
 	struct timeval tval;
@@ -68,11 +59,7 @@ void generate_next_challenge(char *challenge)
 
 	/* mash it up with md4 */
 	mdfour(buf, (unsigned char *)challenge, 8);
-#else
-        unsigned char buf[8];
 
-        generate_random_buffer(buf,8,False);
-#endif 
 	memcpy(saved_challenge, buf, 8);
 	memcpy(challenge,buf,8);
 	challenge_sent = True;
@@ -91,7 +78,7 @@ BOOL set_challenge(char *challenge)
 /*******************************************************************
 get the last challenge sent
 ********************************************************************/
-BOOL last_challenge(unsigned char *challenge)
+BOOL last_challenge(char *challenge)
 {
   if (!challenge_sent) return(False);
   memcpy(challenge,saved_challenge,8);
@@ -159,92 +146,6 @@ char *validated_username(uint16 vuid)
     return 0;
   return(vuser->name);
 }
-
-
-/****************************************************************************
-Setup the groups a user belongs to.
-****************************************************************************/
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups,
-         int **p_attrs)
-{
-  if (-1 == initgroups(user,gid))
-    {
-      if (getuid() == 0)
-	{
-	  DEBUG(0,("Unable to initgroups!\n"));
-	  if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
-	    DEBUG(0,("This is probably a problem with the account %s\n",user));
-	}
-    }
-  else
-    {
-      int i,ngroups;
-      int *igroups;
-      int *attrs;
-      gid_t grp = 0;
-      ngroups = getgroups(0,&grp);
-      if (ngroups <= 0)
-        ngroups = 32;
-      igroups = (int *)malloc(sizeof(int)*ngroups);
-      attrs   = (int *)malloc(sizeof(int)*ngroups);
-      for (i=0;i<ngroups;i++)
-      {
-        attrs  [i] = 0x7; /* XXXX don't know what NT user attributes are yet! */
-        igroups[i] = 0x42424242;
-      }
-      ngroups = getgroups(ngroups,(gid_t *)igroups);
-
-      if (igroups[0] == 0x42424242)
-        ngroups = 0;
-
-      *p_ngroups = ngroups;
-      *p_attrs   = attrs;
-
-      /* The following bit of code is very strange. It is due to the
-         fact that some OSes use int* and some use gid_t* for
-         getgroups, and some (like SunOS) use both, one in prototypes,
-         and one in man pages and the actual code. Thus we detect it
-         dynamically using some very ugly code */
-      if (ngroups > 0)
-        {
-	  /* does getgroups return ints or gid_t ?? */
-	  static BOOL groups_use_ints = True;
-
-	  if (groups_use_ints && 
-	      ngroups == 1 && 
-	      SVAL(igroups,2) == 0x4242)
-	    groups_use_ints = False;
-	  
-          for (i=0;groups_use_ints && i<ngroups;i++)
-            if (igroups[i] == 0x42424242)
-    	      groups_use_ints = False;
-	      
-          if (groups_use_ints)
-          {
-    	      *p_igroups = igroups;
-    	      *p_groups = (gid_t *)igroups;	  
-          }
-          else
-          {
-	      gid_t *groups = (gid_t *)igroups;
-	      igroups = (int *)malloc(sizeof(int)*ngroups);
-	      for (i=0;i<ngroups;i++)
-          {
-	        igroups[i] = groups[i];
-          }
-	      *p_igroups = igroups;
-	      *p_groups = (gid_t *)groups;
-	    }
-	}
-      DEBUG(3,("%s is in %d groups\n",user,ngroups));
-      for (i=0;i<ngroups;i++)
-        DEBUG(3,("%d ",igroups[i]));
-      DEBUG(3,("\n"));
-    }
-  return 0;
-}
-
 
 /****************************************************************************
 register a uid/name pair as being valid and that a valid password
@@ -427,26 +328,23 @@ static char *osf1_bigcrypt(char *password,char *salt1)
 /****************************************************************************
 update the encrypted smbpasswd file from the plaintext username and password
 *****************************************************************************/
-BOOL update_smbpassword_file( char *user, fstring password)
+BOOL update_smbpassword_file( struct passwd *pass, fstring password)
 {
-  struct smb_passwd *sampw;
+  struct smb_passwd smbpw;
   BOOL ret;
 
-  become_root(0);
-  sampw = getsampwnam(user);
-  unbecome_root(0);
+  /* Fake up an smb_passwd. */
+  smbpw.smb_userid = pass->pw_uid;
+  smbpw.smb_name = pass->pw_name;
+  smbpw.smb_passwd = NULL;
+  smbpw.smb_nt_passwd = NULL;
+  smbpw.acct_ctrl = ACB_NORMAL;
 
-  if(sampw == NULL)
-  {
-    DEBUG(0,("update_smbpassword_file: getsampwnam returned NULL\n"));
-    return False;
-  }
- 
   /* Here, the flag is one, because we want to ignore the XXXXXXX'd out password */
-  ret = change_oem_password( sampw, password, True);
+  ret = change_oem_password( &smbpw, password, 1);
   if (ret == False)
-    DEBUG(3,("update_smbpasswd_file: change_oem_password returned False\n"));
-
+    DEBUG(3,("update_smbpasswd_entry: change_oem_password returned False\n"));
+ 
   return ret;
 }
 
@@ -1013,68 +911,6 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 }
 
 /****************************************************************************
- Do a specific test for an smb password being correct, given a smb_password and
- the lanman and NT responses.
-****************************************************************************/
-
-BOOL smb_password_ok(struct smb_passwd *smb_pass,
-                     uchar lm_pass[24], uchar nt_pass[24])
-{
-  uchar challenge[8];
-
-  if (!lm_pass || !smb_pass) return(False);
-
-  if(smb_pass->acct_ctrl & ACB_DISABLED)
-  {
-    DEBUG(3,("smb_password_ok: account for user %s was disabled.\n", smb_pass->smb_name));
-    return(False);
-  }
-
-  if (!last_challenge(challenge))
-  {
-    DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
-    return False;
-  }
-
-  DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n", smb_pass->smb_name));
-
-  if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL))
-  {
-    /* We have the NT MD4 hash challenge available - see if we can
-       use it (ie. does it exist in the smbpasswd file).
-     */
-    DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-    if (smb_password_check((char *)nt_pass, (uchar *)smb_pass->smb_nt_passwd, challenge))
-    {
-      DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
-      return(True);
-    }
-    DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
-  }
-
-  /* Try against the lanman password. smb_pass->smb_passwd == NULL means
-     no password, allow access. */
-
-  DEBUG(4,("Checking LM MD4 password\n"));
-
-  if((smb_pass->smb_passwd == NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
-  {
-    DEBUG(4,("smb_password_ok: no password required for user %s\n", smb_pass->smb_name));
-    return True;
-  }
-
-  if((smb_pass->smb_passwd != NULL) && smb_password_check((char *)lm_pass, (uchar *)smb_pass->smb_passwd, challenge))
-  {
-    DEBUG(4,("smb_password_ok: LM MD4 password check succeeded\n"));
-    return(True);
-  }
-
-  DEBUG(4,("smb_password_ok: LM MD4 password check failed\n"));
-
-  return False;
-}
-
-/****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
@@ -1082,9 +918,9 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   pstring pass2;
   int level = lp_passwordlevel();
   struct passwd *pass;
-  uchar challenge[8];
-  struct smb_passwd *smb_pass;
+  char challenge[8];
   BOOL update_encrypted = lp_update_encrypted();
+  struct smb_passwd *smb_pass;
   BOOL challenge_done = False;
 
   if (password) password[pwlen] = 0;
@@ -1131,20 +967,13 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-      smb_pass = getsampwnam(user);
-
+      /* non-null username indicates search by username not smb userid */
+      smb_pass = get_smbpwd_entry(user, 0);
       if (!smb_pass)
 	{
 	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
 	  return(False);
 	}
-
-      /* Quit if the account was disabled. */
-      if(smb_pass->acct_ctrl & ACB_DISABLED)
-        {
-          DEBUG(3,("password_ok: account for user %s was disabled.\n", user));
-          return(False);
-        }
 
       /* Ensure the uid's match */
       if (smb_pass->smb_userid != pass->pw_uid)
@@ -1153,13 +982,35 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-      if(smb_password_ok( smb_pass, (unsigned char *)password,(uchar *)password))
-        {
-          update_protected_database(user,True);
-          return(True);
-        }
+	if (Protocol >= PROTOCOL_NT1)
+	{
+		/* We have the NT MD4 hash challenge available - see if we can
+		   use it (ie. does it exist in the smbpasswd file).
+		*/
+		if (smb_pass->smb_nt_passwd != NULL)
+		{
+		  DEBUG(4,("Checking NT MD4 password\n"));
+		  if (smb_password_check(password, 
+					smb_pass->smb_nt_passwd, 
+					(unsigned char *)challenge))
+   		  {
+	      	update_protected_database(user,True);
+	        return(True);
+    	  }
+		  DEBUG(4,("NT MD4 password check failed\n"));
+		}
+	}
 
-      DEBUG(3,("Error smb_password_check failed\n"));
+	/* Try against the lanman password */
+
+      if (smb_password_check(password, 
+			     smb_pass->smb_passwd,
+			     (unsigned char *)challenge)) {
+	update_protected_database(user,True);
+	return(True);
+      }
+
+	DEBUG(3,("Error smb_password_check failed\n"));
     }
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
@@ -1265,8 +1116,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (password_check(password))
     {
       update_protected_database(user,True);
-      if (update_encrypted)
-        update_smbpassword_file(user,password);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 
@@ -1284,8 +1135,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (password_check(password))
     {
       update_protected_database(user,True);
-      if (update_encrypted)
-        update_smbpassword_file(user,password);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 
@@ -1306,8 +1157,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (string_combinations(password,password_check,level))
     {
       update_protected_database(user,True);
-      if (update_encrypted)
-        update_smbpassword_file(user,password);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 
@@ -1693,35 +1544,35 @@ BOOL check_hosts_equiv(char *user)
   fname = lp_hosts_equiv();
 
   /* note: don't allow hosts.equiv on root */
-  if (fname && *fname && (pass->pw_uid != 0)) {
-	  extern int Client;
-	  if (check_user_equiv(user,client_name(Client),fname))
-		  return(True);
-  }
+  if (fname && *fname && (pass->pw_uid != 0))
+    {
+      if (check_user_equiv(user,client_name(),fname))
+	return(True);
+    }
   
   if (lp_use_rhosts())
     {
       char *home = get_home_dir(user);
-      if (home) {
-	      extern int Client;
-	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-	      if (check_user_equiv(user,client_name(Client),rhostsfile))
-		      return(True);
-      }
+      if (home)
+	{
+	  slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
+	  if (check_user_equiv(user,client_name(),rhostsfile))
+	    return(True);
+	}
     }
 
   return(False);
 }
 
 
-static struct cli_state pw_cli;
+static struct cli_state cli;
 
 /****************************************************************************
 return the client state structure
 ****************************************************************************/
 struct cli_state *server_client(void)
 {
-	return &pw_cli;
+	return &cli;
 }
 
 /****************************************************************************
@@ -1733,63 +1584,61 @@ struct cli_state *server_cryptkey(void)
 	struct in_addr dest_ip;
 	extern fstring local_machine;
 	char *p;
-        BOOL connected_ok = False;
 
-	if (!cli_initialise(&pw_cli))
+	if (!cli_initialise(&cli))
 		return NULL;
-
-        p = lp_passwordserver();
-        while(p && next_token( &p, desthost, LIST_SEP)) {
+	    
+	for (p=strtok(lp_passwordserver(),LIST_SEP); p ; p = strtok(NULL,LIST_SEP)) {
+		fstrcpy(desthost,p);
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
                 if(!resolve_name( desthost, &dest_ip)) {
-                        DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
-                        continue;
-                }
-
-		if (ismyip(dest_ip)) {
-			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
+			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",p));
 			continue;
 		}
 
-		if (cli_connect(&pw_cli, desthost, &dest_ip)) {
-			DEBUG(3,("connected to password server %s\n",desthost));
-			connected_ok = True;
+		if (ismyip(dest_ip)) {
+			DEBUG(1,("Password server loop - disabling password server %s\n",p));
+			continue;
+		}
+
+		if (cli_connect(&cli, desthost, &dest_ip)) {
+			DEBUG(3,("connected to password server %s\n",p));
 			break;
 		}
 	}
 
-	if (!connected_ok) {
-		DEBUG(0,("password server not available\n"));
-		cli_shutdown(&pw_cli);
+	if (!p) {
+		DEBUG(1,("password server not available\n"));
+		cli_shutdown(&cli);
 		return NULL;
 	}
 
-	if (!cli_session_request(&pw_cli, desthost, 0x20, local_machine)) {
+	if (!cli_session_request(&cli, desthost, 0x20, local_machine)) {
 		DEBUG(1,("%s rejected the session\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(&cli);
 		return NULL;
 	}
 
 	DEBUG(3,("got session\n"));
 
-	if (!cli_negprot(&pw_cli)) {
+	if (!cli_negprot(&cli)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(&cli);
 		return NULL;
 	}
 
-	if (pw_cli.protocol < PROTOCOL_LANMAN2 ||
-	    !(pw_cli.sec_mode & 1)) {
+	if (cli.protocol < PROTOCOL_LANMAN2 ||
+	    !(cli.sec_mode & 1)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
-		cli_shutdown(&pw_cli);
+		cli_shutdown(&cli);
 		return NULL;
 	}
 
 	DEBUG(3,("password server OK\n"));
 
-	return &pw_cli;
+	return &cli;
 }
 
 /****************************************************************************
@@ -1802,8 +1651,8 @@ BOOL server_validate(char *user, char *domain,
 	extern fstring local_machine;
         static unsigned char badpass[24];
 
-	if (!pw_cli.initialised) {
-		DEBUG(1,("password server %s is not connected\n", pw_cli.desthost));
+	if (!cli.initialised) {
+		DEBUG(1,("password server %s is not connected\n", cli.desthost));
 		return(False);
 	}  
 
@@ -1824,17 +1673,17 @@ BOOL server_validate(char *user, char *domain,
          * need to detect this as some versions of NT4.x are broken. JRA.
          */
 
-        if (cli_session_setup(&pw_cli, user, (char *)badpass, sizeof(badpass), 
+        if (cli_session_setup(&cli, user, (char *)badpass, sizeof(badpass), 
                               (char *)badpass, sizeof(badpass), domain)) {
-	  if ((SVAL(pw_cli.inbuf,smb_vwv2) & 1) == 0) {
+          if ((SVAL(cli.inbuf,smb_vwv2) & 1) == 0) {
             DEBUG(0,("server_validate: password server %s allows users as non-guest \
-with a bad password.\n", pw_cli.desthost));
+with a bad password.\n", cli.desthost));
             DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
-            cli_ulogoff(&pw_cli);
+            cli_ulogoff(&cli);
             return False;
           }
-          cli_ulogoff(&pw_cli);
+          cli_ulogoff(&cli);
         }
 
         /*
@@ -1842,17 +1691,17 @@ use this machine as the password server.\n"));
          * not guest enabled, we can try with the real password.
          */
 
-	if (!cli_session_setup(&pw_cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
-		DEBUG(1,("password server %s rejected the password\n", pw_cli.desthost));
+	if (!cli_session_setup(&cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+		DEBUG(1,("password server %s rejected the password\n", cli.desthost));
 		return False;
 	}
 
 	/* if logged in as guest then reject */
-	if ((SVAL(pw_cli.inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("password server %s gave us guest only\n", pw_cli.desthost));
-                cli_ulogoff(&pw_cli);
+	if ((SVAL(cli.inbuf,smb_vwv2) & 1) != 0) {
+		DEBUG(0,("password server %s gave us guest only\n", cli.desthost));
 		return(False);
 	}
+
 
         /*
          * This patch from Rob Nielsen <ran@adc.com> makes doing
@@ -1864,302 +1713,42 @@ use this machine as the password server.\n"));
          */
 
 	if (lp_net_wksta_user_logon()) {
-		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
-
-                if (!cli_send_tconX(&pw_cli, "IPC$", "IPC", "", 1)) {
-                        DEBUG(0,("password server %s refused IPC$ connect\n", pw_cli.desthost));
-                        cli_ulogoff(&pw_cli);
+		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", cli.desthost));
+	        if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+                        DEBUG(0,("password server %s refused IPC$ connect\n", cli.desthost));
                         return False;
                 }
 
-		if (!cli_NetWkstaUserLogon(&pw_cli,user,local_machine)) {
-			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", pw_cli.desthost));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+		if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
+			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
+			cli_tdis(&cli);
 			return False;
 		}
 
-		if (pw_cli.privilages == 0) {
-			DEBUG(0,("password server %s gave guest privilages\n", pw_cli.desthost));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+		if (cli.privilages == 0) {
+			DEBUG(0,("password server %s gave guest privilages\n", cli.desthost));
+			cli_tdis(&cli);
 			return False;
 		}
 
-		if (!strequal(pw_cli.eff_name, user)) {
+		if (!strequal(cli.eff_name, user)) {
 			DEBUG(0,("password server %s gave different username %s\n", 
-			 	pw_cli.desthost,
-			 	pw_cli.eff_name));
-			cli_tdis(&pw_cli);
-                        cli_ulogoff(&pw_cli);
+			 	cli.desthost,
+			 	cli.eff_name));
+			cli_tdis(&cli);
 			return False;
 		}
-                cli_tdis(&pw_cli);
+	        cli_tdis(&cli);
 	}
         else {
-		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
+		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", cli.desthost));
         }
 
-	DEBUG(3,("password server %s accepted the password\n", pw_cli.desthost));
+	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
-        cli_ulogoff(&pw_cli);
+        cli_ulogoff(&cli);
 
 	return(True);
 }
 
-/***********************************************************************
- Do the same as security=server, but using NT Domain calls and a session
- key from the machine password.
-************************************************************************/
 
-BOOL domain_client_validate( char *user, char *domain, 
-                             char *smb_apasswd, int smb_apasslen, 
-                             char *smb_ntpasswd, int smb_ntpasslen)
-{
-  unsigned char local_challenge[8];
-  unsigned char local_lm_response[24];
-  unsigned char local_nt_reponse[24];
-  unsigned char machine_passwd[16];
-  time_t lct;
-  fstring remote_machine;
-  char *p;
-  struct in_addr dest_ip;
-  NET_ID_INFO_CTR ctr;
-  NET_USER_INFO_3 info3;
-  struct cli_state cli;
-  uint32 smb_uid_low;
-  BOOL connected_ok = False;
-
-  /* 
-   * Check that the requested domain is not our own machine name.
-   * If it is, we should never check the PDC here, we use our own local
-   * password file.
-   */
-
-  if(strequal( domain, global_myname)) {
-    DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
-    return False;
-  }
-
-  /*
-   * Next, check that the passwords given were encrypted.
-   */
-
-  if(smb_apasslen != 24 || smb_ntpasslen != 24) {
-
-    /*
-     * Not encrypted - do so.
-     */
-
-    DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
-    generate_random_buffer( local_challenge, 8, False);
-    SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
-    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
-    smb_apasslen = 24;
-    smb_ntpasslen = 24;
-    smb_apasswd = (char *)local_lm_response;
-    smb_ntpasswd = (char *)local_nt_reponse;
-  } else {
-
-    /*
-     * Encrypted - get the challenge we sent for these
-     * responses.
-     */
-
-    if (!last_challenge(local_challenge)) {
-      DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
-      return False;
-    }
-  }
-
-  become_root(False);
-
-  /*
-   * Get the machine account password.
-   */
-  if(!machine_password_lock( global_myworkgroup, global_myname, False)) {
-    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-    return False;
-  }
-
-  if(get_machine_account_password( machine_passwd, &lct) == False) {
-    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-    machine_password_unlock();
-    return False;
-  }
-
-  machine_password_unlock();
-
-  unbecome_root(False);
-
-  /* 
-   * Here we should check the last change time to see if the machine
-   * password needs changing..... TODO... JRA. 
-   */
-
-  /*
-   * At this point, smb_apasswd points to the lanman response to
-   * the challenge in local_challenge, and smb_ntpasswd points to
-   * the NT response to the challenge in local_challenge. Ship
-   * these over the secure channel to a domain controller and
-   * see if they were valid.
-   */
-
-  memset(&cli, '\0', sizeof(struct cli_state));
-  if(cli_initialise(&cli) == False) {
-    DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
-    return False;
-  }
-
-  /*
-   * Treat each name in the 'password server =' line as a potential
-   * PDC/BDC. Contact each in turn and try and authenticate.
-   */
-
-  p = lp_passwordserver();
-  while(p && next_token( &p, remote_machine, LIST_SEP)) {                       
-
-    standard_sub_basic(remote_machine);
-    strupper(remote_machine);
- 
-    if(!resolve_name( remote_machine, &dest_ip)) {
-      DEBUG(1,("domain_client_validate: Can't resolve address for %s\n", remote_machine));
-      continue;
-    }   
-    
-    if (ismyip(dest_ip)) {
-      DEBUG(1,("domain_client_validate: Password server loop - not using password server %s\n",remote_machine));
-      continue;
-    }
-      
-    if (!cli_connect(&cli, remote_machine, &dest_ip)) {
-      DEBUG(0,("domain_client_validate: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      continue;
-    }
-    
-    if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    cli.protocol = PROTOCOL_NT1;
-
-    if (!cli_negprot(&cli)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    if (cli.protocol != PROTOCOL_NT1) {
-      DEBUG(0,("domain_client_validate: machine %s didn't negotiate NT protocol.\n",
-                     remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /* 
-     * Do an anonymous session setup.
-     */
-
-    if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }      
-
-    if (!(cli.sec_mode & 1)) {
-      DEBUG(1,("domain_client_validate: machine %s isn't in user level security mode\n",
-                 remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /*
-     * We have an anonymous connection to IPC$.
-     */
-    connected_ok = True;
-    break;
-  }
-
-  if (!connected_ok) {
-    DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-    cli_shutdown(&cli);
-    return False;
-  }
-
-  /*
-   * Ok - we have an anonymous connection to the IPC$ share.
-   * Now start the NT Domain stuff :-).
-   */
-
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
-    DEBUG(0,("domain_client_validate: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False; 
-  }
-
-  if(cli_nt_setup_creds(&cli, machine_passwd) == False) {
-    DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
-
-  /* We really don't care what LUID we give the user. */
-  generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
-
-  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
-                          smb_apasswd, smb_ntpasswd, &ctr, &info3) == False) {
-    DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
-
-  /*
-   * Here, if we really want it, we have lots of info about the user in info3.
-   */
-
-#if 0
-  /* 
-   * We don't actually need to do this - plus it fails currently with
-   * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-   * send here. JRA.
-   */
-
-  if(cli_nt_logoff(&cli, &ctr) == False) {
-    DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
-#endif /* 0 */
-
-  cli_nt_session_close(&cli);
-  cli_ulogoff(&cli);
-  cli_shutdown(&cli);
-  return True;
-}

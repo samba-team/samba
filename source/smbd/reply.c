@@ -41,7 +41,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
-extern fstring global_myworkgroup;
+extern fstring myworkgroup;
 extern int Client;
 extern int global_oplock_break;
 
@@ -57,7 +57,7 @@ static void overflow_attack(int len)
 {
 	DEBUG(0,("%s: ERROR: Invalid password length %d\n", timestring(), len));
 	DEBUG(0,("your machine may be under attack by a user exploiting an old bug\n"));
-	DEBUG(0,("Attack was from IP=%s\n", client_addr(Client)));
+	DEBUG(0,("Attack was from IP=%s\n", client_addr()));
 	exit_server("possible attack");
 }
 
@@ -119,10 +119,6 @@ int reply_special(char *inbuf,char *outbuf)
 
 		reload_services(True);
 		reopen_logs();
-
-		if (lp_status(-1)) {
-			claim_connection(-1,"STATUS.",MAXSTATUS,True);
-		}
 
 		break;
 		
@@ -312,7 +308,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
   else
   {
-    char *fsname = FSTYPE_STRING;
+    char *fsname = "SAMBA";
     char *p;
 
     set_message(outbuf,3,3,True);
@@ -358,7 +354,7 @@ int reply_unknown(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to an ioctl
 ****************************************************************************/
-int reply_ioctl(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_ioctl(char *inbuf,char *outbuf, int size, int bufsize)
 {
   DEBUG(3,("ignoring ioctl\n"));
 #if 0
@@ -368,75 +364,6 @@ int reply_ioctl(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 #else
   return(ERROR(ERRSRV,ERRnosupport));
 #endif
-}
-
-/****************************************************************************
- always return an error: it's just a matter of which one...
- ****************************************************************************/
-static int session_trust_account(char *inbuf, char *outbuf, char *user,
-                                char *smb_passwd, int smb_passlen,
-                                char *smb_nt_passwd, int smb_nt_passlen)
-{
-  struct smb_passwd *sam_trust_acct = NULL; /* check if trust account exists */
-  if (lp_security() == SEC_USER)
-  {
-    sam_trust_acct = getsampwnam(user);
-  }
-  else
-  {
-    DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-  }
-
-  if (sam_trust_acct == NULL)
-  {
-    /* lkclXXXX: workstation entry doesn't exist */
-    DEBUG(0,("session_trust_account: Trust account %s user doesn't exist\n",user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_NO_SUCH_USER));
-  }
-  else
-  {
-    if ((smb_passlen != 24) || (smb_nt_passlen != 24))
-    {
-      DEBUG(0,("session_trust_account: Trust account %s - password length wrong.\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-    }
-
-    if (!smb_password_ok(sam_trust_acct, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd))
-    {
-      DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-    }
-
-    if (IS_BITS_SET_ALL(sam_trust_acct->acct_ctrl, ACB_DOMTRUST))
-    {
-      DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT));
-    }
-
-    if (IS_BITS_SET_ALL(sam_trust_acct->acct_ctrl, ACB_SVRTRUST))
-    {
-      DEBUG(0,("session_trust_account: Server trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT));
-    }
-
-    if (IS_BITS_SET_ALL(sam_trust_acct->acct_ctrl, ACB_WSTRUST))
-    {
-      DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT));
-    }
-  }
-
-  /* don't know what to do: indicate logon failure */
-  SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-  return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
 }
 
 
@@ -459,6 +386,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL valid_nt_password = False;
   pstring user;
   BOOL guest=False;
+  BOOL computer_id=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
@@ -516,7 +444,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-    if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
+    if(doencrypt || (lp_security() == SEC_SERVER)) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
@@ -568,12 +496,47 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
+  if (user[strlen(user) - 1] == '$')
   {
-    return session_trust_account(inbuf, outbuf, user, 
-                                 smb_apasswd, smb_apasslen,
-                                 smb_ntpasswd, smb_ntpasslen);
+#ifdef NTDOMAIN
+    struct smb_passwd *smb_pass; /* To check if machine account exists */
+/* 
+   PAXX: Ack. We don't want to do this. The workstation trust account
+   with a $ on the end should exist in the local password database
+   or be mapped to something generic, but not modified. For NT
+   domain support we must reject this used in certain circumstances
+   with a code to indicate to the client that it is an invalid use
+   of a workstation trust account. NTWKS needs this error to join
+   a domain. This may be the source of future bugs if we cannot
+   be sure whether to reject this or not.
+*/
+   /* non-null user name indicates search by username not by smb userid */
+   smb_pass = get_smbpwd_entry(user, 0);
+
+   if (!smb_pass)
+   {
+     /* lkclXXXX: if workstation entry doesn't exist, indicate logon failure */
+     DEBUG(4,("Workstation trust account %s doesn't exist.",user));
+     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
+     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
+     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* decimal 109 NT error, 0xc000 */
+   }
+   else
+   {
+     /* PAXX: This is the NO LOGON workstation trust account stuff */
+     /* lkclXXXX: if the workstation *does* exist, indicate failure differently! */
+     DEBUG(4,("No Workstation trust account %s",user));
+     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
+     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
+     return(ERROR(NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, 0xc000)); /* decimal 409 NT error, 0xc000 */
+   }
+
+   computer_id = True;
+#else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
+    user[strlen(user) - 1] = '\0';
+#endif
   }
+
 
   /* If no username is sent use the guest account */
   if (!*user)
@@ -586,7 +549,14 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   strlower(user);
 
-  strcpy(sesssetup_user,user);
+  /* 
+   * In share level security, only overwrite sesssetup_use if
+   * it's a non null-session share. Helps keep %U and %G
+   * working.
+   */
+
+  if((lp_security() != SEC_SHARE) || *user)
+    strcpy(sesssetup_user,user);
 
   reload_services(True);
 
@@ -604,10 +574,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		  server_validate(user, domain, 
 				  smb_apasswd, smb_apasslen, 
 				  smb_ntpasswd, smb_ntpasslen)) &&
-                !(lp_security() == SEC_DOMAIN &&
-                  domain_client_validate(user, domain,
-                                  smb_apasswd, smb_apasslen,
-                                  smb_ntpasswd, smb_ntpasslen)) &&
       !check_hosts_equiv(user))
     {
 
@@ -624,7 +590,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	} 
       if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
 	{
-	  if (lp_security() >= SEC_USER) {
+	  if (!computer_id && lp_security() >= SEC_USER) {
 #if (GUEST_SESSSETUP == 0)
 	    return(ERROR(ERRSRV,ERRbadpw));
 #endif
@@ -665,7 +631,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     p = smb_buf(outbuf);
     strcpy(p,"Unix"); p = skip_string(p,1);
     strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,global_myworkgroup); p = skip_string(p,1);
+    strcpy(p,myworkgroup); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }
@@ -684,7 +650,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     uid = pw->pw_uid;
   }
 
-  if (guest)
+  if (guest && !computer_id)
     SSVAL(outbuf,smb_vwv2,1);
 
   /* register the name and uid as being validated, so further connections
@@ -763,7 +729,7 @@ int reply_chkpth(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a getatr
 ****************************************************************************/
-int reply_getatr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_getatr(char *inbuf,char *outbuf, int in_size, int buffsize)
 {
   pstring fname;
   int cnum;
@@ -1643,7 +1609,7 @@ static BOOL can_delete(char *fname,int cnum,int dirtype)
 /****************************************************************************
   reply to a unlink
 ****************************************************************************/
-int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_bufsize)
 {
   int outsize = 0;
   pstring name;
@@ -1680,7 +1646,7 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_cache( mask );
+    check_mangled_stack(mask);
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
@@ -1858,7 +1824,7 @@ int reply_readbraw(char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a lockread (core+ protocol)
 ****************************************************************************/
-int reply_lockread(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz)
+int reply_lockread(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   int nread = -1;
@@ -1962,10 +1928,6 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL ok = False;
 
   cnum = SVAL(inbuf,smb_tid);
-
-  /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(cnum))
-    return reply_pipe_read_and_X(inbuf,outbuf,length,bufsize);
 
   CHECK_FNUM(fnum,cnum);
   CHECK_READ(fnum);
@@ -2106,7 +2068,7 @@ int reply_writebraw(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a writeunlock (core+)
 ****************************************************************************/
-int reply_writeunlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_writeunlock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   int nwritten = -1;
@@ -2163,7 +2125,7 @@ int reply_writeunlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a write
 ****************************************************************************/
-int reply_write(char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
+int reply_write(char *inbuf,char *outbuf,int dum1,int dum2)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -2171,6 +2133,9 @@ int reply_write(char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
   int startpos;
   char *data;
 
+  dum1 = dum2 = 0;
+
+  
   cnum = SVAL(inbuf,smb_tid);
   fnum = GETFNUM(inbuf,smb_vwv0);
 
@@ -2278,7 +2243,7 @@ int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a lseek
 ****************************************************************************/
-int reply_lseek(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_lseek(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   uint32 startpos;
@@ -2319,7 +2284,7 @@ int reply_lseek(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a flush
 ****************************************************************************/
-int reply_flush(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_flush(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum, fnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2350,7 +2315,7 @@ int reply_flush(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a exit
 ****************************************************************************/
-int reply_exit(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_exit(char *inbuf,char *outbuf, int size, int bufsize)
 {
   int outsize = set_message(outbuf,0,0,True);
   DEBUG(3,("%s exit\n",timestring()));
@@ -2362,7 +2327,7 @@ int reply_exit(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a close
 ****************************************************************************/
-int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_close(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = 0;
@@ -2408,7 +2373,7 @@ int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a writeclose (Core+ protocol)
 ****************************************************************************/
-int reply_writeclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_writeclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -2438,12 +2403,12 @@ int reply_writeclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   set_filetime(cnum, Files[fnum].name,mtime);
   
-  close_file(fnum,True);
-
   DEBUG(3,("%s writeclose fnum=%d cnum=%d num=%d wrote=%d (numopen=%d)\n",
 	   timestring(),fnum,cnum,numtowrite,nwritten,
 	   Connections[cnum].num_files_open));
   
+  close_file(fnum,True);
+
   if (nwritten <= 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
@@ -2457,7 +2422,7 @@ int reply_writeclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a lock
 ****************************************************************************/
-int reply_lock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_lock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2486,7 +2451,7 @@ int reply_lock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a unlock
 ****************************************************************************/
-int reply_unlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_unlock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2515,7 +2480,7 @@ int reply_unlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a tdis
 ****************************************************************************/
-int reply_tdis(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_tdis(char *inbuf,char *outbuf, int size, int bufsize)
 {
   int cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2543,7 +2508,7 @@ int reply_tdis(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a echo
 ****************************************************************************/
-int reply_echo(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_echo(char *inbuf,char *outbuf, int size, int bufsize)
 {
   int cnum;
   int smb_reverb = SVAL(inbuf,smb_vwv0);
@@ -2593,7 +2558,7 @@ int reply_echo(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a printopen
 ****************************************************************************/
-int reply_printopen(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_printopen(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   pstring fname;
   pstring fname2;
@@ -2660,7 +2625,7 @@ int reply_printopen(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a printclose
 ****************************************************************************/
-int reply_printclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_printclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2677,7 +2642,7 @@ int reply_printclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   DEBUG(3,("%s printclose fd=%d fnum=%d cnum=%d\n",timestring(),Files[fnum].fd_ptr->fd,fnum,cnum));
   
   close_file(fnum,True);
-
+  
   return(outsize);
 }
 
@@ -2685,7 +2650,7 @@ int reply_printclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a printqueue
 ****************************************************************************/
-int reply_printqueue(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_printqueue(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum;
   int outsize = set_message(outbuf,2,3,True);
@@ -2779,7 +2744,7 @@ int reply_printqueue(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a printwrite
 ****************************************************************************/
-int reply_printwrite(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_printwrite(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2811,7 +2776,7 @@ int reply_printwrite(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a mkdir
 ****************************************************************************/
-int reply_mkdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_mkdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   pstring directory;
   int cnum;
@@ -2906,7 +2871,7 @@ static BOOL recursive_rmdir(char *directory)
 /****************************************************************************
   reply to a rmdir
 ****************************************************************************/
-int reply_rmdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_rmdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   pstring directory;
   int cnum;
@@ -3098,7 +3063,7 @@ static BOOL can_rename(char *fname,int cnum)
 /****************************************************************************
   reply to a mv
 ****************************************************************************/
-int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_mv(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   pstring name;
@@ -3147,7 +3112,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_cache( mask );
+    check_mangled_stack(mask);
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
@@ -3353,7 +3318,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
 /****************************************************************************
   reply to a file copy.
   ****************************************************************************/
-int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_copy(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   pstring name;
@@ -3417,7 +3382,7 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_cache( mask );
+    check_mangled_stack(mask);
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
@@ -3487,7 +3452,7 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a setdir
 ****************************************************************************/
-int reply_setdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_setdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,snum;
   int outsize = 0;
@@ -3716,7 +3681,7 @@ int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a SMBwritebmpx (write block multiplex primary) request
 ****************************************************************************/
-int reply_writebmpx(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_writebmpx(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -3809,7 +3774,7 @@ int reply_writebmpx(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a SMBwritebs (write block multiplex secondary) request
 ****************************************************************************/
-int reply_writebs(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_writebs(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -3890,7 +3855,7 @@ int reply_writebs(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 /****************************************************************************
   reply to a SMBsetattrE
 ****************************************************************************/
-int reply_setattrE(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_setattrE(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   struct utimbuf unix_times;

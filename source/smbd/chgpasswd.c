@@ -132,15 +132,15 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 	     slavedev));
     return(False);
   }
-#if defined(SVR4) || defined(SUNOS5) || defined(SCO)
+#if defined(SVR4) || defined(SUNOS5) || defined(SCO) || defined(HPUX)
   ioctl(slave, I_PUSH, "ptem");
   ioctl(slave, I_PUSH, "ldterm");
-#else /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
+#else /* defined(SVR4) || defined(SUNOS5) || defined(SCO) || defined(HPUX) */
   if (ioctl(slave,TIOCSCTTY,0) <0) {
      DEBUG(3,("Error in ioctl call for slave pty\n"));
      /* return(False); */
   }
-#endif /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
+#endif /* defined(SVR4) || defined(SUNOS5) || defined(SCO) || defined(HPUX) */
 
   /* Close master. */
   close(master);
@@ -440,56 +440,56 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 ************************************************************/
 
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
-                           unsigned char *pass2, struct smb_passwd **psampw)
+                           unsigned char *pass2, struct smb_passwd **psmbpw)
 {
   unsigned char unenc_new_pw[16];
   unsigned char unenc_old_pw[16];
   unsigned char null_pw[16];
-  struct smb_passwd *sampw;
+  struct smb_passwd *smbpw;
 
-  *psampw = NULL;
+  *psmbpw = NULL;
 
   become_root(0);
-  sampw = getsampwnam(user);
+  smbpw = get_smbpwd_entry(user, 0);
   unbecome_root(0);
 
-  if(sampw == NULL)
+  if(smbpw == NULL)
   {
-    DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
+    DEBUG(0,("check_lanman_password: get_smbpwd_entry returned NULL\n"));
     return False;
   }
 
-  if(sampw->acct_ctrl & ACB_DISABLED)
+  if(smbpw->acct_ctrl & ACB_DISABLED)
   {
     DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
     return False;
   }
 
-  if((sampw->smb_passwd == NULL) && (sampw->acct_ctrl & ACB_PWNOTREQ))
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
     unsigned char no_pw[14];
     memset(no_pw, '\0', 14);
     E_P16((uchar *)no_pw, (uchar *)null_pw);
-    sampw->smb_passwd = null_pw;
-  } else if (sampw->smb_passwd == NULL) {
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("check_lanman_password: no lanman password !\n"));
     return False;
   }
 
   /* Get the new lanman hash. */
-  D_P16(sampw->smb_passwd, pass2, unenc_new_pw);
+  D_P16(smbpw->smb_passwd, pass2, unenc_new_pw);
 
   /* Use this to get the old lanman hash. */
   D_P16(unenc_new_pw, pass1, unenc_old_pw);
 
   /* Check that the two old passwords match. */
-  if(memcmp(sampw->smb_passwd, unenc_old_pw, 16))
+  if(memcmp(smbpw->smb_passwd, unenc_old_pw, 16))
   {
     DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
     return False;
   }
 
-  *psampw = sampw;
+  *psmbpw = smbpw;
   return True;
 }
 
@@ -499,44 +499,44 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
  no longer be valid.
 ************************************************************/
 
-BOOL change_lanman_password(struct smb_passwd *sampw, unsigned char *pass1, unsigned char *pass2)
+BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2)
 {
   unsigned char unenc_new_pw[16];
   unsigned char null_pw[16];
   BOOL ret;
 
-  if(sampw == NULL)
+  if(smbpw == NULL)
   { 
-    DEBUG(0,("change_lanman_password: no smb password entry.\n"));
+    DEBUG(0,("change_lanman_password: get_smbpwd_entry returned NULL\n"));
     return False;
   }
 
-  if(sampw->acct_ctrl & ACB_DISABLED)
+  if(smbpw->acct_ctrl & ACB_DISABLED)
   {
-    DEBUG(0,("change_lanman_password: account %s disabled.\n", sampw->smb_name));
+    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->smb_name));
     return False;
   }
 
-  if((sampw->smb_passwd == NULL) && (sampw->acct_ctrl & ACB_PWNOTREQ))
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
     unsigned char no_pw[14];
     memset(no_pw, '\0', 14);
     E_P16((uchar *)no_pw, (uchar *)null_pw);
-    sampw->smb_passwd = null_pw;
-  } else if (sampw->smb_passwd == NULL) {
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("change_lanman_password: no lanman password !\n"));
     return False;
   }
 
   /* Get the new lanman hash. */
-  D_P16(sampw->smb_passwd, pass2, unenc_new_pw);
+  D_P16(smbpw->smb_passwd, pass2, unenc_new_pw);
 
-  sampw->smb_passwd = unenc_new_pw;
-  sampw->smb_nt_passwd = NULL; /* We lose the NT hash. Sorry. */
+  smbpw->smb_passwd = unenc_new_pw;
+  smbpw->smb_nt_passwd = NULL; /* We lose the NT hash. Sorry. */
 
   /* Now write it into the file. */
   become_root(0);
-  ret = mod_sampwd_entry(sampw,False);
+  ret = mod_smbpwd_entry(smbpw, False);
   unbecome_root(0);
     
   return ret;
@@ -547,10 +547,10 @@ BOOL change_lanman_password(struct smb_passwd *sampw, unsigned char *pass1, unsi
 ************************************************************/
 
 BOOL check_oem_password(char *user, unsigned char *data,
-                        struct smb_passwd **psampw, char *new_passwd,
+                        struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size)
 {
-  struct smb_passwd *sampw = NULL;
+  struct smb_passwd *smbpw = NULL;
   int new_pw_len;
   fstring upper_case_new_passwd;
   unsigned char new_p16[16];
@@ -558,28 +558,28 @@ BOOL check_oem_password(char *user, unsigned char *data,
   unsigned char null_pw[16];
 
   become_root(0);
-  *psampw = sampw = getsampwnam(user);
+  *psmbpw = smbpw = get_smbpwd_entry(user, 0);
   unbecome_root(0);
 
-  if(sampw == NULL)
+  if(smbpw == NULL)
   {
-    DEBUG(0,("check_oem_password: getsampwnam returned NULL\n"));
+    DEBUG(0,("check_oem_password: get_smbpwd_entry returned NULL\n"));
     return False;
   }
 
-  if(sampw->acct_ctrl & ACB_DISABLED)
+  if(smbpw->acct_ctrl & ACB_DISABLED)
   {
     DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
     return False;
   }
 
-  if((sampw->smb_passwd == NULL) && (sampw->acct_ctrl & ACB_PWNOTREQ))
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
     unsigned char no_pw[14];
     memset(no_pw, '\0', 14);
     E_P16((uchar *)no_pw, (uchar *)null_pw);
-    sampw->smb_passwd = null_pw;
-  } else if (sampw->smb_passwd == NULL) {
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("check_oem_password: no lanman password !\n"));
     return False;
   }
@@ -587,7 +587,7 @@ BOOL check_oem_password(char *user, unsigned char *data,
   /* 
    * Call the hash function to get the new password.
    */
-  SamOEMhash( (unsigned char *)data, (unsigned char *)sampw->smb_passwd, True);
+  SamOEMhash( (unsigned char *)data, (unsigned char *)smbpw->smb_passwd, True);
 
   /* 
    * The length of the new password is in the last 4 bytes of
@@ -619,7 +619,7 @@ BOOL check_oem_password(char *user, unsigned char *data,
    */
   D_P16(new_p16, &data[516], unenc_old_pw);
 
-  if(memcmp(sampw->smb_passwd, unenc_old_pw, 16)) {
+  if(memcmp(smbpw->smb_passwd, unenc_old_pw, 16)) {
     DEBUG(0,("check_oem_password: old password doesn't match.\n"));
     return False;
   }
@@ -636,7 +636,7 @@ BOOL check_oem_password(char *user, unsigned char *data,
  override = True, override XXXXXXXXXX'd password
 ************************************************************/
 
-BOOL change_oem_password(struct smb_passwd *sampw, char *new_passwd, BOOL override)
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override)
 {
   int ret;
   fstring upper_case_new_passwd;
@@ -649,14 +649,14 @@ BOOL change_oem_password(struct smb_passwd *sampw, char *new_passwd, BOOL overri
 
   E_P16((uchar *)upper_case_new_passwd, new_p16);
 
-  sampw->smb_passwd = new_p16;
+  smbpw->smb_passwd = new_p16;
   
   E_md4hash((uchar *) new_passwd, new_nt_p16);
-  sampw->smb_nt_passwd = new_nt_p16;
+  smbpw->smb_nt_passwd = new_nt_p16;
   
   /* Now write it into the file. */
   become_root(0);
-  ret = mod_sampwd_entry(sampw,override);
+  ret = mod_smbpwd_entry(smbpw, override);
   unbecome_root(0);
 
   memset(upper_case_new_passwd, '\0', strlen(upper_case_new_passwd));

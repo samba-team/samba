@@ -1,7 +1,7 @@
 /* ========================================================================== **
  *                              ubi_dLinkList.c
  *
- *  Copyright (C) 1997, 1998 by Christopher R. Hertel
+ *  Copyright (C) 1997 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -24,13 +24,6 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.c,v
- * Revision 0.5  1998/03/10 02:55:00  crh
- * Simplified the code and added macros for stack & queue manipulations.
- *
- * Revision 0.4  1998/01/03 01:53:56  crh
- * Added ubi_dlCount() macro.
- *
  * Revision 0.3  1997/10/15 03:05:39  crh
  * Added some handy type casting to the macros.  Added AddHere and RemThis
  * macros.
@@ -42,16 +35,11 @@
  * Revision 0.1  1997/10/07 04:34:07  crh
  * Initial Revision.
  *
- * -------------------------------------------------------------------------- **
- * This module is similar to the ubi_sLinkList module, but it is neither a
- * descendant type nor an easy drop-in replacement for the latter.  One key
- * difference is that the ubi_dlRemove() function removes the indicated node,
- * while the ubi_slRemove() function (in ubi_sLinkList) removes the node
- * *following* the indicated node.
  *
  * ========================================================================== **
  */
 
+#include "../includes.h"
 #include "ubi_dLinkList.h"
 
 /* ========================================================================== **
@@ -97,17 +85,28 @@ ubi_dlNodePtr ubi_dlInsert( ubi_dlListPtr ListPtr,
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_dlNodePtr PredNode = After ? After : (ubi_dlNodePtr)ListPtr;
-
-  New->Next         = PredNode->Next;
-  New->Prev         = After;
-  PredNode->Next    = New;
-  if( New->Next )
-    New->Next->Prev = New;
+  if( NULL == After )
+    {
+    New->Next           = ListPtr->Head;
+    New->Prev           = NULL;
+    if( NULL != ListPtr->Head )
+      ListPtr->Head->Prev = New;
+    else
+      ListPtr->Tail       = New;
+    ListPtr->Head       = New;
+    }
   else
-    ListPtr->Tail   = New;
+    {
+    New->Next         = After->Next;
+    New->Prev         = After;
+    if( NULL != After->Next )
+      After->Next->Prev = New;
+    else
+      ListPtr->Tail       = New;
+    After->Next       = New;
+    }
 
-  (ListPtr->count)++;
+  ++(ListPtr->count);
 
   return( New );
   } /* ubi_dlInsert */
@@ -126,7 +125,7 @@ ubi_dlNodePtr ubi_dlRemove( ubi_dlListPtr ListPtr, ubi_dlNodePtr Old )
    * ------------------------------------------------------------------------ **
    */
   {
-  if( Old )
+  if( NULL != Old )
     {
     if( Old->Next )
       Old->Next->Prev = Old->Prev;
@@ -138,10 +137,11 @@ ubi_dlNodePtr ubi_dlRemove( ubi_dlListPtr ListPtr, ubi_dlNodePtr Old )
     else
       ListPtr->Head = Old->Next;
 
-    (ListPtr->count)--;
+    --(ListPtr->count);
     }
 
   return( Old );
   } /* ubi_dlRemove */
+
 
 /* ================================ The End ================================= */

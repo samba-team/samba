@@ -35,6 +35,10 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 	static int pagesize;
 	int ret;
 
+#ifndef PROT_READ
+#define PROT_READ 1
+#endif
+
 	if (!len || !buf || (len-pagesize) < n) {
 		pagesize = getpagesize();
 		len = (2+(n/pagesize))*pagesize;

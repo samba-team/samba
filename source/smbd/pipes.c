@@ -41,6 +41,7 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
+extern fstring myworkgroup;
 
 #define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
 #define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)
@@ -50,7 +51,17 @@ extern int Client;
    a packet to ensure chaining works correctly */
 #define GETPNUM(buf,where) (chain_pnum!= -1?chain_pnum:SVAL(buf,where))
 
-extern struct pipe_id_info pipe_names[];
+char * known_pipes [] =
+{
+  "lsarpc",
+#if NTDOMAIN
+  "NETLOGON",
+  "srvsvc",
+  "wkssvc",
+  "samr",
+#endif
+  NULL
+};
 
 /****************************************************************************
   reply to an open and X on a named pipe
@@ -61,8 +72,7 @@ extern struct pipe_id_info pipe_names[];
 int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
   pstring fname;
-  uint16 cnum = SVAL(inbuf, smb_tid);
-  uint16 vuid = SVAL(inbuf, smb_uid);
+  int cnum = SVAL(inbuf,smb_tid);
   int pnum = -1;
   int smb_ofun = SVAL(inbuf,smb_vwv8);
   int size=0,fmode=0,mtime=0,rmode=0;
@@ -79,23 +89,23 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   DEBUG(4,("Opening pipe %s.\n", fname));
 
-  /* See if it is one we want to handle. */
-  for( i = 0; pipe_names[i].client_pipe ; i++ )
-    if( strcmp(fname,pipe_names[i].client_pipe) == 0 )
-      break;
-
-  if ( pipe_names[i].client_pipe == NULL )
-    return(ERROR(ERRSRV,ERRaccess));
-
   /* Strip \PIPE\ off the name. */
   pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
+
+  /* See if it is one we want to handle. */
+  for( i = 0; known_pipes[i] ; i++ )
+    if( strcmp(fname,known_pipes[i]) == 0 )
+      break;
+
+  if ( known_pipes[i] == NULL )
+    return(ERROR(ERRSRV,ERRaccess));
 
   /* Known pipes arrive with DIR attribs. Remove it so a regular file */
   /* can be opened and add it in after the open. */
   DEBUG(3,("Known pipe %s opening.\n",fname));
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  pnum = open_rpc_pipe_hnd(fname, cnum, vuid);
+  pnum = open_rpc_pipe_hnd(fname, cnum);
   if (pnum < 0) return(ERROR(ERRSRV,ERRnofids));
 
   /* Prepare the reply */
@@ -123,53 +133,6 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 
 /****************************************************************************
-  reply to a read and X
-
-  This code is basically stolen from reply_read_and_X with some
-  wrinkles to handle pipes.
-****************************************************************************/
-int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
-{
-  int pnum = get_rpc_pipe_num(inbuf,smb_vwv2);
-  uint32 smb_offs = IVAL(inbuf,smb_vwv3);
-  int smb_maxcnt = SVAL(inbuf,smb_vwv5);
-  int smb_mincnt = SVAL(inbuf,smb_vwv6);
-  int cnum;
-  int nread = -1;
-  char *data;
-  BOOL ok = False;
-
-  cnum = SVAL(inbuf,smb_tid);
-
-/*
-  CHECK_FNUM(fnum,cnum);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
-*/
-
-  set_message(outbuf,12,0,True);
-  data = smb_buf(outbuf);
-
-  nread = read_pipe(pnum, data, smb_offs, smb_maxcnt);
-
-  ok = True;
-  
-  if (nread < 0)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
-  SSVAL(outbuf,smb_vwv5,nread);
-  SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-  SSVAL(smb_buf(outbuf),-2,nread);
-  
-  DEBUG(3,("%s readX pnum=%04x cnum=%d min=%d max=%d nread=%d\n",
-	timestring(),pnum,cnum,
-	smb_mincnt,smb_maxcnt,nread));
-
-  set_chain_pnum(pnum);
-
-  return chain_reply(inbuf,outbuf,length,bufsize);
-}
-/****************************************************************************
   reply to a close
 ****************************************************************************/
 int reply_pipe_close(char *inbuf,char *outbuf)
@@ -183,5 +146,177 @@ int reply_pipe_close(char *inbuf,char *outbuf)
   if (!close_rpc_pipe_hnd(pnum, cnum)) return(ERROR(ERRDOS,ERRbadfid));
 
   return(outsize);
+}
+
+
+/****************************************************************************
+ api_LsarpcSNPHS
+
+ SetNamedPipeHandleState on \PIPE\lsarpc. 
+****************************************************************************/
+BOOL api_LsarpcSNPHS(int pnum, int cnum, char *param)
+{
+  uint16 id;
+
+  if (!param) return False;
+
+  id = param[0] + (param[1] << 8);
+  DEBUG(4,("lsarpc SetNamedPipeHandleState to code %x\n",id));
+
+  return set_rpc_pipe_hnd_state(pnum, cnum, id);
+}
+
+
+/****************************************************************************
+ api_LsarpcTNP
+
+ TransactNamedPipe on \PIPE\lsarpc.
+****************************************************************************/
+static void LsarpcTNP1(char *data,char **rdata, int *rdata_len)
+{
+  uint32 dword1, dword2;
+  char pname[] = "\\PIPE\\lsass";
+
+  /* All kinds of mysterious numbers here */
+  *rdata_len = 68;
+  *rdata = REALLOC(*rdata,*rdata_len);
+
+  dword1 = IVAL(data,0xC);
+  dword2 = IVAL(data,0x10);
+
+  SIVAL(*rdata,0,0xc0005);
+  SIVAL(*rdata,4,0x10);
+  SIVAL(*rdata,8,0x44);
+  SIVAL(*rdata,0xC,dword1);
+  
+  SIVAL(*rdata,0x10,dword2);
+  SIVAL(*rdata,0x14,0x15);
+  SSVAL(*rdata,0x18,sizeof(pname));
+  strcpy(*rdata + 0x1a,pname);
+  SIVAL(*rdata,0x28,1);
+  memcpy(*rdata + 0x30, data + 0x34, 0x14);
+}
+
+static void LsarpcTNP2(char *data,char **rdata, int *rdata_len)
+{
+  uint32 dword1;
+
+  /* All kinds of mysterious numbers here */
+  *rdata_len = 48;
+  *rdata = REALLOC(*rdata,*rdata_len);
+
+  dword1 = IVAL(data,0xC);
+
+  SIVAL(*rdata,0,0x03020005);
+  SIVAL(*rdata,4,0x10);
+  SIVAL(*rdata,8,0x30);
+  SIVAL(*rdata,0xC,dword1);
+  SIVAL(*rdata,0x10,0x18);
+  SIVAL(*rdata,0x1c,0x44332211);
+  SIVAL(*rdata,0x20,0x88776655);
+  SIVAL(*rdata,0x24,0xCCBBAA99);
+  SIVAL(*rdata,0x28,0x11FFEEDD);
+}
+
+static void LsarpcTNP3(char *data,char **rdata, int *rdata_len)
+{
+  uint32 dword1;
+  uint16 word1;
+  char * workgroup = myworkgroup;
+  int wglen = strlen(workgroup);
+  int i;
+
+  /* All kinds of mysterious numbers here */
+  *rdata_len = 90 + 2 * wglen;
+  *rdata = REALLOC(*rdata,*rdata_len);
+
+  dword1 = IVAL(data,0xC);
+  word1 = SVAL(data,0x2C);
+
+  SIVAL(*rdata,0,0x03020005);
+  SIVAL(*rdata,4,0x10);
+  SIVAL(*rdata,8,0x60);
+  SIVAL(*rdata,0xC,dword1);
+  SIVAL(*rdata,0x10,0x48);
+  SSVAL(*rdata,0x18,0x5988);	/* This changes */
+  SSVAL(*rdata,0x1A,0x15);
+  SSVAL(*rdata,0x1C,word1);
+  SSVAL(*rdata,0x20,6);
+  SSVAL(*rdata,0x22,8);
+  SSVAL(*rdata,0x24,0x8E8);	/* So does this */
+  SSVAL(*rdata,0x26,0x15);
+  SSVAL(*rdata,0x28,0x4D48);	/* And this */
+  SSVAL(*rdata,0x2A,0x15);
+  SIVAL(*rdata,0x2C,4);
+  SIVAL(*rdata,0x34,wglen);
+  for ( i = 0 ; i < wglen ; i++ )
+    (*rdata)[0x38 + i * 2] = workgroup[i];
+   
+  /* Now fill in the rest */
+  i = 0x38 + wglen * 2;
+  SSVAL(*rdata,i,0x648);
+  SIVAL(*rdata,i+2,4);
+  SIVAL(*rdata,i+6,0x401);
+  SSVAL(*rdata,i+0xC,0x500);
+  SIVAL(*rdata,i+0xE,0x15);
+  SIVAL(*rdata,i+0x12,0x2372FE1);
+  SIVAL(*rdata,i+0x16,0x7E831BEF);
+  SIVAL(*rdata,i+0x1A,0x4B454B2);
+}
+
+static void LsarpcTNP4(char *data,char **rdata, int *rdata_len)
+{
+  uint32 dword1;
+
+  /* All kinds of mysterious numbers here */
+  *rdata_len = 48;
+  *rdata = REALLOC(*rdata,*rdata_len);
+
+  dword1 = IVAL(data,0xC);
+
+  SIVAL(*rdata,0,0x03020005);
+  SIVAL(*rdata,4,0x10);
+  SIVAL(*rdata,8,0x30);
+  SIVAL(*rdata,0xC,dword1);
+  SIVAL(*rdata,0x10,0x18);
+}
+
+
+BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len)
+{
+  uint32 id,id2;
+
+  id = IVAL(data,0);
+
+  DEBUG(4,("lsarpc TransactNamedPipe id %lx\n",id));
+  switch (id)
+  {
+    case 0xb0005:
+      LsarpcTNP1(data,rdata,rdata_len);
+      break;
+
+    case 0x03000005:
+      id2 = IVAL(data,8);
+      DEBUG(4,("\t- Suboperation %lx\n",id2));
+      switch (id2 & 0xF)
+      {
+        case 8:
+          LsarpcTNP2(data,rdata,rdata_len);
+          break;
+
+        case 0xC:
+          LsarpcTNP4(data,rdata,rdata_len);
+          break;
+
+        case 0xE:
+          LsarpcTNP3(data,rdata,rdata_len);
+          break;
+      }
+      break;
+  }
+  return(True);
 }
 

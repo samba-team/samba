@@ -69,7 +69,7 @@ BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
-extern pstring global_myname;
+extern pstring myname;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -89,12 +89,22 @@ extern pstring global_myname;
 #define LP_SNUM_OK(iService) (((iService) >= 0) && ((iService) < iNumServices) && iSERVICE(iService).valid)
 #define VALID(i) iSERVICE(i).valid
 
-int keepalive=DEFAULT_KEEPALIVE;
+/* these are the types of parameter we have */
+typedef enum
+{
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,
+  P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM
+} parm_type;
+
+typedef enum
+{
+  P_LOCAL,P_GLOBAL,P_NONE
+} parm_class;
+
+int keepalive=0;
 extern BOOL use_getwd_cache;
 
 extern int extra_time_offset;
-
-static BOOL defaults_saved=False;
 
 /* 
  * This structure describes global (ie., server-wide) parameters.
@@ -144,11 +154,6 @@ typedef struct
   char *szDomainGroups;
   char *szDriverFile;
   char *szNameResolveOrder;
-  char *szLdapServer;
-  char *szLdapSuffix;
-  char *szLdapFilter;
-  char *szLdapRoot;
-  char *szLdapRootPassword; 
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -172,9 +177,6 @@ typedef struct
   int shmem_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
-#ifdef USE_LDAP
-  int ldap_port;
-#endif /* USE_LDAP */
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -406,14 +408,18 @@ static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 
 static void set_default_server_announce_type(void);
 
+struct enum_list {
+	int value;
+	char *name;
+};
+
 static struct enum_list enum_protocol[] = {{PROTOCOL_NT1, "NT1"}, {PROTOCOL_LANMAN2, "LANMAN2"}, 
 					   {PROTOCOL_LANMAN1, "LANMAN1"}, {PROTOCOL_CORE,"CORE"}, 
 					   {PROTOCOL_COREPLUS, "COREPLUS"}, 
 					   {PROTOCOL_COREPLUS, "CORE+"}, {-1, NULL}};
 
 static struct enum_list enum_security[] = {{SEC_SHARE, "SHARE"},  {SEC_USER, "USER"}, 
-					   {SEC_SERVER, "SERVER"}, {SEC_DOMAIN, "DOMAIN"},
-                                           {-1, NULL}};
+					   {SEC_SERVER, "SERVER"}, {-1, NULL}};
 
 static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "aix"}, 
 					   {PRINT_HPUX, "hpux"}, {PRINT_BSD, "bsd"},
@@ -428,254 +434,226 @@ static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "uppe
 
 static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
 
-/* note that we do not initialise the defaults union - it is not allowed in ANSI C */
-static struct parm_struct parm_table[] =
+static struct parm_struct
 {
-  {"Base Options", P_SEP, P_SEPARATOR},
-  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
-  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
-  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  0},
-  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC},
-  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  0},
-  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC},
-  {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
-  {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
+	char *label;
+	parm_type type;
+	parm_class class;
+	void *ptr;
+	BOOL (*special)(char *, char **);
+	struct enum_list *enum_list;
+} parm_table[] =
+{
+  {"debuglevel",       P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL},
+  {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL},
+  {"syslog",           P_INTEGER, P_GLOBAL, &Globals.syslog,            NULL,   NULL},
+  {"syslog only",      P_BOOL,    P_GLOBAL, &Globals.bSyslogOnly,       NULL,   NULL},
+  {"protocol",         P_ENUM,    P_GLOBAL, &Globals.maxprotocol,       NULL,   enum_protocol},
+  {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security},
+  {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL},
+  {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL},
+  {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as},
+  {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL},
+  {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL},
+  {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL},
+  {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL},
+  {"read bmpx",        P_BOOL,    P_GLOBAL, &Globals.bReadbmpx,         NULL,   NULL},
+  {"read raw",         P_BOOL,    P_GLOBAL, &Globals.bReadRaw,          NULL,   NULL},
+  {"write raw",        P_BOOL,    P_GLOBAL, &Globals.bWriteRaw,         NULL,   NULL},
+  {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL},
+  {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL},
+  {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL},
+  {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL},
+  {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL},
+  {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL},
+  {"networkstation user login", P_BOOL,P_GLOBAL, &Globals.bNetWkstaUserLogon,NULL,   NULL},
+  {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL},
+  {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL,   NULL},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL,   NULL},
+  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL},
+  {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL,   NULL},
+  {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL,   NULL},
+  {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL,   NULL},
+  {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL},
+  {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL},
+  {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL},
+  {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL},
+  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL},
+  {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL},
+  {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL},
+  {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL},
+  {"lock directory",   P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL},
+  {"root directory",   P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL},
+  {"root dir",         P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL},
+  {"root",             P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL},
+  {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL},
+  {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL},
+  {"message command",  P_STRING,  P_GLOBAL, &Globals.szMsgCommand,      NULL,   NULL},
+  {"dfree command",    P_STRING,  P_GLOBAL, &Globals.szDfree,           NULL,   NULL},
+  {"passwd program",   P_STRING,  P_GLOBAL, &Globals.szPasswdProgram,   NULL,   NULL},
+  {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL,   NULL},
+  {"passwd chat debug",P_BOOL,    P_GLOBAL, &Globals.bPasswdChatDebug, NULL,   NULL},
+  {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars, NULL},
+  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL},
+#ifdef NTDOMAIN
+  {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL,   NULL},
+  {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL,   NULL},
+  {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL},
+  {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL,   NULL},
+  {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL},
+  {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL},
+  {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL},
+  {"domain allow hosts",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL},
+  {"domain hosts deny", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL},
+  {"domain deny hosts", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL},
+#endif /* NTDOMAIN */
+  {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL,   NULL},
+  {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set, NULL},
+  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL},
+  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL},
+  {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL},
+  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL},
+  {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL,   NULL},
+  {"remote browse sync",P_STRING, P_GLOBAL, &Globals.szRemoteBrowseSync,NULL,   NULL},
+  {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL,   NULL},
+  {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL,   NULL},
+  {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL,   NULL},
+  {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL},
+  {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL,   NULL},
+  {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL},
+  {"max xmit",         P_INTEGER, P_GLOBAL, &Globals.max_xmit,          NULL,   NULL},
+  {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL},
+  {"name resolve order",  P_STRING,  P_GLOBAL, &Globals.szNameResolveOrder,  NULL,   NULL},
+  {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL},
+  {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL},
+  {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL},
+  {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL,   NULL},
+  {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL},
+  {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL,   NULL},
+  {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL,   NULL},
+  {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL,   NULL},
+  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL},
+  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL,   NULL},
+  {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL},
+  {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL},
+  {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL},
+  {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL},
+  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce},
+  {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL},
+  {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL},
+  {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL},
+  {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL},
+  {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL},
+  {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL},
+  {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL},
+  {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL,   NULL},
+  {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL,   NULL},
+  {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL,   NULL},
+  {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL,   NULL},
+  {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL,   NULL},
+  {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL,   NULL},
+  {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL},
+  {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL},
+  {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL},
+  {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL},
+  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL},
+  {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,           handle_copy, NULL},
+  {"include",          P_STRING,  P_LOCAL,  &sDefault.szInclude,        handle_include, NULL},
+  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL},
+  {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL},
+  {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL},
+  {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL},
+  {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL},
+  {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL},
+  {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL},
+  {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case},
+  {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL},
+  {"casesignames",     P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL},
+  {"preserve case",    P_BOOL,    P_LOCAL,  &sDefault.bCasePreserve,    NULL,   NULL},
+  {"short preserve case",P_BOOL,  P_LOCAL,  &sDefault.bShortCasePreserve,NULL,   NULL},
+  {"mangle case",      P_BOOL,    P_LOCAL,  &sDefault.bCaseMangle,      NULL,   NULL},
+  {"mangling char",    P_CHAR,    P_LOCAL,  &sDefault.magic_char,       NULL,   NULL},
+  {"browseable",       P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL},
+  {"browsable",        P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL},
+  {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL},
+  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL},
+  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL},
+  {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL},
+  {"user",             P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL},
+  {"users",            P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL},
+  {"guest account",    P_STRING,  P_LOCAL,  &sDefault.szGuestaccount,   NULL,   NULL},
+  {"invalid users",    P_STRING,  P_LOCAL,  &sDefault.szInvalidUsers,   NULL,   NULL},
+  {"valid users",      P_STRING,  P_LOCAL,  &sDefault.szValidUsers,     NULL,   NULL},
+  {"admin users",      P_STRING,  P_LOCAL,  &sDefault.szAdminUsers,     NULL,   NULL},
+  {"read list",        P_STRING,  P_LOCAL,  &sDefault.readlist,         NULL,   NULL},
+  {"write list",       P_STRING,  P_LOCAL,  &sDefault.writelist,        NULL,   NULL},
+  {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL},
+  {"force user",       P_STRING,  P_LOCAL,  &sDefault.force_user,       NULL,   NULL},
+  {"force group",      P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL},
+  {"group",            P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL},
+  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL},
+  {"write ok",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL},
+  {"writeable",        P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL},
+  {"writable",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL},
+  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL},
+  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL},
+  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL},
+  {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL},
+  {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL},
+  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL},
+  {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL},
+  {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL,   NULL},
+  {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL},
+  {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL},
+  {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL,   NULL},
+  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL,   NULL},
+  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL},
+  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL},
+  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL},
+  {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL},
+  {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL},
+  {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL},
+  {"public",           P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL},
+  {"print ok",         P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL},
+  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL},
+  {"postscript",       P_BOOL,    P_LOCAL,  &sDefault.bPostscript,      NULL,   NULL},
+  {"map system",       P_BOOL,    P_LOCAL,  &sDefault.bMap_system,      NULL,   NULL},
+  {"map hidden",       P_BOOL,    P_LOCAL,  &sDefault.bMap_hidden,      NULL,   NULL},
+  {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL},
+  {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL},
+  {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL},
+  {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL},
+  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL},
+  {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL,   NULL},
+  {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL},
+  {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL},
+  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL},
+  {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL},
+  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL},
+  {"printing",         P_ENUM,    P_LOCAL,  &sDefault.iPrinting,        NULL,   enum_printing},
+  {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL,   NULL},
+  {"lpq command",      P_STRING,  P_LOCAL,  &sDefault.szLpqcommand,     NULL,   NULL},
+  {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL,   NULL},
+  {"lppause command",  P_STRING,  P_LOCAL,  &sDefault.szLppausecommand, NULL,   NULL},
+  {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL,   NULL},
+  {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL},
+  {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL},
+  {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL},
+  {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL},
+  {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL},
+  {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL},
+  {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL},
+  {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL},
+  {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL},
+  {"magic script",     P_STRING,  P_LOCAL,  &sDefault.szMagicScript,    NULL,   NULL},
+  {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL,   NULL},
+  {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL,   NULL},
+  {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL,   NULL},
+  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL,   NULL},
+  {"dos filetime resolution",   P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimeResolution,    NULL,   NULL},
+  {"fake directory create times",    P_BOOL,    P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL},
 
-  {"Security Options", P_SEP, P_SEPARATOR},
-  {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
-  {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
-  {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
-  {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
-  {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
-  {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
-  {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL,  0},
-  {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
-  {"root directory",   P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
-  {"root dir",         P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
-  {"root",             P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
-  {"passwd program",   P_STRING,  P_GLOBAL, &Globals.szPasswdProgram,   NULL,   NULL,  0},
-  {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL,   NULL,  0},
-  {"passwd chat debug",P_BOOL,    P_GLOBAL, &Globals.bPasswdChatDebug,  NULL,   NULL,  0},
-  {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL,   NULL,  0},
-  {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
-  {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
-  {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
-  {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL},
-  {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL},
-  {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL},
-  {"user",             P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
-  {"users",            P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
-  {"guest account",    P_STRING,  P_LOCAL,  &sDefault.szGuestaccount,   NULL,   NULL,  FLAG_BASIC|FLAG_PRINT|FLAG_GLOBAL},
-  {"invalid users",    P_STRING,  P_LOCAL,  &sDefault.szInvalidUsers,   NULL,   NULL,  FLAG_GLOBAL},
-  {"valid users",      P_STRING,  P_LOCAL,  &sDefault.szValidUsers,     NULL,   NULL,  FLAG_GLOBAL},
-  {"admin users",      P_STRING,  P_LOCAL,  &sDefault.szAdminUsers,     NULL,   NULL,  FLAG_GLOBAL},
-  {"read list",        P_STRING,  P_LOCAL,  &sDefault.readlist,         NULL,   NULL,  FLAG_GLOBAL},
-  {"write list",       P_STRING,  P_LOCAL,  &sDefault.writelist,        NULL,   NULL,  FLAG_GLOBAL},
-  {"force user",       P_STRING,  P_LOCAL,  &sDefault.force_user,       NULL,   NULL,  0},
-  {"force group",      P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  0},
-  {"group",            P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  0},
-  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  FLAG_BASIC},
-  {"write ok",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
-  {"writeable",        P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
-  {"writable",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
-  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
-  {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
-  {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL,  FLAG_GLOBAL},
-  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL},
-  {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL},
-  {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL,   NULL,  FLAG_GLOBAL},
-  {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
-  {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
-  {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
-  {"public",           P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  0},
-  {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL,   NULL,  0},
-  {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
-  {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL,   NULL,  0},
-  {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
-  {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
-
-  {"Logging Options", P_SEP, P_SEPARATOR},
-  {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
-  {"debuglevel",       P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  0},
-  {"syslog",           P_INTEGER, P_GLOBAL, &Globals.syslog,            NULL,   NULL,  0},
-  {"syslog only",      P_BOOL,    P_GLOBAL, &Globals.bSyslogOnly,       NULL,   NULL,  0},
-  {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL,   NULL,  0},
-  {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL,  0},
-  {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL},
-
-  {"Protocol Options", P_SEP, P_SEPARATOR},
-  {"protocol",         P_ENUM,    P_GLOBAL, &Globals.maxprotocol,       NULL,   enum_protocol, 0},
-  {"read bmpx",        P_BOOL,    P_GLOBAL, &Globals.bReadbmpx,         NULL,   NULL,  0},
-  {"read raw",         P_BOOL,    P_GLOBAL, &Globals.bReadRaw,          NULL,   NULL,  0},
-  {"write raw",        P_BOOL,    P_GLOBAL, &Globals.bWriteRaw,         NULL,   NULL,  0},
-  {"networkstation user login", P_BOOL,P_GLOBAL, &Globals.bNetWkstaUserLogon,NULL,   NULL,  0},
-  {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL,   NULL,  0},
-  {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as, 0},
-  {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL,  0},
-  {"max xmit",         P_INTEGER, P_GLOBAL, &Globals.max_xmit,          NULL,   NULL,  0},
-  {"name resolve order",  P_STRING,  P_GLOBAL, &Globals.szNameResolveOrder,  NULL,   NULL, 0},
-  {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
-  {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
-  {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL,  0},
-  {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL,  0},
-  {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL,  0},
-  {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
-
-  {"Tuning Options", P_SEP, P_SEPARATOR},
-  {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
-  {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
-  {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
-  {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL,  0},
-  {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL,   NULL,  0},
-  {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL,   NULL,  0},
-  {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL,  0},
-  {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL,   NULL,  0},
-  {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL,   NULL,  0},
-  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
-  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
-  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
-
-  {"Printing Options", P_SEP, P_SEPARATOR},
-  {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  0},
-  {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
-  {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
-  {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL,  0},
-  {"print ok",         P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
-  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
-  {"postscript",       P_BOOL,    P_LOCAL,  &sDefault.bPostscript,      NULL,   NULL,  FLAG_PRINT},
-  {"printing",         P_ENUM,    P_LOCAL,  &sDefault.iPrinting,        NULL,   enum_printing, FLAG_PRINT|FLAG_GLOBAL},
-  {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
-  {"lpq command",      P_STRING,  P_LOCAL,  &sDefault.szLpqcommand,     NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
-  {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
-  {"lppause command",  P_STRING,  P_LOCAL,  &sDefault.szLppausecommand, NULL,   NULL,  FLAG_GLOBAL},
-  {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL,   NULL,  FLAG_GLOBAL},
-  {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  FLAG_PRINT},
-  {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
-  {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  0},
-  {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_GLOBAL},
-
-
-  {"Filename Handling", P_SEP, P_SEPARATOR},
-  {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL,  0},
-  {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set, NULL,  0},
-  {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL,   NULL,  0},
-  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
-  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL,   NULL,  0},
-  {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case, 0},
-  {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  FLAG_GLOBAL},
-  {"casesignames",     P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  0},
-  {"preserve case",    P_BOOL,    P_LOCAL,  &sDefault.bCasePreserve,    NULL,   NULL,  FLAG_GLOBAL},
-  {"short preserve case",P_BOOL,  P_LOCAL,  &sDefault.bShortCasePreserve,NULL,   NULL,  FLAG_GLOBAL},
-  {"mangle case",      P_BOOL,    P_LOCAL,  &sDefault.bCaseMangle,      NULL,   NULL,  FLAG_GLOBAL},
-  {"mangling char",    P_CHAR,    P_LOCAL,  &sDefault.magic_char,       NULL,   NULL,  FLAG_GLOBAL},
-  {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL,   NULL,  FLAG_GLOBAL},
-  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL,   NULL,  FLAG_GLOBAL},
-  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL,  FLAG_GLOBAL},
-  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL,  FLAG_GLOBAL},
-  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL,  FLAG_GLOBAL},
-  {"map system",       P_BOOL,    P_LOCAL,  &sDefault.bMap_system,      NULL,   NULL,  FLAG_GLOBAL},
-  {"map hidden",       P_BOOL,    P_LOCAL,  &sDefault.bMap_hidden,      NULL,   NULL,  FLAG_GLOBAL},
-  {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL,  FLAG_GLOBAL},
-  {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL,  FLAG_GLOBAL},
-  {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL,   NULL,  FLAG_GLOBAL},
-
-  {"Domain Options", P_SEP, P_SEPARATOR},
-  {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL,   NULL,  0},
-  {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL,   NULL,  0},
-  {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL,  0},
-  {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL,   NULL,  0},
-  {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
-  {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
-  {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
-  {"domain allow hosts",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
-  {"domain hosts deny", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
-  {"domain deny hosts", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
-
-  {"Logon Options", P_SEP, P_SEPARATOR},
-  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
-  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  0},
-  {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL,  0},
-  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL,  0},
-  {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL,   NULL,  0},
-
-  {"Browse Options", P_SEP, P_SEPARATOR},
-  {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL,  FLAG_BASIC},
-  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce, 0},
-  {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL,  0},
-  {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL,  FLAG_BASIC},
-  {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL,  0},
-  {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL,   NULL,  FLAG_BASIC},
-  {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL,   NULL,  FLAG_BASIC},
-  {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL,   NULL,  0},
-  {"browseable",       P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
-  {"browsable",        P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
-
-  {"WINS Options", P_SEP, P_SEPARATOR},
-  {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL,  0},
-  {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
-  {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL,  0},
-  {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL,  FLAG_BASIC},
-
-  {"Locking Options", P_SEP, P_SEPARATOR},
-  {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_GLOBAL},
-  {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_GLOBAL},
-  {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_GLOBAL},
-  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
-  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
-
-#ifdef USE_LDAP
-  {"Ldap Options", P_SEP, P_SEPARATOR},
-  {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
-  {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
-  {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
-  {"ldap filter",      P_STRING,  P_GLOBAL, &Globals.szLdapFilter,      NULL,   NULL,  0},
-  {"ldap root",        P_STRING,  P_GLOBAL, &Globals.szLdapRoot,        NULL,   NULL,  0},
-  {"ldap root passwd", P_STRING,  P_GLOBAL, &Globals.szLdapRootPassword,NULL,   NULL,  0},
-#endif /* USE_LDAP */
-
-
-  {"Miscellaneous Options", P_SEP, P_SEPARATOR},
-  {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL,   NULL,  0},
-  {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL,   NULL,  FLAG_HIDE},
-  {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
-  {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
-  {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
-  {"lock directory",   P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
-  {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
-  {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
-  {"message command",  P_STRING,  P_GLOBAL, &Globals.szMsgCommand,      NULL,   NULL,  0},
-  {"dfree command",    P_STRING,  P_GLOBAL, &Globals.szDfree,           NULL,   NULL,  0},
-  {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars, NULL,  0},
-  {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL,   NULL,  0},
-  {"remote browse sync",P_STRING, P_GLOBAL, &Globals.szRemoteBrowseSync,NULL,   NULL,  0},
-  {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL,   NULL,  0},
-  {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL,   NULL,  0},
-  {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL,   NULL,  0},
-  {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL,   NULL,  0},
-  {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL,   NULL,  0},
-  {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL,  FLAG_HIDE},
-  {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,           handle_copy, NULL,  FLAG_HIDE},
-  {"include",          P_STRING,  P_LOCAL,  &sDefault.szInclude,        handle_include, NULL,  FLAG_HIDE},
-  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
-  {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
-  {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL,  0},
-  {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL,  0},
-  {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  0},
-  {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  0},
-  {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  0},
-  {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  0},
-  {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_GLOBAL},
-  {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_GLOBAL},
-  {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL,  0},
-  {"magic script",     P_STRING,  P_LOCAL,  &sDefault.szMagicScript,    NULL,   NULL,  0},
-  {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL,   NULL,  0},
-  {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL,   NULL,  FLAG_GLOBAL},
-  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL,   NULL,  FLAG_GLOBAL},
-  {"dos filetime resolution",P_BOOL,P_LOCAL,&sDefault.bDosFiletimeResolution,   NULL,  NULL,  FLAG_GLOBAL},
-  
-  {"fake directory create times", P_BOOL,P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL, FLAG_GLOBAL},
-  {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
+  {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL}
 };
 
 
@@ -708,7 +686,9 @@ static void init_globals(void)
 
   DEBUG(3,("Initialising global parameters\n"));
 
+#ifdef SMB_PASSWD_FILE
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
+#endif
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, SMB_PASSWD);
@@ -754,8 +734,8 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.os_level = 0;
-  Globals.max_ttl = 60*60*24*3; /* 3 days default */
-  Globals.max_wins_ttl = 60*60*24*6; /* 6 days default */
+  Globals.max_ttl = 60*60*4; /* 4 hours default */
+  Globals.max_wins_ttl = 60*60*24*3; /* 3 days default */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
   Globals.ReadSize = 16*1024;
   Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */
@@ -774,16 +754,9 @@ static void init_globals(void)
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
-  Globals.bNetWkstaUserLogon = False; /* This is now set to false by default as
-                                         the code in password.c protects us from this bug. */
+  Globals.bNetWkstaUserLogon = True;
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
-
-#ifdef USE_LDAP
-  /* default values for ldap */
-  string_set(&Globals.szLdapServer, "localhost");
-  Globals.ldap_port=389;
-#endif /* USE_LDAP */
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -979,6 +952,7 @@ FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 
+#ifdef NTDOMAIN
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
@@ -986,14 +960,7 @@ FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
 FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
-
-#ifdef USE_LDAP
-FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
-FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
-FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
-FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
-FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
-#endif /* USE_LDAP */
+#endif /* NTDOMAIN */
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
@@ -1049,10 +1016,6 @@ FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
 FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
-
-#ifdef USE_LDAP
-FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
-#endif /* USE_LDAP */
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)
@@ -1736,15 +1699,6 @@ static void init_copymap(service *pservice)
 
 
 /***************************************************************************
- return the local pointer to a parameter given the service number and the 
- pointer into the default structure
-***************************************************************************/
-void *lp_local_ptr(int snum, void *ptr)
-{
-	return (void *)(((char *)pSERVICE(snum)) + PTR_DIFF(ptr,&sDefault));
-}
-
-/***************************************************************************
 Process a parameter for a particular service number. If snum < 0
 then assume we are in the globals
 ***************************************************************************/
@@ -1788,7 +1742,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
    /* if it is a special case then go ahead */
    if (parm_table[parmnum].special) {
-	   parm_table[parmnum].special(pszParmValue,(char **)parm_ptr);
+	   parm_table[parmnum].special(pszParmValue,parm_ptr);
 	   return(True);
    }
 
@@ -1841,8 +1795,6 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			     break;
 		     }
 	     }
-	     break;
-     case P_SEP:
 	     break;
      }
 
@@ -1909,7 +1861,58 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		if (*(char **)ptr)
 			fprintf(f,"%s",*(char **)ptr);
 		break;
-	case P_SEP:
+	}
+}
+
+
+/***************************************************************************
+print a parameter of the specified type
+***************************************************************************/
+static void parameter_string(struct parm_struct *p,void *ptr,char *s)
+{
+	int i;
+	s[0] = 0;
+	
+	switch (p->type) {
+	case P_ENUM:
+		for (i=0;p->enum_list[i].name;i++) {
+			if (*(int *)ptr == p->enum_list[i].value) {
+				sprintf(s,"%s",p->enum_list[i].name);
+				break;
+			}
+		}
+		break;
+
+	case P_BOOL:
+		sprintf(s, "%s",BOOLSTR(*(BOOL *)ptr));
+		break;
+		
+	case P_BOOLREV:
+		sprintf(s, "%s",BOOLSTR(! *(BOOL *)ptr));
+		break;
+		
+	case P_INTEGER:
+		sprintf(s, "%d",*(int *)ptr);
+		break;
+		
+	case P_CHAR:
+		sprintf(s, "%c",*(char *)ptr);
+		break;
+		
+	case P_OCTAL:
+		sprintf(s, "0%o",*(int *)ptr);
+		break;
+		
+	case P_GSTRING:
+	case P_UGSTRING:
+		if ((char *)ptr)
+			slprintf(s, sizeof(pstring)-1, "%s",(char *)ptr);
+		break;
+		
+	case P_STRING:
+	case P_USTRING:
+		if (*(char **)ptr)
+			slprintf(s, sizeof(pstring)-1,"%s",*(char **)ptr);
 		break;
 	}
 }
@@ -1950,8 +1953,6 @@ static BOOL equal_parameter(parm_type type,void *ptr1,void *ptr2)
 	if (p2 && !*p2) p2 = NULL;
 	return(p1==p2 || strequal(p1,p2));
       }
-     case P_SEP:
-	     break;
     }
   return(False);
 }
@@ -2007,129 +2008,86 @@ static BOOL do_section(char *pszSectionName)
    return (bRetval);
 }
 
-
-/***************************************************************************
-determine if a partcular base parameter is currently set to the default value.
-***************************************************************************/
-static BOOL is_default(int i)
-{
-	if (!defaults_saved) return False;
-	switch (parm_table[i].type) {
-	case P_STRING:
-	case P_USTRING:
-		return strequal(parm_table[i].def.svalue,*(char **)parm_table[i].ptr);
-	case P_GSTRING:
-	case P_UGSTRING:
-		return strequal(parm_table[i].def.svalue,(char *)parm_table[i].ptr);
-	case P_BOOL:
-	case P_BOOLREV:
-		return parm_table[i].def.bvalue == *(BOOL *)parm_table[i].ptr;
-	case P_CHAR:
-		return parm_table[i].def.cvalue == *(char *)parm_table[i].ptr;
-	case P_INTEGER:
-	case P_OCTAL:
-	case P_ENUM:
-		return parm_table[i].def.ivalue == *(int *)parm_table[i].ptr;
-	case P_SEP:
-		break;
-	}
-	return False;
-}
-
-
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
 static void dump_globals(FILE *f)
 {
-	int i;
-	fprintf(f, "# Global parameters\n");
-	
-	for (i=0;parm_table[i].label;i++)
-		if (parm_table[i].class == P_GLOBAL &&
-		    parm_table[i].ptr &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
-			if (defaults_saved && is_default(i)) continue;
-			fprintf(f,"\t%s = ",parm_table[i].label);
-			print_parameter(&parm_table[i],parm_table[i].ptr, f);
-			fprintf(f,"\n");
-		}
-}
+  int i;
+  fprintf(f, "# Global parameters\n");
 
-/***************************************************************************
-return True if a local parameter is currently set to the global default
-***************************************************************************/
-BOOL lp_is_default(int snum, struct parm_struct *parm)
-{
-	int pdiff = PTR_DIFF(parm->ptr,&sDefault);
-			
-	return equal_parameter(parm->type,
-			       ((char *)pSERVICE(snum)) + pdiff,
-			       ((char *)&sDefault) + pdiff);
+  for (i=0;parm_table[i].label;i++)
+    if (parm_table[i].class == P_GLOBAL &&
+	parm_table[i].ptr &&
+	(i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr)))
+      {
+	fprintf(f,"\t%s = ",parm_table[i].label);
+	print_parameter(&parm_table[i],parm_table[i].ptr, f);
+	fprintf(f,"\n");
+      }
 }
-
 
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
 static void dump_a_service(service *pService, FILE *f)
 {
-	int i;
-	if (pService != &sDefault)
-		fprintf(f,"\n[%s]\n",pService->szService);
+  int i;
+  if (pService == &sDefault)
+    fprintf(f,"\n\n# Default service parameters\n");
+  else
+    fprintf(f,"\n[%s]\n",pService->szService);
 
-	for (i=0;parm_table[i].label;i++)
-		if (parm_table[i].class == P_LOCAL &&
-		    parm_table[i].ptr && 
-		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
-			int pdiff = PTR_DIFF(parm_table[i].ptr,&sDefault);
-			
-			if (pService == &sDefault) {
-				if (defaults_saved && is_default(i)) continue;
-			} else {
-				if (equal_parameter(parm_table[i].type,
-						    ((char *)pService) + pdiff,
-						    ((char *)&sDefault) + pdiff)) 
-					continue;
-			}
+  for (i=0;parm_table[i].label;i++)
+    if (parm_table[i].class == P_LOCAL &&
+	parm_table[i].ptr && 
+	(*parm_table[i].label != '-') &&
+	(i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr)))
+      {
+	int pdiff = PTR_DIFF(parm_table[i].ptr,&sDefault);
 
-			fprintf(f,"\t%s = ",parm_table[i].label);
-			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f);
-			fprintf(f,"\n");
-		}
+	if (pService == &sDefault || !equal_parameter(parm_table[i].type,
+						      ((char *)pService) + pdiff,
+						      ((char *)&sDefault) + pdiff))
+	  {
+	    fprintf(f,"\t%s = ",parm_table[i].label);
+	    print_parameter(&parm_table[i],
+			    ((char *)pService) + pdiff, f);
+	    fprintf(f,"\n");
+	  }
+      }
 }
 
 
 /***************************************************************************
-return info about the next service  in a service. snum==-1 gives the globals
+return info about the next service  in a service. snum==-1 gives the default
+serice and snum==-2 gives the globals
 
-return NULL when out of parameters
+return 0 when out of parameters
 ***************************************************************************/
-struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
+int lp_next_parameter(int snum, int *i, char *label, 
+			   char *value, int allparameters)
 {
-	if (snum == -1) {
+	if (snum == -2) {
 		/* do the globals */
-		for (;parm_table[*i].label;(*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR) 
-				return &parm_table[(*i)++];
-
-			if (!parm_table[*i].ptr || (*parm_table[*i].label == '-'))
-				continue;
-			
-			if ((*i) > 0 && (parm_table[*i].ptr == parm_table[(*i)-1].ptr))
-				continue;
-
-			return &parm_table[(*i)++];
-		}
+		for (;parm_table[*i].label;(*i)++)
+			if (parm_table[*i].class == P_GLOBAL &&
+			    parm_table[*i].ptr && 
+			    (*parm_table[*i].label != '-') &&
+			    ((*i) == 0 || 
+			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
+				strcpy(label, parm_table[*i].label);
+				parameter_string(&parm_table[*i],
+						 parm_table[*i].ptr,
+						 value);
+				(*i)++;
+				return 1;
+			}
+		return 0;
 	} else {
-		service *pService = pSERVICE(snum);
+		service *pService = (snum==-1?&sDefault:pSERVICE(snum));
 
-		for (;parm_table[*i].label;(*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR) 
-				return &parm_table[(*i)++];
-
+		for (;parm_table[*i].label;(*i)++)
 			if (parm_table[*i].class == P_LOCAL &&
 			    parm_table[*i].ptr && 
 			    (*parm_table[*i].label != '-') &&
@@ -2137,17 +2095,21 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
 				int pdiff = PTR_DIFF(parm_table[*i].ptr,&sDefault);
 				
-				if (allparameters ||
+				if (snum == -1 || allparameters ||
 				    !equal_parameter(parm_table[*i].type,
 						     ((char *)pService) + pdiff,
 						     ((char *)&sDefault) + pdiff)) {
-					return &parm_table[(*i)++];
+					strcpy(label, parm_table[*i].label);
+					parameter_string(&parm_table[*i],
+							 ((char *)pService) + pdiff,
+							 value);
+					(*i)++;
+					return 1;
 				}
 			}
-		}
 	}
 
-	return NULL;
+  return 0;
 }
 
 
@@ -2196,7 +2158,7 @@ static void lp_add_auto_services(char *str)
   s = strdup(str);
   if (!s) return;
 
-  homes = lp_servicenumber(HOMES_NAME);
+  homes = lp_servicenumber(HOMES_NAME);    
   printers = lp_servicenumber(PRINTERS_NAME);
 
   for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP))
@@ -2268,51 +2230,11 @@ void lp_killunused(BOOL (*snumused)(int ))
       }
 }
 
-
-/***************************************************************************
-save the curent values of all global and sDefault parameters into the 
-defaults union. This allows swat and testparm to show only the
-changed (ie. non-default) parameters.
-***************************************************************************/
-static void lp_save_defaults(void)
-{
-	int i;
-	for (i = 0; parm_table[i].label; i++) {
-		if (i>0 && parm_table[i].ptr == parm_table[i-1].ptr) continue;
-		switch (parm_table[i].type) {
-		case P_STRING:
-		case P_USTRING:
-			parm_table[i].def.svalue = strdup(*(char **)parm_table[i].ptr);
-			break;
-		case P_GSTRING:
-		case P_UGSTRING:
-			parm_table[i].def.svalue = strdup((char *)parm_table[i].ptr);
-			break;
-		case P_BOOL:
-		case P_BOOLREV:
-			parm_table[i].def.bvalue = *(BOOL *)parm_table[i].ptr;
-			break;
-		case P_CHAR:
-			parm_table[i].def.cvalue = *(char *)parm_table[i].ptr;
-			break;
-		case P_INTEGER:
-		case P_OCTAL:
-		case P_ENUM:
-			parm_table[i].def.ivalue = *(int *)parm_table[i].ptr;
-			break;
-		case P_SEP:
-			break;
-		}
-	}
-	defaults_saved = True;
-}
-
-
 /***************************************************************************
 Load the services array from the services file. Return True on success, 
 False on failure.
 ***************************************************************************/
-BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
+BOOL lp_load(char *pszFname,BOOL global_only)
 {
   pstring n2;
   BOOL bRetval;
@@ -2325,11 +2247,6 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
   bGlobalOnly = global_only;
   
   init_globals();
-
-  if (save_defaults) {
-	  init_locals();
-	  lp_save_defaults();
-  }
   
   pstrcpy(n2,pszFname);
   standard_sub_basic(n2);
@@ -2348,8 +2265,7 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
   if (lp_load_printers())
     lp_add_all_printers();
 
-  if (add_ipc)
-	  lp_add_ipc();
+  lp_add_ipc();
 
   set_default_server_announce_type();
 
@@ -2370,13 +2286,9 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults)
+void lp_dump(FILE *f)
 {
    int iService;
-
-   if (show_defaults) {
-	   defaults_saved = False;
-   }
 
    dump_globals(f);
    
@@ -2563,6 +2475,6 @@ int lp_minor_announce_version(void)
 ************************************************************/
 
 void lp_set_name_resolve_order(char *new_order)
-{ 
+{
   Globals.szNameResolveOrder = new_order;
 }

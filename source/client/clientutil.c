@@ -31,7 +31,7 @@
 
 pstring service="";
 pstring desthost="";
-extern pstring global_myname;
+extern pstring myname;
 pstring password = "";
 pstring smb_login_passwd = "";
 pstring username="";
@@ -331,7 +331,7 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
 
   /* and my name */
   p = outbuf+len;
-  name_mangle(global_myname,p,0);
+  name_mangle(myname,p,0);
   len += name_len(p);
 
   /* setup the packet length */
@@ -378,7 +378,7 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
     {
       int ecode = CVAL(inbuf,4);
       DEBUG(0,("Session request failed (%d,%d) with myname=%s destname=%s\n",
-	       CVAL(inbuf,0),ecode,global_myname,desthost));
+	       CVAL(inbuf,0),ecode,myname,desthost));
       switch (ecode)
 	{
 	case 0x80: 
@@ -388,7 +388,7 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
 	  break;
 	case 0x81: 
 	  DEBUG(0,("Not listening for calling name\n")); 
-	  DEBUG(0,("Try to connect as another name (instead of %s)\n",global_myname));
+	  DEBUG(0,("Try to connect as another name (instead of %s)\n",myname));
 	  DEBUG(0,("You may find the -n option useful for this\n"));
 	  break;
 	case 0x82: 
@@ -508,7 +508,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   if (CVAL(inbuf,smb_rcls) != 0 || ((int)SVAL(inbuf,smb_vwv0) >= numprots))
     {
       DEBUG(0,("SMBnegprot failed. myname=%s destname=%s - %s \n",
-	    global_myname,desthost,smb_errstr(inbuf)));
+	    myname,desthost,smb_errstr(inbuf)));
       if (was_null)
 	{
 	  free(inbuf);
@@ -665,7 +665,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 	    }
 	      
 	  DEBUG(0,("Session setup failed for username=%s myname=%s destname=%s   %s\n",
-		username,global_myname,desthost,smb_errstr(inbuf)));
+		username,myname,desthost,smb_errstr(inbuf)));
 	  DEBUG(0,("You might find the -U, -W or -n options useful\n"));
 	  DEBUG(0,("Sometimes you have to use `-n USERNAME' (particularly with OS/2)\n"));
 	  DEBUG(0,("Some servers also insist on uppercase-only passwords\n"));
@@ -882,10 +882,10 @@ BOOL cli_open_sockets(int port )
       strcpy(desthost,host);
     }
 
-  if (!(*global_myname)) {
-      get_myname(global_myname,NULL);
+  if (!(*myname)) {
+      get_myname(myname,NULL);
   }
-  strupper(global_myname);
+  strupper(myname);
 
   DEBUG(3,("Opening sockets\n"));
 

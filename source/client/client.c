@@ -33,7 +33,7 @@ pstring cur_dir = "\\";
 pstring cd_path = "";
 extern pstring service;
 extern pstring desthost;
-extern pstring global_myname;
+extern pstring myname;
 extern pstring myhostname;
 extern pstring password;
 extern pstring username;
@@ -3716,7 +3716,7 @@ static void usage(char *pname)
 	}
 	break;
       case 'n':
-	strcpy(global_myname,optarg);
+	strcpy(myname,optarg);
 	break;
       case 'N':
 	got_pass = True;
@@ -3770,7 +3770,7 @@ static void usage(char *pname)
     DEBUG(0,("Failed to get my hostname.\n"));
   }
 
-  if (!lp_load(servicesf,True,False,False)) {
+  if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 
@@ -3790,8 +3790,8 @@ static void usage(char *pname)
     strcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  get_myname((*global_myname)?NULL:global_myname,NULL);  
-  strupper(global_myname);
+  get_myname((*myname)?NULL:myname,NULL);  
+  strupper(myname);
 
   if(*new_name_resolve_order)
     lp_set_name_resolve_order(new_name_resolve_order);

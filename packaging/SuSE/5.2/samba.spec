@@ -60,7 +60,6 @@ fi
 /sbin/init.d/rc3.d/S20smb
 %config /sbin/init.d/smb
 /usr/bin/addtosmbpass
-/usr/bin/mksmbpasswd.sh
 /usr/bin/make_printerdef
 /usr/bin/make_smbcodepage
 /usr/bin/nmblookup

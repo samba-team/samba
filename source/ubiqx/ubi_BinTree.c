@@ -1,7 +1,7 @@
 /* ========================================================================== **
  *                              ubi_BinTree.c
  *
- *  Copyright (C) 1991-1998 by Christopher R. Hertel
+ *  Copyright (C) 1991-1997 by Christopher R. Hertel
  *
  *  Email:  crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -27,21 +27,6 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.c,v
- * Revision 4.1  1998/03/31 06:11:57  crh
- * Thomas Aglassinger sent E'mail pointing out errors in the
- * dereferencing of function pointers, and a missing typecast.
- * Thanks, Thomas!
- *
- * Revision 4.0  1998/03/10 03:19:22  crh
- * Added the AVL field 'balance' to the ubi_btNode structure.  This means
- * that all BinTree modules now use the same basic node structure, which
- * greatly simplifies the AVL module.
- * Decided that this was a big enough change to justify a new major revision
- * number.  3.0 was an error, so we're at 4.0.
- *
- * Revision 2.6  1998/01/24 06:27:46  crh
- * Added ubi_trCount() macro.
- *
  * Revision 2.5  1997/12/23 03:56:29  crh
  * In this version, all constants & macros defined in the header file have
  * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
@@ -94,9 +79,10 @@
  *
  * To further complicate matters, only those portions of the base module
  * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_SplayTree, the locate function was
- * called "ubi_sptLocate", but the next and previous functions remained
- * "ubi_btNext" and "ubi_btPrev".
+ * For example, if you were using ubi_AVLtree, the AVL node structure was
+ * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
+ * SplayTree, the locate function was called "ubi_sptLocate", but the next
+ * and previous functions remained "ubi_btNext" and "ubi_btPrev".
  *
  * This was not too terrible if you were familiar with the modules and knew
  * exactly which tree model you wanted to use.  If you wanted to be able to
@@ -130,8 +116,8 @@
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.1\n\
-\tDate: 1998/03/31 06:11:57\n\
+\tRevision: 2.5\n\
+\tDate: 1997/12/23 03:56:29\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -203,16 +189,16 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
    * ------------------------------------------------------------------------ **
    */
   {
-  register ubi_btNodePtr tmp_p      = p;
-  ubi_btNodePtr          tmp_pp     = NULL;
-  signed char            tmp_gender = ubi_trEQUAL;
-  int                    tmp_cmp;
+  register ubi_btNodePtr tmp_p = p;
+  ubi_btNodePtr tmp_pp         = NULL;
+  int tmp_gender               = ubi_trEQUAL;
+  int tmp_cmp;
 
   while( tmp_p
      && (ubi_trEQUAL != (tmp_cmp = ubi_trAbNormal((*CmpFunc)(findme, tmp_p)))) )
     {
     tmp_pp     = tmp_p;                 /* Keep track of previous node. */
-    tmp_gender = (signed char)tmp_cmp;  /* Keep track of sex of child.  */
+    tmp_gender = tmp_cmp;               /* Keep track of sex of child.  */
     tmp_p      = tmp_p->Link[tmp_cmp];  /* Go to child. */
     }
   *parentp = tmp_pp;                /* Return results. */
@@ -223,7 +209,7 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
 static void ReplaceNode( ubi_btNodePtr *parent,
                          ubi_btNodePtr  oldnode,
                          ubi_btNodePtr  newnode )
-  /* ------------------------------------------------------------------------ **
+  /* ------------------------------------------------------------------ *
    * Remove node oldnode from the tree, replacing it with node newnode.
    *
    * Input:
@@ -241,7 +227,7 @@ static void ReplaceNode( ubi_btNodePtr *parent,
    *           that now reads:
    *     ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
    *           Bleah!
-   * ------------------------------------------------------------------------ **
+   * ------------------------------------------------------------------ *
    */
   {
   register int i;
@@ -470,7 +456,6 @@ ubi_btNodePtr ubi_btInitNode( ubi_btNodePtr NodePtr )
   NodePtr->Link[ ubi_trPARENT ] = NULL;
   NodePtr->Link[ ubi_trRIGHT ]  = NULL;
   NodePtr->gender               = ubi_trEQUAL;
-  NodePtr->balance              = ubi_trEQUAL;
   return( NodePtr );
   } /* ubi_btInitNode */
 
@@ -931,7 +916,7 @@ ubi_trBool ubi_btTraverse( ubi_btRootPtr   RootPtr,
 
   while( p )
     {
-    (*EachNode)( p, UserData );
+    EachNode( p, UserData );
     p = ubi_btNext( p );
     }
   return( ubi_trTRUE );
@@ -969,7 +954,7 @@ ubi_trBool ubi_btKillTree( ubi_btRootPtr     RootPtr,
     p = q->Link[ubi_trPARENT];
     if( p )
       p->Link[ ((p->Link[ubi_trLEFT] == q)?ubi_trLEFT:ubi_trRIGHT) ] = NULL;
-    (*FreeNode)((void *)q);
+    FreeNode((void *)q);
     }
 
   (void)ubi_btInitTree( RootPtr,

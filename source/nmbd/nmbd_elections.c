@@ -26,8 +26,8 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 
 /* Election parameters. */
 extern time_t StartupTime;
@@ -95,7 +95,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
     return;
   }
 
-  if (strequal(work->work_group, global_myworkgroup))
+  if (strequal(work->work_group, myworkgroup))
   {
 
     if (lp_local_master())
@@ -117,7 +117,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
          not to become the local master, but we still need one,
          having detected that one doesn't exist.
        */
-      send_election_dgram(subrec, work->work_group, 0, 0, global_myname);
+      send_election_dgram(subrec, work->work_group, 0, 0, myname);
     }
   }
 }
@@ -131,7 +131,7 @@ void check_master_browser_exists(time_t t)
 {
   static time_t lastrun=0;
   struct subnet_record *subrec;
-  char *workgroup_name = global_myworkgroup;
+  char *workgroup_name = myworkgroup;
 
   if (!lastrun)
     lastrun = t;
@@ -186,7 +186,7 @@ void run_elections(time_t t)
       if (work->RunningElection)
       {
         send_election_dgram(subrec, work->work_group, work->ElectionCriterion,
-                      t - StartupTime, global_myname);
+                      t - StartupTime, myname);
 	      
         if (work->ElectionCount++ >= 4)
         {
@@ -225,7 +225,7 @@ static BOOL win_election(struct work_record *work, int version,
         version, ELECTION_VERSION,
         criterion, mycriterion,
         timeup, mytimeup,
-        server_name, global_myname));
+        server_name, myname));
 
   if (version > ELECTION_VERSION)
     return(False);
@@ -242,7 +242,7 @@ static BOOL win_election(struct work_record *work, int version,
   if (timeup < mytimeup)
     return(True);
 
-  if (strcasecmp(global_myname, server_name) > 0)
+  if (strcasecmp(myname, server_name) > 0)
     return(False);
   
   return(True);
@@ -276,7 +276,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
     return;
   }
 
-  if (!strequal(work->work_group, global_myworkgroup))
+  if (!strequal(work->work_group, myworkgroup))
   {
     DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));

@@ -27,7 +27,8 @@
 extern int DEBUGLEVEL;
 
 extern char **my_netbios_names;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 extern pstring scope;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
@@ -57,10 +58,10 @@ BOOL register_my_workgroup_and_names(void)
   for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
     /* Create the workgroup on the subnet. */
-    if((work = create_workgroup_on_subnet(subrec, global_myworkgroup, PERMANENT_TTL)) == NULL)
+    if((work = create_workgroup_on_subnet(subrec, myworkgroup, PERMANENT_TTL)) == NULL)
     {
       DEBUG(0,("register_my_workgroup_and_names: Failed to create my workgroup %s on subnet %s. \
-Exiting.\n", global_myworkgroup, subrec->subnet_name));
+Exiting.\n", myworkgroup, subrec->subnet_name));
       return False;
     }
 
@@ -127,10 +128,10 @@ Exiting.\n", global_myworkgroup, subrec->subnet_name));
        */
       struct nmb_name nmbname;
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x0, scope);
+      make_nmb_name(&nmbname, myworkgroup, 0x0, scope);
       insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x1e, scope);
+      make_nmb_name(&nmbname, myworkgroup, 0x1e, scope);
       insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
     }
   }

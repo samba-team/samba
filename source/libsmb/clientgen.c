@@ -29,96 +29,11 @@
 
 extern int DEBUGLEVEL;
 
-/*****************************************************
- RAP error codes - a small start but will be extended.
-*******************************************************/
-
-struct
-{
-  int err;
-  char *message;
-} rap_errmap[] =
-{
-  {5,    "User has insufficient privilege" },
-  {86,   "The specified password is invalid" },
-  {2226, "Operation only permitted on a Primary Domain Controller"  },
-  {2242, "The password of this user has expired." },
-  {2243, "The password of this user cannot change." },
-  {2244, "This password cannot be used now (password history conflict)." },
-  {2245, "The password is shorter than required." },
-  {2246, "The password of this user is too recent to change."},
-  {0, NULL}
-};  
-
-/****************************************************************************
-  return a description of an SMB error
-****************************************************************************/
-char *cli_smb_errstr(struct cli_state *cli)
-{
-	return smb_errstr(cli->inbuf);
-}
-
-/******************************************************
- Return an error message - either an SMB error or a RAP
- error.
-*******************************************************/
-    
-char *cli_errstr(struct cli_state *cli)
-{   
-  static fstring error_message;
-  int errclass;
-  int errnum;
-  int i;      
-      
-  /*  
-   * Errors are of three kinds - smb errors,
-   * dealt with by cli_smb_errstr, NT errors,
-   * whose code is in cli.nt_error, and rap
-   * errors, whose error code is in cli.rap_error.
-   */ 
-
-  cli_error(cli, &errclass, &errnum);
-  if(errclass != 0)
-    return cli_smb_errstr(cli);
-
-  /*
-   * Was it an NT error ?
-   */
-
-  if(cli->nt_error) {
-    char *nt_msg = get_nt_error_msg(cli->nt_error);
-
-    if(nt_msg == NULL)
-      sprintf(error_message, "NT code %d", cli->nt_error);
-    else
-      fstrcpy(error_message, nt_msg);
-
-    return error_message;
-  }
-
-  /*
-   * Must have been a rap error.
-   */
-
-  sprintf(error_message, "code %d", cli->rap_error);
-    
-  for(i = 0; rap_errmap[i].message != NULL; i++) {
-    if (rap_errmap[i].err == cli->rap_error) {
-      fstrcpy( error_message, rap_errmap[i].message);
-      break;
-    }
-  } 
-  
-  return error_message;
-}
-
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/
 static void cli_setup_packet(struct cli_state *cli)
 {
-        cli->rap_error = 0;
-        cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->uid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -132,12 +47,10 @@ static void cli_setup_packet(struct cli_state *cli)
 /****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
-static BOOL cli_send_trans(struct cli_state *cli, int trans, 
-                           char *name, int pipe_name_len, 
-                           int fid, int flags,
-                           uint16 *setup, int lsetup, int msetup,
-                           char *param, int lparam, int mparam,
-                           char *data, int ldata, int mdata)
+static BOOL cli_send_trans(struct cli_state *cli,
+			   int trans, char *name, int fid, int flags,
+			   char *data,char *param,uint16 *setup, int ldata,int lparam,
+			   int lsetup,int mdata,int mparam,int msetup)
 {
 	int i;
 	int this_ldata,this_lparam;
@@ -154,7 +67,7 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
-	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? pipe_name_len+1 : 3);
+	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? strlen(name)+1 : 3);
 	outdata = outparam+this_lparam;
 
 	/* primary request */
@@ -174,7 +87,7 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 		SSVAL(cli->outbuf,smb_setup+i*2,setup[i]);
 	p = smb_buf(cli->outbuf);
 	if (trans==SMBtrans) {
-		memcpy(p,name, pipe_name_len + 1);  /* name[] */
+		strcpy(p,name);			/* name[] */
 	} else {
 		*p++ = 0;  /* put in a null smb_name */
 		*p++ = 'D'; *p++ = ' ';	/* observed in OS/2 */
@@ -242,9 +155,9 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 /****************************************************************************
   receive a SMB trans or trans2 response allocating the necessary memory
   ****************************************************************************/
-static BOOL cli_receive_trans(struct cli_state *cli,int trans,
-                              char **param, int *param_len,
-                              char **data, int *data_len)
+static BOOL cli_receive_trans(struct cli_state *cli,
+			      int trans,int *data_len,
+			      int *param_len, char **data,char **param)
 {
 	int total_data=0;
 	int total_param=0;
@@ -322,51 +235,23 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	return(True);
 }
 
-/****************************************************************************
-Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
-****************************************************************************/
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
-                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
-                  char *params, uint32 param_count, uint32 max_param_count,
-                  char *data, uint32 data_count, uint32 max_data_count,
-                  char **rparam, uint32 *rparam_count,
-                  char **rdata, uint32 *rdata_count)
-{
-  if(pipe_name_len == 0)
-    pipe_name_len = strlen(pipe_name);
-
-  cli_send_trans(cli, SMBtrans, 
-                 pipe_name, pipe_name_len,
-                 0,0,                         /* fid, flags */
-                 setup, setup_count, max_setup_count,
-                 params, param_count, max_param_count,
-                 data, data_count, max_data_count);
-
-  return (cli_receive_trans(cli, SMBtrans, 
-                            rparam, (int *)rparam_count,
-                            rdata, (int *)rdata_count));
-}
 
 /****************************************************************************
 call a remote api
 ****************************************************************************/
 static BOOL cli_api(struct cli_state *cli,
-                    char *param, int prcnt, int mprcnt,
-                    char *data, int drcnt, int mdrcnt,
-                    char **rparam, int *rprcnt,
-                    char **rdata, int *rdrcnt)
+		    int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
+		    int *rdrcnt, char *param,char *data, 
+		    char **rparam, char **rdata)
 {
-  cli_send_trans(cli,SMBtrans,
-                 PIPE_LANMAN,strlen(PIPE_LANMAN), /* Name, length */
-                 0,0,                             /* fid, flags */
-                 NULL,0,0,                /* Setup, length, max */
-                 param, prcnt, mprcnt,    /* Params, length, max */
-                 data, drcnt, mdrcnt      /* Data, length, max */ 
-                );
+  cli_send_trans(cli,SMBtrans,PIPE_LANMAN,0,0,
+		 data,param,NULL,
+		 drcnt,prcnt,0,
+		 mdrcnt,mprcnt,0);
 
   return (cli_receive_trans(cli,SMBtrans,
-                            rparam, rprcnt,
-                            rdata, rdrcnt));
+				     rdrcnt,rprcnt,
+				     rdata,rparam));
 }
 
 
@@ -404,84 +289,30 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	SSVAL(p, 0, BUFFER_SIZE);
 	p += 2;
 	
-	if (cli_api(cli, 
-                    param, PTR_DIFF(p,param),1024,  /* param, length, max */
-                    NULL, 0, BUFFER_SIZE,           /* data, length, max */
-                    &rparam, &rprcnt,               /* return params, return size */
-                    &rdata, &rdrcnt                 /* return data, return size */
-                   )) {
-		cli->rap_error = SVAL(rparam,0);
+	cli->error = -1;
+	
+	if (cli_api(cli, PTR_DIFF(p,param),0,
+		    1024,BUFFER_SIZE,
+		    &rprcnt,&rdrcnt,
+		    param,NULL,
+		    &rparam,&rdata)) {
+		cli->error = SVAL(rparam,0);
 		p = rdata;
 		
-		if (cli->rap_error == 0) {
+		if (cli->error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
 			cli->privilages = SVAL(p, 24);
 			fstrcpy(cli->eff_name,p+2);
 		} else {
-			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->rap_error));
+			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->error));
 		}
 	}
 	
 	if (rparam) free(rparam);
 	if (rdata) free(rdata);
-	return (cli->rap_error == 0);
+	return cli->error == 0;
 }
 
-/****************************************************************************
-call a NetShareEnum - try and browse available connections on a host
-****************************************************************************/
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *))
-{
-  char *rparam = NULL;
-  char *rdata = NULL;
-  char *p;
-  int rdrcnt,rprcnt;
-  pstring param;
-  int count = -1;
-
-  /* now send a SMBtrans command with api RNetShareEnum */
-  p = param;
-  SSVAL(p,0,0); /* api number */
-  p += 2;
-  strcpy(p,"WrLeh");
-  p = skip_string(p,1);
-  strcpy(p,"B13BWz");
-  p = skip_string(p,1);
-  SSVAL(p,0,1);
-  SSVAL(p,2,BUFFER_SIZE);
-  p += 4;
-
-  if (cli_api(cli, 
-              param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-              NULL, 0, BUFFER_SIZE,            /* data, length, maxlen */
-              &rparam, &rprcnt,                /* return params, length */
-              &rdata, &rdrcnt))                /* return data, length */
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
-      
-      if (res == 0)
-	{
-	  count=SVAL(rparam,4);
-	  p = rdata;
-
-	  for (i=0;i<count;i++,p+=20)
-	    {
-	      char *sname = p;
-	      int type = SVAL(p,14);
-	      int comment_offset = IVAL(p,16) & 0xFFFF;
-	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-	      fn(sname, type, cmnt);
-	    }
-	}
-    }
-  
-  if (rparam) free(rparam);
-  if (rdata) free(rdata);
-
-  return(count>0);
-}
 
 /****************************************************************************
 call a NetServerEnum for the specified workgroup and servertype mask.
@@ -521,11 +352,13 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p = skip_string(p,1);
 	
 	if (cli_api(cli, 
-                    param, PTR_DIFF(p,param), 8,        /* params, length, max */
-                    NULL, 0, BUFFER_SIZE,               /* data, length, max */
-                    &rparam, &rprcnt,                   /* return params, return size */
-                    &rdata, &rdrcnt                     /* return data, return size */
-                   )) {
+		    PTR_DIFF(p,param), /* param count */
+		    0, /*data count */
+		    8, /* mprcount */
+		    BUFFER_SIZE, /* mdrcount */
+		    &rprcnt,&rdrcnt,
+		    param, NULL, 
+		    &rparam,&rdata)) {
 		int res = SVAL(rparam,0);
 		int converter=SVAL(rparam,2);
 		int i;
@@ -681,13 +514,13 @@ BOOL cli_ulogoff(struct cli_state *cli)
         set_message(cli->outbuf,2,0,True);
         CVAL(cli->outbuf,smb_com) = SMBulogoffX;
         cli_setup_packet(cli);
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
+        SSVAL(cli->outbuf,smb_vwv0,0xFF);
+        SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 
         send_smb(cli->fd,cli->outbuf);
         if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
                 return False;
-
+ 
         return CVAL(cli->inbuf,smb_rcls) == 0;
 }
 
@@ -1262,19 +1095,15 @@ BOOL cli_qpathinfo(struct cli_state *cli, char *fname,
 	SSVAL(param, 0, SMB_INFO_STANDARD);
 	pstrcpy(&param[6], fname);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                      /* Name, length */
-                            -1, 0,                        /* fid, flags */
-                            &setup, 1, 0,                 /* setup, length, max */
-                            param, param_len, 10,         /* param, length, max */
-                            NULL, data_len, cli->max_xmit /* data, length, max */
-                           )) {
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 10, 0)) {
 		return False;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2, 
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
 		return False;
 	}
 
@@ -1319,19 +1148,15 @@ BOOL cli_qpathinfo2(struct cli_state *cli, char *fname,
 	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
 	pstrcpy(&param[6], fname);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                      /* name, length */
-                            -1, 0,                        /* fid, flags */
-                            &setup, 1, 0,                 /* setup, length, max */
-                            param, param_len, 10,         /* param, length, max */
-                            NULL, data_len, cli->max_xmit /* data, length, max */
-                           )) {
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 10, 0)) {
 		return False;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
 		return False;
 	}
 
@@ -1379,19 +1204,15 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, SMB_INFO_STANDARD);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                        /* name, length */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            NULL, data_len, cli->max_xmit   /* data, length, max */
-                           )) {
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 2, 0)) {
 		return False;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
 		return False;
 	}
 
@@ -1438,6 +1259,8 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   char *rdata = NULL;
   int rprcnt, rdrcnt;
 
+  cli->error = -1;
+
   if(strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
     return False;
@@ -1463,11 +1286,8 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   /*
    * Now setup the data area.
-   * We need to generate a random fill
-   * for this area to make it harder to
-   * decrypt. JRA.
    */
-  generate_random_buffer((unsigned char *)data, sizeof(data), False);
+  memset(data, '\0', sizeof(data));
   fstrcpy( &data[512 - new_pw_len], new_password);
   SIVAL(data, 512, new_pw_len);
 
@@ -1495,23 +1315,18 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   data_len = 532;
     
-  if(cli_send_trans(cli,SMBtrans,
-                    PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
-                    0,0,                                  /* fid, flags */
-                    NULL,0,0,                             /* setup, length, max */
-                    param,param_len,2,                    /* param, length, max */
-                    data,data_len,0                       /* data, length, max */
-                   ) == False) {
+  if(cli_send_trans(cli,SMBtrans,PIPE_LANMAN,0,0,
+                 data,param,NULL,
+                 data_len , param_len,0,
+                 0,2,0) == False) {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));
     return False;
   }
 
-  if(cli_receive_trans(cli,SMBtrans,
-                       &rparam, &rprcnt,
-                       &rdata, &rdrcnt)) {
+  if(cli_receive_trans(cli,SMBtrans, &rdrcnt, &rprcnt, &rdata, &rparam)) {
     if(rparam)
-      cli->rap_error = SVAL(rparam,0);
+      cli->error = SVAL(rparam,0);
   }
 
   if (rparam)
@@ -1519,7 +1334,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   if (rdata)
     free(rdata);
 
-  return (cli->rap_error == 0);
+  return (cli->error == 0);
 }
 
 /****************************************************************************
@@ -1640,8 +1455,7 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 		return False;
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
-                /* This is the wrong place to put the error... JRA. */
-		cli->rap_error = CVAL(cli->inbuf,0);
+		cli->error = CVAL(cli->inbuf,0);
 		return False;
 	}
 	return(True);
@@ -1707,6 +1521,14 @@ void cli_shutdown(struct cli_state *cli)
 	if (cli->inbuf) free(cli->inbuf);
 	if (cli->fd != -1) close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
+}
+
+/****************************************************************************
+  return a description of the error
+****************************************************************************/
+char *cli_errstr(struct cli_state *cli)
+{
+	return smb_errstr(cli->inbuf);
 }
 
 /****************************************************************************

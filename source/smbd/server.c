@@ -25,8 +25,7 @@
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern pstring sesssetup_user;
-extern fstring global_myworkgroup;
-extern pstring global_myname;
+extern fstring myworkgroup;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -465,7 +464,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
    * (JRA).
    */
   if (mangled)
-    mangled = !check_mangled_cache( name );
+    mangled = !check_mangled_stack(name);
 
   /* open the directory */
   if (!(cur_dir = OpenDir(cnum, path, True))) 
@@ -660,7 +659,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 	      /* check on the mangled stack to see if we can recover the 
 		 base of the filename */
 	      if (is_mangled(start))
-		check_mangled_cache( start );
+		check_mangled_stack(start);
 
 	      DEBUG(5,("New file %s\n",start));
 	      return(True); 
@@ -1836,12 +1835,6 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       flags = O_RDONLY;
       break;
   }
-
-#if defined(O_SYNC)
-  if (share_mode&(1<<14)) {
-	  flags2 |= O_SYNC;
-  }
-#endif /* O_SYNC */
   
   if (flags != O_RDONLY && file_existed && 
       (!CAN_WRITE(cnum) || IS_DOS_READONLY(dos_mode(cnum,fname,&sbuf)))) 
@@ -2347,21 +2340,13 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line)
 {
   int outsize = set_message(outbuf,0,0,True);
-  int cmd = CVAL(inbuf,smb_com);
-  int flgs2 = SVAL(outbuf,smb_flg2); 
-
-  if ((flgs2 & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES)
-  {
-    SIVAL(outbuf,smb_rcls,error_code);
-    
-    DEBUG(3,("%s 32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
-           timestring(), line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf)));
-  }
-  else
-  {
-    CVAL(outbuf,smb_rcls) = error_class;
-    SSVAL(outbuf,smb_err,error_code);  
-    DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
+  int cmd;
+  cmd = CVAL(inbuf,smb_com);
+  
+  CVAL(outbuf,smb_rcls) = error_class;
+  SSVAL(outbuf,smb_err,error_code);  
+  
+  DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
 	   timestring(),
 	   line,
 	   (int)CVAL(inbuf,smb_com),
@@ -2369,8 +2354,6 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 	   error_class,
 	   error_code));
 
-  }
-  
   if (errno != 0)
     DEBUG(3,("error string = %s\n",strerror(errno)));
   
@@ -2657,7 +2640,7 @@ static void process_smb(char *inbuf, char *outbuf)
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG(1,("%s Connection denied from %s\n",
-			   timestring(),client_addr(Client)));
+			   timestring(),client_addr()));
 		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
@@ -3289,7 +3272,7 @@ BOOL reload_services(BOOL test)
 
   lp_killunused(snum_used);
 
-  ret = lp_load(servicesf,False,False,True);
+  ret = lp_load(servicesf,False);
 
   /* perhaps the config filename is now set */
   if (!test)
@@ -3307,7 +3290,7 @@ BOOL reload_services(BOOL test)
     }
   }
 
-  reset_mangled_cache();
+  reset_mangled_stack( lp_mangledstack() );
 
   /* this forces service parameters to be flushed */
   become_service(-1,True);
@@ -3332,6 +3315,89 @@ static int sig_hup(void)
   return(0);
 }
 
+/****************************************************************************
+Setup the groups a user belongs to.
+****************************************************************************/
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
+		 int **p_igroups, gid_t **p_groups,
+         int **p_attrs)
+{
+  if (-1 == initgroups(user,gid))
+    {
+      if (getuid() == 0)
+	{
+	  DEBUG(0,("Unable to initgroups!\n"));
+	  if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
+	    DEBUG(0,("This is probably a problem with the account %s\n",user));
+	}
+    }
+  else
+    {
+      int i,ngroups;
+      int *igroups;
+      int *attrs;
+      gid_t grp = 0;
+      ngroups = getgroups(0,&grp);
+      if (ngroups <= 0)
+        ngroups = 32;
+      igroups = (int *)malloc(sizeof(int)*ngroups);
+      attrs   = (int *)malloc(sizeof(int)*ngroups);
+      for (i=0;i<ngroups;i++)
+      {
+        attrs  [i] = 0x7; /* XXXX don't know what NT user attributes are yet! */
+        igroups[i] = 0x42424242;
+      }
+      ngroups = getgroups(ngroups,(gid_t *)igroups);
+
+      if (igroups[0] == 0x42424242)
+        ngroups = 0;
+
+      *p_ngroups = ngroups;
+      *p_attrs   = attrs;
+
+      /* The following bit of code is very strange. It is due to the
+         fact that some OSes use int* and some use gid_t* for
+         getgroups, and some (like SunOS) use both, one in prototypes,
+         and one in man pages and the actual code. Thus we detect it
+         dynamically using some very ugly code */
+      if (ngroups > 0)
+        {
+	  /* does getgroups return ints or gid_t ?? */
+	  static BOOL groups_use_ints = True;
+
+	  if (groups_use_ints && 
+	      ngroups == 1 && 
+	      SVAL(igroups,2) == 0x4242)
+	    groups_use_ints = False;
+	  
+          for (i=0;groups_use_ints && i<ngroups;i++)
+            if (igroups[i] == 0x42424242)
+    	      groups_use_ints = False;
+	      
+          if (groups_use_ints)
+          {
+    	      *p_igroups = igroups;
+    	      *p_groups = (gid_t *)igroups;	  
+          }
+          else
+          {
+	      gid_t *groups = (gid_t *)igroups;
+	      igroups = (int *)malloc(sizeof(int)*ngroups);
+	      for (i=0;i<ngroups;i++)
+          {
+	        igroups[i] = groups[i];
+          }
+	      *p_igroups = igroups;
+	      *p_groups = (gid_t *)groups;
+	    }
+	}
+      DEBUG(3,("%s is in %d groups\n",user,ngroups));
+      for (i=0;i<ngroups;i++)
+        DEBUG(3,("%d ",igroups[i]));
+      DEBUG(3,("\n"));
+    }
+  return 0;
+}
 
 /****************************************************************************
   make a connection to a service
@@ -3344,20 +3410,20 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   connection_struct *pcon;
   BOOL guest = False;
   BOOL force = False;
+  static BOOL first_connection = True;
 
   strlower(service);
 
   snum = find_service(service);
   if (snum < 0)
     {
-      extern int Client;
       if (strequal(service,"IPC$"))
 	{	  
 	  DEBUG(3,("%s refusing IPC connection\n",timestring()));
 	  return(-3);
 	}
 
-      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(Client),service));      
+      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(),service));      
       return(-2);
     }
 
@@ -3564,7 +3630,9 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 	}  
 
       if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,False);
+	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
+
+      first_connection = False;
     } /* IS_IPC */
 
   pcon->open = True;
@@ -3644,11 +3712,10 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   }
 
   {
-    extern int Client;
     DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
 			    timestring(),
 			    remote_machine,
-			    client_addr(Client),
+			    client_addr(),
 			    lp_servicename(SNUM(cnum)),user,
 			    pcon->uid,
 			    pcon->gid,
@@ -3917,7 +3984,7 @@ reply for the nt protocol
 int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
 /*
   other valid capabilities which we may support at some time...
                      CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
@@ -3961,10 +4028,10 @@ int reply_nt1(char *outbuf)
   /* decide where (if) to put the encryption challenge, and
      follow it with the OEM'd domain name
    */
-  data_len = crypt_len + strlen(global_myworkgroup) + 1;
+  data_len = crypt_len + strlen(myworkgroup) + 1;
 
   set_message(outbuf,17,data_len,True);
-  strcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
+  strcpy(smb_buf(outbuf)+crypt_len, myworkgroup);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
@@ -3976,7 +4043,7 @@ int reply_nt1(char *outbuf)
   SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
   SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
-  SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
+  SIVAL(outbuf,smb_vwv5+1,0xffff); /* raw size. LOTS! */
   SIVAL(outbuf,smb_vwv7+1,getpid()); /* session key */
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
   put_long_date(outbuf+smb_vwv11+1,t);
@@ -4068,7 +4135,7 @@ struct {
 /****************************************************************************
   reply to a negprot
 ****************************************************************************/
-static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+static int reply_negprot(char *inbuf,char *outbuf, int size, int bufsize)
 {
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
@@ -4133,7 +4200,7 @@ static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz
     
   /* a special case to stop password server loops */
   if (Index == 1 && strequal(remote_machine,myhostname) && 
-      (lp_security()==SEC_SERVER || lp_security()==SEC_DOMAIN))
+      lp_security()==SEC_SERVER)
     exit_server("Password server loop!");
   
   /* Check for protocols, most desirable first */
@@ -4191,7 +4258,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(int cnum, uint16 vuid)
 {
-  extern int Client;
   DirCacheFlush(SNUM(cnum));
 
   unbecome_user();
@@ -4204,7 +4270,7 @@ void close_cnum(int cnum, uint16 vuid)
 
   DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) closed connection to service %s\n",
 			  timestring(),
-			  remote_machine,client_addr(Client),
+			  remote_machine,client_addr(),
 			  lp_servicename(SNUM(cnum))));
 
   yield_connection(cnum,
@@ -4259,6 +4325,183 @@ void close_cnum(int cnum, uint16 vuid)
 }
 
 
+/****************************************************************************
+simple routines to do connection counting
+****************************************************************************/
+BOOL yield_connection(int cnum,char *name,int max_connections)
+{
+  struct connect_record crec;
+  pstring fname;
+  FILE *f;
+  int mypid = getpid();
+  int i;
+
+  DEBUG(3,("Yielding connection to %d %s\n",cnum,name));
+
+  if (max_connections <= 0)
+    return(True);
+
+  bzero(&crec,sizeof(crec));
+
+  pstrcpy(fname,lp_lockdir());
+  standard_sub(cnum,fname);
+  trim_string(fname,"","/");
+
+  strcat(fname,"/");
+  strcat(fname,name);
+  strcat(fname,".LCK");
+
+  f = fopen(fname,"r+");
+  if (!f)
+    {
+      DEBUG(2,("Couldn't open lock file %s (%s)\n",fname,strerror(errno)));
+      return(False);
+    }
+
+  fseek(f,0,SEEK_SET);
+
+  /* find a free spot */
+  for (i=0;i<max_connections;i++)
+    {
+      if (fread(&crec,sizeof(crec),1,f) != 1)
+	{
+	  DEBUG(2,("Entry not found in lock file %s\n",fname));
+	  fclose(f);
+	  return(False);
+	}
+      if (crec.pid == mypid && crec.cnum == cnum)
+	break;
+    }
+
+  if (crec.pid != mypid || crec.cnum != cnum)
+    {
+      fclose(f);
+      DEBUG(2,("Entry not found in lock file %s\n",fname));
+      return(False);
+    }
+
+  bzero((void *)&crec,sizeof(crec));
+  
+  /* remove our mark */
+  if (fseek(f,i*sizeof(crec),SEEK_SET) != 0 ||
+      fwrite(&crec,sizeof(crec),1,f) != 1)
+    {
+      DEBUG(2,("Couldn't update lock file %s (%s)\n",fname,strerror(errno)));
+      fclose(f);
+      return(False);
+    }
+
+  DEBUG(3,("Yield successful\n"));
+
+  fclose(f);
+  return(True);
+}
+
+
+/****************************************************************************
+simple routines to do connection counting
+****************************************************************************/
+BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
+{
+  struct connect_record crec;
+  pstring fname;
+  FILE *f;
+  int snum = SNUM(cnum);
+  int i,foundi= -1;
+  int total_recs;
+
+  if (max_connections <= 0)
+    return(True);
+
+  DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
+
+  pstrcpy(fname,lp_lockdir());
+  standard_sub(cnum,fname);
+  trim_string(fname,"","/");
+
+  if (!directory_exist(fname,NULL))
+    mkdir(fname,0755);
+
+  strcat(fname,"/");
+  strcat(fname,name);
+  strcat(fname,".LCK");
+
+  if (!file_exist(fname,NULL))
+    {
+      int oldmask = umask(022);
+      f = fopen(fname,"w");
+      if (f) fclose(f);
+      umask(oldmask);
+    }
+
+  total_recs = file_size(fname) / sizeof(crec);
+
+  f = fopen(fname,"r+");
+
+  if (!f)
+    {
+      DEBUG(1,("couldn't open lock file %s\n",fname));
+      return(False);
+    }
+
+  /* find a free spot */
+  for (i=0;i<max_connections;i++)
+    {
+
+      if (i>=total_recs || 
+	  fseek(f,i*sizeof(crec),SEEK_SET) != 0 ||
+	  fread(&crec,sizeof(crec),1,f) != 1)
+	{
+	  if (foundi < 0) foundi = i;
+	  break;
+	}
+
+      if (Clear && crec.pid && !process_exists(crec.pid))
+	{
+	  fseek(f,i*sizeof(crec),SEEK_SET);
+	  bzero((void *)&crec,sizeof(crec));
+	  fwrite(&crec,sizeof(crec),1,f);
+	  if (foundi < 0) foundi = i;
+	  continue;
+	}
+      if (foundi < 0 && (!crec.pid || !process_exists(crec.pid)))
+	{
+	  foundi=i;
+	  if (!Clear) break;
+	}
+    }  
+
+  if (foundi < 0)
+    {
+      DEBUG(3,("no free locks in %s\n",fname));
+      fclose(f);
+      return(False);
+    }      
+
+  /* fill in the crec */
+  bzero((void *)&crec,sizeof(crec));
+  crec.magic = 0x280267;
+  crec.pid = getpid();
+  crec.cnum = cnum;
+  crec.uid = Connections[cnum].uid;
+  crec.gid = Connections[cnum].gid;
+  StrnCpy(crec.name,lp_servicename(snum),sizeof(crec.name)-1);
+  crec.start = time(NULL);
+
+  StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
+  StrnCpy(crec.addr,client_addr(),sizeof(crec.addr)-1);
+  
+  /* make our mark */
+  if (fseek(f,foundi*sizeof(crec),SEEK_SET) != 0 ||
+      fwrite(&crec,sizeof(crec),1,f) != 1)
+    {
+      fclose(f);
+      return(False);
+    }
+
+  fclose(f);
+  return(True);
+}
 
 #if DUMP_CORE
 /*******************************************************************
@@ -4390,6 +4633,7 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
+
 struct smb_message_struct
 {
   int code;
@@ -4412,7 +4656,7 @@ struct smb_message_struct
    {SMBecho,"SMBecho",reply_echo,0},
    {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
    {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
+   {SMBulogoffX, "SMBulogoffX",reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
@@ -4470,7 +4714,7 @@ struct smb_message_struct
    {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
    
    {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
-   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
+   {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER},
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
    
@@ -4479,10 +4723,10 @@ struct smb_message_struct
    {SMBfclose,"SMBfclose",reply_fclose,AS_USER},
 
    /* LANMAN2.0 PROTOCOL FOLLOWS */
-   {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
-   {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER },
-   {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
+   {SMBfindnclose, "SMBfindnclose",reply_findnclose, AS_USER},
+   {SMBfindclose, "SMBfindclose",reply_findclose,AS_USER},
+   {SMBtrans2, "SMBtrans2",reply_trans2, AS_USER},
+   {SMBtranss2, "SMBtranss2",reply_transs2, AS_USER},
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},
@@ -4601,7 +4845,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
             last_session_tag = session_tag;
             if(session_tag != UID_FIELD_INVALID)
-              vuser = get_valid_user_struct(session_tag);           
+              vuser = get_valid_user_struct(session_tag);
             if(vuser != NULL)
               pstrcpy( sesssetup_user, vuser->requested_name);
           }
@@ -4962,21 +5206,6 @@ static void init_structs(void )
   int i;
   get_myname(myhostname,NULL);
 
-  /*
-   * Set the machine NETBIOS name if not already
-   * set from the config file.
-   */
-
-  if (!*global_myname)
-  {
-    char *p;
-    fstrcpy( global_myname, myhostname );
-    p = strchr( global_myname, '.' );
-    if (p) 
-      *p = 0;
-  }
-  strupper( global_myname );
-
   for (i=0;i<MAX_CONNECTIONS;i++)
     {
       Connections[i].open = False;
@@ -4993,6 +5222,7 @@ static void init_structs(void )
     {
       Files[i].open = False;
       string_init(&Files[i].name,"");
+
     }
 
   for (i=0;i<MAX_OPEN_FILES;i++)
@@ -5010,8 +5240,10 @@ static void init_structs(void )
   /* for RPC pipes */
   init_rpc_pipe_hnd();
 
+#ifdef NTDOMAIN
   /* for LSA handles */
   init_lsa_policy_hnd();
+#endif
 
   init_dptrs();
 }
@@ -5047,6 +5279,9 @@ static void usage(char *pname)
   int port = SMB_PORT;
   int opt;
   extern char *optarg;
+  char pidFile[100];
+
+  *pidFile = '\0';
 
 #ifdef NEED_AUTH_PARAMETERS
   set_auth_parameters(argc,argv);
@@ -5100,6 +5335,9 @@ static void usage(char *pname)
   while ((opt = getopt(argc, argv, "O:i:l:s:d:Dp:hPaf:")) != EOF)
     switch (opt)
       {
+      case 'f':
+        strncpy(pidFile, optarg, sizeof(pidFile));
+        break;
       case 'O':
 	strcpy(user_socket_options,optarg);
 	break;
@@ -5185,7 +5423,7 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  strcpy(global_myworkgroup, lp_workgroup());
+  strcpy(myworkgroup, lp_workgroup());
 
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);
@@ -5225,9 +5463,33 @@ static void usage(char *pname)
 	  mkdir(lp_lockdir(), 0755);
   }
 
-  if (is_daemon) {
-	  pidfile_create("smbd");
-  }
+  if (*pidFile)
+    {
+      int     fd;
+      char    buf[20];
+
+      if ((fd = open(pidFile,
+#ifdef O_NONBLOCK
+         O_NONBLOCK | 
+#endif
+         O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
+        {
+           DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
+           exit(1);
+        }
+      if(fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False)
+        {
+          DEBUG(0,("ERROR: smbd is already running\n"));
+          exit(1);
+        }
+      sprintf(buf, "%u\n", (unsigned int) getpid());
+      if (write(fd, buf, strlen(buf)) < 0)
+        {
+          DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));
+          exit(1);
+        }
+      /* Leave pid file open & locked for the duration... */
+    }
 
   if (!open_sockets(is_daemon,port))
     exit(1);

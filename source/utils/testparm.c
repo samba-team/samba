@@ -67,7 +67,7 @@ extern pstring myhostname;
     return(1);
   }
 
-  if (!lp_load(configfile,False,True,False))
+  if (!lp_load(configfile,False))
     {
       printf("Error loading services.\n");
       return(1);
@@ -89,7 +89,7 @@ extern pstring myhostname;
       printf("Press enter to see a dump of your service definitions\n");
       fflush(stdout);
       getc(stdin);
-      lp_dump(stdout,False);
+      lp_dump(stdout);      
     }
   
   if (argc == 4)

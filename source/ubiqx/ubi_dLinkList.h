@@ -3,7 +3,7 @@
 /* ========================================================================== **
  *                              ubi_dLinkList.h
  *
- *  Copyright (C) 1997, 1998 by Christopher R. Hertel
+ *  Copyright (C) 1997 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -26,13 +26,6 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.h,v
- * Revision 0.5  1998/03/10 02:54:04  crh
- * Simplified the code and added macros for stack & queue manipulations.
- *
- * Revision 0.4  1998/01/03 01:53:44  crh
- * Added ubi_dlCount() macro.
- *
  * Revision 0.3  1997/10/15 03:04:31  crh
  * Added some handy type casting to the macros.  Added AddHere and RemThis
  * macros.
@@ -44,12 +37,6 @@
  * Revision 0.1  1997/10/07 04:34:38  crh
  * Initial Revision.
  *
- * -------------------------------------------------------------------------- **
- * This module is similar to the ubi_sLinkList module, but it is neither a
- * descendant type nor an easy drop-in replacement for the latter.  One key
- * difference is that the ubi_dlRemove() function removes the indicated node,
- * while the ubi_slRemove() function (in ubi_sLinkList) removes the node
- * *following* the indicated node.
  *
  * ========================================================================== **
  */
@@ -86,62 +73,45 @@ typedef ubi_dlList *ubi_dlListPtr;
 
 /* ========================================================================== **
  * Macros...
- *
- *  ubi_dlCount   - Return the number of entries currently in the list.
- *
+ * 
  *  ubi_dlAddHead - Add a new node at the head of the list.
- *  ubi_dlAddNext - Add a node following the given node.
  *  ubi_dlAddTail - Add a new node at the tail of the list.
- *                  Note: AddTail evaluates the L parameter twice.
- *
+ *  ubi_dlAddHere - Add a node following the given node.
  *  ubi_dlRemHead - Remove the node at the head of the list, if any.
- *                  Note: RemHead evaluates the L parameter twice.
- *  ubi_dlRemThis - Remove the indicated node.
  *  ubi_dlRemTail - Remove the node at the tail of the list, if any.
- *                  Note: RemTail evaluates the L parameter twice.
- *
+ *  ubi_dlRemThis - Remove the indicated node.
  *  ubi_dlFirst   - Return a pointer to the first node in the list, if any.
  *  ubi_dlLast    - Return a pointer to the last node in the list, if any.
  *  ubi_dlNext    - Given a node, return a pointer to the next node.
  *  ubi_dlPrev    - Given a node, return a pointer to the previous node.
  *
- *  ubi_dlPush    - Add a node at the head of the list (synonym of AddHead).
- *  ubi_dlPop     - Remove a node at the head of the list (synonym of RemHead).
- *  ubi_dlEnqueue - Add a node at the tail of the list (sysnonym of AddTail).
- *  ubi_dlDequeue - Remove a node at the head of the list (synonym of RemHead).
- *
  *  Note that all of these provide type casting of the parameters.  The
  *  Add and Rem macros are nothing more than nice front-ends to the
  *  Insert and Remove operations.
  *
- *  Also note that there the First, Next and Last macros do no parameter
- *  checking!
- *
  */
-
-#define ubi_dlCount( L ) (((ubi_dlListPtr)(L))->count)
 
 #define ubi_dlAddHead( L, N ) \
         ubi_dlInsert( (ubi_dlListPtr)(L), (ubi_dlNodePtr)(N), NULL )
-
-#define ubi_dlAddNext( L, N, A ) \
-        ubi_dlInsert( (ubi_dlListPtr)(L), \
-                      (ubi_dlNodePtr)(N), \
-                      (ubi_dlNodePtr)(A) )
 
 #define ubi_dlAddTail( L, N ) \
         ubi_dlInsert( (ubi_dlListPtr)(L), \
                       (ubi_dlNodePtr)(N), \
                     (((ubi_dlListPtr)(L))->Tail) )
 
+#define ubi_dlAddHere( L, N, P ) \
+        ubi_dlInsert( (ubi_dlListPtr)(L), \
+                      (ubi_dlNodePtr)(N), \
+                      (ubi_dlNodePtr)(P) )
+
 #define ubi_dlRemHead( L ) ubi_dlRemove( (ubi_dlListPtr)(L), \
                                          (((ubi_dlListPtr)(L))->Head) )
 
-#define ubi_dlRemThis( L, N ) ubi_dlRemove( (ubi_dlListPtr)(L), \
-                                            (ubi_dlNodePtr)(N) )
-
 #define ubi_dlRemTail( L ) ubi_dlRemove( (ubi_dlListPtr)(L), \
                                          (((ubi_dlListPtr)(L))->Tail) )
+
+#define ubi_dlRemThis( L, N ) ubi_dlRemove( (ubi_dlListPtr)(L), \
+                                            (ubi_dlNodePtr)(N) )
 
 #define ubi_dlFirst( L ) (((ubi_dlListPtr)(L))->Head)
 
@@ -151,10 +121,6 @@ typedef ubi_dlList *ubi_dlListPtr;
 
 #define ubi_dlPrev( N )  (((ubi_dlNodePtr)(N))->Prev)
 
-#define ubi_dlPush    ubi_dlAddHead
-#define ubi_dlPop     ubi_dlRemHead
-#define ubi_dlEnqueue ubi_dlAddTail
-#define ubi_dlDequeue ubi_dlRemHead
 
 /* ========================================================================== **
  * Function prototypes...
@@ -206,6 +172,7 @@ ubi_dlNodePtr ubi_dlRemove( ubi_dlListPtr ListPtr, ubi_dlNodePtr Old );
    *
    * ------------------------------------------------------------------------ **
    */
+
 
 /* ================================ The End ================================= */
 #endif /* ubi_dLinkList_H */

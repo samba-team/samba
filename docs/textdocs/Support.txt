@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18p3 19 Feb 1998
+!== Support.txt for Samba release 1.9.18p6 11 May 1998
 !==
 The Samba Consultants List
 ==========================
@@ -36,9 +36,9 @@ Region                             Number of entries
     AMERICA - CENTRAL & SOUTH                     4
     AMERICA - USA                                36
     ASIA                                          1
-    AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        8
-    EUROPE                                       40
+    AUSTRALIA & NEW ZEALAND                      19
+    CANADA                                        9
+    EUROPE                                       41
     MIDDLE EAST                                   1
 
 AFRICA
@@ -415,19 +415,17 @@ Related Products and Services:
 ------------------------------------------------------------------------------
 FLORIDA - USA
 
-The PC Doctor
-3009 West Tharpe Street Unit-C
-Tallahassee, Florida 32303
-ph 904.531.0364
-fx 904.531.0128
+Ten Twenty-Six Enterprises, Inc.
+1616 Illinois Street, Orlando FL  32803
 
-Contacts: Andy McRory    pcdr@pcdr.com
-          David Blodgett david@pcdr.com
+http://www.ten26.com/
 
-The PC Doctor specializes in Linux Internet/Workgroup servers and network
-intergration. We have experience in setup and configuration of SAMBA under
-Caldera/RedHat/Slackware Linux as well as SCO and AIX. We offer workgroup
-Internet gateway servers for Windows client based networks.
+Email: samba@ten26.com
+
+Tel: 407 898-2519
+
+We are a commercial network and computer consulting firm providing
+hardware sales and network support.  
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -902,12 +900,9 @@ Novell/NT Systems.
 ------------------------------------------------------------------------------
 N.T - AUSTRALIA
 
-Open Systems Network Support
-
-Server Platforms        - Unix/Linux
-Client Platforms        - Windows3.1/95/NT, Macintosh, Unix/Linux
-
--- 
+Open Systems Network SupportServer Platforms        -
+Unix/Linux
+Client Platforms        - Windows3.1/95/NT, Macintosh, Unix/Linux--
 David Schroeder                 Darwin Network Services
 Ph/Fax (08) 8932 1156           PO Box 82383
 (Int) +61 8 8932 1156           Casuarina N.T
@@ -963,6 +958,31 @@ Office Information has been in existence since 1991.  We are (amongst
 other things) systems integrators with experts in Unix, Linux, Novell, 
 NT and the other DOS & Windows platforms.  We also have a number of 
 Clients for whom we have installed and supported Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+QUEENSLAND - AUSTRALIA
+
+OPAL BROOK Pty Ltd.
+Dave Forden
+The Software Systems & Technology Consulting Specialists
+Unit 120 Admiralty  Towers 1, 35 Howard Street BRISBANE QLD 4000
+Business: 38318251
+Mobile:    041 996 5577
+email: opalbrk@bit.net.au
+web: http://bit.net.au/~opalbrk
+
+ON SITE: FOCUS98 Project - Queensland Department of Natural Resources
+fordendk@exchange.lands.qld.gov.au
+Unit6 Level3 Anzac Square Building Brisbane
+(07) 3227 6265
+
+My company provides general Unix based development and support services in
+Brisbane.
+
+Personally, I have been using SAMBA for about 2 years and have implemented
+it on several different Unix platforms including HPUX, Linux, Dynix, and 
+Solaris.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1056,6 +1076,28 @@ Email: ttcdg@cyberspace.co.nz
 
 CANADA
 ======
+
+------------------------------------------------------------------------------
+ALBERTA - CANADA
+
+GDS & Associates Systems Ltd.
+1010 First Edmonton Place
+10665 Jasper Ave.
+Edmonton, AB  
+Canada  T5J 3S9
+
+http://www.gds.ca/
+
++1 403 426 4484
+FAX:   426 2898
+
+Contact:  Iain O'Cain <iocain@gds.ca>
+
+GDS is an information management consulting company with headquarters in 
+Regina, Saskatchewan, and offices across Western Canada.  The Edmonton 
+office offers Systems Management services covering a variety of Unix and 
+similar server operating systems.
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 ONTARIO - CANADA
@@ -1769,6 +1811,33 @@ Contact: Dario Centofanti <dario@pantheon.it>
 
 Pantheon provide support for SaMBa and other TCP/IP applications running
 under Linux. We are also an internet provider.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ITALY
+
+Sedac S.a.S.
+
+Piazza XX Settembre, 68
+62012 Civitanova Marche (MC)
+Italy
+
+Tel.   : +39 (733) 810257-817064
+Fax    : +39 (733) 819008
+PPP    : +39 (733) 819009
+E-mail : sedac@cognigni.com
+WWW    : http://www.cognigni.com/sedac
+
+La Sedac S.a.S. e' specializzata nell'implementazione ed amministrazione di
+reti eterogenee LAN/WAN basate sui sistemi operativi SCO Open Server, SCO
+Unix, Windows NT e Windows 95.
+Su tali piattaforme installiamo, configuriamo e supportiamo pienamente il
+Samba.
+
+Sedac S.a.S. is specialized in the implementation and administration of
+heterogeneous LAN/WAN networks based on SCO Open Server, SCO Unix, Windows
+NT and Windows 95 operating systems.
+On these platforms we fully install, configure and support Samba.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------

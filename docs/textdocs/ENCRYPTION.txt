@@ -1,5 +1,5 @@
 !==
-!== ENCRYPTION.txt for Samba release 1.9.18p3 19 Feb 1998
+!== ENCRYPTION.txt for Samba release 1.9.18p6 11 May 1998
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
 Updated:	March 19, 1998
@@ -223,6 +223,29 @@ access to this file can (with enough knowledge of the protocols) gain
 access to your SMB server. The file is thus more sensitive than a
 normal unix /etc/passwd file.
 
+Migrating to encrypted passwords
+--------------------------------
+
+New with Samba 1.9.18p5 and all subsequent versions is a parameter 
+written by Bruce Tenison - the "update encrypted" parameter.
+If this parameter is set to "yes" (it defaults to "no") and an smbpasswd
+file exists containing all the valid users of a Samba system but 
+no encrypted passwords (ie. the Lanman hash and NT hash entries in
+the file are set to "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"), then as
+users log in with plaintext passwords that are matched against
+their UNIX password entries, their plaintext passwords will be   
+hashed and entered into the smbpasswd file. After all the users 
+have successfully logged in using unencrypted passwords, the
+smbpasswd file will have the Lanman and NT hashes of these users
+UNIX passwords correctly stored. At that point the administrator
+can convert Samba to use encrypted passwords (and configure the
+Windows 95 and NT clients to send only encrypted passwords) and
+migrate to an encrypted setup without having to ask users to re-enter
+all their passwords explicitly. Note that to use this option the
+"encrypt passwords" parameter must be set to "no" when this option
+is set to "yes". See the smb.conf man page for up to date information
+on this parameter.
+
 The smbpasswd Command.
 ----------------------
 
@@ -246,6 +269,14 @@ range of potential security problems is eliminated.
 on Windows NT servers (this only works when the request is
 sent to the NT Primary Domain Controller if you are changing 
 an NT Domain users password).
+
+3). smbpasswd can use smbd to change the UNIX password at
+the same time as the SMB password is being changed. For details
+on this see the parameters 'passwd program', 'passwd chat', and
+'unix password sync' in the smb.conf man page. Note that Samba
+must have been compiled with -DALLOW_CHANGE_PASSWORD for this
+to work (and the system must be one in which UNIX password changing
+is supported).
 
 To run smbpasswd as a normal user just type :
 

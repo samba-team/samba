@@ -86,8 +86,8 @@ pstring samlogon_user="";
 
 BOOL sam_logon_in_ssb = False;
 
-pstring global_myname = "";
-fstring global_myworkgroup = "";
+pstring myname = "";
+fstring myworkgroup = "";
 char **my_netbios_names;
 
 int smb_read_error = 0;
@@ -97,9 +97,9 @@ static BOOL stdout_logging = False;
 static char *filename_dos(char *path,char *buf);
 
 #if defined(SIGUSR2)
-/******************************************************************************
+/**************************************************************************** **
  catch a sigusr2 - decrease the debug log level.
- *****************************************************************************/
+ **************************************************************************** */
 int sig_usr2(void)
 {  
   BlockSignals( True, SIGUSR2);
@@ -581,7 +581,7 @@ set user socket options
 ****************************************************************************/
 void set_socket_options(int fd, char *options)
 {
-  string tok;
+  fstring tok;
 
   while (next_token(&options,tok," \t,"))
     {
@@ -1257,50 +1257,44 @@ void dos_format(char *fname)
   string_replace(fname,'/','\\');
 }
 
+
 /*******************************************************************
   show a smb message structure
 ********************************************************************/
 void show_msg(char *buf)
 {
-	int i;
-	int bcc=0;
+  int i;
+  int bcc=0;
 
-	if (DEBUGLEVEL < 5) return;
+  if (DEBUGLEVEL < 5) return;
 
-	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
-			smb_len(buf),
-			(int)CVAL(buf,smb_com),
-			(int)CVAL(buf,smb_rcls),
-			(int)CVAL(buf,smb_reh),
-			(int)SVAL(buf,smb_err),
-			(int)CVAL(buf,smb_flg),
-			(int)SVAL(buf,smb_flg2)));
-	DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
-			(int)SVAL(buf,smb_tid),
-			(int)SVAL(buf,smb_pid),
-			(int)SVAL(buf,smb_uid),
-			(int)SVAL(buf,smb_mid),
-			(int)CVAL(buf,smb_wct)));
+  DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
+	  smb_len(buf),
+	  (int)CVAL(buf,smb_com),
+	  (int)CVAL(buf,smb_rcls),
+	  (int)CVAL(buf,smb_reh),
+	  (int)SVAL(buf,smb_err),
+	  (int)CVAL(buf,smb_flg),
+	  (int)SVAL(buf,smb_flg2)));
+  DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
+	  (int)SVAL(buf,smb_tid),
+	  (int)SVAL(buf,smb_pid),
+	  (int)SVAL(buf,smb_uid),
+	  (int)SVAL(buf,smb_mid),
+	  (int)CVAL(buf,smb_wct)));
 
-	for (i=0;i<(int)CVAL(buf,smb_wct);i++)
-	{
-		DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
-			SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
-	}
+  for (i=0;i<(int)CVAL(buf,smb_wct);i++)
+    DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
+	  SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
 
-	bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
+  bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
+  DEBUG(5,("smb_bcc=%d\n",bcc));
 
-	DEBUG(5,("smb_bcc=%d\n",bcc));
+  if (DEBUGLEVEL < 10) return;
 
-	if (DEBUGLEVEL < 10) return;
-
-	if (DEBUGLEVEL < 50)
-	{
-		bcc = MIN(bcc, 512);
-	}
-
-	dump_data(10, smb_buf(buf), bcc);
+  dump_data(10, smb_buf(buf), MIN(bcc, 512));
 }
+
 /*******************************************************************
   return the length of an smb packet
 ********************************************************************/
@@ -3123,7 +3117,7 @@ void become_daemon(void)
 {
 #ifndef NO_FORK_DEBUG
   if (fork())
-    _exit(0);
+    exit(0);
 
   /* detach from the terminal */
 #ifdef USE_SETSID
@@ -3408,7 +3402,7 @@ BOOL get_myname(char *my_name,struct in_addr *ip)
   /* get host info */
   if ((hp = Get_Hostbyname(hostname)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",hostname));
+      DEBUG(0,( "Get_Hostbyname: Unknown host %s.\n",hostname));
       return False;
     }
 
@@ -3457,7 +3451,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   /* get host info */
   if ((hp = Get_Hostbyname(host_name)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",host_name));
+      DEBUG(0,( "Get_Hostbyname: Unknown host. %s\n",host_name));
       return -1;
     }
   
@@ -3637,7 +3631,7 @@ uint32 interpret_addr(char *str)
       return 0;
     }
     if(hp->h_addr == NULL) {
-      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s\n",str));
+      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s.\n",str));
       return 0;
     }
     putip((char *)&res,(char *)hp->h_addr);
@@ -3733,81 +3727,73 @@ void reset_globals_after_fork(void)
 /*******************************************************************
  return the DNS name of the client 
  ******************************************************************/
-char *client_name(int fd)
+char *client_name(void)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static pstring name_buf;
-	struct hostent *hp;
-	static int last_fd=-1;
-	
-	if (global_client_name_done && last_fd == fd) 
-		return name_buf;
-	
-	last_fd = fd;
-	global_client_name_done = False;
-	
-	strcpy(name_buf,"UNKNOWN");
-	
-	if (fd == -1) {
-		return name_buf;
-	}
-	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed\n"));
-		return name_buf;
-	}
-	
-	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
-				sizeof(sockin->sin_addr),
-				AF_INET)) == 0) {
-		DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr(fd)));
-		StrnCpy(name_buf,client_addr(fd),sizeof(name_buf) - 1);
-	} else {
-		StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
-		if (!matchname(name_buf, sockin->sin_addr)) {
-			DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr(fd)));
-			strcpy(name_buf,"UNKNOWN");
-		}
-	}
-	global_client_name_done = True;
-	return name_buf;
+  struct sockaddr sa;
+  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+  int     length = sizeof(sa);
+  static pstring name_buf;
+  struct hostent *hp;
+
+  if (global_client_name_done) 
+    return name_buf;
+
+  strcpy(name_buf,"UNKNOWN");
+
+  if (Client == -1) {
+	  return name_buf;
+  }
+
+  if (getpeername(Client, &sa, &length) < 0) {
+    DEBUG(0,("getpeername failed\n"));
+    return name_buf;
+  }
+
+  /* Look up the remote host name. */
+  if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
+			  sizeof(sockin->sin_addr),
+			  AF_INET)) == 0) {
+    DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr()));
+    StrnCpy(name_buf,client_addr(),sizeof(name_buf) - 1);
+  } else {
+    StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
+    if (!matchname(name_buf, sockin->sin_addr)) {
+      DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr()));
+      strcpy(name_buf,"UNKNOWN");
+    }
+  }
+  global_client_name_done = True;
+  return name_buf;
 }
 
 /*******************************************************************
  return the IP addr of the client as a string 
  ******************************************************************/
-char *client_addr(int fd)
+char *client_addr(void)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static fstring addr_buf;
-	static int last_fd = -1;
+  struct sockaddr sa;
+  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+  int     length = sizeof(sa);
+  static fstring addr_buf;
 
-	if (global_client_addr_done && fd == last_fd) 
-		return addr_buf;
+  if (global_client_addr_done) 
+    return addr_buf;
 
-	last_fd = fd;
-	global_client_addr_done = False;
+  strcpy(addr_buf,"0.0.0.0");
 
-	strcpy(addr_buf,"0.0.0.0");
+  if (Client == -1) {
+	  return addr_buf;
+  }
 
-	if (fd == -1) {
-		return addr_buf;
-	}
-	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed\n"));
-		return addr_buf;
-	}
-	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-	
-	global_client_addr_done = True;
-	return addr_buf;
+  if (getpeername(Client, &sa, &length) < 0) {
+    DEBUG(0,("getpeername failed\n"));
+    return addr_buf;
+  }
+
+  fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+
+  global_client_addr_done = True;
+  return addr_buf;
 }
 
 /*******************************************************************
@@ -3929,15 +3915,14 @@ char *automount_server(char *user_name)
 {
 	static pstring server_name;
 
-	/* use the local machine name as the default */
-	/* this will be the default if AUTOMOUNT is not used or fails */
-	pstrcpy(server_name, local_machine);
-
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
+	int home_server_len;
+
+	/* set to default of local machine */
+	pstrcpy(server_name, local_machine);
 
 	if (lp_nis_home_map())
 	{
-	        int home_server_len;
 		char *automount_value = automount_lookup(user_name);
 		home_server_len = strcspn(automount_value,":");
 		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
@@ -3948,6 +3933,9 @@ char *automount_server(char *user_name)
 		strncpy(server_name, automount_value, home_server_len);
                 server_name[home_server_len] = '\0';
 	}
+#else
+	/* use the local machine name instead of the auto-map server */
+	pstrcpy(server_name, local_machine);
 #endif
 
 	DEBUG(4,("Home server: %s\n", server_name));
@@ -3964,16 +3952,14 @@ char *automount_path(char *user_name)
 {
 	static pstring server_path;
 
-	/* use the passwd entry as the default */
-	/* this will be the default if AUTOMOUNT is not used or fails */
-	/* pstrcpy() copes with get_home_dir() returning NULL */
-	pstrcpy(server_path, get_home_dir(user_name));
-
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
+	char *home_path_start;
+
+	/* set to default of no string */
+	server_path[0] = 0;
 
 	if (lp_nis_home_map())
 	{
-	        char *home_path_start;
 		char *automount_value = automount_lookup(user_name);
 		home_path_start = strchr(automount_value,':');
 		if (home_path_start != NULL)
@@ -3983,6 +3969,10 @@ char *automount_path(char *user_name)
 		  strcpy(server_path, home_path_start+1);
 		}
 	}
+#else
+	/* use the passwd entry instead of the auto-map server entry */
+	/* pstrcpy() copes with get_home_dir() returning NULL */
+	pstrcpy(server_path, get_home_dir(user_name));
 #endif
 
 	DEBUG(4,("Home server path: %s\n", server_path));
@@ -4020,13 +4010,13 @@ void standard_sub_basic(char *str)
                                 break;
                         }
                         case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
+			case 'I' : string_sub(p,"%I", client_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name(Client)); break;
+			case 'M' : string_sub(p,"%M", client_name()); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
-                        case 'U' : string_sub(p,"%U", username); break;
 			case 'a' : string_sub(p,"%a", remote_arch); break;
+                        case 'U' : string_sub(p,"%U", username); break;
 			case 'd' :
 			{
 				sprintf(pidstr,"%d",(int)getpid());
@@ -4121,8 +4111,7 @@ struct hostent *Get_Hostbyname(char *name)
       exit(0);
     }
 
-   
-  /* 
+  /*
    * This next test is redundent and causes some systems (with
    * broken isalnum() calls) problems.
    * JRA.
@@ -4939,56 +4928,4 @@ char *tab_depth(int depth)
 	return spaces;
 }
 
-/*****************************************************************
- Convert a domain SID to an ascii string. (non-reentrant).
-*****************************************************************/
 
-/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-char *dom_sid_to_string(DOM_SID *sid)
-{
-  static pstring sidstr;
-  char subauth[16];
-  int i;
-  uint32 ia = (sid->id_auth[5]) +
-              (sid->id_auth[4] << 8 ) +
-              (sid->id_auth[3] << 16) +
-              (sid->id_auth[2] << 24);
-
-  sprintf(sidstr, "S-%d-%d", sid->sid_rev_num, ia);
-
-  for (i = 0; i < sid->num_auths; i++)
-  {
-    sprintf(subauth, "-%d", sid->sub_auths[i]);
-    strcat(sidstr, subauth);
-  }
-
-  DEBUG(7,("dom_sid_to_string returning %s\n", sidstr));
-  return sidstr;
-}
-
-/*************************************************************
- Routine to get the next 32 hex characters and turn them
- into a 16 byte array.
-**************************************************************/
-int gethexpwd(char *p, char *pwd)
-{
-  int i;
-  unsigned char   lonybble, hinybble;
-  char           *hexchars = "0123456789ABCDEF";
-  char           *p1, *p2;
-
-  for (i = 0; i < 32; i += 2) {
-    hinybble = toupper(p[i]);
-    lonybble = toupper(p[i + 1]);
- 
-    p1 = strchr(hexchars, hinybble);
-    p2 = strchr(hexchars, lonybble);
-    if (!p1 || !p2)
-      return (False);
-    hinybble = PTR_DIFF(p1, hexchars);
-    lonybble = PTR_DIFF(p2, hexchars);
- 
-    pwd[i / 2] = (hinybble << 4) | lonybble;
-  }
-  return (True);
-}

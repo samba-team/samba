@@ -3,7 +3,7 @@
 /* ========================================================================== **
  *                              ubi_BinTree.h
  *
- *  Copyright (C) 1991-1998 by Christopher R. Hertel
+ *  Copyright (C) 1991-1997 by Christopher R. Hertel
  *
  *  Email:  crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -29,21 +29,6 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v
- * Revision 4.1  1998/03/31 06:13:47  crh
- * Thomas Aglassinger sent E'mail pointing out errors in the
- * dereferencing of function pointers, and a missing typecast.
- * Thanks, Thomas!
- *
- * Revision 4.0  1998/03/10 03:16:04  crh
- * Added the AVL field 'balance' to the ubi_btNode structure.  This means
- * that all BinTree modules now use the same basic node structure, which
- * greatly simplifies the AVL module.
- * Decided that this was a big enough change to justify a new major revision
- * number.  3.0 was an error, so we're at 4.0.
- *
- * Revision 2.6  1998/01/24 06:27:30  crh
- * Added ubi_trCount() macro.
- *
  * Revision 2.5  1997/12/23 03:59:21  crh
  * In this version, all constants & macros defined in the header file have
  * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
@@ -96,9 +81,10 @@
  *
  * To further complicate matters, only those portions of the base module
  * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_SplayTree, the locate function was
- * called "ubi_sptLocate", but the next and previous functions remained
- * "ubi_btNext" and "ubi_btPrev".
+ * For example, if you were using ubi_AVLtree, the AVL node structure was
+ * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
+ * SplayTree, the locate function was called "ubi_sptLocate", but the next
+ * and previous functions remained "ubi_btNext" and "ubi_btPrev".
  *
  * This was not too terrible if you were familiar with the modules and knew
  * exactly which tree model you wanted to use.  If you wanted to be able to
@@ -198,8 +184,7 @@ typedef enum {
  * -------------------------------------------------------------------------- **
  */
 #define ubi_trNormalize(W) ((char)( (W) - ubi_trEQUAL ))
-#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( (long)(W) )) \
-                                         + ubi_trEQUAL ))
+#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( W )) + ubi_trEQUAL ))
 #define ubi_trRevWay(W)    ((char)( ubi_trEQUAL - ((W) - ubi_trEQUAL) ))
 
 /* -------------------------------------------------------------------------- **
@@ -211,16 +196,6 @@ typedef enum {
         ((ubi_trDUPKEY & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
 #define ubi_trOvwt_OK(A) \
         ((ubi_trOVERWRITE & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
-
-/* -------------------------------------------------------------------------- **
- * A quickie for consistency.
- *  ubi_trCount() - Given a pointer to a tree root, this macro returns the
- *                  number of nodes currently in the tree.
- *
- * -------------------------------------------------------------------------- **
- */
-
-#define ubi_trCount( R ) (((ubi_trRootPtr)(R))->count)
 
 /* -------------------------------------------------------------------------- **
  * Typedefs...
@@ -236,7 +211,7 @@ typedef enum {
 
 typedef unsigned char ubi_trBool;
 
-typedef void *ubi_btItemPtr;          /* A pointer to key data within a node. */
+typedef void *ubi_btItemPtr;              /* A pointer to data within a node. */
 
 /*  ------------------------------------------------------------------------- **
  *  Binary Tree Node Structure:  This structure defines the basic elements of
@@ -255,16 +230,11 @@ typedef void *ubi_btItemPtr;          /* A pointer to key data within a node. */
  *    gender   -  a one-byte field indicating whether the node is the RIGHT or
  *                LEFT child of its parent.  If the node is the root of the
  *                tree, gender will be PARENT.
- *    balance  -  only used by the AVL tree module.  This field indicates
- *                the height balance at a given node.  See ubi_AVLtree for
- *                details.
- *
  *  ------------------------------------------------------------------------- **
  */
 typedef struct ubi_btNodeStruct {
   struct ubi_btNodeStruct *Link[ 3 ];
-  signed char              gender;
-  signed char              balance;
+  char                     gender;
   } ubi_btNode;
 
 typedef ubi_btNode *ubi_btNodePtr;     /* Pointer to an ubi_btNode structure. */
@@ -302,8 +272,8 @@ typedef void (*ubi_btKillNodeRtn)( ubi_btNodePtr );
 
 /* -------------------------------------------------------------------------- **
  * Tree Root Structure: This structure gives us a convenient handle for
- *                      accessing whole binary trees.  The fields are:
- *    root  -  A pointer to the root node of the tree.
+ *                      accessing whole AVL trees.  The fields are:
+ *    root  -  A pointer to the root node of the AVL tree.
  *    count -  A count of the number of nodes stored in the tree.
  *    cmp   -  A pointer to the comparison routine to be used when building or
  *             searching the tree.
@@ -324,8 +294,8 @@ typedef void (*ubi_btKillNodeRtn)( ubi_btNodePtr );
 
 typedef struct {
   ubi_btNodePtr  root;     /* A pointer to the root node of the tree       */
-  ubi_btCompFunc cmp;      /* A pointer to the tree's comparison function  */
   unsigned long  count;    /* A count of the number of nodes in the tree   */
+  ubi_btCompFunc cmp;      /* A pointer to the tree's comparison function  */
   unsigned char  flags;    /* Overwrite Y|N, Duplicate keys Y|N...         */
   } ubi_btRoot;
 

@@ -194,8 +194,9 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   returns an array of IP addresses or NULL if none
   *count will be set to the number of addresses returned
   ****************************************************************************/
-struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recurse,
-         struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *))
+struct in_addr *name_query(int fd,char *name,int name_type, 
+                           BOOL bcast,BOOL recurse, struct in_addr to_ip, 
+                           int *count, void (*fn)(struct packet_struct *))
 {
   BOOL found=False;
   int i, retries = 3;
@@ -450,8 +451,6 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
 
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
-  if (!ptr || !*ptr) ptr = "host";
-
   while (next_token(&ptr, tok, LIST_SEP)) {
     if(strequal(tok, "host") || strequal(tok, "hosts")) {
 

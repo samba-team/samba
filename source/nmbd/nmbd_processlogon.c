@@ -28,8 +28,8 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 
 /****************************************************************************
 Process a domain logon packet
@@ -68,7 +68,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     return;
   }
 
-  strcpy(my_name, global_myname);
+  strcpy(my_name, myname);
   strupper(my_name);
 
   code = SVAL(buf,0);
@@ -145,7 +145,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
         PutUniCode(q, my_name); /* PDC name */
         q = skip_unicode_string(q, 1); 
-        PutUniCode(q, global_myworkgroup); /* Domain name*/
+        PutUniCode(q, myworkgroup); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 
         SIVAL(q, 0, ntversion); q += 4;
@@ -201,24 +201,18 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       strcpy(reply_name+2,my_name); 
 
-      smb_pass = getsampwnam(ascuser);
+      smb_pass = get_smbpwd_entry(ascuser, 0);
 
-      if(!smb_pass )
+      if(!smb_pass)
       {
         DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, not in password file\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser));
-        return;
-      }
-      else if(smb_pass->acct_ctrl & ACB_DISABLED)
-      {
-        DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, accound disabled.\n",
            unistr(unicomp),inet_ntoa(p->ip), ascuser));
         return;
       }
       else
       {
         DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+           unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, myworkgroup,
            SAMLOGON_R ,lmnttoken));
       }
 

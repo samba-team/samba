@@ -14,7 +14,7 @@
 #======================= Global Settings =====================================
 [global]
 
-# workgroup = NT-Domain-Name or Workgroup-Name, eg: REDHAT4
+# workgroup = NT-Domain-Name or Workgroup-Name
    workgroup = MYGROUP
 
 # server string is the equivalent of the NT Description field
@@ -61,10 +61,17 @@
 # Use password server option only with security = server
 ;   password server = <NT-Server-Name>
 
+# Password Level allows matching of _n_ characters of the password for
+# all combinations of upper and lower case.
+;  password level = 8
+
 # You may wish to use password encryption. Please read
 # ENCRYPTION.txt, Win95.txt and WinNT.txt in the Samba documentation.
 # Do not enable this option unless you have read those documents
 ;  encrypt passwords = yes
+
+# Unix users can map to different SMB User names
+;  username map = /etc/smbusers
 
 # Using the following line enables you to customise your configuration
 # on a per machine basis. The %m gets replaced with the netbios name
@@ -79,6 +86,13 @@
 # If you have multiple network interfaces then you must list them
 # here. See the man page for details.
 ;   interfaces = 192.168.12.2/24 192.168.13.2/24 
+
+# Configure remote browse list synchronisation here
+#  request announcement to, or browse list sync from:
+#	a specific host or from / to a whole subnet (see below)
+;   remote browse sync = 192.168.3.25 192.168.5.255
+# Cause this host to announce itself to local subnets here
+;   remote announce = 192.168.1.255 192.168.2.44
 
 # Browser Control Options:
 # set local master to no if you don't want Samba to become a master
@@ -135,6 +149,15 @@
 # via DNS nslookups. The built-in default for versions 1.9.17 is yes,
 # this has been changed in version 1.9.18 to no.
    dns proxy = no 
+
+# Case Preservation can be handy - system default is _no_
+# NOTE: These can be set on a per share basis
+;  preserve case = no
+;  short preserve case = no
+# Default case is normally upper case for all DOS files
+;  default case = lower
+# Be very careful with case sensitivity - it can break things!
+;  case sensitive = no
 
 #============================ Share Definitions ==============================
 [homes]

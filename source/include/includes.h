@@ -26,6 +26,11 @@
    and add a section for the new unix below.
 */
 
+#ifdef NTDOMAIN
+#error WARNING: remove this option (-DNTDOMAIN) from your [Mm]akefile.
+#error Please read NTDOMAIN.txt with _this_ distribution.
+#endif
+
 
 /* the first OS dependent section is to setup what includes will be used.
    the main OS dependent section comes later on 
@@ -182,10 +187,6 @@
 #ifdef POSIX_H
 #include <bsd/net/if.h>
 #else
-#ifdef OSF1
-#include <net/route.h>
-#include <sys/mbuf.h>
-#endif
 #include <net/if.h>
 #endif
 #endif
@@ -205,9 +206,6 @@
 #include <syslog.h>
 #endif
 
-#ifdef HAVE_REGEX_H
-#include <regex.h>
-#endif
 
 
 /***************************************************************************
@@ -506,22 +504,23 @@ char *mktemp(char *); /* No standard include */
 #endif
 
 
-#ifdef NETBSD  
-#ifdef NetBSD1_3  
-#include <string.h>  
-#ifdef ALLOW_CHANGE_PASSWORD  
-#include <termios.h>  
-#endif /* ALLOW_CHANGE_PASSWORD */  
+#ifdef NETBSD 
+#ifdef NetBSD1_3
+#include <string.h>
+#ifdef ALLOW_CHANGE_PASSWORD
+#include <termios.h>
+#endif /* ALLOW_CHANGE_PASSWORD */
 #else /* NetBSD1_3 */
-#include <strings.h>  
-#endif /* NetBSD1_3 */  
+#include <strings.h>
+#endif /* NetBSD1_3 */
 #include <netinet/tcp.h>
 /* you may not need this */
-#define NO_GETSPNAM 
+#define NO_GETSPNAM
 #define SIGNAL_CAST (void (*)())
 #define USE_DIRECT
 #define REPLACE_INNETGR
-#endif
+#endif 
+
 
 
 #ifdef FreeBSD
@@ -531,7 +530,6 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <termios.h>
-#include <fcntl.h>
 #if __FreeBSD__ >= 3
 #include <dirent.h>
 #else
@@ -547,7 +545,9 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETTIMEOFDAY
 #define HAVE_PATHCONF
 #define HAVE_GETGRNAM 1
+#ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
 #if !defined(O_SYNC)
 #if defined(O_FSYNC)
 #define O_SYNC O_FSYNC
@@ -607,6 +607,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/termios.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>                /* needed for inet_ntoa proto */
+#include <stropts.h>
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>
@@ -1305,7 +1306,7 @@ it works and getting lots of bug reports */
 #endif
 
 #ifndef QSORT_CAST
-#define QSORT_CAST (int (*)())
+#define QSORT_CAST (int (*)(void *, void *))
 #endif
 
 #ifndef INADDR_LOOPBACK

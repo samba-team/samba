@@ -542,8 +542,6 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	int i;
 	int pid;
 
-
-
 #ifdef LINUX
 	if (sizeof(shm_ds) == 52) {
 		DEBUG(0,("WARNING: You probably have a broken set of glibc2 include files - disabling sysv shared memory\n"));

@@ -44,7 +44,7 @@ pstring cur_dir = "\\";
 pstring cd_path = "";
 extern pstring service;
 extern pstring desthost;
-extern pstring global_myname;
+extern pstring myname;
 extern pstring myhostname;
 extern pstring password;
 extern pstring username;
@@ -818,7 +818,7 @@ static void usage(char *pname)
 	}
 	break;
       case 'n':
-	strcpy(global_myname,optarg);
+	strcpy(myname,optarg);
 	break;
       case 'N':
 	got_pass = True;
@@ -868,7 +868,7 @@ static void usage(char *pname)
     DEBUG(0,("Failed to get my hostname.\n"));
   }
 
-  if (!lp_load(servicesf,True,False,False)) {
+  if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 
@@ -880,8 +880,33 @@ static void usage(char *pname)
     strcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  get_myname((*global_myname)?NULL:global_myname,NULL);  
-  strupper(global_myname);
+  get_myname((*myname)?NULL:myname,NULL);  
+  strupper(myname);
+
+#ifdef NTDOMAIN
+
+	if (nt_domain_logon)
+	{
+		int ret = 0;
+		slprintf(service,sizeof(service), "\\\\%s\\IPC$",query_host);
+		strupper(service);
+		connect_as_ipc = True;
+
+		DEBUG(5,("NT Domain Logon.  Service: %s\n", service));
+
+		if (cli_open_sockets(port))
+		{
+			if (!cli_send_login(NULL,NULL,True,True,NULL)) return(1);
+
+			do_nt_login(desthost, myhostname, Client, cnum);
+
+			cli_send_logout();
+			close_sockets();
+		}
+
+		return(ret);
+	}
+#endif 
 
   if (cli_open_sockets(port))
     {

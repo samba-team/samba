@@ -40,8 +40,8 @@ int global_nmb_port = -1;
 
 extern pstring myhostname;
 static pstring host_file;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 extern char **my_netbios_names;
 
 extern BOOL global_in_nmbd;
@@ -225,7 +225,7 @@ BOOL reload_services(BOOL test)
   if ( test && !lp_file_list_changed() )
     return(True);
 
-  ret = lp_load( servicesf, True , False, False);
+  ret = lp_load( servicesf, True );
 
   /* perhaps the config filename is now set */
   if ( !test )
@@ -450,23 +450,23 @@ static BOOL init_structs(void)
   int nodup;
   pstring nbname;
 
-  if (! *global_myname)
+  if (! *myname)
   {
-    fstrcpy( global_myname, myhostname );
-    p = strchr( global_myname, '.' );
+    fstrcpy( myname, myhostname );
+    p = strchr( myname, '.' );
     if (p)
       *p = 0;
   }
-  strupper( global_myname );
+  strupper( myname );
 
   /* Add any NETBIOS name aliases. Ensure that the first entry
-     is equal to global_myname.
+     is equal to myname.
    */
   /* Work out the max number of netbios aliases that we have */
   ptr = lp_netbios_aliases();
   for( namecount=0; next_token(&ptr,nbname,NULL); namecount++ )
     ;
-  if ( *global_myname )
+  if ( *myname )
     namecount++;
 
   /* Allocate space for the netbios aliases */
@@ -477,10 +477,10 @@ static BOOL init_structs(void)
      return( False );
   }
  
-  /* Use the global_myname string first */
+  /* Use the myname string first */
   namecount=0;
-  if ( *global_myname )
-    my_netbios_names[namecount++] = global_myname;
+  if ( *myname )
+    my_netbios_names[namecount++] = myname;
   
   ptr = lp_netbios_aliases();
   while ( next_token( &ptr, nbname, NULL ) )
@@ -508,7 +508,7 @@ static BOOL init_structs(void)
   /* Terminate name list */
   my_netbios_names[namecount++] = NULL;
   
-  fstrcpy( local_machine, global_myname );
+  fstrcpy( local_machine, myname );
   trim_string( local_machine, " ", " " );
   p = strchr( local_machine, ' ' );
   if (p)
@@ -551,9 +551,12 @@ int main(int argc,char *argv[])
   int opt;
   extern FILE *dbf;
   extern char *optarg;
+  char pidFile[100] = { 0 };
 
   global_nmb_port = NMB_PORT;
+
   *host_file = 0;
+
   global_in_nmbd = True;
 
   StartupTime = time(NULL);
@@ -577,7 +580,7 @@ int main(int argc,char *argv[])
     argc--;
   }
 
-  fault_setup((void (*)(void *))fault_continue );
+  fault_setup((void (*)(void *)) fault_continue );
 
   signal( SIGHUP,  SIGNAL_CAST sig_hup );
   signal( SIGTERM, SIGNAL_CAST sig_term );
@@ -601,6 +604,9 @@ int main(int argc,char *argv[])
     {
       switch (opt)
         {
+        case 'f':
+          strncpy(pidFile, optarg, sizeof(pidFile));
+          break;
         case 's':
           pstrcpy(servicesf,optarg);
           break;          
@@ -615,8 +621,8 @@ int main(int argc,char *argv[])
           pstrcpy(host_file,optarg);
           break;
         case 'n':
-          pstrcpy(global_myname,optarg);
-          strupper(global_myname);
+          pstrcpy(myname,optarg);
+          strupper(myname);
           break;
         case 'l':
           slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
@@ -674,9 +680,9 @@ int main(int argc,char *argv[])
 
   reload_services( True );
 
-  fstrcpy( global_myworkgroup, lp_workgroup() );
+  fstrcpy( myworkgroup, lp_workgroup() );
 
-  if (strequal(global_myworkgroup,"*"))
+  if (strequal(myworkgroup,"*"))
   {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);
@@ -696,11 +702,40 @@ int main(int argc,char *argv[])
     become_daemon();
   }
 
-  if (!directory_exist(lp_lockdir(), NULL)) {
-	  mkdir(lp_lockdir(), 0755);
+  if (!directory_exist(lp_lockdir(), NULL))
+  {
+    mkdir(lp_lockdir(), 0755);
   }
 
-  pidfile_create("nmbd");
+  if (*pidFile)
+  {
+    int     fd;
+    char    buf[20];
+
+#ifdef O_NONBLOCK
+    fd = open( pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644 );
+#else
+    fd = open( pidFile, O_CREAT | O_WRONLY | O_TRUNC, 0644 );
+#endif
+    if ( fd < 0 )
+    {
+      DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
+      exit(1);
+    }
+    if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False)
+    {
+      DEBUG(0,("ERROR: nmbd is already running\n"));
+      exit(1);
+    }
+    sprintf(buf, "%u\n", (unsigned int) getpid());
+    if (write(fd, buf, strlen(buf)) < 0)
+    {
+      DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));
+      exit(1);
+    }
+      /* Leave pid file open & locked for the duration... */
+  }
+
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

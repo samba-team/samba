@@ -29,7 +29,8 @@ extern int ClientNMB;
 
 extern int DEBUGLEVEL;
 
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 extern char **my_netbios_names;
 
 int updatecount = 0;
@@ -258,7 +259,7 @@ static uint32 write_this_server_name( struct subnet_record *subrec,
 
 /*******************************************************************
  Decide if we should write out a workgroup record for this workgroup.
- We return zero if we should not. Don't write out global_myworkgroup (we've
+ We return zero if we should not. Don't write out myworkgroup (we've
  already done it) and also don't write out a second workgroup record
  on the unicast subnet that we've already written out on one of the
  broadcast subnets.
@@ -269,7 +270,7 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
 {
   struct subnet_record *ssub;
 
-  if(strequal(global_myworkgroup, work->work_group))
+  if(strequal(myworkgroup, work->work_group))
     return 0;
 
   /* This is a workgroup we have seen on a broadcast subnet. All
@@ -357,10 +358,10 @@ void write_browse_list(time_t t, BOOL force_write)
    * subnet.
    */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, global_myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet(FIRST_SUBNET, myworkgroup)) == NULL)
   { 
     DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
-             global_myworkgroup));
+             myworkgroup));
     fclose(fp);
     return;
   }
@@ -385,7 +386,7 @@ void write_browse_list(time_t t, BOOL force_write)
     stype = 0;
     for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
     {
-      if((work = find_workgroup_on_subnet( subrec, global_myworkgroup )) == NULL)
+      if((work = find_workgroup_on_subnet( subrec, myworkgroup )) == NULL)
         continue;
       if((servrec = find_server_in_workgroup( work, my_netbios_names[i])) == NULL)
         continue;
@@ -399,7 +400,7 @@ void write_browse_list(time_t t, BOOL force_write)
     fprintf(fp, "%08x ", stype);
     slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", lp_serverstring());
     fprintf(fp, "%-30s", tmp);
-    fprintf(fp, "\"%s\"\n", global_myworkgroup);
+    fprintf(fp, "\"%s\"\n", myworkgroup);
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 

@@ -1,4 +1,4 @@
-.TH SMBCLIENT 1 "19 Feb 1998" "smbclient 1.9.18p3"
+.TH SMBCLIENT 1 "11 May 1998" "smbclient 1.9.18p6"
 .SH NAME
 smbclient \- ftp-like Lan Manager client program
 .SH SYNOPSIS
@@ -6,8 +6,6 @@ smbclient \- ftp-like Lan Manager client program
 .B servicename
 [
 .B password
-] [
-.B \-A
 ] [
 .B \-E
 ] [
@@ -129,15 +127,6 @@ This parameter will override the default name resolution order of the
 server listed in the "name resolve order" parameter in smb.conf. This
 is useful to force name resolution to take place by a particular method.
 This command line parameter only exists in Samba 1.9.18p4 and above.
-.RE
-
-.B \-A
-
-.RS 3
-This parameter, if specified, causes the maximum debug level to be selected.
-Be warned that this generates prodigious amounts of debug data. There is also
-a security issue involved, as at the maximum debug level cleartext passwords
-may be written to some log files.
 .RE
 
 .B \-L
@@ -317,7 +306,7 @@ Be cautious about including passwords in scripts.
 .I debuglevel
 
 .RS 3
-debuglevel is an integer from 0 to 5.
+debuglevel is an integer from 0 to 5, or the letter 'A'.
 
 The default value if this parameter is not specified is zero.
 
@@ -330,6 +319,9 @@ Levels above 1 will generate considerable amounts of log data, and should
 only be used when investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log data, most of which 
 is extremely cryptic.
+
+If the debuglevel is set to 'A' then the debug level is set to the maximum
+value possible (it stands for debug 'all').
 .RE
 
 .B \-l
@@ -418,7 +410,7 @@ smbclient
 ]
 .IR tarfile
 [
-.IR filenames ...
+.IR filenames....
 ]
 
 .RS 3
@@ -439,9 +431,7 @@ option is given, the tar files will be restored from the top level of
 the share. Must be followed by the name of the tar file, device or "\-"
 for standard input. Mutually exclusive with the
 .B c
-flag. Restored files have theuir creation times (mtime) set to the date saved in
-the tar file. Directories currently do not get their creation dates restored 
-properly.
+flag.
 
 .B I
 Include files and directories. Is the default behaviour when
@@ -483,18 +473,6 @@ up. Useful with the
 flags.
 .LP
 
-.B Long File Names
-
-smbclient's tar option now supports long file names both on backup and 
-restore. However, the full path name of the file must be less than 1024 bytes.
-Also, when a tar archive is created, smbclient's tar option places all files 
-in the archive with relative names, not absolute names.
-
-.B Filenames ...
-
-All file names can be given as DOS path names (with \e as the component 
-separator) or as UNIX path names (with / as the component separator).
-
 .B Examples
 
 smbclient \e\emypc\emyshare "" -N -Tx backup.tar
@@ -508,14 +486,6 @@ Restore everything except users/docs
 smbclient \e\emypc\emyshare "" -N -Tc backup.tar users/docs
 
 Create a tar file of the files beneath users/docs.
-
-smbclient \e\emypc\emyshare "" -N -tc backup.tar users\edocs
-
-Create the same tar file as above, but now use a DOS path name.
-
-smbclient \e\emypc\emyshare "" -N -Tc backup.tar \e*
-
-Create a tar file of all the files and directories in the share.
 .RE
 .RE
 

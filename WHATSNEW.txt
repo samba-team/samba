@@ -1,9 +1,362 @@
-          WHATS NEW IN 1.9.18 - January 7th 1998.
-          =======================================
+
+          WHATS NEW IN 1.9.18p6 - May 11th 1998.
+          ======================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+This release is a security hole patch fix for a security hole reported
+on BugTraq by Drago. The security hole may have allowed authenticated
+users to subvert security on the server by overflowing a buffer in a
+filename rename operation. It is as yet undetermined whether the
+security hole is actually exploitable because of existing buffer
+overflow checks in Samba and the limitations on available characters
+in filenames but the Samba Team considered the threat of a possible
+security hole to warrant an immediate patch release.
+
+It is highly recommended that all sites assume that the security hole
+is exploitable and upgrade to version 1.9.18p6 of Samba.
+
+
+Previous release notes for 1.9.18p5 follow.
+=========================================================================
+
+Note that most Samba Team effort is now going into working on the
+next major release which should contain some Windows NT Domain 
+features. It is intended that any future work on the 1.9.18 series
+be maintenance only fixes.
+
+An announcement will be made when the first alpha release of the next
+Samba series is available.
+
+Added features in 1.9.18p5
+--------------------------
+
+New parameters
+--------------
+
+passwd chat debug
+
+This parameter is to allow Samba administrators to debug their password
+chat scripts more easily when they have "unix password sync" set. It is
+provided as a debugging convenience only and should be enabled only when
+debugging. Full documentation is in the smb.conf man page.
+
+update encrypted
+
+The code for this parameter was kindly donated by Bruce Tenison.
+If this parameter is set to "yes" (it defaults to "no") and an smbpasswd
+file exists containing all the valid users of a Samba system but
+no encrypted passwords (ie. the Lanman hash and NT hash entries in
+the file are set to "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"), then as
+users log in with plaintext passwords that are matched against  
+their UNIX password entries, their plaintext passwords will be  
+hashed and entered into the smbpasswd file. After all the users
+have successfully logged in using unencrypted passwords, the
+smbpasswd file will have the Lanman and NT hashes of these users
+UNIX passwords correctly stored. At that point the administrator
+can convert Samba to use encrypted passwords (and configure the
+Windows 95 and NT clients to send only encrypted passwords) and
+migrate to an encrypted setup without having to ask users to re-enter
+all their passwords explicitly. Note that to use this option the
+"encrypt passwords" parameter must be set to "no" when this option
+is set to "yes". See the smb.conf man page for up to date information 
+on this parameter.
+
+Updates to smbtar
+-----------------
+
+The following changes were developed by Richard Sharpe for Canon Information
+Systems Research Australia (CISRA). The Samba Team would like to thank
+Canon Information Systems Research Australia for their funding this
+effort, as such sponsorship advances the Samba project significantly.
+
+  1. Restore can now restore files with long file names
+  2. Save now saves directory information so that we can restore
+     directory creation times
+  3. tar now accepts both UNIX path names and DOS path names.
+
+New document in docs/ directory
+-------------------------------
+
+A new document, PROFILES.txt has been added to the docs/ directory.
+This is still a work in progress (currently consisting of a series 
+of email exchanges) and will be updated over the coming releases.
+The document covers the task of getting roving profiles to work with
+a Samba server with Windows 95 and Windows NT clients.
+
+Bugfixes added since 1.9.18p4
+-----------------------------
+
+1). Samba should now compile cleanly with the gcc -Wstrict-prototypes
+option.
+2). New code page 852 tranlation table created by Petr Hubeny.
+3). New "update encrypted" parameter (described above).
+4). New "passwd chat debug" parameter (described above).
+5). Updates to smbtar (described above).
+6). Fix to do correct null session connections from nmbd and smbd.
+7). Synchronous open flag is now honoured.
+8). security=server now logs out correctly.
+9). Fix to stop long printer job listings causing Win95 and smbd to
+spin the CPU & network.
+10). Multibyte character fix that prevented the "character set" parameter
+working in 1.9.18p4.
+11). Fix for problems with security=share and the [homes] share.
+12). NIS+ patch to get home directory info.
+13). Added FTRUNCATE_NEEDS_ROOT define for systems with broken ftruncate()
+call.
+14). Fix for nmbd not allowing log append mode.
+15). Fix for nmbd as a WINS server doing a name query after a WACK with
+the 'recursion desired' bit set - this would cause problems if directed
+at a machine running a WINS server.
+16). Correctly ignore "become backup browser" requests, rather than
+logging them as a problem.
+17). Use compressed names correctly as requested by RFC1002.
+18). Workaround for bug where NT allows a guest logon and 
+doesn't set the guest bit (in security=server mode).
+19). Added SOFTQ print type.
+20). Free filename on file close (long standing small memory leak fix).
+21). Fix for lp_defaultservice() getting overwritten by rotating string
+buffers.
+22). Print time in international, rather than USA, format.
+23). Fix to queue a trans2 open request when oplock break pending.
+24). Added Simplified Chinese codepage (936).
+25). Fixed expansion bug with %U, %G when multiple sessionsetups done
+in security > SHARE mode.
+26). Change to DEC enhanced mode security code to allow the same
+binary to work when in enhanced and basic security mode. This change affects
+all systems that define OSF1_ENH_SEC at compile time.
+
+Previous release notes for 1.9.18p4 follow.
+=========================================================================
+
+Added features in 1.9.18p4
+--------------------------
+
+Changing passwords now supported
+--------------------------------
+
+Samba now supports changing the SMB password from a Windows 95 client,
+using the standard Windows 95 password changing dialog. Note that by
+default this changes the SMB password, not the UNIX password (Samba
+must be set up with encrypted passwords in order to support this).
+
+The smbpasswd program has been re-written to take advantage of this
+feature, and now has no need to be a setuid root program, thus eliminating
+a potential security hole. As a side effect of this change smbpasswd
+can now be used on a UNIX machine to change users passwords on an NT
+machine.
+
+The new password changing code can also synchronize a users UNIX
+password at the same time a SMB password is being changed, if Samba
+is compiled with password changing enabled, and the new parameter
+'unix password sync' is set to True. By default this is off, as
+it allows the password change program to be called as root, which
+may be considered a security problem at some sites.
+
+Name resolution order now user selectable
+-----------------------------------------
+
+The resolution of NetBIOS names into IP addresses can be done in
+several different ways (broadcast, lmhosts, DNS lookup, WINS). 
+Previous versions of Samba were inconsistant in which commands
+used which methods to look up IP addresses from a name. New in
+this version is a parameter (name resolve order, mentioned in
+the new parameters list below) that allows administrators to
+select the methods of name resolution, and the order in which
+such methods are applied. All Samba utilities have been changed
+to use the new name to IP address name resolution code and
+so this can be controlled from a central place.
+
+Expanded multi-byte character support
+-------------------------------------
+
+In previous versions of Samba, Kanji (Japanese) character 
+support was treated as a special case, making it the only
+multi-byte character set natively supported in Samba. New
+code has been added to generalize the multi-byte codepage
+support, with the effect that other multibyte codepage support
+can be easily added. The new codepages that this version
+ships with are Korean Hangul and Traditional Chinese.
+
+New Parameters in 1.9.18p4
+--------------------------
+
+name resolve order = lmhosts wins hosts bcast
+
+This parameter allows control over the order in which netbios name to
+IP Address resolution is attempted. Any method NOT specified will be
+excluded from the name resolution process. If this parameter is not
+specified then the above default order will be observed - this is
+consistent with prior releases. See the smb.conf and smbclient man
+pages for full details. See the above text for the announcement on
+this feature.
+
+fake directory create times
+
+This parameter is a compatibility option for software developers
+using Microsoft NMAKE make tool, saving files onto a Samba share.
+Setting this parameter to true causes Samba to lie to the client
+about the creation time of a directory, so NMAKE commands don't
+re-compile every file.
+
+unix password sync
+
+This parameter is set to False by default. When set to True, it
+causes Samba to attempt to synchronize the users UNIX password
+when a user is changing their SMB password. This causes the
+password change program to be run as root (as the new password
+change code has no access to the plaintext of the old password).
+Because of this, it is set off by default to allow sites to
+set their own security policy regarding UNIX and SMB password
+synchronization.
+
+This parameter has no effect if Samba has been compiled without
+password changing enabled.
+
+Changed compile-time default in 1.9.18p4
+----------------------------------------
+
+The maximum length of a printer share name has now been increased to 15
+characters - the same as file share names. Any one who needs to revert back
+to 8 character printer share name support can do so by adjusting the #define
+in local.h.
+
+Bugfixes added since 1.9.18p3
+-----------------------------
+
+1). Fix for nmbd leaving the child nmbd running when doing DNS
+lookups as a WINS server.
+2). Fix core dump in smbd when acting as a logon server with 
+security=share.
+3). Workaround for a bug in FTP OnNet software NBT implementation.
+It does a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
+names and don't set the group bit.
+4). Ensure all the NetBIOS aliases are added to all the known 
+interfaces on nmbd initialization.
+5). Fix bug in multiple query name responses print code.
+6). Fix to send out mailslot reply on correct interface.
+7). Fix retranmission queue to scan WINS server subnet so
+nmbd retransmits queries needed when acting as a WINS server.
+Thanks to Andrey Alekseyev <fetch@muffin.arcadia.spb.ru> for
+spotting this one.
+8). Send host announcement to correct 0x1d name rather than
+0x1e name.
+9). Fix for WINS server when returning multi-homed record,
+was returning one garbage IP address.
+10). Fix for Thursby Software's 'Dave' client - ensure
+that a vuid of zero is always returned for them when in
+share level security (the spec say's it shouldn't matter,
+but it was causing them grief).
+11). Added KRB4 authentication code.
+12). Fix to allow max printer name to be 15 characters (see above).
+13). Fix for name mangling cache bug - cache wasn't being
+used in some cases.
+14). Fix for RH5.0 broken system V shared memory include
+files.
+15). Fix for broken redirector use of resume keys between
+deletes in a directory. Samba now returns zero as resume
+keys (as does NT) and uses the resume filename instead.
+16). Fix for systems that have a broken implementation
+of isalnum() - was causing gethostbyname to fail.
+17). Fix for 'hide files' bug not working correctly (bug
+in is_in_path function - fix from Steven Hartland 
+<steven_hartland@pa.press.net>.
+18). Fixed bug in smbclient where debug log level on the
+command line was being overridden by the log level in smb.conf.
+19). Fixed bug in USE_MMAP code where client sending
+a silly offset to readraw could cause a smbd core dump.
+
+Bugfixes added since 1.9.18p2
+-----------------------------
+
+1). Fix to cause oplocked files to be broken when open
+file table is full before giving up and reporting 'too
+many open files'. This fix seems to help many applications
+on Win95.
+2). Fix to stop extra files being closed in user logoff
+code.
+3). Fix to stop padded packet being returned on
+trans2 call. This bug could cause Windows 95 to freeze
+on some (rare) occasions.
+4). Added fix for Visual C++ filetime changes (see above).
+5). Made security check code an option (see above).
+6). Fixed printer job enumeration in smbclient.
+7). Re-added code into smbclient that causes it to do NetBIOS
+broadcast name lookups (as it used to in 1.9.17).
+8). Fixed code dump bug in smbtar.
+9). Fixed mapping code between Appletalk and Kanji filenames.
+10). Tuned shared memory size based on open file table size.
+11). Made nmbd log file names consistant with smbd.
+12). Fixed nmbd problem where packet queues could grow
+without bound when connection to WINS server was down.
+13). Fix for DCE login code.
+14). Fix for system V printing to remove extra space
+in printer name.
+15). Patch to add a new substitution paramter (%p) in
+a service patchname. Adds NIS home path (see the man page
+on smb.conf for details). Patch from Julian Field.
+16). Fix to stop smbpassword code from failing when
+parsing invalid uid fields.
+17). Made volume serial number constant based on machine
+and service name.
+18). Added expand environment variables code from Branko 
+Cibej. See the man page on smb.conf for details.
+19). Fixed warnings in change_lanman_password code.
+
+
+Bugfixes added since 1.9.18p1
+-----------------------------
+
+1). A deadlock condition in the oplock code has been found
+and fixed. This occured under heavy load at large sites. Several
+of the sites who reported the original problem have now been 
+testing the code in this (1.9.18p2) release for a week now with
+no problems (previously the problem occurred within 3-6 hours).
+(Thanks to Peter Crawshaw of Mount Allison University for
+his great help in tracking down this bug).
+2). Fix for a share level security problem that caused 
+'valid users' not to work correctly.
+3). Addition of Russian code page support.
+4). Fix to the password changing code (thanks to Randy Boring
+at Thursby Software Systems for this).
+5). More fixes to the Windows 95 printer driver support
+code from Herb Lewis at SGI.
+6). Two NetBIOS over TCP source name type fixes in nmbd.
+7). Memory leak in the dynamic loading of services in an
+smb.conf file fixed.
+8). LPRng parsing code fix.
+9). Fix to try and return a 'best guess' of create time
+under UNIX (which doens't store such a file attribute).
+10). Added parameters to samba/examples/smb.conf.default file :
+Remote announce, Remote browse sync, username map, filename
+case preservation and sensitivity options.
+11). Reply to trans2 calls now aligns all parameters and
+data on 4 byte boundary.
+12). Fixed SIGTERM bug where nmbd would hang on exit.
+13). Fixed WINS server bug to allow spaces in WINS names.
+
+Bugfixes added since 1.9.18
+---------------------------
+
+1). Fix for oplock-break problem. If an open crossed
+with an oplock break on the wire it was possible for the 
+same fnum to be re-used. This caused a rare but fatal
+problem.
+2). Fix for adding printers to Windows NT 4.x. Now
+return correct "no space error" when buffer of zero 
+given.
+3). Fix for nmbd core dumps when running on architectures
+that cannot access structures on non-aligned boundaries
+(sparc, alpha etc).
+4). Compiler warnings in nmbd fixed.
+5). Makefile updated for Linux 2.0 versions (new smbmount
+commands should only be compiled for 2.1.x kernels).
+6). Addition of a timestamp to attack warning messages.
+
+Changes in 1.9.18.
+------------------
 
 This release contains several major changes and much re-written 
 code.

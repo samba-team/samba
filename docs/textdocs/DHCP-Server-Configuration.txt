@@ -1,3 +1,6 @@
+!==
+!== DHCP-Server-Configuration.txt for Samba release 1.9.18p6 11 May 1998
+!==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998
 Contributor:	John H Terpstra <jht@samba.anu.edu.au>
@@ -11,20 +14,19 @@ Background:
 
 We wish to help those folks who wish to use the ISC DHCP Server and provide
 sample configuration settings. Red Hat Linux 5.0 is one operating system that
-comes supplied with the ISC DHCP Server. ISC DHCP is available from
-		ftp://ftp.isc.org/isc/dhcp
+comes supplied with the ISC DHCP Server.
 
 Incorrect configuration of MS Windows clients (Windows95, Windows NT Server and
 Workstation) will lead to problems with browsing and with general network
-operation. Windows 95 users often report problems where the TCP/IP and related
+operation. Windows95 users often report problems where the TCP/IP and related
 network settings will inadvertantly become reset at machine start-up resulting
 in loss of configuration settings. This results in increased maintenance
 overheads as well as serious user frustration.
 
-In recent times users on one mailing list incorrectly attributed the cause of
+In recent times users on one mailing list oncorrectly attributed the cause of
 network operating problems to incorrect configuration of Samba.
 
-One user insisted that the only way to provent Windows95 from periodically
+One userinsisted that the only way to provent Windows95 from periodically
 performing a full system reset and hardware detection process on start-up was
 to install the NetBEUI protocol in addition to TCP/IP.
 
@@ -94,14 +96,14 @@ major needs.
 DHCP Server Installation:
 =========================
 It is assumed that you will have obtained a copy of the GPL'd ISC DHCP server
-source files from ftp://ftp.isc.org/isc/dhcp, it is also assumed that you have
+source files from ftp://ftp.isc.org/pub/dhcp, it is also assumed that you have
 compiled the sources and have installed the binary files.
 
 The following simply serves to provide sample configuration files to enable
 dhcpd to operate. The sample files assume that your site is configured to use
 private IP network address space using the Class B range of 172.16.1.0 -
 172.16.1.255 and is using a netmask of 255.255.255.0 (ie:24 bits). It is
-assumed that your router to the outside world is at 172.16.1.254 and that your
+assumed that you router to the outside world is at 172.16.1.254 and that your
 Internet Domain Name is bestnet.com.au. The IP Address range 172.16.1.100 to
 172.16.1.240 has been set aside as your dynamically allocated range. In
 addition, bestnet.com.au have two print servers that need to obtain settings

@@ -27,7 +27,7 @@
 extern int DEBUGLEVEL;
 
 extern pstring scope;
-extern fstring global_myworkgroup;
+extern fstring myworkgroup;
 
 /****************************************************************************
  Deal with a response packet when registering one of our names.
@@ -73,7 +73,7 @@ name %s.\n", namestr(answer_name), namestr(question_name)));
      */
 
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-    if((nmb->header.rcode == ACT_ERR) && strequal(global_myworkgroup, answer_name->name) &&
+    if((nmb->header.rcode == ACT_ERR) && strequal(myworkgroup, answer_name->name) &&
          (answer_name->name_type == 0x1b))
     {
       /* Pretend we did not get this. */

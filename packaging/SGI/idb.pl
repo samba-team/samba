@@ -49,12 +49,6 @@ if (@codepage) {
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
-# install the swat files
-chdir '../../source';
-system("chmod +x ./installswat.sh");
-system("./installswat.sh  ../packaging/SGI/swat ./");
-system("cp ../swat/README ../packaging/SGI/swat");
-chdir $curdir;
 
 # add my local files to the list of binaries to install
 @bins = sort (@sprogs,@progs,@progs1,@scripts,("findsmb","sambalp","smbprint"));
@@ -68,13 +62,12 @@ chdir $curdir;
 # the "*.doc" files from the source tree
 @docs = sort byfilename grep (!/^docs\/$/ & (/^source\/.*\.doc$/ | /^docs\//),@allfiles);
 
-@swatfiles = sort grep(/^packaging\/SGI\/swat/, @allfiles);
 @catman = sort grep(/^packaging\/SGI\/catman/ & !/\/$/, @allfiles);
 @catman = sort bydirnum @catman;
 
 # strip out all the generated directories and the "*.o" files from the source
 # release
-@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
+@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/, @allfiles);
 
 open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
@@ -102,9 +95,6 @@ while(@bins) {
     }
     elsif ($nextfile eq "findsmb") {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
-    }
-    elsif ($nextfile eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
     }
     elsif ($nextfile eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
@@ -163,19 +153,6 @@ while (@sorted) {
     else {
         print IDB "f 0644 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
     }
-  }
-}
-
-print IDB "d 0755 root sys usr/samba/swat/ packaging/SGI/swat samba.sw.base\n";
-while (@swatfiles) {
-  $nextfile = shift @swatfiles;
-  ($file = $nextfile) =~ s/^packaging\/SGI\/swat\///;
-  next if !$file;
-  if (grep(/\/$/,$file)) {
-    print IDB "d 0755 root sys usr/samba/swat/$file packaging/SGI/swat/$file samba.sw.base\n";
-  }
-  else {
-    print IDB "f 0444 root sys usr/samba/swat/$file packaging/SGI/swat/$file samba.sw.base\n";
   }
 }
 

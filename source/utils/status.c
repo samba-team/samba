@@ -120,7 +120,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   charset_initialise();
 
   DEBUGLEVEL = 0;
-  dbf = stderr;
+  dbf = fopen("/dev/null","w");
 
   if (getuid() != geteuid()) {
     printf("smbstatus should not be run setuid\n");
@@ -152,7 +152,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
   get_myname(myhostname, NULL);
 
-  if (!lp_load(servicesf,False,False,False)) {
+  if (!lp_load(servicesf,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
     return (-1);
   }
@@ -199,7 +199,6 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     {
       if (fread(&crec,sizeof(crec),1,f) != 1)
 	break;
-      if (crec.cnum == -1) continue;
       if ( crec.magic == 0x280267 && process_exists(crec.pid) 
            && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
          )

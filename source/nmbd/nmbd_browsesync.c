@@ -28,8 +28,8 @@
 extern int DEBUGLEVEL;
 extern pstring scope;
 extern struct in_addr ipzero;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 
 /* This is our local master browser list database. */
 extern struct browse_cache_record *lmb_browserlist;
@@ -244,7 +244,7 @@ Do not announce to ourselves.\n", work->work_group ));
   CVAL(p,0) = ANN_MasterAnnouncement;
   p++;
 
-  StrnCpy(p,global_myname,15);
+  StrnCpy(p,myname,15);
   strupper(p);
   p = skip_string(p,1);
 
@@ -252,7 +252,7 @@ Do not announce to ourselves.\n", work->work_group ));
 to %s for workgroup %s.\n", namestr(&work->dmb_name), work->work_group ));
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          global_myname, 0x0, work->dmb_name.name, 0x0, work->dmb_addr, FIRST_SUBNET->myip);
+          myname, 0x0, work->dmb_name.name, 0x0, work->dmb_addr, FIRST_SUBNET->myip);
 
 }
 
@@ -640,10 +640,10 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
     return;
 
   /* Check to see if we are a domain master browser on the unicast subnet. */
-  if((work = find_workgroup_on_subnet( unicast_subnet, global_myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet( unicast_subnet, myworkgroup)) == NULL)
   {
     DEBUG(0,("collect_all_workgroup_names_from_wins_server: Cannot find my workgroup %s on subnet %s.\n",
-              global_myworkgroup, unicast_subnet->subnet_name ));
+              myworkgroup, unicast_subnet->subnet_name ));
     return;
   }
 

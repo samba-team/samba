@@ -27,8 +27,8 @@
 extern int DEBUGLEVEL;
 
 extern pstring scope;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
+extern pstring myname;
+extern fstring myworkgroup;
 extern char **my_netbios_names;
 extern struct in_addr ipzero;
 extern struct in_addr allones_ip;
@@ -56,11 +56,11 @@ static void unbecome_dmb_success(struct subnet_record *subrec,
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, myname)) == NULL)
   {
     DEBUG(0,("unbecome_dmb_success: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       global_myname, released_name->name, subrec->subnet_name));
+       myname, released_name->name, subrec->subnet_name));
     return;
   }
 
@@ -82,7 +82,7 @@ in workgroup %s on subnet %s\n",
   putip((char *)&work->dmb_addr, &ipzero);
 
   DEBUG(0,("\n%s ***** Samba server %s has stopped being a domain master browser \
-for workgroup %s on subnet %s *****\n\n", timestring(), global_myname, work->work_group, subrec->subnet_name));
+for workgroup %s on subnet %s *****\n\n", timestring(), myname, work->work_group, subrec->subnet_name));
 
 }
 
@@ -157,11 +157,11 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
   /* Set the state back to DOMAIN_NONE. */
   work->dom_state = DOMAIN_NONE;
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, myname)) == NULL)
   {
     DEBUG(0,("become_domain_master_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       global_myname, work->work_group, subrec->subnet_name));
+       myname, work->work_group, subrec->subnet_name));
     return;
   }
 
@@ -196,11 +196,11 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, myname)) == NULL)
   {
     DEBUG(0,("become_domain_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n", 
-       global_myname, registered_name->name, subrec->subnet_name));
+       myname, registered_name->name, subrec->subnet_name));
     work->dom_state = DOMAIN_NONE;
     return;
   }
@@ -215,7 +215,7 @@ in workgroup %s on subnet %s\n",
   subrec->work_changed = True;
 
   DEBUG(0,("\n%s ***** Samba server %s is now a domain master browser for \
-workgroup %s on subnet %s *****\n\n", timestring(),global_myname, work->work_group, 
+workgroup %s on subnet %s *****\n\n", timestring(),myname, work->work_group, 
 subrec->subnet_name));
 
   if(subrec == unicast_subnet)
@@ -228,7 +228,7 @@ subrec->subnet_name));
        will stop us syncing with ourself if we are also
        a local master browser. */
 
-    make_nmb_name(&nmbname, global_myname, 0x20, scope);
+    make_nmb_name(&nmbname, myname, 0x20, scope);
 
     work->dmb_name = nmbname;
     /* Pick the first interface ip address as the domain master browser ip. */
@@ -464,9 +464,9 @@ void add_domain_names(time_t t)
          1.9.16p2 to 1.9.16p11 - due to a bug in namelogon.c,
          cannot provide domain master / domain logon services.
        */
-      become_domain_master_browser_wins(global_myworkgroup);
+      become_domain_master_browser_wins(myworkgroup);
     }
     else
-      become_domain_master_browser_bcast(global_myworkgroup);
+      become_domain_master_browser_bcast(myworkgroup);
   }
 }

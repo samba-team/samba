@@ -172,7 +172,7 @@ int main(int argc,char *argv[])
 
   init_structs();
 
-  if (!lp_load(servicesf,True,False,False)) {
+  if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 

@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "08 Jan 1998" "smb.conf 1.9.18"
+.TH SMB.CONF 5 "11 May 1998" "smb.conf 1.9.18p6"
 .SH NAME
 smb.conf \- configuration file for smbd
 .SH SYNOPSIS
@@ -449,6 +449,8 @@ packet size
 
 passwd chat
 
+passwd chat debug
+
 passwd program
 
 password level
@@ -511,7 +513,11 @@ time offset
 
 time server
 
+unix password sync
+
 unix realname
+
+update encrypted
 
 username level
 
@@ -1704,8 +1710,13 @@ between 'keepalive' packets. If this parameter is zero, no keepalive packets
 will be sent. Keepalive packets, if sent, allow the server to tell whether a
 client is still present and responding.
 
+Keepalives should, in general, not be needed if the socket being used
+has the SO_KEEPALIVE attribute set on it (see "socket
+options"). Basically you should only use this option if you strike
+difficulties.
+
 .B Default:
- 	keep alive = 300
+ 	keep alive = 0
 
 .B Example:
  	keep alive = 60
@@ -2499,6 +2510,12 @@ problems with machines in trust relationships in which case you can
 disable it here, but be warned, we have heard that some NT machines
 will then allow anyone in with any password! Make sure you test it.
 
+In Samba 1.9.18p5 this parameter is of limited use, as smbd now
+explicitly tests for this NT bug and will refuse to use a password
+server that has the problem. The parameter still defaults to on,
+for compatibility, but it is now probably safe to set this to
+off without testing the NT server being used as a password server.
+
 .B Default:
 	networkstation user login = yes
 
@@ -2589,6 +2606,14 @@ If the send string in any part of the chat sequence is a fullstop "."
 then no string is sent. Similarly, is the expect string is a fullstop
 then no string is expected.
 
+Note that if the 'unix password sync' parameter is set to true,
+then this sequence is called *AS ROOT* when the SMB password in the
+smbpasswd file is being changed, without access to the old password
+cleartext. In this case the old password cleartext is set to ""
+(the empty string).
+
+See also 'unix password sync' and 'passwd chat debug'
+
 .B Example:
         passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en \e
                        "*Reenter NEW password*" %n\en "*Password changed*"
@@ -2597,17 +2622,43 @@ then no string is expected.
 .B Default:
        passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
 
+.SS passwd chat debug (G)
+
+This boolean specifies if the passwd chat script parameter is run
+in 'debug' mode. In this mode the strings passed to and received
+from the passwd chat are printed in the smbd log with a debug level
+of 100. This is a dangerous option as it will allow plaintext passwords
+to be seen in the smbd log. It is available to help Samba admins
+debug their passwd chat scripts and should be turned off after
+this has been done. This parameter is off by default.
+
+.B Example:
+     passwd chat debug = True
+
+.B Default:
+     passwd chat debug = False
+
 .SS passwd program (G)
 The name of a program that can be used to set user passwords.
 
-This is only necessary if you have enabled remote password changing at
-compile time. Any occurrences of %u will be replaced with the user
-name.
+This is only available if you have enabled remote password changing at
+compile time (see the comments in the Makefile for details). Any occurrences 
+of %u will be replaced with the user name. The user name is checked
+for existance before calling the password changing program.
 
 Also note that many passwd programs insist in "reasonable" passwords,
 such as a minimum length, or the inclusion of mixed case chars and
 digits. This can pose a problem as some clients (such as Windows for
 Workgroups) uppercase the password before sending it. 
+
+Note that if the 'unix password sync' parameter is set to true,
+then this sequence is called *AS ROOT* when the SMB password in the
+smbpasswd file is being changed. If the 'unix passwd sync' parameter
+is set this parameter MUST USE ABSOLUTE PATHS for ALL programs called,
+and must be examined for security implications. Note that by default
+'unix password sync' is set to False.
+
+See also 'unix password sync'
 
 .B Default:
 	passwd program = /bin/passwd
@@ -3253,7 +3304,11 @@ user that you are logged into WfWg as.
 
 If you use "security = server" then Samba will try to validate the
 username/password by passing it to another SMB server, such as an NT
-box. If this fails it will revert to "security = USER".
+box. If this fails it will revert to "security = USER", but note that
+if encrypted passwords have been negotiated then Samba cannot revert
+back to checking the UNIX password file, it must have a valid 
+smbpasswd file to check users against. See the documentation
+docs/ENCRYPTION.txt for details on how to set this up.
 
 See the "password server" option for more details.
 
@@ -3549,6 +3604,23 @@ to Windows clients. The default is False.
 .B Example:
 	time server = True
 
+.SS unix password sync (G)
+This boolean parameter controlls whether Samba attempts to synchronise
+the UNIX password with the SMB password when the encrypted SMB password
+in the smbpasswd file is changed. If this is set to true the 'passwd program'
+program is called *AS ROOT* - to allow the new UNIX password to be set
+without access to the old UNIX password (as the SMB password has change
+code has no access to the old password cleartext, only the new). By
+default this is set to false.
+
+See also 'passwd program', 'passwd chat'
+
+.B Default:
+         unix password sync = False
+
+.B Example:
+         unix password sync = True
+
 .SS unix realname (G)
 This boolean parameter when set causes samba to supply the real name field
 from the unix password file to the client. This is useful for setting up
@@ -3559,6 +3631,33 @@ mail clients and WWW browsers on systems used by more than one person.
 
 .B Example:
 	unix realname = yes
+
+.SS update encrypted (G)
+This boolean parameter allows a user logging on with a plaintext
+password to have their encrypted (hashed) password in the smbpasswd
+file to be updated automatically as they log on. This option allows
+a site to migrate from plaintext password authentication (users 
+authenticate with plaintext password over the wire, and are checked
+against a UNIX account database) to encrypted password authentication
+(the SMB challenge/response authentication mechanism) without forcing
+all users to re-enter their passwords via smbpasswd at the time the change
+is made. This is a convenience option to allow the change over to
+encrypted passwords to be made over a longer period. Once all users
+have encrypted representations of their passwords in the smbpasswd
+file this parameter should be set to "off".
+
+In order for this parameter to work correctly the "encrypt passwords"
+must be set to "no" when this parameter is set to "yes".
+
+Note that even when this parameter is set a user authenticating to
+smbd must still enter a valid password in order to connect correctly,
+and to update their hashed (smbpasswd) passwords.
+
+.B Default:
+	update encrypted = no
+
+.B Example:
+	update encrypted = yes
 
 .SS user (S)
 See

@@ -20,10 +20,9 @@
    refer to the special "printers" service */
 #define PRINTERS_NAME "printers"
 
-/* Yves Gaige <yvesg@hptnodur.grenoble.hp.com> requested this set this 	     */
-/* to a maximum of 8 if old smb clients break because of long printer names. */
+/* Yves Gaige <yvesg@hptnodur.grenoble.hp.com> requested this */
+/* Set to 8 if old clients break because of this, the max value is 15 */
 #define MAXPRINTERLEN 15
-
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
@@ -42,8 +41,8 @@
 #define SHMEM_SIZE (1024*MAX_OPEN_FILES)
 #endif
 
-/* the max number of simultanous connections to the server by all clients */
-#define MAXSTATUS 100000
+/* the max number of connections that the smbstatus program will show */
+#define MAXSTATUS 1000
 
 /* max number of directories open at once */
 /* note that with the new directory code this no longer requires a
@@ -167,8 +166,6 @@
 #define LONG_CONNECT_TIMEOUT 30
 #define SHORT_CONNECT_TIMEOUT 5
 
-/* the default netbios keepalive timeout */
-#define DEFAULT_KEEPALIVE 300
 
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */

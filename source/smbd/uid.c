@@ -276,7 +276,7 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
 
   current_user.cnum = cnum;
   current_user.vuid = vuid;
-
+  
   DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 	   getuid(),geteuid(),getgid(),getegid()));
   

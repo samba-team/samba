@@ -29,7 +29,7 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern fstring global_myworkgroup;
+extern fstring myworkgroup;
 
 /****************************************************************************
 Send a name release response.
@@ -102,7 +102,7 @@ subnet %s from owner IP %s\n",
    * names and *don't set the group bit* !!!!!
    */
 
-  if( !group && !ismyip(owner_ip) && strequal(question->name, global_myworkgroup) && 
+  if( !group && !ismyip(owner_ip) && strequal(question->name, myworkgroup) && 
       ((question->name_type == 0x0) || (question->name_type == 0x1e)))
   {
     DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
@@ -290,20 +290,20 @@ We put our own names first, then in alphabetical order.
 
 static int status_compare(char *n1,char *n2)
 {
-  extern pstring global_myname;
+  extern pstring myname;
   int l1,l2,l3;
 
   /* It's a bit tricky because the names are space padded */
   for (l1=0;l1<15 && n1[l1] && n1[l1] != ' ';l1++) ;
   for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++) ;
-  l3 = strlen(global_myname);
+  l3 = strlen(myname);
 
-  if ((l1==l3) && strncmp(n1,global_myname,l3) == 0 && 
-      (l2!=l3 || strncmp(n2,global_myname,l3) != 0))
+  if ((l1==l3) && strncmp(n1,myname,l3) == 0 && 
+      (l2!=l3 || strncmp(n2,myname,l3) != 0))
     return -1;
 
-  if ((l2==l3) && strncmp(n2,global_myname,l3) == 0 && 
-      (l1!=l3 || strncmp(n1,global_myname,l3) != 0))
+  if ((l2==l3) && strncmp(n2,myname,l3) == 0 && 
+      (l1!=l3 || strncmp(n1,myname,l3) != 0))
     return 1;
 
   return memcmp(n1,n2,18);

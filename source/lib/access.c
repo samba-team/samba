@@ -60,19 +60,18 @@ BOOL check_access(int snum)
 
   if (!ret)
     {
-      extern int Client;
-      if (allow_access(denyl,allowl,client_name(Client),client_addr(Client)))
+      if (allow_access(denyl,allowl,client_name(),client_addr()))
 	{
 	  if (snum >= 0)
 	    DEBUG(2,("Allowed connection from %s (%s) to %s\n",
-		     client_name(Client),client_addr(Client),
+		     client_name(),client_addr(),
 		     lp_servicename(snum)));
 	  ret = True;
 	}
       else
 	if (snum >= 0)
 	  DEBUG(0,("%s Denied connection from %s (%s) to %s\n",
-		   timestring(), client_name(Client),client_addr(Client),
+		   timestring(), client_name(),client_addr(),
 		   lp_servicename(snum)));
     }
 
@@ -118,7 +117,7 @@ BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr)
 
 /* list_match - match an item against a list of tokens with exceptions */
 /* (All modifications are marked with the initials "jkf") */
-static int list_match(char *list,char *item, int (*match_fn)(char *, char *))
+static int list_match(char *list,char *item, int (*match_fn)(char *,char *))
 {
     char   *tok;
     char   *listcopy;		/* jkf */

@@ -451,21 +451,6 @@ time_t make_unix_date3(void *date_ptr)
   return(t);
 }
 
-
-/***************************************************************************
-return a HTTP/1.0 time string
-  ***************************************************************************/
-char *http_timestring(time_t t)
-{
-	static char buf[40];
-	struct tm *tm = LocalTime(&t);
-
-	strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
-	return buf;
-}
-
-
-
 /****************************************************************************
   return the date and time as a string
 ****************************************************************************/

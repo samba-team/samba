@@ -1,6 +1,6 @@
 --- Makefile.Linux
-+++ Makefile.Linux	1998/05/06 15:58:42
-@@ -0,0 +1,35 @@
++++ Makefile.Linux	1998/04/27 07:49:10
+@@ -0,0 +1,34 @@
 +#
 +#
 +# Makefile.Linux to integrate package into source tree of S.u.S.E.-Linux
@@ -29,7 +29,6 @@
 +	chmod 755 `find $(doc) -type d`
 +	install -m 644 smb.conf /etc/smb.conf
 +	install rc /sbin/init.d/smb
-+	install -m 755 source/mksmbpasswd.sh /usr/bin/mksmbpasswd.sh
 +	ln -sf ../smb /sbin/init.d/rc2.d/S20smb
 +	ln -sf ../smb /sbin/init.d/rc2.d/K20smb
 +	ln -sf ../smb /sbin/init.d/rc3.d/S20smb
@@ -37,7 +36,7 @@
 +	mkdir -p /var/adm/fillup-templates
 +	cp rc.config.samba /var/adm/fillup-templates
 --- doinst.sh
-+++ doinst.sh	1998/05/06 15:54:52
++++ doinst.sh	1998/04/27 07:49:10
 @@ -0,0 +1,15 @@
 +#
 +# install/doinst.sh - to be done after extraction
@@ -55,7 +54,7 @@
 +fi
 +
 --- rc
-+++ rc	1998/05/06 15:54:52
++++ rc	1998/04/27 07:49:10
 @@ -0,0 +1,32 @@
 +#! /bin/sh
 +# Copyright (c) 1996 StarDivision GmbH. All rights reserved.
@@ -90,7 +89,7 @@
 +
 +exit 0
 --- rc.config.samba
-+++ rc.config.samba	1998/05/06 15:54:52
++++ rc.config.samba	1998/04/27 07:49:10
 @@ -0,0 +1,5 @@
 +#
 +# start samba? ("yes" or "no")
@@ -98,7 +97,7 @@
 +#
 +START_SMB="no"
 --- smb.conf
-+++ smb.conf	1998/05/06 15:54:52
++++ smb.conf	1998/04/27 07:49:10
 @@ -0,0 +1,48 @@
 +[global]
 +   workgroup = arbeitsgruppe
@@ -149,7 +148,7 @@
 +   create mode = 0700
 +   directory = /tmp
 --- source/Makefile
-+++ source/Makefile	1998/05/06 15:54:52
++++ source/Makefile	1998/04/27 07:49:10
 @@ -5,11 +5,11 @@
  ###########################################################################
  
@@ -217,7 +216,7 @@
  
  # Use this for Linux without shadow passwords or for any Linux
 --- source/includes.h
-+++ source/includes.h	1998/05/06 15:54:52
++++ source/includes.h	1998/04/27 07:49:10
 @@ -244,13 +244,6 @@
  #define USE_SETFS
  #endif

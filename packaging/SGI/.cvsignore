@@ -2,7 +2,6 @@ bins
 catman
 html
 codepages
-swat
 Makefile
 samba.idb
 samba.spec

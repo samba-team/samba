@@ -32,12 +32,12 @@ static char *sockops="";
 
 static struct timeval tp1,tp2;
 
-static void start_timer(void)
+static void start_timer()
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer(void)
+static double end_timer()
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -116,8 +116,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 	int fnum;
 	int fnum2;
 	int pid2, pid = getpid();
-	int i, j;
-	char buf[1024];
+	int i;
 
 	fnum2 = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
@@ -148,14 +147,6 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 
 		if (cli_write(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", cli_errstr(c));
-		}
-
-		for (j=0;j<50;j++) {
-			if (cli_write(c, fnum, (char *)buf, 
-				      sizeof(pid)+(j*sizeof(buf)), 
-				      sizeof(buf)) != sizeof(buf)) {
-				printf("write failed (%s)\n", cli_errstr(c));
-			}
 		}
 
 		pid2 = 0;
@@ -191,7 +182,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 
 static void usage(void)
 {
-	printf("Usage: smbtorture //server/share <options>\n");
+	printf("Usage: smbtorture \\\\server\\share <options>\n");
 
 	printf("\t-U user%%pass\n");
 	printf("\t-N numprocs\n");
@@ -841,16 +832,12 @@ static void create_procs(int nprocs, int numops)
 		usage();
 	}
 
-        for(p = argv[1]; *p; p++)
-          if(*p == '\\')
-            *p = '/';
- 
-	if (strncmp(argv[1], "//", 2)) {
+	if (strncmp(argv[1], "\\\\", 2)) {
 		usage();
 	}
 
 	fstrcpy(host, &argv[1][2]);
-	p = strchr(&host[2],'/');
+	p = strchr(&host[2],'\\');
 	if (!p) {
 		usage();
 	}

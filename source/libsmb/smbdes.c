@@ -347,15 +347,6 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key2, 1);
 }
 
-void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw)
-{
-        static unsigned char key2[8];
-
-        smbhash(out, in, key, forw);
-        key2[0] = key[7];
-        smbhash(out + 8, in + 8, key2, forw);
-}
-
 void SamOEMhash( unsigned char *data, unsigned char *key, int val)
 {
   unsigned char s_box[256];

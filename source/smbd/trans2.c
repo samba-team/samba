@@ -1748,7 +1748,7 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
   {
     /*
      * Queue this open message as we are the process of an oplock break.
-     */
+     */ 
 
     DEBUG(2,("%s: reply_trans2: queueing message trans2open due to being in oplock break state.\n",
            timestring() ));
@@ -1787,10 +1787,8 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
   if (num_params > total_params || num_data > total_data)
 	  exit_server("invalid params in reply_trans2");
 
-  if(params)
-    memcpy( params, smb_base(inbuf) + SVAL(inbuf, smb_psoff), num_params);
-  if(data)
-    memcpy( data, smb_base(inbuf) + SVAL(inbuf, smb_dsoff), num_data);
+  memcpy( params, smb_base(inbuf) + SVAL(inbuf, smb_psoff), num_params);
+  memcpy( data, smb_base(inbuf) + SVAL(inbuf, smb_dsoff), num_data);
 
   if(num_data_sofar < total_data || num_params_sofar < total_params)
     {
@@ -1814,10 +1812,8 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
               else
                 DEBUG(0,("reply_trans2: %s in getting secondary trans2 response.\n",
                          (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
-              if(params)
-                free(params);
-              if(data)
-                free(data);
+	      free(params);
+	      free(data);
 	      return(ERROR(ERRSRV,ERRerror));
 	    }
       
