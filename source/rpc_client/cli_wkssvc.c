@@ -62,10 +62,8 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 	make_wks_q_query_info(&q_o, srv_name, switch_value);
 
 	/* turn parameters into data stream */
-	wks_io_q_query_info("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, WKS_QUERY_INFO, &buf, &rbuf))
+	if (wks_io_q_query_info("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, WKS_QUERY_INFO, &buf, &rbuf))
 	{
 		WKS_R_QUERY_INFO r_o;
 		BOOL p;

@@ -59,12 +59,8 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 	                           lm_newpass, lm_oldhash);
 
 	/* turn parameters into data stream */
-	samr_io_q_chgpasswd_user("", &q_e, &data, 0);
-
-	dbgflush();
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SAMR_CHGPASSWD_USER, &data, &rdata))
+	if(!samr_io_q_chgpasswd_user("", &q_e, &data, 0) &&
+	    rpc_con_pipe_req(con, SAMR_CHGPASSWD_USER, &data, &rdata))
 	{
 		SAMR_R_CHGPASSWD_USER r_e;
 		BOOL p;
@@ -113,10 +109,8 @@ BOOL samr_get_dom_pwinfo(struct cli_connection *con, const char *srv_name)
 	make_samr_q_get_dom_pwinfo(&q_e, srv_name);
 
 	/* turn parameters into data stream */
-	samr_io_q_get_dom_pwinfo("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SAMR_GET_DOM_PWINFO, &data, &rdata))
+	if (samr_io_q_get_dom_pwinfo("", &q_e, &data, 0) &&
+	    rpc_con_pipe_req(con, SAMR_GET_DOM_PWINFO, &data, &rdata))
 	{
 		SAMR_R_GET_DOM_PWINFO r_e;
 		BOOL p;
@@ -173,10 +167,8 @@ BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 	make_samr_q_query_dom_info(&q_e, domain_pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_dom_info("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_QUERY_DOMAIN_INFO, &data, &rdata))
+	if (samr_io_q_query_dom_info("", &q_e, &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_QUERY_DOMAIN_INFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_DOMAIN_INFO r_e;
 		BOOL p;
@@ -234,10 +226,8 @@ uint32 samr_enum_domains(  POLICY_HND *pol,
 	make_samr_q_enum_domains(&q_e, pol, *start_idx, size);
 
 	/* turn parameters into data stream */
-	samr_io_q_enum_domains("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_ENUM_DOMAINS, &data, &rdata))
+	if (samr_io_q_enum_domains("", &q_e, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_ENUM_DOMAINS, &data, &rdata))
 	{
 		SAMR_R_ENUM_DOMAINS r_e;
 		BOOL p;
@@ -335,10 +325,8 @@ uint32 samr_enum_dom_groups(  POLICY_HND *pol,
 	make_samr_q_enum_dom_groups(&q_e, pol, *start_idx, size);
 
 	/* turn parameters into data stream */
-	samr_io_q_enum_dom_groups("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_GROUPS, &data, &rdata))
+	if (samr_io_q_enum_dom_groups("", &q_e, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_GROUPS, &data, &rdata))
 	{
 		SAMR_R_ENUM_DOM_GROUPS r_e;
 		BOOL p;
@@ -436,10 +424,8 @@ uint32 samr_enum_dom_aliases(  POLICY_HND *pol,
 	make_samr_q_enum_dom_aliases(&q_e, pol, *start_idx, size);
 
 	/* turn parameters into data stream */
-	samr_io_q_enum_dom_aliases("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_ALIASES, &data, &rdata))
+	if (samr_io_q_enum_dom_aliases("", &q_e, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_ALIASES, &data, &rdata))
 	{
 		SAMR_R_ENUM_DOM_ALIASES r_e;
 		BOOL p;
@@ -539,10 +525,8 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 	                           acb_mask, unk_1, size);
 
 	/* turn parameters into data stream */
-	samr_io_q_enum_dom_users("", &q_e, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_USERS, &data, &rdata))
+	if (samr_io_q_enum_dom_users("", &q_e, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_ENUM_DOM_USERS, &data, &rdata))
 	{
 		SAMR_R_ENUM_DOM_USERS r_e;
 		BOOL p;
@@ -647,10 +631,8 @@ BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 	make_samr_q_connect(&q_o, srv_name, access_mask);
 
 	/* turn parameters into data stream */
-	samr_io_q_connect("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SAMR_CONNECT, &data, &rdata))
+	if (samr_io_q_connect("", &q_o,  &data, 0) &&
+	    rpc_con_pipe_req(con, SAMR_CONNECT, &data, &rdata))
 	{
 		SAMR_R_CONNECT r_o;
 		BOOL p;
@@ -710,10 +692,8 @@ BOOL samr_query_sec_obj(  const POLICY_HND *pol,
 	make_samr_q_query_sec_obj(&q_o, pol, type);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_sec_obj("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_SEC_OBJECT, &data, &rdata))
+	if (samr_io_q_query_sec_obj("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_QUERY_SEC_OBJECT, &data, &rdata))
 	{
 		SAMR_R_QUERY_SEC_OBJ r_o;
 		BOOL p;
@@ -770,10 +750,8 @@ BOOL samr_open_user(  const POLICY_HND *pol,
 	make_samr_q_open_user(&q_o, pol, unk_0, rid);
 
 	/* turn parameters into data stream */
-	samr_io_q_open_user("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_OPEN_USER, &data, &rdata))
+	if (samr_io_q_open_user("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_OPEN_USER, &data, &rdata))
 	{
 		SAMR_R_OPEN_USER r_o;
 		BOOL p;
@@ -827,10 +805,8 @@ BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 	make_samr_q_open_alias(&q_o, domain_pol, flags, rid);
 
 	/* turn parameters into data stream */
-	samr_io_q_open_alias("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_OPEN_ALIAS, &data, &rdata))
+	if (samr_io_q_open_alias("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_OPEN_ALIAS, &data, &rdata))
 	{
 		SAMR_R_OPEN_ALIAS r_o;
 		BOOL p;
@@ -882,10 +858,8 @@ BOOL samr_del_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid)
 	make_samr_q_del_aliasmem(&q_o, alias_pol, sid);
 
 	/* turn parameters into data stream */
-	samr_io_q_del_aliasmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_DEL_ALIASMEM, &data, &rdata))
+	if (samr_io_q_del_aliasmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_DEL_ALIASMEM, &data, &rdata))
 	{
 		SAMR_R_DEL_ALIASMEM r_o;
 		BOOL p;
@@ -936,10 +910,8 @@ BOOL samr_add_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid)
 	make_samr_q_add_aliasmem(&q_o, alias_pol, sid);
 
 	/* turn parameters into data stream */
-	samr_io_q_add_aliasmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_ADD_ALIASMEM, &data, &rdata))
+	if (samr_io_q_add_aliasmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_ADD_ALIASMEM, &data, &rdata))
 	{
 		SAMR_R_ADD_ALIASMEM r_o;
 		BOOL p;
@@ -990,10 +962,8 @@ BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol)
 	make_samr_q_delete_dom_alias(&q_o, alias_pol);
 
 	/* turn parameters into data stream */
-	samr_io_q_delete_dom_alias("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_DELETE_DOM_ALIAS, &data, &rdata))
+	if (samr_io_q_delete_dom_alias("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_DELETE_DOM_ALIAS, &data, &rdata))
 	{
 		SAMR_R_DELETE_DOM_ALIAS r_o;
 		BOOL p;
@@ -1046,10 +1016,8 @@ uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 	make_samr_q_create_user(&q_o, domain_pol, acct_name, unk_0, unk_1);
 
 	/* turn parameters into data stream */
-	samr_io_q_create_user("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_USER, &data, &rdata))
+	if (samr_io_q_create_user("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_USER, &data, &rdata))
 	{
 		SAMR_R_CREATE_USER r_o;
 		BOOL p;
@@ -1107,10 +1075,8 @@ BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
 	make_samr_q_create_dom_alias(&q_o, domain_pol, acct_name);
 
 	/* turn parameters into data stream */
-	samr_io_q_create_dom_alias("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_DOM_ALIAS, &data, &rdata))
+	if (samr_io_q_create_dom_alias("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_DOM_ALIAS, &data, &rdata))
 	{
 		SAMR_R_CREATE_DOM_ALIAS r_o;
 		BOOL p;
@@ -1164,10 +1130,8 @@ BOOL samr_query_aliasinfo(  POLICY_HND *alias_pol, uint16 switch_value,
 	make_samr_q_query_aliasinfo(&q_o, alias_pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_aliasinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_QUERY_ALIASINFO, &data, &rdata))
+	if (samr_io_q_query_aliasinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_QUERY_ALIASINFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_ALIASINFO r_o;
 		BOOL p;
@@ -1221,10 +1185,8 @@ BOOL samr_set_aliasinfo(  POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
 	make_samr_q_set_aliasinfo(&q_o, alias_pol, ctr);
 
 	/* turn parameters into data stream */
-	samr_io_q_set_aliasinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_SET_ALIASINFO, &data, &rdata))
+	if (samr_io_q_set_aliasinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_SET_ALIASINFO, &data, &rdata))
 	{
 		SAMR_R_SET_ALIASINFO r_o;
 		BOOL p;
@@ -1277,10 +1239,8 @@ BOOL samr_open_group(  const POLICY_HND *domain_pol,
 	make_samr_q_open_group(&q_o, domain_pol, flags, rid);
 
 	/* turn parameters into data stream */
-	samr_io_q_open_group("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_OPEN_GROUP, &data, &rdata))
+	if (samr_io_q_open_group("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_OPEN_GROUP, &data, &rdata))
 	{
 		SAMR_R_OPEN_GROUP r_o;
 		BOOL p;
@@ -1332,10 +1292,8 @@ BOOL samr_del_groupmem(  POLICY_HND *group_pol, uint32 rid)
 	make_samr_q_del_groupmem(&q_o, group_pol, rid);
 
 	/* turn parameters into data stream */
-	samr_io_q_del_groupmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(group_pol, SAMR_DEL_GROUPMEM, &data, &rdata))
+	if (samr_io_q_del_groupmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(group_pol, SAMR_DEL_GROUPMEM, &data, &rdata))
 	{
 		SAMR_R_DEL_GROUPMEM r_o;
 		BOOL p;
@@ -1386,10 +1344,8 @@ BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid)
 	make_samr_q_add_groupmem(&q_o, group_pol, rid);
 
 	/* turn parameters into data stream */
-	samr_io_q_add_groupmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(group_pol, SAMR_ADD_GROUPMEM, &data, &rdata))
+	if (samr_io_q_add_groupmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(group_pol, SAMR_ADD_GROUPMEM, &data, &rdata))
 	{
 		SAMR_R_ADD_GROUPMEM r_o;
 		BOOL p;
@@ -1440,10 +1396,8 @@ BOOL samr_delete_dom_group(  POLICY_HND *group_pol)
 	make_samr_q_delete_dom_group(&q_o, group_pol);
 
 	/* turn parameters into data stream */
-	samr_io_q_delete_dom_group("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(group_pol, SAMR_DELETE_DOM_GROUP, &data, &rdata))
+	if (samr_io_q_delete_dom_group("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(group_pol, SAMR_DELETE_DOM_GROUP, &data, &rdata))
 	{
 		SAMR_R_DELETE_DOM_GROUP r_o;
 		BOOL p;
@@ -1495,10 +1449,8 @@ BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 	make_samr_q_create_dom_group(&q_o, domain_pol, acct_name);
 
 	/* turn parameters into data stream */
-	samr_io_q_create_dom_group("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_DOM_GROUP, &data, &rdata))
+	if (samr_io_q_create_dom_group("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_CREATE_DOM_GROUP, &data, &rdata))
 	{
 		SAMR_R_CREATE_DOM_GROUP r_o;
 		BOOL p;
@@ -1551,10 +1503,8 @@ BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr)
 	make_samr_q_set_groupinfo(&q_o, group_pol, ctr);
 
 	/* turn parameters into data stream */
-	samr_io_q_set_groupinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(group_pol, SAMR_SET_GROUPINFO, &data, &rdata))
+	if (samr_io_q_set_groupinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(group_pol, SAMR_SET_GROUPINFO, &data, &rdata))
 	{
 		SAMR_R_SET_GROUPINFO r_o;
 		BOOL p;
@@ -1614,10 +1564,8 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 	make_samr_q_open_domain(&q_o, connect_pol, ace_perms, sid);
 
 	/* turn parameters into data stream */
-	samr_io_q_open_domain("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(connect_pol, SAMR_OPEN_DOMAIN, &data, &rdata))
+	if (samr_io_q_open_domain("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(connect_pol, SAMR_OPEN_DOMAIN, &data, &rdata))
 	{
 		SAMR_R_OPEN_DOMAIN r_o;
 		BOOL p;
@@ -1670,10 +1618,8 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 	make_samr_q_lookup_domain(&q_o, pol, dom_name);
 
 	/* turn parameters into data stream */
-	samr_io_q_lookup_domain("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_LOOKUP_DOMAIN, &data, &rdata))
+	if (samr_io_q_lookup_domain("", &q_o, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_LOOKUP_DOMAIN, &data, &rdata))
 	{
 		SAMR_R_LOOKUP_DOMAIN r_o;
 		BOOL p;
@@ -1732,10 +1678,8 @@ BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
 	make_samr_q_lookup_names(&q_o, pol, flags, num_names, names);
 
 	/* turn parameters into data stream */
-	samr_io_q_lookup_names("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_LOOKUP_NAMES, &data, &rdata))
+	if (samr_io_q_lookup_names("", &q_o, &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_LOOKUP_NAMES, &data, &rdata))
 	{
 		SAMR_R_LOOKUP_NAMES r_o;
 		BOOL p;
@@ -1821,10 +1765,8 @@ BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
 	make_samr_q_lookup_rids(&q_o, pol, flags, num_rids, rids);
 
 	/* turn parameters into data stream */
-	samr_io_q_lookup_rids("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_LOOKUP_RIDS, &data, &rdata))
+	if (samr_io_q_lookup_rids("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_LOOKUP_RIDS, &data, &rdata))
 	{
 		SAMR_R_LOOKUP_RIDS r_o;
 		BOOL p;
@@ -1915,10 +1857,8 @@ BOOL samr_query_aliasmem(  const POLICY_HND *alias_pol,
 	make_samr_q_query_aliasmem(&q_o, alias_pol);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_aliasmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(alias_pol, SAMR_QUERY_ALIASMEM, &data, &rdata))
+	if (samr_io_q_query_aliasmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(alias_pol, SAMR_QUERY_ALIASMEM, &data, &rdata))
 	{
 		SAMR_R_QUERY_ALIASMEM r_o;
 		BOOL p;
@@ -1977,10 +1917,8 @@ BOOL samr_query_useraliases(  const POLICY_HND *pol,
 	make_samr_q_query_useraliases(&q_o, pol, ptr_sid, sid);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_useraliases("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_USERALIASES, &data, &rdata))
+	if (samr_io_q_query_useraliases("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_QUERY_USERALIASES, &data, &rdata))
 	{
 		SAMR_R_QUERY_USERALIASES r_o;
 		BOOL p;
@@ -2037,10 +1975,8 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 	make_samr_q_query_groupmem(&q_o, group_pol);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_groupmem("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(group_pol, SAMR_QUERY_GROUPMEM, &data, &rdata))
+	if (samr_io_q_query_groupmem("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(group_pol, SAMR_QUERY_GROUPMEM, &data, &rdata))
 	{
 		SAMR_R_QUERY_GROUPMEM r_o;
 		BOOL p;
@@ -2101,10 +2037,8 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 	make_samr_q_query_usergroups(&q_o, pol);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_usergroups("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_USERGROUPS, &data, &rdata))
+	if (samr_io_q_query_usergroups("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_QUERY_USERGROUPS, &data, &rdata))
 	{
 		SAMR_R_QUERY_USERGROUPS r_o;
 		BOOL p;
@@ -2161,10 +2095,8 @@ BOOL samr_query_groupinfo(  POLICY_HND *pol,
 	make_samr_q_query_groupinfo(&q_o, pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_groupinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_GROUPINFO, &data, &rdata))
+	if (samr_io_q_query_groupinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_QUERY_GROUPINFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_GROUPINFO r_o;
 		BOOL p;
@@ -2228,10 +2160,8 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 	make_samr_q_set_userinfo2(&q_o, pol, switch_value, &ctr);
 
 	/* turn parameters into data stream */
-	samr_io_q_set_userinfo2("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_SET_USERINFO2, &data, &rdata))
+	if (samr_io_q_set_userinfo2("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_SET_USERINFO2, &data, &rdata))
 	{
 		SAMR_R_SET_USERINFO2 r_o;
 		BOOL p;
@@ -2285,10 +2215,8 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 	make_samr_q_set_userinfo(&q_o, pol, switch_value, usr);
 
 	/* turn parameters into data stream */
-	samr_io_q_set_userinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_SET_USERINFO, &data, &rdata))
+	if (samr_io_q_set_userinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_SET_USERINFO, &data, &rdata))
 	{
 		SAMR_R_SET_USERINFO r_o;
 		BOOL p;
@@ -2340,10 +2268,8 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
 	make_samr_q_query_userinfo(&q_o, pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_userinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_USERINFO, &data, &rdata))
+	if (samr_io_q_query_userinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol, SAMR_QUERY_USERINFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_USERINFO r_o;
 		BOOL p;
@@ -2408,10 +2334,8 @@ BOOL samr_close(  POLICY_HND *hnd)
 	make_samr_q_close_hnd(&q_c, hnd);
 
 	/* turn parameters into data stream */
-	samr_io_q_close_hnd("", &q_c,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, SAMR_CLOSE_HND, &data, &rdata))
+	if (samr_io_q_close_hnd("", &q_c,  &data, 0) &&
+	    rpc_hnd_pipe_req(hnd, SAMR_CLOSE_HND, &data, &rdata))
 	{
 		SAMR_R_CLOSE_HND r_c;
 		BOOL p;
@@ -2485,10 +2409,8 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 	make_samr_q_query_dispinfo(&q_o, pol_domain, level, 0, 0xffffffff);
 
 	/* turn parameters into data stream */
-	samr_io_q_query_dispinfo("", &q_o,  &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(pol_domain, SAMR_QUERY_DISPINFO, &data, &rdata))
+	if (samr_io_q_query_dispinfo("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(pol_domain, SAMR_QUERY_DISPINFO, &data, &rdata))
 	{
 		SAMR_R_QUERY_DISPINFO r_o;
 		BOOL p;

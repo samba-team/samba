@@ -57,7 +57,7 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 /***************************************************************************
 lsa_reply_query_info
  ***************************************************************************/
-static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
+static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 				char *dom_name, DOM_SID *dom_sid,
 				uint32 status)
 {
@@ -83,7 +83,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 		r_q.status = 0x0;
 	}
 	/* store the response in the SMB stream */
-	lsa_io_r_query("", &r_q, rdata, 0);
+	return lsa_io_r_query("", &r_q, rdata, 0);
 }
 
 
@@ -256,7 +256,7 @@ static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 /***************************************************************************
 lsa_reply_lookup_sids
  ***************************************************************************/
-static void lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, prs_struct *rdata)
+static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, prs_struct *rdata)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -277,13 +277,13 @@ static void lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, prs_struct *rdata)
 	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count, status);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_sids("", &r_l, rdata, 0);
+	return lsa_io_r_lookup_sids("", &r_l, rdata, 0);
 }
 
 /***************************************************************************
 lsa_reply_lookup_names
  ***************************************************************************/
-static void lsa_reply_lookup_names(prs_struct *rdata,
+static BOOL lsa_reply_lookup_names(prs_struct *rdata,
 				UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
 {
 	LSA_R_LOOKUP_NAMES r_l;
@@ -300,13 +300,13 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 	make_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_names("", &r_l, rdata, 0);
+	return lsa_io_r_lookup_names("", &r_l, rdata, 0);
 }
 
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL2 q_o;
@@ -315,17 +315,21 @@ static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(q_o);
 	ZERO_STRUCT(r_o);
 
-	lsa_io_q_open_pol2("", &q_o, data, 0);
+	if (!lsa_io_q_open_pol2("", &q_o, data, 0))
+	{
+		return False;
+	}
+
 	r_o.status = _lsa_open_policy2(&q_o.uni_server_name, &r_o.pol,
 				       &q_o.attr,
 				       q_o.des_access);
-	lsa_io_r_open_pol2("", &r_o, rdata, 0);
+	return lsa_io_r_open_pol2("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
@@ -334,16 +338,24 @@ static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_o);
 	ZERO_STRUCT(q_o);
 
-	lsa_io_q_open_pol("", &q_o, data, 0);
+	if (!lsa_io_q_open_pol("", &q_o, data, 0))
+	{
+		return False;
+	}
+
 	r_o.status = _lsa_open_policy(NULL, &r_o.pol,
 	                              &q_o.attr, q_o.des_access);
 	lsa_io_r_open_pol("", &r_o, rdata, 0);
+	{
+		return False;
+	}
+	return True;
 }
 
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	uint32 status;
@@ -353,12 +365,16 @@ static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
 	DOM_SID **sids = NULL;
 	LSA_R_ENUM_TRUST_DOM r_e;
 	LSA_Q_ENUM_TRUST_DOM q_e;
+	BOOL ret;
 
 	ZERO_STRUCT(r_e);
 	ZERO_STRUCT(q_e);
 
 	/* grab the enum trust domain context etc. */
-	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
+	if (!lsa_io_q_enum_trust_dom("", &q_e, data, 0))
+	{
+		return False;
+	}
 
 	/* construct reply.  return status is always 0x0 */
 
@@ -370,17 +386,19 @@ static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
 			      status);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
+	ret = lsa_io_r_enum_trust_dom("", &r_e, rdata, 0);
 
 	/* free names and sids */
 	free_sid_array(num_doms, sids);
 	safe_free(uni_names);
+
+	return ret;
 }
 
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
@@ -393,52 +411,64 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(q_i);
 
 	/* grab the info class and policy handle */
-	lsa_io_q_query("", &q_i, data, 0);
+	if (!lsa_io_q_query("", &q_i, data, 0))
+	{
+		return False;
+	}
+
 
 	status = _lsa_query_info_pol(&q_i.pol, q_i.info_class,
 				     name, &sid);
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, name, &sid, status);
+	return lsa_reply_query_info(&q_i, rdata, name, &sid, status);
 }
 
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static void api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
                                  prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_sids("", &q_l, data, 0);
+	if (!lsa_io_q_lookup_sids("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_sids(&q_l, rdata);
+	return lsa_reply_lookup_sids(&q_l, rdata);
 }
 
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static void api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_NAMES q_l;
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_names("", &q_l, data, 0);
+	if (!lsa_io_q_lookup_names("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 
 	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
 
-	lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
+	return lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_close( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_CLOSE r_c;
@@ -447,15 +477,19 @@ static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(q_c);
 	ZERO_STRUCT(r_c);
 
-	lsa_io_q_close("", &q_c, data, 0);
+	if (!lsa_io_q_close("", &q_c, data, 0))
+	{
+		return False;
+	}
+
 	r_c.status = _lsa_close(&q_c.pol);
-	lsa_io_r_close("", &r_c, rdata, 0);
+	return lsa_io_r_close("", &r_c, rdata, 0);
 }
 
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static void api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_CREATE_SECRET r_o;
@@ -464,17 +498,21 @@ static void api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(q_o);
 	ZERO_STRUCT(r_o);
 
-	lsa_io_q_create_secret("", &q_o, data, 0);
+	if (!lsa_io_q_create_secret("", &q_o, data, 0))
+	{
+		return False;
+	}
+
 	r_o.status = _lsa_create_secret(&q_o.pol,
 				      &q_o.uni_secret, q_o.des_access,
 				      &r_o.pol);
-	lsa_io_r_create_secret("", &r_o, rdata, 0);
+	return lsa_io_r_create_secret("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
  api_lsa_set_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static void api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_Q_SET_SECRET q_o;
@@ -484,18 +522,22 @@ static void api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_o);
 	ZERO_STRUCT(q_o);
 
-	lsa_io_q_set_secret("", &q_o, data, 0);
+	if (!lsa_io_q_set_secret("", &q_o, data, 0))
+	{
+		return False;
+	}
+
 	if (q_o.value.ptr_secret) val = &q_o.value.enc_secret;
 
 	r_o.status = _lsa_set_secret(&q_o.pol, val, q_o.unknown);
 
-	lsa_io_r_set_secret("", &r_o, rdata, 0);
+	return lsa_io_r_set_secret("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
  api_lsa_query_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_QUERY_SECRET r_o;
@@ -508,7 +550,10 @@ static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_o);
 	ZERO_STRUCT(q_o);
 
-	lsa_io_q_query_secret("", &q_o, data, 0);
+	if (!lsa_io_q_query_secret("", &q_o, data, 0))
+	{
+		return False;
+	}
 
 	/* HACK! */
 	if (q_o.sec.curinfo.ptr_value  != 0) curval = &q_o.sec.curinfo.value.enc_secret;
@@ -536,13 +581,13 @@ static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
 		              r_o.sec.oldinfo.value.enc_secret.str_max_len, 1);
 	}
 
-	lsa_io_r_query_secret("", &r_o, rdata, 0);
+	return lsa_io_r_query_secret("", &r_o, rdata, 0);
 }
 
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_OPEN_SECRET r_o;
@@ -551,11 +596,15 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_o);
 	ZERO_STRUCT(q_o);
 
-	lsa_io_q_open_secret("", &q_o, data, 0);
+	if (!lsa_io_q_open_secret("", &q_o, data, 0))
+	{
+		return False;
+	}
+
 	r_o.status = _lsa_open_secret(&q_o.pol,
 				      &q_o.uni_secret, q_o.des_access,
 				      &r_o.pol);
-	lsa_io_r_open_secret("", &r_o, rdata, 0);
+	return lsa_io_r_open_secret("", &r_o, rdata, 0);
 }
 
 /***************************************************************************

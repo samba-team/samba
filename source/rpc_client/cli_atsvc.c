@@ -56,10 +56,8 @@ BOOL at_add_job(
 	make_at_q_add_job(&q_a, srv_name, info, command);
 
 	/* turn parameters into data stream */
-	at_io_q_add_job("", &q_a, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, AT_ADD_JOB, &buf, &rbuf))
+	if (at_io_q_add_job("", &q_a, &buf, 0) &&
+	    rpc_con_pipe_req(con, AT_ADD_JOB, &buf, &rbuf))
 	{
 		AT_R_ADD_JOB r_a;
 
@@ -115,10 +113,8 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 	make_at_q_del_job(&q_d, srv_name, min_jobid, max_jobid);
 
 	/* turn parameters into data stream */
-	at_io_q_del_job("", &q_d, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, AT_DEL_JOB, &buf, &rbuf))
+	if (at_io_q_del_job("", &q_d, &buf, 0) &&
+	    rpc_con_pipe_req(con, AT_DEL_JOB, &buf, &rbuf))
 	{
 		AT_R_DEL_JOB r_d;
 
@@ -170,10 +166,8 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 	make_at_q_enum_jobs(&q_e, srv_name);
 
 	/* turn parameters into data stream */
-	at_io_q_enum_jobs("", &q_e, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, AT_ENUM_JOBS, &buf, &rbuf))
+	if (at_io_q_enum_jobs("", &q_e, &buf, 0) &&
+	    rpc_con_pipe_req(con, AT_ENUM_JOBS, &buf, &rbuf))
 	{
 		AT_R_ENUM_JOBS r_e;
 
@@ -244,10 +238,8 @@ BOOL at_query_job(char *srv_name,
 	make_at_q_query_job(&q_q, srv_name, jobid);
 
 	/* turn parameters into data stream */
-	at_io_q_query_job("", &q_q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, AT_QUERY_JOB, &buf, &rbuf))
+	if (at_io_q_query_job("", &q_q, &buf, 0) &&
+	    rpc_con_pipe_req(con, AT_QUERY_JOB, &buf, &rbuf))
 	{
 		AT_R_QUERY_JOB r_q;
 

@@ -236,10 +236,8 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 	}
 
 	/* turn parameters into data stream */
-	lsa_io_q_open_pol("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf))
+	if (lsa_io_q_open_pol("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL r_o;
 		BOOL p;
@@ -314,10 +312,8 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 	}
 
 	/* turn parameters into data stream */
-	lsa_io_q_open_pol2("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, LSA_OPENPOLICY2, &buf, &rbuf))
+	if (lsa_io_q_open_pol2("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, LSA_OPENPOLICY2, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL2 r_o;
 		BOOL p;
@@ -377,10 +373,8 @@ BOOL lsa_create_secret( const POLICY_HND *hnd,
 	make_q_create_secret(&q_o, hnd, secret_name, des_access);
 
 	/* turn parameters into data stream */
-	lsa_io_q_create_secret("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_CREATESECRET, &buf, &rbuf))
+	if (lsa_io_q_create_secret("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_CREATESECRET, &buf, &rbuf))
 	{
 		LSA_R_CREATE_SECRET r_o;
 		BOOL p;
@@ -434,10 +428,8 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 	make_q_open_secret(&q_o, hnd, secret_name, des_access);
 
 	/* turn parameters into data stream */
-	lsa_io_q_open_secret("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_OPENSECRET, &buf, &rbuf))
+	if (lsa_io_q_open_secret("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_OPENSECRET, &buf, &rbuf))
 	{
 		LSA_R_OPEN_SECRET r_o;
 		BOOL p;
@@ -504,10 +496,8 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret)
 	}
 
 	/* turn parameters into data stream */
-	lsa_io_q_set_secret("", &q_q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_SETSECRET, &buf, &rbuf))
+	if (lsa_io_q_set_secret("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_SETSECRET, &buf, &rbuf))
 	{
 		LSA_R_SET_SECRET r_q;
 		BOOL p;
@@ -560,10 +550,8 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 	make_q_query_secret(&q_q, hnd);
 
 	/* turn parameters into data stream */
-	lsa_io_q_query_secret("", &q_q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_QUERYSECRET, &buf, &rbuf))
+	if (lsa_io_q_query_secret("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_QUERYSECRET, &buf, &rbuf))
 	{
 		LSA_R_QUERY_SECRET r_q;
 		BOOL p;
@@ -631,10 +619,8 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 	make_q_lookup_names(&q_l, hnd, num_names, names);
 
 	/* turn parameters into data stream */
-	lsa_io_q_lookup_names("", &q_l, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_LOOKUPNAMES, &buf, &rbuf))
+	if (lsa_io_q_lookup_names("", &q_l, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_LOOKUPNAMES, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_NAMES r_l;
 		DOM_R_REF ref;
@@ -777,10 +763,8 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 	make_q_lookup_sids(&q_l, hnd, num_sids, sids, 1);
 
 	/* turn parameters into data stream */
-	lsa_io_q_lookup_sids("", &q_l, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_LOOKUPSIDS, &buf, &rbuf))
+	if (lsa_io_q_lookup_sids("", &q_l, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_LOOKUPSIDS, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_SIDS r_l;
 		DOM_R_REF ref;
@@ -910,10 +894,8 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 	make_q_query(&q_q, hnd, info_class);
 
 	/* turn parameters into data stream */
-	lsa_io_q_query("", &q_q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_QUERYINFOPOLICY, &buf, &rbuf))
+	if (lsa_io_q_query("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_QUERYINFOPOLICY, &buf, &rbuf))
 	{
 		LSA_R_QUERY_INFO r_q;
 		BOOL p;
@@ -1016,10 +998,8 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 	make_q_enum_trust_dom(&q_q, hnd, *enum_ctx, 0xffffffff);
 
 	/* turn parameters into data stream */
-	lsa_io_q_enum_trust_dom("", &q_q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_ENUMTRUSTDOM, &buf, &rbuf))
+	if (lsa_io_q_enum_trust_dom("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_ENUMTRUSTDOM, &buf, &rbuf))
 	{
 		LSA_R_ENUM_TRUST_DOM r_q;
 		BOOL p;
@@ -1092,10 +1072,8 @@ BOOL lsa_close(POLICY_HND *hnd)
 	make_lsa_q_close(&q_c, hnd);
 
 	/* turn parameters into data stream */
-	lsa_io_q_close("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, LSA_CLOSE, &buf, &rbuf))
+	if (lsa_io_q_close("", &q_c, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_CLOSE, &buf, &rbuf))
 	{
 		LSA_R_CLOSE r_c;
 		BOOL p;

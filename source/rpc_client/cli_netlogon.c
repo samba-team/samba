@@ -81,10 +81,8 @@ BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level)
 	make_q_logon_ctrl2(&q_l, srv_name, 0, 0, status_level);
 
 	/* turn parameters into data stream */
-	net_io_q_logon_ctrl2("", &q_l,  &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, NET_LOGON_CTRL2, &buf, &rbuf))
+	if (net_io_q_logon_ctrl2("", &q_l,  &buf, 0) &&
+	    rpc_con_pipe_req(con, NET_LOGON_CTRL2, &buf, &rbuf))
 	{
 		NET_R_LOGON_CTRL2 r_l;
 
@@ -155,10 +153,8 @@ uint32 cli_net_auth2(const char *srv_name,
 	              &clnt_cred.challenge, *neg_flags);
 
 	/* turn parameters into data stream */
-	net_io_q_auth_2("", &q_a,  &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, NET_AUTH2, &buf, &rbuf))
+	if (net_io_q_auth_2("", &q_a,  &buf, 0) &&
+	    rpc_con_pipe_req(con, NET_AUTH2, &buf, &rbuf))
 	{
 		NET_R_AUTH_2 r_a;
 
@@ -264,10 +260,8 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
   make_q_req_chal(&q_c, srv_name, myhostname, clnt_chal);
 
   /* turn parameters into data stream */
-  net_io_q_req_chal("", &q_c,  &buf, 0);
-
-  /* send the data on \PIPE\ */
-  if (rpc_con_pipe_req(con, NET_REQCHAL, &buf, &rbuf))
+  if (net_io_q_req_chal("", &q_c,  &buf, 0) &&
+      rpc_con_pipe_req(con, NET_REQCHAL, &buf, &rbuf))
   {
     NET_R_REQ_CHAL r_c;
 
@@ -349,10 +343,8 @@ BOOL cli_net_srv_pwset(const char* srv_name,
                    myhostname, &new_clnt_cred, (char *)processed_new_pwd);
 
   /* turn parameters into data stream */
-  net_io_q_srv_pwset("", &q_s,  &buf, 0);
-
-  /* send the data on \PIPE\ */
-  if (rpc_con_pipe_req(con, NET_SRVPWSET, &buf, &rbuf))
+  if (net_io_q_srv_pwset("", &q_s,  &buf, 0) &&
+      rpc_con_pipe_req(con, NET_SRVPWSET, &buf, &rbuf))
   {
     NET_R_SRV_PWSET r_s;
 
@@ -428,10 +420,8 @@ uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 	q_s.validation_level = validation_level;
 
   /* turn parameters into data stream */
-  net_io_q_sam_logon("", &q_s,  &buf, 0);
-
-  /* send the data on \PIPE\ */
-  if (rpc_con_pipe_req(con, NET_SAMLOGON, &buf, &rbuf))
+  if (net_io_q_sam_logon("", &q_s,  &buf, 0) &&
+      rpc_con_pipe_req(con, NET_SAMLOGON, &buf, &rbuf))
   {
     NET_R_SAM_LOGON r_s;
 
@@ -528,10 +518,8 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
                 &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr);
 
   /* turn parameters into data stream */
-  net_io_q_sam_logoff("", &q_s,  &buf, 0);
-
-  /* send the data on \PIPE\ */
-  if (rpc_con_pipe_req(con, NET_SAMLOGOFF, &buf, &rbuf))
+  if (net_io_q_sam_logoff("", &q_s,  &buf, 0) &&
+      rpc_con_pipe_req(con, NET_SAMLOGOFF, &buf, &rbuf))
   {
     NET_R_SAM_LOGOFF r_s;
 
@@ -602,10 +590,8 @@ BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 			&new_clnt_cred, database_id);
 	
 	/* turn parameters into data stream */
-	net_io_q_sam_sync("", &q_s,  &buf, 0);
-	
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, NET_SAM_SYNC, &buf, &rbuf))
+	if (net_io_q_sam_sync("", &q_s,  &buf, 0) &&
+	    rpc_con_pipe_req(con, NET_SAM_SYNC, &buf, &rbuf))
 	{
 		NET_R_SAM_SYNC r_s;
 

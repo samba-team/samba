@@ -67,10 +67,8 @@ BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 	make_spoolss_q_enumprinters(&q_o, flags, srv_name, level, 0x2000);
 
 	/* turn parameters into data stream */
-	spoolss_io_q_enumprinters("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf))
+	if (spoolss_io_q_enumprinters("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf))
 	{
 		SPOOL_R_ENUMPRINTERS r_o;
 		BOOL p;
@@ -139,10 +137,8 @@ uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 			level, *buf_size);
 
 	/* turn parameters into data stream */
-	spoolss_io_q_enumjobs("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
+	if (spoolss_io_q_enumjobs("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
 	{
 		SPOOL_R_ENUMJOBS r_o;
 		BOOL p;
@@ -224,10 +220,8 @@ BOOL spoolss_open_printer_ex( const char *printername,
 	                               station, username);
 
 	/* turn parameters into data stream */
-	spoolss_io_q_open_printer_ex("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SPOOLSS_OPENPRINTEREX, &buf, &rbuf))
+	if (spoolss_io_q_open_printer_ex("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SPOOLSS_OPENPRINTEREX, &buf, &rbuf))
 	{
 		SPOOL_R_OPEN_PRINTER_EX r_o;
 		BOOL p;
@@ -285,10 +279,8 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 	make_spoolss_q_closeprinter(&q_c, hnd);
 
 	/* turn parameters into data stream */
-	spoolss_io_q_closeprinter("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, SPOOLSS_CLOSEPRINTER, &buf, &rbuf))
+	if (spoolss_io_q_closeprinter("", &q_c, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, SPOOLSS_CLOSEPRINTER, &buf, &rbuf))
 	{
 		SPOOL_R_CLOSEPRINTER r_c;
 		BOOL p;

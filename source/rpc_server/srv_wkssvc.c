@@ -34,7 +34,7 @@ extern pstring global_myname;
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	WKS_Q_QUERY_INFO q_u;
@@ -46,7 +46,11 @@ static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_u);
 
 	/* grab the net share enum */
-	wks_io_q_query_info("", &q_u, data, 0);
+	if (!wks_io_q_query_info("", &q_u, data, 0))
+	{
+		return False;
+	}
+
 
 	status = _wks_query_info(&q_u.uni_srv_name, q_u.switch_value, &wks100);
 	make_wks_r_query_info(&r_u, q_u.switch_value, &wks100, status);

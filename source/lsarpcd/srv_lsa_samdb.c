@@ -442,7 +442,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 /***************************************************************************
 lsa_reply_lookup_names
  ***************************************************************************/
-static void lsa_reply_lookup_names(prs_struct *rdata,
+static BOOL lsa_reply_lookup_names(prs_struct *rdata,
 				UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
 {
 	LSA_R_LOOKUP_NAMES r_l;
@@ -459,7 +459,7 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 	make_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_names("", &r_l, rdata, 0);
+	return lsa_io_r_lookup_names("", &r_l, rdata, 0);
 }
 
 /***************************************************************************
@@ -516,18 +516,22 @@ uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 /***************************************************************************
 _lsa_lookup_names
  ***************************************************************************/
-static void _lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
+static BOOL _lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_NAMES q_l;
 	ZERO_STRUCT(q_l);
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_names("", &q_l, data, 0);
+	if (!lsa_io_q_lookup_names("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 
 	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
 
-	lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
+	return lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
 /***************************************************************************

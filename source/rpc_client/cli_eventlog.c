@@ -50,10 +50,8 @@ BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd)
 	make_eventlog_q_open(&q, log, NULL);
 
 	/* turn parameters into data stream */
-	eventlog_io_q_open("", &q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, EVENTLOG_OPEN, &buf, &rbuf))
+	if (eventlog_io_q_open("", &q, &buf, 0) &&
+	    rpc_con_pipe_req(con, EVENTLOG_OPEN, &buf, &rbuf))
 	{
 		EVENTLOG_R_OPEN r;
 
@@ -101,10 +99,8 @@ BOOL event_close( POLICY_HND *hnd)
 	make_eventlog_q_close(&q, hnd);
 
 	/* turn parameters into data stream */
-	eventlog_io_q_close("", &q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, EVENTLOG_CLOSE, &buf, &rbuf))
+	if (eventlog_io_q_close("", &q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, EVENTLOG_CLOSE, &buf, &rbuf))
 	{
 		EVENTLOG_R_CLOSE r;
 
@@ -144,10 +140,8 @@ BOOL event_numofeventlogrec( POLICY_HND *hnd, uint32 *number)
 	make_eventlog_q_numofeventlogrec(&q, hnd);
 
 	/* turn parameters into data stream */
-	eventlog_io_q_numofeventlogrec("", &q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, EVENTLOG_NUMOFEVENTLOGRECORDS, &buf, &rbuf))
+	if (eventlog_io_q_numofeventlogrec("", &q, &buf, 0) &&
+	     rpc_hnd_pipe_req(hnd, EVENTLOG_NUMOFEVENTLOGRECORDS, &buf, &rbuf))
 	{
 		EVENTLOG_R_NUMOFEVENTLOGREC r;
 
@@ -192,10 +186,8 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 	make_eventlog_q_readeventlog(&q, hnd, flags, offset, *number_of_bytes);
 
 	/* turn parameters into data stream */
-	eventlog_io_q_readeventlog("", &q, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, EVENTLOG_READEVENTLOG, &buf, &rbuf))
+	if (eventlog_io_q_readeventlog("", &q, &buf, 0) &&
+	     rpc_hnd_pipe_req(hnd, EVENTLOG_READEVENTLOG, &buf, &rbuf))
 	{
 		r.event=ev;
 		eventlog_io_r_readeventlog("", &r, &rbuf, 0);

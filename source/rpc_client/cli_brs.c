@@ -62,10 +62,8 @@ BOOL brs_query_info( const char *srv_name, uint32 switch_value,
 	make_brs_q_query_info(&q_o, srv_name, switch_value);
 
 	/* turn parameters into data stream */
-	brs_io_q_query_info("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, BRS_QUERY_INFO, &buf, &rbuf))
+	if (brs_io_q_query_info("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, BRS_QUERY_INFO, &buf, &rbuf))
 	{
 		BRS_R_QUERY_INFO r_o;
 		BOOL p;

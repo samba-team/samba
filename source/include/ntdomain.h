@@ -207,7 +207,7 @@ struct api_struct
 {  
   char *name;
   uint8 opnum;
-  void (*fn) (rpcsrv_struct*, prs_struct*, prs_struct*);
+  BOOL (*fn) (rpcsrv_struct*, prs_struct*, prs_struct*);
 };
 
 struct acct_info

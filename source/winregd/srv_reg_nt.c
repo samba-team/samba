@@ -182,13 +182,17 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static void api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_ENTRY q_u;
 
 	/* grab the reg open entry */
-	reg_io_q_open_entry("", &q_u, data, 0);
+	if (!reg_io_q_open_entry("", &q_u, data, 0))
+	{
+		return False;
+	}
+
 
 	/* construct reply. */
 	reg_reply_open_entry(&q_u, rdata);
@@ -240,13 +244,17 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_INFO q_u;
 
 	/* grab the reg unknown 0x11*/
-	reg_io_q_info("", &q_u, data, 0);
+	if (!reg_io_q_info("", &q_u, data, 0))
+	{
+		return False;
+	}
+
 
 	/* construct reply.  always indicate success */
 	reg_reply_info(&q_u, rdata);
@@ -273,3 +281,4 @@ BOOL api_reg_rpc(rpcsrv_struct *p)
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
 #endif
+

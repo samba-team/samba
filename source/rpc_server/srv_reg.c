@@ -73,7 +73,7 @@ static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_close( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
         REG_Q_CLOSE q_r;
@@ -82,7 +82,11 @@ static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
         ZERO_STRUCT(r_u);
  
         /* grab the reg unknown 1 */
-        reg_io_q_close("", &q_r, data, 0);
+        if (!reg_io_q_close("", &q_r, data, 0))
+	{
+		return False;
+	}
+
  
         memcpy(&r_u.pol, &q_r.pol, sizeof(POLICY_HND));
  
@@ -90,13 +94,13 @@ static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
         r_u.status = _reg_close(&r_u.pol);
  
         /* store the response in the SMB stream */
-        reg_io_r_close("", &r_u, rdata, 0);
+        return reg_io_r_close("", &r_u, rdata, 0);
 }            
 
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_open( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
         REG_Q_OPEN_HKLM q_u;
@@ -105,19 +109,23 @@ static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
         ZERO_STRUCT(r_u);
  
         /* grab the reg open */
-        reg_io_q_open_hklm("", &q_u, data, 0);
+        if (!reg_io_q_open_hklm("", &q_u, data, 0))
+	{
+		return False;
+	}
+
  
         r_u.status = _reg_open(&r_u.pol, q_u.access_mask);
  
         /* store the response in the SMB stream */
-        reg_io_r_open_hklm("", &r_u, rdata, 0); 
+        return reg_io_r_open_hklm("", &r_u, rdata, 0); 
 }
 
 
 /*******************************************************************
  reg_reply_open_entry
  ********************************************************************/
-static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
+static BOOL reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
@@ -159,31 +167,33 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 	make_reg_r_open_entry(&r_u, &pol, status);
 
 	/* store the response in the SMB stream */
-	reg_io_r_open_entry("", &r_u, rdata, 0);
-
-	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
+	return reg_io_r_open_entry("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static void api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_ENTRY q_u;
 
 	/* grab the reg open entry */
-	reg_io_q_open_entry("", &q_u, data, 0);
+	if (!reg_io_q_open_entry("", &q_u, data, 0))
+	{
+		return False;
+	}
+
 
 	/* construct reply. */
-	reg_reply_open_entry(&q_u, rdata);
+	return reg_reply_open_entry(&q_u, rdata);
 }
 
 
 /*******************************************************************
  reg_reply_info
  ********************************************************************/
-static void reg_reply_info(REG_Q_INFO *q_u,
+static BOOL reg_reply_info(REG_Q_INFO *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
@@ -217,24 +227,25 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	make_reg_r_info(&r_u, &type, &buf, status);
 
 	/* store the response in the SMB stream */
-	reg_io_r_info("", &r_u, rdata, 0);
-
-	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
+	return reg_io_r_info("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_INFO q_u;
 
 	/* grab the reg unknown 0x11*/
-	reg_io_q_info("", &q_u, data, 0);
+	if (!reg_io_q_info("", &q_u, data, 0))
+	{
+		return False;
+	}
 
 	/* construct reply.  always indicate success */
-	reg_reply_info(&q_u, rdata);
+	return reg_reply_info(&q_u, rdata);
 }
 
 

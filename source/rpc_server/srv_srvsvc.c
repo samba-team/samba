@@ -32,7 +32,7 @@ extern pstring global_myname;
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
@@ -44,7 +44,11 @@ static void api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_n);
 
 	/* grab the net server get info */
-	srv_io_q_net_srv_get_info("", &q_n, data, 0);
+	if (!srv_io_q_net_srv_get_info("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	status = _srv_net_srv_get_info( &q_n.uni_srv_name, q_n.switch_value,
 					&ctr );
@@ -53,12 +57,12 @@ static void api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
         make_srv_r_net_srv_get_info(&r_n, q_n.switch_value, &ctr, status);
 
         /* store the response in the SMB stream */
-        srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
+        return srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_FILE_ENUM q_n;
@@ -74,7 +78,11 @@ static void api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 	r_n.file_level = q_n.file_level;
 
 	/* grab the net server get enum */
-	srv_io_q_net_file_enum("", &q_n, data, 0);
+	if (!srv_io_q_net_file_enum("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	r_n.status = _srv_net_file_enum( &q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
@@ -85,12 +93,12 @@ static void api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
-	srv_io_r_net_file_enum("", &r_n, rdata, 0);
+	return srv_io_r_net_file_enum("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_CONN_ENUM q_n;
@@ -106,7 +114,11 @@ static void api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
 	r_n.conn_level = q_n.conn_level;
 
 	/* grab the net server get enum */
-	srv_io_q_net_conn_enum("", &q_n, data, 0);
+	if (!srv_io_q_net_conn_enum("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	r_n.status = _srv_net_conn_enum( &q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
@@ -117,12 +129,12 @@ static void api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
-	srv_io_r_net_conn_enum("", &r_n, rdata, 0);
+	return srv_io_r_net_conn_enum("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SESS_ENUM q_n;
@@ -136,7 +148,11 @@ static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 	r_n.ctr = &ctr;
 
 	/* grab the net server get enum */
-	srv_io_q_net_sess_enum("", &q_n, data, 0);
+	if (!srv_io_q_net_sess_enum("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	r_n.sess_level = q_n.sess_level;
 
@@ -149,17 +165,19 @@ static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
         memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
-	srv_io_r_net_sess_enum("", &r_n, rdata, 0);
+	return srv_io_r_net_sess_enum("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
         SRV_Q_NET_SHARE_ENUM q_n;
 	SRV_R_NET_SHARE_ENUM r_n;
         SRV_SHARE_INFO_CTR ctr;
+
+        BOOL ret;
 
 	ZERO_STRUCT(q_n);
 	ZERO_STRUCT(r_n);
@@ -169,7 +187,11 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 	r_n.ctr = &ctr;
 
         /* grab the net server get enum */
-        srv_io_q_net_share_enum("", &q_n, data, 0);
+        if (!srv_io_q_net_share_enum("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	r_n.share_level = q_n.share_level;
 
@@ -182,14 +204,14 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
-	srv_io_r_net_share_enum("", &r_n, rdata, 0);
-
+	ret = srv_io_r_net_share_enum("", &r_n, rdata, 0);
 	srv_free_srv_share_ctr(&ctr);
+	return ret;
 }
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
         SRV_Q_NET_REMOTE_TOD q_n;
@@ -201,7 +223,11 @@ static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_n);
 
 	/* grab the net server get enum */
-	srv_io_q_net_remote_tod("", &q_n, data, 0);
+	if (!srv_io_q_net_remote_tod("", &q_n, data, 0))
+	{
+		return False;
+	}
+
 
 	status = _srv_net_remote_tod( &q_n.uni_srv_name, &tod );
 
@@ -210,7 +236,7 @@ static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 	r_n.status = status;
 
 	/* store the response in the SMB stream */
-	srv_io_r_net_remote_tod("", &r_n, rdata, 0);
+	return srv_io_r_net_remote_tod("", &r_n, rdata, 0);
 }
 
 

@@ -63,10 +63,8 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 	make_svc_q_open_sc_man(&q_o, srv_name, db_name, des_access);
 
 	/* turn parameters into data stream */
-	svc_io_q_open_sc_man("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_OPEN_SC_MAN, &buf, &rbuf))
+	if (svc_io_q_open_sc_man("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_OPEN_SC_MAN, &buf, &rbuf))
 	{
 		SVC_R_OPEN_SC_MAN r_o;
 		BOOL p;
@@ -135,10 +133,8 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 	make_svc_q_open_service(&q_o, scm_hnd, srv_name, des_access);
 
 	/* turn parameters into data stream */
-	svc_io_q_open_service("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_OPEN_SERVICE, &buf, &rbuf))
+	if (svc_io_q_open_service("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_OPEN_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_OPEN_SERVICE r_o;
 		BOOL p;
@@ -211,10 +207,8 @@ BOOL svc_enum_svcs( POLICY_HND *hnd,
 	                            *buf_size, *resume_hnd);
 
 	/* turn parameters into data stream */
-	svc_io_q_enum_svcs_status("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
+	if (svc_io_q_enum_svcs_status("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
 	{
 		SVC_R_ENUM_SVCS_STATUS r_o;
 		BOOL p;
@@ -287,10 +281,8 @@ BOOL svc_stop_service( POLICY_HND *hnd,
 	make_svc_q_stop_service(&q_c, hnd, unknown);
 
 	/* turn parameters into data stream */
-	svc_io_q_stop_service("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_STOP_SERVICE, &buf, &rbuf))
+	if (svc_io_q_stop_service("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_STOP_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_STOP_SERVICE r_c;
 		BOOL p;
@@ -352,10 +344,8 @@ BOOL svc_start_service( POLICY_HND *hnd,
 	make_svc_q_start_service(&q_c, hnd, argc, argv);
 
 	/* turn parameters into data stream */
-	svc_io_q_start_service("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_START_SERVICE, &buf, &rbuf))
+	if (svc_io_q_start_service("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_START_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_START_SERVICE r_c;
 		BOOL p;
@@ -417,10 +407,8 @@ BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 	make_svc_q_query_svc_config(&q_c, hnd, *buf_size);
 
 	/* turn parameters into data stream */
-	svc_io_q_query_svc_config("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_QUERY_SVC_CONFIG, &buf, &rbuf))
+	if (svc_io_q_query_svc_config("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_QUERY_SVC_CONFIG, &buf, &rbuf))
 	{
 		SVC_R_QUERY_SVC_CONFIG r_c;
 		BOOL p;
@@ -483,10 +471,8 @@ BOOL svc_close(POLICY_HND *hnd)
 	make_svc_q_close(&q_c, hnd);
 
 	/* turn parameters into data stream */
-	svc_io_q_close("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_CLOSE, &buf, &rbuf))
+	if (svc_io_q_close("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_CLOSE, &buf, &rbuf))
 	{
 		SVC_R_CLOSE r_c;
 		BOOL p;
@@ -576,10 +562,8 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				password, disp_name);
 
 	/* turn parameters into data stream */
-	svc_io_q_change_svc_config("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SVC_CHANGE_SVC_CONFIG, &buf, &rbuf))
+	if (svc_io_q_change_svc_config("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_CHANGE_SVC_CONFIG, &buf, &rbuf))
 	{
 		SVC_R_CHANGE_SVC_CONFIG r_c;
 		BOOL p;

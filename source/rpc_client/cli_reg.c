@@ -140,10 +140,8 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 	make_reg_q_open_hkcr(&q_o, unknown_0, level);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_hkcr("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, REG_OPEN_HKCR, &buf, &rbuf))
+	if (reg_io_q_open_hkcr("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, REG_OPEN_HKCR, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKCR r_o;
 		BOOL p;
@@ -198,10 +196,8 @@ BOOL reg_open_hklm( struct cli_connection *con,
 	make_reg_q_open_hklm(&q_o, unknown_0, level);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_hklm("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, REG_OPEN_HKLM, &buf, &rbuf))
+	if (reg_io_q_open_hklm("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, REG_OPEN_HKLM, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKLM r_o;
 		BOOL p;
@@ -256,10 +252,8 @@ BOOL reg_open_hku( struct cli_connection *con,
 	make_reg_q_open_hku(&q_o, unknown_0, level);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_hku("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, REG_OPEN_HKU, &buf, &rbuf))
+	if (reg_io_q_open_hku("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, REG_OPEN_HKU, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKU r_o;
 		BOOL p;
@@ -314,10 +308,8 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 	make_reg_q_flush_key(&q_o, hnd);
 
 	/* turn parameters into data stream */
-	reg_io_q_flush_key("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_FLUSH_KEY, &buf, &rbuf))
+	if (reg_io_q_flush_key("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_FLUSH_KEY, &buf, &rbuf))
 	{
 		REG_R_FLUSH_KEY r_o;
 		BOOL p;
@@ -373,10 +365,8 @@ BOOL reg_query_key( POLICY_HND *hnd,
 	make_reg_q_query_key(&q_o, hnd, *class_len);
 
 	/* turn parameters into data stream */
-	reg_io_q_query_key("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_QUERY_KEY, &buf, &rbuf))
+	if (reg_io_q_query_key("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_QUERY_KEY, &buf, &rbuf))
 	{
 		REG_R_QUERY_KEY r_o;
 		BOOL p;
@@ -438,10 +428,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 	make_reg_q_unk_1a(&q_o, hnd);
 
 	/* turn parameters into data stream */
-	reg_io_q_unk_1a("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_UNK_1A, &buf, &rbuf))
+	if (reg_io_q_unk_1a("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_UNK_1A, &buf, &rbuf))
 	{
 		REG_R_UNK_1A r_o;
 		BOOL p;
@@ -495,10 +483,8 @@ BOOL reg_query_info( POLICY_HND *hnd,
 	make_reg_q_info(&q_o, hnd, val_name, 4, 0);
 
 	/* turn parameters into data stream */
-	reg_io_q_info("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_INFO, &buf, &rbuf))
+	if (reg_io_q_info("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_INFO, &buf, &rbuf))
 	{
 		REG_R_INFO r_o;
 		BOOL p;
@@ -554,10 +540,8 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 	make_reg_q_set_key_sec(&q_o, hnd, sec_info, sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
-	reg_io_q_set_key_sec("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_SET_KEY_SEC, &buf, &rbuf))
+	if (reg_io_q_set_key_sec("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_SET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_SET_KEY_SEC r_o;
 		BOOL p;
@@ -604,10 +588,8 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 	make_reg_q_get_key_sec(&q_o, hnd, sec_info, *sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
-	reg_io_q_get_key_sec("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_GET_KEY_SEC, &buf, &rbuf))
+	if (reg_io_q_get_key_sec("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_GET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_GET_KEY_SEC r_o;
 		BOOL p;
@@ -672,10 +654,8 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 	make_reg_q_delete_val(&q_o, hnd, val_name);
 
 	/* turn parameters into data stream */
-	reg_io_q_delete_val("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_DELETE_VALUE, &buf, &rbuf))
+	if (reg_io_q_delete_val("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_DELETE_VALUE, &buf, &rbuf))
 	{
 		REG_R_DELETE_VALUE r_o;
 		BOOL p;
@@ -726,10 +706,8 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 	make_reg_q_delete_key(&q_o, hnd, key_name);
 
 	/* turn parameters into data stream */
-	reg_io_q_delete_key("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_DELETE_KEY, &buf, &rbuf))
+	if (reg_io_q_delete_key("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_DELETE_KEY, &buf, &rbuf))
 	{
 		REG_R_DELETE_KEY r_o;
 		BOOL p;
@@ -797,10 +775,8 @@ BOOL reg_create_key( POLICY_HND *hnd,
 	                      &sec_buf, sec_len, &sec);
 
 	/* turn parameters into data stream */
-	reg_io_q_create_key("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_CREATE_KEY, &buf, &rbuf))
+	if (reg_io_q_create_key("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_CREATE_KEY, &buf, &rbuf))
 	{
 		REG_R_CREATE_KEY r_o;
 		BOOL p;
@@ -857,10 +833,8 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 	make_reg_q_enum_key(&q_o, hnd, key_index);
 
 	/* turn parameters into data stream */
-	reg_io_q_enum_key("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_ENUM_KEY, &buf, &rbuf))
+	if (reg_io_q_enum_key("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_ENUM_KEY, &buf, &rbuf))
 	{
 		REG_R_ENUM_KEY r_o;
 		BOOL p;
@@ -917,10 +891,8 @@ BOOL reg_create_val( POLICY_HND *hnd,
 	make_reg_q_create_val(&q_o, hnd, val_name, type, data);
 
 	/* turn parameters into data stream */
-	reg_io_q_create_val("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_CREATE_VALUE, &buf, &rbuf))
+	if (reg_io_q_create_val("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_CREATE_VALUE, &buf, &rbuf))
 	{
 		REG_R_CREATE_VALUE r_o;
 		BOOL p;
@@ -974,10 +946,8 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 	make_reg_q_enum_val(&q_o, hnd, val_index, max_valnamelen, max_valbufsize);
 
 	/* turn parameters into data stream */
-	reg_io_q_enum_val("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_ENUM_VALUE, &buf, &rbuf))
+	if (reg_io_q_enum_val("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_ENUM_VALUE, &buf, &rbuf))
 	{
 		REG_R_ENUM_VALUE r_o;
 		BOOL p;
@@ -1033,10 +1003,8 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 	make_reg_q_open_entry(&q_o, hnd, key_name, unk_0);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_entry("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_OPEN_ENTRY, &buf, &rbuf))
+	if (reg_io_q_open_entry("", &q_o, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_OPEN_ENTRY, &buf, &rbuf))
 	{
 		REG_R_OPEN_ENTRY r_o;
 		BOOL p;
@@ -1096,10 +1064,8 @@ BOOL reg_close( POLICY_HND *hnd)
 	make_reg_q_close(&q_c, hnd);
 
 	/* turn parameters into data stream */
-	reg_io_q_close("", &q_c, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_hnd_pipe_req(hnd, REG_CLOSE, &buf, &rbuf))
+	if (reg_io_q_close("", &q_c, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, REG_CLOSE, &buf, &rbuf))
 	{
 		REG_R_CLOSE r_c;
 		BOOL p;
@@ -1175,10 +1141,8 @@ BOOL reg_shutdown(const char *srv_name,
 	make_reg_q_shutdown(&q_o, msg, timeout, flags);
 
 	/* turn parameters into data stream */
-	reg_io_q_shutdown("", &q_o, &buf, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, REG_SHUTDOWN, &buf, &rbuf))
+	if (reg_io_q_shutdown("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, REG_SHUTDOWN, &buf, &rbuf))
 	{
 		REG_R_SHUTDOWN r_o;
 		BOOL p;

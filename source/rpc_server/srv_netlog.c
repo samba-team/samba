@@ -37,7 +37,7 @@ extern pstring global_myname;
 /*************************************************************************
  api_net_req_chal
  *************************************************************************/
-static void api_net_req_chal( rpcsrv_struct *p,
+static BOOL api_net_req_chal( rpcsrv_struct *p,
                               prs_struct *data,
                               prs_struct *rdata)
 {
@@ -48,19 +48,23 @@ static void api_net_req_chal( rpcsrv_struct *p,
 	ZERO_STRUCT(r_c);
 
 	/* grab the challenge... */
-	net_io_q_req_chal("", &q_r, data, 0);
+	if (!net_io_q_req_chal("", &q_r, data, 0))
+	{
+		return False;
+	}
+
 	r_c.status = _net_req_chal(&q_r.uni_logon_srv, &q_r.uni_logon_clnt, 
 					   &q_r.clnt_chal, &r_c.srv_chal,
 					   p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
-	net_io_r_req_chal("", &r_c, rdata, 0);
+	return net_io_r_req_chal("", &r_c, rdata, 0);
 }
 
 /*************************************************************************
  api_net_auth
  *************************************************************************/
-static void api_net_auth( rpcsrv_struct *p,
+static BOOL api_net_auth( rpcsrv_struct *p,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -71,20 +75,24 @@ static void api_net_auth( rpcsrv_struct *p,
 	ZERO_STRUCT(r_a);
 
 	/* grab the challenge... */
-	net_io_q_auth("", &q_a, data, 0);
+	if (!net_io_q_auth("", &q_a, data, 0))
+	{
+		return False;
+	}
+
 	r_a.status = _net_auth(&q_a.clnt_id,
 				     &q_a.clnt_chal,
 				     &r_a.srv_chal,
 				     p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
-	net_io_r_auth("", &r_a, rdata, 0);
+	return net_io_r_auth("", &r_a, rdata, 0);
 }
 
 /*************************************************************************
  api_net_auth_2
  *************************************************************************/
-static void api_net_auth_2( rpcsrv_struct *p,
+static BOOL api_net_auth_2( rpcsrv_struct *p,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -95,7 +103,11 @@ static void api_net_auth_2( rpcsrv_struct *p,
 	ZERO_STRUCT(r_a);
 
 	/* grab the challenge... */
-	net_io_q_auth_2("", &q_a, data, 0);
+	if (!net_io_q_auth_2("", &q_a, data, 0))
+	{
+		return False;
+	}
+
 	r_a.status = _net_auth_2(&q_a.clnt_id,
 					&q_a.clnt_chal,
 					&q_a.clnt_flgs,
@@ -104,13 +116,13 @@ static void api_net_auth_2( rpcsrv_struct *p,
 					p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
-	net_io_r_auth_2("", &r_a, rdata, 0);
+	return net_io_r_auth_2("", &r_a, rdata, 0);
 }
 
 /*************************************************************************
  api_net_srv_pwset
  *************************************************************************/
-static void api_net_srv_pwset( rpcsrv_struct *p,
+static BOOL api_net_srv_pwset( rpcsrv_struct *p,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -121,20 +133,24 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 	ZERO_STRUCT(r_s);
 
 	/* grab the challenge and encrypted password ... */
-	net_io_q_srv_pwset("", &q_a, data, 0);
+	if (!net_io_q_srv_pwset("", &q_a, data, 0))
+	{
+		return False;
+	}
+
 	r_s.status = _net_srv_pwset(&q_a.clnt_id,
 					    q_a.pwd,
 					    &r_s.srv_cred,
 					    p->key.pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
-	net_io_r_srv_pwset("", &r_s, rdata, 0);
+	return net_io_r_srv_pwset("", &r_s, rdata, 0);
 }
 
 /*************************************************************************
  api_net_sam_logoff
  *************************************************************************/
-static void api_net_sam_logoff( rpcsrv_struct *p,
+static BOOL api_net_sam_logoff( rpcsrv_struct *p,
                                 prs_struct *data,
                                 prs_struct *rdata)
 {
@@ -152,14 +168,18 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	q_l.sam_id.ctr = &ctr;
 
 	/* grab the challenge... */
-	net_io_q_sam_logoff("", &q_l, data, 0);
+	if (!net_io_q_sam_logoff("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 	status = _net_sam_logoff(&q_l.sam_id,
 					 &srv_cred,
 					 p->key.pid); /* strikerXXXX have to pass this parameter */
 	make_r_sam_logoff(&r_s, &srv_cred, status);
 
 	/* store the response in the SMB stream */
-	net_io_r_sam_logoff("", &r_s, rdata, 0);
+	return net_io_r_sam_logoff("", &r_s, rdata, 0);
 }
 
 static uint32 net_update_creds(uint32 remote_pid, struct dcinfo *dc,
@@ -196,7 +216,7 @@ static uint32 net_update_creds(uint32 remote_pid, struct dcinfo *dc,
 /*************************************************************************
  api_net_sam_sync
  *************************************************************************/
-static void api_net_sam_sync( rpcsrv_struct *p,
+static BOOL api_net_sam_sync( rpcsrv_struct *p,
                               prs_struct *data,
                               prs_struct *rdata)
 {
@@ -214,7 +234,11 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 	ZERO_STRUCT(srv_creds);
 	
 	/* grab the challenge... */
-	net_io_q_sam_sync("", &q_s, data, 0);
+	if (!net_io_q_sam_sync("", &q_s, data, 0))
+	{
+		return False;
+	}
+
 
 	status = net_update_creds(p->key.pid,
 	                             &dc, &q_s.uni_cli_name,
@@ -245,13 +269,13 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 				    status);
 
 	/* store the response in the SMB stream */
-	net_io_r_sam_sync("", dc.sess_key, &r_s, rdata, 0);
+	return net_io_r_sam_sync("", dc.sess_key, &r_s, rdata, 0);
 }
 
 /*************************************************************************
  api_net_sam_logon
  *************************************************************************/
-static void api_net_sam_logon( rpcsrv_struct *p,
+static BOOL api_net_sam_logon( rpcsrv_struct *p,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -268,7 +292,11 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	ZERO_STRUCT(r_s);
 
 	q_l.sam_id.ctr = &ctr; /* strikerXXXX don't really get this */
-	net_io_q_sam_logon("", &q_l, data, 0);
+	if (!net_io_q_sam_logon("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 	status = _net_sam_logon(&q_l.sam_id,
 					q_l.validation_level,
 					&srv_creds,
@@ -280,13 +308,13 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	                 status);
 
 	/* store the response in the SMB stream */
-	net_io_r_sam_logon("", &r_s, rdata, 0);
+	return net_io_r_sam_logon("", &r_s, rdata, 0);
 }
 
 /*************************************************************************
  api_net_trust_dom_list
  *************************************************************************/
-static void api_net_trust_dom_list( rpcsrv_struct *p,
+static BOOL api_net_trust_dom_list( rpcsrv_struct *p,
                                     prs_struct *data,
                                     prs_struct *rdata)
 {
@@ -297,19 +325,23 @@ static void api_net_trust_dom_list( rpcsrv_struct *p,
 	ZERO_STRUCT(r_t);
 
 	/* grab the lsa trusted domain list query... */
-	net_io_q_trust_dom("", &q_t, data, 0);
+	if (!net_io_q_trust_dom("", &q_t, data, 0))
+	{
+		return False;
+	}
+
 	r_t.status = _net_trust_dom_list(&q_t.uni_server_name,
 						   q_t.function_code,
 						   &r_t.uni_trust_dom_name);
 	
 	/* store the response in the SMB stream */
-	net_io_r_trust_dom("", &r_t, rdata, 0);
+	return net_io_r_trust_dom("", &r_t, rdata, 0);
 }
 
 /*************************************************************************
  api_net_logon_ctrl2
  *************************************************************************/
-static void api_net_logon_ctrl2( rpcsrv_struct *p,
+static BOOL api_net_logon_ctrl2( rpcsrv_struct *p,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {
@@ -324,7 +356,11 @@ static void api_net_logon_ctrl2( rpcsrv_struct *p,
 	ZERO_STRUCT(r_l);
 
 	/* grab the lsa netlogon ctrl2 query... */
-	net_io_q_logon_ctrl2("", &q_l, data, 0);
+	if (!net_io_q_logon_ctrl2("", &q_l, data, 0))
+	{
+		return False;
+	}
+
 	status = _net_logon_ctrl2(&q_l.uni_server_name,
 					  q_l.function_code,
 					  q_l.query_level,
@@ -334,7 +370,7 @@ static void api_net_logon_ctrl2( rpcsrv_struct *p,
 	make_r_logon_ctrl2(&r_l, switch_value, &logon_info, status);
 
 	/* store the response in the SMB stream */
-	net_io_r_logon_ctrl2("", &r_l, rdata, 0);
+	return net_io_r_logon_ctrl2("", &r_l, rdata, 0);
 }
 
 /*******************************************************************

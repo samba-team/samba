@@ -3531,7 +3531,6 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 char *get_sid_name_use_str(uint32 sid_name_use);
 char *get_file_mode_str(uint32 share_mode);
 char *get_file_oplock_str(uint32 op_type);
-char *get_share_type_str(uint32 type);
 char *get_server_type_str(uint32 type);
 void display_srv_info_101(FILE *out_hnd, enum action_type action, 
 		SRV_INFO_101 *const sv101);
@@ -3553,14 +3552,6 @@ void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
 				const SRV_TPRT_INFO_0 *const ctr);
 void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action, 
 				const SRV_TPRT_INFO_CTR *const ctr);
-void display_share_info_1(FILE *out_hnd, enum action_type action, 
-		SH_INFO_1 *const info1, SH_INFO_1_STR *const str1);
-void display_share_info_2(FILE *out_hnd, enum action_type action, 
-		SH_INFO_2 *const info2, SH_INFO_2_STR *const str2);
-void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SHARE_INFO_1 *const ctr);
-void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SHARE_INFO_2 *const ctr);
 void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action, 
 				SRV_SHARE_INFO_CTR *const ctr);
 void display_file_info_3(FILE *out_hnd, enum action_type action, 

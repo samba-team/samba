@@ -33,7 +33,7 @@ extern pstring global_myname;
 /*******************************************************************
  api_brs_query_info
  ********************************************************************/
-static void api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
+static BOOL api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	BRS_Q_QUERY_INFO q_u;
@@ -45,7 +45,11 @@ static void api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(r_u);
 
 	/* grab the net share enum */
-	brs_io_q_query_info("", &q_u, data, 0);
+	if (!brs_io_q_query_info("", &q_u, data, 0))
+	{
+		return False;
+	}
+
 
 	status = _brs_query_info(&q_u.uni_srv_name, q_u.switch_value1,
 				 &brs100);

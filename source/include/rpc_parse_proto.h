@@ -886,15 +886,20 @@ JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
-BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
-BOOL make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
+BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1,
+			      const char *net_name, const char *remark);
+BOOL make_srv_share_info1(SH_INFO_1 *sh1,
+			  const char *net_name, uint32 type,
+			  const char *remark);
 BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
-				char *net_name, char *remark,
-				char *path, char *pass);
+			      const char *net_name, const char *remark,
+			      const char *path, const char *pass);
 BOOL make_srv_share_info2(SH_INFO_2 *sh2,
-				char *net_name, uint32 type, char *remark,
-				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *pass);
+			  const char *net_name, uint32 type,
+			  const char *remark,
+			  uint32 perms, uint32 max_uses, uint32 num_uses,
+			  const char *path, const char *pass);
+void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR *ctr);
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				const char *srv_name, 
 				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,

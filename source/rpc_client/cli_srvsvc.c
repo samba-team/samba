@@ -74,10 +74,8 @@ BOOL srv_net_srv_tprt_enum(
 	                         hnd);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_tprt_enum("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NETTRANSPORTENUM, &data, &rdata))
+	if (srv_io_q_net_tprt_enum("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETTRANSPORTENUM, &data, &rdata))
 	{
 		SRV_R_NET_TPRT_ENUM r_o;
 		BOOL p;
@@ -158,10 +156,8 @@ BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 	                         hnd);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_conn_enum("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NETCONNENUM, &data, &rdata))
+	if (srv_io_q_net_conn_enum("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETCONNENUM, &data, &rdata))
 	{
 		SRV_R_NET_CONN_ENUM r_o;
 		BOOL p;
@@ -242,10 +238,8 @@ BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 	                         hnd);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_sess_enum("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NETSESSENUM, &data, &rdata))
+	if (srv_io_q_net_sess_enum("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETSESSENUM, &data, &rdata))
 	{
 		SRV_R_NET_SESS_ENUM r_o;
 		BOOL p;
@@ -328,10 +322,8 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 	                         hnd);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_share_enum("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NETSHAREENUM, &data, &rdata))
+	if (srv_io_q_net_share_enum("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETSHAREENUM, &data, &rdata))
 	{
 		SRV_R_NET_SHARE_ENUM r_o;
 		BOOL p;
@@ -414,10 +406,8 @@ BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 	                         hnd);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_file_enum("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NETFILEENUM, &data, &rdata))
+	if (srv_io_q_net_file_enum("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETFILEENUM, &data, &rdata))
 	{
 		SRV_R_NET_FILE_ENUM r_o;
 		BOOL p;
@@ -487,10 +477,8 @@ BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 	make_srv_q_net_srv_get_info(&q_o, srv_name, switch_value);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_srv_get_info("", &q_o, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NET_SRV_GET_INFO, &data, &rdata))
+	if (srv_io_q_net_srv_get_info("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NET_SRV_GET_INFO, &data, &rdata))
 	{
 		SRV_R_NET_SRV_GET_INFO r_o;
 		BOOL p;
@@ -560,10 +548,8 @@ BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
 	make_srv_q_net_remote_tod(&q_t, srv_name);
 
 	/* turn parameters into data stream */
-	srv_io_q_net_remote_tod("", &q_t, &data, 0);
-
-	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, SRV_NET_REMOTE_TOD, &data, &rdata))
+	if (srv_io_q_net_remote_tod("", &q_t, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NET_REMOTE_TOD, &data, &rdata))
 	{
 		SRV_R_NET_REMOTE_TOD r_t;
 		BOOL p;
