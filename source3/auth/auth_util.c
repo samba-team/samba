@@ -216,8 +216,8 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	/* do what win2k does.  Always map unknown domains to our own
 	   and let the "passdb backend" handle unknown users */
 
-	if ( !is_trusted_domain(domain) )
-		domain = lp_workgroup();
+	if ( !is_trusted_domain(domain) ) 
+		domain = get_global_sam_name();
 	
 	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
 	
