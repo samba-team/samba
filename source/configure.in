@@ -1672,7 +1672,7 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM)])
 # check for pam_smbpass support
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[  --with-pam_smbpass      Include the smbpass PAM module (default=no)],
+[  --with-pam_smbpass      Build a PAM module to allow other applications to use our smbpasswd file (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1686,7 +1686,6 @@ AC_ARG_WITH(pam_smbpass,
           AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
           PAM_MOD=""
        else
-          AC_DEFINE(WITH_PAM_SMBPASS)
           PAM_MOD="bin/pam_smbpass.so"
        fi
     ;;
