@@ -109,22 +109,23 @@ krb5_rd_req_with_keyblock(krb5_context context,
 
     memset((*auth_context)->authenticator, 0, 
 	   sizeof((*auth_context)->authenticator));
+    copy_Authenticator(&authenticator, (*auth_context)->authenticator);
     {
-	krb5_principal p2;
+	krb5_principal p1, p2;
+	krb5_boolean res;
 	
-	principalname2krb5_principal(&(*auth_context)->authenticator->cname, 
+	principalname2krb5_principal(&p1,
 				     authenticator.cname,
 				     authenticator.crealm);
 	principalname2krb5_principal(&p2, 
 				     t->tkt.cname,
 				     t->tkt.crealm);
-	if (!krb5_principal_compare (context, 
-				     (*auth_context)->authenticator->cname, 
-				     p2))
+	res = krb5_principal_compare (context, p1, p2);
+	krb5_free_principal (context, p1);
+	krb5_free_principal (context, p2);
+	if (!res)
 	    return KRB5KRB_AP_ERR_BADMATCH;
     }
-    (*auth_context)->authenticator->cusec = authenticator.cusec;
-    (*auth_context)->authenticator->ctime = authenticator.ctime;
 
     if (authenticator.seq_number)
       (*auth_context)->remote_seqnumber = *(authenticator.seq_number);
@@ -132,6 +133,8 @@ krb5_rd_req_with_keyblock(krb5_context context,
     /* XXX - Xor sequence numbers */
 
     /* XXX - check addresses */
+
+    /* XXX - subkeys? */
 
     if (ap_req_options) {
       *ap_req_options = 0;
