@@ -23,6 +23,13 @@
 */
 #include "includes.h"
 
+/* We can parameterize this if someone complains.... JRA. */
+
+char lp_failed_convert_char(void)
+{
+	return '_';
+}
+
 /**
  * @file
  *
@@ -259,11 +266,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			return destlen - o_len;
 
 		if (from == CH_UCS2 && to != CH_UCS2) {
-			/* Can't convert from ucs2 to multibyte. Just truncate this char to ascii. */
+			/* Can't convert from ucs2 to multibyte. Replace with the default fail char. */
 			if (i_len < 2)
 				return destlen - o_len;
 			if (i_len >= 2) {
-				*outbuf = inbuf[0];
+				*outbuf = lp_failed_convert_char();
 
 				outbuf++;
 				o_len--;
@@ -279,11 +286,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			goto again;
 
 		} else if (from != CH_UCS2 && to == CH_UCS2) {
-			/* Can't convert to ucs2 - just widen by adding zero. */
+			/* Can't convert to ucs2 - just widen by adding the default fail char then zero. */
 			if (o_len < 2)
 				return destlen - o_len;
 
-			outbuf[0] = inbuf[0];
+			outbuf[0] = lp_failed_convert_char();
 			outbuf[1] = '\0';
 
 			inbuf++;
@@ -299,9 +306,9 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			goto again;
 
 		} else if (from != CH_UCS2 && to != CH_UCS2) {
-			/* Failed multibyte to multibyte. Just copy 1 char and
+			/* Failed multibyte to multibyte. Just copy the default fail char and
 				try again. */
-			outbuf[0] = inbuf[0];
+			outbuf[0] = lp_failed_convert_char();
 
 			inbuf++;
 			i_len--;
@@ -581,12 +588,12 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			goto out;
 
 		if (from == CH_UCS2 && to != CH_UCS2) {
-			/* Can't convert from ucs2 to multibyte. Just truncate this char to ascii. */
+			/* Can't convert from ucs2 to multibyte. Just use the default fail char. */
 			if (i_len < 2)
 				goto out;
 
 			if (i_len >= 2) {
-				*outbuf = inbuf[0];
+				*outbuf = lp_failed_convert_char();
 
 				outbuf++;
 				o_len--;
@@ -602,11 +609,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			goto again;
 
 		} else if (from != CH_UCS2 && to == CH_UCS2) {
-			/* Can't convert to ucs2 - just widen by adding zero. */
+			/* Can't convert to ucs2 - just widen by adding the default fail char then zero. */
 			if (o_len < 2)
 				goto out;
 
-			outbuf[0] = inbuf[0];
+			outbuf[0] = lp_failed_convert_char();
 			outbuf[1] = '\0';
 
 			inbuf++;
@@ -622,9 +629,9 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			goto again;
 
 		} else if (from != CH_UCS2 && to != CH_UCS2) {
-			/* Failed multibyte to multibyte. Just copy 1 char and
+			/* Failed multibyte to multibyte. Just copy the default fail char and
 				try again. */
-			outbuf[0] = inbuf[0];
+			outbuf[0] = lp_failed_convert_char();
 
 			inbuf++;
 			i_len--;
