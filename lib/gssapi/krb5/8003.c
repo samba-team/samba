@@ -91,7 +91,6 @@ gssapi_krb5_create_8003_checksum (
 		      Checksum *result)
 {
   u_char *p;
-  u_int32_t val;
 
   result->cksumtype = 0x8003;
   result->checksum.length = 24;
