@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.1d)
+AM_INIT_AUTOMAKE(heimdal,0.1e)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -42,6 +42,7 @@ AC_KRB_PROG_LN_S
 
 AC_MIPS_ABI
 CC="$CC $abi"
+libdir="$libdir$abilibdirext"
 
 AM_DISABLE_SHARED
 AM_PROG_LIBTOOL
@@ -60,8 +61,11 @@ AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
 
 LIB_kdb=
 if test "$with_krb4"; then
-	LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
-	LIB_kdb="-rpath $krb4_libdir -L$krb4_libdir -lkdb -lkrb"
+	LIB_kdb="-lkdb -lkrb"
+	if test "$krb4_libdir"; then
+		LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
+		LIB_kdb="-rpath $krb4_libdir $LIB_kdb -L$krb4_libdir"
+	fi
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
@@ -77,6 +81,23 @@ if test "$with_krb4"; then
 	if test "$ac_cv_func_krb_put_int_four" = yes; then
 		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1,
 			[Define if krb_put_int takes four arguments.])
+	fi
+	AC_CACHE_CHECK(for KRB_VERIFY_SECURE, ac_cv_func_krb_verify_secure,
+		[save_CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS $INCLUDE_krb4"
+		AC_TRY_COMPILE([#include <krb.h>],[
+		int x = KRB_VERIFY_SECURE],
+		ac_cv_func_krb_verify_secure=yes,
+		ac_cv_func_krb_verify_secure=no)
+		CFLAGS="$save_CFLAGS"
+	])
+	if test "$ac_cv_func_krb_verify_secure" != yes; then
+		AC_DEFINE(KRB_VERIFY_NOT_SECURE, 0,
+			[Define to zero if your krb.h doesn't])
+		AC_DEFINE(KRB_VERIFY_SECURE, 1,
+			[Define to one if your krb.h doesn't])
+		AC_DEFINE(KRB_VERIFY_SECURE_FAIL, 2,
+			[Define to two if your krb.h doesn't])
 	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")
@@ -108,10 +129,10 @@ AC_SUBST(AIX_EXTRA_KAFS)dnl
 
 AC_ARG_ENABLE(kaserver,
 [  --enable-kaserver	  if you want the KDC to try to emulate a kaserver])
-if test "$enable_kaserver" != no; then
+if test "$enable_kaserver" = yes; then
 	AC_DEFINE(KASERVER, 1,
 		[Define if you want to use the KDC as a kaserver.])
-	if test "x$with_krb4" = "x"; then
+	if test "$with_krb4" = "no"; then
 		AC_MSG_ERROR(kaserver requires krb4)
 		exit 1
 	fi
@@ -119,9 +140,13 @@ fi
 
 AC_ARG_ENABLE(kaserver-db,
 [  --enable-kaserver-db	  if you want support for reading kaserver databases in hprop])
-if test "$enable_kaserver_db" != "no"; then
+if test "$enable_kaserver_db" = yes; then
 	AC_DEFINE(KASERVER_DB, 1,
 		[Define if you want support in hprop for reading kaserver databases])
+	if test "$with_krb4" = "no"; then
+		AC_MSG_ERROR(kaserver-db requires krb4)
+		exit 1
+	fi
 fi
 
 otp=yes
@@ -204,10 +229,12 @@ AC_CHECK_HEADERS(maillock.h ndbm.h)
 AC_CHECK_HEADERS(net/if.h netdb.h)
 AC_CHECK_HEADERS(netinet/in.h netinet/in6.h netinet/in6_var.h)
 AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/in_systm.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h netinet6/in6.h paths.h pty.h pwd.h)
+AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h netinet6/in6.h)
+AC_CHECK_HEADERS(paths.h pty.h pwd.h)
 AC_CHECK_HEADERS(io.h resolv.h)
 AC_CHECK_HEADERS(rpcsvc/dbm.h sac.h sgtty.h shadow.h siad.h signal.h stropts.h)
-AC_CHECK_HEADERS(sys/bitypes.h sys/file.h sys/filio.h sys/ioccom.h sys/ioctl.h)
+AC_CHECK_HEADERS(sys/bitypes.h sys/category.h sys/file.h sys/filio.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/ioctl.h)
 AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/pty.h sys/ptyio.h)
 AC_CHECK_HEADERS(sys/ptyvar.h sys/resource.h sys/select.h)
 AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/stream.h)
@@ -215,7 +242,7 @@ AC_CHECK_HEADERS(sys/stropts.h sys/strtty.h sys/str_tty.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/sysctl.h sys/time.h sys/timeb.h sys/times.h)
 AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
-AC_CHECK_HEADERS(termios.h time.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
+AC_CHECK_HEADERS(termios.h time.h tmpdir.h udb.h unistd.h util.h utmp.h utmpx.h)
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
@@ -581,6 +608,9 @@ else
 	LIB_readline='$(top_builddir)/lib/editline/libeditline.a'
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
+if test "$readline_libdir"; then
+	LIB_readline="-rpath $readline_libdir $LIB_readline"
+fi
 LIB_readline="$LIB_readline \$(LIB_tgetent)"
 AC_DEFINE(HAVE_READLINE, 1, 
 	[Define if you have a readline compatible library.])dnl
