@@ -88,13 +88,17 @@ static void *shm_setup(int size)
 static BOOL open_connection(struct cli_state *c)
 {
 	struct nmb_name called, calling;
+	struct in_addr ip;
+	extern struct in_addr ipzero;
 
 	ZERO_STRUCTP(c);
 
 	make_nmb_name(&calling, myname, 0x0, "");
 	make_nmb_name(&called , host, 0x20, "");
 
-	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
+	ip = ipzero;
+
+	if (!cli_initialise(c) || !cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
@@ -1262,12 +1266,16 @@ static void usage(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
+	static pstring servicesf = CONFIGFILE;
 
 	dbf = stdout;
 
 	setbuffer(stdout, NULL, 0);
 
 	charset_initialise();
+
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
 
 	if (argc < 2) {
 		usage();
