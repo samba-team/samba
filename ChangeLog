@@ -1,9 +1,14 @@
-2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pkinit.c (_krb5_pk_create_sign): fill in NULL as
+	parameters, required by CMS
 
+2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/get_in_tkt_with_keytab.c (krb5_get_in_tkt_with_keytab):
 	avoid memory leak that snuck in when krb5_keytab_key_proc was
 	exported, pointed out by Panases Inc
-
+	
 	* lib/krb5/keytab_file.c: do locking, found to be a problem for
 	Panasas Inc
 
