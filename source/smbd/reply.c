@@ -3482,8 +3482,9 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	unix_convert(newname,conn,newname_last_component,&bad_path2,&sbuf2);
 
 	/* Quick check for "." and ".." */
-	if (newname_last_component[0] == '.') {
+	if (!bad_path2 && newname_last_component[0] == '.') {
 		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
+			DEBUG(10,("rename_internals: newname_last_component = '.' or '..'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
