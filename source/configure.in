@@ -25,14 +25,25 @@ AC_CANONICAL_SYSTEM
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 SAMBA_MAINTAINER_MODE
 
-# try to work out if this compiler uses the HPUX -Ae flag.
+#
+# Config CPPFLAG settings for strange OS's that must be set
+# before other tests.
+#
 case "$host_os" in
-     *hpux*)
-        AC_PROG_CC_FLAG(Ae)
-        if test $ac_cv_prog_cc_Ae = yes; then
-           CPPFLAGS="$CPPFLAGS -Ae"
-        fi
-    ;;
+# Try to work out if this is the native HPUX compiler that uses the -Ae flag.
+    *hpux*)
+      AC_PROG_CC_FLAG(Ae)
+      if test $ac_cv_prog_cc_Ae = yes; then
+        CPPFLAGS="$CPPFLAGS -Ae"
+      fi
+      ;;
+#
+# AIX4.x is *so* broken. It doesn't even admit to having large
+# files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
+#
+    *aix4*)
+      CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
+      ;;    
 esac
 
 AC_INLINE
@@ -181,7 +192,7 @@ AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getne
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
-AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
+AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwnam)
 AC_CHECK_FUNCS(srandom random srand rand setenv mmap64)
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
