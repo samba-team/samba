@@ -1,5 +1,13 @@
 2003-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* resolve.c: parse dns header, add support for SSHFP
+	
+	* resolve.h: add cpp rewrite for sshfp_record
+	
+	* resolve.h: add SSHFP, clean up the the dns_header
+	
+2003-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* resolve.h: remove HEADER (only used for crays)
 	
 	* resolve.c: number-of fields no longer stored in network order
