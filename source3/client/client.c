@@ -2648,7 +2648,8 @@ static int do_message_op(void)
 					}
 					else if (strwicmp("username", param) == 0)
 						pstrcpy(username, val);
-						
+					else if (strwicmp("domain", param) == 0)
+						pstrcpy(workgroup,val);
 					memset(buf, 0, sizeof(buf));
 				}
 				x_fclose(auth);
