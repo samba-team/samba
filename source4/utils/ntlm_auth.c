@@ -320,7 +320,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	if (strncmp(buf, "YR", 2) == 0) {
 		if (gensec_state && *gensec_state) {
-			gensec_end(gensec_state);
+			talloc_free(*gensec_state);
 			*gensec_state = NULL;
 		}
 	} else if ( (strncmp(buf, "OK", 2) == 0)) {
