@@ -669,10 +669,13 @@ spnego_reply
 	return GSS_S_BAD_MECH;
 
     ret = der_match_tag_and_length((const char *)indata.data,
-				   indata.length - taglen,
+				   indata.length,
 				   CONTEXT, CONS, 1, &len, &taglen);
     if (ret)
 	return ret;
+
+    if(len > indata.length - taglen)
+	return ASN1_OVERRUN;
 
     ret = decode_NegTokenTarg((const char *)indata.data + taglen, 
 			      len, &targ, NULL);
