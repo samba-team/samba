@@ -1,9 +1,0 @@
-<samba:parameter name="timestamp logs"
-                 context="G"
-                 developer="1" advanced="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="DEBUGTIMESTAMP"><parameter moreinfo="none">
-    debug timestamp</parameter></link>.</para>
-</listitem>
-</samba:parameter>

@@ -1,9 +1,0 @@
-<samba:parameter name="users"
-                 context="S"
-                 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="USERNAME"><parameter moreinfo="none">
-    username</parameter></link>.</para>
-</listitem>
-</samba:parameter>

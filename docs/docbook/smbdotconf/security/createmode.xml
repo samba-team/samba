@@ -1,8 +1,0 @@
-<samba:parameter name="create mode"
-                 context="S"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>This is a synonym for <link linkend="CREATEMASK"><parameter moreinfo="none">
-    create mask</parameter></link>.</para>
-</listitem>
-</samba:parameter>

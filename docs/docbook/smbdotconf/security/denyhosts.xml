@@ -1,9 +1,0 @@
-<samba:parameter name="deny hosts"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="HOSTSDENY"><parameter moreinfo="none">hosts 
-    deny</parameter></link>.</para>
-</listitem>
-</samba:parameter>

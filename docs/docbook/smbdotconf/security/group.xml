@@ -1,9 +1,0 @@
-<samba:parameter name="group"
-                 context="S"
-                 advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="FORCEGROUP">
-    <parameter moreinfo="none">force group</parameter></link>.</para>
-</listitem>
-</samba:parameter>
