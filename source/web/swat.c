@@ -382,12 +382,9 @@ static void commit_parameters(int snum)
 /****************************************************************************
   load the smb.conf file into loadparm.
 ****************************************************************************/
-static void load_config(void)
+static BOOL load_config(void)
 {
-	if (!lp_load(servicesf,False,True,False)) {
-		printf("<b>Can't load %s - using defaults</b><p>\n", 
-		       servicesf);
-	}
+	return lp_load(servicesf,False,True,False);
 }
 
 /****************************************************************************
@@ -603,7 +600,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if(!initialize_password_db()) {
+	if(!initialise_password_db()) {
 		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
@@ -909,17 +906,13 @@ static void printers_page(void)
 		}
 	}
 
+	charset_initialise();
+	load_config();
+
 	cgi_setup(SWATDIR, !demo_mode);
 
 	print_header();
 	
-	charset_initialise();
-
-	/* if this binary is setuid then run completely as root */
-	setuid(0);
-
-	load_config();
-
 	cgi_load_variables(NULL);
 
 	show_main_buttons();
