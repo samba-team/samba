@@ -199,18 +199,15 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
     {
       remove_type_local |= SV_TYPE_MASTER_BROWSER;
     }
-    if (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
-         name_type == 0x1d)
+    if (AM_MASTER(work) && strequal(name, lp_workgroup()) && name_type == 0x1d)
     {
       remove_type_local |= SV_TYPE_MASTER_BROWSER;
     }
-    if (AM_DOMMST(work) && strequal(name, lp_workgroup()) == 0 &&
-         name_type == 0x1b)
+    if (AM_DOMMST(work) && strequal(name, lp_workgroup()) && name_type == 0x1b)
     {
       remove_type_domain |= SV_TYPE_DOMAIN_MASTER;
     }
-    if (AM_DOMMEM(work) && strequal(name, lp_workgroup()) == 0 &&
-         name_type == 0x1c)
+    if (AM_DOMMEM(work) && strequal(name, lp_workgroup()) && name_type == 0x1c)
     {
       remove_type_logon|= SV_TYPE_DOMAIN_MEMBER;
     }
@@ -246,21 +243,23 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
 			int add_type_domain = False;
 			int add_type_logon  = False;
 
+			DEBUG(4,("checking next stage: name_register_work %s\n", name));
+
 			/* work out what to become, from the name type being added */
 
 			if (ms_browser_name(name, name_type))
 			{
 				add_type_local = True;
 			}
-			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1d)
+			if (strequal(name, lp_workgroup()) && name_type == 0x1d)
 			{
 				add_type_local = True;
 			}
-			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1b)
+			if (strequal(name, lp_workgroup()) && name_type == 0x1b)
 			{
 				add_type_domain = True;
 			}
-			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1c)
+			if (strequal(name, lp_workgroup()) && name_type == 0x1c)
 			{
 				add_type_logon = True;
 			}
@@ -401,7 +400,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
      not a workgroup
    */
 
-  if (!work || !d) return;
+  if ((!work) || (!d)) return;
   
   DEBUG(2,("Becoming domain master for %s %s (currently at stage %d)\n",
 					work->work_group,inet_ntoa(d->bcast_ip),work->dom_state));
