@@ -126,10 +126,14 @@ init_cred (krb5_context context,
 	cred->times.renew_till = time(NULL) + tmp;
 
     if (in_tkt_service) {
+	krb5_realm server_realm;
+
 	ret = krb5_parse_name (context, in_tkt_service, &cred->server);
 	if (ret)
 	    goto out;
-	krb5_princ_set_realm (context, cred->server, client_realm);
+	server_realm = strdup (*client_realm);
+	free (cred->server->realm);
+	krb5_princ_set_realm (context, cred->server, &server_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
 				  *client_realm, "krbtgt", *client_realm, NULL);
