@@ -44,6 +44,17 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24])
   E_P24(p21, c8, p24);
 }
 
+/* Does unicode string convert, then NT MD4 hash then p24 password encryption */
+void SMBNTencrypt(char *passwd, uchar *c8, uchar p24[24])
+{
+	uchar p21[21];
+ 
+	memset(p21,'\0',21);
+ 
+	E_md4hash(passwd, p21);    
+	E_P24(p21, c8, p24);
+}
+
 /* Routines for Windows NT MD4 Hash functions. */
 static int _my_wcslen(int16 *str)
 {
@@ -99,24 +110,13 @@ void E_md4hash(uchar *passwd, uchar *p16)
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(char passwd[16], uchar *c8, uchar p24[24])
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  
 	memset(p21,'\0',21);
  
 	memcpy(p21, passwd, sizeof(passwd));    
-	E_P24(p21, c8, p24);
-}
-
-/* Does the NT MD4 hash then des encryption. */
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar p24[24])
-{
-	uchar p21[21];
- 
-	memset(p21,'\0',21);
- 
-	E_md4hash(passwd, p21);    
 	E_P24(p21, c8, p24);
 }
 

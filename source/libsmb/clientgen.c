@@ -538,6 +538,17 @@ prots[] =
 
 /****************************************************************************
 send a session setup
+
+password-generating options:
+
+- send two 16 byte hashes             (pass=LM16 ntpass=NT16)
+- send a clear-text password          (pass=ct-pw ntpass=NULL)
+- send different clear-text passwords (pass=ct-pw ntpass=ct-pw)
+- send pre-computed OWFS              (pass=p24 ntpass=p24)
+
+in all instances except the pre-computed OWFs, both the LM OWF and NT OWF
+will be generated.
+
 ****************************************************************************/
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
@@ -553,8 +564,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 	          cli->protocol, cli->sec_mode, passlen));
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("password: "));
+	DEBUG(100, ("password   : "));
 	dump_data(100, pass, passlen);
+	DEBUG(100, ("nt-password: "));
+	dump_data(100, ntpass, ntpasslen);
 #endif
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
@@ -567,21 +580,51 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (IS_BITS_SET(cli->sec_mode, USE_CHALLENGE_RESPONSE))
 	{
 		DEBUG(5,("cli_session_setup: using challenge-response mode\n"));
-		if (pass && *pass && passlen != 24)
+
+		/* detect if two 16 byte hashes have been handed to us */
+		if (pass && ntpass && passlen == 16 && ntpasslen == 16)
 		{
 			passlen = 24;
-			SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+			SMBOWFencrypt((uchar *)pass  ,(uchar *)cli->cryptkey,(uchar *)pword);
+			ntpasslen = 24;
+			SMBOWFencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+		}
+		else if (pass)
+		{
+			if (*pass && passlen != 24)
+			{
+				/* do a LM password encrypt */
+				passlen = 24;
+				SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+
+				if (!ntpass)
+				{
+					/* do an NT password encrypt */
+					ntpasslen = 24;
+					SMBNTencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+				}
+			}
+			else
+			{
+				memcpy(pword, pass, sizeof(pword));
+			}
+
+			if (*ntpass && ntpasslen != 24)
+			{
+				ntpasslen = 24;
+				SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+			}
+			else
+			{
+				/* an already-OWF'd challenge has been handed to us */
+				memcpy(ntpword, ntpass, sizeof(ntpword));
+			}
 		}
 		else
 		{
 			/* blank password... */
 			pword[0] = 0;
 			passlen = 1;
-		}
-		if (ntpass && *ntpass && ntpasslen != 24)
-		{
-			ntpasslen = 24;
-			SMBencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
 		}
 	}
 	else
@@ -634,8 +677,11 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpword,ntpasslen); 
-		p += SVAL(cli->outbuf,smb_vwv8);
+		if (ntpasslen != 0)
+		{
+			memcpy(p,ntpword,ntpasslen); 
+			p += SVAL(cli->outbuf,smb_vwv8);
+		}
 		strcpy(p,user);
 		strupper(p);
 		p = skip_string(p,1);
@@ -646,6 +692,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 		strcpy(p,"Samba");p = skip_string(p,1);
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
+
+      show_msg(cli->outbuf);
 
       send_smb(cli->fd,cli->outbuf);
       if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
@@ -1123,7 +1171,7 @@ BOOL cli_stat(struct cli_state *cli, char *file)
 BOOL cli_print(struct cli_state *cli, struct client_info *info,
 				FILE *f, char *lname, char *rname)
 {
-	int fnum;
+	uint16 fnum;
 	uint32 nread=0;
 	char *p;
 
@@ -1415,8 +1463,6 @@ int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
 			time_t JobTime = make_unix_date3( p + 12);
 			uint32 Size = IVAL(p,16);
 			char *JobName = fix_char_ptr(SVAL(p,24), converter, rdata, rdrcnt);
-
-			char *JobTimeStr = asctime(LocalTime( &JobTime));
 
 			strlower(UserName);
 
@@ -1952,14 +1998,15 @@ int cli_put(struct cli_state *cli, struct client_info *info,
   if (finfo->mtime == 0 || finfo->mtime == -1)
     finfo->mtime = finfo->atime = finfo->ctime = time(NULL);
 
-  fnum = cli_create(cli, rname, finfo->mode, finfo->mtime, NULL);
+  if (!cli_create(cli, rname, finfo->mode, finfo->mtime, &fnum)) return False;
 
   if (fnum == 0xffff) return False;
 
   if (finfo->size < 0)
     finfo->size = file_size(lname);
   
-  DEBUG(1,("putting file %s of size %d bytes as %s ",lname,finfo->size,CNV_LANG(rname)));
+  DEBUG(1,("putting file %s of size %d bytes as %s\n",
+		lname,finfo->size,CNV_LANG(rname)));
   
   if (!maxwrite)
     maxwrite = cli->writebraw_supported?MAX(cli->max_xmit,BUFFER_SIZE):(cli->max_xmit-200);
@@ -1971,16 +2018,22 @@ int cli_put(struct cli_state *cli, struct client_info *info,
 
       n = MIN(n,finfo->size - nread);
 
+      /* HACK! this is for *possible* use by writeraw */
       buf = (char *)Realloc(buf,n+4);
   
       fseek(f,nread,SEEK_SET);
+      /* buf+4 because that's where the data is */
       if ((n = read_fn(info, buf+4,1,n, f)) < 1)
 	{
 	  DEBUG(0,("Error reading local file\n"));
 	  break;
 	}	  
 
+      /* buf+4 is the data.  buf[0..3] *might* get used by writeraw */
       ret = cli_write(cli, fnum, nread, buf+4, n);
+
+      DEBUG(5,("cli_write: offset %ld requested %d.  received %d\n",
+			nread, n, ret));
 
       if (n != ret) {
 	if (!maxwrite) {
@@ -2050,6 +2103,9 @@ int cli_get(struct cli_state *cli, struct client_info *info,
   time_t mtime;
   uint32 fsize;
 
+	struct timeval tar_tp_start;
+	GetTimeOfDay(&tar_tp_start);
+
   if (finfo1) 
     finfo = *finfo1;
   else
@@ -2060,6 +2116,8 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 
   fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fmode, &mtime, &fsize);
 			
+  if (fnum == 0xffff) return False;
+
   strcpy(finfo.name,rname);
 
   if (!finfo1)
@@ -2076,8 +2134,6 @@ int cli_get(struct cli_state *cli, struct client_info *info,
   {
 	if (!init_fn(info, handle, rname, &finfo)) return 0;
   }
-
-  fnum = SVAL(cli->inbuf,smb_vwv2);
 
   /* we might have got some data from a chained readX */
   if (SVAL(cli->inbuf,smb_vwv0) == SMBreadX)
@@ -2207,7 +2263,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 	    SIVALS(cli->outbuf,smb_vwv5,-1);
 
       send_smb(cli->fd,cli->outbuf);
-      if (!receive_smb(cli->fd, cli->inbuf, cli->timeout)) break;
+
 	    /* Now read the raw data into the buffer and write it */	  
 	    if(read_smb_length(cli->fd,cli->inbuf,0) == -1) {
 	      DEBUG(0,("Failed to read length in readbraw\n"));	    
@@ -2301,6 +2357,23 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 	  return 0;
 	}
     }
+
+	{
+		struct timeval tar_tp_end;
+		int this_time;
+
+		GetTimeOfDay(&tar_tp_end);
+		this_time = 
+		(tar_tp_end.tv_sec - tar_tp_start.tv_sec)*1000 +
+		(tar_tp_end.tv_usec - tar_tp_start.tv_usec)/1000;
+		info->get_total_time_ms += this_time;
+		info->get_total_size    += nread;
+
+		/* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
+		DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
+			nread                / MAX(0.001, (1.024*this_time)),
+			info->get_total_size / MAX(0.001,(1.024*info->get_total_time_ms))));
+	}
 
   return nread;
 }
@@ -2511,7 +2584,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname,
 Create a file on a share
 ***************************************************************************/
 BOOL cli_create(struct cli_state *cli,
-				char *name, uint16 file_mode, uint16 make_time, int *fnum)
+				char *name, uint16 file_mode, uint16 make_time, uint16 *fnum)
 {
 	char *p;
 
@@ -2609,7 +2682,7 @@ uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
 /****************************************************************************
   close a file
 ****************************************************************************/
-BOOL cli_close(struct cli_state *cli, int fnum, time_t close_time)
+BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time)
 {
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
@@ -2638,7 +2711,7 @@ BOOL cli_close(struct cli_state *cli, int fnum, time_t close_time)
 /****************************************************************************
   lock a file
 ****************************************************************************/
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout)
 {
 	char *p;
 
@@ -2676,7 +2749,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 /****************************************************************************
   unlock a file
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout)
 {
 	char *p;
 
@@ -2715,7 +2788,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 /****************************************************************************
   read from a file
 ****************************************************************************/
-int cli_readx(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
 
@@ -2753,8 +2826,10 @@ int cli_readx(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 /*******************************************************************
   write to a file using writebraw
   ********************************************************************/
-int cli_writeraw(struct cli_state *cli,int fnum,int pos,char *buf,int n)
+int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 {
+	DEBUG(5,("cli_write_raw: [%04x] %d %d\n", fnum, pos, n));
+
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);  
 	set_message(cli->outbuf,cli->protocol>PROTOCOL_COREPLUS?12:10,0,True);
@@ -2772,13 +2847,11 @@ int cli_writeraw(struct cli_state *cli,int fnum,int pos,char *buf,int n)
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
     if (cli_error(cli,NULL, NULL)) return -1;
 
+	/* direct write */
 	_smb_setlen(buf-4,n);		/* HACK! XXXX */
-
 	if (write_socket(cli->fd,buf-4,n+4) != n+4) return(0);
 
-	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
-    if (cli_error(cli,NULL, NULL)) return -1;
 
 	return(SVAL(cli->inbuf,smb_vwv0));
 }
@@ -2788,8 +2861,10 @@ int cli_writeraw(struct cli_state *cli,int fnum,int pos,char *buf,int n)
 /*******************************************************************
   write to a file
   ********************************************************************/
-int cli_write(struct cli_state *cli,int fnum,int pos,char *buf,int n)
+int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 {
+	int len;
+
 	if (cli->writebraw_supported && n > (cli->max_xmit-200)) 
 	{
 		return(cli_writeraw(cli, fnum, pos, buf, n));
@@ -2816,7 +2891,12 @@ int cli_write(struct cli_state *cli,int fnum,int pos,char *buf,int n)
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
     if (cli_error(cli,NULL, NULL)) return -1;
 
-	return(SVAL(cli->inbuf,smb_vwv0));
+	len = SVAL(cli->inbuf,smb_vwv0);
+
+	DEBUG(5,("cli_write: [%04x] offset:%ld req:%d ret:%d\n",
+				fnum, pos, n, len));
+
+	return len;
 }
       
 
@@ -2824,7 +2904,7 @@ int cli_write(struct cli_state *cli,int fnum,int pos,char *buf,int n)
 /****************************************************************************
   write to a file
 ****************************************************************************/
-int cli_write_x(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+int cli_write_x(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
 
@@ -3183,7 +3263,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	dump_data(100, cli->cryptkey, sizeof(cli->cryptkey));
 #endif
 
-	SMBencrypt(nt_owf_passwd, cli->cryptkey, nt_sess_pwd);
+	SMBOWFencrypt(nt_owf_passwd, cli->cryptkey, nt_sess_pwd);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_owf_passwd: "));
@@ -3192,7 +3272,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	dump_data(100, nt_sess_pwd, sizeof(nt_sess_pwd));
 #endif
 
-	SMBencrypt(lm_owf_passwd, cli->cryptkey, lm_sess_pwd);
+	SMBOWFencrypt(lm_owf_passwd, cli->cryptkey, lm_sess_pwd);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_owf_passwd: "));

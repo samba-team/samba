@@ -792,17 +792,17 @@ Hence we make a direct return to avoid a second chance!!!
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-static BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8)
+static BOOL smb_password_check(uint8 password[24], uint8 part_passwd[16], uint8 c8[8])
 {
   unsigned char p24[24];
 
-  if (part_passwd == NULL)
+  if (part_passwd == NULL || part_passwd == NULL || c8 == NULL)
   {
-    DEBUG(10,("No password set - allowing access\n"));
-    return True;
+    DEBUG(5,("smb_password_check: failed (NULL pointers)\n"));
+    return False;
   }
 
-    SMBencrypt(part_passwd, c8, p24);
+	SMBOWFencrypt(part_passwd, c8, p24);
 
 #if DEBUG_PASSWORD
   {
@@ -831,79 +831,60 @@ static BOOL smb_password_check(char *password, unsigned char *part_passwd, unsig
 /****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
-BOOL smb_password_ok(char *user,char *password, int pwlen)
+BOOL smb_password_ok(struct smb_passwd *smb_pass,
+				char lm_pass[24], char nt_pass[24])
 {
-	char challenge[8];
-	struct smb_passwd *smb_pass;
-	BOOL challenge_done = False;
+	uint8 challenge[8];
 
-	if (password) password[pwlen] = 0;
+	if (!lm_pass || !smb_pass) return(False);
 
-	if (pwlen == 24) challenge_done = last_challenge(challenge);
+	if (!last_challenge(challenge))
+	{
+		DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
+		return False;
+	}
 
 #if DEBUG_PASSWORD
-	if (challenge_done)
+	DEBUG(100,("checking user=[%s]\n", smb_pass->smb_name));
+	DEBUG(100,("lm:"));
+	dump_data(100, lm_pass, sizeof(lm_pass));
+	if (nt_pass)
 	{
-		int i;      
-		DEBUG(100,("checking user=[%s] pass=[",user));
-		for( i = 0; i < 24; i++)
-		DEBUG(100,("%0x ", (unsigned char)password[i]));
-		DEBUG(100,("]\n"));
+		DEBUG(100,("nt:"));
+		dump_data(100, nt_pass, sizeof(nt_pass));
 	}
-	else
+#endif
+
+	DEBUG(4,("Checking SMB password for user %s\n", smb_pass->smb_name));
+
+	if (Protocol >= PROTOCOL_NT1)
 	{
-		DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
+		/* We have the NT MD4 hash challenge available - see if we can
+		use it (ie. does it exist in the smbpasswd file).
+		*/
+		DEBUG(4,("Checking NT MD4 password\n"));
+		if (smb_password_check(nt_pass, smb_pass->smb_nt_passwd, challenge))
+		{
+			DEBUG(4,("NT MD4 password check succeeded\n"));
+			return(True);
+		}
+		DEBUG(4,("NT MD4 password check failed\n"));
 	}
-	#endif
 
-	if (!password) return(False);
-
-	if (((!*password) || (!pwlen)) && !lp_null_passwords()) return(False);
-
-	DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
-
-	if ((pwlen == 24) && challenge_done)
+	if (smb_pass->smb_passwd != NULL)
 	{
-		DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
-
-		/* non-null username indicates search by username not smb userid */
-		smb_pass = get_smbpwd_entry(user, 0);
-		if (!smb_pass)
-		{
-			DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-			return(False);
-		}
-
-		if (Protocol >= PROTOCOL_NT1)
-		{
-			/* We have the NT MD4 hash challenge available - see if we can
-			use it (ie. does it exist in the smbpasswd file).
-			*/
-			if (smb_pass->smb_nt_passwd != NULL)
-			{
-				DEBUG(4,("Checking NT MD4 password\n"));
-				if (smb_password_check(password, smb_pass->smb_nt_passwd, (unsigned char *)challenge))
-				{
-					DEBUG(4,("NT MD4 password check succeeded\n"));
-					return(True);
-				}
-				DEBUG(4,("NT MD4 password check failed\n"));
-			}
-		}
-
 		/* Try against the lanman password */
 		DEBUG(4,("Checking LM MD4 password\n"));
-		if (smb_password_check(password, smb_pass->smb_passwd, (unsigned char *)challenge))
+		if (smb_password_check(lm_pass, smb_pass->smb_passwd, challenge))
 		{
 			DEBUG(4,("LM MD4 password check succeeded\n"));
 			return(True);
 		}
 
 		DEBUG(4,("LM MD4 password check failed\n"));
-
 	}
 
-	DEBUG(3,("Error: smb_password_ok failed\n"));
+	DEBUG(4,("smb_password_ok: failed\n"));
 
 	return(False);
 }
@@ -913,253 +894,234 @@ BOOL smb_password_ok(char *user,char *password, int pwlen)
 /****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
-BOOL password_ok(char *user, BOOL *guest, char *password, int pwlen, struct passwd *pwd)
+BOOL password_ok(char *user, BOOL *guest,
+				char *password, int pwlen,
+				char *nt_pass, int nt_pwlen,
+				struct passwd *pwd)
 {
-  pstring pass2;
-  int level = lp_passwordlevel();
-  struct passwd *pass;
-  char challenge[8];
-  struct smb_passwd *smb_pass;
-  BOOL challenge_done = False;
+	pstring pass2;
+	int level = lp_passwordlevel();
+	struct passwd *pass;
+	struct smb_passwd *smb_pass;
 
-  if (password) password[pwlen] = 0;
-
-  if (pwlen == 24)
-    challenge_done = last_challenge(challenge);
+	if (password) password[pwlen] = 0;
 
 #if DEBUG_PASSWORD
-  if (challenge_done)
-    {
-      int i;      
-      DEBUG(100,("checking user=[%s] pass=[",user));
-      for( i = 0; i < 24; i++)
-	DEBUG(100,("%0x ", (unsigned char)password[i]));
-      DEBUG(100,("]\n"));
-    } else {
-	    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
-    }
+	if (pwlen != 24)
+	{
+		DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
+	}
 #endif
 
-  if (!password)
-    return(False);
+	if (!password) return(False);
 
-  if (((!*password) || (!pwlen)) && !lp_null_passwords())
-    return(False);
+	if (((!*password) || (!pwlen)) && !lp_null_passwords())
+	return(False);
 
-  if (pwd && !user) 
-    {
-      pass = (struct passwd *) pwd;
-      user = pass->pw_name;
-    } 
-  else 
-    pass = Get_Pwnam(user,True, guest);
-
-  DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
-
-  if ((pwlen == 24) && challenge_done)
-    {
-      DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
-
-      if (!pass) 
+	if (pwd && !user) 
 	{
-	  DEBUG(3,("Couldn't find user %s\n",user));
-	  return(False);
+		pass = (struct passwd *) pwd;
+		user = pass->pw_name;
+	} 
+	else 
+	{
+		pass = Get_Pwnam(user,True, guest);
 	}
 
-      /* non-null username indicates search by username not smb userid */
-      smb_pass = get_smbpwd_entry(user, 0);
-      if (!smb_pass)
-	{
-	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-	  return(False);
-	}
+	DEBUG(4,("SMB Password - pwlen = %d\n", pwlen));
 
-      /* Ensure the uid's match */
-      if (smb_pass->smb_userid != pass->pw_uid)
+	if ((pwlen == 24))
 	{
-	  DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
-	  return(False);
-	}
+		DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
 
-	if (Protocol >= PROTOCOL_NT1)
-	{
-		/* We have the NT MD4 hash challenge available - see if we can
-		   use it (ie. does it exist in the smbpasswd file).
-		*/
-		if (smb_pass->smb_nt_passwd != NULL)
+		if (!pass) 
 		{
-		  DEBUG(4,("Checking NT MD4 password\n"));
-		  if (smb_password_check(password, 
-					smb_pass->smb_nt_passwd, 
-					(unsigned char *)challenge))
-   		  {
-	      	update_protected_database(user,True);
-	        return(True);
-    	  }
-		  DEBUG(4,("NT MD4 password check failed\n"));
+			DEBUG(3,("Couldn't find user %s\n",user));
+			return(False);
 		}
+
+		/* non-null username indicates search by username not smb userid */
+		smb_pass = get_smbpwd_entry(user, 0);
+		if (!smb_pass)
+		{
+			DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
+			return(False);
+		}
+
+		/* Ensure the uid's match */
+		if (smb_pass->smb_userid != pass->pw_uid)
+		{
+			DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
+			return(False);
+		}
+
+		if (smb_password_ok(smb_pass, password, nt_pass))
+		{
+			update_protected_database(user,True);
+			return(True);
+		}
+
+		DEBUG(3,("password_ok: smb_password_ok failed (l=24)\n"));
 	}
 
-	/* Try against the lanman password */
+	DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
-      if (smb_password_check(password, 
-			     smb_pass->smb_passwd,
-			     (unsigned char *)challenge)) {
-	update_protected_database(user,True);
-	return(True);
-      }
-
-	DEBUG(3,("Error smb_password_check failed\n"));
-    }
-
-  DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
-
-  if (!pass) 
-    {
-      DEBUG(3,("Couldn't find user %s\n",user));
-      return(False);
-    }
+	if (!pass) 
+	{
+	DEBUG(3,("Couldn't find user %s\n",user));
+	return(False);
+	}
 
 #ifdef SHADOW_PWD
-  {
-    struct spwd *spass;
+	{
+		struct spwd *spass;
 
-    /* many shadow systems require you to be root to get the password,
-       in most cases this should already be the case when this
-       function is called, except perhaps for IPC password changing
-       requests */
+		/* many shadow systems require you to be root to get the password,
+		in most cases this should already be the case when this
+		function is called, except perhaps for IPC password changing
+		requests */
 
-    spass = getspnam(pass->pw_name);
-    if (spass && spass->sp_pwdp)
-      pass->pw_passwd = spass->sp_pwdp;
-  }
+		spass = getspnam(pass->pw_name);
+		if (spass && spass->sp_pwdp)
+		pass->pw_passwd = spass->sp_pwdp;
+	}
 #elif defined(IA_UINFO)
-  {
-      /* Need to get password with SVR4.2's ia_ functions instead of
-         get{sp,pw}ent functions. Required by UnixWare 2.x, tested on 
-         version 2.1. (tangent@cyberport.com) */
-      uinfo_t uinfo;
-      if (ia_openinfo(pass->pw_name, &uinfo) != -1)
-        ia_get_logpwd(uinfo, &(pass->pw_passwd));
-  }
+	{
+		/* Need to get password with SVR4.2's ia_ functions instead of
+		   get{sp,pw}ent functions. Required by UnixWare 2.x, tested on 
+		   version 2.1. (tangent@cyberport.com)
+		 */
+		uinfo_t uinfo;
+		if (ia_openinfo(pass->pw_name, &uinfo) != -1)
+		{
+			ia_get_logpwd(uinfo, &(pass->pw_passwd));
+		}
+	}
 #endif
 
 #ifdef SecureWare
-  {
-    struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-    if (pr_pw && pr_pw->ufld.fd_encrypt)
-      pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-  }
+	{
+		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
+		if (pr_pw && pr_pw->ufld.fd_encrypt)
+		{
+			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
+		}
+	}
 #endif
 
 #ifdef HPUX_10_TRUSTED
-  {
-    struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-    if (pr_pw && pr_pw->ufld.fd_encrypt)
-      pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-  }
+	{
+		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
+		if (pr_pw && pr_pw->ufld.fd_encrypt)
+		{
+			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
+		}
+	}
 #endif
 
 #ifdef OSF1_ENH_SEC
-  {
-    struct pr_passwd *mypasswd;
-    DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",user));
-    mypasswd = getprpwnam (user);
-    if ( mypasswd )
-      { 
-  	strcpy(pass->pw_name,mypasswd->ufld.fd_name);
-  	strcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
-      }
-    else
-      {
-	DEBUG(5,("No entry for user %s in protected database !\n",user));
-	return(False);
-      }
-  }
+	{
+		struct pr_passwd *mypasswd;
+		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",user));
+		mypasswd = getprpwnam (user);
+		if ( mypasswd )
+		{ 
+			strcpy(pass->pw_name  , mypasswd->ufld.fd_name);
+			strcpy(pass->pw_passwd, mypasswd->ufld.fd_encrypt);
+		}
+		else
+		{
+			DEBUG(5,("No entry for user %s in protected database !\n",user));
+			return(False);
+		}
+	}
 #endif
 
 #ifdef ULTRIX_AUTH
-  {
-    AUTHORIZATION *ap = getauthuid( pass->pw_uid );
-    if (ap)
-      {
-	strcpy( pass->pw_passwd, ap->a_password );
-	endauthent();
-      }
-  }
+	{
+		AUTHORIZATION *ap = getauthuid( pass->pw_uid );
+		if (ap)
+		{
+			strcpy( pass->pw_passwd, ap->a_password );
+			endauthent();
+		}
+	}
 #endif
 
-  /* extract relevant info */
-  strcpy(this_user,pass->pw_name);  
-  strcpy(this_salt,pass->pw_passwd);
-  this_salt[2] = 0;
-  strcpy(this_crypted,pass->pw_passwd);
- 
-  if (!*this_crypted) {
-    if (!lp_null_passwords()) {
-      DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
-      return(False);
-    }
+	/* extract relevant info */
+	strcpy(this_user,pass->pw_name);  
+	strcpy(this_salt,pass->pw_passwd);
+
+	this_salt[2] = 0;
+	strcpy(this_crypted,pass->pw_passwd);
+
+	if (!*this_crypted)
+	{
+		if (!lp_null_passwords())
+		{
+			DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
+			return(False);
+		}
 #ifndef PWDAUTH
-    if (!*password) {
-      DEBUG(3,("Allowing access to %s with null password\n",this_user));
-      return(True);
-    }
+		if (!*password)
+		{
+			DEBUG(3,("Allowing access to %s with null password\n",this_user));
+			return(True);
+		}
 #endif    
-  }
+	}
 
-  /* try it as it came to us */
-  if (password_check(password))
-    {
-      update_protected_database(user,True);
-      return(True);
-    }
+	/* try it as it came to us */
+	if (password_check(password))
+	{
+		update_protected_database(user,True);
+		return(True);
+	}
 
-  /* if the password was given to us with mixed case then we don't
-     need to proceed as we know it hasn't been case modified by the
-     client */
-  if (strhasupper(password) && strhaslower(password))
-    return(False);
+	/* if the password was given to us with mixed case then we don't
+	   need to proceed as we know it hasn't been case modified by the
+	   client
+	 */
+	if (strhasupper(password) && strhaslower(password)) return(False);
 
-  /* make a copy of it */
-  StrnCpy(pass2,password,sizeof(pstring)-1);
-  
-  /* try all lowercase */
-  strlower(password);
-  if (password_check(password))
-    {
-      update_protected_database(user,True);
-      return(True);
-    }
+	/* make a copy of it */
+	StrnCpy(pass2,password,sizeof(pstring)-1);
 
-  /* give up? */
-  if (level < 1)
-    {
-      update_protected_database(user,False);
+	/* try all lowercase */
+	strlower(password);
+	if (password_check(password))
+	{
+		update_protected_database(user,True);
+		return(True);
+	}
 
-      /* restore it */
-      strcpy(password,pass2);
+	/* give up? */
+	if (level < 1)
+	{
+		update_protected_database(user,False);
 
-      return(False);
-    }
+		/* restore it */
+		strcpy(password,pass2);
 
-  /* last chance - all combinations of up to level chars upper! */
-  strlower(password);
+		return(False);
+	}
 
-  if (string_combinations(password,password_check,level))
-    {
-      update_protected_database(user,True);
-      return(True);
-    }
+	/* last chance - all combinations of up to level chars upper! */
+	strlower(password);
 
-  update_protected_database(user,False);
-  
-  /* restore it */
-  strcpy(password,pass2);
-  
-  return(False);
+	if (string_combinations(password,password_check,level))
+	{
+		update_protected_database(user,True);
+		return(True);
+	}
+
+	update_protected_database(user,False);
+
+	/* restore it */
+	strcpy(password,pass2);
+
+	return(False);
 }
-
 
 
 /****************************************************************************
@@ -1205,7 +1167,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user, NULL, password,pwlen,NULL)) {
+	    password_ok(user, NULL, password,pwlen, NULL, 0, NULL)) {
 	  endnetgrent();
 	  return(user);
 	}
@@ -1227,7 +1189,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	    static fstring name;
 	    strcpy(name,*member);
 	    if (user_ok(name,snum) &&
-		password_ok(name,NULL, password,pwlen,NULL))
+		password_ok(name,NULL, password,pwlen, NULL, 0, NULL))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -1240,7 +1202,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	  while (pwd = getpwent ()) {
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, NULL, password, pwlen, pwd)) {
+	      if (password_ok(NULL, NULL, password, pwlen,  NULL, 0, pwd)) {
 		strcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
@@ -1293,14 +1255,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user, NULL, password, pwlen, NULL);
+	ok = password_ok(user, NULL, password, pwlen, password, pwlen, NULL);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, NULL, password, pwlen, NULL)) {
+	    password_ok(vuser->name, NULL, password, pwlen, password, pwlen, NULL)) {
 	  strcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -1324,7 +1286,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	      strcpy(user2,auser);
 	      if (!user_ok(user2,snum)) continue;
 		  
-	      if (password_ok(user2,NULL, password, pwlen, NULL)) {
+	      if (password_ok(user2,NULL, password, pwlen,  password, pwlen, NULL)) {
 		ok = True;
 		strcpy(user,user2);
 		DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -1376,7 +1338,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		strcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,NULL, password,pwlen,NULL))
+		    password_ok(user2,NULL, password,pwlen, password, pwlen, NULL))
 		  {
 		    ok = True;
 		    strcpy(user,user2);

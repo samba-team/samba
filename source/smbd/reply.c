@@ -402,7 +402,7 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
 	}
 	else
 	{
-		if (!smb_password_ok(user, smb_nt_passwd, smb_nt_passlen))
+		if (!smb_password_ok(smb_trust_acct, smb_passwd, smb_nt_passwd))
 		{
 			DEBUG(4,("Trust Account %s - password failed\n", user));
 			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -467,21 +467,12 @@ static BOOL sess_passwd_check(BOOL *guest, char *user, char *domain,
 		return True;
 	}
 
-	/* If an NT password was supplied try and validate with that
-	   first. This is superior as the passwords are mixed case 
-	   128 length unicode */
-	if (smb_nt_passlen != 0 && password_ok(user,NULL, smb_nt_passwd,smb_nt_passlen,NULL))
+	if (password_ok(user,NULL, smb_passwd   , smb_passlen,
+	                           smb_nt_passwd, smb_nt_passlen,NULL))
 	{
-		DEBUG(3,("sess_passwd_check: accepted NT password\n"));
+		DEBUG(3,("sess_passwd_check: accepted password\n"));
 		return True;
 	} 
-
-	/* check the LM password instead */
-	if (password_ok(user,NULL, smb_passwd,smb_passlen,NULL))
-	{
-		DEBUG(3,("sess_passwd_check: accepted LM password\n"));
-		return True;
-	}
 
 	DEBUG(4,("sess_passwd_check: password checks failed: checking guest access mode\n"));
 	if (lp_security() >= SEC_USER)

@@ -581,35 +581,13 @@ append one remote file to the tar file
 static void do_atar(struct cli_state *cli, struct client_info *info,
 				char *rname,char *lname,file_info *finfo1)
 {
-	uint32 nread=0;
-
-	struct timeval tar_tp_start;
-	GetTimeOfDay(&tar_tp_start);
-
-	nread = cli_get(cli, info, rname, lname, finfo1, info->tar.handle,
+	uint32 nread = cli_get(cli, info, rname, lname, finfo1, info->tar.handle,
 				tar_write_check, do_tar_buf, tar_pad_check);
 
 	/* reset the archive bit */
 	if (info->tar.reset)
 	{
 		do_setrattr(cli, info, rname, aARCH, ATTRRESET);
-	}
-
-	{
-		struct timeval tar_tp_end;
-		int this_time;
-
-		GetTimeOfDay(&tar_tp_end);
-		this_time = 
-		(tar_tp_end.tv_sec - tar_tp_start.tv_sec)*1000 +
-		(tar_tp_end.tv_usec - tar_tp_start.tv_usec)/1000;
-		info->get_total_time_ms += this_time;
-		info->get_total_size    += nread;
-
-		/* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
-		DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
-			nread                / MAX(0.001, (1.024*this_time)),
-			info->get_total_size / MAX(0.001,(1.024*info->get_total_time_ms))));
 	}
 }
 
@@ -674,7 +652,7 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
   file_info finfo;
   int nread=0, bufread;
   int fsize=0;
-  int fnum;
+  uint16 fnum;
   struct timeval tar_tp_start;
   BOOL tskip=False;       /* We'll take each file as it comes */
 

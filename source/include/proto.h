@@ -120,16 +120,16 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 BOOL cli_setatr(struct cli_state *cli, char *fname,
 				uint8 fattr, uint16 write_time);
 BOOL cli_create(struct cli_state *cli,
-				char *name, uint16 file_mode, uint16 make_time, int *fnum);
+				char *name, uint16 file_mode, uint16 make_time, uint16 *fnum);
 uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
 			uint16 *fmode, time_t *mtime, uint32 *fsize);
-BOOL cli_close(struct cli_state *cli, int fnum, time_t close_time);
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-int cli_readx(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
-int cli_writeraw(struct cli_state *cli,int fnum,int pos,char *buf,int n);
-int cli_write(struct cli_state *cli,int fnum,int pos,char *buf,int n);
-int cli_write_x(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time);
+BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout);
+BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout);
+int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size);
+int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n);
+int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n);
+int cli_write_x(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			char *called_host_name        , int called_name_type,
@@ -710,8 +710,12 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
 void add_session_user(char *user, BOOL *changed_to_guest);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
-BOOL smb_password_ok(char *user,char *password, int pwlen);
-BOOL password_ok(char *user, BOOL *guest, char *password, int pwlen, struct passwd *pwd);
+BOOL smb_password_ok(struct smb_passwd *smb_pass,
+				char lm_pass[24], char nt_pass[24]);
+BOOL password_ok(char *user, BOOL *guest,
+				char *password, int pwlen,
+				char *nt_pass, int nt_pwlen,
+				struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
@@ -1242,9 +1246,9 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 /*The following definitions come from  smbencrypt.c  */
 
 void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
+void SMBNTencrypt(char *passwd, uchar *c8, uchar p24[24]);
 void E_md4hash(uchar *passwd, uchar *p16);
-void SMBOWFencrypt(char passwd[16], uchar *c8, uchar p24[24]);
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
 
 /*The following definitions come from  smberr.c  */
