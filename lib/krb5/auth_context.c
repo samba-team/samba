@@ -51,8 +51,10 @@ krb5_auth_con_init(krb5_context context,
 	return ENOMEM;
     memset(p, 0, sizeof(*p));
     ALLOC(p->authenticator, 1);
-    if (!p->authenticator)
+    if (!p->authenticator) {
+	free(p);
 	return ENOMEM;
+    }
     memset (p->authenticator, 0, sizeof(*p->authenticator));
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
 
@@ -158,15 +160,19 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 
     if (auth_context->local_address == NULL) {
 	len = max_sz;
-	if(getsockname(fd, local, &len) < 0)
+	if(getsockname(fd, local, &len) < 0) {
+	    ret = errno;
 	    goto out;
+	}
 	krb5_sockaddr2address (local, &local_k_address);
 	lptr = &local_k_address;
     }
     if (auth_context->remote_address == NULL) {
 	len = max_sz;
-	if(getpeername(fd, remote, &len) < 0)
+	if(getpeername(fd, remote, &len) < 0) {
+	    ret = errno;
 	    goto out;
+	}
 	krb5_sockaddr2address (remote, &remote_k_address);
 	rptr = &remote_k_address;
     }
