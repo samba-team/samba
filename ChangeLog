@@ -1,3 +1,15 @@
+2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kdc_locl.h: fix prototype for get_des_key
+
+	* kdc/kaserver.c: fix call to get_des_key
+
+	* kdc/524.c: fix call to get_des_key
+
+	* kdc/kerberos4.c (get_des_key): if getting a key for a server,
+	return any des-key not just keys that can be string-to-keyed by
+	the client
+
 2001-08-10  Assar Westerlund  <assar@assaris.sics.se>
 
 	* Release 0.4e
