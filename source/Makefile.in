@@ -489,8 +489,7 @@ MAKEDIR = || exec false; \
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
-	@@GCOV@ $(CC) -I. -I$(srcdir) $(FLAGS) -c $(builddir)/$< \
-	  -o $(builddir)/$@
+	@@GCOV@ $(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/$< -o $(builddir)/$@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 .c.po: 
