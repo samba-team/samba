@@ -7,7 +7,9 @@ Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 
 # Don't depend on Net::LDAP
-Source999: filter-requires-samba.sh
+# one filter for RH 8 and one for 9
+Source998: filter-requires-samba_rh8.sh
+Source999: filter-requires-samba_rh9.sh
 
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
@@ -18,7 +20,12 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
 
 # Working around perl dependency problem from docs
-%define REQUIRES_MACRO %{SOURCE999}
+# Only > RH 8.0 seems to care here
+%if "%{rpm_version}" == "4.2"
+   %define __perl_requires %{SOURCE998}
+%else if "%{rpm_version}" == "4.1"
+   %define __find_requires %{SOURCE999}
+%endif
 
 %description
 Samba provides an SMB/CIFS server which can be used to provide
