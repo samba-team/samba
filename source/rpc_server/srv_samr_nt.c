@@ -1246,6 +1246,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	DOM_SID   sid;
 	GROUP_MAP map;
 	uint32    acc_granted;
+	BOOL ret;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1262,7 +1263,11 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (!pdb_getgrsid(&map, sid))
+	become_root();
+	ret = pdb_getgrsid(&map, sid);
+	unbecome_root();
+	
+	if ( !ret )
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {

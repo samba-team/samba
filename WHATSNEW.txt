@@ -35,8 +35,16 @@ details:
 7)  Protect alloc_sub_basic() from crashing when the source string 
     is NULL (partial work on bug 687).
 8)  Fix spinlocks on IRIX.
-9)  Corrected some bad paths with using --with-fhs to configure.
+9)  Corrected some bad destination paths when running "configure 
+    --with-fhs".
 10) Add packaging for Fedora Core 1.
+11) Correct bug in SWAT install script for non=english languages.
+12) Support character set ISO-8859-1 internally (bug 558).
+13) Fixed more LDAP access errors when looking up group mappings 
+    (bug 281).
+14) Fix UNISTR2 length bug in LsaQueryInfo(3) that caused SID 
+    resolution to fail on local files on on domain members 
+    (bug 875).
 
 
 Changes since 3.0.1pre3
