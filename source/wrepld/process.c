@@ -59,12 +59,12 @@ static void dump_global_table(void)
 	int i,j;
 	
 	for (i=0;i<partner_count;i++) {
-		DEBUG(0,("\n%d ", i));
+		DEBUG(10,("\n%d ", i));
 		for (j=0; global_wins_table[i][j].address.s_addr!=0; j++)
-			DEBUG(0,("%s:%d \t", inet_ntoa(global_wins_table[i][j].address),
+			DEBUG(10,("%s:%d \t", inet_ntoa(global_wins_table[i][j].address),
 				(int)global_wins_table[i][j].max_version));
 	}
-	DEBUG(0,("\n"));
+	DEBUG(10,("\n"));
 }
 
 /*******************************************************************
@@ -115,7 +115,7 @@ static void start_assoc_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 		fill_header(r, OPCODE_NON_NBT, get_server_assoc(q->header.assoc_ctx), MESSAGE_TYPE_REPLICATE);
 
 		r->rep.msg_type=MESSAGE_REP_ADD_VERSION_REQUEST;
-		DEBUG(0,("start_assoc_reply: requesting map table\n"));
+		DEBUG(5,("start_assoc_reply: requesting map table\n"));
 
 		return;
 	}
@@ -136,7 +136,7 @@ static void start_assoc_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 		for (i=0; i<partner_count; i++)
 			r->rep.un_rq.wins_owner[i]=global_wins_table[0][i];
 		
-		DEBUG(0,("start_assoc_reply: sending update table\n"));
+		DEBUG(5,("start_assoc_reply: sending update table\n"));
 		return;
 	}
 	
@@ -154,7 +154,13 @@ int init_wins_partner_table(void)
 	int i=1,j=0,k;
 	char **partner = lp_list_make(lp_wins_partners());
 
-	DEBUG(0, ("init_wins_partner_table: partners: %s\n", lp_wins_partners()));
+	if (partner==NULL) {
+		DEBUG(0,("wrepld: no partner list, exiting\n"));
+		exit_server("normal exit");
+		return(0);
+	}
+
+	DEBUG(4, ("init_wins_partner_table: partners: %s\n", lp_wins_partners()));
 
 	global_wins_table[0][0].address=*iface_n_ip(0);
 	global_wins_table[0][0].max_version=0;
@@ -162,7 +168,7 @@ int init_wins_partner_table(void)
 	global_wins_table[0][0].type=0;
 
 	while (partner[j]!=NULL) {
-		DEBUG(0,("init_wins_partner_table, adding partner: %s\n", partner[j]));
+		DEBUG(3,("init_wins_partner_table, adding partner: %s\n", partner[j]));
 		
 		global_wins_table[0][i].address=*interpret_addr2(partner[j]);
 		global_wins_table[0][i].max_version=0;
@@ -212,7 +218,7 @@ static void send_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	int s_ctx=get_server_assoc(q->header.assoc_ctx);
 
 	if (s_ctx==0) {
-		DEBUG(0, ("send_version_number_map_table: request for a partner not in our table\n"));
+		DEBUG(5, ("send_version_number_map_table: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -238,10 +244,10 @@ static void send_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *r)
 		return;
 	}
 	
-	DEBUG(0,("send_version_number_map_table: partner_count: %d\n", partner_count));
+	DEBUG(5,("send_version_number_map_table: partner_count: %d\n", partner_count));
 
 	for (i=0; i<partner_count; i++) {
-		DEBUG(0,("send_version_number_map_table, partner: %d -> %s, \n", i, inet_ntoa(global_wins_table[0][i].address)));
+		DEBUG(5,("send_version_number_map_table, partner: %d -> %s, \n", i, inet_ntoa(global_wins_table[0][i].address)));
 		r->rep.avmt_rep.wins_owner[i]=global_wins_table[0][i];
 	}
 	
@@ -331,7 +337,7 @@ static void receive_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *
 	int s_ctx=get_server_assoc(q->header.assoc_ctx);
 
 	if (s_ctx==0) {
-		DEBUG(0, ("receive_version_number_map_table: request for a partner not in our table\n"));
+		DEBUG(5, ("receive_version_number_map_table: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -341,15 +347,15 @@ static void receive_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *
 
 	get_our_last_id(&global_wins_table[0][0]);
 	
-	DEBUG(0,("receive_version_number_map_table: received a map of %d server from: %s\n", 
+	DEBUG(5,("receive_version_number_map_table: received a map of %d server from: %s\n", 
 	          q->rep.avmt_rep.partner_count ,inet_ntoa(q->rep.avmt_rep.initiating_wins_server)));
-	DEBUG(0,("real peer is: %s\n", peer));
+	DEBUG(5,("real peer is: %s\n", peer));
 
 	for (i=0; global_wins_table[0][i].address.s_addr!=addr.s_addr && i<partner_count;i++)
 		;
 
 	if (i==partner_count) {
-		DEBUG(0,("receive_version_number_map_table: unknown partner: %s\n", peer));
+		DEBUG(5,("receive_version_number_map_table: unknown partner: %s\n", peer));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -457,7 +463,7 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	int num_interfaces = iface_count();
 
 	if (s_ctx==0) {
-		DEBUG(0, ("send_entry_request: request for a partner not in our table\n"));
+		DEBUG(1, ("send_entry_request: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -466,8 +472,8 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	wins_owner=&q->rep.se_rq.wins_owner;
 	r->rep.se_rp.wins_name=NULL;
 
-	DEBUG(0,("send_entry_request: we have been asked to send the list of wins records\n"));
-	DEBUGADD(0,("owned by: %s and between min: %d and max: %d\n", inet_ntoa(wins_owner->address),
+	DEBUG(3,("send_entry_request: we have been asked to send the list of wins records\n"));
+	DEBUGADD(3,("owned by: %s and between min: %d and max: %d\n", inet_ntoa(wins_owner->address),
 		    (int)wins_owner->min_version, (int)wins_owner->max_version));
 
 	/*
@@ -569,7 +575,7 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
     
 	tdb_close(tdb);
 
-	DEBUG(0,("send_entry_request, sending %d records\n", max_names));
+	DEBUG(4,("send_entry_request, sending %d records\n", max_names));
 	fill_header(r, OPCODE_NON_NBT, s_ctx, MESSAGE_TYPE_REPLICATE);
 	r->rep.msg_type=MESSAGE_REP_SEND_ENTRIES_REPLY; /* reply */
 	r->rep.se_rp.max_names=max_names;
@@ -586,7 +592,7 @@ static void update_notify_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	int s_ctx=get_server_assoc(q->header.assoc_ctx);
 	
 	if (s_ctx==0) {
-		DEBUG(0, ("update_notify_request: request for a partner not in our table\n"));
+		DEBUG(4, ("update_notify_request: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -595,14 +601,14 @@ static void update_notify_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 
 	/* check if we already have the range of records */
 
-	DEBUG(0,("update_notify_request: wins server: %s offered this list of %d records:\n",
+	DEBUG(5,("update_notify_request: wins server: %s offered this list of %d records:\n",
 		inet_ntoa(u->initiating_wins_server), u->partner_count));
 
 	get_our_last_id(&global_wins_table[0][0]);
 
 	for (i=0; i<partner_count; i++) {
 		if (global_wins_table[0][i].address.s_addr==u->initiating_wins_server.s_addr) {
-			DEBUG(0,("update_notify_request: found initiator at index %d\n", i));
+			DEBUG(5,("update_notify_request: found initiator at index %d\n", i));
 			break;
 		}
 	}
@@ -678,12 +684,12 @@ static void send_entry_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	WINS_RECORD record;
 	
 	if (s_ctx==0) {
-		DEBUG(0, ("send_entry_reply: request for a partner not in our table\n"));
+		DEBUG(1, ("send_entry_reply: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
 
-	DEBUG(0,("send_entry_reply:got %d new records\n", q->rep.se_rp.max_names));
+	DEBUG(5,("send_entry_reply:got %d new records\n", q->rep.se_rp.max_names));
 
 	/* we got records from a wins partner but that can be from another wins server */
 	/* hopefully we track that */
@@ -694,7 +700,7 @@ static void send_entry_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 
 	for (j=0; global_wins_table[0][j].address.s_addr!=0; j++) {
 		if (global_wins_table[0][j].address.s_addr==server.s_addr) {
-			DEBUG(0,("send_entry_reply: found server at index %d\n", j));
+			DEBUG(5,("send_entry_reply: found server at index %d\n", j));
 			break;
 		}
 	}
@@ -706,7 +712,7 @@ static void send_entry_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	}
 
 	for (k=0; k<q->rep.se_rp.max_names; k++) {
-		DEBUG(0,("send_entry_reply: %s<%02x> %d\n", q->rep.se_rp.wins_name[k].name, q->rep.se_rp.wins_name[k].type,
+		DEBUG(5,("send_entry_reply: %s<%02x> %d\n", q->rep.se_rp.wins_name[k].name, q->rep.se_rp.wins_name[k].type,
 		         (int)q->rep.se_rp.wins_name[k].id));
 
 		safe_strcpy(record.name, q->rep.se_rp.wins_name[k].name, 16);
@@ -824,7 +830,7 @@ void construct_reply(struct wins_packet_struct *p)
 	buffer.offset=0;
 	buffer.length=0;
 
-	DEBUG(0,("dump: received packet\n"));
+	DEBUG(5,("dump: received packet\n"));
 	dump_generic_packet(p->packet);
 
 	/* Verify if the request we got is from a listed partner */
@@ -840,7 +846,7 @@ void construct_reply(struct wins_packet_struct *p)
 				break;
 
 		if (i==partner_count) {
-			DEBUG(0,("construct_reply: got a request from a non peer machine: %s\n", peer));
+			DEBUG(1,("construct_reply: got a request from a non peer machine: %s\n", peer));
 			stop_packet(p->packet, &r, STOP_REASON_AUTH_FAILED);
 			p->stop_packet=True;
 			encode_generic_packet(&buffer, &r);
@@ -852,7 +858,7 @@ void construct_reply(struct wins_packet_struct *p)
 
 	if (switch_message(p->packet, &r)) {
 		encode_generic_packet(&buffer, &r);
-		DEBUG(0,("dump: sending packet\n"));
+		DEBUG(5,("dump: sending packet\n"));
 		dump_generic_packet(&r);
 
 		if(buffer.offset > 0) {
