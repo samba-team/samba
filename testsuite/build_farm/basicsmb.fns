@@ -87,15 +87,15 @@ test_smbpasswd() {
 }
 
 test_smbpasswd_remote() {
-	test_smbpasswd_password="$1"
-	test_smbpasswd_newpassword="$2"
-	echo "( echo $test_smbpasswd_password; echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami"
-	( echo $test_smbpasswd_password; echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami
+	test_smbpasswd_rem_password="$1"
+	test_smbpasswd_rem_newpassword="$2"
+	echo "( echo $test_smbpasswd_rem_password; echo $test_smbpasswd_rem_newpassword; echo $test_smbpasswd_rem_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami"
+	( echo $test_smbpasswd_rem_password; echo $test_smbpasswd_rem_newpassword; echo $test_smbpasswd_rem_newpassword; ) | $prefix/bin/smbpasswd -r localhost -s -U $whoami
 	status=$?
 	if [ $status = 0 ]; then
-	    echo "smbpasswd correctly remotely changed password ($test_smbpasswd_password -> $test_smbpasswd_newpassword)"
+	    echo "smbpasswd correctly remotely changed password ($test_smbpasswd_rem_password -> $test_smbpasswd_rem_newpassword)"
 	else
-	    echo "smbpasswd failed to remotely changed password ($test_smbpasswd_password -> $test_smbpasswd_newpassword)! (status $status)"
+	    echo "smbpasswd failed to remotely changed password ($test_smbpasswd_rem_password -> $test_smbpasswd_rem_newpassword)! (status $status)"
 	    return 1
 	fi
 	return 0
