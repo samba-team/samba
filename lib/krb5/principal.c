@@ -264,7 +264,8 @@ krb5_build_principal(krb5_context context,
 
 static krb5_error_code
 append_component(krb5_context context, krb5_principal p, 
-		 general_string comp)
+		 general_string comp,
+		 size_t comp_len)
 {
     general_string *tmp;
     size_t len = princ_num_comp(p);
@@ -272,7 +273,9 @@ append_component(krb5_context context, krb5_principal p,
     if(tmp == NULL)
 	return ENOMEM;
     princ_comp(p) = tmp;
-    princ_ncomp(p, len) = strdup(comp);
+    princ_ncomp(p, len) = malloc(comp_len + 1);
+    memcpy (princ_ncomp(p, len), comp, comp_len);
+    princ_ncomp(p, len)[comp_len] = '\0';
     princ_num_comp(p)++;
     return 0;
 }
@@ -287,7 +290,7 @@ va_ext_princ(krb5_context context, krb5_principal p, va_list ap)
 	if(len == 0)
 	    break;
 	s = va_arg(ap, char*);
-	append_component(context, p, s);
+	append_component(context, p, s, len);
     }
 }
 
@@ -299,7 +302,7 @@ va_princ(krb5_context context, krb5_principal p, va_list ap)
 	s = va_arg(ap, char*);
 	if(s == NULL)
 	    break;
-	append_component(context, p, s);
+	append_component(context, p, s, strlen(s));
     }
 }
 
