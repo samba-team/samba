@@ -90,7 +90,7 @@ static int request_lm_key;
 static int request_user_session_key;
 
 static const char *require_membership_of;
-static const char *require_membership_sid;
+static const char *require_membership_of_sid;
 
 static char winbind_separator(void)
 {
@@ -214,7 +214,7 @@ static BOOL get_require_membership_sid(void) {
 		return True;
 	}
 
-	if (require_membership_sid) {
+	if (require_membership_of_sid) {
 		return True;
 	}
 
@@ -238,9 +238,9 @@ static BOOL get_require_membership_sid(void) {
 		return False;
 	}
 
-	require_membership_sid = strdup(response.data.sid.sid);
+	require_membership_of_sid = strdup(response.data.sid.sid);
 
-	if (require_membership_sid)
+	if (require_membership_of_sid)
 		return True;
 
 	return False;
@@ -265,8 +265,8 @@ static BOOL check_plaintext_auth(const char *user, const char *pass,
 
 	fstrcpy(request.data.auth.user, user);
 	fstrcpy(request.data.auth.pass, pass);
-	if (require_membership_sid)
-		fstrcpy(request.data.auth.required_membership_sid, require_membership_sid);
+	if (require_membership_of_sid)
+		fstrcpy(request.data.auth.require_membership_of_sid, require_membership_of_sid);
 
 	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
 
@@ -323,27 +323,14 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
-	if (require_membership_sid)
-		fstrcpy(request.data.auth_crap.required_membership_sid, require_membership_sid);
+	if (require_membership_of_sid)
+		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
 
-	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
-		*error_string = smb_xstrdup(
-			"unable to create utf8 string for username");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+        fstrcpy(request.data.auth_crap.user, username);
+	fstrcpy(request.data.auth_crap.domain, domain);
 
-	if (push_utf8_fstring(request.data.auth_crap.domain, domain) == -1) {
-		*error_string = smb_xstrdup(
-			"unable to create utf8 string for domain");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (push_utf8_fstring(request.data.auth_crap.workstation, 
-			      workstation) == -1) {
-		*error_string = smb_xstrdup(
-			"unable to create utf8 string for workstation");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	fstrcpy(request.data.auth_crap.workstation, 
+		workstation);
 
 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
 
@@ -391,7 +378,8 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		if (pull_utf8_allocate(unix_name, (char *)response.extra_data) == -1) {
+		*unix_name = strdup((char *)response.extra_data);
+		if (!*unix_name) {
 			free_response(&response);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -478,7 +466,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 	NTSTATUS status;
 	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
 		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
-		return status;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = ntlmssp_client_start(client_ntlmssp_state);
@@ -1817,7 +1805,7 @@ enum {
 
                 case OPT_REQUIRE_MEMBERSHIP:
 			if (StrnCaseCmp("S-", require_membership_of, 2) == 0) {
-				require_membership_sid = require_membership_of;
+				require_membership_of_sid = require_membership_of;
 			}
 			break;
 		}
