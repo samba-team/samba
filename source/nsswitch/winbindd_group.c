@@ -459,7 +459,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	/* get the domain local groups if we are a member of a native win2k domain
 	   and are not using LDAP to get the groups */
 	   
-	if ( lp_security != SEC_ADS && domain->native_mode 
+	if ( lp_security() != SEC_ADS && domain->native_mode 
 		&& strequal(lp_workgroup(), domain->name) )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
