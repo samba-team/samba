@@ -1,3 +1,7 @@
+Thu Feb 11 22:57:37 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: set AIX_SRC also if !AIX
+
 Tue Dec  1 14:45:15 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: fix AIX linkage
