@@ -1,3 +1,8 @@
+1999-12-21  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c: don't use sa_len as a parameter, it's defined on
+ 	Irix
+
 1999-12-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c (dataconn): make sure from points to actual data
