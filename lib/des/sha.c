@@ -262,7 +262,7 @@ SHA1_Update (struct sha *m, const void *v, size_t len)
 void
 SHA1_Final (void *res, struct sha *m)
 {
-  static unsigned char zeros[72];
+  unsigned char zeros[72];
   unsigned offset = (m->sz[0] / 8) % 64;
   unsigned int dstart = (120 - offset - 1) % 64 + 1;
 
