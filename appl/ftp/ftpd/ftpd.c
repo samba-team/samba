@@ -136,7 +136,7 @@ static void	 myoob (int);
 static int	 checkuser (char *, char *);
 static int	 checkaccess (char *);
 static FILE	*dataconn (const char *, off_t, const char *);
-static void	 dolog (struct sockaddr *sa, int sa_len);
+static void	 dolog (struct sockaddr *sa, int len);
 static void	 end_login (void);
 static FILE	*getdatasock (const char *);
 static char	*gunique (char *);
@@ -1774,9 +1774,9 @@ renamecmd(char *from, char *to)
 }
 
 static void
-dolog(struct sockaddr *sa, int sa_len)
+dolog(struct sockaddr *sa, int len)
 {
-	getnameinfo_verified (sa, sa_len, remotehost, sizeof(remotehost),
+	getnameinfo_verified (sa, len, remotehost, sizeof(remotehost),
 			      NULL, 0, 0);
 #ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
