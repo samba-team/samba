@@ -27,6 +27,20 @@
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = False;
 
+/*****************************************************************************
+ stubb functions 
+****************************************************************************/
+
+void become_root( void )
+{
+	return;
+}
+
+void unbecome_root( void )
+{
+	return;
+}
+
 /* Reload configuration */
 
 static BOOL reload_services_file(BOOL test)
