@@ -86,7 +86,7 @@ static uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 
 static char *tarbuf, *buffer_p;
 static int tp, ntarf, tbufsiz;
-static SMB_BIG_UINT ttarf;
+static double ttarf;
 /* Incremental mode */
 BOOL tar_inc=False;
 /* Reset archive bit */
