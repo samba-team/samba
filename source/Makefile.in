@@ -84,7 +84,7 @@ FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage @WRAP@ @WRAP32@
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
@@ -261,6 +261,8 @@ UMOUNT_OBJ = client/smbumount.o \
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
+DEBUG2HTML_OBJ = utils/debug2html.o $(PARAM_OBJ) $(LIB_OBJ)
+
 SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -429,6 +431,10 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
