@@ -2632,6 +2632,24 @@ static BOOL run_deletetest(int dummy)
 	return correct;
 }
 
+/* FIRST_DESIRED_ACCESS   0xf019f */
+#define FIRST_DESIRED_ACCESS   FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|\
+                               FILE_READ_EA|                           /* 0xf */ \
+                               FILE_WRITE_EA|FILE_READ_ATTRIBUTES|     /* 0x90 */ \
+                               FILE_WRITE_ATTRIBUTES|                  /* 0x100 */ \
+                               DELETE_ACCESS|READ_CONTROL_ACCESS|\
+                               WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS     /* 0xf0000 */
+/* SECOND_DESIRED_ACCESS  0xe0080 */
+#define SECOND_DESIRED_ACCESS  FILE_READ_ATTRIBUTES|                   /* 0x80 */ \
+                               READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|\
+                               WRITE_OWNER_ACCESS                      /* 0xe0000 */
+
+#if 0
+#define THIRD_DESIRED_ACCESS   FILE_READ_ATTRIBUTES|                   /* 0x80 */ \
+                               READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|\
+                               FILE_READ_DATA|\
+                               WRITE_OWNER_ACCESS                      /* */
+#endif
 
 /*
   Test ntcreate calls made by xcopy
@@ -2650,8 +2668,8 @@ static BOOL run_xcopy(int dummy)
 	}
 	
 	fnum1 = cli_nt_create_full(&cli1, fname, 
-				   0xf019f, 0x20,
-				   0, 5, 
+				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 
 				   0x4044);
 
 	if (fnum1 == -1) {
@@ -2660,8 +2678,8 @@ static BOOL run_xcopy(int dummy)
 	}
 
 	fnum2 = cli_nt_create_full(&cli1, fname, 
-				   0xe0080, 0,
-				   0x7, 1, 
+				   SECOND_DESIRED_ACCESS, 0,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 
 				   0x200000);
 	if (fnum2 == -1) {
 		printf("second open failed - %s\n", cli_errstr(&cli1));
