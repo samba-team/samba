@@ -58,7 +58,8 @@ hdb_entry ::= SEQUENCE {
 	pw-end[7]	KerberosTime OPTIONAL,
 	max-life[8]	INTEGER OPTIONAL,
 	max-renew[9]	INTEGER OPTIONAL,
-	flags[10]	HDBFlags
+	flags[10]	HDBFlags,
+	etypes[11]	SEQUENCE OF INTEGER OPTIONAL
 }
 
 END
