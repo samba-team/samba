@@ -72,9 +72,9 @@ fatal (kx_context *kc, int fd, char *format, ...)
     va_start(args, format);
     p = msg;
     *p++ = ERROR;
-    vsnprintf (p + 4, sizeof(msg) - 5, format, args);
-    syslog (LOG_ERR, p + 4);
-    len = strlen (p + 4);
+    vsnprintf ((char *)p + 4, sizeof(msg) - 5, format, args);
+    syslog (LOG_ERR, (char *)p + 4);
+    len = strlen ((char *)p + 4);
     p += KRB_PUT_INT (len, p, 4, 4);
     p += len;
     kx_write (kc, fd, msg, p - msg);
