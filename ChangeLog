@@ -1,5 +1,12 @@
 Sun Nov  9 02:17:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kadmin/kadmin.c: Add get_privileges function.
+
+	* lib/kadm5: Rename KADM5_ACL_* -> KADM5_PRIV_* to conform with
+ 	specification.
+
+	* kdc/connect.c: Exit if no sockets could be bound.
+
 	* kadmin/kadmind.c: Check return value from krb5_net_read().
 
 	* lib/kadm5,kadmin: Fix memory leaks.
