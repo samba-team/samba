@@ -85,9 +85,9 @@ try_aix(void)
     if(ptr == NULL) {
 	if(_kafs_debug) {
 	    if(errno == ENOEXEC && (p = dlerror()) != NULL)
-		warnx("%s: %s", path, p);
+		fprintf(stderr, "dlopen(%s): %s\n", path, p);
 	    else if (errno != ENOENT)
-		warn("%s", path);
+		fprintf(stderr, "dlopen(%s): %s\n", path, strerror(errno));
 	}
 	return 1;
     }
