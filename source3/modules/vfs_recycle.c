@@ -610,7 +610,7 @@ static int recycle_unlink(connection_struct *conn, const char *file_name)
 	final_name = NULL;
 	asprintf(&final_name, "%s/%s", temp_name, base);
 	ALLOC_CHECK(final_name, done);
-	DEBUG(10, ("recycle.bin: recycled file name%s\n", temp_name));		/* new filename with path */
+	DEBUG(10, ("recycle.bin: recycled file name: %s\n", temp_name));		/* new filename with path */
 
 	/* check if we should delete file from recycle bin */
 	if (recycle_file_exist(conn, final_name)) {
