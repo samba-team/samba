@@ -35,6 +35,8 @@
 
 RCSID("$Id$");
 
+static char *check_library  = NULL;
+static char *check_function = NULL;
 static char *config_file;
 static char *keyfile;
 static char *keytab_str = "HDB:";
@@ -60,6 +62,12 @@ static struct getargs args[] = {
     {	"realm",	'r',	arg_string,   &realm, 
 	"realm to use", "realm" 
     },
+#ifdef HAVE_DLOPEN
+    { "check-library", 0, arg_string, &check_library, 
+      "library to load password check function from", "library" },
+    { "check-function", 0, arg_string, &check_function,
+      "password check function to load", "function" },
+#endif
     {	"debug",	'd',	arg_flag,   &debug_flag, 
 	"enable debugging" 
     },
@@ -132,6 +140,8 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_resolve");
 
+    kadm5_setup_passwd_quality_check (context, check_library, check_function);
+
     {
 	int fd = 0;
 	struct sockaddr sa;
@@ -149,6 +159,7 @@ main(int argc, char **argv)
 	} else if(getsockname(STDIN_FILENO, &sa, &sa_size) < 0 && 
 		   errno == ENOTSOCK) {
 	    parse_ports(context, port_str ? port_str : "+");
+	    pidfile(NULL);
 	    start_server(context);
 	}
 	if(realm)
