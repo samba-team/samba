@@ -214,7 +214,7 @@ $dcom
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
 		  $filename = util::ChangeExtension($filename, ".i");
-		  util::FileSave($pidl, IdlSwig::Parse($pidl));
+		  util::FileSave($filename, IdlSwig::Parse($pidl));
 		}
 	}
 
