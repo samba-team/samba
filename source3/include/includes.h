@@ -381,7 +381,7 @@
 #include <krb5.h>
 #endif
 
-#if HAVE_LDAP
+#if HAVE_LDAP_H
 #include <ldap.h>
 #endif
 
@@ -390,7 +390,7 @@
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_SASL_H)
+#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_LDAP_H) && defined(HAVE_SASL_H)
 #define HAVE_ADS
 #endif
 
