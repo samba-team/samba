@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -71,7 +71,7 @@ afslog_uid_int(kafs_data *data, const char *cell, uid_t uid,
     if (cell == 0 || cell[0] == 0)
 	return _kafs_afslog_all_local_cells (data, uid, homedir);
 
-    ret = krb_get_lrealm(realm , 0);
+    ret = krb_get_lrealm(realm, 1);
     if(ret == KSUCCESS && (d->realm == NULL || strcmp(d->realm, realm)))
 	lrealm = realm;
     else
@@ -125,4 +125,17 @@ int
 krb_afslog_home(const char *cell, const char *realm, const char *homedir)
 {
     return krb_afslog_uid_home (cell, realm, getuid(), homedir);
+}
+
+/*
+ *
+ */
+
+int
+krb_realm_of_cell(const char *cell, char **realm)
+{
+    kafs_data kd;
+
+    kd.get_realm = get_realm;
+    return _kafs_realm_of_cell(&kd, cell, realm);
 }
