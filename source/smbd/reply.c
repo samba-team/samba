@@ -1309,7 +1309,7 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT 
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
+static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOOL bad_path)
 {
 	SMB_STRUCT_STAT sbuf;
 	int fmode;
@@ -1323,8 +1323,15 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0)
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
+	        if(errno == ENOENT) {
+			if (bad_path)
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			else
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		return map_nt_error_from_unix(errno);
+	}
 
 	fmode = dos_mode(conn,fname,&sbuf);
 
@@ -1421,7 +1428,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(directory,conn,dirtype);
+		error = can_delete(directory,conn,dirtype,bad_path);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -1457,7 +1464,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 					continue;
 				
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(fname,conn,dirtype);
+				error = can_delete(fname,conn,dirtype,bad_path);
 				if (!NT_STATUS_IS_OK(error))
 					continue;
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
@@ -3639,7 +3646,8 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			dirptr = OpenDir(conn, directory, True);
 		
 		if (dirptr) {
-			error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			error = NT_STATUS_NO_SUCH_FILE;
+/*			Was error = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
@@ -3649,6 +3657,9 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 
 				pstrcpy(fname,dname);
 				
+				if((strcmp(fname, ".") == 0) || (strcmp(fname, "..")==0))
+					continue;
+
 				if(!mask_match(fname, mask, case_sensitive))
 					continue;
 				
