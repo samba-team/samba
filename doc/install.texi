@@ -52,7 +52,7 @@ You will need a fairly recent version of our Kerberos 4 distribution for
 
 @item @kbd{--enable-kaserver}
 Enables experimental kaserver support in the KDC. This is the protocol
-used by ``KDC'' in AFS. Requires Kerberos 4 support.
+used by the ``KDC'' in AFS. Requires Kerberos 4 support.
 @item @kbd{--with-readline=@file{dir}}
 Gives the path for the GNU Readline library, which will be used in some
 programs. If no readline library is found, the (simpler) editline
