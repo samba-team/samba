@@ -3585,34 +3585,6 @@ int PutUniCode(char *dst,char *src)
   return(ret);
 }
 
-
-pstring smbrun_path = SMBRUN;
-
-/****************************************************************************
-run a command via system() using smbrun
-****************************************************************************/
-int smbrun(char *cmd,char *outfile)
-{
-  int ret;
-  pstring syscmd;  
-
-  if (!file_exist(smbrun_path,NULL))
-    {
-      DEBUG(0,("SMBRUN ERROR: Can't find %s. Installation problem?\n",smbrun_path));
-      return(1);
-    }
-
-  sprintf(syscmd,"%s \"(%s 2>&1) > %s\"",
-	  smbrun_path,cmd,
-	  outfile?outfile:"/dev/null");
-
-  DEBUG(5,("smbrun - running %s ",syscmd));
-  ret = system(syscmd);
-  DEBUG(5,("gave %d\n",ret));
-  return(ret);
-}
-
-
 /****************************************************************************
 a wrapper for gethostbyname() that tries with all lower and all upper case 
 if the initial name fails
@@ -3745,8 +3717,7 @@ my own panic function - not suitable for general use
 ********************************************************************/
 void ajt_panic(void)
 {
-  pstring cmd = "/usr/bin/X11/xedit -display :0 /tmp/ERROR_FAULT &";
-  smbrun(cmd,NULL);
+  system("/usr/bin/X11/xedit -display :0 /tmp/ERROR_FAULT &");
 }
 #endif
 

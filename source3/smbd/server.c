@@ -26,7 +26,6 @@
 #include "reply.h"
 
 pstring servicesf = CONFIGFILE;
-pstring OriginalDir ="/";
 extern pstring debugf;
 extern pstring sesssetup_user;
 
@@ -34,15 +33,7 @@ char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
-int initial_uid = 0;
-int initial_gid = 0;
-
 BOOL share_mode_pending = False;
-
-/* have I done a become_user? */
-static struct {
-  int cnum, uid;
-} last_user;
 
 /* the last message the was processed */
 int last_message = -1;
@@ -1373,8 +1364,6 @@ int write_file(int fnum,char *data,int n)
 }
 
 
-static int old_umask = 022;
-
 /****************************************************************************
 load parameters specific to a connection/service
 ****************************************************************************/
@@ -1418,261 +1407,6 @@ BOOL become_service(int cnum,BOOL do_chdir)
   return(True);
 }
 
-
-/****************************************************************************
-  become the specified uid 
-****************************************************************************/
-static BOOL become_uid(int uid)
-{
-  if (initial_uid != 0)
-    return(True);
-
-#ifdef AIX
-  {
-    /* AIX 3 stuff - inspired by a code fragment in wu-ftpd */
-    priv_t priv;
-
-    priv.pv_priv[0] = 0;
-    priv.pv_priv[1] = 0;
-    if (setpriv(PRIV_SET|PRIV_INHERITED|PRIV_EFFECTIVE|PRIV_BEQUEATH,
-		&priv, sizeof(priv_t)) < 0 ||
-	setuidx(ID_REAL|ID_EFFECTIVE, (uid_t)uid) < 0 ||
-	seteuid((uid_t)uid) < 0) 
-      DEBUG(1,("Can't set uid (AIX3)"));
-  }
-#endif
-
-#ifdef USE_SETRES
-  if (setresuid(-1,uid,-1) != 0)
-#else
-    if ((seteuid(uid) != 0) && 
-	(setuid(uid) != 0))
-#endif
-      {
-	DEBUG(0,("Couldn't set uid %d currently set to (%d,%d)\n",
-		 uid,getuid(), geteuid()));
-	if (uid > 32000)
-	  DEBUG(0,("Looks like your OS doesn't like high uid values - try using a different account\n"));
-	return(False);
-      }
-
-  if (((uid == -1) || (uid == 65535)) && geteuid() != uid)
-    {
-      DEBUG(0,("Invalid uid -1. perhaps you have a account with uid 65535?\n"));
-      return(False);
-    }
-
-  return(True);
-}
-
-
-/****************************************************************************
-  become the specified gid
-****************************************************************************/
-static BOOL become_gid(int gid)
-{
-  if (initial_uid != 0)
-    return(True);
-  
-#ifdef USE_SETRES 
-  if (setresgid(-1,gid,-1) != 0)
-#else
-    if (setgid(gid) != 0)
-#endif
-      {
-	DEBUG(0,("Couldn't set gid %d currently set to (%d,%d)\n",
-		 gid,getgid(),getegid()));
-	if (gid > 32000)
-	  DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
-	return(False);
-      }
-
-  return(True);
-}
-
-
-/****************************************************************************
-  become the specified uid and gid
-****************************************************************************/
-static BOOL become_id(int uid,int gid)
-{
-  return(become_gid(gid) && become_uid(uid));
-}
-
-/****************************************************************************
-become the guest user
-****************************************************************************/
-static BOOL become_guest(void)
-{
-  BOOL ret;
-  static struct passwd *pass=NULL;
-
-  if (initial_uid != 0) 
-    return(True);
-
-  if (!pass)
-    pass = Get_Pwnam(lp_guestaccount(-1),True);
-  if (!pass) return(False);
-
-  ret = become_id(pass->pw_uid,pass->pw_gid);
-
-  if (!ret)
-    DEBUG(1,("Failed to become guest. Invalid guest account?\n"));
-
-  last_user.cnum = -2;
-
-  return(ret);
-}
-
-/*******************************************************************
-check if a username is OK
-********************************************************************/
-static BOOL check_user_ok(int cnum,user_struct *vuser,int snum)
-{
-  int i;
-  for (i=0;i<Connections[cnum].uid_cache.entries;i++)
-    if (Connections[cnum].uid_cache.list[i] == vuser->uid) return(True);
-
-  if (!user_ok(vuser->name,snum)) return(False);
-
-  i = Connections[cnum].uid_cache.entries % UID_CACHE_SIZE;
-  Connections[cnum].uid_cache.list[i] = vuser->uid;
-
-  if (Connections[cnum].uid_cache.entries < UID_CACHE_SIZE)
-    Connections[cnum].uid_cache.entries++;
-
-  return(True);
-}
-
-
-/****************************************************************************
-  become the user of a connection number
-****************************************************************************/
-BOOL become_user(int cnum, int uid)
-{
-  int new_umask;
-  user_struct *vuser;
-  int snum,gid;
-  int ngroups;
-  gid_t *groups;
-
-  if (last_user.cnum == cnum && last_user.uid == uid) {
-    DEBUG(4,("Skipping become_user - already user\n"));
-    return(True);
-  }
-
-  unbecome_user();
-
-  if (!OPEN_CNUM(cnum)) {
-    DEBUG(2,("Connection %d not open\n",cnum));
-    return(False);
-  }
-
-  snum = Connections[cnum].service;
-
-  if (Connections[cnum].force_user || 
-      lp_security() == SEC_SHARE ||
-      !(vuser = get_valid_user_struct(uid)) ||
-      !check_user_ok(cnum,vuser,snum)) {
-    uid = Connections[cnum].uid;
-    gid = Connections[cnum].gid;
-    groups = Connections[cnum].groups;
-    ngroups = Connections[cnum].ngroups;
-  } else {
-    if (!vuser) {
-      DEBUG(2,("Invalid vuid used %d\n",uid));
-      return(False);
-    }
-    uid = vuser->uid;
-    if(!*lp_force_group(snum))
-      gid = vuser->gid;
-    else
-      gid = Connections[cnum].gid;
-    groups = vuser->user_groups;
-    ngroups = vuser->user_ngroups;
-  }
-
-  if (initial_uid == 0)
-    {
-      if (!become_gid(gid)) return(False);
-
-#ifndef NO_SETGROUPS      
-      if (!IS_IPC(cnum)) {
-	/* groups stuff added by ih/wreu */
-	if (ngroups > 0)
-	  if (setgroups(ngroups,groups)<0)
-	    DEBUG(0,("setgroups call failed!\n"));
-      }
-#endif
-
-      if (!Connections[cnum].admin_user && !become_uid(uid))
-	return(False);
-    }
-
-  new_umask = 0777 & ~CREATE_MODE(cnum);
-  old_umask = umask(new_umask);
-
-  last_user.cnum = cnum;
-  last_user.uid = uid;
-  
-  DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d) new_umask=0%o\n",
-	   getuid(),geteuid(),getgid(),getegid(),new_umask));
-  
-  return(True);
-}
-
-/****************************************************************************
-  unbecome the user of a connection number
-****************************************************************************/
-BOOL unbecome_user(void )
-{
-  if (last_user.cnum == -1)
-    return(False);
-
-  ChDir(OriginalDir);
-
-  umask(old_umask);
-
-  if (initial_uid == 0)
-    {
-#ifdef USE_SETRES
-      setresuid(-1,getuid(),-1);
-      setresgid(-1,getgid(),-1);
-#else
-      if (seteuid(initial_uid) != 0) 
-	setuid(initial_uid);
-      setgid(initial_gid);
-#endif
-    }
-#ifdef NO_EID
-  if (initial_uid == 0)
-    DEBUG(2,("Running with no EID\n"));
-  initial_uid = getuid();
-  initial_gid = getgid();
-#else
-  if (geteuid() != initial_uid)
-    {
-      DEBUG(0,("Warning: You appear to have a trapdoor uid system\n"));
-      initial_uid = geteuid();
-    }
-  if (getegid() != initial_gid)
-    {
-      DEBUG(0,("Warning: You appear to have a trapdoor gid system\n"));
-      initial_gid = getegid();
-    }
-#endif
-  
-  if (ChDir(OriginalDir) != 0)
-    DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
-	     timestring(),OriginalDir));  
-
-  DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
-	getuid(),geteuid(),getgid(),getegid()));
-
-  last_user.cnum = -1;
-
-  return(True);
-}
 
 /****************************************************************************
   find a service entry
@@ -3677,8 +3411,6 @@ void process(void )
   }
 #endif    
 
-  last_user.cnum = -1;
-  
   while (True)
     {
       int32 len;      
@@ -3922,22 +3654,7 @@ int main(int argc,char *argv[])
 
   umask(0777 & ~DEF_CREATE_MASK);
 
-  initial_uid = geteuid();
-  initial_gid = getegid();
-
-  if (initial_gid != 0 && initial_uid == 0)
-    {
-#ifdef HPUX
-      setresgid(0,0,0);
-#else
-      setgid(0);
-      setegid(0);
-#endif
-    }
-
-  initial_uid = geteuid();
-  initial_gid = getegid();
-
+  init_uid();
 
   /* this is for people who can't start the program correctly */
   while (argc > 1 && (*argv[1] != '-'))
@@ -3998,8 +3715,6 @@ int main(int argc,char *argv[])
 
   DEBUG(2,("%s smbd version %s started\n",timestring(),VERSION));
   DEBUG(2,("Copyright Andrew Tridgell 1992-1995\n"));
-
-  GetWd(OriginalDir);
 
 #ifndef NO_GETRLIMIT
 #ifdef RLIMIT_NOFILE

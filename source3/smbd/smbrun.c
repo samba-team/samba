@@ -44,53 +44,54 @@ static void close_fds(void)
 This is a wrapper around the system call to allow commands to run correctly 
 as non root from a program which is switching between root and non-root 
 
-It takes one argument as argv[1] and runs it after becoming a non-root
-user
-*/
+It takes 3 arguments as uid,gid,command and runs command after
+becoming a non-root user */
 int main(int argc,char *argv[])
 {
+  int uid,gid;
+
   close_fds();
 
-  if (getuid() != geteuid())
-    {
-      int uid,gid;
-      
-      if (getuid() == 0)
-	uid = geteuid();
-      else
-	uid = getuid();
-      
-      if (getgid() == 0)
-	gid = getegid();
-      else
-	gid = getgid();
-      
+  if (argc != 4) exit(2);
+
+  uid = atoi(argv[1]);
+  gid = atoi(argv[2]);
+
+  /* first become root - we may need to do this in order to lose
+     our privilages! */
 #ifdef USE_SETRES
-      setresgid(0,0,0);
-      setresuid(0,0,0);
-      setresgid(gid,gid,gid);
-      setresuid(uid,uid,uid);      
+  setresgid(0,0,0);
+  setresuid(0,0,0);
 #else      
-      setuid(0);
-      seteuid(0);
-      setgid(gid);
-      setegid(gid);
-      setuid(uid);
-      seteuid(uid);
+  setuid(0);
+  seteuid(0);
 #endif
 
-      if (getuid() != uid)
-	return(3);
-    }
+#ifdef USE_SETFS
+  setfsuid(uid);
+  setfsgid(gid);
+#endif
+
+#ifdef USE_SETRES
+  setresgid(gid,gid,gid);
+  setresuid(uid,uid,uid);      
+#else
+  setgid(gid);
+  setegid(gid);
+  setuid(uid);
+  seteuid(uid);
+#endif
+
+
+  /* paranoia :-) */
+  if (getuid() != uid)
+    return(3);
 
   if (geteuid() != getuid())
-    return(1);
-
-  if (argc < 2)
-    return(2);
+    return(4);
 
   /* this is to make sure that the system() call doesn't run forever */
   alarm(30);
 
-  return(system(argv[1]));
+  return(system(argv[3]));
 }
