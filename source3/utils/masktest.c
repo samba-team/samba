@@ -39,6 +39,9 @@ static BOOL reg_match_one(char *pattern, char *file)
 	if (strcmp(file,"..") == 0) file = ".";
 	if (strcmp(pattern,".") == 0) return False;
 
+	/* oh what a weird world this is */
+	if (old_list && strcmp(pattern, "*.*") == 0) return True;
+
 	return ms_fnmatch(pattern, file)==0;
 }
 
