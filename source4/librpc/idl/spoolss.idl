@@ -187,12 +187,21 @@
 
 	/******************/
 	/* Function: 0x01 */
+	typedef struct {
+		uint32 foo;
+	} spoolss_Devmode;
+
+	typedef struct {
+		uint32 size;
+		spoolss_Devmode *devmode;
+	} spoolss_DevmodeContainer;
+
 	WERROR spoolss_OpenPrinter(
-		[in] unistr *server,
-		[in] unistr *printer,
-		[in] DATA_BLOB *buffer,
+		[in] unistr *printername,
+		[in] unistr *datatype,
+		[in] spoolss_DevmodeContainer devmode_ctr,
 		[in] uint32 access_mask,
-		[out,ref]   policy_handle *handle
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -734,15 +743,6 @@
 	/* Function: 0x44 */
 	WERROR spoolss_44(
 	);
-
-	typedef struct {
-		uint32 foo;
-	} spoolss_Devmode;
-
-	typedef struct {
-		uint32 size;
-		spoolss_Devmode *devmode;
-	} spoolss_DevmodeContainer;
 
 	typedef struct {
 		uint32 size;
