@@ -1,6 +1,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY general SYSTEM "general.sgml">
 <!ENTITY install SYSTEM "install.sgml">
+<!ENTITY errors SYSTEM "errors.sgml">
 <!ENTITY clientapp SYSTEM "clientapp.sgml">
 ]>
 
@@ -20,11 +21,13 @@ allows file and printer connections from clients such as Windows,
 OS/2, Linux and others. Current to version 3.0. Please send any
 corrections to the samba documentation mailinglist at
 <ulink url="mailto:samba-doc@samba.org">samba-doc@samba.org</ulink>. 
-This FAQ is based on the old Samba FAQ by Dan Shearer and Paul Blackman.
+This FAQ was based on the old Samba FAQ by Dan Shearer and Paul Blackman, 
+and the old samba text documents which were mostly written by John Terpstra.
 </para>
 </dedication>
 
 &general;
 &install;
 &clientapp;
+&errors;
 </book>
