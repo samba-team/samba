@@ -309,6 +309,7 @@ tgs_rep(krb5_context context,
 	
 	{
 	    PrincipalName p;
+	    p.name_type = 0;
 	    p.name_string.val = calloc(2, sizeof(*p.name_string.val));
 	    p.name_string.len = 2;
 	    p.name_string.val[0] = "krbtgt";
