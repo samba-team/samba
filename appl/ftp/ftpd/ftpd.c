@@ -183,18 +183,18 @@ char	proctitle[BUFSIZ];	/* initial part of title */
 			cmd, (*(file) == '/') ? "" : curdir(), file, cnt); \
 	}
 
-static void	 ack __P((char *));
-static void	 myoob __P((int));
-static int	 checkuser __P((char *, char *));
-static FILE	*dataconn __P((char *, off_t, char *));
-static void	 dolog __P((struct sockaddr_in *));
-static void	 end_login __P((void));
-static FILE	*getdatasock __P((char *));
-static char	*gunique __P((char *));
-static void	 lostconn __P((int));
-static int	 receive_data __P((FILE *, FILE *));
-static void	 send_data __P((FILE *, FILE *, off_t));
-static struct passwd * sgetpwnam __P((char *));
+static void	 ack (char *);
+static void	 myoob (int);
+static int	 checkuser (char *, char *);
+static FILE	*dataconn (char *, off_t, char *);
+static void	 dolog (struct sockaddr_in *);
+static void	 end_login (void);
+static FILE	*getdatasock (char *);
+static char	*gunique (char *);
+static void	 lostconn (int);
+static int	 receive_data (FILE *, FILE *);
+static void	 send_data (FILE *, FILE *, off_t);
+static struct passwd * sgetpwnam (char *);
 
 static char *
 curdir(void)
@@ -553,7 +553,7 @@ user(char *name)
 		strncpy(curname, name, sizeof(curname)-1);
 #ifdef SKEY
 	if (!skey_haskey(name)) {
-		char *myskey, *skey_keyinfo __P((char *name));
+		char *myskey, *skey_keyinfo (char *name);
 
 		myskey = skey_keyinfo(name);
 		reply(331, "Password [%s] for %s required.",
@@ -772,7 +772,7 @@ retrieve(char *cmd, char *name)
 {
 	FILE *fin, *dout;
 	struct stat st;
-	int (*closefunc) __P((FILE *));
+	int (*closefunc) (FILE *);
 
 	if (cmd == 0) {
 		fin = fopen(name, "r"), closefunc = fclose;
@@ -867,7 +867,7 @@ store(char *name, char *mode, int unique)
 {
 	FILE *fout, *din;
 	struct stat st;
-	int (*closefunc) __P((FILE *));
+	int (*closefunc) (FILE *);
 
 	if(filename_check(name))
 	    return;
