@@ -7,11 +7,12 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-CC = @CC@
-AR = ar
-RANLIB = @RANLIB@
-DEFS = @DEFS@
-CFLAGS = @CFLAGS@
+CC	= @CC@
+CPP	= @CPP@
+AR	= ar
+RANLIB	= @RANLIB@
+DEFS	= @DEFS@
+CFLAGS	= @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -29,8 +30,6 @@ LIBEXT = a
 SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
-
-SOURCES = signal.c
 
 OBJECTS = signal.o @LIBOBJS@
 

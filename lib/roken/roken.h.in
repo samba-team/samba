@@ -3,6 +3,9 @@
 #ifndef __ROKEN_H__
 #define __ROKEN_H__
 
+#include <sys/types.h>
+#include <netinet/in.h>
+
 #ifndef HAVE_PUTENV
 int putenv(const char *string);
 #endif
