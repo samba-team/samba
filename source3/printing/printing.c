@@ -168,7 +168,9 @@ static int print_run_command(int snum,char *command,
   
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
-  
+
+	/* Convert script args to unix-codepage */
+	dos_to_unix(syscmd, True);
 	ret = smbrun(syscmd,outfile,False);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -1202,8 +1204,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 
 	njobs = print_queue_status(snum, &queue, &status);
 	for (i=0;i<njobs;i++) {
-		if (print_access_check(user, snum, 
-				       PRINTER_ACCESS_ADMINISTER)) {
+		if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 			print_job_delete1(queue[i].job);
 		}
 	}
