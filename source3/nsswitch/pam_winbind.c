@@ -451,6 +451,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      const char *password;
      const char *member = NULL;
      int retval = PAM_AUTH_ERR;
+     int i;
     
      /* parse arguments */
      int ctrl = _pam_parse(argc, argv);
@@ -485,7 +486,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      }
 
      /* Retrieve membership-string here */
-     int i;
      for ( i=0; i<argc; i++ ) {
 
 	 if (!strncmp(argv[i], "required_membership", strlen("required_membership"))) {
