@@ -342,8 +342,8 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 
 		/* One and two value data has two uint32 values */
 
-	case ONE_VALUE:
-	case TWO_VALUE:
+	case NOTIFY_ONE_VALUE:
+	case NOTIFY_TWO_VALUE:
 
 		if(!prs_uint32("value[0]", ps, depth, &data->notify_data.value[0]))
 			return False;
@@ -356,7 +356,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		   the number of uint16 characters plus a trailing
 		   \0\0. */
 
-	case POINTER:
+	case NOTIFY_POINTER:
 
 		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length ))
 			return False;
@@ -365,7 +365,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 
 		break;
 
-	case STRING:
+	case NOTIFY_STRING:
 
 		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length))
 			return False;
@@ -401,14 +401,14 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 
 		/* No data for values */
 
-	case ONE_VALUE:
-	case TWO_VALUE:
+	case NOTIFY_ONE_VALUE:
+	case NOTIFY_TWO_VALUE:
 
 		break;
 
 		/* Strings start with a length in uint16s */
 
-	case STRING:
+	case NOTIFY_STRING:
 
 		if (UNMARSHALLING(ps)) {
 			data->notify_data.data.string = 
@@ -433,7 +433,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 
 		break;
 
-	case POINTER:
+	case NOTIFY_POINTER:
 
 		if (UNMARSHALLING(ps)) {
 			data->notify_data.data.string = 
