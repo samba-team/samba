@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -145,6 +145,9 @@ extern des_cblock iv;
 #define KCMD_NEW_VERSION "KCMDV0.2"
 
 #define USERNAME_SZ 16
+#ifndef NCARGS
+#define NCARGS 8192
+#endif
 #define COMMAND_SZ (NCARGS+1)
 
 #define RSH_BUFSIZ (5 * 1024) /* MIT kcmd can't handle larger buffers */
