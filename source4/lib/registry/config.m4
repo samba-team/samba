@@ -11,6 +11,7 @@ PKG_CHECK_MODULES(GCONF, gconf-2.0, [ SMB_MODULE_DEFAULT(reg_gconf,STATIC)
 PKG_CHECK_MODULES(GTK, glib-2.0 gtk+-2.0, [ CFLAGS="$CFLAGS $GTK_CFLAGS"; ], [ AC_MSG_WARN([Will be unable to build gregedit])])
 
 SMB_MODULE(reg_nt4, REG, STATIC, lib/registry/reg_backend_nt4/reg_backend_nt4.o)
+SMB_MODULE(reg_w95, REG, STATIC, lib/registry/reg_backend_w95/reg_backend_w95.o)
 SMB_MODULE(reg_dir, REG, STATIC, lib/registry/reg_backend_dir/reg_backend_dir.o)
 SMB_MODULE(reg_rpc, REG, STATIC, lib/registry/reg_backend_rpc/reg_backend_rpc.o)
 SMB_MODULE(reg_gconf, REG, NOT, lib/registry/reg_backend_gconf/reg_backend_gconf.o, [], [$GCONF_LIBS])
