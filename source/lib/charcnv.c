@@ -184,14 +184,18 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 		}
 	}
 
+
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		if (!conv_silent)
 			DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
-		goto use_as_is;
+		return 0;
 	}
 
 	i_len=srclen;
 	o_len=destlen;
+
+ again:
+
 	retval = smb_iconv(descriptor, (char **)&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
 	    	const char *reason="unknown error";
@@ -227,12 +231,77 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
  use_as_is:
 
-	/* conversion not supported, use as is */
+	/* 
+	 * Conversion not supported. This is actually an error, but there are so
+	 * many misconfigured iconv systems and smb.conf's out there we can't just
+	 * fail. Do a very bad conversion instead.... JRA.
+	 */
+
 	{
-		size_t len = MIN(srclen,destlen);
-		if (len)
-			memcpy(dest,src,len);
-		return len;
+		if (o_len == 0 || i_len == 0)
+			return destlen - o_len;
+
+		if (from == CH_UCS2 && to != CH_UCS2) {
+			/* Can't convert from ucs2 to multibyte. Just truncate this char to ascii. */
+			if (i_len < 2)
+				return destlen - o_len;
+			if (i_len >= 2) {
+				*outbuf = inbuf[0];
+
+				outbuf++;
+				o_len--;
+
+				inbuf += 2;
+				i_len -= 2;
+			}
+
+			if (o_len == 0 || i_len == 0)
+				return destlen - o_len;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else if (from != CH_UCS2 && to == CH_UCS2) {
+			/* Can't convert to ucs2 - just widen by adding zero. */
+			if (o_len < 2)
+				return destlen - o_len;
+
+			outbuf[0] = inbuf[0];
+			outbuf[1] = '\0';
+
+			inbuf++;
+			i_len--;
+
+			outbuf += 2;
+			o_len -= 2;
+
+			if (o_len == 0 || i_len == 0)
+				return destlen - o_len;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else if (from != CH_UCS2 && to != CH_UCS2) {
+			/* Failed multibyte to multibyte. Just copy 1 char and
+				try again. */
+			outbuf[0] = inbuf[0];
+
+			inbuf++;
+			i_len--;
+
+			outbuf++;
+			o_len--;
+
+			if (o_len == 0 || i_len == 0)
+				return destlen - o_len;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else {
+			/* Keep compiler happy.... */
+			return destlen - o_len;
+		}
 	}
 }
 
@@ -241,9 +310,9 @@ static size_t convert_string_internal(charset_t from, charset_t to,
  * Fast path version - handles ASCII first.
  *
  * @param src pointer to source string (multibyte or singlebyte)
- * @param srclen length of the source string in bytes
+ * @param srclen length of the source string in bytes, or -1 for nul terminated.
  * @param dest pointer to destination string (multibyte or singlebyte)
- * @param destlen maximal length allowed for string
+ * @param destlen maximal length allowed for string - *NEVER* -1.
  * @returns the number of bytes occupied in the destination
  *
  * Ensure the srclen contains the terminating zero.
@@ -257,10 +326,14 @@ size_t convert_string(charset_t from, charset_t to,
 		      void *dest, size_t destlen)
 {
 	/*
-	 * NB. We deliberately don't do a strlen here is srclen == -1.
+	 * NB. We deliberately don't do a strlen here if srclen == -1.
 	 * This is very expensive over millions of calls and is taken
 	 * care of in the slow path in convert_string_internal. JRA.
 	 */
+
+#ifdef DEVELOPER
+	SMB_ASSERT(destlen != (size_t)-1);
+#endif
 
 	if (srclen == 0)
 		return 0;
@@ -302,7 +375,7 @@ size_t convert_string(charset_t from, charset_t to,
 		unsigned char lastp;
 
 		/* If all characters are ascii, fast path here. */
-		while ((slen >= 2) && dlen) {
+		while (((slen == (size_t)-1) || (slen >= 2)) && dlen) {
 			if (((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
 				if (slen != (size_t)-1) {
@@ -370,6 +443,9 @@ size_t convert_string(charset_t from, charset_t to,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  *
  * Ensure the srclen contains the terminating zero.
+ * 
+ * I hate the goto's in this function. It's embarressing.....
+ * There has to be a cleaner way to do this. JRA.
  **/
 
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
@@ -398,7 +474,8 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		goto use_as_is;
 	}
 
-convert:
+  convert:
+
 	if ((destlen*2) < destlen) {
 		/* wrapped ! abort. */
 		if (!conv_silent)
@@ -425,6 +502,9 @@ convert:
 	}
 	i_len = srclen;
 	o_len = destlen;
+
+ again:
+
 	retval = smb_iconv(descriptor,
 			   (char **)&inbuf, &i_len,
 			   &outbuf, &o_len);
@@ -449,7 +529,9 @@ convert:
 		/* smb_panic(reason); */
 		return (size_t)-1;
 	}
-	
+
+  out:
+
 	destlen = destlen - o_len;
 	if (ctx)
 		*dest = (char *)talloc_realloc(ctx,ob,destlen);
@@ -464,27 +546,80 @@ convert:
 
 	return destlen;
 
-  use_as_is:
+ use_as_is:
 
-	/* conversion not supported, use as is */
+	/* 
+	 * Conversion not supported. This is actually an error, but there are so
+	 * many misconfigured iconv systems and smb.conf's out there we can't just
+	 * fail. Do a very bad conversion instead.... JRA.
+	 */
+
 	{
-		if (srclen && (destlen != srclen)) {
-			destlen = srclen;
-			if (ctx)
-				ob = (char *)talloc_realloc(ctx, ob, destlen);
-			else
-				ob = (char *)Realloc(ob, destlen);
-			if (!ob) {
-				DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
-				if (!ctx)
-					SAFE_FREE(outbuf);
-				return (size_t)-1;
+		if (o_len == 0 || i_len == 0)
+			goto out;
+
+		if (from == CH_UCS2 && to != CH_UCS2) {
+			/* Can't convert from ucs2 to multibyte. Just truncate this char to ascii. */
+			if (i_len < 2)
+				goto out;
+
+			if (i_len >= 2) {
+				*outbuf = inbuf[0];
+
+				outbuf++;
+				o_len--;
+
+				inbuf += 2;
+				i_len -= 2;
 			}
+
+			if (o_len == 0 || i_len == 0)
+				goto out;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else if (from != CH_UCS2 && to == CH_UCS2) {
+			/* Can't convert to ucs2 - just widen by adding zero. */
+			if (o_len < 2)
+				goto out;
+
+			outbuf[0] = inbuf[0];
+			outbuf[1] = '\0';
+
+			inbuf++;
+			i_len--;
+
+			outbuf += 2;
+			o_len -= 2;
+
+			if (o_len == 0 || i_len == 0)
+				goto out;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else if (from != CH_UCS2 && to != CH_UCS2) {
+			/* Failed multibyte to multibyte. Just copy 1 char and
+				try again. */
+			outbuf[0] = inbuf[0];
+
+			inbuf++;
+			i_len--;
+
+			outbuf++;
+			o_len--;
+
+			if (o_len == 0 || i_len == 0)
+				goto out;
+
+			/* Keep trying with the next char... */
+			goto again;
+
+		} else {
+			/* Keep compiler happy.... */
+			goto out;
 		}
-		if (srclen && ob)
-			memcpy(ob,(const char *)src,srclen);
-		*dest = (char *)ob;
-		return srclen;
 	}
 }
 
