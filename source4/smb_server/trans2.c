@@ -1307,7 +1307,7 @@ void reply_trans_generic(struct request_context *req, uint8_t command)
 		status = trans2_backend(req, &trans);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		req_reply_error(req, status);
 		return;
 	}
@@ -1326,6 +1326,10 @@ void reply_trans_generic(struct request_context *req, uint8_t command)
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 
 		req_setup_reply(req, 10 + trans.out.setup_count, 0);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			req_setup_error(req, status);
+		}
 	
 		max_bytes = req_max_data(req) - (align1 + align2);
 

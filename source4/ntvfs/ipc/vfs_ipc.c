@@ -401,7 +401,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 	}
 
 	status = dcesrv_output_blob(p->dce_conn, &data);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
@@ -418,7 +418,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
@@ -624,7 +624,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 	  the error is encoded at the dcerpc level
 	*/
 	status = dcesrv_output_blob(p->dce_conn, &trans->out.data);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
@@ -632,7 +632,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 	trans->out.setup = NULL;
 	trans->out.params = data_blob(NULL, 0);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 

@@ -297,10 +297,35 @@ void req_reply_dos_error(struct request_context *req, uint8_t eclass, uint16_t e
 
 	SCVAL(req->out.hdr, HDR_RCLS, eclass);
 	SSVAL(req->out.hdr, HDR_ERR, ecode);
-
-	SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);
-	
+	SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);	
 	req_send_reply(req);
+}
+
+/* 
+   setup the header of a reply to include an NTSTATUS code
+*/
+void req_setup_error(struct request_context *req, NTSTATUS status)
+{
+	if (!lp_nt_status_support() || !(req->smb->negotiate.client_caps & CAP_STATUS32)) {
+		/* convert to DOS error codes */
+		uint8_t eclass;
+		uint32_t ecode;
+		ntstatus_to_dos(status, &eclass, &ecode);
+		SCVAL(req->out.hdr, HDR_RCLS, eclass);
+		SSVAL(req->out.hdr, HDR_ERR, ecode);
+		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);
+		return;
+	}
+
+	if (NT_STATUS_IS_DOS(status)) {
+		/* its a encoded DOS error, using the reserved range */
+		SSVAL(req->out.hdr, HDR_RCLS, NT_STATUS_DOS_CLASS(status));
+		SSVAL(req->out.hdr, HDR_ERR,  NT_STATUS_DOS_CODE(status));
+		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);
+	} else {
+		SIVAL(req->out.hdr, HDR_RCLS, NT_STATUS_V(status));
+		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) | FLAGS2_32_BIT_ERROR_CODES);
+	}
 }
 
 /* 
@@ -314,25 +339,7 @@ void req_reply_error(struct request_context *req, NTSTATUS status)
 	/* error returns never have any data */
 	req_grow_data(req, 0);
 
-	if (!lp_nt_status_support() || !(req->smb->negotiate.client_caps & CAP_STATUS32)) {
-		/* convert to DOS error codes */
-		uint8_t eclass;
-		uint32_t ecode;
-		ntstatus_to_dos(status, &eclass, &ecode);
-		req_reply_dos_error(req, eclass, ecode);
-		return;
-	}
-
-	if (NT_STATUS_IS_DOS(status)) {
-		/* its a encoded DOS error, using the reserved range */
-		SSVAL(req->out.hdr, HDR_RCLS, NT_STATUS_DOS_CLASS(status));
-		SSVAL(req->out.hdr, HDR_ERR,  NT_STATUS_DOS_CODE(status));
-		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);
-	} else {
-		SIVAL(req->out.hdr, HDR_RCLS, NT_STATUS_V(status));
-		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) | FLAGS2_32_BIT_ERROR_CODES);
-	}
-	
+	req_setup_error(req, status);
 	req_send_reply(req);
 }
 
