@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
@@ -25,10 +25,13 @@
 
 use strict;
 use Getopt::Std;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
-# smbldap-migrate.pl (-? for help)
+# smbldap-migrate.pl (-? or -h for help)
 #
 # Read pwdump entries on stdin, and add them to the ldap server.
 # Output uncreated/unmodified entries (see parameters -C -U)
@@ -38,20 +41,19 @@ use smbldap_conf;
 sub modify_account
 {
   my ($login, $basedn, $lmpwd, $ntpwd, $gecos, $homedir) = @_;
-
-  my $tmpldif =
-"dn: uid=$login,$basedn
-changetype: modify
-lmpassword: $lmpwd
-ntpassword: $ntpwd
-gecos: $gecos
-sambaHomePath: $homedir
-
-";
-
-  die "$0: error while modifying user $login\n"
-      unless (do_ldapmodify($tmpldif) == 0);
-  undef $tmpldif;
+	# bind to a directory with dn and password
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->modify ("uid=$login,$basedn",
+		changes => [
+			replace => [lmpassword => "$lmpwd"],
+			replace => [ntpassword => "$ntpwd"],
+			replace => [gecos => "$gecos"],
+			replace => [sambaHomePath => "$homedir"]
+		]
+	);
+	$modify->code && die "failed to modify entry: ", $modify->error ;
+	# take down the session
+	$ldap_master->unbind;
 }
 
 #####################
@@ -59,9 +61,9 @@ sambaHomePath: $homedir
 
 my %Options;
 
-my $ok = getopts('awA:CUW:?', \%Options);
+my $ok = getopts('awA:CUW:?h', \%Options);
 
-if ( (!$ok) || ($Options{'?'}) ) {
+if ( (!$ok) || ($Options{'?'}) || ($Options{'h'}) ) {
         print "Usage: $0 [-awAWCU?]\n";
         print "  -a         process only people, ignore computers\n";
         print "  -w         process only computers, ignore persons\n";
@@ -69,7 +71,7 @@ if ( (!$ok) || ($Options{'?'}) ) {
         print "  -W <opts>  option string passed verbatim to smbldap-useradd for computers\n";
         print "  -C         if entry not found, don't create it and log it to stdout (default: create it)\n";
         print "  -U         if entry found, don't update it and log it to stdout (default: update it)\n";
-        print "  -?         show this help message\n";
+  print "  -?|-h      show this help message\n";
         exit (1);
 }
 
@@ -81,8 +83,7 @@ my %errors = ( 'user' => 0, 'machine' => 0);
 my %existing = ( 'user' => 0, 'machine' => 0);
 my $specialskipped = 0;
 
-while (<>)
-{
+while (<>) {
   my ($login, $rid, $lmpwd, $ntpwd, $gecos, $homedir, $b) = split(/:/, $_);
   my $usertype;
   my $userbasedn;
@@ -99,8 +100,7 @@ while (<>)
  
     $usertype = "-w $Options{'W'}";
     $userbasedn = $computersdn;
-  }
-  else { # people
+  } else {						# people
     $processed{'user'}++;
     if (defined($Options{'w'})) {
       print STDERR "ignoring $login\n";
@@ -124,7 +124,7 @@ while (<>)
 
   # normalize gecos
   if (!($gecos eq "")) {
-    $gecos =~ tr/¡¿¬ƒ·‡‚‰«Á…» À∆ÈËÍÎÊÕÃœŒÌÏÓœ—Ò”“‘÷ÛÚÙˆ⁄Ÿ‹€˙˘¸˚›˝ˇ/AAAAaaaaCcEEEEEeeeeeIIIIiiiiNnOOOOooooUUUUuuuuYyy/;
+    $gecos =~ tr/√Å√Ä√Ç√Ñ√°√†√¢√§√á√ß√â√à√ä√ã√Ü√©√®√™√´√¶√ç√å√è√é√≠√¨√Æ√è√ë√±√ì√í√î√ñ√≥√≤√¥√∂√ö√ô√ú√õ√∫√π√º√ª√ù√Ω√ø/AAAAaaaaCcEEEEEeeeeeIIIIiiiiNnOOOOooooUUUUuuuuYyy/;
   } else {
     $gecos = $_userGecos;
   }
@@ -142,25 +142,21 @@ while (<>)
         next;
       }
 	# lem modif... a retirer si pb
-	if ($entry_type eq "user")
-	{
+	  if ($entry_type eq "user") {
       	modify_account($login, $userbasedn, $lmpwd, $ntpwd, $gecos, $homedir);
 	}
 
       	$created{$entry_type}++;
-    }
-    else { # uid doesn't exist and no create => log
+    } else {					# uid doesn't exist and no create => log
       print "$_";
       $logged{$entry_type}++;
     }
-  }
-  else { # account exists
+  } else {						# account exists
     $existing{$entry_type}++;
     if (!defined($Options{'U'})) { # exists and modify 
       modify_account($login, $userbasedn, $lmpwd, $ntpwd, $gecos, $homedir);
       $updated{$entry_type}++;
-    }
-    else { # exists and log
+    } else {					# exists and log
       print "$_";
       $logged{$entry_type}++;
     }

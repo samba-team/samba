@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # LDAP to unix password sync script for samba
 #
@@ -27,6 +27,9 @@
 #       . may also replace /bin/passwd
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
@@ -105,6 +108,9 @@ if ($pass ne $pass2) {
     exit (10);
 }
 
+# First, connecting to the directory
+my $ldap_master=connect_ldap_master();
+
 # only modify smb passwords if smb user
 if ($samba == 1) {
     if (!$with_smbpasswd) {
@@ -116,25 +122,19 @@ if ($samba == 1) {
 	my $ntpwd = `$mk_ntpasswd '$pass'`;
         chomp(my $sambaLMPassword = substr($ntpwd, 0, index($ntpwd, ':')));
         chomp(my $sambaNTPassword = substr($ntpwd, index($ntpwd, ':')+1));
+	# the sambaPwdLastSet must be updating
+	my $date=time;
+	# Let's change nt/lm passwords
+	my $modify = $ldap_master->modify ( "$dn",
+										changes => [
+													replace => [sambaLMPassword => "$sambaLMPassword"],
+													replace => [sambaNTPassword => "$sambaNTPassword"],
+													replace => [sambaPwdLastSet => "$date"]
+												   ]
+									  );
+	$modify->code && warn "failed to modify entry: ", $modify->error ;
 
-# change nt/lm passwords
-	my $tmpldif =
-"$dn_line
-changetype: modify
-replace: sambaLMPassword
-sambaLMPassword: $sambaLMPassword
--
-changetype: modify
-replace: sambaNTPassword
-sambaNTPassword: $sambaNTPassword
--
-
-";
-	die "$0: error while modifying password for $user\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
-	undef $tmpldif;
-    }
-    else {
+  } else {
 	if ($< != 0) {
 	    my $FILE="|$smbpasswd -s >/dev/null";
 	    open (FILE, $FILE) || die "$!\n";
@@ -157,13 +157,19 @@ EOF
 	}
     }
 }
+
 # change unix password
-$ret = system "$ldappasswd $dn -s '$pass' > /dev/null";
-if ($ret == 0) {
-    print "all authentication tokens updated successfully\n";
-} else {
-    return $ret;
-}
+my $hash_password = `slappasswd -h {$hash_encrypt} -s '$pass'`;
+chomp($hash_password);
+my $modify = $ldap_master->modify ( "$dn",
+	changes => [
+			replace => [userPassword => "$hash_password"]
+		   ]
+	  );
+$modify->code && warn "Unable to change password : ", $modify->error ;
+
+# take down session
+$ldap_master->unbind;
 
 exit 0;
 

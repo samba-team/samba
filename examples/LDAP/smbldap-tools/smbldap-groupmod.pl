@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -23,6 +23,9 @@
 
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
@@ -70,45 +73,30 @@ if (defined($tmp = $Options{'g'}) and $tmp =~ /\d+/) {
 	}
     }
     if (!($gid == $tmp)) {
-	my $tmpldif =
-"dn: cn=$groupName,$groupsdn
-changetype: modify
-replace: gidNumber
-gidNumber: $tmp
-
-";
-	die "$0: error while modifying group $groupName\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
-	undef $tmpldif;
-
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+										changes => [
+													replace => [gidNumber => $tmp]
+												   ]
+									  );
+	$modify->code && die "failed to modify entry: ", $modify->error ;
+	# take down session
+	$ldap_master->unbind
     }
 }
 
+
 if (defined($newname)) {
-    my $FILE="|$ldapmodrdn >/dev/null";
-    open (FILE, $FILE) || die "$!\n";
-    print FILE <<EOF;
-cn=$groupName,$groupsdn
-cn=$newname
-
-EOF
-    ;
-    close FILE;
-    die "$0: error while modifying group $groupName\n" if ($?);
-
-    my $tmpldif =
-"dn: cn=$newname,$groupsdn
-changetype: modify
-delete: cn
--
-add: cn
-cn: $newname
-
-";
-    die "$0: error while modifying group $groupName\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-    undef $tmpldif;
-
+  my $ldap_master=connect_ldap_master();
+  my $modify = $ldap_master->moddn (
+									"cn=$groupName,$groupsdn",
+									newrdn => "cn=$newname",
+									deleteoldrdn => "1",
+									newsuperior => "$groupsdn"
+								   );
+  $modify->code && die "failed to modify entry: ", $modify->error ;
+  # take down session
+  $ldap_master->unbind
 }
 
 # Add members
@@ -117,16 +105,24 @@ if (defined($Options{'m'})) {
 	my @members = split( /,/, $members );
 	my $member;
 	foreach $member ( @members ) {
-		my $tmpldif =
-"dn: cn=$groupName,$groupsdn
-changetype: modify
-add: memberUid
-memberUid: $member
-
-";
-		die "$0: error while modifying group $groupName\n"
-			unless (do_ldapmodify($tmpldif) == 0);
-		undef $tmpldif;
+	if (is_unix_user($member)) {
+	  if (is_group_member("cn=$groupName,$groupsdn",$member)) {
+		print "User $member already in the group\n";
+	  } else {
+	  	print "adding user $member to group $groupName\n";
+		my $ldap_master=connect_ldap_master();
+		my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+											changes => [
+														add => [memberUid => $member]
+													   ]
+										  );
+		$modify->code && warn "failed to add entry: ", $modify->error ;
+		# take down session
+		$ldap_master->unbind
+	  }
+	} else {
+	  print "User $member does not exist: create it first !\n";
+	}
 	}
 }
 
@@ -136,16 +132,20 @@ if (defined($Options{'x'})) {
         my @members = split( /,/, $members );
         my $member;
         foreach $member ( @members ) {
-                my $tmpldif =
-"dn: cn=$groupName,$groupsdn
-changetype: modify
-delete: memberUid
-memberUid: $member
-
-";
-                die "$0: error while modifying group $groupName\n"
-                        unless (do_ldapmodify($tmpldif) == 0);
-                undef $tmpldif;
+	if (is_group_member("cn=$groupName,$groupsdn",$member)) {
+	  print "deleting user $member from group $groupName\n";
+	  my $ldap_master=connect_ldap_master();
+	  my $modify = $ldap_master->modify ( "cn=$groupName,$groupsdn",
+										  changes => [
+													  delete => [memberUid => $member]
+													 ]
+										);
+	  $modify->code && warn "failed to delete entry: ", $modify->error ;
+	  # take down session
+	  $ldap_master->unbind
+	} else {
+	  print "User $member is not in the group $groupName!\n";
+	}
         }
 }
 
