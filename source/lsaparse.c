@@ -34,7 +34,7 @@ char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int a
 	DEBUG(5,("%slsa_io_r_open_pol\n", tab_depth(depth)));
 	depth++;
 
-	q = smb_io_pol_hnd(io, &(r_p->pol), q, base, align);
+	q = smb_io_pol_hnd(io, &(r_p->pol), q, base, align, depth);
 
 	DBG_RW_IVAL("status", depth, base, io, q, r_p->status); q += 4;
 
@@ -51,7 +51,7 @@ char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int al
 	DEBUG(5,("%s%04x lsa_io_q_query\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
-	q = smb_io_pol_hnd(io, &(q_q->pol), q, base, align);
+	q = smb_io_pol_hnd(io, &(q_q->pol), q, base, align, depth);
 
 	DBG_RW_SVAL("info_class", depth, base, io, q, q_q->info_class); q += 2;
 
@@ -113,7 +113,7 @@ char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base,
 
 	q = align_offset(q, base, align);
 	
-    q = smb_io_pol_hnd(io, &(q_s->pol_hnd), q, base, align); /* policy handle */
+    q = smb_io_pol_hnd(io, &(q_s->pol_hnd), q, base, align, depth); /* policy handle */
 
 	DBG_RW_IVAL("num_entries", depth, base, io, q, q_s->num_entries); q += 4;
 	DBG_RW_IVAL("buffer_dom_sid", depth, base, io, q, q_s->buffer_dom_sid); q += 4; /* undocumented domain SID buffer pointer */
@@ -182,7 +182,7 @@ char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base,
 
 	q = align_offset(q, base, align);
 	
-    q = smb_io_pol_hnd(io, &(q_r->pol_hnd), q, base, align); /* policy handle */
+    q = smb_io_pol_hnd(io, &(q_r->pol_hnd), q, base, align, depth); /* policy handle */
 
 	DBG_RW_IVAL("num_entries", depth, base, io, q, q_r->num_entries); q += 4;
 	DBG_RW_IVAL("num_entries2", depth, base, io, q, q_r->num_entries2); q += 4;

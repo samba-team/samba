@@ -2801,30 +2801,35 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   subcommand = setup[0];
   
   DEBUG(3,("Got API command %d on pipe %s ",subcommand,Files[fd].name));
-  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
-	   tdscnt,tpscnt,mdrcnt,mprcnt));
+  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
+	   tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
   
   for (i=0;api_fd_commands[i].name;i++)
+  {
     if (strequal(api_fd_commands[i].pipename, Files[fd].name) &&
-	api_fd_commands[i].subcommand == subcommand &&
-	api_fd_commands[i].fn)
-      {
-	DEBUG(3,("Doing %s\n",api_fd_commands[i].name));
-	break;
-      }
+	    api_fd_commands[i].subcommand == subcommand &&
+	    api_fd_commands[i].fn)
+    {
+	  DEBUG(3,("Doing %s\n",api_fd_commands[i].name));
+	  break;
+    }
+  }
   
-  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
+  rdata  = (char *)malloc(1024); if (rdata ) bzero(rdata ,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
+  DEBUG(10,("calling api_fd_command\n"));
+
   reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
 			        &rdata,&rparam,&rdata_len,&rparam_len);
   
-  if (rdata_len > mdrcnt ||
-      rparam_len > mprcnt)
-    {
-      reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
+  DEBUG(10,("called api_fd_command\n"));
+
+  if (rdata_len > mdrcnt || rparam_len > mprcnt)
+  {
+    reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
-    }
+  }
   
   
   /* if we get False back then it's actually unsupported */
