@@ -55,7 +55,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 
 	while ((s=x_fgets(buf, sizeof(buf), f)) != NULL) {
 
-		if (buf[strlen(buf)-1] == '\n')
+		if ((strlen(buf) > 0) && (buf[strlen(buf)-1] == '\n'))
 			buf[strlen(buf)-1] = '\0';
 
 		DEBUG(10, ("Scanning line [%s]\n", buf));
