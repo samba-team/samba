@@ -240,6 +240,7 @@ generate_type_encode (Symbol *s)
 	     "size_t ret = 0;\n"
 	     "size_t l;\n"
 	     "int i, e;\n\n");
+    fprintf(codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
     
     encode_type ("data", s->type);
     fprintf (codefile, "*size = ret;\n"

@@ -297,8 +297,9 @@ generate_type_decode (Symbol *s)
     fprintf (codefile,
 	     "size_t ret = 0, reallen;\n"
 	     "size_t l;\n"
-	     "int e, i;\n\n");
-    
+	     "int i, e;\n\n");
+    fprintf(codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
+
     decode_type ("data", s->type);
     fprintf (codefile, 
 	     "if(size) *size = ret;\n"
