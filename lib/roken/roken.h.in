@@ -132,9 +132,11 @@ int getent(char *cp, char *name);
 char *getstr(char *id, char **cpp);
 #endif
 
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 struct passwd *k_getpwnam (char *user);
 struct passwd *k_getpwuid (uid_t uid);
+#endif
 
 #ifndef HAVE_SETEUID
 int seteuid(int euid);
@@ -142,6 +144,13 @@ int seteuid(int euid);
 
 #ifndef HAVE_SETEGID
 int setegid(int egid);
+#endif
+
+#ifndef HAVE_STRCHR && defined(HAVE_INDEX)
+#define strchr(p, ch) index(p, ch)
+#endif
+#ifndef HAVE_STRRCHR && defined(HAVE_RINDEX)
+#define strrchr(p, ch) rindex(p, ch)
 #endif
 
 #include <time.h>
