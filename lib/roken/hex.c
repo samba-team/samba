@@ -54,7 +54,7 @@ pos(char c)
 }
 
 ssize_t
-hex_encode(const void *data, int size, char **str)
+hex_encode(const void *data, size_t size, char **str)
 {
     const unsigned char *q = data;
     size_t i;
