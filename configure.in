@@ -431,6 +431,7 @@ AC_CHECK_FUNCS([				\
 	gettimeofday				\
 	getuid					\
 	grantpt					\
+	initstate				\
 	mktime					\
 	ptsname					\
 	rand					\
@@ -446,6 +447,7 @@ AC_CHECK_FUNCS([				\
 	setresuid				\
 	setreuid				\
 	setsid					\
+	setstate				\
 	setutent				\
 	sigaction				\
 	strstr					\
