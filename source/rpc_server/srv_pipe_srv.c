@@ -747,9 +747,10 @@ static BOOL api_pipe_ntlmssp_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 	return ret;
 }
 
-static void api_ntlmsp_usr_sess_key(rpcsrv_struct *l, uchar usr_sess_key[16])
+static void api_ntlmssp_usr_sess_key(rpcsrv_struct *l, uchar usr_sess_key[16])
 {
-	memcpy(usr_sess_key, l->user_sess_key, 16);
+	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
+	memcpy(usr_sess_key, a->user_sess_key, 16);
 }
 
 static srv_auth_fns ntlmssp_fns = 
