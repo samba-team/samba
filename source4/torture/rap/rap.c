@@ -20,45 +20,6 @@
 
 #include "includes.h"
 
-/*
-struct rap_server_info_0 {
-	char name[16];
-};
-
-struct rap_server_info_1 {
-        char name[16];
-        uint8 version_major;
-        uint8 version_minor;
-        uint32 type;
-        const char *comment_or_master_browser;
-};
-
-union rap_server_info {
-	struct rap_server_info0 info0;
-	struct rap_server_info1 info1;
-};
-
-struct rap_NetServerEnum2 {
-	struct {
-		uint16 level;
-		uint32 servertype;
-		const char *domain;
-	} in;
-
-	struct {
-		union rap_serverinfo *info;
-		int num_entries;
-	} out;
-};
-
-  unsigned short NetServerEnum2 (
-    [in] uint16 level,
-    [out,switch_is(level)] union rap_serverinfo info[],
-    [in] uint16 servertype;
-    [in] const char *domain;
-    );
-*/
-
 struct rap_call {
 	TALLOC_CTX *mem_ctx;
 	uint16 callno;
@@ -70,10 +31,15 @@ struct rap_call {
 	uint16 status;
 	uint16 convert;
 
-	int out_param_offset, out_data_offset;
+	struct ndr_push *ndr_push_param;
+	struct ndr_push *ndr_push_data;
+	struct ndr_pull *ndr_pull_param;
+	struct ndr_pull *ndr_pull_data;
 };
 
-static struct rap_call *new_rap_call(uint16 callno)
+#define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+
+static struct rap_call *new_rap_cli_call(uint16 callno)
 {
 	struct rap_call *call;
 	TALLOC_CTX *mem_ctx = talloc_init("rap_call");
@@ -91,6 +57,12 @@ static struct rap_call *new_rap_call(uint16 callno)
 	call->callno = callno;
 	call->trans.in.max_param = 4;	/* uint16 error, uint16 "convert" */
 	call->mem_ctx = mem_ctx;
+
+	call->ndr_push_param = ndr_push_init_ctx(mem_ctx);
+	call->ndr_push_param->flags = RAPNDR_FLAGS;
+
+	call->ndr_push_data = ndr_push_init_ctx(mem_ctx);
+	call->ndr_push_data->flags = RAPNDR_FLAGS;
 
 	return call;
 }
@@ -113,54 +85,23 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 	call->paramdesc[len+1] = '\0';
 }
 
-static void rap_cli_push_param_word(struct rap_call *call, uint16 val)
-{
-	DATA_BLOB *params = &call->trans.in.params;
-
-	params->data = talloc_realloc(call->mem_ctx, params->data,
-				      params->length + sizeof(val));
-	SSVAL(params->data, params->length, val);
-	params->length += sizeof(val);
-}
-
-static void rap_cli_push_param_dword(struct rap_call *call, uint32 val)
-{
-	DATA_BLOB *params = &call->trans.in.params;
-
-	params->data = talloc_realloc(call->mem_ctx, params->data,
-				      params->length + sizeof(val));
-	SIVAL(params->data, params->length, val);
-	params->length += sizeof(val);
-}
-
-static void rap_cli_push_param_string(struct rap_call *call, const char *str)
-{
-	size_t len = strlen(str);
-	DATA_BLOB *params = &call->trans.in.params;
-
-	params->data = talloc_realloc(call->mem_ctx, params->data,
-				      params->length + len + 1);
-	memcpy(params->data+params->length, str, len+1);
-	params->length += (len+1);
-}
-	
 static void rap_cli_push_word(struct rap_call *call, uint16 val)
 {
 	rap_cli_push_paramdesc(call, 'W');
-	rap_cli_push_param_word(call, val);
+	ndr_push_uint16(call->ndr_push_param, val);
 }
 
 static void rap_cli_push_dword(struct rap_call *call, uint32 val)
 {
 	rap_cli_push_paramdesc(call, 'D');
-	rap_cli_push_param_dword(call, val);
+	ndr_push_uint32(call->ndr_push_param, val);
 }
 
 static void rap_cli_push_rcvbuf(struct rap_call *call, int len)
 {
 	rap_cli_push_paramdesc(call, 'r');
 	rap_cli_push_paramdesc(call, 'L');
-	rap_cli_push_param_word(call, len);
+	ndr_push_uint16(call->ndr_push_param, len);
 	call->trans.in.max_data = len;
 }
 
@@ -178,7 +119,7 @@ static void rap_cli_push_string(struct rap_call *call, const char *str)
 		return;
 	}
 	rap_cli_push_paramdesc(call, 'z');
-	rap_cli_push_param_string(call, str);
+	ndr_push_string(call->ndr_push_param, NDR_SCALARS, str);
 }
 
 static void rap_cli_expect_format(struct rap_call *call, const char *format)
@@ -186,90 +127,47 @@ static void rap_cli_expect_format(struct rap_call *call, const char *format)
 	call->datadesc = format;
 }
 
-static BOOL bytes_available(DATA_BLOB *blob, int *offset, int size)
-{
-	if (*offset < 0)
-		return False;
-
-	if ( (*offset + size) > blob->length ) {
-		*offset = -1;
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL rap_pull_word(DATA_BLOB *blob, int *offset, uint16 *val)
-{
-	if (!bytes_available(blob, offset, sizeof(*val)))
-		return False;
-
-	*val = SVAL(blob->data, *offset);
-	*offset += sizeof(*val);
-	return True;
-}
-
-static BOOL rap_pull_dword(DATA_BLOB *blob, int *offset, uint32 *val)
-{
-	if (!bytes_available(blob, offset, sizeof(*val)))
-		return False;
-
-	*val = IVAL(blob->data, *offset);
-	*offset += sizeof(*val);
-	return True;
-}
-
-static BOOL rap_pull_bytes(DATA_BLOB *blob, int *offset, char *dest,
-			   int length)
-{
-	if (!bytes_available(blob, offset, length))
-		return False;
-
-	memcpy(dest, blob->data+*offset, length);
-	*offset += length;
-	return True;
-}
-
-static BOOL rap_pull_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, int *offset,
-			    uint16 convert, char **dest)
+static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
+				uint16 convert, char **dest)
 {
 	uint16 string_offset;
 	uint16 ignore;
 	char *p;
 	size_t len;
 
-	if (!rap_pull_word(blob, offset, &string_offset))
-		return False;
-
-	if (!rap_pull_word(blob, offset, &ignore))
-		return False;
+	NDR_CHECK(ndr_pull_uint16(ndr, &string_offset));
+	NDR_CHECK(ndr_pull_uint16(ndr, &ignore));
 
 	string_offset -= convert;
 
-	if (string_offset+1 > blob->length)
-		return False;
+	if (string_offset+1 > ndr->data_size)
+		return NT_STATUS_INVALID_PARAMETER;
 
-	p = blob->data + string_offset;
-	len = strnlen(p, blob->length-string_offset);
+	p = ndr->data + string_offset;
+	len = strnlen(p, ndr->data_size-string_offset);
 
-	if ( string_offset + len + 1 >  blob->length ) {
-		*offset = -1;
-		return False;
-	}
+	if ( string_offset + len + 1 >  ndr->data_size )
+		return NT_STATUS_INVALID_PARAMETER;
 
 	*dest = talloc_zero(mem_ctx, len+1);
 	pull_ascii(*dest, p, len+1, len, 0);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				struct rap_call *call)
 {
-	int paramlen;
-	char *p;
 	NTSTATUS result;
-	DATA_BLOB params;
+	DATA_BLOB param_blob;
+	struct ndr_push *params;
+
+	params = ndr_push_init_ctx(mem_ctx);
+
+	if (params == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	params->flags = RAPNDR_FLAGS;
 
 	call->trans.in.max_setup = 0;
 	call->trans.in.flags = 0;
@@ -278,27 +176,15 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	call->trans.in.setup = NULL;
 	call->trans.in.trans_name = "\\PIPE\\LANMAN";
 
-	paramlen = 2 + 		/* uint16 command */
-		strlen(call->paramdesc) + 1 +
-		strlen(call->datadesc) + 1 +
-		call->trans.in.params.length;
+	NDR_CHECK(ndr_push_uint16(params, call->callno));
+	NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
+	NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->datadesc));
 
-	params = data_blob_talloc(call->mem_ctx, NULL, paramlen);
+	param_blob = ndr_push_blob(call->ndr_push_param);
+	NDR_CHECK(ndr_push_bytes(params, param_blob.data,
+				 param_blob.length));
 
-	p = params.data;
-
-	SSVAL(p, 0, call->callno);
-	p += 2;
-
-	memcpy(p, call->paramdesc, strlen(call->paramdesc)+1);
-	p += strlen(p)+1;
-
-	memcpy(p, call->datadesc, strlen(call->datadesc)+1);
-	p += strlen(p)+1;
-
-	memcpy(p, call->trans.in.params.data, call->trans.in.params.length);
-
-	call->trans.in.params = params;
+	call->trans.in.params = ndr_push_blob(params);
 	call->trans.in.data = data_blob(NULL, 0);
 
 	result = smb_raw_trans(cli->tree, call->mem_ctx, &call->trans);
@@ -306,39 +192,22 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
+	call->ndr_pull_param = ndr_pull_init_blob(&call->trans.out.params,
+						  call->mem_ctx);
+	call->ndr_pull_param->flags = RAPNDR_FLAGS;
+
+	call->ndr_pull_data = ndr_pull_init_blob(&call->trans.out.data,
+						 call->mem_ctx);
+	call->ndr_pull_data->flags = RAPNDR_FLAGS;
+
 	return result;
 }
 
-struct rap_shareenum_info_0 {
-	char name[13];
-};
-
-struct rap_shareenum_info_1 {
-	char name[13];
-	char pad;
-	uint16 type;
-	char *comment;
-};
-
-union rap_shareenum_info {
-	struct rap_shareenum_info_0 info0;
-	struct rap_shareenum_info_1 info1;
-};
-
-struct rap_NetShareEnum {
-	struct {
-		uint16 level;
-		uint16 bufsize;
-	} in;
-
-	struct {
-		uint16 status;
-		uint16 convert;
-		uint16 count;
-		uint16 available;
-		union rap_shareenum_info *info;
-	} out;
-};
+#define NDR_OK(call) do { NTSTATUS _status; \
+                             _status = call; \
+                             if (!NT_STATUS_IS_OK(_status)) \
+				goto done; \
+                        } while (0)
 
 static NTSTATUS cli_rap_netshareenum(struct cli_state *cli,
 				     TALLOC_CTX *mem_ctx,
@@ -348,7 +217,7 @@ static NTSTATUS cli_rap_netshareenum(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_call(0);
+	call = new_rap_cli_call(0);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -371,53 +240,38 @@ static NTSTATUS cli_rap_netshareenum(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.status);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.convert);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.count);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.available);
-
-	if (call->out_param_offset < 0) {
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.status));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.convert));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
 	r->out.info = talloc_array_p(mem_ctx, union rap_shareenum_info,
 				     r->out.count);
 
+	if (r->out.info == NULL)
+		return NT_STATUS_NO_MEMORY;
+
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
 		case 0:
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       r->out.info[i].info0.name, 13);
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      r->out.info[i].info0.name, 13));
 			break;
 		case 1:
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       r->out.info[i].info1.name, 13);
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       &r->out.info[i].info1.pad, 1);
-			rap_pull_word(&call->trans.out.data,
-				      &call->out_data_offset,
-				      &r->out.info[i].info1.type);
-			rap_pull_string(mem_ctx,
-					&call->trans.out.data,
-					&call->out_data_offset,
-					r->out.convert,
-					&r->out.info[i].info1.comment);
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      r->out.info[i].info1.name, 13));
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      &r->out.info[i].info1.pad, 1));
+			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
+					       &r->out.info[i].info1.type));
+			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info1.comment));
+			break;
 		}
 	}
 
 	result = NT_STATUS_OK;
-
-	if (call->out_data_offset < 0) {
-		result = NT_STATUS_INVALID_PARAMETER;
-	}
 
  done:
 	destroy_rap_call(call);
@@ -445,40 +299,6 @@ static BOOL test_netshareenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-struct rap_server_info_0 {
-	char name[16];
-};
-
-struct rap_server_info_1 {
-        char     name[16];
-        uint8_t  version_major;
-        uint8_t  version_minor;
-        uint32_t servertype;
-        char    *comment;
-};
-
-union rap_server_info {
-	struct rap_server_info_0 info0;
-	struct rap_server_info_1 info1;
-};
-
-struct rap_NetServerEnum2 {
-	struct {
-		uint16 level;
-		uint16 bufsize;
-		uint32 servertype;
-		char *domain;
-	} in;
-
-	struct {
-		uint16 status;
-		uint16 convert;
-		uint16 count;
-		uint16 available;
-		union rap_server_info *info;
-	} out;
-};
-		
 static NTSTATUS cli_rap_netserverenum2(struct cli_state *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct rap_NetServerEnum2 *r)
@@ -487,7 +307,7 @@ static NTSTATUS cli_rap_netserverenum2(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_call(104);
+	call = new_rap_cli_call(104);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -512,56 +332,41 @@ static NTSTATUS cli_rap_netserverenum2(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.status);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.convert);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.count);
-	rap_pull_word(&call->trans.out.params, &call->out_param_offset,
-		      &r->out.available);
+	result = NT_STATUS_INVALID_PARAMETER;
 
-	if (call->out_param_offset < 0) {
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.status));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.convert));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
 	r->out.info = talloc_array_p(mem_ctx, union rap_server_info,
 				     r->out.count);
 
+	if (r->out.info == NULL)
+		return NT_STATUS_NO_MEMORY;
+
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
 		case 0:
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       r->out.info[i].info0.name, 16);
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      r->out.info[i].info0.name, 16));
 			break;
 		case 1:
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       r->out.info[i].info1.name, 16);
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       &r->out.info[i].info1.version_major, 1);
-			rap_pull_bytes(&call->trans.out.data,
-				       &call->out_data_offset,
-				       &r->out.info[i].info1.version_minor, 1);
-			rap_pull_dword(&call->trans.out.data,
-				       &call->out_data_offset,
-				       &r->out.info[i].info1.servertype);
-			rap_pull_string(mem_ctx,
-					&call->trans.out.data,
-					&call->out_data_offset,
-					r->out.convert,
-					&r->out.info[i].info1.comment);
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      r->out.info[i].info1.name, 16));
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      &r->out.info[i].info1.version_major, 1));
+			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+					      &r->out.info[i].info1.version_minor, 1));
+			NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
+					       &r->out.info[i].info1.servertype));
+			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info1.comment));
 		}
 	}
 
 	result = NT_STATUS_OK;
-
-	if (call->out_data_offset < 0) {
-		result = NT_STATUS_INVALID_PARAMETER;
-	}
 
  done:
 	destroy_rap_call(call);
