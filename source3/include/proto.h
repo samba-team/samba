@@ -3865,15 +3865,8 @@ BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T
 
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
-int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
-int vfs_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *st);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
-int vfs_rmdir(connection_struct *conn, char *fname);
-int vfs_unlink(connection_struct *conn, char *fname);
-int vfs_chmod(connection_struct *conn, char *fname,mode_t mode);
-int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid);
-int vfs_chdir(connection_struct *conn, char *fname);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
