@@ -1,4 +1,4 @@
-Changes in release 0.4e
+Changes in release 0.4d
 
  * fix some problems when using libcrypto from openssl
 
@@ -9,10 +9,6 @@ Changes in release 0.4e
  * rsh: clean-up and add man page
 
  * fix -A and -a in builtin-ls in tpd
-
- * bug fixes
-
-Changes in release 0.4d
 
  * fix building problem on Irix
 
