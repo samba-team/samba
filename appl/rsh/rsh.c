@@ -416,6 +416,11 @@ proto (int s, int errsock,
     return loop (s, errsock2);
 }
 
+/*
+ * Return in `res' a copy of the concatenation of `argc, argv' into
+ * malloced space.
+ */
+
 static size_t
 construct_command (char **res, int argc, char **argv)
 {
@@ -625,7 +630,7 @@ usage (int ret)
 }
 
 /*
- * main
+ *
  */
 
 int
@@ -689,6 +694,9 @@ main(int argc, char **argv)
 	else
 	    host = argv[host_index = optind++];
     }
+
+    if (optind == argc)
+	errx (1, "no command given.  Try rlogin if that's what you wanted.");
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
