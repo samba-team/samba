@@ -11,11 +11,6 @@
 <chapter id="happy">
   <title>Making Happy Users</title>
 
-<note><para>
-This chapter is under reconstruction/modification. The data here is incomplete at this time.
-Please check back in a few days time as the contents are undergoing change.
-</para></note>
-
 	<para>
 	It has been said, <quote>A day that is without troubles is not fulfilling.  Rather, give 
 	me a day of troubles well handled so that I can be content with my achievements.</quote>
@@ -1090,8 +1085,43 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 		This may require you to add a user and a group account for LDAP if they do not exist.
 		</para></step>
 
+	<step><para><indexterm><primary>DB_CONFIG</primary></indexterm>
+		Install the file shown in <link linkend="ch6-dbconf"/> in the directory
+		<filename>/data/ldap</filename>. In the event that this file is added after <constant>ldap</constant>
+		has been started, it is possible to cause the new settings to take effect by shutting down
+		the <constant>LDAP</constant> server, executing the <command>db_recover</command> command inside the
+		<filename>/data/ldap</filename> directory, and then restarting the <constant>LDAP</constant> server.
+		</para></step>
+
+	<step><para><indexterm><primary>syslog</primary></indexterm>
+		Performance logging can be enabled and should preferrably be sent to a file on
+		a file system that is large enough to handle significantly sized logs. To enable
+		the logging at a verbose level to permit detailed analysis uncomment the entry in
+		the <filename>/etc/openldap/slapd.conf</filename> shown as <quote>loglevel 256</quote>.
+		</para>
+
+		<para>
+		Edit the <filename>/etc/syslog.conf</filename> file to add the following at the end
+		of the file:
+<screen>
+local4.*        -/data/ldap/log/openldap.log
+</screen>
+		Note: The path <filename>/data/ldap/log</filename> should be set a a location
+		that is convenient and that can store a large volume of data.
+		</para></step>
+
 	</procedure>
 
+<example id="ch6-dbconf">
+<title>LDAP DB_CONFIG File</title>
+<screen>
+set_cachesize           0 150000000 1
+set_lg_regionmax        262144
+set_lg_bsize            2097152
+#set_lg_dir             /var/log/bdb
+set_flags               DB_LOG_AUTOREMOVE
+</screen>
+</example>
 
 <example id="ch6-slapdconf">
 <title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename></title>
@@ -1105,11 +1135,27 @@ include		/etc/openldap/schema/samba3.schema
 pidfile		/var/run/slapd/slapd.pid
 argsfile	/var/run/slapd/slapd.args
 
+access to dn.base=""
+		by self write
+		by * auth
+
+access to attr=userPassword
+		by self write
+		by * auth
+
+access to attr=shadowLastChange
+		by self write
+		by * read
+
 access to *
-                by self write
-                by users read
+                by * read
                 by anonymous auth
 
+#loglevel	256
+
+schemacheck 	on
+idletimeout	30
+backend		bdb
 database	bdb
 checkpoint      1024 5
 cachesize       10000
@@ -1556,7 +1602,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>map acl inherit</name><value>Yes</value></smbconfoption>
 	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>Administrator, chrisr</value></smbconfoption>
+	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
 </smbconfexample>
 
 	</sect2>
@@ -2019,7 +2065,7 @@ Starting ldap-server                           done
 		<step><para>
 		Execute the script that will populate the LDAP database as shown here:
 <screen>
-&rootprompt; ./smbldap-populate.pl
+&rootprompt; ./smbldap-populate
 </screen>
 		The expected output from this is:
 <screen>
@@ -2191,11 +2237,11 @@ result: 0 Success
 		You must now make certain that the NSS resolver can interrogate LDAP also.
 		Execute the following commands:
 <screen>
-&rootprompt; getent passwd | grep Administrator
-Administrator:x:998:512:Netbios Domain Administrator:/home:/bin/false
+&rootprompt; getent passwd | grep root
+root:x:998:512:Netbios Domain Administrator:/home:/bin/false
 
 &rootprompt; getent group | grep Domain
-Domain Admins:x:512:Administrator
+Domain Admins:x:512:root
 Domain Users:x:513:
 Domain Guests:x:514:
 Domain Computers:x:553:
@@ -2237,7 +2283,7 @@ Retype new SMB password: XXXXXXXX
 <screen>
 &rootprompt; getent passwd
 ...
-Administrator:x:998:512:Netbios Domain Administrator:/home:/bin/false
+root:x:998:512:Netbios Domain Administrator:/home:/bin/false
 nobody:x:999:514:nobody:/dev/null:/bin/false
 bobj:x:1000:513:System User:/home/bobj:/bin/bash
 stans:x:1001:513:System User:/home/stans:/bin/bash
@@ -2251,17 +2297,28 @@ uid=1002(chrisr) gid=513(Domain Users) groups=513(Domain Users)
 		</para></step>
 
 	  <step><para><indexterm>
-		<primary>smbldap-usermod.pl</primary>
+		<primary>smbldap-usermod</primary>
 	      </indexterm>
-		In the above listing, you can see that the user <constant>Administrator</constant>
+		In the above listing, you can see that the user <constant>root</constant>
 		has been given UID=998. This means that operations conducted from a Windows client
 		using tools such as the Domain User Manager fails under UNIX because the
 		management of user and group accounts requires that the UID=0. You decide to rectify 
 		this immediately as demonstrated here:
 <screen>
 &rootprompt; cd /opt/IDEALX/sbin
-&rootprompt; ./smbldap-usermod.pl -u 0 Administrator
+&rootprompt; ./smbldap-usermod -u 0 -d /root -s /bin/bash root
 </screen>
+		</para></step>
+
+		<step><para>
+		Verify that the changes just made to the <constant>root</constant> account were
+		accepted by executing:
+<screen>
+&rootprompt; getent passwd | grep root
+root:x:0:0:root:/root:/bin/bash
+root:x:0:512:Netbios Domain Administrator:/root:/bin/bash
+</screen>
+		This demonstrates that the changes were accepted.
 		</para></step>
 
 		<step><para>
@@ -2296,7 +2353,7 @@ Primary Group SID:    S-1-5-21-3504140859-1010554828-2431957765-513
 Full Name:            System User
 Home Directory:       \\MASSIVE\homes
 HomeDir Drive:        H:
-Logon Script:         chrisr.cmd
+Logon Script:         scripts\login.cmd
 Profile Path:         \\MASSIVE\profiles\chrisr
 Domain:               MEGANET2
 Account desc:         System User
@@ -2308,19 +2365,22 @@ Kickoff time:         Mon, 18 Jan 2038 20:14:07 GMT
 Password last set:    Wed, 17 Dec 2003 17:17:40 GMT
 Password can change:  Wed, 17 Dec 2003 17:17:40 GMT
 Password must change: Mon, 18 Jan 2038 20:14:07 GMT
+Last bad password   : 0
+Bad password count  : 0
+Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 </screen>
 		This looks good. Of course, you fully expected that it would all work, didn't you?
 		</para></step>
 
 	  <step><para><indexterm>
-		<primary>smbldap-groupadd.pl</primary>
+		<primary>smbldap-groupadd</primary>
 	      </indexterm>
 		Now you add the group accounts that are used on the Abmas network. Execute
 		the following exactly as shown:
 <screen>
-&rootprompt; ./smbldap-groupadd.pl -a Accounts
-&rootprompt; ./smbldap-groupadd.pl -a Finances
-&rootprompt; ./smbldap-groupadd.pl -a PIOps
+&rootprompt; ./smbldap-groupadd -a Accounts
+&rootprompt; ./smbldap-groupadd -a Finances
+&rootprompt; ./smbldap-groupadd -a PIOps
 </screen>
 		The addition of groups does not involve keyboard interaction, so the lack of console
 		output is of no concern.
@@ -2334,7 +2394,7 @@ Password must change: Mon, 18 Jan 2038 20:14:07 GMT
 <screen>
 &rootprompt; getent group
 ...
-Domain Admins:x:512:Administrator
+Domain Admins:x:512:root
 Domain Users:x:513:bobj,stans,chrisr,maryv
 Domain Guests:x:514:
 ...
@@ -2393,7 +2453,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 		localhost interface. This requires a Domain account for the PDC. This account can be
 		easily created by joining the PDC to the Domain by executing the following command:
 <screen>
-&rootprompt; net rpc join -U Administrator%not24get
+&rootprompt; net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
 		This indicates that the Domain security account for the BDC has been correctly created.
@@ -2619,7 +2679,7 @@ daemon:x:2:2:Daemon:/sbin:/bin/bash
 lp:x:4:7:Printing daemon:/var/spool/lpd:/bin/bash
 mail:x:8:12:Mailer daemon:/var/spool/clientmqueue:/bin/false
 ...
-Administrator:x:0:512:Netbios Domain Administrator:/home:/bin/false
+root:x:0:512:Netbios Domain Administrator:/root:/bin/bash
 nobody:x:999:514:nobody:/dev/null:/bin/false
 bobj:x:1000:513:System User:/home/bobj:/bin/bash
 stans:x:1001:513:System User:/home/stans:/bin/bash
@@ -2643,7 +2703,7 @@ bin:x:1:daemon
 daemon:x:2:
 sys:x:3:
 ...
-Domain Admins:x:512:Administrator
+Domain Admins:x:512:root
 Domain Users:x:513:bobj,stans,chrisr,maryv,jht
 Domain Guests:x:514:
 Administrators:x:544:
@@ -2699,7 +2759,7 @@ Storing SID S-1-5-21-3504140859-1010554828-2431957765 \
 		<step><para>
 		To join the Samba BDC to the Domain execute the following:
 <screen>
-&rootprompt; net rpc join -U Administrator%not24get
+&rootprompt; net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
 		This indicates that the Domain security account for the BDC has been correctly created.
@@ -2712,7 +2772,7 @@ Joined domain MEGANET2.
 		Verify that user and group account resolution works via Samba-3 tools as follows:
 <screen>
 &rootprompt; pdbedit -L
-Administrator:0:Administrator
+root:0:root
 nobody:65534:nobody
 bobj:1000:System User
 stans:1001:System User
@@ -2843,7 +2903,7 @@ smb: \> q
 	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>Administrator, chrisr</value></smbconfoption>
+	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
 </smbconfexample>
 
 
@@ -2881,7 +2941,7 @@ smb: \> q
 	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>Administrator, chrisr</value></smbconfoption>
+	<smbconfoption><name>printer admin</name><value>root, chrisr</value></smbconfoption>
 </smbconfexample>
 
 
@@ -2948,7 +3008,7 @@ smb: \> q
 	<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
 	<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
 	<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>write list</name><value>Administrator, chrisr</value></smbconfoption>
+	<smbconfoption><name>write list</name><value>root, chrisr</value></smbconfoption>
 </smbconfexample>
 
 <example id="ch6-ldifadd">
@@ -3478,7 +3538,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 		<step><para>
 		After the machine has re-booted, log onto the workstation as the domain
-		<constant>Administrator</constant>.
+		<constant>root</constant> (this is the Administrator account for the 
+		operating system that is the host platform for this implementation of Samba.
 		</para></step>
 
 		<step><para>
