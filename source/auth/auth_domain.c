@@ -197,9 +197,8 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		if(!is_local_net(ip_list[i]))
 			continue;
 
-		if(NT_STATUS_IS_OK(nt_status = 
-				   attempt_connect_to_dc(cli, domain, 
-							 &ip_list[i], trust_passwd))) 
+		if(NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
+						&ip_list[i], trust_passwd))) 
 			break;
 		
 		zero_ip(&ip_list[i]); /* Tried and failed. */
@@ -211,10 +210,11 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	if(!NT_STATUS_IS_OK(nt_status)) {
 		i = (sys_random() % count);
 
-		if (!NT_STATUS_IS_OK(nt_status = 
-				     attempt_connect_to_dc(cli, domain, 
-							   &ip_list[i], trust_passwd)))
-                        zero_ip(&ip_list[i]); /* Tried and failed. */
+		if (!is_zero_ip(ip_list[i])) {
+			if (!NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
+						&ip_list[i], trust_passwd)))
+			zero_ip(&ip_list[i]); /* Tried and failed. */
+		}
 	}
 
 	/*
@@ -227,15 +227,16 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		 * Note that from a WINS server the #1 IP address is the PDC.
 		 */
 		for(i = 0; i < count; i++) {
-			if (NT_STATUS_IS_OK(nt_status = 
-					    attempt_connect_to_dc(cli, domain, 
-								  &ip_list[i], trust_passwd)))
+			if (is_zero_ip(ip_list[i]))
+				continue;
+
+			if (NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
+						  &ip_list[i], trust_passwd)))
 				break;
 		}
 	}
 
 	SAFE_FREE(ip_list);
-
 	return nt_status;
 }
 

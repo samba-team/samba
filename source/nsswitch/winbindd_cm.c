@@ -148,47 +148,46 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 	}
 
 	/* Pick a nice close server */
-	   
-	if (strequal(lp_passwordserver(), "*")) {
-		
-		/* Look for DC on local net */
-
-		for (i = 0; i < count; i++) {
-			if (is_local_net(ip_list[i]) &&
-			    name_status_find(domain, 0x1c, 0x20,
-					     ip_list[i], srv_name)) {
-				dc_ip = ip_list[i];
-				goto done;
-			}
-			zero_ip(&ip_list[i]);
-		}
-
-		/* Look for other DCs */
-
-		for (i = 0; i < count; i++) {
-			if (!is_zero_ip(ip_list[i]) &&
-			    name_status_find(domain, 0x1c, 0x20,
-					     ip_list[i], srv_name)) {
-				dc_ip = ip_list[i];
-				goto done;
-			}
-		}
-
-		/* No-one to talk to )-: */
-
-		return False;
-	}
-
-	/* Return first DC that we can contact */
+	/* Look for DC on local net */
 
 	for (i = 0; i < count; i++) {
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i],
-				     srv_name)) {
+		if (!is_local_net(ip_list[i]))
+			continue;
+		
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			dc_ip = ip_list[i];
+			goto done;
+		}
+		zero_ip(&ip_list[i]);
+	}
+
+	/*
+	 * Secondly try and contact a random PDC/BDC.
+	 */
+
+	i = (sys_random() % count);
+
+	if (!is_zero_ip(ip_list[i]) &&
+	    name_status_find(domain, 0x1c, 0x20,
+			     ip_list[i], srv_name)) {
+		dc_ip = ip_list[i];
+		goto done;
+	}
+	zero_ip(&ip_list[i]); /* Tried and failed. */
+
+	/* Finally return first DC that we can contact */
+
+	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
 			dc_ip = ip_list[i];
 			goto done;
 		}
 	}
 
+	/* No-one to talk to )-: */
 	return False;		/* Boo-hoo */
 	
  done:
@@ -201,7 +200,7 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	fstrcpy(dcc->srv_name, srv_name);
 
-	DEBUG(3, ("Returning DC %s (%s) for domain %s\n", srv_name,
+	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
 
 	*ip_out = dc_ip;
