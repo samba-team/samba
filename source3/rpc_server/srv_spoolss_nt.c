@@ -2456,7 +2456,7 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstri
  *
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
-static void init_unistr_array(uint16 **uni_array, char **char_array, char *where)
+static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *where)
 {
 	int i=0;
 	int j=0;
@@ -2466,7 +2466,8 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
 
-	for (v=char_array[i]; *v!='\0'; v=char_array[i]) {
+	while (1) {
+		v = char_array[i];
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
@@ -2476,9 +2477,12 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 		ascii_to_unistr((char *)(*uni_array+j), line , 2*strlen(line));
 		j+=strlen(line)+1;			
 		i++;
+		if (strlen(v) == 0) break;
 	}
 	
-	(*uni_array)[j]=0x0000;
+	if (*uni_array) {
+		(*uni_array)[j]=0x0000;
+	}
 	
 	DEBUGADD(6,("last one:done\n"));
 }
@@ -2614,27 +2618,21 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 ****************************************************************************/
 static uint32 getprinterdriver2_level3(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	DRIVER_INFO_3 *info=NULL;
-	
-	if((info=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3)))==NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-	
-	construct_printer_driver_info_3(info, snum, servername, architecture);
+	DRIVER_INFO_3 info;
+
+	ZERO_STRUCT(info);
+
+	construct_printer_driver_info_3(&info, snum, servername, architecture);
 
 	/* check the required size. */	
-	*needed += spoolss_size_printer_driver_info_3(info);
+	*needed += spoolss_size_printer_driver_info_3(&info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_3("", buffer, info, 0);	
-
-	/* clear memory */
-	safe_free(info->dependentfiles);
-	safe_free(info);
+	new_smb_io_printer_driver_info_3("", buffer, &info, 0);
 
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
