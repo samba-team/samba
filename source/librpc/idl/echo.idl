@@ -119,4 +119,13 @@ interface rpcecho
 		[in,out,ref] echo_Enum2 *foo2,
 		[in,out,ref,switch_is(*foo1)] echo_Enum3 *foo3
 		);
+
+	typedef struct {
+		uint32 x;
+		[size_is(x)] uint16 surrounding[*];
+	} echo_Surrounding;
+
+	void echo_TestSurrounding(
+		[in,out,ref] echo_Surrounding *data
+	);
 }
