@@ -36,7 +36,7 @@ extern int DEBUGLEVEL;
 do a SPOOLSS Enum Printers
 ****************************************************************************/
 BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
-			uint32 flags, char *servername,
+			uint32 flags, const char *servername,
 			uint32 level,
 			uint32 *count,
 			void ***printers)

@@ -40,41 +40,61 @@ extern int smb_tidx;
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-void cmd_spoolss_enum_printers(struct client_info *info)
+BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
+				uint32 level,
+				uint32 *num,
+				void ***ctr,
+				PRINT_INFO_FN(fn))
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
-	void **ctr = NULL;
-	uint32 num = 0;
-	uint32 level = 1;
-
 	BOOL res = True;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, smb_cli->desthost);
 	strupper(srv_name);
 
-	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
-
 	/* open SPOOLSS session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
+	res = cli_nt_session_open(cli, PIPE_SPOOLSS, &nt_pipe_fnum);
 
-	res = res ? spoolss_enum_printers(smb_cli, nt_pipe_fnum, 
-	                        0x40, srv_name, level, &num, &ctr) : False;
+	res = res ? spoolss_enum_printers(cli, nt_pipe_fnum, 
+	                        0x40, srv_name, level, num, ctr) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	cli_nt_session_close(cli, nt_pipe_fnum);
 
-	if (res)
+	if (res && fn != NULL)
+	{
+		fn(srv_name, level, *num, *ctr);
+	}
+
+	return res;
+}
+
+static void spool_print_info_ctr(const char* srv_name, uint32 level,
+				uint32 num, void **ctr)
+{
+	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+void cmd_spoolss_enum_printers(struct client_info *info)
+{
+	void **ctr = NULL;
+	uint32 num = 0;
+	uint32 level = 1;
+
+	if (msrpc_spoolss_enum_printers(smb_cli, level, &num, &ctr,
+	                         spool_print_info_ctr))
 	{
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-		display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
-		display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
-		display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
 	}
 	else
 	{
-		DEBUG(5,("cmd_spoolss_enum_printer: query failed\n"));
 		report(out_hnd, "FAILED\n");
 	}
 

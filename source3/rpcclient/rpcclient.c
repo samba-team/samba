@@ -105,6 +105,7 @@ static void rpcclient_stop(void)
 #define COMPL_SAMGRP 4
 #define COMPL_SAMALS 5
 #define COMPL_SVCLST 6
+#define COMPL_PRTLST 7
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -245,7 +246,7 @@ commands[] =
 		"spoolopen",
 		cmd_spoolss_open_printer_ex,
 		"<printer name> Spool Printer Open Test",
-		{COMPL_NONE, COMPL_NONE}
+		{COMPL_PRTLST, COMPL_NONE}
 	},
 	/*
 	 * server
@@ -1086,6 +1087,47 @@ static char *complete_svcenum(char *text, int state)
 	return NULL;
 }
 
+static char *complete_printersenum(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num = 0;
+	static PRINTER_INFO_1 **ctr = NULL;
+    
+	if (state == 0)
+	{
+		free_print1_array(num, ctr);
+		ctr = NULL;
+		num = 0;
+
+		/* Iterate all users */
+		if (!msrpc_spoolss_enum_printers(smb_cli, 1, &num,
+		                   (void***)&ctr,
+		                   NULL))
+		{
+			return NULL;
+		}
+
+		i = 0;
+    	}
+
+	for (; i < num; i++)
+	{
+		fstring name;
+		unistr_to_ascii(name, ctr[i]->name.buffer,
+			sizeof(name)-1);
+
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, name, strlen(text)))
+		{
+			char *copy = strdup(name);
+			i++;
+			return copy;
+		}
+	}
+	
+	return NULL;
+}
+
 /* Complete an rpcclient command */
 
 static char *complete_cmd(char *text, int state)
@@ -1188,6 +1230,9 @@ static char **completion_fn(char *text, int start, int end)
 
         case COMPL_SVCLST:
           return completion_matches(text, complete_svcenum);
+
+        case COMPL_PRTLST:
+          return completion_matches(text, complete_printersenum);
 
         case COMPL_REGKEY:
           return completion_matches(text, complete_regenum);

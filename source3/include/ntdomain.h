@@ -171,5 +171,7 @@ struct acct_info
 
 #define TPRT_INFO_FN(fn)  void (*fn)(SRV_TPRT_INFO_CTR *)
 
+#define PRINT_INFO_FN(fn)  void (*fn)(const char*, uint32, uint32, void **)
+
 #endif /* _NT_DOMAIN_H */
 
