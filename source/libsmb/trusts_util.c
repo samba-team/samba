@@ -182,7 +182,6 @@ done:
 	/* cleanup */
 	if (cli) {
 		DEBUG(10,("enumerate_domain_trusts: shutting down connection...\n"));
-		cli_nt_session_close( cli );
 		cli_shutdown( cli );
 	}
 
