@@ -107,7 +107,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 
 static void gen_name(char *name)
 {
-	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~...";
+	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~... ";
 	unsigned max_idx = strlen(chars);
 	unsigned len;
 	int i;
@@ -135,7 +135,12 @@ static void gen_name(char *name)
 
 	/* and a medium probability of a common lead string */
 	if (random() % 10 == 0) {
-		strncpy(p, "ABCDE", 5);
+		if (strlen(p) <= 5) {
+			fstrcpy(p, "ABCDE");
+		} else {
+			/* try not to kill off the null termination */
+			memcpy(p, "ABCDE", 5);
+		}
 	}
 
 	/* and a high probability of a good extension length */
@@ -151,8 +156,9 @@ static void gen_name(char *name)
 BOOL torture_mangle(int dummy)
 {
 	extern int torture_numops;
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	int i;
+	BOOL ret = True;
 
 	printf("starting mangle test\n");
 
@@ -167,20 +173,22 @@ BOOL torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(&cli, "\\mangle_test\\*");
-	cli_rmdir(&cli, "\\mangle_test");
+	cli_unlink(cli, "\\mangle_test\\*");
+	cli_rmdir(cli, "\\mangle_test");
 
-	if (!cli_mkdir(&cli, "\\mangle_test")) {
+	if (!cli_mkdir(cli, "\\mangle_test")) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}
 
 	for (i=0;i<torture_numops;i++) {
 		fstring name;
+		ZERO_STRUCT(name);
 
 		gen_name(name);
-
-		if (!test_one(&cli, name)) {
+		
+		if (!test_one(cli, name)) {
+			ret = False;
 			break;
 		}
 		if (total && total % 100 == 0) {
@@ -189,8 +197,8 @@ BOOL torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(&cli, "\\mangle_test\\*");
-	if (!cli_rmdir(&cli, "\\mangle_test")) {
+	cli_unlink(cli, "\\mangle_test\\*");
+	if (!cli_rmdir(cli, "\\mangle_test")) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}
@@ -198,8 +206,8 @@ BOOL torture_mangle(int dummy)
 	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",
 	       collisions, total, (100.0*collisions) / total, failures);
 
-	torture_close_connection(&cli);
+	torture_close_connection(cli);
 
 	printf("mangle test finished\n");
-	return (failures == 0);
+	return (ret && (failures == 0));
 }
