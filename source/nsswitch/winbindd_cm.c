@@ -502,7 +502,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 {
 	find_cm_connection(domain, pipe_name, conn_out);
 
-	if (conn_out != NULL)
+	if (*conn_out != NULL)
 		return NT_STATUS_OK;
 
 	return new_cm_connection(domain, pipe_name, conn_out);
