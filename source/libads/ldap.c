@@ -100,6 +100,14 @@ int ads_search_dn(ADS_STRUCT *ads, void **res,
 			     LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)res);
 }
 
+/*
+  free up memory from a ads_search
+*/
+void ads_msgfree(ADS_STRUCT *ads, void *msg)
+{
+	if (!msg) return;
+	ldap_msgfree(msg);
+}
 
 /*
   find a machine account given a hostname 
