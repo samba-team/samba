@@ -1,3 +1,11 @@
+2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* kdc/kdc_locl.h: 524 is independent of kerberos 4, so move out
+	#ifdef KRB4 from enable_v4_cross_realm since 524 needs it
+	
+	* kdc/config.c: 524 is independent of kerberos 4, so move out
+	enable_v4_cross_realm from #ifdef KRB4 since 524 needs it
+	
 2003-03-17  Assar Westerlund  <assar@kth.se>
 
 	* kdc/kdc.8: document --kerberos4-cross-realm
