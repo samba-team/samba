@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,86 +45,86 @@ krb5_build_authenticator (krb5_context context,
 			  krb5_data *result,
 			  krb5_key_usage usage)
 {
-  Authenticator *auth;
-  u_char *buf = NULL;
-  size_t buf_size;
-  size_t len;
-  krb5_error_code ret;
-  krb5_crypto crypto;
+    Authenticator *auth;
+    u_char *buf = NULL;
+    size_t buf_size;
+    size_t len;
+    krb5_error_code ret;
+    krb5_crypto crypto;
 
-  auth = malloc(sizeof(*auth));
-  if (auth == NULL) {
-      krb5_set_error_string(context, "malloc: out of memory");
-      return ENOMEM;
-  }
+    auth = malloc(sizeof(*auth));
+    if (auth == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
 
-  memset (auth, 0, sizeof(*auth));
-  auth->authenticator_vno = 5;
-  copy_Realm(&cred->client->realm, &auth->crealm);
-  copy_PrincipalName(&cred->client->name, &auth->cname);
+    memset (auth, 0, sizeof(*auth));
+    auth->authenticator_vno = 5;
+    copy_Realm(&cred->client->realm, &auth->crealm);
+    copy_PrincipalName(&cred->client->name, &auth->cname);
 
-  {
-      int32_t sec, usec;
+    krb5_us_timeofday (context, &auth->ctime, &auth->cusec);
+    
+    ret = krb5_auth_con_getlocalsubkey(context, auth_context, &auth->subkey);
+    if(ret)
+	goto fail;
 
-      krb5_us_timeofday (context, &sec, &usec);
-      auth->ctime = sec;
-      auth->cusec = usec;
-  }
-  ret = krb5_auth_con_getlocalsubkey(context, auth_context, &auth->subkey);
-  if(ret)
-      goto fail;
+    if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+	if(auth_context->local_seqnumber == 0)
+	    krb5_generate_seq_number (context,
+				      &cred->session, 
+				      &auth_context->local_seqnumber);
+	ALLOC(auth->seq_number, 1);
+	if(auth->seq_number == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	*auth->seq_number = auth_context->local_seqnumber;
+    } else
+	auth->seq_number = NULL;
+    auth->authorization_data = NULL;
+    auth->cksum = cksum;
 
-  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-    krb5_generate_seq_number (context,
-			      &cred->session, 
-			      &auth_context->local_seqnumber);
-    ALLOC(auth->seq_number, 1);
-    *auth->seq_number = auth_context->local_seqnumber;
-  } else
-    auth->seq_number = NULL;
-  auth->authorization_data = NULL;
-  auth->cksum = cksum;
+    /* XXX - Copy more to auth_context? */
 
-  /* XXX - Copy more to auth_context? */
+    if (auth_context) {
+	auth_context->authenticator->ctime = auth->ctime;
+	auth_context->authenticator->cusec = auth->cusec;
+    }
 
-  if (auth_context) {
-    auth_context->authenticator->ctime = auth->ctime;
-    auth_context->authenticator->cusec = auth->cusec;
-  }
+    ASN1_MALLOC_ENCODE(Authenticator, buf, buf_size, auth, &len, ret);
 
-  ASN1_MALLOC_ENCODE(Authenticator, buf, buf_size, auth, &len, ret);
+    if (ret)
+	goto fail;
 
-  if (ret)
-      goto fail;
+    ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
+    if (ret)
+	goto fail;
+    ret = krb5_encrypt (context,
+			crypto,
+			usage /* KRB5_KU_AP_REQ_AUTH */,
+			buf + buf_size - len, 
+			len,
+			result);
+    krb5_crypto_destroy(context, crypto);
 
-  ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
-  if (ret)
-      goto fail;
-  ret = krb5_encrypt (context,
-		      crypto,
-		      usage /* KRB5_KU_AP_REQ_AUTH */,
-		      buf + buf_size - len, 
-		      len,
-		      result);
-  krb5_crypto_destroy(context, crypto);
+    if (ret)
+	goto fail;
 
-  if (ret)
-      goto fail;
+    free (buf);
 
-  free (buf);
-
-  if (auth_result)
-    *auth_result = auth;
-  else {
-    /* Don't free the `cksum', it's allocated by the caller */
-    auth->cksum = NULL;
+    if (auth_result)
+	*auth_result = auth;
+    else {
+	/* Don't free the `cksum', it's allocated by the caller */
+	auth->cksum = NULL;
+	free_Authenticator (auth);
+	free (auth);
+    }
+    return ret;
+  fail:
     free_Authenticator (auth);
     free (auth);
-  }
-  return ret;
-fail:
-  free_Authenticator (auth);
-  free (auth);
-  free (buf);
-  return ret;
+    free (buf);
+    return ret;
 }
