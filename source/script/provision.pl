@@ -36,6 +36,15 @@ sub randsid()
 		       int(rand(10**8)), int(rand(10**8)), int(rand(10**8)));
 }
 
+my $domainsid = randsid();
+
+sub ldaptime()
+{
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) =  gmtime(time);
+	return sprintf "%04u%02u%02u%02u%02u%02u.0Z",
+	$year+1900, $mon+1, $mday, $hour, $min, $sec;
+}
+
 #######################
 # substitute a single variable
 sub substitute($)
@@ -47,7 +56,7 @@ sub substitute($)
 	}
 
 	if ($var eq "DOMAINSID") {
-		return randsid();
+		return $domainsid;
 	}
 
 	if ($var eq "DOMAIN") {
@@ -63,7 +72,7 @@ sub substitute($)
 	}
 
 	if ($var eq "LDAPTIME") {
-		return "20040408072022.0Z";
+		return ldaptime();
 	}
 
 	if ($var eq "NEWGUID") {
