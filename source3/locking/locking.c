@@ -419,10 +419,10 @@ int get_share_modes(connection_struct *conn,
 	struct locking_data *data;
 	int num_share_modes;
 	share_mode_entry *shares = NULL;
-
+	TDB_DATA key = locking_key(dev, inode);
 	*pp_shares = NULL;
 
-	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return 0;
 
@@ -469,7 +469,7 @@ int get_share_modes(connection_struct *conn,
 			/* The record has shrunk a bit */
 			dbuf.dsize -= del_count * sizeof(share_mode_entry);
 
-			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1) {
+			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
 				SAFE_FREE(shares);
 				SAFE_FREE(dbuf.dptr);
 				return 0;
@@ -544,12 +544,13 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 	int i, del_count=0;
 	share_mode_entry *shares;
 	ssize_t count = 0;
+	TDB_DATA key = locking_key(dev, inode);
 
 	if (ppse)
 		*ppse = NULL;
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return -1;
 
@@ -590,10 +591,10 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 
 		/* store it back in the database */
 		if (data->u.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
+			if (tdb_delete(tdb, key) == -1)
 				count = -1;
 		} else {
-			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
+			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 				count = -1;
 		}
 	}
@@ -630,10 +631,11 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	struct locking_data *data;
 	char *p=NULL;
 	int size;
+	TDB_DATA key = locking_key_fsp(fsp);
 	BOOL ret = True;
 		
 	/* read in the existing share modes if any */
-	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
 		size_t offset;
 		/* we'll need to create a new record */
@@ -658,7 +660,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
-		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
+		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 			ret = False;
 
 		print_share_mode_table((struct locking_data *)p);
@@ -688,7 +690,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
-	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
+	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 		ret = False;
 	print_share_mode_table((struct locking_data *)p);
 	SAFE_FREE(p);
@@ -709,9 +711,10 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	share_mode_entry *shares;
 	BOOL need_store=False;
 	BOOL ret = True;
+	TDB_DATA key = locking_key(dev, inode);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 
@@ -729,10 +732,10 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	/* if the mod fn was called then store it back */
 	if (need_store) {
 		if (data->u.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
+			if (tdb_delete(tdb, key) == -1)
 				ret = False;
 		} else {
-			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
+			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 				ret = False;
 		}
 	}
@@ -808,9 +811,10 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 	struct locking_data *data;
 	int i;
 	share_mode_entry *shares;
+	TDB_DATA key = locking_key(dev, inode);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 
@@ -826,7 +830,7 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 
 	/* store it back */
 	if (data->u.num_share_mode_entries) {
-		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1) {
+		if (tdb_store(tdb, key, dbuf, TDB_REPLACE)==-1) {
 			SAFE_FREE(dbuf.dptr);
 			return False;
 		}
