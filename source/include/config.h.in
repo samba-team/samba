@@ -180,7 +180,18 @@
 #undef USE_SETUIDX
 #undef HAVE_LIBDL
 #undef SYSCONF_SC_NGROUPS_MAX
+#undef HAVE_UT_UT_NAME
+#undef HAVE_UT_UT_USER
+#undef HAVE_UT_UT_ID
+#undef HAVE_UT_UT_HOST
+#undef HAVE_UT_UT_TIME
+#undef HAVE_UT_UT_TV
+#undef HAVE_UT_UT_TYPE
+#undef HAVE_UT_UT_PID
+#undef HAVE_UT_UT_EXIT
+#undef HAVE_UT_UT_ADDR
 #undef HAVE_UX_UT_SYSLEN
+#undef PUTUTLINE_RETURNS_UTMP
 #undef COMPILER_SUPPORTS_LL
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
 
@@ -508,6 +519,9 @@
 /* Define if you have the getspnam function.  */
 #undef HAVE_GETSPNAM
 
+/* Define if you have the getutmpx function.  */
+#undef HAVE_GETUTMPX
+
 /* Define if you have the glob function.  */
 #undef HAVE_GLOB
 
@@ -558,6 +572,12 @@
 
 /* Define if you have the putprpwnam function.  */
 #undef HAVE_PUTPRPWNAM
+
+/* Define if you have the pututline function.  */
+#undef HAVE_PUTUTLINE
+
+/* Define if you have the pututxline function.  */
+#undef HAVE_PUTUTXLINE
 
 /* Define if you have the pwrite function.  */
 #undef HAVE_PWRITE
@@ -658,6 +678,12 @@
 /* Define if you have the sysconf function.  */
 #undef HAVE_SYSCONF
 
+/* Define if you have the updwtmp function.  */
+#undef HAVE_UPDWTMP
+
+/* Define if you have the updwtmpx function.  */
+#undef HAVE_UPDWTMPX
+
 /* Define if you have the usleep function.  */
 #undef HAVE_USLEEP
 
@@ -699,6 +725,9 @@
 
 /* Define if you have the <history.h> header file.  */
 #undef HAVE_HISTORY_H
+
+/* Define if you have the <lastlog.h> header file.  */
+#undef HAVE_LASTLOG_H
 
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
@@ -798,6 +827,9 @@
 
 /* Define if you have the <sys/fs/s5param.h> header file.  */
 #undef HAVE_SYS_FS_S5PARAM_H
+
+/* Define if you have the <sys/fs/vx_quota.h> header file.  */
+#undef HAVE_SYS_FS_VX_QUOTA_H
 
 /* Define if you have the <sys/id.h> header file.  */
 #undef HAVE_SYS_ID_H
