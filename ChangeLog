@@ -1,3 +1,17 @@
+2001-05-08  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (encryption_type): make field names more
+	consistent
+	(create_checksum): separate usage and type
+	(krb5_create_checksum): add a separate type parameter
+	(encrypt_internal): only free once on mismatched checksum length
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc2): try to tell what
+	realm we didn't manage to reach any KDC for in the error string
+
+	* lib/krb5/generate_seq_number.c (krb5_generate_seq_number): free
+	the entire subkey.  from <tmartin@mirapoint.com>
+
 2001-05-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab_keyfile.c (akf_start_seq_get): return

@@ -1,3 +1,8 @@
+2001-05-08  Assar Westerlund  <assar@sics.se>
+
+	* delete_sec_context.c (gss_delete_sec_context): remember to free
+	the memory used by the ticket itself. from <tmartin@mirapoint.com>
+
 2001-05-04  Assar Westerlund  <assar@sics.se>
 
 	* gssapi_locl.h: add config.h for completeness
