@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,12 +78,11 @@ OM_uint32 gss_accept_sec_context
   krb5_flags ap_options;
   OM_uint32 flags;
   krb5_ticket *ticket;
-  Checksum cksum;
   krb5_keytab keytab = NULL;
 
   gssapi_krb5_init ();
 
-  if (*context_handle != GSS_C_NO_CONTEXT) {
+  if (*context_handle == GSS_C_NO_CONTEXT) {
     *context_handle = malloc(sizeof(**context_handle));
     if (*context_handle == GSS_C_NO_CONTEXT)
       return GSS_S_FAILURE;
@@ -159,32 +158,25 @@ OM_uint32 gss_accept_sec_context
     }
   }
 
-  flags = 0;
-  if (ap_options & AP_OPTS_MUTUAL_REQUIRED)
-    flags |= GSS_C_MUTUAL_FLAG;
-  flags |= GSS_C_CONF_FLAG;
-  flags |= GSS_C_INTEG_FLAG;
-  flags |= GSS_C_SEQUENCE_FLAG;
-
-  kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
-					   flags,
-					   &cksum);
-
-  if (kret) {
-    ret = GSS_S_FAILURE;
-    goto failure;
-  }
-
   {
-    Checksum *c2 = (*context_handle)->auth_context->authenticator->cksum;
-    if (cksum.cksumtype != c2->cksumtype ||
-	cksum.checksum.length != c2->checksum.length ||
-	memcmp(cksum.checksum.data,
-	       c2->checksum.data,
-	       cksum.checksum.length)) {
-      ret = GSS_S_FAILURE;
-      goto failure;
-    }
+      krb5_authenticator authenticator;
+      
+      kret = krb5_auth_getauthenticator(gssapi_krb5_context,
+					(*context_handle)->auth_context,
+					&authenticator);
+      if(kret) {
+	  ret = GSS_S_FAILURE;
+	  goto failure;
+      }
+
+      kret = gssapi_krb5_verify_8003_checksum(input_chan_bindings,
+					      authenticator->cksum,
+					      &flags);
+      krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+      if (kret) {
+	  ret = GSS_S_FAILURE;
+	  goto failure;
+      }
   }
 
   if (ret_flags)
