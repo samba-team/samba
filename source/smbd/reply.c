@@ -662,7 +662,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
       smb_create_user(unix_user, NULL);
     }
 
-    if(lp_adduser_script() && pwd) {
+    if(lp_adduser_script() && *lp_adduser_script() && pwd) {
       SMB_STRUCT_STAT st;
 
       /*
