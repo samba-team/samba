@@ -699,6 +699,7 @@ typedef struct smb_wpasswd {
 /***** automatically generated prototypes *****/
 #include "ldapdb.h"
 #include "proto.h"
+#include "lib_smb_proto.h"
 
 /* String routines */
 
