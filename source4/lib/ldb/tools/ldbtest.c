@@ -319,6 +319,8 @@ static void usage(void)
 		exit(1);
 	}
 
+	ldb_set_debug_stderr(ldb);
+
 	srandom(1);
 
 	start_test(ldb, nrecords, nsearches);
