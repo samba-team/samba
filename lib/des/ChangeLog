@@ -2,6 +2,11 @@
 
 	* set_key.c: correct weak keys and update comment
 
+2001-02-14  Assar Westerlund  <assar@sics.se>
+
+	* set_key.c: correct the two last weak keys in accordance with
+	FIPS 74.  noted by <jhutz@cmu.edu>
+
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libdes_la_LDFLAGS): bump version to 3:0:0
