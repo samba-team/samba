@@ -876,6 +876,7 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 	
 	if(!spoolss_io_q_addprinterdriver("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_addprinterdriver: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVER.\n"));
+		free_spoolss_q_addprinterdriver(&q_u);
 		return False;
 	}
 	
