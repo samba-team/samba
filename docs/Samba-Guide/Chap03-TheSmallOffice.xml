@@ -792,8 +792,8 @@ $rootprompt; ps ax | grep winbind
 14295 ?        S     0:00 /usr/sbin/winbindd -B
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal) so there are also
-			two instances of it. For more information regarding winbindd, see <emphasis>TOSHARG</emphasis>, Chapter 20, 
-			Section 20.3. The single instance of <command>smbd</command> is normal.
+			two instances of it. For more information regarding winbindd, see <emphasis>TOSHARG</emphasis>,
+			Chapter 22, Section 22.3. The single instance of <command>smbd</command> is normal.
 			</para></step>
 	
 			<step><para>

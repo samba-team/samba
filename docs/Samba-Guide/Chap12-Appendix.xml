@@ -925,37 +925,31 @@ objectClass: organization
 dc: INETDOMAIN
 o: ORGNAME
 description: Posix and Samba LDAP Identity Database
-structuralObjectClass: organization
 
 dn: cn=Manager,dc=INETDOMAIN,dc=TLDORG
 objectClass: organizationalRole
 cn: Manager
 description: Directory Manager
-structuralObjectClass: organizationalRole
 
 dn: ou=People,dc=INETDOMAIN,dc=TLDORG
 objectClass: top
 objectClass: organizationalUnit
 ou: People
-structuralObjectClass: organizationalUnit
 
 dn: ou=Computers,dc=INETDOMAIN,dc=TLDORG
 objectClass: top
 objectClass: organizationalUnit
 ou: Computers
-structuralObjectClass: organizationalUnit
 
 dn: ou=Groups,dc=INETDOMAIN,dc=TLDORG
 objectClass: top
 objectClass: organizationalUnit
 ou: Groups
-structuralObjectClass: organizationalUnit
 
 dn: ou=Idmap,dc=INETDOMAIN,dc=TLDORG
 objectClass: top
 objectClass: organizationalUnit
 ou: Idmap
-structuralObjectClass: organizationalUnit
 
 dn: sambaDomainName=DOMNAME,ou=Domains,dc=INETDOMAIN,dc=TLDORG
 objectClass: sambaDomain
@@ -978,7 +972,6 @@ sambaSID: DOMSID-512
 sambaGroupType: 2
 displayName: Domain Admins
 description: Domain Administrators
-structuralObjectClass: posixGroup
 
 dn: cn=domguests,ou=Groups,dc=INETDOMAIN,dc=TLDORG
 objectClass: posixGroup
@@ -989,7 +982,6 @@ sambaSID: DOMSID-514
 sambaGroupType: 2
 displayName: Domain Guests
 description: Domain Guests Users
-structuralObjectClass: posixGroup
 
 dn: cn=domusers,ou=Groups,dc=INETDOMAIN,dc=TLDORG
 objectClass: posixGroup
@@ -1000,7 +992,6 @@ sambaSID: DOMSID-513
 sambaGroupType: 2
 displayName: Domain Users
 description: Domain Users
-structuralObjectClass: posixGroup
 </screen>
 </example>
 

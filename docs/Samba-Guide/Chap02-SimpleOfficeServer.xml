@@ -945,7 +945,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 	<para><indexterm>
 	    <primary>Red Hat Linux</primary>
 	  </indexterm>
-	The new server will run Red Hat Linux 9.0. You should install Samba-3.0.12 and 
+	The new server will run Red Hat Fedora Core2. You should install Samba-3.0.12 and 
 	copy all files off the old system to the new one. The existing Windows NT4 server has a parallel
 	port HP LaserJet 4 printer that is shared by all. The printer driver is installed on each
 	workstation. You must not change anything on the workstations. Mr. Meany gave instructions to
