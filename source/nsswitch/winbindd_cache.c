@@ -192,6 +192,23 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+/* pull a string from a cache entry, using the supplied
+   talloc context 
+*/
+static DOM_SID *centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
+{
+	DOM_SID *sid;
+	char *sid_string;
+	sid = talloc(mem_ctx, sizeof(*sid));
+	if (!sid) return NULL;
+	
+	sid_string = centry_string(centry, mem_ctx);
+	if (!string_to_sid(sid, sid_string)) {
+		return NULL;
+	}
+	return sid;
+}
+
 /* the server is considered down if it can't give us a sequence number */
 static BOOL wcache_server_down(struct winbindd_domain *domain)
 {
@@ -258,6 +275,9 @@ static BOOL centry_expired(struct winbindd_domain *domain, struct cache_entry *c
   fetch an entry from the cache, with a varargs key. auto-fetch the sequence
   number and return status
 */
+static struct cache_entry *wcache_fetch(struct winbind_cache *cache, 
+					struct winbindd_domain *domain,
+					const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 static struct cache_entry *wcache_fetch(struct winbind_cache *cache, 
 					struct winbindd_domain *domain,
 					const char *format, ...)
@@ -370,6 +390,13 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 	centry->ofs += len;
 }
 
+static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid) 
+{
+	int len;
+	fstring sid_string;
+	centry_put_string(centry, sid_to_string(sid_string, sid));
+}
+
 /*
   start a centry for output. When finished, call centry_end()
 */
@@ -393,6 +420,7 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 /*
   finish a centry and write it to the tdb
 */
+static void centry_end(struct cache_entry *centry, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 static void centry_end(struct cache_entry *centry, const char *format, ...)
 {
 	va_list ap;
@@ -412,39 +440,30 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	free(kstr);
 }
 
-/* form a sid from the domain plus rid */
-static DOM_SID *form_sid(struct winbindd_domain *domain, uint32 rid)
-{
-	static DOM_SID sid;
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-	return &sid;
-}
-
-static void wcache_save_name_to_sid(struct winbindd_domain *domain, NTSTATUS status, 
-				    const char *name, DOM_SID *sid, enum SID_NAME_USE type)
+static void wcache_save_name_to_sid(struct winbindd_domain *domain, 
+				    NTSTATUS status, 
+				    const char *name, DOM_SID *sid, 
+				    enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
 	uint32 len;
 	fstring uname;
+	fstring sid_string;
 
 	centry = centry_start(domain, status);
 	if (!centry) return;
-	len = sid_size(sid);
-	centry_expand(centry, len);
-	centry_put_uint32(centry, type);
-	sid_linearize(centry->data + centry->ofs, len, sid);
-	centry->ofs += len;
+	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
 	strupper(uname);
-	centry_end(centry, "NS/%s/%s", domain->name, uname);
+	centry_end(centry, "NS/%s", sid_to_string(sid_string, sid));
 	centry_free(centry);
 }
 
 static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS status, 
-				    DOM_SID *sid, const char *name, enum SID_NAME_USE type, uint32 rid)
+				    DOM_SID *sid, const char *name, enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
+	fstring sid_string;
 
 	centry = centry_start(domain, status);
 	if (!centry) return;
@@ -452,7 +471,7 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 		centry_put_uint32(centry, type);
 		centry_put_string(centry, name);
 	}
-	centry_end(centry, "SN/%s/%d", domain->name, rid);
+	centry_end(centry, "SN/%s", sid_to_string(sid_string, sid));
 	centry_free(centry);
 }
 
@@ -460,14 +479,15 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WINBIND_USERINFO *info)
 {
 	struct cache_entry *centry;
+	fstring sid_string;
 
 	centry = centry_start(domain, status);
 	if (!centry) return;
 	centry_put_string(centry, info->acct_name);
 	centry_put_string(centry, info->full_name);
-	centry_put_uint32(centry, info->user_rid);
-	centry_put_uint32(centry, info->group_rid);
-	centry_end(centry, "U/%s/%d", domain->name, info->user_rid);
+	centry_put_sid(centry, info->user_sid);
+	centry_put_sid(centry, info->group_sid);
+	centry_end(centry, "U/%s", sid_to_string(sid_string, info->user_sid));
 	centry_free(centry);
 }
 
@@ -481,7 +501,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 
 	if (!cache->tdb) goto do_query;
 
@@ -497,8 +517,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	for (i=0; i<(*num_entries); i++) {
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
-		(*info)[i].user_rid = centry_uint32(centry);
-		(*info)[i].group_rid = centry_uint32(centry);
+		(*info)[i].user_sid = centry_sid(centry, mem_ctx);
+		(*info)[i].group_sid = centry_sid(centry, mem_ctx);
 	}
 
 do_cached:	
@@ -524,18 +544,18 @@ do_query:
 	for (i=0; i<(*num_entries); i++) {
 		centry_put_string(centry, (*info)[i].acct_name);
 		centry_put_string(centry, (*info)[i].full_name);
-		centry_put_uint32(centry, (*info)[i].user_rid);
-		centry_put_uint32(centry, (*info)[i].group_rid);
+		centry_put_sid(centry, (*info)[i].user_sid);
+		centry_put_sid(centry, (*info)[i].group_sid);
 		if (cache->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						(*info)[i].acct_name, 
-						form_sid(domain, (*info)[i].user_rid),
+						(*info)[i].user_sid,
 						SID_NAME_USER);
 			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
-						form_sid(domain, (*info)[i].user_rid),
+						(*info)[i].user_sid,
 						(*info)[i].acct_name, 
-						SID_NAME_USER, (*info)[i].user_rid);
+						SID_NAME_USER);
 			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
 		}
 	}	
@@ -555,7 +575,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 
 	if (!cache->tdb) goto do_query;
 
@@ -615,7 +635,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 
 	if (!cache->tdb) goto do_query;
 
@@ -669,7 +689,7 @@ do_query:
 		centry_put_string(centry, (*info)[i].acct_name);
 		centry_put_string(centry, (*info)[i].acct_desc);
 		centry_put_uint32(centry, (*info)[i].rid);
-	}	
+	}
 	centry_end(centry, "GL/%s/local", domain->name);
 	centry_free(centry);
 
@@ -679,6 +699,7 @@ skip_save:
 
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
@@ -687,6 +708,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	fstring uname;
+	DOM_SID *sid2;
 
 	if (!cache->tdb) goto do_query;
 
@@ -695,7 +717,12 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry) goto do_query;
 	*type = centry_uint32(centry);
-	sid_parse(centry->data + centry->ofs, centry->len - centry->ofs, sid);
+	sid2 = centry_sid(centry, mem_ctx);
+	if (!sid2) {
+		ZERO_STRUCTP(sid);
+	} else {
+		sid_copy(sid, sid2);
+	}
 
 	status = centry->status;
 	centry_free(centry);
@@ -707,7 +734,7 @@ do_query:
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
-	status = cache->backend->name_to_sid(domain, name, sid, type);
+	status = cache->backend->name_to_sid(domain, mem_ctx, name, sid, type);
 
 	/* and save it */
 	wcache_save_name_to_sid(domain, status, name, sid, *type);
@@ -729,14 +756,11 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	uint32 rid = 0;
-
-	if (!sid_peek_check_rid(&domain->sid, sid, &rid))
-		return NT_STATUS_INVALID_PARAMETER;
+	fstring sid_string;
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "SN/%s/%d", domain->name, rid);
+	centry = wcache_fetch(cache, domain, "SN/%s", sid_to_string(sid_string, sid));
 	if (!centry) goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
 		*type = centry_uint32(centry);
@@ -756,7 +780,7 @@ do_query:
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
-	wcache_save_sid_to_name(domain, status, sid, *name, *type, rid);
+	wcache_save_sid_to_name(domain, status, sid, *name, *type);
 	wcache_save_name_to_sid(domain, status, *name, sid, *type);
 
 	return status;
@@ -766,22 +790,23 @@ do_query:
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   uint32 user_rid, 
+			   DOM_SID *user_sid, 
 			   WINBIND_USERINFO *info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
+	fstring sid_string;
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "U/%s/%d", domain->name, user_rid);
+	centry = wcache_fetch(cache, domain, "U/%s", sid_to_string(sid_string, user_sid));
 	if (!centry) goto do_query;
 
 	info->acct_name = centry_string(centry, mem_ctx);
 	info->full_name = centry_string(centry, mem_ctx);
-	info->user_rid = centry_uint32(centry);
-	info->group_rid = centry_uint32(centry);
+	info->user_sid = centry_sid(centry, mem_ctx);
+	info->group_sid = centry_sid(centry, mem_ctx);
 	status = centry->status;
 	centry_free(centry);
 	return status;
@@ -793,7 +818,7 @@ do_query:
 		return NT_STATUS_SERVER_DISABLED;
 	}
 	
-	status = cache->backend->query_user(domain, mem_ctx, user_rid, info);
+	status = cache->backend->query_user(domain, mem_ctx, user_sid, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
@@ -806,17 +831,18 @@ do_query:
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 user_rid, 
-				  uint32 *num_groups, uint32 **user_gids)
+				  DOM_SID *user_sid, 
+				  uint32 *num_groups, DOM_SID ***user_gids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
+	fstring sid_string;
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "UG/%s/%d", domain->name, user_rid);
+	centry = wcache_fetch(cache, domain, "UG/%s", sid_to_string(sid_string, user_sid));
 	if (!centry) goto do_query;
 
 	*num_groups = centry_uint32(centry);
@@ -826,7 +852,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	(*user_gids) = talloc(mem_ctx, sizeof(**user_gids) * (*num_groups));
 	if (! (*user_gids)) smb_panic("lookup_usergroups out of memory");
 	for (i=0; i<(*num_groups); i++) {
-		(*user_gids)[i] = centry_uint32(centry);
+		(*user_gids)[i] = centry_sid(centry, mem_ctx);
 	}
 
 do_cached:	
@@ -841,7 +867,7 @@ do_query:
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
-	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_rid, num_groups, user_gids);
+	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
@@ -849,9 +875,9 @@ do_query:
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_groups);
 	for (i=0; i<(*num_groups); i++) {
-		centry_put_uint32(centry, (*user_gids)[i]);
+		centry_put_sid(centry, (*user_gids)[i]);
 	}	
-	centry_end(centry, "UG/%s/%d", domain->name, user_rid);
+	centry_end(centry, "UG/%s", sid_to_string(sid_string, user_sid));
 	centry_free(centry);
 
 skip_save:
@@ -861,34 +887,35 @@ skip_save:
 
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 group_rid, uint32 *num_names, 
-				uint32 **rid_mem, char ***names, 
+				DOM_SID *group_sid, uint32 *num_names, 
+				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
+	fstring sid_string;
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "GM/%s/%d", domain->name, group_rid);
+	centry = wcache_fetch(cache, domain, "GM/%s", sid_to_string(sid_string, group_sid));
 	if (!centry) goto do_query;
 
 	*num_names = centry_uint32(centry);
 	
 	if (*num_names == 0) goto do_cached;
 
-	(*rid_mem) = talloc(mem_ctx, sizeof(**rid_mem) * (*num_names));
+	(*sid_mem) = talloc(mem_ctx, sizeof(**sid_mem) * (*num_names));
 	(*names) = talloc(mem_ctx, sizeof(**names) * (*num_names));
 	(*name_types) = talloc(mem_ctx, sizeof(**name_types) * (*num_names));
 
-	if (! (*rid_mem) || ! (*names) || ! (*name_types)) {
+	if (! (*sid_mem) || ! (*names) || ! (*name_types)) {
 		smb_panic("lookup_groupmem out of memory");
 	}
 
 	for (i=0; i<(*num_names); i++) {
-		(*rid_mem)[i] = centry_uint32(centry);
+		(*sid_mem)[i] = centry_sid(centry, mem_ctx);
 		(*names)[i] = centry_string(centry, mem_ctx);
 		(*name_types)[i] = centry_uint32(centry);
 	}
@@ -900,7 +927,7 @@ do_cached:
 
 do_query:
 	(*num_names) = 0;
-	(*rid_mem) = NULL;
+	(*sid_mem) = NULL;
 	(*names) = NULL;
 	(*name_types) = NULL;
 	
@@ -908,8 +935,8 @@ do_query:
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
-	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_rid, num_names, 
-						 rid_mem, names, name_types);
+	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_sid, num_names, 
+						 sid_mem, names, name_types);
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
@@ -917,11 +944,11 @@ do_query:
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_names);
 	for (i=0; i<(*num_names); i++) {
-		centry_put_uint32(centry, (*rid_mem)[i]);
+		centry_put_sid(centry, (*sid_mem)[i]);
 		centry_put_string(centry, (*names)[i]);
 		centry_put_uint32(centry, (*name_types)[i]);
 	}	
-	centry_end(centry, "GM/%s/%d", domain->name, group_rid);
+	centry_end(centry, "GM/%s", sid_to_string(sid_string, group_sid));
 	centry_free(centry);
 
 skip_save:

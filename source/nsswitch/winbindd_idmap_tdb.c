@@ -342,78 +342,6 @@ static BOOL tdb_get_gid_from_sid(DOM_SID * sid, gid_t * gid)
 	return tdb_get_id_from_sid(sid, gid, True);
 }
 
-/* Get a uid from a user rid */
-static BOOL tdb_get_uid_from_rid(const char *dom_name, uint32 rid,
-				 uid_t * uid)
-{
-	struct winbindd_domain *domain;
-	DOM_SID sid;
-
-	if (!(domain = find_domain_from_name(dom_name))) {
-		return False;
-	}
-
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-
-	return tdb_get_id_from_sid(&sid, uid, False);
-}
-
-/* Get a gid from a group rid */
-static BOOL tdb_get_gid_from_rid(const char *dom_name, uint32 rid,
-				 gid_t * gid)
-{
-	struct winbindd_domain *domain;
-	DOM_SID sid;
-
-	if (!(domain = find_domain_from_name(dom_name))) {
-		return False;
-	}
-
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-
-	return tdb_get_id_from_sid(&sid, gid, True);
-}
-
-/* Get a user rid from a uid */
-static BOOL tdb_get_rid_from_uid(uid_t uid, uint32 * user_rid,
-				 struct winbindd_domain **domain)
-{
-	DOM_SID sid;
-
-	if (!tdb_get_sid_from_id((int) uid, &sid, False)) {
-		return False;
-	}
-
-	*domain = find_domain_from_sid(&sid);
-	if (!*domain)
-		return False;
-
-	sid_split_rid(&sid, user_rid);
-
-	return True;
-}
-
-/* Get a group rid from a gid */
-static BOOL tdb_get_rid_from_gid(gid_t gid, uint32 * group_rid,
-				 struct winbindd_domain **domain)
-{
-	DOM_SID sid;
-
-	if (!tdb_get_sid_from_id((int) gid, &sid, True)) {
-		return False;
-	}
-
-	*domain = find_domain_from_sid(&sid);
-	if (!*domain)
-		return False;
-
-	sid_split_rid(&sid, group_rid);
-
-	return True;
-}
-
 /* Close the tdb */
 static BOOL tdb_idmap_close(void)
 {
@@ -499,12 +427,6 @@ struct idmap_methods tdb_idmap_methods = {
 
 	tdb_get_uid_from_sid,
 	tdb_get_gid_from_sid,
-
-	tdb_get_rid_from_uid,
-	tdb_get_rid_from_gid,
-
-	tdb_get_uid_from_rid,
-	tdb_get_gid_from_rid,
 
 	tdb_idmap_close,
 
