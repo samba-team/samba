@@ -703,7 +703,7 @@ doit (const char *hostname,
 	    continue;
 	}
 	if (do_errsock) {
-	    struct addrinfo *ea;
+	    struct addrinfo *ea, *eai;
 	    struct addrinfo hints;
 
 	    memset (&hints, 0, sizeof(hints));
@@ -712,15 +712,23 @@ doit (const char *hostname,
 	    hints.ai_family   = a->ai_family;
 	    hints.ai_flags    = AI_PASSIVE;
 
-	    error = getaddrinfo (NULL, "0", &hints, &ea);
+	    errsock = -1;
+
+	    error = getaddrinfo (NULL, "0", &hints, &eai);
 	    if (error)
 		errx (1, "getaddrinfo: %s", gai_strerror(error));
-	    errsock = socket (ea->ai_family, ea->ai_socktype, ea->ai_protocol);
+	    for (ea = eai; ea != NULL; ea = ea->ai_next) {
+		errsock = socket (ea->ai_family, ea->ai_socktype,
+				  ea->ai_protocol);
+		if (errsock < 0)
+		    continue;
+		if (bind (errsock, ea->ai_addr, ea->ai_addrlen) < 0)
+		    err (1, "bind");
+		break;
+	    }
 	    if (errsock < 0)
 		err (1, "socket");
-	    if (bind (errsock, ea->ai_addr, ea->ai_addrlen) < 0)
-		err (1, "bind");
-	    freeaddrinfo (ea);
+	    freeaddrinfo (eai);
 	} else
 	    errsock = -1;
     
