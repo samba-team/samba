@@ -216,7 +216,7 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 	}
 
 	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
@@ -242,7 +242,7 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 	}
 
 	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
@@ -282,7 +282,7 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	}
 
 	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
@@ -301,7 +301,7 @@ uint32 lookup_group_rid(char *group_name, uint32 *rid)
 
 	} while (grp_name != NULL && !strequal(grp_name, group_name));
 
-	return (grp_name != NULL) ? 0 : 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return (grp_name != NULL) ? 0 : NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
@@ -320,7 +320,7 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
 
 	} while (als_name != NULL && !strequal(als_name, alias_name));
 
-	return (als_name != NULL) ? 0 : 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return (als_name != NULL) ? 0 : NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
@@ -342,7 +342,7 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid)
 		return 0x0;
 	}
 
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 #undef OLD_NTDOMAIN

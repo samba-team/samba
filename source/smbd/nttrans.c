@@ -718,7 +718,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
         if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
         }
         return(ERROR(ERRDOS,ERRbadfid));
       }
@@ -848,7 +848,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
 					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
 	
 				oplock_request = 0;
@@ -1140,7 +1140,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
       if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
       }
 
       return(ERROR(ERRDOS,ERRbadfid));
@@ -1250,7 +1250,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
 				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 			}
 	
 			oplock_request = 0;
@@ -1524,7 +1524,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
     free_sec_desc(&psd);
 
-    send_nt_replies(inbuf, outbuf, bufsize, 0xC0000000|NT_STATUS_BUFFER_TOO_SMALL,
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
                     params, 4, *ppdata, 0);
     return -1;
   }

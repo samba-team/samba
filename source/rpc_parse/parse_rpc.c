@@ -843,8 +843,7 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	offset = 0x40;
 
-	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
-	{
+	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		dom_len *= 2;
 		wks_len *= 2;
 		usr_len *= 2;
@@ -872,7 +871,7 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	memcpy(rsp->lm_resp, lm_resp, 24);
 	memcpy(rsp->nt_resp, nt_resp, 24);
 
-	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE)) {
+	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		dos_struni2(rsp->domain, domain, sizeof(rsp->domain));
 		dos_struni2(rsp->user, user, sizeof(rsp->user));
 		dos_struni2(rsp->wks, wks, sizeof(rsp->wks));

@@ -88,7 +88,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		          (*num_entries), pwd->smb_name,
 		          pwd->user_rid, pwd->acct_ctrl));
 
-		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask)) {
+		if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
 			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
 			(*num_entries)++;
 		} else {

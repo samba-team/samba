@@ -520,7 +520,7 @@ BOOL pass_check_smb(char *user, char *domain,
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", user));
 		return(False);
-        }
+	}
 
 	/* Ensure the uid's match */
 	if (smb_pass->smb_userid != pass->pw_uid)
@@ -529,7 +529,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(False);
 	}
 
-	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
+	if (lm_pwd[0] == '\0' && (smb_pass->acct_ctrl & ACB_PWNOTREQ) && lp_null_passwords())
 	{
 		DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
 		return(True);

@@ -124,8 +124,8 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
 		return False;
 	}
 
-	(*first) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_FIRST);
-	(*last) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_LAST );
+	(*first) = ((rhdr->flags & RPC_FLG_FIRST) != 0);
+	(*last) = ((rhdr->flags & RPC_FLG_LAST ) != 0);
 	(*len) = (uint32)rhdr->frag_len - prs_data_size(rdata);
 
 	return (rhdr->pkt_type != RPC_FAULT);
@@ -188,8 +188,8 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 	 */
 	char *reply_data = prs_data_p(rdata) + RPC_HEADER_LEN + RPC_HDR_REQ_LEN;
 
-	BOOL auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
-	BOOL auth_seal = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
+	BOOL auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
+	BOOL auth_seal = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
 
 	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s\n",
 	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal)));
@@ -756,8 +756,8 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	uint32 crc32 = 0;
 	char *pdata_out = NULL;
 
-	auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
-	auth_seal   = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
+	auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
+	auth_seal   = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
 
 	/*
 	 * The auth_len doesn't include the RPC_HDR_AUTH_LEN.
@@ -1168,7 +1168,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 {
 	int fnum;
 
-	if (IS_BITS_SET_ALL(cli->capabilities, CAP_NT_SMBS)) {
+	if (cli->capabilities & CAP_NT_SMBS) {
 		if ((fnum = cli_nt_create(cli, &(pipe_name[5]))) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
 				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));

@@ -78,8 +78,8 @@ static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 BOOL create_next_pdu(pipes_struct *p)
 {
 	RPC_HDR_RESP hdr_resp;
-	BOOL auth_verify = IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_SIGN);
-	BOOL auth_seal   = IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_SEAL);
+	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
+	BOOL auth_seal   = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
@@ -292,7 +292,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * We always negotiate UNICODE.
 	 */
 
-	if (IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_UNICODE)) {
+	if (p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		fstrcpy(user_name, dos_unistrn2((uint16*)ntlmssp_resp->user, ntlmssp_resp->hdr_usr.str_str_len/2));
 		fstrcpy(domain, dos_unistrn2((uint16*)ntlmssp_resp->domain, ntlmssp_resp->hdr_domain.str_str_len/2));
 		fstrcpy(wks, dos_unistrn2((uint16*)ntlmssp_resp->wks, ntlmssp_resp->hdr_wks.str_str_len/2));
@@ -1014,8 +1014,8 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	/*
 	 * We always negotiate the following two bits....
 	 */
-	BOOL auth_verify = IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_SIGN);
-	BOOL auth_seal   = IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_SEAL);
+	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
+	BOOL auth_seal   = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
 	int data_len;
 	int auth_len;
 	uint32 old_offset;

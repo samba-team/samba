@@ -173,10 +173,10 @@ static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_
 	if(!prs_align(ps))
 		return False;
         
-	if(!prs_uint32("level", ps, depth, &(cont->level)))
+	if(!prs_uint32("level", ps, depth, &cont->level))
 		return False;
 	
-	if(!smb_io_doc_info("",&(cont->docinfo), ps, depth))
+	if(!smb_io_doc_info("",&cont->docinfo, ps, depth))
 		return False;
 
 	return True;
@@ -234,7 +234,7 @@ static BOOL smb_io_notify_option_type_data(char *desc, SPOOL_NOTIFY_OPTION_TYPE 
 
 	/* parse the option type data */
 	for(i=0;i<type->count2;i++)
-		if(!prs_uint16("fields",ps,depth,&(type->fields[i])))
+		if(!prs_uint16("fields",ps,depth,&type->fields[i]))
 			return False;
 	return True;
 }

@@ -161,7 +161,8 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
 		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
-		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
+		if (!(nt_err & 0xc0000000))
+			return 0;
 
 		switch (nt_err) {
 		case NT_STATUS_ACCESS_VIOLATION: return EACCES;

@@ -213,17 +213,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	
 	fstrcpy(p->name, pipe_name);
 	
-#if 0
-
-   Comment out until memory leak fixed. JRA.
-
-	/*
-	 * For Luke - attempt to connect to RPC redirect process.
-	 */
-
-	attempt_remote_rpc_connect(p);
-#endif
-
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
 	
@@ -364,7 +353,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 
 static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 {
-	BOOL auth_verify = IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_SIGN);
+	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	size_t data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
 				(auth_verify ? RPC_HDR_AUTH_LEN : 0) - p->hdr.auth_len;
 

@@ -703,24 +703,15 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t)
 **************************************************************/
 void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl)
 {
-	if (pwd != NULL)
-	{
+	if (pwd != NULL) {
 		int i;
 		for (i = 0; i < 16; i++)
-		{
 			slprintf(&p[i*2], 3, "%02X", pwd[i]);
-		}
-	}
-	else
-	{
-		if (IS_BITS_SET_ALL(acct_ctrl, ACB_PWNOTREQ))
-		{
+	} else {
+		if (acct_ctrl & ACB_PWNOTREQ)
 			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
 		else
-		{
 			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
-		}
 	}
 }
 /*************************************************************
