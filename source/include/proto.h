@@ -1023,6 +1023,7 @@ BOOL lp_bind_interfaces_only(void);
 BOOL lp_net_wksta_user_logon(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
+BOOL lp_ole_locking_compat(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1804,7 +1805,7 @@ BOOL check_name(char *name,int cnum);
 void sync_file(int cnum, int fnum);
 void close_file(int fnum, BOOL normal_close);
 void close_directory(int fnum);
-void open_directory(int fnum,int cnum,char *fname, int *action);
+int open_directory(int fnum,int cnum,char *fname, int smb_ofun, int unixmode, int *action);
 BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op);
 int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);
@@ -2043,7 +2044,7 @@ int read_smb_length(int fd,char *inbuf,int timeout);
 BOOL receive_smb(int fd,char *buffer, int timeout);
 BOOL client_receive_smb(int fd,char *buffer, int timeout);
 BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout);
-BOOL push_smb_message(char *buf, int msg_len);
+BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
 BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
                            char *buffer, int buffer_len, 
                            int timeout, BOOL *got_smb);

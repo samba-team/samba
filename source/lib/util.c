@@ -2611,27 +2611,27 @@ BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
  for processing.
 ****************************************************************************/
 
-typedef struct _message_list {
-   struct _message_list *msg_next;
+typedef struct smb_message_list {
+   ubi_slNode msg_next;
    char *msg_buf;
    int msg_len;
 } pending_message_list;
 
-static pending_message_list *smb_msg_head = NULL;
+static ubi_slList smb_oplock_queue = { NULL, (ubi_slNodePtr)&smb_oplock_queue, 0};
 
 /****************************************************************************
- Function to push a linked list of local messages ready
+ Function to push a message onto the tail of a linked list of smb messages ready
  for processing.
 ****************************************************************************/
 
-static BOOL push_local_message(pending_message_list **pml, char *buf, int msg_len)
+static BOOL push_local_message(ubi_slList *list_head, char *buf, int msg_len)
 {
   pending_message_list *msg = (pending_message_list *)
                                malloc(sizeof(pending_message_list));
 
   if(msg == NULL)
   {
-    DEBUG(0,("push_message: malloc fail (1)\n"));
+    DEBUG(0,("push_local_message: malloc fail (1)\n"));
     return False;
   }
 
@@ -2646,20 +2646,19 @@ static BOOL push_local_message(pending_message_list **pml, char *buf, int msg_le
   memcpy(msg->msg_buf, buf, msg_len);
   msg->msg_len = msg_len;
 
-  msg->msg_next = *pml;
-  *pml = msg;
+  ubi_slAddTail( list_head, msg);
 
   return True;
 }
 
 /****************************************************************************
- Function to push a linked list of local smb messages ready
+ Function to push a smb message onto a linked list of local smb messages ready
  for processing.
 ****************************************************************************/
 
-BOOL push_smb_message(char *buf, int msg_len)
+BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-  return push_local_message(&smb_msg_head, buf, msg_len);
+  return push_local_message(&smb_oplock_queue, buf, msg_len);
 }
 
 /****************************************************************************
@@ -2699,11 +2698,10 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
    * If so - copy and return it.
    */
   
-  if(smb_msg_head)
+  if(ubi_slCount(&smb_oplock_queue) != 0)
   {
-    pending_message_list *msg = smb_msg_head;
+    pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
     memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
-    smb_msg_head = msg->msg_next;
   
     /* Free the message we just copied. */
     free((char *)msg->msg_buf);
@@ -4629,35 +4627,47 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
   struct flock lock;
   int ret;
 
-#if 1
-  uint32 mask = 0xC0000000;
+  /*
+   * FIXME.
+   * NB - this code will need re-writing to cope with large (64bit)
+   * lock requests. JRA.
+   */
 
-  /* make sure the count is reasonable, we might kill the lockd otherwise */
-  count &= ~mask;
+  if(lp_ole_locking_compat()) {
+    uint32 mask = 0xC0000000;
 
-  /* the offset is often strange - remove 2 of its bits if either of
-     the top two bits are set. Shift the top ones by two bits. This
-     still allows OLE2 apps to operate, but should stop lockd from
-     dieing */
-  if ((offset & mask) != 0)
-    offset = (offset & ~mask) | ((offset & mask) >> 2);
-#else
-  uint32 mask = ((unsigned)1<<31);
-
-  /* interpret negative counts as large numbers */
-  if (count < 0)
+    /* make sure the count is reasonable, we might kill the lockd otherwise */
     count &= ~mask;
 
-  /* no negative offsets */
-  offset &= ~mask;
+    /* the offset is often strange - remove 2 of its bits if either of
+       the top two bits are set. Shift the top ones by two bits. This
+       still allows OLE2 apps to operate, but should stop lockd from
+       dieing */
+    if ((offset & mask) != 0)
+      offset = (offset & ~mask) | ((offset & mask) >> 2);
+  } else {
+    uint32 mask = ((unsigned)1<<31);
+    int32 s_count = (int32) count; /* Signed count. */
+    int32 s_offset = (int32)offset; /* Signed offset. */
 
-  /* count + offset must be in range */
-  while ((offset < 0 || (offset + count < 0)) && mask)
+    /* interpret negative counts as large numbers */
+    if (s_count < 0)
+      s_count &= ~mask;
+
+    /* no negative offsets */
+    if(s_offset < 0)
+      s_offset &= ~mask;
+
+    /* count + offset must be in range */
+    while ((s_offset < 0 || (s_offset + s_count < 0)) && mask)
     {
-      offset &= ~mask;
+      s_offset &= ~mask;
       mask = mask >> 1;
     }
-#endif
+
+    offset = (uint32)s_offset;
+    count = (uint32)s_count;
+  }
 
 
   DEBUG(8,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));

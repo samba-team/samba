@@ -222,6 +222,7 @@ typedef struct
   BOOL bNetWkstaUserLogon;
   BOOL bUnixPasswdSync;
   BOOL bPasswdChatDebug;
+  BOOL bOleLockingCompat;
 } global;
 
 static global Globals;
@@ -675,6 +676,7 @@ static struct parm_struct parm_table[] =
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
+  {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
 
 #ifdef WITH_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},
@@ -832,6 +834,7 @@ static void init_globals(void)
                                          the code in password.c protects us from this bug. */
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
+  Globals.bOleLockingCompat = True;
 
 #ifdef WITH_LDAP
   /* default values for ldap */
@@ -1120,6 +1123,7 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
 FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
+FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

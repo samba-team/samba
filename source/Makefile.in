@@ -131,7 +131,8 @@ PASSDB_OBJ = passdb.o ldap.o smbpass.o nisppass.o smbpassfile.o
 UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o genrand.o
 UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o membuffer.o namequery.o nmblib.o
 UTILOBJ3 = $(UTILOBJ2) signal.o netmask.o dfree.o
-UTILOBJ = $(UTILOBJ3) credentials.o interface.o replace.o print_svid.o smberr.o pidfile.o slprintf.o $(SSL_OBJ)
+UTILOBJ = $(UTILOBJ3) credentials.o interface.o replace.o print_svid.o smberr.o pidfile.o slprintf.o \
+          $(SSL_OBJ) $(UBIOBJ)
 
 # Client utility object files.
 CLIENTUTIL = clientgen.o nterr.o
@@ -141,7 +142,7 @@ SMBDOBJ1 = $(UTILOBJ) trans2.o nttrans.o message.o dir.o printing.o
 SMBDOBJ2 = ipc.o reply.o mangle.o chgpasswd.o password.o quotas.o uid.o
 SMBDOBJ3 = predict.o pipes.o server.o access.o 
 SMBDOBJ4 = ufc.o connection.o groupname.o
-SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(UBIOBJ) $(RPC_OBJ) $(RPC_SERV_OBJ) \
+SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(RPC_OBJ) $(RPC_SERV_OBJ) \
           $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(VTP_OBJ) $(LOCKOBJ) $(CLIENTUTIL) $(PASSDB_OBJ)
 
 # object code needed for programs that handle the the locking files
@@ -155,7 +156,7 @@ NMBDOBJ4 = nmbd_sendannounce.o nmbd_processlogon.o nmbd_incomingdgrams.o
 NMBDOBJ5 = asyncdns.o nmbd_winsserver.o nmbd_incomingrequests.o nmbd_nameregister.o
 NMBDOBJ6 = nmbd_namerelease.o nmbd_namequery.o nmbd_become_lmb.o nmbd_elections.o nmbd_namelistdb.o
 
-NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3) $(NMBDOBJ4) $(NMBDOBJ5) $(NMBDOBJ6) $(CLIENTUTIL) $(UBIOBJ)
+NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3) $(NMBDOBJ4) $(NMBDOBJ5) $(NMBDOBJ6) $(CLIENTUTIL)
 
 # object files for smbclient
 CLIENT_OBJ = client.o clientutil.o clitar.o getsmbpass.o $(UTILOBJ)
