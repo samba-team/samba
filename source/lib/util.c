@@ -1422,7 +1422,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
          */
 
         if (*cp2 == '\0' && (ra_type != RA_WINNT) && (ra_type != RA_WIN2K) &&
-            (strequal(eext, "*") || str_is_all(eext, '?')))
+            (strequal(cp1, "*") || str_is_all(cp1, '?')))
           break;
 
         cp1 = rp ? rp + 1 : NULL;
