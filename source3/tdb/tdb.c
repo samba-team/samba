@@ -637,7 +637,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		TDB_LOG((tdb, 0, "lock failed in tdb_expand\n"));
-		return 0;
+		return -1;
 	}
 
 	/* must know about any previous expansions by another process */
