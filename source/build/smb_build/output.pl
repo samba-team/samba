@@ -107,6 +107,74 @@ sub _generate_shared_modules($)
 
 sub _generate_libraries($)
 {
+	my $CTX = shift;
+
+	#
+	# loop over all binaries
+	#
+	foreach my $key (sort keys %{$CTX->{DEPEND}{LIBRARIES}}) {
+		my $NAME = $CTX->{INPUT}{LIBRARIES}{$key}{NAME};
+		my @OBJ_LIST = @{$CTX->{INPUT}{LIBRARIES}{$key}{OBJ_FILES}};
+		my $MAJOR_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{MAJOR_VERSION};
+		my $MINOR_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{MINOR_VERSION};
+		my $RELEASE_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{RELEASE_VERSION};
+		#
+		my @DEPEND_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
+
+		my $STATIC_LIBRARY_NAME = $NAME.".a";
+		my @STATIC_LINK_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
+		my @STATIC_LINK_FLAGS = ();
+
+		my $SHARED_LIBRARY_NAME = $NAME.".so";
+		my $SHARED_LIBRARY_SONAME = $SHARED_LIBRARY_NAME.".$MAJOR_VERSION";
+		my $SHARED_LIBRARY_REALNAME = $SHARED_LIBRARY_SONAME.".$MINOR_VERSION.$RELEASE_VERSION";
+		my @SHARED_LINK_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
+		my @SHARED_LINK_FLAGS = ("\@SONAMEFLAG\@$SHARED_LIBRARY_SONAME");
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(LIBRARY_$key\_OBJS)");
+		
+		#
+		# not add to 'make all' for now
+		#
+
+		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{SUBSYSTEMS_LIST}}) {
+			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
+				die("Library[$NAME] depends on unkown Subsystem[$elem]!\n");
+			}
+			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
+			push(@STATIC_LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
+			push(@SHARED_LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
+		}
+
+		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{LIBRARIES_LIST}}) {
+			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
+				die("Library[$NAME] depends on unkown External Library[$elem]!\n");
+			}
+			push(@STATIC_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
+			push(@STATIC_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
+			push(@SHARED_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
+			push(@SHARED_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
+		}
+
+		#
+		# set the lists
+		#
+		$CTX->{OUTPUT}{LIBRARIES}{$key}{NAME} = $NAME;
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{OBJ_LIST}} = @OBJ_LIST;
+		#
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
+
+		$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LIBRARY_NAME} = $STATIC_LIBRARY_NAME;
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LINK_LIST}} = @STATIC_LINK_LIST;
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LINK_FLAGS}} = @STATIC_LINK_FLAGS;
+
+		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_NAME} = $SHARED_LIBRARY_NAME;
+		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_REALNAME} = $SHARED_LIBRARY_REALNAME;
+		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_SONAME} = $SHARED_LIBRARY_SONAME;
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LINK_LIST}} = @SHARED_LINK_LIST;
+		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LINK_FLAGS}} = @SHARED_LINK_FLAGS;
+	}
+
 	return;
 }
 
