@@ -7,6 +7,7 @@ AC_CHECK_PROG(COMPILE_ET, compile_et, [compile_et])
 
 krb_cv_compile_et="no"
 krb_cv_com_err_need_r=""
+krb_cv_compile_et_cross=no
 if test "${COMPILE_ET}" = "compile_et"; then
 
 dnl We have compile_et.  Now let's see if it supports `prefix' and `index'.
@@ -37,10 +38,10 @@ int main(){
 #endif
 return (CONFTEST_CODE2 - CONFTEST_CODE1) != 127;}
   ], [krb_cv_compile_et="yes"],[CPPFLAGS="${save_CPPFLAGS}"],
-  [krb_cv_compile_et="no"] )
+  [krb_cv_compile_et="yes" krb_cv_compile_et_cross=yes] )
 fi
 AC_MSG_RESULT(${krb_cv_compile_et})
-if test "${krb_cv_compile_et}" = "yes"; then
+if test "${krb_cv_compile_et}" = "yes" -a "${krb_cv_compile_et_cross}" = no; then
   AC_MSG_CHECKING(for if com_err needs to have a initialize_error_table_r)
   AC_EGREP_CPP(initialize_error_table_r,[#include "conftest_et.c"],
      [krb_cv_com_err_need_r="initialize_error_table_r(0,0,0,0);"])
@@ -53,7 +54,9 @@ fi
 rm -fr conftest*
 fi
 
-if test "${krb_cv_compile_et}" = "yes"; then
+if test "${krb_cv_compile_et_cross}" = yes ; then
+  krb_cv_com_err="cross"
+elif test "${krb_cv_compile_et}" = "yes"; then
   dnl Since compile_et seems to work, let's check libcom_err
   krb_cv_save_LIBS="${LIBS}"
   LIBS="${LIBS} -lcom_err"
@@ -78,6 +81,12 @@ if test "${krb_cv_com_err}" = "yes"; then
     LIB_com_err_a=""
     LIB_com_err_so=""
     AC_MSG_NOTICE(Using the already-installed com_err)
+elif test "${krb_cv_com_err}" = "cross"; then
+    DIR_com_err="com_err"
+    LIB_com_err="\$(top_builddir)/lib/com_err/libcom_err.la"
+    LIB_com_err_a="\$(top_builddir)/lib/com_err/.libs/libcom_err.a"
+    LIB_com_err_so="\$(top_builddir)/lib/com_err/.libs/libcom_err.so"
+    AC_MSG_NOTICE(Using our own com_err with toolchain compile_et)
 else
     COMPILE_ET="\$(top_builddir)/lib/com_err/compile_et"
     DIR_com_err="com_err"
