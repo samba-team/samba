@@ -69,9 +69,7 @@ void smbw_init(void)
 
 	load_interfaces();
 
-	if (!lp_load(servicesf,True,False,False)) {
-		exit(1);
-	}
+	lp_load(servicesf,True,False,False);
 
 	get_myname(global_myname,NULL);
 
