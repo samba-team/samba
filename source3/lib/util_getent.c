@@ -228,7 +228,7 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 			free_userlist(list_head);
 			return NULL;
 		}
-		entry->unix_name = strdup(grp->gr_mem[i]);
+		entry->unix_name = (char *)strdup(grp->gr_mem[i]);
 		if (entry->unix_name == NULL) {
 			SAFE_FREE(entry);
 			free_userlist(list_head);
