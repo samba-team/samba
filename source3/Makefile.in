@@ -884,11 +884,11 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR) $(KRB5LIBS)
+	$(KRB5LIBS) @SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
 bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
-	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) $(KRB5LIBS)
+	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
