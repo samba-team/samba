@@ -427,11 +427,13 @@ static void bufr_print( void )
 static void format_debug_text( char *msg )
   {
   int i;
+  BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || 
+					!(lp_loaded())));
 
   for( i = 0; msg[i]; i++ )
     {
     /* Indent two spaces at each new line. */
-    if( 0 == format_pos )
+    if(timestamp && 0 == format_pos)
       {
       format_bufr[0] = format_bufr[1] = ' ';
       format_pos = 2;
