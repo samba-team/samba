@@ -6,7 +6,6 @@
 package dump;
 
 use strict;
-use Data::Dumper;
 
 my($res);
 

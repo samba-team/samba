@@ -7,7 +7,6 @@
 package eparser;
 
 use strict;
-use Data::Dumper;
 
 my($res);
 

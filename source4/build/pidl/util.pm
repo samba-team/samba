@@ -4,8 +4,6 @@
 # released under the GNU GPL
 package util;
 
-use Data::Dumper;
-
 #####################################################################
 # load a data structure from a file (as saved with SaveStructure)
 sub LoadStructure($)
@@ -136,9 +134,10 @@ sub ChangeExtension($$)
 # save a data structure into a file
 sub SaveStructure($$)
 {
-    my($filename) = shift;
-    my($v) = shift;
-    FileSave($filename, Dumper($v));
+	require Data::Dumper;
+	my($filename) = shift;
+	my($v) = shift;
+	FileSave($filename, Data::Dumper::Dumper($v));
 }
 
 #####################################################################
@@ -361,11 +360,6 @@ sub is_inline_array($)
 		return 1;
 	}
 	return 0;
-}
-
-sub dump($)
-{
-	print Dumper shift;
 }
 
 1;

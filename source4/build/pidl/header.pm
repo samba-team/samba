@@ -6,7 +6,6 @@
 package IdlHeader;
 
 use strict;
-use Data::Dumper;
 
 my($res);
 my($tab_depth);
