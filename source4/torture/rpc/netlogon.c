@@ -264,6 +264,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 enum ntlm_break {
+	BREAK_BOTH,
 	BREAK_NONE,
 	BREAK_LM,
 	BREAK_NT,
@@ -325,6 +326,14 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		}
 		break;
 	case BREAK_NT:
+		if (nt_response && nt_response->data) {
+			nt_response->data[0]++;
+		}
+		break;
+	case BREAK_BOTH:
+		if (lm_response && lm_response->data) {
+			lm_response->data[0]++;
+		}
 		if (nt_response && nt_response->data) {
 			nt_response->data[0]++;
 		}
@@ -474,7 +483,7 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		if (break_which == NO_NT && !lm_good) {
 			return True;
 		}
-		return break_which == BREAK_NT;
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -678,11 +687,14 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	NTSTATUS nt_status;
 	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(), lp_workgroup());
 
+	uint8_t lm_session_key[8];
 	uint8_t user_session_key[16];
 
+	ZERO_STRUCT(lm_session_key);
 	ZERO_STRUCT(user_session_key);
 	
 	/* TODO - test with various domain cases, and without domain */
@@ -690,7 +702,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 			      samlogon_state->password, &samlogon_state->chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
-			      &ntlmv2_session_key)) {
+			      &lmv2_session_key, &ntlmv2_session_key)) {
 		data_blob_free(&names_blob);
 		return False;
 	}
@@ -701,26 +713,58 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 				   &samlogon_state->chall,
 				   &lmv2_response,
 				   &ntlmv2_response,
-				   NULL, 
+				   lm_session_key, 
 				   user_session_key,
 				   error_string);
 	
 	data_blob_free(&lmv2_response);
 	data_blob_free(&ntlmv2_response);
 
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return break_which == BREAK_NT;
+		return break_which == BREAK_BOTH;
 	}
 
-	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(ntlmv2_session_key.data, user_session_key, 
-		   sizeof(user_session_key)) != 0) {
-		printf("USER (NTLMv2) Session Key does not match expectations!\n");
- 		printf("user_session_key:\n");
-		dump_data(1, (const char *)user_session_key, 16);
- 		printf("expected:\n");
-		dump_data(1, (const char *)ntlmv2_session_key.data, ntlmv2_session_key.length);
-		pass = False;
+	if (break_which == NO_NT) {
+		if (memcmp(lmv2_session_key.data, user_session_key, 
+			   sizeof(user_session_key)) != 0) {
+			printf("USER (NTLMv2) Session Key does not match expectations!\n");
+			printf("user_session_key:\n");
+			dump_data(1, (const char *)user_session_key, 16);
+			printf("expected:\n");
+			dump_data(1, (const char *)lmv2_session_key.data, ntlmv2_session_key.length);
+			pass = False;
+		}
+		if (memcmp(lmv2_session_key.data, lm_session_key, 
+			   sizeof(lm_session_key)) != 0) {
+			printf("LM (NTLMv2) Session Key does not match expectations!\n");
+			printf("lm_session_key:\n");
+			dump_data(1, (const char *)lm_session_key, 8);
+			printf("expected:\n");
+			dump_data(1, (const char *)lmv2_session_key.data, 8);
+			pass = False;
+		}
+	} else {
+		if (memcmp(ntlmv2_session_key.data, user_session_key, 
+			   sizeof(user_session_key)) != 0) {
+			printf("USER (NTLMv2) Session Key does not match expectations!\n");
+			printf("user_session_key:\n");
+			dump_data(1, (const char *)user_session_key, 16);
+			printf("expected:\n");
+			dump_data(1, (const char *)ntlmv2_session_key.data, ntlmv2_session_key.length);
+			pass = False;
+		}
+		if (memcmp(ntlmv2_session_key.data, lm_session_key, 
+			   sizeof(lm_session_key)) != 0) {
+			printf("LM (NTLMv2) Session Key does not match expectations!\n");
+			printf("lm_session_key:\n");
+			dump_data(1, (const char *)lm_session_key, 8);
+			printf("expected:\n");
+			dump_data(1, (const char *)ntlmv2_session_key.data, 8);
+			pass = False;
+		}
 	}
+
         return pass;
 }
 
@@ -766,6 +810,10 @@ static BOOL test_ntlm_ntlm_broken(struct samlogon_state *samlogon_state, char **
 	return test_lm_ntlm_broken(samlogon_state, BREAK_NT, error_string);
 }
 
+static BOOL test_lm_ntlm_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lm_ntlm_broken(samlogon_state, BREAK_BOTH, error_string);
+}
 static BOOL test_ntlmv2_lmv2_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_LM, error_string);
@@ -774,6 +822,11 @@ static BOOL test_ntlmv2_lmv2_broken(struct samlogon_state *samlogon_state, char 
 static BOOL test_ntlmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, error_string);
+}
+
+static BOOL test_ntlmv2_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, error_string);
 }
 
 static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string)
@@ -878,6 +931,7 @@ static const struct ntlm_tests {
 } test_table[] = {
 	{test_lm, "LM", False},
 	{test_lm_ntlm, "LM and NTLM", False},
+	{test_lm_ntlm_both_broken, "LM and NTLM, both broken", False},
 	{test_ntlm, "NTLM", False},
 	{test_ntlm_in_lm, "NTLM in LM", False},
 	{test_ntlm_in_both, "NTLM in both", False},
@@ -886,6 +940,7 @@ static const struct ntlm_tests {
 	{test_lmv2, "LMv2", False},
 	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken", False},
 	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken", False},
+	{test_ntlmv2_both_broken, "NTLMv2 and LMv2, both broken", False},
 	{test_ntlm_lm_broken, "NTLM and LM, LM broken", False},
 	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken", False},
 	{test_plaintext_none_broken, "Plaintext", True},
@@ -958,6 +1013,65 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
+
+/*
+  test an ADS style interactive domain login
+*/
+static BOOL test_InteractiveLogin(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct creds_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogonWithFlags r;
+	struct netr_Authenticator a, ra;
+	struct netr_PasswordInfo pinfo;
+	const char *plain_pass;
+
+	ZERO_STRUCT(r);
+	ZERO_STRUCT(ra);
+
+	creds_client_authenticator(creds, &a);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.workstation = TEST_MACHINE_NAME;
+	r.in.credential = &a;
+	r.in.return_authenticator = &ra;
+	r.in.logon_level = 5;
+	r.in.logon.password = &pinfo;
+	r.in.validation_level = 6;
+	r.in.flags = 0;
+
+	pinfo.identity_info.domain_name.string = lp_parm_string(-1, "torture", "userdomain");
+	pinfo.identity_info.parameter_control = 0;
+	pinfo.identity_info.logon_id_low = 0;
+	pinfo.identity_info.logon_id_high = 0;
+	pinfo.identity_info.account_name.string = lp_parm_string(-1, "torture", "username");
+	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
+
+	plain_pass = lp_parm_string(-1, "torture", "password");
+
+	E_deshash(plain_pass, pinfo.lmpassword.hash);
+	E_md4hash(plain_pass, pinfo.ntpassword.hash);
+
+	creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
+	creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
+
+	printf("Testing netr_LogonSamLogonWithFlags\n");
+
+	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
+		exit(1);
+		return False;
+	}
+
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
+		printf("Credential chaining failed\n");
+		return False;
+	}
+
+	return True;
+}
+
 
 
 /*
@@ -1526,65 +1640,6 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		printf("netr_DsrEnumerateDomainTrusts - %s/%s\n", 
 		       nt_errstr(status), win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
-}
-
-
-/*
-  test an ADS style interactive domain login
-*/
-static BOOL test_InteractiveLogin(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				  struct creds_CredentialState *creds)
-{
-	NTSTATUS status;
-	struct netr_LogonSamLogonWithFlags r;
-	struct netr_Authenticator a, ra;
-	struct netr_PasswordInfo pinfo;
-	const char *plain_pass;
-
-	ZERO_STRUCT(r);
-	ZERO_STRUCT(ra);
-
-	creds_client_authenticator(creds, &a);
-
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = TEST_MACHINE_NAME;
-	r.in.credential = &a;
-	r.in.return_authenticator = &ra;
-	r.in.logon_level = 5;
-	r.in.logon.password = &pinfo;
-	r.in.validation_level = 6;
-	r.in.flags = 0;
-
-	pinfo.identity_info.domain_name.string = lp_parm_string(-1, "torture", "userdomain");
-	pinfo.identity_info.parameter_control = 0;
-	pinfo.identity_info.logon_id_low = 0;
-	pinfo.identity_info.logon_id_high = 0;
-	pinfo.identity_info.account_name.string = lp_parm_string(-1, "torture", "username");
-	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
-
-	plain_pass = lp_parm_string(-1, "torture", "password");
-
-	E_deshash(plain_pass, pinfo.lmpassword.hash);
-	E_md4hash(plain_pass, pinfo.ntpassword.hash);
-
-	creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
-	creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
-
-	printf("Testing netr_LogonSamLogonWithFlags\n");
-
-	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
-		exit(1);
-		return False;
-	}
-
-	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
-		printf("Credential chaining failed\n");
 		return False;
 	}
 
