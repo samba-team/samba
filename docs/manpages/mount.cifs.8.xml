@@ -110,8 +110,8 @@ below) will be read correctly.
 			</para>
 
 <programlisting>
-		username = <replaceable>value</replaceable>
-		password = <replaceable>value</replaceable>
+		username=<replaceable>value</replaceable>
+		password=<replaceable>value</replaceable>
 </programlisting>
 		
 		<para>
