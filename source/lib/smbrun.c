@@ -153,6 +153,11 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 			DEBUG(2,("waitpid(%d) : %s\n",(int)pid,strerror(errno)));
 			return -1;
 		}
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+		if (WIFEXITED(status)) {
+			return WEXITSTATUS(status);
+		}
+#endif
 		return status;
 	}
 	
