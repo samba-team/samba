@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,6 +59,9 @@
 #endif
 #ifndef HAVE_STRUPR
 #define strupr _sl_strupr
+#endif
+#ifndef HAVE_STRDUP
+#define strdup _sl_strdup
 #endif
 
 #endif /* __roken_rename_h__ */
