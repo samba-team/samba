@@ -918,7 +918,19 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		goto next_jobnum;
 	}
 	pjob.fd = sys_open(pjob.filename,O_WRONLY|O_CREAT|O_EXCL,0600);
-	if (pjob.fd == -1) goto fail;
+
+	if (pjob.fd == -1) {
+		if (errno == EACCES) {
+			/* Common setup error, force a report. */
+			DEBUG(0, ("print_job_start: insufficient permissions \
+to open spool file %s.\n", pjob.filename));
+		} else {
+			/* Normal case, report at level 3 and above. */
+			DEBUG(3, ("print_job_start: can't open spool file %s,\n", pjob.filename));
+			DEBUGADD(3, ("errno = %d (%s).\n", errno, strerror(errno)));
+		}
+		goto fail;
+	}
 
 	print_job_store(jobid, &pjob);
 
