@@ -3,9 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -519,7 +518,7 @@ static void api_samr_lookup_names( rpcsrv_struct *p, prs_struct *data, prs_struc
 	SAMR_R_LOOKUP_NAMES r_u;
 
 	uint32 rid [MAX_SAM_ENTRIES];
-	uint8  type[MAX_SAM_ENTRIES];
+	uint32 type[MAX_SAM_ENTRIES];
 	uint32 num_rids  = 0;
 	uint32 num_types = 0;
 
@@ -575,90 +574,21 @@ static void api_samr_chgpasswd_user( rpcsrv_struct *p, prs_struct *data, prs_str
 
 
 /*******************************************************************
- samr_reply_unknown_38
- ********************************************************************/
-static void samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_UNKNOWN_38 r_u;
-
-	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
-
-	make_samr_r_unknown_38(&r_u);
-
-	/* store the response in the SMB stream */
-	samr_io_r_unknown_38("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_samr_unknown_38
  ********************************************************************/
 static void api_samr_unknown_38( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_UNKNOWN_38 q_u;
+	SAMR_R_UNKNOWN_38 r_u;
+
 	samr_io_q_unknown_38("", &q_u, data, 0);
-	samr_reply_unknown_38(&q_u, rdata);
+	r_u.status = _samr_unknown_38(&q_u.uni_srv_name,
+	                    &r_u.unk_0,
+	                    &r_u.unk_1,
+	                    &r_u.unk_2);
+	samr_io_r_unknown_38("", &r_u, rdata, 0);
 }
 
-
-/*******************************************************************
- samr_reply_lookup_rids
- ********************************************************************/
-static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
-				prs_struct *rdata)
-{
-	fstring group_names[MAX_SAM_ENTRIES];
-	uint8   types[MAX_SAM_ENTRIES];
-	uint32 status     = 0;
-	int num_rids = q_u->num_rids1;
-	DOM_SID pol_sid;
-
-	SAMR_R_LOOKUP_RIDS r_u;
-	ZERO_STRUCT(r_u);
-
-	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &pol_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	if (status == 0x0)
-	{
-		int i;
-		if (num_rids > MAX_SAM_ENTRIES)
-		{
-			num_rids = MAX_SAM_ENTRIES;
-			DEBUG(5,("samr_lookup_rids: truncating entries to %d\n", num_rids));
-		}
-
-		for (i = 0; i < num_rids && status == 0; i++)
-		{
-			DOM_SID sid;
-			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, q_u->rid[i]);
-			status = lookup_sid(&sid, group_names[i], &types[i]);
-			if (status != 0)
-				types[i] = SID_NAME_UNKNOWN;
-		}
-	}
-
-	make_samr_r_lookup_rids(&r_u, num_rids, group_names, types, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_rids("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
-
-}
 
 /*******************************************************************
  api_samr_lookup_rids
@@ -666,10 +596,24 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 static void api_samr_lookup_rids( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_RIDS q_u;
+	SAMR_R_LOOKUP_RIDS r_u;
+	uint32 status = 0;
+	UNIHDR *hdr_names = NULL;
+	UNISTR2 *uni_names = NULL;
+	uint32 *types = NULL;
+	uint32 num_names = 0;
+
+	ZERO_STRUCT(r_u);
 	ZERO_STRUCT(q_u);
+
 	samr_io_q_lookup_rids("", &q_u, data, 0);
-	samr_reply_lookup_rids(&q_u, rdata);
+	status = _samr_lookup_rids(&q_u.pol, q_u.num_rids1,
+		                    q_u.flags, q_u.rid,
+	                            &num_names, 
+	                            &hdr_names, &uni_names, &types);
 	samr_free_q_lookup_rids(&q_u);
+	make_samr_r_lookup_rids(&r_u, num_names, hdr_names, uni_names, types);
+	samr_io_r_lookup_rids("", &r_u, rdata, 0);
 }
 
 

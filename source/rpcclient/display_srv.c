@@ -39,9 +39,9 @@ struct field_info sid_name_info[] =
 /****************************************************************************
 convert a SID_NAME_USE to a string 
 ****************************************************************************/
-char *get_sid_name_use_str(uint8 sid_name_use)
+char *get_sid_name_use_str(uint32 sid_name_use)
 {
-	return enum_field_to_str((uint32)sid_name_use, sid_name_info, True);
+	return enum_field_to_str(sid_name_use, sid_name_info, True);
 }
 
 /****************************************************************************

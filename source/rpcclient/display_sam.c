@@ -27,7 +27,7 @@
  ****************************************************************************/
 void display_alias_members(FILE *out_hnd, enum action_type action, 
 				uint32 num_mem, char *const *const sid_mem, 
-				uint8 *const type)
+				uint32 *const type)
 {
 	switch (action)
 	{

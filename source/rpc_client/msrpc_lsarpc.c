@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 
 uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
-			uint32 *num_sids, DOM_SID **sids, uint8 **types)
+			uint32 *num_sids, DOM_SID **sids, uint32 **types)
 {
 	BOOL res1 = True;
 	BOOL res2 = True;
@@ -82,13 +82,13 @@ uint32 lookup_lsa_names(const char *srv_name,
 
 
 uint32 lookup_lsa_name(const char *domain,
-				char *name, DOM_SID *sid, uint8 *type)
+				char *name, DOM_SID *sid, uint32 *type)
 {
 	fstring srv_name;
 	BOOL res3 = True;
 	BOOL res4 = True;
 	char **names = NULL;
-	uint8 *types = NULL;
+	uint32 *types = NULL;
 	int num_names = 0;
 	DOM_SID *sids = NULL; 
 	int num_sids = 0;
@@ -138,7 +138,7 @@ uint32 lookup_lsa_name(const char *domain,
 lookup sids
 ****************************************************************************/
 uint32 lookup_lsa_sid(const char *domain,
-				DOM_SID *sid, char *name, uint8 *type)
+				DOM_SID *sid, char *name, uint32 *type)
 {
 	POLICY_HND lsa_pol;
 	fstring srv_name;
@@ -146,7 +146,7 @@ uint32 lookup_lsa_sid(const char *domain,
 	uint32 num_sids = 0;
 	char **names = NULL;
 	int num_names = 0;
-	uint8 *types = NULL;
+	uint32 *types = NULL;
 
 	BOOL res = True;
 	BOOL res1 = True;

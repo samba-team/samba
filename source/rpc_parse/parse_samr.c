@@ -3660,15 +3660,18 @@ void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u)
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
-		uint32 num_names, fstring *name, uint8 *type,
-		uint32 status)
+		uint32 num_names, UNIHDR *hdr_name, UNISTR2 *uni_name,
+		uint32 *type)
 {
-	uint32 i;
-	if (r_u == NULL || name == NULL || type == NULL) return False;
+	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_lookup_rids\n"));
 
-	if (status == 0x0)
+	r_u->hdr_name = NULL;
+	r_u->uni_name = NULL;
+	r_u->type = NULL;
+
+	if (num_names != 0)
 	{
 		r_u->num_names1 = num_names;
 		r_u->ptr_names  = 1;
@@ -3678,37 +3681,9 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		r_u->ptr_types  = 1;
 		r_u->num_types2 = num_names;
 
-		if (num_names != 0)
-		{
-			r_u->hdr_name = (UNIHDR*)malloc(num_names * sizeof(r_u->hdr_name[0]));
-			if (r_u->hdr_name == NULL)
-			{
-				samr_free_r_lookup_rids(r_u);
-				return False;
-			}
-			r_u->uni_name = (UNISTR2*)malloc(num_names * sizeof(r_u->uni_name[0]));
-			if (r_u->uni_name == NULL)
-			{
-				samr_free_r_lookup_rids(r_u);
-				return False;
-			}
-			r_u->type = (uint32*)malloc(r_u->num_types2 * sizeof(r_u->type[0]));
-			if (r_u->type == NULL)
-			{
-				samr_free_r_lookup_rids(r_u);
-				return False;
-			}
-		}
-
-		for (i = 0; i < num_names; i++)
-		{
-			int len = name[i] != NULL ? strlen(name[i]) : 0;
-			DEBUG(10,("name[%d]:%s\ttype:%d\n",
-			           i, name[i], type[i]));
-			make_uni_hdr(&(r_u->hdr_name[i]), len);
-			make_unistr2(&(r_u->uni_name[i]), name[i], len);
-			r_u->type[i] = type[i];
-		}
+		r_u->hdr_name = hdr_name;
+		r_u->uni_name = uni_name;
+		r_u->type = type;
 	}
 	else
 	{
@@ -3720,8 +3695,6 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		r_u->ptr_types  = 0;
 		r_u->num_types2 = num_names;
 	}
-
-	r_u->status = status;
 
 	return True;
 }
@@ -4341,16 +4314,17 @@ makes a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 			      uint32 num_rids,
-			      const uint32 *rid, const uint8 *type,
+			      const uint32 *rid, const uint32 *type,
 			      uint32 status)
 {
-	uint32 i;
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_lookup_names\n"));
 
 	if ((status == 0x0) && (num_rids != 0))
 	{
+		uint32 i;
+
 		r_u->num_types1 = num_rids;
 		r_u->ptr_types  = 1;
 		r_u->num_types2 = num_rids;
@@ -6078,22 +6052,6 @@ BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, i
 	return True;
 }
 
-/*******************************************************************
-makes a SAMR_R_UNKNOWN_38 structure.
-********************************************************************/
-BOOL make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("make_r_unknown_38\n"));
-
-	r_u->unk_0 = 0;
-	r_u->unk_1 = 0;
-	r_u->unk_2 = 0;
-	r_u->status = 0;
-
-	return True;
-}
 
 /*******************************************************************
 reads or writes a structure.

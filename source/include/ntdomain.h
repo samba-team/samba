@@ -235,7 +235,7 @@ struct acct_info
 #define ALIAS_MEM_FN(fn)\
 	void(*fn)(const char*, const DOM_SID*, uint32, const char*,\
 	          uint32, DOM_SID *const *const, char *const *const,\
-	          uint8*const)
+	          uint32*const)
 
 #define GROUP_FN(fn)\
 	void (*fn)(const char*, const DOM_SID*, uint32, const char*)

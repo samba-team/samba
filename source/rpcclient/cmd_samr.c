@@ -75,7 +75,7 @@ static void sam_display_alias_members(const char *domain, const DOM_SID *sid,
 				uint32 num_names,
 				DOM_SID *const *const sids,
 				char *const *const name,
-				uint8 *const type)
+				uint32 *const type)
 {
 	display_alias_members(out_hnd, ACTION_HEADER   , num_names, name, type);
 	display_alias_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);

@@ -124,7 +124,7 @@ static uint32 pwdb_uid_to_user_rid(uint32 uid)
  converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-static BOOL pwdb_sam_sid_to_unixid(DOM_SID *sid, uint8 type, uint32 *id)
+static BOOL pwdb_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id)
 {
 	DOM_SID tmp_sid;
 	uint32 rid;
@@ -159,7 +159,7 @@ static BOOL pwdb_sam_sid_to_unixid(DOM_SID *sid, uint8 type, uint32 *id)
  converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-static BOOL pwdb_unixid_to_sam_sid(uint32 id, uint8 type, DOM_SID *sid)
+static BOOL pwdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid)
 {
 	sid_copy(sid, &global_sam_sid);
 	switch (type)
@@ -888,7 +888,7 @@ BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP *grp)
 /************************************************************************
  Routine to look up a remote nt name
 *************************************************************************/
-static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
+static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint32 *type)
 {
 	struct cli_state cli;
 	POLICY_HND lsa_pol;
@@ -899,7 +899,7 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	BOOL res4 = True;
 	uint32 num_sids;
 	DOM_SID *sids;
-	uint8 *types;
+	uint32 *types;
 	char *names[1];
 
 	usr_creds = NULL;
@@ -953,7 +953,7 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 /************************************************************************
  Routine to look up a remote nt name
 *************************************************************************/
-static BOOL get_sid_and_type(const char *fullntname, uint8 expected_type,
+static BOOL get_sid_and_type(const char *fullntname, uint32 expected_type,
 				DOM_NAME_MAP *gmep)
 {
 	/*

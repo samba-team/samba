@@ -227,7 +227,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 		char *find_name = NULL;
 		fstring dom_name;
 		fstring full_name;
-		uint8 sid_name_use = SID_NAME_UNKNOWN;
+		uint32 sid_name_use = SID_NAME_UNKNOWN;
 
 		unistr2_to_ascii(full_name, &name[i], sizeof(full_name)-1);
 		find_name = strdup(full_name);
@@ -360,7 +360,7 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 		int dom_idx = -1;
 		fstring name;
 		fstring dom_name;
-		uint8 sid_name_use = 0;
+		uint32 sid_name_use = 0;
 		
 		memset(dom_name, 0, sizeof(dom_name));
 		memset(name    , 0, sizeof(name    ));

@@ -647,11 +647,11 @@ BOOL close_policy_hnd(struct policy_cache *cache,
 /*The following definitions come from  lib/util_pwdb.c  */
 
 uint32 lookup_wk_group_name(const char *group_name, const char *domain,
-				DOM_SID *sid, uint8 *type);
+				DOM_SID *sid, uint32 *type);
 uint32 lookup_wk_user_name(const char *user_name, const char *domain,
-				DOM_SID *sid, uint8 *type);
+				DOM_SID *sid, uint32 *type);
 uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
-				DOM_SID *sid, uint8 *type);
+				DOM_SID *sid, uint32 *type);
 char *lookup_wk_alias_rid(uint32 rid);
 char *lookup_wk_user_rid(uint32 rid);
 char *lookup_wk_group_rid(uint32 rid);
@@ -2047,13 +2047,13 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 			int num_names,
 			char **names,
 			DOM_SID **sids,
-			uint8 **types,
+			uint32 **types,
 			int *num_sids);
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
-			uint8 **types,
+			uint32 **types,
 			int *num_names);
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
@@ -2379,11 +2379,11 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
-			uint32 *num_sids, DOM_SID **sids, uint8 **types);
+			uint32 *num_sids, DOM_SID **sids, uint32 **types);
 uint32 lookup_lsa_name(const char *domain,
-				char *name, DOM_SID *sid, uint8 *type);
+				char *name, DOM_SID *sid, uint32 *type);
 uint32 lookup_lsa_sid(const char *domain,
-				DOM_SID *sid, char *name, uint8 *type);
+				DOM_SID *sid, char *name, uint32 *type);
 BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
@@ -2403,9 +2403,9 @@ uint32 check_domain_security(char *orig_user, char *domain,
 uint32 lookup_sam_domainname(const char *srv_name,
 			     const char *domain, DOM_SID *sid);
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
-				char *name, uint32 *rid, uint8 *type);
+				char *name, uint32 *rid, uint32 *type);
 uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
-				uint32 rid, char *name, uint8 *type);
+				uint32 rid, char *name, uint32 *type);
 BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
@@ -2462,7 +2462,7 @@ BOOL sam_query_aliasmem(const char *srv_name,
 				uint32 *num_names,
 				DOM_SID ***sids,
 				char ***name,
-				uint8 **type);
+				uint32 **type);
 BOOL req_aliasmem_info(const char* srv_name,
 				const POLICY_HND *pol_dom,
 				const char *domain,
@@ -3202,8 +3202,6 @@ BOOL make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
 BOOL samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
-		uint32 status);
 BOOL samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
 				POLICY_HND *pol,
@@ -3297,8 +3295,8 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth);
 void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u);
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
-		uint32 num_names, fstring *name, uint8 *type,
-		uint32 status);
+		uint32 num_names, UNIHDR *hdr_name, UNISTR2 *uni_name,
+		uint32 *type);
 BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
 void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u);
 BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u, POLICY_HND *hnd);
@@ -3336,7 +3334,7 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_l);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 			      uint32 num_rids,
-			      const uint32 *rid, const uint8 *type,
+			      const uint32 *rid, const uint32 *type,
 			      uint32 status);
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
 void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l);
@@ -3492,7 +3490,6 @@ BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *p
 BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name);
 BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u);
 BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
 BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512]);
 BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
@@ -3847,10 +3844,10 @@ BOOL api_brs_rpc(rpcsrv_struct *p);
 
 int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
 int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid);
-uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type);
+uint32 lookup_sid(DOM_SID *sid, char *name, uint32  *type);
 uint32 lookup_added_user_rids(char *nt_name,
 		uint32 *usr_rid, uint32 *grp_rid);
-uint32 lookup_name(const char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
@@ -4077,7 +4074,7 @@ void display_reg_key_info(FILE *out_hnd, enum action_type action,
 
 void display_alias_members(FILE *out_hnd, enum action_type action, 
 				uint32 num_mem, char *const *const sid_mem, 
-				uint8 *const type);
+				uint32 *const type);
 void display_alias_rid_info(FILE *out_hnd, enum action_type action, 
 				DOM_SID *const sid, 
 				uint32 num_rids, uint32 *const rid);
@@ -4142,7 +4139,7 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/display_srv.c  */
 
-char *get_sid_name_use_str(uint8 sid_name_use);
+char *get_sid_name_use_str(uint32 sid_name_use);
 char *get_file_mode_str(uint32 share_mode);
 char *get_file_oplock_str(uint32 op_type);
 char *get_share_type_str(uint32 type);
@@ -4298,17 +4295,20 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 			uint32 *num_rids1,
 			uint32 rid[MAX_SAM_ENTRIES],
 			uint32 *num_types1,
-			uint8 type[MAX_SAM_ENTRIES] );
+			uint32 type[MAX_SAM_ENTRIES]);
 uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const UNISTR2 *uni_user_name,
 				const char nt_newpass[516],
 				const uchar nt_oldhash[16],
 				const char lm_newpass[516],
 				const uchar lm_oldhash[16]);
-uint32 _samr_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
-				prs_struct *rdata);
-uint32 _samr_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
-				prs_struct *rdata);
+uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
+				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
+uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
+					uint32 num_rids, const uint32 *rids,
+					uint32 *num_names,
+					UNIHDR **hdr_name, UNISTR2** uni_name,
+					uint32 **types);
 uint32 _samr_open_user(SAMR_Q_OPEN_USER *q_u,
 				prs_struct *rdata,
 				int status);

@@ -384,7 +384,7 @@ typedef struct group_name_info
 	char *unix_name;
 
 	DOM_SID sid;
-	uint8 type;
+	uint32 type;
 	uint32 unix_id;
 
 } DOM_NAME_MAP;

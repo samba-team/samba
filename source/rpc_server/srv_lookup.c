@@ -73,7 +73,7 @@ int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids)
 
 		uint32 rid;
 		DOM_SID sid;
-		uint8  type;
+		uint32   type;
 
 		uint8  attr  = mem[count].attr;
 		char   *name = mem[count].name;
@@ -140,7 +140,7 @@ int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid)
 /*******************************************************************
  lookup_wk_group_sid
  ********************************************************************/
-static uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
+static uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint32  *type)
 {
 	uint32 rid;
 	DOM_SID tmp;
@@ -172,7 +172,7 @@ static uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
 /*******************************************************************
  lookup_group_sid
  ********************************************************************/
-static uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
+static uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint32  *type)
 {
 	pstring sid_str;
 	uint32 rid;
@@ -209,7 +209,7 @@ static uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
 /*******************************************************************
  lookup_wk_alias_sid
  ********************************************************************/
-static uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
+static uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint32  *type)
 {
 	uint32 rid;
 	DOM_SID tmp;
@@ -241,7 +241,7 @@ static uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
 /*******************************************************************
  lookup_alias_sid
  ********************************************************************/
-static uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
+static uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint32  *type)
 {
 	pstring sid_str;
 	uint32 rid;
@@ -278,7 +278,7 @@ static uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
 /*******************************************************************
  lookup well-known user name
  ********************************************************************/
-static uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
+static uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint32  *type)
 {
 	uint32 rid;
 	DOM_SID tmp;
@@ -310,7 +310,7 @@ static uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
 /*******************************************************************
  lookup user name
  ********************************************************************/
-static uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
+static uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint32  *type)
 {
 	struct sam_disp_info *disp_info;
 	uint32 rid;
@@ -346,7 +346,7 @@ static uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
 /*******************************************************************
  lookup_builtin_sid
  ********************************************************************/
-static uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type)
+static uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint32  *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -360,7 +360,7 @@ static uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type)
 /*******************************************************************
  lookup_added_sid - names that have been added to the SAM database by admins.
  ********************************************************************/
-static uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type)
+static uint32 lookup_added_sid(DOM_SID *sid, char *name, uint32  *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -375,7 +375,7 @@ static uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type)
 /*******************************************************************
  lookup_sid
  ********************************************************************/
-uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type)
+uint32 lookup_sid(DOM_SID *sid, char *name, uint32  *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -391,7 +391,7 @@ uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type)
  ********************************************************************/
 static uint32 lookup_added_group_name(const char *grp_name,
 				      const char *domain,
-				      DOM_SID *sid, uint8 *type)
+				      DOM_SID *sid, uint32  *type)
 {
 	DOMAIN_GRP *grp = NULL;
 
@@ -424,7 +424,7 @@ static uint32 lookup_added_group_name(const char *grp_name,
  ********************************************************************/
 static uint32 lookup_added_alias_name(const char *als_name,
 				      const char *domain,
-				      DOM_SID *sid, uint8 *type)
+				      DOM_SID *sid, uint32  *type)
 {
 	LOCAL_GRP *als = NULL;
 
@@ -481,7 +481,7 @@ uint32 lookup_added_user_rids(char *nt_name,
  lookup_added_user_name
  ********************************************************************/
 static uint32 lookup_added_user_name(const char *nt_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32  *type)
 {
 	struct sam_passwd *sam_pass;
 
@@ -513,7 +513,7 @@ static uint32 lookup_added_user_name(const char *nt_name, const char *domain,
  lookup_grp_name
  ********************************************************************/
 static uint32 lookup_grp_name(const char *name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32  *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -529,7 +529,7 @@ static uint32 lookup_grp_name(const char *name, const char *domain,
  lookup_user_name
  ********************************************************************/
 static uint32 lookup_user_name(const char *name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32 *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -542,7 +542,7 @@ static uint32 lookup_user_name(const char *name, const char *domain,
 /*******************************************************************
  lookup_name
  ********************************************************************/
-uint32 lookup_name(const char *name, DOM_SID *sid, uint8 *type)
+uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	fstring domain;

@@ -232,7 +232,7 @@ static BOOL load_wk_rid_map(void)
  lookup_wk_group_name
  ********************************************************************/
 uint32 lookup_wk_group_name(const char *group_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32 *type)
 {
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
@@ -276,7 +276,7 @@ uint32 lookup_wk_group_name(const char *group_name, const char *domain,
  lookup_wk_user_name
  ********************************************************************/
 uint32 lookup_wk_user_name(const char *user_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32 *type)
 {
 	char *usr_name;
 	int i = -1; /* start do loop at -1 */
@@ -317,7 +317,7 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
  lookup_builtin_alias_name
  ********************************************************************/
 uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+				DOM_SID *sid, uint32 *type)
 {
 	char *als_name;
 	int i = 0;

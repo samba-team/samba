@@ -62,7 +62,7 @@ uint32 lookup_sam_domainname(const char *srv_name,
 lookup in a sam database
 ****************************************************************************/
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
-				char *name, uint32 *rid, uint8 *type)
+				char *name, uint32 *rid, uint32 *type)
 {
 	fstring srv_name;
 	BOOL res = True;
@@ -105,7 +105,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	}
 
 	*rid = rids[0];
-	*type = (uint8)(types[0]);
+	*type = (uint32)(types[0]);
 
 	free(rids);
 	free(types);
@@ -117,7 +117,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 lookup in a sam database
 ****************************************************************************/
 uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
-				uint32 rid, char *name, uint8 *type)
+				uint32 rid, char *name, uint32 *type)
 {
 	fstring srv_name;
 	int i;
@@ -632,7 +632,7 @@ BOOL sam_query_aliasmem(const char *srv_name,
 				uint32 *num_names,
 				DOM_SID ***sids,
 				char ***name,
-				uint8 **type)
+				uint32 **type)
 {
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -703,7 +703,7 @@ BOOL req_aliasmem_info(const char* srv_name,
 {
 	uint32 num_names = 0;
 	char **name = NULL;
-	uint8 *type = NULL;
+	uint32 *type = NULL;
 	DOM_SID **sids = NULL;
 
 	if (sam_query_aliasmem( srv_name, pol_dom, alias_rid,

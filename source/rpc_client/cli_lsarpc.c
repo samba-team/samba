@@ -475,7 +475,7 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 			int num_names,
 			char **names,
 			DOM_SID **sids,
-			uint8 **types,
+			uint32 **types,
 			int *num_sids)
 {
 	prs_struct rbuf;
@@ -552,7 +552,7 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 
 		if (types != NULL && valid_response && r_l.num_entries != 0)
 		{
-			(*types) = (uint8*)malloc((*num_sids) * sizeof(uint8));
+			(*types) = (uint32*)malloc((*num_sids) * sizeof(uint32));
 		}
 
 		if (sids != NULL && valid_response && r_l.num_entries != 0)
@@ -606,7 +606,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
-			uint8 **types,
+			uint32 **types,
 			int *num_names)
 {
 	prs_struct rbuf;
@@ -695,7 +695,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 
 		if (types != NULL && valid_response && (*num_names) != 0)
 		{
-			(*types) = (uint8*)malloc((*num_names) * sizeof(uint8));
+			(*types) = (uint32*)malloc((*num_names) * sizeof(uint32));
 		}
 
 		if (names != NULL && valid_response && (*num_names) != 0)

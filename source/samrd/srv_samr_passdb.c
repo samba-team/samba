@@ -58,9 +58,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1417,7 +1416,7 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 			uint32 *num_rids1,
 			uint32 rid[MAX_SAM_ENTRIES],
 			uint32 *num_types1,
-			uint8 type[MAX_SAM_ENTRIES] )
+			uint32 type[MAX_SAM_ENTRIES])
 {
 	uint32 status     = 0;
 	int i;
@@ -1441,8 +1440,6 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
 	}
-
-	SMB_ASSERT_ARRAY(uni_name, num_rids);
 
 	for (i = 0; i < num_rids; i++)
 	{
@@ -1510,37 +1507,73 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 	return status;
 }
 
-#if 0
 
 /*******************************************************************
  samr_reply_unknown_38
  ********************************************************************/
-uint32 _samr_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
-				prs_struct *rdata)
+uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
+				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2)
 {
-	SAMR_R_UNKNOWN_38 r_u;
+	/* absolutely no idea what to do, here */
+	*unk_0 = 0;
+	*unk_1 = 0;
+	*unk_2 = 0;
 
-	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
+	return 0x0;
+}
 
-	make_samr_r_unknown_38(&r_u);
+/*******************************************************************
+makes a SAMR_R_LOOKUP_RIDS structure.
+********************************************************************/
+static BOOL make_samr_lookup_rids( uint32 num_names, const fstring *name, 
+				UNIHDR **hdr_name, UNISTR2** uni_name)
+{
+	uint32 i;
+	if (name == NULL) return False;
 
-	/* store the response in the SMB stream */
-	samr_io_r_unknown_38("", &r_u, rdata, 0);
+	*uni_name = NULL;
+	*hdr_name = NULL;
 
-	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
+	if (num_names != 0)
+	{
+		(*hdr_name) = (UNIHDR*)malloc(num_names * sizeof((*hdr_name)[0]));
+		if ((*hdr_name) == NULL)
+		{
+			return False;
+		}
+		(*uni_name) = (UNISTR2*)malloc(num_names * sizeof((*uni_name)[0]));
+		if ((*uni_name) == NULL)
+		{
+			free(*uni_name);
+			*uni_name = NULL;
+			return False;
+		}
+	}
+
+	for (i = 0; i < num_names; i++)
+	{
+		int len = name[i] != NULL ? strlen(name[i]) : 0;
+		DEBUG(10,("name[%d]:%s\n", i, name[i]));
+		make_uni_hdr(&((*hdr_name)[i]), len);
+		make_unistr2(&((*uni_name)[i]), name[i], len);
+	}
+
+	return True;
 }
 
 /*******************************************************************
  samr_reply_lookup_rids
  ********************************************************************/
-uint32 _samr_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
-				prs_struct *rdata)
+uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
+					uint32 num_rids, const uint32 *rids,
+					uint32 *num_names,
+					UNIHDR **hdr_name, UNISTR2** uni_name,
+					uint32 **types)
 {
-	fstring group_names[MAX_SAM_ENTRIES];
-	uint8   types[MAX_SAM_ENTRIES];
+	fstring grp_names[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
-	int num_rids = num_rids1;
 	DOM_SID pol_sid;
+	BOOL found_one = False;
 
 	SAMR_R_LOOKUP_RIDS r_u;
 	ZERO_STRUCT(r_u);
@@ -1548,45 +1581,62 @@ uint32 _samr_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(pol)) == -1))
+	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &pol, &pol_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	if (status == 0x0)
 	{
-		int i;
-		if (num_rids > MAX_SAM_ENTRIES)
-		{
-			num_rids = MAX_SAM_ENTRIES;
-			DEBUG(5,("samr_lookup_rids: truncating entries to %d\n", num_rids));
-		}
+		(*types) = malloc(num_rids * sizeof(**types));
 
-		for (i = 0; i < num_rids && status == 0; i++)
+		if ((*types) == NULL)
 		{
-			DOM_SID sid;
-			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, rid[i]);
-			status = lookup_sid(&sid, group_names[i], &types[i]);
-			if (status != 0)
-				types[i] = SID_NAME_UNKNOWN;
+			status = 0xC0000000 | NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	make_samr_r_lookup_rids(&r_u, num_rids, group_names, types, status);
+	if (status == 0x0)
+	{
+		int i;
 
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_rids("", &r_u, rdata, 0);
+		for (i = 0; i < num_rids; i++)
+		{
+			uint32 status1;
+			DOM_SID sid;
+			sid_copy(&sid, &pol_sid);
+			sid_append_rid(&sid, rids[i]);
+			status1 = lookup_sid(&sid, grp_names[i], &(*types)[i]);
+			if (status1 == 0)
+			{
+				found_one = True;
+			}
+			else
+			{
+				(*types)[i] = SID_NAME_UNKNOWN;
+			}
+		}
+	}
 
-	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
+	if (status == 0x0 && !found_one)
+	{
+		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	else
+	{
+		(*num_names) = num_rids;
+		make_samr_lookup_rids(num_rids, grp_names, hdr_name, uni_name);
+	}
 
+	return status;
 }
 
+#if 0
 
 /*******************************************************************
  samr_reply_open_user
