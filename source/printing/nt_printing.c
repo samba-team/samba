@@ -2718,14 +2718,13 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	
 	/* retreive the guid and store it locally */
 	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
-		ads_memfree(ads, prt_dn);
 		ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
 		store_printer_guid(printer->info_2, guid);
 		win_rc = mod_a_printer(*printer, 2);
 	} 
 
-	safe_free(prt_dn);
+	SAFE_FREE(prt_dn);
 	ads_destroy(&ads);
 
 	return WERR_OK;
