@@ -29,6 +29,7 @@ extern "C" {
 /* flags to tdb_store() */
 #define TDB_REPLACE 1
 #define TDB_INSERT 2
+#define TDB_MODIFY 3
 
 /* flags for tdb_open() */
 #define TDB_DEFAULT 0 /* just a readability place holder */
