@@ -1110,6 +1110,19 @@ char *strchr_m(const char *s, char c)
 	pstring s2;
 	smb_ucs2_t *p;
 
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		if (*s == c)
+			return s;
+	}
+
+	if (!*s)
+		return NULL;
+
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
 	if (!p)
