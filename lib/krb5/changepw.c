@@ -192,8 +192,10 @@ setpw_send_request (krb5_context context,
 	
     ASN1_MALLOC_ENCODE(ChangePasswdDataMS, pwd_data.data, pwd_data.length,
 		       &chpw, &len, ret);
-    if (ret)
+    if (ret) {
+	krb5_data_free (&ap_req_data);
 	return ret;
+    }
 
     if(pwd_data.length != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
