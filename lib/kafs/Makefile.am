@@ -108,6 +108,3 @@ strlcpy.c:
 
 strsep.c:
 	$(LN_S) $(srcdir)/../roken/strsep.c .
-
-strupr.c:
-	$(LN_S) $(srcdir)/../roken/strupr.c .
