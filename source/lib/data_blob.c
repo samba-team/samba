@@ -51,17 +51,12 @@ DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 /*******************************************************************
  construct a data blob, using supplied TALLOC_CTX
 *******************************************************************/
-DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
+DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t length, const char *name)
 {
-	DATA_BLOB ret = data_blob(p, length);
+	DATA_BLOB ret = data_blob_named(p, length, name);
 
 	if (ret.data) {
-		ret.data = talloc_steal(mem_ctx, ret.data);
-	} else {
-		/* this ensures the blob has the context attached, so a zero length call
-		   to data_blob_talloc followed by a realloc doesn't cause the memory to come
-		   from the NULL context */
-		ret.data = talloc(mem_ctx, 0);
+		talloc_steal(mem_ctx, ret.data);
 	}
 	return ret;
 }

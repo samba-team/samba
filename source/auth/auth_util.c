@@ -421,7 +421,7 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
  Make a user_info struct
 ***************************************************************************/
 
-NTSTATUS make_server_info(TALLOC_CTX *mem_ctx,
+NTSTATUS make_server_info(const TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info **server_info, 
 			  const char *username)
 {
@@ -437,7 +437,7 @@ NTSTATUS make_server_info(TALLOC_CTX *mem_ctx,
 /***************************************************************************
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
-NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
+NTSTATUS make_server_info_guest(const TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	static const char zeros[16];
