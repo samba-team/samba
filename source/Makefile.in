@@ -656,7 +656,7 @@ PAM_NTDOM_OBJ = pam_ntdom/pam_ntdom_auth.o \
 
 PAM_NTDOM_LIBS = $(SAMBA_LIBS)
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/common.po
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
