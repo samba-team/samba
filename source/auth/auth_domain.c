@@ -36,9 +36,6 @@ NTSTATUS check_domain_security(const auth_usersupplied_info *user_info,
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 
-	if(lp_security() != SEC_DOMAIN)
-		return NT_STATUS_LOGON_FAILURE;
-
 	become_root();
 
 	/*
