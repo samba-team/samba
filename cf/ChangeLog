@@ -1,5 +1,7 @@
 2004-02-12  Love  <lha@stacken.kth.se>
 
+	* configure.in: rename AC_WFLAGS to rk_WFLAGS
+	
 	* *.m4: overquote to pacify automake1.8
 
 2004-02-11  Love  <lha@stacken.kth.se>
