@@ -421,7 +421,7 @@ DEBUG(3,("Time reported for job %d is %s", buf->job, ctime(&buf->time)));
 #ifdef LPRNG_PRIOTOK
   /* Here I try to map the CLASS char to a number, but the number
      is never shown in Print Manager under NT anyway... Magnus. */
-  buf->priority = atoi(tok[LPRNG_PRIOTOK-('A'-1)]);
+  buf->priority = atoi(tok[LPRNG_PRIOTOK]-('A'-1));
 #else
   buf->priority = 1;
 #endif
