@@ -111,8 +111,7 @@ static void sig_pipe(int sig)
   BlockSignals( True, SIGPIPE );
 
   DEBUG( 0, ("Got SIGPIPE\n") );
-  if ( !is_daemon )
-    exit(1);
+
   BlockSignals( False, SIGPIPE );
 } /* sig_pipe */
 
