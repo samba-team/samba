@@ -33,16 +33,4 @@ error_code NONAME,		"nodename nor servname provided, or not known"
 error_code SERVICE,		"servname not supported for ai_socktype"
 error_code SOCKTYPE,		"ai_socktype not supported"
 error_code SYSTEM,		"system error returned in errno"
-
-index 160
-prefix KRB524
-error_code BADKEY,		"cannot convert V5 keyblock"
-error_code BADADDR,		"cannot convert V5 address information"
-error_code BADPRINC,		"cannot convert V5 principal"
-error_code BADREALM,		"V5 realm name longer than V4 maximum"
-error_code V4ERR,		"kerberos V4 error"
-error_code ENCFULL,		"encoding too large"
-error_code DECEMPTY,		"decoding out of data"
-error_code NOTRESP,		"service not responding"
-
 end
