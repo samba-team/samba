@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <libsmbclient.h>
 
 void auth_fn(const char *server, const char *share,
@@ -79,7 +82,7 @@ int main(int argc, char *argv[])
   const char *file2 = "smb://samba/public/testfile2.txt";
   char buff[256];
   char dirbuf[512];
-  struct smbc_dirent *dirp;
+  char *dirp;
   struct stat st1, st2;
 
   err = smbc_init(auth_fn,  10); /* Initialize things */
@@ -169,9 +172,10 @@ int main(int argc, char *argv[])
 
     /* Now, list those directories, but in funny ways ... */
 
-    dirp = (struct smbc_dirent *)dirbuf;
+    dirp = (char *)dirbuf;
 
-    if ((dirc = smbc_getdents(dh1, dirp, sizeof(dirbuf))) < 0) {
+    if ((dirc = smbc_getdents(dh1, (struct smbc_dirent *)dirp, 
+			      sizeof(dirbuf))) < 0) {
 
       fprintf(stderr, "Problems getting directory entries: %s\n",
 	      strerror(errno));
@@ -186,18 +190,21 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = dirp->dirlen;
+      dsize = ((struct smbc_dirent *)dirp)->dirlen;
       fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      dirp->smbc_type, dirp->name, dirp->comment);
+	      ((struct smbc_dirent *)dirp)->smbc_type, 
+	      ((struct smbc_dirent *)dirp)->name, 
+	      ((struct smbc_dirent *)dirp)->comment);
 
-      (char *)dirp += dsize;
+      dirp += dsize;
       (char *)dirc -= dsize;
 
     }
 
-    dirp = (struct smbc_dirent *)dirbuf;
+    dirp = (char *)dirbuf;
 
-    if ((dirc = smbc_getdents(dh2, dirp, sizeof(dirbuf))) < 0) {
+    if ((dirc = smbc_getdents(dh2, (struct smbc_dirent *)dirp, 
+			      sizeof(dirbuf))) < 0) {
 
       fprintf(stderr, "Problems getting directory entries: %s\n",
 	      strerror(errno));
@@ -212,18 +219,21 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = dirp->dirlen;
+      dsize = ((struct smbc_dirent *)dirp)->dirlen;
       fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      dirp->smbc_type, dirp->name, dirp->comment);
+	      ((struct smbc_dirent *)dirp)->smbc_type, 
+	      ((struct smbc_dirent *)dirp)->name, 
+	      ((struct smbc_dirent *)dirp)->comment);
 
-      (char *)dirp += dsize;
+      dirp += dsize;
       (char *)dirc -= dsize;
 
     }
 
-    dirp = (struct smbc_dirent *)dirbuf;
+    dirp = (char *)dirbuf;
 
-    if ((dirc = smbc_getdents(dh3, dirp, sizeof(dirbuf))) < 0) {
+    if ((dirc = smbc_getdents(dh3, (struct smbc_dirent *)dirp, 
+			      sizeof(dirbuf))) < 0) {
 
       fprintf(stderr, "Problems getting directory entries: %s\n",
 	      strerror(errno));
@@ -238,9 +248,11 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = dirp->dirlen;
+      dsize = ((struct smbc_dirent *)dirp)->dirlen;
       fprintf(stdout, "\nDir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      dirp->smbc_type, dirp->name, dirp->comment);
+	      ((struct smbc_dirent *)dirp)->smbc_type, 
+	      ((struct smbc_dirent *)dirp)->name, 
+	      ((struct smbc_dirent *)dirp)->comment);
 
       (char *)dirp += dsize;
       (char *)dirc -= dsize;
@@ -255,7 +267,7 @@ int main(int argc, char *argv[])
    * read from the command line ...
    */
 
-  fd = smbc_open(file, O_RDWR | O_CREAT, 0666);
+  fd = smbc_open(file, O_RDWR | O_CREAT | O_TRUNC, 0666);
 
   if (fd < 0) {
 
@@ -393,10 +405,10 @@ int main(int argc, char *argv[])
   }
 
   fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2, 
-	  st2.st_size, st2.st_mode);
+	  (int)st2.st_size, st2.st_mode);
   fprintf(stdout, "    time: %s\n", ctime(&st2.st_atime));
   fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file, 
-	  st1.st_size, st1.st_mode);
+	  (int)st1.st_size, st1.st_mode);
   fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
 
   /* Now, make a directory ... */
@@ -440,4 +452,5 @@ int main(int argc, char *argv[])
   }
 
   fprintf(stdout, "Made dir: make-dir\n");
+  return 0;
 }
