@@ -951,5 +951,18 @@ extern int DEBUGLEVEL;
 
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
 
+
+#ifdef GLIBC_HACK_FCNTL64
+/* this is a gross hack. 64 bit locking is completely screwed up on
+   i386 Linux in glibc 2.1.95 (which ships with RedHat 7.0). This hack
+   "fixes" the problem with the current 2.4.0test kernels 
+*/
+#define fcntl fcntl64
+#undef F_SETLKW 
+#undef F_SETLK 
+#define F_SETLK 13
+#define F_SETLKW 14
+#endif
+
 #endif /* _INCLUDES_H */
 
