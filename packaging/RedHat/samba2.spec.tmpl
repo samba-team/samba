@@ -252,26 +252,35 @@ install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 %clean
-rm -rf $RPM_BUILD_ROOT
+#rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
 
+echo "Looking for old /etc/smb.conf..."
 if [ -f /etc/smb.conf ]; then
+	echo "Moving old /etc/smb.conf to /etc/samba/smb.conf"
 	mv /etc/smb.conf /etc/samba/smb.conf
 fi
 
+echo "Looking for old /etc/smbusers..."
 if [ -f /etc/smbusers ]; then
+	echo "Moving old /etc/smbusers to /etc/samba/smbusers"
 	mv /etc/smbusers /etc/samba/smbusers
 fi
 
+echo "Looking for old /etc/lmhosts..."
 if [ -f /etc/lmhosts ]; then
+	echo "Moving old /etc/lmhosts to /etc/samba/lmhosts"
 	mv /etc/lmhosts /etc/samba/lmhosts
 fi
 
+echo "Looking for old /etc/MACHINE.SID..."
 if [ -f /etc/MACHINE.SID ]; then
+	echo "Moving old /etc/MACHINE.SID to /etc/samba/MACHINE.SID"
 	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
 fi
 
@@ -290,14 +299,16 @@ fi
 
 # Add swat entry to xinetd.d if needed.
 if [ -d $RPM_BUILD_ROOT/etc/xinetd.d ]; then
-    install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
+    install -m644 packaging/RedHat/samba.xinetd /etc/xinetd.d/swat
 fi
 
 # Install the correct version of the samba pam file, depending on pam version.
 if [ -f /lib/security/pam_stack.so ]; then
-	install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
+	echo "Installing stack version of /etc/pam.d/samba..."
+	install -m644 packaging/RedHat/samba.pamd.stack /etc/pam.d/samba
 else
-	install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+	echo "Installing non-stack version of /etc/pam.d/samba..."
+	install -m644 packaging/RedHat/samba.pamd /etc/pam.d/samba
 fi
 
 %preun
@@ -413,7 +424,7 @@ fi
 %attr(-,root,root) MANDIR_MACRO/man5/*
 %attr(-,root,root) MANDIR_MACRO/man7/*
 %attr(-,root,root) MANDIR_MACRO/man8/*
-%attr(-,root,root) %dir %{prefix}/etc/codepages/*
+%attr(-,root,root) %dir /etc/codepages/*
 %attr(755,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
