@@ -71,6 +71,7 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 		SAFE_FREE(data.dptr);
 		return rap_jobid;
 	}
+	SAFE_FREE(data.dptr);
 	/* Not found - create and store mapping. */
 	rap_jobid = ++next_rap_jobid;
 	if (rap_jobid == 0)
@@ -99,6 +100,7 @@ BOOL rap_to_pjobid(uint16 rap_jobid, int *psnum, uint32 *pjobid)
 		SAFE_FREE(data.dptr);
 		return True;
 	}
+	SAFE_FREE(data.dptr);
 	return False;
 }
 
@@ -117,8 +119,10 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 	key.dptr = (char *)&jinfo;
 	key.dsize = sizeof(jinfo);
 	data = tdb_fetch(rap_tdb, key);
-	if (!data.dptr || (data.dsize != sizeof(uint16)))
+	if (!data.dptr || (data.dsize != sizeof(uint16))) {
+		SAFE_FREE(data.dptr);
 		return;
+	}
 
 	memcpy(&rap_jobid, data.dptr, sizeof(uint16));
 	SAFE_FREE(data.dptr);
@@ -404,8 +408,10 @@ static struct printjob *print_job_find(int snum, uint32 jobid)
 		
 	ZERO_STRUCT( pjob );
 	
-	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 )
+	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 ) {
+		SAFE_FREE(ret.dptr);
 		return NULL;
+	}
 	
 	SAFE_FREE(ret.dptr);	
 	return &pjob;
@@ -580,8 +586,7 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 
 		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
 	
-		if (buflen != len) 
-		{
+		if (buflen != len) {
 			char *tb;
 
 			tb = (char *)Realloc(buf, len);
@@ -593,8 +598,7 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 				buf = tb;
 			newlen = len;
 		}
-	}
-	while ( buflen != len );
+	} while ( buflen != len );
 		
 	
 	/* Store new data */
@@ -833,8 +837,10 @@ static pid_t get_updating_pid(fstring printer_name)
 
 	data = tdb_fetch(pdb->tdb, key);
 	release_print_db(pdb);
-	if (!data.dptr || data.dsize != sizeof(pid_t))
+	if (!data.dptr || data.dsize != sizeof(pid_t)) {
+		SAFE_FREE(data.dptr);
 		return (pid_t)-1;
+	}
 
 	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
 	SAFE_FREE(data.dptr);
@@ -1065,6 +1071,7 @@ static TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printe
 	if (data.dsize % 8) {
 		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n", printer_name ));
 		tdb_delete_by_string(tdb, NOTIFY_PID_LIST_KEY );
+		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
 		return data;
 	}

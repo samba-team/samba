@@ -652,8 +652,10 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 
 	size = dbuf.dsize + sizeof(share_mode_entry);
 	p = malloc(size);
-	if (!p)
+	if (!p) {
+		SAFE_FREE(dbuf.dptr);
 		return False;
+	}
 	memcpy(p, dbuf.dptr, sizeof(*data));
 	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),

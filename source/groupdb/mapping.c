@@ -498,8 +498,9 @@ BOOL remove_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 }
 
 /****************************************************************************
-return the sid and the type of the unix group
+ Return the sid and the type of the unix group.
 ****************************************************************************/
+
 BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf;
@@ -523,7 +524,8 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	kbuf.dsize = strlen(key)+1;
 		
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr) return False;
+	if (!dbuf.dptr)
+		return False;
 
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
 				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->systemaccount);
@@ -559,10 +561,10 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	return True;
 }
 
-
 /****************************************************************************
-return the sid and the type of the unix group
+ Return the sid and the type of the unix group.
 ****************************************************************************/
+
 BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
@@ -585,7 +587,8 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr)
+			continue;
 
 		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
 
@@ -624,8 +627,9 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 }
 
 /****************************************************************************
-return the sid and the type of the unix group
+ Return the sid and the type of the unix group.
 ****************************************************************************/
+
 BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
@@ -648,7 +652,8 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr)
+			continue;
 
 		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
 
@@ -689,8 +694,9 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 }
 
 /****************************************************************************
- remove a group mapping entry
+ Remove a group mapping entry.
 ****************************************************************************/
+
 BOOL group_map_remove(DOM_SID sid)
 {
 	TDB_DATA kbuf, dbuf;
@@ -711,7 +717,8 @@ BOOL group_map_remove(DOM_SID sid)
 	kbuf.dsize = strlen(key)+1;
 		
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr) return False;
+	if (!dbuf.dptr)
+		return False;
 	
 	SAFE_FREE(dbuf.dptr);
 
@@ -721,10 +728,10 @@ BOOL group_map_remove(DOM_SID sid)
 	return True;
 }
 
-
 /****************************************************************************
-enumerate the group mapping
+ Enumerate the group mapping.
 ****************************************************************************/
+
 BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 			int *num_entries, BOOL unix_only, BOOL with_priv)
 {

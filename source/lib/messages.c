@@ -180,10 +180,12 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 	if (!dbuf.dptr) {
 		/* its a new record */
 		p = (void *)malloc(len + sizeof(rec));
-		if (!p) goto failed;
+		if (!p)
+			goto failed;
 
 		memcpy(p, &rec, sizeof(rec));
-		if (len > 0) memcpy((void *)((char*)p+sizeof(rec)), buf, len);
+		if (len > 0)
+			memcpy((void *)((char*)p+sizeof(rec)), buf, len);
 
 		dbuf.dptr = p;
 		dbuf.dsize = len + sizeof(rec);
@@ -218,11 +220,13 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 
 	/* we're adding to an existing entry */
 	p = (void *)malloc(dbuf.dsize + len + sizeof(rec));
-	if (!p) goto failed;
+	if (!p)
+		goto failed;
 
 	memcpy(p, dbuf.dptr, dbuf.dsize);
 	memcpy((void *)((char*)p+dbuf.dsize), &rec, sizeof(rec));
-	if (len > 0) memcpy((void *)((char*)p+dbuf.dsize+sizeof(rec)), buf, len);
+	if (len > 0)
+		memcpy((void *)((char*)p+dbuf.dsize+sizeof(rec)), buf, len);
 
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
@@ -256,7 +260,8 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	tdb_chainlock(tdb, kbuf);
 	
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (dbuf.dptr == NULL || dbuf.dsize == 0) goto failed;
+	if (dbuf.dptr == NULL || dbuf.dsize == 0)
+		goto failed;
 
 	memcpy(&rec, dbuf.dptr, sizeof(rec));
 
@@ -267,7 +272,8 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 
 	if (rec.len > 0) {
 		(*buf) = (void *)malloc(rec.len);
-		if (!(*buf)) goto failed;
+		if (!(*buf))
+			goto failed;
 
 		memcpy(*buf, dbuf.dptr+sizeof(rec), rec.len);
 	} else {
@@ -293,6 +299,7 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 
  failed:
 	tdb_chainunlock(tdb, kbuf);
+	SAFE_FREE(dbuf.dptr);
 	return False;
 }
 
