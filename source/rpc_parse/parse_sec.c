@@ -276,41 +276,23 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	dst->off_sacl      = 0;
 	dst->off_dacl      = 0;
 
-	if(dacl && ((dst->dacl = dup_sec_acl(dacl)) == NULL))
-		goto error_exit;
-		
-	if(sacl && ((dst->sacl = dup_sec_acl(sacl)) == NULL))
-		goto error_exit;
-
 	if(owner_sid && ((dst->owner_sid = sid_dup(owner_sid)) == NULL))
 		goto error_exit;
 
 	if(grp_sid && ((dst->grp_sid = sid_dup(grp_sid)) == NULL))
 		goto error_exit;
 
+	if(sacl && ((dst->sacl = dup_sec_acl(sacl)) == NULL))
+		goto error_exit;
+
+	if(dacl && ((dst->dacl = dup_sec_acl(dacl)) == NULL))
+		goto error_exit;
+		
 	offset = 0x0;
 
 	/*
 	 * Work out the linearization sizes.
 	 */
-
-	if (dst->dacl != NULL) {
-
-		if (offset == 0)
-			offset = SD_HEADER_SIZE;
-
-		dst->off_dacl = offset;
-		offset += ((dacl->size + 3) & ~3);
-	}
-
-	if (dst->sacl != NULL) {
-
-		if (offset == 0)
-			offset = SD_HEADER_SIZE;
-
-		dst->off_sacl = offset;
-		offset += ((sacl->size + 3) & ~3);
-	}
 
 	if (dst->owner_sid != NULL) {
 
@@ -328,6 +310,24 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 
 		dst->off_grp_sid = offset;
 		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
+	}
+
+	if (dst->sacl != NULL) {
+
+		if (offset == 0)
+			offset = SD_HEADER_SIZE;
+
+		dst->off_sacl = offset;
+		offset += ((sacl->size + 3) & ~3);
+	}
+
+	if (dst->dacl != NULL) {
+
+		if (offset == 0)
+			offset = SD_HEADER_SIZE;
+
+		dst->off_dacl = offset;
+		offset += ((dacl->size + 3) & ~3);
 	}
 
 	*sec_desc_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
@@ -441,28 +441,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
-		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
-			return False;
-		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
-			return False;
-		if(!prs_align(ps))
-			return False;
-	}
-
-	max_offset = MAX(max_offset, prs_offset(ps));
-
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
-		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
-			return False;
-		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
-			return False;
-		if(!prs_align(ps))
-			return False;
-	}
-
-	max_offset = MAX(max_offset, prs_offset(ps));
-
 	if (psd->off_owner_sid != 0) {
 
 		if (UNMARSHALLING(ps)) {
@@ -494,6 +472,28 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 		}
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
+			return False;
+		if(!prs_align(ps))
+			return False;
+	}
+
+	max_offset = MAX(max_offset, prs_offset(ps));
+
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
+		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
+			return False;
+		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
+			return False;
+		if(!prs_align(ps))
+			return False;
+	}
+
+	max_offset = MAX(max_offset, prs_offset(ps));
+
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
+		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
+			return False;
+		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
 		if(!prs_align(ps))
 			return False;
