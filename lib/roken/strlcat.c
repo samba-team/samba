@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -44,6 +44,12 @@ size_t
 strlcat (char *dst, const char *src, size_t dst_sz)
 {
     size_t len = strlen(dst);
+
+    if (dst_sz < len)
+	/* the total size of dst is less than the string it contains;
+           this could be considered bad input, but we might as well
+           handle it */
+	return len + strlen(src);
 
     return len + strlcpy (dst + len, src, dst_sz - len);
 }
