@@ -1311,7 +1311,6 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct cli_state *cli,
 		printf("unk_2 = 0x%08x\n", unk_2);
 	}
 
- done:
 	return result;
 }
 
