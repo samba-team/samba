@@ -3,7 +3,8 @@
 
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
-#include <sys/ioccom.h>
+#include <sys/ioctl.h>
+
 /*
  */
 #define AFSCALL_PIOCTL 20
