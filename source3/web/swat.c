@@ -737,8 +737,10 @@ static void wizard_page(void)
 	d_printf("<td><input type=radio name=\"WINSType\" value=0 %s> Not Used&nbsp;</td>", (winstype == 0) ? "checked" : "");
 	d_printf("<td><input type=radio name=\"WINSType\" value=1 %s> Server for client use&nbsp;</td>", (winstype == 1) ? "checked" : "");
 	d_printf("<td><input type=radio name=\"WINSType\" value=2 %s> Client of another WINS server&nbsp;</td>", (winstype == 2) ? "checked" : "");
+	d_printf("</tr>\n");	
+
 	d_printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"");
-	
+
 	/* Print out the list of wins servers */
 	if(lp_wins_server_list()) {
 		int i;
@@ -751,7 +753,6 @@ static void wizard_page(void)
 		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Error: WINS Server Mode and WINS Support both set in smb.conf</font></td></tr>");
 		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Please Select desired WINS mode above.</font></td></tr>");
 	}
-	d_printf("</tr>");
 	d_printf("<tr><td><b>%s</b></td>\n","Expose Home Directories:&nbsp;");
 	d_printf("<td><input type=radio name=\"HomeExpo\" value=1 %s> Yes</td>", (have_home == -1) ? "" : "checked ");
 	d_printf("<td><input type=radio name=\"HomeExpo\" value=0 %s> No</td>", (have_home == -1 ) ? "checked" : "");
@@ -780,7 +781,7 @@ static void globals_page(void)
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
 
-	d_printf("<H2>%s</H2>\n", _("Global Variables"));
+	d_printf("<H2>%s</H2>\n", _("Global Parameters"));
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
