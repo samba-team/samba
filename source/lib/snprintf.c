@@ -823,12 +823,10 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  *
  * The logic for these two is that we need our own definition if the
  * OS *either* has no definition of *sprintf, or if it does have one
- * that doesn't work properly according to the autoconf test.  Perhaps
- * these should really be smb_snprintf to avoid conflicts with buggy
- * linkers? -- mbp
+ * that doesn't work properly according to the autoconf test.
  */
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
- int snprintf(char *str,size_t count,const char *fmt,...)
+ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
 	va_list ap;
