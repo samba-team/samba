@@ -423,15 +423,6 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		free_getent_state(state->getgrent_state);
 		state->getgrent_state = NULL;
 	}
-
-	/* Add our locally defined groups */
-
-	state->local_group_names = NULL;
-	state->num_local_group_names = 0;
-	state->local_group_ndx = 0;
-
-	wb_list_group_names(&state->local_group_names,
-			    &state->num_local_group_names);
 	
 	/* Create sam pipes for each domain we know about */
 	
@@ -479,80 +470,6 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 	
 	return WINBINDD_OK;
 }
-
-/* Fetch group entries from local faked database */
-
-static BOOL return_local_winbind_groups(struct winbindd_cli_state *state)
-{
-	WINBINDD_GR *grp;
-	char *buffer = NULL;
-	char *name;
-	int gr_mem_list_len = 0;
-	struct winbindd_gr *group_list;
-	struct winbindd_gr *gr;
-
-	if (state->local_group_names == NULL)
-		return False;
-
-	name = state->local_group_names[state->local_group_ndx];
-	grp = wb_getgrnam(name);
-
-	if (grp == NULL) {
-		DEBUG(3, ("Group %s vanished\n", name));
-
-		/* Stop that stuff.. */
-		state->local_group_ndx = state->num_local_group_names;
-
-		return False;
-	}
-
-	gr_mem_list_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
-
-	state->response.extra_data = malloc(sizeof(struct winbindd_gr) +
-					    gr_mem_list_len);
-	state->response.length += sizeof(struct winbindd_gr) + gr_mem_list_len;
-
-	group_list = (struct winbindd_gr *)state->response.extra_data;
-
-	if (group_list == NULL) {
-		DEBUG(0, ("Could not malloc group_list\n"));
-		return False;
-	}
-
-	gr = &group_list[0];
-
-	ZERO_STRUCTP(gr);
-
-	gr->gr_gid = grp->gr_gid;
-	safe_strcpy(gr->gr_name, name, sizeof(gr->gr_name) - 1);
-	safe_strcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd) - 1);
-	gr->num_gr_mem = grp->num_gr_mem;
-	gr->gr_mem_ofs = 0;
-
-	memcpy(&((char *)state->response.extra_data)
-	       [sizeof(struct winbindd_gr)],
-	       buffer, gr_mem_list_len);
-
-	SAFE_FREE(buffer);
-	SAFE_FREE(grp->gr_mem);
-
-	state->response.data.num_entries = 1;
-
-	state->local_group_ndx += 1;
-
-	if (state->local_group_ndx >= state->num_local_group_names) {
-		int i;
-
-		for (i=0; i<state->num_local_group_names; i++) {
-			free(state->local_group_names[i]);
-		}
-		free(state->local_group_names);
-		state->local_group_names = NULL;
-	}
-
-	return True;
-}
-
 
 /* Get the list of domain groups and domain aliases for a domain.  We fill in
    the sam_entries and num_sam_entries fields with domain group information.  
@@ -688,9 +605,6 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	if (!lp_winbind_enum_groups())
 		return WINBINDD_ERROR;
-
-	if (return_local_winbind_groups(state))
-		return WINBINDD_OK;
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
 
@@ -982,20 +896,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-static void add_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
-{
-	gid_t gid;
-
-	DEBUG(10, ("Adding gids from SID: %s\n", sid_string_static(sid)));
-
-	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
-		add_gid_to_array_unique(gid, gids, num);
-
-	/* Add nested group memberships */
-
-	add_foreign_gids_from_sid(sid, gids, num);
-}
-
 /* Get user supplementary groups.  This is much quicker than trying to
    invert the groups database.  We merge the groups from the gids and
    other_sids info3 fields as trusted domain, universal group
@@ -1013,7 +913,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	DOM_SID **user_grpsids;
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
-	gid_t *gid_list = NULL;
+	gid_t *gid_list;
 	unsigned int i;
 	TALLOC_CTX *mem_ctx;
 	NET_USER_INFO_3 *info3 = NULL;
@@ -1061,8 +961,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	add_gids_from_sid(&user_sid, &gid_list, &num_gids);
-
 	/* Treat the info3 cache as authoritative as the
 	   lookup_usergroups() function may return cached data. */
 
@@ -1072,6 +970,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			   info3->num_groups2, info3->num_other_sids));
 
 		num_groups = info3->num_other_sids + info3->num_groups2;
+		gid_list = calloc(sizeof(gid_t), num_groups);
 
 		/* Go through each other sid and convert it to a gid */
 
@@ -1105,11 +1004,23 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 				continue;
 			}
 
-			add_gids_from_sid(&info3->other_sids[i].sid,
-					  &gid_list, &num_gids);
+			/* Map to a gid */
 
-			if (gid_list == NULL)
-				goto done;
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&info3->other_sids[i].sid, &gid_list[num_gids], 0)) )
+			{
+				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
+					   sid_string_static(&info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* We've jumped through a lot of hoops to get here */
+
+			DEBUG(10, ("winbindd_getgroups: mapped other sid %s to "
+				   "gid %lu\n", sid_string_static(
+					   &info3->other_sids[i].sid),
+				   (unsigned long)gid_list[num_gids]));
+
+			num_gids++;
 		}
 
 		for (i = 0; i < info3->num_groups2; i++) {
@@ -1119,10 +1030,12 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			sid_copy( &group_sid, &domain->sid );
 			sid_append_rid( &group_sid, info3->gids[i].g_rid );
 
-			add_gids_from_sid(&group_sid, &gid_list, &num_gids);
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &gid_list[num_gids], 0)) ) {
+				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
+					   sid_string_static(&group_sid)));
+			}
 
-			if (gid_list == NULL)
-				goto done;
+			num_gids++;
 		}
 
 		SAFE_FREE(info3);
@@ -1140,11 +1053,12 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			goto done;
 
 		for (i = 0; i < num_groups; i++) {
-			add_gids_from_sid(user_grpsids[i],
-					  &gid_list, &num_gids);
-
-			if (gid_list == NULL)
-				goto done;
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(user_grpsids[i], &gid_list[num_gids], 0))) {
+				DEBUG(1, ("unable to convert group sid %s to gid\n", 
+					  sid_string_static(user_grpsids[i])));
+				continue;
+			}
+			num_gids++;
 		}
 	}
 
