@@ -1624,7 +1624,7 @@ start_login(host, autologin, name)
 	{
 		addarg(&argv, "-h");
 		addarg(&argv, host);
-#ifdef	SOLARIS
+#ifdef	SOLARIS_LOGIN
 		/*
 		 * SVR4 version of -h takes TERM= as second arg, or -
 		 */
@@ -1711,7 +1711,7 @@ start_login(host, autologin, name)
 			 * to have "localhost" in their .rhost file.
 			 */
 #			define LOGIN_HOST "localhost"
-#  endif
+#  endif /* LOGIN_HOST */
 			addarg(&argv, "-r");
 			addarg(&argv, LOGIN_HOST);
 
@@ -1742,7 +1742,7 @@ start_login(host, autologin, name)
 				tty_setecho(isecho);
 				tty_setraw(israw);
 				set_termbuf();
-#if !defined(SOLARIS)
+#ifndef SOLARIS
 				if (!israw) {
 					/*
 					 * Write a newline to ensure
@@ -1755,10 +1755,10 @@ start_login(host, autologin, name)
 			}
 			pty = xpty;
 		}
-#  else
+#  else /* LOGIN_R */
 		addarg(&argv, name);
 #  endif
-# endif
+# endif /* NO_LOGIN_F */
 	} /* else */ /* esc@magic.fi; removed stupid else */
 #endif
 	if (getenv("USER")) {
@@ -1783,7 +1783,7 @@ start_login(host, autologin, name)
 		 */
 		unsetenv("USER");
 	}
-#ifdef	SOLARIS
+#ifdef	SOLARIS_LOGIN
 	else {
 		char **p;
 
@@ -1806,7 +1806,16 @@ start_login(host, autologin, name)
 	sleep(1);
 	if (k_hasafs())
 		k_setpag();	/* Put users process in an new pag */
-	execv(_PATH_LOGIN, argv.argv);
+#ifdef SHOW_LOGIN_ARGS
+	{ 
+	  int i;
+	  for(i=0;argv.argv[i];i++)
+	    fprintf(stderr, "%s ", argv.argv[i]);
+	  fprintf(stderr, "\n");
+	}
+#endif
+
+	execv(LOGIN_PATH, argv.argv);
 
 	syslog(LOG_ERR, "%s: %m\n", _PATH_LOGIN);
 	fatalperror(net, _PATH_LOGIN);
