@@ -112,6 +112,7 @@ DATA_BLOB data_blob_talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx,
 	if (new.data == NULL) {
 		smb_panic("data_blob_talloc_steal: talloc_steal failed.\n");
 	}
+	return new;
 }
 
 /*******************************************************************
