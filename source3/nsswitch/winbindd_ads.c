@@ -25,10 +25,10 @@
 #ifdef HAVE_ADS
 
 /* Query display info for a realm. This is the basic user list fn */
-static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
+static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       uint32 *start_ndx, uint32 *num_entries, 
-			       WINBIND_DISPINFO **info)
+			       WINBIND_USERINFO **info)
 {
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
@@ -37,7 +37,7 @@ static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
 	void *res;
 	void *msg;
 
-	DEBUG(3,("ads: query_dispinfo\n"));
+	DEBUG(3,("ads: query_user_list\n"));
 
 	if ((*start_ndx) != 0) {
 		DEBUG(1,("ads backend start_ndx not implemented\n"));
@@ -52,19 +52,19 @@ static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
 
 	rc = ads_connect(ads);
 	if (rc) {
-		DEBUG(1,("query_dispinfo ads_connect: %s\n", ads_errstr(rc)));
+		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
 	if (rc) {
-		DEBUG(1,("query_dispinfo ads_search: %s\n", ads_errstr(rc)));
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
-		DEBUG(1,("query_dispinfo: No users found\n"));
+		DEBUG(1,("query_user_list: No users found\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -141,19 +141,19 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	rc = ads_connect(ads);
 	if (rc) {
-		DEBUG(1,("query_dispinfo ads_connect: %s\n", ads_errstr(rc)));
+		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
 	if (rc) {
-		DEBUG(1,("query_dispinfo ads_search: %s\n", ads_errstr(rc)));
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
-		DEBUG(1,("query_dispinfo: No users found\n"));
+		DEBUG(1,("query_user_list: No users found\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -273,7 +273,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
-	query_dispinfo,
+	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
 	/* I can't see a good way to do a sid to name mapping with ldap,

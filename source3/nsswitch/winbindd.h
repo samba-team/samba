@@ -82,17 +82,17 @@ typedef struct {
 	char *full_name;
 	uint32 user_rid;
 	uint32 group_rid; /* primary group */
-} WINBIND_DISPINFO;
+} WINBIND_USERINFO;
 
 /* per-domain methods. This is how LDAP vs RPC is selected
    This will eventually be the sole entry point to all the methods,
    I'm just starting small
  */
 struct winbindd_methods {
-	NTSTATUS (*query_dispinfo)(struct winbindd_domain *domain,
+	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 *start_ndx, uint32 *num_entries, 
-				   WINBIND_DISPINFO **info);
+				   WINBIND_USERINFO **info);
 
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,

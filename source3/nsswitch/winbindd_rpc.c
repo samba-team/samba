@@ -26,10 +26,10 @@
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
-static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
+static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       uint32 *start_ndx, uint32 *num_entries, 
-			       WINBIND_DISPINFO **info)
+			       WINBIND_USERINFO **info)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -62,8 +62,8 @@ static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
 					&dom_pol, start_ndx, 1,
 					num_entries, 0xffff, &ctr);
 
-	/* now map the result into the WINBIND_DISPINFO structure */
-	(*info) = (WINBIND_DISPINFO *)talloc(mem_ctx, (*num_entries)*sizeof(WINBIND_DISPINFO));
+	/* now map the result into the WINBIND_USERINFO structure */
+	(*info) = (WINBIND_USERINFO *)talloc(mem_ctx, (*num_entries)*sizeof(WINBIND_USERINFO));
 	if (!(*info)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -187,7 +187,7 @@ NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
-	query_dispinfo,
+	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
 	winbindd_rpc_sid_to_name
