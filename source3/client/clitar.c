@@ -23,12 +23,6 @@
 #include "includes.h"
 #include "clitar.h"
 
-extern void setup_pkt(char *outbuf);
-extern BOOL reopen_connection(char *inbuf,char *outbuf);
-extern void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
-
-int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
-
 extern BOOL recurse;
 
 #define SEPARATORS " \t\n\r"

@@ -139,31 +139,20 @@ mode_t unix_mode(int cnum,int dosmode)
 int dos_mode(int cnum,char *path,struct stat *sbuf)
 {
   int result = 0;
+  extern struct current_user current_user;
 
-#if OLD_DOS_MODE
-  if (!CAN_WRITE(cnum) || !((sbuf->st_mode & S_IWOTH) ||
-			    Connections[cnum].admin_user ||
-			    ((sbuf->st_mode & S_IWUSR) && 
-			     Connections[cnum].uid==sbuf->st_uid) ||
-			    ((sbuf->st_mode & S_IWGRP) && 
-			     in_group(sbuf->st_gid,Connections[cnum].gid,
-				      Connections[cnum].ngroups,
-				      Connections[cnum].igroups))))
-    result |= aRONLY;
-#else
   if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum))) {
     if (!((sbuf->st_mode & S_IWOTH) ||
 	  Connections[cnum].admin_user ||
-	  ((sbuf->st_mode & S_IWUSR) && Connections[cnum].uid==sbuf->st_uid) ||
+	  ((sbuf->st_mode & S_IWUSR) && current_user.uid==sbuf->st_uid) ||
 	  ((sbuf->st_mode & S_IWGRP) && 
-	   in_group(sbuf->st_gid,Connections[cnum].gid,
-		    Connections[cnum].ngroups,Connections[cnum].igroups))))
+	   in_group(sbuf->st_gid,current_user.gid,
+		    current_user.ngroups,current_user.igroups))))
       result |= aRONLY;
   } else {
     if ((sbuf->st_mode & S_IWUSR) == 0)
       result |= aRONLY;
   }
-#endif
 
   if ((sbuf->st_mode & S_IXUSR) != 0)
     result |= aARCH;
@@ -3383,7 +3372,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-void process(void )
+static void process(void)
 {
   static int trans_num = 0;
   int nread;
@@ -3407,7 +3396,7 @@ void process(void )
     ip = *interpret_addr2("localhost");
     if (zero_ip(ip)) ip = *interpret_addr2("127.0.0.1");
     *OutBuffer = 0;
-    send_one_packet(OutBuffer,1,ip,137,SOCK_DGRAM);
+    send_one_packet(OutBuffer,1,ip,NMB_PORT,SOCK_DGRAM);
   }
 #endif    
 
@@ -3592,7 +3581,7 @@ static void init_structs(void )
 /****************************************************************************
 usage on the program
 ****************************************************************************/
-void usage(char *pname)
+static void usage(char *pname)
 {
   DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 
@@ -3612,12 +3601,12 @@ void usage(char *pname)
 /****************************************************************************
   main program
 ****************************************************************************/
-int main(int argc,char *argv[])
+ int main(int argc,char *argv[])
 {
   extern BOOL append_log;
   /* shall I run as a daemon */
   BOOL is_daemon = False;
-  int port = 139;
+  int port = SMB_PORT;
   int opt;
   extern char *optarg;
 

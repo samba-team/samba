@@ -46,7 +46,7 @@ as non root from a program which is switching between root and non-root
 
 It takes 3 arguments as uid,gid,command and runs command after
 becoming a non-root user */
-int main(int argc,char *argv[])
+ int main(int argc,char *argv[])
 {
   int uid,gid;
 

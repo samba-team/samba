@@ -44,7 +44,7 @@ unsigned int   Ucrit_checkUsername(pstring username); /* added by OH */
 void           Ucrit_addPid(int pid);                 /* added by OH */
 unsigned int   Ucrit_checkPid(int pid);               /* added by OH */
 
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
   FILE *f;
   pstring fname;

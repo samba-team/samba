@@ -20,16 +20,51 @@
    
 */
 
-#define MAX_DGRAM_SIZE 576
+#define MAX_DGRAM_SIZE (80*18+64)
 #define MIN_DGRAM_SIZE 12
 
-#define NMB_PORT 137
-#define DGRAM_PORT 138
-#define SMB_PORT 139
+#define NMB_QUERY  0x20
+#define NMB_STATUS 0x21
+#define NMB_REG    0x05
+#define NMB_REL    0x06
 
-enum name_source {LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
+#define NB_GROUP  0x80
+#define NB_PERM   0x02
+#define NB_ACTIVE 0x04
+#define NB_CONFL  0x08
+#define NB_DEREG  0x10
+#define NB_BFLAG  0x00
+#define NB_PFLAG  0x20
+#define NB_MFLAG  0x40
+#define NB__FLAG  0x60
+#define NB_FLGMSK 0x60
+
+#define NAME_PERMANENT(p) ((p) & NB_PERM)
+#define NAME_ACTIVE(p)    ((p) & NB_ACTIVE)
+#define NAME_CONFLICT(p)  ((p) & NB_CONFL)
+#define NAME_DEREG(p)     ((p) & NB_DEREG)
+#define NAME_GROUP(p)     ((p) & NB_GROUP)
+
+#define NAME_BFLAG(p)     (((p) & NB_FLGMSK) == NB_BFLAG)
+#define NAME_PFLAG(p)     (((p) & NB_FLGMSK) == NB_PFLAG)
+#define NAME_MFLAG(p)     (((p) & NB_FLGMSK) == NB_MFLAG)
+#define NAME__FLAG(p)     (((p) & NB_FLGMSK) == NB__FLAG)
+
+enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
+enum cmd_type
+{
+	NAME_STATUS_MASTER_CHECK,
+	NAME_STATUS_CHECK,
+	MASTER_SERVER_CHECK,
+	SERVER_CHECK,
+	FIND_MASTER,
+	CHECK_MASTER,
+	NAME_REGISTER,
+	NAME_RELEASE,
+	NAME_CONFIRM_QUERY
+};
 
 /* a netbios name structure */
 struct nmb_name {
@@ -46,30 +81,71 @@ struct name_record
   struct nmb_name name;
   time_t death_time;
   struct in_addr ip;
-  BOOL unique;
+  int nb_flags;
   enum name_source source;
 };
 
-/* this is used by the list of domains */
-struct domain_record
+/* browse and backup server cache for synchronising browse list */
+struct browse_cache_record
 {
-  struct domain_record *next;
-  struct domain_record *prev;
-  fstring name;
-  time_t lastannounce_time;
-  int announce_interval;
-  struct in_addr bcast_ip;
+	struct browse_cache_record *next;
+	struct browse_cache_record *prev;
+
+	pstring name;
+	int type;
+	pstring group;
+	struct in_addr ip;
+	time_t sync_time;
+	BOOL synced;
 };
 
-/* this is used to hold the list of servers in my domain */
+/* this is used to hold the list of servers in my domain, and is */
+/* contained within lists of domains */
 struct server_record
 {
   struct server_record *next;
   struct server_record *prev;
-  fstring name;
-  fstring comment;
-  uint32 servertype;
+
+  struct server_info_struct serv;
   time_t death_time;  
+};
+
+/* a workgroup structure. it contains a list of servers */
+struct work_record
+{
+  struct work_record *next;
+  struct work_record *prev;
+
+  struct server_record *serverlist;
+
+  /* work group info */
+  fstring work_group;
+  int     token;        /* used when communicating with backup browsers */
+  int     ServerType;
+
+  /* announce info */
+  time_t lastannounce_time;
+  int announce_interval;
+  BOOL    needannounce;
+
+  /* election info */
+  BOOL    RunningElection;
+  BOOL    needelection;
+  int     ElectionCount;
+  uint32  ElectionCriterion;
+};
+
+/* a domain structure. it contains a list of workgroups */
+struct domain_record
+{
+  struct domain_record *next;
+  struct domain_record *prev;
+
+  struct work_record *workgrouplist;
+
+  struct in_addr bcast_ip;
+  struct in_addr mask_ip;
+  struct in_addr myip;
 };
 
 /* a resource record */
@@ -115,6 +191,25 @@ struct nmb_packet
 };
 
 
+/* initiated name queries recorded in this list to track any responses... */
+struct name_response_record
+{
+  struct name_response_record *next;
+  struct name_response_record *prev;
+
+  uint16 response_id;
+  enum cmd_type cmd_type;
+
+  int fd;
+  struct nmb_name name;
+  BOOL bcast;
+  BOOL recurse;
+  struct in_addr to_ip;
+
+  time_t start_time;
+  int num_msgs;
+};
+
 /* a datagram - this normally contains SMB data in the data[] array */
 struct dgram_packet {
   struct {
@@ -154,31 +249,3 @@ struct packet_struct
 };
 
 
-/* this defines a list of network interfaces */
-struct net_interface {
-  struct net_interface *next;
-  struct in_addr ip;
-  struct in_addr bcast;
-  struct in_addr netmask;
-};
-
-
-/* prototypes */
-void free_nmb_packet(struct nmb_packet *nmb);
-void free_packet(struct packet_struct *packet);
-struct packet_struct *read_packet(int fd,enum packet_type packet_type);
-BOOL send_packet(struct packet_struct *p);
-struct packet_struct *receive_packet(int fd,enum packet_type type,int timeout);
-void make_nmb_name(struct nmb_name *n,char *name,int type,char *this_scope);
-BOOL name_query(int fd,char *name,int name_type,
-		       BOOL bcast,BOOL recurse,
-		       struct in_addr to_ip, struct in_addr *ip,void (*fn)());
-BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)());
-BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,
-			 char *srcname,char *dstname,
-			 int src_type,int dest_type,
-			 struct in_addr dest_ip,
-			 struct in_addr src_ip);
-char *namestr(struct nmb_name *n);

@@ -295,5 +295,5 @@
  ** End of md4.c
  */
 #else
-void md4_dummy() {;}
+ void md4_dummy() {;}
 #endif

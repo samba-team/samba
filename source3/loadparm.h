@@ -67,6 +67,7 @@ extern int  lp_max_log_size(void);
 extern int  lp_maxxmit(void);
 extern int  lp_maxmux(void);
 extern int  lp_mangledstack(void);
+extern BOOL lp_wins_support(void);
 extern BOOL lp_preferred_master(void);
 extern BOOL lp_domain_master(void);
 extern BOOL lp_domain_logons(void);

@@ -63,23 +63,74 @@ the other = 3
 static char *pszParmFile = NULL;
 extern int DEBUGLEVEL;
 
-/* local prototypes */
-static BOOL enumerate_parameters(FILE *infile, PM_PARMFUNC pfunc);
-static BOOL enumerate_sections(FILE *infile, 
-			       PM_SECFUNC sfunc, PM_PARMFUNC pfunc);
 
-/* prototypes for local toolbox functions */
-static void trimleft(char *psz);
-static void trimright(char *psz);
-static void collapse_spaces(char *psz);
-static int  firstnonwhite(char *psz);
+/**************************************************************************
+Strip all leading whitespace from a string.
+**************************************************************************/
+static void trimleft(char *psz)
+{
+   char *pszDest;
+
+   pszDest = psz;
+   if (psz != NULL)
+   {
+      while (*psz != '\0' && isspace(*psz))
+	 psz++;
+      while (*psz != '\0')
+	 *pszDest++ = *psz++;
+      *pszDest = '\0';
+   }
+}
+
+/**************************************************************************
+Strip all trailing whitespace from a string.
+**************************************************************************/
+static void trimright(char *psz)
+{
+   char *pszTemp;
+
+   if (psz != NULL && psz[0] != '\0')
+   {
+      pszTemp = psz + strlen(psz) - 1;
+      while (isspace(*pszTemp))
+	 *pszTemp-- = '\0';
+   }
+}
+
+/***********************************************************************
+Collapse each whitespace area in a string to a single space.
+***********************************************************************/
+static void collapse_spaces(char *psz)
+{
+   while (*psz)
+      if (isspace(*psz))
+      {
+	 *psz++ = ' ';
+	 trimleft(psz);
+      }
+      else
+	 psz++;
+}
+
+/**************************************************************************
+Return the value of the first non-white character in the specified string.
+The terminating NUL counts as non-white for the purposes of this function.
+Note - no check for a NULL string! What would we return?
+**************************************************************************/
+static int firstnonwhite(char *psz)
+{
+   while (isspace(*psz) && (*psz != '\0'))
+      psz++;
+   return (*psz);
+}
+
 
 /**************************************************************************
 Identifies all parameters in the current section, calls the parameter
 function for each. Ignores comment lines, stops and backs up in file when
 a section is encountered. Returns True on success, False on error.
 **************************************************************************/
-static BOOL enumerate_parameters(FILE *fileIn, PM_PARMFUNC pfunc)
+static BOOL enumerate_parameters(FILE *fileIn, BOOL (*pfunc)(char *,char *))
 {
    pstring szBuf;
    char *pszTemp;
@@ -186,8 +237,8 @@ Returns True on success, False on failure. Note that the section and
 parameter names will have all internal whitespace areas collapsed to a 
 single space for processing.
 **************************************************************************/
-static BOOL enumerate_sections(FILE *fileIn, 
-			       PM_SECFUNC sfunc, PM_PARMFUNC pfunc)
+static BOOL enumerate_sections(FILE *fileIn,
+			       BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,char *))
 {
    pstring szBuf;
    BOOL bRetval;
@@ -246,7 +297,7 @@ Process the passed parameter file.
 
 Returns True if successful, else False.
 **************************************************************************/
-BOOL pm_process(char *pszFileName, PM_SECFUNC sfunc, PM_PARMFUNC pfunc)
+BOOL pm_process(char *pszFileName,BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,char *))
 {
    FILE *fileIn;
    BOOL bRetval;
@@ -274,62 +325,3 @@ BOOL pm_process(char *pszFileName, PM_SECFUNC sfunc, PM_PARMFUNC pfunc)
 }
 
 
-/**************************************************************************
-Strip all leading whitespace from a string.
-**************************************************************************/
-static void trimleft(char *psz)
-{
-   char *pszDest;
-
-   pszDest = psz;
-   if (psz != NULL)
-   {
-      while (*psz != '\0' && isspace(*psz))
-	 psz++;
-      while (*psz != '\0')
-	 *pszDest++ = *psz++;
-      *pszDest = '\0';
-   }
-}
-
-/**************************************************************************
-Strip all trailing whitespace from a string.
-**************************************************************************/
-static void trimright(char *psz)
-{
-   char *pszTemp;
-
-   if (psz != NULL && psz[0] != '\0')
-   {
-      pszTemp = psz + strlen(psz) - 1;
-      while (isspace(*pszTemp))
-	 *pszTemp-- = '\0';
-   }
-}
-
-/***********************************************************************
-Collapse each whitespace area in a string to a single space.
-***********************************************************************/
-static void collapse_spaces(char *psz)
-{
-   while (*psz)
-      if (isspace(*psz))
-      {
-	 *psz++ = ' ';
-	 trimleft(psz);
-      }
-      else
-	 psz++;
-}
-
-/**************************************************************************
-Return the value of the first non-white character in the specified string.
-The terminating NUL counts as non-white for the purposes of this function.
-Note - no check for a NULL string! What would we return?
-**************************************************************************/
-static int firstnonwhite(char *psz)
-{
-   while (isspace(*psz) && (*psz != '\0'))
-      psz++;
-   return (*psz);
-}

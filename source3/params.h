@@ -32,14 +32,9 @@ Prototypes and definitions for PARAMS.C.
 #include <stdio.h>
 #include "smb.h"
 
-typedef BOOL (* PM_PARMFUNC)(char *pszParmName, char *pszParmValue);
-typedef BOOL (* PM_SECFUNC)(char *pszSectionName);
-
 #define PM_NOFILE               1
 #define PM_NOFILENAME           2
 #define PM_FILEERROR            3
-
-extern BOOL pm_process(char *pszFileName, PM_SECFUNC sfunc, PM_PARMFUNC pfunc);
 
 #endif
 

@@ -71,8 +71,7 @@ static void initiso() {
 /*
  * Convert unix to dos
  */
-char *
-unix2dos_format(char *str,BOOL overwrite)
+char *unix2dos_format(char *str,BOOL overwrite)
 {
     char *p;
     char *dp;
@@ -91,8 +90,7 @@ unix2dos_format(char *str,BOOL overwrite)
 /*
  * Convert dos to unix
  */
-char *
-dos2unix_format (char *str, BOOL overwrite)
+char *dos2unix_format(char *str, BOOL overwrite)
 {
     char *p;
     char *dp;
@@ -112,8 +110,7 @@ dos2unix_format (char *str, BOOL overwrite)
 /*
  * Interpret character set.
  */
-int 
-interpret_character_set (char *str, int def)
+int interpret_character_set(char *str, int def)
 {
 
     if (strequal (str, "iso8859-1")) {

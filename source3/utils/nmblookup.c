@@ -25,7 +25,6 @@
 #endif
 
 #include "includes.h"
-#include "nameserv.h"
 
 extern int DEBUGLEVEL;
 
@@ -35,6 +34,7 @@ extern struct in_addr bcast_ip;
 extern pstring myhostname;
 
 static BOOL got_bcast = False;
+struct in_addr ipzero;
 
 int ServerFD= -1;
 
@@ -123,6 +123,8 @@ int main(int argc,char *argv[])
   *lookup = 0;
 
   TimeInit();
+
+  ipzero = *interpret_addr2("0.0.0.0");
 
   setup_logging(argv[0],True);
 

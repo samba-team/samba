@@ -30,23 +30,18 @@ static int initial_uid;
 static int initial_gid;
 static int old_umask = 022;
 
-int current_uid;
-int current_gid;
-
 static pstring OriginalDir;
 
-/* have I done a become_user? */
-static struct {
-  int cnum, uid;
-} last_user;
+/* what user is current? */
+struct current_user current_user;
 
 /****************************************************************************
 initialise the uid routines
 ****************************************************************************/
 void init_uid(void)
 {
-  initial_uid = current_uid = geteuid();
-  initial_gid = current_gid = getegid();
+  initial_uid = current_user.uid = geteuid();
+  initial_gid = current_user.gid = getegid();
 
   if (initial_gid != 0 && initial_uid == 0)
     {
@@ -61,7 +56,7 @@ void init_uid(void)
   initial_uid = geteuid();
   initial_gid = getegid();
 
-  last_user.cnum = -1;
+  current_user.cnum = -1;
 
   GetWd(OriginalDir);
 }
@@ -111,7 +106,7 @@ static BOOL become_uid(int uid)
     return(False);
   }
 
-  current_uid = uid;
+  current_user.uid = uid;
 
   return(True);
 }
@@ -140,7 +135,7 @@ static BOOL become_gid(int gid)
 	return(False);
       }
 
-  current_gid = gid;
+  current_user.gid = gid;
 
   return(True);
 }
@@ -174,7 +169,7 @@ BOOL become_guest(void)
   if (!ret)
     DEBUG(1,("Failed to become guest. Invalid guest account?\n"));
 
-  last_user.cnum = -2;
+  current_user.cnum = -2;
 
   return(ret);
 }
@@ -208,10 +203,9 @@ BOOL become_user(int cnum, int uid)
   int new_umask;
   user_struct *vuser;
   int snum,gid;
-  int ngroups;
-  gid_t *groups;
+  int id = uid;
 
-  if (last_user.cnum == cnum && last_user.uid == uid) {
+  if (current_user.cnum == cnum && current_user.id == id) {
     DEBUG(4,("Skipping become_user - already user\n"));
     return(True);
   }
@@ -231,8 +225,9 @@ BOOL become_user(int cnum, int uid)
       !check_user_ok(cnum,vuser,snum)) {
     uid = Connections[cnum].uid;
     gid = Connections[cnum].gid;
-    groups = Connections[cnum].groups;
-    ngroups = Connections[cnum].ngroups;
+    current_user.groups = Connections[cnum].groups;
+    current_user.igroups = Connections[cnum].igroups;
+    current_user.ngroups = Connections[cnum].ngroups;
   } else {
     if (!vuser) {
       DEBUG(2,("Invalid vuid used %d\n",uid));
@@ -243,8 +238,9 @@ BOOL become_user(int cnum, int uid)
       gid = vuser->gid;
     else
       gid = Connections[cnum].gid;
-    groups = vuser->user_groups;
-    ngroups = vuser->user_ngroups;
+    current_user.groups = vuser->user_groups;
+    current_user.igroups = vuser->user_igroups;
+    current_user.ngroups = vuser->user_ngroups;
   }
 
   if (initial_uid == 0)
@@ -254,8 +250,8 @@ BOOL become_user(int cnum, int uid)
 #ifndef NO_SETGROUPS      
       if (!IS_IPC(cnum)) {
 	/* groups stuff added by ih/wreu */
-	if (ngroups > 0)
-	  if (setgroups(ngroups,groups)<0)
+	if (current_user.ngroups > 0)
+	  if (setgroups(current_user.ngroups,current_user.groups)<0)
 	    DEBUG(0,("setgroups call failed!\n"));
       }
 #endif
@@ -267,8 +263,8 @@ BOOL become_user(int cnum, int uid)
   new_umask = 0777 & ~CREATE_MODE(cnum);
   old_umask = umask(new_umask);
 
-  last_user.cnum = cnum;
-  last_user.uid = uid;
+  current_user.cnum = cnum;
+  current_user.id = id;
   
   DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d) new_umask=0%o\n",
 	   getuid(),geteuid(),getgid(),getegid(),new_umask));
@@ -281,7 +277,7 @@ BOOL become_user(int cnum, int uid)
 ****************************************************************************/
 BOOL unbecome_user(void )
 {
-  if (last_user.cnum == -1)
+  if (current_user.cnum == -1)
     return(False);
 
   ChDir(OriginalDir);
@@ -320,8 +316,8 @@ BOOL unbecome_user(void )
     }
 #endif
 
-  current_uid = initial_uid;
-  current_gid = initial_gid;
+  current_user.uid = initial_uid;
+  current_user.gid = initial_gid;
   
   if (ChDir(OriginalDir) != 0)
     DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
@@ -330,7 +326,7 @@ BOOL unbecome_user(void )
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 	getuid(),geteuid(),getgid(),getegid()));
 
-  last_user.cnum = -1;
+  current_user.cnum = -1;
 
   return(True);
 }
@@ -352,7 +348,7 @@ int smbrun(char *cmd,char *outfile)
     }
 
   sprintf(syscmd,"%s %d %d \"(%s 2>&1) > %s\"",
-	  path,current_uid,current_gid,cmd,
+	  path,current_user.uid,current_user.gid,cmd,
 	  outfile?outfile:"/dev/null");
 
   DEBUG(5,("smbrun - running %s ",syscmd));

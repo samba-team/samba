@@ -201,14 +201,13 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 /*
  * Print command usage on stderr and die.
  */
-void 
-usage(char *name)
+static void usage(char *name)
 {
 	fprintf(stderr, "Usage is : %s [username]\n", name);
 	exit(1);
 }
 
-int main(int argc, char **argv)
+ int main(int argc, char **argv)
 {
   int             real_uid;
   struct passwd  *pwd;

@@ -297,8 +297,7 @@ get_smbpwnam(char *name)
 	return NULL;
 }
 #else
-void 
-smbpass_dummy(void)
+ void smbpass_dummy(void)
 {
 }				/* To avoid compiler complaints */
 #endif
