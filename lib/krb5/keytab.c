@@ -142,7 +142,7 @@ krb5_kt_close(krb5_context context,
 krb5_error_code
 krb5_kt_get_entry(krb5_context context,
 		  krb5_keytab id,
-		  krb5_principal principal,
+		  krb5_const_principal principal,
 		  krb5_kvno kvno,
 		  krb5_keytype keytype,
 		  krb5_keytab_entry *entry)
