@@ -153,16 +153,24 @@ init(int argc, char **argv)
 	const char *realm = argv[i];
 
 	/* Create `krbtgt/REALM' */
-	krb5_make_principal(context, &princ, realm,
-			    KRB5_TGS_NAME, realm, NULL);
+	ret = krb5_make_principal(context, &princ, realm,
+				  KRB5_TGS_NAME, realm, NULL);
+	if(ret)
+	    return 0;
 	if (realm_max_life == NULL) {
 	    max_life = 0;
-	    edit_deltat ("Realm max ticket life", &max_life, NULL, 0);
+	    if(edit_deltat ("Realm max ticket life", &max_life, NULL, 0)) {
+		krb5_free_principal(context, princ);
+		return 0;
+	    }
 	}
 	if (realm_max_rlife == NULL) {
 	    max_rlife = 0;
-	    edit_deltat("Realm max renewable ticket life", &max_rlife,
-			NULL, 0);
+	    if(edit_deltat("Realm max renewable ticket life", &max_rlife,
+			   NULL, 0)) {
+		krb5_free_principal(context, princ);
+		return 0;
+	    }
 	}
 	create_random_entry(princ, max_life, max_rlife, 0);
 	krb5_free_principal(context, princ);
