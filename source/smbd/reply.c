@@ -765,7 +765,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
 
     username_str = smb_buf(inbuf)+smb_apasslen;
-    fstrcpy( native_lanman, skip_string(username_str, 3));
+    fstrcpy( native_lanman, skip_string(username_str, 4));
     
     /* 
      * we distinguish between 2K and XP by the "Native Lan Manager" 
