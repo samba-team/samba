@@ -539,15 +539,15 @@ do a SAMR Query Unknown 12
 ****************************************************************************/
 BOOL do_samr_query_unknown_12(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
-				uint32 *num_aliases,
-				fstring als_names    [MAX_LOOKUP_SIDS],
-				uint32  num_als_users[MAX_LOOKUP_SIDS])
+				uint32 *num_names,
+				fstring names[MAX_LOOKUP_SIDS],
+				uint32  type [MAX_LOOKUP_SIDS])
 {
 	prs_struct data;
 	prs_struct rdata;
 
 	SAMR_Q_UNKNOWN_12 q_o;
-    BOOL valid_query = False;
+	BOOL valid_query = False;
 
 	/* create and send a MSRPC command with api SAMR_UNKNOWN_12 */
 
@@ -557,7 +557,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 	DEBUG(4,("SAMR Query Unknown 12.\n"));
 
 	if (pol == NULL || rid == 0 || num_gids == 0 || gids == NULL ||
-	    num_aliases == NULL || als_names == NULL || num_als_users == NULL ) return False;
+	    num_names == NULL || names == NULL || type == NULL ) return False;
 
 	/* store the parameters */
 	make_samr_q_unknown_12(&q_o, pol, rid, num_gids, gids);
@@ -583,27 +583,27 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 
 		if (p)
 		{
-			if (r_o.ptr_aliases != 0 && r_o.ptr_als_usrs != 0 &&
-			    r_o.num_als_usrs1 == r_o.num_aliases1)
+			if (r_o.ptr_names != 0 && r_o.ptr_types != 0 &&
+			    r_o.num_types1 == r_o.num_names1)
 			{
 				int i;
 
 				valid_query = True;
-				*num_aliases = r_o.num_aliases1;
+				*num_names = r_o.num_names1;
 
-				for (i = 0; i < r_o.num_aliases1; i++)
+				for (i = 0; i < r_o.num_names1; i++)
 				{
-					fstrcpy(als_names[i], unistrn2(r_o.uni_als_name[i].buffer, r_o.uni_als_name[i].uni_str_len));
+					fstrcpy(names[i], unistr2_to_str(&r_o.uni_name[i]));
 				}
-				for (i = 0; i < r_o.num_als_usrs1; i++)
+				for (i = 0; i < r_o.num_types1; i++)
 				{
-					num_als_users[i] = r_o.num_als_usrs[i];
+					type[i] = r_o.type[i];
 				}
 			}
-			else if (r_o.ptr_aliases == 0 && r_o.ptr_als_usrs == 0)
+			else if (r_o.ptr_names == 0 && r_o.ptr_types == 0)
 			{
 				valid_query = True;
-				*num_aliases = 0;
+				*num_names = 0;
 			}
 			else
 			{
