@@ -203,8 +203,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
  */
 static void usage(char *name)
 {
-	fprintf(stderr, "Usage (as root) is : %s [-add] [username] [password]\n", name);
-	fprintf(stderr, "Usage (as user) is : %s [old password  new password]\n", name);
+	fprintf(stderr, "Usage is : %s [-add] [username] [password]\n", name);
 	exit(1);
 }
 
@@ -270,7 +269,7 @@ static void usage(char *name)
     if ((argv[1][0] == '-') && (argv[1][1] == 'a'))
       add_user = True;
 
-    if(add_user && (argc != 4 || argc != 3))
+    if(add_user && (argc < 2 || argc > 4))
       usage(argv[0]);
 
     /* root can specify password on command-line */
@@ -485,10 +484,7 @@ Error was %d. Password file may be corrupt ! Please examine by hand !\n",
      we don't need to check the old password. */
   if (real_uid != 0) {
     if (valid_old_pwd == False) {
-      fprintf(stderr, "%s: User %s is disabled, plase contact your administrator to enable it.\n", argv[0], pwd->pw_name);
-      fclose(fp);
-      pw_file_unlock(lockfd);
-      exit(1);
+      fprintf(stderr, "%s: User %s has no old SMB password.\n", argv[0], pwd->pw_name);
     }
     /* Check the old Lanman password - NULL means 'NO PASSWORD' */
     if (smb_pwent->smb_passwd != NULL) {
