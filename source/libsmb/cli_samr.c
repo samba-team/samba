@@ -85,8 +85,7 @@ void cli_samr_shutdown(struct cli_state *cli)
 /* Connect to SAMR database */
 
 uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			char *srv_name, uint32 access_mask, 
-			POLICY_HND *connect_pol)
+			uint32 access_mask, POLICY_HND *connect_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CONNECT q;
@@ -103,7 +102,7 @@ uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_samr_q_connect(&q, srv_name, access_mask);
+	init_samr_q_connect(&q, cli->desthost, access_mask);
 
 	if (!samr_io_q_connect("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_CONNECT, &qbuf, &rbuf)) {
@@ -320,7 +319,7 @@ uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			       POLICY_HND *user_pol, uint16 switch_value, 
-			       SAM_USERINFO_CTR *ctr)
+			       SAM_USERINFO_CTR **ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERINFO q;
@@ -346,8 +345,6 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	r.ctr = ctr;
-
 	if (!samr_io_r_query_userinfo("", &r, &rbuf, 0)) {
 		goto done;
 	}
@@ -355,6 +352,7 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	result = r.status;
+	*ctr = r.ctr;
 
  done:
 	prs_mem_free(&qbuf);
@@ -772,7 +770,71 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
+	r.ctr = ctr;
+
 	if (!samr_io_r_query_dispinfo("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+        result = r.status;
+
+	if (result != NT_STATUS_NOPROBLEMO &&
+	    result != STATUS_MORE_ENTRIES) {
+		goto done;
+	}
+
+	*num_entries = r.num_entries;
+	*start_idx += r.num_entries;  /* No next_idx in this structure! */
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Lookup rids.  Note that NT4 seems to crash if more than ~1000 rids are
+   looked up in one packet. */
+
+uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			    POLICY_HND *domain_pol, uint32 flags,
+			    uint32 num_rids, uint32 *rids, 
+			    uint32 *num_names, char ***names,
+			    uint32 **name_types)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_LOOKUP_RIDS q;
+	SAMR_R_LOOKUP_RIDS r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL, i;
+
+        if (num_rids > 1000) {
+                DEBUG(2, ("cli_samr_lookup_rids: warning: NT4 can crash if "
+                          "more than ~1000 rids are looked up at once.\n"));
+        }
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_lookup_rids(mem_ctx, &q, domain_pol, flags,
+				num_rids, rids);
+
+	if (!samr_io_q_lookup_rids("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_RIDS, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_lookup_rids("", &r, &rbuf, 0)) {
 		goto done;
 	}
 
@@ -782,8 +844,282 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*num_entries = r.num_entries;
-	*start_idx += r.num_entries;  /* No next_idx in this structure! */
+	if (r.num_names1 == 0) {
+		*num_names = 0;
+		*names = NULL;
+		goto done;
+	}
+
+	*num_names = r.num_names1;
+	*names = talloc(mem_ctx, sizeof(char *) * r.num_names1);
+	*name_types = talloc(mem_ctx, sizeof(uint32) * r.num_names1);
+
+	for (i = 0; i < r.num_names1; i++) {
+		fstring tmp;
+
+		unistr2_to_ascii(tmp, &r.uni_name[i], sizeof(tmp) - 1);
+		(*names)[i] = talloc_strdup(mem_ctx, tmp);
+		(*name_types)[i] = r.type[i];
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Lookup names */
+
+uint32 cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *domain_pol, uint32 flags,
+			     uint32 num_names, char **names,
+			     uint32 *num_rids, uint32 **rids,
+			     uint32 **rid_types)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_LOOKUP_NAMES q;
+	SAMR_R_LOOKUP_NAMES r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL, i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_lookup_names(mem_ctx, &q, domain_pol, flags,
+				 num_names, names);
+
+	if (!samr_io_q_lookup_names("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_NAMES, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_lookup_names("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	if (r.num_rids1 == 0) {
+		*num_rids = 0;
+		goto done;
+	}
+
+	*num_rids = r.num_rids1;
+	*rids = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
+	*rid_types = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
+
+	for (i = 0; i < r.num_rids1; i++) {
+		(*rids)[i] = r.rids[i];
+		(*rid_types)[i] = r.types[i];
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Create a domain user */
+
+uint32 cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *domain_pol, char *acct_name,
+				uint32 acb_info, uint32 unknown, 
+				POLICY_HND *user_pol, uint32 *rid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CREATE_USER q;
+	SAMR_R_CREATE_USER r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_create_user(&q, domain_pol, acct_name, acb_info, unknown);
+
+	if (!samr_io_q_create_user("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CREATE_USER, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_create_user("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	if (user_pol)
+		*user_pol = r.user_pol;
+
+	if (rid)
+		*rid = r.user_rid;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set userinfo */
+
+uint32 cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *user_pol, uint16 switch_value,
+			     uchar sess_key[16], SAM_USERINFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_USERINFO q;
+	SAMR_R_SET_USERINFO r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	q.ctr = ctr;
+
+	init_samr_q_set_userinfo(&q, user_pol, sess_key, switch_value, 
+				 ctr->info.id);
+
+	if (!samr_io_q_set_userinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_USERINFO, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_userinfo("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set userinfo2 */
+
+uint32 cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			      POLICY_HND *user_pol, uint16 switch_value,
+			      uchar sess_key[16], SAM_USERINFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_USERINFO2 q;
+	SAMR_R_SET_USERINFO2 r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_userinfo2(&q, user_pol, sess_key, switch_value, ctr);
+
+	if (!samr_io_q_set_userinfo2("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_USERINFO2, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_userinfo2("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete domain user */
+
+uint32 cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *user_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DELETE_DOM_USER q;
+	SAMR_R_DELETE_DOM_USER r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_delete_dom_user(&q, user_pol);
+
+	if (!samr_io_q_delete_dom_user("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_USER, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_delete_dom_user("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);

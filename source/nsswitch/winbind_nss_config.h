@@ -22,22 +22,12 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#ifndef _NTDOM_CONFIG_H
-#define _NTDOM_CONFIG_H
+#ifndef _WINBIND_NSS_CONFIG_H
+#define _WINBIND_NSS_CONFIG_H
 
 /* Include header files from data in config.h file */
 
 #include <config.h>
-
-#ifdef RELIANTUNIX
-/*
- * <unistd.h> has to be included before any other to get
- * large file support on Reliant UNIX. Yes, it's broken :-).
- */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#endif /* RELIANTUNIX */
 
 #include <stdio.h>
 
@@ -178,6 +168,7 @@ typedef int BOOL;
 #ifndef S_IFSOCK
 #define S_IFSOCK S_IFIFO
 #endif
+
 #ifndef S_ISSOCK
 #define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
 #endif

@@ -82,7 +82,9 @@ SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup 
+WINBIND_PROGS = nsswitch/libnss_winbind.so bin/winbindd bin/wbinfo
+WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup @WINBIND_TARGETS@
 
 SCRIPTS = $(srcdir)/script/smbtar 
 
@@ -125,7 +127,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o \
-	       rpc_client/cli_pipe.o
+	       rpc_client/cli_pipe.o nsswitch/winbindd_glue.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -152,7 +154,7 @@ RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
 		 rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
 		 rpc_client/cli_use.o rpc_client/cli_login.o \
 		 rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
-		 lib/util_list.o
+		 lib/util_list.o rpc_client/cli_trust.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -352,20 +354,27 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_idmap.o \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
-		nsswitch/winbindd_pam.o
+		nsswitch/winbindd_pam.o   \
+		nsswitch/winbindd_sid.o   \
+		nsswitch/winbindd_misc.o
+
+NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
+		smbd/password.o smbd/utmp.o smbd/session.o smbd/uid.o smbd/sec_ctx.o \
+		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
+		smbd/chgpasswd.o
 
 WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) \
-		$(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
+		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
+		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
+		$(GROUPDB_OBJ) $(PROFILE_OBJ) \
+		$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o
 
-WINBIND_NSS_OBJ = nsswitch/winbindd.o nsswitch/wb_common.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
-
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -401,6 +410,8 @@ bin/rpccheck: $(RPCCHECK_OBJ) bin/.dummy
 debug2html : CHECK bin/debug2html
 
 smbfilter : CHECK bin/smbfilter
+
+nsswitch : CHECK @WINBIND_TARGETS@
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -587,29 +598,22 @@ nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
-#bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
-#	@echo Linking $@
-#	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-#nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
-#	@echo "Linking $@"
-#	@$(LINK) -shared -o $@ $(WINBIND_NSS_PICOBJS)
+nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
+	@echo "Linking $@"
+	@$(LINK) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
 
-#nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
-#	@echo Linking $@
-#	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
+nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
 
-#bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
-#	@echo Linking $@
-#	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
-#		$(UBIQX_OBJ) $(LIBS)
-
-#nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so \
-#	nsswitch/libnss_winbind.so bin/wbinfo
-
-bin/winbindd nsswitch/libnss_winbind.so nsswitch/pam_winbind.so bin/wbinfo nsswitch:
-	@echo The winbind code in this branch is not compilable.  Please use
-	@echo the version in HEAD CVS instead.
+bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
+		$(UBIQX_OBJ) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 

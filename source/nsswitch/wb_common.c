@@ -29,6 +29,17 @@
 /* Global variables.  These are effectively the client state information */
 
 static int established_socket = -1;           /* fd for winbindd socket */
+static char *excluded_domain;
+
+/*
+  smbd needs to be able to exclude lookups for its own domain
+*/
+void winbind_exclude_domain(const char *domain)
+{
+	if (excluded_domain) free(excluded_domain);
+	excluded_domain = strdup(domain);
+}
+
 
 /* Initialise a request structure */
 
@@ -37,7 +48,7 @@ void init_request(struct winbindd_request *request, int request_type)
         static char *domain_env;
         static BOOL initialised;
 
-	request->cmd = (enum winbindd_cmd)request_type;
+	request->cmd = request_type;
 	request->pid = getpid();
 	request->domain[0] = '\0';
 
@@ -99,7 +110,8 @@ static int open_pipe_sock(void)
 		return -1;
 	}
 	
-	if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISDIR(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
@@ -128,7 +140,8 @@ static int open_pipe_sock(void)
 	
 	/* Check permissions on unix socket file */
 	
-	if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISSOCK(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
@@ -169,6 +182,7 @@ int write_sock(void *buffer, int count)
 	while(nwritten < count) {
 		struct timeval tv;
 		fd_set r_fds;
+		int selret;
 		
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling select(). */
@@ -177,8 +191,8 @@ int write_sock(void *buffer, int count)
 		FD_SET(established_socket, &r_fds);
 		ZERO_STRUCT(tv);
 		
-		if (select(established_socket + 1, &r_fds, 
-				     NULL, NULL, &tv) == -1) {
+		if ((selret = select(established_socket + 1, &r_fds, 
+				     NULL, NULL, &tv)) == -1) {
 			close_sock();
 			return -1;                   /* Select error */
 		}
@@ -315,6 +329,12 @@ NSS_STATUS winbindd_request(int req_type,
 	/* Check for our tricky environment variable */
 
 	if (getenv(WINBINDD_DONT_ENV)) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
+	/* smbd may have excluded this domain */
+	if (excluded_domain && 
+	    strcasecmp(excluded_domain, request->domain) == 0) {
 		return NSS_STATUS_NOTFOUND;
 	}
 

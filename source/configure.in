@@ -2263,6 +2263,48 @@ if test "x$prefix" = xNONE -a "$sbindir" = "\${exec_prefix}/sbin"; then
 	sbindir="$bindir"
 fi
 
+#################################################
+# check whether winbind is supported on this platform
+
+AC_MSG_CHECKING(whether to compile winbind)
+
+case "$host_os" in 
+        *linux*|*solaris*)
+                WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PROGS)"
+		case "$with_pam" in
+			yes)
+				WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PAM_PROGS)"
+			;;
+			*)
+		esac
+                ;;
+        *)
+                winbind_no_reason=", unsupported on $host_os"
+                ;;
+esac
+
+AC_ARG_WITH(winbind,
+[  --with-winbind   	Build winbind library (default, if supported by OS)
+  --without-winbind 	Don't build winbind library],
+[ 
+  case "$withval" in
+        no)
+                WINBIND_TARGETS=""
+                winbind_reason=""
+                ;;
+  esac ],
+)
+
+if test x"$WINBIND_TARGETS" = x; then
+        AC_MSG_RESULT(no$winbind_no_reason)
+else
+        AC_MSG_RESULT(yes)
+fi
+
+AC_SUBST(WINBIND_TARGETS)
+
+#################################################
+# final configure stuff
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
