@@ -463,9 +463,15 @@ typedef struct ptr_info_1004_info
 	SH_INFO_1004_STR info_1004_str; 
 } SRV_SHARE_INFO_1004;
 
+#define SHARE_1005_IN_DFS               0x00000001
+#define SHARE_1005_DFS_ROOT             0x00000002
+/* use the CSC policy mask and shift to match up with the smb.conf parm */
+#define SHARE_1005_CSC_POLICY_MASK      0x00000030
+#define SHARE_1005_CSC_POLICY_SHIFT     4
+
 typedef struct share_info_1005_info
 {
-  uint32 dfs_root_flag; 
+  uint32 share_info_flags; 
 } SRV_SHARE_INFO_1005;
 
 typedef struct share_info_1006_info

@@ -623,7 +623,8 @@ static BOOL srv_io_share_info1005(const char* desc, SRV_SHARE_INFO_1005* sh1005,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag))
+	if(!prs_uint32("share_info_flags", ps, depth, 
+		       &sh1005->share_info_flags))
 		return False;
 
 	return True;
