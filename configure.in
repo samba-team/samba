@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_INIT(lib/krb5/send_to_kdc.c)
+AC_PREREQ(2.14a)
+AC_INIT(heimdal, 0.3a-pre, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
 AM_INIT_AUTOMAKE(heimdal,0.3a-pre)
@@ -169,6 +170,15 @@ if test "$enable_dce" = yes; then
     AC_DEFINE(DCE, 1, [Define if you want support for DCE/DFS PAG's.])
 fi
 AM_CONDITIONAL(DCE, test "$with_dce" = yes)
+
+## XXX should get this from ibmcxx.cfg
+dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
+AC_SUBST(dpagaix_CFLAGS)
+dpagaix_LDFLAGS="-Wl,-edpagaix -Wl,dfspag.exp"
+AC_SUBST(dpagaix_LDFLAGS)
+dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
+AC_SUBST(dpagaix_LDADD)
+
 
 AC_ARG_ENABLE(kaserver,
 [  --enable-kaserver	  if you want the KDC to try to emulate a kaserver])
