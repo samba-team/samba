@@ -279,6 +279,8 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 		return NULL;
 	}
 
+	ZERO_STRUCT(act);
+
 	act.sa_handler = NULL;
 	act.sa_sigaction = signal_handler;
 	act.sa_flags = SA_SIGINFO;
