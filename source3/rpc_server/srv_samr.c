@@ -670,7 +670,6 @@ static void api_samr_query_dispinfo( uint16 vuid, prs_struct *data, prs_struct *
 	samr_reply_query_dispinfo(&q_e, rdata);
 }
 
-#if 0
 /*******************************************************************
  samr_reply_query_groupmem
  ********************************************************************/
@@ -741,9 +740,14 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_query_groupmem("", &r_u, rdata, 0);
 
-	if (sid != NULL)
+	if (rid != NULL)
 	{
-		free(sid);
+		free(rid);
+	}
+
+	if (attr != NULL)
+	{
+		free(attr);
 	}
 
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
@@ -763,8 +767,6 @@ static void api_samr_query_groupmem( uint16 vuid, prs_struct *data, prs_struct *
 	/* construct reply.  always indicate success */
 	samr_reply_query_groupmem(&q_u, rdata);
 }
-
-#endif
 
 
 /*******************************************************************
@@ -793,13 +795,13 @@ static void samr_reply_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 		{
 			r_e.ptr = 1;
 			ctr.switch_value = 1;
-			make_samr_group_info1(&ctr.group.info1, "<account name>", "<account description>");
+			make_samr_group_info1(&ctr.group.info1, "account name", "account description");
 		}
 		else if (q_u->switch_level == 4)
 		{
 			r_e.ptr = 1;
 			ctr.switch_value = 4;
-			make_samr_group_info4(&ctr.group.info4, "<account description>");
+			make_samr_group_info4(&ctr.group.info4, "account description");
 		}
 		else
 		{
@@ -1296,7 +1298,6 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 			sid_copy(&sid, &pol_sid);
 			sid_append_rid(&sid, q_u->gid[i]);
 			lookup_sid(&sid, group_names[i], &group_attrs[i]);
-			group_attrs[i] = 0x2;
 		}
 	}
 
@@ -2075,6 +2076,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_ENUM_DOM_ALIASES" , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },
 	{ "SAMR_QUERY_USERALIASES", SAMR_QUERY_USERALIASES, api_samr_query_useraliases},
 	{ "SAMR_QUERY_ALIASMEM"   , SAMR_QUERY_ALIASMEM   , api_samr_query_aliasmem   },
+	{ "SAMR_QUERY_GROUPMEM"   , SAMR_QUERY_GROUPMEM   , api_samr_query_groupmem   },
 	{ "SAMR_LOOKUP_NAMES"     , SAMR_LOOKUP_NAMES     , api_samr_lookup_names     },
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },

@@ -1387,7 +1387,7 @@ void make_samr_group_info1(GROUP_INFO1 *gr1,
 	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len , desc_len, acct_desc ? 1 : 0);
 
 	gr1->unknown_1 = 0x3;
-	gr1->unknown_2 = 0x1;
+	gr1->unknown_2 = 0x3;
 
 	make_unistr2(&(gr1->uni_acct_name), acct_name, acct_len);
 	make_unistr2(&(gr1->uni_acct_desc), acct_desc, desc_len);
@@ -1406,13 +1406,15 @@ void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 
 	prs_align(ps);
 
-	smb_io_unihdr ("hdr_acct_desc", &(gr1->hdr_acct_desc) , ps, depth); 
+	smb_io_unihdr ("hdr_acct_name", &(gr1->hdr_acct_name) , ps, depth); 
 	smb_io_unihdr ("hdr_acct_desc", &(gr1->hdr_acct_desc) , ps, depth); 
 
 	prs_uint32("unknown_1", ps, depth, &(gr1->unknown_1));
 	prs_uint32("unknown_2", ps, depth, &(gr1->unknown_2));
 
-	smb_io_unistr2("uni_acct_desc", &(gr1->uni_acct_desc), gr1->hdr_acct_desc.buffer, ps, depth);
+	smb_io_unistr2("uni_acct_name", &(gr1->uni_acct_name), gr1->hdr_acct_name.buffer, ps, depth);
+	prs_align(ps);
+
 	smb_io_unistr2("uni_acct_desc", &(gr1->uni_acct_desc), gr1->hdr_acct_desc.buffer, ps, depth);
 }
 
@@ -1460,25 +1462,22 @@ void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int d
 	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
 	prs_align(ps);
 
-	if (ctr->switch_value != 0)
+	switch (ctr->switch_value)
 	{
-		switch (ctr->switch_value)
+		case 1:
 		{
-			case 1:
-			{
-				samr_io_group_info1("group_info1", &(ctr->group.info1), ps, depth);
-				break;
-			}
-			case 4:
-			{
-				samr_io_group_info4("group_info4", &(ctr->group.info4), ps, depth);
-				break;
-			}
-			default:
-			{
-				DEBUG(4,("samr_group_info_ctr: unsupported switch level\n"));
-				break;
-			}
+			samr_io_group_info1("group_info1", &(ctr->group.info1), ps, depth);
+			break;
+		}
+		case 4:
+		{
+			samr_io_group_info4("group_info4", &(ctr->group.info4), ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(4,("samr_group_info_ctr: unsupported switch level\n"));
+			break;
 		}
 	}
 
@@ -2483,43 +2482,43 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 makes a SAMR_R_UNKNOWN_12 structure.
 ********************************************************************/
 void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
-		uint32 num_aliases, fstring *als_name, uint8 *num_als_usrs,
+		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status)
 {
 	int i;
-	if (r_u == NULL || als_name == NULL || num_als_usrs == NULL) return;
+	if (r_u == NULL || name == NULL || type == NULL) return;
 
 	DEBUG(5,("make_samr_r_unknown_12\n"));
 
 	if (status == 0x0)
 	{
-		r_u->num_aliases1 = num_aliases;
-		r_u->ptr_aliases  = 1;
-		r_u->num_aliases2 = num_aliases;
+		r_u->num_names1 = num_names;
+		r_u->ptr_names  = 1;
+		r_u->num_names2 = num_names;
 
-		r_u->num_als_usrs1 = num_aliases;
-		r_u->ptr_als_usrs  = 1;
-		r_u->num_als_usrs2 = num_aliases;
+		r_u->num_types1 = num_names;
+		r_u->ptr_types  = 1;
+		r_u->num_types2 = num_names;
 
-		SMB_ASSERT_ARRAY(r_u->hdr_als_name, num_aliases);
+		SMB_ASSERT_ARRAY(r_u->hdr_name, num_names);
 
-		for (i = 0; i < num_aliases; i++)
+		for (i = 0; i < num_names; i++)
 		{
-			int als_len = als_name[i] != NULL ? strlen(als_name[i]) : 0;
-			make_uni_hdr(&(r_u->hdr_als_name[i]), als_len    , als_len, als_name[i] ? 1 : 0);
-			make_unistr2(&(r_u->uni_als_name[i]), als_name[i], als_len);
-			r_u->num_als_usrs[i] = num_als_usrs[i];
+			int len = name[i] != NULL ? strlen(name[i]) : 0;
+			make_uni_hdr(&(r_u->hdr_name[i]), len    , len, name[i] ? 1 : 0);
+			make_unistr2(&(r_u->uni_name[i]), name[i], len);
+			r_u->type[i] = type[i];
 		}
 	}
 	else
 	{
-		r_u->num_aliases1 = num_aliases;
-		r_u->ptr_aliases  = 0;
-		r_u->num_aliases2 = num_aliases;
+		r_u->num_names1 = num_names;
+		r_u->ptr_names  = 0;
+		r_u->num_names2 = num_names;
 
-		r_u->num_als_usrs1 = num_aliases;
-		r_u->ptr_als_usrs  = 0;
-		r_u->num_als_usrs2 = num_aliases;
+		r_u->num_types1 = num_names;
+		r_u->ptr_types  = 0;
+		r_u->num_types2 = num_names;
 	}
 
 	r_u->status = status;
@@ -2539,43 +2538,41 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 
 	prs_align(ps);
 
-	prs_uint32("num_aliases1", ps, depth, &(r_u->num_aliases1));
-	prs_uint32("ptr_aliases ", ps, depth, &(r_u->ptr_aliases ));
-	prs_uint32("num_aliases2", ps, depth, &(r_u->num_aliases2));
+	prs_uint32("num_names1", ps, depth, &(r_u->num_names1));
+	prs_uint32("ptr_names ", ps, depth, &(r_u->ptr_names ));
+	prs_uint32("num_names2", ps, depth, &(r_u->num_names2));
 
-	if (r_u->ptr_aliases != 0 && r_u->num_aliases1 != 0)
+	if (r_u->ptr_names != 0 && r_u->num_names1 != 0)
 	{
-		SMB_ASSERT_ARRAY(r_u->hdr_als_name, r_u->num_aliases2);
+		SMB_ASSERT_ARRAY(r_u->hdr_name, r_u->num_names2);
 
-		for (i = 0; i < r_u->num_aliases2; i++)
+		for (i = 0; i < r_u->num_names2; i++)
 		{
 			prs_grow(ps);
-			slprintf(tmp, sizeof(tmp) - 1, "als_hdr[%02d]  ", i);
-			smb_io_unihdr ("", &(r_u->hdr_als_name[i]), ps, depth); 
+			slprintf(tmp, sizeof(tmp) - 1, "hdr[%02d]  ", i);
+			smb_io_unihdr ("", &(r_u->hdr_name[i]), ps, depth); 
 		}
-		for (i = 0; i < r_u->num_aliases2; i++)
+		for (i = 0; i < r_u->num_names2; i++)
 		{
 			prs_grow(ps);
-			slprintf(tmp, sizeof(tmp) - 1, "als_str[%02d]  ", i);
-			smb_io_unistr2("", &(r_u->uni_als_name[i]), r_u->hdr_als_name[i].buffer, ps, depth); 
+			slprintf(tmp, sizeof(tmp) - 1, "str[%02d]  ", i);
+			smb_io_unistr2("", &(r_u->uni_name[i]), r_u->hdr_name[i].buffer, ps, depth); 
 		}
 	}
 
 	prs_align(ps);
 
-	prs_uint32("num_als_usrs1", ps, depth, &(r_u->num_als_usrs1));
-	prs_uint32("ptr_als_usrs ", ps, depth, &(r_u->ptr_als_usrs ));
-	prs_uint32("num_als_usrs2", ps, depth, &(r_u->num_als_usrs2));
+	prs_uint32("num_types1", ps, depth, &(r_u->num_types1));
+	prs_uint32("ptr_types ", ps, depth, &(r_u->ptr_types ));
+	prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
 
-	if (r_u->ptr_als_usrs != 0 && r_u->num_als_usrs1 != 0)
+	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
 	{
-		SMB_ASSERT_ARRAY(r_u->num_als_usrs, r_u->num_als_usrs2);
-
-		for (i = 0; i < r_u->num_als_usrs2; i++)
+		for (i = 0; i < r_u->num_types2; i++)
 		{
 			prs_grow(ps);
-			slprintf(tmp, sizeof(tmp) - 1, "als_usrs[%02d]  ", i);
-			prs_uint32(tmp, ps, depth, &(r_u->num_als_usrs[i]));
+			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
+			prs_uint32(tmp, ps, depth, &(r_u->type[i]));
 		}
 	}
 
