@@ -89,6 +89,8 @@ static int find_handle(int handle)
 	printf("(%d) ERROR: handle %d was not found\n", 
 	       line_count, handle);
 	exit(1);
+
+	return -1;		/* Not reached */
 }
 
 
