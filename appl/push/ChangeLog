@@ -1,3 +1,9 @@
+1998-11-07  Assar Westerlund  <assar@sics.se>
+
+	* push.8: updated
+
+	* push.c: --from implementation from <lha@stacken.kth.se>
+
 Fri Jul 10 01:14:45 1998  Assar Westerlund  <assar@sics.se>
 
 	* push.c (net_{read,write}): remove
