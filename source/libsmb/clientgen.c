@@ -1126,6 +1126,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
 {
 	char *p;
+        int saved_timeout = cli->timeout;
 
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
@@ -1149,9 +1150,15 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SIVAL(p, 6, len);
 
 	send_smb(cli->fd,cli->outbuf);
+
+        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
+
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+                cli->timeout = saved_timeout;
 		return False;
 	}
+
+	cli->timeout = saved_timeout;
 
 	if (CVAL(cli->inbuf,smb_rcls) != 0) {
 		return False;
@@ -1315,6 +1322,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
+
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_ALL(mode, 0x0008) ? 0xFFFFFFFF : 0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);

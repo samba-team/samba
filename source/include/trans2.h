@@ -231,6 +231,12 @@ Byte offset   Type     name                description
 #define SMB_SET_FILE_ALLOCATION_INFO	0x103
 #define SMB_SET_FILE_END_OF_FILE_INFO	0x104
 
+/*
+ * Thursby MAC extensions....
+ */
+
+#define SMB_MAC_QUERY_FS_INFO           0x301
+
 #define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
 
 #endif

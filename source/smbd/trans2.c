@@ -1170,6 +1170,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SIVAL(pdata,0,0); /* dev type */
       SIVAL(pdata,4,0); /* characteristics */
       break;
+    case SMB_MAC_QUERY_FS_INFO:
+      /*
+       * Thursby MAC extension...
+       */
+      data_len = 88;
+      SIVAL(pdata,84,0x100); /* Don't support mac... */
+      break;
     default:
       return(ERROR(ERRDOS,ERRunknownlevel));
   }
