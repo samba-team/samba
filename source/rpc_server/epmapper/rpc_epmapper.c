@@ -21,7 +21,9 @@
 */
 
 #include "includes.h"
+#include "rpc_server/common/common.h"
 
+typedef uint32_t error_status_t;
 
 /* handle types for this module */
 enum handle_types {HTYPE_LOOKUP};
@@ -145,14 +147,14 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 }
 
 
-static NTSTATUS epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-			   struct epm_Insert *r)
+static error_status_t epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+				 struct epm_Insert *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static NTSTATUS epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-			   struct epm_Delete *r)
+static error_status_t epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+				 struct epm_Delete *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -162,8 +164,8 @@ static NTSTATUS epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
   implement epm_Lookup. This call is used to enumerate the interfaces
   available on a rpc server
 */
-static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-			   struct epm_Lookup *r)
+static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+				 struct epm_Lookup *r)
 {
 	struct dcesrv_handle *h;
 	struct rpc_eps {
@@ -174,9 +176,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	int i;
 
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
-	if (!h) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	DCESRV_CHECK_HANDLE(h);
 
 	eps = h->data;
 
@@ -185,7 +185,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 		   will feed from this list, stored in the handle */
 		eps = talloc_p(h->mem_ctx, struct rpc_eps);
 		if (!eps) {
-			return NT_STATUS_NO_MEMORY;
+			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 		h->data = eps;
 
@@ -200,19 +200,17 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 
 	*r->out.entry_handle = h->wire_handle;
 	r->out.num_ents = num_ents;
-	r->out.status = 0;
 
 	if (num_ents == 0) {
 		r->out.entries = NULL;
-		r->out.status  = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 		ZERO_STRUCTP(r->out.entry_handle);
 		dcesrv_handle_destroy(dce_call->conn, h);
-		return NT_STATUS_OK;
+		return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	}
 
 	r->out.entries = talloc_array_p(mem_ctx, struct epm_entry_t, num_ents);
 	if (!r->out.entries) {
-		return NT_STATUS_NO_MEMORY;
+		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 
 	for (i=0;i<num_ents;i++) {
@@ -220,18 +218,18 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 		r->out.entries[i].annotation = eps->e[i].name;
 		r->out.entries[i].tower = talloc_p(mem_ctx, struct epm_twr_t);
 		if (!r->out.entries[i].tower) {
-			return NT_STATUS_NO_MEMORY;
+			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 
 		if (!fill_protocol_tower(mem_ctx, &r->out.entries[i].tower->towers, &eps->e[i])) {
-			return NT_STATUS_NO_MEMORY;
+			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 	}
 
 	eps->count -= num_ents;
 	eps->e += num_ents;
 
-	return NT_STATUS_OK;
+	return EPMAPPER_STATUS_OK;
 }
 
 
@@ -239,8 +237,8 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
   implement epm_Map. This is used to find the specific endpoint to talk to given
   a generic protocol tower
 */
-static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-			struct epm_Map *r)
+static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+			      struct epm_Map *r)
 {
 	uint32_t count;
 	int i;
@@ -251,14 +249,13 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(*r->out.entry_handle);
 	r->out.num_towers = 1;
-	r->out.status = 0;
 	r->out.towers = talloc_p(mem_ctx, struct epm_twr_p_t);
 	if (!r->out.towers) {
-		return NT_STATUS_NO_MEMORY;
+		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 	r->out.towers->twr = talloc_p(mem_ctx, struct epm_twr_t);
 	if (!r->out.towers->twr) {
-		return NT_STATUS_NO_MEMORY;
+		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 	
 	if (!r->in.map_tower || r->in.max_towers == 0 ||
@@ -297,40 +294,39 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		}
 		fill_protocol_tower(mem_ctx, &r->out.towers->twr->towers, &eps[i]);
 		r->out.towers->twr->tower_length = 0;
-		return NT_STATUS_OK;
+		return EPMAPPER_STATUS_OK;
 	}
 
 
 failed:
 	r->out.num_towers = 0;
-	r->out.status = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	r->out.towers->twr = NULL;
 
-	return NT_STATUS_OK;
+	return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 }
 
-static NTSTATUS epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-				     struct epm_LookupHandleFree *r)
+static error_status_t epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+					   struct epm_LookupHandleFree *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static NTSTATUS epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-			      struct epm_InqObject *r)
+static error_status_t epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+				    struct epm_InqObject *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static NTSTATUS epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			       struct epm_MgmtDelete *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static NTSTATUS epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static error_status_t epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			    struct epm_MapAuth *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /* include the generated boilerplate */

@@ -162,7 +162,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 4);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
+	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
@@ -175,7 +175,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
+	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
@@ -192,7 +192,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p->mem_ctx, 2);
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
+	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
@@ -226,7 +226,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	do {
 		int i;
 		status = dcerpc_epm_Lookup(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status) || r.out.status != 0) {
+		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
 			break;
 		}
 		for (i=0;i<r.out.num_ents;i++) {
@@ -235,7 +235,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			test_Map(p, mem_ctx, r.out.entries[i].tower);
 		}
 	} while (NT_STATUS_IS_OK(status) && 
-		 r.out.status == 0 && 
+		 r.out.result == 0 && 
 		 r.out.num_ents == r.in.max_ents);
 
 	if (!NT_STATUS_IS_OK(status)) {
