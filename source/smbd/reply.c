@@ -261,15 +261,32 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (connection_num < 0)
     return(connection_error(inbuf,outbuf,connection_num));
 
-  set_message(outbuf,2,strlen(devicename)+1,True);
+  if (Protocol < PROTOCOL_NT1)
+  {
+    set_message(outbuf,2,strlen(devicename)+1,True);
+    strcpy(smb_buf(outbuf),devicename);
+  }
+  else
+  {
+    char *fsname = "NTFS";
+    char *p;
+
+    set_message(outbuf,3,3,True);
+
+    p = smb_buf(outbuf);
+    strcpy(p,devicename); p = skip_string(p,1); /* device name */
+    strcpy(p,fsname); p = skip_string(p,1); /* filesystem type e.g NTFS */
+
+    set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
+
+    SSVAL(outbuf, smb_vwv2, 0x0); /* optional support */
+  }
   
   DEBUG(3,("%s tconX service=%s user=%s cnum=%d\n",timestring(),service,user,connection_num));
   
   /* set the incoming and outgoing tid to the just created one */
   SSVAL(inbuf,smb_tid,connection_num);
   SSVAL(outbuf,smb_tid,connection_num);
-
-  strcpy(smb_buf(outbuf),devicename);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -350,7 +367,23 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
+    uint32 client_caps = IVAL(inbuf,smb_vwv11);
+    enum remote_arch_types ra_type = get_remote_arch();
+
     char *p = smb_buf(inbuf);    
+
+    /* client_caps is used as final determination if client is NT or Win95. 
+       This is needed to return the correct error codes in some
+       circumstances.
+     */
+    
+    if(ra_type == RA_WINNT || ra_type == RA_WIN95)
+    {
+      if(client_caps & (CAP_NT_SMBS | CAP_STATUS32))
+        set_remote_arch( RA_WINNT);
+      else
+        set_remote_arch( RA_WIN95);
+    }
 
     if (passlen1 != 24 && passlen2 != 24)
       doencrypt = False;
@@ -2463,7 +2496,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
       {
 	put_dos_date2(p,0,queue[i].time);
 	CVAL(p,4) = (queue[i].status==LPQ_PRINTING?2:3);
-	SSVAL(p,5,queue[i].job);
+	SSVAL(p,5,printjob_encode(SNUM(cnum), queue[i].job));
 	SIVAL(p,7,queue[i].size);
 	CVAL(p,11) = 0;
 	StrnCpy(p+12,queue[i].user,16);

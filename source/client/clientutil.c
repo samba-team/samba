@@ -428,6 +428,12 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
   else
     pass = (char *)getpass("Password: ");
 
+  if(pass == NULL)
+  {
+    DEBUG(0, ("cli_send_login : no password available - logon failed.\n"));
+    return False;
+  }
+
   if (Protocol >= PROTOCOL_LANMAN1 && use_setup)
     {
       fstring pword;

@@ -341,7 +341,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  strcpy(pathreal,Connections[cnum].dirpath);
           if(needslash)
   	    strcat(pathreal,"/");
-	  strcat(pathreal,fname);
+	  strcat(pathreal,dname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
@@ -368,12 +368,10 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	}
     }
 
-
+  name_map_mangle(fname,False,SNUM(cnum));
 
   p = pdata;
   nameptr = p;
-
-  name_map_mangle(fname,False,SNUM(cnum));
 
   nt_extmode = mode ? mode : NT_FILE_ATTRIBUTE_NORMAL;
 
@@ -1301,11 +1299,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-#ifdef OS2_WPS_FIX /* This may become the main code stream in a later release */
-    return(ERROR(ERRDOS,ERRcannotopen));
-#else /* OS2_WPS_FIX */
     return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
-#endif /* OS2_WPS_FIX */
   }
 
   switch (info_level)

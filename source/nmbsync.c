@@ -20,6 +20,8 @@
    
 */
 
+/* We *must have REPLACE_GETPASS defined here before the includes. */
+#define REPLACE_GETPASS
 #include "includes.h"
 
 extern int ClientNMB;

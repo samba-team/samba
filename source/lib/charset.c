@@ -280,7 +280,7 @@ void codepage_initialise(int client_codepage)
 
   if(cp)
   {
-    for(i = 0; (cp[i][0] != '\0') && (cp[i][1] != '\0'); i++)
+    for(i = 0; !((cp[i][0] == '\0') && (cp[i][1] == '\0')); i++)
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
 

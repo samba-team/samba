@@ -146,6 +146,7 @@ char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
+char *lp_announce_version(void);
 char *lp_netbios_aliases(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
@@ -189,6 +190,7 @@ int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
+int lp_announce_as(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -268,10 +270,10 @@ BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
 void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
+char *volume_label(int snum);
 int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
-char *volume_label(int snum);
 
 /*The following definitions come from  locking.c  */
 
@@ -460,7 +462,9 @@ void initiate_netbios_packet(uint16 *id,
 			     int nb_flags,BOOL bcast,BOOL recurse,
 			     struct in_addr to_ip);
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode, int rcv_code, int opcode, BOOL recurse,
+				int rcode, int rcv_code, int opcode,
+                BOOL recursion_available,
+                BOOL recursion_desired,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 				char *data,int len);
 void queue_packet(struct packet_struct *packet);
@@ -486,7 +490,6 @@ struct response_record *queue_netbios_pkt_wins(
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
-			    BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
 struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
@@ -613,9 +616,12 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 		   print_status_struct *status);
 void del_printqueue(int cnum,int snum,int jobid);
 void status_printjob(int cnum,int snum,int jobid,int status);
+int printjob_encode(int snum, int job);
+void printjob_decode(int jobid, int *snum, int *job);
 
 /*The following definitions come from  quotas.c  */
 
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
@@ -726,22 +732,22 @@ void close_cnum(int cnum, uint16 vuid);
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *string);
+void standard_sub(int cnum,char *str);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-smb_shm_offset_t smb_shm_alloc(int size);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
+smb_shm_offset_t smb_shm_alloc(int size);
 BOOL smb_shm_free(smb_shm_offset_t offset);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
 void * smb_shm_offset2addr(smb_shm_offset_t offset);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
@@ -873,7 +879,7 @@ uint32 file_size(char *file_name);
 char *attrib_string(int mode);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, int n);
-BOOL strequal(const char *s1,const char *s2);
+BOOL strequal(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
@@ -951,7 +957,7 @@ BOOL zero_ip(struct in_addr ip);
 void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
-void standard_sub_basic(char *string);
+void standard_sub_basic(char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);
 struct hostent *Get_Hostbyname(char *name);
@@ -968,6 +974,8 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
 BOOL is_myname(const char *s);
+void set_remote_arch(enum remote_arch_types type);
+enum remote_arch_types get_remote_arch();
 
 /*The following definitions come from  vt_mode.c  */
 

@@ -480,7 +480,7 @@ static void fill_printjob_info(int cnum, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",((snum%0xFF)<<8) | (queue->job%0xFF)); /* uJobId */
+  PACKI(desc,"W",printjob_encode(snum, queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -1405,11 +1405,10 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int jobid = (SVAL(p,0)&0xFF); /* the snum and jobid are encoded
-				   by the print queue api */
-  int snum = (SVAL(p,0)>>8);  
+  int jobid, snum;
   int i, count;
 
+  printjob_decode(SVAL(p,0), &snum, &jobid);
 
   /* check it's a supported varient */
   if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
@@ -1429,7 +1428,7 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
       count = get_printqueue(snum,cnum,&queue,NULL);
   
       for (i=0;i<count;i++)
-  	if ((queue[i].job%0xFF) == jobid)
+  	if ((queue[i].job&0xFF) == jobid)
   	  {
  	    switch (function) {
 	    case 81:		/* delete */ 
@@ -1538,13 +1537,13 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int jobid = (SVAL(p,0)&0xFF); /* the snum and jobid are encoded
- 				   by the print queue api */
-  int snum = (SVAL(p,0)>>8);
+  int jobid, snum;
   int uLevel = SVAL(p,2);
   int function = SVAL(p,4);	/* what is this ?? */
   int i;
   char *s = data;
+
+  printjob_decode(SVAL(p,0), &snum, &jobid);
    
   *rparam_len = 4;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1565,7 +1564,7 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	lpq_reset(snum);
 	count = get_printqueue(snum,cnum,&queue,NULL);
 	for (i=0;i<count;i++)	/* find job */
-	  if ((queue[i].job%0xFF) == jobid) break;
+	  if ((queue[i].job&0xFF) == jobid) break;
  	    
 	if (i==count) {
 	  desc.errcode=NERR_JobNotFound;
@@ -2317,7 +2316,6 @@ static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uJobId = SVAL(p,0);
   int uLevel,cbBuf;
   int count;
   int i;
@@ -2333,20 +2331,19 @@ static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
   bzero(&desc,sizeof(desc));
   bzero(&status,sizeof(status));
 
-  DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,uJobId));
+  DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
   /* check it's a supported varient */
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  snum = (unsigned int)uJobId >> 8; /*## valid serice number??*/
-  job = uJobId & 0xFF;
+  printjob_decode(SVAL(p,0), &snum, &job);
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = get_printqueue(snum,cnum,&queue,&status);
   for (i = 0; i < count; i++) {
-    if ((queue[i].job % 0xFF) == job) break;
+    if ((queue[i].job & 0xFF) == job) break;
   }
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;

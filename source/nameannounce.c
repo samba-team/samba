@@ -430,7 +430,7 @@ workgroup %s\n", am_master, work->work_group));
                     NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
                     name, type, 0,0,0,
                     work->work_group,NULL,
-                    False, True, ipzero, ipzero);
+                    ipzero, ipzero);
         }
       else if(lp_wins_support()) 
         {

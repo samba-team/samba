@@ -880,6 +880,8 @@ enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER};
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG};
 
+/* Remote architectures we know about. */
+enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMBA};
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};

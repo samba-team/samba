@@ -397,7 +397,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
       if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
 
       if ((mangled && mangled_equal(name,name2))
-	  || fname_equal(name, dname))
+	  || fname_equal(name, name2)) /* name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra) */
 	{
 	  /* we've found the file, change it's name and return */
 	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
@@ -1532,7 +1532,12 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   if (strstr(fname,".+,;=[].")) 
   {
     unix_ERR_class = ERRDOS;
+    /* OS/2 Workplace shell fix - may be main code stream in a later release. */
+#ifdef OS2_WPS_FIX
+    unix_ERR_code = ERRcannotopen;
+#else /* OS2_WPS_FIX */
     unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
+#endif /* OS2_WPS_FIX */
     return;
   }
 
@@ -1978,6 +1983,19 @@ struct
   {0,0,0}
 };
 
+/* Mapping for old clients. */
+
+struct
+{
+  int new_smb_error;
+  int old_smb_error;
+  int protocol_level;
+  enum remote_arch_types valid_ra_type;
+} old_client_errmap[] =
+{
+  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, RA_WINNT},
+  {0,0,0}
+};
 
 /****************************************************************************
   create an error packet from errno
@@ -1998,16 +2016,39 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
   else
     {
       while (unix_smb_errmap[i].smbclass != 0)
-	{
-	  if (unix_smb_errmap[i].unixerror == errno)
+      {
+	    if (unix_smb_errmap[i].unixerror == errno)
 	    {
 	      eclass = unix_smb_errmap[i].smbclass;
 	      ecode = unix_smb_errmap[i].smbcode;
 	      break;
 	    }
 	  i++;
-	}
+      }
     }
+
+  /* Make sure we don't return error codes that old
+     clients don't understand. */
+
+  /* JRA - unfortunately, WinNT needs some error codes
+     for apps to work correctly, Win95 will break if
+     these error codes are returned. But they both
+     negotiate the *same* protocol. So we need to use
+     the revolting 'remote_arch' enum to tie break.
+
+     There must be a better way of doing this...
+  */
+
+  for(i = 0; old_client_errmap[i].new_smb_error != 0; i++)
+  {
+    if(((Protocol < old_client_errmap[i].protocol_level) ||
+       (old_client_errmap[i].valid_ra_type != get_remote_arch())) &&
+       (old_client_errmap[i].new_smb_error == ecode))
+    {
+      ecode = old_client_errmap[i].old_smb_error;
+      break;
+    }
+  }
 
   return(error_packet(inbuf,outbuf,eclass,ecode,line));
 }
@@ -3025,7 +3066,6 @@ struct {
 ****************************************************************************/
 static int reply_negprot(char *inbuf,char *outbuf)
 {
-  extern fstring remote_arch;
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
   int choice= -1;
@@ -3065,22 +3105,22 @@ static int reply_negprot(char *inbuf,char *outbuf)
     
   switch ( arch ) {
   case ARCH_SAMBA:
-    strcpy(remote_arch,"Samba");
+    set_remote_arch(RA_SAMBA);
     break;
   case ARCH_WFWG:
-    strcpy(remote_arch,"WfWg");
+    set_remote_arch(RA_WFWG);
     break;
   case ARCH_WIN95:
-    strcpy(remote_arch,"Win95");
+    set_remote_arch(RA_WIN95);
     break;
   case ARCH_WINNT:
-    strcpy(remote_arch,"WinNT");
+    set_remote_arch(RA_WINNT);
     break;
   case ARCH_OS2:
-    strcpy(remote_arch,"OS2");
+    set_remote_arch(RA_OS2);
     break;
   default:
-    strcpy(remote_arch,"UNKNOWN");
+    set_remote_arch(RA_UNKNOWN);
     break;
   }
  
@@ -3471,12 +3511,12 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *string)
+void standard_sub(int cnum,char *str)
 {
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
 
-    for ( s=string ; (p=strchr(s, '%')) != NULL ; s=p ) {
+    for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
       switch (*(p+1)) {
         case 'H' : if ((home = get_home_dir(Connections[cnum].user))!=NULL)
                      string_sub(p,"%H",home);
@@ -3492,7 +3532,7 @@ void standard_sub(int cnum,char *string)
       }
     }
   }
-  standard_sub_basic(string);
+  standard_sub_basic(str);
 }
 
 /*

@@ -1395,11 +1395,26 @@ check if a config file has changed date
 BOOL lp_file_list_changed(void)
 {
   struct file_lists *f = file_lists;
-  while (f) {
+  DEBUG(6,("lp_file_list_changed()\n"));
+
+  while (f)
+  {
     pstring n2;
+    time_t mod_time;
+
     strcpy(n2,f->name);
     standard_sub_basic(n2);
-    if (f->modtime != file_modtime(n2)) return(True);
+
+    DEBUG(6,("file %s -> %s  last mod_time: %s\n",
+             f->name, n2, ctime(&f->modtime)));
+
+    mod_time = file_modtime(n2);
+
+    if (f->modtime != mod_time)
+    {
+      DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
+      return(True);
+    }
     f = f->next;   
   }
   return(False);
