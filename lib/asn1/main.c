@@ -16,6 +16,8 @@ main(int argc, char **argv)
   } else {
     name = argv[1];
     yyin = fopen (name, "r");
+    if (yyin == NULL)
+	err (1, "open %s", name);
   }
 
   init_generate (name);
