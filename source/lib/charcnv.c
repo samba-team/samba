@@ -143,6 +143,36 @@ update_map("\241\360\361\361\244\362\364\363\247\364\367\365\256\366\376\367");
 update_map("\360\374\240\377");
 }
 
+/* Added by Antonios Kavarnos (Antonios.Kavarnos@softlab.ece.ntua.gr */
+
+static void init_iso8859_7(void)
+{
+  int i;
+  if (!mapsinited) initmaps();
+
+  /* Do not map undefined characters to some accidental code */
+  for (i = 128; i < 256; i++) 
+  {
+     unix2dos[i] = CTRLZ;
+     dos2unix[i] = CTRLZ;
+  }
+
+/* MSDOS Code Page 737 -> ISO-8859-7 (Greek-Hellenic) */
+
+update_map("\301\200\302\201\303\202\304\203\305\204\306\205\307\206");
+update_map("\310\207\311\210\312\211\313\212\314\213\315\214\316\215\317\216");
+update_map("\320\217\321\220\323\221\324\222\325\223\326\224\327\225");
+update_map("\330\226\331\227");
+update_map("\341\230\342\231\343\232\344\233\345\234\346\235\347\236");
+update_map("\350\237\351\240\352\241\353\242\354\243\355\244\356\245\357\246");
+update_map("\360\247\361\250\362\252\363\251\364\253\365\254\366\255\367\256");
+update_map("\370\257\371\340");
+update_map("\332\364\333\365\334\341\335\342\336\343\337\345");
+update_map("\372\344\373\350\374\346\375\347\376\351");
+update_map("\266\352");
+update_map("\270\353\271\354\272\355\274\356\276\357\277\360");
+}
+
 /* Init for russian language (koi8) */
 
 static void init_koi8_r(void)
@@ -222,6 +252,8 @@ void interpret_character_set(char *str)
         init_iso8859_2();
     } else if (strequal (str, "iso8859-5")) {
         init_iso8859_5();
+    } else if (strequal (str, "iso8859-7")) {
+        init_iso8859_7();
     } else if (strequal (str, "koi8-r")) {
         init_koi8_r();
     } else {
