@@ -1,14 +1,6 @@
 #include "includes.h"
 #include "dynconfig.h"
 
-/*
-
- this is a set of temporary stub functions used during the core smbd rewrite.
- This file will need to go away before the rewrite is complete
-*/
-
-BOOL pcap_printername_ok(const char *service, const char *foo)
-{ return True; }
 
 /*
  * initialize an smb process. Guaranteed to be called only once per

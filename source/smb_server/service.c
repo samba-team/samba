@@ -72,54 +72,6 @@ static int find_service(const char *service)
 
 	iService = lp_servicenumber(service);
 
-	/* If we still don't have a service, attempt to add it as a printer. */
-	if (iService == -1) {
-		int iPrinterService;
-
-		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
-			const char *pszTemp;
-
-			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-			pszTemp = lp_printcapname();
-			if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp)) {
-				DEBUG(3,("%s is a valid printer name\n", service));
-				DEBUG(3,("adding %s as a printer service\n", service));
-				lp_add_printer(service, iPrinterService);
-				iService = lp_servicenumber(service);
-				if (iService < 0)
-					DEBUG(0,("failed to add %s as a printer service!\n", service));
-			} else {
-				DEBUG(3,("%s is not a valid printer name\n", service));
-			}
-		}
-	}
-
-	/* Check for default vfs service?  Unsure whether to implement this */
-	if (iService == -1) {
-	}
-
-	/* just possibly it's a default service? */
-	if (iService == -1) {
-		const char *pdefservice = lp_defaultservice();
-		if (pdefservice && *pdefservice && 
-		    !strequal(pdefservice,service) &&
-		    !strstr(service,"..")) {
-			/*
-			 * We need to do a local copy here as lp_defaultservice() 
-			 * returns one of the rotating lp_string buffers that
-			 * could get overwritten by the recursive find_service() call
-			 * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
-			 */
-			pstring defservice;
-			pstrcpy(defservice, pdefservice);
-			iService = find_service(defservice);
-			if (iService >= 0) {
-				/* REWRITE: all_string_sub(service, "_","/",0); */
-				iService = lp_add_service(service, iService);
-			}
-		}
-	}
-
 	if (iService >= 0 && !VALID_SNUM(iService)) {
 		DEBUG(0,("Invalid snum %d for %s\n",iService, service));
 		iService = -1;

@@ -33,19 +33,17 @@
 
 static void *thread_connection_fn(void *thread_parm)
 {
-	struct event_context *ev = thread_parm;
+	struct server_connection *conn = thread_parm;
+
+	conn->connection.id = pthread_self();
+
 	/* wait for action */
-	event_loop_wait(ev);
+	event_loop_wait(conn->event.ctx);
 
 #if 0
 	pthread_cleanup_pop(1);  /* will invoke terminate_mt_connection() */
 #endif
 	return NULL;
-}
-
-static int thread_get_id(struct smbsrv_request *req)
-{
-	return (int)pthread_self();
 }
 
 /*
@@ -59,15 +57,15 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	int rc;
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
-	struct server_socket *server_socket = srv_fde->private;
+	struct server_stream_socket *stream_socket = srv_fde->private;
 	struct server_connection *conn;
 
 	/* accept an incoming connection. */
-	status = socket_accept(server_socket->socket, &sock);
+	status = socket_accept(stream_socket->socket, &sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}
-	
+
 	/* create new detached thread for this connection.  The new
 	   thread gets a new event_context with a single fd_event for
 	   receiving from the new socket. We set that thread running
@@ -75,13 +73,13 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	   main event_context is continued.
 	*/
 
-	ev = event_context_init(server_socket);
+	ev = event_context_init(stream_socket);
 	if (!ev) {
 		socket_destroy(sock);
-		return; 
+		return;
 	}
 
-	conn = server_setup_connection(ev, server_socket, sock, t, pthread_self());
+	conn = server_setup_connection(ev, stream_socket, sock, t, -1);
 	if (!conn) {
 		event_context_destroy(ev);
 		socket_destroy(sock);
@@ -91,16 +89,9 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	talloc_steal(conn, ev);
 	talloc_steal(conn, sock);
 
-	/* TODO: is this MUTEX_LOCK in the right place here?
-	 *       --metze
-	 */
-	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	DLIST_ADD(server_socket->connection_list,conn);
-	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
-	
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&thread_id, &thread_attr, thread_connection_fn, ev);
+	rc = pthread_create(&thread_id, &thread_attr, thread_connection_fn, conn);
 	pthread_attr_destroy(&thread_attr);
 	if (rc == 0) {
 		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
@@ -414,15 +405,13 @@ static void thread_fault_handler(int sig)
 /*
   called when the process model is selected
 */
-static void thread_model_startup(void)
+static void thread_model_init(struct server_context *server)
 {
 	struct mutex_ops m_ops;
 	struct debug_ops d_ops;
 
 	ZERO_STRUCT(m_ops);
 	ZERO_STRUCT(d_ops);
-
-	smbd_process_init();
 
 	/* register mutex/rwlock handlers */
 	m_ops.mutex_init = thread_mutex_init;
@@ -448,10 +437,90 @@ static void thread_model_startup(void)
 	register_debug_handlers("thread", &d_ops);	
 }
 
-static void thread_exit_server(struct server_context *srv_ctx, const char *reason)
+static void thread_model_exit(struct server_context *server, const char *reason)
 {
-	DEBUG(1,("thread_exit_server: reason[%s]\n",reason));
+	DEBUG(1,("thread_model_exit: reason[%s]\n",reason));
+	talloc_free(server);
+	exit(0);
 }
+
+static void *thread_task_fn(void *thread_parm)
+{
+	struct server_task *task = thread_parm;
+
+	task->task.id = pthread_self();
+
+	task->event.ctx = event_context_init(task);
+	if (!task->event.ctx) {
+		server_terminate_task(task, "event_context_init() failed");
+		return NULL; 
+	}
+
+	task->messaging.ctx = messaging_init(task, task->task.id, task->event.ctx);
+	if (!task->messaging.ctx) {
+		server_terminate_task(task, "messaging_init() failed");
+		return NULL;
+	}
+
+	task->task.ops->task_init(task);
+
+	/* wait for action */
+	event_loop_wait(task->event.ctx);
+
+	server_terminate_task(task, "exit");
+#if 0
+	pthread_cleanup_pop(1);  /* will invoke terminate_mt_connection() */
+#endif
+	return NULL;
+}
+/*
+  called to create a new event context for a new task
+*/
+static void thread_create_task(struct server_task *task)
+{
+	int rc;
+	pthread_t thread_id;
+	pthread_attr_t thread_attr;
+
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
+	rc = pthread_create(&thread_id, &thread_attr, thread_task_fn, task);
+	pthread_attr_destroy(&thread_attr);
+	if (rc == 0) {
+		DEBUG(4,("thread_create_task: created thread_id=%lu for task='%s'\n", 
+			(unsigned long int)thread_id, task->task.ops->name));
+	} else {
+		DEBUG(0,("thread_create_task: thread create failed for task='%s', rc=%d\n", task->task.ops->name, rc));
+		return;
+	}
+	return;
+}
+
+/*
+  called to destroy a new event context for a new task
+*/
+static void thread_terminate_task(struct server_task *task, const char *reason)
+{
+	DEBUG(2,("thread_terminate_task: reason[%s]\n",reason));
+
+	talloc_free(task);
+
+	/* terminate this thread */
+	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
+}
+
+static const struct model_ops thread_ops = {
+	.name			= "thread",
+
+	.model_init		= thread_model_init,
+	.model_exit		= thread_model_exit,
+
+	.accept_connection	= thread_accept_connection,
+	.terminate_connection	= thread_terminate_connection,
+
+	.create_task		= thread_create_task,
+	.terminate_task		= thread_terminate_task
+};
 
 /*
   initialise the thread process model, registering ourselves with the model subsystem
@@ -459,22 +528,9 @@ static void thread_exit_server(struct server_context *srv_ctx, const char *reaso
 NTSTATUS process_model_thread_init(void)
 {
 	NTSTATUS ret;
-	struct model_ops ops;
-
-	ZERO_STRUCT(ops);
-
-	/* fill in our name */
-	ops.name = "thread";
-
-	/* fill in all the operations */
-	ops.model_startup = thread_model_startup;
-	ops.accept_connection = thread_accept_connection;
-	ops.terminate_connection = thread_terminate_connection;
-	ops.exit_server = thread_exit_server;
-	ops.get_id = thread_get_id;
 
 	/* register ourselves with the PROCESS_MODEL subsystem. */
-	ret = register_process_model(&ops);
+	ret = register_process_model(&thread_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register process_model 'thread'!\n"));
 		return ret;

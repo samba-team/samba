@@ -42,7 +42,17 @@ struct server_service_ops {
 	const char *name;
 
 	/* called at startup when the server_service is selected */
-	void (*service_init)(struct server_service *service, const struct model_ops *ops);
+	void (*service_init)(struct server_service *service);	
+};
+
+struct server_stream_socket;
+
+struct server_stream_ops {
+	/* the name of the server_service */
+	const char *name;
+
+	/* called at startup when the server_service is selected */
+	void (*socket_init)(struct server_stream_socket *socket);
 
 	/* function to accept new connection */
 	void (*accept_connection)(struct server_connection *);
@@ -56,16 +66,16 @@ struct server_service_ops {
 
 	/* function to close a connection */
 	void (*close_connection)(struct server_connection *, const char *reason);
-
-	/* function to exit server */
-	void (*service_exit)(struct server_service *srv_ctx, const char *reason);	
 };
 
 struct socket_context;
 
-struct server_socket {
-	struct server_socket *next,*prev;
-	void *private_data;
+struct server_stream_socket {
+	struct server_stream_socket *next,*prev;
+	struct {
+		const struct server_stream_ops *ops;
+		void *private_data;
+	} stream;
 
 	struct {
 		struct event_context *ctx;
@@ -75,20 +85,16 @@ struct server_socket {
 	struct socket_context *socket;
 
 	struct server_service *service;
-
-	struct server_connection *connection_list;
 };
 
 struct server_service {
 	struct server_service *next,*prev;
-	void *private_data;
-	const struct server_service_ops *ops;
+	struct {
+		const struct server_service_ops *ops;
+		void *private_data;
+	} service;
 
-	const struct model_ops *model_ops;
-
-	struct server_socket *socket_list;
-
-	struct server_context *srv_ctx;
+	struct server_context *server;
 };
 
 /* the concept of whether two operations are on the same server
@@ -106,7 +112,10 @@ typedef uint32_t servid_t;
 
 struct server_connection {
 	struct server_connection *next,*prev;
-	void *private_data;
+	struct {
+		void *private_data;
+		servid_t id;
+	} connection;
 
 	struct {
 		struct event_context *ctx;
@@ -115,15 +124,42 @@ struct server_connection {
 		struct timeval idle_time;
 	} event;
 
-	servid_t server_id;
-
 	struct socket_context *socket;
 
-	struct server_socket *server_socket;
+	struct server_stream_socket *stream_socket;
+
+	struct {
+		struct messaging_context *ctx;
+	} messaging;
+};
+
+struct server_task;
+
+struct server_task_ops {
+	/* the name of the server_task */
+	const char *name;
+
+	/* called at startup when the server_task is selected */
+	void (*task_init)(struct server_task *task);
+};
+
+struct server_task {
+	struct server_task *next,*prev;
+	struct {
+		const struct server_task_ops *ops;
+		void *private_data;
+		servid_t id;
+	} task;
+
+	struct {
+		struct event_context *ctx;
+	} event;
+
+	struct {
+		struct messaging_context *ctx;
+	} messaging;
 
 	struct server_service *service;
-
-	struct messaging_context *messaging_ctx;
 };
 
 #endif /* _SERVER_SERVICE_H */

@@ -506,7 +506,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		session_tag = req->session->vuid;
 	}
 
-	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->connection->service->model_ops->get_id(req)));
+	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->connection.id));
 
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
@@ -649,21 +649,12 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 	server_terminate_connection(smb_conn->connection, reason);
 }
 
-/*
-  called on a fatal error that should cause this server to terminate
-*/
-static void smbsrv_exit(struct server_service *service, const char *reason)
-{
-	DEBUG(1,("smbsrv_exit\n"));
-	return;
-}
+static const struct server_stream_ops *smbsrv_stream_ops(void);
 
 /*
   add a socket address to the list of events, one event per port
 */
-static void smb_add_socket(struct server_service *service, 
-			   const struct model_ops *model_ops,
-			   struct socket_context *socket_ctx, 
+static void smb_add_socket(struct server_service *service,
 			   struct ipv4_addr *ifip)
 {
 	const char **ports = lp_smb_ports();
@@ -673,7 +664,7 @@ static void smb_add_socket(struct server_service *service,
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		service_setup_socket(service, model_ops, "ipv4", ip_str, &port);
+		service_setup_stream_socket(service, smbsrv_stream_ops(), "ipv4", ip_str, &port);
 	}
 
 	talloc_free(ip_str);
@@ -682,7 +673,7 @@ static void smb_add_socket(struct server_service *service,
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
-static void smbsrv_init(struct server_service *service, const struct model_ops *model_ops)
+static void smbsrv_init(struct server_service *service)
 {	
 	DEBUG(1,("smbsrv_init\n"));
 
@@ -702,13 +693,13 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 				continue;
 			}
 
-			smb_add_socket(service, model_ops, NULL, ifip);
+			smb_add_socket(service, ifip);
 		}
 	} else {
 		struct ipv4_addr ifip;
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(lp_socket_address());
-		smb_add_socket(service, model_ops, NULL, &ifip);
+		smb_add_socket(service, &ifip);
 	}
 }
 
@@ -717,7 +708,7 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 */
 static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = conn->private_data;
+	struct smbsrv_connection *smb_conn = conn->connection.private_data;
 	NTSTATUS status;
 
 	DEBUG(10,("smbsrv_recv\n"));
@@ -738,7 +729,7 @@ static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16
 */
 static void smbsrv_send(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = conn->private_data;
+	struct smbsrv_connection *smb_conn = conn->connection.private_data;
 
 	while (smb_conn->pending_send) {
 		struct smbsrv_request *req = smb_conn->pending_send;
@@ -776,19 +767,9 @@ static void smbsrv_send(struct server_connection *conn, struct timeval t, uint16
 	}
 }
 
-/*
-  called when connection is idle
-*/
-static void smbsrv_idle(struct server_connection *conn, struct timeval t)
-{
-	DEBUG(10,("smbsrv_idle: not implemented!\n"));
-	conn->event.idle->next_event = timeval_add(&t, 5, 0);
-	return;
-}
-
 static void smbsrv_close(struct server_connection *conn, const char *reason)
 {
-	struct smbsrv_connection *smb_conn = conn->private_data;
+	struct smbsrv_connection *smb_conn = conn->connection.private_data;
 
 	DEBUG(5,("smbsrv_close: %s\n",reason));
 
@@ -818,7 +799,7 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
-void smbsrv_accept(struct server_connection *conn)
+static void smbsrv_accept(struct server_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
 
@@ -826,10 +807,6 @@ void smbsrv_accept(struct server_connection *conn)
 
 	smb_conn = talloc_zero_p(conn, struct smbsrv_connection);
 	if (!smb_conn) return;
-
-	smb_conn->pid = getpid();
-
-	sub_set_context(&smb_conn->substitute);
 
 	/* now initialise a few default values associated with this smb socket */
 	smb_conn->negotiate.max_send = 0xFFFF;
@@ -848,20 +825,29 @@ void smbsrv_accept(struct server_connection *conn)
 
 	smb_conn->connection = conn;
 
-	conn->private_data = smb_conn;
+	conn->connection.private_data = smb_conn;
 
 	return;
 }
 
-static const struct server_service_ops smb_server_ops = {
+static const struct server_stream_ops smb_stream_ops = {
 	.name			= "smb",
-	.service_init		= smbsrv_init,
+	.socket_init		= NULL,
 	.accept_connection	= smbsrv_accept,
 	.recv_handler		= smbsrv_recv,
 	.send_handler		= smbsrv_send,
-	.idle_handler		= smbsrv_idle,
-	.close_connection	= smbsrv_close,
-	.service_exit		= smbsrv_exit,	
+	.idle_handler		= NULL,
+	.close_connection	= smbsrv_close
+};
+
+static const struct server_stream_ops *smbsrv_stream_ops(void)
+{
+	return &smb_stream_ops;
+}
+
+static const struct server_service_ops smb_server_ops = {
+	.name			= "smb",
+	.service_init		= smbsrv_init,	
 };
 
 const struct server_service_ops *smbsrv_get_ops(void)
