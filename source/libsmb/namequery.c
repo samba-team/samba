@@ -616,6 +616,8 @@ BOOL resolve_wins(const char *name, int name_type,
 
 	if (wins_srv_count() < 1) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
+		sys_adminlog(LOG_INFO, "No active WINS server available when looking for name %s<0x%x>\n",
+				name, name_type );
 		return False;
 	}
 
