@@ -486,9 +486,9 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     int size;
     int len;
 #ifdef HAVE_RES_NSEARCH
-    struct __res_state stat;
-    memset(&stat, 0, sizeof(stat));
-    if(res_ninit(&stat))
+    struct __res_state state;
+    memset(&state, 0, sizeof(state));
+    if(res_ninit(&state))
 	return NULL; /* is this the best we can do? */
 #elif defined(HAVE__RES)
     u_long old_options = 0;
@@ -505,7 +505,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	    size = len;
 	if (_resolve_debug) {
 #ifdef HAVE_RES_NSEARCH
-	    stat.options |= RES_DEBUG;
+	    state.options |= RES_DEBUG;
 #elif defined(HAVE__RES)
 	    old_options = _res.options;
 	    _res.options |= RES_DEBUG;
@@ -516,12 +516,12 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	reply = malloc(size);
 	if (reply == NULL) {
 #ifdef HAVE_RES_NSEARCH
-	    res_nclose(&stat);
+	    res_nclose(&state);
 #endif
 	    return NULL;
 	}
 #ifdef HAVE_RES_NSEARCH
-	len = res_nsearch(&stat, domain, rr_class, rr_type, reply, size);
+	len = res_nsearch(&state, domain, rr_class, rr_type, reply, size);
 #else
 	len = res_search(domain, rr_class, rr_type, reply, size);
 #endif
@@ -534,14 +534,14 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
-	    res_nclose(&stat);
+	    res_nclose(&state);
 #endif
 	    free(reply);
 	    return NULL;
 	}
     } while (size < len && len < rk_DNS_MAX_PACKET_SIZE);
 #ifdef HAVE_RES_NSEARCH
-    res_nclose(&stat);
+    res_nclose(&state);
 #endif
 
     len = min(len, size);
