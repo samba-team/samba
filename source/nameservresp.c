@@ -805,7 +805,8 @@ void response_netbios_packet(struct packet_struct *p)
   struct subnet_record *d = NULL;
 
   if (!(n = find_response_record(&d,nmb->header.name_trn_id))) {
-    DEBUG(2,("unknown netbios response (received late or from nmblookup?)\n"));
+    DEBUG(2,("unknown netbios response id %d (received late or from nmblookup?)\n", 
+               nmb->header.name_trn_id));
     return;
   }
 
