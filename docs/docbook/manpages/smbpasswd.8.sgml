@@ -281,8 +281,17 @@
 		user accounts to any Domain Controller in the same way as a Windows 
 		NT Server. See the <command>security = domain</command> option in 
 		the <filename>smb.conf(5)</filename> man page. </para>
+
+                <para>This command can work both with and without the -U parameter. </para>
+
+                <para>When invoked with -U, that username (and optional password) are
+                used to contact the PDC (which must be specified with -r) to both
+                create a machine account, and to set a password on it.</para>
 		
-		<para>In order to be used in this way, the Administrator for 
+                <para>Alternately, if -U is omitted, Samba will contact its PDC
+                and attempt to change the password on a pre-existing account. </para>
+
+                <para>In order to be used in this way, the Administrator for 
 		the Windows NT Domain must have used the program "Server Manager 
 		for Domains" to add the primary NetBIOS name of  the Samba server 
 		as a member of the Domain. </para>
@@ -292,9 +301,10 @@
 		look up the Primary Domain Controller for the Domain (found in 
 		the <filename>smb.conf</filename> file in the parameter 
 		<parameter>password server</parameter> and change the machine account 
-		password used to create the secure Domain communication.  This 
-		password is then stored by smbpasswd in a TDB, writeable only by root, 
-		called <filename>secrets.tdb</filename> </para>
+		password used to create the secure Domain communication.  </para>
+
+                <para>Either way, this password is then stored by smbpasswd in a TDB, 
+                writeable only by root, called <filename>secrets.tdb</filename> </para>
 		
 		<para>Once this operation has been performed the <filename>
 		smb.conf</filename> file may be updated to set the <command>
@@ -304,7 +314,9 @@
 		
 		<para>Note that even though the authentication is being 
 		done to the PDC all users accessing the Samba server must still 
-		have a valid UNIX account on that machine. </para>
+		have a valid UNIX account on that machine.  
+                The <command>winbindd(8)</command> daemon can be used
+                to create UNIX accounts for NT users.</para>
 
 
 		<para>This option is only available when running smbpasswd as root. 
@@ -320,7 +332,13 @@
 		a password on a remote machine it allows the user to specify 
 		the user name on that machine whose password will be changed. It 
 		is present to allow users who have different user names on 
-		different systems to change these passwords. </para></listitem>
+		different systems to change these passwords. </para>
+
+                <para>In particular, this parameter specifies the username
+                used to create the machine account when invoked with -j</para>
+                </listitem>
+
+
 		</varlistentry>
 		
 		
@@ -347,7 +365,7 @@
 		<varlistentry>
 		<term>-w password</term>
 		<listitem><para>This parameter is only available is Samba
-		has been configured to use the experiemental
+		has been configured to use the experimental
 		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
 		switch is used to specify the password to be used with the 
 		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 

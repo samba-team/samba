@@ -78,6 +78,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 /* Challenge Response Authentication Protocol */
 
+#if ALLOW_WINBIND_AUTH_CRAP
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
@@ -133,6 +134,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
  done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
+#endif
 
 /* Change a user password */
 

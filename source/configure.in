@@ -2570,7 +2570,7 @@ AC_MSG_CHECKING(whether to build winbind)
 # Initially, the value of $host_os decides whether winbind is supported
 
 case "$host_os" in 
-        *linux*|*solaris*|*irix*)
+        *linux*|*solaris*|*irix*|*hpux11*)
 		HAVE_WINBIND=yes
                 ;;
         *)

@@ -603,8 +603,6 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 					smb_ntpasswd, smb_ntpasslen);
 
 	if(ret) {
-		struct passwd *pwd = NULL;
-
 		/*
 		 * User validated ok against Domain controller.
 		 * If the admin wants us to try and create a UNIX
@@ -614,7 +612,7 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 		 * due to a bad password, or the user really doesn't exist.
 		 */
 
-		if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
+		if(lp_adduser_script() && !smb_getpwnam(unix_user,True))
 			smb_create_user(unix_user, NULL);
 	}
 

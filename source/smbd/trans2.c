@@ -2188,12 +2188,16 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 #endif
 	fstring last_component;
 	pstring link_dest;
+	pstring link_test;
 	char *p;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
 
 	pstrcpy(link_dest, link_dest_in);
 	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
+
+	/* Store the UNIX converted path. */
+	pstrcpy(link_dest_out, link_dest);
 
 	p = strrchr(link_dest, '/');
 	if (p) {
@@ -2213,18 +2217,18 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 
 	if (*link_dest != '/') {
 		/* Relative path. */
-		pstrcpy(link_dest_out, conn->connectpath);
-		pstrcat(link_dest_out, "/");
-		pstrcat(link_dest_out, link_dest);
+		pstrcpy(link_test, conn->connectpath);
+		pstrcat(link_test, "/");
+		pstrcat(link_test, link_dest);
 	} else {
-		pstrcpy(link_dest_out, link_dest);
+		pstrcpy(link_test, link_dest);
 	}
 
 	/*
 	 * Check if the link is within the share.
 	 */
 
-	if (strncmp(conn->connectpath, link_dest_out, strlen(conn->connectpath))) {
+	if (strncmp(conn->connectpath, link_test, strlen(conn->connectpath))) {
 		errno = EACCES;
 		return -1;
 	}
