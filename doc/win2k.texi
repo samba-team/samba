@@ -249,7 +249,7 @@ short list of the interesting documents that we have managed to find.
 @url{http://www.microsoft.com/windows2000/library/planning/security/kerbsteps.asp}
 Kerberos GSS-API (in Windows-ize SSPI), Windows as a client in a
 non-Windows KDC realm, adding unix clients to a Windows 2000 KDC, and
-adding cross-realm trust (@xref{Inter-Realm trust (keys) between Windows 2000
+adding cross-realm trust (@xref{Inter-Realm keys (trust) between Windows 2000
 and a Heimdal KDC}.).
 
 @item Windows 2000 Kerberos Authentication - 
