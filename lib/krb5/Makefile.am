@@ -153,6 +153,7 @@ man_MANS =					\
 	krb5_parse_name.3			\
 	krb5_sname_to_principal.3		\
 	krb5_unparse_name.3			\
+	krb5_verify_user.3			\
 	krb5_warn.3				\
 	verify_krb5_conf.8
 
