@@ -1,3 +1,11 @@
+2003-12-19  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/security.h: add ftp_do_gss_delegate
+	
+	* ftp/main.c (getargs): negative flag for delegating gss creds
+	
+	* ftp/gssapi.c (ftp_do_gss_delegate): delegate creds (default on)
+	
 2003-09-03  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/ftp.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
