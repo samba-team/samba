@@ -4102,7 +4102,7 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
         offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
       else {
 
-        DEBUG(0,("get_lock_count: Error : a large file offset (%x << 32 | %x) was sent and we don't \
+        DEBUG(0,("get_lock_offset: Error : a large file offset (%x << 32 | %x) was sent and we don't \
 support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)),
             (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) ));
 
