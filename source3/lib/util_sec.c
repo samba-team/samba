@@ -30,6 +30,8 @@ extern int DEBUGLEVEL;
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <errno.h>
 
 #ifdef HAVE_SYS_PRIV_H
 #include <sys/priv.h>
@@ -201,9 +203,21 @@ void save_re_uid(void)
 void restore_re_uid(void)
 {
 	set_effective_uid(0);
+
+#if USE_SETRESUID
+	setresuid(saved_ruid, saved_euid, -1);
+#elif USE_SETREUID
+	setreuid(saved_ruid, -1);
+	setreuid(-1,saved_euid);
+#elif USE_SETUIDX
+	setuidx(ID_REAL, saved_ruid);
+	setuidx(ID_EFFECTIVE, saved_euid);
+#else
 	set_effective_uid(saved_euid);
-	if (getuid() != saved_ruid) setuid(saved_ruid);
+	if (getuid() != saved_ruid)
+		setuid(saved_ruid);
 	set_effective_uid(saved_euid);
+#endif
 
 	assert_uid(saved_ruid, saved_euid);
 }
@@ -291,6 +305,35 @@ void become_user_permanently(uid_t uid, gid_t gid)
 	assert_gid(gid, gid);
 }
 
+
+/****************************************************************************
+this function just checks that we don't get ENOSYS back
+****************************************************************************/
+static int have_syscall(void)
+{
+	errno = 0;
+
+#if USE_SETRESUID
+	setresuid(-1,-1,-1);
+#endif
+
+#if USE_SETREUID
+	setreuid(-1,-1);
+#endif
+
+#if USE_SETEUID
+	seteuid(-1);
+#endif
+
+#if USE_SETUIDX
+	setuidx(ID_EFFECTIVE, -1);
+#endif
+
+	if (errno == ENOSYS) return -1;
+	
+	return 0;
+}
+
 #ifdef AUTOCONF_TEST
 main()
 {
@@ -301,15 +344,18 @@ main()
 		exit(1);
 #endif
 
-		/* assume that if we have the functions then they work */
-                fprintf(stderr,"not running as root: assuming OK\n");
-		exit(0);
+		/* if not running as root then at least check to see if we get ENOSYS - this 
+		   handles Linux 2.0.x with glibc 2.1 */
+                fprintf(stderr,"not running as root: checking for ENOSYS\n");
+		exit(have_syscall());
 	}
 
 	gain_root_privilege();
 	gain_root_group_privilege();
 	set_effective_gid(1);
 	set_effective_uid(1);
+	save_re_uid();
+	restore_re_uid();
 	gain_root_privilege();
 	gain_root_group_privilege();
 	become_user_permanently(1, 1);
