@@ -651,10 +651,9 @@ host_port
 			char *a, *p;
 
 			data_dest.sin_family = AF_INET;
-			p = (char *)&data_dest.sin_port;
-			p[0] = $9; p[1] = $11;
-			a = (char *)&data_dest.sin_addr;
-			a[0] = $1; a[1] = $3; a[2] = $5; a[3] = $7;
+			data_dest.sin_port = htons($9 * 256 + $11);
+			data_dest.sin_addr.s_addr = 
+			    htonl(($1 << 24) | ($3 << 16) | ($5 << 8) | $7);
 		}
 	;
 
