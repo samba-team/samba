@@ -141,7 +141,7 @@ void check_master_browser_exists(time_t t)
 
   lastrun = t;
 
-  dump_workgroups();
+  dump_workgroups(False);
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {

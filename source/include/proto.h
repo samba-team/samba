@@ -724,6 +724,7 @@ void browse_sync_remote(time_t t);
 
 void remove_all_servers(struct work_record *work);
 struct server_record *find_server_in_workgroup(struct work_record *work, char *name);
+void remove_server_from_workgroup(struct work_record *work, struct server_record *servrec);
 struct server_record *create_server_on_workgroup(struct work_record *work,
                                                  char *name,int servertype, 
                                                  int ttl,char *comment);
@@ -770,7 +771,7 @@ struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
                                                fstring name, int ttl);
 void update_workgroup_ttl(struct work_record *work, int ttl);
 void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_record *work);
-void dump_workgroups(void);
+void dump_workgroups(BOOL force_write);
 void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nmblib.c  */

@@ -153,28 +153,45 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
    * announce instead ? JRA.
    */
 
-  if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL)
+  work = find_workgroup_on_subnet(subrec, work_name);
+
+  if(servertype != 0)
   {
-    /* We have no record of this workgroup. Add it. */
-    if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
-      return;
-  }
+    if (work ==NULL )
+    {
+      /* We have no record of this workgroup. Add it. */
+      if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+        return;
+    }
   
-  if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
-  {
-    /* If this server is not already in the workgroup, add it. */
-    create_server_on_workgroup(work, announce_name, 
-                               servertype|SV_TYPE_LOCAL_LIST_ONLY, 
-                               ttl, comment);
+    if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
+    {
+      /* If this server is not already in the workgroup, add it. */
+      create_server_on_workgroup(work, announce_name, 
+                                 servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+                                 ttl, comment);
+    }
+    else
+    {
+      /* Update the record. */
+      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+      update_server_ttl( servrec, ttl);
+      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    }
   }
   else
   {
-    /* Update the record. */
-    servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-    update_server_ttl( servrec, ttl);
-    StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    /*
+     * This server is announcing it is going down. Remove it from the 
+     * workgroup.
+     */
+    if(!is_myname(announce_name) && (work != NULL) &&
+       ((servrec = find_server_in_workgroup( work, announce_name))!=NULL)
+      )
+    {
+      remove_server_from_workgroup( work, servrec);
+    }
   }
-
   subrec->work_changed = True;
 }
 
@@ -272,6 +289,10 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 
   if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL)
   {
+    /* Don't bother adding if it's a local master release announce. */
+    if(servertype == 0)
+      return;
+
     /* We have no record of this workgroup. Add it. */
     if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
       return;
@@ -308,22 +329,38 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 
   /* Find the server record on this workgroup. If it doesn't exist, add it. */
 
-  if((servrec = find_server_in_workgroup( work, server_name))==NULL)
+  if(servertype != 0)
   {
-    /* If this server is not already in the workgroup, add it. */
-    create_server_on_workgroup(work, server_name, 
-                               servertype|SV_TYPE_LOCAL_LIST_ONLY, 
-                               ttl, comment);
+    if((servrec = find_server_in_workgroup( work, server_name))==NULL)
+    {
+      /* If this server is not already in the workgroup, add it. */
+      create_server_on_workgroup(work, server_name, 
+                                 servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+                                 ttl, comment);
+    }
+    else
+    {
+      /* Update the record. */
+      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+      update_server_ttl(servrec, ttl);
+      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    }
+
+    set_workgroup_local_master_browser_name( work, server_name );
   }
   else
   {
-    /* Update the record. */
-    servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-    update_server_ttl(servrec, ttl);
-    StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    /*
+     * This server is announcing it is going down. Remove it from the
+     * workgroup.
+     */
+    if(!is_myname(server_name) && (work != NULL) &&
+       ((servrec = find_server_in_workgroup( work, server_name))!=NULL)
+      )
+    {
+      remove_server_from_workgroup( work, servrec);
+    }
   }
-
-  set_workgroup_local_master_browser_name( work, server_name );
 
   subrec->work_changed = True;
 }
@@ -454,26 +491,44 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
    * announce instead ? JRA.
    */
 
-  if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL)
-  {
-    /* We have no record of this workgroup. Add it. */
-    if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
-      return;
-  }
+  work = find_workgroup_on_subnet(subrec, work_name);
 
-  if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
+  if(servertype != 0)
   {
-    /* If this server is not already in the workgroup, add it. */
-    create_server_on_workgroup(work, announce_name,
-                               servertype|SV_TYPE_LOCAL_LIST_ONLY,
-                               ttl, comment);
+    if (work == NULL)
+    {
+      /* We have no record of this workgroup. Add it. */
+      if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+        return;
+    }
+
+    if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
+    {
+      /* If this server is not already in the workgroup, add it. */
+      create_server_on_workgroup(work, announce_name,
+                                 servertype|SV_TYPE_LOCAL_LIST_ONLY,
+                                 ttl, comment);
+    }
+    else
+    {
+      /* Update the record. */
+      servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+      update_server_ttl( servrec, ttl);
+      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    }
   }
   else
   {
-    /* Update the record. */
-    servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
-    update_server_ttl( servrec, ttl);
-    StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+    /*
+     * This server is announcing it is going down. Remove it from the
+     * workgroup.
+     */
+    if(!is_myname(announce_name) && (work != NULL) &&
+       ((servrec = find_server_in_workgroup( work, announce_name))!=NULL)
+      )
+    {
+      remove_server_from_workgroup( work, servrec);
+    }
   }
 
   subrec->work_changed = True;
