@@ -136,10 +136,12 @@ void conn_close_all(void)
 }
 
 /****************************************************************************
-idle inactive connections
+ Idle inactive connections.
 ****************************************************************************/
+
 BOOL conn_idle_all(time_t t, int deadtime)
 {
+	pipes_struct *plist = NULL;
 	BOOL allidle = True;
 	connection_struct *conn, *next;
 
@@ -154,6 +156,15 @@ BOOL conn_idle_all(time_t t, int deadtime)
 			allidle = False;
 	}
 
+	/*
+	 * Check all pipes for any open handles. We cannot
+	 * idle with a handle open.
+	 */
+
+	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist))
+		if (plist->pipe_handles && plist->pipe_handles->count)
+			allidle = False;
+	
 	return allidle;
 }
 
