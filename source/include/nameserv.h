@@ -568,6 +568,10 @@ extern struct subnet_record *remote_broadcast_subnet;
 #define NEXT_SUBNET_EXCLUDING_UNICAST(x) ((x)->next)
 #define NEXT_SUBNET_INCLUDING_UNICAST(x) (get_next_subnet_maybe_unicast((x)))
 
+/* Standard nameserver file on UNIX */
+#define NAME_SERVER_FILE "/etc/resolv.conf"
+#define NAME_SERVER_NUM 3 /* The number of nameservers that are parsed out of resolv.conf */
+
 /* To be removed. */
 enum state_type { TEST };
 #endif /* _NAMESERV_H_ */

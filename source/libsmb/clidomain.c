@@ -283,6 +283,12 @@ BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 			     remote_machine)) {
 		DEBUG(0,("unable to lookup pdc name for %s in domain %s\n",
 			 inet_ntoa(dest_ip), domain));
+
+        /* BEGIN_ADMIN_LOG */
+                sys_adminlog(LOG_INFO,
+                (char *) gettext("Cannot communicate with domain controller.Domain name: %s.Domain controller address: %s."),domain,inet_ntoa(dest_ip));
+        /* END_ADMIN_LOG */
+
 		return False;
 	}
 
@@ -567,6 +573,9 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
  	} else {
  		DEBUG(3, ("no domain controllers found for domain %s\n",
  			  domain));
+                /* BEGIN_ADMIN_LOG */
+                sys_adminlog(LOG_CRIT, (char *) gettext("Cannot communicate with any domain controllers.Domain name: %s."),domain);
+                /* END_ADMIN_LOG */
   	}
 
 	return connected_ok;

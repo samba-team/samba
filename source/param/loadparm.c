@@ -230,6 +230,7 @@ typedef struct
 	BOOL sslReqServerCert;
 	BOOL sslCompatibility;
 #endif				/* WITH_SSL */
+	BOOL bAdminLog;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
 	BOOL bWINSproxy;
@@ -905,6 +906,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Browse Options", P_SEP, P_SEPARATOR},
 
+	{"show admin log", P_BOOL, P_GLOBAL, &Globals.bAdminLog, NULL, NULL, 0},
 	{"os level", P_INTEGER, P_GLOBAL, &Globals.os_level, NULL, NULL, FLAG_BASIC},
 	{"lm announce", P_ENUM, P_GLOBAL, &Globals.lm_announce, NULL, enum_lm_announce, 0},
 	{"lm interval", P_INTEGER, P_GLOBAL, &Globals.lm_interval, NULL, NULL, 0},
@@ -1244,6 +1246,7 @@ static void init_globals(void)
 
 */
 
+	Globals.bAdminLog = True;
 	Globals.bPreferredMaster = Auto;	/* depending on bDomainMaster */
 	Globals.os_level = 32;
 	Globals.bLocalMaster = True;
@@ -1561,6 +1564,7 @@ FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert);
 FN_GLOBAL_BOOL(lp_ssl_compatibility, &Globals.sslCompatibility);
 #endif /* WITH_SSL */
 
+FN_GLOBAL_BOOL(lp_admin_log, &Globals.bAdminLog)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server, &Globals.bWINSsupport)

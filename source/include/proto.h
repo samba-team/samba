@@ -462,6 +462,7 @@ pid_t sys_fork(void);
 pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
+void sys_adminlog(int priority,char *format_str, ...);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -910,6 +911,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type,
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
+BOOL parse_resolvconf(char name_server_arr[][16]);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -1582,6 +1584,7 @@ BOOL lp_ssl_enabled(void);
 BOOL lp_ssl_reqClientCert(void);
 BOOL lp_ssl_reqServerCert(void);
 BOOL lp_ssl_compatibility(void);
+BOOL lp_admin_log(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);

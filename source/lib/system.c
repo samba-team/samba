@@ -1013,3 +1013,22 @@ int sys_pclose(int fd)
 		return -1;
 	return wstatus;
 }
+
+/**************************************************************************
+ Wrapper for Admin Logs.
+****************************************************************************/
+void sys_adminlog(int priority,char *format_str, ...)
+{
+        va_list ap;
+        pstring msgbuf;
+
+        if (lp_admin_log())
+        {
+                va_start( ap, format_str );
+                vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
+                va_end( ap );
+
+                msgbuf[255] = '\0';
+                syslog( priority, "%s", msgbuf );
+        }
+}
