@@ -115,7 +115,6 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
 		   (current_user.uid == vuser->uid)) {
-	  int n, ngroups; gid_t grps[10];
 		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
 	}
 

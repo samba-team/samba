@@ -158,14 +158,13 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 
 #ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
 	if (getegid() == groups[0]) {
-	  int n;
-	  ngroups--;
-	  if (!ngroups) {
-	    SAFE_FREE(groups);
-	    return(ngroups);
-	  }
-	  for (n=0; n < ngroups; n++)
-	    groups[n] = groups[n+1];
+		ngroups--;
+		if (!ngroups) {
+			SAFE_FREE(groups);
+			return(ngroups);
+		}
+		
+		memmove(&groups[0], &groups[1], ngroups*sizeof(gid_t));
 	}
 #endif
 
