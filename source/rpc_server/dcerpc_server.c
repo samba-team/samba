@@ -243,7 +243,7 @@ NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
 				    DATA_BLOB *session_key)
 {
 	/* this took quite a few CPU cycles to find ... */
-	session_key->data = discard_const_p(void, "SystemLibraryDTC");
+	session_key->data = discard_const_p(uint8_t, "SystemLibraryDTC");
 	session_key->length = 16;
 	return NT_STATUS_OK;
 }
