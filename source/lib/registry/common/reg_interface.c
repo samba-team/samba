@@ -60,11 +60,12 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {
 	struct reg_init_function_entry *entry;
 	static BOOL reg_first_init = True;
+	NTSTATUS status;
 
 	if(reg_first_init) {
 		status = register_subsystem("registry", registry_register);
 		if (!NT_STATUS_IS_OK(status)) 
-			return WERR_GENERAL_FAILURE;
+			return NULL;
 
 		static_init_registry;
 		reg_first_init = False;
