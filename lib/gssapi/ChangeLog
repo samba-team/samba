@@ -1,3 +1,8 @@
+2003-04-28  Jacques Vidrine  <nectar@kth.se>
+
+	* verify_mic.c (verify_mic_des3): If MIC verification fails,
+	retry using the `old' MIC computation (with zero IV).
+
 2003-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: more about difference between comparing IN
