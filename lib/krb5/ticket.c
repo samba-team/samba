@@ -110,12 +110,16 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
     data->data = NULL;
 
     ad = ticket->ticket.authorization_data;
-    if (ad == NULL)
+    if (ad == NULL) {
+	krb5_set_error_string(context, "Ticket have not authorization data");
 	return ENOENT; /* XXX */
+    }
 
     for (i = 0; i < ad->len; i++) {
 	if (ad->val[i].ad_type == type)
 	    return copy_octet_string(&ad->val[i].ad_data, data);
     }
+    krb5_set_error_string(context, "Ticket have not authorization "
+			  "data of type %d", type);
     return ENOENT; /* XXX */
 }
