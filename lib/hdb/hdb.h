@@ -46,6 +46,9 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_DECRYPT	1 /* decrypt keys */
 #define HDB_F_REPLACE	2 /* replace entry */
 
+/* key usage for master key */
+#define HDB_KU_MKEY	0x484442
+
 typedef struct hdb_master_key_data *hdb_master_key;
 
 typedef struct HDB{

@@ -316,7 +316,7 @@ hdb_unseal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 
 	key = find_master_key(&ent->keys.val[i], mkey);
 
-	ret = krb5_decrypt(context, key->crypto, 0, 
+	ret = krb5_decrypt(context, key->crypto, HDB_KU_MKEY,
 			   k->key.keyvalue.data,
 			   k->key.keyvalue.length,
 			   &res);
@@ -352,7 +352,7 @@ hdb_seal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 
 	key = find_master_key(k, mkey);
 
-	ret = krb5_encrypt(context, key->crypto, 0,
+	ret = krb5_encrypt(context, key->crypto, HDB_KU_MKEY,
 			   k->key.keyvalue.data,
 			   k->key.keyvalue.length,
 			   &res);
