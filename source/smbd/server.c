@@ -223,8 +223,19 @@ max can be %d\n",
 		
 		num = sys_select(FD_SETSIZE,&lfds,NULL);
 		
-		if (num == -1 && errno == EINTR)
+		if (num == -1 && errno == EINTR) {
+			extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+
+			/* check for sighup processing */
+			if (reload_after_sighup) {
+				unbecome_user();
+				DEBUG(1,("Reloading services after SIGHUP\n"));
+				reload_services(False);
+				reload_after_sighup = False;
+			}
+
 			continue;
+		}
 		
 		/* check if we need to reload services */
 		check_reload(time(NULL));
