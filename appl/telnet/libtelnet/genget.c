@@ -57,7 +57,7 @@ isprefix(char *s1, char *s2)
     os1 = s1;
     c1 = *s1;
     c2 = *s2;
-    while (LOWER(c1) == LOWER(c2)) {
+    while (tolower((unsigned char)c1) == tolower((unsigned char)c2)) {
 	if (c1 == '\0')
 	    break;
 	c1 = *++s1;

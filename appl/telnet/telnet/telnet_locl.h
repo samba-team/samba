@@ -149,6 +149,7 @@
 #include <socks.h>
 #endif
 
+#include <err.h>
 #include <roken.h>
 /* krb.h? */
 

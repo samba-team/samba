@@ -536,10 +536,11 @@ proto (int s, int errsock,
 
     if (sock_debug) {
 	int one = 1;
-	if (setsockopt(s, SOL_SOCKET, SO_DEBUG, &one, sizeof(one)) < 0)
+	if (setsockopt(s, SOL_SOCKET, SO_DEBUG, (void *)&one, sizeof(one)) < 0)
 	    warn("setsockopt remote");
 	if (errsock2 != -1 &&
-	    setsockopt(errsock2, SOL_SOCKET, SO_DEBUG, &one, sizeof(one)) < 0)
+	    setsockopt(errsock2, SOL_SOCKET, SO_DEBUG,
+		       (void *)&one, sizeof(one)) < 0)
 	    warn("setsockopt stderr");
     }
 

@@ -1152,7 +1152,7 @@ printdata(char *tag, char *ptr, int cnt)
 	output_data("%s: ", tag);
 	for (i = 0; i < 20 && cnt; i++) {
 	    output_data("%02x", *ptr);
-	    if (isprint(*ptr)) {
+	    if (isprint((unsigned char)*ptr)) {
 		xbuf[i] = *ptr;
 	    } else {
 		xbuf[i] = '.';

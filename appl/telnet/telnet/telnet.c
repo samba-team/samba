@@ -579,7 +579,7 @@ mklist(char *buf, char *name)
 #define ISASCII(c) (!((c)&0x80))
 		if ((c == ' ') || !ISASCII(c))
 			n = 1;
-		else if (islower(c))
+		else if (islower((unsigned char)c))
 			*cp = toupper(c);
 	}
 

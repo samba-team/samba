@@ -513,7 +513,7 @@ sink(int argc, char **argv)
 		if (*cp++ != ' ')
 			SCREWUP("mode not delimited");
 
-		for (size = 0; isdigit(*cp);)
+		for (size = 0; isdigit((unsigned char)*cp);)
 			size = size * 10 + (*cp++ - '0');
 		if (*cp++ != ' ')
 			SCREWUP("size not delimited");
