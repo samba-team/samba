@@ -175,7 +175,7 @@
 	<sect2>
 		<title>Microsoft Remote Procedure Calls</title>
 		
-		<para>Over the last two years, efforts have been underway 
+		<para>Over the last few years, efforts have been underway 
 		by various Samba Team members to decode various aspects of 
 		the Microsoft Remote Procedure Call (MSRPC) system. This 
 		system is used for most network related operations between 
@@ -191,6 +191,21 @@
 		NT domain users and to change user passwords. By directly querying 
 		a Windows PDC for user and group information, winbind maps the 
 		NT account information onto UNIX user and group names.</para>
+	</sect2>
+	
+	<sect2>
+		<title>Microsoft Active Directory Services</title>
+
+		<para>
+                Since late 2001, Samba has gained the ability to
+                interact with Microsoft Windows 2000 using its 'Native
+                Mode' protocols, rather than the NT4 RPC services.
+                Using LDAP and Kerberos, a domain member running
+                winbind can enumerate users and groups in exactly the
+                same way as a Win2k client would, and in so doing
+                provide a much more efficient and
+                effective winbind implementation.  
+                </para>
 	</sect2>
 	
 	<sect2>
@@ -466,7 +481,7 @@ whether or not you have previously built the Samba binaries.
 <prompt>root#</prompt> <command>autoconf</command>
 <prompt>root#</prompt> <command>make clean</command>
 <prompt>root#</prompt> <command>rm config.cache</command>
-<prompt>root#</prompt> <command>./configure --with-winbind</command>
+<prompt>root#</prompt> <command>./configure</command>
 <prompt>root#</prompt> <command>make</command>
 <prompt>root#</prompt> <command>make install</command>
 </programlisting></para>
@@ -584,7 +599,7 @@ a domain user who has administrative privileges in the domain.
 	
 
 <para>
-<prompt>root#</prompt> <command>/usr/local/samba/bin/net rpc join -S PDC -U Administrator</command>
+<prompt>root#</prompt> <command>/usr/local/samba/bin/net join -S PDC -U Administrator</command>
 </para>
 
 
@@ -1065,7 +1080,7 @@ configured in the pam.conf.
 
 	<itemizedlist>
 		<listitem><para>Winbind is currently only available for 
-		the Linux operating system, although ports to other operating 
+		the Linux, Solaris and IRIX operating systems, although ports to other operating 
 		systems are certainly possible. For such ports to be feasible, 
 		we require the C library of the target operating system to 
 		support the Name Service Switch and Pluggable Authentication
@@ -1081,7 +1096,8 @@ configured in the pam.conf.
 		
 		<listitem><para>Currently the winbind PAM module does not take 
 		into account possible workstation and logon time restrictions 
-		that may be been set for Windows NT users.</para></listitem>
+		that may be been set for Windows NT users, this is
+		instead up to the PDC to enforce.</para></listitem>
 	</itemizedlist>
 </sect1>
 
