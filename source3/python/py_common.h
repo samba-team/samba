@@ -27,4 +27,8 @@ void py_samba_init(void);
 PyObject *py_werror_tuple(WERROR werror);
 PyObject *py_ntstatus_tuple(NTSTATUS ntstatus);
 
+PyObject *py_setup_logging(PyObject *self, PyObject *args);
+PyObject *get_debuglevel(PyObject *self, PyObject *args);
+PyObject *set_debuglevel(PyObject *self, PyObject *args);
+
 #endif /* _PY_COMMON_H */
