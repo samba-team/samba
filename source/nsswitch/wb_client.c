@@ -233,10 +233,136 @@ static BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
+/* Fetch the list of groups a user is a member of from winbindd.  This is
+   used by winbind_initgroups and winbind_getgroups. */
 
+static int wb_getgroups(char *user, gid_t **groups)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	/* Call winbindd */
+
+	fstrcpy(request.data.username, user);
+
+	ZERO_STRUCT(response);
+
+	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+
+	if (result == NSS_STATUS_SUCCESS) {
+		
+		/* Return group list.  Don't forget to free the group list
+		   when finished. */
+
+		*groups = (gid_t *)response.extra_data;
+		return response.data.num_entries;
+	}
+
+	return -1;
+}
+
+/* Call winbindd to initialise group membership.  This is necessary for
+   some systems (i.e RH5.2) that do not have an initgroups function as part
+   of the nss extension.  In RH5.2 this is implemented using getgrent()
+   which can be amazingly inefficient as well as having problems with
+   username case. */
+
+int winbind_initgroups(char *user, gid_t gid)
+{
+	gid_t *groups = NULL;
+	int result;
+	char *sep;
+
+	/* Call normal initgroups if we are a local user */
+
+	sep = lp_winbind_separator();
+
+	if (!strchr(user, *sep)) {
+		return initgroups(user, gid);
+	}
+
+	result = wb_getgroups(user, &groups);
+
+	if (result != -1) {
+		int ngroups = result, i;
+		BOOL is_member = False;
+
+		/* Check to see if the passed gid is already in the list */
+
+		for (i = 0; i < ngroups; i++) {
+			if (groups[i] == gid) {
+				is_member = True;
+			}
+		}
+
+		/* Add group to list if necessary */
+
+		if (!is_member) {
+			groups = Realloc(groups, sizeof(gid_t) * ngroups + 1);
+			
+			if (!groups) {
+				errno = ENOMEM;
+				result = -1;
+				goto done;
+			}
+
+			groups[ngroups] = gid;
+			ngroups++;
+		}
+
+		/* Set the groups */
+
+		if (setgroups(ngroups, groups) == -1) {
+			errno = EPERM;
+			result = -1;
+			goto done;
+		}
+	}
+
+	/* Free response data if necessary */
+
+ done:
+	safe_free(groups);
+
+	return result;
+}
+
+/* Return a list of groups the user is a member of.  This function is
+   useful for large systems where inverting the group database would be too
+   time consuming.  If size is zero, list is not modified and the total
+   number of groups for the user is returned. */
+
+int winbind_getgroups(char *user, int size, gid_t *list)
+{
+	gid_t *groups = NULL;
+	int result, i;
+
+	/* Fetch list of groups */
+
+	result = wb_getgroups(user, &groups);
+
+	if (size == 0) goto done;
+
+	if (result > size) {
+		result = -1;
+		errno = EINVAL; /* This is what getgroups() does */
+		goto done;
+	}
+
+	/* Copy list of groups across */
+
+	for (i = 0; i < result; i++) {
+		list[i] = groups[i];
+	}
+
+ done:
+	safe_free(groups);
+	return result;
+}
 
 /*****************************************************************
- *THE CANNONICAL* convert name to SID function.
+ *THE CANONICAL* convert name to SID function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
@@ -267,7 +393,7 @@ BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to name function.
+ *THE CANONICAL* convert SID to name function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
@@ -289,7 +415,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert uid_t to SID function.
+ *THE CANONICAL* convert uid_t to SID function.
  Tries winbind first - then uses local lookup.
  Returns SID pointer.
 *****************************************************************/  
@@ -311,7 +437,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert gid_t to SID function.
+ *THE CANONICAL* convert gid_t to SID function.
  Tries winbind first - then uses local lookup.
  Returns SID pointer.
 *****************************************************************/  
@@ -333,7 +459,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to uid function.
+ *THE CANONICAL* convert SID to uid function.
  Tries winbind first - then uses local lookup.
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
@@ -387,7 +513,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to gid function.
+ *THE CANONICAL* convert SID to gid function.
  Tries winbind first - then uses local lookup.
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
