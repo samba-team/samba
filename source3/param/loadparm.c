@@ -1074,9 +1074,16 @@ static void free_service(service *pservice)
   if (!pservice)
      return;
 
+  string_free(&pservice->szService);
+  if (pservice->copymap)
+  {
+    free(pservice->copymap);
+    pservice->copymap = NULL;
+  }
+ 
   for (i=0;parm_table[i].label;i++)
     if ((parm_table[i].type == P_STRING ||
-	 parm_table[i].type == P_STRING) &&
+	 parm_table[i].type == P_USTRING) &&
 	parm_table[i].class == P_LOCAL)
       string_free((char **)(((char *)pservice) + PTR_DIFF(parm_table[i].ptr,&sDefault)));
 }
