@@ -56,6 +56,17 @@ static NTSTATUS ntlm_sign_packet(struct dcerpc_security *dcerpc_security,
 	return ntlmssp_sign_packet(ntlmssp_state, data, length, sig);
 }
 
+static NTSTATUS ntlm_session_key(struct dcerpc_security *dcerpc_security, 
+				 uint8 session_key[16])
+{
+	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
+	if (!ntlmssp_state || ntlmssp_state->session_key.length < 16) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	memcpy(session_key, ntlmssp_state->session_key.data, 16);
+	return NT_STATUS_OK;
+}
+
 static void ntlm_security_end(struct dcerpc_security *dcerpc_security)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
@@ -173,6 +184,7 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	p->security_state->check_packet = ntlm_check_packet;
 	p->security_state->seal_packet = ntlm_seal_packet;
 	p->security_state->sign_packet = ntlm_sign_packet;
+	p->security_state->session_key = ntlm_session_key;
 	p->security_state->security_end = ntlm_security_end;
 
 	switch (p->auth_info->auth_level) {

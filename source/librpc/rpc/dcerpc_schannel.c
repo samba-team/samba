@@ -56,6 +56,12 @@ static NTSTATUS schan_sign_packet(struct dcerpc_security *dcerpc_security,
 	return schannel_sign_packet(schannel_state, data, length, sig);
 }
 
+static NTSTATUS schan_session_key(struct dcerpc_security *dcerpc_security, 
+				  uint8 session_key[16])
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static void schan_security_end(struct dcerpc_security *dcerpc_security)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
@@ -232,6 +238,7 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 	p->security_state->check_packet = schan_check_packet;
 	p->security_state->seal_packet = schan_seal_packet;
 	p->security_state->sign_packet = schan_sign_packet;
+	p->security_state->session_key = schan_session_key;
 	p->security_state->security_end = schan_security_end;
 
 done:

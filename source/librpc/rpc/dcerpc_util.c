@@ -677,14 +677,23 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 {
 	struct cli_tree *tree;
 
+	memset(session_key, 0, 16);
+
 	tree = dcerpc_smb_tree(p);
-	if (!tree) {
-		return NT_STATUS_INVALID_PARAMETER;
+	if (tree) {
+		memcpy(session_key, 
+		       tree->session->transport->negotiate.user_session_key,
+		       16);
 	}
 
-	memcpy(session_key, 
-	       tree->session->transport->negotiate.user_session_key,
-	       16);
+	if (p->security_state) {
+		NTSTATUS status;
+
+		status = p->security_state->session_key(p->security_state, session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 	
 	return NT_STATUS_OK;
 }
