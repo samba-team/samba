@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpcclient.h"
 
 extern pstring debugf;
 
@@ -266,7 +267,8 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 
 /* Display help on commands */
 
-static NTSTATUS cmd_help(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -324,7 +326,8 @@ static NTSTATUS cmd_help(struct cli_state *cli, int argc, char **argv)
 
 /* Change the debug level */
 
-static NTSTATUS cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                               int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -340,7 +343,8 @@ static NTSTATUS cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_quit(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
 {
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
@@ -389,7 +393,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	NULL
 };
 
-void add_command_set(struct cmd_set *cmd_set)
+static void add_command_set(struct cmd_set *cmd_set)
 {
 	struct cmd_list *entry;
 
@@ -404,10 +408,11 @@ void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd)
+static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, 
+                       char *cmd)
 {
 	char *p = cmd, **argv = NULL;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
 	int argc = 0, i;
 
@@ -428,10 +433,12 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *c
 		/* Create argument list */
 
 		argv = (char **)malloc(sizeof(char *) * argc);
+                memset(argv, 0, sizeof(char *) * argc);
 
 		if (!argv) {
 			fprintf(stderr, "out of memory\n");
-			return NT_STATUS_NO_MEMORY;
+			result = NT_STATUS_NO_MEMORY;
+                        goto done;
 		}
 					
 		p = cmd;
@@ -441,21 +448,52 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *c
 	}
 
 	/* Call the function */
-	if (cmd_entry->fn) {
-		result = cmd_entry->fn(cli, argc, argv);
-	}
-	else {
-		fprintf (stderr, "Invalid command\n");
-		result = NT_STATUS_INVALID_PARAMETER;
-	}
 
+	if (cmd_entry->fn) {
+                TALLOC_CTX *mem_ctx;
+
+                /* Create mem_ctx */
+
+                if (!(mem_ctx = talloc_init())) {
+                        DEBUG(0, ("talloc_init() failed\n"));
+                        goto done;
+                }
+
+                /* Open pipe */
+
+                if (cmd_entry->pipe)
+                        if (!cli_nt_session_open(cli, cmd_entry->pipe)) {
+                                DEBUG(0, ("Could not initialise %s\n",
+                                          cmd_entry->pipe));
+                                goto done;
+                        }
+
+                /* Run command */
+
+                result = cmd_entry->fn(cli, mem_ctx, argc, argv);
+
+                /* Cleanup */
+
+                if (cmd_entry->pipe)
+                        cli_nt_session_close(cli);
+
+                talloc_destroy(mem_ctx);
+
+	} else {
+		fprintf (stderr, "Invalid command\n");
+                goto done;
+        }
+
+ done:
 						
 	/* Cleanup */
-	for (i = 0; i < argc; i++) {
-		SAFE_FREE(argv[i]);
-	}
+
+        if (argv) {
+                for (i = 0; i < argc; i++)
+                        SAFE_FREE(argv[i]);
 	
-	SAFE_FREE(argv);
+                SAFE_FREE(argv);
+        }
 	
 	return result;
 }
@@ -490,8 +528,9 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 
 		while(temp_set->name) {
 			if (strequal(buf, temp_set->name)) {
-				found = True;
+                                found = True;
 				result = do_cmd(cli, temp_set, cmd);
+
 				goto done;
 			}
 			temp_set++;

@@ -21,14 +21,13 @@
 */
 
 #include "includes.h"
-
-extern pstring server;
+#include "rpcclient.h"
 
 /* Check DFS is supported by the remote server */
 
-static NTSTATUS cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              int argc, char **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	BOOL dfs_exists;
 	NTSTATUS result;
 
@@ -37,34 +36,17 @@ static NTSTATUS cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("cmd_dfs_exist: talloc_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
-		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
 	result = cli_dfs_exist(cli, mem_ctx, &dfs_exists);
 
 	if (NT_STATUS_IS_OK(result))
 		printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
 
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
-static NTSTATUS cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                            int argc, char **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 	char *entrypath, *servername, *sharename, *comment;
 	uint32 flags = 0;
@@ -80,32 +62,15 @@ static NTSTATUS cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
 	sharename = argv[3];
 	comment = argv[4];
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("cmd_dfs_add: talloc_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
-		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
 	result = cli_dfs_add(cli, mem_ctx, entrypath, servername, 
 			     sharename, comment, flags);
 
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
-static NTSTATUS cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                               int argc, char **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 	char *entrypath, *servername, *sharename;
 
@@ -118,26 +83,9 @@ static NTSTATUS cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
 	servername = argv[2];
 	sharename = argv[3];
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("cmd_dfs_remove: talloc_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
-		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
 	result = cli_dfs_remove(cli, mem_ctx, entrypath, servername, 
 				sharename);
 
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -221,9 +169,9 @@ static void display_dfs_info_ctr(DFS_INFO_CTR *ctr)
 
 /* Enumerate dfs shares */
 
-static NTSTATUS cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             int argc, char **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	DFS_INFO_CTR ctr;
 	NTSTATUS result;
 	uint32 info_level = 1;
@@ -236,44 +184,25 @@ static NTSTATUS cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("cmd_dfs_enum: talloc_init failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
-		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Call RPC function */
-
 	result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr);
-	if (NT_STATUS_IS_OK(result)) {
-		/* Print results */
+
+	if (NT_STATUS_IS_OK(result))
 		display_dfs_info_ctr(&ctr);
-	}
 
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
-static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                int argc, char **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 	char *entrypath, *servername, *sharename;
 	uint32 info_level = 1;
 	DFS_INFO_CTR ctr;
 
 	if (argc < 4 || argc > 5) {
-		printf("Usage: %s entrypath servername sharename [info_level]\n", argv[0]);
+		printf("Usage: %s entrypath servername sharename "
+                       "[info_level]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -284,32 +213,12 @@ static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 	if (argc == 5)
 		info_level = atoi(argv[4]);
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("cmd_dfs_getinfo: talloc_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_NETDFS)) {
-		DEBUG(0, ("Could not initialize netdfs pipe!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Call RPC function */
-
 	result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
 				  sharename, info_level, &ctr);
-	if (NT_STATUS_IS_OK(result)) {
-		/* Print results */
+
+	if (NT_STATUS_IS_OK(result))
 		display_dfs_info_ctr(&ctr);
-	}
 
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -319,11 +228,11 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsexist",   cmd_dfs_exist,   "Query DFS support",    "" },
-	{ "dfsadd",     cmd_dfs_add,     "Add a DFS share",      "" },
-	{ "dfsremove",  cmd_dfs_remove,  "Remove a DFS share",   "" },
-	{ "dfsgetinfo", cmd_dfs_getinfo, "Query DFS share info", "" },
-	{ "dfsenum",    cmd_dfs_enum,    "Enumerate dfs shares", "" },
+	{ "dfsexist",   cmd_dfs_exist,   PIPE_NETDFS, "Query DFS support",    "" },
+	{ "dfsadd",     cmd_dfs_add,     PIPE_NETDFS, "Add a DFS share",      "" },
+	{ "dfsremove",  cmd_dfs_remove,  PIPE_NETDFS, "Remove a DFS share",   "" },
+	{ "dfsgetinfo", cmd_dfs_getinfo, PIPE_NETDFS, "Query DFS share info", "" },
+	{ "dfsenum",    cmd_dfs_enum,    PIPE_NETDFS, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };

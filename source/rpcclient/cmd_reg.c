@@ -21,15 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
-
-extern int smb_tidx;
-
-extern FILE* out_hnd;
+#include "rpcclient.h"
 
 /*
  * keys.  of the form:
@@ -902,7 +895,8 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 /****************************************************************************
 nt registry shutdown
 ****************************************************************************/
-static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 int argc, char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
@@ -911,7 +905,6 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
 	int opt;
 	int ret;
 	char *srv_name;
-	TALLOC_CTX *mem_ctx;
 
 	ret = asprintf (&srv_name, "\\\\%s", cli->desthost);
 	if (ret < 0) {
@@ -920,18 +913,6 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
 	}
 	strupper(srv_name);
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_getprinter: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_WINREG)) {
-		fprintf (stderr, "Could not initialize winreg pipe!\n");
-		goto done;
-	}
-			
 	*msg = 0;
 	optind = 0; /* TODO: test if this hack works on other systems too --simo */
 
@@ -974,23 +955,19 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
 	else
 		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
 
- 	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
-			
 	return result;
 }
 
 /****************************************************************************
 abort a shutdown
 ****************************************************************************/
-static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx, int argc, 
+                                       char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int ret;
 	char *srv_name;
-	TALLOC_CTX *mem_ctx;
 
 	ret = asprintf(&srv_name, "\\\\%s", cli->desthost);
 	if (ret < 0) {
@@ -999,29 +976,12 @@ static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, int argc, char **a
 	}
 	strupper(srv_name);
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_spoolss_getprinter: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_WINREG)) {
-		fprintf (stderr, "Could not initialize winreg pipe!\n");
-		goto done;
-	}
-
 	result = cli_reg_abort_shutdown(cli, mem_ctx, srv_name);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
 	else
 		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
-
-	cli_nt_session_close(cli);
-
-done:
-	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -1032,10 +992,10 @@ struct cmd_set reg_commands[] = {
 
 	{ "REG"  },
 
-	{ "shutdown",		cmd_reg_shutdown,		"Remote Shutdown",
+	{ "shutdown",		cmd_reg_shutdown,		PIPE_WINREG, "Remote Shutdown",
 				"[-m message] [-t timeout] [-r] [-f] (-r == reboot, -f == force)" },
 				
-	{ "abortshutdown",	cmd_reg_abort_shutdown,		"Abort Shutdown",
+	{ "abortshutdown",	cmd_reg_abort_shutdown,		PIPE_WINREG, "Abort Shutdown",
 				"" },				
 /*
 	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
