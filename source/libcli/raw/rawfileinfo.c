@@ -419,12 +419,12 @@ static NTSTATUS smb_raw_getattrE_recv(struct cli_request *req,
 	}
 	
 	CLI_CHECK_WCT(req, 11);
-	parms->getattre.out.create_time =      make_unix_date2(req->in.vwv + VWV(0));
-	parms->getattre.out.access_time =      make_unix_date2(req->in.vwv + VWV(2));
-	parms->getattre.out.write_time  =      make_unix_date2(req->in.vwv + VWV(4));
-	parms->getattre.out.size =       IVAL(req->in.vwv, VWV(6));
-	parms->getattre.out.alloc_size = IVAL(req->in.vwv, VWV(8));
-	parms->getattre.out.attrib =     SVAL(req->in.vwv, VWV(10));
+	parms->getattre.out.create_time =   make_unix_date2(req->in.vwv + VWV(0));
+	parms->getattre.out.access_time =   make_unix_date2(req->in.vwv + VWV(2));
+	parms->getattre.out.write_time  =   make_unix_date2(req->in.vwv + VWV(4));
+	parms->getattre.out.size =          IVAL(req->in.vwv,             VWV(6));
+	parms->getattre.out.alloc_size =    IVAL(req->in.vwv,             VWV(8));
+	parms->getattre.out.attrib =        SVAL(req->in.vwv,             VWV(10));
 
 failed:
 	return cli_request_destroy(req);
