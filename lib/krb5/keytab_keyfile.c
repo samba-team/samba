@@ -76,7 +76,7 @@ get_cell_and_realm (struct akf_data *d)
 	return EINVAL;
     }
     if (buf[strlen(buf) - 1] == '\n')
-	buf[strlen(buf)-1] = '\0';
+	buf[strlen(buf) - 1] = '\0';
     fclose(f);
 
     d->cell = strdup (buf);
@@ -200,6 +200,7 @@ akf_next_entry(krb5_context context,
 	       krb5_keytab_entry *entry, 
 	       krb5_kt_cursor *cursor)
 {
+    krb5_error_code error;
     struct akf_data *d = id->data;
     int32_t kvno;
     off_t pos;
@@ -210,24 +211,37 @@ akf_next_entry(krb5_context context,
     if ((pos - 4) / (4 + 8) >= d->num_entries)
 	return KRB5_KT_END;
 
-    ret = krb5_ret_int32(cursor->sp, &kvno);
+    ret = krb5_make_principal (context, &entry->principal,
+			       d->realm, "afs", d->cell, NULL);
     if (ret)
-	return ret;
+	goto out;
+
+    ret = krb5_ret_int32(cursor->sp, &kvno);
+    if (ret) {
+	krb5_free_principal (context, entry->principal);
+	goto out;
+    }
 
     entry->vno = (int8_t) kvno;
 
-    krb5_make_principal (context, &entry->principal,
-			 d->realm, "afs", d->cell, NULL);
-
-    entry->keyblock.keytype = ETYPE_DES_CBC_MD5;
+    entry->keyblock.keytype         = ETYPE_DES_CBC_MD5;
     entry->keyblock.keyvalue.length = 8;
-    entry->keyblock.keyvalue.data = malloc (8);
+    entry->keyblock.keyvalue.data   = malloc (8);
+    if (entry->keyblock.keyvalue.data == NULL) {
+	krb5_free_principal (context, entry->principal);
+	ret = ENOMEM;
+	goto out;
+    }
+
     ret = cursor->sp->fetch(cursor->sp, entry->keyblock.keyvalue.data, 8);
     if(ret != 8)
-	return (ret < 0)? errno : KRB5_KT_END;
+	ret = (ret < 0) ? errno : KRB5_KT_END;
 
+    entry->timestamp = time(NULL);
+
+ out:
     cursor->sp->seek(cursor->sp, pos + 4 + 8, SEEK_SET);
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
