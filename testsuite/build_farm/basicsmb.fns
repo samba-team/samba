@@ -105,8 +105,8 @@ test_smbpasswd_remote() {
 test_smbpasswd_local() {
 	test_smbpasswd_newpassword="$2"
 	rm -f $prefix/private/smbpasswd
-	echo "( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L $whoami"
-	( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L $whoami
+	echo "( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L -s $whoami"
+	( echo $test_smbpasswd_newpassword ; echo $test_smbpasswd_newpassword; ) | $prefix/bin/smbpasswd -L -s $whoami
 	status=$?
 	if [ $status = 0 ]; then
 	    echo "smbpasswd correctly locally changed password ($test_smbpasswd_password -> $test_smbpasswd_newpassword)"
