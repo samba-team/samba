@@ -839,7 +839,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	}
 
 	dest_len = 0;
-	for (i = 0; i < buffer_len; i++) {
+	for (i = 0; buffer[i] != 0 && (i < buffer_len); i++) {
 		unsigned char mb[10];
 		/* Convert one smb_ucs2_t character at a time. */
 		size_t mb_len = convert_string(CH_UCS2, CH_DOS, buffer+i, sizeof(smb_ucs2_t), mb, sizeof(mb), False);
@@ -847,6 +847,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 			memcpy((char *)dest + dest_len, mb, mb_len);
 			dest_len += mb_len;
 		} else {
+			errno = E2BIG;
 			break;
 		}
 	}
@@ -912,9 +913,11 @@ size_t pull_ascii_fstring(char *dest, const void *src)
 	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
-size_t pull_ascii_nstring(char *dest, const void *src)
+/* When pulling an nstring it can expand into a larger size (dos cp -> utf8). Cope with this. */
+
+size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
 {
-	return pull_ascii(dest, src, sizeof(nstring), sizeof(nstring), STR_TERMINATE);
+	return pull_ascii(dest, src, dest_len, sizeof(nstring), STR_TERMINATE);
 }
 
 /**
