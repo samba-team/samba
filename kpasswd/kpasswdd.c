@@ -35,9 +35,6 @@
 RCSID("$Id$");
 
 #include <kadm5/admin.h>
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
 
 #include <hdb.h>
 
@@ -574,6 +571,8 @@ main (int argc, char **argv)
     signal(SIGINT,  sigterm);
     signal(SIGTERM, sigterm);
 #endif
+
+    pidfile(NULL);
 
     return doit (keytab,
 		 krb5_getportbyname (context, "kpasswd", 

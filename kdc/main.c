@@ -94,6 +94,7 @@ main(int argc, char **argv)
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
 #endif
+    pidfile(NULL);
     loop();
     krb5_free_context(context);
     return 0;
