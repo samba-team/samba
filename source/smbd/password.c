@@ -470,26 +470,26 @@ static BOOL pass_check_smb(char *user,char *password, struct passwd *pwd)
 	}
 
 	if (!pass) {
-		DEBUG(1,("Couldn't find user %s\n",user));
+		DEBUG(3,("Couldn't find user %s\n",user));
 		return(False);
 	}
 
 	smb_pass = getsmbpwnam(user);
 
 	if (!smb_pass) {
-		DEBUG(0,("Couldn't find user %s in smb_passwd file.\n", user));
+		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
 		return(False);
 	}
 
 	/* Quit if the account was disabled. */
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
-		DEBUG(0,("account for user %s was disabled.\n", user));
+		DEBUG(3,("account for user %s was disabled.\n", user));
 		return(False);
         }
 
 	/* Ensure the uid's match */
 	if (smb_pass->smb_userid != pass->pw_uid)	{
-		DEBUG(0,("Error : UNIX and SMB uids in password files do not match !\n"));
+		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
 		return(False);
 	}
 

@@ -219,7 +219,7 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_owf_passwd: "));
-	dump_data(100, pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
+	dump_data(100, pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
 	DEBUG(100,("lm_sess_pwd: "));
 	dump_data(100, pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 #endif

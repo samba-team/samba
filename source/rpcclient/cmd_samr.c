@@ -80,7 +80,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
 
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_unknown_38(smb_cli, srv_name) : False;
@@ -119,12 +119,13 @@ void cmd_sam_test(struct client_info *info)
 	fstrcpy(sid   , info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
+/*
 	if (strlen(sid) == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
-
+*/
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);

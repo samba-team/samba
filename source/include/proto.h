@@ -1558,7 +1558,8 @@ void make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 void smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
 void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len);
+				uint8 stub_type_len,
+				uint32 ptr);
 void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
 void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type);
