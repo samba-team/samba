@@ -78,8 +78,9 @@ typedef struct auth_serversupplied_info
 	NT_USER_TOKEN *ptok;
 	
 	uint8 session_key[16];
-	
 	uint8 first_8_lm_hash[8];
+	DATA_BLOB nt_session_key;
+	DATA_BLOB lm_session_key;
 
 	uint32 sam_fill_level;  /* How far is this structure filled? */
 	
@@ -94,6 +95,8 @@ struct auth_context {
 
 	/* Who set this up in the first place? */ 
 	const char *challenge_set_by; 
+
+	BOOL challenge_may_be_modified;
 
 	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 

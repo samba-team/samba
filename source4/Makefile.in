@@ -258,7 +258,7 @@ PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
 AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 	   auth/auth_unix.o auth/auth_util.o	\
-	   auth/auth_builtin.o auth/auth_compat.o \
+	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
