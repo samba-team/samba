@@ -25,8 +25,10 @@
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
 #endif /* WITH_PROFILE */
 
+#ifdef WITH_PROFILE
 static int shm_id;
 static BOOL read_only;
+#endif
 
 struct profile_header *profile_h;
 struct profile_stats *profile_p;
