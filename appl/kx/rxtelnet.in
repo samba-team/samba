@@ -1,10 +1,12 @@
 #!/bin/sh
 # $Id$
-if test $# -ne 1; then
-  echo "Usage: $0 host"
+if test $# -lt 1; then
+  echo "Usage: $0 host [arguments to telnet]"
   exit 1
 fi
 host=$1
+shift
+telnet_args=$*
 bindir=%bindir%
 PATH=$PATH:$bindir
 set -- `kx $host`
@@ -28,8 +30,8 @@ for i in $*; do
   done
 done
 if test -n "$term"; then
-  $term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $host
+  $term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
 else
-  env DISPLAY=$disp XAUTHORITY=$auth telnet -D $host
+  env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
 fi
 kill -USR2 $pid
