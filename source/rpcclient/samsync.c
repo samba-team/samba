@@ -401,6 +401,9 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
         if (!NT_STATUS_IS_OK(result))
 		goto done;
 
+	
+        /* Update sam */
+
 	apply_deltas(num_deltas_0, hdr_deltas_0, deltas_0);
 
 
@@ -465,8 +468,6 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                                
                 goto done;
         }
-
-        /* Update sam tdb */
 
  done:
 	cli_nt_session_close(cli);
