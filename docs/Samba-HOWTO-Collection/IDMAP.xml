@@ -29,9 +29,19 @@ This is followed by an overview of how the IDMAP facility may be implemented.
 </para>
 
 <para>
-The IDMAP facility is usually of concern only where more than one Samba server or Samba network client
+The IDMAP facility is usually of concern where more than one Samba server or Samba network client
 is installed in the one Domain. Where there is a single Samba server do not be too concerned regarding
 the IDMAP infrastructure - the default behavior of Samba is nearly always sufficient.
+</para>
+
+<para>
+The use of IDMAP is important where the Samba server will be accessed by workstations or servers from
+more than one domain, in which case it is important to run winbind so it can handle the resolution (ID mapping)
+of foreign SIDs to local UNIX UIDs and GIDs.
+</para>
+
+<para>
+The use of the IDMAP facility requires that the <command>winbindd</command> be executed on Samba start-up.
 </para>
 
 <sect1>
