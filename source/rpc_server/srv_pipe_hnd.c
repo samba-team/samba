@@ -35,6 +35,18 @@ static int pipes_open;
 #define MAX_OPEN_PIPES 2048
 #endif
 
+/*
+ * Sometimes I can't decide if I hate Windows printer driver
+ * writers more than I hate the Windows spooler service driver
+ * writers. This gets around a combination of bugs in the spooler
+ * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ */
+
+#ifndef MAX_OPEN_SPOOLSS_PIPES
+#define MAX_OPEN_SPOOLSS_PIPES 20
+#endif
+static int current_spoolss_pipes_open;
+
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
 
@@ -126,11 +138,20 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
+	BOOL is_spoolss_pipe = False;
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 
-	
+	if (strstr(pipe_name, "spoolss"))
+		is_spoolss_pipe = True;
+
+	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
+		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
+			pipe_name ));
+		return NULL;
+	}
+
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
@@ -242,6 +263,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/* OVERWRITE p as a temp variable, to display all open pipes */ 
 	for (p = Pipes; p; p = p->next)
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+
+	if (is_spoolss_pipe)
+		current_spoolss_pipes_open++;
 
 	return chain_p;
 }
@@ -905,6 +929,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		DEBUG(0,("Invalid pipe in close_rpc_pipe_hnd\n"));
 		return False;
 	}
+
+	if (strstr(p->name, "spoolss"))
+		current_spoolss_pipes_open--;
 
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
