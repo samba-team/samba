@@ -1,7 +1,25 @@
-1999-11-09  Assar Westerlund  <assar@sics.se>
+1999-11-12  Assar Westerlund  <assar@sics.se>
 
+	* getarg.h: add arg_counter
+	* getarg.c: add a new type of argument: `arg_counter' re-organize
+	the code somewhat
+	
+	* Makefile.am: add strptime and strpftime-test
+	
+	* snprintf.c (xyzprintf): try to do the right thing with an % at
+	the end of the format string
+	
+	* strptime.c (strptime): implement '%U', '%V', '%W'
+	* strftime.c (strftime): implement '%U', '%V', '%W', '%z'
+	
 	* strftime.c (strftime): correct %E and %O handling.  do something
  	reasonable with "...%"
+
+	* strftime.c: replace the BSD implementation by one of our own
+	coding
+
+	* strptime.c : new file
+	* strpftime-test.c: new file
 
 1999-11-07  Assar Westerlund  <assar@sics.se>
 
