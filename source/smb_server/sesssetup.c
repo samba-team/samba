@@ -143,7 +143,7 @@ static NTSTATUS sesssetup_spnego(struct request_context *req, union smb_sesssetu
 }
 
 /*
-  backend for sessionsetup call - this takes all 3 varients of the call
+  backend for sessionsetup call - this takes all 3 variants of the call
 */
 NTSTATUS sesssetup_backend(struct request_context *req, 
 			   union smb_sesssetup *sess)

@@ -403,7 +403,7 @@ static NTSTATUS smb_raw_session_setup_generic(struct cli_session *session,
 /****************************************************************************
  Perform a session setup (sync interface)
 this interface allows for RAW_SESSSETUP_GENERIC to auto-select session
-setup varient based on negotiated protocol options
+setup variant based on negotiated protocol options
 ****************************************************************************/
 NTSTATUS smb_raw_session_setup(struct cli_session *session, TALLOC_CTX *mem_ctx, 
 			       union smb_sesssetup *parms) 

@@ -89,7 +89,7 @@ void samdb_close(void *ctx)
 }
 
 /*
-  search the sam for the specified attributes - va_list varient
+  search the sam for the specified attributes - va_list variant
 */
 int samdb_search_v(void *ctx, 
 		   TALLOC_CTX *mem_ctx,
@@ -121,7 +121,7 @@ int samdb_search_v(void *ctx,
 				 
 
 /*
-  search the sam for the specified attributes - varargs varient
+  search the sam for the specified attributes - varargs variant
 */
 int samdb_search(void *ctx,
 		 TALLOC_CTX *mem_ctx, 
