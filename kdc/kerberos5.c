@@ -864,15 +864,10 @@ out2:
     free(client_name);
     krb5_free_principal(context, server_princ);
     free(server_name);
-    if(client){
-	hdb_free_entry(context, client);
-	free(client);
-    }
-    if(server){
-	hdb_free_entry(context, server);
-	free(server);
-    }
-    
+    if(client)
+	free_ent(client);
+    if(server)
+	free_ent(server);
     return ret;
 }
 
@@ -1418,6 +1413,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 					    ac,
 					    &subkey);
 	if(ret){
+	    krb5_auth_con_free(context, ac);
 	    kdc_log(0, "Failed to get remote subkey: %s", 
 		    krb5_get_err_text(context, ret));
 	    goto out2;
@@ -1425,18 +1421,21 @@ tgs_rep2(KDC_REQ_BODY *b,
 	if(subkey == NULL){
 	    ret = krb5_auth_con_getkey(context, ac, &subkey);
 	    if(ret) {
+		krb5_auth_con_free(context, ac);
 		kdc_log(0, "Failed to get session key: %s", 
 			krb5_get_err_text(context, ret));
 		goto out2;
 	    }
 	}
 	if(subkey == NULL){
+	    krb5_auth_con_free(context, ac);
 	    kdc_log(0, "Failed to get key for enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out2;
 	}
 	ret = krb5_crypto_init(context, subkey, 0, &crypto);
 	if (ret) {
+	    krb5_auth_con_free(context, ac);
 	    kdc_log(0, "krb5_crypto_init failed: %s",
 		    krb5_get_err_text(context, ret));
 	    goto out2;
@@ -1448,6 +1447,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 					  &ad);
 	krb5_crypto_destroy(context, crypto);
 	if(ret){
+	    krb5_auth_con_free(context, ac);
 	    kdc_log(0, "Failed to decrypt enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out2;
@@ -1456,6 +1456,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ALLOC(auth_data);
 	ret = decode_AuthorizationData(ad.data, ad.length, auth_data, NULL);
 	if(ret){
+	    krb5_auth_con_free(context, ac);
 	    free(auth_data);
 	    auth_data = NULL;
 	    kdc_log(0, "Failed to decode authorization data");
@@ -1603,15 +1604,10 @@ tgs_rep2(KDC_REQ_BODY *b,
 	free(spn);
 	free(cpn);
 	    
-	if(server){
-	    hdb_free_entry(context, server);
-	    free(server);
-	}
-	if(client){
-	    hdb_free_entry(context, client);
-	    free(client);
-	}
-	
+	if(server)
+	    free_ent(server);
+	if(client)
+	    free_ent(client);
     }
 out2:
     if(ret)
@@ -1635,10 +1631,8 @@ out2:
 	free(auth_data);
     }
 
-    if(krbtgt){
-	hdb_free_entry(context, krbtgt);
-	free(krbtgt);
-    }
+    if(krbtgt)
+	free_ent(krbtgt);
     return ret;
 }
 
