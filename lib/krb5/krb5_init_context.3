@@ -37,6 +37,7 @@
 .Sh NAME
 .Nm krb5_init_context ,
 .Nm krb5_free_context ,
+.Nm krb5_init_ets ,
 .Nm krb5_add_et_list ,
 .Nm krb5_add_extra_addresses ,
 .Nm krb5_add_ignore_addresses ,
@@ -64,6 +65,10 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft void
 .Fo krb5_free_context
+.Fa "krb5_context context"
+.Fc
+.Ft void
+.Fo krb5_init_ets
 .Fa "krb5_context context"
 .Fc
 .Ft krb5_error_code
@@ -165,6 +170,14 @@ Failure means either that something bad happened during initialization
 or that Kerberos should not be used
 .Bq ENXIO .
 .Pp
+.Fn krb5_init_ets
+adds all
+.Xr com_err 3
+libs to
+.Fa context .
+This is done by
+.Fn krb5_init_context .
+.Pp
 .Fn krb5_add_et_list 
 adds a
 .Xr com_err 3
@@ -237,5 +250,6 @@ gets if all KDC requests should go admin KDC.
 .Sh SEE ALSO
 .Xr errno 2 ,
 .Xr krb5 3 ,
+.Xr krb5_config 3 ,
 .Xr krb5_context 3 ,
 .Xr kerberos 8
