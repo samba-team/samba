@@ -48,7 +48,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 	bp = strdup(bind_path);
 
 	while (count--) {
-		status = ads_do_search(ads, bp, scope, exp, attrs, res);
+		status = ads_do_search_all(ads, bp, scope, exp, attrs, res);
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
 				 exp, ads_count_replies(ads, *res)));
