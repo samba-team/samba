@@ -10,6 +10,7 @@ torture-UNLINK torture-BROWSE torture-ATTR \
 torture-TRANS2 torture-TORTURE torture-OPLOCK1 \
 torture-OPLOCK3 torture-DIR torture-DENY1 \
 torture-DENY2 torture-TCON torture-RW1 \
-torture-RW2 torture-OPEN torture-DELETE"
+torture-RW2 torture-OPEN torture-RENAME \
+torture-DELETE"
 
 #basicsmb-serversec

@@ -1,2 +1,2 @@
 preexec close = yes
-preexec = /bin/sh PREFIX/lib/preexec_does_not_exist
+preexec = PREFIX/lib/preexec_does_not_exist
