@@ -1371,6 +1371,9 @@ void samr_io_r_open_alias(char *desc, BOOL io, SAMR_R_OPEN_ALIAS *r_u, struct me
 
 void smb_io_utime(char *desc, BOOL io, UTIME *t, struct mem_buffer *buf, int *q, int depth);
 void smb_io_time(char *desc, BOOL io, NTTIME *nttime, struct mem_buffer *buf, int *q, int depth);
+uint32 get_enum_hnd(ENUM_HND *enh);
+void make_enum_hnd(ENUM_HND *enh, uint32 hnd);
+void smb_io_enum_hnd(char *desc, BOOL io, ENUM_HND *hnd, struct mem_buffer *buf, int *q, int depth);
 void make_dom_sid(DOM_SID *sid, char *str_sid);
 void smb_io_dom_sid(char *desc, BOOL io, DOM_SID *sid, struct mem_buffer *buf, int *q, int depth);
 void make_dom_sid2(DOM_SID2 *sid, char *str_sid);
@@ -1482,11 +1485,29 @@ void smb_io_logon_hrs(char *desc, BOOL io, LOGON_HRS *hrs, struct mem_buffer *bu
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */
 
+void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
 void srv_io_share_info1_str(char *desc, BOOL io, SH_INFO_1_STR *sh1, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
 void srv_io_share_info1(char *desc, BOOL io, SH_INFO_1 *sh1, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_share_1_ctr(char *desc, BOOL io, SHARE_INFO_1_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_q_net_share_enum(char *desc, BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_share_enum(char *desc, BOOL io, SRV_R_NET_SHARE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info0_str(SESS_INFO_0_STR *sh0, char *name);
+void srv_io_sess_info0_str(char *desc, BOOL io, SESS_INFO_0_STR *sh0, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info0(SESS_INFO_0 *sh0, char *name);
+void srv_io_sess_info0(char *desc, BOOL io, SESS_INFO_0 *sh0, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_sess_0_ctr(char *desc, BOOL io, SESS_INFO_0_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_q_net_sess_enum(char *desc, BOOL io, SRV_Q_NET_SESS_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_r_net_sess_enum(char *desc, BOOL io, SRV_R_NET_SESS_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
+void srv_io_file_info3_str(char *desc, BOOL io, FILE_INFO_3_STR *sh1, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_file_info3(FILE_INFO_3 *fl3,
+				uint32 id, uint32 perms, uint32 num_locks,
+				char *path_name, char *user_name);
+void srv_io_file_info3(char *desc, BOOL io, FILE_INFO_3 *fl3, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_file_3_ctr(char *desc, BOOL io, FILE_INFO_3_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_q_net_file_enum(char *desc, BOOL io, SRV_Q_NET_FILE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_r_net_file_enum(char *desc, BOOL io, SRV_R_NET_FILE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
 				uint32 ver_major, uint32 ver_minor,
 				uint32 srv_type, char *comment);
