@@ -28,6 +28,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring username;
+extern pstring smb_login_passwd;
 extern pstring workgroup;
 
 #define CLIENT_TIMEOUT (30*1000)
@@ -278,11 +279,27 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/*********************** SAM Info ***********************/
 
-	/* this is used in both the SAM Logon and the SAM Logoff */
-	make_id_info1(&id1, workgroup, 0,
+	{
+		char lm_owf_user_pwd[16];
+		char nt_owf_user_pwd[16];
+		nt_lm_owf_gen(smb_login_passwd, nt_owf_user_pwd, lm_owf_user_pwd);
+
+#ifdef DEBUG_PASSWORD
+
+		DEBUG(100,("nt owf of user password: "));
+		dump_data(100, lm_owf_user_pwd, 16);
+
+		DEBUG(100,("nt owf of user password: "));
+		dump_data(100, nt_owf_user_pwd, 16);
+
+#endif
+
+		/* this is used in both the SAM Logon and the SAM Logoff */
+		make_id_info1(&id1, workgroup, 0,
 	              getuid(), 0,
 	              username, myhostname,
-	              NULL, NULL);
+	              sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
+	}
 
 	/*********************** SAM Logon **********************/
 

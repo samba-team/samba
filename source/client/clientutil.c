@@ -33,6 +33,7 @@ pstring service="";
 pstring desthost="";
 extern pstring myname;
 pstring password = "";
+pstring smb_login_passwd = "";
 pstring username="";
 pstring workgroup=WORKGROUP;
 BOOL got_pass = False;
@@ -425,7 +426,7 @@ static struct {
 
 
 /****************************************************************************
-send a login command
+send a login command.  
 ****************************************************************************/
 BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
 {
@@ -577,6 +578,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
     pass = password;
   else
     pass = (char *)getpass("Password: ");
+
+  pstrcpy(smb_login_passwd, pass);
 
   /* use a blank username for the 2nd try with a blank password */
   if (tries++ && !*pass)
