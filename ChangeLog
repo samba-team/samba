@@ -1,3 +1,17 @@
+Sun Sep  7 20:41:01 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/roken/roken.h: include <fcntl.h>
+
+	* kdc/kerberos5.c (set_salt_padata): new function
+
+	* appl/telnet/telnetd/telnetd.c: Rename some variables that
+ 	conflict with cpp symbols on HP-UX 10.20
+
+	* change all calls of `gethostbyaddr' to cast argument 1 to `const
+ 	char *'
+
+	* acconfig.h: only use SGTTY on nextstep
+
 Sun Sep  7 14:33:50 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Check invalid flag.
