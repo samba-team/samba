@@ -388,12 +388,12 @@ void cmd_reg_create_val(struct client_info *info)
 	{
 		case 0x01: /* UNISTR */
 		{
-			make_buffer3_str(&value, tmp, strlen(tmp)+1);
+			init_buffer3_str(&value, tmp, strlen(tmp)+1);
 			break;
 		}
 		case 0x03: /* BYTES */
 		{
-			make_buffer3_hex(&value, tmp);
+			init_buffer3_hex(&value, tmp);
 			break;
 		}
 		case 0x04: /* DWORD */
@@ -407,7 +407,7 @@ void cmd_reg_create_val(struct client_info *info)
 			{
 				tmp_val = strtol(tmp, (char**)NULL, 10);
 			}
-			make_buffer3_uint32(&value, tmp_val);
+			init_buffer3_uint32(&value, tmp_val);
 			break;
 		}
 		default:

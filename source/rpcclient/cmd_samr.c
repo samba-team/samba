@@ -201,7 +201,7 @@ void cmd_sam_enum_users(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	init_dom_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -375,7 +375,7 @@ void cmd_sam_query_user(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	init_dom_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -466,7 +466,7 @@ void cmd_sam_query_groups(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	init_dom_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -549,7 +549,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	init_dom_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);

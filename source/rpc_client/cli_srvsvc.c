@@ -276,7 +276,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 do a server net file enum
 ****************************************************************************/
 
-BOOL do_srv_nevalid_enum_srv_file_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,

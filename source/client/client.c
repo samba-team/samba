@@ -463,7 +463,7 @@ static void cmd_du(void)
 
 	do_dskattr();
 
-	DEBUG(0, ("Total number of bytes: %d\n", dir_total));
+	DEBUG(0, ("Total number of bytes: %.0f\n", (double)dir_total));
 }
 
 

@@ -162,7 +162,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 			fstrcat(sid_name, "-");
 			fstrcat(sid_name, temp);
 		}
-		make_dom_sid(&sid[num_sids], sid_name);
+		init_dom_sid(&sid[num_sids], sid_name);
 		sids[num_sids] = &sid[num_sids];
 		num_sids++;
 	}
