@@ -232,13 +232,14 @@ sub ParseArrayPull($$$)
 	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 	my $alloc_size = $size;
 
+	pidl "\t{ guint32 _array_size;\n";
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
 	if (defined $e->{CONFORMANT_SIZE}) {
 		$alloc_size = $e->{CONFORMANT_SIZE};
 
 		pidl "\tif ($size > $alloc_size) {\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		pidl "\t\treturn ndr_pull_error(ndr, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
 		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
@@ -248,15 +249,14 @@ sub ParseArrayPull($$$)
 
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
-		pidl "\t\tguint32 _array_size;\n";
-		pidl "\t\tndr_pull_uint32(ndr, &_array_size);\n";
+		pidl "\t\tdissect_ndr_uint32(ndr->tvb, ndr->offset, ndr->pinfo, ndr->tree, ndr->drep, hf_array_size, &_array_size);\n";
 		if ($size =~ /r->in/) {
-			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
+			pidl "\t\t// if (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
 		} else {
-			pidl "\t\tif ($size != _array_size) {\n";
+			pidl "\t\t// if ($size != _array_size) {\n";
 		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t}\n";
+		pidl "\t\t\t// return ndr_pull_error(ndr, \"Bad array size %u should be %u\", _array_size, $size);\n";
+		pidl "\t\t// }\n";
 		if ($size =~ /r->in/) {
 			pidl "else { $size = _array_size; }\n";
 		}
@@ -285,17 +285,18 @@ sub ParseArrayPull($$$)
 		pidl "\t\tguint32 _offset, _length;\n";
 		pidl "\t\tndr_pull_uint32(ndr, &_offset);\n";
 		pidl "\t\tndr_pull_uint32(ndr, &_length);\n";
-		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
-		pidl "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
+		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, \"Bad array offset 0x%08x\", _offset);\n";
+		pidl "\t\t//if (_length > $size || _length != $length) return ndr_pull_error(ndr, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
 		$size = "_length";
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size);\n";
+		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, _array_size);\n";
 	} else {
-		pidl "\t\tndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE});\n";
+		pidl "\t\tndr_pull_array(ndr, $ndr_flags, /* sizeof($var_prefix$e->{NAME}\[0]), */ _array_size, ndr_pull_$e->{TYPE});\n";
 	}
 
+	pidl "\t}\n";
 	pidl "\t}\n";
 }
 
@@ -316,26 +317,26 @@ sub ParseElementPullSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
+		pidl "\t g$e2->{TYPE} _level;\n";
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\t $e2->{TYPE} _level;\n";
 		pidl "\t\tndr_pull_$e2->{TYPE}(ndr, &_level);\n";
 		if ($switch_var =~ /r->in/) {
-			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
+			pidl "\t\t // if (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
 		} else {
-			pidl "\t\tif (_level != $switch_var) {\n";
+			pidl "\t\t // if (_level != $switch_var) {\n";
 		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
+		pidl "\t\t\t // return ndr_pull_error(ndr, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
 		if ($switch_var =~ /r->/) {
-			pidl "else { $switch_var = _level; }\n";
+			pidl "// else { $switch_var = _level;\n }\n";
 		}
-		pidl "\t}\n";
+		pidl "\t// }\n";
 	}
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
 		pidl "\tndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, $ndr_flags, _level);\n";
 	}
 
 
@@ -420,9 +421,9 @@ sub ParseElementPullBuffer($$$)
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
 			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_fn(ndr, $sub_size, _pull_$e->{TYPE});\n";
 			} else {
-				pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, ndr_pull_$e->{TYPE});\n";
 			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
@@ -496,7 +497,7 @@ sub ParseStructPull($)
 
 	pidl "\tndr_pull_struct_end(ndr);\n";
 
-	pidl "done:\n";
+	pidl "done: ;\n";
 
 	end_flags($struct);
 }
@@ -536,7 +537,7 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+		pidl "\t\t// return ndr_pull_error(ndr, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
 	pidl "buffers:\n";
@@ -555,12 +556,33 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+		pidl "\t\t// return ndr_pull_error(ndr, \"Bad switch value \%u\", level);\n";
 	}
 	pidl "\t}\n";
 	pidl "\tndr_pull_struct_end(ndr);\n";
 	pidl "done:\n";
 	end_flags($e);
+}
+
+#####################################################################
+# parse a enum - pull side
+sub ParseEnumPull($)
+{
+	my $e = shift;
+
+	my $name;
+	my $ndx = 0;
+
+	for my $x (@{$e->{ELEMENTS}}) {
+	    if ($x =~ /([a-zA-Z_]+)=([0-9]+)/) {
+		$name = $1;
+		$ndx = $2;
+	    } else {
+		$name = $x;
+	    }
+	    pidl "#define $name $ndx\n";
+	    $ndx++;
+	}
 }
 
 #####################################################################
@@ -574,6 +596,8 @@ sub ParseTypePull($)
 		    ParseStructPull($data);
 		($data->{TYPE} eq "UNION") &&
 		    ParseUnionPull($data);
+		($data->{TYPE} eq "ENUM") &&
+		    ParseEnumPull($data);
 	}
 }
 
@@ -594,20 +618,21 @@ sub ParseTypedefPull($)
 	pidl "*/\n\n";
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl $static . "void dissect_$e->{NAME}(struct e_ndr_pull *ndr, int ndr_flags)";
+		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, int ndr_flags)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "void dissect_$e->{NAME}(struct e_ndr_pull *ndr, int ndr_flags, guint16 level)";
+		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, int ndr_flags, int level)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
+	    ParseEnumPull($e->{DATA});
 	}
 }
 
@@ -792,8 +817,6 @@ sub type2base($)
 sub NeededFunction($)
 {
 	my $fn = shift;
-	$needed{"pull_$fn->{NAME}"} = 1;
-	$needed{"push_$fn->{NAME}"} = 1;
 	foreach my $e (@{$fn->{DATA}}) {
 	        $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
 		    'name' => $e->{NAME},
@@ -801,39 +824,47 @@ sub NeededFunction($)
 		    'ft'   => type2ft($e->{TYPE}),
 		    'base' => type2base($e->{TYPE})
 		    };
+		$needed{"proto_$e->{TYPE}"} = 1,
+		    if !util::is_builtin_type($e->{TYPE});
 		$e->{PARENT} = $fn;
-		$needed{"pull_$e->{TYPE}"} = 1;
-		$needed{"push_$e->{TYPE}"} = 1;
 	}
 }
 
 sub NeededTypedef($)
 {
 	my $t = shift;
+
 	if (util::has_property($t->{DATA}, "public")) {
 		$needed{"pull_$t->{NAME}"} = 1;
-		$needed{"push_$t->{NAME}"} = 1;		
 	}
+
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+
+	        $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+		    'name' => $e->{NAME},
+		    'type' => $e->{TYPE},
+		    'ft'   => type2ft($e->{TYPE}),
+		    'base' => type2base($e->{TYPE})
+		    };
+
+		$needed{"proto_$e->{TYPE}"} = 1,
+		if !util::is_builtin_type($e->{TYPE});
+
 			$e->{PARENT} = $t->{DATA};
 			if ($needed{"pull_$t->{NAME}"}) {
 				$needed{"pull_$e->{TYPE}"} = 1;
 			}
-			if ($needed{"push_$t->{NAME}"}) {
-				$needed{"push_$e->{TYPE}"} = 1;
-			}
 		}
 	}
 	if ($t->{DATA}->{TYPE} eq "UNION") {
+	        $needed{"proto_$t->{NAME}"} = "union";
 		for my $e (@{$t->{DATA}->{DATA}}) {
 			$e->{PARENT} = $t->{DATA};
 			if ($e->{TYPE} eq "UNION_ELEMENT") {
+			    $needed{"proto_$e->{DATA}->{TYPE}"} = 1;
 				if ($needed{"pull_$t->{NAME}"}) {
 					$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
-				}
-				if ($needed{"push_$t->{NAME}"}) {
-					$needed{"push_$e->{DATA}->{TYPE}"} = 1;
 				}
 			}
 		}
@@ -894,6 +925,7 @@ sub Parse($$)
 	pidl "static int hf_opnum = -1;\n";
 	pidl "static int hf_rc = -1;\n";
 	pidl "static int hf_ptr = -1;\n";
+	pidl "static int hf_array_size = -1;\n";
 	pidl "static int hf_policy_handle = -1;\n";
 
 	foreach my $x (@{$idl}) {
@@ -903,11 +935,26 @@ sub Parse($$)
 		if ($x->{TYPE} eq "INTERFACE") { 
 			BuildNeeded($x);
 
+			# Declarations for hf variables
+
 			foreach my $y (keys(%needed)) {
 			    pidl "static int $y = -1;\n", if $y =~ /^hf_/;
 			}
 
-			ParseInterface($x);
+			# Function prototypes
+
+			foreach my $x (keys(%needed)) {
+			    next, if !($x =~ /^proto_/);
+			    my $name = $x;
+			    $name =~ s/^proto_//;
+			    pidl "void ndr_pull_$name(struct e_ndr_pull *ndr, int ndr_flags";
+
+			    pidl ", int level", if $needed{$x} eq "union";
+
+			    pidl ");\n";
+			}
+	
+		ParseInterface($x);
 		}
 	}
 
@@ -935,6 +982,7 @@ sub Parse($$)
 	pidl "\t{ &hf_opnum, { \"Operation\", \"$module.opnum\", FT_UINT16, BASE_DEC, NULL, 0x0, \"Operation\", HFILL }},\n";
 	pidl "\t{ &hf_policy_handle, { \"Policy handle\", \"$module.policy\", FT_BYTES, BASE_NONE, NULL, 0x0, \"Policy handle\", HFILL }},\n";
 	pidl "\t{ &hf_rc, { \"Return code\", \"$module.rc\", FT_UINT32, BASE_HEX, VALS(NT_errors), 0x0, \"Return status code\", HFILL }},\n";
+	pidl "\t{ &hf_array_size, { \"Operation\", \"$module.array_size\", FT_UINT32, BASE_DEC, NULL, 0x0, \"Array size\", HFILL }},\n";
 	pidl "\t{ &hf_ptr, { \"Pointer\", \"$module.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},\n";
 
 	foreach my $x (keys(%needed)) {
