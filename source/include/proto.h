@@ -395,6 +395,7 @@ void pstring_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *octal_string(int i);
+char *string_truncate(char *s, int length);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -2499,7 +2500,7 @@ BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
-void downgrade_file_oplock(files_struct *fsp);
+BOOL remove_oplock(files_struct *fsp);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
 BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);

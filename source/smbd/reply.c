@@ -4174,19 +4174,17 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
    */
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
-    int token;
-    SMB_DEV_T dev = fsp->fd_ptr->dev;
-    SMB_INO_T inode = fsp->fd_ptr->inode;
-
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fsp->fnum));
+
     /*
      * Make sure we have granted an exclusive or batch oplock on this file.
      */
+
     if(!EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file.\n", fsp->fnum));
+no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
       /* if this is a pure oplock break request then don't send a reply */
       if (num_locks == 0 && num_ulocks == 0)
@@ -4195,40 +4193,10 @@ no oplock granted on this file.\n", fsp->fnum));
         return ERROR(ERRDOS,ERRlock);
     }
 
-    /* Remove the oplock flag from the sharemode. */
-    if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
-      DEBUG(0,("reply_lockingX: failed to lock share entry for file %s\n",
+    if (remove_oplock(fsp) == False) {
+      DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
             fsp->fsp_name ));
     }
-
-    if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
-
-      /*
-       * Deal with a reply when a break-to-none was sent.
-       */
-
-      if(remove_share_oplock(token, fsp)==False) {
-        DEBUG(0,("reply_lockingX: failed to remove share oplock for file %s fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-      }
-
-      release_file_oplock(fsp);
-
-    } else {
-
-      /*
-       * Deal with a reply when a break-to-level II was sent.
-       */
-
-      if(downgrade_share_oplock(token, fsp)==False) {
-        DEBUG(0,("reply_lockingX: failed to downgrade share oplock for file %s fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-      }
-
-      downgrade_file_oplock(fsp);
-    }
-
-    unlock_share_entry(fsp->conn, dev, inode, token);
 
     /* if this is a pure oplock break request then don't send a reply */
     if (num_locks == 0 && num_ulocks == 0)

@@ -871,7 +871,8 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		case 102:
 		{
 			init_srv_info_102(&ctr.srv.sv102,
-			                  500, global_myname, lp_serverstring(),
+			                  500, global_myname, 
+					  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
 			                  lp_major_announce_version(), lp_minor_announce_version(),
 			                  lp_default_server_announce(),
 			                  0xffffffff, /* users */
@@ -889,7 +890,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 			                  500, global_myname,
 			                  lp_major_announce_version(), lp_minor_announce_version(),
 			                  lp_default_server_announce(),
-			                  lp_serverstring());
+			                  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 			break;
 		}
 		default:

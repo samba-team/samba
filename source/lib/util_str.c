@@ -1206,3 +1206,15 @@ char *octal_string(int i)
 	slprintf(ret, sizeof(ret), "0%o", i);
 	return ret;
 }
+
+
+/****************************************************************************
+truncate a string at a specified length
+****************************************************************************/
+char *string_truncate(char *s, int length)
+{
+	if (s && strlen(s) > length) {
+		s[length] = 0;
+	}
+	return s;
+}

@@ -342,7 +342,7 @@ static void release_kernel_oplock(files_struct *fsp)
        * oplock state of this file.
        */
       int state = fcntl(fsp->fd_ptr->fd, F_OPLKACK, -1);
-      dbgtext("release_file_oplock: file %s, dev = %x, inode = %.0f has kernel \
+      dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
                         (double)fsp->fd_ptr->inode, state );
     }
@@ -355,7 +355,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
     {
       if( DEBUGLVL( 0 ))
       {
-        dbgtext("release_file_oplock: Error when removing kernel oplock on file " );
+        dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
         dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
                  fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, 
                  (double)fsp->fd_ptr->inode, strerror(errno) );
@@ -387,13 +387,65 @@ void release_file_oplock(files_struct *fsp)
  Attempt to downgrade an oplock on a file. Doesn't decrement oplock count.
 ****************************************************************************/
 
-void downgrade_file_oplock(files_struct *fsp)
+static void downgrade_file_oplock(files_struct *fsp)
 {
   release_kernel_oplock(fsp);
   fsp->oplock_type = LEVEL_II_OPLOCK;
   exclusive_oplocks_open--;
   level_II_oplocks_open++;
   fsp->sent_oplock_break = NO_BREAK_SENT;
+}
+
+/****************************************************************************
+ Remove a file oplock. Copes with level II and exclusive.
+ Locks then unlocks the share mode lock.
+****************************************************************************/
+
+BOOL remove_oplock(files_struct *fsp)
+{
+  int token;
+  SMB_DEV_T dev = fsp->fd_ptr->dev;
+  SMB_INO_T inode = fsp->fd_ptr->inode;
+  BOOL ret = True;
+
+  /* Remove the oplock flag from the sharemode. */
+  if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+    DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
+          fsp->fsp_name ));
+    ret = False;
+  }
+
+  if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+
+    /*
+     * Deal with a reply when a break-to-none was sent.
+     */
+
+    if(remove_share_oplock(token, fsp)==False) {
+      DEBUG(0,("remove_oplock: failed to remove share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      ret = False;
+    }
+
+    release_file_oplock(fsp);
+
+  } else {
+
+    /*
+     * Deal with a reply when a break-to-level II was sent.
+     */
+
+    if(downgrade_share_oplock(token, fsp)==False) {
+      DEBUG(0,("remove_oplock: failed to downgrade share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      ret = False;
+    }
+
+    downgrade_file_oplock(fsp);
+  }
+
+  unlock_share_entry(fsp->conn, dev, inode, token);
+  return ret;
 }
 
 /****************************************************************************
@@ -784,11 +836,11 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   files_struct *fsp = NULL;
   time_t start_time;
   BOOL shutdown_server = False;
+  BOOL oplock_timeout = False;
   connection_struct *saved_conn;
   int saved_vuid;
   pstring saved_dir; 
-  int break_counter = OPLOCK_BREAK_RESENDS;
-  int timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
+  int timeout = OPLOCK_BREAK_TIMEOUT;
   pstring file_name;
   BOOL using_levelII;
 
@@ -906,39 +958,25 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   {
     if(receive_smb(Client,inbuf, timeout) == False)
     {
-
-      /* 
-       * Isaac suggestd that if a MS client doesn't respond to a
-       * oplock break request then we might try resending
-       * it. Certainly it's no worse than just dropping the
-       * socket!
-       */
-
-      if (smb_read_error == READ_TIMEOUT && break_counter--) {
-        DEBUG(0, ( "oplock_break resend\n" ) );
-	prepare_break_message( outbuf, fsp, using_levelII);
-        send_smb(Client, outbuf);
-        continue;
-      }
-
       /*
        * Die if we got an error.
        */
 
-      if (smb_read_error == READ_EOF)
+      if (smb_read_error == READ_EOF) {
         DEBUG( 0, ( "oplock_break: end of file from client\n" ) );
- 
-      if (smb_read_error == READ_ERROR)
+        shutdown_server = True;
+      } else if (smb_read_error == READ_ERROR) {
         DEBUG( 0, ("oplock_break: receive_smb error (%s)\n", strerror(errno)) );
-
-      if (smb_read_error == READ_TIMEOUT)
+        shutdown_server = True;
+      } else if (smb_read_error == READ_TIMEOUT) {
         DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n",
                      OPLOCK_BREAK_TIMEOUT ) );
+        oplock_timeout = True;
+      }
 
       DEBUGADD( 0, ( "oplock_break failed for file %s ", file_name ) );
       DEBUGADD( 0, ( "(dev = %x, inode = %.0f).\n", (unsigned int)dev, (double)inode));
 
-      shutdown_server = True;
       break;
     }
 
@@ -966,7 +1004,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
         dbgtext( "oplock_break failed for file %s ", fsp->fsp_name );
         dbgtext( "(dev = %x, inode = %.0f).\n", (unsigned int)dev, (double)inode );
       }
-      shutdown_server = True;
+      oplock_timeout = True;
       break;
     }
   }
@@ -998,7 +1036,20 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
     global_oplock_break = False;
 
   /*
-   * If the client did not respond we must die.
+   * If the client timed out then clear the oplock (or go to level II)
+   * and continue. This seems to be what NT does and is better than dropping
+   * the connection.
+   */
+
+  if(oplock_timeout && (fsp = initial_break_processing(dev, inode, tval)) &&
+        OPEN_FSP(fsp) && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+  {
+    DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
+    remove_oplock(fsp);
+  }
+
+  /*
+   * If the client had an error we must die.
    */
 
   if(shutdown_server)
@@ -1017,7 +1068,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
               exclusive_oplocks_open));
     abort();
   }
-
 
   if( DEBUGLVL( 3 ) )
   {
