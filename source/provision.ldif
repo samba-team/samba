@@ -258,6 +258,31 @@ groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
+privilege: SeSecurityPrivilege
+privilege: SeBackupPrivilege
+privilege: SeRestorePrivilege
+privilege: SeSystemtimePrivilege
+privilege: SeShutdownPrivilege
+privilege: SeRemoteShutdownPrivilege
+privilege: SeTakeOwnershipPrivilege
+privilege: SeDebugPrivilege
+privilege: SeSystemEnvironmentPrivilege
+privilege: SeSystemProfilePrivilege
+privilege: SeProfileSingleProcessPrivilege
+privilege: SeIncreaseBasePriorityPrivilege
+privilege: SeLoadDriverPrivilege
+privilege: SeCreatePagefilePrivilege
+privilege: SeIncreaseQuotaPrivilege
+privilege: SeChangeNotifyPrivilege
+privilege: SeUndockPrivilege
+privilege: SeManageVolumePrivilege
+privilege: SeImpersonatePrivilege
+privilege: SeCreateGlobalPrivilege
+privilege: SeEnableDelegationPrivilege
+privilege: SeInteractiveLogonRight
+privilege: SeNetworkLogonRight
+privilege: SeRemoteInteractiveLogonRight
+
 
 dn: CN=Users,CN=Builtin,${BASEDN}
 objectClass: top
@@ -323,6 +348,9 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+privilege: SeLoadDriverPrivilege
+privilege: SeShutdownPrivilege
+privilege: SeInteractiveLogonRight
 
 dn: CN=Backup Operators,CN=Builtin,${BASEDN}
 objectClass: top
@@ -344,6 +372,10 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+privilege: SeBackupPrivilege
+privilege: SeRestorePrivilege
+privilege: SeShutdownPrivilege
+privilege: SeInteractiveLogonRight
 
 dn: CN=Replicator,CN=Builtin,${BASEDN}
 objectClass: top
@@ -750,6 +782,12 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+privilege: SeBackupPrivilege
+privilege: SeSystemtimePrivilege
+privilege: SeRemoteShutdownPrivilege
+privilege: SeRestorePrivilege
+privilege: SeShutdownPrivilege
+privilege: SeInteractiveLogonRight
 
 dn: CN=Account Operators,CN=Builtin,${BASEDN}
 objectClass: top
@@ -771,6 +809,7 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+privilege: SeInteractiveLogonRight
 
 dn: CN=Templates,${BASEDN}
 objectClass: top
@@ -864,4 +903,3 @@ cn: TemplateGroup
 name: TemplateGroup
 instanceType: 4
 sAMAccountType: 0x10000000
-
