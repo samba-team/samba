@@ -663,7 +663,11 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
 		DEBUG(10,("receive_smb: length < 0!\n"));
-		return(False);
+		/* XXX: You might think that we ought to set
+		 * smb_read_error here, but apparently that breaks the
+		 * recursive main loop in oplock.c.  Global variables
+		 * suck. */
+		return False;
 	}
 
 	/*
