@@ -45,10 +45,6 @@ char rcsid_kerberos5_c[] = "$Id$";
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)kerberos5.c	8.3 (Berkeley) 5/30/95";
-#endif /* not lint */
-
 /*
  * Copyright (C) 1990 by the Massachusetts Institute of Technology
  *
@@ -70,6 +66,8 @@ static char sccsid[] = "@(#)kerberos5.c	8.3 (Berkeley) 5/30/95";
  */
 
 #include <config.h>
+
+RCSID("$Id$");
 
 #ifdef	KRB5
 #include <arpa/telnet.h>

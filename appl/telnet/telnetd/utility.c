@@ -31,11 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)utility.c	8.4 (Berkeley) 5/30/95";
-#endif /* not lint */
-
 #include <config.h>
+
+RCSID("$Id$");
 
 #define PRINTOPTIONS
 #include "telnetd.h"

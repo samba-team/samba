@@ -31,11 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)utilities.c	8.3 (Berkeley) 5/30/95";
-#endif /* not lint */
-
 #include <config.h>
+
+RCSID("$Id$");
 
 #define	TELOPTS
 #define	TELCMDS

@@ -31,14 +31,12 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)global.c	8.1 (Berkeley) 6/4/93";
-#endif /* not lint */
-
 /* a *lot* of ugly global definitions that really should be removed...
  */
 
 #include <config.h>
+
+RCSID("$Id$");
 
 #include "defs.h"
 #include "ext.h"

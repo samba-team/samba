@@ -31,15 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)enc_des.c	8.3 (Berkeley) 5/30/95";
-#endif /* not lint */
-
-#ifndef lint
-static char orig_sccsid[] = "@(#)enc_des.c	5.1 (Berkeley) 3/22/91";
-#endif /* not lint */
-
 #include <config.h>
+
+RCSID("$Id$");
 
 #if	defined(AUTHENTICATION) && defined(ENCRYPTION) && defined(DES_ENCRYPTION)
 #include <arpa/telnet.h>

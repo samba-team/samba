@@ -31,10 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)auth.c	8.3 (Berkeley) 5/30/95";
-#endif /* not lint */
-
 /*
  * Copyright (C) 1990 by the Massachusetts Institute of Technology
  *
@@ -56,6 +52,8 @@ static char sccsid[] = "@(#)auth.c	8.3 (Berkeley) 5/30/95";
  */
 
 #include <config.h>
+
+RCSID("$Id$");
 
 #if	defined(AUTHENTICATION)
 #include <stdio.h>

@@ -31,14 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)encrypt.c	8.2 (Berkeley) 5/30/95";
-#endif /* not lint */
-
-#ifndef lint
-static char orig_sccsid[] = "@(#)encrypt.c	5.2 (Berkeley) 3/22/91";
-#endif /* not lint */
-
 /*
  * Copyright (C) 1990 by the Massachusetts Institute of Technology
  *
@@ -61,6 +53,8 @@ static char orig_sccsid[] = "@(#)encrypt.c	5.2 (Berkeley) 3/22/91";
 
 
 #include <config.h>
+
+RCSID("$Id$");
 
 #if	defined(ENCRYPTION)
 

@@ -31,11 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)network.c	8.2 (Berkeley) 12/15/93";
-#endif /* not lint */
-
 #include <config.h>
+
+RCSID("$Id$");
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_SELECT_H
