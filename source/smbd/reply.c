@@ -3827,12 +3827,15 @@ support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(da
 
       /*
        * Before we error out, see if we can sensibly map the top bits
-       * down to the lower bits. It seems that NT has this horrible bug
-       * where it will send 64 bit lock requests even if told not to. JRA.
+       * down to the lower bits - or lose the top bits if they are all 1's.
+       * It seems that NT has this horrible bug where it will send 64 bit
+       * lock requests even if told not to. JRA.
        */
 
       if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
         count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset));
+      else if (SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset) == (uint32)0xFFFFFFFF)
+        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
       else {
         *err = True;
         return (SMB_OFF_T)-1;
@@ -3876,12 +3879,15 @@ support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(d
 
       /*
        * Before we error out, see if we can sensibly map the top bits
-       * down to the lower bits. It seems that NT has this horrible bug
-       * where it will send 64 bit lock requests even if told not to. JRA.
+       * down to the lower bits - or lose the top bits if they are all 1's.
+       * It seems that NT has this horrible bug where it will send 64 bit
+       * lock requests even if told not to. JRA.
        */
 
       if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
         offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
+      else if((data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
+        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
       else {
         *err = True;
         return (SMB_OFF_T)-1;

@@ -833,7 +833,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * exclusive & batch here.
 	 */
 	
-	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
+	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
+
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
@@ -1078,7 +1079,7 @@ static int call_nt_transact_create(connection_struct *conn,
   memset((char *)params,'\0',69);
 
   p = params;
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
   p += 2;
   if (IS_IPC(conn)) {
 	  SSVAL(p,0,pnum);

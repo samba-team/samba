@@ -563,6 +563,26 @@ pid %d, port %d, for file dev = %x, inode = %.0f\n",
 }
 
 /****************************************************************************
+ Set up an oplock break message.
+****************************************************************************/
+
+static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
+{
+  memset(outbuf,'\0',smb_size);
+  set_message(outbuf,8,0,True);
+
+  SCVAL(outbuf,smb_com,SMBlockingX);
+  SSVAL(outbuf,smb_tid,fsp->conn->cnum);
+  SSVAL(outbuf,smb_pid,0xFFFF);
+  SSVAL(outbuf,smb_uid,0);
+  SSVAL(outbuf,smb_mid,0xFFFF);
+  SCVAL(outbuf,smb_vwv0,0xFF);
+  SSVAL(outbuf,smb_vwv2,fsp->fnum);
+  SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
+  SCVAL(outbuf,smb_vwv3+1,level2 ? OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
+}
+
+/****************************************************************************
  Process an oplock break directly.
 ****************************************************************************/
 
@@ -663,20 +683,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   }
 
   /* Prepare the SMBlockingX message. */
-  memset(outbuf,'\0',smb_size);
-  set_message(outbuf,8,0,True);
 
-  SCVAL(outbuf,smb_com,SMBlockingX);
-  SSVAL(outbuf,smb_tid,fsp->conn->cnum);
-  SSVAL(outbuf,smb_pid,0xFFFF);
-  SSVAL(outbuf,smb_uid,0);
-  SSVAL(outbuf,smb_mid,0xFFFF);
-  SCVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,fsp->fnum);
-  SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
-  /* Change this when we have level II oplocks. */
-  SCVAL(outbuf,smb_vwv3+1,OPLOCKLEVEL_NONE);
- 
+  prepare_break_message( outbuf, fsp, False);
   send_smb(Client, outbuf);
 
   /* Remember we just sent an oplock break on this file. */
