@@ -47,6 +47,53 @@ RCSID("$Id$");
 
 #include <krb.h>
 
+
+#if 0
+
+/* This code assumes that getpwnam_r et al is following POSIX.1c,
+ * however, the result is only tested for inequality with zero and the
+ * result parameter is never used, so there shouldn't be any problems
+ * using this with Digital UNIX 3.x, which has an earlier
+ * implementation.
+ *
+ * The following functions could be used for replacement, if necessary
+ */
+
+
+static int
+posix_getpwnam_r(const char *name, struct passwd *pwd, 
+	   char *buffer, int len, struct passwd **result)
+{
+    int ret = getpwnam_r(name, pwd, buffer, len);
+    if(ret < 0){
+	ret = errno;
+	*result = NULL;
+    }else{
+	*result = pwd;
+    }
+    return ret;
+}
+
+#define getpwnam_r posix_getpwnam_r
+
+static int
+posix_getpwuid_r(uid_t uid, struct passwd *pwd, 
+		 char *buffer, int len, struct passwd **result)
+{
+    int ret = getpwuid_r(uid, pwd, buffer, len);
+    if(ret < 0){
+	ret = errno;
+	*result = NULL;
+    }else{
+	*result = pwd;
+    }
+    return ret;
+}
+
+#define getpwuid_r posix_getpwuid_r
+
+#endif
+
 /* Is it necessary to have all functions? I think not. */
 
 int 
@@ -145,10 +192,10 @@ siad_ses_authent(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pw;
+	struct passwd pw, *pwd;
 	char pwbuf[1024];
 
-	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf)) < 0)
+	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
 	sprintf((char*)entity->mech[pkgind], "%d%d_%d", 
 		TKT_ROOT, pw.pw_uid, getpid());
@@ -208,28 +255,29 @@ siad_ses_suauthent(sia_collect_func_t *collect,
     char toname[ANAME_SZ];
     char toinst[INST_SZ];
     char realm[REALM_SZ];
-    struct passwd pw, topw;
+    struct passwd pw, *pwd, topw, *topwd;
     char pw_buf[1024], topw_buf[1024];
     
     if(geteuid() != 0)
 	return SIADFAIL;
     if(siastat == SIADSUCCESS)
 	return SIADSUCCESS;
-    if(getpwuid_r(getuid(), &pw, pw_buf, sizeof(pw_buf)) < 0)
+    if(getpwuid_r(getuid(), &pw, pw_buf, sizeof(pw_buf), &pwd) != 0)
 	return SIADFAIL;
     if(entity->name[0] == 0 || strcmp(entity->name, "root") == 0){
 	strcpy(toname, pw.pw_name);
 	strcpy(toinst, "root");
-	if(getpwnam_r("root", &topw, topw_buf, sizeof(topw_buf)) < 0)
+	if(getpwnam_r("root", &topw, topw_buf, sizeof(topw_buf), &topwd) != 0)
 	    return SIADFAIL;
     }else{
 	strcpy(toname, entity->name);
 	toinst[0] = 0;
-	if(getpwnam_r(entity->name, &topw, topw_buf, sizeof(topw_buf)) < 0)
+	if(getpwnam_r(entity->name, &topw, 
+		      topw_buf, sizeof(topw_buf), &topwd) != 0)
 	    return SIADFAIL;
     }
     if(krb_get_lrealm(realm, 1))
-	return SIADFAIL;
+      return SIADFAIL;
     if(entity->password == NULL){
 	prompt_t prompt;
 	if(collect == NULL)
@@ -257,11 +305,15 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	    return SIADFAIL;
 	}
     }
-    if(sia_make_entity_pwd(&topw, entity) == SIAFAIL)
+    if(sia_make_entity_pwd(topwd, entity) == SIAFAIL)
 	return SIADFAIL;
     return SIADSUCCESS;
 }
 
+/* Conflicting types between different versions of SIA, and they are
+   never called anyway */
+
+#if 0
 
 int 
 siad_ses_reauthent(sia_collect_func_t *collect,
@@ -296,17 +348,17 @@ siad_chg_shell(sia_collect_func_t *collect,
     return SIADFAIL;
 }
 
-
-int 
-siad_getpwent(struct passwd *result, char *buf, int bufsize, FILE
-	      **context)
+int
+siad_getpwent(const char *name, struct passwd *result, char *buf, int bufsize,
+	      struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_getpwuid(uid_t uid, struct passwd *result, char *buf, int bufsize)
+siad_getpwuid(uid_t uid, struct passwd *result, char *buf, int bufsize, 
+	      struct sia_context *context)
 {
     return SIADFAIL;
 }
@@ -314,36 +366,37 @@ siad_getpwuid(uid_t uid, struct passwd *result, char *buf, int bufsize)
 
 int 
 siad_getpwnam(const char *name, struct passwd *result, char *buf,
-	      int bufsize)
+	      int bufsize, struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_setpwent(FILE **context)
+siad_setpwent(struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_endpwent(FILE **context)
+siad_endpwent(struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_getgrent(struct group *result, char *buf, int bufsize, FILE 
-	      **context)
+siad_getgrent(struct group *result, char *buf, int bufsize, 
+	      struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_getgrgid(gid_t gid, struct group *result, char *buf, int bufsize)
+siad_getgrgid(gid_t gid, struct group *result, char *buf, int bufsize,
+	      struct sia_context *context)
 {
     return SIADFAIL;
 }
@@ -351,21 +404,21 @@ siad_getgrgid(gid_t gid, struct group *result, char *buf, int bufsize)
 
 int 
 siad_getgrnam(const char *name, struct group *result, char *buf, 
-	      int bufsize)
+	      int bufsize, struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_setgrent(FILE **context)
+siad_setgrent(struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 
 int 
-siad_endgrent(FILE **context)
+siad_endgrent(struct sia_context *context)
 {
     return SIADFAIL;
 }
@@ -376,3 +429,4 @@ siad_chk_user(const char *logname, int checkflag)
 {
     return SIADFAIL;
 }
+#endif
