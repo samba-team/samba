@@ -1811,7 +1811,7 @@ static BOOL lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *r_c, prs_struc
 
 NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUNT *r_u, LUID_ATTR *set, uint32 count, uint32 control)
 {
-	NTSTATUS ret;
+	NTSTATUS ret = NT_STATUS_OK;
 
 	r_u->ptr = 1;
 	r_u->count = count;
@@ -1823,6 +1823,8 @@ NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUN
 		return ret;
 
 	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set->count));
+
+	return ret;
 }
 
 /*******************************************************************
