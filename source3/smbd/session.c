@@ -78,11 +78,13 @@ BOOL session_claim(user_struct *vuser)
 	}
 
 	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
-           needed becouse utmp and PAM both expect DNS names */
+           needed becouse utmp and PAM both expect DNS names 
+	   
+	   client_name() handles this case internally.
+	*/
 
-	if (lp_hostname_lookups()) {
-		hostname = client_name();
-	} else {
+	hostname = client_name();
+	if (strcmp(hostname, "UNKNOWN") == 0) {
 		hostname = client_addr();
 	}
 
