@@ -19,7 +19,7 @@ EXTRA_libsl_la_SOURCES = strtok_r.c snprintf.c roken_rename.h
 
 # install these?
 
-noinst_PROGRAMS = mk_cmds
+bin_PROGRAMS = mk_cmds
 
 mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l
 
