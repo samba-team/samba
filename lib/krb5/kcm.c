@@ -778,6 +778,50 @@ const krb5_cc_ops krb5_kcm_ops = {
     kcm_get_version
 };
 
+krb5_boolean
+_krb5_kcm_is_running(krb5_context context)
+{
+    krb5_error_code ret;
+    krb5_ccache_data ccdata;
+    krb5_ccache id = &ccdata;
+    krb5_boolean running;
+
+    ret = kcm_alloc(context, NULL, &id);
+    if (ret)
+	return 0;
+
+    running = (_krb5_kcm_noop(context, id) == 0);
+
+    kcm_free(context, &id);
+
+    return running;
+}
+
+/*
+ * Request:
+ *
+ * Response:
+ *
+ */
+krb5_error_code
+_krb5_kcm_noop(krb5_context context,
+	       krb5_ccache id)
+{
+    krb5_error_code ret;
+    krb5_kcmcache *k = KCMCACHE(id);
+    krb5_storage *request;
+
+    ret = kcm_storage_request(context, KCM_OP_NOOP, &request);
+    if (ret)
+	return ret;
+
+    ret = kcm_call(context, k, request, NULL, NULL);
+
+    krb5_storage_free(request);
+    return ret;
+}
+
+
 /*
  * Request:
  *      NameZ
