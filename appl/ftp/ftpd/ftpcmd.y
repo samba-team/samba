@@ -72,6 +72,10 @@ static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $
 #include <time.h>
 #include <unistd.h>
 
+#ifdef HAVE_BSD_BSD_H
+#include <bsd/bsd.h>
+#endif
+
 #include "extern.h"
 #include "auth.h"
 
