@@ -796,7 +796,7 @@ enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER};
 
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
-		     PRINT_QNX,PRINT_PLP};
+		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG};
 
 
 /* case handling */

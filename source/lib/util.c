@@ -48,6 +48,9 @@ struct in_addr lastip;
 /* the last port received from */
 int lastport=0;
 
+/* this is used by the chaining code */
+int chain_size = 0;
+
 int trans_num = 0;
 
 /*
@@ -73,7 +76,7 @@ fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
 pstring sesssetup_user="";
-
+pstring myname = "";
 
 int smb_read_error = 0;
 
@@ -1075,7 +1078,7 @@ return the SMB offset into an SMB buffer
 ********************************************************************/
 int smb_offset(char *p,char *buf)
 {
-  return(PTR_DIFF(p,buf+4));
+  return(PTR_DIFF(p,buf+4) + chain_size);
 }
 
 
@@ -2696,7 +2699,7 @@ void Abort(void )
 /****************************************************************************
 get my own name and IP
 ****************************************************************************/
-BOOL get_myname(char *myname,struct in_addr *ip)
+BOOL get_myname(char *my_name,struct in_addr *ip)
 {
   struct hostent *hp;
   pstring hostname;
@@ -2717,13 +2720,13 @@ BOOL get_myname(char *myname,struct in_addr *ip)
       return False;
     }
 
-  if (myname)
+  if (my_name)
     {
       /* split off any parts after an initial . */
       char *p = strchr(hostname,'.');
       if (p) *p = 0;
 
-      strcpy(myname,hostname);
+      strcpy(my_name,hostname);
     }
 
   if (ip)
@@ -2748,7 +2751,7 @@ BOOL ip_equal(struct in_addr ip1,struct in_addr ip2)
 /****************************************************************************
 open a socket of the specified type, port and address for incoming data
 ****************************************************************************/
-int open_socket_in(int type, int port, int dlevel)
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
 {
   struct hostent *hp;
   struct sockaddr_in sock;
@@ -2773,7 +2776,7 @@ int open_socket_in(int type, int port, int dlevel)
 #endif
   sock.sin_port = htons( port );
   sock.sin_family = hp->h_addrtype;
-  sock.sin_addr.s_addr = INADDR_ANY;
+  sock.sin_addr.s_addr = socket_addr;
   res = socket(hp->h_addrtype, type, 0);
   if (res == -1) 
     { DEBUG(0,("socket failed\n")); return -1; }
@@ -2788,15 +2791,15 @@ int open_socket_in(int type, int port, int dlevel)
     { 
       if (port) {
 	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d (%s)\n",
-			port,strerror(errno))); 
+	  DEBUG(dlevel,("bind failed on port %d socket_addr=%x (%s)\n",
+			port,socket_addr,strerror(errno))); 
 	close(res); 
 
 	if (dlevel > 0 && port < 1000)
 	  port = 7999;
 
 	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel));
+	  return(open_socket_in(type,port+1,dlevel,socket_addr));
       }
 
       return(-1); 

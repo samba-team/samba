@@ -502,7 +502,7 @@ void run_elections(void)
 			   work->work_group,inet_ntoa(d->bcast_ip)));
 		  
 		  work->RunningElection = False;
-          work->state = MST_NONE;
+		  work->state = MST_NONE;
 
 		  become_master(d, work);
 		}

@@ -305,14 +305,6 @@ static void process(void)
 
       announce_host();
 
-#if 0
-      /* XXXX what was this stuff supposed to do? It sent
-	 ANN_GetBackupListReq packets which I think should only be
-	 sent when trying to find out who to browse with */	 
-
-      announce_backup();
-#endif
-
       announce_master();
 
       announce_remote();
@@ -344,11 +336,11 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   }   
 
   if (isdaemon)
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0);
+    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,interpret_addr(lp_socket_address()));
   else
     ClientNMB = 0;
   
-  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3);
+  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,interpret_addr(lp_socket_address()));
 
   if (ClientNMB == -1)
     return(False);
@@ -376,8 +368,8 @@ static BOOL init_structs()
     strcpy(myname,myhostname);
     p = strchr(myname,'.');
     if (p) *p = 0;
-    strupper(myname);
   }
+  strupper(myname);
 
   return True;
 }
@@ -490,10 +482,10 @@ static void usage(char *pname)
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
   DEBUG(1,("Copyright Andrew Tridgell 1994\n"));
 
-  init_structs();
-
   if (!reload_services(False))
     return(-1);	
+
+  init_structs();
 
   set_samba_nb_type();
 

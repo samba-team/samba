@@ -35,7 +35,6 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
-extern int chain_size;
 extern int maxxmit;
 extern int chain_fnum;
 extern char magic_char;
@@ -72,9 +71,6 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
   int fnum = -1;
-  int outsize = 0;
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
 #if 0
@@ -149,8 +145,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
   /* Prepare the reply */
-  outsize = set_message(outbuf,15,0,True);
-  CVAL(outbuf,smb_vwv0) = smb_com2;
+  set_message(outbuf,15,0,True);
 
   /* Put things back the way they were. */
   Connections[cnum].read_only = 1;
@@ -164,7 +159,6 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     rmode = 1;
   }
 
-  SSVAL(outbuf,smb_vwv1,(chain_size+outsize)-4);
   SSVAL(outbuf,smb_vwv2,fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
   put_dos_date3(outbuf,smb_vwv4,mtime);
@@ -174,17 +168,10 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   chain_fnum = fnum;
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-
-  chain_fnum = -1;
-
   DEBUG(4,("Opened pipe %s with handle %d, saved name %s.\n",
 	   fname, fnum, Files[fnum].name));
   
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 

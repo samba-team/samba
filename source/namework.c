@@ -284,11 +284,12 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
   tell_become_backup();
 #endif
 
-  /* get the local_only browse list from the local master and add it to ours. */
+  /* get the local_only browse list from the local master and add it 
+     to ours. */
   if (command == ANN_LocalMasterAnnouncement)
   {
     add_browser_entry(serv_name,dgram->dest_name.name_type,
-		    work->work_group,30,ip,True);
+		      work->work_group,30,ip,True);
   }
 }
 

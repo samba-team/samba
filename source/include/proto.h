@@ -143,6 +143,7 @@ char *lp_logon_script(void);
 char *lp_remote_announce(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
+char *lp_socket_address(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_domain_master(void);
@@ -297,7 +298,6 @@ void do_announce_request(char *info, char *to_name, int announce_type,
 void sync_server(enum state_type state, char *serv_name, char *work_name, 
 		 int name_type,
 		 struct in_addr ip);
-void announce_backup(void);
 void do_announce_host(int command,
 		char *from_name, int from_type, struct in_addr from_ip,
 		char *to_name  , int to_type  , struct in_addr to_ip,
@@ -305,7 +305,7 @@ void do_announce_host(int command,
 		char *server_name, int server_type, char *server_comment);
 void remove_my_servers(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
-					char *name, char *comment, time_t ttl, int server_type);
+		     char *name, char *comment, time_t ttl, int server_type);
 void announce_host(void);
 void announce_master(void);
 void announce_remote(void);
@@ -686,7 +686,7 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
 void standard_sub(int cnum,char *s);
 char *smb_fn_name(int type);
-int chain_reply(int type,char *inbuf,char *inbuf2,char *outbuf,char *outbuf2,int size,int bufsize);
+int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
@@ -891,9 +891,9 @@ int byte_checksum(char *buf,int len);
 char *dirname_dos(char *path,char *buf);
 void *Realloc(void *p,int size);
 void Abort(void );
-BOOL get_myname(char *myname,struct in_addr *ip);
+BOOL get_myname(char *my_name,struct in_addr *ip);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
-int open_socket_in(int type, int port, int dlevel);
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
 int open_socket_out(int type, struct in_addr *addr, int port );
 int interpret_protocol(char *str,int def);
 int interpret_security(char *str,int def);

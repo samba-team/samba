@@ -30,7 +30,6 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
-extern int chain_size;
 extern int maxxmit;
 extern int chain_fnum;
 extern char magic_char;
@@ -178,11 +177,8 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring password;
   pstring devicename;
   int connection_num;
-  int outsize = 0;
   int uid = SVAL(inbuf,smb_uid);
   int vuid;
-  int smb_com2 = SVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int passlen = SVAL(inbuf,smb_vwv3);
 
   *service = *user = *password = *devicename = 0;
@@ -221,7 +217,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (connection_num < 0)
     return(connection_error(inbuf,outbuf,connection_num));
 
-  outsize = set_message(outbuf,2,strlen(devicename)+1,True);
+  set_message(outbuf,2,strlen(devicename)+1,True);
   
   DEBUG(3,("%s tconX service=%s user=%s cnum=%d\n",timestring(),service,user,connection_num));
   
@@ -229,17 +225,9 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   SSVAL(inbuf,smb_tid,connection_num);
   SSVAL(outbuf,smb_tid,connection_num);
 
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(chain_size + outsize)-4);
-
   strcpy(smb_buf(outbuf),devicename);
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -278,11 +266,8 @@ reply to a session setup command
 ****************************************************************************/
 int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int outsize = 0;
   int sess_uid;
   int gid;
-  int   smb_com2;
-  int   smb_off2;       
   int   smb_bufsize;    
   int   smb_mpxmax;     
   int   smb_vc_num;     
@@ -299,8 +284,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   *smb_apasswd = 0;
   
   sess_uid = SVAL(inbuf,smb_uid);
-  smb_com2 = CVAL(inbuf,smb_vwv0);
-  smb_off2 = SVAL(inbuf,smb_vwv1);
   smb_bufsize = SVAL(inbuf,smb_vwv2);
   smb_mpxmax = SVAL(inbuf,smb_vwv3);
   smb_vc_num = SVAL(inbuf,smb_vwv4);
@@ -424,15 +407,15 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* it's ok - setup a reply */
   if (Protocol < PROTOCOL_NT1) {
-    outsize = set_message(outbuf,3,0,True);
+    set_message(outbuf,3,0,True);
   } else {
     char *p;
-    outsize = set_message(outbuf,3,3,True);
+    set_message(outbuf,3,3,True);
     p = smb_buf(outbuf);
     strcpy(p,"Unix"); p = skip_string(p,1);
     strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
     strcpy(p,lp_workgroup()); p = skip_string(p,1);
-    outsize = set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
+    set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }
 
@@ -451,9 +434,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     SSVAL(inbuf,smb_uid,(uint16)pw->pw_uid);
   }
 
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(chain_size+outsize)-4);
-
   if (guest && !computer_id)
     SSVAL(outbuf,smb_vwv2,1);
 
@@ -463,12 +443,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
  
   maxxmit = MIN(maxxmit,smb_bufsize);
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -973,10 +948,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
   int fnum = -1;
-  int outsize = 0;
   int openmode = 0;
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
 #if 0
@@ -1033,9 +1005,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
-  outsize = set_message(outbuf,15,0,True);
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(chain_size+outsize)-4);
+  set_message(outbuf,15,0,True);
   SSVAL(outbuf,smb_vwv2,fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
   put_dos_date3(outbuf,smb_vwv4,mtime);
@@ -1045,14 +1015,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   chain_fnum = fnum;
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-
-  chain_fnum = -1;
-  
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -1061,26 +1024,15 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int outsize = 0;
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int uid = SVAL(inbuf,smb_uid);
 
   invalidate_uid(uid);
 
-  outsize = set_message(outbuf,2,0,True);
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(chain_size+outsize)-4);
+  set_message(outbuf,2,0,True);
 
   DEBUG(3,("%s ulogoffX uid=%d\n",timestring(),uid));
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-
-  
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -1486,8 +1438,6 @@ int reply_read(char *inbuf,char *outbuf)
 ****************************************************************************/
 int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int fnum = GETFNUM(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_maxcnt = SVAL(inbuf,smb_vwv5);
@@ -1495,7 +1445,6 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int cnum;
   int nread = -1;
   char *data;
-  int outsize = 0;
   BOOL ok = False;
 
   cnum = SVAL(inbuf,smb_tid);
@@ -1504,7 +1453,7 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   CHECK_READ(fnum);
   CHECK_ERROR(fnum);
 
-  outsize = set_message(outbuf,12,0,True);
+  set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
 
   if (is_locked(fnum,cnum,smb_maxcnt,smb_offs))
@@ -1515,27 +1464,17 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
-  outsize += nread;
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(outsize+chain_size)-4);
   SSVAL(outbuf,smb_vwv5,nread);
-  SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf) + chain_size);
+  SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
   SSVAL(smb_buf(outbuf),-2,nread);
   
-  DEBUG(3,("%s readX fnum=%d cnum=%d min=%d max=%d nread=%d com2=%d off2=%d\n",
+  DEBUG(3,("%s readX fnum=%d cnum=%d min=%d max=%d nread=%d\n",
 	timestring(),fnum,cnum,
-	smb_mincnt,smb_maxcnt,nread,smb_com2,smb_off2));
+	smb_mincnt,smb_maxcnt,nread));
 
   chain_fnum = fnum;
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-  
-  chain_fnum = -1;
-  
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -1767,8 +1706,6 @@ int reply_write(char *inbuf,char *outbuf,int dum1,int dum2)
 ****************************************************************************/
 int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int fnum = GETFNUM(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_dsize = SVAL(inbuf,smb_vwv10);
@@ -1776,7 +1713,6 @@ int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
   int cnum;
   int nwritten = -1;
-  int outsize = 0;
   char *data;
 
   cnum = SVAL(inbuf,smb_tid);
@@ -1804,10 +1740,8 @@ int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if(((nwritten == 0) && (smb_dsize != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  outsize = set_message(outbuf,6,0,True);
+  set_message(outbuf,6,0,True);
   
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(outsize+chain_size)-4);
   SSVAL(outbuf,smb_vwv2,nwritten);
   
   if (nwritten < smb_dsize) {
@@ -1822,14 +1756,7 @@ int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (lp_syncalways(SNUM(cnum)) || write_through)
     sync_file(fnum);
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-  
-  chain_fnum = -1;
-  
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -2828,8 +2755,6 @@ int reply_setdir(char *inbuf,char *outbuf)
 ****************************************************************************/
 int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
-  int smb_off2 = SVAL(inbuf,smb_vwv1);
   int fnum = GETFNUM(inbuf,smb_vwv2);
   uint16 locktype = SVAL(inbuf,smb_vwv3);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
@@ -2840,7 +2765,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   int i;
   char *data;
   uint32 ecode=0, dummy2;
-  int outsize, eclass=0, dummy1;
+  int eclass=0, dummy1;
 
   cnum = SVAL(inbuf,smb_tid);
 
@@ -2879,24 +2804,14 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
     return ERROR(eclass,ecode);
   }
 
-  outsize = set_message(outbuf,2,0,True);
-  
-  CVAL(outbuf,smb_vwv0) = smb_com2;
-  SSVAL(outbuf,smb_vwv1,(outsize+chain_size)-4);
+  set_message(outbuf,2,0,True);
   
   DEBUG(3,("%s lockingX fnum=%d cnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 	timestring(),fnum,cnum,locktype,num_locks,num_ulocks));
 
   chain_fnum = fnum;
 
-  if (smb_com2 != 0xFF)
-    outsize += chain_reply(smb_com2,inbuf,inbuf+smb_off2+4,
-			   outbuf,outbuf+outsize,
-			   length,bufsize);
-  
-  chain_fnum = -1;
-  
-  return(outsize);
+  return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 

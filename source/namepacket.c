@@ -360,7 +360,8 @@ static void process_nmb(struct packet_struct *p)
     {
 	if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
 	if (nmb->header.response)
-	  response_netbios_packet(p); /* response to registration dealt with here */
+	  response_netbios_packet(p); /* response to registration dealt 
+					 with here */
 	else
 	  reply_name_reg(p);
 	break;
@@ -409,7 +410,8 @@ static void process_nmb(struct packet_struct *p)
 	  }
 	
 	if (nmb->header.response)
-	  response_netbios_packet(p); /* response to reply dealt with in here */
+	  response_netbios_packet(p); /* response to reply dealt with 
+					 in here */
 	else
 	  reply_name_release(p);
       break;
@@ -457,10 +459,11 @@ void listen_for_packets(BOOL run_election)
   FD_SET(ClientNMB,&fds);
   FD_SET(ClientDGRAM,&fds);
 
-  /* during elections and when expecting a netbios response packet we need
-     to send election packets at one second intervals.
-     XXXX actually, it needs to be the interval (in ms) between time now and the
-     time we are expecting the next netbios packet */
+  /* during elections and when expecting a netbios response packet we
+     need to send election packets at tighter intervals 
+
+     ideally it needs to be the interval (in ms) between time now and
+     the time we are expecting the next netbios packet */
 
   timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
   timeout.tv_usec = 0;
@@ -471,17 +474,14 @@ void listen_for_packets(BOOL run_election)
     {
       struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
       if (packet) {
-#if 1
 	if (ismyip(packet->ip) &&
 	    (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(5,("discarding own packet from %s:%d\n",
+	  DEBUG(7,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
 	  free_packet(packet);
-	} else 
-#endif
-	  {
-	    queue_packet(packet);
-	  }
+	} else {
+	  queue_packet(packet);
+	}
       }
     }
 
@@ -489,17 +489,14 @@ void listen_for_packets(BOOL run_election)
     {
       struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
       if (packet) {
-#if 1
 	if (ismyip(packet->ip) &&
 	      (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(5,("discarding own packet from %s:%d\n",
+	  DEBUG(7,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
 	  free_packet(packet);
-	} else
-#endif 
-	  {
-	    queue_packet(packet);
-	  }
+	} else {
+	  queue_packet(packet);
+	}
       }
     }
 }
