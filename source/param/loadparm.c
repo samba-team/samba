@@ -2083,6 +2083,7 @@ static struct file_lists
 {
 	struct file_lists *next;
 	char *name;
+	char *subfname;
 	time_t modtime;
 }
  *file_lists = NULL;
@@ -2091,7 +2092,7 @@ static struct file_lists
 keep a linked list of all config files so we know when one has changed 
 it's date and needs to be reloaded
 ********************************************************************/
-static void add_to_file_list(char *fname)
+static void add_to_file_list(char *fname, char *subfname)
 {
 	struct file_lists *f = file_lists;
 
@@ -2114,15 +2115,16 @@ static void add_to_file_list(char *fname)
 			free(f);
 			return;
 		}
+		f->subfname = strdup(subfname);
+		if (!f->subfname)
+		{
+			free(f);
+			return;
+		}
 		file_lists = f;
 	}
 
-	{
-		pstring n2;
-		pstrcpy(n2, fname);
-		standard_sub_basic(n2);
-		f->modtime = file_modtime(n2);
-	}
+	f->modtime = file_modtime(subfname);
 
 }
 
@@ -2147,12 +2149,14 @@ BOOL lp_file_list_changed(void)
 
 		mod_time = file_modtime(n2);
 
-		if (f->modtime != mod_time)
+		if ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))
 		{
 			DEBUGADD(6,
 				 ("file %s modified: %s\n", n2,
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
+			free(f->subfname);
+			f->subfname = strdup(n2);
 			return (True);
 		}
 		f = f->next;
@@ -2312,9 +2316,9 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	add_to_file_list(fname);
-
 	standard_sub_basic(fname);
+
+	add_to_file_list(pszParmValue, fname);
 
 	string_set(ptr, fname);
 
@@ -2785,7 +2789,7 @@ static BOOL do_section(char *pszSectionName)
 
 
 /***************************************************************************
-determine if a partcular base parameter is currently set to the default value.
+determine if a partcular base parameter is currentl set to the default value.
 ***************************************************************************/
 static BOOL is_default(int i)
 {
@@ -3191,7 +3195,10 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 
-	add_to_file_list(pszFname);
+	pstrcpy(n2, pszFname);
+	standard_sub_basic(n2);
+
+	add_to_file_list(pszFname, n2);
 
 	bRetval = False;
 
@@ -3205,9 +3212,6 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 		init_locals();
 		lp_save_defaults();
 	}
-
-	pstrcpy(n2, pszFname);
-	standard_sub_basic(n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
