@@ -528,6 +528,9 @@ BOOL pdb_rid_is_user(uint32 rid)
    * such that it can be identified as either a user, group etc
    * type.  there are 5 such categories, and they are documented.
    */
+	/* However, they are not in the RID, just somthing you can query
+	   seperatly.  Sorry luke :-) */
+
    if(pdb_rid_is_well_known(rid)) {
       /*
        * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
