@@ -163,6 +163,10 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 		/* password expired */
 		_pam_log(LOG_WARNING, "user `%s' password expired", user);
 		return retval;
+	case PAM_NEW_AUTHTOK_REQD:
+		/* password expired */
+		_pam_log(LOG_WARNING, "user `%s' new password required", user);
+		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
 		if (ctrl & WINBIND_DEBUG_ARG)
