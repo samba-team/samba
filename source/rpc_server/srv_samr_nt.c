@@ -785,7 +785,12 @@ static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 sta
 	d_grp[0].rid = DOMAIN_GROUP_RID_ADMINS;
 	d_grp[0].attr=SID_NAME_DOM_GRP;
 
-	num_entries = 1;
+	fstrcpy(d_grp[1].name, "Domain Users");
+	fstrcpy(d_grp[1].comment, "Just to make it work !");
+	d_grp[1].rid = DOMAIN_GROUP_RID_USERS;
+	d_grp[1].attr=SID_NAME_DOM_GRP;
+
+	num_entries = 2;
 
 	*p_num_entries = num_entries;
 
@@ -800,7 +805,7 @@ static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 sta
 
 uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
 {
-	DOMAIN_GRP grp;
+	DOMAIN_GRP grp[2];
 	int num_entries;
 	DOM_SID sid;
 
@@ -811,9 +816,9 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
-	get_group_domain_entries(&grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+	get_group_domain_entries(grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
 
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &grp);
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
 	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
 

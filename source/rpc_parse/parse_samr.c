@@ -126,8 +126,6 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN * q_u,
 
 	if(!smb_io_unistr2("uni_domain", &q_u->uni_domain, q_u->hdr_domain.buffer, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
