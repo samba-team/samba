@@ -51,7 +51,7 @@ static NTSTATUS smbcli_link_internal(struct smbcli_tree *tree,
 /****************************************************************************
  Map standard UNIX permissions onto wire representations.
 ****************************************************************************/
-static uint32_t unix_perms_to_wire(mode_t perms)
+uint32_t unix_perms_to_wire(mode_t perms)
 {
         uint_t ret = 0;
 
