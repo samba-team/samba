@@ -445,6 +445,9 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		stored_time = pdb_get_pass_last_set_time(account);
 		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
+	} else {
+		/* no last set time, make it now */
+		pdb_set_pass_last_set_time(account, time(NULL), PDB_CHANGED);
 	}
 
 #if 0
