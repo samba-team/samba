@@ -61,6 +61,10 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+
 #include "protos.h"
 
 #ifndef HAVE_PUTENV
@@ -205,6 +209,15 @@ int unix_verify_user(char *user, char *password);
 void inaddr2str(struct in_addr addr, char *s, size_t len);
 
 void mini_inetd (int port);
+
+#ifndef HAVE_STRUCT_WINSIZE
+struct winsize {
+	unsigned short ws_row, ws_col;
+	unsigned short ws_xpixel, ws_ypixel;
+};
+#endif
+
+int get_window_size(int fd, struct winsize *);
 
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
