@@ -71,62 +71,36 @@ find_padata(KDC_REQ *req, int *start, int type)
     return NULL;
 }
 
-#if 0
-
-static krb5_error_code
-find_keys(hdb_entry *client, 
-	  hdb_entry *server, 
-	  Key **ckey, 
-	  krb5_enctype *cetype,
-	  Key **skey,
-	  krb5_enctype *setype,
-	  unsigned *etypes, 
-	  unsigned num_etypes)
-{
-    int i;
-    krb5_error_code ret;
-    for(i = 0; i < num_etypes; i++) {
-	if(client){
-	    ret = hdb_enctype2key(context, client, etypes[i], ckey);
-	    if(ret)
-		continue;
-	}
-	if(server){
-	    ret = hdb_enctype2key(context, server, etypes[i], skey);
-	    if(ret)
-		continue;
-	}
-	if(etype)
-	    *cetype = *setype = etypes[i];
-	return 0;
-    }
-    return KRB5KDC_ERR_ETYPE_NOSUPP;
-}
-
-#else
+/*
+ * return the first appropriate key of `princ' in `ret_key'.  Look for
+ * all the etypes in (`etypes', `len'), stopping as soon as we find
+ * one, but preferring one that has default salt
+ */
 
 static krb5_error_code
 find_etype(hdb_entry *princ, unsigned *etypes, unsigned len, 
-	   Key **key, int *index)
+	   Key **ret_key, krb5_enctype *ret_etype)
 {
     int i;
     krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
 
-    for(i = 0; i < len ; i++) {
-	krb5_error_code tmp;
+    for(i = 0; ret != 0 && i < len ; i++) {
+	Key *key = NULL;
 
-	tmp = hdb_enctype2key(context, princ, etypes[i], key);
-	if (tmp == 0) {
-	    if ((*key)->key.keyvalue.length != 0) {
-		ret = 0;
-		break;
-	    } else {
+	while (hdb_next_enctype2key(context, princ, etypes[i], &key) == 0) {
+	    if (key->key.keyvalue.length == 0) {
 		ret = KRB5KDC_ERR_NULL_KEY;
+		continue;
 	    }
+	    *ret_key = key;
+	    ret = 0;
+	    if (key->salt == NULL)
+		goto out;
 	}
     }
-    if(index)
-	*index = i;
+ out:
+    if (ret_etype)
+	*ret_etype = etypes[i];
     return ret;
 }
 
@@ -140,30 +114,27 @@ find_keys(hdb_entry *client,
 	  int *etypes,
 	  unsigned num_etypes)
 {
-    int i;
     krb5_error_code ret;
+
     if(client){
 	/* find client key */
-	ret = find_etype(client, etypes, num_etypes, ckey, &i);
+	ret = find_etype(client, etypes, num_etypes, ckey, cetype);
 	if (ret) {
 	    kdc_log(0, "Client has no support for etypes");
 	    return ret;
 	}
-	*cetype = etypes[i];
     }
 
     if(server){
 	/* find server key */
-	ret = find_etype(server, etypes, num_etypes, skey, NULL);
+	ret = find_etype(server, etypes, num_etypes, skey, setype);
 	if (ret) {
 	    kdc_log(0, "Server has no support for etypes");
 	    return ret;
 	}
-	*setype = (*skey)->key.keytype;
     }
     return 0;
 }
-#endif
 
 static krb5_error_code
 make_anonymous_principalname (PrincipalName *pn)
