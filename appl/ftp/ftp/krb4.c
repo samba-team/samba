@@ -107,7 +107,7 @@ krb4_encode(void *app_data, void *from, int length, int level, void **to)
 	return krb_mk_priv(from, *to, length, d->schedule, &d->key, 
 			   &LOCAL_ADDR, &REMOTE_ADDR);
     else
-	abort();
+	return -1;
 }
 
 #ifdef FTP_SERVER
