@@ -201,24 +201,24 @@ typedef struct pdb_context
 {
 	struct pdb_methods *pdb_methods;
 	struct pdb_methods *pwent_methods;
-
+	
 	/* These functions are wrappers for the functions listed above.
 	   They may do extra things like re-reading a SAM_ACCOUNT on update */
 
 	NTSTATUS (*pdb_setsampwent)(struct pdb_context *, BOOL update);
-
+	
 	void (*pdb_endsampwent)(struct pdb_context *);
-
+	
 	NTSTATUS (*pdb_getsampwent)(struct pdb_context *, SAM_ACCOUNT *user);
-
+	
 	NTSTATUS (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
-
+	
 	NTSTATUS (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
 
 	NTSTATUS (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
-
+	
 	NTSTATUS (*pdb_update_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
-
+	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 
 	/* group mapping functions: to be removed */
