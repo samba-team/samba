@@ -535,7 +535,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 session request. Error was %s\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
-  
+
   cli.protocol = PROTOCOL_NT1;
     
   if (!cli_negprot(&cli)) {
@@ -666,7 +666,10 @@ account password for domain %s.\n", domain));
        */
 
       for(i = 0; i < count; i++) {
-        if((res = modify_trust_password( domain, inet_ntoa(ip_list[i]),
+        fstring dc_name;
+        if(!lookup_pdc_name(global_myname, domain, &ip_list[i], dc_name))
+          continue;
+        if((res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash, new_trust_passwd_hash)))
           break;
       }

@@ -41,54 +41,54 @@ static void _interpret_node_status(char *p, char *master,char *rname)
   if (master) *master = 0;
 
   p += 1;
-  while (numnames--)
-    {
-      char qname[17];
-      int type;
-      fstring flags;
-      int i;
-      *flags = 0;
-      StrnCpy(qname,p,15);
-      type = CVAL(p,15);
-      p += 16;
+  while (numnames--) {
+    char qname[17];
+    int type;
+    fstring flags;
+    int i;
+    *flags = 0;
+    StrnCpy(qname,p,15);
+    type = CVAL(p,15);
+    p += 16;
 
-      fstrcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
-      if ((p[0] & 0x60) == 0x00) fstrcat(flags,"B ");
-      if ((p[0] & 0x60) == 0x20) fstrcat(flags,"P ");
-      if ((p[0] & 0x60) == 0x40) fstrcat(flags,"M ");
-      if ((p[0] & 0x60) == 0x60) fstrcat(flags,"H ");
-      if (p[0] & 0x10) fstrcat(flags,"<DEREGISTERING> ");
-      if (p[0] & 0x08) fstrcat(flags,"<CONFLICT> ");
-      if (p[0] & 0x04) fstrcat(flags,"<ACTIVE> ");
-      if (p[0] & 0x02) fstrcat(flags,"<PERMANENT> ");
+    fstrcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
+    if ((p[0] & 0x60) == 0x00) fstrcat(flags,"B ");
+    if ((p[0] & 0x60) == 0x20) fstrcat(flags,"P ");
+    if ((p[0] & 0x60) == 0x40) fstrcat(flags,"M ");
+    if ((p[0] & 0x60) == 0x60) fstrcat(flags,"H ");
+    if (p[0] & 0x10) fstrcat(flags,"<DEREGISTERING> ");
+    if (p[0] & 0x08) fstrcat(flags,"<CONFLICT> ");
+    if (p[0] & 0x04) fstrcat(flags,"<ACTIVE> ");
+    if (p[0] & 0x02) fstrcat(flags,"<PERMANENT> ");
 
-      if (master && !*master && type == 0x1d) {
-	StrnCpy(master,qname,15);
-	trim_string(master,NULL," ");
-      }
-
-      if (rname && !*rname && type == 0x20 && !(p[0]&0x80)) {
-	StrnCpy(rname,qname,15);
-	trim_string(rname,NULL," ");
-      }
-      
-      for (i = strlen( qname) ; --i >= 0 ; ) {
-	if (!isprint((int)qname[i])) qname[i] = '.';
-      }
-      DEBUG(1,("\t%-15s <%02x> - %s\n",qname,type,flags));
-      p+=2;
+    if (master && !*master && type == 0x1d) {
+      StrnCpy(master,qname,15);
+      trim_string(master,NULL," ");
     }
+
+    if (rname && !*rname && type == 0x20 && !(p[0]&0x80)) {
+      StrnCpy(rname,qname,15);
+      trim_string(rname,NULL," ");
+    }
+      
+    for (i = strlen( qname) ; --i >= 0 ; ) {
+      if (!isprint((int)qname[i])) qname[i] = '.';
+    }
+    DEBUG(1,("\t%-15s <%02x> - %s\n",qname,type,flags));
+    p+=2;
+  }
+
   DEBUG(1,("num_good_sends=%d num_good_receives=%d\n",
 	       IVAL(p,20),IVAL(p,24)));
 }
 
 /****************************************************************************
- Do a netbios name status query on a host.
- The "master" parameter is a hack used for finding workgroups.
+ Internal function handling a netbios name status query on a host.
 **************************************************************************/
 
-BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
+static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
+		 struct in_addr to_ip,char *master,char *rname, BOOL verbose,
+         void (*fn_interpret_node_status)(char *, char *,char *),
 		 void (*fn)(struct packet_struct *))
 {
   BOOL found=False;
@@ -138,32 +138,31 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
   retries--;
 
-  while (1)
-    {
-      struct timeval tval2;
-      GetTimeOfDay(&tval2);
-      if (TvalDiff(&tval,&tval2) > retry_time) {
-	if (!retries) break;
-	if (!found && !send_packet(&p))
-	  return False;
-	GetTimeOfDay(&tval);
-	retries--;
-      }
+  while (1) {
+    struct timeval tval2;
+    GetTimeOfDay(&tval2);
+    if (TvalDiff(&tval,&tval2) > retry_time) {
+      if (!retries)
+        break;
+      if (!found && !send_packet(&p))
+        return False;
+      GetTimeOfDay(&tval);
+      retries--;
+    }
 
-      if ((p2=receive_packet(fd,NMB_PACKET,90)))
-	{     
-	  struct nmb_packet *nmb2 = &p2->packet.nmb;
+    if ((p2=receive_packet(fd,NMB_PACKET,90))) {     
+      struct nmb_packet *nmb2 = &p2->packet.nmb;
       debug_nmb_packet(p2);
 
-	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-	      !nmb2->header.response) {
-	    /* its not for us - maybe deal with it later */
-	    if (fn) 
-	      fn(p2);
-	    else
-	      free_packet(p2);
-	    continue;
-	  }
+      if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
+             !nmb2->header.response) {
+        /* its not for us - maybe deal with it later */
+        if (fn) 
+          fn(p2);
+        else
+          free_packet(p2);
+        continue;
+      }
 	  
 	  if (nmb2->header.opcode != 0 ||
 	      nmb2->header.nm_flags.bcast ||
@@ -176,16 +175,31 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 	    continue;
 	  }
 
-	  _interpret_node_status(&nmb2->answers->rdata[0], master,rname);
+      if(fn_interpret_node_status)
+	    (*fn_interpret_node_status)(&nmb2->answers->rdata[0],master,rname);
 	  free_packet(p2);
 	  return(True);
 	}
-    }
-  
+  }
 
-  DEBUG(0,("No status response (this is not unusual)\n"));
+  if(verbose)
+    DEBUG(0,("No status response (this is not unusual)\n"));
 
   return(False);
+}
+
+/****************************************************************************
+ Do a netbios name status query on a host.
+ The "master" parameter is a hack used for finding workgroups.
+**************************************************************************/
+
+BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
+		 struct in_addr to_ip,char *master,char *rname,
+		 void (*fn)(struct packet_struct *))
+{
+  return internal_name_status(fd,name,name_type,recurse,
+		 to_ip,master,rname,True,
+         _interpret_node_status, fn);
 }
 
 /****************************************************************************
@@ -726,6 +740,260 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 	if(ip_list != NULL)
 		free((char *)ip_list);
 	return False;
+}
+
+/********************************************************
+ Internal function to extract the MACHINE<0x20> name.
+*********************************************************/
+
+static void _lookup_pdc_name(char *p, char *master,char *rname)
+{
+  int numnames = CVAL(p,0);
+
+  *rname = '\0';
+
+  p += 1;
+  while (numnames--) {
+    int type = CVAL(p,15);
+    if(type == 0x20) {
+      StrnCpy(rname,p,15);
+      trim_string(rname,NULL," ");
+      return;
+    }
+    p += 18;
+  }
+}
+
+/********************************************************
+ Lookup a PDC name given a Domain name and IP address.
+*********************************************************/
+
+BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
+{
+#if !defined(I_HATE_WINDOWS_REPLY_CODE)
+
+  fstring pdc_name;
+  BOOL ret;
+
+  /*
+   * Due to the fact win WinNT *sucks* we must do a node status
+   * query here... JRA.
+   */
+
+  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
+
+  if(sock == -1)
+    return False;
+
+  *pdc_name = '\0';
+
+  ret = internal_name_status(sock,"*SMBSERVER",0x20,True,
+		 *pdc_ip,NULL,pdc_name,False,
+         _lookup_pdc_name,NULL);
+
+  close(sock);
+
+  if(ret && *pdc_name) {
+    fstrcpy(ret_name, pdc_name);
+    return True;
+  }
+
+  return False;
+
+#else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
+  /*
+   * Sigh. I *love* this code, it took me ages to get right and it's
+   * completely *USELESS* because NT 4.x refuses to send the mailslot
+   * reply back to the correct port (it always uses 138).
+   * I hate NT when it does these things... JRA.
+   */
+
+  int retries = 3;
+  int retry_time = 2000;
+  struct timeval tval;
+  struct packet_struct p;
+  struct dgram_packet *dgram = &p.packet.dgram;
+  char *ptr,*p2;
+  char tmp[4];
+  int len;
+  struct sockaddr_in sock_name;
+  int sock_len = sizeof(sock_name);
+  const char *mailslot = "\\MAILSLOT\\NET\\NETLOGON";
+  static int name_trn_id = 0;
+  char buffer[1024];
+  char *bufp;
+  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
+
+  if(sock == -1)
+    return False;
+
+  /* Find out the transient UDP port we have been allocated. */
+  if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
+    DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
+            strerror(errno)));
+    close(sock);
+    return False;
+  }
+
+  /*
+   * Create the request data.
+   */
+
+  memset(buffer,'\0',sizeof(buffer));
+  bufp = buffer;
+  SSVAL(bufp,0,QUERYFORPDC);
+  bufp += 2;
+  fstrcpy(bufp,srcname);
+  bufp += (strlen(bufp) + 1);
+  fstrcpy(bufp,"\\MAILSLOT\\NET\\GETDC411");
+  bufp += (strlen(bufp) + 1);
+  bufp = align2(bufp, buffer);
+  dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1);
+  bufp = skip_unicode_string(bufp, 1);
+  SIVAL(bufp,0,1);
+  SSVAL(bufp,4,0xFFFF); 
+  SSVAL(bufp,6,0xFFFF); 
+  bufp += 8;
+  len = PTR_DIFF(bufp,buffer);
+
+  if (!name_trn_id)
+    name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)getpid()%(unsigned)100);
+  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
+
+  memset((char *)&p,'\0',sizeof(p));
+
+  /* DIRECT GROUP or UNIQUE datagram. */
+  dgram->header.msg_type = 0x10;
+  dgram->header.flags.node_type = M_NODE;
+  dgram->header.flags.first = True;
+  dgram->header.flags.more = False;
+  dgram->header.dgm_id = name_trn_id;
+  dgram->header.source_ip = sock_name.sin_addr;
+  dgram->header.source_port = ntohs(sock_name.sin_port);
+  dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
+  dgram->header.packet_offset = 0;
+ 
+  make_nmb_name(&dgram->source_name,srcname,0,scope);
+  make_nmb_name(&dgram->dest_name,domain,0x1B,scope);
+
+  ptr = &dgram->data[0];
+
+  /* Setup the smb part. */
+  ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
+  memcpy(tmp,ptr,4);
+  set_message(ptr,17,17 + len,True);
+  memcpy(ptr,tmp,4);
+
+  CVAL(ptr,smb_com) = SMBtrans;
+  SSVAL(ptr,smb_vwv1,len);
+  SSVAL(ptr,smb_vwv11,len);
+  SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
+  SSVAL(ptr,smb_vwv13,3);
+  SSVAL(ptr,smb_vwv14,1);
+  SSVAL(ptr,smb_vwv15,1);
+  SSVAL(ptr,smb_vwv16,2);
+  p2 = smb_buf(ptr);
+  pstrcpy(p2,mailslot);
+  p2 = skip_string(p2,1);
+
+  memcpy(p2,buffer,len);
+  p2 += len;
+
+  dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
+
+  p.ip = *pdc_ip;
+  p.port = DGRAM_PORT;
+  p.fd = sock;
+  p.timestamp = time(NULL);
+  p.packet_type = DGRAM_PACKET;
+
+  GetTimeOfDay(&tval);
+
+  if (!send_packet(&p)) {
+    DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+    close(sock);
+    return False;
+  }
+
+  retries--;
+
+  while (1) {
+    struct timeval tval2;
+    struct packet_struct *p_ret;
+
+    GetTimeOfDay(&tval2);
+    if (TvalDiff(&tval,&tval2) > retry_time) {
+      if (!retries)
+        break;
+      if (!send_packet(&p)) {
+        DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+        close(sock);
+        return False;
+      }
+      GetTimeOfDay(&tval);
+      retries--;
+    }
+
+    if ((p_ret = receive_packet(sock,NMB_PACKET,90))) {
+      struct nmb_packet *nmb2 = &p_ret->packet.nmb;
+      struct dgram_packet *dgram2 = &p_ret->packet.dgram;
+      char *buf;
+      char *buf2;
+
+      debug_nmb_packet(p_ret);
+
+      if (memcmp(&p.ip, &p_ret->ip, sizeof(p.ip))) {
+        /* 
+         * Not for us.
+         */
+        DEBUG(0,("lookup_pdc_name: datagram return IP %s doesn't match\n", inet_ntoa(p_ret->ip) ));
+        free_packet(p_ret);
+        continue;
+      }
+
+      buf = &dgram2->data[0];
+      buf -= 4;
+
+      if (CVAL(buf,smb_com) != SMBtrans) {
+        DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)CVAL(buf,smb_com),
+              (unsigned int)SMBtrans ));
+        free_packet(p_ret);
+        continue;
+      }
+
+      len = SVAL(buf,smb_vwv11);
+      buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
+
+      if (len <= 0) {
+        DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
+        free_packet(p_ret);
+        continue;
+      }
+
+      DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
+       nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
+       inet_ntoa(p_ret->ip), smb_buf(buf),CVAL(buf2,0),len));
+
+      if(SVAL(buf,0) != QUERYFORPDC_R) {
+        DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
+              (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
+        free_packet(p_ret);
+        continue;
+      }
+
+      buf += 2;
+      /* Note this is safe as it is a bounded strcpy. */
+      fstrcpy(ret_name, buf);
+      ret_name[sizeof(fstring)-1] = '\0';
+      close(sock);
+      free_packet(p_ret);
+      return True;
+    }
+  }
+
+  close(sock);
+  return False;
+#endif /* I_HATE_WINDOWS_REPLY_CODE */
 }
 
 /********************************************************
