@@ -68,8 +68,6 @@ extern char *prog;
 int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);
 
-RETSIGTYPE childhandler (int);
-
 extern char x_socket[];
 
 int get_xsockets (int *unix_socket, int *tcp_socket);
