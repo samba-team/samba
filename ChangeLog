@@ -1,3 +1,9 @@
+2004-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/gen_length.c (length_type): TSequenceOf: add up the
+	size of all the elements, don't use just the size of the last
+	element.
+
 2004-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c (renew_validate): if renewable_flag and not time
