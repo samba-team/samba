@@ -156,7 +156,8 @@ void refresh_my_names(time_t t)
            multiple refresh calls being done. We actually
            deal with refresh failure in the fail_fn.
          */
-        refresh_name(subrec, namerec, NULL, NULL, NULL);
+        if(!is_refresh_already_queued( subrec, namerec))
+          refresh_name(subrec, namerec, NULL, NULL, NULL);
 	namerec->death_time += lp_max_ttl();
 	namerec->refresh_time += lp_max_ttl();
       }

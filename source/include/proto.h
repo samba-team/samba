@@ -47,7 +47,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
                            unsigned char *pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, char *pass1, char *pass2);
+BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
 
 /*The following definitions come from  client.c  */
 
@@ -710,6 +710,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
                     struct userdata_struct *userdata);
 struct response_record *find_response_record(struct subnet_record **ppsubrec,
 				uint16 id);
+BOOL is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec);
 
 /*The following definitions come from  nmbd_sendannounce.c  */
 
