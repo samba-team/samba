@@ -20,7 +20,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this is a very simple temporary memory allocator. To use it do the following:
+/**
+   @defgroup talloc Simple memory allocator
+   @{
+   
+   This is a very simple temporary memory allocator. To use it do the following:
 
    1) when you first want to allocate a pool of meomry use
    talloc_init() and save the resulting context pointer somewhere
@@ -225,3 +229,5 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 	return ret;
 }
 
+
+/** @} */
