@@ -482,6 +482,10 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 		pstrcpy(acct_desc    , "");
 		pstrcpy(workstations , "");
 
+		standard_sub_advanced(-1, samlogon_user, "", user.smb_grpid, logon_script);
+		standard_sub_advanced(-1, samlogon_user, "", user.smb_grpid, profile_path);
+		standard_sub_advanced(-1, samlogon_user, "", user.smb_grpid, home_drive);
+		standard_sub_advanced(-1, samlogon_user, "", user.smb_grpid, home_dir);
 		sam_logon_in_ssb = False;
 	}
 	else

@@ -491,31 +491,31 @@ static uint32 samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC_BUF **buf, DOM_SID 
 {
 	extern DOM_SID global_sid_Builtin;
 	extern DOM_SID global_sid_World;
-    DOM_SID adm_sid;
-    DOM_SID act_sid;
+	DOM_SID adm_sid;
+	DOM_SID act_sid;
 
-    SEC_ACE ace[4];
-    SEC_ACCESS mask;
+	SEC_ACE ace[4];
+	SEC_ACCESS mask;
 
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 
-    sid_copy(&adm_sid, &global_sid_Builtin);
-    sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+	sid_copy(&adm_sid, &global_sid_Builtin);
+	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 
-    sid_copy(&act_sid, &global_sid_Builtin);
-    sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
+	sid_copy(&act_sid, &global_sid_Builtin);
+	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
 
 	init_sec_access(&mask, 0x2035b);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	init_sec_access(&mask, 0xf07ff);
-    init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-    init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
-    init_sec_access(&mask,0x20044);
-    init_sec_ace(&ace[3], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_access(&mask,0x20044);
+	init_sec_ace(&ace[3], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	if((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 4, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -526,7 +526,7 @@ static uint32 samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC_BUF **buf, DOM_SID 
 	if((*buf = make_sec_desc_buf(ctx, sd_size, psd)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-    return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -582,8 +582,7 @@ static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR
 	}
 
 	for (i = 0; i < num_sam_entries; i++) {
-		/* JRA - I think this should be non-unicode len. It's not in the TNG code. */
-		int len = pass[i].uni_user_name.uni_str_len/2;
+		int len = pass[i].uni_user_name.uni_str_len;
 
 		init_sam_entry(&sam[i], len, pass[i].user_rid);
 		copy_unistr2(&uni_name[i], &pass[i].uni_user_name);
@@ -1347,7 +1346,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 }
 
 /*************************************************************************
- get_user_info_21
+ get_user_info_12
  *************************************************************************/
 
 static BOOL get_user_info_12(SAM_USER_INFO_12 * id12, uint32 user_rid)
@@ -1384,8 +1383,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
     LOGON_HRS hrs;
     int i;
 
-    if (!pdb_rid_is_user(user_rid))
-    {
+    if (!pdb_rid_is_user(user_rid)) {
         DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
         return False;
     }
@@ -1394,8 +1392,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
     sam_pass = getsam21pwrid(user_rid);
     unbecome_root();
 
-    if (sam_pass == NULL)
-    {
+    if (sam_pass == NULL) {
         DEBUG(4,("User 0x%x not found\n", user_rid));
         return False;
     }
@@ -1411,9 +1408,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
     hrs.len = sam_pass->hours_len;
     SMB_ASSERT_ARRAY(hrs.hours, hrs.len);
     for (i = 0; i < hrs.len; i++)
-    {
         hrs.hours[i] = sam_pass->hours[i];
-    }
 
     init_sam_user_info21A(id21,
 
@@ -1457,15 +1452,17 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 	SAM_USERINFO_CTR *ctr;
 	uint32 rid = 0;
 
-    /* search for the handle */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
-        return NT_STATUS_INVALID_HANDLE;
+	r_u->status=NT_STATUS_NO_PROBLEMO;
 
-    /* find the user's rid */
-    if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
-        return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	/* search for the handle */
+	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
 
-    DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
+	/* find the user's rid */
+	if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
 
 	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
 	if (!ctr)
@@ -1532,9 +1529,9 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-    init_samr_r_query_userinfo(r_u, ctr, r_u->status);
+	init_samr_r_query_userinfo(r_u, ctr, r_u->status);
 
-    DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
 
 	return r_u->status;
 }

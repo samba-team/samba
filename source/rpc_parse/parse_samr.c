@@ -458,8 +458,6 @@ BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 
 	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -491,9 +489,6 @@ static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 * u_3,
 	if(!prs_uint32("unknown_0", ps, depth, &u_3->unknown_0))	/* 0x0000 0000 */
 		return False;
 	if(!prs_uint32("unknown_1", ps, depth, &u_3->unknown_1))	/* 0x8000 0000 */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -530,9 +525,6 @@ static BOOL sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 * u_6,
 	if(!prs_uint8s(False, "padding", ps, depth, u_6->padding, sizeof(u_6->padding)))	/* 12 bytes zeros */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	return True;
 }
 
@@ -559,8 +551,6 @@ static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
 	depth++;
 
 	if(!prs_uint16("unknown_0", ps, depth, &u_7->unknown_0)) /* 0x0003 */
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -602,9 +592,6 @@ static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
 	if(!prs_uint32("unknown_3", ps, depth, &u_12->unknown_3))
 		return False;
 	if(!prs_uint32("unknown_4", ps, depth, &u_12->unknown_4))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -698,11 +685,7 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 
 	if(!smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 	if(!smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -738,9 +721,6 @@ static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 * u_1,
 	if(!prs_uint32("unknown_1", ps, depth, &u_1->unknown_1)) /* 0x8000 0000 */
 		return False;
 	if(!prs_uint32("unknown_2", ps, depth, &u_1->unknown_2)) /* 0x0000 0000 */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -825,6 +805,9 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 		}
 	}
 	
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 	
@@ -879,13 +862,9 @@ static BOOL sam_io_sam_str1(char *desc, SAM_STR1 * sam, uint32 acct_buf,
 	if (!smb_io_unistr2("name", &sam->uni_acct_name, acct_buf, ps, depth))
 		return False;
 
-	if(!prs_align(ps))
-		return False;
 	if (!smb_io_unistr2("desc", &sam->uni_acct_desc, desc_buf, ps, depth))
 		return False;
 
-	if(!prs_align(ps))
-		return False;
 	if (!smb_io_unistr2("full", &sam->uni_full_name, name_buf, ps, depth))
 		return False;
 
@@ -965,13 +944,9 @@ static BOOL sam_io_sam_str2(char *desc, SAM_STR2 * sam, uint32 acct_buf,
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_unistr2("unistr2", &sam->uni_srv_name, acct_buf, ps, depth)) /* account name unicode string */
+	if(!smb_io_unistr2("uni_srv_name", &sam->uni_srv_name, acct_buf, ps, depth)) /* account name unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("unistr2", &sam->uni_srv_desc, desc_buf, ps, depth))	/* account desc unicode string */
-		return False;
-	if(!prs_align(ps))
+	if(!smb_io_unistr2("uni_srv_desc", &sam->uni_srv_desc, desc_buf, ps, depth))	/* account desc unicode string */
 		return False;
 
 	return True;
@@ -1045,13 +1020,9 @@ static BOOL sam_io_sam_str3(char *desc, SAM_STR3 * sam, uint32 acct_buf,
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_unistr2("unistr2", &sam->uni_grp_name, acct_buf, ps, depth))	/* account name unicode string */
+	if(!smb_io_unistr2("uni_grp_name", &sam->uni_grp_name, acct_buf, ps, depth))	/* account name unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("unistr2", &sam->uni_grp_desc, desc_buf, ps, depth))	/* account desc unicode string */
-		return False;
-	if(!prs_align(ps))
+	if(!smb_io_unistr2("uni_grp_desc", &sam->uni_grp_desc, desc_buf, ps, depth))	/* account desc unicode string */
 		return False;
 
 	return True;
@@ -1265,9 +1236,6 @@ BOOL samr_io_q_enum_dom_users(char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	return True;
 }
 
@@ -1348,15 +1316,13 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 		for (i = 0; i < r_u->num_entries2; i++) {
 			if(!smb_io_unistr2("", &r_u->uni_acct_name[i],r_u->sam[i].hdr_name.buffer, ps,depth))
 				return False;
-
-			if(!prs_align(ps))
-				return False;
 		}
 
-		if(!prs_align(ps))
-			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
+		
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
@@ -2021,13 +1987,9 @@ BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
 	if(!smb_io_unistr2("uni_acct_name", &gr1->uni_acct_name,
 			   gr1->hdr_acct_name.buffer, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	if(!smb_io_unistr2("uni_acct_desc", &gr1->uni_acct_desc,
 			   gr1->hdr_acct_desc.buffer, ps, depth))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -2068,8 +2030,6 @@ BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
 	if(!smb_io_unistr2("uni_acct_desc", &gr4->uni_acct_desc,
 			   gr4->hdr_acct_desc.buffer, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -2107,9 +2067,6 @@ static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
 		DEBUG(0,("samr_group_info_ctr: unsupported switch level\n"));
 		break;
 	}
-
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -2158,9 +2115,9 @@ BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
 	if(!smb_io_unistr2("uni_acct_desc", &q_e->uni_acct_desc,
 		       q_e->hdr_acct_desc.buffer, ps, depth))
 		return False;
+
 	if(!prs_align(ps))
 		return False;
-
 	if(!prs_uint32("access", ps, depth, &q_e->access_mask))
 		return False;
 
@@ -2222,7 +2179,10 @@ BOOL samr_io_q_delete_dom_group(char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth);
+	if(!smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -2542,6 +2502,8 @@ BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -2575,7 +2537,10 @@ BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth);
+	if(!smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -2706,7 +2671,10 @@ BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("pol", &q_u->pol, ps, depth);
+	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -2805,6 +2773,8 @@ BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
 		}
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
@@ -2849,9 +2819,6 @@ BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
 	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 		return False;
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -2939,15 +2906,12 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 				       r_u->sam[i].hdr_name.buffer, ps,
 				       depth))
 				return False;
-			if(!prs_align(ps))
-				return False;
 		}
-
-		if(!prs_align(ps))
-			return False;
 
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
@@ -2994,9 +2958,6 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
 	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 		return False;
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -3080,15 +3041,11 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 			if(!smb_io_unistr2("", &r_u->uni_grp_name[i],
 				       r_u->sam[i].hdr_name.buffer, ps, depth))
 				return False;
-			if(!prs_align(ps))
-				return False;
 		}
-
-		if(!prs_align(ps))
-			return False;
-
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
@@ -3136,9 +3093,6 @@ BOOL samr_io_q_enum_dom_aliases(char *desc, SAMR_Q_ENUM_DOM_ALIASES * q_e,
 	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 		return False;
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -3222,15 +3176,11 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 				       r_u->sam[i].hdr_name.buffer, ps,
 				       depth))
 				return False;
-			if(!prs_align(ps))
-				return False;
 		}
-
-		if(!prs_align(ps))
-			return False;
-
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
@@ -3274,8 +3224,6 @@ BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3,
 	if(!smb_io_unistr2("uni_acct_desc", &al3->uni_acct_desc,
 		       al3->hdr_acct_desc.buffer, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -3307,9 +3255,6 @@ BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
 		DEBUG(0,("samr_alias_info_ctr: unsupported switch level\n"));
 		break;
 	}
-
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -3348,7 +3293,6 @@ BOOL samr_io_q_query_aliasinfo(char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
 
 	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
 		return False;
-	/* if(!prs_align(ps); return False; */
 
 	return True;
 }
@@ -3391,6 +3335,8 @@ BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -3529,9 +3475,6 @@ BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
 		}
 	}
 
-	if(!prs_align(ps))
-		return False;
-
 	return True;
 }
 
@@ -3626,6 +3569,8 @@ BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -3770,9 +3715,6 @@ BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
 			return False;
 	}
 
-	if(!prs_align(ps))
-		return False;
-
 	return True;
 }
 
@@ -3857,14 +3799,11 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 			if(!smb_io_unistr2("", &r_u->uni_name[i],
 				       r_u->hdr_name[i].buffer, ps, depth))
 				return False;
-			if(!prs_align(ps))
-				return False;
 		}
 	}
 
 	if(!prs_align(ps))
 		return False;
-
 	if(!prs_uint32("num_types1", ps, depth, &r_u->num_types1))
 		return False;
 	if(!prs_uint32("ptr_types ", ps, depth, &r_u->ptr_types))
@@ -3917,7 +3856,10 @@ BOOL samr_io_q_delete_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth);
+	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -3990,7 +3932,6 @@ BOOL samr_io_q_create_dom_alias(char *desc, SAMR_Q_CREATE_DOM_ALIAS * q_u,
 
 	if(!prs_align(ps))
 		return False;
-
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 
@@ -4171,7 +4112,10 @@ BOOL samr_io_q_delete_dom_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth);
+	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -4236,7 +4180,10 @@ BOOL samr_io_q_query_aliasmem(char *desc, SAMR_Q_QUERY_ALIASMEM * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth);
+	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -4309,6 +4256,8 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 		}
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -4382,8 +4331,6 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	}
 
 	for (i = 0; i < q_u->num_names2; i++) {
-		if(!prs_align(ps))
-			return False;
 		if(!smb_io_unistr2("", &q_u->uni_name[i], q_u->hdr_name[i].buffer, ps, depth))
 			return False;
 	}
@@ -4555,7 +4502,10 @@ BOOL samr_io_q_delete_dom_user(char *desc, SAMR_Q_DELETE_DOM_USER * q_u,
 	if(!prs_align(ps))
 		return False;
 
-	return smb_io_pol_hnd("user_pol", &q_u->user_pol, ps, depth);
+	if(!smb_io_pol_hnd("user_pol", &q_u->user_pol, ps, depth))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
@@ -4617,9 +4567,6 @@ BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u,
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 	if(!prs_uint32("user_rid ", ps, depth, &q_u->user_rid))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -4693,19 +4640,16 @@ BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
 	if(!smb_io_pol_hnd("domain_pol", &q_u->domain_pol, ps, depth))
 		return False;
 
-	if(!smb_io_unihdr("unihdr", &q_u->hdr_name, ps, depth))
+	if(!smb_io_unihdr("hdr_name", &q_u->hdr_name, ps, depth))
 		return False;
-	if(!smb_io_unistr2("unistr2", &q_u->uni_name, q_u->hdr_name.buffer, ps, depth))
-		return False;
-	if(!prs_align(ps))
+	if(!smb_io_unistr2("uni_name", &q_u->uni_name, q_u->hdr_name.buffer, ps, depth))
 		return False;
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("acb_info   ", ps, depth, &q_u->acb_info))
 		return False;
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -4849,8 +4793,6 @@ static BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
 	if(!prs_uint8("lm_pwd_active", ps, depth, &u->lm_pwd_active))
 		return False;
 	if(!prs_uint8("nt_pwd_active", ps, depth, &u->nt_pwd_active))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -5051,9 +4993,6 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
 	if(!prs_uint8s(False, "password", ps, depth, usr->pass, sizeof(usr->pass)))
 		return False;
 	if(!prs_uint16("unk_0", ps, depth, &usr->unk_0)) /* unknown */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -5327,78 +5266,44 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
 	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_3 != 0x0) {
+	if (usr->ptr_logon_hrs) {
 		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
 			return False;
 		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
 			return False;
+		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
+			return False;
 	} else if (UNMARSHALLING(ps)) {
 		usr->unknown_6 = 0;
 		usr->padding4 = 0;
-	}
-
-	if (usr->ptr_logon_hrs)	{
-		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
-			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	return True;
@@ -5675,70 +5580,38 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 
 	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name,usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial,usr->hdr_munged_dial.buffer, ps, depth))	/* worksations user can log on from */
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_3 != 0x0) {
+	if (usr->ptr_logon_hrs) {
+		if(!prs_align(ps))
+			return False;
 		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
 			return False;
 		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
 			return False;
+		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
+			return False;
 	} else if (UNMARSHALLING(ps)) {
 		usr->unknown_6 = 0;
 		usr->padding4 = 0;
-	}
-
-	if (usr->ptr_logon_hrs)	{
-		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
-			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	return True;
@@ -5929,9 +5802,6 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
 		break;
 	}
 
-	if(!prs_align(ps))
-		return False;
-
 	return ret;
 }
 
@@ -5979,6 +5849,8 @@ BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
@@ -6186,9 +6058,9 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
 		return False;
 	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
 		return False;
+
 	if(!prs_align(ps))
 		return False;
-
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 
@@ -6325,8 +6197,6 @@ BOOL samr_io_q_get_dom_pwinfo(char *desc, SAMR_Q_GET_DOM_PWINFO * q_u,
 		if(!smb_io_unihdr("", &q_u->hdr_srv_name, ps, depth))
 			return False;
 		if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->hdr_srv_name.buffer, ps, depth))
-			return False;
-		if(!prs_align(ps))
 			return False;
 	}
 
@@ -6508,14 +6378,12 @@ BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER * q_u,
 		return False;
 	if(!smb_io_unistr2("", &q_u->uni_dest_host, q_u->hdr_dest_host.buffer, ps, depth))
 		return False;
+
 	if(!prs_align(ps))
 		return False;
-
 	if(!smb_io_unihdr("", &q_u->hdr_user_name, ps, depth))
 		return False;
 	if(!smb_io_unistr2("", &q_u->uni_user_name, q_u->hdr_user_name.buffer,ps, depth))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	if(!samr_io_enc_passwd("nt_newpass", &q_u->nt_newpass, ps, depth))

@@ -3424,8 +3424,6 @@ void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 				uint32 preferred_len, ENUM_HND *hnd);
 BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
-void free_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n);
-void free_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n);
 BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth);
 void init_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
