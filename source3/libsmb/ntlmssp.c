@@ -121,7 +121,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 {
 	DATA_BLOB struct_blob;
 	fstring dnsname, dnsdomname;
-	uint32 ntlmssp_command, neg_flags, chal_flags;
+	uint32 neg_flags = 0;
+	uint32 ntlmssp_command, chal_flags;
 	char *cliname=NULL, *domname=NULL;
 	const uint8 *cryptkey;
 	const char *target_name;
@@ -131,20 +132,24 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	file_save("ntlmssp_negotiate.dat", request.data, request.length);
 #endif
 
-	if (!msrpc_parse(&request, "CddAA",
-			 "NTLMSSP",
-			 &ntlmssp_command,
-			 &neg_flags,
-			 &cliname,
-			 &domname)) {
-		return NT_STATUS_INVALID_PARAMETER;
+	if (request.length) {
+		if (!msrpc_parse(&request, "CddAA",
+				 "NTLMSSP",
+				 &ntlmssp_command,
+				 &neg_flags,
+				 &cliname,
+				 &domname)) {
+			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
+			dump_data(2, request.data, request.length);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		SAFE_FREE(cliname);
+		SAFE_FREE(domname);
+		
+		debug_ntlmssp_flags(neg_flags);
 	}
-
-	SAFE_FREE(cliname);
-	SAFE_FREE(domname);
-  
-	debug_ntlmssp_flags(neg_flags);
-
+	
 	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state);
 
 	data_blob_free(&ntlmssp_state->chal);
@@ -268,6 +273,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &ntlmssp_state->workstation,
 			 &sess_key,
 			 &neg_flags)) {
+		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
+		dump_data(2, request.data, request.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -357,13 +364,19 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 	uint32 ntlmssp_command;
 	*reply = data_blob(NULL, 0);
 
-	if (!msrpc_parse(&request, "Cd",
-			 "NTLMSSP",
-			 &ntlmssp_command)) {
-		return NT_STATUS_INVALID_PARAMETER;
+	if (request.length) {
+		if (!msrpc_parse(&request, "Cd",
+				 "NTLMSSP",
+				 &ntlmssp_command)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} else {
+		/* 'datagram' mode - no neg packet */
+		ntlmssp_command = NTLMSSP_NEGOTIATE;
 	}
 
 	if (ntlmssp_command != ntlmssp_state->expected_state) {
+		DEBUG(1, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -372,6 +385,7 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 	} else if (ntlmssp_command == NTLMSSP_AUTH) {
 		return ntlmssp_server_auth(ntlmssp_state, request, reply);
 	} else {
+		DEBUG(1, ("unknown NTLMSSP command %u\n", ntlmssp_command, ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
