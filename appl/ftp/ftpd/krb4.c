@@ -341,15 +341,16 @@ int krb4_userok(char *name)
 }
 
 
-int krb4_vprintf(const char *fmt, va_list ap)
+int
+krb4_vprintf(const char *fmt, va_list ap)
 {
-    char buf[10240]; /* XXX */
+    char buf[10240];
     char *p;
     char *enc;
     int code;
     int len;
   
-    vsprintf(buf, fmt, ap);
+    vsnprintf (buf, sizeof(buf), fmt, ap);
     enc = malloc(strlen(buf) + 31);
     if(prot_level == prot_safe){
 	len = krb_mk_safe((u_char*)buf, (u_char*)enc, strlen(buf), &auth_dat.session, 
