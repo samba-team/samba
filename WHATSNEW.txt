@@ -51,6 +51,9 @@ Changed length of fstring to 256 from 128. Longer filenames handled.
 CUPS integration with new printing backend (patches from Michael Sweet).
 Added ADMIN$ IPC share for AS/U integration.
 Policy handle allocation made per pipename specific.
+On PAM (Pluggable Authentication Module) based systems - better debugging
+messages and encrypted password users now have access control verified via
+PAM - Note: Authentication still uses the encrypted password database.
  
 -------------------------------------------------------------
 Previous release notes.
