@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -292,7 +292,7 @@ process_request(unsigned char *buf,
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
 	return 0;
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
-	ret = do_524(&ticket, reply, from);
+	ret = do_524(&ticket, reply, from, (struct sockaddr_in*)addr);
 	free_Ticket(&ticket);
 	return ret;
     }
