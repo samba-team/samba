@@ -2865,25 +2865,17 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			struct ea_list *ea_file_list = NULL;
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
-			put_dos_date2(pdata,0,c_time);
-			put_dos_date2(pdata,4,sbuf.st_atime);
-			put_dos_date2(pdata,8,sbuf.st_mtime);
-			SIVAL(pdata,12,(uint32)file_size);
-			SIVAL(pdata,16,(uint32)allocation_size);
-			SIVAL(pdata,20,mode);
 
 			ea_file_list = get_ea_list_from_file(ea_ctx, conn, fsp, fname, &total_ea_len);
-
 			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
 
-			if (!ea_list || (total_ea_len > data_size - 24)) {
+			if (!ea_list || (total_ea_len > data_size)) {
 				talloc_destroy(ea_ctx);
 				data_size = 4;
 				break;
 			}
 
-			data_size = fill_ea_buffer(ea_ctx, pdata + 24, data_size - 24, conn, ea_list);
-			data_size += 24;
+			data_size = fill_ea_buffer(ea_ctx, pdata, data_size, conn, ea_list);
 			talloc_destroy(ea_ctx);
 			break;
 		}
