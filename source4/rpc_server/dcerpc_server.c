@@ -769,7 +769,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !dcesrv_auth_request(call)) {
-		return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
+		return dcesrv_fault(call, DCERPC_FAULT_LOGON_FAILURE);		
 	}
 
 	/* see if this is a continued packet */
