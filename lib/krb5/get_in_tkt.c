@@ -533,7 +533,7 @@ krb5_get_in_cred(krb5_context context,
 	int ret2;
 
 	ret2 = krb5_rd_error(context, &resp, &error);
-	if(ret2 && ((char*)resp.data)[0] == 4)
+	if(ret2 && resp.data && ((char*)resp.data)[0] == 4)
 	    ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_data_free(&resp);
 	if (ret2 == 0) {
