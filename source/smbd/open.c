@@ -514,7 +514,6 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
         }
 
         broke_oplock = True;
-        *p_all_current_opens_are_level_II = False;
         break;
 
       } else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
