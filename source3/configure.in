@@ -941,9 +941,9 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 ############################################
 # Check if we have libattr
 AC_SEARCH_LIBS(getxattr, [attr])
-AC_CHECK_FUNCS(getxattr, lgetxattr,fgetxattr,listxattr,llistxattr)
-AC_CHECK_FUNCS(flistxattr,removexattr,lremovexattr,fremovexattr)
-AC_CHECK_FUNCS(setxattr,lsetxattr,fsetxattr)
+AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
+AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
