@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,13 +73,6 @@ krb5_build_authenticator (krb5_context context,
   ret = krb5_auth_con_getlocalsubkey(context, auth_context, &auth->subkey);
   if(ret)
       goto fail;
-
-  if(auth->subkey == NULL) {
-      krb5_generate_subkey (context, &cred->session, &auth->subkey);
-      ret = krb5_auth_con_setlocalsubkey(context, auth_context, auth->subkey);
-      if(ret)
-	  goto fail;
-  }
 
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     krb5_generate_seq_number (context,
