@@ -195,10 +195,13 @@ ssize_t read_data(int fd, char *buffer, size_t N)
 	while (total < N) {
 		ret = sys_read(fd,buffer + total,N - total);
 		if (ret == 0) {
-			return 0;
+			return total;
 		}
 		if (ret == -1) {
-			return -1;
+			if (total == 0) {
+				return -1;
+			}
+			return total;
 		}
 		total += ret;
 	}
@@ -222,10 +225,14 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 	while (total < N) {
 		ret = sys_write(fd, buffer + total, N - total);
 		if (ret == -1) {
-			return -1;
-		}
-		if (ret == 0)
+			if (total == 0) {
+				return -1;
+			}
 			return total;
+		}
+		if (ret == 0) {
+			return total;
+		}
 
 		total += ret;
 	}
