@@ -1,10 +1,17 @@
 2000-10-23  Johan Danielsson  <joda@pdc.kth.se>
 
+	* ftpd/ftpd.c: change bad filename message slightly
+
 	* common/buffer.c: HAVE_ST_BLKSIZE -> HAVE_STRUCT_STAT_ST_BLKSIZE
 
 2000-10-08  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (*): check that fds are not too large to select on
+
+2000-08-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c: change redundant password message to something
+	people can understand
 
 2000-07-27  Assar Westerlund  <assar@sics.se>
 
