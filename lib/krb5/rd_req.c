@@ -218,7 +218,7 @@ krb5_verify_ap_req(krb5_context context,
 	time_t start = t.ticket.authtime;
 	if(t.ticket.starttime)
 	    start = *t.ticket.starttime;
-	if(abs(start - now) > context->max_skew || t.ticket.flags.invalid)
+	if(start - now > context->max_skew || t.ticket.flags.invalid)
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	if(now - t.ticket.endtime > context->max_skew)
 	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
