@@ -473,8 +473,8 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
 
-		if (global_client_caps & CAP_STATUS32) {
-			add_to_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+		if (!(global_client_caps & CAP_STATUS32)) {
+			remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
 		}
 
 	}
@@ -623,8 +623,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		if(global_client_caps == 0) {
 			global_client_caps = IVAL(inbuf,smb_vwv11);
 		
-			if (global_client_caps & CAP_STATUS32) {
-				add_to_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+			if (!(global_client_caps & CAP_STATUS32)) {
+				remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
 			}
 
 			/* client_caps is used as final determination if client is NT or Win95. 
