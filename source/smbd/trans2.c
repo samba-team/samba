@@ -1950,9 +1950,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	/*
 	 * NT4 server just returns "invalid query" to this - if we try to answer 
 	 * it then NTws gets a BSOD! (tridge).
+	 * W2K seems to want this. JRA.
 	 */
 
 	case SMB_QUERY_FILE_STREAM_INFO:
+		if (get_remote_arch() != RA_WIN2K)
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 		data_size = 24 + l;
 		SIVAL(pdata,0,pos);
 		SIVAL(pdata,4,size);

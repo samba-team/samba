@@ -3664,24 +3664,17 @@ BOOL make_spoolss_q_setprinter(
 	DEVICEMODE *devmode;
 
 	if (q_u == NULL)
-	{
 		return False;
-	}
 	
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 
 	q_u->level = level;
 	q_u->info.level = level;
 	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
-	switch (level)
-	{
+	switch (level) {
 	case 2:
 		secdesc = info->printers_2->secdesc;
 		devmode = info->printers_2->devmode;
-		
-		/* FIXMEE!!  HACK ALERT!!!  --jerry */
-		info->printers_2->devmode = NULL;
-		info->printers_2->secdesc = NULL;
 		
 		make_spoolss_printer_info_2 (mem_ctx, &q_u->info.info_2, info->printers_2);
 #if 1	/* JERRY TEST */
@@ -3694,7 +3687,7 @@ BOOL make_spoolss_q_setprinter(
 		q_u->secdesc_ctr->sec = secdesc;
 
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
-		q_u->devmode_ctr.size = sizeof(DEVICEMODE) + (3*sizeof(uint32));
+		q_u->devmode_ctr.size = (devmode != NULL) ? sizeof(DEVICEMODE) + (3*sizeof(uint32)) : 0;
 		q_u->devmode_ctr.devmode = devmode;
 #else
 		q_u->secdesc_ctr = NULL;
@@ -3776,15 +3769,16 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
 			return False;
 	} else {
-		uint32 dummy;
+		uint32 dummy = 0;
 
 		/* Parse a NULL security descriptor.  This should really
 		   happen inside the sec_io_desc_buf() function. */
 
 		prs_debug(ps, depth, "", "sec_io_desc_buf");
-		if (!prs_uint32("size", ps, depth + 1, &dummy)) return False;
+		if (!prs_uint32("size", ps, depth + 1, &dummy))
+			return False;
 		if (!prs_uint32("ptr", ps, depth + 1, &dummy)) return
-								       False;
+			False;
 	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
