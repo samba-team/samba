@@ -282,7 +282,7 @@ BOOL initialise_wins(void)
     }
     else
     {
-      DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %ld first IP %s flags = %2x\n",
+      DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %d first IP %s flags = %2x\n",
              name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
     }
 
@@ -1549,9 +1549,9 @@ void wins_write_database(void)
 
     if (namerec->source == REGISTER_NAME)
     {
-      fprintf(fp, "%s#%02x %ld ",
-               namerec->name.name,namerec->name.name_type, /* Ignore scope. */
-               namerec->death_time);
+      fprintf(fp, "%s#%02x %d ",
+	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
+	      (int)namerec->death_time);
 
       for (i = 0; i < namerec->num_ips; i++)
         fprintf(fp, "%s ", inet_ntoa(namerec->ip[i]));
