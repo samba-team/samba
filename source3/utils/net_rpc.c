@@ -844,7 +844,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			else
 				printf("%s\n", user);
 		}
-	} while (!NT_STATUS_IS_OK(result));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
@@ -955,7 +955,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			else
 				printf("%-21.21s\n", groups[i].acct_name);
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
 	do {
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
@@ -970,7 +970,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			else
 				printf("%-21.21s\n", groups[i].acct_name);
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	cli_samr_close(cli, mem_ctx, &domain_pol);
 	/* Get builtin policy handle */
 	
@@ -994,7 +994,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			else
 				printf("%s\n", groups[i].acct_name);
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
