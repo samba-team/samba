@@ -30,7 +30,7 @@ A simple lmhosts file might be:
 #
 # first put ourselves in workgroup MYGROUP using
 # our own net address
-0.0.0.0 MYGROUP G
+0.0.0.0 MYGROUP 255.255.255.0 G
 
 Note in the above that I overrode what workgroup Samba is in using the
 G flag. Also note that the 0.0.0.0 address is used, which will be
@@ -48,7 +48,7 @@ the network which has a broadcast of 192.0.3.255 then this entry would
 do the trick:
 
 # put ourselves in the STAFF workgroup on the other subnet
-192.0.3.255 STAFF G
+192.0.3.255 STAFF 255.255.255.0 G
 
 Notice the G at the end! It is very important you include this as this
 entry without the G could cause a broadcast storm! 
@@ -141,5 +141,13 @@ You have a few options:
 the -B option. This only works if your network setup listens on both
 0s and 1s based broadcasts. The -B option can only control what
 address it sends to, not what it listens on.
+
+MULTIPLE INTERFACES
+===================
+
+Samba now supports machines with multiple network interfaces. If you
+have multiple interfaces then you will need to use the "interfaces"
+option in smb.conf to configure them. See smb.conf(5) for details.
+
 
 
