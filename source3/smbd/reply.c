@@ -114,14 +114,20 @@ static NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				/* 
 				 * Potential mb char with second char a directory separator.
 				 * All the encodings we care about are 2 byte only, so do a
-				 * conversion to unicode. If the 2 byte char won't convert then
-				 * it's probably a one byte char with a real directory separator
-				 * following, so only copy one byte. If it will convert then
-				 * copy both bytes.
+				 * conversion to unicode. If the one byte char converts then
+				 * it really is a directory separator following. Otherwise if
+				 * the two byte character converts (and it should or our assumption
+				 * about character sets is broken and we panic) then copy both
+				 * bytes as it's a MB character, not a directory separator.
 				 */
+
 				uint16 ucs2_val;
-				if (convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2) == 2) {
+				if (convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2) == 2) {
+					;
+				} else if (convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2) == 2) {
 					*d++ = *s++;
+				} else {
+					smb_panic("check_path_syntax: directory separator assumptions invalid !\n");
 				}
 			}
 			/* Just copy the char (or the second byte of the mb char). */
