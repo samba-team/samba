@@ -80,7 +80,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 	}
 
-	if (!modules) { /* no modules in the options, look for @MODULES in the db */
+	if (!modules && strcmp("ldap", ldb->modules->ops->name)) { /* no modules in the options, look for @MODULES in the db (not for ldap) */
 		int ret, j, k;
 		char * attrs[] = { "@MODULE" };
 		struct ldb_message **msg;

@@ -1,6 +1,4 @@
-#!/bin/sh
-
-export PATH=/usr/sbin:$PATH
+#!/bin/sh 
 
 rm -rf tests/tmp/db
 mkdir -p tests/tmp/db
