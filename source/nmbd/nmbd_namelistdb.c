@@ -445,7 +445,8 @@ void add_samba_names_to_subnet(struct subnet_record *subrec)
   /* These names are added permanently (ttl of zero) and will NOT be
      refreshed.  */
 
-  if((subrec == unicast_subnet) || (subrec == wins_server_subnet))
+  if((subrec == unicast_subnet) || (subrec == wins_server_subnet) ||
+     (subrec == remote_broadcast_subnet) )
   {
     struct subnet_record *bcast_subrecs;
     int i;
