@@ -732,9 +732,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   prepare_break_message( outbuf, fsp, False);
   send_smb(Client, outbuf);
 
-  if(get_remote_arch() == RA_WIN95)
-    timeout = 200;
-
   /* Remember we just sent an oplock break on this file. */
   fsp->sent_oplock_break = True;
 
@@ -764,17 +761,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
     if(receive_smb(Client,inbuf, timeout) == False)
     {
 
-      /*
-       * Win95 specific oplock processing...
-       */
-
-      if (smb_read_error == READ_TIMEOUT && timeout == 200) {
-        send_null_session_msg(Client);
-        timeout = ((OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000) -
-                    ((OPLOCK_BREAK_RESENDS - break_counter)*200);
-        continue;
-      }
-
       /* 
        * Isaac suggestd that if a MS client doesn't respond to a
        * oplock break request then we might try resending
@@ -785,9 +771,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
       if (smb_read_error == READ_TIMEOUT && break_counter--) {
         DEBUG(0, ( "oplock_break resend\n" ) );
         send_smb(Client, outbuf);
-
-        if(get_remote_arch() == RA_WIN95)
-          timeout = 200;
         continue;
       }
 
