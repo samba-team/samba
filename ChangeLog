@@ -1,5 +1,11 @@
+2000-03-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): evil
+	hack to avoid recursion
+
 2000-03-04  Assar Westerlund  <assar@sics.se>
 
+	* kuser/kinit.c: add `krb4_get_tickets' per realm. add --anonymous
 	* lib/krb5/krb5.h (krb5_get_init_creds_opt): add `anonymous' and
 	KRB5_GET_INIT_CREDS_OPT_ANONYMOUS
 	* lib/krb5/init_creds_pw.c (get_init_creds_common): set
