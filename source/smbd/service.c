@@ -339,24 +339,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	
-#ifdef HAVE_GETGRNAM 
-	if (*lp_force_group(snum)) {
-		struct group *gptr;
-		pstring gname;
-		
-		StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
-		/* default service may be a group name 		*/
-		string_sub(gname,"%S",service);
-		gptr = (struct group *)getgrnam(gname);
-		
-		if (gptr) {
-			conn->gid = gptr->gr_gid;
-			DEBUG(3,("Forced group %s\n",gname));
-		} else {
-			DEBUG(1,("Couldn't find group %s\n",gname));
-		}
-	}
-#endif
+	/*
+	 * If force user is true, then store the
+	 * given userid and also the primary groupid
+	 * of the user we're forcing.
+	 */
 	
 	if (*lp_force_user(snum)) {
 		struct passwd *pass2;
@@ -369,6 +356,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
+			conn->gid = pass2->pw_gid;
 			string_set(&conn->user,fuser);
 			fstrcpy(user,fuser);
 			conn->force_user = True;
@@ -377,6 +365,57 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			DEBUG(1,("Couldn't find user %s\n",fuser));
 		}
 	}
+
+#ifdef HAVE_GETGRNAM 
+	/*
+	 * If force group is true, then override
+	 * any groupid stored for the connecting user.
+	 */
+	
+	if (*lp_force_group(snum)) {
+		struct group *gptr;
+		pstring gname;
+		pstring tmp_gname;
+		BOOL user_must_be_member = False;
+		
+		StrnCpy(tmp_gname,lp_force_group(snum),sizeof(pstring)-1);
+
+		if (tmp_gname[0] == '+') {
+			user_must_be_member = True;
+			StrnCpy(gname,&tmp_gname[1],sizeof(pstring)-2);
+		} else {
+			StrnCpy(gname,tmp_gname,sizeof(pstring)-1);
+		}
+		/* default service may be a group name 		*/
+		string_sub(gname,"%S",service);
+		gptr = (struct group *)getgrnam(gname);
+		
+		if (gptr) {
+			/*
+			 * If the user has been forced and the forced group starts
+			 * with a '+', then we only set the group to be the forced
+			 * group if the forced user is a member of that group.
+			 * Otherwise, the meaning of the '+' would be ignored.
+			 */
+			if (conn->force_user && user_must_be_member) {
+				int i;
+				for (i = 0; gptr->gr_mem[i] != NULL; i++) {
+					if (strcmp(user,gptr->gr_mem[i]) == 0) {
+						conn->gid = gptr->gr_gid;
+						DEBUG(3,("Forced group %s for member %s\n",gname,user));
+						break;
+					}
+				}
+			}
+			else {
+				conn->gid = gptr->gr_gid;
+			}
+			DEBUG(3,("Forced group %s\n",gname));
+		} else {
+			DEBUG(1,("Couldn't find group %s\n",gname));
+		}
+	}
+#endif /* HAVE_GETGRNAM */
 
 	{
 		pstring s;
@@ -474,6 +513,21 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		standard_sub(conn,cmd);
 		smbrun(cmd,NULL,False);
 	}
+
+	/*
+	 * Print out the 'connected as' stuff here as we need
+	 * to know the effective uid and gid we will be using.
+	 */
+
+	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
+		extern int Client;
+		
+		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
+		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "as user %s ", user );
+		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
+		dbgtext( "(pid %d)\n", (int)getpid() );
+	}
 	
 	/* we've finished with the sensitive stuff */
 	unbecome_user();
@@ -483,16 +537,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		set_namearray( &conn->veto_list, lp_veto_files(SNUM(conn)));
 		set_namearray( &conn->hide_list, lp_hide_files(SNUM(conn)));
 		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
-	}
-	
-	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		extern int Client;
-		
-		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
-		dbgtext( "as user %s ", user );
-		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
-		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 	
 	return(conn);
