@@ -899,12 +899,6 @@ out:
     free(client_str);
 }
 
-
-void
-handle_v4(krb5_context context,
-	  int len,
-	  int fd);
-
 void
 handle_v4(krb5_context context,
 	  int len,
