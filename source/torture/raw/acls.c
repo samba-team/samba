@@ -1214,6 +1214,25 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("failed: w2k3 ACL bug (allowed open when ACL should deny)\n");
+		ret = False;
+		fnum2 = io.ntcreatex.out.fnum;
+		smbcli_close(cli->tree, fnum2);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
+
+	printf("trying without execute\n");
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL & ~SEC_FILE_EXECUTE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("and with full permissions again\n");
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
