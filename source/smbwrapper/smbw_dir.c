@@ -202,30 +202,30 @@ int smbw_dir_open(const char *fname)
 
 	if ((p=strstr(srv->server_name,"#01"))) {
 		*p = 0;
-		smbw_server_add(".",0,"");
-		smbw_server_add("..",0,"");
+		smbw_server_add(".",0,"", NULL);
+		smbw_server_add("..",0,"", NULL);
 		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_DOMAIN_ENUM,
 				  smbw_server_add, NULL);
 		*p = '#';
 	} else if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));
 		*p = 0;
-		smbw_server_add(".",0,"");
-		smbw_server_add("..",0,"");
+		smbw_server_add(".",0,"", NULL);
+		smbw_server_add("..",0,"", NULL);
 		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
 				  smbw_server_add, NULL);
 		*p = '#';
 	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
-		smbw_share_add(".",0,"");
-		smbw_share_add("..",0,"");
+		smbw_share_add(".",0,"", NULL);
+		smbw_share_add("..",0,"", NULL);
 		if (cli_RNetShareEnum(&srv->cli, smbw_share_add, NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
 	} else if (strncmp(srv->cli.dev,"LPT",3) == 0) {
-		smbw_share_add(".",0,"");
-		smbw_share_add("..",0,"");
+		smbw_share_add(".",0,"", NULL);
+		smbw_share_add("..",0,"", NULL);
 		if (cli_print_queue(&srv->cli, smbw_printjob_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
