@@ -1,3 +1,12 @@
+2003-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* copy_ccache.c: rename
+	gss_krb5_extract_authz_data_from_sec_context to
+	gsskrb5_extract_authz_data_from_sec_context
+
+	* gssapi.h: rename gss_krb5_extract_authz_data_from_sec_context to
+	gsskrb5_extract_authz_data_from_sec_context
+	
 2003-08-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* copy_ccache.c (gss_krb5_extract_authz_data_from_sec_context):
