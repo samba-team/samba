@@ -2282,10 +2282,52 @@ static void run_deletetest(int dummy)
 
 	printf("sixth delete on close test succeeded.\n");
 
+	/* Test 7 ... */
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
-    printf("finished delete test 1\n");
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0);
+								
+	if (fnum1 == -1) {
+		printf("[7] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[7] setting delete_on_close on file failed !\n");
+        return;
+    }
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, False)) {
+        printf("[7] unsetting delete_on_close on file failed !\n");
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[7] close - 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	/* This next open should succeed - we reset the flag. */
+
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[7] close - 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	printf("seventh delete on close test succeeded.\n");
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+    printf("finished delete test\n");
 
     close_connection(&cli1);
 }
