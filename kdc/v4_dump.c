@@ -31,11 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#ifdef KRB4
 #include "hprop.h"
 
 RCSID("$Id$");
 
+#ifdef KRB4
 static time_t
 time_parse(const char *cp)
 {
