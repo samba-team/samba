@@ -166,8 +166,8 @@ struct name_record *find_name(struct name_record *n,
       {
         continue;
       }
-      DEBUG(9,("find_name: found name %s(%02x)\n", 
-                name->name, name->name_type));
+      DEBUG(9,("find_name: found name %s(%02x) source=%d\n", 
+                name->name, name->name_type, ret->source));
       return ret;
     }
   }
@@ -185,8 +185,8 @@ struct name_record *find_name(struct name_record *n,
   FIND_WINS - look for names in the WINS record
   **************************************************************************/
 struct name_record *find_name_search(struct subnet_record **d,
-			struct nmb_name *name,
-			int search, struct in_addr ip)
+				     struct nmb_name *name,
+				     int search, struct in_addr ip)
 {
   if (d == NULL) return NULL; /* bad error! */
 	
@@ -558,44 +558,3 @@ void expire_names(time_t t)
 }
 
 
-/***************************************************************************
-  assume a WINS name is a dns name, and do a gethostbyname() on it.
-  ****************************************************************************/
-struct name_record *dns_name_search(struct nmb_name *question, int Time)
-{
-  int name_type = question->name_type;
-  char *qname = question->name;
-  BOOL dns_type = (name_type == 0x20 || name_type == 0);
-  struct in_addr dns_ip;
-
-  if (wins_subnet == NULL) 
-    return NULL;
-
-  DEBUG(3,("Search for %s - ", namestr(question)));
-
-  /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
-  if (!dns_type)
-  {
-    DEBUG(3,("types 0x20 0x0 only: name not found\n"));
-    return NULL;
-  }
-
-  /* look it up with DNS */      
-  dns_ip.s_addr = interpret_addr(qname);
-
-  if (!dns_ip.s_addr)
-  {
-    /* no luck with DNS. We could possibly recurse here XXXX */
-    DEBUG(3,("not found. no recursion.\n"));
-    /* add the fail to WINS cache of names. give it 1 hour in the cache */
-    add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
-                  True, True);
-    return NULL;
-  }
-
-  DEBUG(3,("found with DNS: %s\n", inet_ntoa(dns_ip)));
-
-  /* add it to our WINS cache of names. give it 2 hours in the cache */
-  return add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
-                         True,True);
-}

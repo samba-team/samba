@@ -171,6 +171,7 @@ void initiate_netbios_packet(uint16 *id,
   p.fd = fd;
   p.timestamp = time(NULL);
   p.packet_type = NMB_PACKET;
+  p.locked = False;
   
   debug_nmb_packet(&p);
   
@@ -482,32 +483,31 @@ static void process_nmb(struct packet_struct *p)
   ******************************************************************/
 void run_packet_queue()
 {
-  struct packet_struct *p;
+	struct packet_struct *p, *nextp;
 
-  while ((p=packet_queue))
-    {
-      switch (p->packet_type)
-	{
-	case NMB_PACKET:
-	  process_nmb(p);
-	  break;
-	  
-	case DGRAM_PACKET:
-	  process_dgram(p);
-	  break;
+	while ((p=packet_queue)) {
+		packet_queue = p->next;
+		if (packet_queue) packet_queue->prev = NULL;
+		p->next = p->prev = NULL;
+
+		switch (p->packet_type) {
+		case NMB_PACKET:
+			process_nmb(p);
+			break;
+			
+		case DGRAM_PACKET:
+			process_dgram(p);
+			break;
+		}
+		free_packet(p);
 	}
-      
-      packet_queue = packet_queue->next;
-      if (packet_queue) packet_queue->prev = NULL;
-      free_packet(p);
-    }
 }
+
 
 /****************************************************************************
   Create an fd_set containing all the sockets in the subnet structures,
   plus the broadcast sockets.
   ***************************************************************************/
-
 static BOOL create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_number)
 {
   int *sock_array = NULL;
@@ -582,6 +582,9 @@ BOOL listen_for_packets(BOOL run_election)
   fd_set fds;
   int selrtn;
   struct timeval timeout;
+#ifndef SYNC_DNS
+  int dns_fd;
+#endif
 
   if(listen_set == NULL)
   {
@@ -593,6 +596,14 @@ BOOL listen_for_packets(BOOL run_election)
   }
 
   memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));
+
+#ifndef SYNC_DNS
+  dns_fd = asyncdns_fd();
+  if (dns_fd != -1) {
+	  FD_SET(dns_fd, &fds);
+  }
+#endif
+
 
   /* during elections and when expecting a netbios response packet we
   need to send election packets at tighter intervals 
@@ -611,6 +622,12 @@ BOOL listen_for_packets(BOOL run_election)
   if(selrtn > 0)
   {
     int i;
+
+#ifndef SYNC_DNS
+    if (dns_fd != -1 && FD_ISSET(dns_fd,&fds)) {
+	    run_dns_queue();
+    }
+#endif
 
     for(i = 0; i < listen_number; i++)
     {

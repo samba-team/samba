@@ -332,14 +332,6 @@ static void process(void)
 ****************************************************************************/
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
-  struct hostent *hp;
- 
-  /* get host info */
-  if ((hp = Get_Hostbyname(myhostname)) == 0) {
-    DEBUG(0,( "Get_Hostbyname: Unknown host. %s\n",myhostname));
-    return False;
-  }   
-
   /* The sockets opened here will be used to receive broadcast
      packets *only*. Interface specific sockets are opened in
      make_subnet() in namedbsubnet.c. Thus we bind to the
@@ -598,6 +590,10 @@ static void usage(char *pname)
     become_daemon();
   }
 
+#ifndef SYNC_DNS
+  start_async_dns();
+#endif
+
   if (*pidFile)
     {
       int     fd;
@@ -653,6 +649,7 @@ static void usage(char *pname)
 
   /* We can only take sigterm signals in the select. */
   BlockSignals(True,SIGTERM);
+
   process();
   close_sockets();
 

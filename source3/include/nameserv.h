@@ -363,17 +363,18 @@ struct dgram_packet {
  list of nmb packets */
 struct packet_struct
 {
-  struct packet_struct *next;
-  struct packet_struct *prev;
-  struct in_addr ip;
-  int port;
-  int fd;
-  time_t timestamp;
-  enum packet_type packet_type;
-  union {
-    struct nmb_packet nmb;
-    struct dgram_packet dgram;
-  } packet;
+	struct packet_struct *next;
+	struct packet_struct *prev;
+	BOOL locked;
+	struct in_addr ip;
+	int port;
+	int fd;
+	time_t timestamp;
+	enum packet_type packet_type;
+	union {
+		struct nmb_packet nmb;
+		struct dgram_packet dgram;
+	} packet;
 };
 
 /* NETLOGON opcodes */
