@@ -298,11 +298,10 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 
 	if (domain->loopback) {
 		/* Is this an alias? */
-		result = passdb_name_to_sid(domain, mem_ctx, domain_name,
-					    name, sid, type);
-
-		if (NT_STATUS_IS_OK(result))
-			return result;
+		if (pdb_find_alias(name, sid)) {
+			*type = SID_NAME_ALIAS;
+			return NT_STATUS_OK;
+		}
 	}
 
 	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
@@ -355,13 +354,18 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_static(sid),
 			domain->name ));
 
-	if (domain->loopback) {
-		/* Is this an alias? */
-		result = passdb_sid_to_name(domain, mem_ctx, sid, domain_name,
-					    name, type);
+	if (domain->loopback)  {
+		struct acct_info info;
 
-		if (NT_STATUS_IS_OK(result))
-			return result;
+		/* Is this an alias? */
+
+		if (pdb_get_aliasinfo(sid, &info)) {
+			*domain_name = talloc_strdup(mem_ctx, domain->name);
+			*name = talloc_strdup(mem_ctx, info.acct_name);
+			*type = SID_NAME_ALIAS;
+
+			return NT_STATUS_OK;
+		}
 	}
 
 	retry = 0;

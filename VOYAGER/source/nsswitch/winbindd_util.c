@@ -292,7 +292,6 @@ BOOL init_domain_list(void)
 {
 	extern DOM_SID global_sid_Builtin;
 	extern struct winbindd_methods cache_methods;
-	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
 
 	/* Free existing list */
@@ -339,8 +338,9 @@ BOOL init_domain_list(void)
 
 	/* Add our local SAM domains */
 
-	add_trusted_domain("BUILTIN", NULL, &passdb_methods,
-			   &global_sid_Builtin);
+	domain = add_trusted_domain("BUILTIN", NULL, &cache_methods,
+				    &global_sid_Builtin);
+	domain->loopback = True;
 
 	/* avoid rescanning this right away */
 	last_trustdom_scan = time(NULL);
