@@ -390,9 +390,9 @@ struct share_ops *locking_slow_init(int ronly);
 
 int str_checksum(char *s);
 BOOL is_8_3(char *fname, BOOL check_case);
-void create_mangled_stack(int size);
+void reset_mangled_stack( int size );
 BOOL check_mangled_stack(char *s);
-BOOL is_mangled(char *s);
+BOOL is_mangled( char *s );
 void mangle_name_83(char *s);
 BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
