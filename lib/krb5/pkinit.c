@@ -80,7 +80,7 @@ RCSID("$Id$");
   }									\
 }
 
-struct krb5_pk_init_ctx_openssl_data {
+struct krb5_pk_init_ctx_data {
     STACK_OF(X509) *cert;
     EVP_PKEY *private_key;
     STACK_OF(X509) *trusted_certs;
@@ -383,7 +383,7 @@ _krb5_pk_mk_padata(krb5_context context,
 		   unsigned nonce,
 		   METHOD_DATA *md)
 {
-    krb5_pk_init_ctx_openssl ctx = c;
+    krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
     const heim_oid *oid;
     PA_PK_AS_REQ req;
@@ -921,7 +921,7 @@ pk_verify_host(krb5_context context, X509 *host)
 static krb5_error_code
 pk_rd_pa_reply_enckey(krb5_context context,
                       ContentInfo *rep,
-		      krb5_pk_init_ctx_openssl ctx,
+		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
 	       	      unsigned nonce,
 	       	      PA_DATA *pa,
@@ -1116,7 +1116,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 static krb5_error_code
 pk_rd_pa_reply_dh(krb5_context context,
                   ContentInfo *rep,
-		  krb5_pk_init_ctx_openssl ctx,
+		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
                   unsigned nonce,
                   PA_DATA *pa,
@@ -1296,7 +1296,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		     PA_DATA *pa,
 		     krb5_keyblock **key)
 {
-    krb5_pk_init_ctx_openssl ctx = c;
+    krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
     PA_PK_AS_REP rep;
     size_t size;
@@ -1323,10 +1323,11 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	}
 #if 0
 	convert_rep(&w2krep, &rep);
-#endif
 	printf("decoing of win reply succeded\n");
-	ret = EINVAL; /* XXX */
+#endif
+	krb5_set_error_string(context, "w2k pkinit support missing");
 	free_PA_PK_AS_REP_Win2k(&w2krep);
+	return EINVAL;
     }
 
     switch(rep.element) {
