@@ -56,7 +56,7 @@ init_socket(struct descr *d, int type, int port)
     memset(d, 0, sizeof(*d));
     d->s = socket(AF_INET, type, 0);
     if(d->s < 0){
-	warn("socket(AF_INET, %d, 0)", type);
+	krb5_warn(context, errno, "socket(AF_INET, %d, 0)", type);
 	d->s = -1;
 	return;
     }
@@ -65,13 +65,13 @@ init_socket(struct descr *d, int type, int port)
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
     if(bind(d->s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	warn("bind(%d)", port);
+	krb5_warn(context, errno, "bind(%d)", port);
 	close(d->s);
 	d->s = -1;
 	return;
     }
     if(type == SOCK_STREAM && listen(d->s, SOMAXCONN) < 0){
-	warn("listen");
+	krb5_warn(context, errno, "listen");
 	close(d->s);
 	d->s = -1;
     }
@@ -178,7 +178,7 @@ handle_udp(struct descr *d)
     n = recvfrom(d->s, buf, max_request, 0, 
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
-	warn("recvfrom");
+	krb5_warn(context, errno, "recvfrom");
 	goto out;
     }
     if(n == 0){
@@ -213,7 +213,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	from_len = sizeof(from);
 	s = accept(d[index].s, (struct sockaddr*)&from, &from_len);
 	if(s < 0){
-	    warn("accept");
+	    krb5_warn(context, errno, "accept");
 	    return;
 	}
 	if(min_free == -1){
@@ -229,7 +229,7 @@ handle_tcp(struct descr *d, int index, int min_free)
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, 
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
-	warn("recvfrom");
+	krb5_warn(context, errno, "recvfrom");
 	return;
     }
     if(d[index].size - d[index].len < n){
@@ -346,7 +346,7 @@ loop(void)
 	    struct descr *tmp;
 	    tmp = realloc(d, (ndescr + 4) * sizeof(*d));
 	    if(tmp == NULL)
-		warnx("No memory");
+		krb5_warnx(context, "No memory");
 	    else{
 		d = tmp;
 		memset(d + ndescr, 0, 4 * sizeof(*d));
@@ -359,7 +359,7 @@ loop(void)
 	case 0:
 	    break;
 	case -1:
-	    warn("select");
+	    krb5_warn(context, errno, "select");
 	    break;
 	default:
 	    for(i = 0; i < ndescr; i++)
