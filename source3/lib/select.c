@@ -28,9 +28,9 @@
 
    this means all Samba signal handlers should call sys_select_signal()
 */
-static int initialised;
+static pid_t initialised;
 static int select_pipe[2];
-static VOLATILE SIG_ATOMIC_T pipe_written, pipe_read;
+static VOLATILE unsigned pipe_written, pipe_read;
 
 
 /*******************************************************************
@@ -56,12 +56,12 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
 	int ret;
 
-	if (!initialised) {
-		initialised = 1;
+	if (initialised != sys_getpid()) {
+		initialised = sys_getpid();
 		pipe(select_pipe);
 	}
 
-	maxfd = MAX(select_pipe[0], maxfd);
+	maxfd = MAX(select_pipe[0]+1, maxfd);
 	FD_SET(select_pipe[0], fds);
 	errno = 0;
 	ret = select(maxfd,fds,NULL,NULL,tval);
