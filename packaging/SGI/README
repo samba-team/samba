@@ -16,9 +16,9 @@ is created from the samba version number plus a release number.
 Each section of the samba version number forms 2 digits of the
 version number (with leading zeros if necessary).
 
-samba version 1.9.16   first release would become  0109160000
-samba version 1.9.16p9 first release would become  0109160900
-samba version 1.9.16p9 second release would become 0109160901
+samba version 1.9.16        would become  0109160000
+samba version 1.9.16p9      would become  0109160900
+samba version 1.9.16alpha9  would become  0109160009
 
 You can enable all printers on your system to be used by samba
 by running the script /usr/samba/mkprintcap.sh
@@ -31,9 +31,12 @@ inetd you can run the script /usr/samba/inetd.sh.
 To create a Samba distribution you must have the Documenter's WorkBench
 package installed to format the manual pages. In addition you need
 to have the Software Packager software (inst_dev) installed to
-generate the inst images.
+generate the inst images, and Perl to generate the spec and idb files.
 
-From /usr/samba/packaging/SGI directory run the mkrelease.sh script. 
-This script uses Perl to generate the Makefile with the proper defines.
-The package files will be placed in ./bins
+From /usr/samba/packaging/SGI directory run the mkrelease.sh script.
+There is one optional argument which is the major release number of the
+OS version (4, 5, or 6) you desire.  If no number is specified it defaults
+to 6.  This script uses Perl to generate the Makefile with the proper 
+defines and the packaging files samba.spec and samba.idb.  The binary 
+package files will be placed in ./bins
 
