@@ -1647,10 +1647,12 @@ static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
 	printf("%s\n", timestring(True));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info->change_id);
 
-
 	/* Set the printer data */
 	
-	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, argv[2], argv[3]);
+	result = cli_spoolss_setprinterdata(
+		cli, mem_ctx, &pol, argv[2], REG_SZ, argv[3], 
+		strlen(argv[3]) + 1);
+		
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
 		goto done;
