@@ -103,7 +103,7 @@
 	      <varlistentry>
 		<term>ntlmssp-client-1</term>
 		<listitem><para>
-                Cleint-side helper for use with arbitary external
+                Client-side helper for use with arbitary external
 		programs that may wish to use Samba's NTLMSSP 
 		authentication knowlege. </para>
 		  <para>This helper is a client, and as such may be run by any
