@@ -188,29 +188,28 @@ typedef struct unistr3_info
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
 typedef struct domrid2_info
 {
-  uint32 type; /* value is 5 */
-  uint32 undoc; /* value is non-zero */
-  uint32 rid;
-  uint32 rid_idx; /* don't know what this is */
+	uint8 type; /* value is SID_NAME_USE enum */
+	uint32 rid;
+	uint32 rid_idx; /* referenced domain index */
 
 } DOM_RID2;
 
 /* DOM_RID3 - domain RID structure for samr pipe */
 typedef struct domrid3_info
 {
-  uint32 rid;        /* domain-relative (to a SID) id */
-  uint32 type1;      /* value is 0x1 */
-  uint32 ptr_type;   /* undocumented pointer */
-  uint32 type2;      /* value is 0x1 */
+	uint32 rid;        /* domain-relative (to a SID) id */
+	uint32 type1;      /* value is 0x1 */
+	uint32 ptr_type;   /* undocumented pointer */
+	uint32 type2;      /* value is 0x1 */
 
 } DOM_RID3;
 
 /* DOM_RID4 - rid + user attributes */
 typedef struct domrid4_info
 {
-  uint32 unknown;      
-  uint16 attr;
-  uint32 rid;  /* user RID */
+	uint32 unknown;      
+	uint16 attr;
+	uint32 rid;  /* user RID */
 
 } DOM_RID4;
 

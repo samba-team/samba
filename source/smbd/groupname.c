@@ -207,16 +207,9 @@ failed. Error was %s.\n", grp->unix_name, strerror(errno) ));
 				  grp->nt_domain));
 			return False;
 		}
-
-		DEBUG(0,("unix_name_to_group_info: cannot resolve domain %s\n",
-			  grp->nt_domain));
-
-		return False;
 	}
-	else
-	{
-		return make_mydomain_sid(grp, type);
-	}
+
+	return make_mydomain_sid(grp, type);
 }
 
 static BOOL make_name_entry(name_map_entry **new_ep,
@@ -300,8 +293,6 @@ static void load_name_map(GROUP_TYPE type)
 		map_file           = aliasname_map_file;
 		map_list           = &aliasname_map_list;
 	}
-
-	DEBUG(10,("load_name_map : %s\n", map_file));
 
 	if (!(*initialised))
 	{

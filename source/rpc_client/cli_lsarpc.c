@@ -99,6 +99,119 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a LSA Lookup Names
+****************************************************************************/
+BOOL do_lsa_lookup_names(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_names,
+			char **names,
+			DOM_SID **sids,
+			int *num_sids)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_LOOKUP_NAMES q_l;
+	BOOL valid_response = False;
+
+	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_LOOKUP_NAMES */
+
+	DEBUG(4,("LSA Lookup NAMEs\n"));
+
+	/* store the parameters */
+	make_q_lookup_names(&q_l, hnd, num_names, names);
+
+	/* turn parameters into data stream */
+	lsa_io_q_lookup_names("", &q_l, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &buf, &rbuf))
+	{
+		LSA_R_LOOKUP_NAMES r_l;
+		DOM_R_REF ref;
+		DOM_RID2 t_rids[MAX_LOOKUP_SIDS];
+		BOOL p;
+
+		ZERO_STRUCT(ref);
+		ZERO_STRUCT(t_rids);
+
+		r_l.dom_ref = &ref;
+		r_l.dom_rid = t_rids;
+
+		lsa_io_r_lookup_names("", &r_l, &rbuf, 0);
+		p = rbuf.offset != 0;
+		
+		if (p && r_l.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_l.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			if (r_l.undoc_buffer != 0 && ref.undoc_buffer != 0)
+			{
+				valid_response = True;
+			}
+		}
+
+		if (num_sids != NULL && valid_response)
+		{
+			(*num_sids) = r_l.num_entries;
+		}
+		if (valid_response)
+		{
+			int i;
+			for (i = 0; i < r_l.num_entries; i++)
+			{
+				if (t_rids[i].rid_idx >= ref.num_ref_doms_1 &&
+				    t_rids[i].rid_idx != 0xffffffff)
+				{
+					DEBUG(0,("LSA_LOOKUP_NAMES: domain index %d out of bounds\n",
+					          t_rids[i].rid_idx));
+					valid_response = False;
+					break;
+				}
+			}
+		}
+
+		if (sids != NULL && valid_response && r_l.num_entries != 0)
+		{
+			(*sids) = (DOM_SID*)malloc((*num_sids) * sizeof(DOM_SID));
+		}
+
+		if (sids != NULL && (*sids) != NULL)
+		{
+			int i;
+			/* take each name, construct a SID */
+			for (i = 0; i < (*num_sids); i++)
+			{
+				uint32 dom_idx = t_rids[i].rid_idx;
+				DOM_SID *sid = &(*sids)[i];
+				if (dom_idx != 0xffffffff)
+				{
+					sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+				}
+				else
+				{
+					ZERO_STRUCTP(sid);
+				}
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_response;
+}
+
+/****************************************************************************
 do a LSA Lookup SIDs
 ****************************************************************************/
 BOOL do_lsa_lookup_sids(struct cli_state *cli,
@@ -190,13 +303,21 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 				fstring dom_name;
 				fstring full_name;
 				uint32 dom_idx = t_names.name[i].domain_idx;
-				fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
-				fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
-				
-				slprintf(full_name, sizeof(full_name), "\\%s\\%s",
-				         dom_name, name);
 
-				(*names)[i] = strdup(full_name);
+				if (dom_idx != 0xffffffff)
+				{
+					fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
+					fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
+					
+					slprintf(full_name, sizeof(full_name), "\\%s\\%s",
+						 dom_name, name);
+
+					(*names)[i] = strdup(full_name);
+				}
+				else
+				{
+					(*names)[i] = NULL;
+				}
 			}
 		}
 	}
