@@ -1,3 +1,13 @@
+Tue Jun 10 00:35:54 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/asn1/der*,gen.c: krb5_data -> octet_string, char * ->
+ 	general_string
+
+	* lib/asn1/libasn1.h: Moved stuff from asn1_locl.h that doesn't
+ 	have anything to do with asn1_compile.
+
+	* lib/asn1/asn1_locl.h: Remove der.h. Add some prototypes.
+
 Sun Jun  8 03:51:55 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_in_tkt.c: Do PA-ENC-TS-ENC the correct way.
