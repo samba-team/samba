@@ -276,11 +276,16 @@ you would not want to see would be:
 	<title>Compiling samba with Active Directory support</title>
 	
 	<para>In order to compile samba with ADS support, you need to have installed
-	on your system: 
-	<simplelist>
-	<member>the MIT kerberos development libraries (either install from the sources or use a package). The heimdal libraries will not work.</member>
-	<member>the OpenLDAP development libraries.</member>
-</simplelist></para>
+	on your system:</para>
+	<itemizedlist>
+	
+	    <listitem><para>the MIT kerberos development libraries
+	    (either install from the sources or use a package). The
+	    heimdal libraries will not work.</para></listitem>
+	
+	    <listitem><para>the OpenLDAP development libraries.</para></listitem>
+	    
+	</itemizedlist>
 
 	<para>If your kerberos libraries are in a non-standard location then
 	  remember to add the configure option --with-krb5=DIR.</para>
@@ -290,7 +295,7 @@ you would not want to see would be:
 		  <para><programlisting>
 #define HAVE_KRB5 1
 #define HAVE_LDAP 1
-		  </programlisting></para>
+</programlisting></para>
 
 	  <para>If it doesn't then configure did not find your krb5 libraries or
 	    your ldap libraries. Look in config.log to figure out why and fix
@@ -301,10 +306,10 @@ you would not want to see would be:
 
 	<para>On Debian you need to install the following packages:</para>
 	<para>
-	<simplelist>
-	<member>libkrb5-dev</member>
-	<member>krb5-user</member>
-	</simplelist>
+	<itemizedlist>
+	<listitem>libkrb5-dev</listitem>
+	<listitem>krb5-user</listitem>
+	</itemizedlist>
 	</para>
 	</sect3>
 
@@ -313,11 +318,11 @@ you would not want to see would be:
 
 	<para>On RedHat this means you should have at least: </para>
 	<para>
-	<simplelist>
-	<member>krb5-workstation (for kinit)</member>
-	<member>krb5-libs (for linking with)</member>
-	<member>krb5-devel (because you are compiling from source)</member>
-	</simplelist>
+	<itemizedlist>
+	<listitem>krb5-workstation (for kinit)</listitem>
+	<listitem>krb5-libs (for linking with)</listitem>
+	<listitem>krb5-devel (because you are compiling from source)</listitem>
+	</itemizedlist>
 	</para>
 
 	<para>in addition to the standard development environment.</para>
