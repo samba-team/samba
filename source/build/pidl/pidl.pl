@@ -22,6 +22,7 @@ use eparser;
 use validator;
 use util;
 use template;
+use swig;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -33,6 +34,7 @@ my($opt_server) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
+my($opt_swig) = 0;
 my($opt_output);
 
 my $idl_parser = new idl;
@@ -86,7 +88,8 @@ GetOptions (
 	    'parser' => \$opt_parser,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
-	    'keep' => \$opt_keep
+	    'keep' => \$opt_keep,
+	    'swig' => \$opt_swig
 	    );
 
 if ($opt_help) {
@@ -153,6 +156,13 @@ sub process_file($)
 		print OUT "#include \"ndr_$basename.h\"\n";
 		print OUT "#include \"packet-dcerpc-proto-$basename.h\"\n";
 		close(OUT);
+	}
+
+	if ($opt_swig) {
+	        my($filename) = $output;
+	        $filename =~ s/\/ndr_/\//;
+		$filename = util::ChangeExtension($filename, ".i");
+		util::FileSave($filename, IdlSwig::Parse($pidl));
 	}
 
 	if ($opt_diff) {

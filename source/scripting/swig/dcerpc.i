@@ -112,6 +112,8 @@ uint32 get_uint32_property(PyObject *dict, char *key)
 
 %types(struct dcerpc_pipe *);
 
+%rename(pipe_connect) dcerpc_pipe_connect;
+
 NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *binding,
                              const char *pipe_uuid,
