@@ -377,7 +377,7 @@ static void utmp_update(const pstring dirname, const struct utmp *u, const char 
 #endif
 }
 
-static void utmp_yield(int pid, const connection_struct *conn, int i)
+static void utmp_yield(pid_t pid, const connection_struct *conn, int i)
 {
 	struct utmp u;
 	pstring dirname;
