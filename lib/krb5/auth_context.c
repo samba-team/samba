@@ -188,6 +188,8 @@ krb5_auth_getlocalseqnumber(krb5_context context,
 			    krb5_auth_context auth_context,
 			    int32_t *seqnumber)
 {
+  *seqnumber = auth_context->local_seqnumber;
+  return 0;
 }
 
 
@@ -196,6 +198,8 @@ krb5_auth_getremoteseqnumber(krb5_context context,
 			     krb5_auth_context auth_context,
 			     int32_t *seqnumber)
 {
+  *seqnumber = auth_context->remote_seqnumber;
+  return 0;
 }
 
 
