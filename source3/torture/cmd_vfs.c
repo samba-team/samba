@@ -1,0 +1,872 @@
+/* 
+   Unix SMB/CIFS implementation.
+   VFS module functions
+
+   Copyright (C) Simo Sorce 2002
+   Copyright (C) Eric Lorimer 2002
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "vfstest.h"
+
+static char *null_string = "";
+
+static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	struct smb_vfs_handle_struct *handle;
+	
+	if (argc != 2) {
+		printf("Usage: load <module path>\n");
+		return NT_STATUS_OK;
+	}
+	vfs->conn->vfs_private = NULL;
+	handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
+	handle->handle = NULL;
+	DLIST_ADD(vfs->conn->vfs_private, handle)
+	if (!vfs_init_custom(vfs->conn, argv[1])) {
+		DEBUG(0, ("load: error=-1 (vfs_init_custom failed for %s)\n", argv[1]));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	printf("load: ok\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char c;
+	size_t size;
+	if (argc != 3) {
+		printf("Usage: populate <char> <size>\n");
+		return NT_STATUS_OK;
+	}
+	c = argv[1][0];
+	size = atoi(argv[2]);
+	vfs->data = (char *)talloc(mem_ctx, size);
+	if (vfs->data == NULL) {
+		printf("read: error=-1 (not enough memory)");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	memset(vfs->data, c, size);
+	vfs->data_size = size;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	size_t offset;
+	size_t len;
+	if (argc != 1 && argc != 3) {
+		printf("Usage: showdata [<offset> <len>]\n");
+		return NT_STATUS_OK;
+	}
+	if (vfs->data == NULL || vfs->data_size == 0) {
+		printf("show_data: error=-1 (buffer empty)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (argc == 3) {
+		offset = atoi(argv[1]);
+		len = atoi(argv[2]);
+	} else {
+		offset = 0;
+		len = vfs->data_size;
+	}
+	if ((offset + len) > vfs->data_size) {
+		printf("show_data: error=-1 (not enough data in buffer)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	dump_data(0, (char *)(vfs->data) + offset, len);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_connect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	vfs->conn->vfs_ops.connect(vfs->conn, lp_servicename(vfs->conn->service), "vfstest");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_disconnect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	vfs->conn->vfs_ops.disconnect(vfs->conn);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	SMB_BIG_UINT diskfree, bsize, dfree, dsize;
+	if (argc != 2) {
+		printf("Usage: disk_free <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	diskfree = vfs->conn->vfs_ops.disk_free(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
+	printf("disk_free: %ld, bsize = %ld, dfree = %ld, dsize = %ld\n", diskfree, bsize, dfree, dsize);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	if (argc != 2) {
+		printf("Usage: opendir <fname>\n");
+		return NT_STATUS_OK;
+	}
+
+	vfs->currentdir = vfs->conn->vfs_ops.opendir(vfs->conn, argv[1]);
+	if (vfs->currentdir == NULL) {
+		printf("opendir error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("opendir: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	struct dirent *dent;
+
+	if (vfs->currentdir == NULL) {
+		printf("readdir: error=-1 (no open directory)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	dent = vfs->conn->vfs_ops.readdir(vfs->conn, vfs->currentdir);
+	if (dent == NULL) {
+		printf("readdir: NULL\n");
+		return NT_STATUS_OK;
+	}
+
+	printf("readdir: %s\n", dent->d_name);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	if (argc != 2) {
+		printf("Usage: mkdir <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.mkdir(vfs->conn, argv[1], 00755) == -1) {
+		printf("mkdir error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	printf("mkdir: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int ret;
+	
+	if (vfs->currentdir == NULL) {
+		printf("closedir: failure (no directory open)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = vfs->conn->vfs_ops.closedir(vfs->conn, vfs->currentdir);
+	if (ret == -1) {
+		printf("closedir failure: %s\n", strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("closedir: ok\n");
+	vfs->currentdir = NULL;
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int flags, mode, fd;
+
+	flags = O_RDWR | O_CREAT;
+	mode = 00400;
+
+	if (argc != 2) {
+		printf("Usage: open <filename>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = vfs->conn->vfs_ops.open(vfs->conn, argv[1], flags, mode);
+	if (fd == -1) {
+		printf("open: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	vfs->files[fd] = (struct files_struct *)malloc(sizeof(struct files_struct));
+	vfs->files[fd]->fsp_name = strdup(argv[1]);
+	vfs->files[fd]->fd = fd;
+	vfs->files[fd]->conn = vfs->conn;
+	printf("open: fd=%d\n", fd);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int ret = -1;
+	struct func_entry *fptr;
+	struct func_entry func_table[] = {
+		{ "rmdir",		vfs->conn->vfs_ops.rmdir },
+		{ "unlink",		vfs->conn->vfs_ops.unlink },
+		{ "chdir",		vfs->conn->vfs_ops.chdir },
+		{ NULL }
+	};
+
+	if (argc != 2) {
+		printf("Usage: %s <path>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	for (fptr=func_table; *fptr->name; fptr++)
+		if (strcmp(fptr->name, argv[0]) == 0 )
+			ret = fptr->fn(vfs->conn, argv[1]);
+
+	if (ret == -1) {
+		printf("%s: error=%d (%s)\n", argv[0], errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("%s: ok\n", argv[0]);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd, ret;
+
+	if (argc != 2) {
+		printf("Usage: close <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (vfs->files[fd] == NULL) {
+		printf("close: error=-1 (invalid file descriptor)\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = vfs->conn->vfs_ops.close(vfs->files[fd], fd);
+	if (ret == -1 )
+		printf("close: error=%d (%s)\n", errno, strerror(errno));
+	else
+		printf("close: ok\n");
+
+	SAFE_FREE(vfs->files[fd]->fsp_name);
+	SAFE_FREE(vfs->files[fd]);
+	vfs->files[fd] = NULL;
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd;
+	size_t size, rsize;
+
+	if (argc != 3) {
+		printf("Usage: read <fd> <size>\n");
+		return NT_STATUS_OK;
+	}
+
+	/* do some error checking on these */
+	fd = atoi(argv[1]);
+	size = atoi(argv[2]);
+	vfs->data = (char *)talloc(mem_ctx, size);
+	if (vfs->data == NULL) {
+		printf("read: error=-1 (not enough memory)");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	vfs->data_size = size;
+	
+	rsize = 0;
+	while (rsize < size) {
+		int isize;
+		isize = vfs->conn->vfs_ops.read(vfs->files[fd], fd, vfs->data, size);
+		if (isize == -1) {
+			printf("read: error=%d (%s)\n", errno, strerror(errno));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		rsize += isize;
+	}
+
+	printf("read: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd, size, wsize;
+
+	if (argc != 3) {
+		printf("Usage: write <fd> <size>\n");
+		return NT_STATUS_OK;
+	}
+
+	/* some error checking should go here */
+	fd = atoi(argv[1]);
+	size = atoi(argv[2]);
+	if (vfs->data == NULL) {
+		printf("write: error=-1 (buffer empty, please populate it before writing)");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (vfs->data_size < size) {
+		printf("write: error=-1 (buffer too small, please put some more data in)");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	wsize = vfs->conn->vfs_ops.write(vfs->files[fd], fd, vfs->data, size);
+
+	if (wsize == -1) {
+		printf("write: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("write: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd, offset, whence;
+	SMB_OFF_T pos;
+
+	if (argc != 4) {
+		printf("Usage: lseek <fd> <offset> <whence>\n...where whence is 1 => SEEK_SET, 2 => SEEK_CUR, 3 => SEEK_END\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	offset = atoi(argv[2]);
+	whence = atoi(argv[3]);
+	switch (whence) {
+		case 1:		whence = SEEK_SET; break;
+		case 2:		whence = SEEK_CUR; break;
+		default:	whence = SEEK_END;
+	}
+
+	pos = vfs->conn->vfs_ops.lseek(vfs->files[fd], fd, offset, whence);
+	if (pos == (SMB_OFF_T)-1) {
+		printf("lseek: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("lseek: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int ret;
+	if (argc != 3) {
+		printf("Usage: rename <old> <new>\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = vfs->conn->vfs_ops.rename(vfs->conn, argv[1], argv[2]);
+	if (ret == -1) {
+		printf("rename: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("rename: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int ret, fd;
+	if (argc != 2) {
+		printf("Usage: fsync <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	ret = vfs->conn->vfs_ops.fsync(vfs->files[fd], fd);
+	if (ret == -1) {
+		printf("fsync: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("fsync: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int ret;
+	char *user;
+	char *group;
+	struct passwd *pwd;
+	struct group *grp;
+	SMB_STRUCT_STAT st;
+
+	if (argc != 2) {
+		printf("Usage: stat <fname>\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = vfs->conn->vfs_ops.stat(vfs->conn, argv[1], &st);
+	if (ret == -1) {
+		printf("stat: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pwd = sys_getpwuid(st.st_uid);
+	if (pwd != NULL) user = strdup(pwd->pw_name);
+	else user = null_string;
+	grp = sys_getgrgid(st.st_gid);
+	if (grp != NULL) group = strdup(grp->gr_name);
+	else group = null_string;
+
+	printf("stat: ok\n");
+	printf("  File: %s", argv[1]);
+	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
+	printf("  Size: %10d", st.st_size);
+	printf(" Blocks: %9d", st.st_blocks);
+	printf(" IO Block: %d\n", st.st_blksize);
+	printf("  Device: 0x%.10x", st.st_dev);
+	printf(" Inode: %10d", st.st_ino);
+	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
+	printf("  Access: %s", ctime(&(st.st_atime)));
+	printf("  Modify: %s", ctime(&(st.st_mtime)));
+	printf("  Change: %s", ctime(&(st.st_ctime)));
+	if (user != null_string) SAFE_FREE(user);
+	if (group!= null_string) SAFE_FREE(group);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd;
+	char *user;
+	char *group;
+	struct passwd *pwd;
+	struct group *grp;
+	SMB_STRUCT_STAT st;
+
+	if (argc != 2) {
+		printf("Usage: fstat <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd > 1024) {
+		printf("fstat: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->files[fd] == NULL) {
+		printf("fstat: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.fstat(vfs->files[fd], fd, &st) == -1) {
+		printf("fstat: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pwd = sys_getpwuid(st.st_uid);
+	if (pwd != NULL) user = strdup(pwd->pw_name);
+	else user = null_string;
+	grp = sys_getgrgid(st.st_gid);
+	if (grp != NULL) group = strdup(grp->gr_name);
+	else group = null_string;
+
+	printf("fstat: ok\n");
+	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
+	printf("  Size: %10d", st.st_size);
+	printf(" Blocks: %9d", st.st_blocks);
+	printf(" IO Block: %d\n", st.st_blksize);
+	printf("  Device: 0x%10x", st.st_dev);
+	printf(" Inode: %10d", st.st_ino);
+	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
+	printf("  Access: %s", ctime(&(st.st_atime)));
+	printf("  Modify: %s", ctime(&(st.st_mtime)));
+	printf("  Change: %s", ctime(&(st.st_ctime)));
+	if (user != null_string) SAFE_FREE(user);
+	if (group!= null_string) SAFE_FREE(group);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char *user;
+	char *group;
+	struct passwd *pwd;
+	struct group *grp;
+	SMB_STRUCT_STAT st;
+
+	if (argc != 2) {
+		printf("Usage: lstat <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.lstat(vfs->conn, argv[1], &st) == -1) {
+		printf("lstat: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pwd = sys_getpwuid(st.st_uid);
+	if (pwd != NULL) user = strdup(pwd->pw_name);
+	else user = null_string;
+	grp = sys_getgrgid(st.st_gid);
+	if (grp != NULL) group = strdup(grp->gr_name);
+	else group = null_string;
+
+	printf("lstat: ok\n");
+	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
+	printf("  Size: %10d", st.st_size);
+	printf(" Blocks: %9d", st.st_blocks);
+	printf(" IO Block: %d\n", st.st_blksize);
+	printf("  Device: 0x%10x", st.st_dev);
+	printf(" Inode: %10d", st.st_ino);
+	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
+	printf("  Access: %s", ctime(&(st.st_atime)));
+	printf("  Modify: %s", ctime(&(st.st_mtime)));
+	printf("  Change: %s", ctime(&(st.st_ctime)));
+	if (user != null_string) SAFE_FREE(user);
+	if (group!= null_string) SAFE_FREE(group);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	mode_t mode;
+	if (argc != 3) {
+		printf("Usage: chmod <path> <mode>\n");
+		return NT_STATUS_OK;
+	}
+
+	mode = atoi(argv[2]);
+	if (vfs->conn->vfs_ops.chmod(vfs->conn, argv[1], mode) == -1) {
+		printf("chmod: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("chmod: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd;
+	mode_t mode;
+	if (argc != 3) {
+		printf("Usage: fchmod <fd> <mode>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	mode = atoi(argv[2]);
+	if (fd < 0 || fd > 1024) {
+		printf("fchmod: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("fchmod: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.fchmod(vfs->files[fd], fd, mode) == -1) {
+		printf("fchmod: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("fchmod: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	uid_t uid;
+	gid_t gid;
+	if (argc != 4) {
+		printf("Usage: chown <path> <uid> <gid>\n");
+		return NT_STATUS_OK;
+	}
+
+	uid = atoi(argv[2]);
+	gid = atoi(argv[3]);
+	if (vfs->conn->vfs_ops.chown(vfs->conn, argv[1], uid, gid) == -1) {
+		printf("chown: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("chown: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	uid_t uid;
+	gid_t gid;
+	int fd;
+	if (argc != 4) {
+		printf("Usage: fchown <fd> <uid> <gid>\n");
+		return NT_STATUS_OK;
+	}
+
+	uid = atoi(argv[2]);
+	gid = atoi(argv[3]);
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd > 1024) {
+		printf("fchown: faliure=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("fchown: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->conn->vfs_ops.fchown(vfs->files[fd], fd, uid, gid) == -1) {
+		printf("fchown error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("fchown: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char buf[PATH_MAX];
+	if (vfs->conn->vfs_ops.getwd(vfs->conn, buf) == NULL) {
+		printf("getwd: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("getwd: %s\n", buf);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	struct utimbuf times;
+	if (argc != 4) {
+		printf("Usage: utime <path> <access> <modify>\n");
+		return NT_STATUS_OK;
+	}
+	times.actime = atoi(argv[2]);
+	times.modtime = atoi(argv[3]);
+	if (vfs->conn->vfs_ops.utime(vfs->conn, argv[1], &times) != 0) {
+		printf("utime: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("utime: ok\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int fd;
+	SMB_OFF_T off;
+	if (argc != 3) {
+		printf("Usage: ftruncate <fd> <length>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	off = atoi(argv[2]);
+	if (fd < 0 || fd > 1024) {
+		printf("ftruncate: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("ftruncate: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.ftruncate(vfs->files[fd], fd, off) == -1) {
+		printf("ftruncate: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("ftruncate: ok\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	printf("lock: Not yet implemented!\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	if (argc != 3) {
+		printf("Usage: symlink <path> <link>\n");
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.symlink(vfs->conn, argv[1], argv[2]) == -1) {
+		printf("symlink: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("symlink: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char buffer[PATH_MAX];
+	int size;
+
+	if (argc != 2) {
+		printf("Usage: readlink <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	if ((size = vfs->conn->vfs_ops.readlink(vfs->conn, argv[1], buffer, PATH_MAX)) == -1) {
+		printf("readlink: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	buffer[size] = '\0';
+	printf("readlink: %s\n", buffer);
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	if (argc != 3) {
+		printf("Usage: link <path> <link>\n");
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.link(vfs->conn, argv[1], argv[2]) == -1) {
+		printf("link: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("link: ok\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	printf("lock: Not yet implemented!\n");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char respath[PATH_MAX];
+	
+	if (argc != 2) {
+		printf("Usage: realpath <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	if (vfs->conn->vfs_ops.realpath(vfs->conn, argv[1], respath) == NULL) {
+		printf("realpath: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("realpath: ok\n");
+	return NT_STATUS_OK;
+}
+
+struct cmd_set vfs_commands[] = {
+
+	{ "VFS Commands" },
+
+	{ "load", cmd_load_module, "Load a module", "load <module.so>" },
+	{ "populate", cmd_populate, "Populate a data buffer", "populate <char> <size>" },
+	{ "showdata", cmd_show_data, "Show data currently in data buffer", "show_data [<offset> <len>]"},
+	{ "connect",   cmd_connect,   "VFS connect()",    "connect" },
+	{ "disconnect",   cmd_disconnect,   "VFS disconnect()",    "disconnect" },
+	{ "disk_free",   cmd_disk_free,   "VFS disk_free()",    "disk_free <path>" },
+	{ "opendir",   cmd_opendir,   "VFS opendir()",    "opendir <fname>" },
+	{ "readdir",   cmd_readdir,   "VFS readdir()",    "readdir" },
+	{ "mkdir",   cmd_mkdir,   "VFS mkdir()",    "mkdir <path>" },
+	{ "rmdir",   cmd_pathfunc,   "VFS rmdir()",    "rmdir <path>" },
+	{ "closedir",   cmd_closedir,   "VFS closedir()",    "closedir" },
+	{ "open",   cmd_open,   "VFS open()",    "open <fname>" },
+	{ "close",   cmd_close,   "VFS close()",    "close <fd>" },
+	{ "read",   cmd_read,   "VFS read()",    "read <fd> <size>" },
+	{ "write",   cmd_write,   "VFS write()",    "write <fd> <size>" },
+	{ "lseek",   cmd_lseek,   "VFS lseek()",    "lseek <fd> <offset> <whence>" },
+	{ "rename",   cmd_rename,   "VFS rename()",    "rename <old> <new>" },
+	{ "fsync",   cmd_fsync,   "VFS fsync()",    "fsync <fd>" },
+	{ "stat",   cmd_stat,   "VFS stat()",    "stat <fname>" },
+	{ "fstat",   cmd_fstat,   "VFS fstat()",    "fstat <fd>" },
+	{ "lstat",   cmd_lstat,   "VFS lstat()",    "lstat <fname>" },
+	{ "unlink",   cmd_pathfunc,   "VFS unlink()",    "unlink <fname>" },
+	{ "chmod",   cmd_chmod,   "VFS chmod()",    "chmod <path> <mode>" },
+	{ "fchmod",   cmd_fchmod,   "VFS fchmod()",    "fchmod <fd> <mode>" },
+	{ "chown",   cmd_chown,   "VFS chown()",    "chown <path> <uid> <gid>" },
+	{ "fchown",   cmd_fchown,   "VFS fchown()",    "fchown <fd> <uid> <gid>" },
+	{ "chdir",   cmd_pathfunc,   "VFS chdir()",    "chdir <path>" },
+	{ "getwd",   cmd_getwd,   "VFS getwd()",    "getwd" },
+	{ "utime",   cmd_utime,   "VFS utime()",    "utime <path> <access> <modify>" },
+	{ "ftruncate",   cmd_ftruncate,   "VFS ftruncate()",    "ftruncate <fd> <length>" },
+	{ "lock",   cmd_lock,   "VFS lock()",    "lock: Not yet implemented!" },
+	{ "symlink",   cmd_symlink,   "VFS symlink()",    "symlink <old> <new>" },
+	{ "readlink",   cmd_readlink,   "VFS readlink()",    "readlink <path>" },
+	{ "link",   cmd_link,   "VFS link()",    "link <oldpath> <newpath>" },
+	{ "mknod",   cmd_mknod,   "VFS mknod()",    "mknod: Not yet implemented!" },
+	{ "realpath",   cmd_realpath,   "VFS realpath()",    "realpath <path>" },
+	{ NULL }
+};

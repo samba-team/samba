@@ -138,7 +138,7 @@ static void vfs_init_default(connection_struct *conn)
   initialise custom vfs hooks
 ****************************************************************************/
 
-static BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
+BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
 	int vfs_version = -1;
  	vfs_op_tuple *ops, *(*init_fptr)(int *, const struct vfs_ops *, struct smb_vfs_handle_struct *);
