@@ -35,7 +35,7 @@ How To:
    		  writable=no
    		  browseable=yes
 
-	Second, you have to build the list of the drivers required for a specific
+	Second, you have to build the list of drivers required for a specific
 	printer. This is the most complicated thing to do. Get the files
 	'msprint.inf' and 'msprint2.inf' from Windows 95, the easiest way is to
 	grab them from a working Windows 95 computer. They are usually located
@@ -46,18 +46,22 @@ How To:
 	file created in your inf directory named 'oem?.inf' (where the ? is some
 	number). Use this file instead of msprint.inf.
 
-	Example:
+	Example: (from the /usr/local/samba/lib directory)
 		
-    make_printerdef msprint.inf "Apple LaserWriter" >>/usr/local/samba/lib/printers.def
+	make_printerdef msprint.inf "Apple LaserWriter" >> printers.def
 	 
 	The program will print out a list of required files to stderr.
-	Copy all the files listed into the directory you created in step 1     
+	Copy all the files listed into the directory you created in step 1.
+	If you have "preserve case = yes" make sure your files names match
+	EXACTLY the names listed.
 	
 	Third, you need to add 2 new parameters in smb.conf. One is in the
-	[global] section, called 'printer driver file' pointing to the file description,
-	and the other in each printer share, called 'printer driver location' pointing
-	to where the client will get the drivers. Don't forget to set correctly
-	the printer driver parameter to the Windows printer name.
+	[global] section, called 'printer driver file' pointing to the printer
+	description file you just created, and the other in each printer share,
+	called 'printer driver location' pointing to where the client will get 
+	the drivers. Don't forget to set correctly the printer driver parameter
+	to the Windows printer name.
+
 	Example:
 	
 		[global]
