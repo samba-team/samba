@@ -156,8 +156,8 @@ work out what error to give to a failed connection
 
 static int connection_error(char *inbuf,char *outbuf,int ecode)
 {
-	if (ecode == ERRnoipc)
-		return(ERROR(ERRDOS,ERRnoipc));
+	if (ecode == ERRnoipc || ecode == ERRnosuchshare)
+		return(ERROR(ERRDOS,ecode));
 
 	return(ERROR(ERRSRV,ecode));
 }
@@ -295,7 +295,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	
 	p = strchr(path+2,'\\');
 	if (!p)
-		return(ERROR(ERRSRV,ERRinvnetname));
+		return(ERROR(ERRDOS,ERRnosuchshare));
 	fstrcpy(service,p+1);
 	p = strchr(service,'%');
 	if (p) {

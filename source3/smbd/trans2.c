@@ -2234,6 +2234,9 @@ int reply_trans2(connection_struct *conn,
 		return -1;
 	}
 	
+	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)) 
+		return(ERROR(ERRSRV,ERRaccess));
+
 	outsize = set_message(outbuf,0,0,True);
 
 	/* All trans2 messages we handle have smb_sucnt == 1 - ensure this
