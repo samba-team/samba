@@ -613,6 +613,37 @@ typedef struct vk_struct {
 #define REG_TYPE_DWORD     4
 #define REG_TYPE_MULTISZ   7
 
+typedef struct _val_str { 
+  unsigned int val;
+  char * str;
+} VAL_STR;
+
+VAL_STR reg_type_names[] = {
+   { 1, "REG_SZ" },
+   { 2, "REG_EXPAND_SZ" },
+   { 3, "REG_BIN" },
+   { 4, "REG_DWORD" },
+   { 7, "REG_MULTI_SZ" },
+   { 0, NULL },
+};
+
+char *val_to_str(unsigned int val, VAL_STR *val_array)
+{
+  int i = 0;
+
+  if (!val_array) return NULL;
+
+  while (val_array[i].val && val_array[i].str) {
+
+    if (val_array[i].val == val) return val_array[i].str;
+    i++;
+
+  }
+
+  return NULL;
+
+}
+
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size);
 
 int nt_set_regf_input_file(REGF *regf, char *filename)
@@ -731,11 +762,58 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
 }
 
 /*
+ * Process a VK header and return a value
+ */
+VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
+{
+  char val_name[1024], data_value[1024];
+  int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
+  char *val_type;
+
+  if (!vk_hdr) return NULL;
+
+  if ((vk_id = SVAL(&vk_hdr->VK_ID)) != REG_VK_ID) {
+    fprintf(stderr, "Unrecognized VK header ID: %0X, block: %0X, %s\n",
+	    vk_id, vk_hdr, regf->regfile_name);
+    return NULL;
+  }
+
+  nam_len = SVAL(&vk_hdr->nam_len);
+  val_name[nam_len] = '\0';
+  flag = SVAL(&vk_hdr->flag);
+  dat_type = IVAL(&vk_hdr->dat_type);
+
+  if (flag & 0x01)
+    strncpy(val_name, vk_hdr->dat_name, nam_len);
+  else
+    strncpy(val_name, "<No Name>", 10);
+
+  val_type = val_to_str(dat_type, reg_type_names);
+
+  fprintf(stdout, "  %s : %s : \n", val_name, val_type);
+
+  return NULL;
+
+}
+
+/*
  * Process a VL Header and return a list of values
  */
 VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
 {
+  int i, vk_off;
+  VK_HDR *vk_hdr;
 
+  if (-size < (count+1)*sizeof(int)){
+    fprintf(stderr, "Error in VL header format. Size less than space required. %d\n", -size);
+    return NULL;
+  }
+
+  for (i=0; i<count; i++) {
+    vk_off = IVAL(&vl[i]);
+    vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
+    process_vk(regf, vk_hdr, BLK_SIZE(vk_hdr));
+  }
 } 
 
 /*
@@ -873,6 +951,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
   if (sk_off != -1) {
 
+    /* To be coded */  
 
   } 
 
