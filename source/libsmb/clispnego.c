@@ -241,6 +241,9 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 	BOOL ret;
 	ASN1_DATA data;
 
+	ZERO_STRUCTP(chal1);
+	ZERO_STRUCTP(chal2);
+
 	asn1_load(&data, blob);
 	asn1_start_tag(&data,ASN1_CONTEXT(1));
 	asn1_start_tag(&data,ASN1_SEQUENCE(0));
@@ -257,9 +260,12 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 	asn1_read_octet_string(&data, chal1);
 	asn1_end_tag(&data);
 
-	asn1_start_tag(&data,ASN1_CONTEXT(3));
-	asn1_read_octet_string(&data, chal2);
-	asn1_end_tag(&data);
+	/* the second challenge is optional (XP doesn't send it) */
+	if (asn1_tag_remaining(&data)) {
+		asn1_start_tag(&data,ASN1_CONTEXT(3));
+		asn1_read_octet_string(&data, chal2);
+		asn1_end_tag(&data);
+	}
 
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
