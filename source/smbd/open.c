@@ -28,8 +28,9 @@ extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;
 
 /****************************************************************************
-fd support routines - attempt to do a dos_open
+ fd support routines - attempt to do a dos_open.
 ****************************************************************************/
+
 static int fd_open(struct connection_struct *conn, char *fname, 
 		   int flags, mode_t mode)
 {
@@ -42,21 +43,26 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 	}
 
+	DEBUG(10,("fd_open: name %s, mode = %d, fd = %d. %s\n", fname, (int)mode, fd,
+		(fd == -1) ? strerror(errno) : "" ));
+
 	return fd;
 }
 
 /****************************************************************************
-close the file associated with a fsp
+ Close the file associated with a fsp.
 ****************************************************************************/
-void fd_close(files_struct *fsp, int *err_ret)
+
+int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
-	fsp->conn->vfs_ops.close(fsp->fd);
+	int ret = conn->vfs_ops.close(fsp->fd);
 	fsp->fd = -1;
+	return ret;
 }
 
 
 /****************************************************************************
-check a filename for the pipe string
+ Check a filename for the pipe string.
 ****************************************************************************/
 
 static void check_for_pipe(char *fname)
@@ -73,7 +79,7 @@ static void check_for_pipe(char *fname)
 }
 
 /****************************************************************************
-open a file
+ Open a file.
 ****************************************************************************/
 
 static void open_file(files_struct *fsp,connection_struct *conn,
@@ -91,7 +97,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 
 	pstrcpy(fname,fname1);
 
-	/* check permissions */
+	/* Check permissions */
 
 	/*
 	 * This code was changed after seeing a client open request 
@@ -121,7 +127,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 	/* actually do the open */
 	fsp->fd = fd_open(conn, fname, flags, mode);
 
-    	if (fsp->fd == -1)  {
+	if (fsp->fd == -1)  {
 		DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
 			 fname,strerror(errno),flags));
 		check_for_pipe(fname);
@@ -129,6 +135,18 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 	}
 
 	conn->vfs_ops.fstat(fsp->fd, &sbuf);
+
+	/*
+	 * POSIX allows read-only opens of directories. We don't
+	 * want to do this (we use a different code path for this)
+	 * so catch a directory open and return an EISDIR. JRA.
+	 */
+
+	if(S_ISDIR(sbuf.st_mode)) {
+		fd_close(conn, fsp);
+		errno = EISDIR;
+		return;
+	}
 
 	conn->num_files_open++;
 	fsp->mode = sbuf.st_mode;

@@ -113,7 +113,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if (lp_share_modes(SNUM(conn)))
 		unlock_share_entry_fsp(fsp);
 
-	fd_close(fsp, &err);
+	err = fd_close(conn, fsp);
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)
