@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "rpc_client.h"
+#include "rpc_parse.h"
 #include "nterr.h"
 
 #ifdef CHECK_TYPES
@@ -73,27 +74,28 @@ static BOOL api_TooSmall(connection_struct * conn, uint16 vuid, char *param,
 			 char *data, int mdrcnt, int mprcnt, char **rdata,
 			 char **rparam, int *rdata_len, int *rparam_len);
 
-
-static int CopyExpanded(connection_struct * conn, const vuser_key * key,
-			int snum, char **dst, char *src, int *n)
+static size_t CopyUnistr2(char **p2, const UNISTR2 *uni_str, int *n)
 {
-	pstring buf;
-	int l;
-	user_struct *vuser;
-
-	if (!src || !dst || !n || !(*dst))
-		return (0);
-
-	StrnCpy(buf, src, sizeof(buf) / 2);
-	pstring_sub(buf, "%S", lp_servicename(snum));
-	vuser = get_valid_user_struct(key);
-	standard_sub(conn, vuser, buf);
-	vuid_free_user_struct(vuser);
-	StrnCpy(*dst, buf, *n);
-	l = strlen(*dst) + 1;
-	(*dst) += l;
+	size_t l;
+	unistr2_to_ascii((*p2), uni_str, (*n));
+	(*p2) = skip_string((*p2), 1);
+	l = strlen(*p2) + 1;
+	(*p2) += l;
 	(*n) -= l;
 	return l;
+}
+
+static size_t CopyUnistr2Ptr(const char *base,
+			     char *ptr, int ptr_off, uint32 ptr_str,
+			     char **p2, const UNISTR2 *uni_str, int *n)
+{
+	if (ptr_str != 0)
+	{
+		SIVAL(ptr, ptr_off, PTR_DIFF((*p2), base));
+		return CopyUnistr2(p2, uni_str, n);
+	}
+	SIVAL(ptr, ptr_off, 0);
+	return 0;
 }
 
 static int CopyAndAdvance(char **dst, char *src, int *n)
@@ -106,21 +108,6 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 	(*dst) += l;
 	(*n) -= l;
 	return l;
-}
-
-static int StrlenExpanded(connection_struct * conn,
-			  const vuser_key * key, int snum, char *s)
-{
-	user_struct *vuser;
-	pstring buf;
-	if (!s)
-		return (0);
-	StrnCpy(buf, s, sizeof(buf) / 2);
-	pstring_sub(buf, "%S", lp_servicename(snum));
-	vuser = get_valid_user_struct(key);
-	standard_sub(conn, vuser, buf);
-	vuid_free_user_struct(vuser);
-	return strlen(buf) + 1;
 }
 
 static char *Expand(connection_struct * conn, const vuser_key * key, int snum,
@@ -803,7 +790,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 
 	DEBUG(3, ("PrintQueue uLevel=%d name=%s\n", uLevel, QueueName));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1, "zWrLh"))
 		return False;
 	if (!check_printq_info(&desc, uLevel, str2, str3))
@@ -1502,8 +1489,8 @@ static BOOL check_share_info(int uLevel, char *id)
 	return True;
 }
 
-static int fill_share_info(connection_struct * conn, const vuser_key * key,
-			   int snum, int uLevel,
+static int fill_share_info( const SHARE_INFO_2 * sh2,
+			   int uLevel,
 			   char **buf, int *buflen,
 			   char **stringbuf, int *stringspace, char *baseaddr)
 {
@@ -1536,11 +1523,9 @@ static int fill_share_info(connection_struct * conn, const vuser_key * key,
 	{
 		len = 0;
 		if (uLevel > 0)
-			len +=
-				StrlenExpanded(conn, key, snum,
-					       lp_comment(snum));
+			len += sh2->info2_str.uni_remark.uni_str_len + 1;
 		if (uLevel > 1)
-			len += strlen(lp_pathname(snum)) + 1;
+			len += sh2->info2_str.uni_path.uni_str_len + 1;
 		if (buflen)
 			*buflen = struct_len;
 		if (stringspace)
@@ -1565,32 +1550,26 @@ static int fill_share_info(connection_struct * conn, const vuser_key * key,
 	if (!baseaddr)
 		baseaddr = p;
 
-	StrnCpy(p, lp_servicename(snum), 13);
+	unistr2_to_ascii(p, &sh2->info2_str.uni_netname, 13 - 1);
 
 	if (uLevel > 0)
 	{
-		int type;
-		CVAL(p, 13) = 0;
-		type = STYPE_DISKTREE;
-		if (lp_print_ok(snum))
-			type = STYPE_PRINTQ;
-		if (strequal("IPC$", lp_servicename(snum)))
-			type = STYPE_IPC;
-		SSVAL(p, 14, type);	/* device type */
-		SIVAL(p, 16, PTR_DIFF(p2, baseaddr));
-		len +=
-			CopyExpanded(conn, key, snum, &p2, lp_comment(snum),
-				     &l2);
+		CVAL(p, 13) = 0;	/* maybe da string wurn't null-turminatid */
+		SSVAL(p, 14, sh2->info2_hdr.type);
+		len += CopyUnistr2Ptr(baseaddr, p, 16,
+				      sh2->info2_hdr.ptr_remark, &p2,
+				      &sh2->info2_str.uni_remark, &l2);
 	}
 
 	if (uLevel > 1)
 	{
-		SSVAL(p, 20, ACCESS_READ | ACCESS_WRITE | ACCESS_CREATE);	/* permissions */
-		SSVALS(p, 22, -1);	/* max uses */
-		SSVAL(p, 24, 1);	/* current uses */
-		SIVAL(p, 26, PTR_DIFF(p2, baseaddr));	/* local pathname */
-		len += CopyAndAdvance(&p2, lp_pathname(snum), &l2);
-		memset(p + 30, 0, SHPWLEN + 2);	/* passwd (reserved), pad field */
+		SSVAL(p, 20, sh2->info2_hdr.perms);
+		SSVALS(p, 22, sh2->info2_hdr.max_uses);
+		SSVAL(p, 24, sh2->info2_hdr.num_uses);
+		len += CopyUnistr2Ptr(baseaddr, p, 26,
+				      sh2->info2_hdr.ptr_path, &p2,
+				      &sh2->info2_str.uni_path, &l2);
+		memset(p + 30, 0, SHPWLEN + 2);	/* passwd, pad field */
 	}
 
 	if (uLevel > 2)
@@ -1630,23 +1609,32 @@ static BOOL api_RNetShareGetInfo(connection_struct * conn, uint16 vuid,
 	char *netname = skip_string(str2, 1);
 	char *p = skip_string(netname, 1);
 	int uLevel = SVAL(p, 0);
-	int snum = find_service(netname);
+	SHARE_INFO_CTR ctr;
+	uint32 status;
 	VUSER_KEY;
 
-	if (snum < 0)
-		return False;
-
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1, "zWrLh"))
 		return False;
 	if (!check_share_info(uLevel, str2))
 		return False;
 
+	ZERO_STRUCT(ctr);
+	status = srv_net_srv_share_get_info("\\\\.", netname, 2, &ctr);
+
+	if (status != 0x0)
+	{
+		srv_free_share_info_ctr(&ctr);
+		return False;
+	}
+
 	*rdata = REALLOC(*rdata, mdrcnt);
 	p = *rdata;
-	*rdata_len =
-		fill_share_info(conn, &key, snum, uLevel, &p, &mdrcnt, 0, 0,
+	*rdata_len = fill_share_info(ctr.info.id2, uLevel, &p, &mdrcnt, 0, 0,
 				0);
+
+	srv_free_share_info_ctr(&ctr);
+
 	if (*rdata_len < 0)
 		return False;
 
@@ -1679,45 +1667,71 @@ static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
 	int i;
 	int data_len, fixed_len, string_len;
 	int f_len = 0, s_len = 0;
+	SRV_SHARE_INFO_CTR ctr;
+	ENUM_HND hnd;
+
 	VUSER_KEY;
+
+	ZERO_STRUCT(ctr);
 
 	if (!prefix_ok(str1, "WrLeh"))
 		return False;
 	if (!check_share_info(uLevel, str2))
 		return False;
 
+	hnd.ptr_hnd = 0;
+	hnd.handle = 0;
+
+	if (!srv_net_srv_share_enum("\\\\.", 2, &ctr, mdrcnt, &hnd))
+	{
+		srv_free_srv_share_ctr(&ctr);
+		return False;
+	}
+
 	data_len = fixed_len = string_len = 0;
 	for (i = 0; i < count; i++)
-		if (lp_browseable(i) && lp_snum_ok(i))
+	{
+		SHARE_INFO_2 sh2;
+
+		sh2.info2_hdr = *ctr.share.info2.info_2[i];
+		sh2.info2_str = *ctr.share.info2.info_2_str[i];
+
+		total++;
+		data_len += fill_share_info(&sh2, uLevel, 0,
+					    &f_len, 0, &s_len, 0);
+		if (data_len <= buf_len)
 		{
-			total++;
-			data_len +=
-				fill_share_info(conn, &key, i, uLevel, 0,
-						&f_len, 0, &s_len, 0);
-			if (data_len <= buf_len)
-			{
-				counted++;
-				fixed_len += f_len;
-				string_len += s_len;
-			}
-			else
-				missed = True;
+			counted++;
+			fixed_len += f_len;
+			string_len += s_len;
 		}
+		else
+		{
+			missed = True;
+		}
+	}
+
 	*rdata_len = fixed_len + string_len;
 	*rdata = REALLOC(*rdata, *rdata_len);
 	memset(*rdata, 0, *rdata_len);
 
-	p2 = (*rdata) + fixed_len;	/* auxillery data (strings) will go here */
+	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
 	s_len = string_len;
 	for (i = 0; i < count; i++)
-		if (lp_browseable(i) && lp_snum_ok(i))
-			if (fill_share_info
-			    (conn, &key, i, uLevel, &p, &f_len, &p2, &s_len,
-			     *rdata) < 0)
-				break;
+	{
+		SHARE_INFO_2 sh2;
 
+		sh2.info2_hdr = *ctr.share.info2.info_2[i];
+		sh2.info2_str = *ctr.share.info2.info_2_str[i];
+
+		if (fill_share_info
+		    (&sh2, uLevel, &p, &f_len, &p2, &s_len, *rdata) < 0)
+		{
+			break;
+		}
+	}
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam, *rparam_len);
 	SSVAL(*rparam, 0, missed ? ERRmoredata : NERR_Success);
@@ -1727,6 +1741,9 @@ static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("RNetShareEnum gave %d entries of %d (%d %d %d %d)\n",
 		  counted, total, uLevel, buf_len, *rdata_len, mdrcnt));
+
+	srv_free_srv_share_ctr(&ctr);
+
 	return (True);
 }
 
@@ -1740,7 +1757,14 @@ static BOOL api_NetRemoteTOD(connection_struct * conn, uint16 vuid,
 			     char **rdata, char **rparam, int *rdata_len,
 			     int *rparam_len)
 {
+	TIME_OF_DAY_INFO tod;
 	char *p;
+
+	if (!srv_net_remote_tod("\\\\.", &tod))
+	{
+		return False;
+	}
+
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam, *rparam_len);
 
@@ -1752,31 +1776,18 @@ static BOOL api_NetRemoteTOD(connection_struct * conn, uint16 vuid,
 
 	p = *rdata;
 
-	{
-		struct tm *t;
-		time_t unixdate = time(NULL);
-
-		put_dos_date3(p, 0, unixdate);	/* this is the time that is looked at
-						   by NT in a "net time" operation,
-						   it seems to ignore the one below */
-
-		/* the client expects to get localtime, not GMT, in this bit 
-		   (I think, this needs testing) */
-		t = LocalTime(&unixdate);
-
-		SIVAL(p, 4, 0);	/* msecs ? */
-		CVAL(p, 8) = t->tm_hour;
-		CVAL(p, 9) = t->tm_min;
-		CVAL(p, 10) = t->tm_sec;
-		CVAL(p, 11) = 0;	/* hundredths of seconds */
-		SSVALS(p, 12, TimeDiff(unixdate) / 60);	/* timezone in minutes from GMT */
-		SSVAL(p, 14, 10000);	/* timer interval in 0.0001 of sec */
-		CVAL(p, 16) = t->tm_mday;
-		CVAL(p, 17) = t->tm_mon + 1;
-		SSVAL(p, 18, 1900 + t->tm_year);
-		CVAL(p, 20) = t->tm_wday;
-	}
-
+	SIVAL(p, 0, tod.elapsedt);
+	SIVAL(p, 4, tod.msecs);
+	CVAL(p, 8) = tod.hours;
+	CVAL(p, 9) = tod.mins;
+	CVAL(p, 10) = tod.secs;
+	CVAL(p, 11) = tod.hunds;
+	SSVALS(p, 12, tod.zone);	
+	SSVAL(p, 14, tod.tintervals);
+	CVAL(p, 16) = tod.day;
+	CVAL(p, 17) = tod.month;
+	SSVAL(p, 18, tod.year);
+	CVAL(p, 20) = tod.weekday;
 
 	return (True);
 }
@@ -1825,8 +1836,8 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 			if (make_oem_passwd_hash
 			    (pwbuf, pass1, 16, NULL, False)
 			    && msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
-						      pwbuf, pass2, /* lm pw */
-						      NULL, NULL)) /* nt pw */
+						      pwbuf, pass2,	/* lm pw */
+						      NULL, NULL))	/* nt pw */
 			{
 				SSVAL(*rparam, 0, NERR_Success);
 			}
@@ -1899,8 +1910,7 @@ static BOOL api_SamOEMChangePassword(connection_struct * conn, uint16 vuid,
 	      ("api_SamOEMChangePassword: Change password for <%s>\n", user));
 
 	if (msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
-				   (uchar *) data,
-				   (uchar *) & data[516],	/* lm pw */
+				   (uchar *) data, (uchar *) & data[516],	/* lm pw */
 				   NULL, NULL))	/* nt pw */
 	{
 		SSVAL(*rparam, 0, NERR_Success);
@@ -1928,7 +1938,7 @@ static BOOL api_RDosPrintJobDel(connection_struct * conn, uint16 vuid,
 
 	printjob_decode(SVAL(p, 0), &snum, &jobid);
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!(strcsequal(str1, "W") && strcsequal(str2, "")))
 		return (False);
 
@@ -2005,7 +2015,7 @@ static BOOL api_WPrintQueuePurge(connection_struct * conn, uint16 vuid,
 	int snum;
 	VUSER_KEY;
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!(strcsequal(str1, "z") && strcsequal(str2, "")))
 		return (False);
 
@@ -2128,7 +2138,7 @@ static BOOL api_PrintJobInfo(connection_struct * conn, uint16 vuid,
 
 	*rdata_len = 0;
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if ((strcmp(str1, "WWsTP")) ||
 	    (!check_printjob_info(&desc, uLevel, str2)))
 		return (False);
@@ -2255,13 +2265,16 @@ static BOOL api_RNetServerGetInfo(connection_struct * conn, uint16 vuid,
 	int uLevel = SVAL(p, 0);
 	char *p2;
 	int struct_len;
+	SRV_INFO_CTR ctr;
+	SRV_INFO_102 *sv102 = &ctr.srv.sv102;
 	VUSER_KEY;
 
 	DEBUG(4, ("NetServerGetInfo level %d\n", uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1, "WrLh"))
 		return False;
+
 	switch (uLevel)
 	{
 		case 0:
@@ -2304,69 +2317,54 @@ static BOOL api_RNetServerGetInfo(connection_struct * conn, uint16 vuid,
 			return False;
 	}
 
-	*rdata_len = mdrcnt;
-	*rdata = REALLOC(*rdata, *rdata_len);
-
-	p = *rdata;
-	p2 = p + struct_len;
-	if (uLevel != 20)
-	{
-		StrnCpy(p, local_machine, 16);
-		strupper(p);
-	}
-	p += 16;
-	if (uLevel > 0)
-	{
-		struct srv_info_struct *servers = NULL;
-		int i, count;
-		pstring comment;
-		uint32 servertype = lp_default_server_announce();
-
-		pstrcpy(comment,
-			string_truncate(lp_serverstring(),
-					MAX_SERVER_STRING_LENGTH));
-
-		if (
-		    (count =
-		     get_server_info(SV_TYPE_ALL, &servers,
-				     global_myworkgroup)) > 0)
-		{
-			for (i = 0; i < count; i++)
-				if (strequal(servers[i].name, local_machine))
-				{
-					servertype = servers[i].type;
-					pstrcpy(comment, servers[i].comment);
-				}
-		}
-		if (servers)
-			free(servers);
-
-		SCVAL(p, 0, lp_major_announce_version());
-		SCVAL(p, 1, lp_minor_announce_version());
-		SIVAL(p, 2, servertype);
-
-		if (mdrcnt == struct_len)
-		{
-			SIVAL(p, 6, 0);
-		}
-		else
-		{
-			user_struct *vuser = get_valid_user_struct(&key);
-			SIVAL(p, 6, PTR_DIFF(p2, *rdata));
-			standard_sub(conn, vuser, comment);
-			StrnCpy(p2, comment, MAX(mdrcnt - struct_len, 0));
-			p2 = skip_string(p2, 1);
-			vuid_free_user_struct(vuser);
-
-		}
-	}
 	if (uLevel > 1)
 	{
 		return False;	/* not yet implemented */
 	}
 
-	*rdata_len = PTR_DIFF(p2, *rdata);
+	ZERO_STRUCT(ctr);
+	if (!srv_net_srv_get_info("\\\\.", 102, &ctr))
+	{
+		return False;
+	}
 
+	*rdata_len = mdrcnt;
+	*rdata = REALLOC(*rdata, *rdata_len);
+
+	p = *rdata;
+	p2 = p + struct_len;
+
+	if (sv102->ptr_name != 0)
+	{
+		unistr2_to_ascii(p, &sv102->uni_name, 16 - 1);
+		strupper(p);
+	}
+	else
+	{
+		memset(p, 0, 16);
+	}
+	p += 16;
+
+	if (uLevel > 0)
+	{
+		SCVAL(p, 0, sv102->ver_major);
+		SCVAL(p, 1, sv102->ver_minor);
+		SIVAL(p, 2, sv102->srv_type);
+
+		if (sv102->ptr_comment != 0 || mdrcnt == struct_len)
+		{
+			SIVAL(p, 6, PTR_DIFF(p2, *rdata));
+			unistr2_to_ascii(p2, &sv102->uni_comment,
+					 MAX(mdrcnt - struct_len, 0));
+			p2 = skip_string(p2, 1);
+		}
+		else
+		{
+			SIVAL(p, 6, 0);
+		}
+	}
+
+	*rdata_len = PTR_DIFF(p2, *rdata);
 	*rparam_len = 6;
 	*rparam = REALLOC(*rparam, *rparam_len);
 	SSVAL(*rparam, 0, NERR_Success);
@@ -2385,23 +2383,34 @@ static BOOL api_NetWkstaGetInfo(connection_struct * conn, uint16 vuid,
 				int mprcnt, char **rdata, char **rparam,
 				int *rdata_len, int *rparam_len)
 {
+
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
 	char *p = skip_string(str2, 1);
 	char *p2;
-	extern pstring sesssetup_user;
+	extern pstring sesssetup_user; /* want to get rid of this, use vuser */
 	int level = SVAL(p, 0);
+	int l2;
+	int len = 0;
+	WKS_INFO_100 ctr;
+
+	ZERO_STRUCT(ctr);
 
 	DEBUG(4, ("NetWkstaGetInfo level %d\n", level));
 
-	*rparam_len = 6;
-	*rparam = REALLOC(*rparam, *rparam_len);
-
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!
 	    (level == 10 && strcsequal(str1, "WrLh")
 	     && strcsequal(str2, "zzzBBzz")))
 		return (False);
+
+	if (!wks_query_info( "\\\\.", 100, &ctr))
+	{
+		return False;
+	}
+
+	*rparam_len = 6;
+	*rparam = REALLOC(*rparam, *rparam_len);
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata, *rdata_len);
@@ -2411,32 +2420,32 @@ static BOOL api_NetWkstaGetInfo(connection_struct * conn, uint16 vuid,
 
 	p = *rdata;
 	p2 = p + 22;
+	l2 = *rdata_len;
 
-
-	SIVAL(p, 0, PTR_DIFF(p2, *rdata));	/* host name */
-	pstrcpy(p2, local_machine);
-	strupper(p2);
-	p2 = skip_string(p2, 1);
+	len += CopyUnistr2Ptr(*rdata, p, 0,
+				      ctr.ptr_compname, &p2,
+				      &ctr.uni_compname, &l2);
 	p += 4;
 
+	/* session-user's name? */
 	SIVAL(p, 0, PTR_DIFF(p2, *rdata));
 	pstrcpy(p2, sesssetup_user);
 	p2 = skip_string(p2, 1);
 	p += 4;
 
-	SIVAL(p, 0, PTR_DIFF(p2, *rdata));	/* login domain */
-	pstrcpy(p2, global_myworkgroup);
-	strupper(p2);
-	p2 = skip_string(p2, 1);
+	/* session-user's domain name? */
+	len += CopyUnistr2Ptr(*rdata, p, 0,
+				      ctr.ptr_lan_grp, &p2,
+				      &ctr.uni_lan_grp, &l2);
 	p += 4;
 
-	SCVAL(p, 0, lp_major_announce_version());	/* system version - e.g 4 in 4.1 */
-	SCVAL(p, 1, lp_minor_announce_version());	/* system version - e.g .1 in 4.1 */
+	SCVAL(p, 0, ctr.ver_major);
+	SCVAL(p, 1, ctr.ver_minor);
 	p += 2;
 
-	SIVAL(p, 0, PTR_DIFF(p2, *rdata));
-	pstrcpy(p2, global_myworkgroup);	/* don't know.  login domain?? */
-	p2 = skip_string(p2, 1);
+	len += CopyUnistr2Ptr(*rdata, p, 0,
+				      ctr.ptr_lan_grp, &p2,
+				      &ctr.uni_lan_grp, &l2);
 	p += 4;
 
 	SIVAL(p, 0, PTR_DIFF(p2, *rdata));	/* don't know */
@@ -2582,7 +2591,7 @@ to be ignored. The converter word returned in the parameters section
 needs to be subtracted from the lower 16 bits to calculate an offset
 into the return buffer where this ASCII string resides.
 
-There is no auxiliary data in the response.
+There is no auxilliary data in the response.
 
   ****************************************************************************/
 
@@ -2844,7 +2853,7 @@ static BOOL api_NetUserGetGroups(connection_struct * conn, uint16 vuid,
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam, *rparam_len);
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "zWrLeh") != 0)
 		return False;
 	switch (uLevel)
@@ -2916,7 +2925,7 @@ static BOOL api_WWkstaUserLogon(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WWkstaUserLogon uLevel=%d name=%s\n", uLevel, name));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "OOWb54WrLh") != 0)
 		return False;
 	if (uLevel != 1 || strcmp(str2, "WB21BWDWWDDDDDDDzzzD") != 0)
@@ -2999,7 +3008,7 @@ static BOOL api_WAccessGetUserPerms(connection_struct * conn, uint16 vuid,
 	DEBUG(3,
 	      ("WAccessGetUserPerms user=%s resource=%s\n", user, resource));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "zzh") != 0)
 		return False;
 	if (strcmp(str2, "") != 0)
@@ -3044,7 +3053,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct * conn, uint16 vuid,
 	      ("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n", uLevel,
 	       SVAL(p, 0)));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "WWrLh") != 0)
 		return False;
 	if (!check_printjob_info(&desc, uLevel, str2))
@@ -3120,7 +3129,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WPrintJobEnumerate uLevel=%d name=%s\n", uLevel, name));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "zWrLeh") != 0)
 		return False;
 	if (uLevel > 2)
@@ -3260,7 +3269,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct * conn, uint16 vuid,
 	      ("WPrintDestGetInfo uLevel=%d PrinterName=%s\n", uLevel,
 	       PrinterName));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "zWrLh") != 0)
 		return False;
 	if (!check_printdest_info(&desc, uLevel, str2))
@@ -3326,7 +3335,7 @@ static BOOL api_WPrintDestEnum(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WPrintDestEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "WrLeh") != 0)
 		return False;
 	if (!check_printdest_info(&desc, uLevel, str2))
@@ -3389,7 +3398,7 @@ static BOOL api_WPrintDriverEnum(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WPrintDriverEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "WrLeh") != 0)
 		return False;
 	if (uLevel != 0 || strcmp(str2, "B41") != 0)
@@ -3437,7 +3446,7 @@ static BOOL api_WPrintQProcEnum(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WPrintQProcEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "WrLeh") != 0)
 		return False;
 	if (uLevel != 0 || strcmp(str2, "B13") != 0)
@@ -3486,7 +3495,7 @@ static BOOL api_WPrintPortEnum(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("WPrintPortEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1, "WrLeh") != 0)
 		return False;
 	if (uLevel != 0 || strcmp(str2, "B9") != 0)
@@ -3682,7 +3691,7 @@ int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
 
 	if (params == 0)
 	{
-		DEBUG(0,("ERROR: NULL params in api_reply()\n"));
+		DEBUG(0, ("ERROR: NULL params in api_reply()\n"));
 		return 0;
 	}
 

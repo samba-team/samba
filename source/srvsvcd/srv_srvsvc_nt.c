@@ -265,7 +265,9 @@ static void make_srv_share_2_info(SH_INFO_2 * sh2,
 	pstring path;
 	pstring passwd;
 	uint32 type;
+	uint32 perms;
 	uint32 max_uses;
+	uint32 current_uses;
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
@@ -276,6 +278,9 @@ static void make_srv_share_2_info(SH_INFO_2 * sh2,
 	/* work out the share type */
 	type = STYPE_DISKTREE;
 
+	/* permissions.  actually, i think delete is modify.  lkclXXXX */
+	perms = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+
 	if (lp_print_ok(snum))
 		type = STYPE_PRINTQ;
 	if (strequal("IPC$", net_name))
@@ -283,12 +288,13 @@ static void make_srv_share_2_info(SH_INFO_2 * sh2,
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
 
+	current_uses = 1;
 	max_uses = lp_max_connections(snum);
 	if (max_uses == 0)
 		max_uses = 0xffffffff;
 
-	make_srv_sh_info2(sh2, net_name, type, remark, 0,
-			  max_uses, 1, path, passwd);
+	make_srv_sh_info2(sh2, net_name, type, remark, perms,
+			  max_uses, current_uses, path, passwd);
 	make_srv_sh_info2_str(str2, net_name, remark, path, passwd);
 }
 
