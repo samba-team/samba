@@ -1,5 +1,11 @@
 Mon Oct 20 01:14:53 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/prompter_posix.c (krb5_prompter_posix): implement the
+ 	case of unhidden prompts.
+
+	* lib/krb5/str2key.c (string_to_key_internal): return error
+ 	instead of aborting.  always free memory
+
 	* admin/ktutil.c: add `help' command
 
 	* admin/kdb_edit.c: implement new commands: add_random_key(ark),
