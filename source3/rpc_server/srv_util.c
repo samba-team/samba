@@ -148,13 +148,14 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	}
 
 	for (i=0;i<num_groups;i++) {
-		if(!get_group_from_gid(groups[i], &map, MAPPING_WITHOUT_PRIV)) {
+
+		if (!get_group_from_gid(groups[i], &map)) {
 			DEBUG(10,("get_alias_user_groups: gid %d. not found\n", (int)groups[i]));
 			continue;
 		}
 		
 		/* if it's not an alias, continue */
-		if (map.sid_name_use!=SID_NAME_ALIAS) {
+		if (map.sid_name_use != SID_NAME_ALIAS) {
 			DEBUG(10,("get_alias_user_groups: not returing %s, not an ALIAS group.\n", map.nt_name));
 			continue;
 		}
@@ -208,7 +209,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 
 	DEBUG(10,("get_alias_user_groups: looking for gid %d of user %s\n", (int)gid, user_name));
 
-	if(!get_group_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
+	if(!get_group_from_gid(gid, &map)) {
 		DEBUG(0,("get_alias_user_groups: gid of user %s doesn't exist. Check your /etc/passwd and /etc/group files\n", user_name));
 		goto done;
 	}	
@@ -281,7 +282,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	DEBUG(10,("get_domain_user_groups: searching domain groups [%s] is a member of\n", user_name));
 
 	/* first get the list of the domain groups */
-	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED))
 		return False;
 	DEBUG(10,("get_domain_user_groups: there are %d mapped groups\n", num_entries));
 

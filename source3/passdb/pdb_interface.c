@@ -258,7 +258,7 @@ static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCO
 }
 
 static NTSTATUS context_getgrsid(struct pdb_context *context,
-				 GROUP_MAP *map, DOM_SID sid, BOOL with_priv)
+				 GROUP_MAP *map, DOM_SID sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -269,7 +269,7 @@ static NTSTATUS context_getgrsid(struct pdb_context *context,
 	}
 	curmethods = context->pdb_methods;
 	while (curmethods){
-		ret = curmethods->getgrsid(curmethods, map, sid, with_priv);
+		ret = curmethods->getgrsid(curmethods, map, sid);
 		if (NT_STATUS_IS_OK(ret)) {
 			map->methods = curmethods;
 			return ret;
@@ -281,7 +281,7 @@ static NTSTATUS context_getgrsid(struct pdb_context *context,
 }
 
 static NTSTATUS context_getgrgid(struct pdb_context *context,
-				 GROUP_MAP *map, gid_t gid, BOOL with_priv)
+				 GROUP_MAP *map, gid_t gid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -292,7 +292,7 @@ static NTSTATUS context_getgrgid(struct pdb_context *context,
 	}
 	curmethods = context->pdb_methods;
 	while (curmethods){
-		ret = curmethods->getgrgid(curmethods, map, gid, with_priv);
+		ret = curmethods->getgrgid(curmethods, map, gid);
 		if (NT_STATUS_IS_OK(ret)) {
 			map->methods = curmethods;
 			return ret;
@@ -304,7 +304,7 @@ static NTSTATUS context_getgrgid(struct pdb_context *context,
 }
 
 static NTSTATUS context_getgrnam(struct pdb_context *context,
-				 GROUP_MAP *map, char *name, BOOL with_priv)
+				 GROUP_MAP *map, char *name)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -315,7 +315,7 @@ static NTSTATUS context_getgrnam(struct pdb_context *context,
 	}
 	curmethods = context->pdb_methods;
 	while (curmethods){
-		ret = curmethods->getgrnam(curmethods, map, name, with_priv);
+		ret = curmethods->getgrnam(curmethods, map, name);
 		if (NT_STATUS_IS_OK(ret)) {
 			map->methods = curmethods;
 			return ret;
@@ -371,7 +371,7 @@ static NTSTATUS context_delete_group_mapping_entry(struct pdb_context *context,
 static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only, BOOL with_priv)
+					   BOOL unix_only)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -382,8 +382,7 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 
 	return context->pdb_methods->enum_group_mapping(context->pdb_methods,
 							sid_name_use, rmap,
-							num_entries, unix_only,
-							with_priv);
+							num_entries, unix_only);
 }
 
 /******************************************************************
@@ -668,7 +667,7 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
 }
 
-BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid, BOOL with_priv)
+BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -677,10 +676,10 @@ BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid, BOOL with_priv)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrsid(pdb_context, map, sid, with_priv));
+			       pdb_getgrsid(pdb_context, map, sid));
 }
 
-BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid, BOOL with_priv)
+BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -689,10 +688,10 @@ BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid, BOOL with_priv)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrgid(pdb_context, map, gid, with_priv));
+			       pdb_getgrgid(pdb_context, map, gid));
 }
 
-BOOL pdb_getgrnam(GROUP_MAP *map, char *name, BOOL with_priv)
+BOOL pdb_getgrnam(GROUP_MAP *map, char *name)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -701,7 +700,7 @@ BOOL pdb_getgrnam(GROUP_MAP *map, char *name, BOOL with_priv)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrnam(pdb_context, map, name, with_priv));
+			       pdb_getgrnam(pdb_context, map, name));
 }
 
 BOOL pdb_add_group_mapping_entry(GROUP_MAP *map)
@@ -741,7 +740,7 @@ BOOL pdb_delete_group_mapping_entry(DOM_SID sid)
 }
 
 BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
-			    int *num_entries, BOOL unix_only, BOOL with_priv)
+			    int *num_entries, BOOL unix_only)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -751,8 +750,7 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 	return NT_STATUS_IS_OK(pdb_context->
 			       pdb_enum_group_mapping(pdb_context, sid_name_use,
-						      rmap, num_entries, unix_only,
-						      with_priv));
+						      rmap, num_entries, unix_only));
 }
 
 /***************************************************************

@@ -203,14 +203,11 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 
-	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map,
-				 DOM_SID sid, BOOL with_priv);
+	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map, DOM_SID sid);
 	
-	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map,
-				 gid_t gid, BOOL with_priv);
+	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map, gid_t gid);
 	
-	NTSTATUS (*pdb_getgrnam)(struct pdb_context *context, GROUP_MAP *map,
-				 char *name, BOOL with_priv);
+	NTSTATUS (*pdb_getgrnam)(struct pdb_context *context, GROUP_MAP *map, const char *name);
 	
 	NTSTATUS (*pdb_add_group_mapping_entry)(struct pdb_context *context,
 						GROUP_MAP *map);
@@ -224,7 +221,7 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_enum_group_mapping)(struct pdb_context *context,
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only, BOOL with_priv);
+					   BOOL unix_only);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -257,14 +254,11 @@ typedef struct pdb_methods
 	
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
-	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map,
-			     DOM_SID sid, BOOL with_priv);
+	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
 
-	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map,
-			     gid_t gid, BOOL with_priv);
+	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
 
-	NTSTATUS (*getgrnam)(struct pdb_methods *methods, GROUP_MAP *map,
-			     char *name, BOOL with_priv);
+	NTSTATUS (*getgrnam)(struct pdb_methods *methods, GROUP_MAP *map, const char *name);
 
 	NTSTATUS (*add_group_mapping_entry)(struct pdb_methods *methods,
 					    GROUP_MAP *map);
@@ -278,7 +272,7 @@ typedef struct pdb_methods
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
 				       enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **rmap, int *num_entries,
-				       BOOL unix_only, BOOL with_priv);
+				       BOOL unix_only);
 
 	void *private_data;  /* Private data of some kind */
 	

@@ -347,7 +347,7 @@ BOOL idmap_init_wellknown_sids(void)
 	}
 
 	/* now fill in group mappings */
-	if(pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+	if(pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED)) {
 		int i;
 
 		for (i = 0; i < num_entries; i++) {

@@ -1673,7 +1673,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		{
 			GROUP_MAP map;
 			/* call the mapping code here */
-			if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
+			if(pdb_getgrgid(&map, gid)) {
 				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
 			} 
 			else {
@@ -2815,9 +2815,6 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 	}
 	fstrcpy(map->comment, temp);
 
-	map->systemaccount = 0;
-	init_privilege(&map->priv_set);
-
 	return True;
 }
 
@@ -2906,7 +2903,7 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid, BOOL with_priv)
+				 DOM_SID sid)
 {
 	pstring filter;
 
@@ -2922,7 +2919,7 @@ static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
  *********************************************************************/
 
 static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
-				 gid_t gid, BOOL with_priv)
+				 gid_t gid)
 {
 	pstring filter;
 
@@ -2938,7 +2935,7 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
  *********************************************************************/
 
 static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
-				 char *name, BOOL with_priv)
+				 const char *name)
 {
 	pstring filter;
 
@@ -2989,7 +2986,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	int rc;
 
 	if (NT_STATUS_IS_OK(ldapsam_getgrgid(methods, &dummy,
-					     map->gid, False))) {
+					     map->gid))) {
 		DEBUG(0, ("Group %i already exists in LDAP\n", map->gid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -3215,7 +3212,7 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only, BOOL with_priv)
+					   BOOL unix_only)
 {
 	GROUP_MAP map;
 	GROUP_MAP *mapt;

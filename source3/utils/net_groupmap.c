@@ -65,7 +65,7 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 
 	if (StrnCaseCmp( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
-		if (!pdb_getgrnam(&map, input, MAPPING_WITHOUT_PRIV)) {
+		if (!pdb_getgrnam(&map, input)) {
 			printf("NT Group %s doesn't exist in mapping DB\n", input);
 			return False;
 		} else {
@@ -88,11 +88,9 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 {
 	fstring string_sid;
 	fstring group_type;
-	fstring priv_text;
 	
 	decode_sid_name_use(group_type, map.sid_name_use);
 	sid_to_string(string_sid, &map.sid);
-	convert_priv_to_text(&(map.priv_set), priv_text);
 		
 	if (!long_list)
 		d_printf("%s (%s) -> %s\n", map.nt_name, string_sid, gidtoname(map.gid));
@@ -102,7 +100,6 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 		d_printf("\tUnix group: %s\n", gidtoname(map.gid));
 		d_printf("\tGroup type: %s\n", group_type);
 		d_printf("\tComment   : %s\n", map.comment);
-		d_printf("\tPrivilege : %s\n\n", priv_text);
 	}
 
 }
@@ -155,23 +152,21 @@ int net_groupmap_list(int argc, const char **argv)
 		}
 
 		/* Get the current mapping from the database */
-		if(!pdb_getgrsid(&map, sid, MAPPING_WITH_PRIV)) {
+		if(!pdb_getgrsid(&map, sid)) {
 			d_printf("Failure to local group SID in the database\n");
 			return -1;
 		}
 	
 		print_map_entry( map, long_list );
-		free_privilege(&(map.priv_set));	
 	}
 	else {
 		GROUP_MAP *map=NULL;
 		/* enumerate all group mappings */
-		if ( !pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED, MAPPING_WITH_PRIV) )
+		if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
 			return -1;
 	
 		for (i=0; i<entries; i++) {
 			print_map_entry( map[i], long_list );
-			free_privilege(&(map[i].priv_set));
 		}
 	}
 
@@ -184,7 +179,6 @@ int net_groupmap_list(int argc, const char **argv)
 
 int net_groupmap_add(int argc, const char **argv)
 {
-	PRIVILEGE_SET se_priv;
 	DOM_SID sid;
 	fstring ntgroup = "";
 	fstring unixgrp = "";
@@ -280,20 +274,11 @@ int net_groupmap_add(int argc, const char **argv)
 		fstrcpy( ntgroup, unixgrp );
 		
 	
-	init_privilege(&se_priv);
-#if 0
-	if (privilege!=NULL)
-		convert_priv_from_text(&se_priv, privilege);
-#endif
-
-	if (!add_initial_entry(gid, string_sid, sid_type, ntgroup,
-			      ntcomment, se_priv, PR_ACCESS_FROM_NETWORK) ) {
+	if (!add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment)) {
 		d_printf("adding entry for group %s failed!\n", ntgroup);
 		return -1;
 	}
 
-	free_privilege(&se_priv);
-		
 	d_printf("Successully added group %s to the mapping db\n", ntgroup);
 	return 0;
 }
@@ -381,7 +366,7 @@ int net_groupmap_modify(int argc, const char **argv)
 	}	
 
 	/* Get the current mapping from the database */
-	if(!pdb_getgrsid(&map, sid, MAPPING_WITH_PRIV)) {
+	if(!pdb_getgrsid(&map, sid)) {
 		d_printf("Failure to local group SID in the database\n");
 		return -1;
 	}
@@ -390,9 +375,8 @@ int net_groupmap_modify(int argc, const char **argv)
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-	if ( sid_type != SID_NAME_UNKNOWN ) 
-	{ 
-		if ( map.sid_name_use == SID_NAME_WKN_GRP ) {
+	if (sid_type != SID_NAME_UNKNOWN) { 
+		if (map.sid_name_use == SID_NAME_WKN_GRP) {
 			d_printf("You can only change between domain and local groups.\n");
 			return -1;
 		}
@@ -418,19 +402,10 @@ int net_groupmap_modify(int argc, const char **argv)
 		map.gid = gid;
 	}
 
-#if 0
-	/* Change the privilege if new one */
-	if (privilege!=NULL)
-		convert_priv_from_text(&map.priv_set, privilege);
-#endif
-
 	if ( !pdb_update_group_mapping_entry(&map) ) {
 		d_printf("Could not update group database\n");
-		free_privilege(&map.priv_set);
 		return -1;
 	}
-	
-	free_privilege(&map.priv_set);
 	
 	d_printf("Updated mapping entry for %s\n", ntgroup);
 

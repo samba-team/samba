@@ -91,7 +91,7 @@ static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 
 	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
 							&maps, &entries,
-							False, False))) {
+							False))) {
 		fprintf(stderr, "Can't get group mappings!\n");
 		return 1;
 	}
