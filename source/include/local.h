@@ -23,7 +23,16 @@
    printcap file is a quick-n-dirty way to allow dynamic access to a subset
    of available printers.
 */
+
+#ifndef PRINTCAP_NAME
+#ifdef AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#elif defined(SYSV)
+#define PRINTCAP_NAME "lpstat"
+#else
 #define PRINTCAP_NAME "/etc/printcap"
+#endif
+#endif
 
 /* this affects server level security. With this set (recommended)
    samba will do a full NetWkstaUserLogon to confirm that the client

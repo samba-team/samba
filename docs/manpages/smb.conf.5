@@ -210,6 +210,12 @@ could be used simply to limit access to a subset of your local printers.
 An alias, by the way, is defined as any component of the first entry of a 
 printcap record. Records are separated by newlines, components (if there are 
 more than one) are separated by vertical bar symbols ("|").
+
+NOTE: On SYSV systems which use lpstat to determine what printers are
+defined on the system you may be able to use "printcap name = lpstat" 
+to automatically obtain a list of printers. See the "printcap name"
+option for more detils.
+
 .RE
 .SH PARAMETERS
 Parameters define the specific attributes of services.
@@ -2759,9 +2765,13 @@ This parameter may be used to override the compiled-in default printcap
 name used by the server (usually /etc/printcap). See the discussion of the
 [printers] section above for reasons why you might want to do this.
 
-For those of you without a printcap (say on SysV) you can just create a
-minimal file that looks like a printcap and set "printcap name =" in
-[global] to point at it.
+On SystemV systems that use lpstat to list available printers you
+can use "printcap name = lpstat" to automatically obtain lists of
+available printers. This is the default for systems that define 
+SYSV at compile time in Samba (this includes most SystemV based
+systems). If "printcap name" is set to lpstat on these systems then
+Samba will launch "lpstat -v" and attempt to parse the output to
+obtain a printer list.
 
 A minimal printcap file would look something like this:
 

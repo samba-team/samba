@@ -29,8 +29,15 @@
 
 # If you want to automatically load your printer list rather
 # than setting them up individually then you'll need this
-   printcap name = /etc/printcap
    load printers = yes
+
+# you may wish to override the location of the printcap file
+;   printcap name = /etc/printcap
+
+# on SystemV system setting printcap name to lpstat should allow
+# you to automatically obtain a printer list from the SystemV spool
+# system
+;   printcap name = lpstat
 
 # It should not be necessary to specify the print system type unless
 # it is non-standard. Currently supported print systems include:

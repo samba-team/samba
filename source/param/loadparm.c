@@ -64,14 +64,6 @@ extern pstring myname;
 #define GLOBAL_NAME "global"
 #endif
 
-#ifndef PRINTCAP_NAME
-#ifdef AIX
-#define PRINTCAP_NAME "/etc/qconfig"
-#else
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
 #ifndef PRINTERS_NAME
 #define PRINTERS_NAME "printers"
 #endif
