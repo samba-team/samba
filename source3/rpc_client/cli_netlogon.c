@@ -332,8 +332,7 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-Generate the next creds to use.  Yuck - this is a cut&paste from another
-file.  They should be combined at some stage.  )-:
+Generate the next creds to use.
 ****************************************************************************/
 
 static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
