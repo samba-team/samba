@@ -1,4 +1,21 @@
+2004-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (DES3_random_to_key): make it produce the
+	right result
+	(DES3_postproc): use DES3_random_to_key
+	(krb5_random_to_key): check the required number of bits (not the size
+	of the key)
+
+	* lib/krb5/aes-test.c: test random to key function
+
+	* lib/krb5/string-to-key-test.c: comment out the "@"/"" test for
+	now
+
 2004-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_string_to_key.3: document that
+	krb5_string_to_key_derived is broken for non 3des enctypes and
+	thus deprecated
 
 	* kdc/pkinit.c (generate_dh_keyblock): use the new function
 	krb5_random_to_key
