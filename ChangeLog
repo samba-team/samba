@@ -1,5 +1,8 @@
 2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/asn1/der_get.c: add comment on *why* DCE sometimes used BER
+	encoding
+
 	* kpasswd/Makefile.am: link with pidfile library
 
 	* kpasswd/kpasswdd.c: write a pid file
