@@ -330,12 +330,11 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
 		lib/debug.o lib/util_sid.o lib/messages.o lib/util_str.o \
 		lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
-		lib/slprintf.o nsswitch/wb_client.o nsswitch/wb_common.o \
-		lib/system.o lib/charset.o lib/util_file.o lib/kanji.o \
-		lib/genrand.o lib/username.o lib/charcnv.o lib/time.o \
-		lib/md4.o lib/util_unistr.o lib/signal.o lib/talloc.o \
-		lib/ms_fnmatch.o lib/util_sock.o lib/doscalls.o lib/smbrun.o \
-		lib/util_sec.o \
+		nsswitch/wb_client.o nsswitch/wb_common.o lib/system.o \
+		lib/charset.o lib/util_file.o lib/kanji.o lib/genrand.o \
+		lib/username.o lib/charcnv.o lib/time.o lib/md4.o \
+		lib/util_unistr.o lib/signal.o lib/talloc.o lib/ms_fnmatch.o \
+		lib/util_sock.o lib/doscalls.o lib/smbrun.o lib/util_sec.o \
 		ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
 		$(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
