@@ -635,6 +635,70 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	return token;
 }
 
+static void add_gid_to_array_unique(gid_t gid, gid_t **groups, int *ngroups)
+{
+	int i;
+
+	if ((*ngroups) >= groups_max())
+		return;
+
+	for (i=0; i<*ngroups; i++) {
+		if ((*groups)[i] == gid)
+			return;
+	}
+	
+	*groups = Realloc(*groups, ((*ngroups)+1) * sizeof(gid_t));
+
+	if (*groups == NULL)
+		return;
+
+	(*groups)[*ngroups] = gid;
+	*ngroups += 1;
+}
+
+static void add_foreign_gids_from_sid(const DOM_SID *sid, gid_t **groups,
+				      int *ngroups)
+{
+	DOM_SID *aliases;
+	int j, num_aliases;
+
+	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+		return;
+
+	for (j=0; j<num_aliases; j++) {
+		gid_t gid;
+
+		if (!NT_STATUS_IS_OK(sid_to_gid(&aliases[j], &gid)))
+			continue;
+
+		add_gid_to_array_unique(gid, groups, ngroups);
+	}
+	SAFE_FREE(aliases);
+}
+
+static void add_foreign_gids(uid_t uid, gid_t gid,
+			     gid_t **groups, int *ngroups)
+{
+	int i, dom_groups;
+	DOM_SID sid;
+
+	if (NT_STATUS_IS_OK(uid_to_sid(&sid, uid)))
+		add_foreign_gids_from_sid(&sid, groups, ngroups);
+
+	if (NT_STATUS_IS_OK(gid_to_sid(&sid, gid)))
+		add_foreign_gids_from_sid(&sid, groups, ngroups);
+
+	dom_groups = *ngroups;
+
+	for (i=0; i<dom_groups; i++) {
+
+		if (!NT_STATUS_IS_OK(gid_to_sid(&sid, (*groups)[i])))
+			continue;
+
+		add_foreign_gids_from_sid(&sid, groups, ngroups);
+	}
+}
+
 /******************************************************************************
  * this function returns the groups (SIDs) of the local SAM the user is in.
  * If this samba server is a DC of the domain the user belongs to, it returns 
@@ -698,6 +762,8 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 			}
 		}
 	}
+
+	add_foreign_gids(uid, gid, unix_groups, &n_unix_groups);
 
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, n_unix_groups, *unix_groups);
 	
