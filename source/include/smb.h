@@ -370,7 +370,7 @@ struct dcinfo
 
 struct acct_info
 {
-	LSA_POL_HND acct_pol; /* use this as a reference */
+	POLICY_HND acct_pol; /* use this as a reference */
 	fstring acct_name; /* account name */
 	uint32 smb_userid; /* domain-relative RID */
 };
@@ -394,7 +394,7 @@ struct nt_client_info
 
 	uint16 lsarpc_fnum;
 
-	LSA_POL_HND lsa_info_pol;
+	POLICY_HND lsa_info_pol;
 
 	/* domain member */
 	fstring level3_dom;
@@ -408,7 +408,8 @@ struct nt_client_info
 
 	uint16 samr_fnum;
 
-	LSA_POL_HND samr_pol_open;
+	POLICY_HND samr_pol_connect;
+	POLICY_HND samr_pol_open_domain;
 
 	struct acct_info sam[MAX_SAM_ENTRIES];
 	int num_sam_entries;

@@ -900,17 +900,17 @@ int reply_getattrE(char *inbuf,char *outbuf);
 
 /*The following definitions come from  rpc_pipes/lsa_hnd.c  */
 
-void create_pol_hnd(LSA_POL_HND *hnd);
+void create_pol_hnd(POLICY_HND *hnd);
 void init_lsa_policy_hnd(void);
-BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd);
-int find_lsa_policy_by_hnd(LSA_POL_HND *hnd);
-BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
-BOOL set_lsa_policy_samr_pol_status(LSA_POL_HND *hnd, uint32 pol_status);
-BOOL set_lsa_policy_samr_sid(LSA_POL_HND *hnd, DOM_SID *sid);
-uint32 get_lsa_policy_samr_rid(LSA_POL_HND *hnd);
-BOOL set_lsa_policy_reg_name(LSA_POL_HND *hnd, fstring name);
-BOOL get_lsa_policy_reg_name(LSA_POL_HND *hnd, fstring name);
-BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
+BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
+int find_lsa_policy_by_hnd(POLICY_HND *hnd);
+BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
+BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
+BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
+BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
 
@@ -932,16 +932,16 @@ void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 			uint32 desired_access);
 char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int align, int depth);
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
-void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
+void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
 char* lsa_io_q_enum_trust_dom(BOOL io, LSA_Q_ENUM_TRUST_DOM *q_e, char *q, char *base, int align, int depth);
 void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 				uint32 enum_context, char *domain_name, char *domain_sid,
 				uint32 status);
 char* lsa_io_r_enum_trust_dom(BOOL io, LSA_R_ENUM_TRUST_DOM *r_e, char *q, char *base, int align, int depth);
-void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd);
+void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth);
-void make_r_close(LSA_R_CLOSE *q_r, LSA_POL_HND *hnd);
+void make_lsa_r_close(LSA_R_CLOSE *q_r, POLICY_HND *hnd);
 char* lsa_io_r_close(BOOL io, LSA_R_CLOSE *r_c, char *q, char *base, int align, int depth);
 char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align, int depth);
 char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base, int align, int depth);
@@ -998,11 +998,11 @@ void do_nt_session_close(struct cli_state *cli, int t_idx, uint16 fnum);
 BOOL do_lsa_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_lsa_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
 BOOL do_lsa_open_policy(struct cli_state *cli, int t_idx, uint16 fnum,
-			char *server_name, LSA_POL_HND *hnd);
+			char *server_name, POLICY_HND *hnd);
 BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
-			LSA_POL_HND *hnd, uint16 info_class,
+			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, fstring domain_sid);
-BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, LSA_POL_HND *hnd);
+BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
 
@@ -1047,15 +1047,16 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnu
 BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
-				LSA_POL_HND *pol, uint32 enum_ctx, uint32 unk_1, uint32 size,
+				POLICY_HND *pol, uint32 enum_ctx, uint32 unk_1, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
 				int *num_sam_users);
-BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
-				char *srv_name, uint32 unknown_0,
-				LSA_POL_HND *rtn_pol);
 BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
-				LSA_POL_HND *query_pol, uint32 rid,
-				char *sid, LSA_POL_HND *rtn_pol);
+				char *srv_name, uint32 unknown_0,
+				POLICY_HND *rtn_pol);
+BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol, uint32 rid, char *sid,
+				POLICY_HND *rtn_pol);
+BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclienttrust.c  */
 
@@ -1133,12 +1134,12 @@ void make_reg_q_open_policy(REG_Q_OPEN_POLICY *r_q,
 				uint16 unknown_0, uint32 level, uint16 unknown_1);
 char* reg_io_q_open_policy(BOOL io, REG_Q_OPEN_POLICY *r_q, char *q, char *base, int align, int depth);
 void make_reg_r_open_policy(REG_R_OPEN_POLICY *r_r,
-				LSA_POL_HND *pol, uint32 status);
+				POLICY_HND *pol, uint32 status);
 char* reg_io_r_open_policy(BOOL io, REG_R_OPEN_POLICY *r_r, char *q, char *base, int align, int depth);
 char* reg_io_q_close(BOOL io, REG_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
 char* reg_io_r_close(BOOL io, REG_R_CLOSE *r_u, char *q, char *base, int align, int depth);
 void make_reg_q_info(REG_Q_INFO *r_q,
-				LSA_POL_HND *pol, char *product_type,
+				POLICY_HND *pol, char *product_type,
 				NTTIME *prod_time, uint8 major_version, uint8 minor_version,
 				uint32 unknown);
 char* reg_io_q_info(BOOL io, REG_Q_INFO *r_q, char *q, char *base, int align, int depth);
@@ -1148,35 +1149,36 @@ void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 status);
 char* reg_io_r_info(BOOL io, REG_R_INFO *r_r, char *q, char *base, int align, int depth);
 void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q,
-				LSA_POL_HND *pol, char *name,
+				POLICY_HND *pol, char *name,
 				uint32 unknown_0, uint32 unknown_1, uint16 unknown_2);
 char* reg_io_q_open_entry(BOOL io, REG_Q_OPEN_ENTRY *r_q, char *q, char *base, int align, int depth);
 void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
-				LSA_POL_HND *pol, uint32 status);
+				POLICY_HND *pol, uint32 status);
 char* reg_io_r_open_entry(BOOL io, REG_R_OPEN_ENTRY *r_r, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/samrparse.c  */
 
+void make_samr_q_close(SAMR_Q_CLOSE *q_c, POLICY_HND *hnd);
 char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				LSA_POL_HND *pol, uint32 rid, char *sid);
-char* samr_io_q_connect(BOOL io, SAMR_Q_CONNECT *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_connect(BOOL io, SAMR_R_CONNECT *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, LSA_POL_HND *pol,
+void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
+				POLICY_HND *pol, uint32 rid, char *sid);
+char* samr_io_q_open_domain(BOOL io, SAMR_Q_OPEN_DOMAIN *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_domain(BOOL io, SAMR_R_OPEN_DOMAIN *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint32 enum_ctx, uint32 unk_1, uint32 size);
 char* samr_io_q_enum_dom_users(BOOL io, SAMR_Q_ENUM_DOM_USERS *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 enum_ctx,
 		uint32 num_sam_entries, struct smb_passwd pass[MAX_SAM_ENTRIES], uint32 status);
 char* samr_io_r_enum_dom_users(BOOL io, SAMR_R_ENUM_DOM_USERS *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, LSA_POL_HND *pol, uint32 size);
+void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size);
 char* samr_io_q_enum_dom_aliases(BOOL io, SAMR_Q_ENUM_DOM_ALIASES *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 num_sam_entries, struct smb_passwd grps[MAX_SAM_ENTRIES],
 		uint32 status);
 char* samr_io_r_enum_dom_aliases(BOOL io, SAMR_R_ENUM_DOM_ALIASES *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, LSA_POL_HND *pol,
+void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
 char* samr_io_q_query_dispinfo(BOOL io, SAMR_Q_QUERY_DISPINFO *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
@@ -1184,7 +1186,7 @@ void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 		struct smb_passwd pass[MAX_SAM_ENTRIES],
 		uint32 status);
 char* samr_io_r_query_dispinfo(BOOL io, SAMR_R_QUERY_DISPINFO *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, LSA_POL_HND *pol,
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
 char* samr_io_q_enum_dom_groups(BOOL io, SAMR_Q_ENUM_DOM_GROUPS *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
@@ -1193,7 +1195,7 @@ void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		uint32 status);
 char* samr_io_r_enum_dom_groups(BOOL io, SAMR_R_ENUM_DOM_GROUPS *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
-				LSA_POL_HND *pol,
+				POLICY_HND *pol,
 				uint16 switch_level);
 char* samr_io_q_query_aliasinfo(BOOL io, SAMR_Q_QUERY_ALIASINFO *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
@@ -1214,10 +1216,10 @@ void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
 char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
+void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				char *srv_name, uint32 unknown_0);
-char* samr_io_q_open_domain(BOOL io, SAMR_Q_OPEN_DOMAIN *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_open_domain(BOOL io, SAMR_R_OPEN_DOMAIN *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_connect(BOOL io, SAMR_Q_CONNECT *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_connect(BOOL io, SAMR_R_CONNECT *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				uint32 unknown_0, uint32 rid);
 char* samr_io_q_open_alias(BOOL io, SAMR_Q_OPEN_ALIAS *q_u, char *q, char *base, int align, int depth);
@@ -1317,7 +1319,7 @@ char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int alig
 void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
 				uint32 call_id, int data_len, uint8 opnum);
 char* smb_io_rpc_hdr_rr(BOOL io, RPC_HDR_RR *rpc, char *q, char *base, int align, int depth);
-char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
+char* smb_io_pol_hnd(BOOL io, POLICY_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
 char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, int depth);

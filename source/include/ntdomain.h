@@ -107,33 +107,33 @@ SamrTestPrivateFunctionsUser
 
 ********************************************************************/
 
-#define SAMR_CLOSE          0x01
-#define SAMR_CONNECT        0x07
-#define SAMR_LOOKUP_RIDS    0x11
-#define SAMR_UNKNOWN_3      0x03
-#define SAMR_QUERY_DISPINFO 0x28
-#define SAMR_UNKNOWN_22     0x22
-#define SAMR_UNKNOWN_24     0x24
-#define SAMR_UNKNOWN_32     0x32
-#define SAMR_UNKNOWN_34     0x34
-#define SAMR_OPEN_DOMAIN    0x39
-#define SAMR_OPEN_ALIAS     0x1b
-#define SAMR_QUERY_ALIASINFO 0x1c
+#define SAMR_CLOSE             0x01
+#define SAMR_OPEN_DOMAIN       0x07
+#define SAMR_LOOKUP_RIDS       0x11
+#define SAMR_UNKNOWN_3         0x03
+#define SAMR_QUERY_DISPINFO    0x28
+#define SAMR_UNKNOWN_22        0x22
+#define SAMR_UNKNOWN_24        0x24
+#define SAMR_UNKNOWN_32        0x32
+#define SAMR_UNKNOWN_34        0x34
+#define SAMR_CONNECT           0x39
+#define SAMR_OPEN_ALIAS        0x1b
+#define SAMR_QUERY_ALIASINFO   0x1c
 #define SAMR_ENUM_DOM_USERS    0x0d
 #define SAMR_ENUM_DOM_ALIASES  0x0f
 #define SAMR_ENUM_DOM_GROUPS   0x30
 
-#define LSA_OPENPOLICY             0x2c
-#define LSA_QUERYINFOPOLICY        0x07
-#define LSA_ENUMTRUSTDOM           0x0d
-#define LSA_REQCHAL                0x04
-#define LSA_SRVPWSET               0x06
-#define LSA_SAMLOGON               0x02
-#define LSA_SAMLOGOFF              0x03
-#define LSA_LOGON_CTRL2            0x0e
-#define LSA_TRUST_DOM_LIST   0x13
-#define LSA_AUTH2                  0x0f
-#define LSA_CLOSE                  0x00
+#define LSA_OPENPOLICY         0x2c
+#define LSA_QUERYINFOPOLICY    0x07
+#define LSA_ENUMTRUSTDOM       0x0d
+#define LSA_REQCHAL            0x04
+#define LSA_SRVPWSET           0x06
+#define LSA_SAMLOGON           0x02
+#define LSA_SAMLOGOFF          0x03
+#define LSA_LOGON_CTRL2        0x0e
+#define LSA_TRUST_DOM_LIST     0x13
+#define LSA_AUTH2              0x0f
+#define LSA_CLOSE              0x00
 
 /* XXXX these are here to get a compile! */
 
@@ -526,12 +526,12 @@ typedef DOM_QUERY DOM_QUERY_5;
 
 #define POL_HND_SIZE 20
 
-/* LSA_POL_HND */
+/* POLICY_HND */
 typedef struct lsa_policy_info
 {
   uint8 data[POL_HND_SIZE]; /* policy handle */
 
-} LSA_POL_HND;
+} POLICY_HND;
 
 /* OBJ_ATTR (object attributes) */
 typedef struct object_attributes_info
@@ -655,7 +655,7 @@ typedef struct lsa_q_open_pol_info
 /* LSA_R_OPEN_POL - response to LSA Open Policy */
 typedef struct lsa_r_open_pol_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	POLICY_HND pol; /* policy handle */
 	uint32 status; /* return code */
 
 } LSA_R_OPEN_POL;
@@ -663,7 +663,7 @@ typedef struct lsa_r_open_pol_info
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	POLICY_HND pol; /* policy handle */
     uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
@@ -688,7 +688,7 @@ typedef struct lsa_r_query_info
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	POLICY_HND pol; /* policy handle */
     uint32 enum_context; /* enumeration context handle */
     uint32 preferred_len; /* preferred maximum length */
 
@@ -714,14 +714,14 @@ typedef struct lsa_r_enum_trust_dom_info
 /* LSA_Q_CLOSE */
 typedef struct lsa_q_close_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	POLICY_HND pol; /* policy handle */
 
 } LSA_Q_CLOSE;
 
 /* LSA_R_CLOSE */
 typedef struct lsa_r_close_info
 {
-	LSA_POL_HND pol; /* policy handle.  should be all zeros. */
+	POLICY_HND pol; /* policy handle.  should be all zeros. */
 
 	uint32 status; /* return code */
 
@@ -752,7 +752,7 @@ typedef struct dom_ref_info
 /* LSA_Q_LOOKUP_SIDS - LSA Lookup SIDs */
 typedef struct lsa_q_lookup_sids
 {
-    LSA_POL_HND pol_hnd; /* policy handle */
+    POLICY_HND pol_hnd; /* policy handle */
     uint32 num_entries;
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
     uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
@@ -794,7 +794,7 @@ typedef struct dom_name_info
 typedef struct lsa_q_lookup_rids
 {
 
-    LSA_POL_HND pol_hnd; /* policy handle */
+    POLICY_HND pol_hnd; /* policy handle */
     uint32 num_entries;
     uint32 num_entries2;
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
@@ -1072,7 +1072,7 @@ typedef struct r_net_share_enum_info
 /* SAMR_Q_CLOSE - probably a policy handle close */
 typedef struct q_samr_close_info
 {
-    LSA_POL_HND pol;          /* policy handle */
+    POLICY_HND pol;          /* policy handle */
 
 } SAMR_Q_CLOSE;
 
@@ -1080,39 +1080,36 @@ typedef struct q_samr_close_info
 /* SAMR_R_CLOSE - probably a policy handle close */
 typedef struct r_samr_close_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } SAMR_R_CLOSE;
 
 
 /****************************************************************************
-SAMR_Q_CONNECT - unknown_0 values seen associated with SIDs:
+SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 
 0x0000 03f1 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
 0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-0x0000 0280 and a well-known domain sid - S-1-5-20
-0x2000 0000 and a well-known domain sid - S-1-5-20
-0x2000 0000 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
 *****************************************************************************/
 
-/* SAMR_Q_CONNECT - probably an open secret */
-typedef struct q_samr_connect_info
+/* SAMR_Q_OPEN_DOMAIN - probably an open secret */
+typedef struct q_samr_open_domain_info
 {
-    LSA_POL_HND pol;          /* policy handle */
+    POLICY_HND pol;          /* policy handle */
 	uint32 rid;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - a RID? */
 	DOM_SID dom_sid;          /* domain SID */
 
-} SAMR_Q_CONNECT;
+} SAMR_Q_OPEN_DOMAIN;
 
 
-/* SAMR_R_CONNECT - probably an open */
-typedef struct r_samr_connect_info
+/* SAMR_R_OPEN_DOMAIN - probably an open */
+typedef struct r_samr_open_domain_info
 {
-    LSA_POL_HND pol;       /* policy handle associated with the SID */
+    POLICY_HND pol;       /* policy handle associated with the SID */
 	uint32 status;         /* return status */
 
-} SAMR_R_CONNECT;
+} SAMR_R_OPEN_DOMAIN;
 
 
 #define MAX_SAM_ENTRIES 250
@@ -1127,7 +1124,7 @@ typedef struct samr_entry_info
 /* SAMR_Q_ENUM_DOM_USERS - SAM rids and names */
 typedef struct q_samr_enum_dom_users_info
 {
-	LSA_POL_HND pol;          /* policy handle */
+	POLICY_HND pol;          /* policy handle */
 
 	uint32 enum_ctx;         /* 32 bit enumeration context */
 	uint32 unknown_1;         /* 0x0000 0000 */
@@ -1179,7 +1176,7 @@ typedef struct samr_str_entry_info3
 /* SAMR_Q_ENUM_DOM_GROUPS - SAM rids and names */
 typedef struct q_samr_enum_dom_groups_info
 {
-	LSA_POL_HND pol;          /* policy handle */
+	POLICY_HND pol;          /* policy handle */
 
 	/* these are possibly an enumeration context handle... */
 	uint16 switch_level;      /* 0x0003 */
@@ -1216,7 +1213,7 @@ typedef struct r_samr_enum_dom_groups_info
 /* SAMR_Q_ENUM_DOM_ALIASES - SAM rids and names */
 typedef struct q_samr_enum_dom_aliases_info
 {
-	LSA_POL_HND pol;          /* policy handle */
+	POLICY_HND pol;          /* policy handle */
 
 	/* this is possibly an enumeration context handle... */
 	uint32 unknown_0;         /* 0x0000 0000 */
@@ -1250,7 +1247,7 @@ typedef struct r_samr_enum_dom_aliases_info
 /* SAMR_Q_QUERY_DISPINFO - SAM rids, names and descriptions */
 typedef struct q_samr_query_disp_info
 {
-	LSA_POL_HND pol;        /* policy handle */
+	POLICY_HND pol;        /* policy handle */
 
 	uint16 switch_level;    /* 0x0001 and 0x0002 seen */
 	uint16 unknown_0;       /* 0x0000 and 0x2000 seen */
@@ -1307,7 +1304,7 @@ typedef struct r_samr_query_dispinfo_info
 /* SAMR_Q_QUERY_ALIASINFO - SAM Alias Info */
 typedef struct q_samr_enum_alias_info
 {
-	LSA_POL_HND pol;        /* policy handle */
+	POLICY_HND pol;        /* policy handle */
 
 	uint16 switch_level;    /* 0x0003 seen */
 
@@ -1349,7 +1346,7 @@ itself.  the response to the lookup rids is relative to this SID.
 /* SAMR_Q_LOOKUP_RIDS - probably a "read SAM entry" */
 typedef struct q_samr_lookup_names_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 
 	uint32 num_rids1;      /* 1          - number of rids being looked up */
 	uint32 rid;            /* 0000 03e8  - RID of the server being queried? */
@@ -1381,7 +1378,7 @@ typedef struct r_samr_lookup_names_info
 /* SAMR_Q_UNKNOWN_22 - probably an open */
 typedef struct q_samr_unknown_22_info
 {
-    LSA_POL_HND pol;          /* policy handle */
+    POLICY_HND pol;          /* policy handle */
 	uint32 unknown_id_0;      /* 0x0000 03E8 - 32 bit unknown id */
 
 } SAMR_Q_UNKNOWN_22;
@@ -1390,7 +1387,7 @@ typedef struct q_samr_unknown_22_info
 /* SAMR_R_UNKNOWN_22 - probably an open */
 typedef struct r_samr_unknown_22_info
 {
-    LSA_POL_HND pol;       /* policy handle associated with unknown id */
+    POLICY_HND pol;       /* policy handle associated with unknown id */
 	uint32 status;         /* return status */
 
 } SAMR_R_UNKNOWN_22;
@@ -1399,7 +1396,7 @@ typedef struct r_samr_unknown_22_info
 /* SAMR_Q_UNKNOWN_24 - probably a get sam info */
 typedef struct q_samr_unknown_24_info
 {
-    LSA_POL_HND pol;          /* policy handle associated with unknown id */
+    POLICY_HND pol;          /* policy handle associated with unknown id */
 	uint16 unknown_0;         /* 0x0015 or 0x0011 - 16 bit unknown */
 
 } SAMR_Q_UNKNOWN_24;
@@ -1450,7 +1447,7 @@ typedef struct r_samr_unknown_24_info
 /* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
 typedef struct q_samr_unknown_32_info
 {
-    LSA_POL_HND pol;             /* policy handle */
+    POLICY_HND pol;             /* policy handle */
 
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */
@@ -1465,7 +1462,7 @@ typedef struct q_samr_unknown_32_info
 /* SAMR_R_UNKNOWN_32 - probably a "create SAM entry" */
 typedef struct r_samr_unknown_32_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 
 	/* rid4.unknown - fail: 0030 success: 0x03ff */
 	DOM_RID4 rid4;         /* rid and attributes */
@@ -1487,30 +1484,30 @@ typedef struct q_samr_open_alias_info
 /* SAMR_R_OPEN_ALIAS - probably an open */
 typedef struct r_samr_open_alias_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_ALIAS;
 
 
-/* SAMR_Q_OPEN_DOMAIN - probably an open */
-typedef struct q_samr_open_domain_info
+/* SAMR_Q_CONNECT - probably an open */
+typedef struct q_samr_connect_info
 {
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
 
 	uint32 unknown_0;            /* 32 bit unknown */
 
-} SAMR_Q_OPEN_DOMAIN;
+} SAMR_Q_CONNECT;
 
 
-/* SAMR_R_OPEN_DOMAIN - probably an open */
-typedef struct r_samr_open_domain_info
+/* SAMR_R_CONNECT - probably an open */
+typedef struct r_samr_connect_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
-} SAMR_R_OPEN_DOMAIN;
+} SAMR_R_CONNECT;
 
 
 
@@ -1527,7 +1524,7 @@ typedef struct q_reg_open_policy_info
 /* REG_R_OPEN_POLICY */
 typedef struct r_reg_open_policy_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } REG_R_OPEN_POLICY;
@@ -1536,14 +1533,14 @@ typedef struct r_reg_open_policy_info
 /* REG_Q_CLOSE */
 typedef struct reg_q_close_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	POLICY_HND pol; /* policy handle */
 
 } REG_Q_CLOSE;
 
 /* REG_R_CLOSE */
 typedef struct reg_r_close_info
 {
-	LSA_POL_HND pol; /* policy handle.  should be all zeros. */
+	POLICY_HND pol; /* policy handle.  should be all zeros. */
 
 	uint32 status; /* return code */
 
@@ -1553,7 +1550,7 @@ typedef struct reg_r_close_info
 /* REG_Q_INFO */
 typedef struct q_reg_info_info
 {
-    LSA_POL_HND pol;        /* policy handle */
+    POLICY_HND pol;        /* policy handle */
 
 	UNIHDR  hdr_type;       /* unicode product type header */
 	UNISTR2 uni_type;       /* unicode product type - "ProductType" */
@@ -1597,7 +1594,7 @@ typedef struct r_reg_info_info
 /* REG_Q_OPEN_ENTRY */
 typedef struct q_reg_open_entry_info
 {
-    LSA_POL_HND pol;        /* policy handle */
+    POLICY_HND pol;        /* policy handle */
 
 	UNIHDR  hdr_name;       /* unicode registry string header */
 	UNISTR2 uni_name;       /* unicode registry string name */
@@ -1613,7 +1610,7 @@ typedef struct q_reg_open_entry_info
 /* REG_R_OPEN_ENTRY */
 typedef struct r_reg_open_entry_info
 {
-    LSA_POL_HND pol;       /* policy handle */
+    POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } REG_R_OPEN_ENTRY;

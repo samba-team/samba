@@ -126,13 +126,14 @@ void cmd_sam_query_users(struct client_info *info)
 	BOOL res = True;
 	uint32 val1 = 0x0;
 	uint32 val2 = 0x0;
+	uint32 admin_rid = 0x304;
 	fstring tmp;
 
 	fstrcpy(sid, info->dom.level5_sid);
 
 	if (strlen(sid) == 0)
 	{
-		DEBUG(0,("samquery: use 'samquery <domain server name>' first\n"));
+		DEBUG(0,("cmd_sam_query_users: use 'lsaquery <domain server name>' first\n"));
 		return;
 	}
 
@@ -161,13 +162,19 @@ void cmd_sam_query_users(struct client_info *info)
 	/* open SAMR session.  negotiate credentials */
 	res = res ? do_samr_session_open(smb_cli, smb_tidx, info) : False;
 
-	/* lookup domain controller; receive a policy handle */
-	res = res ? do_samr_open_domain(smb_cli, smb_tidx, info->dom.samr_fnum,
-				srv_name, 0x20000000,
-				&info->dom.samr_pol_open) : False;
+	/* establish a connection. */
+	res = res ? do_samr_connect(smb_cli, smb_tidx, info->dom.samr_fnum,
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
 
+	/* connect to the domain */
+	res = res ? do_samr_open_domain(smb_cli, smb_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_connect, admin_rid, sid,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* read some users */
 	res = res ? do_samr_enum_dom_users(smb_cli, smb_tidx, info->dom.samr_fnum,
-				&info->dom.samr_pol_open,
+				&info->dom.samr_pol_open_domain,
 	            val1, val2, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
 
@@ -185,13 +192,26 @@ void cmd_sam_query_users(struct client_info *info)
 		          info->dom.sam[user_idx].smb_userid,
 		          info->dom.sam[user_idx].acct_name));
 
-		/* send client open secret; receive a client policy handle */
-		res = res ? do_samr_connect(smb_cli, smb_tidx, info->dom.samr_fnum,
-					&info->dom.samr_pol_open,
+#if 0
+		/* send open user; receive a client policy handle */
+		res = res ? do_samr_open_user_or_something(smb_cli, smb_tidx, info->dom.samr_fnum,
+					&info->dom.samr_pol_open_user,
 					info->dom.sam[user_idx].smb_userid, sid,
 					&(info->dom.sam[user_idx].acct_pol)) : False;
-		user_idx++;
+
+		res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_open_user) : False;
+
+#endif
+
+		if (res) user_idx++;
 	}
+
+	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_connect) : False;
+
+	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
+	            &info->dom.samr_pol_open_domain) : False;
 
 	/* close the session */
 	do_samr_session_close(smb_cli, smb_tidx, info);
