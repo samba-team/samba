@@ -100,7 +100,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				d--;
 			}
 			s += 3;
-		} else if ((s[0] == '.') && (IS_DIRECTORY_SEP(s[1]) || s[2] == '\0')) {
+		} else if ((s[0] == '.') && (IS_DIRECTORY_SEP(s[1]) || (s[1] == '\0'))) {
 
 			/*
 			 * No mb char starts with '.' so we're safe checking the directory separator here.
