@@ -63,6 +63,8 @@ struct ldb_module_ops {
 	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_module *, const char *);
 	int (*rename_record)(struct ldb_module *, const char *, const char *);
+	int (*named_lock)(struct ldb_module *, const char *);
+	int (*named_unlock)(struct ldb_module *, const char *);
 	const char * (*errstring)(struct ldb_module *);
 
 	/* this is called when the alloc ops changes to ensure we 
@@ -101,6 +103,8 @@ int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *mes
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message);
 int ldb_next_delete_record(struct ldb_module *module, const char *dn);
 int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const char *newdn);
+int ldb_next_named_lock(struct ldb_module *module, const char *lockname);
+int ldb_next_named_unlock(struct ldb_module *module, const char *lockname);
 const char *ldb_next_errstring(struct ldb_module *module);
 void ldb_next_cache_free(struct ldb_module *module);
 

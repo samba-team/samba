@@ -230,6 +230,18 @@ static int timestamps_rename_record(struct ldb_module *module, const char *olddn
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
+static int timestamps_lock(struct ldb_module *module, const char *lockname)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_lock\n");
+	return ldb_next_named_lock(module, lockname);
+}
+
+static int timestamps_unlock(struct ldb_module *module, const char *lockname)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_unlock\n");
+	return ldb_next_named_unlock(module, lockname);
+}
+
 /* return extended error information */
 static const char *timestamps_errstring(struct ldb_module *module)
 {
@@ -252,6 +264,8 @@ static const struct ldb_module_ops timestamps_ops = {
 	timestamps_modify_record,
 	timestamps_delete_record,
 	timestamps_rename_record,
+	timestamps_lock,
+	timestamps_unlock,
 	timestamps_errstring,
 	timestamps_cache_free
 };
