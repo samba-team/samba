@@ -871,9 +871,11 @@ See also : "valid chars".
 	client code page = 437
 
 .SS comment (S)
-This is a text field that is seen when a client does a net view to
-list what shares are available. It will also be used when browsing is
-fully supported.
+This is a text field that is seen next to a share when a client does a
+net view to list what shares are available.
+
+If you want to set the string that is displayed next to the machine
+name then see the server string command.
 
 .B Default:
 	No comment string
@@ -1238,12 +1240,8 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-Samba does not support opportunistic locks because they are very
-difficult to do under Unix. Samba can fake them, however, by granting
-a oplock whenever a client asks for one. This is controlled using the
-smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
-you are telling the client that it may aggressively cache the file
-data.
+When you set "fake oplocks = yes" Samba will always grant oplock
+requests no matter how many clients are using the file. 
 
 By enabling this option on all read-only shares or shares that you know
 will only be accessed from one client at a time you will see a big
@@ -1251,6 +1249,9 @@ performance improvement on many operations. If you enable this option
 on shares where multiple clients may be accessing the files read-write
 at the same time you can get data corruption. Use this option
 carefully! 
+
+It is generally much better to use the real oplock support except for
+physically read-only media such as CDROMs.
 
 This option is disabled by default.
 
