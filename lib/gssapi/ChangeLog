@@ -1,3 +1,12 @@
+2003-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acquire_cred.c (gss_release_cred): if its a mcc, destroy it
+	rather the just release it Found by: "Zi-Bin Yang"
+	<zbyang@decru.com>
+
+	* acquire_cred.c (acquire_initiator_cred): use kret instead of ret
+	where appropriate
+
 2003-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: spelling
