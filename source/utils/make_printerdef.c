@@ -190,6 +190,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
 #ifdef DEBUGIT
   fprintf(stderr,"In scan_copyfiles Lookup up of %s\n",chaine);
 #endif 
+  fprintf(stderr,"\nCopy the following files to your printer$ share location:\n");
   part=strtok(chaine,",");
   do {
      /* If the entry start with a @ then it's a file to copy
@@ -201,6 +202,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
       if (strlen(files_to_copy) != 0)
         strcat(files_to_copy,",");
       strcat(files_to_copy,&part[1]);
+      fprintf(stderr,"%s\n",&part[1]);
     } else {
       lookup_entry(fichier,part);
       i=0;
@@ -219,12 +221,14 @@ void scan_copyfiles(FILE *fichier, char *chaine)
           strcat(files_to_copy,",");
 	strcat(files_to_copy,direc);
 	strcat(files_to_copy,buffer[i]);
+	fprintf(stderr,"%s%s\n",direc,buffer[i]);
 	i++;
       } 
     }
     part=strtok(NULL,",");
   }
   while (part!=NULL);
+  fprintf(stderr,"\n");
 }
 
 
