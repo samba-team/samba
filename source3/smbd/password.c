@@ -474,11 +474,12 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 			return False;
 		}
 
-		if (!vuser->guest && user_ok(vuser->user.unix_name,snum)) {
+		if ((!vuser->guest && user_ok(vuser->user.unix_name,snum)) || 
+		    (vuser->guest && GUEST_OK(snum))) {
 			fstrcpy(user,vuser->user.unix_name);
-			*guest = False;
-			DEBUG(3,("authorise_login: ACCEPTED: validated uid ok as non-guest \
-(user=%s)\n", user));
+			*guest = vuser->guest;
+			DEBUG(3,("authorise_login: ACCEPTED: validated based on vuid as %sguest \
+(user=%s)\n", vuser->guest ? "" : "non-", user));
 			return True;
 		}
 	}
@@ -577,7 +578,7 @@ and given password ok (%s)\n", user));
 	/* check for a normal guest connection */
 	if (!ok && GUEST_OK(snum)) {
 		fstring guestname;
-		StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
+		StrnCpy(guestname,lp_guestaccount(),sizeof(guestname)-1);
 		if (Get_Pwnam(guestname)) {
 			fstrcpy(user,guestname);
 			ok = True;

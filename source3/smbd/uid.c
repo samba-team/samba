@@ -36,7 +36,7 @@ BOOL change_to_guest(void)
 	static fstring guest_name;
 
 	if (!pass) {
-		pass = Get_Pwnam(lp_guestaccount(-1));
+		pass = sys_getpwnam(lp_guestaccount());
 		if (!pass)
 			return(False);
 		guest_uid = pass->pw_uid;
