@@ -909,8 +909,16 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 2);
 
-	if (cli_unlock(&cli, fnum1, 0, 8)) {
+	if (cli_unlock(&cli, fnum1, 0, 4)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
+	} else {
+		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return;
+	}
+
+	if (cli_unlock(&cli, fnum1, 0, 8)) {
+		printf("unlock2 succeeded! This is a locking bug\n");
+	} else {
+		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return;
 	}
 
 	if (cli_lock(&cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
