@@ -1,5 +1,9 @@
 2004-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_set_password.3: Remove superfluous comma; grammar
+	fixes; split sentence in two for better understanding.  From
+	wiz@NetBSD.org. Describe krb5_set_password_using_ccache while here.
+
 	* lib/krb5/krb5_set_password.3: nroff and spelling, from Jonathan
 	Stone <jonathan@dsg.stanford.edu>
 
