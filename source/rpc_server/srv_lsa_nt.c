@@ -355,24 +355,25 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
             break;
 		}
 	case 0x03:
-		switch (lp_server_role())
-		{
+		/* Request PolicyPrimaryDomainInformation. */
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
+				name = global_myworkgroup;
+				/* We need to return the Domain SID here. */
 				if (secrets_fetch_domain_sid(global_myworkgroup,
 					&domain_sid))
 						sid = &domain_sid;
 				else
-					sid = &global_sam_sid;
+					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
-				sid = NULL;
+				sid = NULL; /* Tell it we're not in a domain. */
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -380,22 +381,14 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		init_dom_query(&r_u->dom.id3, name, sid);
 		break;
 	case 0x05:
-		/* AS/U shows this needs to be the same as level 3. JRA. */
-		switch (lp_server_role())
-		{
+		/* Request PolicyAccountDomainInformation. */
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-					&domain_sid))
-						sid = &domain_sid;
-				else
-					sid = &global_sam_sid;
-				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
 				sid = &global_sam_sid;
@@ -406,8 +399,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
 	case 0x06:
-		switch (lp_server_role())
-		{
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_BDC:
 				/*
 				 * only a BDC is a backup controller
