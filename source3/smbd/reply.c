@@ -1919,7 +1919,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
 
-	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		SMB_OFF_T size = fsp->size;
 		SMB_OFF_T sizeneeded = startpos + maxcount;
   
@@ -2079,7 +2079,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	data = smb_buf(outbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBread);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2268,7 +2268,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2324,7 +2324,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(inbuf,smb_com,SMBwritec);
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwritebraw);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}
@@ -2439,8 +2439,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
-		      WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2508,7 +2507,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwrite);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2619,7 +2618,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2890,7 +2889,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteclose);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -4794,7 +4793,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	tcount = maxcount;
 	total_read = 0;
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadBmpx);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -4920,7 +4919,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		not an SMBwritebmpx - set this up now so we don't forget */
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
 		END_PROFILE(SMBwriteBmpx);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}
