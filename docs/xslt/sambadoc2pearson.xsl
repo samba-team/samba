@@ -23,12 +23,12 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfexample/smbconfoption|smbconfblock/smbconfoption">
-		<xsl:value-of select="name"/><xsl:text> = </xsl:text><xsl:value-of select="value"/><xsl:text>&#10;</xsl:text>
+		<xsl:text>	</xsl:text><xsl:value-of select="name"/><xsl:text> = </xsl:text><xsl:value-of select="value"/><xsl:text>&#10;</xsl:text>
 	</xsl:template>
 
 	<xsl:template match="smbconfexample">
-		<!--		<xsl:call-template name="transform.id.attribute"/>-->
 	   <listing>
+		   <xsl:call-template name="transform.id.attribute"/>
 		   <xsl:if test="title != ''">
 			   <description><xsl:value-of select="title"/></description>
 		   </xsl:if>
