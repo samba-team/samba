@@ -71,7 +71,9 @@ doit2(HDB *db, hdb_entry *ent)
 	fprintf(stderr, "Please answer yes or no.\n");
     }
     if(buf[0] == 'y' || buf[0] == 'Y')
-	set_password (ent);
+	if(set_password (ent))
+	    return;
+	    
     set_modified_by (ent);
     
     ret = db->store(context, db, 1, ent);
