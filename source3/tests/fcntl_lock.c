@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
 	int fd, ret, status=1;
 	pid_t pid;
 
+	alarm(10);
+
 	if (!(pid=fork())) {
 		sleep(2);
 		fd = open(DATA, O_RDONLY);
