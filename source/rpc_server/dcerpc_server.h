@@ -53,6 +53,8 @@ struct dcesrv_call_state {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_packet pkt;
 
+	DATA_BLOB input;
+
 	struct dcesrv_call_reply {
 		struct dcesrv_call_reply *next, *prev;
 		DATA_BLOB data;
@@ -101,6 +103,8 @@ struct dcesrv_state {
 	   them, but it will do for now */
 	uint32 next_handle;
 	struct dcesrv_handle *handles;
+
+	DATA_BLOB partial_input;
 };
 
 

@@ -100,6 +100,7 @@ NTSTATUS dcesrv_endpoint_connect_ops(struct dcesrv_context *dce,
 	(*p)->dispatch = NULL;
 	(*p)->handles = NULL;
 	(*p)->next_handle = 0;
+	(*p)->partial_input = data_blob(NULL, 0);
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -480,6 +481,40 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 
 /*
+  work out if we have a full packet yet
+*/
+static BOOL dce_full_packet(const DATA_BLOB *data)
+{
+	if (data->length < DCERPC_FRAG_LEN_OFFSET+2) {
+		return False;
+	}
+	if (SVAL(data->data, DCERPC_FRAG_LEN_OFFSET) > data->length) {
+		return False;
+	}
+	return True;
+}
+
+/*
+  we might have consumed only part of our input - advance past that part
+*/
+static void dce_partial_advance(struct dcesrv_state *dce, uint32 offset)
+{
+	DATA_BLOB blob;
+
+	if (dce->partial_input.length == offset) {
+		talloc_free(dce->mem_ctx, dce->partial_input.data);
+		dce->partial_input = data_blob(NULL, 0);
+		return;
+	}
+
+	blob = dce->partial_input;
+	dce->partial_input = data_blob_talloc(dce->mem_ctx, 
+					      blob.data + offset,
+					      blob.length - offset);
+	talloc_free(dce->mem_ctx, blob.data);
+}
+
+/*
   provide some input to a dcerpc endpoint server. This passes data
   from a dcerpc client into the server
 */
@@ -490,12 +525,27 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
 
+	dce->partial_input.data = talloc_realloc(dce->mem_ctx,
+						 dce->partial_input.data,
+						 dce->partial_input.length + data->length);
+	if (!dce->partial_input.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(dce->partial_input.data + dce->partial_input.length,
+	       data->data, data->length);
+	dce->partial_input.length += data->length;
+
+	if (!dce_full_packet(&dce->partial_input)) {
+		return NT_STATUS_OK;
+	}
+
 	mem_ctx = talloc_init("dcesrv_input");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	call = talloc_p(mem_ctx, struct dcesrv_call_state);
 	if (!call) {
+		talloc_free(dce->mem_ctx, dce->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -503,17 +553,21 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	call->dce = dce;
 	call->replies = NULL;
 
-	ndr = ndr_pull_init_blob(data, mem_ctx);
+	ndr = ndr_pull_init_blob(&dce->partial_input, mem_ctx);
 	if (!ndr) {
+		talloc_free(dce->mem_ctx, dce->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(dce->mem_ctx, dce->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return status;
 	}
+
+	dce_partial_advance(dce, ndr->offset);
 
 	/* see if this is a continued packet */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
