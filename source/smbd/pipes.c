@@ -121,6 +121,8 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	char *data;
 	BOOL ok = False;
 
+	if (!p) return(ERROR(ERRDOS,ERRbadfid));
+
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
@@ -147,6 +149,8 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	int outsize = set_message(outbuf,0,0,True);
+
+	if (!p) return(ERROR(ERRDOS,ERRbadfid));
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
