@@ -93,7 +93,7 @@ int
 output_data (const char *format, ...)
 {
   va_list args;
-  size_t remaining, ret;
+  int remaining, ret;
 
   va_start(args, format);
   remaining = BUFSIZ - (nfrontp - netobuf);
@@ -101,7 +101,7 @@ output_data (const char *format, ...)
 		   remaining,
 		   format,
 		   args);
-  nfrontp += ret;
+  nfrontp += min(ret, remaining-1);
   va_end(args);
   return ret;
 }
