@@ -90,9 +90,153 @@ static const char *lock_type_name(enum brl_type lock_type)
  False if not.
 ****************************************************************************/
 
-static BOOL posix_lock_in_range(SMB_OFF_T *p_offset, SMB_OFF_T *p_count)
+static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
+								SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
-	/* Placeholder. */
+	SMB_OFF_T offset;
+	SMB_OFF_T count;
+
+#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
+	/*
+	 * In this case SMB_OFF_T is 64 bits,
+	 * and the underlying system can handle 64 bit signed locks.
+	 * Cast to signed type.
+	 */
+
+	offset = (SMB_OFF_T)u_offset;
+	count = (SMB_OFF_T)u_count;
+
+	/*
+	 * POSIX lock ranges cannot be negative.
+	 * Fail if any combination becomes negative.
+	 */
+
+	if(offset < 0 || count < 0 || (offset + count < 0)) {
+		DEBUG(10,("posix_lock_in_range: negative range offset = %.0f, count = %.0f. Ignoring lock.\n",
+				(double)offset, (double)count ));
+		return False;
+
+	/*
+	 * In this case SMB_OFF_T is 64 bits, the offset and count
+	 * fit within the positive range, and the underlying
+	 * system can handle 64 bit locks. Just return as the
+	 * cast values are ok.
+	 */
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * In this case either SMB_OFF_T is 32 bits,
+	 * or the underlying system cannot handle 64 bit signed locks.
+	 * Either way we have to try and mangle to fit within 31 bits.
+	 * This is difficult.
+	 */
+
+#if defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
+	/*
+	 * SMB_OFF_T is 64 bits, but we need to use 31 bits due to
+	 * broken large locking.
+	 */
+
+	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
+		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. offset = %.0f, count = %.0f. Ignoring lock.\n",
+				(double)u_offset, (double)u_count ));
+		/* Top 32 bits of offset or count were not zero. */
+		return False;
+	}
+
+	/* Cast from 64 bits unsigned to 64 bits signed. */
+	offset = (SMB_OFF_T)u_offset;
+	count = (SMB_OFF_T)u_count;
+
+	/*
+	 * Check if we are within the 2^31 range.
+	 */
+
+	{
+		int32 low_offset = (int32)offset;
+		int32 low_count = (int32)count;
+
+		if(low_offset < 0 || low_count < 0 || (low_offset + low_count < 0)) {
+			DEBUG(10,("posix_lock_in_range: not within 2^31 range. low_offset = %d, low_count = %d. Ignoring lock.\n",
+					low_offset, low_count ));
+			return False;
+		}
+	}
+
+	/*
+	 * Ok - we can map from a 64 bit number to a 31 bit lock.
+	 */
+
+#else /* HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * SMB_OFF_T is 32 bits.
+	 */
+
+#if defined(HAVE_LONGLONG)
+
+	/*
+	 * SMB_BIG_UINT is 64 bits, we can do a 32 bit shift.
+	 */
+
+	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
+		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. u_offset = %.0f, u_count = %.0f. Ignoring lock.\n",
+				(double)u_offset, (double)u_count ));
+		return False;
+	}
+
+	/* Cast from 64 bits unsigned to 32 bits signed. */
+	offset = (SMB_OFF_T)u_offset;
+	count = (SMB_OFF_T)u_count;
+
+	/*
+	 * Check if we are within the 2^31 range.
+	 */
+
+	if(offset < 0 || count < 0 || (offset + count < 0)) {
+		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
+				(int)offset, (int)count ));
+		return False;
+	}
+
+#else /* HAVE_LONGLONG */
+
+	/*
+	 * SMB_BIG_UINT and SMB_OFF_T are both 32 bits,
+	 * just cast.
+	 */
+
+	/* Cast from 32 bits unsigned to 32 bits signed. */
+	offset = (SMB_OFF_T)u_offset;
+	count = (SMB_OFF_T)u_count;
+
+	/*
+	 * Check if we are within the 2^31 range.
+	 */
+
+	if(offset < 0 || count < 0 || (offset + count < 0)) {
+		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
+				(int)offset, (int)count ));
+		return False;
+	}
+
+#endif /* HAVE_LONGLONG */
+#endif /* LARGE_SMB_OFF_T */
+#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * The mapping was successful.
+	 */
+
+	DEBUG(10,("posix_lock_in_range: offset_out = %.0f, count_out = %.0f\n",
+			(double)offset, (double)count ));
+
+	*offset_out = offset;
+	*count_out = count;
+	
 	return True;
 }
 
@@ -103,13 +247,13 @@ static BOOL posix_lock_in_range(SMB_OFF_T *p_offset, SMB_OFF_T *p_count)
 
 static BOOL posix_locktest(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
 {
-	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
-	SMB_OFF_T count = (SMB_OFF_T)u_count;
+	SMB_OFF_T offset;
+	SMB_OFF_T count;
 
 	DEBUG(10,("posix_locktest: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
 
-	if(!posix_lock_in_range(&offset, &count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
 	/* Placeholder - for now always return that the lock could be granted. */
@@ -123,13 +267,13 @@ static BOOL posix_locktest(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 
 static BOOL get_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
 {
-	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
-	SMB_OFF_T count = (SMB_OFF_T)u_count;
+	SMB_OFF_T offset;
+	SMB_OFF_T count;
 
-	DEBUG(10,("get_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
+	DEBUG(5,("get_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
 
-	if(!posix_lock_in_range(&offset, &count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
 	/* Placeholder - for now always return that the lock could be granted. */
@@ -144,13 +288,13 @@ static BOOL get_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 
 static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
-	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
-	SMB_OFF_T count = (SMB_OFF_T)u_count;
+	SMB_OFF_T offset;
+	SMB_OFF_T count;
 
-	DEBUG(10,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
+	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
 			fsp->fsp_name, (double)offset, (double)count ));
 
-	if(!posix_lock_in_range(&offset, &count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
 	/* Placeholder - for now always return that the lock could be granted. */

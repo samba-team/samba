@@ -267,7 +267,7 @@ SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
 			(SMB_BIG_UINT) IVAL(data,
 					    SMB_LARGE_LKOFF_OFFSET_LOW
 					    (data_offset));
-#endif /* LARGE_SMB_OFF_T */
+#endif /* HAVE_LONG_LONG */
 	}
 
 	return offset;
