@@ -1552,6 +1552,154 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       data_size = PTR_DIFF(pdata,(*ppdata));
       break;
 
+	/*
+	 * Windows 2000 completely undocumented new SMB info levels.
+	 * Thanks Microsoft.... sure you're working on making this
+	 * protocol a standard.... sure you are... :-).
+	 * Lying rat-bastards. JRA.
+	 */
+
+	case 1004:
+		put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+		put_long_date(pdata+8,sbuf.st_atime);
+		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+		SIVAL(pdata,32,mode);
+		SIVAL(pdata,36,0); /* ??? */
+		data_size = 40;
+		break;
+
+	case 1005:
+		SIVAL(pdata,0,mode);
+		SIVAL(pdata,4,0); /* ??? */
+		SOFF_T(pdata,8,size);
+		SIVAL(pdata,16,1); /* ??? */
+		SIVAL(pdata,20,0); /* ??? */
+		data_size = 24;
+		break;
+
+	case 1006:
+		SIVAL(pdata,0,0x907); /* ??? */
+		SIVAL(pdata,4,0x690000); /* ??? */
+		data_size = 8;
+		break;
+
+	case 1007:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1008:
+		SIVAL(pdata,0,0x12019F); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1009:
+		/* Pathname with leading '\'. */
+		{
+			pstring new_fname;
+			size_t byte_len;
+
+			pstrcpy(new_fname, "\\");
+			pstrcat(new_fname, fname);
+			byte_len = dos_PutUniCode(pdata+4,new_fname,max_data_bytes,False);
+			SIVAL(pdata,0,byte_len);
+			data_size = 4 + byte_len;
+			break;
+		}
+
+	case 1014:
+		SIVAL(pdata,0,0); /* ??? */
+		SIVAL(pdata,4,0); /* ??? */
+		data_size = 8;
+		break;
+
+	case 1016:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1017:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+#if 0
+	/* Not yet finished... JRA */
+	case 1018:
+		{
+			pstring new_fname;
+			size_t byte_len;
+
+			put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+			put_long_date(pdata+8,sbuf.st_atime);
+			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+			SIVAL(pdata,32,mode);
+			SIVAL(pdata,36,0); /* ??? */
+			SIVAL(pdata,40,0x20); /* ??? */
+			SIVAL(pdata,44,0); /* ??? */
+			SOFF_T(pdata,48,size);
+			SIVAL(pdata,56,0x1); /* ??? */
+			SIVAL(pdata,60,0); /* ??? */
+			SIVAL(pdata,64,0); /* ??? */
+			SIVAL(pdata,68,length); /* Following string length in bytes. */
+			dos_PutUniCode(pdata+72,,False);
+			break;
+		}
+#endif
+
+	case 1021:
+		/* Last component of pathname. */
+		{
+			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
+			SIVAL(pdata,0,byte_len);
+			data_size = 4 + byte_len;
+			break;
+		}
+		
+	case 1022:
+		{
+			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
+			SIVAL(pdata,0,0); /* ??? */
+			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
+			SOFF_T(pdata,8,size);
+			SIVAL(pdata,16,0x20); /* ??? */
+			SIVAL(pdata,20,0); /* ??? */
+			data_size = 24 + byte_len;
+			break;
+		}
+
+	case 1028:
+		SOFF_T(pdata,0,size);
+		SIVAL(pdata,8,0); /* ??? */
+		SIVAL(pdata,12,0); /* ??? */
+		data_size = 16;
+		break;
+
+	case 1034:
+		put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+		put_long_date(pdata+8,sbuf.st_atime);
+		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+		SIVAL(pdata,32,0x20); /* ??? */
+		SIVAL(pdata,36,0); /* ??? */
+		SOFF_T(pdata,40,size);
+		SIVAL(pdata,48,mode);
+		SIVAL(pdata,52,0); /* ??? */
+		data_size = 56;
+		break;
+
+	case 1035:
+		SIVAL(pdata,0,mode);
+		SIVAL(pdata,4,0);
+		data_size = 8;
+		break;
+
+	/*
+	 * End new completely undocumented info levels... JRA.
+	 */
+
 #if 0
       /* NT4 server just returns "invalid query" to this - if we try to answer 
 	 it then NTws gets a BSOD! (tridge) */
