@@ -3096,7 +3096,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	*needed += spoolss_size_printer_driver_info_6(&info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		free_printer_driver_info_3(&info);
+		free_printer_driver_info_6(&info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
