@@ -26,6 +26,12 @@ POP     *   p;
     register int            msg_num;
     register int            msg_lines;
     char                    buffer[MAXMSGLINELEN];
+#ifdef RETURN_PATH_HANDLING
+    char		*   return_path_adr;
+    char		*   return_path_end;
+    int			    return_path_sent;
+    int			    return_path_linlen;
+#endif
 
     /*  Convert the first parameter into an integer */
     msg_num = atoi(p->pop_parm[1]);
@@ -63,8 +69,36 @@ POP     *   p;
     /*  Skip the first line (the sendmail "From" line) */
     (void)fgets (buffer,MAXMSGLINELEN,p->drop);
 
+#ifdef RETURN_PATH_HANDLING
+    return_path_sent = 0;
+    if (strncmp(buffer,"From ",5) == 0) {
+	return_path_linlen = strlen(buffer);
+	for (return_path_adr = buffer+5;
+	     (*return_path_adr == ' ' || *return_path_adr == '\t') &&
+	     return_path_adr < buffer + return_path_linlen;
+	     return_path_adr++)
+	    ;
+	if (return_path_adr < buffer + return_path_linlen) {
+	    if ((return_path_end = index(return_path_adr, ' ')) != NULL)
+		*return_path_end = '\0';
+	    if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
+		static char tmpbuf[MAXMSGLINELEN];
+		strcpy(tmpbuf, "Return-Path:");
+		strcat(tmpbuf, return_path_adr);
+		pop_sendline (p,tmpbuf);
+		return_path_sent++;
+	    }
+	}
+    }
+#endif
+
     /*  Send the header of the message followed by a blank line */
     while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
+#ifdef RETURN_PATH_HANDLING
+	/* Don't send existing Return-Path-header if already sent own */
+	if (strncasecmp(buffer,"Return-Path:", 12) != 0 ||
+	    !return_path_sent)
+#endif
         pop_sendline (p,buffer);
         /*  A single newline (blank line) signals the 
             end of the header.  sendline() converts this to a NULL, 
