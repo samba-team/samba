@@ -643,6 +643,7 @@ static BOOL get_lsa_policy_samr_sid(pipes_struct *p, POLICY_HND *pol, DOM_SID *s
 NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QUERY_SEC_OBJ *r_u)
 {
 	DOM_SID pol_sid;
+	fstring str_sid;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -650,6 +651,8 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &pol_sid))
 		return NT_STATUS_INVALID_HANDLE;
+
+	DEBUG(10,("_samr_query_sec_obj: querying security on SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 
 	r_u->status = samr_make_usr_obj_sd(p->mem_ctx, &r_u->buf, &pol_sid);
 
@@ -1302,53 +1305,72 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
-    uint32 rid[MAX_SAM_ENTRIES];
-    enum SID_NAME_USE type[MAX_SAM_ENTRIES];
-    int i;
-    int num_rids = q_u->num_names2;
-    DOM_SID pol_sid;
+	uint32 rid[MAX_SAM_ENTRIES];
+	uint32 local_rid;
+	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
+	enum SID_NAME_USE local_type;
+	int i;
+	int num_rids = q_u->num_names2;
+	DOM_SID pol_sid;
+	fstring sid_str;
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
-    ZERO_ARRAY(rid);
-    ZERO_ARRAY(type);
+	ZERO_ARRAY(rid);
+	ZERO_ARRAY(type);
 
-    if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid)) {
-        init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
-        return r_u->status;
-    }
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid)) {
+		init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
+		return r_u->status;
+	}
 
-    if (num_rids > MAX_SAM_ENTRIES) {
-        num_rids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
-    }
+	if (num_rids > MAX_SAM_ENTRIES) {
+		num_rids = MAX_SAM_ENTRIES;
+		DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
+	}
 
-    for (i = 0; i < num_rids; i++) {
-        fstring name;
+	DEBUG(5,("_samr_lookup_names: looking name on SID %s\n", sid_to_string(sid_str, &pol_sid)));
 
-        r_u->status = NT_STATUS_NONE_MAPPED;
+	for (i = 0; i < num_rids; i++) {
+		fstring name;
+            	DOM_SID sid;
 
-        rid [i] = 0xffffffff;
-        type[i] = SID_NAME_UNKNOWN;
+	        r_u->status = NT_STATUS_NONE_MAPPED;
 
-	rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
+	        rid [i] = 0xffffffff;
+	        type[i] = SID_NAME_UNKNOWN;
 
-        if(sid_equal(&pol_sid, &global_sam_sid)) {
-            DOM_SID sid;
-            if(local_lookup_name(global_myname, name, &sid, &type[i])) {
-                sid_split_rid( &sid, &rid[i]);
-                r_u->status = NT_STATUS_OK;
-            }
-        }
-    }
+		rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
-    init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
+ 		/*
+		 * we are only looking for a name
+		 * the SID we get back can be outside
+		 * the scope of the pol_sid
+		 * 
+		 * in clear: it prevents to reply to domain\group: yes
+		 * when only builtin\group exists.
+		 *
+		 * a cleaner code is to add the sid of the domain we're looking in
+		 * to the local_lookup_name function.
+		 */
+            	if(local_lookup_name(global_myname, name, &sid, &local_type)) {
+                	sid_split_rid(&sid, &local_rid);
+				
+			if (sid_equal(&sid, &pol_sid)) {
+				rid[i]=local_rid;
+				type[i]=local_type;
+                		r_u->status = NT_STATUS_OK;
+			}
+            	}
+	}
 
-    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
 
-    return r_u->status;
+	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -1992,7 +2014,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 */
 
 	DEBUG(10,("checking account %s at pos %d for $ termination\n",account, strlen(account)-1));
-
+#if 0
 	if ((acb_info & ACB_WSTRUST) && (account[strlen(account)-1] == '$')) {
 		pstrcpy(add_script, lp_addmachine_script());		
 	} else if ((!(acb_info & ACB_WSTRUST)) && (account[strlen(account)-1] != '$')) {
@@ -2002,6 +2024,19 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+#endif
+
+	/* 
+	 * we can't check both the ending $ and the acb_info.
+	 * 
+	 * UserManager creates trust accounts (ending in $,
+	 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
+	 * JFM, 11/29/2001
+	 */
+	if (account[strlen(account)-1] == '$')
+		pstrcpy(add_script, lp_addmachine_script());		
+	else 
+		pstrcpy(add_script, lp_adduser_script());
 
 	if(*add_script) {
 		int add_ret;
@@ -2709,7 +2744,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	if (sid_equal(&alias_sid, &global_sid_Builtin)) {
 		DEBUG(10, ("lookup on Builtin SID (S-1-5-32)\n"));
-		if(!get_builtin_group_from_sid(als_sid, &map))
+		if(!get_local_group_from_sid(als_sid, &map))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	} else {
 		if (sid_equal(&alias_sid, &global_sam_sid)) {
@@ -2832,7 +2867,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	} else {
 		if (sid_compare(&alias_sid, &global_sid_Builtin)>0) {
 			DEBUG(10, ("adding member on BUILTIN SID\n"));
-			if( !get_builtin_group_from_sid(alias_sid, &map))
+			if( !get_local_group_from_sid(alias_sid, &map))
 				return NT_STATUS_NO_SUCH_ALIAS;
 
 		} else
@@ -3361,11 +3396,11 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	sid_append_rid(&info->sid, q_u->rid_group);
 	sid_to_string(sid_string, &info->sid);
 
-	DEBUG(10, ("Opening SID: %s\n", sid_string));
+	DEBUG(10, ("_samr_open_group:Opening SID: %s\n", sid_string));
 
 	/* check if that group really exists */
 	if (!get_domain_group_from_sid(info->sid, &map))
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_GROUP;
 
 	free_privilege(&map.priv_set);
 
