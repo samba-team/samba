@@ -956,6 +956,8 @@ char *lp_driverfile(void);
 char *lp_domain_sid(void);
 char *lp_domain_other_sids(void);
 char *lp_domain_groups(void);
+char *lp_domain_admin_group(void);
+char *lp_domain_guest_group(void);
 char *lp_domain_admin_users(void);
 char *lp_domain_guest_users(void);
 char *lp_domain_hostsallow(void);
