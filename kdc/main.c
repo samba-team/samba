@@ -42,7 +42,7 @@ sig_atomic_t exit_flag = 0;
 krb5_context context;
 
 #ifdef HAVE_DAEMON
-int no_detach = 1;
+extern int detach_from_console;
 #endif
 
 static RETSIGTYPE
@@ -104,7 +104,7 @@ main(int argc, char **argv)
     signal(SIGTERM, sigterm);
 #endif
 #ifdef HAVE_DAEMON
-    if (!no_detach)
+    if (detach_from_console)
 	daemon(0, 0);
 #endif
     pidfile(NULL);
