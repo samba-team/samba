@@ -618,7 +618,16 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
     }
 
-    fd = cli_open(&srv->cli, path, flags, DENY_NONE);
+    if ((fd = cli_open(&srv->cli, path, flags, DENY_NONE)) < 0) {
+
+      /* Handle the error ... */
+
+      free(smbc_file_table[slot]);
+      smbc_file_table[slot] = NULL;
+      errno = smbc_errno(&srv->cli);
+      return -1;
+
+    }
 
     /* Fill in file struct */
 
@@ -860,6 +869,35 @@ int smbc_unlink(const char *fname)
   if (!cli_unlink(&srv->cli, path)) {
 
     errno = smbc_errno(&srv->cli);
+
+    if (errno == EACCES) { /* Check if the file is a directory */
+
+      int err, saverr = errno;
+      struct stat st;
+      size_t size = 0;
+      uint16 mode = 0;
+      time_t m_time = 0, a_time = 0, c_time = 0;
+      SMB_INO_T ino = 0;
+
+      if (!smbc_getatr(srv, path, &mode, &size,
+		       &c_time, &a_time, &m_time, &ino)) {
+
+	/* Hmmm, bad error ... What? */
+
+	errno = smbc_errno(&srv->cli);
+	return -1;
+
+      }
+      else {
+
+	if (IS_DOS_DIR(mode))
+	  errno = EPERM;
+	else
+	  errno = saverr;  /* Restore this */
+
+      }
+    }
+
     return -1;
 
   }
