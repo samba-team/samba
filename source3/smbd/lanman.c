@@ -3083,7 +3083,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
-  /* check it's a supported varient */
+  /* check it's a supported variant */
   if (strcmp(str1,"zWrLeh") != 0) return False;
   if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
