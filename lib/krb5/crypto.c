@@ -71,7 +71,7 @@ struct salt_type {
     krb5_salttype type;
     const char *name;
     krb5_error_code (*string_to_key)(krb5_context, krb5_enctype, krb5_data, 
-				     krb5_salt, krb5_keyblock*);
+				     krb5_salt, krb5_data, krb5_keyblock*);
 };
 
 struct key_type {
@@ -192,6 +192,7 @@ krb5_DES_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
 		  krb5_data password,
 		  krb5_salt salt,
+		  krb5_data opaque,
 		  krb5_keyblock *key)
 {
     unsigned char *s;
@@ -297,6 +298,7 @@ DES_AFS3_string_to_key(krb5_context context,
 		       krb5_enctype enctype,
 		       krb5_data password,
 		       krb5_salt salt,
+		       krb5_data opaque,
 		       krb5_keyblock *key)
 {
     des_cblock tmp;
@@ -359,6 +361,7 @@ DES3_string_to_key(krb5_context context,
 		   krb5_enctype enctype,
 		   krb5_data password,
 		   krb5_salt salt,
+		   krb5_data opaque,
 		   krb5_keyblock *key)
 {
     char *str;
@@ -415,6 +418,7 @@ DES3_string_to_key_derived(krb5_context context,
 			   krb5_enctype enctype,
 			   krb5_data password,
 			   krb5_salt salt,
+			   krb5_data opaque,
 			   krb5_keyblock *key)
 {
     krb5_error_code ret;
@@ -461,6 +465,7 @@ ARCFOUR_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
 		  krb5_data password,
 		  krb5_salt salt,
+		  krb5_data opaque,
 		  krb5_keyblock *key)
 {
     char *s, *p;
@@ -730,17 +735,32 @@ krb5_string_to_key (krb5_context context,
     return krb5_string_to_key_data(context, enctype, pw, principal, key);
 }
 
-/*
- * Do a string -> key for encryption type `enctype' operation on
- * `password' (with salt `salt'), returning the resulting key in `key'
- */
-
 krb5_error_code
 krb5_string_to_key_data_salt (krb5_context context,
 			      krb5_enctype enctype,
 			      krb5_data password,
 			      krb5_salt salt,
 			      krb5_keyblock *key)
+{
+    krb5_data opaque;
+    krb5_data_zero(&opaque);
+    return krb5_string_to_key_data_salt_opaque(context, enctype, password, 
+					       salt, opaque, key);
+}
+
+/*
+ * Do a string -> key for encryption type `enctype' operation on
+ * `password' (with salt `salt' and the enctype specific data string
+ * `opaque'), returning the resulting key in `key'
+ */
+
+krb5_error_code
+krb5_string_to_key_data_salt_opaque (krb5_context context,
+				     krb5_enctype enctype,
+				     krb5_data password,
+				     krb5_salt salt,
+				     krb5_data opaque,
+				     krb5_keyblock *key)
 {
     struct encryption_type *et =_find_enctype(enctype);
     struct salt_type *st;
@@ -751,7 +771,8 @@ krb5_string_to_key_data_salt (krb5_context context,
     }
     for(st = et->keytype->string_to_key; st && st->type; st++) 
 	if(st->type == salt.salttype)
-	    return (*st->string_to_key)(context, enctype, password, salt, key);
+	    return (*st->string_to_key)(context, enctype, password, 
+					salt, opaque, key);
     krb5_set_error_string(context, "salt type %d not supported",
 			  salt.salttype);
     return HEIM_ERR_SALTTYPE_NOSUPP;
