@@ -300,7 +300,7 @@
 
 	<image id="acct2net">
 		<imagedescription>Abmas Accounting &smbmdash; 52 User Network Topology</imagedescription>
-		<imagefile scale="100">acct2net</imagefile>
+		<imagefile scale="65">acct2net</imagefile>
 	</image>
 
 	<procedure>
