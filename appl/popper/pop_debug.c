@@ -249,7 +249,7 @@ main(int argc, char **argv)
     }
     if (port == 0) {
 #ifdef KRB5
-	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
+	port = krb5_getportbyname (NULL, "kpop", "tcp", 1109);
 #elif defined(KRB4)
 	port = k_getportbyname ("kpop", "tcp", 1109);
 #else
