@@ -194,13 +194,15 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		  state->request.data.sid));
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n", state->request.data.sid));
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 	
-	/* This gets a little tricky.  If we assume that usernames are syncd between
-	   /etc/passwd and the windows domain (such as a member of a Samba domain),
-	   the we need to get the uid from the OS and not alocate one ourselves */
+	/* This gets a little tricky.  If we assume that usernames are syncd
+	   between /etc/passwd and the windows domain (such as a member of a
+	   Samba domain), the we need to get the uid from the OS and not
+	   alocate one ourselves */
 	   
 	if ( lp_winbind_trusted_domains_only() ) {
 		struct winbindd_domain *domain = NULL;
@@ -209,7 +211,8 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		
 		domain = find_our_domain();
 		if ( !domain ) {
-			DEBUG(0,("winbindd_sid_to_uid: can't find my own domain!\n"));
+			DEBUG(0,("winbindd_sid_to_uid: can't find my own "
+				 "domain!\n"));
 			return WINBINDD_ERROR;
 		}
 
@@ -223,16 +226,23 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 			enum SID_NAME_USE type;
 			struct passwd *pw = NULL;
 			unid_t id;
+			NTSTATUS status;
+			
 			
 			/* ok...here's we know that we are dealing with our
 			   own domain (the one to which we are joined).  And
-			   we know that there must be a UNIX account for this user.
-			   So we lookup the sid and the call getpwnam().*/
+			   we know that there must be a UNIX account for this
+			   user.  So we lookup the sid and the call
+			   getpwnam().*/
 			   
 			
-			/* But first check and see if we don't already have a mapping */
-			   
-			if ( NT_STATUS_IS_OK(idmap_sid_to_uid(&sid, &(state->response.data.uid), ID_QUERY_ONLY)) )
+			/* But first check and see if we don't already have a
+			 * mapping */
+
+			status = idmap_sid_to_uid(&sid,
+						  &(state->response.data.uid),
+						  ID_QUERY_ONLY);
+			if ( NT_STATUS_IS_OK(status) )
 				return WINBINDD_OK;
 				
 			/* now fall back to the hard way */
@@ -243,8 +253,10 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 				return WINBINDD_ERROR;
 				
 			if ( !(pw = getpwnam(user)) ) {
-				DEBUG(0,("winbindd_sid_to_uid: 'winbind trusted domains only' is "
-					"set but this user [%s] doesn't exist!\n", user));
+				DEBUG(0,("winbindd_sid_to_uid: 'winbind "
+					 "trusted domains only' is set but "
+					 "this user [%s] doesn't exist!\n",
+					 user));
 				return WINBINDD_ERROR;
 			}
 			
@@ -311,9 +323,10 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	/* This gets a little tricky.  If we assume that usernames are syncd between
-	   /etc/passwd and the windows domain (such as a member of a Samba domain),
-	   the we need to get the uid from the OS and not alocate one ourselves */
+	/* This gets a little tricky.  If we assume that usernames are syncd
+	   between /etc/passwd and the windows domain (such as a member of a
+	   Samba domain), the we need to get the uid from the OS and not
+	   alocate one ourselves */
 	   
 	if ( lp_winbind_trusted_domains_only() ) {
 		struct winbindd_domain *domain = NULL;
@@ -323,7 +336,8 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		
 		domain = find_our_domain();
 		if ( !domain ) {
-			DEBUG(0,("winbindd_sid_to_uid: can't find my own domain!\n"));
+			DEBUG(0,("winbindd_sid_to_uid: can't find my own "
+				 "domain!\n"));
 			return WINBINDD_ERROR;
 		}
 		
@@ -336,15 +350,21 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 			fstring group;
 			enum SID_NAME_USE type;
 			struct group *grp = NULL;
+			NTSTATUS status;
 			
 			/* ok...here's we know that we are dealing with our
 			   own domain (the one to which we are joined).  And
-			   we know that there must be a UNIX account for this group.
-			   So we lookup the sid and the call getpwnam().*/
+			   we know that there must be a UNIX account for this
+			   group.  So we lookup the sid and the call
+			   getpwnam().*/
 			
-			/* But first check and see if we don't already have a mapping */
-			   
-			if ( NT_STATUS_IS_OK(idmap_sid_to_gid(&sid, &(state->response.data.gid), ID_QUERY_ONLY)) )
+			/* But first check and see if we don't already have a
+			 * mapping */
+
+			status = idmap_sid_to_gid(&sid,
+						  &(state->response.data.gid),
+						  ID_QUERY_ONLY);
+			if ( NT_STATUS_IS_OK(status) )
 				return WINBINDD_OK;
 				
 			/* now fall back to the hard way */
@@ -355,8 +375,10 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 				return WINBINDD_ERROR;
 				
 			if ( !(grp = getgrnam(group)) ) {
-				DEBUG(0,("winbindd_sid_to_uid: 'winbind trusted domains only' is "
-					"set but this group [%s] doesn't exist!\n", group));
+				DEBUG(0,("winbindd_sid_to_uid: 'winbind "
+					 "trusted domains only' is set but "
+					 "this group [%s] doesn't exist!\n",
+					 group));
 				return WINBINDD_ERROR;
 			}
 			
@@ -418,6 +440,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	NTSTATUS status;
 
 	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
@@ -440,8 +463,9 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 
 		/* look for an idmap entry first */
-			
-		if ( NT_STATUS_IS_OK(idmap_uid_to_sid(&sid, state->request.data.uid)) ) 
+
+		status = idmap_uid_to_sid(&sid, state->request.data.uid);
+		if ( NT_STATUS_IS_OK(status) ) 
 			goto done;
 		
 		/* if users exist in /etc/passwd, we should try to 
@@ -451,7 +475,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 
 		if ( !(domain = find_our_domain()) ) {
-			DEBUG(0,("winbindd_uid_to_sid: can't find my own domain!\n"));
+			DEBUG(0,("winbindd_uid_to_sid: can't find my own "
+				 "domain!\n"));
 			return WINBINDD_ERROR;
 		}
 
@@ -472,8 +497,9 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	/* Lookup rid for this uid */
-	
-	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&sid, state->request.data.uid))) {
+
+	status = idmap_uid_to_sid(&sid, state->request.data.uid);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not convert uid %lu to rid\n",
 			  (unsigned long)state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -491,6 +517,7 @@ done:
 enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	NTSTATUS status;
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid,
 		  (unsigned long)state->request.data.gid));
@@ -513,7 +540,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 		/* look for an idmap entry first */
 		
-		if ( NT_STATUS_IS_OK(idmap_gid_to_sid(&sid, state->request.data.gid)) )
+		status = idmap_gid_to_sid(&sid, state->request.data.gid);
+		if ( NT_STATUS_IS_OK(status) )
 			goto done;
 			
 		/* if users exist in /etc/group, we should try to 
@@ -523,7 +551,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 
 		if ( !(domain = find_our_domain()) ) {
-			DEBUG(0,("winbindd_uid_to_sid: can't find my own domain!\n"));
+			DEBUG(0,("winbindd_uid_to_sid: can't find my own "
+				 "domain!\n"));
 			return WINBINDD_ERROR;
 		}
 
@@ -544,8 +573,9 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	/* Lookup sid for this uid */
-	
-	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&sid, state->request.data.gid))) {
+
+	status = idmap_gid_to_sid(&sid, state->request.data.gid);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not convert gid %lu to sid\n",
 			  (unsigned long)state->request.data.gid));
 		return WINBINDD_ERROR;
