@@ -354,7 +354,7 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 1;
-	GROUP_INFO_CTR group_ctr;
+	GROUP_INFO_CTR *group_ctr;
 	fstring			server;	
 	uint32 group_rid;
 	
@@ -388,15 +388,13 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	ZERO_STRUCT(group_ctr);
-
 	result = cli_samr_query_groupinfo(cli, mem_ctx, &group_pol, 
 					  info_level, &group_ctr);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	display_group_info_ctr(&group_ctr);
+	display_group_info_ctr(group_ctr);
 
 done:
 	return result;

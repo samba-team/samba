@@ -498,7 +498,7 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  SAM_USERINFO_CTR **ctr);
 NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                   POLICY_HND *group_pol, uint32 info_level, 
-                                  GROUP_INFO_CTR *ctr);
+                                  GROUP_INFO_CTR **ctr);
 NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                    POLICY_HND *user_pol, uint32 *num_groups, 
                                    DOM_GID **gid);
