@@ -375,18 +375,24 @@ static void usage(char *name)
    * Open the smbpaswd file XXXX - we need to parse smb.conf to get the
    * filename
    */
-  if ((fp = fopen(pfile, "a+")) == NULL) {
-    err = errno;
-    fprintf(stderr, "%s: Failed to open password file %s.\n",
-	    argv[0], pfile);
-    errno = err;
-    perror(argv[0]);
-    exit(err);
+  fp = fopen(pfile, "r+");
+  if (!fp && errno == ENOENT) {
+	  fp = fopen(pfile, "w");
+	  if (fp) {
+		  fprintf(fp, "# Samba SMB password file\n");
+		  fclose(fp);
+		  fp = fopen(pfile, "r+");
+	  }
+  }
+  if (!fp) {
+	  err = errno;
+	  fprintf(stderr, "%s: Failed to open password file %s.\n",
+		  argv[0], pfile);
+	  errno = err;
+	  perror(argv[0]);
+	  exit(err);
   }
   
-  /* position at the start of the file */
-  fseek(fp, 0, SEEK_SET);
-
   /* Set read buffer to 16k for effiecient reads */
   setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
   
@@ -477,6 +483,9 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
       pw_file_unlock(lockfd);  
       exit(0);
     }
+  } else {
+	  /* the entry already existed */
+	  add_user = False;
   }
 
   /* If we are root or the password is 'NO PASSWORD' then
