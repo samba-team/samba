@@ -153,7 +153,7 @@ static struct cli_state *do_connection(char *service)
 		DEBUG(0,("%d: Connection to %s failed\n", getpid(), server_n));
 		if (c) {
 			cli_shutdown(c);
-			free(c);
+			SAFE_FREE(c);
 		}
 		return NULL;
 	}
@@ -163,7 +163,7 @@ static struct cli_state *do_connection(char *service)
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
 			 getpid(), called.name, cli_errstr(c)));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -180,7 +180,7 @@ static struct cli_state *do_connection(char *service)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("%d: protocol negotiation failed\n", getpid()));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -198,7 +198,7 @@ static struct cli_state *do_connection(char *service)
 		DEBUG(0,("%d: session setup failed: %s\n",
 			 getpid(), cli_errstr(c)));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -209,7 +209,7 @@ static struct cli_state *do_connection(char *service)
 		DEBUG(0,("%d: tree connect failed: %s\n",
 			 getpid(), cli_errstr(c)));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -358,8 +358,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
 		cli_shutdown(c);
-		free(c);
-		c = NULL;
+		SAFE_FREE(c);
 
 		if (!closed) {
 			/* redirect stdout & stderr since we can't know that
