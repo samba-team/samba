@@ -32,24 +32,25 @@ LATEX += --interaction nonstopmode
 endif
 
 # Paths
-TOPDIR = $(shell pwd)
-OUTPUTDIR = $(TOPDIR)/output
+OUTPUTDIR = output
 ARCHIVEDIR = $(OUTPUTDIR)/archive
 SRCDIR = @SAMBASOURCEDIR@
 MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
-MANPAGEDIR = $(TOPDIR)/manpages
-HOWTODIR = $(TOPDIR)/howto
-GUIDEDOC = $(TOPDIR)/guide
-DEVDOCDIR = $(TOPDIR)/devel
+MANPAGEDIR = manpages
+HOWTODIR = howto
+GUIDEDOC = guide
+DEVDOCDIR = /devel
 MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
 IMAGEGUIDEDIR = $(GUIDEDOC)/images
-EXAMPLESDIR = $(TOPDIR)/examples
-SMBDOTCONFDOC = $(TOPDIR)/smbdotconf
+EXAMPLESDIR = examples
+SMBDOTCONFDOC = smbdotconf
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
+FODIR = $(OUTPUTDIR)
+HTMLHELPDIR = $(OUTPUTDIR)/htmlhelp
 VALIDATEDIR = $(OUTPUTDIR)/validate
 TXTDIR = $(OUTPUTDIR)/textdocs
 HTMLDIR=$(OUTPUTDIR)/htmldocs
@@ -103,6 +104,8 @@ dvi: $(DVIDIR) $(DVIDIR)/Samba-HOWTO-Collection.dvi $(DVIDIR)/Samba-Developers-G
 ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.ps
 
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
+
+fo: $(FODIR) $(FODIR)/Samba-HOWTO-Collection.fo $(FODIR)/Samba-Developers-Guide.fo
 
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) $(HTMLDIR)/samba.css
 
@@ -211,6 +214,20 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
+# Fo
+$(FODIR):
+	mkdir $(FODIR)
+
+$(FODIR)/%.fo: %.xml $(FODIR)
+	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
+
+$(HTMLHELPDIR):
+	mkdir $(HTMLHELPDIR)
+
+$(HTMLHELPDIR)/%: %.xml $(HTMLHELPDIR) 
+	-mkdir $@
+	$(XSLTPROC) --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
+
 # Single large HTML files
 
 $(HTMLDIR):
@@ -247,25 +264,18 @@ $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html
 
 # Manpages
 $(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
-	@cd $(SMBDOTCONFDOC) && \
-	/bin/sh generate-file-list.sh >parameters.all.xml && \
-	cd $(OUTPUTDIR)
+	@cd $(SMBDOTCONFDOC) && /bin/sh generate-file-list.sh >parameters.all.xml
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	@cd $(SMBDOTCONFDOC) && \
-	$(XSLTPROC) --xinclude \
-	--param smb.context "'G'" \
+	$(XSLTPROC) --xinclude --param smb.context "'G'" \
 	--output parameters.global.xml \
-	generate-context.xsl parameters.all.xml && \
-	cd $(OUTPUTDIR)
+	$(SMBDOTCONFDOC)/generate-context.xsl $(SMBDOTCONFDOC)/parameters.all.xml
 
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	@cd $(SMBDOTCONFDOC) && \
 	$(XSLTPROC) --xinclude \
 	--param smb.context "'S'" \
 	--output parameters.service.xml \
-	generate-context.xsl parameters.all.xml && \
-	cd $(OUTPUTDIR)
+	$(SMBDOTCONFDOC)/generate-context.xsl $(SMBDOTCONFDOC)/parameters.all.xml
 
 smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
  		$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
