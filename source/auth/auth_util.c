@@ -35,8 +35,8 @@ static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
                                const char *client_domain, 
                                const char *domain,
                                const char *wksta_name, 
-                               DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
-                               DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
+                               DATA_BLOB *lm_password, DATA_BLOB *nt_password,
+                               DATA_BLOB *lm_interactive_password, DATA_BLOB *nt_interactive_password,
                                DATA_BLOB *plaintext, 
                                BOOL encrypted)
 {
@@ -95,14 +95,14 @@ static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 
 	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
 
-	if (lm_pwd)
-		(*user_info)->lm_resp = data_blob(lm_pwd->data, lm_pwd->length);
-	if (nt_pwd)
-		(*user_info)->nt_resp = data_blob(nt_pwd->data, nt_pwd->length);
-	if (lm_interactive_pwd)
-		(*user_info)->lm_interactive_pwd = data_blob(lm_interactive_pwd->data, lm_interactive_pwd->length);
-	if (nt_interactive_pwd)
-		(*user_info)->nt_interactive_pwd = data_blob(nt_interactive_pwd->data, nt_interactive_pwd->length);
+	if (lm_password)
+		(*user_info)->lm_resp = data_blob(lm_password->data, lm_password->length);
+	if (nt_password)
+		(*user_info)->nt_resp = data_blob(nt_password->data, nt_password->length);
+	if (lm_interactive_password)
+		(*user_info)->lm_interactive_password = data_blob(lm_interactive_password->data, lm_interactive_password->length);
+	if (nt_interactive_password)
+		(*user_info)->nt_interactive_password = data_blob(nt_interactive_password->data, nt_interactive_password->length);
 
 	if (plaintext)
 		(*user_info)->plaintext_password = data_blob(plaintext->data, plaintext->length);
@@ -122,8 +122,8 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name, 
 			    const char *client_domain, 
 			    const char *wksta_name, 
- 			    DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
- 			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
+ 			    DATA_BLOB *lm_password, DATA_BLOB *nt_password,
+ 			    DATA_BLOB *lm_interactive_password, DATA_BLOB *nt_interactive_password,
 			    DATA_BLOB *plaintext, 
 			    BOOL encrypted)
 {
@@ -147,8 +147,8 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 	
 	return make_user_info(user_info, smb_name, internal_username, 
 			      client_domain, domain, wksta_name, 
-			      lm_pwd, nt_pwd,
-			      lm_interactive_pwd, nt_interactive_pwd,
+			      lm_password, nt_password,
+			      lm_interactive_password, nt_interactive_password,
 			      plaintext, encrypted);
 }
 
@@ -161,19 +161,19 @@ BOOL make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
-				     const uint8_t *lm_network_pwd, int lm_pwd_len,
-				     const uint8_t *nt_network_pwd, int nt_pwd_len)
+				     const uint8_t *lm_network_password, int lm_password_len,
+				     const uint8_t *nt_network_password, int nt_password_len)
 {
 	BOOL ret;
 	NTSTATUS nt_status;
-	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
-	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
+	DATA_BLOB lm_blob = data_blob(lm_network_password, lm_password_len);
+	DATA_BLOB nt_blob = data_blob(nt_network_password, nt_password_len);
 
 	nt_status = make_user_info_map(user_info,
 				       smb_name, client_domain, 
 				       wksta_name, 
-				       lm_pwd_len ? &lm_blob : NULL, 
-				       nt_pwd_len ? &nt_blob : NULL,
+				       lm_password_len ? &lm_blob : NULL, 
+				       nt_password_len ? &nt_blob : NULL,
 				       NULL, NULL, NULL,
 				       True);
 	
@@ -194,12 +194,12 @@ BOOL make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 const char *client_domain, 
 					 const char *wksta_name, 
 					 const uint8_t chal[8], 
-					 const uint8_t lm_interactive_pwd[16], 
-					 const uint8_t nt_interactive_pwd[16], 
+					 const uint8_t lm_interactive_password[16], 
+					 const uint8_t nt_interactive_password[16], 
 					 const uint8_t *dc_sess_key)
 {
-	char lm_pwd[16];
-	char nt_pwd[16];
+	char lm_password[16];
+	char nt_password[16];
 	uint8_t local_lm_response[24];
 	uint8_t local_nt_response[24];
 	uint8_t key[16];
@@ -207,39 +207,39 @@ BOOL make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	ZERO_STRUCT(key);
 	memcpy(key, dc_sess_key, 8);
 	
-	if (lm_interactive_pwd) memcpy(lm_pwd, lm_interactive_pwd, sizeof(lm_pwd));
-	if (nt_interactive_pwd) memcpy(nt_pwd, nt_interactive_pwd, sizeof(nt_pwd));
+	if (lm_interactive_password) memcpy(lm_password, lm_interactive_password, sizeof(lm_password));
+	if (nt_interactive_password) memcpy(nt_password, nt_interactive_password, sizeof(nt_password));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
 	dump_data(100, (char *)key, sizeof(key));
 	
 	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, lm_password, sizeof(lm_password));
 	
 	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, nt_password, sizeof(nt_password));
 #endif
 	
-	if (lm_interactive_pwd)
-		arcfour_crypt((uint8_t *)lm_pwd, key, sizeof(lm_pwd));
+	if (lm_interactive_password)
+		arcfour_crypt((uint8_t *)lm_password, key, sizeof(lm_password));
 	
-	if (nt_interactive_pwd)
-		arcfour_crypt((uint8_t *)nt_pwd, key, sizeof(nt_pwd));
+	if (nt_interactive_password)
+		arcfour_crypt((uint8_t *)nt_password, key, sizeof(nt_password));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, lm_password, sizeof(lm_password));
 	
 	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, nt_password, sizeof(nt_password));
 #endif
 	
-	if (lm_interactive_pwd)
-		SMBOWFencrypt((const uint8_t *)lm_pwd, chal, local_lm_response);
+	if (lm_interactive_password)
+		SMBOWFencrypt((const uint8_t *)lm_password, chal, local_lm_response);
 
-	if (nt_interactive_pwd)
-		SMBOWFencrypt((const uint8_t *)nt_pwd, chal, local_nt_response);
+	if (nt_interactive_password)
+		SMBOWFencrypt((const uint8_t *)nt_password, chal, local_nt_response);
 	
 	/* Password info paranoia */
 	ZERO_STRUCT(key);
@@ -253,25 +253,25 @@ BOOL make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 		DATA_BLOB lm_interactive_blob;
 		DATA_BLOB nt_interactive_blob;
 		
-		if (lm_interactive_pwd) {
+		if (lm_interactive_password) {
 			local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
-			lm_interactive_blob = data_blob(lm_pwd, sizeof(lm_pwd));
-			ZERO_STRUCT(lm_pwd);
+			lm_interactive_blob = data_blob(lm_password, sizeof(lm_password));
+			ZERO_STRUCT(lm_password);
 		}
 		
-		if (nt_interactive_pwd) {
+		if (nt_interactive_password) {
 			local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
-			nt_interactive_blob = data_blob(nt_pwd, sizeof(nt_pwd));
-			ZERO_STRUCT(nt_pwd);
+			nt_interactive_blob = data_blob(nt_password, sizeof(nt_password));
+			ZERO_STRUCT(nt_password);
 		}
 
 		nt_status = make_user_info_map(user_info, 
 		                               smb_name, client_domain, 
 		                               wksta_name, 
-		                               lm_interactive_pwd ? &local_lm_blob : NULL,
-		                               nt_interactive_pwd ? &local_nt_blob : NULL,
-		                               lm_interactive_pwd ? &lm_interactive_blob : NULL,
-		                               nt_interactive_pwd ? &nt_interactive_blob : NULL,
+		                               lm_interactive_password ? &local_lm_blob : NULL,
+		                               nt_interactive_password ? &local_nt_blob : NULL,
+		                               lm_interactive_password ? &lm_interactive_blob : NULL,
+		                               nt_interactive_password ? &nt_interactive_blob : NULL,
 		                               NULL,
 		                               True);
 
