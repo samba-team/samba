@@ -144,14 +144,18 @@
 
 #define PRINTER_STATUS_POWER_SAVE	0x01000000
 
+/* Printer permissions ACE settings */
+
+#define PRINTER_ACE_FULL_CONTROL      GENERIC_ALL_ACCESS
+#define PRINTER_ACE_MANAGE_DOCUMENTS  READ_CONTROL_ACCESS
+#define PRINTER_ACE_PRINT             \
+    (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS)
 
 #define SERVER_ACCESS_ADMINISTER	0x00000001
 #define SERVER_ACCESS_ENUMERATE		0x00000002
 #define PRINTER_ACCESS_ADMINISTER	0x00000004
 #define PRINTER_ACCESS_USE		0x00000008
 #define JOB_ACCESS_ADMINISTER		0x00000010
-
-#define PRINTER_MANAGE_DOCUMENTS	0x10000000 /* i think dis right ... */
 
 #define STANDARD_RIGHTS_READ		0x00020000
 #define STANDARD_RIGHTS_WRITE		STANDARD_RIGHTS_READ
@@ -346,8 +350,6 @@
 #define PRINTER_ENUM_ICON6		0x00200000
 #define PRINTER_ENUM_ICON7		0x00400000
 #define PRINTER_ENUM_ICON8		0x00800000
-
-#define POLICY_HND_SIZE 20
 
 /* this struct is undocumented */
 /* thanks to the ddk ... */
@@ -887,11 +889,34 @@ typedef struct driver_info_3
 }
 DRIVER_INFO_3;
 
+typedef struct driver_info_6
+{
+	uint32 version;
+	UNISTR name;
+	UNISTR architecture;
+	UNISTR driverpath;
+	UNISTR datafile;
+	UNISTR configfile;
+	UNISTR helpfile;
+	uint16 *dependentfiles;
+	UNISTR monitorname;
+	UNISTR defaultdatatype;
+	uint16* previousdrivernames;
+	NTTIME driver_date;
+	uint32 driver_version;
+	UNISTR mfgname;
+	UNISTR oem_url;
+	UNISTR hardware_id;
+	UNISTR provider;
+}
+DRIVER_INFO_6;
+
 typedef struct driver_info_info
 {
 	DRIVER_INFO_1 *info1;
 	DRIVER_INFO_2 *info2;
 	DRIVER_INFO_3 *info3;
+	DRIVER_INFO_6 *info6;
 }
 PRINTER_DRIVER_CTR;
 
