@@ -666,7 +666,11 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	}
 
 	if(len > 0) {
+#ifdef FREEBSD_TCP_BUG
+		ret = read_socket_with_timeout(fd,buffer+4,len,len,10000);
+#else
 		ret = read_socket_data(fd,buffer+4,len);
+#endif
 		if (ret != len) {
 			smb_read_error = READ_ERROR;
 			return False;
