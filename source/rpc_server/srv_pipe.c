@@ -1080,11 +1080,14 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 				prs_struct *rpc_in)
 {
 	int fn_num;
-
+	fstring name;
+	uint32 offset1, offset2;
+ 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
-	prs_dump(rpc_name, p->hdr_req.opnum, rpc_in);
+	slprintf(name, sizeof(name), "in_%s", rpc_name);
+	prs_dump(name, p->hdr_req.opnum, rpc_in);
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
@@ -1104,12 +1107,20 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 		return True;
 	}
 
+	offset1 = p->out_data.rdata.data_offset;
+
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(rpc_in, &p->out_data.rdata)) {
 		DEBUG(0,("api_rpcTNP: %s: failed.\n", rpc_name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
 	}
+
+	slprintf(name, sizeof(name), "out_%s", rpc_name);
+	offset2 = p->out_data.rdata.data_offset;
+	p->out_data.rdata.data_offset = offset1;
+	prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
+	p->out_data.rdata.data_offset = offset2;
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n", rpc_name));
 
