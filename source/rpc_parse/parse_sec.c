@@ -441,7 +441,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT)) {
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
@@ -452,7 +452,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT)) {
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
 		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))

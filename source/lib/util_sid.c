@@ -185,7 +185,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 		i++;
 	}
 
-	DEBUG(0,("map_domain_name_to_sid: mapping to %s not found.\n", (*nt_domain)));
+	DEBUG(0,("map_domain_name_to_sid: mapping to %s not found.\n", nt_domain));
 	return False;
 }
 

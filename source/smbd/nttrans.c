@@ -1973,7 +1973,8 @@ static mode_t map_nt_perms( SEC_ACCESS access, int type)
  Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
 ****************************************************************************/
 
-static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_DESC *psd, BOOL is_directory)
+static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint32 security_info_sent,
+                                  SEC_DESC *psd, BOOL is_directory)
 {
   extern DOM_SID global_sid_World;
   DOM_SID owner_sid;
@@ -1984,6 +1985,13 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
   int i;
 
   *pmode = 0;
+  *puser = (uid_t)-1;
+  *pgrp = (uid_t)-1;
+
+  if(security_info_sent == 0) {
+    DEBUG(0,("unpack_unix_permissions: no security info sent !\n"));
+    return False;
+  }
 
   /*
    * Validate the owner and group SID's.
@@ -1991,25 +1999,29 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
 
   DEBUG(5,("unpack_unix_permissions: validating owner_sid.\n"));
 
-  if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid)) {
-    DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
-    return False;
+  if(security_info_sent & OWNER_SECURITY_INFORMATION) {
+    if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid)) {
+      DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
+      return False;
+    }
+
+    *puser = pdb_user_rid_to_uid(owner_rid);
   }
 
-  *puser = pdb_user_rid_to_uid(owner_rid);
+  if(security_info_sent & GROUP_SECURITY_INFORMATION) {
+    if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid)) {
+      DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
+      return False;
+    }
 
-  if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid)) {
-    DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
-    return False;
+    *pgrp = pdb_user_rid_to_gid(grp_rid);
   }
-
-  *pgrp = pdb_user_rid_to_gid(grp_rid);
 
   /*
    * If no DACL then this is a chown only security descriptor.
    */
 
-  if(!dacl) {
+  if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !dacl) {
     *pmode = 0;
     return True;
   }
@@ -2112,6 +2124,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 									char **ppparams, char **ppdata)
 {
   uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+  uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
   char *params= *ppparams;
   char *data = *ppdata;
   prs_struct pd;
@@ -2122,14 +2135,21 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   mode_t perms = 0;
   SMB_STRUCT_STAT sbuf;
   files_struct *fsp = NULL;
+  uint32 security_info_sent = 0;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
+  if(total_parameter_count < 8)
+    return(ERROR(ERRDOS,ERRbadfunc));
+
   if((fsp = file_fsp(params,0)) == NULL)
     return(ERROR(ERRDOS,ERRbadfid));
 
-  DEBUG(3,("call_nt_transact_set_security_desc: file = %s\n", fsp->fsp_name ));
+  security_info_sent = IVAL(params,4);
+
+  DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
+       (unsigned int)security_info_sent ));
 
   /*
    * Init the parse struct we will unmarshall from.
@@ -2162,7 +2182,7 @@ security descriptor.\n"));
    * Unpack the user/group/world id's and permissions.
    */
 
-  if(!unpack_nt_permissions( &user, &grp, &perms, psd, fsp->is_directory)) {
+  if(!unpack_nt_permissions( &user, &grp, &perms, security_info_sent, psd, fsp->is_directory)) {
     free_sec_desc(&psd);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -2192,7 +2212,7 @@ security descriptor.\n"));
    * Do we need to chown ?
    */
 
-  if(sbuf.st_uid != user || sbuf.st_gid != grp) {
+  if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
 
       DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
             fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -2208,7 +2228,7 @@ security descriptor.\n"));
    * Only change security if we got a DACL.
    */
 
-  if(psd->dacl != NULL) {
+  if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
 
     free_sec_desc(&psd);
 
