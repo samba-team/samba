@@ -41,7 +41,9 @@ bin_PROGRAMS = compile_et
 include_HEADERS = com_right.h com_err.h
 
 SOURCES = error.c com_err.c compile_et.c
-OBJECTS = error.o com_err.o
+OBJECTS = error.o com_err.o $(LIBADD)
+EXTRA_SOURCES = snprintf.c
+LIBADD = snprintf.o
 
 all: $(lib_LIBRARIES) $(bin_PROGRAMS) $(include_HEADERS)
 
@@ -128,5 +130,8 @@ parse.c parse.h: $(srcdir)/parse.y
 lex.c: $(srcdir)/lex.l
 	$(LEX) $(srcdir)/lex.l
 	mv -f lex.yy.c lex.c
+
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .
 
 .PHONY: all Wall install uninstall clean mostlyclean distclean realclean dist
