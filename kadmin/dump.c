@@ -152,14 +152,22 @@ hdb_entry2string(hdb_entry *ent, char **str)
     return 0;
 }
 
+krb5_error_code
+print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
+{
+    char *p;
+    hdb_entry2string(entry, &p);
+    fprintf((FILE*)data, "%s\n", p);
+    free(p);
+    return 0;
+}
+
 
 int
 dump(int argc, char **argv)
 {
     HDB *db;
-    hdb_entry ent;
-    int err;
-    int i;
+    int ret;
     FILE *f;
 
     if(argc < 2)
@@ -168,22 +176,16 @@ dump(int argc, char **argv)
 	f = fopen(argv[1], "w");
     
 
-    err = hdb_open(context, &db, database, O_RDONLY, 0600);
-    if(err){
-	warnx("hdb_open: %s", krb5_get_err_text(context, err));
+    ret = hdb_open(context, &db, database, O_RDONLY, 0600);
+    if(ret){
+	krb5_warn(context, ret, "hdb_open");
 	if(f != stdout)
 	    fclose(f);
 	return 0;
     }
-    err = db->firstkey(context, db, &ent);
-    while(err == 0){
-	char *p;
-	hdb_entry2string(&ent, &p);
-	fprintf(f, "%s\n", p);
-	free(p);
-	hdb_free_entry(context, &ent);
-	err = db->nextkey(context, db, &ent);
-    }
+
+    hdb_foreach(context, db, print_entry, f);
+
     if(f != stdout)
 	fclose(f);
     db->close(context, db);
