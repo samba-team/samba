@@ -1334,7 +1334,7 @@ login_tty(t)
 			fatalperror(net, "setsid()");
 	}
 #endif
-# ifdef	TIOCSCTTY
+# if defined(TIOCSCTTY) && !defined(__hpux)
 	if (ioctl(t, TIOCSCTTY, (char *)0) < 0)
 		fatalperror(net, "ioctl(sctty)");
 #  if defined(CRAY)
@@ -1354,10 +1354,10 @@ login_tty(t)
 	 * setsid() call above may have set our pgrp, so clear
 	 * it out before opening the tty...
 	 */
-#  ifndef SOLARIS
-	(void) setpgrp(0, 0);
-#  else
+#  if defined(SOLARIS) || defined(__hpux)
 	(void) setpgrp();
+#  else
+	(void) setpgrp(0, 0);
 #  endif
 	close(open(line, O_RDWR));
 # endif
