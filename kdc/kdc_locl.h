@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,6 @@ extern krb5_context context;
 
 extern int require_preauth;
 extern sig_atomic_t exit_flag;
-extern char *keyfile;
 extern size_t max_request;
 extern time_t kdc_warn_pwexpire;
 extern struct dbinfo {
@@ -56,6 +55,8 @@ extern struct dbinfo {
 extern HDB **db;
 extern int num_db;
 extern char *port_str;
+extern krb5_addresses explicit_addresses;
+
 extern int enable_http;
 extern krb5_boolean encode_as_rep_as_tgs_rep;
 extern krb5_boolean check_ticket_addresses;
