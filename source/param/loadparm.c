@@ -65,6 +65,7 @@
 #define KANJI "sbcs"
 #endif /* KANJI */
 
+BOOL in_client = False;   /* Not in the client by default */
 BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
@@ -2479,6 +2480,15 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 	  lp_add_ipc();
 
   set_default_server_announce_type();
+
+  /* We set a WINS server address of 127.0.0.1 if we are in the client */
+  /* and we have WINS support enabled                                  */
+
+  if (in_client && Globals.bWINSsupport) {
+
+    string_set(&Globals.szWINSserver, "127.0.0.1");
+
+  }
 
   bLoaded = True;
 
