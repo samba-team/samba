@@ -1,3 +1,17 @@
+Sat Mar 20 03:42:30 1999  Assar Westerlund  <assar@sics.se>
+
+	* roken-common.h (eread, ewrite): add
+
+	* simple_exec.c: add <roken.h>
+
+	* Makefile.am: correct path to Makefile.am.common
+
+Fri Mar 19 21:29:58 1999  Assar Westerlund  <assar@sics.se>
+
+	* eread.c, ewrite.c: new files
+
+	* Makefile.am (libroken_la_SOURCES): add eread and ewrite
+
 Fri Mar 19 14:52:57 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: add version-info

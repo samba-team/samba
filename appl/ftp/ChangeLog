@@ -1,3 +1,13 @@
+Sat Mar 20 00:09:58 1999  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/Makefile.am: correct path to Makefile.am.common
+
+	* ftp/Makefile.am: correct path to Makefile.am.common
+
+	* common/Makefile.am: correct path to Makefile.am.common
+
+	* Makefile.am: correct path to Makefile.am.common
+
 Thu Mar 18 12:07:09 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/Makefile.am: clean ftpcmd.c
