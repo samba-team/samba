@@ -95,8 +95,3 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-enum winbindd_result winbindd_pam_account(struct winbindd_cli_state *state) 
-{
-	/* say account exists if we can do a getpwnam */
-	return winbindd_getpwnam_from_user(state);
-}

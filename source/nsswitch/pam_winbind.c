@@ -78,12 +78,8 @@ static int winbind_request(int req_type, const char *user, const char *pass)
 
 	ZERO_STRUCT(request);
 
-	if (pass) {
-		strncpy(request.data.auth.user, user, sizeof(request.data.auth.user)-1);
-		strncpy(request.data.auth.pass, pass, sizeof(request.data.auth.pass)-1);
-	} else {
-		strncpy(request.data.username, user, sizeof(request.data.username)-1);
-	}
+	strncpy(request.data.auth.user, user, sizeof(request.data.auth.user)-1);
+	strncpy(request.data.auth.pass, pass, sizeof(request.data.auth.pass)-1);
 	
 	/* Fill in request and send down pipe */
 	init_request(&request, req_type);
@@ -129,7 +125,8 @@ static int user_lookup(const char *user, const char *pass)
  */
 static int valid_user(const char *user)
 {
-	return winbind_request(WINBINDD_PAM_ACCOUNT, user, NULL);
+	if (getpwnam(user)) return 0;
+	return 1;
 }
 
 /* --- authentication management functions --- */

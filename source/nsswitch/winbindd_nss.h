@@ -42,8 +42,7 @@ enum winbindd_cmd {
     WINBINDD_SETGRENT,               /* get/set/endgrent */
     WINBINDD_ENDGRENT,
     WINBINDD_GETGRENT,
-    WINBINDD_PAM_AUTH,
-    WINBINDD_PAM_ACCOUNT
+    WINBINDD_PAM_AUTH
 };
 
 /* Winbind request structure */
