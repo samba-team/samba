@@ -63,12 +63,12 @@ size_t cookie_len = sizeof(cookie);
 #endif
 
 /*
- * Allocate a unix domain socket.
+ * Allocate a unix domain socket in `s' for display `dpy' and with
+ * filename `pattern'
  *
  * 0 if all is OK
  * -1 if bind failed badly
- * 1 if dpy is already used
- */
+ * 1 if dpy is already used */
 
 static int
 try_socket (struct x_socket *s, int dpy, const char *pattern)
@@ -202,8 +202,7 @@ try_tcp (struct x_socket *s, int dpy)
 }
 
 /*
- * Allocate and listen on a number of local X server sockets, pipes,
- * and a TCP socket.  Return the display number.
+ * The potential places to create unix sockets.
  */
 
 static char *x_sockets[] = {
@@ -212,6 +211,10 @@ X_UNIX_PATH "%u",
 "/usr/spool/sockets/X11/" "%u",
 NULL
 };
+
+/*
+ * Dito for stream pipes.
+ */
 
 #ifdef MAY_HAVE_X11_PIPES
 static char *x_pipes[] = {
@@ -222,7 +225,7 @@ NULL
 #endif
 
 /*
- * Create the directory corresponding to `path' or fail.
+ * Create the directory corresponding to dirname of `path' or fail.
  */
 
 static void
