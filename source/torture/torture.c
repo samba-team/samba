@@ -864,59 +864,6 @@ static BOOL run_fdpasstest(void)
 
 
 /*
-  This test checks that 
-
-  1) the server does not allow an unlink on a file that is open
-*/
-static BOOL run_unlinktest(void)
-{
-	struct smbcli_state *cli;
-	const char *fname = "\\unlink.tst";
-	int fnum;
-	BOOL correct = True;
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	printf("starting unlink test\n");
-
-	smbcli_unlink(cli->tree, fname);
-
-	cli->session->pid = 1;
-
-	printf("Opening a file\n");
-
-	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	if (fnum == -1) {
-		printf("open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		return False;
-	}
-
-	printf("Unlinking a open file\n");
-
-	if (NT_STATUS_IS_OK(smbcli_unlink(cli->tree, fname))) {
-		printf("error: server allowed unlink on an open file\n");
-		correct = False;
-	} else {
-		correct = check_error(__location__, cli, ERRDOS, ERRbadshare, 
-				      NT_STATUS_SHARING_VIOLATION);
-	}
-
-	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("unlink test finished\n");
-	
-	return correct;
-}
-
-
-/*
 test the timing of deferred open requests
 */
 static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
@@ -2415,7 +2362,7 @@ static struct {
 	{"BASE-LOCK5",  torture_locktest5,  0},
 	{"BASE-LOCK6",  torture_locktest6,  0},
 	{"BASE-LOCK7",  torture_locktest7,  0},
-	{"BASE-UNLINK", run_unlinktest, 0},
+	{"BASE-UNLINK", torture_unlinktest, 0},
 	{"BASE-ATTR",   run_attrtest,   0},
 	{"BASE-TRANS2", run_trans2test, 0},
 	{"BASE-NEGNOWAIT", run_negprot_nowait, 0},

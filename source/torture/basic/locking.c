@@ -55,7 +55,8 @@ BOOL torture_locktest1(void)
 	}
 	fnum2 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("open2 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open2 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		return False;
 	}
 	fnum3 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
@@ -213,7 +214,8 @@ BOOL torture_locktest2(void)
 
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("open2 of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		printf("(%s) open2 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli->tree));
 		return False;
 	}
 
