@@ -452,28 +452,22 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->ngroups = 0;
 	conn->groups = NULL;
 	
-	if (!IS_IPC(conn)) {
-		/* Find all the groups this uid is in and
-		   store them. Used by become_user() */
-		initialise_groups(conn->user, conn->uid, conn->gid); 
-		get_current_groups(&conn->ngroups,&conn->groups);
+	/* Find all the groups this uid is in and
+	   store them. Used by become_user() */
+	initialise_groups(conn->user, conn->uid, conn->gid); 
+	get_current_groups(&conn->ngroups,&conn->groups);
 		
-		/* check number of connections */
-		if (!claim_connection(conn,
-				      lp_servicename(SNUM(conn)),
-				      lp_max_connections(SNUM(conn)),
-				      False)) {
-			DEBUG(1,("too many connections - rejected\n"));
-			*ecode = ERRnoresource;
-			conn_free(conn);
-			return NULL;
-		}  
+	/* check number of connections */
+	if (!claim_connection(conn,
+			      lp_servicename(SNUM(conn)),
+			      lp_max_connections(SNUM(conn)),
+			      False)) {
+		DEBUG(1,("too many connections - rejected\n"));
+		*ecode = ERRnoresource;
+		conn_free(conn);
+		return NULL;
+	}  
 		
-		if (lp_status(SNUM(conn)))
-			claim_connection(conn,"",
-					 MAXSTATUS,False);
-	} /* IS_IPC */
-
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, conn->ngroups, conn->groups);
 
 	/* Initialise VFS function pointers */
@@ -528,14 +522,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		if (!IS_IPC(conn)) {
-			yield_connection(conn,
-					 lp_servicename(SNUM(conn)),
-					 lp_max_connections(SNUM(conn)));
-			if (lp_status(SNUM(conn))) {
-				yield_connection(conn,"",MAXSTATUS);
-			}
-		}
+		yield_connection(conn,
+				 lp_servicename(SNUM(conn)),
+				 lp_max_connections(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
@@ -545,13 +534,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		DEBUG(0,("Can't change directory to %s (%s)\n",
 			 conn->connectpath,strerror(errno)));
 		unbecome_user();
-		if (!IS_IPC(conn)) {
-			yield_connection(conn,
-					 lp_servicename(SNUM(conn)),
-					 lp_max_connections(SNUM(conn)));
-			if (lp_status(SNUM(conn))) 
-				yield_connection(conn,"",MAXSTATUS);
-		}
+		yield_connection(conn,
+				 lp_servicename(SNUM(conn)),
+				 lp_max_connections(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -644,9 +629,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
 			 lp_max_connections(SNUM(conn)));
-
-	if (lp_status(SNUM(conn)))
-		yield_connection(conn,"",MAXSTATUS);
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);

@@ -207,6 +207,10 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 	(*num_entries) = 0;
 	(*total_entries) = 0;
 
+	/* Skip all this stuff if we're in appliance mode */
+
+	if (lp_hide_local_users()) goto done;
+
 	if (pw_buf == NULL) return False;
 
 	if (current_idx == 0) {
@@ -337,6 +341,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		mapped_idx = 0;
 	}
 
+ done:
 	return (*num_entries) > 0;
 }
 
@@ -738,7 +743,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	fstring sid_str;
 	fstring sam_sid_str;
 	struct group *grp;
-	
+
 	ZERO_STRUCT(r_e);
 
 	/* find the policy handle.  open a policy on it. */
@@ -756,7 +761,10 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	if (strequal(sid_str, "S-1-5-32"))
 	{
 		char *name;
-		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
+
+		while (!lp_hide_local_users() &&
+		       num_entries < MAX_SAM_ENTRIES && 
+		       ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
@@ -767,6 +775,8 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	{
 		char *name;
 		char *sep;
+
+		if (lp_hide_local_users()) goto done;
 
 		sep = lp_winbind_separator();
 
@@ -792,6 +802,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 
 		endgrent();
+	done:
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);

@@ -265,6 +265,7 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
+	BOOL bHideLocalUsers;
 }
 global;
 
@@ -993,6 +994,8 @@ static struct parm_struct parm_table[] = {
 
 	{"fake directory create times", P_BOOL, P_LOCAL, &sDefault.bFakeDirCreateTimes, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"panic action", P_STRING, P_GLOBAL, &Globals.szPanicAction, NULL, NULL, 0},
+	{"hide local users", P_BOOL, P_GLOBAL, &Globals.bHideLocalUsers, NULL,
+	 NULL, 0},
 
 	{"VFS options", P_SEP, P_SEPARATOR},
 	
@@ -1102,16 +1105,16 @@ static void init_printer_values(void)
 				   "qstat -s -j%j -r");
 			break;
 #ifdef DEVELOPER
-		case PRINT_TEST:
-		case PRINT_VLP:
-			string_set(&sDefault.szPrintcommand, "vlp print %p %s");
-			string_set(&sDefault.szLpqcommand, "vlp lpq %p");
-			string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
-			string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
-			string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
-			string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
-			string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
-			break;
+	case PRINT_TEST:
+	case PRINT_VLP:
+		string_set(&sDefault.szPrintcommand, "vlp print %p %s");
+		string_set(&sDefault.szLpqcommand, "vlp lpq %p");
+		string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
+		string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
+		string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
+		string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
+		string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
+		break;
 #endif /* DEVELOPER */
 
 	}
@@ -1635,7 +1638,10 @@ FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
+
 /* local prototypes */
+
 static int map_parameter(char *pszParmName);
 static BOOL set_boolean(BOOL *pb, char *pszParmValue);
 static int getservicebyname(char *pszServiceName,

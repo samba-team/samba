@@ -128,6 +128,8 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 			fprintf(stderr,"Can't find pid for nmbd\n");
 			return False;
 		}
+	} else if (strequal(dest,"self")) {
+		pid = getpid();
 	} else {
 		pid = atoi(dest);
 		if (pid == 0) {

@@ -1559,6 +1559,7 @@ int lp_oplock_contention_limit(int );
 int lp_write_cache_size(int );
 char lp_magicchar(int );
 int lp_winbind_cache_time(void);
+BOOL lp_hide_local_users(void);
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
@@ -3303,12 +3304,12 @@ BOOL api_srvsvc_rpc(pipes_struct *p);
 #if OLD_NTDOMAIN
 int make_dom_gids(char *gids_str, DOM_GID **ppgids);
 void get_domain_user_groups(char *domain_groups, char *user);
-uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type);
-uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type);
-uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type);
-uint32 lookup_group_rid(char *group_name, uint32 *rid);
-uint32 lookup_alias_rid(char *alias_name, uint32 *rid);
-uint32 lookup_user_rid(char *user_name, uint32 *rid);
+uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type);
+uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type);
+uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type);
+uint32 local_lookup_group_rid(char *group_name, uint32 *rid);
+uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid);
+uint32 local_lookup_user_rid(char *user_name, uint32 *rid);
 #endif
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
