@@ -1036,6 +1036,11 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   }
 
   /* set the name resolution order */
+
+  if ( strcmp( resolve_order, "NULL") == 0 ) {
+    DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
+    return False;
+  }
   
   if ( !resolve_order )
     pstrcpy(name_resolve_list, lp_name_resolve_order());
@@ -1252,9 +1257,23 @@ BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *c
 BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
                  int *count, BOOL ads_only, int *ordered)
 {
-	/* defined the name resolve order to internal_name_resolve() 
-	   only used for looking up 0x1c names */
-	const char *resolve_oder = (ads_only ? "ads" : lp_name_resolve_order());
+	fstring resolve_order;
+
+	/* if we are restricted to solely using DNS for looking
+	   up a domain controller, make sure that host lookups
+	   are enabled for the 'name resolve order'.  If host lookups
+	   are disabled and ads_only is True, then set the string to
+	   NULL. */
+
+	fstrcpy( resolve_order, lp_name_resolve_order() );
+	strlower_m( resolve_order );
+	if ( ads_only )  {
+		if ( strstr( resolve_order, "host" ) )
+			fstrcpy( resolve_order, "ads" );
+		else
+			fstrcpy( resolve_order, "NULL" );
+	}
+
 	
 	*ordered = False;
 		
@@ -1275,7 +1294,7 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		
 
 		if (!*pserver)
-			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
+			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
 
 		p = pserver;
 
@@ -1288,7 +1307,7 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		 
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 			if (strequal(name, "*")) {
-				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_oder) )
+				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_order) )
 					num_addresses += auto_count;
 				done_auto_lookup = True;
 				DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
@@ -1301,7 +1320,7 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		   just return the list of DC's */
 		   
 		if ( (num_addresses == 0) && !done_auto_lookup )
-			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
+			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
 
 		/* maybe we just failed? */
 		
@@ -1382,5 +1401,5 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	
 	DEBUG(10,("get_dc_list: defaulting to internal auto lookup for domain %s\n", domain));
 	
-	return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
+	return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
 }
