@@ -209,6 +209,10 @@ following syntax:
 principal       [priv1,priv2,...]       [glob-pattern]
 @end smallexample
 
+The matching is from top to bottom for matching principal (and if given,
+glob-pattern).  When there is a match, the rights of that lines are
+used.
+
 The privileges you can assign to a principal are: @samp{add},
 @samp{change-password} (or @samp{cpw} for short), @samp{delete},
 @samp{get}, @samp{list}, and @samp{modify}, or the special privilege
