@@ -236,7 +236,7 @@ static BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 
 
 /*****************************************************************
- *THE CANNONICAL* convert name to SID function.
+ *THE CANONICAL* convert name to SID function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
@@ -254,7 +254,7 @@ BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to name function.
+ *THE CANONICAL* convert SID to name function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
@@ -276,7 +276,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert uid_t to SID function.
+ *THE CANONICAL* convert uid_t to SID function.
  Tries winbind first - then uses local lookup.
  Returns SID pointer.
 *****************************************************************/  
@@ -293,7 +293,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert gid_t to SID function.
+ *THE CANONICAL* convert gid_t to SID function.
  Tries winbind first - then uses local lookup.
  Returns SID pointer.
 *****************************************************************/  
@@ -310,7 +310,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to uid function.
+ *THE CANONICAL* convert SID to uid function.
  Tries winbind first - then uses local lookup.
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
@@ -362,7 +362,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 }
 
 /*****************************************************************
- *THE CANNONICAL* convert SID to gid function.
+ *THE CANONICAL* convert SID to gid function.
  Tries winbind first - then uses local lookup.
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
