@@ -34,13 +34,11 @@ start() {
 #
    $SAMBADIR/sbin/smbd -D -s $SAMBADIR/lib/smb.conf
    $SAMBADIR/sbin/nmbd -D -s $SAMBADIR/lib/smb.conf
-   $SAMBADIR/sbin/winbindd 
 }
 
 stop() {
    killproc nmbd
    killproc smbd
-   killproc winbindd
 }
 
 # Start/stop processes required for samba server

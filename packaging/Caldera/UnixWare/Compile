@@ -7,14 +7,32 @@
 V=
 [ "$1" = "-n" ] && V=echo
 
-CC="cc -Kthread -Kalloca -I/usr/local/include -L/usr/local/lib"
+#CC="cc -Kthread -Kalloca -I/usr/local/include -L/usr/local/lib"
+CC="cc -Kthread -Kalloca"
 CPP="$CC -E"
 CFLAGS="-Xa -Dasm=__asm -DANSICPP -O3"
-LDFLAGS="-L/usr/local/lib"
-CXX="CC -I/usr/local/include"
-CXXFLAGS="-O3 -I/usr/local/include/stl -L/usr/local/lib"
+#LDFLAGS="-L/usr/local/lib"
+LDFLAGS=
+#CXX="CC -I/usr/local/include"
+CXX="CC"
+#CXXFLAGS="-O3 -I/usr/local/include/stl -L/usr/local/lib"
+CXXFLAGS="-O3"
 RANLIB=true
-MAKE=/usr/local/bin/make
+
+if [ -x /usr/gnu/bin/make ]
+then
+    MAKE=/usr/gnu/bin/make
+elif [ -x /usr/local/bin/make ]
+then
+    MAKE=/usr/local/bin/make
+elif [ -x /usr/bin/make ]
+then
+    MAKE=/usr/bin/make
+else
+    echo "Can't find make - exiting"
+    exit 1
+fi
+
 if [ "$V" = "echo" ]
 then
     echo "exporting the following shell variables:"
@@ -34,17 +52,17 @@ if [ "$V" = "echo" ]
 then
     echo "cd ../../../source"
     echo "rm -f mout-1 mout-2 mout-3 mout-4"
-    echo "make all 2>&1 | tee mout-1"
-    echo "make smbfilter smbtorture debug2html 2>&1 | tee mout-2"
-    echo "make bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3"
-    echo "make masktest locktest locktest2 2>&1 | tee mout-3"
+    echo "$MAKE all 2>&1 | tee mout-1"
+    echo "$MAKE smbfilter smbtorture debug2html 2>&1 | tee mout-2"
+    echo "$MAKE bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3"
+    echo "$MAKE masktest locktest locktest2 2>&1 | tee mout-3"
 else
     cd ../../../source
     rm -f mout-1 mout-2 mout-3 mout-4
-    make all 2>&1 | tee mout-1
-    make smbfilter smbtorture debug2html 2>&1 | tee mout-2
-    make bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3
-    make masktest locktest locktest2 2>&1 | tee mout-3
+    $MAKE all 2>&1 | tee mout-1
+    $MAKE smbfilter smbtorture debug2html 2>&1 | tee mout-2
+    $MAKE bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3
+    $MAKE masktest locktest locktest2 2>&1 | tee mout-3
 fi
 #
 # Not building :
