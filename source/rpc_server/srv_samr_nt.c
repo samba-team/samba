@@ -3,10 +3,12 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen			    1999.
- *  Copyright (C) Jeremy Allison               2001-2002.
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Marc Jacobsen			    1999,
+ *  Copyright (C) Jeremy Allison               2001-2002,
+ *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Anthony Liguori                   2002,
+ *  Copyright (C) Jim McDonough                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -727,8 +729,6 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	}
 
 	for (i = 0; i < num_entries; i++) {
-		int len = uni_temp_name.uni_str_len;
-		
 		pwd = disp_user_info[i+start_idx].sam;
 		temp_name = pdb_get_username(pwd);
 		init_unistr2(&uni_temp_name, temp_name, strlen(temp_name)+1);
@@ -743,7 +743,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		init_sam_entry(&sam[i], len, user_rid);
+		init_sam_entry(&sam[i], uni_temp_name.uni_str_len, user_rid);
 		copy_unistr2(&uni_name[i], &uni_temp_name);
 	}
 
@@ -1081,7 +1081,9 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	/* the domain group array is being allocated in the function below */
-	get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+	if (!NT_STATUS_IS_OK(r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))) {
+		return r_u->status;
+	}
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
@@ -2081,6 +2083,8 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	time_t u_logout;
 	NTTIME nt_logout;
 
+	uint32 account_policy_temp;
+
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
@@ -2098,12 +2102,22 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	
 	switch (q_u->switch_value) {
 		case 0x01:
-			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
-			account_policy_get(AP_PASSWORD_HISTORY, &pass_hist);
-			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &flag);
-			account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&u_expire);
-			account_policy_get(AP_MIN_PASSWORD_AGE, (int *)&u_min_age);
+			
+			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			min_pass_len = account_policy_temp;
 
+			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
+			pass_hist = account_policy_temp;
+
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			flag = account_policy_temp;
+
+			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			u_expire = account_policy_temp;
+
+			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			u_min_age = account_policy_temp;
+			
 			unix_to_nt_time_abs(&nt_expire, u_expire);
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
@@ -2149,10 +2163,15 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info7(&ctr->info.inf7);
 			break;
 		case 0x0c:
-			account_policy_get(AP_LOCK_ACCOUNT_DURATION, (int *)&u_lock_duration);
-			account_policy_get(AP_RESET_COUNT_TIME, (int *)&u_reset_time);
-			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &lockout);
-	
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			u_lock_duration = account_policy_temp;
+
+			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
+			u_reset_time = account_policy_temp;
+
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			lockout = account_policy_temp;
+
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
 			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
 	
@@ -2344,7 +2363,8 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	}
 
 	r_u->user_rid=pdb_get_user_rid(sam_pass);
-	r_u->unknown_0 = 0x000703ff;
+
+	r_u->access_granted = acc_granted;
 
 	pdb_free_sam(&sam_pass);
 
@@ -2404,6 +2424,56 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 
 	if (!pipe_access_check(p)) {
 		DEBUG(3, ("access denied to samr_connect\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
+
+	samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
+	se_map_generic(&des_access, &sam_generic_mapping);
+	if (!NT_STATUS_IS_OK(nt_status = 
+			     access_check_samr_object(psd, p->pipe_user.nt_user_token, 
+						      des_access, &acc_granted, "_samr_connect"))) {
+		return nt_status;
+	}
+
+	r_u->status = NT_STATUS_OK;
+
+	/* associate the user's SID and access granted with the new handle. */
+	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	info->acc_granted = acc_granted;
+	info->status = q_u->access_mask;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ samr_connect4
+ ********************************************************************/
+
+NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *r_u)
+{
+	struct samr_info *info = NULL;
+	SEC_DESC *psd = NULL;
+	uint32    acc_granted;
+	uint32    des_access = q_u->access_mask;
+	size_t    sd_size;
+	NTSTATUS  nt_status;
+
+
+	DEBUG(5,("_samr_connect4: %d\n", __LINE__));
+
+	/* Access check */
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_connect4\n"));
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		return r_u->status;
 	}
@@ -4180,6 +4250,8 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
+	uint32 account_policy_temp;
+
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -4195,11 +4267,20 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	switch (q_u->switch_value) {
 		case 0x01:
-			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
-			account_policy_get(AP_PASSWORD_HISTORY, &pass_hist);
-			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &flag);
-			account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&u_expire);
-			account_policy_get(AP_MIN_PASSWORD_AGE, (int *)&u_min_age);
+			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			min_pass_len = account_policy_temp;
+
+			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
+			pass_hist = account_policy_temp;
+
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			flag = account_policy_temp;
+
+			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			u_expire = account_policy_temp;
+
+			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			u_min_age = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_expire, u_expire);
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
@@ -4231,7 +4312,9 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			u_logout = account_policy_temp;
+
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
@@ -4246,9 +4329,14 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info7(&ctr->info.inf7);
 			break;
 		case 0x0c:
-			account_policy_get(AP_LOCK_ACCOUNT_DURATION, (int *)&u_lock_duration);
-			account_policy_get(AP_RESET_COUNT_TIME, (int *)&u_reset_time);
-			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &lockout);
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			u_lock_duration = account_policy_temp;
+
+			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
+			u_reset_time = account_policy_temp;
+
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			lockout = account_policy_temp;
 	
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
 			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);

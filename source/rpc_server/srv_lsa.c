@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Jim McDonough                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -610,6 +611,37 @@ static BOOL api_lsa_query_secobj(pipes_struct *p)
 }
 
 /***************************************************************************
+ api_lsa_query_dnsdomainfo
+ ***************************************************************************/
+
+static BOOL api_lsa_query_info2(pipes_struct *p)
+{
+	LSA_Q_QUERY_INFO2 q_u;
+	LSA_R_QUERY_INFO2 r_u;
+
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_query_info2("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_query_info2: failed to unmarshall LSA_Q_QUERY_INFO2.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_query_info2(p, &q_u, &r_u);
+
+	if (!lsa_io_r_query_info2("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_query_info2: failed to marshall LSA_R_QUERY_INFO2.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
 
@@ -634,6 +666,7 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
 	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
 	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
+	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      },
 	{ NULL                  , 0                   , NULL                     }
 };
 
