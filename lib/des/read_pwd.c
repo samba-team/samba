@@ -115,10 +115,10 @@
 #include <ttdef.h>
 #include <descrip.h>
 struct IOSB {
-	short iosb$w_value;
-	short iosb$w_count;
-	long  iosb$l_info;
-	};
+    short iosb$w_value;
+    short iosb$w_count;
+    long  iosb$l_info;
+};
 #endif
 
 #ifndef NX509_SIG
@@ -149,246 +149,246 @@ static void (*savsig[NX509_SIG])();
 static jmp_buf save;
 
 int des_read_password(key, prompt, verify)
-des_cblock (*key);
-char *prompt;
-int verify;
-	{
-	int ok;
-	char buf[BUFSIZ],buff[BUFSIZ];
+     des_cblock (*key);
+     char *prompt;
+     int verify;
+{
+    int ok;
+    char buf[BUFSIZ],buff[BUFSIZ];
 
-	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_key(buf,key);
-	memset(buf,0,BUFSIZ);
-	memset(buff,0,BUFSIZ);
-	return(ok);
-	}
+    if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
+	des_string_to_key(buf,key);
+    memset(buf,0,BUFSIZ);
+    memset(buff,0,BUFSIZ);
+    return(ok);
+}
 
 int des_read_2passwords(key1, key2, prompt, verify)
-des_cblock (*key1);
-des_cblock (*key2);
-char *prompt;
-int verify;
-	{
-	int ok;
-	char buf[BUFSIZ],buff[BUFSIZ];
+     des_cblock (*key1);
+     des_cblock (*key2);
+     char *prompt;
+     int verify;
+{
+    int ok;
+    char buf[BUFSIZ],buff[BUFSIZ];
 
-	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_2keys(buf,key1,key2);
-	memset(buf,0,BUFSIZ);
-	memset(buff,0,BUFSIZ);
-	return(ok);
-	}
+    if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
+	des_string_to_2keys(buf,key1,key2);
+    memset(buf,0,BUFSIZ);
+    memset(buff,0,BUFSIZ);
+    return(ok);
+}
 
 int des_read_pw_string(buf, length, prompt, verify)
-char *buf;
-int length;
-char *prompt;
-int verify;
-	{
-	char buff[BUFSIZ];
-	int ret;
+     char *buf;
+     int length;
+     char *prompt;
+     int verify;
+{
+    char buff[BUFSIZ];
+    int ret;
 
-	ret=read_pw(buf,buff,(length>BUFSIZ)?BUFSIZ:length,prompt,verify);
-	memset(buff,0,BUFSIZ);
-	return(ret);
-	}
+    ret=read_pw(buf,buff,(length>BUFSIZ)?BUFSIZ:length,prompt,verify);
+    memset(buff,0,BUFSIZ);
+    return(ret);
+}
 
 static void read_till_nl(in)
-FILE *in;
-	{
+     FILE *in;
+{
 #define SIZE 4
-	char buf[SIZE+1];
+    char buf[SIZE+1];
 
-	do	{
-		fgets(buf,SIZE,in);
-		} while (strchr(buf,'\n') == NULL);
-	}
+    do	{
+	fgets(buf,SIZE,in);
+    } while (strchr(buf,'\n') == NULL);
+}
 
 /* return 0 if ok, 1 (or -1) otherwise */
 static int read_pw(buf, buff, size, prompt, verify)
-char *buf;
-char *buff;
-int size;
-char *prompt;
-int verify;
-	{
+     char *buf;
+     char *buff;
+     int size;
+     char *prompt;
+     int verify;
+{
 #ifdef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
-	return pwd_dialog(buf, size);
+    return pwd_dialog(buf, size);
 #else /* !WIN32 */
 #ifdef VMS
-	struct IOSB iosb;
-	$DESCRIPTOR(terminal,"TT");
-	long tty_orig[3], tty_new[3];
-	long status;
-	unsigned short channel = 0;
+    struct IOSB iosb;
+    $DESCRIPTOR(terminal,"TT");
+    long tty_orig[3], tty_new[3];
+    long status;
+    unsigned short channel = 0;
 #else
 #ifndef MSDOS
-	TTY_STRUCT tty_orig,tty_new;
+    TTY_STRUCT tty_orig,tty_new;
 #endif
 #endif
-	int number=5;
-	int ok=0;
-	int ps=0;
-	FILE *tty=NULL;
-	char *p;
+    int number=5;
+    int ok=0;
+    int ps=0;
+    FILE *tty=NULL;
+    char *p;
 
 #ifndef MSDOS
-	if ((tty=fopen("/dev/tty","r")) == NULL)
-		tty=stdin;
+    if ((tty=fopen("/dev/tty","r")) == NULL)
+	tty=stdin;
 #else /* MSDOS */
-	if ((tty=fopen("con","r")) == NULL)
-		tty=stdin;
+    if ((tty=fopen("con","r")) == NULL)
+	tty=stdin;
 #endif /* MSDOS */
 
 #if defined(TTY_get) && !defined(VMS)
-	if (TTY_get(fileno(tty),&tty_orig) == -1)
-		return(-1);
-	memcpy(&(tty_new),&(tty_orig),sizeof(tty_orig));
+    if (TTY_get(fileno(tty),&tty_orig) == -1)
+	return(-1);
+    memcpy(&(tty_new),&(tty_orig),sizeof(tty_orig));
 #endif
 #ifdef VMS
-	status = SYS$ASSIGN(&terminal,&channel,0,0);
-	if (status != SS$_NORMAL)
-		return(-1);
-	status=SYS$QIOW(0,channel,IO$_SENSEMODE,&iosb,0,0,tty_orig,12,0,0,0,0);
-	if ((status != SS$_NORMAL) || (iosb.iosb$w_value != SS$_NORMAL))
-		return(-1);
+    status = SYS$ASSIGN(&terminal,&channel,0,0);
+    if (status != SS$_NORMAL)
+	return(-1);
+    status=SYS$QIOW(0,channel,IO$_SENSEMODE,&iosb,0,0,tty_orig,12,0,0,0,0);
+    if ((status != SS$_NORMAL) || (iosb.iosb$w_value != SS$_NORMAL))
+	return(-1);
 #endif
 
-	if (setjmp(save))
-		{
-		ok=0;
-		goto error;
-		}
-	pushsig();
-	ps=1;
+    if (setjmp(save))
+	{
+	    ok=0;
+	    goto error;
+	}
+    pushsig();
+    ps=1;
 
 #ifdef TTY_FLAGS
-	tty_new.TTY_FLAGS &= ~ECHO;
+    tty_new.TTY_FLAGS &= ~ECHO;
 #endif
 
 #if defined(TTY_set) && !defined(VMS)
-	if (TTY_set(fileno(tty),&tty_new) == -1)
-		return(-1);
+    if (TTY_set(fileno(tty),&tty_new) == -1)
+	return(-1);
 #endif
 #ifdef VMS
-	tty_new[0] = tty_orig[0];
-	tty_new[1] = tty_orig[1] | TT$M_NOECHO;
-	tty_new[2] = tty_orig[2];
-	status = SYS$QIOW(0,channel,IO$_SETMODE,&iosb,0,0,tty_new,12,0,0,0,0);
-	if ((status != SS$_NORMAL) || (iosb.iosb$w_value != SS$_NORMAL))
-		return(-1);
+    tty_new[0] = tty_orig[0];
+    tty_new[1] = tty_orig[1] | TT$M_NOECHO;
+    tty_new[2] = tty_orig[2];
+    status = SYS$QIOW(0,channel,IO$_SETMODE,&iosb,0,0,tty_new,12,0,0,0,0);
+    if ((status != SS$_NORMAL) || (iosb.iosb$w_value != SS$_NORMAL))
+	return(-1);
 #endif
-	ps=2;
+    ps=2;
 
-	while ((!ok) && (number--))
+    while ((!ok) && (number--))
+	{
+	    fputs(prompt,stderr);
+	    fflush(stderr);
+
+	    buf[0]='\0';
+	    fgets(buf,size,tty);
+	    if (feof(tty)) goto error;
+	    if ((p=(char *)strchr(buf,'\n')) != NULL)
+		*p='\0';
+	    else	read_till_nl(tty);
+	    if (verify)
 		{
-		fputs(prompt,stderr);
-		fflush(stderr);
-
-		buf[0]='\0';
-		fgets(buf,size,tty);
-		if (feof(tty)) goto error;
-		if ((p=(char *)strchr(buf,'\n')) != NULL)
+		    fprintf(stderr,"\nVerifying password %s",prompt);
+		    fflush(stderr);
+		    buff[0]='\0';
+		    fgets(buff,size,tty);
+		    if (feof(tty)) goto error;
+		    if ((p=(char *)strchr(buff,'\n')) != NULL)
 			*p='\0';
-		else	read_till_nl(tty);
-		if (verify)
-			{
-			fprintf(stderr,"\nVerifying password %s",prompt);
-			fflush(stderr);
-			buff[0]='\0';
-			fgets(buff,size,tty);
-			if (feof(tty)) goto error;
-			if ((p=(char *)strchr(buff,'\n')) != NULL)
-				*p='\0';
-			else	read_till_nl(tty);
+		    else	read_till_nl(tty);
 				
-			if (strcmp(buf,buff) != 0)
-				{
-				fprintf(stderr,"\nVerify failure");
-				fflush(stderr);
-				break;
-				/* continue; */
-				}
+		    if (strcmp(buf,buff) != 0)
+			{
+			    fprintf(stderr,"\nVerify failure");
+			    fflush(stderr);
+			    break;
+			    /* continue; */
 			}
-		ok=1;
 		}
+	    ok=1;
+	}
 
 error:
-	fprintf(stderr,"\n");
-	/* What can we do if there is an error? */
+    fprintf(stderr,"\n");
+    /* What can we do if there is an error? */
 #if defined(TTY_set) && !defined(VMS) 
-	if (ps >= 2) TTY_set(fileno(tty),&tty_orig);
+    if (ps >= 2) TTY_set(fileno(tty),&tty_orig);
 #endif
 #ifdef VMS
-	if (ps >= 2)
-		status = SYS$QIOW(0,channel,IO$_SETMODE,&iosb,0,0
-			,tty_orig,12,0,0,0,0);
+    if (ps >= 2)
+	status = SYS$QIOW(0,channel,IO$_SETMODE,&iosb,0,0
+			  ,tty_orig,12,0,0,0,0);
 #endif
 	
-	if (ps >= 1) popsig();
-	if (stdin != tty) fclose(tty);
+    if (ps >= 1) popsig();
+    if (stdin != tty) fclose(tty);
 #ifdef VMS
-	status = SYS$DASSGN(channel);
+    status = SYS$DASSGN(channel);
 #endif
-	return(!ok);
+    return(!ok);
 #endif /* !WIN32 */
-	}
+}
 
 #ifndef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
 static void pushsig()
-	{
-	int i;
+{
+    int i;
 
-	for (i=1; i<NX509_SIG; i++)
-		savsig[i]=signal(i,recsig);
-	}
+    for (i=1; i<NX509_SIG; i++)
+	savsig[i]=signal(i,recsig);
+}
 
 static void popsig()
-	{
-	int i;
+{
+    int i;
 
-	for (i=1; i<NX509_SIG; i++)
-		signal(i,savsig[i]);
-	}
+    for (i=1; i<NX509_SIG; i++)
+	signal(i,savsig[i]);
+}
 
 static void recsig(i)
-int i;
-	{
-	longjmp(save,1);
+     int i;
+{
+    longjmp(save,1);
 #ifdef LINT
-	i=i;
+    i=i;
 #endif
-	}
+}
 
 #endif /* !WIN32 */
 
 #ifdef MSDOS
 static int noecho_fgets(buf,size,tty)
-char *buf;
-int size;
-FILE *tty;
-	{
-	int i,n;
-	char *p;
+     char *buf;
+     int size;
+     FILE *tty;
+{
+    int i,n;
+    char *p;
 
-	p=buf;
-	for (;;)
+    p=buf;
+    for (;;)
+	{
+	    if (size == 0)
 		{
-		if (size == 0)
-			{
-			*p='\0';
-			break;
-			}
-		size--;
-		i=getch();
-		if (i == '\r') i='\n';
-		*(p++)=i;
-		if (i == '\n')
-			{
-			*p='\0';
-			break;
-			}
+		    *p='\0';
+		    break;
 		}
-	return(strlen(buf));
+	    size--;
+	    i=getch();
+	    if (i == '\r') i='\n';
+	    *(p++)=i;
+	    if (i == '\n')
+		{
+		    *p='\0';
+		    break;
+		}
 	}
+    return(strlen(buf));
+}
 #endif
