@@ -437,6 +437,18 @@ void strupper(char *s)
   }
 }
 
+/* Convert a string to upper case, but don't modify it */
+
+char *strupper_static(char *s)
+{
+	static pstring str;
+
+	pstrcpy(str, s);
+	strupper(str);
+
+	return str;
+}
+
 /*******************************************************************
   convert a string to "normal" form
 ********************************************************************/
