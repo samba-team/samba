@@ -26,14 +26,6 @@
 #undef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
-enum pyconv_types { PY_UNISTR, PY_UINT32, PY_UINT16 };
-
-struct pyconv {
-	char *name;		/* Name of member */
-	enum pyconv_types type; /* Type */
-	size_t offset;		/* Offset into structure */
-};
-
 typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
