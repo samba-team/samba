@@ -43,7 +43,7 @@ while ( $string = <STDIN> ) {
 	## check and see if account info already exists in LDAP.
         $result = $ldap->search ( base => "$DN",
 				  scope => "sub",
-				  filter => "(&(|(objectclass=posixAccount)(objectclass=smbPasswordEntry))(uid=$smbentry[0]))"
+				  filter => "(&(|(objectclass=posixAccount)(objectclass=sambaAccount))(uid=$smbentry[0]))"
 				);
 
         ## If no LDAP entry exists, create one.
@@ -56,7 +56,7 @@ while ( $string = <STDIN> ) {
 				    ntPassword => $smbentry[3],
                                     acctFlags => $smbentry[4],
                                     pwdLastSet => substr($smbentry[5],4),
-                                    objectclass => [ 'top', 'smbPasswordEntry' ]
+                                    objectclass => [ 'top', 'sambaAccount', 'posixAccount']
                                   ]
 				 );
 	   print "Adding [uid=" . $smbentry[0] . "," . $DN . "]\n";
@@ -68,17 +68,17 @@ while ( $string = <STDIN> ) {
 
 	    print "Updating [" . $entry->dn . "]\n";
 
-  	    ## Add the objectclass: smbPasswordEntry attribute if it's not there
+  	    ## Add the objectclass: sambaAccount attribute if it's not there
 	    @values = $entry->get_value( "objectclass" );
 	    $flag = 1;
 	    foreach $item (@values) {
-	       if ( lc($item) eq "smbpasswordentry" ) {
+	       if ( lc($item) eq "sambaaccount" ) {
 		   print $item . "\n";
 		   $flag = 0;
 	       }
 	    }
 	    if ( $flag ) {
-	       $entry->add(objectclass => "smbPasswordEntry");
+	       $entry->add(objectclass => "sambaAccount");
 	    }
 
 	    ## Set the other attribute values
