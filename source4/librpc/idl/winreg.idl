@@ -124,50 +124,28 @@
 		[in,out]    winreg_Time *last_changed_time
 	);
 
-	typedef struct {
-		uint32 max_len;
-		uint32 offset;
-		uint32 len;
-		uint16 buffer[len];
-	} winreg_Uint16buf;
+        typedef struct {
+	        uint32 max_len;
+	        uint32 offset;
+	        DATA_BLOB buffer;
+        } EnumValue;
 
-	typedef struct {
-		uint16 len;
-		uint16 max_len;
-		unistr *buf;
-	} winreg_EnumValueName;
-
-	typedef struct {
-		uint32 max_len;
-		uint32 offset;
-		uint32 len;
-		uint8 buffer[len];
-	} winreg_Uint8buf;
-
-  typedef struct {
-    uint32 max_len;
-    uint32 offset;
-    DATA_BLOB buffer;
-  } foo2;
-
-  typedef struct {
-    uint16 len;
-    uint16 max_len;
-    foo2 *buffer;
-  } foo1;
+        typedef struct {
+                uint16 len;
+                uint16 max_len;
+                EnumValue *buffer;
+        } EnumValueName;
 
 	/******************/
 	/* Function: 0x0a */
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
 		[in] uint32 enum_index,
-		[in,out] foo1 foo,
-		/*		[out,ref] winreg_EnumValueName *name, */
+		[in,out] EnumValueName name,
 		[in,out] uint32 *type,
-		[in,out] foo2 *foo2,
-		/* [in,out] winreg_Uint8buf *value, */
-		[in,out] uint32 *value1,
-		[in,out] uint32 *value2
+		[in,out] EnumValue *value,
+		[in,out] uint32 *value_len1,
+		[in,out] uint32 *value_len2
 	);
 
 	/******************/
