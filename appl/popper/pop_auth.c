@@ -151,6 +151,10 @@ auth_loop(POP *p, struct auth_mech *m)
     (*m->cleanup)(p, state);
     if(status == POP_AUTH_FAILURE)
 	return pop_msg(p, POP_FAILURE, "%s", auth_msg);
+
+    status = login_user(p);
+    if(status != POP_SUCCESS)
+	return status;
     return pop_msg(p, POP_SUCCESS, "authentication complete");
 }
 
