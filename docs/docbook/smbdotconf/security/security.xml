@@ -214,7 +214,7 @@
     it must have a valid <filename moreinfo="none">smbpasswd</filename> file to check 
 	users against. See the chapter about the User Database in the Samba HOWTO Collection for details on how to set this up.</para>
 
-    <para><emphasis>Note</emphasis> this mode of operation has
+	<note><para>This mode of operation has
     significant pitfalls, due to the fact that is activly initiates a
     man-in-the-middle attack on the remote SMB server.  In particular,
     this mode of operation can cause significant resource consuption on
@@ -222,13 +222,13 @@
     of the user's session.  Furthermore, if this connection is lost,
     there is no way to reestablish it, and futher authenticaions to the
     Samba server may fail.  (From a single client, till it disconnects).
-    </para>
+	</para></note>
 
-    <para><emphasis>Note</emphasis> that from the client's point of 
+	<note><para>From the client's point of 
     view <command moreinfo="none">security = server</command> is the
     same as <command moreinfo="none">security = user</command>.  It
     only affects how the server deals  with the authentication, it does
-    not in any way affect what the  client sees.</para>
+	not in any way affect what the  client sees.</para></note>
 
     <para><emphasis>Note</emphasis> that the name of the resource being 
     requested is <emphasis>not</emphasis> sent to the server until after 
@@ -244,6 +244,23 @@
 
     <para>See also the <link linkend="PASSWORDSERVER"><parameter moreinfo="none">password 
     server</parameter></link> parameter and the <link linkend="ENCRYPTPASSWORDS">
+    <parameter moreinfo="none">encrypted passwords</parameter></link> parameter.</para>
+
+	<para><anchor id="SECURITYEQUALSADS"/><emphasis>SECURITY = ADS</emphasis></para>
+	
+	<para>In this mode, Samba will act as a domain member in an ADS realm. To operate 
+		in this mode, the machine running Samba will need to have Kerberos installed 
+		and configured and Samba will need to be joined to the ADS realm using the 
+		net utility. </para>
+	
+	<para>Note that this mode does NOT make Samba operate as a Active Directory Domain 
+		Controller. </para>
+	
+	<para>Read the chapter about Domain Membership in the HOWTO for details.</para>
+
+	<para>See also the <link linkend="ADSSERVER"><parameter moreinfo="none">ads server
+	</parameter></link> parameter, the <link linkend="REALM"><parameter moreinfo="none">realm
+	</parameter></link> paramter and the <link linkend="ENCRYPTPASSWORDS">
     <parameter moreinfo="none">encrypted passwords</parameter></link> parameter.</para>
 		
     <para>Default: <command moreinfo="none">security = USER</command></para>
