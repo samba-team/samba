@@ -26,20 +26,19 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern DOM_SID global_sid_World;
 
-/*static TDB_CONTEXT *tdb; *//* used for driver files */
-
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
 static TDB_CONTEXT *tdb_drivers; /* used for driver files */
 static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
+#define DRIVER_INIT_PREFIX "DRIVER_INIT/"
 #define PRINTERS_PREFIX "PRINTERS/"
 #define SECDESC_PREFIX "SECDESC/"
-
+ 
 #define NTDRIVERS_DATABASE_VERSION_1 1
 #define NTDRIVERS_DATABASE_VERSION_2 2
-
+ 
 #define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_2
 
 /* Map generic permissions to printer object specific permissions */
@@ -237,55 +236,46 @@ BOOL nt_printing_init(void)
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
 
-	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid()) return True;
-
+	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
+		return True;
+ 
 	tdb_drivers = tdb_open_log(lock_path("ntdrivers.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
 	if (!tdb_drivers) {
-		DEBUG(0,("Failed to open nt drivers database %s (%s)\n",
+		DEBUG(0,("nt_printing_init: Failed to open nt drivers database %s (%s)\n",
 			lock_path("ntdrivers.tdb"), strerror(errno) ));
 		return False;
 	}
-
+ 
 	tdb_printers = tdb_open_log(lock_path("ntprinters.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
 	if (!tdb_printers) {
-		DEBUG(0,("Failed to open nt printers database %s (%s)\n",
+		DEBUG(0,("nt_printing_init: Failed to open nt printers database %s (%s)\n",
 			lock_path("ntprinters.tdb"), strerror(errno) ));
 		return False;
 	}
-
+ 
 	tdb_forms = tdb_open_log(lock_path("ntforms.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
 	if (!tdb_forms) {
-		DEBUG(0,("Failed to open nt forms database %s (%s)\n",
+		DEBUG(0,("nt_printing_init: Failed to open nt forms database %s (%s)\n",
 			lock_path("ntforms.tdb"), strerror(errno) ));
 		return False;
 	}
-
+ 
 	local_pid = sys_getpid();
-
+ 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb_drivers, vstring);
 	if (tdb_fetch_int(tdb_drivers, vstring) != NTDRIVERS_DATABASE_VERSION) {
-	
+ 
 		if (tdb_fetch_int(tdb_drivers, vstring) == NTDRIVERS_DATABASE_VERSION_1) {
 			if (!upgrade_to_version_2())
 				return False;
 		} else
 			tdb_traverse(tdb_drivers, (tdb_traverse_func)tdb_delete, NULL);
-
+ 
 		tdb_store_int(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
 	}
 	tdb_unlock_bystring(tdb_drivers, vstring);
 
-/*
-	tdb_create_index(tdb, "DRIVERS/");
-
-	tdb_lookup_index(tdb, "DRIVERS/", &list, &count);
-
-	DEBUG(0,("nt_printing_init: got %d drivers\n", count));
-	
-	for (i=0;i<count;i++)
-		DEBUG(0,("nt_printing_init: [%s]\n", list[i]));
-*/
 	return True;
 }
 
@@ -558,7 +548,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 
 	if (archi_table[i].long_archi==NULL) {
 		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
-		return FALSE;
+		return False;
 	}
 
 	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
@@ -569,372 +559,6 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 	
 	return True;
 }
-
-/****************************************************************************
-Determine the correct cVersion associated with an architecture and driver
-****************************************************************************/
-static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
-								   struct current_user *user, uint32 *perr)
-{
-	int               cversion;
-	int               access_mode;
-	int               action;
-	int               ecode;
-	char              buf[PE_HEADER_SIZE];
-	ssize_t           byte_count;
-	pstring           driverpath;
-	fstring           user_name;
-	fstring           null_pw;
-	files_struct      *fsp = NULL;
-	BOOL              bad_path;
-	SMB_STRUCT_STAT   st;
-	struct passwd *pass;
-	connection_struct *conn;
-
-	ZERO_STRUCT(st);
-
-	/* If architecture is Windows 95/98, the version is always 0. */
-	if (strcmp(architecture, "WIN40") == 0) {
-		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
-		return 0;
-	}
-
-	become_root();
-	pass = sys_getpwuid(user->uid);
-	if(pass == NULL) {
-		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
-				(unsigned int)user->uid ));
-		unbecome_root();
-		*perr = ERRnoaccess;
-		return -1;
-	}
-	unbecome_root();
-
-	/* connect to the print$ share under the same account as the user connected
-	 * to the rpc pipe */	
-	fstrcpy(user_name, pass->pw_name );
-	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
-
-	/* Null password is ok - we are already an authenticated user... */
-	*null_pw = '\0';
-	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
-
-	if (conn == NULL) {
-		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
-		*perr = (uint32)ecode;
-		return -1;
-	}
-
-	/* Save who we are - we are temporarily becoming the connection user. */
-	push_sec_ctx();
-
-	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("get_correct_cversion: Can't become user %s\n", user_name ));
-		*perr = ERRnoaccess;
-		pop_sec_ctx();
-		return -1;
-	}
-
-	/* Open the driver file (Portable Executable format) and determine the
-	 * deriver the cversion. */
-	slprintf(driverpath, sizeof(driverpath)-1, "%s/%s", architecture, driverpath_in);
-
-	unix_convert(driverpath,conn,NULL,&bad_path,&st);
-
-	fsp = open_file_shared(conn, driverpath, &st,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
-	if (!fsp) {
-		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
-				driverpath, errno));
-		*perr = ERRnoaccess;
-		goto error_exit;
-	}
-
-	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_correct_cversion: File [%s] DOS header too short, bytes read = %d\n",
-				driverpath, byte_count));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* Is this really a DOS header? */
-	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
-		DEBUG(6,("get_correct_cversion: File [%s] bad DOS magic = 0x%x\n",
-				driverpath, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
-		DEBUG(3,("get_correct_cversion: File [%s] too short, errno = %d\n",
-				driverpath, errno));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_correct_cversion: File [%s] Windows header too short, bytes read = %d\n",
-				driverpath, byte_count));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
-	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) == PE_HEADER_MACHINE_I386) {
-
-			switch (SVAL(buf,PE_HEADER_MAJOR_OS_VER_OFFSET)) {
-				case 4: cversion = 2; break;	/* Win NT 4 */
-				case 5: cversion = 3; break;	/* Win 2000 */
-				default:
-					DEBUG(6,("get_correct_cversion: PE formated file [%s] bad version = %d\n",
-							driverpath, SVAL(buf,PE_HEADER_MAJOR_OS_VER_OFFSET)));
-					*perr = NT_STATUS_FILE_INVALID;
-					goto error_exit;
-			}
-		} else {
-			DEBUG(6,("get_correct_cversion: PE formatted file [%s] wrong machine = 0x%x\n",
-					driverpath, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			*perr = NT_STATUS_FILE_INVALID;
-			goto error_exit;
-		}
-
-	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
-		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) == NE_HEADER_TARGOS_WIN ) {
-
-			switch (CVAL(buf,NE_HEADER_MAJOR_VER_OFFSET)) {
-				case 3: cversion = 0; break;	/* Win 3.x / Win 9x / Win ME */
-			/*	case ?: cversion = 1; break;*/ 	/* Win NT 3.51 ... needs research JRR */
-				default:
-					DEBUG(6,("get_correct_cversion: NE formated file [%s] bad version = %d\n",
-							driverpath, CVAL(buf,NE_HEADER_MAJOR_VER_OFFSET)));
-					*perr = NT_STATUS_FILE_INVALID;
-					goto error_exit;
-			}
-		} else {
-			DEBUG(6,("get_correct_cversion: NE formatted file [%s] wrong target OS = 0x%x\n",
-					driverpath, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
-			*perr = NT_STATUS_FILE_INVALID;
-			goto error_exit;
-		}
-
-	} else {
-		DEBUG(6,("get_correct_cversion: Unknown file format [%s], signature = 0x%x\n",
-				driverpath, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
-			driverpath, cversion));
-
-	close_file(fsp, True);
-	close_cnum(conn, user->vuid);
-	pop_sec_ctx();
-	return cversion;
-
-
-	error_exit:
-		if(fsp)
-			close_file(fsp, True);
-
-		close_cnum(conn, user->vuid);
-		pop_sec_ctx();
-		return -1;
-}
-
-/****************************************************************************
-****************************************************************************/
-static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
-											 struct current_user *user)
-{
-	fstring architecture;
-	fstring new_name;
-	char *p;
-	int i;
-	uint32 err;
-
-	/* clean up the driver name.
-	 * we can get .\driver.dll
-	 * or worse c:\windows\system\driver.dll !
-	 */
-	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr_m(driver->driverpath,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->driverpath, new_name);
-	}
-
-	if ((p = strrchr_m(driver->datafile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->datafile, new_name);
-	}
-
-	if ((p = strrchr_m(driver->configfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->configfile, new_name);
-	}
-
-	if ((p = strrchr_m(driver->helpfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->helpfile, new_name);
-	}
-
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr_m(driver->dependentfiles[i],'\\')) != NULL) {
-				fstrcpy(new_name, p+1);
-				fstrcpy(driver->dependentfiles[i], new_name);
-			}
-		}
-	}
-
-	get_short_archi(architecture, driver->environment);
-	
-	/* jfm:7/16/2000 the client always sends the cversion=0.
-	 * The server should check which version the driver is by reading
-	 * the PE header of driver->driverpath.
-	 *
-	 * For Windows 95/98 the version is 0 (so the value sent is correct)
-	 * For Windows NT (the architecture doesn't matter)
-	 *	NT 3.1: cversion=0
-	 *	NT 3.5/3.51: cversion=1
-	 *	NT 4: cversion=2
-	 *	NT2K: cversion=3
-	 */
-	if ((driver->cversion = get_correct_cversion( architecture,
-									driver->driverpath, user, &err)) == -1)
-		return err;
-
-	return ERRsuccess;
-}
-	
-/****************************************************************************
-****************************************************************************/
-static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver,
-											 struct current_user *user)
-{
-	fstring architecture;
-	fstring new_name;
-	char *p;
-	int i;
-	uint32 err;
-
-	/* clean up the driver name.
-	 * we can get .\driver.dll
-	 * or worse c:\windows\system\driver.dll !
-	 */
-	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr_m(driver->driverpath,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->driverpath, new_name);
-	}
-
-	if ((p = strrchr_m(driver->datafile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->datafile, new_name);
-	}
-
-	if ((p = strrchr_m(driver->configfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->configfile, new_name);
-	}
-
-	if ((p = strrchr_m(driver->helpfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->helpfile, new_name);
-	}
-
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr_m(driver->dependentfiles[i],'\\')) != NULL) {
-				fstrcpy(new_name, p+1);
-				fstrcpy(driver->dependentfiles[i], new_name);
-			}
-		}
-	}
-
-	get_short_archi(architecture, driver->environment);
-
-	/* jfm:7/16/2000 the client always sends the cversion=0.
-	 * The server should check which version the driver is by reading
-	 * the PE header of driver->driverpath.
-	 *
-	 * For Windows 95/98 the version is 0 (so the value sent is correct)
-	 * For Windows NT (the architecture doesn't matter)
-	 *	NT 3.1: cversion=0
-	 *	NT 3.5/3.51: cversion=1
-	 *	NT 4: cversion=2
-	 *	NT2K: cversion=3
-	 */
-	if ((driver->version = get_correct_cversion(architecture,
-									driver->driverpath, user, &err)) == -1)
-		return err;
-
-	return ERRsuccess;
-}
-
-/****************************************************************************
-****************************************************************************/
-uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-							  uint32 level, struct current_user *user)
-{
-	switch (level) {
-		case 3:
-		{
-			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
-			driver=driver_abstract.info_3;
-			return clean_up_driver_struct_level_3(driver, user);
-		}
-		case 6:
-		{
-			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
-			driver=driver_abstract.info_6;
-			return clean_up_driver_struct_level_6(driver, user);
-		}
-		default:
-			return ERROR_INVALID_PARAMETER;
-	}
-}
-
-/****************************************************************************
- This function sucks and should be replaced. JRA.
-****************************************************************************/
-
-static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PRINTER_DRIVER_INFO_LEVEL_6 *src)
-{
-    dst->cversion  = src->version;
-
-    fstrcpy( dst->name, src->name);
-    fstrcpy( dst->environment, src->environment);
-    fstrcpy( dst->driverpath, src->driverpath);
-    fstrcpy( dst->datafile, src->datafile);
-    fstrcpy( dst->configfile, src->configfile);
-    fstrcpy( dst->helpfile, src->helpfile);
-    fstrcpy( dst->monitorname, src->monitorname);
-    fstrcpy( dst->defaultdatatype, src->defaultdatatype);
-    dst->dependentfiles = src->dependentfiles;
-}
-
-#if 0 /* Debugging function */
-
-static char* ffmt(unsigned char *c){
-	int i;
-	static char ffmt_str[17];
-
-	for (i=0; i<16; i++) {
-		if ((c[i] < ' ') || (c[i] > '~'))
-			ffmt_str[i]='.';
-		else
-			ffmt_str[i]=c[i];
-	}
-    ffmt_str[16]='\0';
-	return ffmt_str;
-}
-
-#endif
 
 /****************************************************************************
 Version information in Microsoft files is held in a VS_VERSION_INFO structure.
@@ -1282,6 +906,327 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			close_file(fsp, True);
 		return -1;
 }
+
+/****************************************************************************
+Determine the correct cVersion associated with an architecture and driver
+****************************************************************************/
+static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
+								   struct current_user *user, uint32 *perr)
+{
+	int               cversion;
+	int               access_mode;
+	int               action;
+	int               ecode;
+	pstring           driverpath;
+	fstring           user_name;
+	fstring           null_pw;
+	files_struct      *fsp = NULL;
+	BOOL              bad_path;
+	SMB_STRUCT_STAT   st;
+	struct passwd *pass;
+	connection_struct *conn;
+
+	ZERO_STRUCT(st);
+
+	/* If architecture is Windows 95/98/ME, the version is always 0. */
+	if (strcmp(architecture, "WIN40") == 0) {
+		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
+		return 0;
+	}
+
+	become_root();
+	pass = sys_getpwuid(user->uid);
+	if(pass == NULL) {
+		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
+				(unsigned int)user->uid ));
+		unbecome_root();
+		*perr = ERRnoaccess;
+		return -1;
+	}
+	unbecome_root();
+
+	/* connect to the print$ share under the same account as the user connected
+	 * to the rpc pipe */	
+	fstrcpy(user_name, pass->pw_name );
+	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
+		*perr = (uint32)ecode;
+		return -1;
+	}
+
+	/* Save who we are - we are temporarily becoming the connection user. */
+	push_sec_ctx();
+
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("get_correct_cversion: Can't become user %s\n", user_name ));
+		*perr = ERRnoaccess;
+		pop_sec_ctx();
+		return -1;
+	}
+
+	/* Open the driver file (Portable Executable format) and determine the
+	 * deriver the cversion. */
+	slprintf(driverpath, sizeof(driverpath)-1, "%s/%s", architecture, driverpath_in);
+
+	unix_convert(driverpath,conn,NULL,&bad_path,&st);
+
+	fsp = open_file_shared(conn, driverpath, &st,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
+		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
+				driverpath, errno));
+		*perr = ERRnoaccess;
+		goto error_exit;
+	}
+	else {
+		uint32 major;
+		uint32 minor;
+		int    ret = get_file_version(fsp, driverpath, &major, &minor);
+		if (ret == -1) goto error_exit;
+
+		if (!ret) {
+			DEBUG(6,("get_correct_cversion: Version info not found [%s]\n", driverpath));
+			goto error_exit;
+		}
+
+		/*
+		 * This is a Microsoft'ism. See references in MSDN to VER_FILEVERSION
+		 * for more details. Version in this case is not just the version of the 
+		 * file, but the version in the sense of kernal mode (2) vs. user mode
+		 * (3) drivers. Other bits of the version fields are the version info. 
+		 * JRR 010716
+		*/
+		cversion = major & 0x0000ffff;
+		switch (cversion) {
+			case 2: /* WinNT drivers */
+			case 3: /* Win2K drivers */
+				break;
+			
+			default:
+				DEBUG(6,("get_correct_cversion: cversion invalid [%s]  cversion = %d\n", 
+					driverpath, cversion));
+				goto error_exit;
+		}
+
+		DEBUG(10,("get_correct_cversion: Version info found [%s]  major = 0x%x  minor = 0x%x\n",
+				  driverpath, major, minor));
+	}
+
+    DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
+			driverpath, cversion));
+
+	close_file(fsp, True);
+	close_cnum(conn, user->vuid);
+	pop_sec_ctx();
+	return cversion;
+
+
+	error_exit:
+		if(fsp)
+			close_file(fsp, True);
+
+		close_cnum(conn, user->vuid);
+		pop_sec_ctx();
+		return -1;
+}
+
+/****************************************************************************
+****************************************************************************/
+static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
+											 struct current_user *user)
+{
+	fstring architecture;
+	fstring new_name;
+	char *p;
+	int i;
+	uint32 err;
+
+	/* clean up the driver name.
+	 * we can get .\driver.dll
+	 * or worse c:\windows\system\driver.dll !
+	 */
+	/* using an intermediate string to not have overlaping memcpy()'s */
+	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->driverpath, new_name);
+	}
+
+	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->datafile, new_name);
+	}
+
+	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->configfile, new_name);
+	}
+
+	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->helpfile, new_name);
+	}
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+				fstrcpy(new_name, p+1);
+				fstrcpy(driver->dependentfiles[i], new_name);
+			}
+		}
+	}
+
+	get_short_archi(architecture, driver->environment);
+	
+	/* jfm:7/16/2000 the client always sends the cversion=0.
+	 * The server should check which version the driver is by reading
+	 * the PE header of driver->driverpath.
+	 *
+	 * For Windows 95/98 the version is 0 (so the value sent is correct)
+	 * For Windows NT (the architecture doesn't matter)
+	 *	NT 3.1: cversion=0
+	 *	NT 3.5/3.51: cversion=1
+	 *	NT 4: cversion=2
+	 *	NT2K: cversion=3
+	 */
+	if ((driver->cversion = get_correct_cversion( architecture,
+									driver->driverpath, user, &err)) == -1)
+		return err;
+
+	return NT_STATUS_NOPROBLEMO;
+}
+	
+/****************************************************************************
+****************************************************************************/
+static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver,
+											 struct current_user *user)
+{
+	fstring architecture;
+	fstring new_name;
+	char *p;
+	int i;
+	uint32 err;
+
+	/* clean up the driver name.
+	 * we can get .\driver.dll
+	 * or worse c:\windows\system\driver.dll !
+	 */
+	/* using an intermediate string to not have overlaping memcpy()'s */
+	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->driverpath, new_name);
+	}
+
+	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->datafile, new_name);
+	}
+
+	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->configfile, new_name);
+	}
+
+	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->helpfile, new_name);
+	}
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+				fstrcpy(new_name, p+1);
+				fstrcpy(driver->dependentfiles[i], new_name);
+			}
+		}
+	}
+
+	get_short_archi(architecture, driver->environment);
+
+	/* jfm:7/16/2000 the client always sends the cversion=0.
+	 * The server should check which version the driver is by reading
+	 * the PE header of driver->driverpath.
+	 *
+	 * For Windows 95/98 the version is 0 (so the value sent is correct)
+	 * For Windows NT (the architecture doesn't matter)
+	 *	NT 3.1: cversion=0
+	 *	NT 3.5/3.51: cversion=1
+	 *	NT 4: cversion=2
+	 *	NT2K: cversion=3
+	 */
+	if ((driver->version = get_correct_cversion(architecture,
+									driver->driverpath, user, &err)) == -1)
+		return err;
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+							  uint32 level, struct current_user *user)
+{
+	switch (level) {
+		case 3:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
+			driver=driver_abstract.info_3;
+			return clean_up_driver_struct_level_3(driver, user);
+		}
+		case 6:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
+			driver=driver_abstract.info_6;
+			return clean_up_driver_struct_level_6(driver, user);
+		}
+		default:
+			return ERRinvalidparam;
+	}
+}
+
+/****************************************************************************
+ This function sucks and should be replaced. JRA.
+****************************************************************************/
+
+static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PRINTER_DRIVER_INFO_LEVEL_6 *src)
+{
+    dst->cversion  = src->version;
+
+    fstrcpy( dst->name, src->name);
+    fstrcpy( dst->environment, src->environment);
+    fstrcpy( dst->driverpath, src->driverpath);
+    fstrcpy( dst->datafile, src->datafile);
+    fstrcpy( dst->configfile, src->configfile);
+    fstrcpy( dst->helpfile, src->helpfile);
+    fstrcpy( dst->monitorname, src->monitorname);
+    fstrcpy( dst->defaultdatatype, src->defaultdatatype);
+    dst->dependentfiles = src->dependentfiles;
+}
+
+#if 0 /* Debugging function */
+
+static char* ffmt(unsigned char *c){
+	int i;
+	static char ffmt_str[17];
+
+	for (i=0; i<16; i++) {
+		if ((c[i] < ' ') || (c[i] > '~'))
+			ffmt_str[i]='.';
+		else
+			ffmt_str[i]=c[i];
+	}
+    ffmt_str[16]='\0';
+	return ffmt_str;
+}
+
+#endif
 
 /****************************************************************************
 ****************************************************************************/
@@ -2381,7 +2326,7 @@ static void map_to_os2_driver(fstring drivername)
 
 	for( i = 0; i < numlines; i++) {
 		char *nt_name = lines[i];
-		char *os2_name = strchr_m(nt_name,'=');
+		char *os2_name = strchr(nt_name,'=');
 
 		if (!os2_name)
 			continue;
@@ -2391,7 +2336,7 @@ static void map_to_os2_driver(fstring drivername)
 		while (isspace(*nt_name))
 			nt_name++;
 
-		if (!*nt_name || strchr_m("#;",*nt_name))
+		if (!*nt_name || strchr("#;",*nt_name))
 			continue;
 
 		{
@@ -2736,6 +2681,304 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 }
 
 /****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+****************************************************************************/
+static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+{
+	int                     len = 0;
+	pstring                 key;
+	TDB_DATA                kbuf, dbuf;
+	NT_PRINTER_PARAM        *current;
+	NT_PRINTER_INFO_LEVEL_2 info;
+
+	ZERO_STRUCT(info);
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb_drivers, kbuf);
+	if (!dbuf.dptr)
+		return False;
+
+	/*
+	 * Get the saved DEVMODE..
+	 */
+	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+
+	/*
+	 * The saved DEVMODE contains the devicename from the printer used during
+	 * the initialization save. Change it to reflect the new printer.
+	 */
+	ZERO_STRUCT(info.devmode->devicename);
+	fstrcpy(info.devmode->devicename, info_ptr->printername);
+
+	/* 
+	 * 	Bind the saved DEVMODE to the new the printer.
+	 */
+	free_nt_devicemode(&info_ptr->devmode);
+	info_ptr->devmode = info.devmode;
+
+	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
+			info_ptr->printername, info_ptr->drivername));
+
+	/* 
+	 * There should not be any printer data 'specifics' already set during the
+	 * add printer operation, if there are delete them. 
+	 */
+	while ( (current=info_ptr->specific) != NULL ) {
+		info_ptr->specific=current->next;
+		safe_free(current->data);
+		safe_free(current);
+	}
+
+	/* 
+	 * Add the printer data 'specifics' to the new printer
+	 */
+	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
+
+	safe_free(dbuf.dptr);
+
+	return True;	
+}
+
+/****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+ When a printer is created using AddPrinter, the drivername bound to the
+ printer is used to lookup previously saved driver initialization info, which
+ is bound to the new printer.
+****************************************************************************/
+
+uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+{
+	uint32 result;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=set_driver_init_2(printer->info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
+ in the tdb. Note: this is different from the driver entry and the printer
+ entry. There should be a single driver init entry for each driver regardless
+ of whether it was installed from NT or 2K. Technically, they should be
+ different, but they work out to the same struct.
+****************************************************************************/
+static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
+{
+	pstring key;
+	char *buf;
+	int buflen, len, ret;
+	TDB_DATA kbuf, dbuf;
+
+	buf = NULL;
+	buflen = 0;
+
+ again:	
+	len = 0;
+	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+
+	len += pack_specifics(info->specific, buf+len, buflen-len);
+
+	if (buflen != len) {
+		buf = (char *)Realloc(buf, len);
+		buflen = len;
+		goto again;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	dbuf.dptr = buf;
+	dbuf.dsize = len;
+
+	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
+
+	if (ret == -1)
+		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
+
+	safe_free(buf);
+
+	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
+		 info->sharename, info->drivername));
+
+	return ret;
+}
+
+/****************************************************************************
+ Update (i.e. save) the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+{
+	uint32 result;
+	
+	dump_a_printer(printer, level);	
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=update_driver_init_2(printer.info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Convert the printer data value, a REG_BINARY array, into an initialization 
+ DEVMODE. Note: the array must be parsed as if it was a DEVMODE in an rpc...
+ got to keep the endians happy :).
+****************************************************************************/
+
+static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode)
+{
+	BOOL       result = False;
+	prs_struct ps;
+	DEVICEMODE devmode;
+
+	ZERO_STRUCT(devmode);
+
+	prs_init(&ps, 0, ctx, UNMARSHALL);
+	ps.data_p      = param->data;
+	ps.buffer_size = param->data_len;
+
+	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
+		result = convert_devicemode("", &devmode, &nt_devmode);
+	else
+		DEBUG(10,("convert_driver_init: error parsing DEVMODE\n"));
+
+	return result;
+}
+
+/****************************************************************************
+ Set the DRIVER_INIT info in the tdb. Requires Win32 client code that:
+
+ 1. Use the driver's config DLL to this UNC printername and:
+    a. Call DrvPrintEvent with PRINTER_EVENT_INITIALIZE
+    b. Call DrvConvertDevMode with CDM_DRIVER_DEFAULT to get default DEVMODE
+ 2. Call SetPrinterData with the 'magic' key and the DEVMODE as data.
+
+ The last step triggers saving the "driver initialization" information for
+ this printer into the tdb. Later, new printers that use this driver will
+ have this initialization information bound to them. This simulates the
+ driver initialization, as if it had run on the Samba server (as it would
+ have done on NT).
+
+ The Win32 client side code requirement sucks! But until we can run arbitrary
+ Win32 printer driver code on any Unix that Samba runs on, we are stuck with it.
+ 
+ It would have been easier to use SetPrinter because all the UNMARSHALLING of
+ the DEVMODE is done there, but 2K/XP clients do not set the DEVMODE... think
+ about it and you will realize why.  JRR 010720
+****************************************************************************/
+
+static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARAM *param)
+{
+	uint32        status       = ERRsuccess;
+	TALLOC_CTX    *ctx         = NULL;
+	NT_DEVICEMODE *nt_devmode  = NULL;
+	NT_DEVICEMODE *tmp_devmode = printer->info_2->devmode;
+	
+	/*
+	 * Set devmode on printer info, so entire printer initialization can be 
+	 * saved to tdb.
+	 */
+	if ((ctx = talloc_init()) == NULL)
+		return ERRnomem;
+
+	if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+		status = ERRnomem;
+		goto done;
+	}
+	
+	ZERO_STRUCTP(nt_devmode);
+
+	/*
+	 * The DEVMODE is held in the 'data' component of the param in raw binary.
+	 * Convert it to to a devmode structure
+	 */
+	if (!convert_driver_init(param, ctx, nt_devmode)) {
+		DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
+		status = ERRinvalidparam;
+		goto done;
+	}
+
+	/*
+	 * Pack up and add (or update) the DEVMODE and any current printer data to
+	 * a 'driver init' element in the tdb
+	 * 
+	 */
+	printer->info_2->devmode = nt_devmode;
+	if (update_driver_init(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
+		status = ERRnomem;
+		goto done;
+	}
+	
+	/*
+	 * If driver initialization info was successfully saved, set the current 
+	 * printer to match it. This allows initialization of the current printer 
+	 * as well as the driver.
+	 */
+	if (mod_a_printer(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
+				  printer->info_2->printername));
+		status = ERRinvalidparam;
+	}
+
+  done:
+	talloc_destroy(ctx);
+	if (nt_devmode)
+		safe_free(nt_devmode->private);
+	safe_free(nt_devmode);
+	printer->info_2->devmode = tmp_devmode;
+
+	return status;
+}
+
+/****************************************************************************
+ Update the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
+{
+	uint32 status = ERRsuccess;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			status=save_driver_init_2(printer, param);
+			break;
+		}
+		default:
+			status=ERRunknownlevel;
+			break;
+	}
+	
+	return status;
+}
+
+/****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 
@@ -3023,7 +3266,7 @@ uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
 	
-	return ERRsuccess;
+	return NT_STATUS_NOPROBLEMO;
 }
 /****************************************************************************
 ****************************************************************************/
@@ -3174,7 +3417,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, printername);
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
 
 	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = 0;
@@ -3279,13 +3522,13 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 	fstring key;
 	char *temp;
 
-	if ((temp = strchr_m(printername + 2, '\\'))) {
+	if ((temp = strchr(printername + 2, '\\'))) {
 		printername = temp + 1;
 	}
 
 	/* Fetch security descriptor from tdb */
 
-	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, printername);
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
@@ -3577,7 +3820,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
 			lp_servicename(snum) ));
 		result = ERRnoaccess;
-		/*result = ERRsuccess;*/
+		/*result = NT_STATUS_NO_PROBLEMO;*/
 		goto done;
 	}
 
