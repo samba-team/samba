@@ -607,11 +607,11 @@ bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library $@
-	@$(LINK) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
 
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
-	@$(LINK) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
+	@$(SHLD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
 libsmbclient: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
@@ -626,11 +626,11 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo Linking shared library $@
-	$(LINK) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) -lpam $(LIBS) -lc
+	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) -lpam $(LIBS) -lc
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
-	@$(LINK) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -638,11 +638,11 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 
 nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(LINK) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
 
 nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
 
 bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
 	@echo Linking $@
