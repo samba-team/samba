@@ -97,6 +97,8 @@ void ndr_pull_dom_sid2(struct e_ndr_pull *e_ndr, int hf)
 {
 }
 
+#if 0
+
 void ndr_pull_security_descriptor(struct e_ndr_pull *e_ndr, int hf)
 {
 }
@@ -107,6 +109,8 @@ void ndr_pull_policy_handle(struct e_ndr_pull *e_ndr, int hf)
 		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo, e_ndr->tree, 
 		e_ndr->drep, hf, NULL, NULL, 0, 0);
 }
+
+#endif
 
 void ndr_pull_advance(struct e_ndr_pull *e_ndr, int offset)
 {
@@ -160,5 +164,10 @@ void ndr_pull_struct_end(struct e_ndr_pull *ndr)
 void ndr_pull_subcontext_header(struct e_ndr_pull *ndr, 
 				size_t sub_size,
 				struct e_ndr_pull *ndr2)
+{
+}
+
+void ndr_pull_relative(struct e_ndr_pull *ndr,
+		       void (*fn)(struct e_ndr_pull *, int ndr_flags))
 {
 }

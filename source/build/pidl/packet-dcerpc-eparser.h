@@ -80,4 +80,8 @@ void ndr_pull_string(struct e_ndr_pull *e_ndr, int hf);
 void ndr_pull_dom_sid2(struct e_ndr_pull *e_ndr, int hf);
 void ndr_pull_security_descriptor(struct e_ndr_pull *e_ndr, int hf);
 
+void ndr_pull_relative(struct e_ndr_pull *ndr,
+		       void (*fn)(struct e_ndr_pull *, int ndr_flags));
+
+
 #endif /* _packet_dcerpc_eparser_h */
