@@ -122,6 +122,7 @@ static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 	user = talloc_strdup(mem_ctx, h->credentials);
 	pass = strchr(user, '%');
 	if (pass) {
+		*pass = '\0';
 		pass = strdup(pass+1);
 	} else {
 		pass = strdup("");
@@ -136,14 +137,20 @@ static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 
 	h->backend_data = p;
 
-	if(NT_STATUS_IS_ERR(status)) return ntstatus_to_werror(status);
+	if(NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, ("Unable to open '%s': %s\n", h->location, nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
 
 	for(n = 0; known_hives[n].name; n++) 
 	{
 		if(!strcmp(known_hives[n].name, h->backend_hivename)) break;
 	}
 	
-	if(!known_hives[n].name) return WERR_NO_MORE_ITEMS;
+	if(!known_hives[n].name)  {
+		DEBUG(1, ("No such hive %s\n", known_hives[n].name));
+		return WERR_NO_MORE_ITEMS;
+	}
 	
 	*k = talloc_p(mem_ctx, struct registry_key);
 	(*k)->backend_data = mykeydata = talloc_p(mem_ctx, struct rpc_key_data);

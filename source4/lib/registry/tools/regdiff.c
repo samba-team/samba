@@ -158,7 +158,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 			return 1;
 		}
 
-		if(!backend1) backend1 = "dir";
+		if(!backend1) backend1 = "rpc";
 
 		error = reg_open(&h1, backend1, location1, credentials1);
 		if(!W_ERROR_IS_OK(error)) {
@@ -173,7 +173,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		return 2;
 	}
 
-	if(!backend2) backend2 = "dir";
+	if(!backend2) backend2 = "rpc";
 
 	error = reg_open(&h2, backend2, location2, credentials2);
 	if(!W_ERROR_IS_OK(error)) {

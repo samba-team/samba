@@ -760,7 +760,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 	const char *location;
 	const char *credentials = NULL;
 	const char *patch;
-	const char *backend = "dir";
+	const char *backend = "rpc";
 	struct registry_context *h;
 	WERROR error;
 	struct poptOption long_options[] = {
