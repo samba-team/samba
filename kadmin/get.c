@@ -41,50 +41,13 @@
 
 RCSID("$Id$");
 
-struct units kdb_attrs[] = {
-    { "new-princ", KRB5_KDB_NEW_PRINC },
-    { "support-desmd5", KRB5_KDB_SUPPORT_DESMD5 },
-    { "pwchange-service", KRB5_KDB_PWCHANGE_SERVICE },
-    { "disallow-svr", KRB5_KDB_DISALLOW_SVR },
-    { "requires-pw-change", KRB5_KDB_REQUIRES_PWCHANGE },
-    { "requires-hw-auth", KRB5_KDB_REQUIRES_HW_AUTH },
-    { "requires-pre-auth", KRB5_KDB_REQUIRES_PRE_AUTH },
-    { "disallow-all-tix", KRB5_KDB_DISALLOW_ALL_TIX },
-    { "disallow-dup-skey", KRB5_KDB_DISALLOW_DUP_SKEY },
-    { "disallow-postdated", KRB5_KDB_DISALLOW_POSTDATED },
-    { "disallow-forwardable", KRB5_KDB_DISALLOW_FORWARDABLE },
-    { "disallow-tgt-based", KRB5_KDB_DISALLOW_TGT_BASED },
-    { "disallow-renewable", KRB5_KDB_DISALLOW_RENEWABLE },
-    { "disallow-proxiable", KRB5_KDB_DISALLOW_PROXIABLE },
-    { NULL }
-};
-
-static void
-timeval2str(time_t t, char *str, size_t len)
-{
-    if(t)
-	strftime(str, len, "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
-    else
-	snprintf(str, len, "never");
-}
-
-static void
-deltat2str(unsigned t, char *str, size_t len)
-{
-    if(t)
-	unparse_time(t, str, len);
-    else
-	snprintf(str, len, "unlimited");
-}
-
 static void
 print_entry(kadm5_principal_ent_t princ)
 {
-    char *str, buf[1024];
+    char buf[1024];
     
-    krb5_unparse_name(context, princ->principal, &str);
-    printf("%24s: %s\n", "Principal", str);
-    free(str);
+    krb5_unparse_name_fixed(context, princ->principal, buf, sizeof(buf));
+    printf("%24s: %s\n", "Principal", buf);
     timeval2str(princ->princ_expire_time, buf, sizeof(buf));
     printf("%24s: %s\n", "Principal expires", buf);
 	    
@@ -109,10 +72,9 @@ print_entry(kadm5_principal_ent_t princ)
     printf("%24s: %d\n", "Failed login count", princ->fail_auth_count);
     timeval2str(princ->mod_date, buf, sizeof(buf));
     printf("%24s: %s\n", "Last modified", buf);
-    krb5_unparse_name(context, princ->mod_name, &str);
-    printf("%24s: %s\n", "Modifier", str);
-    free(str);
-    unparse_flags (princ->attributes, kdb_attrs, buf, sizeof(buf));
+    krb5_unparse_name_fixed(context, princ->mod_name, buf, sizeof(buf));
+    printf("%24s: %s\n", "Modifier", buf);
+    attr2str (princ->attributes, buf, sizeof(buf));
     printf("%24s: %s\n", "Attributes", buf);
     printf("\n");
 }
