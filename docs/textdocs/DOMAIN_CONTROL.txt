@@ -94,7 +94,7 @@ have at least one Backup Domain Controller (BDC).
 
 The PDC and BDCs then participate in replication of the SAM database so that
 each Domain Controlling participant will have an up to date SAM component
-within it's registry.
+within its registry.
 
 Samba can NOT at this time function as a Domain Controller for any of these
 security services, but like all other domain members can interact with the
