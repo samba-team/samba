@@ -83,4 +83,9 @@ Probably only useful (and working) on NextStep/Mac OS X.
 @item @kbd{--without-ipv6}
 Disable the IPv6 support.
 
+@item @kbd{--with-openldap}
+Compile Heimdal with support for storing the database in LDAP.  Requires
+OpenLDAP @url{http://www.openldap.org}.  See
+@url{http://www.padl.com/~lukeh/heimdal/} for more information.
+
 @end table
