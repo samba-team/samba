@@ -1073,8 +1073,16 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	unix_pw = sys_getpwuid( uid );
 
 	if ( !unix_pw ) {
-		DEBUG(4,("local_uid_to_sid: host has know idea of uid %lu\n", (unsigned long)uid));
-		return NULL;
+		DEBUG(4,("local_uid_to_sid: host has no idea of uid %lu\n", (unsigned long)uid));
+
+		if ( !lp_enable_rid_algorithm() ) 
+			return NULL;
+
+		DEBUG(8,("local_uid_to_sid: falling back to RID algorithm\n"));
+		
+		sid_copy( psid, get_global_sam_sid() );
+		sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
+		goto out;
 	}
 	
 	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
@@ -1101,6 +1109,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
 	}
 
+out:
 	
 	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
 		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
