@@ -1142,7 +1142,7 @@ static void dump_guid(const char *field, struct berval **values)
 	GUID guid;
 	for (i=0; values[i]; i++) {
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		printf("%s: %s\n", field, uuid_string_static(guid));
+		printf("%s: %s\n", field, smb_uuid_string_static(guid));
 	}
 }
 
