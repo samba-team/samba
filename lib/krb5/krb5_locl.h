@@ -95,6 +95,9 @@ const krb5_config_binding *krb5_config_get_list (krb5_config_section *c,
 const krb5_config_binding *krb5_config_vget_list (krb5_config_section *c,
 						  va_list args);
 
+krb5_error_code
+krb5_config_file_free (krb5_config_section *s);
+
 int
 krb5_getportbyname (const char *service,
 		    const char *proto,
