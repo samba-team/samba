@@ -766,31 +766,31 @@ interface netlogon
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
-#if 0
 
 	/*****************/
 	/* Function 0x11 */
 
+	/* i'm not at all sure how this call works */
+
 	NTSTATUS netr_DatabaseRedo(
-		[in][string][ref] wchar_t *logon_server, # REF!!!
-		[in][string][ref] wchar_t *computername,
-		[in][ref] netr_Authenticator credential,
-		[in][out][ref] netr_Authenticator return_authenticator,
-		[in][ref][size_is(change_log_entry_size)] uint8 *change_log_entry,
-		[in] uint32 change_log_entry_size,
-		[out] netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[in]     unistr logon_server,
+		[in]     unistr computername,
+		[in]     netr_Authenticator credential,
+		[in,out] netr_Authenticator return_authenticator,
+		[in][size_is(change_log_entry_size)] uint8 *change_log_entry,
+		[in]     uint32 change_log_entry_size,
+		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
 	/*****************/
 	/* Function 0x12 */
 
-	NTSTATUS netr_LogonControl2Ex(
-		[in][string] wchar_t *logon_server,
-		[in] uint32 function_code,
-		[in] uint32 level,
-		[in][ref] CONTROL_DATA_INFORMATION *data,
-		[out][ref] CONTROL_QUERY_INFORMATION *query
+	WERROR netr_LogonControl2Ex(
+		[in]   unistr *logon_server,
+		[in]   uint32 function_code,
+		[in]   uint32 level,
+		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
+		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
 		);
-#endif	
 }

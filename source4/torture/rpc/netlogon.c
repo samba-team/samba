@@ -645,7 +645,6 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-
 /*
   try a netlogon DatabaseSync2
 */
@@ -695,6 +694,87 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
+
+
+/*
+  try a netlogon LogonControl2Ex
+*/
+static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonControl2Ex r;
+	BOOL ret = True;
+	int i;
+
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+
+	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2Ex level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2Ex level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2Ex level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
+	r.in.data.debug_level = ~0;
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2Ex level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 
 
 BOOL torture_rpc_netlogon(int dummy)
@@ -765,6 +845,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_DatabaseSync2(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_LogonControl2Ex(p, mem_ctx)) {
 		ret = False;
 	}
 
