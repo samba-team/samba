@@ -165,20 +165,9 @@ pop_init(POP *p,int argcount,char **argmessage)
     /*  Save the cannonical name of the client host in 
         the POP parameter block */
     else {
-
-#ifndef BIND43
-        p->client = ch->h_name;
-#else
-#       include <arpa/nameser.h>
-#       include <resolv.h>
-
         /*  Distrust distant nameservers */
-        extern struct state     _res;
         struct hostent      *   ch_again;
         char            *   *   addrp;
-
-        /*  We already have a fully-qualified name */
-        _res.options &= ~RES_DEFNAMES;
 
         /*  See if the name obtained for the client's IP 
             address returns an address */
@@ -207,7 +196,6 @@ pop_init(POP *p,int argcount,char **argmessage)
                 p->client = p->ipaddr;
             }
         }
-#endif /* BIND43 */
     }
 
     /*  Create input file stream for TCP/IP communication */
