@@ -26,13 +26,14 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 extern REGISTRY_OPS printing_ops;
+extern REGISTRY_OPS eventlog_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
 
-
 REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,   &printing_ops },
+  { KEY_EVENTLOG,   &eventlog_ops }, 
   { NULL, NULL }
 };
 
@@ -124,6 +125,8 @@ BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index
 	*subkey = NULL;
 	
 	/* simple caching for performance; very basic heuristic */
+
+	DEBUG(8,("fetch_reg_keys_specific: Looking for key [%d] of  [%s]\n", key_index, key->name));
 	
 	if ( !ctr_init ) {
 		DEBUG(8,("fetch_reg_keys_specific: Initializing cache of subkeys for [%s]\n", key->name));

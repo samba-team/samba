@@ -41,6 +41,7 @@ static const char *known_nt_pipes[] = {
 	"\\netdfs",
 	"\\rpcecho",
         "\\svcctl",
+	"\\eventlog",
 	"\\epmapper",
 	NULL
 };

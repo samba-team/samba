@@ -185,6 +185,13 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
+        char *szEventLogOpenCommand;
+        char *szEventLogReadCommand;
+        char *szEventLogClearCommand;
+        char *szEventLogNumRecordsCommand;
+        char *szEventLogOldestRecordCommand;
+	char *szEventLogCloseCommand;
+        char **szEventLogs;
 	char *szGuestaccount;
 	char *szManglingMethod;
 	int mangle_prefix;
@@ -583,6 +590,7 @@ static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr
 static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_acl_compatibility( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_eventlog( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -1114,6 +1122,14 @@ static struct parm_struct parm_table[] = {
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
+	{"eventlog open command", P_STRING, P_GLOBAL, &Globals.szEventLogOpenCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog read command", P_STRING, P_GLOBAL, &Globals.szEventLogReadCommand, handle_eventlog, NULL, FLAG_ADVANCED}, 
+	{"eventlog clear command", P_STRING, P_GLOBAL, &Globals.szEventLogClearCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog num records command", P_STRING, P_GLOBAL, &Globals.szEventLogNumRecordsCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog oldest record command", P_STRING, P_GLOBAL, &Globals.szEventLogOldestRecordCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
@@ -1536,6 +1552,12 @@ static void init_globals(void)
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
 
+	string_set(&Globals.szEventLogOpenCommand, "");
+	string_set(&Globals.szEventLogReadCommand, "");
+	string_set(&Globals.szEventLogClearCommand, "");
+	string_set(&Globals.szEventLogNumRecordsCommand, "");
+	string_set(&Globals.szEventLogOldestRecordCommand, "");
+
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnableLocalAccounts = False;
 	Globals.bWinbindEnumUsers = True;
@@ -1750,6 +1772,14 @@ FN_GLOBAL_INTEGER(lp_ldap_timeout, &Globals.ldap_timeout)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
+
+FN_GLOBAL_STRING(lp_eventlog_open_cmd, &Globals.szEventLogOpenCommand)
+FN_GLOBAL_STRING(lp_eventlog_read_cmd, &Globals.szEventLogReadCommand)
+FN_GLOBAL_STRING(lp_eventlog_clear_cmd, &Globals.szEventLogClearCommand)
+FN_GLOBAL_STRING(lp_eventlog_num_records_cmd, &Globals.szEventLogNumRecordsCommand)
+FN_GLOBAL_STRING(lp_eventlog_oldest_record_cmd, &Globals.szEventLogOldestRecordCommand)
+FN_GLOBAL_STRING(lp_eventlog_close_cmd, &Globals.szEventLogCloseCommand)
+FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
@@ -2775,6 +2805,12 @@ static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
 		string_set(ptr, pszParmValue);
 		init_iconv();
 	}
+	return True;
+}
+
+static BOOL handle_eventlog(int snum, const char *pszParmValue, char **ptr)
+{
+	string_set(ptr, pszParmValue);
 	return True;
 }
 

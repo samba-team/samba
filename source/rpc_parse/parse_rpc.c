@@ -191,6 +191,16 @@ interface/version dce/rpc pipe identification
 }
 
 
+#define SYNT_EVENTLOG_V0		    \
+{					    \
+	{				    \
+		0x82273fdc, 0xe32a, 0x18c3, \
+		{ 0x3f, 0x78 },		    \
+		{ 0x82, 0x79,		    \
+		  0x29, 0xdc, 0x23, 0xea }  \
+	}, 0x00				    \
+}
+
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
@@ -212,6 +222,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ PIPE_EPM     , SYNT_EPM_V3           , PIPE_EPM      , TRANS_SYNT_V2 },
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

@@ -23,7 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static BOOL api_eventlog_open_eventlog_w(pipes_struct *p)
+static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_OPEN_EVENTLOG q_u;
 	EVENTLOG_R_OPEN_EVENTLOG r_u;
@@ -49,7 +49,7 @@ static BOOL api_eventlog_open_eventlog_w(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_close_eventlog_w(pipes_struct *p)
+static BOOL api_eventlog_close_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_CLOSE_EVENTLOG q_u;
 	EVENTLOG_R_CLOSE_EVENTLOG r_u;
@@ -75,7 +75,7 @@ static BOOL api_eventlog_close_eventlog_w(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_get_num_records_w(pipes_struct *p)
+static BOOL api_eventlog_get_num_records(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_NUM_RECORDS q_u;
 	EVENTLOG_R_GET_NUM_RECORDS r_u;
@@ -101,7 +101,7 @@ static BOOL api_eventlog_get_num_records_w(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_get_oldest_entry_w(pipes_struct *p)
+static BOOL api_eventlog_get_oldest_entry(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_OLDEST_ENTRY q_u;
 	EVENTLOG_R_GET_OLDEST_ENTRY r_u;
@@ -127,7 +127,7 @@ static BOOL api_eventlog_get_oldest_entry_w(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_read_eventlog_w(pipes_struct *p)
+static BOOL api_eventlog_read_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_READ_EVENTLOG q_u;
 	EVENTLOG_R_READ_EVENTLOG r_u;
@@ -153,7 +153,7 @@ static BOOL api_eventlog_read_eventlog_w(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_clear_eventlog_w(pipes_struct *p)
+static BOOL api_eventlog_clear_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_CLEAR_EVENTLOG q_u;
 	EVENTLOG_R_CLEAR_EVENTLOG r_u;
@@ -184,12 +184,12 @@ static BOOL api_eventlog_clear_eventlog_w(pipes_struct *p)
 */
 struct api_struct api_eventlog_cmds[] =
 {
-	{"EVENTLOG_OPENEVENTLOG_W", 	EVENTLOG_OPENEVENTLOG_W, 	api_eventlog_open_eventlog_w    },
-	{"EVENTLOG_CLOSEVENTLOG_W", 	EVENTLOG_CLOSEEVENTLOG_W, 	api_eventlog_close_eventlog_w   },
-	{"EVENTLOG_GETNUMRECORDS_W", 	EVENTLOG_GETNUMRECORDS_W, 	api_eventlog_get_num_records_w  },
-	{"EVENTLOG_GETOLDESTENTRY_W", 	EVENTLOG_GETOLDESTENTRY_W, 	api_eventlog_get_oldest_entry_w },
-	{"EVENTLOG_READEVENTLOG_W", 	EVENTLOG_READEVENTLOG_W, 	api_eventlog_read_eventlog_w    },
-	{"EVENTLOG_CLEAREVENTLOG_W", 	EVENTLOG_CLEAREVENTLOG_W, 	api_eventlog_clear_eventlog_w   }
+	{"EVENTLOG_OPENEVENTLOG", 	EVENTLOG_OPENEVENTLOG, 		api_eventlog_open_eventlog    },
+	{"EVENTLOG_CLOSEVENTLOG", 	EVENTLOG_CLOSEEVENTLOG, 	api_eventlog_close_eventlog   },
+	{"EVENTLOG_GETNUMRECORDS", 	EVENTLOG_GETNUMRECORDS, 	api_eventlog_get_num_records  },
+	{"EVENTLOG_GETOLDESTENTRY", 	EVENTLOG_GETOLDESTENTRY, 	api_eventlog_get_oldest_entry },
+	{"EVENTLOG_READEVENTLOG", 	EVENTLOG_READEVENTLOG, 		api_eventlog_read_eventlog    },
+	{"EVENTLOG_CLEAREVENTLOG", 	EVENTLOG_CLEAREVENTLOG, 	api_eventlog_clear_eventlog   }
 };
 
 NTSTATUS rpc_eventlog_init(void)

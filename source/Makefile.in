@@ -267,7 +267,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o 
+               registry/reg_db.o registry/reg_eventlog.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
 
@@ -290,6 +290,8 @@ RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
 
+RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog.o rpc_server/srv_eventlog_nt.o
+
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
@@ -308,7 +310,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_epmapper.o rpc_parse/parse_svcctl.o \
-                $(REGOBJS_OBJ)
+		rpc_parse/parse_eventlog.o $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -635,8 +637,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(AUTH_SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
-	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) \
-            libsmb/spnego.o $(PASSCHANGE_OBJ)
+	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
+            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -1074,6 +1076,11 @@ bin/librpc_lsa_ds.@SHLIBEXT@: $(RPC_LSA_DS_OBJ)
 bin/librpc_spoolss.@SHLIBEXT@: $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_eventlog.@SHLIBEXT@: $(RPC_EVENTLOG_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EVENTLOG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
