@@ -236,7 +236,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 
 	unbecome_user();
 
-	if (!(conn && conn->open)) {
+	if (!conn) {
 		DEBUG(2,("Connection not open\n"));
 		return(False);
 	}
