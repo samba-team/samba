@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "10 October 2001" "" ""
+.TH "SMB.CONF" "5" "06 December 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -387,8 +387,8 @@ process.
 \fB%a\fR
 the architecture of the remote
 machine. Only some are recognized, and those may not be 
-100% reliable. It currently recognizes Samba, WfWg, 
-WinNT and Win95. Anything else will be known as 
+100% reliable. It currently recognizes Samba, WfWg, Win95,
+WinNT and Win2k. Anything else will be known as 
 "UNKNOWN". If it gets it wrong then sending a level 
 3 log to samba@samba.org
  <URL:mailto:samba@samba.org> should allow it to be fixed.
@@ -653,6 +653,24 @@ each parameter for details. Note that some are synonyms.
 \fIlarge readwrite\fR
 .TP 0.2i
 \(bu
+\fIldap admin dn\fR
+.TP 0.2i
+\(bu
+\fIldap filter\fR
+.TP 0.2i
+\(bu
+\fIldap port\fR
+.TP 0.2i
+\(bu
+\fIldap server\fR
+.TP 0.2i
+\(bu
+\fIldap ssl\fR
+.TP 0.2i
+\(bu
+\fIldap suffix\fR
+.TP 0.2i
+\(bu
 \fIlm announce\fR
 .TP 0.2i
 \(bu
@@ -756,9 +774,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fInis homedir\fR
-.TP 0.2i
-\(bu
-\fInt acl support\fR
 .TP 0.2i
 \(bu
 \fInt pipe support\fR
@@ -896,6 +911,15 @@ each parameter for details. Note that some are synonyms.
 \fIssl compatibility\fR
 .TP 0.2i
 \(bu
+\fIssl egd socket\fR
+.TP 0.2i
+\(bu
+\fIssl entropy bytes\fR
+.TP 0.2i
+\(bu
+\fIssl entropy file\fR
+.TP 0.2i
+\(bu
 \fIssl hosts\fR
 .TP 0.2i
 \(bu
@@ -954,6 +978,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIupdate encrypted\fR
+.TP 0.2i
+\(bu
+\fIuse mmap\fR
 .TP 0.2i
 \(bu
 \fIuse rhosts\fR
@@ -1209,6 +1236,9 @@ each parameter for details. Note that some are synonyms.
 \fImsdfs root\fR
 .TP 0.2i
 \(bu
+\fInt acl support\fR
+.TP 0.2i
+\(bu
 \fIonly guest\fR
 .TP 0.2i
 \(bu
@@ -1303,6 +1333,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIstatus\fR
+.TP 0.2i
+\(bu
+\fIstrict allocate\fR
 .TP 0.2i
 \(bu
 \fIstrict locking\fR
@@ -2535,8 +2568,8 @@ If set to true, the Samba server will serve
 Windows 95/98 Domain logons for the  \fIworkgroup\fR it is in. Samba 2.2 also 
 has limited capability to act as a domain controller for Windows 
 NT 4 Domains. For more details on setting up this feature see 
-the file DOMAINS.txt in the Samba documentation directory \fIdocs/
-\fRshipped with the source code.
+the Samba-PDC-HOWTO included in the \fIhtmldocs/\fR
+directory shipped with the source code.
 
 Default: \fBdomain logons = no\fR
 .TP
@@ -2775,11 +2808,6 @@ permissions changed. The default for this parameter is (in octal)
 mode after the mask set in the \fIcreate mask\fR 
 parameter is applied.
 
-Note that by default this parameter does not apply to permissions
-set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
-
 See also the parameter \fIcreate 
 mask\fR for details on masking mode bits on files.
 
@@ -2803,11 +2831,6 @@ parameter is (in octal) 0000 which will not add any extra permission
 bits to a created directory. This operation is done after the mode 
 mask in the parameter \fIdirectory mask\fR is 
 applied.
-
-Note that by default this parameter does not apply to permissions
-set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
 
 See also the parameter \fI directory mask\fR for details on masking mode bits 
 on created directories.
@@ -3367,6 +3390,88 @@ Windows 2000 clients. Defaults to off. Not as tested as some other Samba
 code paths.
 
 Default : \fBlarge readwrite = no\fR
+.TP
+\fBldap admin dn (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+The \fIldap admin dn\fR defines the Distinguished 
+Name (DN) name used by Samba to contact the ldap
+server when retreiving user account information. The \fIldap
+admin dn\fR is used in conjunction with the admin dn password
+stored in the \fIprivate/secrets.tdb\fR file. See the
+\fBsmbpasswd(8)\fRman
+page for more information on how to accmplish this.
+
+Default : \fBnone\fR
+.TP
+\fBldap filter (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+This parameter specifies the RFC 2254 compliant LDAP search filter.
+The default is to match the login name with the uid 
+attribute for all entries matching the sambaAccount 
+objectclass. Note that this filter should only return one entry.
+
+Default : \fBldap filter = (&(uid=%u)(objectclass=sambaAccount))\fR
+.TP
+\fBldap port (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+This option is used to control the tcp port number used to contact
+the \fIldap server\fR.
+The default is to use the stand LDAP port 389.
+
+Default : \fBldap port = 389\fR
+.TP
+\fBldap server (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+This parameter should contains the FQDN of the ldap directory 
+server which should be queried to locate user account information.
+
+Default : \fBldap server = localhost\fR
+.TP
+\fBldap ssl (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+This option is used to define whether or not Samba should
+use SSL when connecting to the \fIldap
+server\fR. This is \fBNOT\fR related to
+Samba SSL support which is enabled by specifying the 
+\fB--with-ssl\fR option to the \fIconfigure\fR 
+script (see \fIssl\fR).
+
+The \fIldap ssl\fR can be set to one of three values:
+(a) \fBon\fR - Always use SSL when contacting the 
+\fIldap server\fR, (b) \fBoff\fR -
+Never use SSL when querying the directory, or (c) \fBstart 
+tls\fR - Use the LDAPv3 StartTLS extended operation 
+(RFC2830) for communicating with the directory server.
+
+Default : \fBldap ssl = off\fR
+.TP
+\fBldap suffix (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time. This option should be considered experimental and
+under active development.
+
+Default : \fBnone\fR
 .TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports
@@ -4363,7 +4468,7 @@ Default: \fBmin wins ttl = 21600\fR
 .TP
 \fBmsdfs root (S)\fR
 This boolean parameter is only available if 
-Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes>, 
+Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes, 
 Samba treats the share as a Dfs root and allows clients to browse 
 the distributed file system tree rooted at the share directory. 
 Dfs links are specified in the share directory by symbolic 
@@ -4398,7 +4503,7 @@ name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
 is operating system depended for instance on IRIX or Solaris this 
 may be controlled by the \fI/etc/nsswitch.conf\fR 
-file). Note that this method is only used if the NetBIOS name 
+file. Note that this method is only used if the NetBIOS name 
 type being queried is the 0x20 (server) name type, otherwise 
 it is ignored.
 .TP 0.2i
@@ -4489,10 +4594,12 @@ be a logon server.
 
 Default: \fBnis homedir = no\fR
 .TP
-\fBnt acl support (G)\fR
+\fBnt acl support (S)\fR
 This boolean parameter controls whether 
 smbd(8)will attempt to map 
 UNIX permissions into Windows NT access control lists.
+This parameter was formally a global parameter in releases
+prior to 2.2.2.
 
 Default: \fBnt acl support = yes\fR
 .TP
@@ -4715,7 +4822,7 @@ if the expect string is a full stop then no string is expected.
 
 If the \fIpam
 password change\fR parameter is set to true, the chat pairs
-may be matched in any order, and sucess is determined by the PAM result, 
+may be matched in any order, and success is determined by the PAM result, 
 not any particular output. The \\n macro is ignored for PAM conversions.
 
 See also \fIunix password 
@@ -5066,8 +5173,9 @@ verbatim, with two exceptions: All occurrences of \fI%s
 \fRand \fI%f\fR will be replaced by the 
 appropriate spool file name, and all occurrences of \fI%p
 \fRwill be replaced by the appropriate printer name. The 
-spool file name is generated automatically by the server, the printer 
-name is discussed below.
+spool file name is generated automatically by the server. The 
+\fI%J\fR macro can be used to access the job 
+name as transmitted by the client.
 
 The print command \fBMUST\fR contain at least 
 one occurrence of \fI%s\fR or \fI%f
@@ -5105,7 +5213,7 @@ or PLP :\fR
 
 \fBprint command = lpr -r -P%p %s\fR
 
-For \fBprinting = SYS or HPUX :\fR
+For \fBprinting = SYSV or HPUX :\fR
 
 \fBprint command = lp -c -d%p %s; rm %s\fR
 
@@ -5289,7 +5397,7 @@ default values for the \fIprint command\fR,
 \fIlprm command\fR if specified in the 
 [global] section.
 
-Currently eight printing styles are supported. They are
+Currently nine printing styles are supported. They are
 BSD, AIX, 
 LPRNG, PLP,
 SYSV, HPUX,
@@ -5483,27 +5591,6 @@ is in fact the browse master on its segment.
 
 Default: \fBremote browse sync = <empty string>
 \fR.TP
-\fBrestrict acl with mask (S)\fR
-This is a boolean parameter. If set to false (default), then 
-creation of files with access control lists (ACLS) and modification of ACLs
-using the Windows NT/2000 ACL editor will be applied directly to the file
-or directory.
-
-If set to true, then all requests to set an ACL on a file will have the
-parameters \fIcreate mask\fR,
-\fIforce create mode\fR
-applied before setting the ACL, and all requests to set an ACL on a directory will
-have the parameters \fIdirectory 
-mask\fR, \fIforce 
-directory mode\fR applied before setting the ACL.
-
-See also \fIcreate mask\fR,
-\fIforce create mode\fR,
-\fIdirectory mask\fR,
-\fIforce directory mode\fR
-
-Default: \fBrestrict acl with mask = no\fR
-.TP
 \fBrestrict anonymous (G)\fR
 This is a boolean parameter. If it is true, then 
 anonymous access to the server will be restricted, namely in the 
@@ -5609,7 +5696,7 @@ The alternatives are \fBsecurity = share\fR,
 \fBsecurity = server\fR or \fBsecurity = domain
 \fR\&.
 
-In versions of Samba prior to 2..0, the default was 
+In versions of Samba prior to 2.0.0, the default was 
 \fBsecurity = share\fR mainly because that was
 the only option at one stage.
 
@@ -6118,10 +6205,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 This variable enables or disables the entire SSL mode. If 
 it is set to no, the SSL-enabled Samba behaves 
 exactly like the non-SSL Samba. If set to yes, 
@@ -6135,10 +6218,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 This variable defines where to look up the Certification
 Authorities. The given directory should contain one file for 
@@ -6155,10 +6234,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 This variable is a second way to define the trusted CAs. 
 The certificates of the trusted CAs are collected in one big 
@@ -6177,10 +6252,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 This variable defines the ciphers that should be offered 
 during SSL negotiation. You should not set this variable unless 
 you know what you are doing.
@@ -6190,10 +6261,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 The certificate in this file is used by  \fBsmbclient(1)\fRif it exists. It's needed 
 if the server requires a client certificate.
@@ -6206,10 +6273,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 This is the private key for  \fBsmbclient(1)\fR. It's only needed if the 
 client should have a certificate. 
 
@@ -6221,16 +6284,54 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
-This variable defines whether SSLeay should be configured 
+This variable defines whether OpenSSL should be configured 
 for bug compatibility with other SSL implementations. This is 
 probably not desirable because currently no clients with SSL 
-implementations other than SSLeay exist.
+implementations other than OpenSSL exist.
 
 Default: \fBssl compatibility = no\fR
+.TP
+\fBssl egd socket (G)\fR
+This variable is part of SSL-enabled Samba. This 
+is only available if the SSL libraries have been compiled on your 
+system and the configure option \fB--with-ssl\fR was 
+given at configure time.
+
+This option is used to define the location of the communiation socket of 
+an EGD or PRNGD daemon, from which entropy can be retrieved. This option 
+can be used instead of or together with the \fIssl entropy file\fR 
+directive. 255 bytes of entropy will be retrieved from the daemon.
+
+Default: \fBnone\fR
+.TP
+\fBssl entropy bytes (G)\fR
+This variable is part of SSL-enabled Samba. This 
+is only available if the SSL libraries have been compiled on your 
+system and the configure option \fB--with-ssl\fR was 
+given at configure time.
+
+This parameter is used to define the number of bytes which should 
+be read from the \fIssl entropy 
+file\fR If a -1 is specified, the entire file will
+be read.
+
+Default: \fBssl entropy bytes = 255\fR
+.TP
+\fBssl entropy file (G)\fR
+This variable is part of SSL-enabled Samba. This 
+is only available if the SSL libraries have been compiled on your 
+system and the configure option \fB--with-ssl\fR was 
+given at configure time.
+
+This parameter is used to specify a file from which processes will 
+read "random bytes" on startup. In order to seed the internal pseudo 
+random number generator, entropy must be provided. On system with a 
+\fI/dev/urandom\fR device file, the processes
+will retrieve its entropy from the kernel. On systems without kernel
+entropy support, a file can be supplied that will be read on startup
+and that will be used to seed the PRNG.
+
+Default: \fBnone\fR
 .TP
 \fBssl hosts (G)\fR
 See \fI ssl hosts resign\fR.
@@ -6240,10 +6341,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 These two variables define whether Samba will go 
 into SSL mode or not. If none of them is defined, Samba will 
@@ -6270,10 +6367,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 If this variable is set to yes, the 
 server will not tolerate connections from clients that don't 
 have a valid certificate. The directory/file given in \fIssl CA certDir\fR
@@ -6296,10 +6389,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 If this variable is set to yes, the 
 \fBsmbclient(1)\fR
 will request a certificate from the server. Same as 
@@ -6314,10 +6403,6 @@ is only available if the SSL libraries have been compiled on your
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
 
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
-
 This is the file containing the server's certificate. 
 The server \fBmust\fR have a certificate. The 
 file may also contain the server's private key. See later for 
@@ -6330,10 +6415,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 This file contains the private key of the server. If 
 this variable is not defined, the key is looked up in the 
@@ -6349,10 +6430,6 @@ This variable is part of SSL-enabled Samba. This
 is only available if the SSL libraries have been compiled on your 
 system and the configure option \fB--with-ssl\fR was 
 given at configure time.
-
-\fBNote\fR that for export control reasons 
-this code is \fBNOT\fR enabled by default in any 
-current binary version of Samba.
 
 This enumeration variable defines the versions of the 
 SSL protocol that will be used. ssl2or3 allows 
@@ -6387,6 +6464,25 @@ to tell you what connections are active. You should never need to
 change this parameter.
 
 Default: \fBstatus = yes\fR
+.TP
+\fBstrict allocate (S)\fR
+This is a boolean that controls the handling of 
+disk space allocation in the server. When this is set to yes 
+the server will change from UNIX behaviour of not committing real
+disk storage blocks when a file is extended to the Windows behaviour
+of actually forcing the disk system to allocate real storage blocks
+when a file is created or extended to be a given size. In UNIX
+terminology this means that Samba will stop creating sparse files.
+This can be slow on some systems.
+
+When strict allocate is no the server does sparse
+disk block allocation when a file is extended.
+
+Setting this to yes can help Samba return
+out of quota messages on systems that are restricting the disk quota
+of users.
+
+Default: \fBstrict allocate = no\fR
 .TP
 \fBstrict locking (S)\fR
 This is a boolean that controls the handling of 
@@ -6593,6 +6689,17 @@ server.\fR
 See also disable spoolss
 
 Default: \fBuse client driver = no\fR
+.TP
+\fBuse mmap (G)\fR
+This global parameter determines if the tdb internals of Samba can
+depend on mmap working correctly on the running system. Samba requires a coherent
+mmap/read-write system memory cache. Currently only HPUX does not have such a
+coherent cache, and so this parameter is set to false by
+default on HPUX. On all other systems this parameter should be left alone. This
+parameter is provided to help the Samba developers track down problems with
+the tdb internal code.
+
+Default: \fBuse mmap = yes\fR
 .TP
 \fBuse rhosts (G)\fR
 If this global parameter is true, it specifies 
@@ -6913,15 +7020,14 @@ Default: \fBNo files or directories are vetoed.
 Examples:
 .sp
 .nf
-	   ; Veto any files containing the word Security, 
-    	; any ending in .tmp, and any directory containing the
-    	; word root.
-		veto files = /*Security*/*.tmp/*root*/
+; Veto any files containing the word Security, 
+; any ending in .tmp, and any directory containing the
+; word root.
+veto files = /*Security*/*.tmp/*root*/
 
-		; Veto the Apple specific files that a NetAtalk server
-    	; creates.
-		veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
-		
+; Veto the Apple specific files that a NetAtalk server
+; creates.
+veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 .sp
 .fi
 .TP
@@ -7024,7 +7130,7 @@ call will not return any data.
 \fBWarning:\fR Turning off group
 enumeration may cause some programs to behave oddly.
 
-Default: \fBwinbind enum groups = no \fR
+Default: \fBwinbind enum groups = yes \fR
 .TP
 \fBwinbind gid\fR
 The winbind gid parameter specifies the range of group 

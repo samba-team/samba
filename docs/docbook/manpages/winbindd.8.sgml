@@ -42,6 +42,15 @@
 	can be used to resolve user and group information from a 
 	Windows NT server. The service can also provide authentication
 	services via an associated PAM module. </para>
+	
+	<para>
+	The <filename>pam_winbind</filename> module in the 2.2.2 release only 
+	supports the <parameter>auth</parameter> and <parameter>account</parameter> 
+	module-types.  The latter is simply
+	performs a getpwnam() to verify that the system can obtain a uid for the
+	user.  If the <filename>libnss_winbind</filename> library has been correctly 
+	installed, this should always suceed.
+	</para>
 
 	<para>The following nsswitch databases are implemented by 
 	the winbindd service: </para>

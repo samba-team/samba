@@ -1,0 +1,9 @@
+REGEDIT4
+
+;
+; This registry key (gathered from the Samba-tng lists) is needed
+; for a Windows XP client to join and logon to a Samba domain
+;
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\netlogon\parameters
+"RequireSignOrSeal"=dword:00000000 

@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "10 October 2001" "" ""
+.TH "SMBPASSWD" "8" "06 December 2001" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
 .sp
-\fBsmbpasswd\fR [ \fB-a\fR ]  [ \fB-x\fR ]  [ \fB-d\fR ]  [ \fB-e\fR ]  [ \fB-D debuglevel\fR ]  [ \fB-n\fR ]  [ \fB-r <remote machine>\fR ]  [ \fB-R <name resolve order>\fR ]  [ \fB-m\fR ]  [ \fB-j DOMAIN\fR ]  [ \fB-U username[%password]\fR ]  [ \fB-h\fR ]  [ \fB-s\fR ]  [ \fBusername\fR ] 
+\fBsmbpasswd\fR [ \fB-a\fR ]  [ \fB-x\fR ]  [ \fB-d\fR ]  [ \fB-e\fR ]  [ \fB-D debuglevel\fR ]  [ \fB-n\fR ]  [ \fB-r <remote machine>\fR ]  [ \fB-R <name resolve order>\fR ]  [ \fB-m\fR ]  [ \fB-j DOMAIN\fR ]  [ \fB-U username[%password]\fR ]  [ \fB-h\fR ]  [ \fB-s\fR ]  [ \fB-w pass\fR ]  [ \fBusername\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -258,6 +258,18 @@ not issue prompts) and to read its old and new passwords from
 standard input, rather than from \fI/dev/tty\fR 
 (like the \fBpasswd(1)\fR program does). This option 
 is to aid people writing scripts to drive smbpasswd
+.TP
+\fB-w password\fR
+This parameter is only available is Samba
+has been configured to use the experiemental
+\fB--with-ldapsam\fR option. The \fI-w\fR 
+switch is used to specify the password to be used with the 
+\fIldap admin 
+dn\fR. Note that the password is stored in
+the \fIprivate/secrets.tdb\fR and is keyed off 
+of the admin's DN. This means that if the value of \fIldap
+admin dn\fR ever changes, the password will beed to be 
+manually updated as well.
 .TP
 \fBusername\fR
 This specifies the username for all of the 

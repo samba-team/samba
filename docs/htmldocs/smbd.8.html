@@ -36,7 +36,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbd</B
->  [-D] [-a] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-l &#60;log file&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
+>  [-D] [-a] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -228,17 +228,19 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-l &#60;log file&#62;</DT
+>-l &#60;log directory&#62;</DT
 ><DD
 ><P
->If specified, <TT
+>If specified,
+		<TT
 CLASS="REPLACEABLE"
 ><I
->log file</I
+>log directory</I
 ></TT
 > 
-		specifies a log filename into which informational and debug 
-		messages from the running server will be logged. The log 
+		specifies a log directory into which the "log.smbd" log
+		file will be created for informational and debug 
+		messages from the running server. The log 
 		file generated is never removed by the server although 
 		its size may be controlled by the <A
 HREF="smb.conf.5.html#maxlogsize"
@@ -252,8 +254,11 @@ TARGET="_top"
 CLASS="FILENAME"
 >		smb.conf(5)</TT
 ></A
-> file.  The default log 
-		file name is specified at compile time.</P
+> file.
+		</P
+><P
+>The default log directory is specified at
+		compile time.</P
 ></DD
 ><DT
 >-O &#60;socket options&#62;</DT
@@ -331,7 +336,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN109"
+NAME="AEN110"
 ></A
 ><H2
 >FILES</H2
@@ -429,7 +434,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN142"
+NAME="AEN143"
 ></A
 ><H2
 >LIMITATIONS</H2
@@ -448,7 +453,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN146"
+NAME="AEN147"
 ></A
 ><H2
 >ENVIRONMENTVARIABLES</H2
@@ -479,7 +484,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN155"
+NAME="AEN156"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -601,7 +606,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN188"
+NAME="AEN189"
 ></A
 ><H2
 >RUNNING THE SERVER AS A DAEMON</H2
@@ -656,7 +661,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN201"
+NAME="AEN202"
 ></A
 ><H2
 >RUNNING THE SERVER ON REQUEST</H2
@@ -792,7 +797,7 @@ CLASS="COMPUTEROUTPUT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN233"
+NAME="AEN234"
 ></A
 ><H2
 >PAM INTERACTION</H2
@@ -837,7 +842,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN244"
+NAME="AEN245"
 ></A
 ><H2
 >TESTING THE INSTALLATION</H2
@@ -895,7 +900,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN258"
+NAME="AEN259"
 ></A
 ><H2
 >VERSION</H2
@@ -906,7 +911,7 @@ NAME="AEN258"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN261"
+NAME="AEN262"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -929,7 +934,7 @@ NAME="AEN261"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN266"
+NAME="AEN267"
 ></A
 ><H2
 >SIGNALS</H2
@@ -994,7 +999,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN283"
+NAME="AEN284"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -1060,7 +1065,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN300"
+NAME="AEN301"
 ></A
 ><H2
 >AUTHOR</H2

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "10 October 2001" "" ""
+.TH "WINBINDD" "8" "06 December 2001" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
@@ -27,6 +27,13 @@ The service provided by \fBwinbindd\fR is called `winbind' and
 can be used to resolve user and group information from a 
 Windows NT server. The service can also provide authentication
 services via an associated PAM module. 
+.PP
+The \fIpam_winbind\fR module in the 2.2.2 release only 
+supports the \fIauth\fR and \fIaccount\fR 
+module-types. The latter is simply
+performs a getpwnam() to verify that the system can obtain a uid for the
+user. If the \fIlibnss_winbind\fR library has been correctly 
+installed, this should always suceed.
 .PP
 The following nsswitch databases are implemented by 
 the winbindd service: 

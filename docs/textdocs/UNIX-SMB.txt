@@ -1,4 +1,4 @@
-Contributor:	Andrew Tridgell <samba-bugs@samba.org>
+Contributor:	Andrew Tridgell <samba@samba.org>
 Date:		April 1995
 
 Subject:	Discussion of NetBIOS in a Unix World
