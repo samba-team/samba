@@ -1297,318 +1297,303 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				    char **pparams,char **ppdata,
 				    int total_data)
 {
-  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
-  char *params = *pparams;
-  char *pdata = *ppdata;
-  uint16 tran_call = SVAL(inbuf, smb_setup0);
-  uint16 info_level;
-  int mode=0;
-  SMB_OFF_T size=0;
-  unsigned int data_size;
-  SMB_STRUCT_STAT sbuf;
-  pstring fname1;
-  char *fname;
-  char *p;
-  int l;
-  SMB_OFF_T pos = 0;
-  BOOL bad_path = False;
-  BOOL delete_pending = False;
-  time_t c_time;
+	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
+	char *params = *pparams;
+	char *pdata = *ppdata;
+	uint16 tran_call = SVAL(inbuf, smb_setup0);
+	uint16 info_level;
+	int mode=0;
+	SMB_OFF_T size=0;
+	unsigned int data_size;
+	SMB_STRUCT_STAT sbuf;
+	pstring fname1;
+	char *fname;
+	char *p;
+	int l;
+	SMB_OFF_T pos = 0;
+	BOOL bad_path = False;
+	BOOL delete_pending = False;
+	time_t c_time;
 
-  if (tran_call == TRANSACT2_QFILEINFO) {
-    files_struct *fsp = file_fsp(params,0);
-    info_level = SVAL(params,2);
+	if (tran_call == TRANSACT2_QFILEINFO) {
+		files_struct *fsp = file_fsp(params,0);
+		info_level = SVAL(params,2);
 
-    DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
+		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-    if(fsp && (fsp->is_directory || fsp->stat_open)) {
-      /*
-       * This is actually a QFILEINFO on a directory
-       * handle (returned from an NT SMB). NT5.0 seems
-       * to do this call. JRA.
-       */
-      fname = fsp->fsp_name;
-      unix_convert(fname,conn,0,&bad_path,&sbuf);
-      if (!check_name(fname,conn) || 
-          (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
-        DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-        if((errno == ENOENT) && bad_path)
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-        return(UNIXERROR(ERRDOS,ERRbadpath));
-      }
+		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+			/*
+			 * This is actually a QFILEINFO on a directory
+			 * handle (returned from an NT SMB). NT5.0 seems
+			 * to do this call. JRA.
+			 */
+			fname = fsp->fsp_name;
+			unix_convert(fname,conn,0,&bad_path,&sbuf);
+			if (!check_name(fname,conn) || 
+					(!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
+				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
 
-      delete_pending = fsp->directory_delete_on_close;
+				if((errno == ENOENT) && bad_path) {
+					unix_ERR_class = ERRDOS;
+					unix_ERR_code = ERRbadpath;
+				}
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
 
-    } else {
-      /*
-       * Original code - this is an open file.
-       */
-      CHECK_FSP(fsp,conn);
-      CHECK_ERROR(fsp);
+			delete_pending = fsp->directory_delete_on_close;
 
-      fname = fsp->fsp_name;
-      if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
-        DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
-        return(UNIXERROR(ERRDOS,ERRbadfid));
-      }
-      if((pos = fsp->conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_CUR)) == -1)
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
+		} else {
+			/*
+			 * Original code - this is an open file.
+			 */
+			CHECK_FSP(fsp,conn);
+			CHECK_ERROR(fsp);
 
-      delete_pending = fsp->delete_on_close;
-    }
-  } else {
-    /* qpathinfo */
-    info_level = SVAL(params,0);
+			fname = fsp->fsp_name;
+			if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
+				DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+				return(UNIXERROR(ERRDOS,ERRbadfid));
+			}
 
-    DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
+			if((pos = fsp->conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_CUR)) == -1)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-    fname = &fname1[0];
-    pstrcpy(fname,&params[6]);
+			delete_pending = fsp->delete_on_close;
+		}
+	} else {
+		/* qpathinfo */
+		info_level = SVAL(params,0);
 
-    RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
-    unix_convert(fname,conn,0,&bad_path,&sbuf);
-    if (!check_name(fname,conn) || 
-        (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
-      DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-      if((errno == ENOENT) && bad_path)
-      {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      return(UNIXERROR(ERRDOS,ERRbadpath));
-    }
-  }
+		fname = &fname1[0];
+		pstrcpy(fname,&params[6]);
 
+		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  DEBUG(3,("call_trans2qfilepathinfo %s level=%d call=%d total_data=%d\n",
-	   fname,info_level,tran_call,total_data));
+		unix_convert(fname,conn,0,&bad_path,&sbuf);
+		if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
+			DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+			if((errno == ENOENT) && bad_path) {
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadpath;
+			}
+			return(UNIXERROR(ERRDOS,ERRbadpath));
+		}
+	}
 
-  p = strrchr(fname,'/'); 
-  if (!p) 
-    p = fname;
-  else
-    p++;
-  l = strlen(p);  
-  mode = dos_mode(conn,fname,&sbuf);
-  size = sbuf.st_size;
-  if (mode & aDIR) size = 0;
+	DEBUG(3,("call_trans2qfilepathinfo %s level=%d call=%d total_data=%d\n",
+			fname,info_level,tran_call,total_data));
 
-  /* from now on we only want the part after the / */
-  fname = p;
+	p = strrchr(fname,'/'); 
+	if (!p) 
+		p = fname;
+	else
+		p++;
+	l = strlen(p);  
+	mode = dos_mode(conn,fname,&sbuf);
+	size = sbuf.st_size;
+	if (mode & aDIR)
+		size = 0;
+
+	/* from now on we only want the part after the / */
+	fname = p;
   
-  params = Realloc(*pparams,2);
-  if ( params == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
-  }
-  *pparams	= params;
-  memset((char *)params,'\0',2);
-  data_size = max_data_bytes + 1024;
-  pdata = Realloc(*ppdata, data_size); 
-  if ( pdata == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
-  }
-  *ppdata	= pdata;
+	params = Realloc(*pparams,2);
+	if ( params == NULL )
+		return(ERROR(ERRDOS,ERRnomem));
+	*pparams	= params;
+	memset((char *)params,'\0',2);
+	data_size = max_data_bytes + 1024;
+	pdata = Realloc(*ppdata, data_size); 
+	if ( pdata == NULL )
+		return(ERROR(ERRDOS,ERRnomem));
+	*ppdata	= pdata;
 
-  if (total_data > 0 && IVAL(pdata,0) == total_data) {
-    /* uggh, EAs for OS2 */
-    DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    return(ERROR(ERRDOS,ERReasnotsupported));
-  }
+	if (total_data > 0 && IVAL(pdata,0) == total_data) {
+		/* uggh, EAs for OS2 */
+		DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
+		return(ERROR(ERRDOS,ERReasnotsupported));
+	}
 
-  memset((char *)pdata,'\0',data_size);
+	memset((char *)pdata,'\0',data_size);
 
-  c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-  if (lp_dos_filetime_resolution(SNUM(conn))) {
-    c_time &= ~1;
-    sbuf.st_atime &= ~1;
-    sbuf.st_mtime &= ~1;
-    sbuf.st_mtime &= ~1;
-  }
+	if (lp_dos_filetime_resolution(SNUM(conn))) {
+		c_time &= ~1;
+		sbuf.st_atime &= ~1;
+		sbuf.st_mtime &= ~1;
+		sbuf.st_mtime &= ~1;
+	}
 
-  switch (info_level) 
-    {
-    case SMB_INFO_STANDARD:
-    case SMB_INFO_QUERY_EA_SIZE:
-      data_size = (info_level==1?22:26);
-      put_dos_date2(pdata,l1_fdateCreation,c_time);
-      put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-      put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
-      SIVAL(pdata,l1_cbFile,(uint32)size);
-      SIVAL(pdata,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
-      SSVAL(pdata,l1_attrFile,mode);
-      SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
-      break;
-
-    case SMB_INFO_QUERY_EAS_FROM_LIST:
-      data_size = 24;
-      put_dos_date2(pdata,0,c_time);
-      put_dos_date2(pdata,4,sbuf.st_atime);
-      put_dos_date2(pdata,8,sbuf.st_mtime);
-      SIVAL(pdata,12,(uint32)size);
-      SIVAL(pdata,16,SMB_ROUNDUP(size,1024));
-      SIVAL(pdata,20,mode);
-      break;
-
-    case SMB_INFO_QUERY_ALL_EAS:
-      data_size = 4;
-      SIVAL(pdata,0,data_size);
-      break;
-
-    case 6:
-      return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
-
-    case SMB_QUERY_FILE_BASIC_INFO:
-	case 1004:
-
-      if (info_level == SMB_QUERY_FILE_BASIC_INFO)
-	      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
-      else {
-          data_size = 40;
-          SIVAL(pdata,36,0);
-      }
-      put_long_date(pdata,c_time);
-      put_long_date(pdata+8,sbuf.st_atime);
-      put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-      put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-      SIVAL(pdata,32,mode);
-
-      DEBUG(5,("SMB_QFBI - "));
-      {
-        time_t create_time = c_time;
-        DEBUG(5,("create: %s ", ctime(&create_time)));
-      }
-      DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
-      DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
-      DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
-      DEBUG(5,("mode: %x\n", mode));
-
-      break;
-
-    case SMB_QUERY_FILE_STANDARD_INFO:
-      data_size = 22;
-      SOFF_T(pdata,0,size);
-      SOFF_T(pdata,8,size);
-      SIVAL(pdata,16,sbuf.st_nlink);
-      CVAL(pdata,20) = 0;
-      CVAL(pdata,21) = (mode&aDIR)?1:0;
-      break;
-
-    case SMB_QUERY_FILE_EA_INFO:
-      data_size = 4;
-      break;
-
-    /* Get the 8.3 name - used if NT SMB was negotiated. */
-    case SMB_QUERY_FILE_ALT_NAME_INFO:
-      {
-        pstring short_name;
-        pstrcpy(short_name,p);
-        /* Mangle if not already 8.3 */
-        if(!is_8_3(short_name, True))
-        {
-          if(!name_map_mangle(short_name,True,True,SNUM(conn)))
-            *short_name = '\0';
-        }
-        strupper(short_name);
-        l = dos_PutUniCode(pdata + 4, short_name, sizeof(pstring), False);
-        data_size = 4 + l;
-        SIVAL(pdata,0,l);
-      }
-      break;
-
-    case SMB_QUERY_FILE_NAME_INFO:
-      /*
-       * The first part of this code is essential
-       * to get security descriptors to work on mapped
-       * drives. Don't ask how I discovered this unless
-       * you like hearing about me suffering.... :-). JRA.
-       */
-      if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
-        l = l*2;
-        SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-        dos_PutUniCode(pdata + 4, "\\",sizeof(pstring), False);
-      } else {
-        pstrcpy(pdata+4,fname);
-      }
-      data_size = 4 + l;
-      SIVAL(pdata,0,l);
-      break;
-
-    case SMB_QUERY_FILE_ALLOCATION_INFO:
-    case SMB_QUERY_FILE_END_OF_FILEINFO:
-      data_size = 8;
-      SOFF_T(pdata,0,size);
-      break;
-
-    case SMB_QUERY_FILE_ALL_INFO:
-      put_long_date(pdata,c_time);
-      put_long_date(pdata+8,sbuf.st_atime);
-      put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-      put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-      SIVAL(pdata,32,mode);
-      pdata += 40;
-      SOFF_T(pdata,0,size);
-      SOFF_T(pdata,8,size);
-      SIVAL(pdata,16,sbuf.st_nlink);
-      CVAL(pdata,20) = delete_pending;
-      CVAL(pdata,21) = (mode&aDIR)?1:0;
-      pdata += 24;
-      SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
-      pdata += 8; /* index number */
-      pdata += 4; /* EA info */
-      if (mode & aRONLY)
-        SIVAL(pdata,0,0xA9);
-      else
-        SIVAL(pdata,0,0xd01BF);
-      pdata += 4;
-      SOFF_T(pdata,0,pos); /* current offset */
-      pdata += 8;
-      SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
-      pdata += 4;
-      pdata += 4; /* alignment */
-      SIVAL(pdata,0,l);
-      pstrcpy(pdata+4,fname);
-      pdata += 4 + l;
-      data_size = PTR_DIFF(pdata,(*ppdata));
-      break;
-
-	/*
-	 * Windows 2000 completely undocumented new SMB info levels.
-	 * Thanks Microsoft.... sure you're working on making this
-	 * protocol a standard.... sure you are... :-).
-	 * Lying rat-bastards. JRA.
-	 */
-
-	case 1005:
-		SIVAL(pdata,0,mode);
-		SIVAL(pdata,4,0); /* ??? */
-		SOFF_T(pdata,8,size);
-		SIVAL(pdata,16,1); /* ??? */
-		SIVAL(pdata,20,0); /* ??? */
-		data_size = 24;
+	switch (info_level) {
+	case SMB_INFO_STANDARD:
+	case SMB_INFO_QUERY_EA_SIZE:
+		data_size = (info_level==1?22:26);
+		put_dos_date2(pdata,l1_fdateCreation,c_time);
+		put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
+		put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+		SIVAL(pdata,l1_cbFile,(uint32)size);
+		SIVAL(pdata,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
+		SSVAL(pdata,l1_attrFile,mode);
+		SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
 		break;
 
-	case 1006:
-		SIVAL(pdata,0,0x907); /* ??? */
-		SIVAL(pdata,4,0x690000); /* ??? */
+	case SMB_INFO_QUERY_EAS_FROM_LIST:
+		data_size = 24;
+		put_dos_date2(pdata,0,c_time);
+		put_dos_date2(pdata,4,sbuf.st_atime);
+		put_dos_date2(pdata,8,sbuf.st_mtime);
+		SIVAL(pdata,12,(uint32)size);
+		SIVAL(pdata,16,SMB_ROUNDUP(size,1024));
+		SIVAL(pdata,20,mode);
+		break;
+
+	case SMB_INFO_QUERY_ALL_EAS:
+		data_size = 4;
+		SIVAL(pdata,0,data_size);
+		break;
+
+	case 6:
+		return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
+
+	case SMB_FILE_BASIC_INFORMATION:
+	case SMB_QUERY_FILE_BASIC_INFO:
+
+		if (info_level == SMB_QUERY_FILE_BASIC_INFO)
+			data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
+		else {
+			data_size = 40;
+			SIVAL(pdata,36,0);
+		}
+		put_long_date(pdata,c_time);
+		put_long_date(pdata+8,sbuf.st_atime);
+		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+		SIVAL(pdata,32,mode);
+
+		DEBUG(5,("SMB_QFBI - "));
+
+		{
+			time_t create_time = c_time;
+			DEBUG(5,("create: %s ", ctime(&create_time)));
+		}
+
+		DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
+		DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
+		DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
+		DEBUG(5,("mode: %x\n", mode));
+
+		break;
+
+	case SMB_FILE_STANDARD_INFORMATION:
+	case SMB_QUERY_FILE_STANDARD_INFO:
+
+		data_size = 22;
+		SOFF_T(pdata,0,size);
+		SOFF_T(pdata,8,size);
+		SIVAL(pdata,16,sbuf.st_nlink);
+		CVAL(pdata,20) = 0;
+		CVAL(pdata,21) = (mode&aDIR)?1:0;
+		break;
+
+	case SMB_FILE_EA_INFORMATION:
+	case SMB_QUERY_FILE_EA_INFO:
+		data_size = 4;
+		SIVAL(pdata,0,0);
+		break;
+
+		/* Get the 8.3 name - used if NT SMB was negotiated. */
+
+	case SMB_QUERY_FILE_ALT_NAME_INFO:
+	{
+		pstring short_name;
+		pstrcpy(short_name,p);
+		/* Mangle if not already 8.3 */
+		if(!is_8_3(short_name, True)) {
+			if(!name_map_mangle(short_name,True,True,SNUM(conn)))
+				*short_name = '\0';
+		}
+		strupper(short_name);
+		l = dos_PutUniCode(pdata + 4, short_name, sizeof(pstring), False);
+		data_size = 4 + l;
+		SIVAL(pdata,0,l);
+		break;
+	}
+
+	case SMB_QUERY_FILE_NAME_INFO:
+		/*
+		 * The first part of this code is essential
+		 * to get security descriptors to work on mapped
+		 * drives. Don't ask how I discovered this unless
+		 * you like hearing about me suffering.... :-). JRA.
+		 */
+
+		if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
+			l = l*2;
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			dos_PutUniCode(pdata + 4, "\\",sizeof(pstring), False);
+		} else {
+			pstrcpy(pdata+4,fname);
+		}
+		data_size = 4 + l;
+		SIVAL(pdata,0,l);
+		break;
+
+	case SMB_FILE_ALLOCATION_INFORMATION:
+	case SMB_FILE_END_OF_FILE_INFORMATION:
+	case SMB_QUERY_FILE_ALLOCATION_INFO:
+	case SMB_QUERY_FILE_END_OF_FILEINFO:
+		data_size = 8;
+		SOFF_T(pdata,0,size);
+		break;
+
+	case SMB_QUERY_FILE_ALL_INFO:
+		put_long_date(pdata,c_time);
+		put_long_date(pdata+8,sbuf.st_atime);
+		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+		SIVAL(pdata,32,mode);
+		pdata += 40;
+		SOFF_T(pdata,0,size);
+		SOFF_T(pdata,8,size);
+		SIVAL(pdata,16,sbuf.st_nlink);
+		CVAL(pdata,20) = delete_pending;
+		CVAL(pdata,21) = (mode&aDIR)?1:0;
+		pdata += 24;
+		SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
+		pdata += 8; /* index number */
+		pdata += 4; /* EA info */
+		if (mode & aRONLY)
+			SIVAL(pdata,0,0xA9);
+		else
+			SIVAL(pdata,0,0xd01BF);
+		pdata += 4;
+		SOFF_T(pdata,0,pos); /* current offset */
+		pdata += 8;
+		SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
+		pdata += 4;
+		pdata += 4; /* alignment */
+		SIVAL(pdata,0,l);
+		pstrcpy(pdata+4,fname);
+		pdata += 4 + l;
+		data_size = PTR_DIFF(pdata,(*ppdata));
+		break;
+
+	case SMB_FILE_INTERNAL_INFORMATION:
+		/* This should be an index number - looks like dev/ino to me :-) */
+		SIVAL(pdata,0,sbuf.st_dev);
+		SIVAL(pdata,4,sbuf.st_ino);
 		data_size = 8;
 		break;
 
-	case 1007:
-		SIVAL(pdata,0,0); /* ??? */
-		data_size = 4;
-		break;
-
-	case 1008:
+	case SMB_FILE_ACCESS_INFORMATION:
 		SIVAL(pdata,0,0x12019F); /* ??? */
 		data_size = 4;
 		break;
 
-	case 1009:
+	case SMB_FILE_NAME_INFORMATION:
 		/* Pathname with leading '\'. */
 		{
 			pstring new_fname;
@@ -1622,19 +1607,23 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-	case 1014:
-		SIVAL(pdata,0,0); /* ??? */
-		SIVAL(pdata,4,0); /* ??? */
-		data_size = 8;
+	case SMB_FILE_DISPOSITION_INFORMATION:
+		data_size = 1;
+		CVAL(pdata,0) = delete_pending;
 		break;
 
-	case 1016:
-		SIVAL(pdata,0,0); /* ??? */
+	case SMB_FILE_POSITION_INFORMATION:
+		data_size = 8;
+		SOFF_T(pdata,0,pos);
+		break;
+
+	case SMB_FILE_MODE_INFORMATION:
+		SIVAL(pdata,0,mode);
 		data_size = 4;
 		break;
 
-	case 1017:
-		SIVAL(pdata,0,0); /* ??? */
+	case SMB_FILE_ALIGNMENT_INFORMATION:
+		SIVAL(pdata,0,0); /* No alignment needed. */
 		data_size = 4;
 		break;
 
@@ -1686,56 +1675,54 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 		break;
 
-	case 1028:
+	case SMB_FILE_COMPRESSION_INFORMATION:
 		SOFF_T(pdata,0,size);
 		SIVAL(pdata,8,0); /* ??? */
 		SIVAL(pdata,12,0); /* ??? */
 		data_size = 16;
 		break;
 
-	case 1034:
+	case SMB_FILE_NETWORK_OPEN_INFORMATION:
 		put_long_date(pdata,c_time);
 		put_long_date(pdata+8,sbuf.st_atime);
 		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
 		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-		SIVAL(pdata,32,0x20); /* ??? */
-		SIVAL(pdata,36,0); /* ??? */
+		SOFF_T(pdata,32,0x20); /* Allocation size. */
 		SOFF_T(pdata,40,size);
 		SIVAL(pdata,48,mode);
 		SIVAL(pdata,52,0); /* ??? */
 		data_size = 56;
 		break;
 
-	case 1035:
+	case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
 		SIVAL(pdata,0,mode);
 		SIVAL(pdata,4,0);
 		data_size = 8;
 		break;
 
+#if 0
 	/*
-	 * End new completely undocumented info levels... JRA.
+	 * NT4 server just returns "invalid query" to this - if we try to answer 
+	 * it then NTws gets a BSOD! (tridge).
 	 */
 
-#if 0
-      /* NT4 server just returns "invalid query" to this - if we try to answer 
-	 it then NTws gets a BSOD! (tridge) */
-    case SMB_QUERY_FILE_STREAM_INFO:
-      data_size = 24 + l;
-      SIVAL(pdata,0,pos);
-      SIVAL(pdata,4,size);
-      SIVAL(pdata,12,size);
-      SIVAL(pdata,20,l);	
-      pstrcpy(pdata+24,fname);
-      break;
+	case SMB_QUERY_FILE_STREAM_INFO:
+		data_size = 24 + l;
+		SIVAL(pdata,0,pos);
+		SIVAL(pdata,4,size);
+		SIVAL(pdata,12,size);
+		SIVAL(pdata,20,l);	
+		pstrcpy(pdata+24,fname);
+		break;
 #endif
 
-    default:
-      return(ERROR(ERRDOS,ERRunknownlevel));
-    }
+	default:
+		return(ERROR(ERRDOS,ERRunknownlevel));
+	}
 
-  send_trans2_replies( outbuf, bufsize, params, 2, *ppdata, data_size);
+	send_trans2_replies( outbuf, bufsize, params, 2, *ppdata, data_size);
 
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
@@ -1925,8 +1912,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
-	case 1019:
-	case 1020:
+	case SMB_FILE_ALLOCATION_INFORMATION:
     case SMB_SET_FILE_ALLOCATION_INFO:
     {
       int ret = -1;
@@ -1981,6 +1967,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
+	case SMB_FILE_END_OF_FILE_INFORMATION:
     case SMB_SET_FILE_END_OF_FILE_INFO:
     {
       size = IVAL(pdata,0);
