@@ -1,0 +1,199 @@
+.TH "winbindd " "1" "8 May 2000" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+winbindd \- Name Service Switch daemon for resolving names from NT servers
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBwinbindd\fP [-d debuglevel] [-i]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite version 3\&.0 and describes
+functionality not yet implemented in the main version of Samba\&.
+.PP 
+\fBwinbindd\fP is a daemon that provides a service for the Name Service
+Switch capability that is present in most modern C libraries\&.  The Name
+Service Switch allows user and system information to be obtained from
+different databases services such as NIS or DNS\&.  The exact behaviour can
+be configured throught the \f(CW/etc/nsswitch\&.conf\fP file\&.  Users and groups
+are allocated as they are resolved to a range of user and group ids
+specified by the administrator of the Samba system\&.  
+.PP 
+The service provided by \fBwinbindd\fP is called `winbind\' and can be used to
+resolve user and group information from a Windows NT server\&.  
+.PP 
+The following nsswitch databases are implemented by the \fBwinbindd\fP
+service:
+.PP 
+.IP 
+.IP "passwd" 
+.IP 
+User information traditionally stored in the \fBpasswd(5)\fP file and used by
+\fBgetpwent(3)\fP functions\&.
+.IP 
+.IP "group" 
+.IP 
+Group information traditionally stored in the \fBgroup(5)\fP file and used by
+\fBgetgrent(3)\fP functions\&.
+.IP 
+.PP 
+For example, the following simple configuration in the
+\f(CW/etc/nsswitch\&.conf\fP file can be used to initially resolve user and group
+information from \f(CW/etc/passwd\fP and \f(CW/etc/group\fP and then from the
+Windows NT server\&.
+.PP 
+\f(CWpasswd:         files winbind\fP
+.PP 
+\f(CWgroup:          files winbind\fP
+.PP 
+.SH "OPTIONS" 
+.PP 
+The following options are available to the \fBwinbindd\fP daemon:
+.PP 
+.IP 
+.IP "\fB-d debuglevel\fP" 
+Sets the debuglevel to an integer between 0 and 100\&. 0 is for no debugging
+and 100 is for reams and reams\&. To submit a bug report to the Samba Team,
+use debug level 100 (see \fBBUGS\&.txt\fP)\&.  
+.IP 
+.IP "\fB-i\fP" 
+Tells winbindd to not become a daemon and detach from the current terminal\&.
+This option is used by developers when interactive debugging of winbindd is
+required\&.
+.IP 
+.PP 
+.SH "NAME AND ID RESOLUTION" 
+.PP 
+Users and groups on a Windows NT server are assigned a relative id (rid)
+which is unique for the domain when the user or group is created\&.  To
+convert the Windows NT user or group into a unix user or group, a mapping
+between rids and unix user and group ids is required\&.  This is one of the
+jobs that \fBwinbindd\fP performs\&.
+.PP 
+As \fBwinbindd\fP users and groups are resolved from a server, user and group
+ids are allocated from a specified range\&.  This is done on a first come,
+first served basis, although all existing users and groups will be mapped
+as soon as a client performs a user or group enumeration command\&.  The
+allocated unix ids are stored in a database file under the Samba lock
+directory and will be remembered\&.
+.PP 
+WARNING: The rid to unix id database is the only location where the user
+and group mappings are stored by \fBwinbindd\fP\&.  If this file is deleted or
+corrupted, there is no way for \fBwinbindd\fP to determine which user and
+group ids correspond to Windows NT user and group rids\&.
+.PP 
+.SH "CONFIGURATION" 
+.PP 
+Configuration of the \fBwinbindd\fP daemon is done through configuration
+parameters in the \fBsmb\&.conf\fP file\&.  All parameters
+should be specified in the [global] section of
+\fBsmb\&.conf\fP\&.
+.PP 
+.IP 
+.IP "winbind uid" 
+.IP 
+The winbind uid parameter specifies the range of user ids that are
+allocated by the \fBwinbindd\fP daemon\&.  This range of
+ids should have no existing local or nis users within it as strange
+conflicts can occur otherwise\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind uid = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW     winbind uid = 10000-20000\fP
+.IP 
+.IP "winbind gid" 
+.IP 
+The winbind gid parameter specifies the range of group ids that are
+allocated by the \fBwinbindd\fP daemon\&.  This range of
+group ids should have no existing local or nis groups within it as strange
+conflicts can occur otherwise\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind gid = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW     winbind gid = 10000-20000\fP
+.IP 
+.IP "winbind cache time" 
+.IP 
+This parameter specifies the number of seconds the
+\fBwinbindd\fP daemon will cache user and group
+information before querying a Windows NT server again\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind cache type = 15\fP
+.IP 
+.IP "template homedir" 
+.IP 
+When filling out the user information for a Windows NT user, the
+\fBwinbindd\fP daemon uses this parameter to fill in
+the home directory for that user\&.  If the string \f(CW%D\fP is present it is
+substituted with the user\'s Windows NT domain name\&.  If the string \f(CW%U\fP
+is present it is substituted with the user\'s Windows NT user name\&.
+.IP 
+\fBDefault:\fP
+\f(CW     template homedir = /home/%D/%U\fP
+.IP 
+.IP "template shell" 
+.IP 
+When filling out the user information for a Windows NT user, the
+\fBwinbindd\fP daemon uses this parameter to fill in
+the home directory for that user\&.  If the string \f(CW%D\fP is present it is
+substituted with the user\'s Windows NT domain name\&.  If the string \f(CW%U\fP
+is present it is substituted with the user\'s Windows NT user name\&.
+.IP 
+\fBDefault:\fP
+\f(CW     template homedir = /home/%D/%U\fP
+.IP 
+.PP 
+.SH "FILES" 
+.PP 
+The following files are relevant to the operation of the \fBwinbindd\fP
+daemon\&.
+.PP 
+.IP 
+.IP "/etc/nsswitch\&.conf(5)" 
+.IP 
+Name service switch configuration file\&.
+.IP 
+.IP "/tmp/\&.winbindd/pipe" 
+.IP 
+The UNIX pipe over which clients communicate with the \fBwinbindd\fP program\&.
+For security reasons, the winbind client will only attempt to connect to the
+\fBwinbindd\fP daemon if both the \f(CW/tmp/\&.winbindd\fP directory and
+\f(CW/tmp/\&.winbindd/pipe\fP file are owned by root\&.
+.IP 
+.IP "/lib/libnss_winbind\&.so\&.X" 
+.IP 
+Implementation of name service switch library\&. 
+.IP 
+.IP "$LOCKDIR/winbindd_idmap\&.tdb" 
+.IP 
+Storage for the Windows NT rid to UNIX user/group id mapping\&.  If this file
+is damaged or destroyed then the mappings will be lost\&.
+.IP 
+The lock directory is specified when Samba is initially compiled using the
+\f(CW--with-lockdir\fP option\&.  This directory is by default
+\f(CW/usr/local/samba/var/locks\fP\&.
+.IP 
+.IP "$LOCKDIR/winbindd_cache\&.tdb" 
+.IP 
+Storage for cached user and group information\&.
+.IP 
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBsamba(7)\fP, \fBsmb\&.conf(5)\fP, 
+\fBnsswitch\&.conf(5)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell samba-bugs@samba\&.org\&. Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed\&.
+.PP 
+Winbindd was written by Tim Potter\&.
