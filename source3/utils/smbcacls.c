@@ -5,6 +5,7 @@
    
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter      2000
+   Copyright (C) Jeremy Allison  2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +25,8 @@
 #include "includes.h"
 
 static fstring password;
-static fstring username;
+static pstring username;
+static pstring owner_username;
 static fstring server;
 static int got_pass;
 static int test_args;
@@ -33,7 +35,8 @@ static int test_args;
    than going via LSA calls to resolve them */
 static int numeric;
 
-enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD};
+enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD };
+enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 
 struct perm_value {
 	char *perm;
@@ -467,6 +470,44 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 }
 
 /***************************************************** 
+Change the ownership or group ownership of a file. Just
+because the NT docs say this can't be done :-). JRA.
+*******************************************************/
+
+static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *filename, char *new_username)
+{
+	int fnum;
+	DOM_SID sid;
+	SEC_DESC *sd, *old;
+	size_t sd_size;
+
+	fnum = cli_nt_create(cli, filename, READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
+	if (fnum == -1) {
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+		return;
+	}
+
+	if (!StringToSid(&sid, new_username))
+		return;
+
+	old = cli_query_secdesc(cli, fnum);
+
+	sd = make_sec_desc(old->revision,
+				(change_mode == REQUEST_CHOWN) ? &sid : old->owner_sid,
+				(change_mode == REQUEST_CHGRP) ? &sid : old->grp_sid,
+			   NULL, old->dacl, &sd_size);
+
+	if (!cli_set_secdesc(cli, fnum, sd)) {
+		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
+	}
+
+	free_sec_desc(&sd);
+	free_sec_desc(&old);
+
+	cli_close(cli, fnum);
+}
+
+/***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
 static void cacl_set(struct cli_state *cli, char *filename, 
@@ -475,7 +516,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	int fnum;
 	SEC_DESC *sd, *old;
 	int i, j;
-	unsigned sd_size;
+	size_t sd_size;
 
 	sd = sec_desc_parse(the_acl);
 
@@ -677,6 +718,8 @@ static void usage(void)
 \t-M <acls>               modify an acl\n\
 \t-A <acls>               add an acl\n\
 \t-S <acls>               set acls\n\
+\t-C username             change ownership of a file\n\
+\t-G username             change group ownership of a file\n\
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
 \n\
@@ -704,6 +747,7 @@ You can string acls together with spaces, commas or newlines\n\
 	struct cli_state *cli;
 	enum acl_mode mode;
 	char *the_acl = NULL;
+	enum chown_mode change_mode = REQUEST_NONE;
 
 	setlinebuf(stdout);
 
@@ -736,7 +780,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:t")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:t")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -766,6 +810,16 @@ You can string acls together with spaces, commas or newlines\n\
 		case 'A':
 			the_acl = optarg;
 			mode = ACL_ADD;
+			break;
+
+		case 'C':
+			pstrcpy(owner_username,optarg);
+			change_mode = REQUEST_CHOWN;
+			break;
+
+		case 'G':
+			pstrcpy(owner_username,optarg);
+			change_mode = REQUEST_CHGRP;
 			break;
 
 		case 'n':
@@ -799,7 +853,9 @@ You can string acls together with spaces, commas or newlines\n\
 		if (!cli) exit(1);
 	}
 
-	if (the_acl) {
+	if (change_mode != REQUEST_NONE) {
+		owner_set(cli, change_mode, filename, owner_username);
+	} else if (the_acl) {
 		cacl_set(cli, filename, the_acl, mode);
 	} else {
 		cacl_dump(cli, filename);
