@@ -1008,7 +1008,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
     if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
-      pstrcpy(s->domain,lp_workgroup()); 
+      fstrcpy(s->domain,lp_workgroup()); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -1955,7 +1955,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     SAM_ACCOUNT *hnd = NULL;
 
     if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
-       change_lanman_password(hnd,(unsigned char *)pass1,(unsigned char *)pass2))
+       change_lanman_password(hnd,pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
