@@ -349,6 +349,7 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info3;
 
+	ZERO_STRUCT(info3);
 	info3.cversion = driver->version;
 	fstrcpy(info3.environment,driver->environment);
 	fstrcpy(info3.driverpath,driver->driverpath);
@@ -377,10 +378,16 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.name, lp_printerdriver(snum));
 	fstrcpy(info.defaultdatatype, "RAW");
 	
-	if ((info.dependentfiles=(fstring *)malloc(sizeof(fstring))) == NULL)
+	fstrcpy(info.driverpath, "DUMMY.DLL");
+	fstrcpy(info.datafile, "DUMMY.PPD");
+	fstrcpy(info.configfile, "DUMMY.DLL");
+	fstrcpy(info.helpfile, "DUMMY.HLP");
+
+	if ((info.dependentfiles=(fstring *)malloc(2*sizeof(fstring))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
-	fstrcpy(info.dependentfiles[0], "");
+	memset(info.dependentfiles, '\0', 2*sizeof(fstring));
+	fstrcpy(info.dependentfiles[0], "DUMMY.PPD");
 
 	*info_ptr = memdup(&info, sizeof(info));
 	
@@ -1367,6 +1374,7 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			{
 				info6=driver.info_6;
 				safe_free(info6->dependentfiles);
+				safe_free(info6->previousnames);
 				ZERO_STRUCTP(info6);
 				safe_free(info6);
 				success=0;

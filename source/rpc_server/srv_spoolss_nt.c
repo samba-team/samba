@@ -577,11 +577,11 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	switch (level) {
 		case 3: 
 			printer->info_3=NULL;
-			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));
+			uni_2_asc_printer_driver_3(uni->info_3, &printer->info_3);
 			break;
 		case 6: 
 			printer->info_6=NULL;
-			uni_2_asc_printer_driver_6(uni->info_6, &(printer->info_6));
+			uni_2_asc_printer_driver_6(uni->info_6, &printer->info_6);
 			break;
 		default:
 			break;

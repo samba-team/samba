@@ -3759,8 +3759,6 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("dummy1", ps, depth, &il->dummy1))
-		return False;
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
 	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
@@ -3836,18 +3834,18 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!prs_align(ps))
 		return False;
-        if (il->dependentfiles_ptr) {
-	if(!smb_io_buffer5("dependentfiles", &il->dependentfiles, ps, depth))
-		return False;
-	if(!prs_align(ps))
-		return False;
-        }
-        if (il->previousnames_ptr) {
-	if(!smb_io_buffer5("previousnames", &il->previousnames, ps, depth))
-		return False;
-	if(!prs_align(ps))
-		return False;
-        }
+	if (il->dependentfiles_ptr) {
+		if(!smb_io_buffer5("dependentfiles", &il->dependentfiles, ps, depth))
+			return False;
+		if(!prs_align(ps))
+			return False;
+	}
+	if (il->previousnames_ptr) {
+		if(!smb_io_buffer5("previousnames", &il->previousnames, ps, depth))
+			return False;
+		if(!prs_align(ps))
+			return False;
+	}
 	if(!smb_io_unistr2("mfgname", &il->mfgname, il->mfgname_ptr, ps, depth))
 		return False;
 	if(!prs_align(ps))
@@ -3864,7 +3862,6 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!prs_align(ps))
 		return False;
-
 
 	return True;
 }
@@ -4099,14 +4096,14 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 
 	d->version=uni->version;
 
-	unistr2_to_ascii(d->name,            &(uni->name),            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &(uni->environment),     sizeof(d->environment)-1);
-	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &(uni->defaultdatatype), sizeof(d->defaultdatatype)-1);
+	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
+	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
+	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
+	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
+	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
+	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
+	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
+	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->version));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -4118,8 +4115,8 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_dosarray(&(uni->dependentfiles), &(d->dependentfiles) );
-	uniarray_2_dosarray(&(uni->previousnames), &(d->previousnames) );
+	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
+	uniarray_2_dosarray(&uni->previousnames, &d->previousnames );
 
 	return True;
 }
