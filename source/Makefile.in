@@ -114,7 +114,7 @@ LIBSTATUS_OBJ = lib/util_status.o
 LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o \
           lib/md5.o lib/hmacmd5.o lib/md4.o \
-          lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
+          lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o lib/time.o \
 		  lib/ufc.o lib/util.o lib/genrand.o lib/username.o \
 		lib/vuser.o \
