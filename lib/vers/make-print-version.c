@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,10 +39,10 @@ RCSID("$Id$");
 #include <stdio.h>
 
 #ifdef KRB5
-extern char *heimdal_version;
+extern const char *heimdal_version;
 #endif
 #ifdef KRB4
-extern char *krb4_version;
+extern const char *krb4_version;
 #endif
 #include <version.h>
 
