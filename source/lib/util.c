@@ -1332,8 +1332,10 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   char *p;
   pstring t_pattern, t_filename, te_pattern, te_filename;
   fstring ebase,eext,sbase,sext;
-
   BOOL matched = False;
+
+  /* special case - if it is exactly the same then it always matches! */
+  if (strcmp(str, regexp) == 0) return True;
 
   /* Make local copies of str and regexp */
   pstrcpy(t_pattern,regexp);
@@ -1410,7 +1412,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         if(rp)
           *rp = '\0';
 
-        if(cp1[strlen(cp1)-1] == '*')
+        if(cp1[0] && cp1[strlen(cp1)-1] == '*')
           last_wcard_was_star = True;
         else
           last_wcard_was_star = False;
