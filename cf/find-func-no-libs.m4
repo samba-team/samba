@@ -26,7 +26,7 @@ fi
 
 eval "ac_res=\$ac_cv_funclib_$1"
 
-# autoheader tricks *sigh*
+dnl autoheader tricks *sigh*
 : << END
 @@@funcs="$funcs $1"@@@
 @@@libs="$libs $2"@@@

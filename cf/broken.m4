@@ -10,7 +10,7 @@ do
 AC_CHECK_FUNC($ac_func, [
 ac_tr_func=HAVE_[]upcase($ac_func)
 AC_DEFINE_UNQUOTED($ac_tr_func)],[LIBOBJS="$LIBOBJS ${ac_func}.o"])
-# autoheader tricks *sigh*
+dnl autoheader tricks *sigh*
 : << END
 @@@funcs="$funcs $1"@@@
 END
