@@ -35,6 +35,8 @@ static struct cmd_list {
 
 TALLOC_CTX *global_ctx;
 
+extern pstring user_socket_options;
+
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
@@ -87,7 +89,7 @@ static char **completion_fn(char *text, int start, int end)
 	return matches;
 }
 
-static char* next_command (char** cmdstr)
+static char* next_command(char** cmdstr)
 {
 	static pstring 		command;
 	char			*p;
@@ -382,6 +384,26 @@ static NTSTATUS process_cmd(struct vfs_state *vfs, char *cmd)
 	return result;
 }
 
+static void process_file(struct vfs_state *pvfs, char *filename) {
+	FILE *file;
+	char command[3 * PATH_MAX];
+
+	if (*filename == '-') {
+		file = stdin;
+	} else {
+		file = fopen(filename, "r");
+		if (file == NULL) {
+			printf("vfstest: error reading file (%s)!", filename);
+			printf("errno n.%d: %s", errno, strerror(errno));
+			exit(-1);
+		}
+	}
+
+	while (fgets(command, 3 * PATH_MAX, file) != NULL) {
+		process_cmd(pvfs, command);
+	}
+}
+
 void exit_server(char *reason)
 {
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
@@ -396,9 +418,57 @@ int smbd_server_fd(void)
 		return server_fd;
 }
 
+/****************************************************************************
+ Reload the services file.
+**************************************************************************/
+
 BOOL reload_services(BOOL test)
 {
-	return True;
+	BOOL ret;
+	
+	if (lp_loaded()) {
+		pstring fname;
+		pstrcpy(fname,lp_configfile());
+		if (file_exist(fname, NULL) &&
+		    !strcsequal(fname, dyn_CONFIGFILE)) {
+			pstrcpy(dyn_CONFIGFILE, fname);
+			test = False;
+		}
+	}
+
+	reopen_logs();
+
+	if (test && !lp_file_list_changed())
+		return(True);
+
+	lp_killunused(conn_snum_used);
+	
+	ret = lp_load(dyn_CONFIGFILE, False, False, True);
+
+	load_printers();
+
+	/* perhaps the config filename is now set */
+	if (!test)
+		reload_services(True);
+
+	reopen_logs();
+
+	load_interfaces();
+
+	{
+		if (smbd_server_fd() != -1) {      
+			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+			set_socket_options(smbd_server_fd(), user_socket_options);
+		}
+	}
+
+	mangle_reset_cache();
+	reset_stat_cache();
+
+	/* this forces service parameters to be flushed */
+	set_current_service(NULL,True);
+
+	return (ret);
 }
 
 /* Print usage information */
@@ -407,6 +477,7 @@ static void usage(void)
 	printf("Usage: vfstest [options]\n");
 
 	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
+	printf("\t-f or --file filename  execute a set of operations as described in the file\n");
 	printf("\t-d or --debug debuglevel	   set the debuglevel\n");
 	printf("\t-l or --logfile logfile	    logfile to use instead of stdout\n");
 	printf("\t-h or --help		       Print this help message.\n");
@@ -420,19 +491,20 @@ int main(int argc, char *argv[])
 	BOOL 			interactive = True;
 	int 			opt;
 	static char		*cmdstr = "";
-	static char *opt_logfile=NULL;
+	static char		*opt_logfile=NULL;
 	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
 	extern BOOL 		AllowDebugChange;
 	static struct vfs_state vfs;
 	int i;
-
+	static char		*filename = "";
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
+		{"file",	'f', POPT_ARG_STRING,	&filename},
 		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
 		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
@@ -473,6 +545,9 @@ int main(int argc, char *argv[])
 
 	poptFreeContext(pc);
 
+	/* TODO: check output */
+	reload_services(False);
+
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("vfstest", interactive);
@@ -495,7 +570,16 @@ int main(int argc, char *argv[])
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
-       /* Do anything specified with -c */
+	/* some advanced initiliazation stuff */
+	smbd_vfs_init(vfs.conn);
+
+	/* Do we have a file input? */
+	if (filename[0]) {
+		process_file(&vfs, filename);
+		return 0;
+	}
+
+	/* Do anything specified with -c */
 	if (cmdstr[0]) {
 		char    *cmd;
 		char    *p = cmdstr;
@@ -506,10 +590,6 @@ int main(int argc, char *argv[])
 		
 		return 0;
 	}
-
-	/* Initialize VFS */
-	vfs.conn->vfs_private = NULL;
-	smbd_vfs_init(vfs.conn);
 
 	/* Loop around accepting commands */
 
