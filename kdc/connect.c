@@ -114,7 +114,7 @@ add_standard_ports (int family)
 	add_port_service(family, "http", 80, "tcp");
 #ifdef KASERVER
     if (enable_kaserver)
-	add_port_service(family, "afs3-kaserver", 7004 "udp");
+	add_port_service(family, "afs3-kaserver", 7004, "udp");
 #endif
 }
 
