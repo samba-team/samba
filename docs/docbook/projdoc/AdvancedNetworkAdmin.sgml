@@ -14,8 +14,10 @@
         <pubdate>April 1 2003</pubdate>
 </chapterinfo>
 
-<sect1>
 <title>System Policies</title>
+
+<sect1>
+<title>Basic System Policy Info</title>
 
 <para>
 Much of the information necessary to implement System Policies and
@@ -154,8 +156,8 @@ copy of the registry it stores on each Win9x/Me machine. Hence, you will
 occasionally notice things changing back to the original settings.
 </para>
 
-</sect2/
 </sect3>
+</sect2>
 </sect1>
 
 <sect1>
@@ -497,7 +499,6 @@ turns a profile into a mandatory one.
 The case of the profile is significant.  The file must be called
 NTuser.DAT or, for a mandatory profile, NTuser.MAN.
 </para>
-</note>
 
 </sect2>
 
@@ -774,6 +775,6 @@ changed).</para></listitem>
 </note>
 
 </sect2>
+</sect1>
 </chapter>
 
-</sect1>

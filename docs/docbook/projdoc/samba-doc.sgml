@@ -26,7 +26,7 @@
 <!ENTITY Compiling SYSTEM "Compiling.sgml">
 <!ENTITY unicode SYSTEM "unicode.sgml">
 <!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
-<!ENTITY AdvancedNetworkManagement SYSTEM "AdvancedNetworkAdmin.sgml">
+<!ENTITY AdvancedNetworkAdmin SYSTEM "AdvancedNetworkAdmin.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -108,7 +108,7 @@ for various environments.
 <para>Samba has several features that you might want or might not want to use. The chapters in this 
 part each cover one specific feature.</para>
 </partintro>
-&AdvancedNetworkManagment;
+&AdvancedNetworkAdmin;
 &NT-Security;
 &GROUP-MAPPING-HOWTO;
 &Samba-PAM;
