@@ -252,6 +252,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
     krb5_data outbuf;
     krb5_keyblock *key_block;
     char *name;
+    krb5_principal server;
 
     if (cnt-- < 1)
 	return;
@@ -262,8 +263,34 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	auth_context = NULL;
 
-	r = krb5_rd_req(context, &auth_context, &auth, 
-			NULL, NULL, NULL, &ticket);
+	r = krb5_auth_con_init (context, &auth_context);
+	if (r)
+	    abort ();
+
+
+	r = krb5_auth_con_setaddrs_from_fd (context,
+					    auth_context,
+					    0);
+	if (r)
+	    abort ();
+
+	r = krb5_sock_to_principal (context,
+				    0,
+				    "host",
+				    KRB5_NT_SRV_HST,
+				    &server);
+	if (r)
+	    abort ();
+
+
+	r = krb5_rd_req(context,
+			&auth_context,
+			&auth, 
+			server,
+			NULL,
+			NULL,
+			&ticket);
+	krb5_free_principal (context, server);
 
 	if (r) {
 	    char *errbuf;
