@@ -28,6 +28,36 @@ fstring remote_proto="UNKNOWN";
 fstring remote_machine="";
 extern pstring global_myname;
 
+void set_local_machine_name(const char* local_name)
+{
+	fstring tmp_local_machine;
+
+	fstrcpy(tmp_local_machine,local_name);
+	trim_string(tmp_local_machine," "," ");
+	strlower(tmp_local_machine);
+	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
+}
+
+void set_remote_machine_name(const char* remote_name)
+{
+	fstring tmp_remote_machine;
+
+	fstrcpy(tmp_remote_machine,remote_name);
+	trim_string(tmp_remote_machine," "," ");
+	strlower(tmp_remote_machine);
+	alpha_strcpy(remote_machine,tmp_remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
+}
+
+const char* get_remote_machine_name(void) 
+{
+	return remote_machine;
+}
+
+const char* get_local_machine_name(void) 
+{
+	return local_machine;
+}
+
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
  Return the number of characters by which the pointer should be advanced.
@@ -188,14 +218,15 @@ static char *automount_path(const char *user_name)
  moved out to a separate function.
 *******************************************************************/
 
-static char *automount_server(const char *user_name)
+static const char *automount_server(const char *user_name)
 {
 	static pstring server_name;
+	const char *local_machine_name = get_local_machine_name(); 
 
 	/* use the local machine name as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	if (*local_machine)
-		pstrcpy(server_name, local_machine);
+	if (local_machine_name && *local_machine_name)
+		pstrcpy(server_name, local_machine_name);
 	else
 		pstrcpy(server_name, global_myname);
 	
@@ -229,6 +260,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 	char *p, *s;
 	fstring pidstr;
 	struct passwd *pass;
+	const char *local_machine_name = get_local_machine_name();
 
 	for (s=str; (p=strchr_m(s, '%'));s=p) {
 		fstring tmp_str;
@@ -261,8 +293,8 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			string_sub(p,"%I", client_addr(),l);
 			break;
 		case 'L' : 
-			if (*local_machine)
-				string_sub(p,"%L", local_machine,l); 
+			if (local_machine_name && *local_machine_name)
+				string_sub(p,"%L", local_machine_name,l); 
 			else
 				string_sub(p,"%L", global_myname,l); 
 			break;
@@ -286,7 +318,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			string_sub(p,"%h", myhostname(),l);
 			break;
 		case 'm' :
-			string_sub(p,"%m", remote_machine,l);
+			string_sub(p,"%m", get_remote_machine_name(),l);
 			break;
 		case 'v' :
 			string_sub(p,"%v", VERSION,l);
@@ -381,6 +413,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 	char *b, *p, *s, *t, *r, *a_string;
 	fstring pidstr;
 	struct passwd *pass;
+	const char *local_machine_name = get_local_machine_name();
 
 	a_string = strdup(str);
 	if (a_string == NULL) {
@@ -415,8 +448,8 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			t = realloc_string_sub(t, "%I", client_addr());
 			break;
 		case 'L' : 
-			if (*local_machine)
-				t = realloc_string_sub(t, "%L", local_machine); 
+			if (local_machine_name && *local_machine_name)
+				t = realloc_string_sub(t, "%L", local_machine_name); 
 			else
 				t = realloc_string_sub(t, "%L", global_myname); 
 			break;

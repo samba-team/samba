@@ -385,7 +385,6 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	uint32 auth_flags = AUTH_FLAG_NONE;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
-	extern fstring remote_machine;
 
 	/* we must have setup the auth context by now */
 	if (!ntlmssp_auth_context) {
@@ -422,7 +421,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
-	fstrcpy(remote_machine, machine);
+
+	set_remote_machine_name(machine);
+
 	reload_services(True);
 
 #if 0

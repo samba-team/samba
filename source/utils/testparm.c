@@ -175,7 +175,6 @@ int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	extern int optind;
-	extern fstring local_machine;
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
 	static BOOL silent_mode = False;
@@ -183,7 +182,7 @@ int main(int argc, char *argv[])
 	int opt;
 	poptContext pc;
 	static char *term_code = "";
-	static char *new_local_machine = local_machine;
+	static char *new_local_machine = NULL;
 	const char *cname;
 	const char *caddr;
 
@@ -207,8 +206,10 @@ int main(int argc, char *argv[])
 
 	cname = poptGetArg(pc);
 	caddr = poptGetArg(pc);
-
-	fstrcpy(local_machine,new_local_machine);
+	
+	if (new_local_machine) {
+		set_local_machine_name(new_local_machine);
+	}
 
 	dbf = x_stdout;
 	DEBUGLEVEL = 2;

@@ -53,7 +53,6 @@ int reply_special(char *inbuf,char *outbuf)
 	int msg_flags = CVAL(inbuf,1);
 	pstring name1,name2;
 
-	extern fstring local_machine;
 	int len;
 	char name_type = 0;
 	
@@ -84,24 +83,19 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-		fstrcpy(remote_machine,name2);
-		remote_machine[15] = 0;
-		trim_string(remote_machine," "," ");
-		strlower(remote_machine);
-		alpha_strcpy(remote_machine,remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
+		name1[15] = 0;
 
-		fstrcpy(local_machine,name1);
-		len = strlen(local_machine);
+		len = strlen(name2);
 		if (len == 16) {
-			name_type = local_machine[15];
-			local_machine[15] = 0;
+			name_type = name2[15];
+			name2[15] = 0;
 		}
-		trim_string(local_machine," "," ");
-		strlower(local_machine);
-		alpha_strcpy(local_machine,local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
+
+		set_local_machine_name(name1);
+		set_remote_machine_name(name2);
 
 		DEBUG(2,("netbios connect: local=%s remote=%s\n",
-			local_machine, remote_machine ));
+			get_local_machine_name(), get_remote_machine_name() ));
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
