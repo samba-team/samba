@@ -578,7 +578,7 @@ struct termspeeds {
 #endif	/* DECODE_BAUD */
 
 void
-TerminalSpeeds(long *ispeed, long *ospeed)
+TerminalSpeeds(long *input_speed, long *output_speed)
 {
 #ifdef	DECODE_BAUD
     struct termspeeds *tp;
@@ -594,15 +594,15 @@ TerminalSpeeds(long *ispeed, long *ospeed)
     tp = termspeeds;
     while ((tp->speed != -1) && (tp->value < in))
 	tp++;
-    *ispeed = tp->speed;
+    *input_speed = tp->speed;
 
     tp = termspeeds;
     while ((tp->speed != -1) && (tp->value < out))
 	tp++;
-    *ospeed = tp->speed;
+    *output_speed = tp->speed;
 #else	/* DECODE_BAUD */
-	*ispeed = in;
-	*ospeed = out;
+	*input_speed = in;
+	*output_speed = out;
 #endif	/* DECODE_BAUD */
 }
 

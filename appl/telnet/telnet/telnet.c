@@ -731,15 +731,17 @@ suboption()
 	if (SB_EOF())
 	    return;
 	if (SB_GET() == TELQUAL_SEND) {
-	    long ospeed, ispeed;
+	    long output_speed, input_speed;
 	    unsigned char temp[50];
 	    int len;
 
-	    TerminalSpeeds(&ispeed, &ospeed);
+	    TerminalSpeeds(&input_speed, &output_speed);
 
 	    snprintf((char *)temp, sizeof(temp),
 		     "%c%c%c%c%u,%u%c%c", IAC, SB, TELOPT_TSPEED,
-		     TELQUAL_IS, (unsigned)ospeed, (unsigned)ispeed, IAC, SE);
+		     TELQUAL_IS,
+		     (unsigned)output_speed,
+		     (unsigned)input_speed, IAC, SE);
 	    len = strlen((char *)temp+4) + 4;	/* temp[3] is 0 ... */
 
 	    if (len < NETROOM()) {

@@ -250,7 +250,7 @@ void TerminalSaveState(void);
 void TerminalDefaultChars(void);
 void TerminalNewMode(int f);
 cc_t *tcval(int func);
-void TerminalSpeeds(long *ispeed, long *ospeed);
+void TerminalSpeeds(long *input_speed, long *output_speed);
 int TerminalWindowSize(long *rows, long *cols);
 int NetClose(int fd);
 void NetNonblockingIO(int fd, int onoff);
