@@ -91,8 +91,8 @@ BOOL gencache_shutdown(void)
 
 
 /**
- * Add one entry to the cache file.
- * (it part of tridge's proposed API)
+ * Set an entry in the cache file. If there's no such
+ * one, then add it.
  *
  * @param key string that represents a key of this entry
  * @param value text representation value being cached
@@ -102,7 +102,7 @@ BOOL gencache_shutdown(void)
  *         false on the attempt's failure
  **/
  
-BOOL gencache_add(const char *keystr, const char *value, time_t timeout)
+BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 {
 	int ret;
 	TDB_DATA keybuf, databuf;
@@ -122,7 +122,7 @@ BOOL gencache_add(const char *keystr, const char *value, time_t timeout)
 	           = %s (%d seconds %s)\n", keybuf.dptr, value, ctime(&timeout),
 	           (int)(timeout - time(NULL)), timeout > time(NULL) ? "ahead" : "in the past"));
 		
-	ret = tdb_store(cache, keybuf, databuf, TDB_INSERT);
+	ret = tdb_store(cache, keybuf, databuf, 0);
 	SAFE_FREE(valstr);
 	SAFE_FREE(keybuf.dptr);
 	SAFE_FREE(databuf.dptr);
@@ -133,7 +133,6 @@ BOOL gencache_add(const char *keystr, const char *value, time_t timeout)
 
 /**
  * Set existing entry to the cache file.
- * (it part of tridge's proposed API)
  *
  * @param key string that represents a key of this entry
  * @param value text representation value being cached
@@ -143,7 +142,7 @@ BOOL gencache_add(const char *keystr, const char *value, time_t timeout)
  *         false on the attempt's failure
  **/
 
-BOOL gencache_set(const char *keystr, const char *valstr, time_t timeout)
+BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 {
 	int ret = -1;
 	TDB_DATA keybuf, databuf;
@@ -189,7 +188,6 @@ BOOL gencache_set(const char *keystr, const char *valstr, time_t timeout)
 
 /**
  * Delete one entry from the cache file.
- * (it part of tridge's proposed API)
  *
  * @param key string that represents a key of this entry
  *
@@ -219,11 +217,10 @@ BOOL gencache_del(const char *keystr)
 
 /**
  * Get existing entry from the cache file.
- * (it part of tridge's proposed API)
  *
  * @param key string that represents a key of this entry
  * @param value buffer that is allocated and filled with the entry value
- *        buffer's disposing is done outside
+ *        buffer's disposing must be done outside
  * @param timeout pointer to a time_t that is filled with entry's
  *        timeout
  *
@@ -272,12 +269,14 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
  *
  * @param fn pointer to the function that will be supplied with each single
  *        matching cache entry (key, value and timeout) as an arguments
+ * @param data void pointer to an arbitrary data that is passed directly to the fn
+ *        function on each call
  * @param keystr_pattern pattern the existing entries' keys are matched to
  *
  **/
 
-void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout),
-                      const char* keystr_pattern)
+void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),
+                      void* data, const char* keystr_pattern)
 {
 	TDB_LIST_NODE *node, *first_node;
 	TDB_DATA databuf;
@@ -289,7 +288,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 	if (!gencache_init()) return;
 
-	DEBUG(5, ("Searching cache keys with pattern %s", keystr_pattern));
+	DEBUG(5, ("Searching cache keys with pattern %s\n", keystr_pattern));
 	node = tdb_search_keys(cache, keystr_pattern);
 	first_node = node;
 	
@@ -314,7 +313,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		
 		DEBUG(10, ("Calling function with arguments (key = %s, value = %s, timeout = %s)\n",
 		           keystr, valstr, ctime(&timeout)));
-		fn(keystr, valstr, timeout);
+		fn(keystr, valstr, timeout, data);
 		
 		SAFE_FREE(valstr);
 		SAFE_FREE(entry);
