@@ -195,11 +195,12 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	/*
 	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
 	 * to a trans call. This is not an error and should not
-	 * be treated as such.
+	 * be treated as such. Note that STATUS_NO_MORE_FILES is
+	 * returned when a trans2 findfirst/next finishes.
 	 */
 	status = cli_nt_error(cli);
 	
-	if (NT_STATUS_IS_ERR(status)) {
+	if (NT_STATUS_IS_ERR(status) || NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES)) {
 		cli_signing_trans_stop(cli);
 		return False;
 	}
