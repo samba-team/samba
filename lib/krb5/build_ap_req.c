@@ -34,7 +34,7 @@ krb5_build_ap_req (krb5_context context,
   decode_Ticket(cred->ticket.data, cred->ticket.length, &t);
 
   ap.ticket.enc_part.etype  = t.enc_part.etype;
-  ap.ticket.enc_part.kvno   = NULL;
+  ap.ticket.enc_part.kvno   = t.enc_part.kvno;
   ap.ticket.enc_part.cipher = t.enc_part.cipher;
 
   memcpy(&key, cred->session.contents.data, sizeof(key));
