@@ -150,3 +150,90 @@ char *reg_path_unix2win(char *path)
 	}
 	return path;
 }
+
+/* Open a key by name (including the predefined key name!) */
+WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result)
+{
+	struct registry_key *predef;
+	WERROR error;
+	int predeflength;
+	char *predefname;
+
+	if(strchr(name, '\\')) predeflength = strchr(name, '\\')-name;
+	else predeflength = strlen(name);
+
+	predefname = strndup(name, predeflength);
+	error = reg_get_predefined_key_by_name(handle, predefname, &predef);
+	SAFE_FREE(predefname);
+
+	if(!W_ERROR_IS_OK(error)) {
+		return error;
+	}
+
+	if (strchr(name, '\\')) {
+		return reg_open_key(mem_ctx, predef, strchr(name, '\\')+1, result);
+	} else {
+		*result = predef;
+		return WERR_OK;
+	}
+}
+
+static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, struct registry_key **parent, const char **name)
+{
+	char *parent_name;
+	WERROR error;
+	
+	if (strchr(path, '\\') == NULL) {
+		return WERR_FOOBAR;
+	}
+	
+	parent_name = talloc_strndup(mem_ctx, path, strrchr(path, '\\')-1-path);
+
+	error = reg_open_key_abs(mem_ctx, ctx, parent_name, parent);
+	if (!W_ERROR_IS_OK(error)) {
+		return error;
+	}
+	
+	*name = talloc_strdup(mem_ctx, strchr(path, '\\')+1);
+
+	return WERR_OK;
+}
+
+WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
+{
+	struct registry_key *parent;
+	const char *n;
+	TALLOC_CTX *mem_ctx = talloc_init("reg_key_del_abs");
+	WERROR error;
+	
+	if (!strchr(path, '\\')) {
+		return WERR_FOOBAR;
+	}
+	
+	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
+	if (W_ERROR_IS_OK(error)) {
+		error = reg_key_del(parent, n);
+	}
+
+	talloc_destroy(mem_ctx);
+
+	return error;
+}
+
+WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32 access_mask, SEC_DESC *sec_desc, struct registry_key **result)
+{
+	struct registry_key *parent;
+	const char *n;
+	WERROR error;
+	
+	if (!strchr(path, '\\')) {
+		return WERR_FOOBAR;
+	}
+	
+	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
+	if (W_ERROR_IS_OK(error)) {
+		error = reg_key_add_name(mem_ctx, parent, n, access_mask, sec_desc, result);
+	}
+
+	return error;
+}

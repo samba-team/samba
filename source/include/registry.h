@@ -131,11 +131,11 @@ struct hive_operations {
 
 	/* Key management */
 	WERROR (*add_key)(TALLOC_CTX *, struct registry_key *, const char *name, uint32_t access_mask, SEC_DESC *, struct registry_key **);
-	WERROR (*del_key)(struct registry_key *);
+	WERROR (*del_key)(struct registry_key *, const char *name);
 	WERROR (*flush_key) (struct registry_key *);
 
 	/* Value management */
-	WERROR (*set_value)(struct registry_key *, const char *name, int type, void *data, int len); 
+	WERROR (*set_value)(struct registry_key *, const char *name, uint32 type, void *data, int len); 
 	WERROR (*del_value)(struct registry_key *, const char *valname);
 };
 

@@ -120,18 +120,12 @@ static struct registry_key *cmd_mkkey(TALLOC_CTX *mem_ctx, struct registry_key *
 
 static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
 { 
-	struct registry_key *key;
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmkey <name>\n");
 		return NULL;
 	}
 
-	if(!W_ERROR_IS_OK(reg_open_key(mem_ctx, cur, argv[1], &key))) {
-		fprintf(stderr, "No such subkey '%s'\n", argv[1]);
-		return NULL;
-	}
-
-	if(!W_ERROR_IS_OK(reg_key_del(key))) {
+	if(!W_ERROR_IS_OK(reg_key_del(cur, argv[1]))) {
 		fprintf(stderr, "Error deleting '%s'\n", argv[1]);
 	} else {
 		fprintf(stderr, "Successfully deleted '%s'\n", argv[1]);
@@ -259,9 +253,10 @@ static char **reg_complete_command(const char *text, int end)
 	return matches;
 
 cleanup:
-	while (i >= 0) {
-		free(matches[i]);
-		i--;
+	count--;
+	while (count >= 0) {
+		free(matches[count]);
+		count--;
 	}
 	free(matches);
 	return NULL;
