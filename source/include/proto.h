@@ -4425,6 +4425,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 /*The following definitions come from  tdb/tdb.c  */
 
+void tdb_dump_all(TDB_CONTEXT *tdb);
 void tdb_printfreelist(TDB_CONTEXT *tdb);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
@@ -4444,6 +4445,7 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
@@ -4458,6 +4460,8 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
 int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
+TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+			  int open_flags, mode_t mode);
 
 /*The following definitions come from  utils/nbio.c  */
 

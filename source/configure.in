@@ -415,28 +415,14 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE)
 fi
 
-AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
-    AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
-	samba_cv_errno=yes,samba_cv_have_errno=no)])
-if test x"$samba_cv_errno" = x"yes"; then
-   AC_DEFINE(HAVE_ERRNO_DECL)
-fi
-
-# stupid glibc has the functions but no declaration. grrrr.
-AC_CACHE_CHECK([for setresuid declaration],samba_cv_have_setresuid_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresuid],
-        samba_cv_have_setresuid_decl=yes,samba_cv_have_setresuid_decl=no)])
-if test x"$samba_cv_have_setresuid_decl" = x"yes"; then
-    AC_DEFINE(HAVE_SETRESUID_DECL)
-fi
-
-# stupid glibc has the functions but no declaration. grrrr.
-AC_CACHE_CHECK([for setresgid declaration],samba_cv_have_setresgid_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresgid],
-        samba_cv_have_setresgid_decl=yes,samba_cv_have_setresgid_decl=no)])
-if test x"$samba_cv_have_setresgid_decl" = x"yes"; then
-    AC_DEFINE(HAVE_SETRESGID_DECL)
-fi
+# stupid headers have the functions but no declaration. grrrr.
+AC_HAVE_DECL(errno, [#include <errno.h>])
+AC_HAVE_DECL(setresuid, [#include <unistd.h>])
+AC_HAVE_DECL(setresgid, [#include <unistd.h>])
+AC_HAVE_DECL(asprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
+AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
