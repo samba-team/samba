@@ -2,10 +2,7 @@
 
 RCSID("$Id$");
 
-#include <time.h>
-#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif /* HAVE_SYS_TIME_H */
 #include <signal.h>
 
 /*
@@ -61,7 +58,7 @@ des_clock_rand(unsigned char *data, int size)
     /* Setup signal handler */
     sa.sa_handler = sigALRM;
     sa.sa_flags = 0;
-    sa.sa_mask = 0;
+    sigemptyset(&sa.sa_mask);
     sigaction(SIGALRM, &sa, &osa);
   
     /* Start timer */
