@@ -1,6 +1,3 @@
-!==
-!== cifsntdomain.txt for Samba release 1.9.18alpha8 30 Oct 1997
-!==
 NT Domain Authentication
 ------------------------
 
@@ -12,7 +9,7 @@ Authors:	- Luke Kenneth Casson Leighton (lkcl@switchboard.net)
 		  Copyright (C) 1997 Paul Ashton
 		  Copyright (C) 1997 Duncan Stansfield
 
-Version:	0.020 (26oct97)
+Version:	0.023 (29oct97)
 --------
 
 Distribution:	Unlimited and encouraged, for the purposes of implementation
@@ -652,7 +649,7 @@ The start of each of the NTLSA and NETLOGON named pipes begins with:
 18  ......        start of data (goes on for allocation_hint bytes)
 
 
-MsrpcPacket for both request and response
+RPC_Packet for request, response, bind and bind acknowledgement.
 {
   
   UINT8 versionmaj        # reply same as request (0x05)
@@ -673,7 +670,7 @@ MsrpcPacket for both request and response
 # srvsvc
 #   abstract (0x4B324FC8, 0x01D31670, 0x475A7812, 0x88E16EBF, 0x00000003)
 #   transfer (0x8A885D04, 0x11C91CEB, 0x0008E89F, 0x6048102B, 0x00000002)
-Msrpcface RW
+RPC_Iface RW
 {
   UINT8 byte[16]    # 16 bytes of number
   UINT32 version    # the interface number
@@ -682,7 +679,7 @@ Msrpcface RW
 
 # the remainder of the packet after the header if "type" was Bind
 # in the response header, "type" should be BindAck
-MsrpcReqBind RW
+RPC_ReqBind RW
 {
   UINT16 maxtsize       # maximum transmission fragment size (0x1630)
   UINT16 maxrsize       # max receive fragment size (0x1630)
@@ -690,20 +687,14 @@ MsrpcReqBind RW
   UINT32 numelements    # the number of elements (0x1)
   UINT16 contextid      # presentation context identifier (0x0)
   UINT8 numsyntaxes     # the number of syntaxes (has always been 1?)(0x1)
-  UINT8 padding         # 0 - 1 byte of padding
+  UINT8[]               # 4-byte alignment padding, against SMB header
 
-  * abstractint USE MsrpcIface # num and vers. of interface client is using
-  * transferint USE MsrpcIface # num and vers. of interface to use for replies
+  * abstractint USE RPC_Iface # num and vers. of interface client is using
+  * transferint USE RPC_Iface # num and vers. of interface to use for replies
 }
 
 
-# this seems to be the same string name depending on the name of the pipe,
-# but is more likely to be linked to the interface name
-# "srvsvc", "\\PIPE\\ntsvcs"
-# "samr", "\\PIPE\\lsass"
-# "wkssvc", "\\PIPE\\wksvcs"
-# "NETLOGON", "\\PIPE\\NETLOGON"
-MsrpcAddress RW
+RPC_Address RW
 {
   UINT16 length        # length of the string including null terminator
   * port USE string    # the string above in single byte, null terminated form
@@ -711,15 +702,15 @@ MsrpcAddress RW
 
 
 # the response to place after the header in the reply packet
-MsrpcResBind RW
+RPC_ResBind RW
 {
   UINT16 maxtsize                   # same as request
   UINT16 maxrsize                   # same as request
   UINT32 assocgid                   # zero
 
-  * secondaddr USE MsrpcAddress     # the address string, as described earlier
+  * secondaddr USE RPC_Address     # the address string, as described earlier
 
-  UINT8 padding                     # 0 - one byte padding
+  UINT8[]                           # 4-byte alignment padding, against SMB header
 
   UINT8 numresults                  # the number of results (0x01)
 
@@ -727,13 +718,13 @@ MsrpcResBind RW
   UINT16 result                     # result (0x00 = accept)
   UINT16 reason                     # reason (0x00 = no reason specified)
 
-  * transfersyntax USE MsrpcIface   # the transfer syntax from the request
+  * transfersyntax USE RPC_Iface   # the transfer syntax from the request
 }
 
 
 # the remainder of the packet after the header for every other other
 # request
-MsrpcReqNorm RW
+RPC_ReqNorm RW
 {
   UINT32 allochint         # the size of the stub data in bytes
   UINT16 prescontext       # presentation context identifier (0x0)
@@ -745,7 +736,7 @@ MsrpcReqNorm RW
 
 
 # response to a request
-MsrpcResNorm RW
+RPC_ResNorm RW
 {
   UINT32 allochint         # size of the stub data in bytes
   UINT16 prescontext       # presentation context identifier (same as request)
@@ -756,14 +747,57 @@ MsrpcResNorm RW
 }
 
 
-3.3 Tail
---------
+3.3) Tail
+---------
 
 The end of each of the NTLSA and NETLOGON named pipes ends with:
 
     ......        end of data
     UINT32        return code
 
+
+
+3.4 RPC Bind / Bind Ack
+-----------------------
+
+RPC Binds are the process of associating an RPC pipe (e.g \PIPE\lsarpc)
+with a "transfer syntax" (see RPC_Iface structure).  The purpose for doing
+this is unknown.
+
+Note:	The RPC_ResBind SMB Transact request is sent with two uint16 setup
+	parameters.  The first is 0x0026; the second is the file handle
+	returned by the SMBopenX Transact response.
+
+Note:	The RPC_ResBind members maxtsize, maxrsize and assocgid are the
+	same in the response as the same members in the RPC_ReqBind.  The
+	RPC_ResBind member transfersyntax is the same in the response as
+	the
+
+Note:	The RPC_ResBind response member secondaddr contains the name
+	of what is presumed to be the service behind the RPC pipe.  The
+	mapping identified so far is:
+
+		initial SMBopenX request:          RPC_ResBind response:
+
+		"\\PIPE\\srvsvc"                   "\\PIPE\\ntsvcs"
+		"\\PIPE\\samr"                     "\\PIPE\\lsass"
+		"\\PIPE\\lsarpc"                   "\\PIPE\\lsass"
+		"\\PIPE\\wkssvc"                   "\\PIPE\\wksvcs"
+		"\\PIPE\\NETLOGON"                 "\\PIPE\\NETLOGON"
+
+Note:	The RPC_Packet fraglength member in both the Bind Request and Bind
+	Acknowledgment must contain the length of the entire RPC data,
+	including the RPC_Packet header.  
+
+Request:
+
+    RPC_Packet
+    RPC_ReqBind
+
+Response:
+
+    RPC_Packet
+    RPC_ResBind
 
 
 4) NTLSA Transact Named Pipe
@@ -787,6 +821,7 @@ Note:	The policy handle can be anything you like.
 
 Request:
 
+	VOID*     buffer pointer
     UNISTR2   server name - unicode string starting with two '\'s
     OBJ_ATTR  object attributes
     UINT32    1 - desired access
@@ -862,15 +897,11 @@ Response:
 
 Request:
 
-    no extra data
+    POL_HND   policy handle to be closed
 
 Response:
 
-    UINT32    0 - undocumented
-    UINT32    0 - undocumented
-    UINT32    0 - undocumented
-    UINT32    0 - undocumented
-    UINT32    0 - undocumented
+    POL_HND   0s - closed policy handle (all zeros)
 
     return    0 - indicates success
 
@@ -944,7 +975,7 @@ Defines for this pipe, identifying the query are:
 - LSA Request Challenge:         0x04
 - LSA Server Password Set:       0x06
 - LSA SAM Logon:                 0x02
-- LSA SAM Logoff:                0xfc
+- LSA SAM Logoff:                0x03
 - LSA Auth 2:                    0x0f
 - LSA Logon Control:             0x0e
 
