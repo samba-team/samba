@@ -19,60 +19,6 @@
 
 #include "includes.h"
 
-/* 
- * Password changing error codes.
- */
-
-struct
-{
-  int err;
-  char *message;
-} pw_change_errmap[] =
-{
-  {5,    "User has insufficient privilege" },
-  {86,   "The specified password is invalid" },
-  {2226, "Operation only permitted on a Primary Domain Controller"  },
-  {2242, "The password of this user has expired." },
-  {2243, "The password of this user cannot change." },
-  {2244, "This password cannot be used now (password history conflict)." },
-  {2245, "The password is shorter than required." },
-  {2246, "The password of this user is too recent to change."},
-  {0, NULL}
-};
-
-/******************************************************
- Return an error message for a remote password change.
-*******************************************************/
-
-char *get_error_message(struct cli_state *cli)
-{
-  static fstring error_message;
-  int errclass;
-  int errnum;
-  int i;
-
-  /*
-   * Errors are of two kinds - smb errors,
-   * dealt with by cli_errstr, and rap
-   * errors, whose error code is in cli.error.
-   */
-
-  cli_error(cli, &errclass, &errnum);
-  if(errclass != 0)
-    return cli_errstr(cli);
-
-  sprintf(error_message, "code %d", cli->error);
-
-  for(i = 0; pw_change_errmap[i].message != NULL; i++) {
-    if (pw_change_errmap[i].err == cli->error) {
-      fstrcpy( error_message, pw_change_errmap[i].message);
-      break;
-    }
-  }
-
-  return error_message;
-}
-
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
@@ -365,13 +311,13 @@ int main(int argc, char **argv)
  
     if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
       fprintf(stderr, "%s: unable to connect to SMB server on machine %s. Error was : %s.\n",
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       exit(1);
     }
   
     if (!cli_session_request(&cli, remote_machine, 0x20, myname)) {
       fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
@@ -380,7 +326,7 @@ int main(int argc, char **argv)
 
     if (!cli_negprot(&cli)) {
       fprintf(stderr, "%s: machine %s rejected the negotiate protocol. Error was : %s.\n",        
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
@@ -388,21 +334,21 @@ int main(int argc, char **argv)
     if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd),
                            "", 0, "")) {
       fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",        
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }               
 
     if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
       fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
 
     if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
       fprintf(stderr, "%s: machine %s rejected the password change: Error was : %s.\n",
-              prog_name, remote_machine, get_error_message(&cli) );
+              prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }

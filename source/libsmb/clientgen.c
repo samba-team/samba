@@ -29,6 +29,69 @@
 
 extern int DEBUGLEVEL;
 
+/*****************************************************
+ RAP error codes - a small start but will be extended.
+*******************************************************/
+
+struct
+{
+  int err;
+  char *message;
+} rap_errmap[] =
+{
+  {5,    "User has insufficient privilege" },
+  {86,   "The specified password is invalid" },
+  {2226, "Operation only permitted on a Primary Domain Controller"  },
+  {2242, "The password of this user has expired." },
+  {2243, "The password of this user cannot change." },
+  {2244, "This password cannot be used now (password history conflict)." },
+  {2245, "The password is shorter than required." },
+  {2246, "The password of this user is too recent to change."},
+  {0, NULL}
+};  
+
+/****************************************************************************
+  return a description of an SMB error
+****************************************************************************/
+char *cli_smb_errstr(struct cli_state *cli)
+{
+	return smb_errstr(cli->inbuf);
+}
+
+/******************************************************
+ Return an error message - either an SMB error or a RAP
+ error.
+*******************************************************/
+    
+char *cli_errstr(struct cli_state *cli)
+{   
+  static fstring error_message;
+  int errclass;
+  int errnum;
+  int i;      
+      
+  /*  
+   * Errors are of two kinds - smb errors,
+   * dealt with by cli_smb_errstr, and rap
+   * errors, whose error code is in cli.error.
+   */ 
+
+  cli_error(cli, &errclass, &errnum);
+  if(errclass != 0)
+    return cli_smb_errstr(cli);
+    
+  sprintf(error_message, "code %d", cli->error);
+    
+  for(i = 0; rap_errmap[i].message != NULL; i++) {
+    if (rap_errmap[i].err == cli->error) {
+      fstrcpy( error_message, rap_errmap[i].message);
+      break;
+    }
+  } 
+  
+  return error_message;
+}
+
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/
@@ -1564,14 +1627,6 @@ void cli_shutdown(struct cli_state *cli)
 	if (cli->inbuf) free(cli->inbuf);
 	if (cli->fd != -1) close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
-}
-
-/****************************************************************************
-  return a description of the error
-****************************************************************************/
-char *cli_errstr(struct cli_state *cli)
-{
-	return smb_errstr(cli->inbuf);
 }
 
 /****************************************************************************
