@@ -136,6 +136,7 @@ main(int argc, char **argv)
 	krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
 	ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
 			    server, 0, NULL, &ticket);
+	krb5_free_principal(context, server);
 	
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_recvauth");
