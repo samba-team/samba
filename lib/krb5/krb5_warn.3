@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997, 2001 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997, 2001 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,32 +31,53 @@
 .\"
 .\" $Id$
 .\"
-.Dd August 8, 1997
+.Dd March 20, 2004
 .Dt KRB5_WARN 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_warn ,
-.Nm krb5_warnx ,
-.Nm krb5_vwarn ,
-.Nm krb5_vwarnx ,
+.Nm krb5_abort ,
+.Nm krb5_abortx ,
+.Nm krb5_clear_error_string ,
 .Nm krb5_err ,
 .Nm krb5_errx ,
+.Nm krb5_free_error_string
+.Nm krb5_get_err_text ,
+.Nm krb5_get_error_string ,
+.Nm krb5_have_error_string ,
+.Nm krb5_set_error_string ,
+.Nm krb5_set_warn_dest ,
+.Nm krb5_vabort ,
+.Nm krb5_vabortx ,
 .Nm krb5_verr ,
 .Nm krb5_verrx ,
-.Nm krb5_set_warn_dest
+.Nm krb5_vset_error_string ,
+.Nm krb5_vwarn ,
+.Nm krb5_vwarnx ,
+.Nm krb5_warn ,
+.Nm krb5_warnx
 .Nd Heimdal warning and error functions
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
 .Ft krb5_error_code
+.Fn krb5_abort "krb5_context context" "krb5_error_code code" "const char *fmt"  "..."
+.Ft krb5_error_code
+.Fn krb5_abortx "krb5_context context" "krb5_error_code code" "const char *fmt"  "..."
+.Ft void
+.Fn krb5_clear_error_string "krb5_context context"
+.Ft krb5_error_code
 .Fn krb5_err "krb5_context context" "int eval" "krb5_error_code code" "const char *format" "..."
 .Ft krb5_error_code
 .Fn krb5_errx "krb5_context context" "int eval" "const char *format" "..."
+.Ft void
+.Fn krb5_free_error_string "krb5_context context" "char *str"
 .Ft krb5_error_code
 .Fn krb5_verr "krb5_context context" "int eval" "krb5_error_code code" "const char *format" "va_list ap"
 .Ft krb5_error_code
 .Fn krb5_verrx "krb5_context context" "int eval" "const char *format" "va_list ap"
+.Ft krb5_error_code
+.Fn krb5_vset_error_string "krb5_context context" "const char *fmt" "va_list args"
 .Ft krb5_error_code
 .Fn krb5_vwarn "krb5_context context" "krb5_error_code code" "const char *format" "va_list ap"
 .Ft krb5_error_code
@@ -66,9 +87,19 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_error_code
 .Fn krb5_warnx "krb5_context context" "const char *format" "..."
 .Ft krb5_error_code
+.Fn krb5_set_error_string "krb5_context context" "const char *fmt" "..."
+.Ft krb5_error_code
 .Fn krb5_set_warn_dest "krb5_context context" "krb5_log_facility *facility"
 .Ft "char *"
 .Fn krb5_get_err_text "krb5_context context" "krb5_error_code code"
+.Ft char*
+.Fn krb5_get_error_string "krb5_context context"
+.Ft krb5_boolean
+.Fn krb5_have_error_string "krb5_context context"
+.Ft krb5_error_code
+.Fn krb5_vabortx "krb5_context context" "const char *fmt" "va_list ap"
+.Ft krb5_error_code
+.Fn krb5_vabort "krb5_context context" "const char *fmt" "va_list ap"
 .Sh DESCRIPTION
 These functions prints a warning message to some destination.
 .Fa format
@@ -95,5 +126,46 @@ functions logs with level 0.
 .Pp
 .Fn krb5_get_err_text
 fetches the human readable strings describing the error-code.
+.Pp
+.Fn krb5_abort
+and 
+.Nm krb5_abortx
+behavies like
+.Nm krb5_err
+and
+.Nm krb5_errx
+but instead of exiting using the
+.Xr exit 3
+call,
+.Xr abort 3
+is used.
+.Pp
+.Fn krb5_free_error_string
+frees the error string
+.Fa str .
+.Pp
+.Fn krb5_clear_error_string
+clears the error string from the
+.Fa context .
+.Pp
+.Fn krb5_set_error_string
+and
+.Fn krb5_vset_error_string
+sets an verbose error string in
+.Fa context .
+.Pp
+.Fn krb5_get_error_string
+fetches the error string from
+.Fa context .
+The error message in the context is consumed and must be freed using
+.Fn krb5_free_error_string
+by the caller.
+.Pp
+.Fn krb5_have_error_string
+returns
+.Dv TRUE
+if there is a verbose error message in the
+.Fa context .
 .Sh SEE ALSO
+.Xr krb5 3 ,
 .Xr krb5_openlog 3
