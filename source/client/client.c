@@ -3,7 +3,7 @@
    SMB client
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Simo Sorce 2001-2002
-   Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Jelmer Vernooij 2003-2004
    Copyright (C) James J Myers   2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
@@ -3039,9 +3039,8 @@ static void remember_query_host(const char *arg,
 			argv[0], dyn_CONFIGFILE);
 	}
 	
-	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
-				POPT_CONTEXT_KEEP_FIRST);
-	poptSetOtherOptionHelp(pc, "service <password>");
+	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
+	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -3096,8 +3095,6 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	poptGetArg(pc);
-	
 	load_interfaces();
 
 	if(poptPeekArg(pc)) {
