@@ -31,6 +31,61 @@
 
 #include "includes.h"
 
+/* Connect to winbindd socket */
+
+int connect_sock(void)
+{
+    int sock, result;
+    struct sockaddr_un sunaddr;
+    fd_set writefd;
+    struct timeval timeout;
+    struct stat st;
+
+    /* Check permissions on unix socket file and directory */
+
+    if (lstat(WINBINDD_SOCKET_DIR, &st) < 0) {
+        return -1;
+    }
+
+    if (!S_ISDIR(st.st_mode) || (st.st_uid != 0) || 
+        ((st.st_mode & 0777) != 0755)) {
+        return -1;
+    }
+
+    /* Connect to socket */
+
+    sunaddr.sun_family = AF_UNIX;
+    strncpy(sunaddr.sun_path, WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME, 
+            sizeof(sunaddr.sun_path));
+
+    if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        return -1;
+    }
+
+    /* Attempt to connect.  Use select as the connect() call can block
+       for a long time if the winbindd is suspended (e.g in gdb). */
+
+    if (fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL)) < 0) {
+        return -1;
+    }
+
+    FD_ZERO(&writefd);
+    FD_SET(sock, &writefd);
+    timeout.tv_sec = WINBINDD_TIMEOUT_SEC;
+    timeout.tv_usec = 0;
+    
+    if ((result = select(sock + 1, NULL, &writefd, NULL, 
+                         &timeout)) <= 0) {
+        return -1;
+    }
+
+    if (connect(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
+        return -1;
+    }
+
+    return sock;
+}
+
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */

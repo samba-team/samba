@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "includes.h"
@@ -346,10 +347,94 @@ int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
 
 static void termination_handler(int signum)
 {
-    /* Clean up */
+    /* Remove socket file */
 
-    remove_sock();
+    unlink(WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME);
+
     exit(0);
+}
+
+/* Create winbindd socket */
+
+int create_sock(void)
+{
+    struct sockaddr_un sunaddr;
+    struct stat st;
+    int sock;
+    mode_t old_umask;
+
+    /* Create the socket directory or reuse the existing one */
+
+    if ((lstat(WINBINDD_SOCKET_DIR, &st) < 0) && (errno != ENOENT)) {
+        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
+                  WINBINDD_SOCKET_DIR, sys_errlist[errno]));
+        return -1;
+    }
+
+    if (errno == ENOENT) {
+
+        /* Create directory */
+
+        if (mkdir(WINBINDD_SOCKET_DIR, 0755) < 0) {
+            DEBUG(0, ("error creating socket directory %s: %s\n",
+                      WINBINDD_SOCKET_DIR, sys_errlist[errno]));
+            return -1;
+        }
+
+    } else {
+
+        /* Check ownership and permission on existing directory */
+
+        if (!S_ISDIR(st.st_mode)) {
+            DEBUG(0, ("socket directory %s isn't a directory\n",
+                      WINBINDD_SOCKET_DIR));
+            return -1;
+        }
+
+        if ((st.st_uid != 0) || ((st.st_mode & 0777) != 0755)) {
+            DEBUG(0, ("invalid permissions on socket directory %s\n",
+                      WINBINDD_SOCKET_DIR));
+            return -1;
+        }
+    }
+
+    /* Create the socket file */
+
+    old_umask = umask(0);
+
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+    
+    memset(&sunaddr, 0, sizeof(sunaddr));
+    sunaddr.sun_family = AF_UNIX;
+    strncpy(sunaddr.sun_path, WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME, 
+            sizeof(sunaddr.sun_path));
+    
+    if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
+        DEBUG(0, ("bind failed on winbind socket %s: %s\n",
+                  WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME,
+                  sys_errlist[errno]));
+        close(sock);
+        return -1;
+    }
+    
+    if (listen(sock, 5) < 0) {
+        DEBUG(0, ("listen failed on winbind socket %s: %s\n",
+                  WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME,
+                  sys_errlist[errno]));
+        close(sock);
+        return -1;
+    }
+    
+    umask(old_umask);
+    
+    /* Success! */
+    
+    return sock;
 }
 
 /*
@@ -361,7 +446,7 @@ int main(int argc, char **argv)
     extern fstring global_myname;
     int sock, sock2;
     extern pstring debugf;
-    
+
     /* Initialise samba/rpc client stuff */
 
     setup_logging("winbindd", False); /* XXX change to false for daemon log */
@@ -394,23 +479,17 @@ int main(int argc, char **argv)
     signal(SIGTERM, termination_handler);
     signal(SIGPIPE, SIG_IGN);
 
+    /* Loop waiting for requests */
+
+    if ((sock = create_sock()) == -1) {
+        DEBUG(0, ("failed to create socket\n"));
+        return 1;
+    }
+
     /* Get the domain sid */
 
     if (!winbindd_surs_init()) {
         DEBUG(0, ("Could not initialise surs information\n"));
-        return 1;
-    }
-
-    /* Loop waiting for requests */
-
-    if ((unlink(WINBINDD_SOCKET_NAME) < 0) && (errno != ENOENT)) {
-        DEBUG(0, ("Unable to remove domain socket %s: %s\n",
-                  WINBINDD_SOCKET_NAME, sys_errlist[errno]));
-        return 1;
-    }
-
-    if ((sock = create_sock()) == -1) {
-        DEBUG(0, ("failed to create socket\n"));
         return 1;
     }
 

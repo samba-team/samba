@@ -22,8 +22,9 @@
 #ifndef _WINBINDD_H
 #define _WINBINDD_H
 
-#define WINBINDD_SOCKET_NAME "/tmp/winbindd" /* Name of PF_UNIX socket */
-#define WINBINDD_TIMEOUT_SEC 30              /* Read/write timeout on socket */
+#define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
+#define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX socket */
+#define WINBINDD_TIMEOUT_SEC 30                /* Read/write timeout */
 
 /* Naughty global stuff */
 
