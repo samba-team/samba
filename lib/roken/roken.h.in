@@ -144,6 +144,10 @@ struct sockaddr_dl;
 
 ROKEN_CPP_START
 
+#ifndef HAVE_SSIZE_T
+typedef int ssize_t;
+#endif
+
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
 #endif
