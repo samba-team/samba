@@ -164,6 +164,8 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(BLDSHARED)
+AC_SUBST(INSTALLCLIENTCMD_SH)
+AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 
@@ -314,6 +316,26 @@ case "$host_os" in
 			;;
 		esac
 		;;
+#
+# VOS may need to have POSIX support and System V compatibility enabled.
+#
+    *vos*)
+    case "$CPPFLAGS" in
+	  *-D_POSIX_C_SOURCE*)
+		;;
+	  *)
+		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=199506L"
+		AC_DEFINE(_POSIX_C_SOURCE, 199506L, [Whether to enable POSIX support])
+		;;
+    esac
+    case "$CPPFLAGS" in
+	  *-D_SYSV*|*-D_SVID_SOURCE*)
+		;;
+	  *)
+		CPPFLAGS="$CPPFLAGS -D_SYSV"
+		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
+    esac
+    ;;
 #
 # Tests needed for SINIX large file support.
 #
@@ -981,6 +1003,10 @@ case "$host_os" in
 			fi
 			LDSHFLAGS="-G"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
+		*vos*) AC_DEFINE(STAT_ST_BLOCKSIZE,4096)
+			BLDSHARED="false"
+			LDSHFLAGS=""
 			;;
 		*)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -2349,6 +2375,8 @@ AC_ARG_WITH(msdfs,
 #################################################
 # should we build libsmbclient?
 
+INSTALLCLIENTCMD_SH=:
+INSTALLCLIENTCMD_A=:
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -2357,11 +2385,14 @@ AC_ARG_WITH(libsmbclient,
 [ case "$withval" in
   yes)
      if test $BLDSHARED = true; then
+        INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
         LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-	LIBSMBCLIENT=libsmbclient
+        LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
      else
-        AC_MSG_RESULT(no shared library support)
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBCLIENT=libsmbclient
+        AC_MSG_RESULT(no shared library support -- will supply static library)
      fi
      ;;
   *)
