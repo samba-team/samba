@@ -2693,8 +2693,11 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 	if (num   ) *num = 0;
 	if (nt_rpc_error) *nt_rpc_error = 0;
 
-	if(!cli || !cli->initialised || !cli->inbuf)
+	if(cli->initialised)
 		return EINVAL;
+
+	if(!cli->inbuf)
+		return ENOMEM;
 
 	flgs2 = SVAL(cli->inbuf,smb_flg2);
 	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
@@ -3225,7 +3228,7 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 ****************************************************************************/
 
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
-                                            struct in_addr *pdest_ip)
+                                     struct in_addr *pdest_ip)
 {
   struct nmb_name calling, called;
 
@@ -3244,21 +3247,32 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
   if (!cli_session_request(cli, &calling, &called)) {
     struct nmb_name smbservername;
 
+    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
+
     /*
      * If the name wasn't *SMBSERVER then
      * try with *SMBSERVER if the first name fails.
      */
 
+    if (nmb_name_equal(&called, &smbservername)) {
+
+        /*
+         * The name used was *SMBSERVER, don't bother with another name.
+         */
+
+        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name %s \
+with error %s.\n", desthost, cli_errstr(cli) ));
+	    cli_shutdown(cli);
+		return False;
+	}
+
     cli_shutdown(cli);
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
-
-    if (!nmb_name_equal(&called, &smbservername) ||
-        !cli_initialise(cli) ||
+    if (!cli_initialise(cli) ||
         !cli_connect(cli, desthost, pdest_ip) ||
         !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER.\n",
-                desthost));
+          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
+name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
           cli_shutdown(cli);
           return False;
     }
