@@ -31,7 +31,10 @@ RCSID("$Id$");
 #include <pwd.h>
 #endif
 #ifdef HAVE_CRYPT_H
+#undef des_encrypt
+#define des_encrypt wingless_pigs_mostly_fail_to_fly
 #include <crypt.h>
+#undef des_encrypt
 #endif
 
 #ifdef KRB5
