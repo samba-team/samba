@@ -437,6 +437,16 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 {
 	struct samr_info *info = NULL;
 
+	/* Perform access check.  Since this rpc does not require a
+	   policy handle it will not be caught by the access checks on
+	   SAMR_CONNECT or SAMR_CONNECT_ANON. */
+	
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_get_dom_pwinfo\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
+
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
@@ -1981,6 +1991,14 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 {
 	struct samr_info *info = NULL;
 
+	/* Access check */
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_connect_anon\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
+
 	/* set up the SAMR connect_anon response */
 
 	r_u->status = NT_STATUS_OK;
@@ -2007,6 +2025,14 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 	struct samr_info *info = NULL;
 
 	DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+	/* Access check */
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_connect\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
 
 	r_u->status = NT_STATUS_OK;
 

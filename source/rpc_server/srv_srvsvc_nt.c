@@ -1061,6 +1061,11 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 
 	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
 
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_srv_get_info\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	switch (q_u->switch_value) {
 	case 102:
 		init_srv_info_102(&ctr->srv.sv102,
@@ -1201,6 +1206,11 @@ WERROR _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_share_enum_all\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p, r_u,
 				q_u->ctr.info_level,
@@ -1218,6 +1228,11 @@ WERROR _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
 WERROR _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_share_enum\n"));
+		return WERR_ACCESS_DENIED;
+	}
 
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p, r_u,
