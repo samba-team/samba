@@ -4628,7 +4628,7 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			}
 
 			if (UNMARSHALLING(ps)) {
-				r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID));
+				r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID2));
 			}
 
 			for (i = 0; i < r_u->num_sids1; i++) {
