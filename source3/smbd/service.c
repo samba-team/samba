@@ -644,7 +644,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 #ifdef WITH_FAKE_KASERVER
-	afs_login(user);
+	if (lp_afs_share(SNUM(conn))) {
+		afs_login(conn);
+	}
 #endif
 	
 #if CHECK_PATH_ON_TCONX
