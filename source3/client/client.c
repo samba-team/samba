@@ -43,7 +43,7 @@ static char *cmdstr = NULL;
 static int io_bufsize = 64512;
 
 static int name_type = 0x20;
-static int max_protocol = PROTOCOL_NT1;
+extern int max_protocol;
 
 static int process_tok(pstring tok);
 static int cmd_help(void);
