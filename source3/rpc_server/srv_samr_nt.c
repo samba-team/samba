@@ -2115,7 +2115,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			free_samr_db(info);
 			
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, lp_workgroup(), global_myname(), (uint32) time(NULL), 
+			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
