@@ -850,7 +850,13 @@ static void reply_read_and_X_send(struct smbsrv_request *req)
 
 	/* readx reply packets can be over-sized */
 	req->control_flags |= REQ_CONTROL_LARGE;
-	req_grow_data(req, 1 + io->readx.out.nread);
+	if (io->readx.in.maxcnt != 0xFFFF &&
+	    io->readx.in.mincnt != 0xFFFF) {
+		req_grow_data(req, 1 + io->readx.out.nread);
+		SCVAL(req->out.data, 0, 0); /* padding */
+	} else {
+		req_grow_data(req, io->readx.out.nread);
+	}
 
 	/* construct reply */
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
@@ -860,7 +866,6 @@ static void reply_read_and_X_send(struct smbsrv_request *req)
 	REQ_VWV_RESERVED(4, 1);
 	SSVAL(req->out.vwv, VWV(5), io->readx.out.nread);
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(io->readx.out.data, req->out.hdr));
-	SCVAL(req->out.data, 0, 0); /* padding */
 	REQ_VWV_RESERVED(7, 5);
 
 	chain_reply(req);
@@ -897,7 +902,12 @@ void reply_read_and_X(struct smbsrv_request *req)
 	req_setup_reply(req, 12, 1 + io->readx.in.maxcnt);
 
 	/* tell the backend where to put the data. Notice the pad byte. */
-	io->readx.out.data = req->out.data + 1;
+	if (io->readx.in.maxcnt != 0xFFFF &&
+	    io->readx.in.mincnt != 0xFFFF) {
+		io->readx.out.data = req->out.data + 1;
+	} else {
+		io->readx.out.data = req->out.data;
+	}
 
 	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_read_and_X_send;
