@@ -15,6 +15,7 @@ ADD_OBJ_FILES = \
 		torture/basic/rename.o \
 		torture/basic/dir.o \
 		torture/basic/delete.o \
+		torture/basic/unlink.o \
 		torture/basic/attr.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB

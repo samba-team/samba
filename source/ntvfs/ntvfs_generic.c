@@ -178,7 +178,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		io->openx.out.devstate    = 0;
 		io->openx.out.action      = io2->generic.out.create_action;
 		io->openx.out.unique_fid  = 0;
-		io->openx.out.access_mask = io2->generic.in.access_mask;
+		io->openx.out.access_mask = STANDARD_RIGHTS_ALL_ACCESS;
 		io->openx.out.unknown     = 0;
 		
 		/* we need to extend the file to the requested size if
@@ -280,17 +280,17 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 	
 		switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
 		case OPENX_MODE_ACCESS_READ:
-			io2->generic.in.access_mask = STANDARD_RIGHTS_READ_ACCESS;
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
 			io->openx.out.access = OPENX_MODE_ACCESS_READ;
 			break;
 		case OPENX_MODE_ACCESS_WRITE:
-			io2->generic.in.access_mask = STANDARD_RIGHTS_WRITE_ACCESS;
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
 			io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
 			break;
 		case OPENX_MODE_ACCESS_RDWR:
 		case OPENX_MODE_ACCESS_FCB:
 		case OPENX_MODE_ACCESS_EXEC:
-			io2->generic.in.access_mask = STANDARD_RIGHTS_ALL_ACCESS;
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE | GENERIC_RIGHTS_FILE_READ;
 			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
 			break;
 		default:
@@ -309,12 +309,16 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 			break;
 		case OPENX_MODE_DENY_NONE:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+			io2->generic.in.share_access = 
+				NTCREATEX_SHARE_ACCESS_READ | 
+				NTCREATEX_SHARE_ACCESS_WRITE;
 			break;
 		case OPENX_MODE_DENY_DOS:
 			/* DENY_DOS is quite strange - it depends on the filename! */
 			if (is_exe_file(io->openx.in.fname)) {
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+				io2->generic.in.share_access = 
+					NTCREATEX_SHARE_ACCESS_READ | 
+					NTCREATEX_SHARE_ACCESS_WRITE;
 			} else {
 				if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) == 
 				    OPENX_MODE_ACCESS_READ) {
@@ -417,8 +421,9 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
 			break;
 		case OPEN_FLAGS_DENY_NONE:
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE |
-				NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_DELETE;
+			io2->generic.in.share_access = 
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_READ;
 			break;
 		case OPEN_FLAGS_DENY_MASK:
 			io2->generic.in.share_access = 
