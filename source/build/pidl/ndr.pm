@@ -8,10 +8,17 @@
 package Ndr;
 
 use strict;
+use typelist;
 
 #####################################################################
 # return a table describing the order in which the parts of an element
 # should be parsed
+# Possible level types:
+#  - POINTER
+#  - ARRAY
+#  - SUBCONTEXT
+#  - SWITCH
+#  - DATA
 sub GetElementLevelTable($)
 {
 	my $e = shift;
@@ -20,6 +27,8 @@ sub GetElementLevelTable($)
 
 	my $order = [];
 	my $is_deferred = 0;
+	
+	# FIXME: Process {ARRAY_SIZE} kinds of arrays
 
 	# First, all the pointers
 	foreach my $i (1..need_wire_pointer($e)) {
@@ -31,6 +40,7 @@ sub GetElementLevelTable($)
 		});
 		# everything that follows will be deferred
 		$is_deferred = 1;
+		# FIXME: Process array here possibly (in case of multi-dimensional arrays, etc)
 	}
 
 	if (defined($e->{ARRAY_LEN})) {
@@ -47,7 +57,8 @@ sub GetElementLevelTable($)
 		push (@$order, {
 			TYPE => "SUBCONTEXT",
 			SUBCONTEXT_SIZE => $sub_size,
-			IS_DEFERRED => $is_deferred
+			IS_DEFERRED => $is_deferred,
+			COMPRESSION => util::has_property($e, "compression")
 		});
 	}
 
@@ -61,6 +72,7 @@ sub GetElementLevelTable($)
 
 	push (@$order, {
 		TYPE => "DATA",
+		DATA_TYPE => $e->{TYPE},
 		NAME => $e->{NAME},
 		IS_DEFERRED => $is_deferred,
 		CONTAINS_DEFERRED => can_contain_deferred($e)
@@ -204,6 +216,61 @@ sub find_largest_alignment($)
 	return $align;
 }
 
+my %scalar_alignments = 
+(
+     "char"           => 1,
+     "int8"           => 1,
+     "uint8"          => 1,
+     "short"          => 2,
+     "wchar_t"        => 2,
+     "int16"          => 2,
+     "uint16"         => 2,
+     "long"           => 4,
+     "int32"          => 4,
+     "uint32"         => 4,
+     "dlong"          => 4,
+     "udlong"         => 4,
+     "udlongr"        => 4,
+     "NTTIME"         => 4,
+     "NTTIME_1sec"    => 4,
+     "time_t"         => 4,
+     "DATA_BLOB"      => 4,
+     "error_status_t" => 4,
+     "WERROR"         => 4,
+	 "NTSTATUS" 	  => 4,
+     "boolean32"      => 4,
+     "unsigned32"     => 4,
+     "ipv4address"    => 4,
+     "hyper"          => 8,
+     "NTTIME_hyper"   => 8
+);
+
+#####################################################################
+# align a type
+sub align_type
+{
+	my $e = shift;
+
+	unless (typelist::hasType($e)) {
+	    # it must be an external type - all we can do is guess 
+		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
+	    return 4;
+	}
+
+	my $dt = typelist::getType($e)->{DATA};
+
+	if ($dt->{TYPE} eq "ENUM") {
+		return align_type(typelist::enum_type_fn($dt));
+	} elsif ($dt->{TYPE} eq "BITMAP") {
+		return align_type(typelist::bitmap_type_fn($dt));
+	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
+		return find_largest_alignment($dt);
+	} elsif ($dt->{TYPE} eq "SCALAR") {
+		return $scalar_alignments{$dt->{NAME}};
+	} else { 
+		die("Unknown data type type $dt->{TYPE}");
+	}
+}
 
 # determine if an element needs a reference pointer on the wire
 # in its NDR representation
@@ -329,7 +396,10 @@ sub ParseTypedef($$)
 		die("Unknown data type '$d->{DATA}->{TYPE}'");
 	}
 
+	$data->{ALIGN} = align_type($d->{NAME});
+
 	return {
+		NAME => $d->{NAME},
 		TYPE => "TYPEDEF",
 		PROPERTIES => $d->{PROPERTIES},
 		DATA => $data
@@ -347,16 +417,17 @@ sub ParseFunction($$)
 		$ndr->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
 	);
 
-	foreach my $x ($d->{ELEMENTS}) {
+	foreach my $x (@{$d->{ELEMENTS}}) {
 		if (util::has_property($x, "in")) {
-			push @in, ParseElement($x);
+			push (@in, ParseElement($x));
 		}
 		if (util::has_property($x, "out")) {
-			push @out, ParseElement($x);
+			push (@out, ParseElement($x));
 		}
 	}
 	
 	return {
+			NAME => $d->{NAME},
 			TYPE => "FUNCTION",
 			RETURN_TYPE => $d->{RETURN_TYPE},
 			PROPERTIES => $d->{PROPERTIES},
