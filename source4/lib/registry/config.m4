@@ -22,25 +22,23 @@ if test t$SMB_EXT_LIB_ENABLE_gtk = tYES; then
 	SMB_BINARY_ENABLE(gregedit, YES)
 fi
 
-SMB_MODULE(registry_nt4, REGISTRY, STATIC, lib/registry/reg_backend_nt4/reg_backend_nt4.o)
-SMB_MODULE(registry_w95, REGISTRY, STATIC, lib/registry/reg_backend_w95/reg_backend_w95.o)
-SMB_MODULE(registry_dir, REGISTRY, STATIC, lib/registry/reg_backend_dir/reg_backend_dir.o)
-SMB_MODULE(registry_rpc, REGISTRY, STATIC, lib/registry/reg_backend_rpc/reg_backend_rpc.o,[],[],[LIBSMB])
-SMB_MODULE(registry_gconf, REGISTRY, STATIC, lib/registry/reg_backend_gconf/reg_backend_gconf.o, [], [gconf])
-SMB_MODULE(registry_ldb, REGISTRY, NOT, lib/registry/reg_backend_ldb/reg_backend_ldb.o,[],[],[LIBLDB])
-SMB_SUBSYSTEM(REGISTRY,lib/registry/common/reg_interface.o,
-	[lib/registry/common/reg_objects.o lib/registry/common/reg_util.o],
-	[],
-	[LIBBASIC])
+SMB_MODULE_MK(registry_nt4, REGISTRY, STATIC, lib/registry/config.mk)
+SMB_MODULE_MK(registry_w95, REGISTRY, STATIC, lib/registry/config.mk)
+SMB_MODULE_MK(registry_dir, REGISTRY, STATIC, lib/registry/config.mk)
+SMB_MODULE_MK(registry_rpc, REGISTRY, STATIC, lib/registry/config.mk)
+SMB_MODULE_MK(registry_gconf, REGISTRY, STATIC, lib/registry/config.mk)
+SMB_MODULE_MK(registry_ldb, REGISTRY, NOT, lib/registry/config.mk)
 
-SMB_BINARY(regdiff, [REG], [BIN], lib/registry/tools/regdiff.o,[],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
-SMB_BINARY(regpatch, [REG], [BIN], lib/registry/tools/regpatch.o,[],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
-SMB_BINARY(regshell, [REG], [BIN], lib/registry/tools/regshell.o,[],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
-SMB_BINARY(regtree, [REG], [BIN], lib/registry/tools/regtree.o,[],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
-SMB_BINARY(gregedit, [REG], [BIN], lib/registry/tools/gregedit.o,[gtk],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
+SMB_SUBSYSTEM_MK(REGISTRY,lib/registry/config.mk)
+
+SMB_BINARY_MK(regdiff, lib/registry/config.mk)
+SMB_BINARY_MK(regpatch, lib/registry/config.mk)
+SMB_BINARY_MK(regshell, lib/registry/config.mk)
+SMB_BINARY_MK(regtree, lib/registry/config.mk)
+SMB_BINARY_MK(gregedit, lib/registry/config.mk)
 
 if test x"$experimental" = x"yes"; then
 	SMB_LIBRARY_ENABLE(libwinregistry, YES)
 fi
 
-SMB_LIBRARY(libwinregistry, 0, 0, 1, , , REGISTRY) 
+SMB_LIBRARY_MK(libwinregistry, lib/registry/config.mk) 
