@@ -48,9 +48,9 @@ man_MANS = ftpd.8 ftpusers.5
 LDADD = ../common/libcommon.a \
 	$(LIB_kafs) \
 	$(LIB_gssapi) \
+	$(LIB_otp) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(LIB_otp) \
 	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)
