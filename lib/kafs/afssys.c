@@ -46,26 +46,6 @@ foldup(char *a, char *b)
   *a = '\0';
 }
 
-#define _PATH_VICE		"/usr/vice/etc/"
-#define _PATH_THISCELL 		_PATH_VICE "ThisCell"
-#define _PATH_CELLSERVDB 	_PATH_VICE "CellServDB"
-
-static char *
-k_cell(void)
-{
-    static char cell[64];
-
-    FILE *f = fopen(_PATH_THISCELL, "r");
-    if (f == 0)
-	return 0;
-    fscanf(f, "%s\n", cell);
-    fclose(f);
-    if (cell[0] != 0)
-	return cell;
-    else
-	return 0;
-}
-
 static int
 get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
 {
@@ -142,6 +122,33 @@ realm_of_cell(char *cell)
   return realm;
 }
 
+/*
+ * Try to find the cells we should try to klog to.  Look at
+ * /usr/vice/etc/TheseCells and /usr/vice/etc/ThisCell,
+ * in that order.
+ */
+
+static int
+k_afsklog_all_local_cells (char *krealm)
+{
+  FILE *f;
+  char cell[64];
+  int err;
+
+  f = fopen(_PATH_THESECELLS, "r");
+  if (f == NULL)
+    f = fopen(_PATH_THISCELL, "r");
+  if (f == NULL)
+    return KSUCCESS;
+  err = KSUCCESS;
+  while(fgets(cell, sizeof(cell), f) && err == KSUCCESS) {
+    cell[strlen(cell) - 1] = '\0';
+    err = k_afsklog (cell, krealm);
+  }
+  fclose(f);
+  return err;
+}
+
 int
 k_afsklog(char *cell, char *krealm)
 {
@@ -153,15 +160,11 @@ k_afsklog(char *cell, char *krealm)
   char *lrealm; /* local realm */
   char CELL[64];
 
-  char *realms[4], **r;
-
   if (!k_hasafs())
     return KSUCCESS;
 
   if (cell == 0 || cell[0] == 0)
-    cell = k_cell();
-  if (cell == 0)
-    return KSUCCESS;		/* Not running AFS */
+    return k_afsklog_all_local_cells (krealm);
   foldup(CELL, cell);
 
   vl_realm = realm_of_cell(cell);
