@@ -1,0 +1,230 @@
+
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Andrew Tridgell              1992-1998,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
+ *  Copyright (C) Paul Ashton                  1997-1998.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+
+#ifdef SYSLOG
+#undef SYSLOG
+#endif
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+
+/****************************************************************************
+do a SVC Open Policy
+****************************************************************************/
+BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
+				char *srv_name, char *db_name,
+				uint32 des_access,
+				POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_OPEN_SC_MAN q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SVC_OPEN_SC_MAN */
+
+	DEBUG(4,("SVC Open SC_MAN\n"));
+
+	make_svc_q_open_sc_man(&q_o, srv_name, db_name, des_access);
+
+	/* turn parameters into data stream */
+	svc_io_q_open_sc_man("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_OPEN_SC_MAN, &buf, &rbuf))
+	{
+		SVC_R_OPEN_SC_MAN r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		svc_io_r_open_sc_man("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+
+/****************************************************************************
+do a SVC Enumerate Services
+****************************************************************************/
+BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *hnd,
+				uint32 services_type, uint32 services_state,
+				uint32 buf_size, uint32 *resume_hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_ENUM_SVCS_STATUS q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SVC_ENUM_SVCS_STATUS */
+
+	DEBUG(4,("SVC Enum Services Status\n"));
+
+	make_svc_q_enum_svcs_status(&q_o, hnd,
+	                            services_type, services_state,
+	                            buf_size, *resume_hnd);
+
+	/* turn parameters into data stream */
+	svc_io_q_enum_svcs_status("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
+	{
+#if 0
+		SVC_R_ENUM_SVCS_STATUS r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		svc_io_r_enum_svcs_status("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+#else
+	valid_pol = True;
+#endif
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+
+/****************************************************************************
+do a SVC Close
+****************************************************************************/
+BOOL do_svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_CLOSE q_c;
+	BOOL valid_close = False;
+
+	if (hnd == NULL) return False;
+
+	/* create and send a MSRPC command with api SVC_CLOSE */
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SVC Close\n"));
+
+	/* store the parameters */
+	make_svc_q_close(&q_c, hnd);
+
+	/* turn parameters into data stream */
+	svc_io_q_close("", &q_c, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_CLOSE, &buf, &rbuf))
+	{
+		SVC_R_CLOSE r_c;
+		BOOL p;
+
+		ZERO_STRUCT(r_c);
+
+		svc_io_r_close("", &r_c, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_c.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SVC_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* check that the returned policy handle is all zeros */
+			int i;
+			valid_close = True;
+
+			for (i = 0; i < sizeof(r_c.pol.data); i++)
+			{
+				if (r_c.pol.data[i] != 0)
+				{
+					valid_close = False;
+					break;
+				}
+			}	
+			if (!valid_close)
+			{
+				DEBUG(0,("SVC_CLOSE: non-zero handle returned\n"));
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_close;
+}
+
+

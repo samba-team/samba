@@ -105,6 +105,7 @@ struct
   char *description;
 } commands[] = 
 {
+  {"svcenum",    cmd_svc_enum,         "Services Manager Enumeration"},
   {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
   {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete"},
   {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create"},

@@ -71,17 +71,17 @@ static void api_svc_close( uint16 vuid, prs_struct *data,
 
 
 /*******************************************************************
- svc_reply_open_policy
+ svc_reply_open_sc_man
  ********************************************************************/
-static void svc_reply_open_policy(SVC_Q_OPEN_POLICY *q_u,
+static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 				prs_struct *rdata)
 {
 	uint32 status     = 0;
 	POLICY_HND pol;
-	SVC_R_OPEN_POLICY r_u;
+	SVC_R_OPEN_SC_MAN r_u;
 	fstring name;
 
-	DEBUG(5,("svc_open_policy: %d\n", __LINE__));
+	DEBUG(5,("svc_open_sc_man: %d\n", __LINE__));
 
 	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
 	{
@@ -92,7 +92,7 @@ static void svc_reply_open_policy(SVC_Q_OPEN_POLICY *q_u,
 
 	if (status == 0x0)
 	{
-		DEBUG(5,("svc_open_policy: %s\n", name));
+		DEBUG(5,("svc_open_sc_man: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
 	}
 
@@ -101,23 +101,23 @@ static void svc_reply_open_policy(SVC_Q_OPEN_POLICY *q_u,
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	make_svc_r_open_policy(&r_u, &pol, status);
+	make_svc_r_open_sc_man(&r_u, &pol, status);
 
 	/* store the response in the SMB stream */
-	svc_io_r_open_policy("", &r_u, rdata, 0);
+	svc_io_r_open_sc_man("", &r_u, rdata, 0);
 
-	DEBUG(5,("svc_open_policy: %d\n", __LINE__));
+	DEBUG(5,("svc_open_sc_man: %d\n", __LINE__));
 }
 
 /*******************************************************************
- api_svc_open_policy
+ api_svc_open_sc_man
  ********************************************************************/
-static void api_svc_open_policy( uint16 vuid, prs_struct *data,
+static void api_svc_open_sc_man( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
-	SVC_Q_OPEN_POLICY q_u;
-	svc_io_q_open_policy("", &q_u, data, 0);
-	svc_reply_open_policy(&q_u, rdata);
+	SVC_Q_OPEN_SC_MAN q_u;
+	svc_io_q_open_sc_man("", &q_u, data, 0);
+	svc_reply_open_sc_man(&q_u, rdata);
 }
 
 /*******************************************************************
@@ -126,7 +126,7 @@ static void api_svc_open_policy( uint16 vuid, prs_struct *data,
 static struct api_struct api_svc_cmds[] =
 {
 	{ "SVC_CLOSE"        , SVC_CLOSE        , api_svc_close        },
-	{ "SVC_OPEN_POLICY"  , SVC_OPEN_POLICY  , api_svc_open_policy  },
+	{ "SVC_OPEN_SC_MAN"  , SVC_OPEN_SC_MAN  , api_svc_open_sc_man  },
 	{ NULL,                0                , NULL                 }
 };
 
