@@ -1,6 +1,3 @@
-#ifndef _HP_NSS_DBDEFS_H
-#define _HP_NSS_DBDEFS_H
-
 /*
    Unix SMB/CIFS implementation.
  
@@ -22,6 +19,45 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA  02111-1307, USA.
 */
+
+#ifndef _WINBIND_NSS_HPUX_H
+#define _WINBIND_NSS_HPUX_H
+
+#include <nsswitch.h>
+
+#ifndef _HAVE_TYPEDEF_NSS_STATUS
+#define _HAVE_TYPEDEF_NSS_STATUS
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+
+#ifdef HAVE_SYNCH_H
+#include <synch.h>
+#endif
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+ 
+typedef enum {
+	NSS_SUCCESS,
+	NSS_NOTFOUND,
+	NSS_UNAVAIL,
+	NSS_TRYAGAIN
+} nss_status_t;
+ 
+struct nss_backend;
+ 
+typedef nss_status_t (*nss_backend_op_t)(struct nss_backend *, void *args);
+ 
+struct nss_backend {
+	nss_backend_op_t *ops;
+	int n_ops;
+};
+typedef struct nss_backend nss_backend_t;
+typedef int nss_dbop_t;
 
 #include <errno.h>
 #include <netdb.h>
@@ -102,4 +138,4 @@ typedef struct nss_XbyY_args {
 	nss_status_t status;
 } nss_XbyY_args_t;
  
-#endif /* _NSS_DBDEFS_H */
+#endif /* _WINBIND_NSS_HPUX_H */

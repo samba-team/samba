@@ -76,30 +76,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pwd.h>
-#include "nsswitch/nss.h"
-
-/* Declarations for functions in winbind_nss.c
-   needed in winbind_nss_solaris.c (solaris wrapper to nss) */
-
-NSS_STATUS _nss_winbind_setpwent(void);
-NSS_STATUS _nss_winbind_endpwent(void);
-NSS_STATUS _nss_winbind_getpwent_r(struct passwd* result, char* buffer,
-				   size_t buflen, int* errnop);
-NSS_STATUS _nss_winbind_getpwuid_r(uid_t, struct passwd*, char* buffer,
-				   size_t buflen, int* errnop);
-NSS_STATUS _nss_winbind_getpwnam_r(const char* name, struct passwd* result,
-				   char* buffer, size_t buflen, int* errnop);
-
-NSS_STATUS _nss_winbind_setgrent(void);
-NSS_STATUS _nss_winbind_endgrent(void);
-NSS_STATUS _nss_winbind_getgrent_r(struct group* result, char* buffer,
-				   size_t buflen, int* errnop);
-NSS_STATUS _nss_winbind_getgrnam_r(const char *name,
-				   struct group *result, char *buffer,
-				   size_t buflen, int *errnop);
-NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
-				   struct group *result, char *buffer,
-				   size_t buflen, int *errnop);
+#include "nsswitch/winbind_nss.h"
 
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */
