@@ -1534,12 +1534,36 @@ done:
 	return result;
 }
 
+static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			  uint32 num_jobs, JOB_INFO_1 **jobs)
+{
+	uint32 i;
+
+	*jobs = (JOB_INFO_1 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_1));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_jobs; i++) 
+		smb_io_job_info_1("", buffer, &((*jobs)[i]), 0);
+}
+
+static void decode_jobs_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			  uint32 num_jobs, JOB_INFO_2 **jobs)
+{
+	uint32 i;
+
+	*jobs = (JOB_INFO_2 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_2));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_jobs; i++) 
+		smb_io_job_info_2("", buffer, &((*jobs)[i]), 0);
+}
+
 /* Enumerate jobs */
 
 WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			    uint32 offered, uint32 *needed,
-			    POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
-			    uint32 level)
+			    POLICY_HND *hnd, uint32 level, uint32 firstjob, 
+			    uint32 num_jobs, uint32 *returned, JOB_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMJOBS q;
@@ -1559,7 +1583,7 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_enumjobs(&q, hnd, firstjob, numofjobs, level, &buffer, 
+        make_spoolss_q_enumjobs(&q, hnd, firstjob, num_jobs, level, &buffer, 
 				offered);
 
 	/* Marshall data and send request */
@@ -1579,6 +1603,25 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (needed)
 		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	*returned = r.returned;
+
+	switch(level) {
+	case 1:
+		decode_jobs_1(mem_ctx, r.buffer, r.returned,
+			      &ctr->job.job_info_1);
+		break;
+	case 2:
+		decode_jobs_2(mem_ctx, r.buffer, r.returned,
+			      &ctr->job.job_info_2);
+		break;
+	default:
+		DEBUG(3, ("unsupported info level %d", level));
+		break;
+	}
 
  done:
 	prs_mem_free(&qbuf);
