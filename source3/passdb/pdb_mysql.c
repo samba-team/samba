@@ -946,7 +946,7 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 	return NT_STATUS_OK;
 }
 
-int pdb_mysql_init(void) 
+NTSTATUS pdb_mysql_init(void) 
 {
-	return smb_register_passdb("mysql", mysqlsam_init, PASSDB_INTERFACE_VERSION);
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "mysql", mysqlsam_init);
 }

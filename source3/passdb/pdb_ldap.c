@@ -2065,8 +2065,7 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	return NT_STATUS_OK;
 }
 
-int pdb_ldap_init(void)
+NTSTATUS pdb_ldap_init(void)
 {
-	smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
-	return True;
+	return smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
 }

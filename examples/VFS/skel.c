@@ -451,7 +451,7 @@ static vfs_op_tuple *skel_init(const struct vfs_ops *def_vfs_ops,
 	return skel_ops;
 }
 
-int init_module(void)
+NTSTATUS init_module(void)
 {
 	return smb_register_vfs("skel", skel_init, SMB_VFS_INTERFACE_VERSION);
 }

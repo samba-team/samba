@@ -22,11 +22,11 @@
 #include "includes.h"
 
 #ifdef HAVE_DLOPEN
-int smb_load_module(const char *module_name)
+NTSTATUS smb_load_module(const char *module_name)
 {
 	void *handle;
 	init_module_function *init;
-	int status;
+	NTSTATUS status;
 	const char *error;
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
@@ -37,7 +37,7 @@ int smb_load_module(const char *module_name)
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	init = sys_dlsym(handle, "init_module");
@@ -47,7 +47,7 @@ int smb_load_module(const char *module_name)
 	error = sys_dlerror();
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, error));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	status = init();
@@ -65,7 +65,7 @@ int smb_load_modules(const char **modules)
 	int success = 0;
 
 	for(i = 0; modules[i]; i++){
-		if(smb_load_module(modules[i])) {
+		if(NT_STATUS_IS_OK(smb_load_module(modules[i]))) {
 			success++;
 		}
 	}
@@ -75,7 +75,7 @@ int smb_load_modules(const char **modules)
 	return success;
 }
 
-int smb_probe_module(const char *subsystem, const char *module)
+NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
 	pstring full_path;
 	
@@ -95,22 +95,22 @@ int smb_probe_module(const char *subsystem, const char *module)
 
 #else /* HAVE_DLOPEN */
 
-int smb_load_module(const char *module_name)
+NTSTATUS smb_load_module(const char *module_name)
 {
 	DEBUG(0,("This samba executable has not been built with plugin support"));
-	return False;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 int smb_load_modules(const char **modules)
 {
 	DEBUG(0,("This samba executable has not been built with plugin support"));
-	return False;
+	return -1;
 }
 
-int smb_probe_module(const char *subsystem, const char *module)
+NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
 	DEBUG(0,("This samba executable has not been built with plugin support, not probing")); 
-	return False;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 #endif /* HAVE_DLOPEN */

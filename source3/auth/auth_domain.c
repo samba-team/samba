@@ -557,9 +557,9 @@ NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* pa
 	return NT_STATUS_OK;
 }
 
-int auth_domain_init(void) 
+NTSTATUS auth_domain_init(void) 
 {
-	smb_register_auth("trustdomain", auth_init_trustdomain, AUTH_INTERFACE_VERSION);
-	smb_register_auth("ntdomain", auth_init_ntdomain, AUTH_INTERFACE_VERSION);
-	return True;
+	smb_register_auth(AUTH_INTERFACE_VERSION, "trustdomain", auth_init_trustdomain);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "ntdomain", auth_init_ntdomain);
+	return NT_STATUS_OK;
 }

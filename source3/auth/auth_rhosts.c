@@ -243,9 +243,9 @@ NTSTATUS auth_init_rhosts(struct auth_context *auth_context, const char *param, 
 	return NT_STATUS_OK;
 }
 
-int auth_rhosts_init(void)
+NTSTATUS auth_rhosts_init(void)
 {
-	smb_register_auth("rhosts", auth_init_rhosts, AUTH_INTERFACE_VERSION);
-	smb_register_auth("hostsequiv", auth_init_hostsequiv, AUTH_INTERFACE_VERSION);
-	return True;
+	smb_register_auth(AUTH_INTERFACE_VERSION, "rhosts", auth_init_rhosts);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "hostsequiv", auth_init_hostsequiv);
+	return NT_STATUS_OK;
 }

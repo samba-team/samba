@@ -158,7 +158,7 @@ static BOOL api_dfs_enum(pipes_struct *p)
 \pipe\netdfs commands
 ********************************************************************/
 
-int rpc_dfs_init(void)
+NTSTATUS rpc_dfs_init(void)
 {
   struct api_struct api_netdfs_cmds[] =
     {
@@ -168,6 +168,6 @@ int rpc_dfs_init(void)
       {"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
       {"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     }
     };
-  return rpc_pipe_register_commands("netdfs", "netdfs", api_netdfs_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", api_netdfs_cmds,
 				    sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
 }
