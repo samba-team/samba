@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
+
 extern int DEBUGLEVEL;
 
 static BOOL * lpq_cache_reset=NULL;

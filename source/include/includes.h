@@ -571,8 +571,6 @@ extern int errno;
 #include "kanji.h"
 #include "charset.h"
 
-#include "nterr.h"
-
 #ifdef WITH_PROFILE
 #include "profile.h"
 #endif

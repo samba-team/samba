@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
 #include "trans2.h"
 
 extern int DEBUGLEVEL;
