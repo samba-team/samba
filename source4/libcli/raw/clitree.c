@@ -238,9 +238,15 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	setup.generic.in.capabilities = CAP_UNICODE | CAP_STATUS32 | 
 		CAP_LARGE_FILES | CAP_NT_SMBS | CAP_LEVEL_II_OPLOCKS | 
 		CAP_W2K_SMBS | CAP_LARGE_READX | CAP_LARGE_WRITEX;
-	setup.generic.in.password = password;
-	setup.generic.in.user = user;
-	setup.generic.in.domain = domain;
+	if (!user || !user[0]) {
+		setup.generic.in.password = NULL;
+		setup.generic.in.user = "";
+		setup.generic.in.domain = "";
+	} else {
+		setup.generic.in.password = password;
+		setup.generic.in.user = user;
+		setup.generic.in.domain = domain;
+	}
 
 	mem_ctx = talloc_init("tcon");
 	if (!mem_ctx) {
