@@ -21,7 +21,7 @@ krb5_init_ets(krb5_context context)
 #if 0
 	initialize_kv5m_error_table(&context->et_list);
 	initialize_kdb5_error_table(&context->et_list);
-	initialize_asn1_error_table(&context->et_list);
 #endif
+	initialize_asn1_error_table(&context->et_list);
     }
 }

@@ -6,7 +6,7 @@ INCLUDES = -I$(top_builddir)/include -I$(srcdir)/.. -I$(srcdir)
 
 lib_LIBRARIES = error
 
-error_SOURCES = error.c krb5_err.c
+error_SOURCES = error.c krb5_err.c asn1_err.c
 
 %.c: %.et
 	$(srcdir)/compile_et $<
