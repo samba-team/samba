@@ -35,11 +35,22 @@
 
 RCSID("$Id$");
 
+static void
+print_time(OM_uint32 time_rec)
+{
+    if (time_rec == GSS_C_INDEFINITE) {
+	printf("cred never expire\n");
+    } else {
+	time_t t = time_rec;
+	printf("expiration time: %s", ctime(&t));
+    }
+}
+
 int
 main(int argc, char **argv)
 {
     OM_uint32 major_status, minor_status;
-    gss_cred_id_t cred_handle;
+    gss_cred_id_t cred_handle, copy_cred;
     OM_uint32 time_rec;
 
     major_status = gss_acquire_cred(&minor_status, 
@@ -53,16 +64,33 @@ main(int argc, char **argv)
     if (GSS_ERROR(major_status))
 	errx(1, "acquire_cred failed");
 	
-    if (time_rec == GSS_C_INDEFINITE) {
-	printf("cred never expire\n");
-    } else {
-	time_t t = time_rec;
-	printf("expiration time: %s", ctime(&t));
-    }
+
+    print_time(time_rec);
+
+    major_status = gss_add_cred (&minor_status,
+				 cred_handle,
+				 GSS_C_NO_NAME,
+				 GSS_KRB5_MECHANISM,
+				 GSS_C_INITIATE,
+				 0,
+				 0,
+				 &copy_cred,
+				 NULL,
+				 &time_rec,
+				 NULL);
+			    
+    if (GSS_ERROR(major_status))
+	errx(1, "add_cred failed");
+
+    print_time(time_rec);
 
     major_status = gss_release_cred(&minor_status,
 				    &cred_handle);
+    if (GSS_ERROR(major_status))
+	errx(1, "release_cred failed");
 
+    major_status = gss_release_cred(&minor_status,
+				    &copy_cred);
     if (GSS_ERROR(major_status))
 	errx(1, "release_cred failed");
 
