@@ -1,3 +1,9 @@
+2005-01-09  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/domacro.c: cast argument to is* to unsigned char
+
+	* ftp/ftp.c: cast argument to tolower to unsigned char
+
 2004-08-20 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/ftp.c: send ABOR protect with security layer if its there
