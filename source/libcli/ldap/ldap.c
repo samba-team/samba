@@ -589,14 +589,15 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		asn1_write_OctetString(&data, r->attribute,
 				       strlen(r->attribute));
-		asn1_write_OctetString(&data, r->value,
-				       strlen(r->value));
+		asn1_write_OctetString(&data, r->value.data,
+				       r->value.length);
 		asn1_pop_tag(&data);
 		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_CompareResponse: {
-/*		struct ldap_Result *r = &msg->r.CompareResponse; */
+		struct ldap_Result *r = &msg->r.ModifyDNResponse;
+		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
 	case LDAP_TAG_AbandonRequest: {
@@ -1070,8 +1071,19 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_CompareRequest): {
-/*		struct ldap_CompareRequest *r = &msg->r.CompareRequest; */
+		struct ldap_CompareRequest *r = &msg->r.CompareRequest;
 		msg->type = LDAP_TAG_CompareRequest;
+		asn1_start_tag(data,
+			       ASN1_APPLICATION(LDAP_TAG_CompareRequest));
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
+		asn1_start_tag(data, ASN1_SEQUENCE(0));
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->attribute);
+		asn1_read_OctetString(data, &r->value);
+		if (r->value.data) {
+			talloc_steal(msg->mem_ctx, r->value.data);
+		}
+		asn1_end_tag(data);
+		asn1_end_tag(data);
 		break;
 	}
 
