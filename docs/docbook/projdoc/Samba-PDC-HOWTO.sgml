@@ -1,0 +1,184 @@
+<chapter>
+
+
+<chapterinfo>
+	<author>
+		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
+		<affiliation>
+			<orgname>VA Linux Systems/Samba Team</orgname>
+			<address><email>jerry@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>15 Apr 2001</pubdate>
+</chapterinfo>
+
+<title>
+How to Configure Samba 2.2.x as a Primary Domain Controller
+</title>
+
+<sect1>
+<title>
+Background
+</title>
+
+<para>
+Version of Samba prior to release 2.2 had marginal capabilities to
+act as a Windows NT 4.0 Primary Domain Controller (PDC).  Please
+note that Windows 9x clients are not true members of a domain
+for reasons outlined in this article.  Therefore the protocol for
+support Windows 9x style domain logons is completely different
+from NT4 domain logons and has been officially supported for some 
+time.
+</para>
+
+<para>
+Beginning with Samba 2.2.0, we are proud to announce official 
+support for Windows NT 4.0 style domain logons from Windows NT
+4.0 and Windows 2000 (including SP1) clients.  This article 
+outlines the steps necessary for configuring Samba as a PDC.
+Note that it is necessary to have a working Samba server
+prior to implementing the PDC functionality.  If you have not 
+followed the steps outlined in <ulink url="UNIX_INSTALL.html">
+UNIX_INSTALL.html</ulink>, please make sure that your server 
+is configured correctly before proceeding.  Another good 
+resource in the <ulink url="smb.conf.5.html">smb.conf(5) man 
+page</ulink>.
+</para>
+
+<para>
+Implementing a Samba PDC can basically be divided into 2 broad
+steps.
+</para>
+
+<orderedlist numeration="Arabic">
+	<listitem><para>Configuring the Samba Domain Controller
+	</para></listitem>
+	
+	<listitem><para>Creating machine trust accounts
+	and joining clients to the domain</para></listitem>
+</orderedlist>
+
+<para>
+There are other minor details such as user profiles, system
+policies, etc...  However, these are not necessarily specific
+to a Samba PDC as much as they are related to Windows NT networking
+concepts.  They will be mentioned only briefly here.
+</para>
+
+<para>
+On a closing note, many people have asked regarding the status
+of Samba, Kerberos, and Active Directory.  Samba <emphasis>does 
+not</emphasis> implement a true Windows 2000 domain controller.  
+There are actually three pieces to this puzzle.
+</para>
+
+<itemizedlist>
+	<listitem><para>Kerberos</para></listitem>
+	<listitem><para>Samba</para></listitem>
+	<listitem><para>LDAP</para></listitem>
+</itemizedlist>
+
+<para>
+We are working on exploring possibilities related to this, but
+much work needs to be done.
+</para>
+</sect1>
+
+
+<sect1>
+<title>Configuring the Samba Domain Controller</title>
+
+<para>
+The first step in creating a working Samba PDC is to 
+understand the parameters necesary in smb.conf.  I will not
+attempt to re-explain the parameters here as they are more that
+adequately covered in <ulink url="smb.conf.5.html"> the smb.conf
+man page</ulink>.  For convienience, the parameters have been
+linked with the actual smb.conf description.
+</para>
+
+<para>
+Here is an example smb.conf for acting as a PDC:
+</para>
+
+<para><programlisting>
+[global]
+    ; Basic server settings
+    <ulink url="smb.conf.5.html#NETBIOSNAME">netbios name</ulink> = <replaceable>POGO</replaceable>
+    workgroup = <replaceable>NARNIA</replaceable>
+
+    ; we should act as the domain and local master browser
+    os level = 64
+    preferred master = yes
+    domain master = yes
+    local master = yes
+    
+    ; security settings (must user security = user)
+    security = user
+    
+    ; encrypted passwords are a requirement for a PDC
+    encrypt passwords = yes
+    
+    ; support domain logons
+    domain logons = yes
+    
+    ; where to store user profiles?
+    logon path = \\%N\profiles\%u
+    
+    ; where is a user's home directory and where should it
+    ; be mounted at?
+    logon drive = H:
+    logon home = \\homeserver\%u
+    
+    ; specify a generic logon script for all users
+    ; this is a relative path to the [netlogon] share
+    logon script = logon.cmd
+
+; necessary share for domain controller
+[netlogon]
+    path = /usr/local/samba/lib/netlogon
+    writeable = no
+    write list = ntadmin
+    
+; share for storing user profiles
+[profiles]
+    path = /export/smb/ntprofile
+    writeable = yes
+    create mask = 0600
+    directory mask = 0700
+</programlisting></para>
+
+<para>
+There are a couple of points to emphasize in the above
+configuration.
+</para>
+
+<itemizedlist>
+	<listitem><para>encrypted passwords must be enabled.
+	For more details on how to do this, refer to 
+	<ulink url="ENCRYPTION.html">ENCRYPTION.html</ulink>.
+	</para></listitem>
+	
+	<listitem><para>The server must support domain logons
+	and a [netlogon] share</para></listitem>
+	
+	<listitem><para>The server must be the domain master browser
+	in order for Windows client to locate the server as a DC.</para>
+	</listitem>
+</itemizedlist>    
+</sect1>
+
+
+<sect1>
+<title>Creating Machine Trust Accounts and Joining Clients 
+to the Domain</title>
+
+<para>
+</para>
+
+
+</sect1>
+
+
+
+</chapter>

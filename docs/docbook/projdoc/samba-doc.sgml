@@ -7,6 +7,7 @@
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
 <!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
+<!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -29,6 +30,7 @@
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
 &DOMAIN-MEMBER;
+&Samba-PDC-HOWTO;
 &WINBIND;
 &NT-Security;
 &OS2-Client;
