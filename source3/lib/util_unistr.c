@@ -572,25 +572,28 @@ BOOL load_unix_unicode_map(const char *unix_char_set)
 static char *unicode_to_multibyte(char *dst, const smb_ucs2_t *src,
                                   size_t dst_len, const uint16 *ucs2_to_cp)
 {
-	size_t i;
+	size_t dst_pos;
 
-	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
-		smb_ucs2_t val = ucs2_to_cp[*src];
+	for(dst_pos = 0; *src && (dst_pos < dst_len - 1);) {
+		smb_ucs2_t val = ucs2_to_cp[*src++];
 		if(val < 256) {
-			dst[i++] = (char)val;
-		} else if (i < (dst_len  - 2)) {
+			dst[dst_pos++] = (char)val;
+		} else {
+
+			if(dst_pos >= dst_len - 2)
+				break;
 
 			/*
 			 * A 2 byte value is always written as
 			 * high/low into the buffer stream.
 			 */
 
-			dst[i++] = (char)((val >> 8) & 0xff);
-			dst[i++] = (char)(val & 0xff);
+			dst[dst_pos++] = (char)((val >> 8) & 0xff);
+			dst[dst_pos++] = (char)(val & 0xff);
 		}
 	} 	
 
-	dst[i] = '\0';
+	dst[dst_pos] = '\0';
 
 	return dst;
 }
@@ -898,7 +901,7 @@ smb_ucs2_t *wstrtok(smb_ucs2_t *s1, const smb_ucs2_t *s2)
 
 smb_ucs2_t *wstrdup(const smb_ucs2_t *s)
 {
-	size_t newlen = (wstrlen(s)*sizeof(smb_ucs2_t)) + 1;
+	size_t newlen = (wstrlen(s)+1)*sizeof(smb_ucs2_t);
 	smb_ucs2_t *newstr = (smb_ucs2_t *)malloc(newlen);
     if (newstr == NULL)
         return NULL;
@@ -929,6 +932,7 @@ int wisupper( smb_ucs2_t val)
 {
 	return (map_table[val].flags & UNI_UPPER);
 }
+
 /*******************************************************************
  Is a lower case wchar.
 ********************************************************************/
@@ -937,6 +941,7 @@ int wislower( smb_ucs2_t val)
 {
 	return (map_table[val].flags & UNI_LOWER);
 }
+
 /*******************************************************************
  Is a digit wchar.
 ********************************************************************/
@@ -945,6 +950,7 @@ int wisdigit( smb_ucs2_t val)
 {
 	return (map_table[val].flags & UNI_DIGIT);
 }
+
 /*******************************************************************
  Is a hex digit wchar.
 ********************************************************************/
