@@ -428,7 +428,7 @@ static void usage(void)
 
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 2) {
+	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
