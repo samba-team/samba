@@ -44,12 +44,12 @@ static void node_status_response(struct subnet_record *subrec,
   if(!nmb_name_equal(question_name, answer_name))
   {
     DEBUG(0,("node_status_response: Answer name %s differs from question \
-name %s.\n", namestr(answer_name), namestr(question_name)));
+name %s.\n", nmb_namestr(answer_name), nmb_namestr(question_name)));
     return;
   }
 
   DEBUG(5,("node_status_response: response from name %s on subnet %s.\n",
-        namestr(answer_name), subrec->subnet_name));
+        nmb_namestr(answer_name), subrec->subnet_name));
 
   /* Just send the whole answer resource record for the success function
      to parse. */
@@ -70,7 +70,7 @@ static void node_status_timeout_response(struct subnet_record *subrec,
   struct nmb_name *question_name = &sent_nmb->question.question_name;
 
   DEBUG(5,("node_status_timeout_response: failed to get node status from name %s on subnet %s\n",
-           namestr(question_name), subrec->subnet_name));
+           nmb_namestr(question_name), subrec->subnet_name));
 
   if( rrec->fail_fn)
     (*rrec->fail_fn)(subrec, rrec);
@@ -92,7 +92,7 @@ BOOL node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
               success_fn, fail_fn, userdata, nmbname, send_ip)==NULL)
   {
     DEBUG(0,("node_status: Failed to send packet trying to get node status for \
-name %s, IP address %s\n", namestr(nmbname), inet_ntoa(send_ip)));
+name %s, IP address %s\n", nmb_namestr(nmbname), inet_ntoa(send_ip)));
     return True;
   } 
   return False;

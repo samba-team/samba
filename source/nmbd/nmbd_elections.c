@@ -197,7 +197,7 @@ void run_elections(time_t t)
         make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
         if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
           DEBUG(8,("run_elections: Cannot send election packet yet as name %s not \
-yet registered on subnet %s\n", namestr(&nmbname), subrec->subnet_name ));
+yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
           continue;
         }
 
@@ -368,7 +368,7 @@ BOOL check_elections(void)
         make_nmb_name(&nmbname, work->work_group, 0x1e, scope);
         if(find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME)==NULL) {
           DEBUG(8,("check_elections: Cannot send election packet yet as name %s not \
-yet registered on subnet %s\n", namestr(&nmbname), subrec->subnet_name ));
+yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
           continue;
         }
 

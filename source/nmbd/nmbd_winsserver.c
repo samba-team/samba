@@ -402,12 +402,12 @@ void wins_process_name_refresh_request(struct subnet_record *subrec,
 
     DEBUG(0,("wins_process_name_refresh_request: broadcast name refresh request \
 received for name %s from IP %s on subnet %s. Error - should not be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     return;
   }
 
   DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s \
-IP %s\n", namestr(question), inet_ntoa(from_ip) ));
+IP %s\n", nmb_namestr(question), inet_ntoa(from_ip) ));
 
   /* 
    * See if the name already exists.
@@ -424,7 +424,7 @@ IP %s\n", namestr(question), inet_ntoa(from_ip) ));
   if(namerec == NULL)
   {
     DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s and \
-the name does not exist. Treating as registration.\n", namestr(question) ));
+the name does not exist. Treating as registration.\n", nmb_namestr(question) ));
     wins_process_name_registration_request(subrec,p);
     return;
   }
@@ -437,7 +437,7 @@ the name does not exist. Treating as registration.\n", namestr(question) ));
   if((namerec != NULL) && ((group && !NAME_GROUP(namerec)) || (!group && NAME_GROUP(namerec))) )
   {
     DEBUG(3,("wins_process_name_refresh_request: Name %s group bit = %s \
-does not match group bit in WINS for this name.\n", namestr(question), group ? "True" : "False" ));
+does not match group bit in WINS for this name.\n", nmb_namestr(question), group ? "True" : "False" ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -483,7 +483,7 @@ does not match group bit in WINS for this name.\n", namestr(question), group ? "
      */
 
     DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s with IP %s and \
-is IP is not known to the name.\n", namestr(question), inet_ntoa(from_ip) ));
+is IP is not known to the name.\n", nmb_namestr(question), inet_ntoa(from_ip) ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -510,7 +510,7 @@ static void wins_register_query_success(struct subnet_record *subrec,
   memcpy((char *)&orig_reg_packet, userdata->data, sizeof(struct packet_struct *));
 
   DEBUG(3,("wins_register_query_success: Original client at IP %s still wants the \
-name %s. Rejecting registration request.\n", inet_ntoa(ip), namestr(question_name) ));
+name %s. Rejecting registration request.\n", inet_ntoa(ip), nmb_namestr(question_name) ));
 
   send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
 
@@ -563,7 +563,7 @@ static void wins_register_query_fail(struct subnet_record *subrec,
     wins_process_name_registration_request(subrec, orig_reg_packet);
   else
     DEBUG(2,("wins_register_query_fail: The state of the WINS database changed between \
-querying for name %s in order to replace it and this reply.\n", namestr(question_name) ));
+querying for name %s in order to replace it and this reply.\n", nmb_namestr(question_name) ));
 
   orig_reg_packet->locked = False;
   free_packet(orig_reg_packet);
@@ -650,12 +650,12 @@ void wins_process_name_registration_request(struct subnet_record *subrec,
 
     DEBUG(0,("wins_process_name_registration_request: broadcast name registration request \
 received for name %s from IP %s on subnet %s. Error - should not be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     return;
   }
 
   DEBUG(3,("wins_process_name_registration_request: %s name registration for name %s \
-IP %s\n", registering_group_name ? "Group" : "Unique", namestr(question), inet_ntoa(from_ip) ));
+IP %s\n", registering_group_name ? "Group" : "Unique", nmb_namestr(question), inet_ntoa(from_ip) ));
 
   /*
    * See if the name already exists.
@@ -674,7 +674,7 @@ IP %s\n", registering_group_name ? "Group" : "Unique", namestr(question), inet_n
      || (namerec->data.source == DNSFAIL_NAME) ) )
   {
     DEBUG(5,("wins_process_name_registration_request: Name (%s) in WINS was \
-a dns lookup - removing it.\n", namestr(question) ));
+a dns lookup - removing it.\n", nmb_namestr(question) ));
     remove_name_from_namelist( subrec, namerec );
     namerec = NULL;
   }
@@ -688,7 +688,7 @@ a dns lookup - removing it.\n", namestr(question) ));
   {
     DEBUG( 3, ( "wins_process_name_registration_request: Attempt \
 to register name %s. Name already exists in WINS with source type %d.\n",
-                namestr(question), namerec->data.source ));
+                nmb_namestr(question), namerec->data.source ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -715,7 +715,7 @@ to register name %s. Name already exists in WINS with source type %d.\n",
   if(!registering_group_name && (question->name_type == 0x1d))
   {
     DEBUG(3,("wins_process_name_registration_request: Ignoring request \
-to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
+to register name %s from IP %s.", nmb_namestr(question), inet_ntoa(p->ip) ));
     send_wins_name_registration_response(0, ttl, p);
     return;
   }
@@ -734,7 +734,7 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
        */
 
       DEBUG(3,("wins_process_name_registration_request: Adding IP %s to group name %s.\n",
-            inet_ntoa(from_ip), namestr(question) ));
+            inet_ntoa(from_ip), nmb_namestr(question) ));
       /* 
        * Check the ip address is not already in the group.
        */
@@ -752,7 +752,7 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
        */
 
       DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
-already exists in WINS as a GROUP name.\n", namestr(question) ));
+already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
       send_wins_name_registration_response(RFS_ERR, 0, p);
       return;
     } 
@@ -774,7 +774,7 @@ already exists in WINS as a GROUP name.\n", namestr(question) ));
     if(!ismyip(from_ip))
     {
       DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
-is one of our (WINS server) names. Denying registration.\n", namestr(question) ));
+is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
       send_wins_name_registration_response(RFS_ERR, 0, p);
       return;
     }
@@ -903,7 +903,7 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
   if( (namerec == NULL) || (namerec->data.source != REGISTER_NAME) )
   {
     DEBUG(3,("wins_multihomed_register_query_success: name %s is not in the correct state to add \
-a subsequent IP addess.\n", namestr(question_name) ));
+a subsequent IP addess.\n", nmb_namestr(question_name) ));
     send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
 
     orig_reg_packet->locked = False;
@@ -940,7 +940,7 @@ static void wins_multihomed_register_query_fail(struct subnet_record *subrec,
   memcpy((char *)&orig_reg_packet, userdata->data, sizeof(struct packet_struct *));
 
   DEBUG(3,("wins_multihomed_register_query_fail: Registering machine at IP %s failed to answer \
-query successfully for name %s.\n", inet_ntoa(orig_reg_packet->ip), namestr(question_name) ));
+query successfully for name %s.\n", inet_ntoa(orig_reg_packet->ip), nmb_namestr(question_name) ));
   send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
 
   orig_reg_packet->locked = False;
@@ -977,7 +977,7 @@ void wins_process_multihomed_name_registration_request( struct subnet_record *su
 
     DEBUG(0,("wins_process_multihomed_name_registration_request: broadcast name registration request \
 received for name %s from IP %s on subnet %s. Error - should not be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     return;
   }
 
@@ -989,12 +989,12 @@ received for name %s from IP %s on subnet %s. Error - should not be sent to WINS
   {
     DEBUG(0,("wins_process_multihomed_name_registration_request: group name registration request \
 received for name %s from IP %s on subnet %s. Errror - group names should not be multihomed.\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     return;
   }
 
   DEBUG(3,("wins_process_multihomed_name_registration_request: name registration for name %s \
-IP %s\n", namestr(question), inet_ntoa(from_ip) ));
+IP %s\n", nmb_namestr(question), inet_ntoa(from_ip) ));
 
   /*
    * Deal with policy regarding 0x1d names.
@@ -1003,7 +1003,7 @@ IP %s\n", namestr(question), inet_ntoa(from_ip) ));
   if(question->name_type == 0x1d)
   {
     DEBUG(3,("wins_process_multihomed_name_registration_request: Ignoring request \
-to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
+to register name %s from IP %s.", nmb_namestr(question), inet_ntoa(p->ip) ));
     send_wins_name_registration_response(0, ttl, p);  
     return;
   }
@@ -1025,7 +1025,7 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
      || (namerec->data.source == DNSFAIL_NAME) ) )
   {
     DEBUG(5,("wins_process_multihomed_name_registration_request: Name (%s) in WINS was a dns lookup \
-- removing it.\n", namestr(question) ));
+- removing it.\n", nmb_namestr(question) ));
     remove_name_from_namelist( subrec, namerec);
     namerec = NULL;
   }
@@ -1039,7 +1039,7 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
   {
     DEBUG( 3, ( "wins_process_multihomed_name_registration_request: Attempt \
 to register name %s. Name already exists in WINS with source type %d.\n",
-    namestr(question), namerec->data.source ));
+    nmb_namestr(question), namerec->data.source ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -1051,7 +1051,7 @@ to register name %s. Name already exists in WINS with source type %d.\n",
   if((namerec != NULL) && NAME_GROUP(namerec))
   {
     DEBUG(3,("wins_process_multihomed_name_registration_request: Attempt to register name %s. Name \
-already exists in WINS as a GROUP name.\n", namestr(question) ));
+already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   } 
@@ -1072,7 +1072,7 @@ already exists in WINS as a GROUP name.\n", namestr(question) ));
     if(!ismyip(from_ip))
     {
       DEBUG(3,("wins_process_multihomed_name_registration_request: Attempt to register name %s. Name \
-is one of our (WINS server) names. Denying registration.\n", namestr(question) ));
+is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
       send_wins_name_registration_response(RFS_ERR, 0, p);
       return;
     }
@@ -1310,7 +1310,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
   struct name_record *namerec = NULL;
 
   DEBUG(3,("wins_process_name_query: name query for name %s from IP %s\n", 
-            namestr(question), inet_ntoa(p->ip) ));
+            nmb_namestr(question), inet_ntoa(p->ip) ));
 
   /*
    * Special name code. If the queried name is *<1b> then search
@@ -1336,7 +1336,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
     if( namerec->data.source == DNSFAIL_NAME )
     {
       DEBUG(3,("wins_process_name_query: name query for name %s returning DNS fail.\n",
-             namestr(question) ));
+             nmb_namestr(question) ));
       send_wins_name_query_response(NAM_ERR, p, namerec);
       return;
     }
@@ -1349,13 +1349,13 @@ void wins_process_name_query_request(struct subnet_record *subrec,
      && (namerec->data.death_time < p->timestamp) )
     {
       DEBUG(3,("wins_process_name_query: name query for name %s - name expired. Returning fail.\n",
-                namestr(question) ));
+                nmb_namestr(question) ));
       send_wins_name_query_response(NAM_ERR, p, namerec);
       return;
     }
 
     DEBUG(3,("wins_process_name_query: name query for name %s returning first IP %s.\n",
-           namestr(question), inet_ntoa(namerec->data.ip[0]) ));
+           nmb_namestr(question), inet_ntoa(namerec->data.ip[0]) ));
 
     send_wins_name_query_response(0, p, namerec);
     return;
@@ -1370,7 +1370,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
   {
 
     DEBUG(3,("wins_process_name_query: name query for name %s not found - doing dns lookup.\n",
-              namestr(question) ));
+              nmb_namestr(question) ));
 
     queue_dns_query(p, question, &namerec);
     return;
@@ -1430,12 +1430,12 @@ void wins_process_name_release_request(struct subnet_record *subrec,
 
     DEBUG(0,("wins_process_name_release_request: broadcast name registration request \
 received for name %s from IP %s on subnet %s. Error - should not be sent to WINS server\n",
-          namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
     return;
   }
   
   DEBUG(3,("wins_process_name_release_request: %s name release for name %s \
-IP %s\n", releasing_group_name ? "Group" : "Unique", namestr(question), inet_ntoa(from_ip) ));
+IP %s\n", releasing_group_name ? "Group" : "Unique", nmb_namestr(question), inet_ntoa(from_ip) ));
     
   /*
    * Deal with policy regarding 0x1d names.
@@ -1444,7 +1444,7 @@ IP %s\n", releasing_group_name ? "Group" : "Unique", namestr(question), inet_nto
   if(!releasing_group_name && (question->name_type == 0x1d))
   {
     DEBUG(3,("wins_process_name_release_request: Ignoring request \
-to release name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
+to release name %s from IP %s.", nmb_namestr(question), inet_ntoa(p->ip) ));
     send_wins_name_release_response(0, p);
     return;
   }
@@ -1483,7 +1483,7 @@ to release name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
   {
     DEBUG(3,("wins_process_name_release_request: Refusing request to \
 release name %s as IP %s is not one of the known IP's for this name.\n",
-           namestr(question), inet_ntoa(from_ip) ));
+           nmb_namestr(question), inet_ntoa(from_ip) ));
     send_wins_name_release_response(NAM_ERR, p);
     return;
   }    
@@ -1576,7 +1576,7 @@ void wins_write_database(BOOL background)
     int i;
     struct tm *tm;
 
-    DEBUGADD(4,("%-19s ", namestr(&namerec->name) ));
+    DEBUGADD(4,("%-19s ", nmb_namestr(&namerec->name) ));
 
     if( namerec->data.death_time != PERMANENT_TTL )
     {

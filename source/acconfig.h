@@ -13,6 +13,7 @@
 #undef aclent_t
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
+#undef WITH_SMBWRAPPER
 #undef WITH_AFS
 #undef WITH_DFS
 #undef SUNOS5

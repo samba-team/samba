@@ -40,7 +40,7 @@ static void my_name_register_failed(struct subnet_record *subrec,
                               struct response_record *rrec, struct nmb_name *nmbname)
 {
   DEBUG(0,("my_name_register_failed: Failed to register my name %s on subnet %s.\n",
-            namestr(nmbname), subrec->subnet_name));
+            nmb_namestr(nmbname), subrec->subnet_name));
 }
 
 /****************************************************************************

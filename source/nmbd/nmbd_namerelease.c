@@ -53,7 +53,7 @@ static void release_name_response(struct subnet_record *subrec,
   if(!nmb_name_equal(question_name, answer_name))
   {
     DEBUG(0,("release_name_response: Answer name %s differs from question \
-name %s.\n", namestr(answer_name), namestr(question_name)));
+name %s.\n", nmb_namestr(answer_name), nmb_namestr(question_name)));
     return;
   }
 
@@ -61,7 +61,7 @@ name %s.\n", namestr(answer_name), namestr(question_name)));
   {
     /* Someone sent a response. This shouldn't happen/ */
     DEBUG(1,("release_name_response: A response for releasing name %s was received on a \
-broadcast subnet %s. This should not happen !\n", namestr(answer_name), subrec->subnet_name));
+broadcast subnet %s. This should not happen !\n", nmb_namestr(answer_name), subrec->subnet_name));
     return;
   }
   else
@@ -74,7 +74,7 @@ broadcast subnet %s. This should not happen !\n", namestr(answer_name), subrec->
 
       DEBUG(0,("release_name_response: WINS server at IP %s rejected our \
 name release of name %s with error code %d.\n", inet_ntoa(p->ip), 
-                  namestr(answer_name), nmb->header.rcode));
+                  nmb_namestr(answer_name), nmb->header.rcode));
 
     }
     else if(nmb->header.opcode == NMB_WACK_OPCODE)
@@ -83,7 +83,7 @@ name release of name %s with error code %d.\n", inet_ntoa(p->ip),
          the response but don't send out any more release requests. */
 
       DEBUG(5,("release_name_response: WACK from WINS server %s in releasing \
-name %s on subnet %s.\n", inet_ntoa(p->ip), namestr(answer_name), subrec->subnet_name));
+name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(answer_name), subrec->subnet_name));
 
       rrec->repeat_count = 0;
       /* How long we should wait for. */
@@ -94,7 +94,7 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), namestr(answer_name), subrec->subnet
   } 
 
   DEBUG(5,("release_name_response: %s in releasing name %s on subnet %s.\n",
-        success ? "success" : "failure", namestr(answer_name), subrec->subnet_name));
+        success ? "success" : "failure", nmb_namestr(answer_name), subrec->subnet_name));
 
   if(success)
   {
@@ -171,7 +171,7 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
   }
 
   DEBUG(5,("release_name_timeout_response: %s in releasing name %s on subnet %s.\n",
-        success ? "success" : "failure", namestr(question_name), subrec->subnet_name));
+        success ? "success" : "failure", nmb_namestr(question_name), subrec->subnet_name));
 
   if(success && rrec->success_fn)
   {
@@ -204,7 +204,7 @@ BOOL release_name(struct subnet_record *subrec, struct name_record *namerec,
   if((namerec->data.source != SELF_NAME) || !NAME_IS_ACTIVE(namerec))
   {
     DEBUG(0,("release_name: Cannot release name %s from subnet %s. Source was %d \n",
-          namestr(&namerec->name), subrec->subnet_name, namerec->data.source)); 
+          nmb_namestr(&namerec->name), subrec->subnet_name, namerec->data.source)); 
     return True;
   }
 
@@ -230,7 +230,7 @@ BOOL release_name(struct subnet_record *subrec, struct name_record *namerec,
         namerec->data.ip[i]) == NULL)
     {
       DEBUG(0,("release_name: Failed to send packet trying to release name %s IP %s\n",
-            namestr(&namerec->name), inet_ntoa(namerec->data.ip[i]) ));
+            nmb_namestr(&namerec->name), inet_ntoa(namerec->data.ip[i]) ));
       return True;
     }
   }

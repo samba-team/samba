@@ -125,16 +125,16 @@ struct name_record *find_name_on_subnet( struct subnet_record *subrec,
       {
       DEBUG( 9, 
              ( "find_name_on_subnet: on subnet %s - self name %s NOT FOUND\n",
-               subrec->subnet_name, namestr(nmbname) ) );
+               subrec->subnet_name, nmb_namestr(nmbname) ) );
       return( NULL );
       }
     DEBUG( 9, ("find_name_on_subnet: on subnet %s - found name %s source=%d\n",
-               subrec->subnet_name, namestr(nmbname), name_ret->data.source) );
+               subrec->subnet_name, nmb_namestr(nmbname), name_ret->data.source) );
     return( name_ret );
     }
   DEBUG( 9, 
          ( "find_name_on_subnet: on subnet %s - name %s NOT FOUND\n",
-           subrec->subnet_name, namestr(nmbname) ) );
+           subrec->subnet_name, nmb_namestr(nmbname) ) );
   return( NULL );
   } /* find_name_on_subnet */
 
@@ -243,7 +243,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
 
   DEBUG( 3, ( "add_name_to_subnet: Added netbios name %s with first IP %s \
 ttl=%d nb_flags=%2x to subnet %s\n",
-	    namestr( &namerec->name ),
+	    nmb_namestr( &namerec->name ),
             inet_ntoa( *iplist ),
             ttl,
             (unsigned int)nb_flags,
@@ -292,7 +292,7 @@ void standard_fail_register( struct subnet_record   *subrec,
 
   DEBUG( 0, ( "standard_fail_register: Failed to register/refresh name %s \
 on subnet %s\n",
-            namestr(nmbname), subrec->subnet_name) );
+            nmb_namestr(nmbname), subrec->subnet_name) );
 
   /* Remove the name from the subnet. */
   if( namerec )
@@ -399,7 +399,7 @@ void standard_success_release( struct subnet_record   *subrec,
   {
     DEBUG( 0, ( "standard_success_release: Name release for name %s IP %s \
 on subnet %s. Name was not found on subnet.\n",
-                namestr(nmbname),
+                nmb_namestr(nmbname),
                 inet_ntoa(released_ip),
                 subrec->subnet_name) );
     return;
@@ -413,7 +413,7 @@ on subnet %s. Name was not found on subnet.\n",
     if( namerec->data.num_ips == orig_num )
       DEBUG( 0, ( "standard_success_release: Name release for name %s IP %s \
 on subnet %s. This ip is not known for this name.\n",
-                namestr(nmbname),
+                nmb_namestr(nmbname),
                 inet_ntoa(released_ip),
                 subrec->subnet_name ) );
   }
@@ -443,13 +443,13 @@ void expire_names_on_subnet(struct subnet_record *subrec, time_t t)
       {
         DEBUG( 3, ( "expire_names_on_subnet: Subnet %s not expiring SELF \
 name %s\n", 
-                    subrec->subnet_name, namestr(&namerec->name) ) );
+                    subrec->subnet_name, nmb_namestr(&namerec->name) ) );
         namerec->data.death_time += 300;
         namerec->subnet->namelist_changed = True;
         continue;
       }
       DEBUG(3,("expire_names_on_subnet: Subnet %s - removing expired name %s\n",
-                 subrec->subnet_name, namestr(&namerec->name)));
+                 subrec->subnet_name, nmb_namestr(&namerec->name)));
   
       remove_name_from_namelist( subrec, namerec );
     }
@@ -541,7 +541,7 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
        namerec;
        namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
-    fprintf(fp,"\tName = %s\t", namestr(&namerec->name));
+    fprintf(fp,"\tName = %s\t", nmb_namestr(&namerec->name));
     switch(namerec->data.source)
     {
       case LMHOSTS_NAME:

@@ -74,7 +74,7 @@ in workgroup %s on subnet %s\n",
 
   DEBUG(0,("become_domain_master_fail: Failed to become a domain master browser for \
 workgroup %s on subnet %s. Couldn't register name %s.\n",
-       work->work_group, subrec->subnet_name, namestr(fail_name)));
+       work->work_group, subrec->subnet_name, nmb_namestr(fail_name)));
 }
 
 /****************************************************************************
@@ -213,7 +213,7 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
     {
       dbgtext( "become_domain_master_query_success():\n" );
       dbgtext( "Our address (%s) ", inet_ntoa(ip) );
-      dbgtext( "returned in query for name %s ", namestr(nmbname) );
+      dbgtext( "returned in query for name %s ", nmb_namestr(nmbname) );
       dbgtext( "(domain master browser name) " );
       dbgtext( "on subnet %s.\n", subrec->subnet_name );
       dbgtext( "Continuing with domain master code.\n" );
@@ -249,7 +249,7 @@ static void become_domain_master_query_fail(struct subnet_record *subrec,
   {
     DEBUG(0,("become_domain_master_query_fail: Error %d returned when \
 querying WINS server for name %s.\n", 
-                  fail_code, namestr(question_name)));
+                  fail_code, nmb_namestr(question_name)));
     return;
   }
 
@@ -344,7 +344,7 @@ static void become_domain_master_browser_wins(char *workgroup_name)
 
       DEBUG(0,("become_domain_master_browser_wins: querying WINS server at IP %s \
 for domain master browser name %s on workgroup %s\n",
-         inet_ntoa(unicast_subnet->myip), namestr(&nmbname), workgroup_name));
+         inet_ntoa(unicast_subnet->myip), nmb_namestr(&nmbname), workgroup_name));
 
       query_name(unicast_subnet, nmbname.name, nmbname.name_type,
                    become_domain_master_query_success,

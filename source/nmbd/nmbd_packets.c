@@ -279,7 +279,7 @@ static BOOL initiate_name_query_packet( struct packet_struct *packet)
   nmb->header.nm_flags.recursion_desired = True;
 
   DEBUG(4,("initiate_name_query_packet: sending query for name %s (bcast=%s) to IP %s\n",
-	   namestr(&nmb->question.question_name), 
+	   nmb_namestr(&nmb->question.question_name), 
            BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
 
   return send_netbios_packet( packet );
@@ -301,7 +301,7 @@ static BOOL initiate_name_query_packet_from_wins_server( struct packet_struct *p
   nmb->header.nm_flags.recursion_desired = False;
   
   DEBUG(4,("initiate_name_query_packet_from_wins_server: sending query for name %s (bcast=%s) to IP %s\n",
-           namestr(&nmb->question.question_name),
+           nmb_namestr(&nmb->question.question_name),
            BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
     
   return send_netbios_packet( packet );
@@ -325,7 +325,7 @@ static BOOL initiate_name_register_packet( struct packet_struct *packet,
     return False;
 
   DEBUG(4,("initiate_name_register_packet: sending registration for name %s (bcast=%s) to IP %s\n",
-	   namestr(&nmb->additional->rr_name),
+	   nmb_namestr(&nmb->additional->rr_name),
            BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
 
   return send_netbios_packet( packet );
@@ -353,7 +353,7 @@ static BOOL initiate_multihomed_name_register_packet( struct packet_struct *pack
 
   DEBUG(4,("initiate_multihomed_name_register_packet: sending registration \
 for name %s IP %s (bcast=%s) to IP %s\n",
-	   namestr(&nmb->additional->rr_name), inet_ntoa(*register_ip),
+	   nmb_namestr(&nmb->additional->rr_name), inet_ntoa(*register_ip),
            BOOLSTR(nmb->header.nm_flags.bcast), second_ip_buf ));
 
   return send_netbios_packet( packet );
@@ -377,7 +377,7 @@ static BOOL initiate_name_refresh_packet( struct packet_struct *packet,
     return False;
 
   DEBUG(4,("initiate_name_refresh_packet: sending refresh for name %s (bcast=%s) to IP %s\n",
-	   namestr(&nmb->additional->rr_name),
+	   nmb_namestr(&nmb->additional->rr_name),
            BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
 
   return send_netbios_packet( packet );
@@ -401,7 +401,7 @@ static BOOL initiate_name_release_packet( struct packet_struct *packet,
     return False;
 
   DEBUG(4,("initiate_name_release_packet: sending release for name %s (bcast=%s) to IP %s\n",
-	   namestr(&nmb->additional->rr_name),
+	   nmb_namestr(&nmb->additional->rr_name),
            BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
 
   return send_netbios_packet( packet );
@@ -423,7 +423,7 @@ static BOOL initiate_node_status_packet( struct packet_struct *packet )
   nmb->question.question_type = QUESTION_TYPE_NB_STATUS;
 
   DEBUG(4,("initiate_node_status_packet: sending node status request for name %s to IP %s\n",
-	   namestr(&nmb->question.question_name),
+	   nmb_namestr(&nmb->question.question_name),
            inet_ntoa(packet->ip)));
 
   return send_netbios_packet( packet );
@@ -898,7 +898,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
     default:
     {
       DEBUG(0,("reply_netbios_packet: Unknown packet type: %s %s to ip %s\n",
-	            packet_type, namestr(&orig_nmb->question.question_name),
+	            packet_type, nmb_namestr(&orig_nmb->question.question_name),
                     inet_ntoa(packet.ip)));
 
       return;
@@ -907,7 +907,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 
   DEBUG(4,("reply_netbios_packet: sending a reply of packet type: %s %s to ip %s \
 for id %hu\n",
-	   packet_type, namestr(&orig_nmb->question.question_name),
+	   packet_type, nmb_namestr(&orig_nmb->question.question_name),
            inet_ntoa(packet.ip), orig_nmb->header.name_trn_id));
 
   nmb->header.name_trn_id = orig_nmb->header.name_trn_id;
@@ -1033,7 +1033,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   if (is_myname(dgram->source_name.name))
   {
     DEBUG(0,("process_browse_packet: Discarding datagram from IP %s. Source name \
-%s is one of our names !\n", inet_ntoa(p->ip), namestr(&dgram->source_name)));
+%s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
     return;
   }
 
@@ -1090,7 +1090,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
       /* We never send ANN_GetBackupListReq so we
          should never get these. */
       DEBUG(0,("process_browse_packet: Discarding GetBackupListResponse \
-packet from %s IP %s\n", namestr(&dgram->source_name), inet_ntoa(p->ip)));
+packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
       break;
     }
     case ANN_ResetBrowserState:
@@ -1117,8 +1117,8 @@ packet from %s IP %s\n", namestr(&dgram->source_name), inet_ntoa(p->ip)));
       debug_browse_data(buf, len);
       DEBUG(10,("process_browse_packet: On subnet %s ignoring browse packet \
 command ANN_BecomeBackup from %s IP %s to %s\n",
-            subrec->subnet_name, namestr(&dgram->source_name),
-            inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+            subrec->subnet_name, nmb_namestr(&dgram->source_name),
+            inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
       break;
     }
     default:
@@ -1126,8 +1126,8 @@ command ANN_BecomeBackup from %s IP %s to %s\n",
       debug_browse_data(buf, len);
       DEBUG(0,("process_browse_packet: On subnet %s ignoring browse packet \
 command code %d from %s IP %s to %s\n", 
-            subrec->subnet_name, command, namestr(&dgram->source_name),
-            inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+            subrec->subnet_name, command, nmb_namestr(&dgram->source_name),
+            inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
     }
   } 
 }
@@ -1154,7 +1154,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   if (is_myname(dgram->source_name.name))
   {
     DEBUG(0,("process_lanman_packet: Discarding datagram from IP %s. Source name \
-%s is one of our names !\n", inet_ntoa(p->ip), namestr(&dgram->source_name)));
+%s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
     return;
   }
 
@@ -1175,8 +1175,8 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
     {
       DEBUG(0,("process_lanman_packet: On subnet %s ignoring browse packet \
 command code %d from %s IP %s to %s\n",
-            subrec->subnet_name, command, namestr(&dgram->source_name),
-            inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+            subrec->subnet_name, command, nmb_namestr(&dgram->source_name),
+            inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
     }
   }
 }
@@ -1218,7 +1218,7 @@ static void process_dgram(struct packet_struct *p)
   if (!listening(p,&dgram->dest_name))
   {
     DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from %s\n",
-           namestr(&dgram->dest_name), inet_ntoa(p->ip)));
+           nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip)));
     return;
   }
 
@@ -1229,7 +1229,7 @@ static void process_dgram(struct packet_struct *p)
     /* Don't process error packets etc yet */
     DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from IP %s as it is \
            an error packet of type %x\n",
-           namestr(&dgram->dest_name), inet_ntoa(p->ip), dgram->header.msg_type));
+           nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip), dgram->header.msg_type));
     return;
   }
 
@@ -1244,7 +1244,7 @@ static void process_dgram(struct packet_struct *p)
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
   DEBUG(4,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d\n",
-	   namestr(&dgram->source_name),namestr(&dgram->dest_name),
+	   nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
  
@@ -1940,8 +1940,8 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   p.packet_type = DGRAM_PACKET;
 
   DEBUG(4,("send_mailslot: Sending to mailslot %s from %s IP %s ", mailslot,
-                    namestr(&dgram->source_name), inet_ntoa(src_ip)));
-  DEBUG(4,("to %s IP %s\n", namestr(&dgram->dest_name), inet_ntoa(dest_ip)));
+                    nmb_namestr(&dgram->source_name), inet_ntoa(src_ip)));
+  DEBUG(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), inet_ntoa(dest_ip)));
 
   debug_browse_data(buf, len);
 
