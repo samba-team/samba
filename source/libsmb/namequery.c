@@ -61,6 +61,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 	for (i=0;i< *num_names;i++) {
 		StrnCpy(ret[i].name,p,15);
 		trim_string(ret[i].name,NULL," ");
+		dos_to_unix(ret[i].name);
 		ret[i].type = CVAL(p,15);
 		ret[i].flags = p[16];
 		p += 18;
