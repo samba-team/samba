@@ -407,7 +407,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				if(!prs_uint8s(True,"string",ps,depth, (uint8 *)&data->notify_data.data.length,x*2)) 
 					return False;
 			} else {
-				if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
+				if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 					return False;
 			}
 		} else {
@@ -418,7 +418,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 			if (!data->notify_data.data.string) 
 				return False;
 
-			if(!prs_uint16s(True,"string",ps,depth,data->notify_data.data.string,x))
+			if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 				return False;
 		}
 	}
@@ -550,7 +550,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 			return False;
 	}
 
-	if (!prs_uint16s(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
+	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
 		return False;
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
 		return False;
@@ -595,7 +595,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 			return False;
 	}
 
-	if (!prs_uint16s(True, "formname",  ps, depth, devmode->formname.buffer, 32))
+	if (!prs_uint16uni(True, "formname",  ps, depth, devmode->formname.buffer, 32))
 		return False;
 	if (!prs_uint16("logpixels",        ps, depth, &devmode->logpixels))
 		return False;
@@ -5313,14 +5313,8 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
 
-	if (MARSHALLING(ps)) {
-		/* "Value is actually a UNICODE string. It's already little-endian so don't reverse. */
-		if(!prs_uint8s(False, "value", ps, depth, (uint8 *)r_u->value, r_u->valuesize * 2))
-			return False;
-	} else {
-		if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize ))
-			return False;
-	}
+	if(!prs_uint16uni(False, "value", ps, depth, r_u->value, r_u->valuesize ))
+		return False;
 
 	if(!prs_align(ps))
 		return False;

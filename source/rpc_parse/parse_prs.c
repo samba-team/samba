@@ -552,6 +552,59 @@ BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *d
 }
 
 /******************************************************************
+ Start using a function for streaming unicode chars.
+ ********************************************************************/
+
+static void dbg_rw_punival(BOOL charmode, char *name, int depth, uint32 data_offset, BOOL do_read,
+							BOOL bigendian_data, char *in_buf, char *out_buf, int len)
+{
+	int i;
+
+	if (do_read) {
+		if (bigendian_data) {
+			for (i = 0; i < len; i++)
+				SSVAL(out_buf,2*i,RSVAL(in_buf, 2*i));
+		} else {
+			for (i = 0; i < len; i++)
+				SSVAL(out_buf, 2*i, SVAL(in_buf, 2*i));
+		}
+	} else {
+		if (bigendian_data) {
+			for (i = 0; i < len; i++)
+				RSSVAL(in_buf, 2*i, SVAL(out_buf,2*i));
+		} else {
+			for (i = 0; i < len; i++)
+				SSVAL(in_buf, 2*i, SVAL(out_buf,2*i));
+		}
+	}
+
+	DEBUG(5,("%s%04x %s: ", tab_depth(depth), data_offset, name));
+	if (charmode)
+		print_asc(5, (unsigned char*)out_buf, 2*len);
+	else {
+		for (i = 0; i < len; i++)
+			DEBUG(5,("%04x ", out_buf[i]));
+	}
+    DEBUG(5,("\n"));
+}
+
+/******************************************************************
+ Stream a unistr. Always little endian.
+ ********************************************************************/
+
+BOOL prs_uint16uni(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+{
+	char *q = prs_mem_get(ps, len * sizeof(uint16));
+	if (q == NULL)
+		return False;
+
+	dbg_rw_punival(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len);
+	ps->data_offset += (len * sizeof(uint16));
+
+	return True;
+}
+
+/******************************************************************
  Stream an array of uint32s. Length is number of uint32s.
  ********************************************************************/
 
@@ -592,15 +645,9 @@ BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *
 
 	p = (char *)str->buffer;
 
-	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data) {
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, 
+	dbg_rw_punival(charmode, name, depth, ps->data_offset, 
 			     ps->io, ps->bigendian_data, q, p, 
-			     str->buf_len)
-	} else {
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, 
-			     ps->io, q, p, str->buf_len * sizeof(uint16))
-	}
+			     str->buf_len);
 	
 	ps->data_offset += (str->buf_len * sizeof(uint16));
 
@@ -628,10 +675,7 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 	p = (char *)str->buffer;
 
 	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data)
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->buf_len/2)
-	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->buf_len)
+	dbg_rw_punival(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->buf_len/2);
 	ps->data_offset += str->buf_len;
 
 	return True;
@@ -685,15 +729,9 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 
 	p = (char *)str->buffer;
 
-	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data) {
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, 
+	dbg_rw_punival(charmode, name, depth, ps->data_offset, 
 			     ps->io, ps->bigendian_data, q, p, 
-			     str->uni_str_len)
-	} else {
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, 
-			     ps->io, q, p, str->uni_str_len * sizeof(uint16))
-	}
+			     str->uni_str_len);
 	
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
@@ -723,11 +761,7 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
 
 	p = (char *)str->str.buffer;
 
-	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data)
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
-	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * sizeof(uint16))
+	dbg_rw_punival(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len);
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
 	return True;
