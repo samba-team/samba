@@ -123,15 +123,12 @@ BOOL torture_open_connection(struct smbcli_state **c)
 BOOL torture_close_connection(struct smbcli_state *c)
 {
 	BOOL ret = True;
-	DEBUG(9,("torture_close_connection: smbcli_state@%p\n", c));
 	if (!c) return True;
 	if (NT_STATUS_IS_ERR(smbcli_tdis(c))) {
 		printf("tdis failed (%s)\n", smbcli_errstr(c->tree));
 		ret = False;
 	}
-	DEBUG(9,("torture_close_connection: call smbcli_shutdown\n"));
 	smbcli_shutdown(c);
-	DEBUG(9,("torture_close_connection: exit\n"));
 	return ret;
 }
 
