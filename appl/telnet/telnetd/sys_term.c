@@ -1431,19 +1431,15 @@ void start_login(char *host, int autologin, char *name)
 		setenv("LINEMODE", "kludge", 1);
 # endif
 #endif
-#if	defined (SecurID)
-	/*
-	 * don't worry about the -f that might get sent.
-	 * A -s is supposed to override it anyhow.
-	 */
-	if (require_SecurID)
-		addarg(&argv, "-s");
-#endif
 #if	defined (AUTHENTICATION)
 	if (auth_level < 0 || autologin != AUTH_VALID) {
 		if(!no_warn)
 		  printf("User not authenticated. "
 			 "Using plaintext username and password\r\n");
+		if (require_otp) {
+		  addarg(&argv, "-a");
+		  addarg(&argv, "otp");
+		}
 		if(log_unauth) {
 		  char *u;
 		  if(name[0]) u = name;
