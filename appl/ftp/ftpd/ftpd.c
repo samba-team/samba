@@ -1286,15 +1286,17 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 #ifdef HAVE_MMAP
 	    {
 		struct stat st;
-		void *chunk;
+		char *chunk;
 		int in = fileno(instr);
 		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)){
 		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
 		    if(chunk != NULL){
-			auth_write(fileno(outstr), chunk, st.st_size);
+			cnt = st.sz_size - restart_point;
+			auth_write(fileno(outstr),
+				   chunk + restart_point,
+				   cnt);
 			munmap(chunk, st.st_size);
 			auth_write(fileno(outstr), NULL, 0);
-			cnt = st.st_size;
 			byte_count = cnt;
 			transflag = 0;
 		    }
