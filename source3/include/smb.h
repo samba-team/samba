@@ -1695,7 +1695,7 @@ struct unix_error_map {
 
 /* generic iconv conversion structure */
 typedef struct {
-	size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
+	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft);
 	size_t (*pull)(void *cd, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
