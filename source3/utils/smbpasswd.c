@@ -295,7 +295,7 @@ add a new user to the local smbpasswd file
 *************************************************************/
 static BOOL add_new_user(char *user_name, uid_t uid, BOOL trust_account, 
 			 BOOL disable_user, BOOL set_no_password,
-			 char *new_p16, char *new_nt_p16)
+			 uchar *new_p16, uchar *new_nt_p16)
 {
 	struct smb_passwd new_smb_pwent;
 
