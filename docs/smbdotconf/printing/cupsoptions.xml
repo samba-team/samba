@@ -12,8 +12,8 @@
     <filename>cupsd.conf</filename>.  
     </para>
 
-    <value type="default">""</value>
-    <value type="example">"raw"</value>
-
 </description>
+
+<value type="default">""</value>
+<value type="example">"raw"</value>
 </samba:parameter>
