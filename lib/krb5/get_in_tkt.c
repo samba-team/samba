@@ -505,8 +505,13 @@ init_as_req (krb5_context context,
 
 	if (addrs)
 	    ret = krb5_copy_addresses(context, addrs, a->req_body.addresses);
-	else
+	else {
 	    ret = krb5_get_all_client_addrs (context, a->req_body.addresses);
+	    if(ret == 0 && a->req_body.addresses->len == 0) {
+		free(a->req_body.addresses);
+		a->req_body.addresses = NULL;
+	    }
+	}
 	if (ret)
 	    return ret;
     }
