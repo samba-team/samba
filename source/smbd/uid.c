@@ -711,10 +711,6 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 
 /*****************************************************************
  *THE CANONICAL* convert uid_t to SID function.
- check idmap if uid is in idmap range, otherwise falls back to
- the legacy algorithmic mapping.
- A special cache is used for uids that maps to Wellknown SIDs
- Returns SID pointer.
 *****************************************************************/  
 
 NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
@@ -752,10 +748,6 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 
 /*****************************************************************
  *THE CANONICAL* convert gid_t to SID function.
- check idmap if gid is in idmap range, otherwise falls back to
- the legacy algorithmic mapping.
- Group mapping is used for gids that maps to Wellknown SIDs
- Returns SID pointer.
 *****************************************************************/  
 
 NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
@@ -793,79 +785,56 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 
 /*****************************************************************
  *THE CANONICAL* convert SID to uid function.
- if it is a foreign sid or it is in idmap rid range check idmap,
- otherwise falls back to the legacy algorithmic mapping.
- A special cache is used for uids that maps to Wellknown SIDs
- Returns True if this name is a user sid and the conversion
- was done correctly, False if not.
 *****************************************************************/  
 
 NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
-	BOOL ret;
 
 	if (fetch_uid_from_cache(puid, psid))
 		return NT_STATUS_OK;
 
-	/* if this is our DIS then go straight to a local lookup */
+	/* if this is our SID then go straight to a local lookup */
 	
 	if ( sid_compare_domain(get_global_sam_sid(), psid) == 0 ) {
 		DEBUG(10,("sid_to_uid: my domain (%s) - trying local.\n",
 			sid_string_static(psid) ));
 		
-		if ( (ret = local_sid_to_uid(puid, psid, &name_type)) == True )
-			store_uid_sid_cache(psid, *puid);
+		if ( local_sid_to_uid(puid, psid, &name_type) )
+			goto success;
+			
+		DEBUG(10,("sid_to_uid: local lookup failed\n"));
 		
-		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
+	/* If it is not our local domain, only hope is winbindd */
 
-	/* look up the name and decide if this is a user sid */
-
-	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
-		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
+	if ( !winbind_lookup_sid(psid, dom_name, name, &name_type) ) {
+		DEBUG(10,("sid_to_uid: winbind lookup for non-local sid %s failed\n",
 			sid_string_static(psid) ));
-
-		if ( (ret = local_sid_to_uid(puid, psid, &name_type)) == True )
-			store_uid_sid_cache(psid, *puid);
-
-		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+			
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/*
-	 * Ensure this is a user sid.
-	 */
+	/* If winbindd does know the SID, ensure this is a user */
 
 	if (name_type != SID_NAME_USER) {
-		DEBUG(10,("sid_to_uid: winbind lookup succeeded but SID is not a uid (%u)\n",
+		DEBUG(10,("sid_to_uid: winbind lookup succeeded but SID is not a user (%u)\n",
 			(unsigned int)name_type ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* query only first */
-	
-	if ( !winbind_sid_to_uid_query(puid, psid) ) {
-		DEBUG(10,("sid_to_uid: winbind query for sid %s failed.\n",
-			sid_to_string(sid_str, psid) ));
-		
-		/* see if we have a local mapping */
-			
-		if ( local_sid_to_uid(puid, psid, &name_type) ) {
-			store_uid_sid_cache(psid, *puid);
-			return NT_STATUS_OK;
-		}
-			
-		/* Call back to winbind to allocate a new uid */
+	/* get the uid.  Has to work or else we are dead in the water */
 
-		if ( !winbind_sid_to_uid(puid, psid) ) {
-			DEBUG(10,("sid_to_uid: winbind failed to allocate a new uid for sid %s\n",
-				sid_to_string(sid_str, psid) ));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if ( !winbind_sid_to_uid(puid, psid) ) {
+		DEBUG(10,("sid_to_uid: winbind failed to allocate a new uid for sid %s\n",
+			sid_to_string(sid_str, psid) ));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+success:
 	DEBUG(10,("sid_to_uid: %s -> %u\n", sid_to_string(sid_str, psid),
 		(unsigned int)*puid ));
 
@@ -875,75 +844,56 @@ NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 }
 /*****************************************************************
  *THE CANONICAL* convert SID to gid function.
- if it is a foreign sid or it is in idmap rid range check idmap,
- otherwise falls back to the legacy algorithmic mapping.
  Group mapping is used for gids that maps to Wellknown SIDs
- Returns True if this name is a user sid and the conversion
- was done correctly, False if not.
 *****************************************************************/  
 
 NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
-	BOOL ret;
 
 	if (fetch_gid_from_cache(pgid, psid))
 		return NT_STATUS_OK;
 
 	/*
 	 * First we must look up the name and decide if this is a group sid.
+	 * Group mapping can deal with foreign SIDs
 	 */
 
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
 		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
 			sid_to_string(sid_str, psid) ));
 
-		ret = local_sid_to_gid(pgid, psid, &name_type);
-		if (ret)
-			store_gid_sid_cache(psid, *pgid);
+		if ( local_sid_to_gid(pgid, psid, &name_type) )
+			goto success;
 			
-		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+		DEBUG(10,("sid_to_gid: no one knows this SID\n"));
+		
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/*
-	 * Ensure this is a group sid.
-	 */
+	/* winbindd knows it; Ensure this is a group sid */
 
 	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
 		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
 			(unsigned int)name_type ));
 
-		ret = local_sid_to_gid(pgid, psid,  &name_type);
-		if (ret)
-			store_gid_sid_cache(psid, *pgid);
-		return (ret ? NT_STATUS_OK : NT_STATUS_INVALID_PARAMETER);
+		/* winbindd is running and knows about this SID.  Just the wrong type.
+		   Don't fallback to a local lookup here */
+		   
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	/* query only first */
 	
-	if ( !winbind_sid_to_gid_query(pgid, psid) ) {
-		DEBUG(10,("sid_to_gid: winbind query for sid %s failed.\n",
-			sid_to_string(sid_str, psid) ));
-			
-		/* see if we have a local mapping */
-			
-		if ( local_sid_to_gid(pgid, psid, &name_type) ) {
-			store_gid_sid_cache(psid, *pgid);
-			return NT_STATUS_OK;
-		}
-			
-		/* Call back to winbind to allocate a new uid */
+	/* winbindd knows it and it is a type of group; sid_to_gid must succeed
+	   or we are dead in the water */
 
-		if ( !winbind_sid_to_gid(pgid, psid) ) {
-			DEBUG(10,("sid_to_uid: winbind failed to allocate a new gid for sid %s\n",
-				sid_to_string(sid_str, psid) ));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		else
-			return NT_STATUS_UNSUCCESSFUL;
+	if ( !winbind_sid_to_gid(pgid, psid) ) {
+		DEBUG(10,("sid_to_uid: winbind failed to allocate a new gid for sid %s\n",
+			sid_to_string(sid_str, psid) ));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+success:
 	DEBUG(10,("sid_to_gid: %s -> %u\n", sid_to_string(sid_str, psid),
 		(unsigned int)*pgid ));
 
