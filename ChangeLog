@@ -26,7 +26,30 @@
 	
 	* kdc/kaserver.c (do_getticket): check client max_life
 	
+2005-03-31  Love  <lha@kth.se>
+
+	* lib/krb5/verify_krb5_conf.c: const poison
+
+	* lib/krb5/test_alname.c: const poison
+
+	* lib/asn1/main.c: const poison
+
+	* lib/krb5/test_addr.c: test parse IPv6 RANGE addresses
+
+	* lib/krb5/addr_families.c: implement mask boundary for IPv6
+
+	* lib/asn1/gen.c: avoid const string warnings steming from
+	writeable-string
+
 2005-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: TESTS += test_addr
+
+	* lib/krb5/test_addr.c: simple test for addresses
+	
+	* lib/krb5/addr_families.c: make RANGE parse prefixlen style
+	addresses too, fix printing of RANGE addresses, add
+	krb5_address_prefixlen_boundary
 
 	* lib/krb5/krb5_keytab.3: stop memory leak in example, expand on
 	wildcards
