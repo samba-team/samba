@@ -1,3 +1,8 @@
+2005-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* 8003.c (gssapi_krb5_verify_8003_checksum): check that cksum
+	isn't NULL From: Nicolas Pouvesle <npouvesle@tenablesecurity.com>
+
 2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: use $(LIB_roken)
