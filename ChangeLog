@@ -1,5 +1,7 @@
 2003-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/heim_threads.h: add missing argument to mutex_init
+	
 	* lib/krb5/crypto.c: protect the random initiator with a mutex
 	
 	* lib/krb5/mcache.c: protect the mcc_head with a mutex
