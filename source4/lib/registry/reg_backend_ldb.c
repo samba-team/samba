@@ -22,6 +22,24 @@
 #include "registry.h"
 #include "lib/ldb/include/ldb.h"
 
+struct ldb_key_data 
+{
+	const char *dn;
+	struct ldb_message **subkeys, **values;
+	int subkey_count, value_count;
+};
+
+static int reg_close_ldb_key (void *data)
+{
+	struct registry_key *key = data;
+	struct ldb_key_data *kd = key->backend_data;
+	struct ldb_context *c = key->hive->backend_data;
+
+	ldb_search_free(c, kd->subkeys); kd->subkeys = NULL;
+	ldb_search_free(c, kd->values); kd->values = NULL;
+	return 0;
+}
+
 static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *add)
 {
 	char *ret = talloc_strdup(mem_ctx, "");
@@ -62,52 +80,56 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_key **subkey)
 {
 	struct ldb_context *c = k->hive->backend_data;
-	int ret;
-	struct ldb_message **msg;
 	struct ldb_message_element *el;
+	struct ldb_key_data *kd = k->backend_data, *newkd;
 
-	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(key=*)", NULL,&msg);
+	/* Do a search if necessary */
+	if (kd->subkeys == NULL) {
+		kd->subkey_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL,&kd->subkeys);
 
-	if(ret < 0) {
-		DEBUG(0, ("Error getting subkeys for '%s': %s\n", (char *)k->backend_data, ldb_errstring(c)));
-		return WERR_FOOBAR;
-	}
+		if(kd->subkey_count < 0) {
+			DEBUG(0, ("Error getting subkeys for '%s': %s\n", kd->dn, ldb_errstring(c)));
+			return WERR_FOOBAR;
+		}
+	} 
 
-	if(idx >= ret) return WERR_NO_MORE_ITEMS;
-	
-	el = ldb_msg_find_element(msg[idx], "key");
+	if (idx >= kd->subkey_count) return WERR_NO_MORE_ITEMS;
+
+	el = ldb_msg_find_element(kd->subkeys[idx], "key");
 	
 	*subkey = talloc_p(mem_ctx, struct registry_key);
+	talloc_set_destructor(*subkey, reg_close_ldb_key);
 	(*subkey)->name = talloc_strdup(mem_ctx, el->values[0].data);
-	(*subkey)->backend_data = talloc_strdup(mem_ctx, msg[idx]->dn);
+	(*subkey)->backend_data = newkd = talloc_zero_p(*subkey, struct ldb_key_data);
+	newkd->dn = talloc_strdup(mem_ctx, kd->subkeys[idx]->dn);
 
-	ldb_search_free(c, msg);
 	return WERR_OK;
 }
 
 static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_value **value)
 {
 	struct ldb_context *c = k->hive->backend_data;
-	int ret;
-	struct ldb_message **msg;
 	struct ldb_message_element *el;
+	struct ldb_key_data *kd = k->backend_data;
 
-	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&msg);
+	/* Do the search if necessary */
+	if (kd->values == NULL) {
+		kd->value_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&kd->values);
 
-	if(ret < 0) {
-		DEBUG(0, ("Error getting values for '%s': %s\n", (char *)k->backend_data, ldb_errstring(c)));
-		return WERR_FOOBAR;
+		if(kd->value_count < 0) {
+			DEBUG(0, ("Error getting values for '%s': %s\n", kd->dn, ldb_errstring(c)));
+			return WERR_FOOBAR;
+		}
 	}
 
-	if(idx >= ret) return WERR_NO_MORE_ITEMS;
+	if(idx >= kd->value_count) return WERR_NO_MORE_ITEMS;
 	
-	el = ldb_msg_find_element(msg[idx], "value");
+	el = ldb_msg_find_element(kd->values[idx], "value");
 	
 	*value = talloc_p(mem_ctx, struct registry_value);
 	(*value)->name = talloc_strdup(mem_ctx, el->values[0].data);
-	(*value)->backend_data = talloc_strdup(mem_ctx, msg[idx]->dn);
+	(*value)->backend_data = talloc_strdup(mem_ctx, kd->values[idx]->dn);
 
-	ldb_search_free(c, msg);
 	return WERR_OK;
 }
 
@@ -117,8 +139,9 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 	struct ldb_message **msg;
 	char *ldap_path;
 	int ret;
+	struct ldb_key_data *newkd;
 	ldap_path = reg_path_to_ldb(mem_ctx, name, NULL);
-	
+
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL,&msg);
 
 	if(ret == 0) {
@@ -129,8 +152,10 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 	}
 
 	*key = talloc_p(mem_ctx, struct registry_key);
+	talloc_set_destructor(*key, reg_close_ldb_key);
 	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\'));
-	(*key)->backend_data = talloc_strdup(mem_ctx, msg[0]->dn);
+	(*key)->backend_data = newkd = talloc_zero_p(*key, struct ldb_key_data);
+	newkd->dn = talloc_strdup(mem_ctx, msg[0]->dn); 
 
 	ldb_search_free(c, msg);
 
@@ -152,7 +177,10 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	hive->backend_data = c;
 
 	hive->root = talloc_zero_p(hive, struct registry_key);
+	talloc_set_destructor (hive->root, reg_close_ldb_key);
 	hive->root->name = talloc_strdup(hive->root, "");
+	hive->root->backend_data = talloc_zero_p(hive->root, struct ldb_key_data);
+	
 
 	return WERR_OK;
 }
@@ -161,6 +189,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message msg;
+	struct ldb_key_data *newkd;
 	int ret;
 
 	ZERO_STRUCT(msg);
@@ -176,8 +205,10 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 	}
 
 	*newkey = talloc_zero_p(mem_ctx, struct registry_key);
-	(*newkey)->backend_data = msg.dn;
 	(*newkey)->name = talloc_strdup(mem_ctx, name);
+
+	(*newkey)->backend_data = newkd = talloc_zero_p(*newkey, struct ldb_key_data);
+	newkd->dn = msg.dn; 
 
 	return WERR_OK;
 }
@@ -185,8 +216,9 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 static WERROR ldb_del_key (struct registry_key *key)
 {
 	int ret;
+	struct ldb_key_data *kd = key->backend_data;
 
-	ret = ldb_delete(key->hive->backend_data, key->backend_data);
+	ret = ldb_delete(key->hive->backend_data, kd->dn);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(key->hive->backend_data)));
