@@ -57,6 +57,8 @@ struct samr_info {
 	DOM_SID sid;
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
+	uint16 acb_mask;
+	BOOL all_machines;
 	DISP_INFO disp_info;
 
 	TALLOC_CTX *mem_ctx;
@@ -150,14 +152,13 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	return info;
 }
 
+
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
-static void free_samr_db(struct samr_info *info)
+static void free_samr_users(struct samr_info *info) 
 {
 	int i;
-
-	/* Groups are talloced */
 
 	if (info->disp_info.user_dbloaded){
 		for (i=0; i<info->disp_info.num_user_account; i++) {
@@ -165,11 +166,22 @@ static void free_samr_db(struct samr_info *info)
 			pdb_free_sam(&info->disp_info.disp_user_info[i].sam);
 		}
 	}
-
 	info->disp_info.user_dbloaded=False;
+	info->disp_info.num_user_account=0;
+}
+
+
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+static void free_samr_db(struct samr_info *info)
+{
+	/* Groups are talloced */
+
+	free_samr_users(info);
+
 	info->disp_info.group_dbloaded=False;
 	info->disp_info.num_group_account=0;
-	info->disp_info.num_user_account=0;
 }
 
 
@@ -208,10 +220,14 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 	DEBUG(10,("load_sampwd_entries\n"));
 
 	/* if the snapshoot is already loaded, return */
-	if (info->disp_info.user_dbloaded==True) {
+	if ((info->disp_info.user_dbloaded==True) 
+	    && (info->acb_mask == acb_mask) 
+	    && (info->all_machines == all_machines)) {
 		DEBUG(10,("load_sampwd_entries: already in memory\n"));
 		return NT_STATUS_OK;
 	}
+
+	free_samr_users(info);
 
 	if (!pdb_setsampwent(False)) {
 		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
@@ -261,6 +277,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 
 	/* the snapshoot is in memory, we're ready to enumerate fast */
 
+	info->acb_mask = acb_mask;
+	info->all_machines = all_machines;
 	info->disp_info.user_dbloaded=True;
 
 	DEBUG(12,("load_sampwd_entries: done\n"));
