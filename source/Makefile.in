@@ -337,6 +337,9 @@ WINBIND_NSS_OBJ = nsswitch/winbind.o nsswitch/wb_common.o
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
 
+NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
+NSS_OBJ = $(NSS_OBJ_0:.o=.po)
+
 ######################################################################
 # now the rules...
 ######################################################################
