@@ -1,3 +1,11 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (loop): shutdown one side of the TCP connection on EOF.
+  	From Brian A May <bmay@dgs.monash.edu.au>
+
+	* common.c (do_read): handle EOF.  From Brian A May
+ 	<bmay@dgs.monash.edu.au>
+
 1999-08-01  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c: const fixes

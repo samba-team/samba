@@ -1,5 +1,7 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/config_file.c (parse_list): don't run past end of line
+
 	* appl/test/gss_common.h: new prototypes
 
 	* appl/test/gssapi_client.c: use gss_err instead of abort
