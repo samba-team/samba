@@ -57,4 +57,6 @@ struct machine_acct_pass {
 	time_t mod_time;
 };
 
+#define SECRETS_PRIMARY_DOMAIN_DN "cn=Primary Domains"
+
 #endif /* _SECRETS_H */
