@@ -1,3 +1,7 @@
+1999-09-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* des.h: make this work with mips 64-bit abi
+
 1999-08-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* fcrypt.c (crypt_md5): don't use snprintf
