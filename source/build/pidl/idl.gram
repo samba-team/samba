@@ -103,6 +103,7 @@ property: 'unique'
 	  | 'struct_len'
 	  | 'context_handle'
 	  | 'string'
+	  | 'subcontext'
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'length_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
