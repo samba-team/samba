@@ -136,6 +136,16 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	                              vuser->n_groups, vuser->groups);
 	usr.ptr_uxs = 1;
 
+	usr.ptr_ssk = 1;
+	DEBUG(0,("user session key not available (yet).\n"));
+	DEBUG(0,("password-change operations may fail.\n"));
+
+#if USER_SESSION_KEY_DEFINED_IN_VUSER_STRUCT
+	memcpy(usr.usr_sess_key, vuser->usr_sess_key, sizeof(usr.usr_sess_key));
+#else
+	memset(usr.usr_sess_key, 0, sizeof(usr.usr_sess_key));
+#endif
+
 	/* set up nt credentials from the smb side, to feed over the pipe */
 	/* lkclXXXX todo!
 	make_creds_nt(&usr.ntc);
