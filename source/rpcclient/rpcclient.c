@@ -757,7 +757,7 @@ int main(int argc, char *argv[])
 		get_username(username);
 		
 	nt_status = cli_full_connection(&cli, global_myname_unix(), server, 
-					&server_ip, 0,
+					&server_ip, 0, 30000,
 					"IPC$", "IPC",  
 					username, domain,
 					password, strlen(password), NULL);

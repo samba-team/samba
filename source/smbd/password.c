@@ -1185,6 +1185,7 @@ use this machine as the password server.\n"));
 }
 
 static char *mutex_server_name;
+static size_t ref_count;
 
 static BOOL grab_server_mutex(const char *name)
 {
@@ -1193,7 +1194,7 @@ static BOOL grab_server_mutex(const char *name)
 		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
 		return False;
 	}
-	if (!secrets_named_mutex(name, 10)) {
+	if (!secrets_named_mutex(name, SERVER_MUTEX_WAIT_TIME, &ref_count)) {
 		DEBUG(0,("grab_server_mutex: failed for %s\n", name));
 		SAFE_FREE(mutex_server_name);
 		return False;
@@ -1205,7 +1206,7 @@ static BOOL grab_server_mutex(const char *name)
 static void release_server_mutex(void)
 {
 	if (mutex_server_name) {
-		secrets_named_mutex_release(mutex_server_name);
+		secrets_named_mutex_release(mutex_server_name, &ref_count);
 		SAFE_FREE(mutex_server_name);
 	}
 }
@@ -1231,7 +1232,7 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		return False;
 	}
 
-	cli_set_timeout(pcli, 10000); /* 10 seconds only. */
+	cli_set_timeout(pcli, CLI_AUTH_TIMEOUT);
 
 	if (is_ipaddress(server)) {
 		struct in_addr to_ip;
@@ -1408,7 +1409,7 @@ static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, 
 	if (!lookup_dc_name(global_myname_unix(), lp_workgroup_unix(), ip, dc_name))
 		return False;
 
-	for (i = 0; (ret == False) && retry && (i < 3); i++)
+	for (i = 0; (ret == False) && retry && (i < NUM_CLI_AUTH_CONNECT_RETRIES); i++)
 		ret = connect_to_domain_password_server(ppcli, dc_name, trust_passwd, &retry);
 	return ret;
 }
@@ -1631,7 +1632,7 @@ BOOL domain_client_validate( char *user, char *domain,
 			  connected_ok = connect_to_domain_password_server(
 				  &pcli, remote_machine, trust_passwd, &retry);
 			  i++;
-			} while (!connected_ok && retry && (i < 3));
+			} while (!connected_ok && retry && (i < NUM_CLI_AUTH_CONNECT_RETRIES));
 		}
 	}
 

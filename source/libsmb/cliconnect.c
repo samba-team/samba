@@ -940,10 +940,10 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, const char *dest_host, 
-			     struct in_addr *dest_ip, int port,
+			     struct in_addr *dest_ip, int port, int timeout,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password, int pass_len, BOOL *retry) 
+			     char *password, int pass_len, BOOL *retry)
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -969,7 +969,7 @@ again:
 		return NT_STATUS_NO_MEMORY;
 	
 	cli_set_port(cli, port);
-	cli_set_timeout(cli, 10000); /* 10 seconds. */
+	cli_set_timeout(cli, timeout);
 
 	ip = *dest_ip;
 	

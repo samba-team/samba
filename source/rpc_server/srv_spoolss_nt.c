@@ -186,7 +186,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 	 */
 
 	if (!print_notify_deregister_pid(snum))
-		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
+		DEBUG(0,("print_notify_deregister_pid: Failed to deregister our pid for printer %s\n", lp_const_servicename(snum) ));
 
 	/* weird if the test succeds !!! */
 	if (smb_connections==0) {
@@ -2435,7 +2435,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 l
 	 */
 
 	if (!print_notify_register_pid(snum))
-		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", printer ));
+		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
 
 	smb_connections++;
 

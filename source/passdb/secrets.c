@@ -292,64 +292,85 @@ static unsigned long mutex_hash_offset(const char *v)
 	return (h % 0x1FFFFFFFL) + 0x1FFFFFFFL;
 }
 
-BOOL secrets_named_mutex(const char *name, unsigned int timeout)
+/*****************************************************************************************
+ Grab a mutex based on name with a timeout. ref_count allows this to be recursive.
+*****************************************************************************************/
+ 
+BOOL secrets_named_mutex(const char *name, unsigned int timeout, size_t *p_ref_count)
 {
-	int ret;
-	struct flock fl;
-	unsigned long offset = mutex_hash_offset(name);
+	size_t ref_count = *p_ref_count;
+	int ret = 0;
 
-	gotalarm = 0;
-	fl.l_type = F_WRLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = offset;
-	fl.l_len = 1;
-	fl.l_pid = 0;
+	if (ref_count == 0) {
+		struct flock fl;
+		unsigned long offset = mutex_hash_offset(name);
 
-	if (timeout) {
-		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-		alarm(timeout);
-	}
+		gotalarm = 0;
+		fl.l_type = F_WRLCK;
+		fl.l_whence = SEEK_SET;
+		fl.l_start = offset;
+		fl.l_len = 1;
+		fl.l_pid = 0;
 
-	do {
-		ret = fcntl(tdb->fd,F_SETLKW,&fl);
-		if (ret == -1 && errno == EINTR && timeout)
-			break;
-	} while (ret == -1 && errno == EINTR);
-
-	if (timeout) {
-		alarm(0);
-		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-		if (gotalarm) {
-			DEBUG(0,("secrets_named_mutex: Timeout after %u seconds \
-getting mutex at offset %lu for server %s\n", timeout, offset, name ));
-			return False;
+		if (timeout) {
+			CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+			alarm(timeout);
 		}
+
+		do {
+			ret = fcntl(tdb->fd,F_SETLKW,&fl);
+			if (ret == -1 && errno == EINTR && timeout)
+				break;
+		} while (ret == -1 && errno == EINTR);
+
+		if (timeout) {
+			alarm(0);
+			CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+			if (gotalarm) {
+				DEBUG(0,("secrets_named_mutex: Timeout after %u seconds \
+getting mutex at offset %lu for server %s\n", timeout, offset, name ));
+				return False;
+			}
+		}
+
+		if (ret == 0) {
+			DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+		} else
+			DEBUG(0,("secrets_named_mutex: Error in acquiring mutex for %s (%s)\n",
+				name, strerror(errno) ));
 	}
 
-	if (ret == 0)
-		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
-	else
-		DEBUG(0,("secrets_named_mutex: Error in acquiring mutex for %s (%s)\n",
-			name, strerror(errno) ));
+	if (ret == 0) {
+		*p_ref_count = ++ref_count;
+		DEBUG(10,("secrets_named_mutex: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
+	}
 	return (ret == 0);
 }
 
 /*
   unlock a named mutex
 */
-void secrets_named_mutex_release(const char *name)
+void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 {
 	struct flock fl;
+	size_t ref_count = *p_ref_count;
 
-	fl.l_type = F_UNLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = mutex_hash_offset(name);
-	fl.l_len = 1;
-	fl.l_pid = 0;
+	SMB_ASSERT(ref_count != 0);
 
-	if (fcntl(tdb->fd,F_SETLKW,&fl) == -1) {
-		DEBUG(0,("secrets_named_mutex_release: Error in releasing mutex for %s (%s)\n",
-			name, strerror(errno) ));
+	if (ref_count == 1) {
+		fl.l_type = F_UNLCK;
+		fl.l_whence = SEEK_SET;
+		fl.l_start = mutex_hash_offset(name);
+		fl.l_len = 1;
+		fl.l_pid = 0;
+
+		if (fcntl(tdb->fd,F_SETLKW,&fl) == -1) {
+			DEBUG(0,("secrets_named_mutex_release: Error in releasing mutex for %s (%s)\n",
+				name, strerror(errno) ));
+		}
+		DEBUG(10,("secrets_named_mutex_release: released mutex for %s\n", name ));
 	}
-	DEBUG(10,("secrets_named_mutex_release: released mutex for %s\n", name ));
+
+	*p_ref_count = --ref_count;
+	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
 }
