@@ -204,7 +204,7 @@ static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 	if (t->ace == NULL && t->num_aces != 0)
 	{
 		DEBUG(0, ("INVALID ACL\n"));
-		ps->offset = 0xfffffffe;
+		prs_set_offset(ps, 0xfffffffe);
 		return False;
 	}
 
@@ -375,7 +375,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	{
 #if 0
 		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl),
-				off_dacl, ps->offset - old_offset);
+				off_dacl, prs_offset(ps) - old_offset);
 #endif
 		if(!prs_set_offset(ps, old_offset + t->off_dacl))
 			return False;
@@ -389,7 +389,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		if (t->dacl == NULL)
 		{
 			DEBUG(0, ("INVALID DACL\n"));
-			ps->offset = 0xfffffffe;
+			prs_set_offset(ps, 0xfffffffe);
 			return False;
 		}
 
@@ -411,7 +411,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	{
 #if 0
 		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl),
-				off_sacl, ps->offset - old_offset);
+				off_sacl, prs_offset(ps) - old_offset);
 #endif
 		if(!prs_set_offset(ps, old_offset + t->off_sacl))
 			return False;
@@ -425,7 +425,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		if (t->sacl == NULL)
 		{
 			DEBUG(0, ("INVALID SACL\n"));
-			ps->offset = 0xfffffffe;
+			prs_set_offset(ps, 0xfffffffe);
 			return False;
 		}
 
@@ -445,7 +445,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 
 #if 0
 	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid),
-			off_owner_sid, ps->offset - old_offset);
+			off_owner_sid, prs_offset(ps) - old_offset);
 #endif
 	if (t->off_owner_sid != 0)
 	{
@@ -465,7 +465,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		if (t->owner_sid == NULL)
 		{
 			DEBUG(0, ("INVALID OWNER SID\n"));
-			ps->offset = 0xfffffffe;
+			prs_set_offset(ps, 0xfffffffe);
 			return False;
 		}
 
@@ -477,7 +477,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 
 #if 0
 	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid),
-			off_grp_sid, ps->offset - old_offset);
+			off_grp_sid, prs_offset(ps) - old_offset);
 #endif
 	if (t->off_grp_sid != 0)
 	{
@@ -496,7 +496,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		if (t->grp_sid == NULL)
 		{
 			DEBUG(0, ("INVALID GROUP SID\n"));
-			ps->offset = 0xfffffffe;
+			prs_set_offset(ps, 0xfffffffe);
 			return False;
 		}
 
@@ -578,7 +578,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF * sec, prs_struct *ps,
 		if (sec->sec == NULL)
 		{
 			DEBUG(0, ("INVALID SEC_DESC\n"));
-			ps->offset = 0xfffffffe;
+			prs_set_offset(ps, 0xfffffffe);
 			return False;
 		}
 	}
