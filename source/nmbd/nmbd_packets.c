@@ -1969,7 +1969,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   /* Setup the smb part. */
   ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
   memcpy(tmp,ptr,4);
-  set_message(ptr,17,17 + len,True);
+  set_message(ptr,17,23 + len,True);
   memcpy(ptr,tmp,4);
 
   SCVAL(ptr,smb_com,SMBtrans);
