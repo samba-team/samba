@@ -5,6 +5,10 @@ Release: PRELEASE
 License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
+
+# Don't depend on Net::LDAP
+Source999: filter-requires-samba.sh
+
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils /sbin/ldconfig
@@ -12,6 +16,9 @@ Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
+
+# Working around perl dependency problem from docs
+%define __perl_requires %{SOURCE999}
 
 %description
 Samba provides an SMB/CIFS server which can be used to provide
