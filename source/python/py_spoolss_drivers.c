@@ -210,11 +210,15 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 	case 2: 
 		py_from_DRIVER_INFO_2(&result, ctr.info2);
 		break;
+	case 3: 
+		py_from_DRIVER_INFO_3(&result, ctr.info3);
+		break;
 	case 6:
 		py_from_DRIVER_INFO_6(&result,  ctr.info6);
 		break;
 	default:
-		break;
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		return NULL;
 	}
 	
 	Py_INCREF(result);
