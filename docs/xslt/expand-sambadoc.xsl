@@ -277,7 +277,7 @@
 								</xsl:when>
 
 								<xsl:otherwise>
-									<xsl:text>50</xsl:text>
+									<xsl:text>100</xsl:text>
 								</xsl:otherwise>
 							</xsl:choose>
 						</xsl:attribute>
