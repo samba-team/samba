@@ -8,3 +8,4 @@ usr/share/man/man1/ldbdel.1
 usr/share/man/man1/ldbedit.1
 usr/share/man/man1/ldbmodify.1
 usr/share/man/man1/ldbsearch.1
+usr/share/man/man7/ldb.7
