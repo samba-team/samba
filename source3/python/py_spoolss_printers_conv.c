@@ -253,7 +253,7 @@ BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
 
 BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info)
 {
-	PyObject *obj;
+	PyObject *obj;	
 
 	*dict = from_struct(info, py_PRINTER_INFO_3);
 
@@ -263,7 +263,18 @@ BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict)
+BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict,
+			  TALLOC_CTX *mem_ctx)
 {
-	return False;
+	PyObject *obj;
+
+	to_struct(info, dict, py_PRINTER_INFO_3);
+
+	if (!(obj = PyDict_GetItemString(dict, "security_descriptor")))
+		return False;
+
+	if (!py_to_SECDESC(&info->secdesc, obj, mem_ctx))
+		return False;
+
+	return True;
 }
