@@ -70,7 +70,7 @@ interface epmapper
 	   non-aligned. I wonder what sort of wicked substance these
 	   guys were smoking?
 	*/
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
 		uint16 num_floors;
 		epm_floor floors[num_floors];
 	} epm_towers;

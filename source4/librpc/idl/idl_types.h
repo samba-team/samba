@@ -45,11 +45,15 @@
 #define ascstr3       [flag(STR_ASCII|STR_SIZE2)]            string
 
 
-#define NDR_NOALIGN   LIBNDR_FLAG_NOALIGN
-#define NDR_REMAINING LIBNDR_FLAG_REMAINING
-#define NDR_ALIGN2    LIBNDR_FLAG_ALIGN2
-#define NDR_ALIGN4    LIBNDR_FLAG_ALIGN4
-#define NDR_ALIGN8    LIBNDR_FLAG_ALIGN8
+#define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
+#define NDR_REMAINING     LIBNDR_FLAG_REMAINING
+#define NDR_ALIGN2        LIBNDR_FLAG_ALIGN2
+#define NDR_ALIGN4        LIBNDR_FLAG_ALIGN4
+#define NDR_ALIGN8        LIBNDR_FLAG_ALIGN8
+
+/* this flag is used to force a section of IDL as little endian. It is
+   needed for the epmapper IDL, which is defined as always being LE */
+#define NDR_LITTLE_ENDIAN LIBNDR_FLAG_LITTLE_ENDIAN
 
 
 /*

@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#define NDR_BE(ndr) ((ndr)->flags & LIBNDR_FLAG_BIGENDIAN)
+#define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
 #define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
 #define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))
 #define NDR_SSVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSSVAL(ndr->data,ofs,v); } else SSVAL(ndr->data,ofs,v); } while (0)
@@ -350,7 +350,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		return NT_STATUS_OK;
 	}
 
-	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
+	if (NDR_BE(ndr)) {
 		chset = CH_UCS2BE;
 	}
 
@@ -472,7 +472,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		return NT_STATUS_OK;
 	}
 
-	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
+	if (NDR_BE(ndr)) {
 		chset = CH_UCS2BE;
 	}
 	
