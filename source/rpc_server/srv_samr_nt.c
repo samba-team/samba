@@ -1097,39 +1097,51 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	if (!(ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
 		return NT_STATUS_NO_MEMORY;
 
+	ZERO_STRUCTP(ctr);
+
 	/* Now create reply structure */
 	switch (q_u->switch_level) {
 	case 0x1:
-		if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_1))))
-			return NT_STATUS_NO_MEMORY;
+		if (num_entries) {
+			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
+				return NT_STATUS_NO_MEMORY;
+		}
 		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
 	case 0x2:
-		if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_2))))
-			return NT_STATUS_NO_MEMORY;
+		if (num_entries) {
+			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
+				return NT_STATUS_NO_MEMORY;
+		}
 		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
 	case 0x3:
-		if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_3))))
-			return NT_STATUS_NO_MEMORY;
+		if (num_entries) {
+			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
+				return NT_STATUS_NO_MEMORY;
+		}
 		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
 	case 0x4:
-		if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_4))))
-			return NT_STATUS_NO_MEMORY;
+		if (num_entries) {
+			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
+				return NT_STATUS_NO_MEMORY;
+		}
 		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
 		break;
 	case 0x5:
-		if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_5))))
-			return NT_STATUS_NO_MEMORY;
+		if (num_entries) {
+			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
+				return NT_STATUS_NO_MEMORY;
+		}
 		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
 		if (disp_ret != NT_STATUS_NO_PROBLEMO)
 			return disp_ret;
