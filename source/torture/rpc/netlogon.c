@@ -65,22 +65,26 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 }
 
-static BOOL test_Challenge(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_Authenticate(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
-	struct netr_Credential creds;
+	struct netr_ServerAuthenticate a;
+	struct netr_Credential client_chal, server_chal, cred2;
+	uint8 session_key[8];
+	const char *plain_pass;
+	uint8 mach_pwd[16];
 
 	printf("Testing ServerReqChallenge");
 
-	ZERO_STRUCT(creds);
+	ZERO_STRUCT(client_chal);
 
-	generate_random_buffer(creds.cred, sizeof(creds.cred), False);
+	generate_random_buffer(client_chal.data, sizeof(client_chal.data), False);
 
 	r.in.server_name = NULL;
 	r.in.computer_name = lp_netbios_name();
-	r.in.credential = &creds;
-	r.out.credential = &creds;
+	r.in.credential = &client_chal;
+	r.out.credential = &server_chal;
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -88,8 +92,31 @@ static BOOL test_Challenge(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
+	plain_pass = secrets_fetch_machine_password();
+	if (!plain_pass) {
+		printf("Unable to fetch machine password!\n");
+		return False;
+	}
+
+	E_md4hash(plain_pass, mach_pwd);
+	cred_session_key(&client_chal, &server_chal, mach_pwd, session_key);
+
+	cred_create(session_key, &client_chal, 0, &cred2);
+
+	a.in.server_name = NULL;
+	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	a.in.secure_challenge_type = 2;
+	a.in.computer_name = lp_netbios_name();
+	a.in.client_challenge = &cred2;
+	a.out.client_challenge = &cred2;
+
+	status = dcerpc_netr_ServerAuthenticate(p, mem_ctx, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerAuthenticate - %s\n", nt_errstr(status));
+		return False;
+	}
+
 	return True;
-	
 }
 
 
@@ -120,7 +147,7 @@ BOOL torture_rpc_netlogon(int dummy)
 		ret = False;
 	}
 
-	if (!test_Challenge(p, mem_ctx)) {
+	if (!test_Authenticate(p, mem_ctx)) {
 		ret = False;
 	}
 
