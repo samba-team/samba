@@ -55,6 +55,18 @@
 }
 #endif
 
+#ifdef HAVE__OPEN64
+ int _open64(const char *name, int flags, mode_t mode) 
+{
+   return open64(name, flags, mode);
+}
+#elif HAVE___OPEN
+ int __open64(const char *name, int flags, mode_t mode) 
+{
+   return open64(name, flags, mode);
+}
+#endif
+
 #ifdef HAVE_PREAD
  ssize_t pread(int fd, void *buf, size_t size, off_t ofs)
 {
