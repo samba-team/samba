@@ -68,31 +68,20 @@ RCSID("$Id$");
 int
 get_window_size(int fd, struct winsize *wp)
 {
-    char *s;
-    struct winsize tmp;
     int ret = -1;
     
     memset(wp, 0, sizeof(*wp));
-    memset(&tmp, 0, sizeof(tmp));
-    if((s = getenv("COLUMNS")))
-	wp->ws_col = atoi(s);
-    if((s = getenv("LINES")))
-	wp->ws_row = atoi(s);
-    if(wp->ws_col > 0 && wp->ws_row > 0)
-	return 0;
-    
+
 #if defined(TIOCGWINSZ)
-    ret = ioctl(fd, TIOCGWINSZ, &tmp);
+    ret = ioctl(fd, TIOCGWINSZ, wp);
 #elif defined(TIOCGSIZE)
     {
 	struct ttysize ts;
 	
 	ret = ioctl(fd, TIOCGSIZE, &ts);
 	if(ret == 0) {
-	    tmp.ws_row = ts.ts_lines;
-	    tmp.ws_col = ts.ts_cols;
-	    tmp.ws_xpixel = 0;
-	    tmp.ws_ypixel = 0;
+	    wp->ws_row = ts.ts_lines;
+	    wp->ws_col = ts.ts_cols;
 	}
     }
 #elif defined(HAVE__SCRSIZE)
@@ -100,22 +89,19 @@ get_window_size(int fd, struct winsize *wp)
 	int dst[2];
 	
 	_scrsize(dst);
-	tmp.ws_row = dst[1];
-	tmp.ws_col = dst[0];
-	tmp.ws_xpixel = 0;
-	tmp.ws_ypixel = 0;
+	wp->ws_row = dst[1];
+	wp->ws_col = dst[0];
 	ret = 0;
     }
 #endif
-    if(ret == 0) {
-	if(wp->ws_col == 0) {
-	    wp->ws_col = tmp.ws_col;
-	    wp->ws_xpixel = tmp.ws_xpixel;
-	}
-	if(wp->ws_row == 0) {
-	    wp->ws_row = tmp.ws_row;
-	    wp->ws_ypixel = tmp.ws_ypixel;
-	}
+    if (ret != 0) {
+        char *s;
+        if((s = getenv("COLUMNS")))
+	    wp->ws_col = atoi(s);
+	if((s = getenv("LINES")))
+	    wp->ws_row = atoi(s);
+	if(wp->ws_col > 0 && wp->ws_row > 0)
+	    ret = 0;
     }
     return ret;
 }
