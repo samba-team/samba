@@ -1512,15 +1512,17 @@ extern int chain_size;
  *  +----+--------+-------+--------+---------+
  */
 
-#define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
 #define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
 
+/* Message types */
+#define OPLOCK_BREAK_CMD 0x1
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
+#define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
 
 /*
  * Capabilities abstracted for different systems.
