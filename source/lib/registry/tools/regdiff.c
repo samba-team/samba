@@ -91,7 +91,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	}
 }
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int opt;
 	poptContext pc;
@@ -115,7 +115,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt)	{
 		case 'c':
@@ -123,9 +123,9 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 			else if(!credentials2) credentials2 = poptGetOptArg(pc);
 			break;
 		case 'b':
-				if(!backend1 && !from_null) backend1 = poptGetOptArg(pc);
-				else if(!backend2) backend2 = poptGetOptArg(pc);
-				break;
+			if(!backend1 && !from_null) backend1 = poptGetOptArg(pc);
+			else if(!backend2) backend2 = poptGetOptArg(pc);
+			break;
 		}
 	}
 	setup_logging(argv[0], True);
@@ -154,13 +154,13 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	}
 
 	if(!backend2) backend2 = "dir";
-	
+
 	error = reg_open(backend2, location2, credentials2, &h2);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location2, backend2);
 		return 1;
 	}
-	
+
 	poptFreeContext(pc);
 
 	if(outputfile) {
@@ -175,24 +175,24 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	fprintf(fd, "; Generated using regdiff\n");
 
 	error2 = error = WERR_OK; 
-	
+
 	for(i = 0; ; i++) {
 		if(backend1) error = reg_get_hive(h1, i, &root1);
 		else root1 = NULL;
 
 		if(!W_ERROR_IS_OK(error)) break;
-	
+
 		if(backend2) error2 = reg_get_hive(h2, i, &root2);
 		else root2 = NULL;
-		
+
 		if(!W_ERROR_IS_OK(error2)) break;
-	
+
 		writediff(root1, root2, fd); 
 
 		if(!root1 && !root2) break;
 	}
 
 	fclose(fd);
-	
+
 	return 0;
 }
