@@ -286,6 +286,37 @@ static void set_read_only(connection_struct *conn)
 
 
 /****************************************************************************
+  admin user check
+****************************************************************************/
+static void set_admin_user(connection_struct *conn) 
+{
+	/* admin user check */
+	
+	/* JRA - original code denied admin user if the share was
+	   marked read_only. Changed as I don't think this is needed,
+	   but old code left in case there is a problem here.
+	*/
+	if (user_in_list(conn->user,lp_admin_users(conn->service)) 
+#if 0
+	    && !conn->read_only
+#endif
+	    ) {
+		conn->admin_user = True;
+		DEBUG(0,("%s logged in as admin user (root privileges)\n",conn->user));
+	} else {
+		conn->admin_user = False;
+	}
+
+#if 0 /* This done later, for now */    
+	/* admin users always run as uid=0 */
+	if (conn->admin_user) {
+		conn->uid = 0;
+	}
+#endif
+}
+
+
+/****************************************************************************
   make a connection to a service
 ****************************************************************************/
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
@@ -381,7 +412,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
-	safe_strcpy(conn->client_address, client_addr(), sizeof(conn->client_address)-1);
+	safe_strcpy(conn->client_address, client_addr(), 
+		    sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;
@@ -398,23 +430,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	set_read_only(conn);
 
-	/* admin user check */
-	
-	/* JRA - original code denied admin user if the share was
-	   marked read_only. Changed as I don't think this is needed,
-	   but old code left in case there is a problem here.
-	*/
-	if (user_in_list(user, lp_admin_users(snum)) 
-#if 0
-	    && !conn->read_only
-#endif
-	    ) {
-		conn->admin_user = True;
-		DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
-	} else {
-		conn->admin_user = False;
-	}
-    
+	set_admin_user(conn);
+
 	/*
 	 * If force user is true, then store the
 	 * given userid and also the primary groupid
