@@ -7,15 +7,19 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include "symbol.h"
 #include "parse.h"
 
+#ifndef HAVE_STRDUP
 char *strdup(char *);
+#endif
 
 void error_message(char *, ...);
 
 static unsigned lineno = 1;
 static char filename[256];
+/* ","|"{"|"}"|"("|")"|"["|"]"|"|"	{ return *yytext; } */
 %}
 
 
@@ -33,7 +37,9 @@ OPTIONAL		{ return OPTIONAL; }
 BEGIN			{ return TBEGIN; }
 END			{ return END; }
 DEFINITIONS		{ return DEFINITIONS; }
-,|\{|\}|\(|\)|\[|\]|\|	{ return *yytext; }
+[,{}()|]		{ return *yytext; }
+"["			{ return *yytext; }
+"]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
 --[^\n]*\n		{ ; }
 -?[0-9]+		{ yylval.constant = atoi(yytext); return CONSTANT; }
