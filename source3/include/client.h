@@ -30,13 +30,6 @@
 #define CLI_BUFFER_SIZE (0xFFFF)
 
 
-/* clistr flags - see clistr.c */
-#define CLISTR_TERMINATE 1
-#define CLISTR_CONVERT 2
-#define CLISTR_UPPER 4
-#define CLISTR_ASCII 8
-#define CLISTR_UNICODE 16
-
 /*
  * These definitions depend on smb.h
  */

@@ -235,7 +235,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p += 4;
 
 	p += clistr_push(cli, p, workgroup, -1, 
-			 CLISTR_TERMINATE | CLISTR_CONVERT | CLISTR_ASCII);
+			 STR_TERMINATE | STR_CONVERT | STR_ASCII);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
@@ -394,7 +394,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_INFO_STANDARD);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, CLISTR_TERMINATE | CLISTR_CONVERT);
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
 
 	param_len = PTR_DIFF(p, param);
 
@@ -470,7 +470,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, CLISTR_TERMINATE | CLISTR_CONVERT);
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
 
 	param_len = PTR_DIFF(p, param);
 

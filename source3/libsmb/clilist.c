@@ -51,7 +51,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+27,
 					    sizeof(finfo->name),
 					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(28 + CVAL(p,26));
 
@@ -66,7 +66,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+31,
 					    sizeof(finfo->name),
 					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(32 + CVAL(p,30));
 
@@ -82,7 +82,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+33,
 					    sizeof(finfo->name),
 					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -97,7 +97,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p+37,
 					    sizeof(finfo->name),
 					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -135,8 +135,8 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 2; 
 				{
 					/* stupid NT bugs. grr */
-					int flags = CLISTR_CONVERT;
-					if (p[1] == 0 && namelen > 1) flags |= CLISTR_UNICODE;
+					int flags = STR_CONVERT;
+					if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
 					clistr_pull(cli, finfo->short_name, p,
 						    sizeof(finfo->short_name),
 						    24, flags);
@@ -145,7 +145,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				clistr_pull(cli, finfo->name, p,
 					    sizeof(finfo->name),
 					    namelen, 
-					    CLISTR_CONVERT);
+					    STR_CONVERT);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -195,8 +195,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
 
 		param_len = 12+clistr_push_size(cli, NULL, mask, -1, 
-						CLISTR_TERMINATE |
-						CLISTR_CONVERT);
+						STR_TERMINATE |
+						STR_CONVERT);
 
 		if (First) {
 			setup = TRANSACT2_FINDFIRST;
@@ -206,7 +206,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
 			clistr_push(cli, param+12, mask, -1, 
-				    CLISTR_TERMINATE | CLISTR_CONVERT);
+				    STR_TERMINATE | STR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -215,7 +215,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			clistr_push(cli, param+12, mask, -1, 
-				    CLISTR_TERMINATE | CLISTR_CONVERT);
+				    STR_TERMINATE | STR_CONVERT);
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
@@ -271,15 +271,15 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 					clistr_pull(cli, mask, p+ff_lastname,
 						    sizeof(mask), 
 						    data_len-ff_lastname,
-						    CLISTR_TERMINATE |
-						    CLISTR_CONVERT);
+						    STR_TERMINATE |
+						    STR_CONVERT);
 					break;
 				case 1:
 					clistr_pull(cli, mask, p+ff_lastname+1,
 						    sizeof(mask), 
 						    -1,
-						    CLISTR_TERMINATE |
-						    CLISTR_CONVERT);
+						    STR_TERMINATE |
+						    STR_CONVERT);
 					break;
 				}
 		} else {
@@ -392,7 +392,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		p += clistr_push(cli, p, first?mask:"", -1, CLISTR_TERMINATE|CLISTR_CONVERT);      
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);      
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);

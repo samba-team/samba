@@ -52,6 +52,14 @@ typedef int BOOL;
 #define DEF_CREATE_MASK (0755)
 #endif
 
+/* string manipulation flags - see clistr.c and srvstr.c */
+#define STR_TERMINATE 1
+#define STR_CONVERT 2
+#define STR_UPPER 4
+#define STR_ASCII 8
+#define STR_UNICODE 16
+
+
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
