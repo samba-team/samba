@@ -6561,9 +6561,6 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
-
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
         if (!W_ERROR_IS_OK(status))
 		goto done;
@@ -6624,9 +6621,6 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
-
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
         if (!W_ERROR_IS_OK(status))
 		goto done;
@@ -6689,9 +6683,6 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	 * ChangeID must always be set
 	 */
 	 
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
-
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
         if (!W_ERROR_IS_OK(status))
 		goto done;
