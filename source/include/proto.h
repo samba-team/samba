@@ -46,7 +46,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd);
 /*The following definitions come from  client.c  */
 
 void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num);
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
+void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir,BOOL dirstoo);
 void cmd_help(void);
 
 /*The following definitions come from  clientgen.c  */
