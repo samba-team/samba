@@ -46,12 +46,12 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
-    SCVAL(cli->outbuf,smb_com,trans);
+	SCVAL(cli->outbuf,smb_com,trans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
 	if (pipe_name) {
-		pipe_name_len = clistr_push(cli, smb_buf(cli->outbuf), pipe_name, -1, STR_TERMINATE);
+		pipe_name_len = clistr_push(cli, smb_buf(cli->outbuf), pipe_name, -1, STR_TERMINATE|STR_CONVERT);
 	}
 
 	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? pipe_name_len : 3);

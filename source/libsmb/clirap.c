@@ -386,7 +386,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_INFO_STANDARD);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE );
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE|STR_CONVERT );
 
 	param_len = PTR_DIFF(p, param);
 
@@ -462,7 +462,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE );
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE|STR_CONVERT );
 
 	param_len = PTR_DIFF(p, param);
 
@@ -649,7 +649,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALT_NAME_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE|STR_CONVERT);
 
 	param_len = PTR_DIFF(p, param);
 
