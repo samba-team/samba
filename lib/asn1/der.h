@@ -52,6 +52,7 @@ enum {
      UT_Null		= 5,
      UT_OID		= 6,
      UT_Enumerated	= 10,
+     UT_UTF8String	= 12,
      UT_Sequence	= 16,
      UT_Set		= 17,
      UT_PrintableString	= 19,
@@ -99,6 +100,8 @@ int decode_oid (const unsigned char *p, size_t len,
 		oid *k, size_t *size);
 int decode_octet_string (const unsigned char*, size_t, octet_string*, size_t*);
 int decode_generalized_time (const unsigned char*, size_t, time_t*, size_t*);
+int decode_nulltype (const unsigned char*, size_t, size_t*);
+int decode_utf8string (const unsigned char*, size_t, utf8_string*, size_t*);
 
 int der_put_int (unsigned char *p, size_t len, int val, size_t*);
 int der_put_length (unsigned char *p, size_t len, size_t val, size_t*);
@@ -127,12 +130,15 @@ int encode_oid (unsigned char *p, size_t len,
 		const oid *k, size_t*);
 int encode_generalized_time (unsigned char *p, size_t len,
 			     const time_t *t, size_t*);
+int encode_nulltype (unsigned char*, size_t, size_t*);
+int encode_utf8string (unsigned char*, size_t, utf8_string*, size_t*);
 
 void free_integer (int *num);
 void free_general_string (general_string *str);
 void free_octet_string (octet_string *k);
 void free_oid (oid *k);
 void free_generalized_time (time_t *t);
+void free_utf8string (utf8_string*);
 
 size_t length_len (size_t len);
 size_t length_integer (const int *data);
@@ -142,10 +148,14 @@ size_t length_general_string (const general_string *data);
 size_t length_octet_string (const octet_string *k);
 size_t length_oid (const oid *k);
 size_t length_generalized_time (const time_t *t);
+size_t length_nulltype (void);
+size_t length_utf8string (const utf8_string*);
 
 int copy_general_string (const general_string *from, general_string *to);
 int copy_octet_string (const octet_string *from, octet_string *to);
 int copy_oid (const oid *from, oid *to);
+int copy_nulltype (void *, void *);
+int copy_utf8string (const utf8_string*, utf8_string*);
 
 int fix_dce(size_t reallen, size_t *len);
 

@@ -105,6 +105,9 @@ init_generate (const char *filename, const char *base)
 	     "typedef char *general_string;\n\n"
 	     );
     fprintf (headerfile,
+	     "typedef char *utf8_string;\n\n"
+	     );
+    fprintf (headerfile,
 	     "typedef struct oid {\n"
 	     "  size_t length;\n"
 	     "  unsigned *components;\n"
@@ -267,6 +270,14 @@ define_asn1 (int level, Type *t)
 	fprintf (headerfile, "[APPLICATION %d] ", t->application);
 	define_asn1 (level, t->subtype);
 	break;
+    case TUTF8String:
+	space(level);
+	fprintf (headerfile, "UTF8String");
+	break;
+    case TNull:
+	space(level);
+	fprintf (headerfile, "NULL");
+	break;
     default:
 	abort ();
     }
@@ -391,6 +402,14 @@ define_type (int level, char *name, Type *t, int typedefp)
     case TGeneralString:
 	space(level);
 	fprintf (headerfile, "general_string %s;\n", name);
+	break;
+    case TUTF8String:
+	space(level);
+	fprintf (headerfile, "UTF8String %s;\n", name);
+	break;
+    case TNull:
+	space(level);
+	fprintf (headerfile, "NULL %s;\n", name);
 	break;
     case TApplication:
 	define_type (level, name, t->subtype, FALSE);

@@ -109,6 +109,11 @@ free_type (const char *name, const Type *t)
   case TGeneralString:
       free_primitive ("general_string", name);
       break;
+  case TUTF8String:
+      free_primitive ("utf8string", name);
+      break;
+  case TNull:
+      break;
   case TApplication:
       free_type (name, t->subtype);
       break;

@@ -12,6 +12,7 @@ typedef struct octet_string {
 } octet_string;
 
 typedef char *general_string;
+typedef char *utf8_string;
 
 typedef struct oid {
     size_t length;

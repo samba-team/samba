@@ -38,7 +38,7 @@
 
 enum typetype { TInteger, TOctetString, TBitString, TSequence, TSequenceOf,
 		TGeneralizedTime, TGeneralString, TApplication, TType, 
-		TUInteger, TEnumerated, TOID };
+		TUInteger, TEnumerated, TOID, TUTF8String, TNull, TChoice };
 
 typedef enum typetype Typetype;
 
@@ -51,6 +51,7 @@ struct member {
   int optional;
   struct type *type;
   struct member *next, *prev;
+  char *defval;
 };
 
 typedef struct member Member;

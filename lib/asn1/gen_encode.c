@@ -205,6 +205,14 @@ encode_type (const char *name, const Type *t)
     case TGeneralString:
 	encode_primitive ("general_string", name);
 	break;
+    case TUTF8String:
+	encode_primitive ("utf8string", name);
+	break;
+    case TNull:
+	fprintf (codefile,
+		 "e = encode_nulltype(p, len, &l);\n"
+		 "BACK;\n");
+	break;
     case TApplication:
 	encode_type (name, t->subtype);
 	fprintf (codefile,
@@ -240,6 +248,8 @@ generate_type_encode (const Symbol *s)
   case TOctetString:
   case TGeneralizedTime:
   case TGeneralString:
+  case TUTF8String:
+  case TNull:
   case TBitString:
   case TEnumerated:
   case TOID:

@@ -142,6 +142,12 @@ length_type (const char *name, const Type *t, const char *variable)
     case TGeneralString:
 	length_primitive ("general_string", name, variable);
 	break;
+    case TUTF8String:
+	length_primitive ("utf8string", name, variable);
+	break;
+    case TNull:
+	fprintf (codefile, "%s += length_nulltype();\n", variable);
+	break;
     case TApplication:
 	length_type (name, t->subtype, variable);
 	fprintf (codefile, "ret += 1 + length_len (ret);\n");

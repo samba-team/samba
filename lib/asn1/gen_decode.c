@@ -253,6 +253,14 @@ decode_type (const char *name, const Type *t)
     case TGeneralString:
 	decode_primitive ("general_string", name);
 	break;
+    case TUTF8String:
+	decode_primitive ("utf8string", name);
+	break;
+    case TNull:
+	fprintf (codefile,
+		 "e = decode_nulltype(p, len, &l);\n"
+		 "FORW;\n");
+	break;
     case TApplication:
 	fprintf (codefile,
 		 "e = der_match_tag_and_length (p, len, APPL, CONS, %d, "
@@ -306,6 +314,9 @@ generate_type_decode (const Symbol *s)
   case TOID:
   case TGeneralizedTime:
   case TGeneralString:
+  case TUTF8String:
+  case TNull:
+  case TEnumerated:
   case TBitString:
   case TSequence:
   case TSequenceOf:

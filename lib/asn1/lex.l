@@ -69,17 +69,20 @@ OCTET			{ return OCTET; }
 STRING			{ return STRING; }
 GeneralizedTime		{ return GeneralizedTime; }
 GeneralString		{ return GeneralString; }
+UTF8String		{ return UTF8String; }
+NULL			{ return NULLTYPE; }
 BIT			{ return BIT; }
 APPLICATION		{ return APPLICATION; }
 OPTIONAL		{ return OPTIONAL; }
 BEGIN			{ return TBEGIN; }
 END			{ return END; }
+DEFAULT			{ return DEFAULT; }
 DEFINITIONS		{ return DEFINITIONS; }
 ENUMERATED		{ return ENUMERATED; }
 EXTERNAL		{ return EXTERNAL; }
 OBJECT			{ return OBJECT; }
 IDENTIFIER		{ return IDENTIFIER; }
-[,;{}()|]		{ return *yytext; }
+[,;{}()|\"]		{ return *yytext; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
@@ -98,6 +101,7 @@ IDENTIFIER		{ return IDENTIFIER; }
 			}
 [ \t]			;
 \n			{ ++lineno; }
+\.\.\.			{ return DOTDOTDOT; }
 \.\.			{ return DOTDOT; }
 .			{ error_message("Ignoring char(%c)\n", *yytext); }
 %%

@@ -125,6 +125,11 @@ copy_type (const char *from, const char *to, const Type *t)
   case TGeneralString:
       copy_primitive ("general_string", from, to);
       break;
+  case TUTF8String:
+      copy_primitive ("utf8string", from, to);
+      break;
+  case TNull:
+      break;
   case TApplication:
       copy_type (from, to, t->subtype);
       break;

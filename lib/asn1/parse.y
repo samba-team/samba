@@ -58,12 +58,14 @@ static void append (Member *l, Member *r);
   char *name;
   Type *type;
   Member *member;
+  char *defval;
 }
 
-%token INTEGER SEQUENCE OF OCTET STRING GeneralizedTime GeneralString
+%token INTEGER SEQUENCE OF OCTET STRING GeneralizedTime GeneralString 
 %token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS ENUMERATED
-%token EXTERNAL
-%token DOTDOT
+%token UTF8String NULLTYPE
+%token EXTERNAL DEFAULT
+%token DOTDOT DOTDOTDOT
 %token IMPORTS FROM
 %token OBJECT IDENTIFIER
 %token <name> IDENT 
@@ -71,7 +73,9 @@ static void append (Member *l, Member *r);
 
 %type <constant> constant optional2
 %type <type> type
-%type <member> memberdecls memberdecl bitdecls bitdecl
+%type <member> memberdecls memberdecl memberdeclstart bitdecls bitdecl
+
+%type <defval> defvalue
 
 %start envelope
 
@@ -145,6 +149,8 @@ type		: INTEGER     { $$ = new_type(TInteger); }
 		}
 		| OCTET STRING { $$ = new_type(TOctetString); }
 		| GeneralString { $$ = new_type(TGeneralString); }
+		| UTF8String { $$ = new_type(TUTF8String); }
+                | NULLTYPE { $$ = new_type(TNull); }
 		| GeneralizedTime { $$ = new_type(TGeneralizedTime); }
 		| SEQUENCE OF type
 		{
@@ -180,28 +186,46 @@ type		: INTEGER     { $$ = new_type(TInteger); }
 
 memberdecls	: { $$ = NULL; }
 		| memberdecl	{ $$ = $1; }
+		| memberdecls  ',' DOTDOTDOT { $$ = $1; }
 		| memberdecls ',' memberdecl { $$ = $1; append($$, $3); }
 		;
 
-memberdecl	: IDENT '[' constant ']' type optional2
+memberdeclstart : IDENT '[' constant ']' type
 		{
 		  $$ = malloc(sizeof(*$$));
 		  $$->name = $1;
 		  $$->gen_name = strdup($1);
 		  output_name ($$->gen_name);
 		  $$->val = $3;
-		  $$->optional = $6;
+		  $$->optional = 0;
+		  $$->defval = NULL;
 		  $$->type = $5;
 		  $$->next = $$->prev = $$;
 		}
 		;
 
-optional2	: { $$ = 0; }
-		| OPTIONAL { $$ = 1; }
+
+memberdecl	: memberdeclstart optional2
+		{ $1->optional = $2 ; $$ = $1; }
+		| memberdeclstart defvalue
+		{ $1->defval = $2 ; $$ = $1; }
+		| memberdeclstart
+		{ $$ = $1; }
+		;
+
+
+optional2	: OPTIONAL { $$ = 1; }
+		;
+
+defvalue	: DEFAULT constant
+		{ asprintf(&$$, "%d", $2); }
+		| DEFAULT '"' IDENT '"'
+		{ $$ = strdup ($3); }
 		;
 
 bitdecls	: { $$ = NULL; }
 		| bitdecl { $$ = $1; }
+		| bitdecls ',' DOTDOTDOT { $$ = $1; }
 		| bitdecls ',' bitdecl { $$ = $1; append($$, $3); }
 		;
 
