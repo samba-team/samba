@@ -125,6 +125,10 @@ susystem(s, userid)
 	return (status);
 }
 
+#ifndef roundup
+#define	roundup(x, y)	((((x)+((y)-1))/(y))*(y))
+#endif
+
 BUF *
 allocbuf(bp, fd, blksize)
 	BUF *bp;
