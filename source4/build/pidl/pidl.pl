@@ -101,8 +101,9 @@ sub process_file($)
 
 	my($pidl_file) = util::ChangeExtension($output, "pidl");
 
+	print "Compiling $idl_file\n";
+
 	if ($opt_parse) {
-		print "Generating $pidl_file from $idl_file\n";
 		my($idl) = IdlParse($idl_file);
 		defined $idl || die "Failed to parse $idl_file";
 		util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
@@ -118,21 +119,18 @@ sub process_file($)
 	if ($opt_header) {
 		my($idl) = util::LoadStructure($pidl_file);
 		my($header) = util::ChangeExtension($output, "h");
-		print "Generating $header\n";
 		util::FileSave($header, IdlHeader::Parse($idl));
 	}
 	
 	if ($opt_parser) {
 		my($idl) = util::LoadStructure($pidl_file);
 		my($parser) = util::ChangeExtension($output, "c");
-		print "Generating $parser\n";
 		IdlParser::Parse($idl, $parser);
 	}
 	
 	if ($opt_eparser) {
 		my($idl) = util::LoadStructure($pidl_file);
 		my($parser) = util::ChangeExtension($output, "c");
-		print "Generating $parser for ethereal\n";
 		util::FileSave($parser, IdlEParser::Parse($idl));
 	}
 	
