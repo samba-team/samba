@@ -23,6 +23,10 @@
 
 #include "includes.h"
 
+#define UNICODE_FLAG(cli, flags) (!(flags & STR_ASCII) && \
+                                  ((flags & STR_UNICODE || \
+                                   (SVAL(cli->outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS))))
+
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
 dos code page destination choosing unicode or ascii based on the 
@@ -33,6 +37,7 @@ flags can have:
   STR_CONVERT   means convert from unix to dos codepage
   STR_UPPER     means uppercase in the destination
   STR_ASCII     use ascii even with unicode servers
+  STR_NOALIGN   means don't do alignment
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
@@ -45,14 +50,14 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && clistr_align(cli->outbuf, dest)) {
+	if (clistr_align(cli, dest, flags)) {
 		*(char *)dest = 0;
 		dest = (void *)((char *)dest + 1);
 		dest_len--;
 		len++;
 	}
 
-	if ((flags & STR_ASCII) || !(SVAL(cli->outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) {
+	if (!UNICODE_FLAG(cli, flags)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -83,6 +88,7 @@ flags can have:
   STR_CONVERT   means convert from dos to unix codepage
   STR_TERMINATE means the string in src is null terminated
   STR_UNICODE   means to force as unicode
+  STR_NOALIGN   means don't do alignment
 if STR_TERMINATE is set then src_len is ignored
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
@@ -95,13 +101,12 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && clistr_align(cli->inbuf, src)) {
+	if (clistr_align(cli, src, flags)) {
 		src = (const void *)((const char *)src + 1);
 		if (src_len > 0) src_len--;
 	}
 
-	if ((flags & STR_ASCII) ||
-	    (!(flags & STR_UNICODE) && !(SVAL(cli->inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS))) {
+	if (!UNICODE_FLAG(cli, flags)) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -141,8 +146,8 @@ return an alignment of either 0 or 1
 if unicode is not negotiated then return 0
 otherwise return 1 if offset is off
 ****************************************************************************/
-int clistr_align(const void *buf, const void *p)
+int clistr_align(struct cli_state *cli, const void *p, int flags)
 {
-	if (!(SVAL(buf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) return 0;
-	return PTR_DIFF(p, buf) & 1;
+	if ((flags & STR_NOALIGN) || !UNICODE_FLAG(cli, flags)) return 0;
+	return PTR_DIFF(p, cli->outbuf) & 1;
 }

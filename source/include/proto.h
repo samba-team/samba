@@ -516,7 +516,7 @@ uint32 cli_srvsvc_net_srv_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
 int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
-int clistr_align(const void *buf, const void *p);
+int clistr_align(struct cli_state *cli, const void *p, int flags);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 
