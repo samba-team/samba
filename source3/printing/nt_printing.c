@@ -2067,6 +2067,11 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 		 */
 		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
 		devmode.driverextra=(uint16)extra_len;
+		
+		/* check to catch an invalid TDB entry so we don't segfault */
+		if (devmode.driverextra == 0) {
+			devmode.private = NULL;
+		}
 	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
