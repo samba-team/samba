@@ -18,6 +18,18 @@ Fri Apr  3 03:54:54 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 	* lib/kadm5/server.c: Replace several other functions with
  	`kadmind_loop'.
 
+Sat Mar 28 09:49:18 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab.c (fkt_add_entry): use an explicit seek instead
+ 	of O_APPEND
+
+	* configure.in: generate ftp Makefiles
+
+	* kuser/klist.c (print_cred_verbose): print IPv4-address in a
+ 	portable way.
+
+	* admin/srvconvert.c (srvconv): return 0 if successful
+
 Tue Mar 24 00:40:33 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/keytab.c: MIT compatible changes: add and use sizes to
