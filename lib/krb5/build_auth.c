@@ -98,7 +98,8 @@ krb5_build_authenticator (krb5_context context,
   }
 
   memset (buf, 0, sizeof(buf));
-  ret = encode_Authenticator (buf + sizeof(buf) - 1, sizeof(buf), auth, &len);
+  ret = krb5_encode_Authenticator (context, buf + sizeof(buf) - 1, sizeof(buf), 
+				   auth, &len);
 
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
 		      enctype,
