@@ -41,7 +41,7 @@
 #ifndef __KAFS_H
 #define __KAFS_H
 
-#include <sys/bitypes.h>
+#include <ktypes.h>
 #include <sys/cdefs.h>
 /* sys/ioctl.h must be included manually before kafs.h */
 
