@@ -525,9 +525,14 @@ static BOOL smb_pam_chauthtok(pam_handle_t *pamh, char * user)
 	case PAM_AUTHTOK_ERR:
 		DEBUG(2, ("PAM: unable to obtain the new authentication token - is password to weak?\n"));
 		break;
+
+	/* This doesn't seem to be defined on Solaris. JRA */
+#ifdef PAM_AUTHTOK_RECOVER_ERR
 	case PAM_AUTHTOK_RECOVER_ERR:
 		DEBUG(2, ("PAM: unable to obtain the old authentication token - was the old password wrong?.\n"));
 		break;
+#endif
+
 	case PAM_AUTHTOK_LOCK_BUSY:
 		DEBUG(2, ("PAM: unable to change the authentication token since it is currently locked.\n"));
 		break;
