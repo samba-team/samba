@@ -1,5 +1,5 @@
 <samba:parameter name="guest account"
-                 context="G"
+                 context="G,S"
                  basic="1" advanced="1" developer="1"
 		 xmlns:samba="http://samba.org/common">
 <listitem>
@@ -13,7 +13,7 @@
     the specified username overrides this one.
     </para>
 
-    <para>On some systems the default guest account &quot;nobody&quot; may not 
+    <para>One some systems the default guest account &quot;nobody&quot; may not 
     be able to print. Use another account in this case. You should test 
     this by trying to log in as your guest user (perhaps by using the 
     <command moreinfo="none">su -</command> command) and trying to print using the 

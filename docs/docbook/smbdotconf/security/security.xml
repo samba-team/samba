@@ -19,8 +19,8 @@
     Windows NT.</para>
 
     <para>The alternatives are <command moreinfo="none">security = share</command>,
-	    <command moreinfo="none">security = server</command>, <command moreinfo="none">security = domain
-    </command>, or <command moreinfo="none">security = ads</command>.</para>
+    <command moreinfo="none">security = server</command> or <command moreinfo="none">security = domain
+    </command>.</para>
 
     <para>In versions of Samba prior to 2.0.0, the default was 
     <command moreinfo="none">security = share</command> mainly because that was

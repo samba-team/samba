@@ -17,9 +17,8 @@
     <para><emphasis>Note</emphasis> that if the <parameter moreinfo="none">unix 
     password sync</parameter> parameter is set to <constant>yes
     </constant> then this program is called <emphasis>AS ROOT</emphasis> 
-    before the SMB password in the <ulink url="smbpasswd.5.html"><citerefentry>
-    <refentrytitle>smbpasswd</refentrytitle><manvolnum>5</manvolnum></citerefentry>
-    </ulink> file is changed. If this UNIX password change fails, then 
+    before the SMB password in the smbpasswd
+    file is changed. If this UNIX password change fails, then 
     <command moreinfo="none">smbd</command> will fail to change the SMB password also 
     (this is by design).</para>
 
@@ -28,13 +27,6 @@
     for <emphasis>ALL</emphasis> programs called, and must be examined 
     for security implications. Note that by default <parameter moreinfo="none">unix 
     password sync</parameter> is set to <constant>no</constant>.</para>
-
-    <para>Not that this program is only invoked when a password change is
-    done via the smbd program, not when smbpasswd is used locally as root to
-    change a password. This means that you cannot run "smbpasswd USERNAME" as
-    root on the SMB server in order to test this parameter, but should run the
-    command "smbpasswd -r SMBMACHINE" as a non-root user instead if you want
-    to test the invocation of this program.</para>
 
     <para>See also <link linkend="UNIXPASSWORDSYNC"><parameter moreinfo="none">unix 
     password sync</parameter></link>.</para>

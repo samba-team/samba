@@ -1313,7 +1313,7 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 
 		       <varlistentry>
 			       <term>only</term>
-				   <listitem><para>Only update the LDAP password and let the LDAP server worry about the other fields. This option is only available on some LDAP servers. <footnote>Only when the LDAP server supports LDAP_EXOP_X_MODIFY_PASSWD</footnote></para></listitem>
+				   <listitem><para>Only update the LDAP password and let the LDAP server worry about the other fields. This option is only available on some LDAP servers. <footnote><para>Only when the LDAP server supports LDAP_EXOP_X_MODIFY_PASSWD</para></footnote></para></listitem>
 		       </varlistentry>
 		</variablelist>
 

@@ -5,7 +5,7 @@
 <listitem>
 
 	<para>The idmap gid parameter specifies the range of group ids that are allocated for
-	the purpose of mapping UNIX groups to NT group SIDs. This range of group ids should have no 
+	the purpose of mapping UNX groups to NT group SIDs. This range of group ids should have no 
 	existing local or NIS groups within it as strange conflicts can occur otherwise.</para>
 
 	<para>The availability of an idmap gid range is essential for correct operation of

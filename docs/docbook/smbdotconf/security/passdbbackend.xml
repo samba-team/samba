@@ -55,22 +55,15 @@
 		details.
 		</para></listitem>
 
-		<listitem>
-		<para><command moreinfo="none">guest</command> - 
-		Very simple backend that only provides one user: the guest user.
-		Only maps the NT guest user to the <parameter>guest account</parameter>.
-		Required in pretty much all situations.
-		</para></listitem>
-
 	</itemizedlist>
     </para>
 
     <para>Default: <command moreinfo="none">passdb backend = smbpasswd</command></para>
 
-    <para>Example: <command moreinfo="none">passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd guest</command></para>
+    <para>Example: <command moreinfo="none">passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</command></para>
 
-	<para>Example: <command moreinfo="none">passdb backend = ldapsam:ldaps://ldap.example.com guest</command></para>
+	<para>Example: <command moreinfo="none">passdb backend = ldapsam:ldaps://ldap.example.com</command></para>
 
-    <para>Example: <command moreinfo="none">passdb backend = mysql:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb guest</command></para>
+    <para>Example: <command moreinfo="none">passdb backend = mysql:my_plugin_args tdbsam</command></para>
 </listitem>
 </samba:parameter>
