@@ -258,7 +258,7 @@ BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 do a REG Query Key
 ****************************************************************************/
 BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				char *class, uint32 *class_len,
+				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
@@ -306,7 +306,7 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 			valid_query = True;
 			
 			*class_len      = r_o.hdr_class.uni_max_len;
-			unistr2_to_ascii(class, &r_o.uni_class, sizeof(fstring)-1);
+			unistr2_to_ascii(key_class, &r_o.uni_class, sizeof(fstring)-1);
 			*num_subkeys    = r_o.num_subkeys   ;
 			*max_subkeylen  = r_o.max_subkeylen ;
 			*max_subkeysize = r_o.max_subkeysize;
