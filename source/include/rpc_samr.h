@@ -104,8 +104,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASINFO   0x1c
 #define SAMR_SET_ALIASINFO     0x1d
 #define SAMR_DELETE_DOM_ALIAS  0x1e
-#define SAMR_UNK_ALIAS         0x1f
-#define SAMR_ADD_ALIASMEM      0x20
+#define SAMR_ADD_ALIASMEM      0x1f
+#define SAMR_DEL_ALIASMEM      0x20
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
@@ -480,8 +480,7 @@ typedef struct q_samr_enum_dom_users_info
 /* SAMR_R_ENUM_DOM_USERS - SAM rids and names */
 typedef struct r_samr_enum_dom_users_info
 {
-	uint16 total_num_entries;  /* number of entries that match without the acb mask */
-	uint16 unknown_0;          /* same as unknown_0 (enum context?) in request */
+	uint32 unknown_0;          /* unknown. */
 	uint32 ptr_entries1;       /* actual number of entries to follow, having masked some out */
 
 	uint32 num_entries2;
@@ -1191,30 +1190,12 @@ typedef struct r_samr_query_aliasmem_info
 } SAMR_R_QUERY_ALIASMEM;
 
 
-/* SAMR_Q_UNK_ALIASMEM - don't know! */
-typedef struct q_samr_unk_alias_mem_info
-{
-	POLICY_HND alias_pol;       /* policy handle */
-
-	DOM_SID sid; /* member sid to be "something"ed to do with the alias */
-
-} SAMR_Q_UNK_ALIASMEM;
-
-
-/* SAMR_R_UNK_ALIASMEM - probably an open */
-typedef struct r_samr_unk_alias_mem_info
-{
-	uint32 status;         /* return status */
-
-} SAMR_R_UNK_ALIASMEM;
-
-
-/* SAMR_Q_ADD_ALIASMEM - probably an add member */
+/* SAMR_Q_ADD_ALIASMEM - don't know! */
 typedef struct q_samr_add_alias_mem_info
 {
 	POLICY_HND alias_pol;       /* policy handle */
 
-	DOM_SID2 sid; /* member sid to be added to alias */
+	DOM_SID sid; /* member sid to be "something"ed to do with the alias */
 
 } SAMR_Q_ADD_ALIASMEM;
 
@@ -1225,6 +1206,24 @@ typedef struct r_samr_add_alias_mem_info
 	uint32 status;         /* return status */
 
 } SAMR_R_ADD_ALIASMEM;
+
+
+/* SAMR_Q_DEL_ALIASMEM - add an add alias member */
+typedef struct q_samr_del_alias_mem_info
+{
+	POLICY_HND alias_pol;       /* policy handle */
+
+	DOM_SID2 sid; /* member sid to be added to alias */
+
+} SAMR_Q_DEL_ALIASMEM;
+
+
+/* SAMR_R_DEL_ALIASMEM - delete alias member */
+typedef struct r_samr_del_alias_mem_info
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_DEL_ALIASMEM;
 
 
 

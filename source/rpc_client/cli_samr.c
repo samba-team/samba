@@ -861,7 +861,7 @@ BOOL samr_open_alias(struct cli_state *cli,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_open_alias(&q_o, domain_pol, 0x0008, rid);
+	make_samr_q_open_alias(&q_o, domain_pol, 0x000f001f, rid);
 
 	/* turn parameters into data stream */
 	samr_io_q_open_alias("", &q_o,  &data, 0);

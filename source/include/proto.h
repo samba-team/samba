@@ -2086,7 +2086,7 @@ void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint16 acb_mask, uint16 unk_1, uint32 size);
 void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
-		uint16 total_num_entries, uint16 unk_0,
+		uint32 unk_0,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
 void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
@@ -2203,14 +2203,14 @@ void make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
 				const char *acct_desc);
 void samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
-void make_samr_q_unk_aliasmem(SAMR_Q_UNK_ALIASMEM *q_u, POLICY_HND *hnd,
-				DOM_SID *sid);
-void samr_io_q_unk_aliasmem(char *desc,  SAMR_Q_UNK_ALIASMEM *q_u, prs_struct *ps, int depth);
-void samr_io_r_unk_aliasmem(char *desc,  SAMR_R_UNK_ALIASMEM *r_u, prs_struct *ps, int depth);
 void make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 				DOM_SID *sid);
 void samr_io_q_add_aliasmem(char *desc,  SAMR_Q_ADD_ALIASMEM *q_u, prs_struct *ps, int depth);
 void samr_io_r_add_aliasmem(char *desc,  SAMR_R_ADD_ALIASMEM *r_u, prs_struct *ps, int depth);
+void make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u, POLICY_HND *hnd,
+				DOM_SID *sid);
+void samr_io_q_del_aliasmem(char *desc,  SAMR_Q_DEL_ALIASMEM *q_u, prs_struct *ps, int depth);
+void samr_io_r_del_aliasmem(char *desc,  SAMR_R_DEL_ALIASMEM *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c, POLICY_HND *hnd);
 void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struct *ps, int depth);
 void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,

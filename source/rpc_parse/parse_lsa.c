@@ -677,10 +677,10 @@ void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
 
 	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
 
-	SMB_ASSERT_ARRAY(q_l->uni_name, q_l->num_entries);
-
 	q_l->num_entries     = num_names;
 	q_l->num_entries2    = num_names;
+
+	SMB_ASSERT_ARRAY(q_l->uni_name, q_l->num_entries);
 
 	for (i = 0; i < num_names; i++)
 	{

@@ -208,9 +208,9 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 		fprintf(out_hnd, "addaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
 		return;
 	}
-	alias_rid = strtoul(tmp, (char**)NULL, 10);
+	alias_rid = get_number(tmp);
 
-	fprintf(out_hnd, "SAM Create Domain Alias\n");
+	fprintf(out_hnd, "SAM Domain Alias Member\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
@@ -385,9 +385,9 @@ void cmd_sam_add_groupmem(struct client_info *info)
 		fprintf(out_hnd, "addgroupmem: <group rid> [member rid1] [member rid2] ...\n");
 		return;
 	}
-	group_rid = strtoul(tmp, (char**)NULL, 10);
+	group_rid = get_number(tmp);
 
-	fprintf(out_hnd, "SAM Create Domain Group\n");
+	fprintf(out_hnd, "SAM Add Domain Group member\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
@@ -959,7 +959,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x304; /* absolutely no idea. */
+	uint32 flags = 0x200003f3; /* absolutely no idea. */
 	fstring tmp;
 	uint32 alias_idx;
 
@@ -1049,15 +1049,15 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				uint16 old_fnum = smb_cli->nt_pipe_fnum;
 
 				if (num_aliases != 0)
-	{
+				{
 					sids = malloc(num_aliases * sizeof(DOM_SID*));
-	}
+				}
 
 				res3 = sids != NULL;
 				if (res3)
-	{
+				{
 					for (i = 0; i < num_aliases; i++)
-		{
+					{
 						sids[i] = &sid_mem[i].sid;
 					}
 				}
@@ -1083,7 +1083,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				smb_cli->nt_pipe_fnum = old_fnum;
 
 				if (res4 && names != NULL)
-			{
+				{
 					display_alias_members(out_hnd, ACTION_HEADER   , num_names, names);
 					display_alias_members(out_hnd, ACTION_ENUMERATE, num_names, names);
 					display_alias_members(out_hnd, ACTION_FOOTER   , num_names, names);
@@ -1104,8 +1104,8 @@ void cmd_sam_enum_aliases(struct client_info *info)
 					free(sids);
 				}
 			}
-				}
-			}
+		}
+	}
 
 	res = res ? samr_close(smb_cli, 
 	            &info->dom.samr_pol_connect) : False;
