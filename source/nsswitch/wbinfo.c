@@ -32,27 +32,61 @@ enum nss_status generic_request(int req_type,
 
 /* Globals */
 
-BOOL do_users, do_groups, do_string2sid, do_sid2string;
-
-/* Convert string to sid */
+BOOL do_users, do_groups, do_lookupsid, do_lookupname;
 
 /* Convert sid to string */
 
-BOOL convert_sid2string(char *sid)
+static BOOL wbinfo_lookupsid(char *sid)
 {
-	return False;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.sid, sid);
+	if (generic_request(WINBINDD_LOOKUPSID, &request, &response) ==
+	    WINBINDD_ERROR) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.name);
+
+	return True;
 }
 
 /* Convert string to sid */
 
-BOOL convert_string2sid(char *sid)
+static BOOL wbinfo_lookupname(char *name)
 {
-	return False;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.name, name);
+	if (generic_request(WINBINDD_LOOKUPNAME, &request, &response) ==
+	    WINBINDD_ERROR) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.sid);
+
+	return True;
 }
 
 /* Print domain users */
 
-BOOL print_domain_users(void)
+static BOOL print_domain_users(void)
 {
 	struct winbindd_response response;
 	fstring name;
@@ -82,7 +116,7 @@ BOOL print_domain_users(void)
 
 /* Print domain groups */
 
-BOOL print_domain_groups(void)
+static BOOL print_domain_groups(void)
 {
 	struct winbindd_response response;
 	fstring name;
@@ -110,8 +144,13 @@ BOOL print_domain_groups(void)
 
 /* Print program usage */
 
-void usage(void)
+static void usage(void)
 {
+	printf("Usage: wbinfo -u | -g | -n name | -s sid\n\n");
+	printf("\t-u\tlists all domain users\n");
+	printf("\t-g\tlists all domain groups\n");
+	printf("\t-n name\tconverts name to sid\n");
+	printf("\t-s sid\tconverts sid to name\n");
 }
 
 /* Main program */
@@ -122,46 +161,32 @@ int main(int argc, char **argv)
 
 	/* Parse command line options */
 
-	while ((opt = getopt(argc, argv, "ugs:t:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:")) != EOF) {
 		switch (opt) {
 		case 'u':
-			do_users = True;
+			if (!print_domain_users()) {
+				printf("Error looking up domain users\n");
+			}
 			break;
 		case 'g':
-			do_groups = True;
+			if (!print_domain_groups()) {
+				printf("Error looking up domain groups\n");
+			}
 			break;
 		case 's':
-			do_sid2string = True;
+			if (!wbinfo_lookupsid(optarg)) {
+				printf("Could not lookup sid %s\n", optarg);
+			}
 			break;
-		case 't':
-			do_string2sid = True;
+		case 'n':
+			if (!wbinfo_lookupname(optarg)) {
+				printf("Could not lookup name %s\n", optarg);
+			}
+			break;
 		default:
 			usage();
 			exit(1);
 		}
-	}
-
-	/* Process options */
-
-	if (do_users && !print_domain_users()) {
-		DEBUG(0, ("Error fetching domain users\n"));
-		return 1;
-
-	}
-
-	if (do_groups && !print_domain_groups()) {
-		DEBUG(0, ("Error fetching domain groups\n"));
-		return 1;
-	}
-
-	if (do_sid2string && !convert_sid2string(optarg)) {
-		DEBUG(0, ("Unable to convert sid %s to string\n", optarg));
-		return 1;
-	}
-
-	if (do_sid2string && !convert_string2sid(optarg)) {
-		DEBUG(0, ("Unable to convert string %s to sid\n", optarg));
-		return 1;
 	}
 
 	/* Clean exit */
