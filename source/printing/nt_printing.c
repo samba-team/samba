@@ -1,21 +1,21 @@
 #define OLD_NTDOMAIN 1
-/* 
+/*
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -25,7 +25,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
-extern DOM_SID global_sid_World; 
+extern DOM_SID global_sid_World;
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
@@ -72,7 +72,7 @@ BOOL nt_printing_init(void)
 	return True;
 }
 
-  
+
 /****************************************************************************
 get a form struct list
 ****************************************************************************/
@@ -84,8 +84,8 @@ int get_ntforms(nt_forms_struct **list)
 	int i;
 	int n = 0;
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
@@ -131,7 +131,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 		/* save index, so list is rebuilt in correct order */
 		len = tdb_pack(buf, sizeof(buf), "dddddddd",
 			       i, (*list)[i].flag, (*list)[i].width, (*list)[i].length,
-			       (*list)[i].left, (*list)[i].top, (*list)[i].right, 
+			       (*list)[i].left, (*list)[i].top, (*list)[i].right,
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[i].name);
@@ -154,8 +154,8 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	BOOL update;
 	fstring form_name;
 
-	/* 
-	 * NT tries to add forms even when 
+	/*
+	 * NT tries to add forms even when
 	 * they are already in the base
 	 * only update the values if already present
 	 */
@@ -192,7 +192,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 }
 
 /****************************************************************************
- delete a named form struct 
+ delete a named form struct
 ****************************************************************************/
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret)
 {
@@ -239,7 +239,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 }
 
 /****************************************************************************
-update a form struct 
+update a form struct
 ****************************************************************************/
 void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 {
@@ -265,7 +265,7 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 	(*list)[n].right=form->right;
 	(*list)[n].bottom=form->bottom;
 }
- 
+
 /****************************************************************************
 get the nt drivers list
 
@@ -281,8 +281,8 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 	get_short_archi(short_archi, architecture);
 	slprintf(key, sizeof(key), "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
@@ -322,7 +322,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 	DEBUG(107,("Getting architecture dependant directory\n"));
 	do {
 		i++;
-	} while ( (archi_table[i].long_archi!=NULL ) && 
+	} while ( (archi_table[i].long_archi!=NULL ) &&
 	          StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
 	if (archi_table[i].long_archi==NULL) {
@@ -342,43 +342,84 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in)
+static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
+								   struct current_user *user, uint32 *perr)
 {
-	int  fd = -1;
-	int  service;
-	int  cversion;
-	ssize_t  byte_count;
-	char buf[PE_HEADER_SIZE];
-	pstring driverpath;
+	int               cversion;
+	int               access_mode;
+	int               action;
+	int               ecode;
+	char              buf[PE_HEADER_SIZE];
+	ssize_t           byte_count;
+	pstring           driverpath;
+	fstring           user_name;
+	fstring           null_pw;
+	files_struct      *fsp = NULL;
+	SMB_STRUCT_STAT   st;
+	struct passwd *pass;
+	connection_struct *conn;
 
 	/* If architecture is Windows 95/98, the version is always 0. */
 	if (strcmp(architecture, "WIN40") == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
 		return 0;
 	}
-	
-	/* Open the driver file (Portable Executable format) and determine the
-	 * deriver the cversion.
-	 */
-	if ((service = find_service("print$")) == -1) {
-		DEBUG(3,("get_correct_cversion: Can't find print$ service\n"));
-		goto error_exit;
+
+	become_root();
+	pass = getpwuid(user->uid);
+	if(pass == NULL) {
+		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
+				(unsigned int)user->uid ));
+		unbecome_root();
+		*perr = ERROR_ACCESS_DENIED;
+		return -1;
+	}
+	unbecome_root();
+
+	/* connect to the print$ share under the same account as the user connected
+	 * to the rpc pipe */	
+	fstrcpy(user_name, pass->pw_name );
+	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
+		*perr = (uint32)ecode;
+		return -1;
 	}
 
-	slprintf(driverpath, sizeof(driverpath), "%s/%s/%s",
-			 lp_pathname(service), architecture, driverpath_in);
+	/* Save who we are - we are temporarily becoming the connection user. */
+	push_sec_ctx();
 
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("get_correct_cversion: Can't become user %s\n", user_name ));
+		*perr = ERROR_ACCESS_DENIED;
+		pop_sec_ctx();
+		return -1;
+	}
+
+	/* Open the driver file (Portable Executable format) and determine the
+	 * deriver the cversion. */
+	slprintf(driverpath, sizeof(driverpath), "%s/%s", architecture, driverpath_in);
 	dos_to_unix(driverpath, True);
-
-	if ((fd = sys_open(driverpath, O_RDONLY, 0)) == -1) {
+	fsp = open_file_shared(conn, driverpath, &st,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
+		*perr = ERROR_ACCESS_DENIED;
 		goto error_exit;
 	}
-	 
-	if ((byte_count = read(fd, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
+
+	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
 		DEBUG(3,("get_correct_cversion: File [%s] DOS header too short, bytes read = %d\n",
 				driverpath, byte_count));
+		*perr = NT_STATUS_FILE_INVALID;
 		goto error_exit;
 	}
 
@@ -386,22 +427,24 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in)
 	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
 		DEBUG(6,("get_correct_cversion: File [%s] bad DOS magic = 0x%x\n",
 				driverpath, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
+		*perr = NT_STATUS_FILE_INVALID;
 		goto error_exit;
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (sys_lseek(fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_correct_cversion: File [%s] too short, errno = %d\n",
 				driverpath, errno));
+		*perr = NT_STATUS_FILE_INVALID;
 		goto error_exit;
 	}
 
-	if ((byte_count = read(fd, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
+	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
 		DEBUG(3,("get_correct_cversion: File [%s] Windows header too short, bytes read = %d\n",
 				driverpath, byte_count));
+		*perr = NT_STATUS_FILE_INVALID;
 		goto error_exit;
 	}
-	close(fd);
 
 	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
@@ -413,11 +456,13 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in)
 				default:
 					DEBUG(6,("get_correct_cversion: PE formated file [%s] bad version = %d\n",
 							driverpath, SVAL(buf,PE_HEADER_MAJOR_OS_VER_OFFSET)));
+					*perr = NT_STATUS_FILE_INVALID;
 					goto error_exit;
 			}
 		} else {
 			DEBUG(6,("get_correct_cversion: PE formatted file [%s] wrong machine = 0x%x\n",
 					driverpath, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
+			*perr = NT_STATUS_FILE_INVALID;
 			goto error_exit;
 		}
 
@@ -430,39 +475,55 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in)
 				default:
 					DEBUG(6,("get_correct_cversion: NE formated file [%s] bad version = %d\n",
 							driverpath, CVAL(buf,NE_HEADER_MAJOR_VER_OFFSET)));
+					*perr = NT_STATUS_FILE_INVALID;
 					goto error_exit;
 			}
 		} else {
 			DEBUG(6,("get_correct_cversion: NE formatted file [%s] wrong target OS = 0x%x\n",
 					driverpath, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
+			*perr = NT_STATUS_FILE_INVALID;
 			goto error_exit;
 		}
 
 	} else {
 		DEBUG(6,("get_correct_cversion: Unknown file format [%s], signature = 0x%x\n",
 				driverpath, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
+		*perr = NT_STATUS_FILE_INVALID;
 		goto error_exit;
 	}
 
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 			driverpath, cversion));
+
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+	close_cnum(conn, user->vuid);
+	pop_sec_ctx();
 	return cversion;
 
 
 	error_exit:
-		if(fd != -1)
-			close(fd);
+		if(fsp) {
+			if(fsp->fd != -1)
+				fsp->conn->vfs_ops.close(fsp, fsp->fd);
+			file_free(fsp);
+		}
+
+		close_cnum(conn, user->vuid);
+		pop_sec_ctx();
 		return -1;
 }
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
+											 struct current_user *user)
 {
 	fstring architecture;
 	fstring new_name;
 	char *p;
 	int i;
+	uint32 err;
 
 	/* clean up the driver name.
 	 * we can get .\driver.dll
@@ -511,21 +572,23 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->cversion = get_correct_cversion(architecture,
-											driver->driverpath)) == -1)
-		return NT_STATUS_FILE_INVALID;     /* Not the best error. Fix JRR */
+	if ((driver->cversion = get_correct_cversion( architecture,
+									driver->driverpath, user, &err)) == -1)
+		return err;
 
 	return NT_STATUS_NO_PROBLEMO;
 }
-	 
+	
 /****************************************************************************
 ****************************************************************************/
-static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver,
+											 struct current_user *user)
 {
 	fstring architecture;
 	fstring new_name;
 	char *p;
 	int i;
+	uint32 err;
 
 	/* clean up the driver name.
 	 * we can get .\driver.dll
@@ -575,29 +638,30 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT2K: cversion=3
 	 */
 	if ((driver->version = get_correct_cversion(architecture,
-											driver->driverpath)) == -1)
-		return NT_STATUS_FILE_INVALID;     /* Not the best error. Fix JRR */
+									driver->driverpath, user, &err)) == -1)
+		return err;
 
 	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+							  uint32 level, struct current_user *user)
 {
 	switch (level) {
 		case 3:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 			driver=driver_abstract.info_3;
-			return clean_up_driver_struct_level_3(driver);
+			return clean_up_driver_struct_level_3(driver, user);
 			break;
 		}
 		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
 			driver=driver_abstract.info_6;
-			return clean_up_driver_struct_level_6(driver);
+			return clean_up_driver_struct_level_6(driver, user);
 			break;
 		}
 		default:
@@ -624,6 +688,369 @@ static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PR
     dst->dependentfiles = src->dependentfiles;
 }
 
+#if 0 /* Debugging function */
+
+static char* ffmt(unsigned char *c){
+	int i;
+	static char ffmt_str[17];
+
+	for (i=0; i<16; i++) {
+		if ((c[i] < ' ') || (c[i] > '~'))
+			ffmt_str[i]='.';
+		else
+			ffmt_str[i]=c[i];
+	}
+    ffmt_str[16]='\0';
+	return ffmt_str;
+}
+
+#endif
+
+/****************************************************************************
+Version information in Microsoft files is held in a VS_VERSION_INFO structure.
+There are two case to be covered here: PE (Portable Executable) and NE (New
+Executable) files. Both files support the same INFO structure, but PE files
+store the signature in unicode, and NE files store it as !unicode.
+****************************************************************************/
+//static BOOL get_file_version(connection_struct *conn, int fd, char *fname,
+static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
+							 uint32 *minor)
+{
+	int     i;
+	char    *buf;
+	ssize_t byte_count;
+
+	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
+		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
+				fname, PE_HEADER_SIZE));
+		goto error_exit;
+	}
+
+	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
+	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
+		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
+				fname, byte_count));
+		goto no_version_info;
+	}
+
+	/* Is this really a DOS header? */
+	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
+		DEBUG(6,("get_file_version: File [%s] bad DOS magic = 0x%x\n",
+				fname, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
+		goto no_version_info;
+	}
+
+	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
+	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
+				fname, errno));
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		goto no_version_info;
+	}
+
+	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
+		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
+				fname, byte_count));
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		goto no_version_info;
+	}
+
+	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
+	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
+		int num_sections;
+		int section_table_bytes;
+		
+		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
+			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
+					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
+			/* At this point, we assume the file is in error. It still could be somthing
+			 * else besides a PE file, but it unlikely at this point.
+			 */
+			goto error_exit;
+		}
+
+		/* get the section table */
+		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
+		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
+		free(buf);
+		if ((buf=malloc(section_table_bytes)) == NULL) {
+			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
+					fname, section_table_bytes));
+			goto error_exit;
+		}
+
+		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
+			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
+					fname, byte_count));
+			goto error_exit;
+		}
+
+		/* Iterate the section table looking for the resource section ".rsrc" */
+		for (i = 0; i < num_sections; i++) {
+			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
+
+			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
+				int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
+				int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
+
+				free(buf);
+				if ((buf=malloc(section_bytes)) == NULL) {
+					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
+							fname, section_bytes));
+					goto error_exit;
+				}
+
+				/* Seek to the start of the .rsrc section info */
+				if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
+							fname, errno));
+					goto error_exit;
+				}
+
+				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
+					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
+							fname, byte_count));
+					goto error_exit;
+				}
+
+				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
+					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
+					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
+						/* Align to next long address */
+						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
+
+						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
+							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
+							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
+							
+							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
+									  fname, *major, *minor,
+									  (*major>>16)&0xffff, *major&0xffff,
+									  (*minor>>16)&0xffff, *minor&0xffff));
+							free(buf);
+							return True;
+						}
+					}
+				}
+			}
+		}
+
+		/* Version info not found, fall back to origin date/time */
+		DEBUG(10,("get_file_version: PE file [%s] has no version info\n", fname));
+		free(buf);
+		return False;
+
+	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
+		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
+			DEBUG(3,("get_file_version: NE file [%s] wrong target OS = 0x%x\n",
+					fname, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
+			/* At this point, we assume the file is in error. It still could be somthing
+			 * else besides a NE file, but it unlikely at this point. */
+			goto error_exit;
+		}
+
+		/* Allocate a bit more space to speed up things */
+		free(buf);
+		if ((buf=malloc(VS_NE_BUF_SIZE)) == NULL) {
+			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
+					fname, PE_HEADER_SIZE));
+			goto error_exit;
+		}
+
+		/* This is a HACK! I got tired of trying to sort through the messy
+		 * 'NE' file format. If anyone wants to clean this up please have at
+		 * it, but this works. 'NE' files will eventually fade away. JRR */
+		while((byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE)) > 0) {
+			/* Cover case that should not occur in a well formed 'NE' .dll file */
+			if (byte_count-VS_VERSION_INFO_SIZE <= 0) break;
+
+			for(i=0; i<byte_count; i++) {
+				/* Fast skip past data that can't possibly match */
+				if (buf[i] != 'V') continue;
+
+				/* Potential match data crosses buf boundry, move it to beginning
+				 * of buf, and fill the buf with as much as it will hold. */
+				if (i>byte_count-VS_VERSION_INFO_SIZE) {
+					int bc;
+
+					memcpy(buf, &buf[i], byte_count-i);
+					if ((bc = vfs_read_data(fsp, &buf[byte_count-i], VS_NE_BUF_SIZE-
+								   (byte_count-i))) < 0) {
+
+						DEBUG(0,("get_file_version: NE file [%s] Read error, errno=%d\n",
+								 fname, errno));
+						goto error_exit;
+					}
+
+					byte_count = bc + (byte_count - i);
+					if (byte_count<VS_VERSION_INFO_SIZE) break;
+
+					i = 0;
+				}
+
+				/* Check that the full signature string and the magic number that
+				 * follows exist (not a perfect solution, but the chances that this
+				 * occurs in code is, well, remote. Yes I know I'm comparing the 'V'
+				 * twice, as it is simpler to read the code. */
+				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
+					/* Compute skip alignment to next long address */
+					int skip = -(fsp->conn->vfs_ops.lseek(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
+								 sizeof(VS_SIGNATURE)) & 3;
+					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
+
+					*major = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MAJOR_OFFSET);
+					*minor = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MINOR_OFFSET);
+					DEBUG(6,("get_file_version: NE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
+							  fname, *major, *minor,
+							  (*major>>16)&0xffff, *major&0xffff,
+							  (*minor>>16)&0xffff, *minor&0xffff));
+					free(buf);
+					return True;
+				}
+			}
+		}
+
+		/* Version info not found, fall back to origin date/time */
+		DEBUG(0,("get_file_version: NE file [%s] Version info not found\n", fname));
+		free(buf);
+		return False;
+
+	} else
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		DEBUG(3,("get_file_version: File [%s] unknown file format, signature = 0x%x\n",
+				fname, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
+
+	no_version_info:
+		free(buf);
+		return False;
+
+	error_exit:
+		free(buf);
+		return -1;
+}
+
+/****************************************************************************
+Drivers for Microsoft systems contain multiple files. Often, multiple drivers
+share one or more files. During the MS installation process files are checked
+to insure that only a newer version of a shared file is installed over an
+older version. There are several possibilities for this comparison. If there
+is no previous version, the new one is newer (obviously). If either file is
+missing the version info structure, compare the creation date (on Unix use
+the modification date). Otherwise chose the numerically larger version number.
+****************************************************************************/
+static int file_version_is_newer(connection_struct *conn, fstring new_file,
+								fstring old_file)
+{
+	BOOL   use_version = True;
+	pstring filepath;
+
+	uint32 new_major;
+	uint32 new_minor;
+	time_t new_create_time;
+
+	uint32 old_major;
+	uint32 old_minor;
+	time_t old_create_time;
+
+	int access_mode;
+	int action;
+	files_struct    *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT stat_buf;
+	
+	/* Get file version info (if available) for previous file (if it exists) */
+	pstrcpy(filepath, old_file);
+	dos_to_unix(filepath, True);
+
+	fsp = open_file_shared(conn, filepath, &stat_buf,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
+		/* Old file not found, so by definition new file is in fact newer */
+		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
+				filepath, errno));
+		return True;
+
+	} else {
+		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
+		if (ret == -1) goto error_exit;
+
+		if (!ret) {
+			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
+					 old_file));
+			use_version = False;
+			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			old_create_time = st.st_mtime;
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
+		}
+	}
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+
+
+	/* Get file version info (if available) for new file */
+	pstrcpy(filepath, new_file);
+	dos_to_unix(filepath, True);
+	fsp = open_file_shared(conn, filepath, &stat_buf,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
+		/* New file not found, this shouldn't occur if the caller did its job */
+		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
+				filepath, errno));
+		goto error_exit;
+
+	} else {
+		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
+		if (ret == -1) goto error_exit;
+
+		if (!ret) {
+			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
+					 new_file));
+			use_version = False;
+			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			new_create_time = st.st_mtime;
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
+		}
+	}
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+
+	if (use_version) {
+		/* Compare versions and choose the larger version number */
+		if (new_major > old_major ||
+			(new_major == old_major && new_minor > old_minor)) {
+			
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			return True;
+		}
+		else {
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			return False;
+		}
+
+	} else {
+		/* Compare modification time/dates and choose the newest time/date */
+		if (new_create_time > old_create_time) {
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			return True;
+		}
+		else {
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			return False;
+		}
+	}
+
+	error_exit:
+		if(fsp) {
+			file_free(fsp);
+			if(fsp->fd != -1)
+				fsp->conn->vfs_ops.close(fsp, fsp->fd);
+		}
+		return -1;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -642,6 +1069,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring outbuf;
 	struct passwd *pass;
 	int ecode;
+	int ver = 0;
 	int outsize = 0;
 	int i;
 
@@ -697,95 +1125,112 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		return False;
 	}
 
-	/* 
-	 * make the directories version and version\driver_name 
+	/*
+	 * make the directories version and version\driver_name
 	 * under the architecture directory.
 	 */
 	DEBUG(5,("Creating first directory\n"));
-	slprintf(new_dir, sizeof(new_dir), "%s\\%d", architecture, driver->cversion);
+	slprintf(new_dir, sizeof(new_dir), "%s/%d", architecture, driver->cversion);
 	mkdir_internal(conn, inbuf, outbuf, new_dir);
 
-	/* move all the files, one by one, 
-	 * from archi\filexxx.yyy to
-	 * archi\version\filexxx.yyy
+	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
+	 * listed for this driver which has already been moved, skip it (note:
+	 * drivers may list the same file name several times. Then check if the
+	 * file already exists in archi\cversion\, if so, check that the version
+	 * info (or time stamps if version info is unavailable) is newer (or the
+	 * date is later). If it is, move it to archi\cversion\filexxx.yyy.
+	 * Otherwise, delete the file.
 	 *
-	 * Note: drivers may list the same file name in several places. This
-	 * causes problems on a second attempt to move the file. JRR
-	 *
-	 * Note: use the replace flag on rename_internals() call, otherwise it
-	 * is very difficult to change previously installed drivers... the Windows
-	 * GUI offers the user the choice to replace or keep exisitng driver. JRR
+	 * If a file is not moved to archi\cversion\ because of an error, all the
+	 * rest of the 'unmoved' driver files are removed from archi\. If one or
+	 * more of the driver's files was already moved to archi\cversion\, it
+	 * potentially leaves the driver in a partially updated state. Version
+	 * trauma will most likely occur if an client attempts to use any printer
+	 * bound to the driver. Perhaps a rewrite to make sure the moves can be
+	 * done is appropriate... later JRR
 	 */
 
-	DEBUG(5,("Moving file now !\n"));
+	DEBUG(5,("Moving files now !\n"));
 
 	if (driver->driverpath && strlen(driver->driverpath)) {
-	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->driverpath);	
-	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->driverpath);	
-	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-				old_name, new_name ));
-		close_cnum(conn, user->vuid);
-		pop_sec_ctx();
-		*perr = (uint32)SVAL(outbuf,smb_err);
-		return False;
-	}
+		slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->driverpath);	
+		slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->driverpath);	
+		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
+			if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
+						new_name, old_name));
+				*perr = (uint32)SVAL(outbuf,smb_err);
+				unlink_internals(conn, inbuf, outbuf, 0, new_name);
+				ver = -1;
+			}
+		}
+		else
+			unlink_internals(conn, inbuf, outbuf, 0, new_name);
 	}
 
 	if (driver->datafile && strlen(driver->datafile)) {
-	if (!strequal(driver->datafile, driver->driverpath)) {
-		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
-		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
-		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-					old_name, new_name ));
-			close_cnum(conn, user->vuid);
-			pop_sec_ctx();
-			*perr = (uint32)SVAL(outbuf,smb_err);
-			return False;
+		if (!strequal(driver->datafile, driver->driverpath)) {
+			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->datafile);	
+			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->datafile);	
+			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
+				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
+							new_name, old_name));
+					*perr = (uint32)SVAL(outbuf,smb_err);
+					unlink_internals(conn, inbuf, outbuf, 0, new_name);
+					ver = -1;
+				}
+			}
+			else
+				unlink_internals(conn, inbuf, outbuf, 0, new_name);
 		}
-	}
 	}
 
 	if (driver->configfile && strlen(driver->configfile)) {
-	if (!strequal(driver->configfile, driver->driverpath) &&
-		!strequal(driver->configfile, driver->datafile)) {
-		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
-		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
-		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-				old_name, new_name ));
-			close_cnum(conn, user->vuid);
-			pop_sec_ctx();
-			*perr = (uint32)SVAL(outbuf,smb_err);
-			return False;
+		if (!strequal(driver->configfile, driver->driverpath) &&
+			!strequal(driver->configfile, driver->datafile)) {
+			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->configfile);	
+			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->configfile);	
+			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
+				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
+							new_name, old_name));
+					*perr = (uint32)SVAL(outbuf,smb_err);
+					unlink_internals(conn, inbuf, outbuf, 0, new_name);
+					ver = -1;
+				}
+			}
+			else
+				unlink_internals(conn, inbuf, outbuf, 0, new_name);
 		}
-	}
 	}
 
 	if (driver->helpfile && strlen(driver->helpfile)) {
-	if (!strequal(driver->helpfile, driver->driverpath) &&
+		if (!strequal(driver->helpfile, driver->driverpath) &&
 			!strequal(driver->helpfile, driver->datafile) &&
 			!strequal(driver->helpfile, driver->configfile)) {
-		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
-		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
-		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-				old_name, new_name ));
-			close_cnum(conn, user->vuid);
-			pop_sec_ctx();
-			*perr = (uint32)SVAL(outbuf,smb_err);
-			return False;
+			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->helpfile);	
+			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->helpfile);	
+			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
+				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
+							new_name, old_name));
+					*perr = (uint32)SVAL(outbuf,smb_err);
+					unlink_internals(conn, inbuf, outbuf, 0, new_name);
+					ver = -1;
+				}
+			}
+			else
+				unlink_internals(conn, inbuf, outbuf, 0, new_name);
 		}
-	}
 	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			if (!strequal(driver->dependentfiles[i], driver->driverpath) &&
-					!strequal(driver->dependentfiles[i], driver->datafile) &&
-					!strequal(driver->dependentfiles[i], driver->configfile) &&
-					!strequal(driver->dependentfiles[i], driver->helpfile)) {
+				!strequal(driver->dependentfiles[i], driver->datafile) &&
+				!strequal(driver->dependentfiles[i], driver->configfile) &&
+				!strequal(driver->dependentfiles[i], driver->helpfile)) {
 				int j;
 				for (j=0; j < i; j++) {
 					if (strequal(driver->dependentfiles[i], driver->dependentfiles[j])) {
@@ -793,16 +1238,19 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 					}
 				}
 
-				slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
-				slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
-				if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-					DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-						old_name, new_name ));
-					close_cnum(conn, user->vuid);
-					pop_sec_ctx();
-					*perr = (uint32)SVAL(outbuf,smb_err);
-					return False;
+				slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->dependentfiles[i]);	
+				slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->dependentfiles[i]);	
+				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
+					if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
+								new_name, old_name));
+						*perr = (uint32)SVAL(outbuf,smb_err);
+						unlink_internals(conn, inbuf, outbuf, 0, new_name);
+						ver = -1;
+					}
 				}
+				else
+					unlink_internals(conn, inbuf, outbuf, 0, new_name);
 			}
 		NextDriver: ;
 		}
@@ -811,7 +1259,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	close_cnum(conn, user->vuid);
 	pop_sec_ctx();
 
-	return True;
+	return ver == -1 ? False : True;
 }
 
 /****************************************************************************
@@ -865,7 +1313,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
  again:
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dffffffff", 
+	len += tdb_pack(buf+len, buflen-len, "dffffffff",
 			driver->cversion,
 			driver->name,
 			driver->environment,
@@ -878,7 +1326,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-			len += tdb_pack(buf+len, buflen-len, "f", 
+			len += tdb_pack(buf+len, buflen-len, "f",
 					driver->dependentfiles[i]);
 		}
 	}
@@ -981,7 +1429,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 #else
 	if (!dbuf.dptr) return 5;
 #endif
-	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff", 
+	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff",
 			  &driver.cversion,
 			  driver.name,
 			  driver.environment,
@@ -999,7 +1447,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		if (driver.dependentfiles == NULL)
 			break;
 
-		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", 
+		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f",
 				  &driver.dependentfiles[i]);
 		i++;
 	}
@@ -1093,7 +1541,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 	
 	switch (level)
 	{
-		case 3: 
+		case 3:
 		{
 			if (driver.info_3 == NULL)
 				success=5;
@@ -1112,7 +1560,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 				
 				for (i=0; info3->dependentfiles &&
 					  *info3->dependentfiles[i]; i++) {
-					DEBUGADD(106,("dependentfile:[%s]\n", 
+					DEBUGADD(106,("dependentfile:[%s]\n",
 						      info3->dependentfiles[i]));
 				}
 				success=0;
@@ -1198,8 +1646,8 @@ static int pack_specifics(NT_PRINTER_PARAM *param, char *buf, int buflen)
 	while (param != NULL) {
 		len += tdb_pack(buf+len, buflen-len, "pfdB",
 				param,
-				param->value, 
-				param->type, 
+				param->value,
+				param->type,
 				param->data_len,
 				param->data);
 		param=param->next;	
@@ -1239,7 +1687,7 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
 	
-	/* 
+	/*
 	 * in addprinter: no servername and the printer is the name
 	 * in setprinter: servername is \\server
 	 *                and printer is \\server\\printer
@@ -1318,7 +1766,7 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	safe_free(buf);
 
-	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n", 
+	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n",
 		 info->sharename, info->drivername, info->portname, len));
 
 	return ret;
@@ -1362,7 +1810,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	
 	if (current==NULL) return (False);
 	
-	if ( !strcmp(current->value, param->value) && 
+	if ( !strcmp(current->value, param->value) &&
 	    (strlen(current->value)==strlen(param->value)) ) {
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
@@ -1440,8 +1888,8 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->driverversion    = 0x0400;
 	nt_devmode->size             = 0x00DC;
 	nt_devmode->driverextra      = 0x0000;
-	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY | 
-				       DEFAULTSOURCE | COPIES | SCALE | 
+	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY |
+				       DEFAULTSOURCE | COPIES | SCALE |
 				       PAPERSIZE | ORIENTATION;
 	nt_devmode->orientation      = 1;
 	nt_devmode->papersize        = PAPER_LETTER;
@@ -1587,7 +2035,7 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.ttoption,
 			  &devmode.collate,
 			  &devmode.logpixels,
-			  
+			
 			  &devmode.fields,
 			  &devmode.bitsperpel,
 			  &devmode.pelswidth,
@@ -1635,8 +2083,8 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 		if (!p) break;
 
 		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  param.value, 
-				  &param.type, 
+				  param.value,
+				  &param.type,
 				  &param.data_len,
 				  &param.data);
 		param.next = *list;
@@ -1668,6 +2116,12 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
+
+	if (!*info.drivername)
+		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
+
+	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
+
 	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
@@ -1787,7 +2241,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	
 	switch (level)
 	{
-		case 2: 
+		case 2:
 		{
 			if (printer.info_2 == NULL)
 				success=5;
@@ -1896,7 +2350,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	
 	switch (level)
 	{
-		case 2: 
+		case 2:
 		{
 			/*
 			 * Update the changestamp.
@@ -1934,7 +2388,7 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 
 	switch (level)
 	{
-		case 2: 
+		case 2:
 		{
 			if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
 				DEBUG(0,("get_a_printer: malloc fail.\n"));
@@ -1976,7 +2430,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 	
 	switch (level)
 	{
-		case 2: 
+		case 2:
 		{
 			if (printer->info_2 != NULL)
 			{
@@ -2009,13 +2463,13 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	
 	switch (level)
 	{
-		case 3: 
+		case 3:
 		{
 			success=add_a_printer_driver_3(driver.info_3);
 			break;
 		}
 
-		case 6: 
+		case 6:
 		{
 			success=add_a_printer_driver_6(driver.info_6);
 			break;
@@ -2029,14 +2483,14 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 }
 /****************************************************************************
 ****************************************************************************/
-uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
+uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
                             fstring printername, fstring architecture, uint32 version)
 {
 	uint32 success;
 	
 	switch (level)
 	{
-		case 3: 
+		case 3:
 		{
 			success=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
 			break;
@@ -2059,7 +2513,7 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	
 	switch (level)
 	{
-		case 3: 
+		case 3:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 			if (driver.info_3 != NULL)
@@ -2076,7 +2530,7 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			}
 			break;
 		}
-		case 6: 
+		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *info6;
 			if (driver.info_6 != NULL)
@@ -2134,7 +2588,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 
 /****************************************************************************
 ****************************************************************************/
-BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level, 
+BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len)
 {
 	/* right now that's enough ! */	
@@ -2147,9 +2601,9 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 	while (param != NULL)
 	{
 #if 1 /* JRA - I think this should be case insensitive.... */
-		if ( strequal(value, param->value) 
+		if ( strequal(value, param->value)
 #else
-		if ( !strcmp(value, param->value) 
+		if ( !strcmp(value, param->value)
 #endif
 		    && strlen(value)==strlen(param->value))
 			break;
@@ -2182,22 +2636,78 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
+	SEC_DESC_BUF *new_secdesc_ctr = NULL;
+	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	uint32 status;
 
 	mem_ctx = talloc_init();
-	if (mem_ctx == NULL) return False;
+	if (mem_ctx == NULL)
+		return False;
+
+        /* The old owner and group sids of the security descriptor are not
+	   present when new ACEs are added or removed by changing printer
+	   permissions through NT.  If they are NULL in the new security
+	   descriptor then copy them over from the old one. */
+
+	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
+		DOM_SID *owner_sid, *group_sid;
+		SEC_ACL *dacl, *sacl;
+		SEC_DESC *psd = NULL;
+		size_t size;
+
+		nt_printing_getsec(printername, &old_secdesc_ctr);
+
+		/* Pick out correct owner and group sids */
+
+		owner_sid = secdesc_ctr->sec->owner_sid ?
+			secdesc_ctr->sec->owner_sid :
+			old_secdesc_ctr->sec->owner_sid;
+
+		group_sid = secdesc_ctr->sec->grp_sid ?
+			secdesc_ctr->sec->grp_sid :
+			old_secdesc_ctr->sec->grp_sid;
+
+		dacl = secdesc_ctr->sec->dacl ?
+			secdesc_ctr->sec->dacl :
+			old_secdesc_ctr->sec->dacl;
+
+		sacl = secdesc_ctr->sec->sacl ?
+			secdesc_ctr->sec->sacl :
+			old_secdesc_ctr->sec->sacl;
+
+		/* Make a deep copy of the security descriptor */
+
+		psd = make_sec_desc(secdesc_ctr->sec->revision,
+				    secdesc_ctr->sec->type,
+				    owner_sid, group_sid,
+				    sacl,
+				    dacl,
+				    &size);
+
+		new_secdesc_ctr = make_sec_desc_buf(size, psd);
+
+		/* Free up memory */
+
+		free_sec_desc(&psd);
+		free_sec_desc_buf(&old_secdesc_ctr);
+	}
+
+	if (!new_secdesc_ctr) {
+		new_secdesc_ctr = secdesc_ctr;
+	}
 
 	/* Store the security descriptor in a tdb */
 
-	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec) + 
+	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) +
 		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
 
-	if (!sec_io_desc_buf("nt_printing_setsec", &secdesc_ctr, &ps, 1)) {
+	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
+			     &ps, 1)) {
 		status = ERROR_INVALID_FUNCTION;
-		goto done;
+		goto out;
 	}
 
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
@@ -2211,11 +2721,16 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Free mallocated memory */
 
- done:
+ out:
+	free_sec_desc_buf(&old_secdesc_ctr);
+
+	if (new_secdesc_ctr != secdesc_ctr) {
+		free_sec_desc_buf(&new_secdesc_ctr);
+	}
+
 	prs_mem_free(&ps);
-
-	if (mem_ctx) talloc_destroy(mem_ctx);
-
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 	return status;
 }
 
@@ -2272,8 +2787,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 #define NT4_ACL_REVISION 0x2
 
 	if ((psa = make_sec_acl(NT4_ACL_REVISION, 2, ace)) != NULL) {
-		psd = make_sec_desc(SEC_DESC_REVISION, 
-				    SEC_DESC_SELF_RELATIVE | 
+		psd = make_sec_desc(SEC_DESC_REVISION,
+				    SEC_DESC_SELF_RELATIVE |
 				    SEC_DESC_DACL_PRESENT,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
@@ -2287,7 +2802,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 
 	sdb = make_sec_desc_buf(sd_size, psd);
 
-	DEBUG(4,("construct_default_printer_sdb: size = %u.\n", 
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",
 		 (unsigned int)sd_size));
 
 	free_sec_desc(&psd);
@@ -2389,7 +2904,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	Why ? Simply because it's easier and it makes sense !
 	
 	Now explanation: You have 3 printers behind your samba server,
-	2 of them are the same make and model (laser A and B). But laser B 
+	2 of them are the same make and model (laser A and B). But laser B
 	has an 3000 sheet feeder and laser A doesn't such an option.
 	Your third printer is an old dot-matrix model for the accounting :-).
 	
@@ -2404,7 +2919,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 		NTdriver_printer model X
 		NTdriver_printer model Y
 
-jfm: I should use this comment for the text file to explain 
+jfm: I should use this comment for the text file to explain
 	same thing for the forms BTW.
 	Je devrais mettre mes commentaires en francais, ca serait mieux :-)
 
@@ -2419,7 +2934,7 @@ jfm: I should use this comment for the text file to explain
        print_queue_pause, print_queue_resume, update_printer_sec,
        update_printer, spoolss_addprinterex_level_2,
        _spoolss_setprinterdata
-        
+
    PRINTER_ACCESS_USE:
        print_job_start
 
@@ -2479,7 +2994,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		required_access = PRINTER_ACE_PRINT;
 		break;
 	case PRINTER_ACCESS_ADMINISTER:
-		required_access = PRINTER_ACE_MANAGE_DOCUMENTS | 
+		required_access = PRINTER_ACE_MANAGE_DOCUMENTS |
 			PRINTER_ACE_PRINT;
 		break;
 	case JOB_ACCESS_ADMINISTER:
@@ -2497,7 +3012,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	   values, i.e PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT.
 	   This would cause the access check to simply fall out when we
 	   check against any subset of these bits.  To get things to work,
-	   change every ACE mask of PRINTER_ACE_FULL_CONTROL to 
+	   change every ACE mask of PRINTER_ACE_FULL_CONTROL to
 	   PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before
 	   performing the access check.  I'm sure there is a better way to
 	   do this! */
@@ -2508,13 +3023,13 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 			if (secdesc->sec->dacl->ace[i].info.mask ==
 			    PRINTER_ACE_FULL_CONTROL) {
 				secdesc->sec->dacl->ace[i].info.mask =
-					PRINTER_ACE_MANAGE_DOCUMENTS | 
+					PRINTER_ACE_MANAGE_DOCUMENTS |
 					PRINTER_ACE_PRINT;
 			}
 		}
 	}
 
-	if ((result = se_access_check(secdesc->sec, user, required_access, 
+	if ((result = se_access_check(secdesc->sec, user, required_access,
 				      &access_granted, &status))) {
 		goto done;
 	}
@@ -2544,7 +3059,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		break;
 	}	
 
-	result = se_access_check(secdesc->sec, user, required_access, 
+	result = se_access_check(secdesc->sec, user, required_access,
 				 &access_granted, &status);
 
 	/* Check access */

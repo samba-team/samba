@@ -271,11 +271,23 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (jobid == qid) break;
 	}
 	
+	/* The job isn't in the system queue - we have to assume it has
+	   completed, so delete the database entry. */
+
 	if (i == ts->qcount) {
-		/* the job isn't in the system queue - we have to
-                   assume it has completed, so delete the database
-                   entry */
-		tdb_delete(t, key);
+		time_t cur_t = time(NULL);
+
+		/* A race can occur between the time a job is spooled and
+		   when it appears in the lpq output.  This happens when
+		   the job is added to printing.tdb when another smbd
+		   running print_queue_update() has completed a lpq and
+		   is currently traversing the printing tdb and deleting jobs.
+		   A workaround is to not delete the job if it has been 
+		   submitted less than lp_lpqcachetime() seconds ago. */
+
+		if ((cur_t - pjob.starttime) > lp_lpqcachetime()) {
+			tdb_delete(t, key);
+		}
 	}
 
 	return 0;
@@ -305,15 +317,17 @@ static void print_queue_update(int snum)
 	print_status_struct status;
 	struct printjob *pjob;
 	struct traverse_struct tstruct;
-	fstring keystr;
+	fstring keystr, printer_name;
 	TDB_DATA data, key;
  
+	fstrcpy(printer_name, lp_servicename(snum));
+	
 	/*
 	 * Update the cache time FIRST ! Stops others doing this
 	 * if the lpq takes a long time.
 	 */
 
-	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr), "CACHE/%s", printer_name);
 	tdb_store_int(tdb, keystr, (int)time(NULL));
 
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
@@ -343,11 +357,11 @@ static void print_queue_update(int snum)
 	file_lines_free(qlines);
 
 	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
-		"s" : "", lp_servicename(snum)));
+		"s" : "", printer_name));
 
 	/* Lock the queue for the database update */
 
-	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
 	tdb_lock_bystring(tdb, keystr);
 
 	/*
@@ -397,7 +411,7 @@ static void print_queue_update(int snum)
 
 	/* store the queue status structure */
 	status.qcount = qcount;
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr), "STATUS/%s", printer_name);
 	data.dptr = (void *)&status;
 	data.dsize = sizeof(status);
 	key.dptr = keystr;
@@ -406,7 +420,7 @@ static void print_queue_update(int snum)
 
 	/* Unlock for database update */
 
-	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
 	tdb_unlock_bystring(tdb, keystr);
 
 	/*
@@ -414,7 +428,7 @@ static void print_queue_update(int snum)
 	 * as little as possible...
 	 */
 
-	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr), "CACHE/%s", printer_name);
 	tdb_store_int(tdb, keystr, (int)time(NULL));
 }
 
@@ -1032,7 +1046,8 @@ int print_queue_status(int snum,
 		return 0;
 
 	/* Allocate the queue size. */
-	if (( tstruct.queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*tsc.count))
+	if ((tstruct.queue = (print_queue_struct *)
+	     malloc(sizeof(print_queue_struct)*tsc.count))
 				== NULL)
 		return 0;
 

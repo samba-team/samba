@@ -405,6 +405,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	 */
 
 	for (snum=0;snum<n_services && found==False;snum++) {
+		char *printername;
 	
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
@@ -414,15 +415,18 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 			continue;
 
+		printername=strchr(printer->info_2->printername+2, '\\');
+		printername++;
+
 		DEBUG(10,("set_printer_hnd_name: name [%s], aprinter [%s]\n", 
 				printer->info_2->printername, aprinter ));
 
-		if ( strlen(printer->info_2->printername) != strlen(aprinter) ) {
+		if ( strlen(printername) != strlen(aprinter) ) {
 			free_a_printer(&printer, 2);
 			continue;
 		}
 		
-		if ( strncasecmp(printer->info_2->printername, aprinter, strlen(aprinter)))  {
+		if ( strncasecmp(printername, aprinter, strlen(aprinter)))  {
 			free_a_printer(&printer, 2);
 			continue;
 		}
@@ -1097,8 +1101,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 }
 
 /*******************************************************************
- * fill a notify_info_data with the servicename
- * jfmxxxx: it's incorrect should be long_printername
+ * fill a notify_info_data with the printername (not including the servername).
  ********************************************************************/
 static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue,
 										NT_PRINTER_INFO_LEVEL *printer)
@@ -1110,10 +1113,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 	} else {
 		p++;
 	}
-/*
-	data->notify_data.data.length=strlen(lp_servicename(snum));
-	dos_PutUniCode(data->notify_data.data.string, lp_servicename(snum), sizeof(data->notify_data.data.string), True);
-*/
+
 	data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
 				p, sizeof(data->notify_data.data.string), True) - sizeof(uint16))/sizeof(uint16));
 }
@@ -1135,7 +1135,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
 	/* even if it's strange, that's consistant in all the code */
 
 	data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
-		lp_servicename(snum), sizeof(data->notify_data.data.string), True)  - sizeof(uint16))/sizeof(uint16));
+		printer->info_2->portname, sizeof(data->notify_data.data.string), True)  - sizeof(uint16))/sizeof(uint16));
 }
 
 /*******************************************************************
@@ -1239,9 +1239,7 @@ static void spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data,
  ********************************************************************/
 static void spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
-	data->notify_data.value[0] =   PRINTER_ATTRIBUTE_SHARED   \
-	                             | PRINTER_ATTRIBUTE_LOCAL  \
-				     | PRINTER_ATTRIBUTE_RAW_ONLY ;
+	data->notify_data.value[0] = printer->info_2->attributes;
 }
 
 /*******************************************************************
@@ -2614,7 +2612,6 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_3 *printer=NULL;
-	fstring temp;
 
 	if (!construct_printer_info_3(&printer, snum))
 		return ERROR_NOT_ENOUGH_MEMORY;
@@ -4894,7 +4891,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	convert_printer_driver_info(info, &driver, level);
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	if ((err = clean_up_driver_struct(driver, level)) != NT_STATUS_NO_PROBLEMO )
+	if ((err = clean_up_driver_struct(driver, level, &user)) != NT_STATUS_NO_PROBLEMO )
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
