@@ -1373,6 +1373,20 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	return ret;
 }
 
+static int tdb_already_open(dev_t device,
+			    ino_t ino)
+{
+	TDB_CONTEXT *i;
+	
+	for (i = tdbs; i; i = i->next) {
+		if (i->device == device && i->inode == ino) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 /* open the database, creating it if necessary 
 
    The open_flags and mode are passed straight to the open call on the
@@ -1392,7 +1406,7 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn)
 {
-	TDB_CONTEXT tdb[1], *ret, *i;
+	TDB_CONTEXT tdb[1], *ret;
 	struct stat st;
 	int rev = 0, locked;
 
@@ -1463,13 +1477,12 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;
 
 	/* Is it already in the open list?  If so, fail. */
-	if (tdb_already_open(st.st_dev, st.st_ino)
-	for (i = tdbs; i; i = i->next) {
-		if (i->device == st.st_dev && i->inode == st.st_ino) {
-			errno = EBUSY;
-			close(tdb->fd);
-			goto fail;
-		}
+	if (tdb_already_open(st.st_dev, st.st_ino)) {
+		TDB_LOG((tdb, 2,
+			 "tdb_open_ex: %s (%d,%d) is already open\n",
+			 name, st.st_dev, st.st_ino));
+		errno = EBUSY;
+		goto fail;
 	}
 
 	/* map the database and fill in the return structure */
