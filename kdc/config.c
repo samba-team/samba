@@ -41,10 +41,11 @@
 
 RCSID("$Id$");
 
-static char *config_file = NULL;
-char *logfile = NULL;
+static char *config_file;
+char *logfile;
 int loglevel = -2;
 int require_preauth = 1;
+char *keyfile;
 
 static int help;
 
@@ -64,6 +65,10 @@ static struct getargs args[] = {
     { 
 	"require-preauth",	'p',	arg_negative_flag, &require_preauth, 
 	"don't require pa-data in as-reqs"
+    },
+    { 
+	"key-file",	'k',	arg_string, &keyfile, 
+	"location of master key file", "file"
     },
     { "help", 'h', arg_flag, &help },
 };
@@ -110,6 +115,15 @@ configure(int argc, char **argv)
 				    NULL);
 	if(p)
 	    loglevel = atoi(p);
+    }
+
+    if(keyfile == NULL){
+	p = krb5_config_get_string (cf, 
+				    "kdc",
+				    "key-file",
+				    NULL);
+	if(p)
+	    keyfile = strdup(p);
     }
     
     if(require_preauth == -1){
