@@ -1919,7 +1919,7 @@ union smb_search_data {
 		large_t unique_id;
 		large_t permissions;
 		large_t nlink;		
-		WIRE_STRING name;
+		const char *name;
 	} unix_info;
 };
 

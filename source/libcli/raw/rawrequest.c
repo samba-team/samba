@@ -1008,6 +1008,52 @@ size_t cli_blob_pull_string(struct cli_session *session,
 }
 
 /*
+  pull a string from a blob, returning a talloced char *
+
+  Currently only used by the UNIX search info level.
+
+  the string length is limited by 2 things:
+   - the data size in the blob
+   - the end of string (null termination)
+
+  on failure zero is returned and dest->s is set to NULL, otherwise the number
+  of bytes consumed in the blob is returned
+*/
+size_t cli_blob_pull_unix_string(struct cli_session *session,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *blob, 
+			    const char **dest, 
+			    uint16 str_offset, 
+			    unsigned flags)
+{
+	int extra = 0;
+	*dest = NULL;
+	
+	if (!(flags & STR_ASCII) && 
+	    ((flags & STR_UNICODE) || 
+	     (session->transport->negotiate.capabilities & CAP_UNICODE))) {
+		int align = 0;
+		if ((str_offset&1) && !(flags & STR_NOALIGN)) {
+			align = 1;
+		}
+		if (flags & STR_LEN_NOTERM) {
+			extra = 2;
+		}
+		return align + extra + cli_blob_pull_ucs2(mem_ctx, blob, dest, 
+							  blob->data+str_offset+align, 
+							  -1, flags);
+	}
+
+	if (flags & STR_LEN_NOTERM) {
+		extra = 1;
+	}
+
+	return extra + cli_blob_pull_ascii(mem_ctx, blob, dest,
+					   blob->data+str_offset, -1, flags);
+}
+
+
+/*
   append a string into a blob
 */
 size_t cli_blob_append_string(struct cli_session *session,
