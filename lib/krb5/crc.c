@@ -40,15 +40,12 @@
 
 RCSID("$Id$");
 
-#include <stdio.h>
-#include "crc.h"
-
 static u_long table[256];
 
 #define CRC_GEN 0xEDB88320L
 
 void
-crc_init_table(void)
+_krb5_crc_init_table(void)
 {
     static int flag = 0;
     unsigned long crc, poly;
@@ -71,7 +68,7 @@ crc_init_table(void)
 }
 
 u_int32_t
-crc_update (char *p, size_t len, u_int32_t res)
+_krb5_crc_update (char *p, size_t len, u_int32_t res)
 {
     while (len--)
 	res = table[(res ^ *p++) & 0xFF] ^ (res >> 8);
