@@ -89,9 +89,12 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	if (privilege!=NULL)
 		convert_priv_from_text(&se_priv, privilege);
 
-	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv, PR_ACCESS_FROM_NETWORK))
+	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv, PR_ACCESS_FROM_NETWORK)) {
+		free_privilege(&se_priv);
 		return -1;
+	}
 
+	free_privilege(&se_priv);
 	return 0;
 }
 
@@ -103,12 +106,11 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 	DOM_SID sid;
 	GROUP_MAP map;
 	gid_t gid;
-	PRIVILEGE_SET se_priv;
 
 	string_to_sid(&sid, sid_string);
 
 	/* Get the current mapping from the database */
-	if(!get_group_map_from_sid(sid, &map)) {
+	if(!get_group_map_from_sid(sid, &map, MAPPING_WITH_PRIV)) {
 		printf("This SID does not exist in the database\n");
 		return -1;
 	}
@@ -145,9 +147,11 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 
 	if (!add_mapping_entry(&map, TDB_REPLACE)) {
 		printf("Count not update group database\n");
+		free_privilege(&map.priv_set);
 		return -1;
 	}
-
+	
+	free_privilege(&map.priv_set);
 	return 0;
 }
 
@@ -180,7 +184,7 @@ int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
 	if (!long_list)
 		printf("NT group (SID) -> Unix group\n");
 		
-	if (!enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED))
+	if (!enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED, MAPPING_WITH_PRIV))
 		return -1;
 	
 	for (i=0; i<entries; i++) {

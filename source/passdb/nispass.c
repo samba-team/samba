@@ -308,8 +308,7 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 	  else {
 	  	GROUP_MAP map;
 		
-		if (get_group_map_from_gid(pw_buf->smb_grpid, &map)) {
-			free_privileges(&map.priv_set);
+		if (get_group_map_from_gid(pw_buf->smb_grpid, &map, MAPPING_WITHOUT_PRIV)) {
 			pw_buf->group_rid = map.rid;
 		}
 		else
