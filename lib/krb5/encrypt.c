@@ -18,10 +18,19 @@ NULL_checksum(void *p, size_t len, void *result)
 }
 
 static void
+MD4_checksum(void *p, size_t len, void *result)
+{
+    struct md4 m;
+    md4_init(&m);
+    md4_update(&m, p, len);
+    md4_finito(&m, result);
+}
+
+static void
 MD5_checksum(void *p, size_t len, void *result)
 {
     struct md5 m;
-    md5init(&m);
+    md5_init(&m);
     md5_update(&m, p, len);
     md5_finito(&m, result);
 }
@@ -67,11 +76,12 @@ DES_encrypt(void *p, size_t len,
 static void
 DES3_encrypt(void *p, size_t len, const krb5_keyblock *keyblock, int encrypt)
 {
-    
+    abort ();
 }
 
 static struct encryption_type em [] = {
     { ETYPE_DES_CBC_CRC, 8, 8, 4, DES_encrypt, CRC_checksum },
+    { ETYPE_DES_CBC_MD4, 8, 8, 16, DES_encrypt, MD4_checksum },
     { ETYPE_DES_CBC_MD5, 8, 8, 16, DES_encrypt, MD5_checksum },
     { ETYPE_NULL, 1, 0, 0, NULL_encrypt, NULL_checksum },
 };
@@ -86,17 +96,16 @@ krb5_do_encrypt(krb5_context context,
 		 krb5_keyblock *keyblock,
 		 krb5_data *result)
 {
-    size_t size;
     size_t sz;
     unsigned char *p;
-    size = len + et->confoundersize + et->checksumsize;
-    sz = (size + et->blocksize - 1) & ~ (et->blocksize - 1);
+    sz = len + et->confoundersize + et->checksumsize;
+    sz = (sz + et->blocksize - 1) & ~ (et->blocksize - 1);
     p = calloc(1, sz);
     if (p == NULL)
 	return ENOMEM;
     des_rand_data(p, et->confoundersize);
     memcpy(p + et->confoundersize + et->checksumsize, ptr, len);
-    (*et->checksum)(p, size, p + et->confoundersize);
+    (*et->checksum)(p, sz, p + et->confoundersize);
     (*et->encrypt)(p, sz, keyblock, 1);
     result->data = p;
     result->length = sz;
@@ -113,20 +122,23 @@ krb5_do_decrypt(krb5_context context,
 {
     unsigned char *his_checksum;
     unsigned char *p = ptr;
-    size_t length = 0; /* magic! */
+    size_t outlen;
+
     (*et->encrypt)(ptr, len, keyblock, 0);
     his_checksum = malloc(et->checksumsize);
-    memcpy(his_checksum, ptr + et->confoundersize, et->checksumsize);
-    memset(ptr + et->confoundersize, 0, et->checksumsize);
+    memcpy(his_checksum, p + et->confoundersize, et->checksumsize);
+    memset(p + et->confoundersize, 0, et->checksumsize);
 
-    (*et->checksum)(p, length, p + et->confoundersize);
+    (*et->checksum)(p, len, p + et->confoundersize);
     if (memcmp(p + et->confoundersize, his_checksum, et->checksumsize))
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    result->data = malloc(length);
+
+    outlen = len - et->confoundersize - et->checksumsize;
+    result->data = malloc(outlen);
     if(result->data == NULL)
 	return ENOMEM;
-    result->length = length;
-    memcpy(result->data, p + et->confoundersize, et->checksumsize);
+    result->length = outlen;
+    memcpy(result->data, p + et->confoundersize + et->checksumsize, outlen);
     return 0;
 }
 
