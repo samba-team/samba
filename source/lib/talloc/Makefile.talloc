@@ -1,6 +1,6 @@
-OPT = -g -ftest-coverage -fprofile-arcs 
-LIBS = -lgcov
-#OPT = -g
+#OPT = -g -ftest-coverage -fprofile-arcs 
+#LIBS = -lgcov
+OPT = -O
 
 CFLAGS = $(OPT) -Wall
 

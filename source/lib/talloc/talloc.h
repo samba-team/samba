@@ -4,7 +4,7 @@
    Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
 
-   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Tridgell 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,8 +54,6 @@ typedef void TALLOC_CTX;
 
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
-#define talloc_destroy(ctx) talloc_free(ctx)
-
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
@@ -70,6 +68,7 @@ typedef void TALLOC_CTX;
 #define talloc_p(ctx, type) talloc(ctx, type)
 #define talloc_array_p(ctx, type, count) talloc_array(ctx, type, count)
 #define talloc_realloc_p(ctx, p, type, count) talloc_realloc(ctx, p, type, count)
+#define talloc_destroy(ctx) talloc_free(ctx)
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
