@@ -219,4 +219,54 @@ performance. Check the sections on the various clients in
 </para>
 
 </sect1>
+
+<sect1>
+<title>Samba performance problem due changing kernel (2.4.20 Linux kernel)</title>
+
+<para>
+Hi everyone. I am running Gentoo on my server and samba 2.2.8a. Recently
+I changed kernel version from linux-2.4.19-gentoo-r10 to
+linux-2.4.20-wolk4.0s. And now I have performance issue with samba. Ok
+many of you will probably say that move to vanilla sources...well I ried
+it too and it didn't work. I have 100mb LAN and two computers (linux +
+Windows2000). Linux server shares directory with DivX files, client
+(windows2000) plays them via LAN. Before when I was running 2.4.19 kernel
+everything was fine, but now movies freezes and stops...I tried moving
+files between server and Windows and it's trerribly slow.
+</para>
+
+<para>
+Grab mii-tool and check the duplex settings on the NIC.
+My guess is that it is a link layer issue, not an application
+layer problem.  Also run ifconfig and verify that the framing
+error, collisions, etc... look normal for ethernet.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Corrupt tdb Files</title>
+
+<para>
+<screen>
+Well today it happend.... our first major troubles using samba. This is
+no complaints but just some questions :-)
+Our samba PDC server has been hosting 3 TB of data to our 500+ users
+[Windows NT/XP]  for the last 3 years using samba, no problem.
+But today all shares went SLOW; very slow. Also the main smbd kept
+spawning new processes so we had 1600+ running smbd's.... ( while
+normally we avg. 250 ).
+It crashed the SUN E3500 cluster twice. After alot of searching I
+decided to rm ./var/locks/*.tbl and YES I was happy again.
+
+Q1) Is there any method of keeping the *.tbl files in top condition or
+how to early detect corruption?
+
+Q2) What I also would like to mention is that the service latency seems
+alot lower then before the locks cleanup, any ideas on keeping it top notch?
+</screen>
+</para>
+
+</sect1>
+
 </chapter>
