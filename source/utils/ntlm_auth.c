@@ -656,7 +656,7 @@ static BOOL test_ntlm(void)
 */
 
 struct ntlm_tests {
-	BOOL (*fn)();
+	BOOL (*fn)(void);
 	const char *name;
 } test_table[] = {
 	{test_lm, "test LM"},
