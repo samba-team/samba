@@ -42,6 +42,16 @@ RCSID("$Id$");
 
 int _kafs_debug; /* this should be done in a better way */
 
+#define NO_ENTRY_POINT		0
+#define SINGLE_ENTRY_POINT	1
+#define MULTIPLE_ENTRY_POINT	2
+#define SINGLE_ENTRY_POINT2	3
+#define SINGLE_ENTRY_POINT3	4
+#define AIX_ENTRY_POINTS	5
+#define UNKNOWN_ENTRY_POINT	6
+static int afs_entry_point = UNKNOWN_ENTRY_POINT;
+static int afs_syscalls[2];
+
 /* Magic to get AIX syscalls to work */
 #ifdef _AIX
 
@@ -123,17 +133,6 @@ map_syscall_name_to_number (const char *str, int *res)
     fclose (f);
     return -1;
 }
-
-#define NO_ENTRY_POINT		0
-#define SINGLE_ENTRY_POINT	1
-#define MULTIPLE_ENTRY_POINT	2
-#define SINGLE_ENTRY_POINT2	3
-#define SINGLE_ENTRY_POINT3	4
-#define AIX_ENTRY_POINTS	5
-#define UNKNOWN_ENTRY_POINT	6
-static int afs_entry_point = UNKNOWN_ENTRY_POINT;
-static int afs_syscalls[2];
-
 
 int
 k_pioctl(char *a_path,
@@ -235,6 +234,7 @@ SIGSYS_handler(int sig)
  * Try to see if `syscall' is a pioctl.  Return 0 iff succesful.
  */
 
+#if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
 static int
 try_one (int syscall_num)
 {
@@ -252,6 +252,7 @@ try_one (int syscall_num)
     }
     return 1;
 }
+#endif
 
 /*
  * Try to see if `syscall_pioctl' is a pioctl syscall.  Return 0 iff
@@ -259,6 +260,7 @@ try_one (int syscall_num)
  *
  */
 
+#ifdef AFS_PIOCTL
 static int
 try_two (int syscall_pioctl, int syscall_setpag)
 {
@@ -277,6 +279,7 @@ try_two (int syscall_pioctl, int syscall_setpag)
     }
     return 1;
 }
+#endif
 
 int
 k_hasafs(void)
