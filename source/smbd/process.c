@@ -44,7 +44,7 @@ int max_recv = BUFFER_SIZE;
 
 extern int last_message;
 extern int global_oplock_break;
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
@@ -524,7 +524,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       SSVAL(inbuf,smb_uid,session_tag);
 
       /*
-       * Ensure the correct username is in sesssetup_user.
+       * Ensure the correct username is in current_user_info.
        * This is a really ugly bugfix for problems with
        * multiple session_setup_and_X's being done and
        * allowing %U and %G substitutions to work correctly.
@@ -539,7 +539,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         if(session_tag != UID_FIELD_INVALID)
           vuser = get_valid_user_struct(session_tag);           
         if(vuser != NULL)
-          pstrcpy( sesssetup_user, vuser->user.smb_name);
+          current_user_info = vuser->user;
       }
 
       /* does this protocol need to be run as root? */

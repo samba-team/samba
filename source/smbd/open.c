@@ -25,7 +25,7 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;
 
@@ -188,7 +188,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-		 *sesssetup_user ? sesssetup_user : conn->user,fsp->fsp_name,
+		 *current_user_info.smb_name ? current_user_info.smb_name : conn->user,fsp->fsp_name,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 

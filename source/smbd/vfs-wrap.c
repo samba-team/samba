@@ -107,6 +107,20 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 #endif
 
     result = mkdir(path, mode);
+
+	if (result == 0) {
+		/*
+		 * We need to do this as the default behavior of POSIX ACLs	
+		 * is to set the mask to be the requested group permission
+		 * bits, not the group permission bits to be the requested
+		 * group permission bits. This is not what we want, as it will
+		 * mess up any inherited ACL bits that were set. JRA.
+		 */
+		if (conn->vfs_ops.chmod_acl != NULL) {
+			conn->vfs_ops.chmod_acl(conn, path, mode);
+		}
+	}
+
     END_PROFILE(syscall_mkdir);
     return result;
 }
@@ -332,6 +346,19 @@ int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
     }
 #endif
 
+	/*
+	 * We need to do this due to the fact that the default POSIX ACL
+	 * chmod modifies the ACL *mask* for the group owner, not the
+	 * group owner bits directly. JRA.
+	 */
+
+	if (conn->vfs_ops.chmod_acl != NULL) {
+		if ((result = conn->vfs_ops.chmod_acl(conn, path, mode)) == 0) {
+			END_PROFILE(syscall_chmod);
+			return result;
+		}
+	}
+
     result = chmod(path, mode);
     END_PROFILE(syscall_chmod);
     return result;
@@ -506,4 +533,15 @@ BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent
 {
 	return set_nt_acl(fsp, security_info_sent, psd);
 }
+
+int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode)
+{
+	return chmod_acl(name, mode);
+}
+
+int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode)
+{
+	return fchmod_acl(fd, mode);
+}
+
 #undef OLD_NTDOMAIN
