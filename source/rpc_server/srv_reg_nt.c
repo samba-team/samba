@@ -372,6 +372,8 @@ static Registry_Key *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 static void free_reg_info(void *ptr)
 {
 	Registry_Key *info = (Registry_Key*)ptr;
+	
+	DLIST_REMOVE(regkeys_list, info);
 
 	SAFE_FREE(info);
 }
@@ -695,7 +697,7 @@ NTSTATUS _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1
 	if ( !regkey )
 		return NT_STATUS_INVALID_HANDLE;	
 	
-	r_u->unknown = 0x05000000;	/* seems to be consistent...no idea what it means */
+	r_u->unknown = 0x00000005;	/* seems to be consistent...no idea what it means */
 	
 	DEBUG(5,("_reg_unknown_1a: Exit\n"));
 	
