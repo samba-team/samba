@@ -625,13 +625,12 @@ bitswap32(int32_t b)
 
 
 /*
- * store `creds' on `sp' returning error or zero
+ *
  */
 
 krb5_error_code
-krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
+_krb5_store_creds_internal(krb5_storage *sp, krb5_creds *creds, int v0_6)
 {
-    int32_t dummy32;
     int ret;
 
     ret = krb5_store_principal(sp, creds->client);
@@ -650,12 +649,15 @@ krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 				enc-tkt-in-skey bit from KDCOptions */
     if(ret)
 	return ret;
-    dummy32 = creds->flags.i;
-    if (0) /* change heimdal major version 0.7 or 0.8 ? */
-	dummy32 = bitswap32(TicketFlags2int(creds->flags.b));
-    ret = krb5_store_int32(sp, dummy32);
-    if(ret)
-	return ret;
+    if (v0_6) {
+	ret = krb5_store_int32(sp, creds->flags.i);
+	if(ret)
+	    return ret;
+    } else {
+	ret = krb5_store_int32(sp, bitswap32(TicketFlags2int(creds->flags.b)));
+	if(ret)
+	    return ret;
+    }
     ret = krb5_store_addrs(sp, creds->addresses);
     if(ret)
 	return ret;
@@ -667,6 +669,28 @@ krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 	return ret;
     ret = krb5_store_data(sp, creds->second_ticket);
     return ret;
+}
+
+/*
+ * store `creds' on `sp' returning error or zero
+ */
+
+krb5_error_code
+krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
+{
+    return _krb5_store_creds_internal(sp, creds, 0);
+}
+
+krb5_error_code
+_krb5_store_creds_heimdal_0_7(krb5_storage *sp, krb5_creds *creds)
+{
+    return _krb5_store_creds_internal(sp, creds, 0);
+}
+
+krb5_error_code
+_krb5_store_creds_heimdal_pre_0_7(krb5_storage *sp, krb5_creds *creds)
+{
+    return _krb5_store_creds_internal(sp, creds, 1);
 }
 
 krb5_error_code
