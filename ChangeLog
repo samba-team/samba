@@ -1,8 +1,16 @@
 2004-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: adapt to change of signature of
+	_krb5_pk_load_openssl_id
+
+	* lib/krb5/pkinit.c: (krb5_get_init_creds_opt_set_pkinit): add
+	prompter argument and use it
+
 	* kuser/kinit.c: adapt to signature change of
 	krb5_get_init_creds_opt_set_pkinit
 	
+	* lib/krb5/krb5.3: add more stuff, 105 functions to go
+
 	* lib/krb5/krb5_rcache.3: add krb5_get_server_rcache
 	
 	* lib/krb5/krb5_rcache.3: framework for replay cache manpage
