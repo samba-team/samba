@@ -917,7 +917,7 @@ int enum_msdfs_links(struct junction_map* jn)
 	int jn_count = 0;
 
 	if(!lp_host_msdfs())
-		return -1;
+		return 0;
 
 	for(i=0;*lp_servicename(i);i++) {
 		if(lp_msdfs_root(i)) 
