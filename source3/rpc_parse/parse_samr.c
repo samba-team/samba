@@ -5745,19 +5745,14 @@ void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, uchar * sess_key,
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr,
+static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR **ppctr,
 				 prs_struct *ps, int depth)
 {
 	BOOL ret;
+	SAM_USERINFO_CTR *ctr;
 
 	prs_debug(ps, depth, desc, "samr_io_userinfo_ctr");
 	depth++;
-
-#if 0
-	/* I think this is broken as the caller should pass in a
-	   sam_userinfo_ctr not have it allocated.  This may break some of
-	   the setuser calls so this is a clue to the person who may be
-	   trying to debug the problem.  (-: -tpot */
 
 	if (UNMARSHALLING(ps)) {
 		ctr = (SAM_USERINFO_CTR *)prs_alloc_mem(ps,sizeof(SAM_USERINFO_CTR));
@@ -5767,7 +5762,6 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr,
 	} else {
 		ctr = *ppctr;
 	}
-#endif
 
 	/* lkclXXXX DO NOT ALIGN BEFORE READING SWITCH VALUE! */
 
@@ -5887,7 +5881,7 @@ BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
 		return False;
 
 	if (r_u->ptr != 0) {
-		if(!samr_io_userinfo_ctr("ctr", r_u->ctr, ps, depth))
+		if(!samr_io_userinfo_ctr("ctr", &r_u->ctr, ps, depth))
 			return False;
 	}
 
@@ -5934,7 +5928,7 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO * q_u,
 
 	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
 		return False;
-	if(!samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth))
+	if(!samr_io_userinfo_ctr("ctr", &q_u->ctr, ps, depth))
 		return False;
 
 	return True;
@@ -6022,7 +6016,7 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 * q_u,
 
 	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
 		return False;
-if(!samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth))
+	if(!samr_io_userinfo_ctr("ctr", &q_u->ctr, ps, depth))
 		return False;
 
 	return True;
