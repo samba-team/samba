@@ -23,11 +23,15 @@
 
 extern int DEBUGLEVEL;
 
-extern int oplock_sock;
-extern uint16 oplock_port;
-extern int32 global_oplocks_open;
-extern int32 global_oplocks_open;
-extern int global_oplock_break;
+/* Oplock ipc UDP socket. */
+int oplock_sock = -1;
+uint16 oplock_port = 0;
+
+/* Current number of oplocks we have outstanding. */
+int32 global_oplocks_open = 0;
+BOOL global_oplock_break = False;
+
+
 extern int smb_read_error;
 
 

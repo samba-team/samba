@@ -24,7 +24,6 @@
 
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
-extern pstring sesssetup_user;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 
@@ -42,14 +41,6 @@ int last_message = -1;
 
 extern pstring scope;
 extern int DEBUGLEVEL;
-extern int case_default;
-extern BOOL case_sensitive;
-extern BOOL case_preserve;
-extern BOOL use_mangled_map;
-extern BOOL short_case_preserve;
-extern BOOL case_mangle;
-time_t smb_last_time=(time_t)0;
-extern BOOL global_machine_pasword_needs_changing;
 
 extern int smb_read_error;
 
@@ -59,43 +50,9 @@ extern pstring user_socket_options;
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
 
-/*
- * This is set on startup - it defines the SID for this
- * machine.
- */
-extern DOM_SID global_machine_sid;
-
-/* 
- * Size of data we can send to client. Set
- *  by the client for all protocols above CORE.
- *  Set by us for CORE protocol.
- */
-int max_send = BUFFER_SIZE;
-/*
- * Size of the data we can receive. Set by us.
- * Can be modified by the max xmit parameter.
- */
-int max_recv = BUFFER_SIZE;
-
-/* Oplock ipc UDP socket. */
-int oplock_sock = -1;
-uint16 oplock_port = 0;
-/* Current number of oplocks we have outstanding. */
-int32 global_oplocks_open = 0;
-
-BOOL global_oplock_break = False;
 
 extern fstring remote_machine;
-
 extern pstring OriginalDir;
-
-/* these can be set by some functions to override the error codes */
-int unix_ERR_class=SMB_SUCCESS;
-int unix_ERR_code=0;
-
-
-extern int extra_time_offset;
-
 extern pstring myhostname;
 
 /****************************************************************************
@@ -732,8 +689,6 @@ static void usage(char *pname)
 
   /* possibly reload the services file. */
   reload_services(True);
-
-  max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   if (*lp_rootdir())
     {

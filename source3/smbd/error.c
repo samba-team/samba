@@ -23,6 +23,10 @@
 
 extern int DEBUGLEVEL;
 
+/* these can be set by some functions to override the error codes */
+int unix_ERR_class=SMB_SUCCESS;
+int unix_ERR_code=0;
+
 
 /****************************************************************************
   create an error packet from a cached error.

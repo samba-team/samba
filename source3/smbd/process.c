@@ -23,11 +23,24 @@
 
 extern int DEBUGLEVEL;
 
+time_t smb_last_time=(time_t)0;
+
+/* 
+ * Size of data we can send to client. Set
+ *  by the client for all protocols above CORE.
+ *  Set by us for CORE protocol.
+ */
+int max_send = BUFFER_SIZE;
+/*
+ * Size of the data we can receive. Set by us.
+ * Can be modified by the max xmit parameter.
+ */
+int max_recv = BUFFER_SIZE;
+
 extern int last_message;
 extern int global_oplock_break;
 extern pstring sesssetup_user;
 extern char *last_inbuf;
-extern time_t smb_last_time;
 extern char *InBuffer;
 extern char *OutBuffer;
 extern int oplock_sock;
@@ -644,6 +657,9 @@ void smbd_process(void)
     send_one_packet(OutBuffer,1,ip,NMB_PORT,SOCK_DGRAM);
   }
 #endif    
+
+
+  max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */
   TimeInit();
