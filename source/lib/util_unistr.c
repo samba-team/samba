@@ -229,7 +229,10 @@ char *skip_unibuf(char *src, size_t len)
  */ 
 int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
 {
-	if (!src) return 0;
+	if (!src) {
+		dest[0] = 0;
+		return 0;
+	}
 	if(dest_len==-1) dest_len=MAXUNI-3;
 	return pull_ucs2(NULL, dest, src, dest_len, src_len, flags|STR_UNICODE|STR_NOALIGN);
 }
