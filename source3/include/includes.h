@@ -671,6 +671,20 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
+#ifdef HAVE_NSS_H
+#include <nss.h>
+#else
+
+/* Minimal needed to compile.. */
+
+enum nss_status {
+	NSS_STATUS_SUCCESS,
+	NSS_STATUS_NOTFOUND,
+	NSS_STATUS_UNAVAIL
+};
+
+#endif
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
@@ -934,20 +948,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 extern int DEBUGLEVEL;
 
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
-
-#ifdef HAVE_NSS_H
-#include <nss.h>
-#else
-
-/* Minimal needed to compile.. */
-
-enum nss_status {
-	NSS_STATUS_SUCCESS,
-	NSS_STATUS_NOTFOUND,
-	NSS_STATUS_UNAVAIL
-};
-
-#endif
 
 #endif /* _INCLUDES_H */
 

@@ -1957,7 +1957,7 @@ BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int
 ********************************************************************/  
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
 {	
-	int pipo=0;
+	uint pipo=0;
 	prs_struct *ps=&(buffer->prs);
 	
 	prs_debug(ps, depth, desc, "new_smb_io_job_info_2");

@@ -2941,7 +2941,8 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	(*buffer_written) = print_job_write(Printer->jobid, buffer, buffer_size);
+	(*buffer_written) = print_job_write(Printer->jobid, (char *)buffer, 
+					    buffer_size);
 
 	return 0x0;
 }
