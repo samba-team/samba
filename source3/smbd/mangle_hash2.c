@@ -254,8 +254,8 @@ static BOOL is_mangled_component(const char *name)
  */
 static BOOL is_mangled(const char *name)
 {
-	char *p;
-	char *s;
+	const char *p;
+	const char *s;
 
 	M_DEBUG(0,("is_mangled %s ?\n", name));
 
@@ -431,15 +431,36 @@ static BOOL is_reserved_name(const char *name)
 }
 
 /*
-  see if a filename is a legal long filename
+ See if a filename is a legal long filename.
+ A filename ending in a '.' is not legal unless it's "." or "..". JRA.
 */
+
 static BOOL is_legal_name(const char *name)
 {
+	const char *dot_pos = NULL;
+	BOOL alldots = True;
+	size_t numdots = 0;
+
 	while (*name) {
 		if (FLAG_CHECK(name[0], FLAG_ILLEGAL)) {
 			return False;
 		}
+		if (name[0] == '.') {
+			dot_pos = name;
+			numdots++;
+		} else {
+			alldots = False;
+		}
 		name++;
+	}
+
+	if (dot_pos) {
+		if (alldots && (numdots == 1 || numdots == 2))
+			return True; /* . or .. is a valid name */
+
+		/* A valid long name cannot end in '.' */
+		if (dot_pos[1] == '\0')
+			return False;
 	}
 
 	return True;

@@ -38,35 +38,14 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
  Check if two filenames are equal.
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
+
 static BOOL fname_equal(char *name1, char *name2)
 {
-  int l1 = strlen(name1);
-  int l2 = strlen(name2);
+	/* Normal filename handling */
+	if (case_sensitive)
+		return(strcmp(name1,name2) == 0);
 
-  /* handle filenames ending in a single dot */
-  if (l1-l2 == 1 && name1[l1-1] == '.' && lp_strip_dot())
-    {
-      BOOL ret;
-      name1[l1-1] = 0;
-      ret = fname_equal(name1,name2);
-      name1[l1-1] = '.';
-      return(ret);
-    }
-
-  if (l2-l1 == 1 && name2[l2-1] == '.' && lp_strip_dot())
-    {
-      BOOL ret;
-      name2[l2-1] = 0;
-      ret = fname_equal(name1,name2);
-      name2[l2-1] = '.';
-      return(ret);
-    }
-
-  /* now normal filename handling */
-  if (case_sensitive)
-    return(strcmp(name1,name2) == 0);
-
-  return(strequal(name1,name2));
+	return(strequal(name1,name2));
 }
 
 
@@ -219,8 +198,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
    * sensitive then searching won't help.
    */
 
-  if (case_sensitive && !mangle_is_mangled(name) && 
-      !lp_strip_dot() && !use_mangled_map)
+  if (case_sensitive && !mangle_is_mangled(name) && !use_mangled_map)
     return(False);
 
   name_has_wildcard = ms_has_wild(start);
