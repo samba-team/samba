@@ -292,7 +292,7 @@ if test x"$with_krb5_support" != x"no"; then
 
 	# Heimdal checks.
 	# But only if we didn't have a krb5-config to tell us this already
-	if x"$FOUND_KRB5_VIA_CONFIG" != x"yes"; then
+	if test x"$FOUND_KRB5_VIA_CONFIG" != x"yes"; then
 		AC_CHECK_LIB_EXT(crypto, KRB5_LIBS, des_set_key)
 		AC_CHECK_LIB_EXT(asn1, KRB5_LIBS, copy_Authenticator)
 		AC_CHECK_LIB_EXT(roken, KRB5_LIBS, roken_getaddrinfo_hostspec)
