@@ -604,7 +604,7 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 	memset(ctx->prefix_cache, 0, sizeof(char *)*MANGLE_CACHE_SIZE);
 	memset(ctx->prefix_cache_hashes, 0, sizeof(uint32_t)*MANGLE_CACHE_SIZE);
 
-	ctx->mangle_prefix = lp_parm_int(-1, "mangle", "prefix");
+	ctx->mangle_prefix = lp_parm_int(-1, "mangle", "prefix", -1);
 	if (ctx->mangle_prefix < 0 || ctx->mangle_prefix > 6) {
 		ctx->mangle_prefix = DEFAULT_MANGLE_PREFIX;
 	}

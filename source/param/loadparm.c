@@ -1436,27 +1436,27 @@ char **lp_parm_string_list(int lookup_service, const char *type, const char *opt
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-int lp_parm_int(int lookup_service, const char *type, const char *option)
+int lp_parm_int(int lookup_service, const char *type, const char *option, int default_v)
 {
 	const char *value = get_parametrics(lookup_service, type, option);
 	
 	if (value)
 		return lp_int(value);
 
-	return (-1);
+	return default_v;
 }
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *option)
+unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *option, unsigned long default_v)
 {
 	const char *value = get_parametrics(lookup_service, type, option);
 	
 	if (value)
 		return lp_ulong(value);
 
-	return (0);
+	return default_v;
 }
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
