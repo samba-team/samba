@@ -644,6 +644,7 @@ int main(int argc, char **argv)
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
+        extern fstring global_myworkgroup;
 
 	sec_init();
 
@@ -707,6 +708,7 @@ int main(int argc, char **argv)
 	}
 
         codepage_initialise(lp_client_code_page());
+	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if (!interactive) {
 		become_daemon();
