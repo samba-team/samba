@@ -178,6 +178,10 @@
 #define NO_FACL_WRAPPER
 #endif
 
+#if defined (IRIX)
+#define NO_ACL_WRAPPER
+#define NO_FACL_WRAPPER
+#endif
 
 #ifdef HAVE__STAT64
 #define real_stat64(fn,st)            	(_stat64(fn,st))
