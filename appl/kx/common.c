@@ -147,7 +147,11 @@ try_one (struct x_socket *s, int dpy, const char *pattern)
 	    sizeof(addr)) < 0) {
 	close (fd);
 	if (errno == EADDRINUSE ||
-	    errno == EACCES) /* Cray return EACCESS */
+	    errno == EACCES  /* Cray return EACCESS */
+#ifdef ENOTUNIQ
+	    || errno == ENOTUNIQ /* bug in Solaris 2.4 */
+#endif
+	    )
 	    return 1;
 	else
 	    return -1;
