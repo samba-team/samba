@@ -197,6 +197,29 @@ PyObject *NTTIME_to_python(NTTIME obj)
 	return PyLong_FromUnsignedLongLong(obj);
 }
 
+time_t time_t_from_python(PyObject *obj, char *name)
+{
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
+		return 0;
+	}
+
+	if (PyLong_Check(obj))
+		return (time_t)PyLong_AsUnsignedLongLong(obj);
+	else
+		return (time_t)PyInt_AsUnsignedLongMask(obj);
+}
+
+PyObject *time_t_to_python(time_t obj)
+{
+	return PyLong_FromUnsignedLongLong(obj);
+}
+
 HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
 {
 	if (obj == NULL) {
