@@ -62,7 +62,7 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
+BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
 	char *s;
 	BOOL quoted;
@@ -976,11 +976,11 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 	fprintf(stderr, "[%5d]: sidtoname %s\n", getpid(), sid);
 #endif
 
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+
 	/* we need to fetch the separator first time through */
 	if (!sep_char) {
-		ZERO_STRUCT(response);
-		ZERO_STRUCT(request);
-
 		ret = winbindd_request(WINBINDD_INFO, &request, &response);
 		if (ret != NSS_STATUS_SUCCESS) {
 			*errnop = errno = EINVAL;
