@@ -618,8 +618,6 @@ verify_krb5(const char *password)
 static int
 verify(char *password)
 {
-    int ret;
-
     /*
      * First try with root password, if allowed.
      */
@@ -664,19 +662,22 @@ verify(char *password)
 #endif
 
 #ifdef KRB4
-    /*
-     * Try to verify as user with kerberos 4.
-     */
-    ret = krb_verify_user(name, inst, realm, password,
-			  KRB_VERIFY_NOT_SECURE, NULL);
-    if (ret == KSUCCESS){
-	if (k_hasafs())
-	    krb_afslog(NULL, NULL);
-	return 0;
+    {
+	int ret;
+	/*
+	 * Try to verify as user with kerberos 4.
+	 */
+	ret = krb_verify_user(name, inst, realm, password,
+			      KRB_VERIFY_NOT_SECURE, NULL);
+	if (ret == KSUCCESS){
+	    if (k_hasafs())
+		krb_afslog(NULL, NULL);
+	    return 0;
+	}
+	if (ret != INTK_BADPW)
+	    warnx ("warning: %s",
+		   (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
     }
-    if (ret != INTK_BADPW)
-	warnx ("warning: %s",
-	       (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
 #endif
     
     return -1;
