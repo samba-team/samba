@@ -3272,7 +3272,8 @@ static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
 	param_opt_struct *data;
-	char *s, *sn;
+	const char *sn;
+	char *s;
 	
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
