@@ -123,7 +123,7 @@ susystem(s, userid)
 	int status;
 	pid_t pid;
 
-	pid = vfork();
+	pid = fork();
 	switch (pid) {
 	case -1:
 		return (127);
