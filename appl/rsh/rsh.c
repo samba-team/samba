@@ -342,6 +342,10 @@ send_krb5_auth(int s,
 			    NULL,
 			    NULL,
 			    NULL);
+
+    krb5_free_principal(context, server);
+    krb5_data_free(&cksum_data);
+
     if (status) {
 	if(status == KRB5_SENDAUTH_REJECTED && 
 	   protocol_version == 2 && protocol_version_str == NULL)
@@ -1095,5 +1099,6 @@ main(int argc, char **argv)
 			   cmd, cmd_len);
 	freeaddrinfo(ai);
     }
+    free(cmd);
     return ret;
 }
