@@ -27,7 +27,9 @@
 /*
   unlink a stream
  */
-static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, struct pvfs_filename *name, 
+static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
+				   struct smbsrv_request *req,
+				   struct pvfs_filename *name, 
 				   uint16_t attrib)
 {
 	NTSTATUS status;
@@ -42,7 +44,7 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, struct pvfs_filename
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, name);
+	status = pvfs_can_delete(pvfs, req, name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -54,7 +56,8 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, struct pvfs_filename
 /*
   unlink one file
 */
-static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
+static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, 
+				struct smbsrv_request *req,
 				const char *unix_path, 
 				const char *fname, uint32_t attrib)
 {
@@ -62,7 +65,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	/* get a pvfs_filename object */
-	status = pvfs_resolve_partial(pvfs, mem_ctx, 
+	status = pvfs_resolve_partial(pvfs, req, 
 				      unix_path, fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -75,7 +78,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, name);
+	status = pvfs_can_delete(pvfs, req, name);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(name);
 		return status;
@@ -133,7 +136,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (name->stream_name) {
-		return pvfs_unlink_stream(pvfs, name, unl->in.attrib);
+		return pvfs_unlink_stream(pvfs, req, name, unl->in.attrib);
 	}
 
 	/* get list of matching files */
