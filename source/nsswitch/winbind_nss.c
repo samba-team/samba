@@ -178,6 +178,8 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	status = winbindd_get_response(&response);
 
 	if (status != NSS_STATUS_SUCCESS) {
+		/* free any extra data area in response structure */
+		free_response(&response);
 		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) returning not found\n");
 		rq->f_status = NS_NOTFOUND;
 		return NSD_NEXT;
@@ -193,8 +195,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			pw->pw_gecos,
 			pw->pw_dir,
 			pw->pw_shell);
-		nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
-		return NSD_OK;
+		break;
 	    case WINBINDD_GETGRNAM_FROM_GROUP:
 	    case WINBINDD_GETGRNAM_FROM_GID:
 		if (gr->num_gr_mem && response.extra_data)
@@ -203,11 +204,15 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			members = "";
 		snprintf(result,1023,"%s:%s:%d:%s\n",
 			gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
-		nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
-		return NSD_OK;
+		break;
+	    default:
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - no valid command\n");
+		return NSD_NEXT;
 	}
-	nsd_logprintf(NSD_LOG_MIN, "exit callback (winbind) - no valid command\n");
-	return NSD_NEXT;
+	/* free any extra data area in response structure */
+	free_response(&response);
+	nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
+	return NSD_OK;
 }
 
 static int 

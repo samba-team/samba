@@ -31,6 +31,16 @@
 int winbindd_fd = -1;           /* fd for winbindd socket */
 static char *excluded_domain;
 
+/* Free a response structure */
+
+void free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response)
+		SAFE_FREE(response->extra_data);
+}
+
 /*
   smbd needs to be able to exclude lookups for its own domain
 */
@@ -290,6 +300,7 @@ int read_reply(struct winbindd_response *response)
 		
 		if ((result2 = read_sock(response->extra_data, extra_data_len))
 		    == -1) {
+			free_response(response);
 			return -1;
 		}
 	}
@@ -297,16 +308,6 @@ int read_reply(struct winbindd_response *response)
 	/* Return total amount of data read */
 	
 	return result1 + result2;
-}
-
-/* Free a response structure */
-
-void free_response(struct winbindd_response *response)
-{
-	/* Free any allocated extra_data */
-
-	if (response)
-		SAFE_FREE(response->extra_data);
 }
 
 /* 
