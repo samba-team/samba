@@ -29,10 +29,21 @@ fstring remote_proto="UNKNOWN";
 static fstring remote_machine;
 static fstring smb_user_name;
 
+/** 
+ * Set the 'local' machine name
+ * @param local_name the name we are being called
+ * @param if this is the 'final' name for us, not be be changed again
+ */
 
-void set_local_machine_name(const char* local_name)
+void set_local_machine_name(const char* local_name, BOOL perm)
 {
+	static BOOL already_perm = False;
 	fstring tmp_local_machine;
+
+	if (already_perm)
+		return;
+
+	already_perm = perm;
 
 	fstrcpy(tmp_local_machine,local_name);
 	trim_string(tmp_local_machine," "," ");
@@ -40,9 +51,21 @@ void set_local_machine_name(const char* local_name)
 	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 }
 
-void set_remote_machine_name(const char* remote_name)
+/** 
+ * Set the 'remote' machine name
+ * @param remote_name the name our client wants to be called by
+ * @param if this is the 'final' name for them, not be be changed again
+ */
+
+void set_remote_machine_name(const char* remote_name, BOOL perm)
 {
+	static BOOL already_perm = False;
 	fstring tmp_remote_machine;
+
+	if (already_perm)
+		return;
+
+	already_perm = perm;
 
 	fstrcpy(tmp_remote_machine,remote_name);
 	trim_string(tmp_remote_machine," "," ");
@@ -57,6 +80,10 @@ const char* get_remote_machine_name(void)
 
 const char* get_local_machine_name(void) 
 {
+	if (!*local_machine) {
+		return global_myname();
+	}
+
 	return local_machine;
 }
 
