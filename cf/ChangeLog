@@ -1,3 +1,7 @@
+2001-09-03  Assar Westerlund  <assar@sics.se>
+
+	* roken-frag.m4: check for atexit and on_exit
+
 2001-09-02  Assar Westerlund  <assar@sics.se>
 
 	* check-compile-et.m4: only add /usr/include/et to CPPFLAGS if
