@@ -577,7 +577,7 @@ to be added to the &smb.conf; file:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
+<smbconfoption name="wins support">Yes</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -586,8 +586,8 @@ needed in the &smb.conf; file:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>wins support</name><value>No</value></smbconfoption>
-<smbconfoption><name>wins server</name><value>xxx.xxx.xxx.xxx</value></smbconfoption>
+<smbconfoption name="wins support">No</smbconfoption>
+<smbconfoption name="wins server">xxx.xxx.xxx.xxx</smbconfoption>
 </smbconfblock></para>
 
 <para>

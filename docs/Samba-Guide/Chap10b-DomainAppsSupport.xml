@@ -698,25 +698,25 @@ password: XXXXXXXX
 <smbconfexample id="ch10-smbconf">
 <title>Samba Configuration &smbmdash; File: <filename>/etc/samba/smb.conf</filename></title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>LONDON</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>W2K3S</value></smbconfoption>
-<smbconfoption><name>realm</name><value>LONDON.ABMAS.BIZ</value></smbconfoption>
-<smbconfoption><name>security</name><value>ads</value></smbconfoption>
-<smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>
-<smbconfoption><name>password server</name><value>w2k3s.london.abmas.biz</value></smbconfoption>
+<smbconfoption name="workgroup">LONDON</smbconfoption>
+<smbconfoption name="netbios name">W2K3S</smbconfoption>
+<smbconfoption name="realm">LONDON.ABMAS.BIZ</smbconfoption>
+<smbconfoption name="security">ads</smbconfoption>
+<smbconfoption name="encrypt passwords">yes</smbconfoption>
+<smbconfoption name="password server">w2k3s.london.abmas.biz</smbconfoption>
 
 <smbconfcomment>separate domain and username with '/', like DOMAIN/username</smbconfcomment>
-<smbconfoption><name>winbind separator</name><value>/</value></smbconfoption>
+<smbconfoption name="winbind separator">/</smbconfoption>
 
 <smbconfcomment>use UIDs from 10000 to 20000 for domain users</smbconfcomment>
-<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
 # use GIDs from 10000 to 20000 for domain groups
-<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
 
 <smbconfcomment>allow enumeration of winbind users and groups</smbconfcomment>
-<smbconfoption><name>winbind enum users</name><value>yes</value></smbconfoption>
-<smbconfoption><name>winbind enum groups</name><value>yes</value></smbconfoption>
-<smbconfoption><name>winbind user default domain</name><value>yes</value></smbconfoption>
+<smbconfoption name="winbind enum users">yes</smbconfoption>
+<smbconfoption name="winbind enum groups">yes</smbconfoption>
+<smbconfoption name="winbind user default domain">yes</smbconfoption>
 </smbconfexample>
 
 <example id="ch10-etcnsscfg">

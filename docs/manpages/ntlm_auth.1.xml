@@ -160,7 +160,7 @@
 		  <term>Username</term>
 		  
                 <listitem><para>The username, expected to be in
-                Samba's <smbconfoption><name>unix charset</name></smbconfoption>.
+                Samba's <smbconfoption name="unix charset"/>.
                 </para>
 
 		      <para><example>Username: bob</example></para>
@@ -170,7 +170,7 @@
 		  <varlistentry>
 		  <term>Username</term>
                 <listitem><para>The user's domain, expected to be in
-                Samba's <smbconfoption><name>unix charset</name></smbconfoption>.
+                Samba's <smbconfoption name="unix charset"/>.
                 </para>
 
 		      <para><example>Domain: WORKGROUP</example></para>
@@ -182,7 +182,7 @@
                 <listitem><para>The fully qualified username, expected to be in
                 Samba's <smbconfoption><name>unix
                 charset</name></smbconfoption> and qualified with the
-                <smbconfoption><name>winbind separator</name></smbconfoption>.
+                <smbconfoption name="winbind separator"/>.
                 </para>
 
 		      <para><example>Full-Username: WORKGROUP\bob</example></para>

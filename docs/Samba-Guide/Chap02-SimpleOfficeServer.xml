@@ -193,13 +193,13 @@
 <title>Drafting Office &smb.conf; File</title>
 <smbconfcomment>Global Parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="security">SHARE</smbconfoption>
 
 <smbconfsection>[Plans]</smbconfsection>
-<smbconfoption><name>path</name><value>/plans</value></smbconfoption>
-<smbconfoption><name>read only</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="path">/plans</smbconfoption>
+<smbconfoption name="read only">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 </smbconfexample>
 			</para></step>
 
@@ -670,39 +670,39 @@ application/octet-stream
 <title>Charity Administration Office &smb.conf; File</title>
 <smbconfcomment>Global Parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
-<smbconfoption><name>printing</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="security">SHARE</smbconfoption>
+<smbconfoption name="printing">CUPS</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="disable spoolss">Yes</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="wins support">yes</smbconfoption>
 
 <smbconfsection>[FTMFILES]</smbconfsection>
-<smbconfoption><name>comment</name><value>Funds Tracking &amp; Management Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/ftmfiles</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>force user</name><value>abmas</value></smbconfoption>
-<smbconfoption><name>force group</name><value>office</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>nt acl support</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Funds Tracking &amp; Management Files</smbconfoption>
+<smbconfoption name="path">/data/ftmfiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="force user">abmas</smbconfoption>
+<smbconfoption name="force group">office</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="nt acl support">No</smbconfoption>
 
 <smbconfsection>[office]</smbconfsection>
-<smbconfoption><name>comment</name><value>General Office Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/officefiles</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>force user</name><value>abmas</value></smbconfoption>
-<smbconfoption><name>force group</name><value>office</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>nt acl support</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">General Office Files</smbconfoption>
+<smbconfoption name="path">/data/officefiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="force user">abmas</smbconfoption>
+<smbconfoption name="force group">office</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="nt acl support">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>Print Temporary Spool Configuration</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Print Temporary Spool Configuration</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
 			<procedure>
@@ -1283,31 +1283,31 @@ application/octet-stream
 <title>Accounting Office Network &smb.conf; File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>BILLMORE</value></smbconfoption>
-<smbconfoption><name>printing</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
+<smbconfoption name="workgroup">BILLMORE</smbconfoption>
+<smbconfoption name="printing">CUPS</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="disable spoolss">Yes</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
 
 <smbconfsection>[files]</smbconfsection>
-<smbconfoption><name>comment</name><value>Work area files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/%U</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Work area files</smbconfoption>
+<smbconfoption name="path">/data/%U</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[master]</smbconfsection>
-<smbconfoption><name>comment</name><value>Master work area files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>alan</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Master work area files</smbconfoption>
+<smbconfoption name="path">/data</smbconfoption>
+<smbconfoption name="valid users">alan</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>Print Temporary Spool Configuration</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Print Temporary Spool Configuration</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
 		</sect3>

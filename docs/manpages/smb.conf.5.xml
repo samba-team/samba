@@ -105,8 +105,8 @@
 
 <smbconfexample>
 	<smbconfsection>[foo]</smbconfsection>
-	<smbconfoption><name>path</name><value>/home/bar</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>read only = no</value></smbconfoption>
+	<smbconfoption name="path">/home/bar</smbconfoption>
+	<smbconfoption name="read only">read only = no</smbconfoption>
 </smbconfexample>
 
 	<para>The following sample section defines a printable share. 
@@ -118,10 +118,10 @@
 
 <smbconfexample>
 	<smbconfsection>[aprinter]</smbconfsection>
-	<smbconfoption><name>path</name><value>/usr/spool/public</value></smbconfoption>
-	<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
+	<smbconfoption name="path">/usr/spool/public</smbconfoption>
+	<smbconfoption name="read only">yes</smbconfoption>
+	<smbconfoption name="printable">yes</smbconfoption>
+	<smbconfoption name="guest ok">yes</smbconfoption>
 </smbconfexample>
 </refsect1>
 
@@ -188,7 +188,7 @@
 
 	<smbconfexample>
 		<smbconfsection>[homes]</smbconfsection>
-		<smbconfoption><name>read only</name><value>no</value></smbconfoption>
+		<smbconfoption name="read only">no</smbconfoption>
 	</smbconfexample>
 	
 		<para>An important point is that if guest access is specified 
@@ -250,9 +250,9 @@
 
 	<smbconfexample>
 		<smbconfsection>[printers]</smbconfsection>
-		<smbconfoption><name>path</name><value>/usr/spool/public</value></smbconfoption>
-		<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
+		<smbconfoption name="path">/usr/spool/public</smbconfoption>
+		<smbconfoption name="guest ok">yes</smbconfoption>
+		<smbconfoption name="printable">yes</smbconfoption>
 	</smbconfexample>
 
 		<para>All aliases given for a printer in the printcap file 

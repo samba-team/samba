@@ -36,18 +36,18 @@ on different systems. They currently have been tested against GNU/Linux and IRIX
 
 <para>
 To use the VFS modules, create a share similar to the one below. The
-important parameter is the <smbconfoption><name>vfs objects</name></smbconfoption> parameter where
+important parameter is the <smbconfoption name="vfs objects"/> parameter where
 you can list one or more VFS modules by name. For example, to log all access 
 to files and put deleted files in a recycle bin, see <link linkend="vfsrecyc">next configuration</link>:
 
 <smbconfexample id="vfsrecyc">
 	<title>smb.conf with VFS modules</title>
 	<smbconfsection>[audit]</smbconfsection>
-<smbconfoption><name>comment</name><value>Audited /data directory</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data</value></smbconfoption>
-<smbconfoption><name>vfs objects</name><value>audit recycle</value></smbconfoption>
-<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+<smbconfoption name="comment">Audited /data directory</smbconfoption>
+<smbconfoption name="path">/data</smbconfoption>
+<smbconfoption name="vfs objects">audit recycle</smbconfoption>
+<smbconfoption name="writeable">yes</smbconfoption>
+<smbconfoption name="browseable">yes</smbconfoption>
 	</smbconfexample>
 </para>
 
@@ -57,7 +57,7 @@ Let's say that you want to both have a virus scanner module and a recycle
 bin module. It is wise to put the virus scanner module as the first one so
 that it is the first that get run an may detect a virus immediately, before
 any action is performed on that file.
-<smbconfoption><name>vfs objects</name><value>vscan-clamav recycle</value></smbconfoption>
+<smbconfoption name="vfs objects">vscan-clamav recycle</smbconfoption>
 </para>
 
 <para>
@@ -73,14 +73,14 @@ This can be done using a configuration similar to the one shown in <link linkend
 <smbconfexample id="multimodule">
 	<title>smb.conf with multiple VFS modules</title>
 <smbconfsection>[test]</smbconfsection>
-<smbconfoption><name>comment</name><value>VFS TEST</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data</value></smbconfoption>
-<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
-<smbconfoption><name>vfs objects</name><value>example:example1 example example:test</value></smbconfoption>
-<smbconfoption><name>example1: parameter</name><value>1</value></smbconfoption>
-<smbconfoption><name>example:  parameter</name><value>5</value></smbconfoption>
-<smbconfoption><name>test:	  parameter</name><value>7</value></smbconfoption>
+<smbconfoption name="comment">VFS TEST</smbconfoption>
+<smbconfoption name="path">/data</smbconfoption>
+<smbconfoption name="writeable">yes</smbconfoption>
+<smbconfoption name="browseable">yes</smbconfoption>
+<smbconfoption name="vfs objects">example:example1 example example:test</smbconfoption>
+<smbconfoption name="example1: parameter">1</smbconfoption>
+<smbconfoption name="example:  parameter">5</smbconfoption>
+<smbconfoption name="test:	  parameter">7</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -111,7 +111,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 		<para>
 		This module is identical with the <command>audit</command> module above except
 		that it sends audit logs to both syslog as well as the <command>smbd</command> log files. The 
-		<smbconfoption><name>log level</name></smbconfoption> for this module is set in the &smb.conf; file. 
+		<smbconfoption name="log level"/> for this module is set in the &smb.conf; file. 
 		</para>
 
 		<para>
@@ -161,7 +161,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 
 		<para>
 		Auditing information often must be preserved for a long time. So that the log files do not get rotated
-		it is essential that the <smbconfoption><name>max log size</name><value>0</value></smbconfoption> be set
+		it is essential that the <smbconfoption name="max log size">0</smbconfoption> be set
 		in the &smb.conf; file.
 		</para>
 
@@ -507,11 +507,11 @@ This can be done using a configuration similar to the one shown in <link linkend
 	      <smbconfexample id="vfsshadow">
 		<title>Share With shadow_copy VFS</title>
 		<smbconfsection>[shadow_share]</smbconfsection>
-		<smbconfoption><name>comment</name><value>Shadow Copy Enabled Share</value></smbconfoption>
-		<smbconfoption><name>path</name><value>/data/shadow_share</value></smbconfoption>
-		<smbconfoption><name>vfs objects</name><value>shadow_copy</value></smbconfoption>
-		<smbconfoption><name>writeable</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
+		<smbconfoption name="comment">Shadow Copy Enabled Share</smbconfoption>
+		<smbconfoption name="path">/data/shadow_share</smbconfoption>
+		<smbconfoption name="vfs objects">shadow_copy</smbconfoption>
+		<smbconfoption name="writeable">yes</smbconfoption>
+		<smbconfoption name="browseable">yes</smbconfoption>
 	      </smbconfexample>
 	    </para>
 	  </listitem>

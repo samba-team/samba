@@ -88,14 +88,14 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para>
-	One of the simplest fixes in this case is to use the <smbconfoption><name>hosts allow</name></smbconfoption> and
-	<smbconfoption><name>hosts deny</name></smbconfoption> options in the Samba &smb.conf; configuration file to only
+	One of the simplest fixes in this case is to use the <smbconfoption name="hosts allow"/> and
+	<smbconfoption name="hosts deny"/> options in the Samba &smb.conf; configuration file to only
 	allow access to your server from a specific range of hosts. An example might be:
 	</para>
 
 	<para><smbconfblock>
-<smbconfoption><name>hosts allow</name><value>127.0.0.1 192.168.2.0/24 192.168.3.0/24</value></smbconfoption>
-<smbconfoption><name>hosts deny</name><value>0.0.0.0/0</value></smbconfoption>
+<smbconfoption name="hosts allow">127.0.0.1 192.168.2.0/24 192.168.3.0/24</smbconfoption>
+<smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 	</smbconfblock></para>
 
 	<para>
@@ -116,7 +116,7 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para><smbconfblock>
-<smbconfoption><name>valid users</name><value>@smbusers, jacko</value></smbconfoption>
+<smbconfoption name="valid users">@smbusers, jacko</smbconfoption>
 	</smbconfblock></para>
 
 	<para>
@@ -142,8 +142,8 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para><smbconfblock>
-<smbconfoption><name>interfaces</name><value>eth* lo</value></smbconfoption>
-<smbconfoption><name>bind interfaces only</name><value>yes</value></smbconfoption>
+<smbconfoption name="interfaces">eth* lo</smbconfoption>
+<smbconfoption name="bind interfaces only">yes</smbconfoption>
 	</smbconfblock></para>
 
 	<para>
@@ -212,8 +212,8 @@ before someone will find yet another vulnerability.
 
 	<para><smbconfblock>
 <smbconfsection>[IPC$]</smbconfsection>
-<smbconfoption><name>hosts allow</name><value>192.168.115.0/24 127.0.0.1</value></smbconfoption>
-<smbconfoption><name>hosts deny</name><value>0.0.0.0/0</value></smbconfoption>
+<smbconfoption name="hosts allow">192.168.115.0/24 127.0.0.1</smbconfoption>
+<smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 	</smbconfblock></para>
 
 	<para>
@@ -343,19 +343,19 @@ out to be a security problem request are totally convinced that the problem is w
 	</para>
 
 	<para>
-	Samba allows the behavior you require. Simply put the <smbconfoption><name>only user</name><value>%S</value></smbconfoption>
+	Samba allows the behavior you require. Simply put the <smbconfoption name="only user">%S</smbconfoption>
 	option in the <smbconfsection>[homes]</smbconfsection> share definition.
 	</para>
 
 	<para>
-	The <smbconfoption><name>only user</name><value></value></smbconfoption> works in conjunction with the <smbconfoption><name>users</name><value>list</value></smbconfoption>,
+	The <smbconfoption name="only user"></smbconfoption> works in conjunction with the <smbconfoption name="users">list</smbconfoption>,
 	so to get the behavior you require, add the line :
 	<smbconfblock>
-<smbconfoption><name>users</name><value>%S</value></smbconfoption>
+<smbconfoption name="users">%S</smbconfoption>
 </smbconfblock>
 	this is equivalent to adding
 	<smbconfblock>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
 	</smbconfblock>
 	to the definition of the <smbconfsection>[homes]</smbconfsection> share, as recommended in
 	the &smb.conf; man page.

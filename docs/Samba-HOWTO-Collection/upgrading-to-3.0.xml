@@ -21,9 +21,9 @@ the move from 2.2.x to 3.0.0.
 
 <para>
 Samba-3.0.0 default behavior should be approximately the same as Samba-2.2.x.
-The default behavior when the new parameter <smbconfoption><name>passdb backend</name></smbconfoption>
+The default behavior when the new parameter <smbconfoption name="passdb backend"/>
 is not defined in the &smb.conf; file provides the same default behavior as Samba-2.2.x
-with <smbconfoption><name>encrypt passwords</name><value>Yes</value></smbconfoption>, and
+with <smbconfoption name="encrypt passwords">Yes</smbconfoption>, and
 will use the <filename>smbpasswd</filename> database.
 </para>
 
@@ -37,7 +37,7 @@ preserved across the upgrade.
 
 <para>
 If the Samba-2.2.x system was using an LDAP backend, and there is no time to update the LDAP
-database, then make sure that <smbconfoption><name>passdb backend</name><value>ldapsam_compat</value></smbconfoption>
+database, then make sure that <smbconfoption name="passdb backend">ldapsam_compat</smbconfoption>
 is specified in the &smb.conf; file. For the rest, behavior should remain more or less the same.
 At a later date, when there is time to implement a new Samba-3 compatible LDAP backend, it is possible
 to migrate the old LDAP database to the new one through use of the <command>pdbedit</command>.
@@ -435,7 +435,7 @@ complete descriptions of new or modified parameters.
 		</para></listitem>
 
 		<listitem><para>
-		Inclusion of new <smbconfoption><name>security</name><value>ads</value></smbconfoption> option for integration
+		Inclusion of new <smbconfoption name="security">ads</smbconfoption> option for integration
 		with an Active Directory domain using the native Windows Kerberos 5 and LDAP protocols.
 		</para></listitem>
 	</orderedlist>
@@ -443,9 +443,9 @@ complete descriptions of new or modified parameters.
 	<para>
 	Samba-3 also includes the possibility of setting up chains
 	of authentication methods 
-	(<smbconfoption><name>auth methods</name></smbconfoption>) and account
+	(<smbconfoption name="auth methods"/>) and account
 	storage backends 
-	(<smbconfoption><name>passdb backend</name></smbconfoption>). 
+	(<smbconfoption name="passdb backend"/>). 
 	Please refer to the &smb.conf;
 	man page and <link linkend="passdb">Account Information Databases</link>, for details. While both parameters assume sane default
 	values, it is likely that you will need to understand what the
@@ -589,10 +589,10 @@ complete descriptions of new or modified parameters.
 		<smbconfblock>
 		<smbconfsection>[global]</smbconfsection>
 		<member>...</member>
-		<smbconfoption><name>idmap backend</name><value>ldap:ldap://onterose/</value></smbconfoption>
-		<smbconfoption><name>ldap idmap suffix</name><value>ou=idmap,dc=quenya,dc=org</value></smbconfoption>
-		<smbconfoption><name>idmap uid</name><value>40000-50000</value></smbconfoption>
-		<smbconfoption><name>idmap gid</name><value>40000-50000</value></smbconfoption>
+		<smbconfoption name="idmap backend">ldap:ldap://onterose/</smbconfoption>
+		<smbconfoption name="ldap idmap suffix">ou=idmap,dc=quenya,dc=org</smbconfoption>
+		<smbconfoption name="idmap uid">40000-50000</smbconfoption>
+		<smbconfoption name="idmap gid">40000-50000</smbconfoption>
 		</smbconfblock>
 
 		<para>

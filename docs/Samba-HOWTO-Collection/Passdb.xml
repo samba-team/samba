@@ -225,9 +225,9 @@ Samba-3 introduces a number of new password backend capabilities.
 	In addition to differently encrypted passwords, Windows also stores certain data for each
 	user that is not stored in a UNIX user database. For example, workstations the user may logon from,
 	the location where the user's profile is stored, and so on. Samba retrieves and stores this
-	information using a <smbconfoption><name>passdb backend</name></smbconfoption>. Commonly available backends are LDAP, plain text
+	information using a <smbconfoption name="passdb backend"/>. Commonly available backends are LDAP, plain text
 	file, and MySQL. For more information, see the man page for &smb.conf; regarding the 
-	<smbconfoption><name>passdb backend</name></smbconfoption> parameter.
+	<smbconfoption name="passdb backend"/> parameter.
 	</para>
 
 
@@ -376,7 +376,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	<para>
 	First, all Samba SAM (Security Account Manager database) accounts require
 	a UNIX/Linux UID that the account will map to. As users are added to the account
-	information database, Samba will call the <smbconfoption><name>add user script</name></smbconfoption>
+	information database, Samba will call the <smbconfoption name="add user script"/>
 	interface to add the account to the Samba host OS. In essence all accounts in
 	the local SAM require a local user account.
 	</para>
@@ -418,9 +418,9 @@ Samba-3 introduces a number of new password backend capabilities.
 <title>Example configuration with the LDAP idmap backend</title>
 <indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>idmap backend</name><value>ldap:ldap://ldap-server.quenya.org:636</value></smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://ldap-server.quenya.org:636</smbconfoption>
 <smbcomment>Alternately, this could be specified as:</smbcomment>
-<smbconfoption><name>idmap backend</name><value>ldap:ldaps://ldap-server.quenya.org</value></smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldaps://ldap-server.quenya.org</smbconfoption>
 </smbconfexample>
 	</para>
 
@@ -620,7 +620,7 @@ Password must change: Mon, 18 Jan 2038 20:14:07 GMT
 
 		<procedure>
 			<step><para>
-			Set the <smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>.
+			Set the <smbconfoption name="passdb backend">tdbsam, smbpasswd</smbconfoption>.
 			</para></step>
 
 			<step><para>
@@ -655,7 +655,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 <para>
 <smbconfblock>
-	<smbconfoption><name>passdb backend</name><value>tdbsam:/etc/samba/passdb.tdb \</value></smbconfoption>
+	<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb \</smbconfoption>
 	<member><parameter>tdbsam:/etc/samba/old-passdb.tdb</parameter></member>
 </smbconfblock>
 </para>
@@ -680,7 +680,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 		<para>
 <indexterm><primary>SAM backend</primary><secondary>smbpasswd</secondary></indexterm>
-		Traditionally, when configuring <smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption> in Samba's &smb.conf; file, user account
+		Traditionally, when configuring <smbconfoption name="encrypt passwords">yes</smbconfoption> in Samba's &smb.conf; file, user account
 		information such as username, LM/NT password hashes, password change times, and account
 		flags have been stored in the <filename>smbpasswd(5)</filename> file. There are several
 		disadvantages to this approach for sites with large numbers of users (counted
@@ -1075,17 +1075,17 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 			<para>LDAP related smb.conf options: 
-			<smbconfoption><name>passdb backend</name><value>ldapsam:url</value></smbconfoption>,
-			<smbconfoption><name>ldap admin dn</name></smbconfoption>,
-			<smbconfoption><name>ldap delete dn</name></smbconfoption>,
-			<smbconfoption><name>ldap filter</name></smbconfoption>,
-			<smbconfoption><name>ldap group suffix</name></smbconfoption>,
-			<smbconfoption><name>ldap idmap suffix</name></smbconfoption>,
-			<smbconfoption><name>ldap machine suffix</name></smbconfoption>,
-			<smbconfoption><name>ldap passwd sync</name></smbconfoption>,
-			<smbconfoption><name>ldap ssl</name></smbconfoption>,
-			<smbconfoption><name>ldap suffix</name></smbconfoption>,
-			<smbconfoption><name>ldap user suffix</name></smbconfoption>,
+			<smbconfoption name="passdb backend">ldapsam:url</smbconfoption>,
+			<smbconfoption name="ldap admin dn"/>,
+			<smbconfoption name="ldap delete dn"/>,
+			<smbconfoption name="ldap filter"/>,
+			<smbconfoption name="ldap group suffix"/>,
+			<smbconfoption name="ldap idmap suffix"/>,
+			<smbconfoption name="ldap machine suffix"/>,
+			<smbconfoption name="ldap passwd sync"/>,
+			<smbconfoption name="ldap ssl"/>,
+			<smbconfoption name="ldap suffix"/>,
+			<smbconfoption name="ldap user suffix"/>,
 		</para>
 
 			<para>
@@ -1098,10 +1098,10 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfexample id="confldapex">
 <title>Configuration with LDAP</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>security</name><value>user</value></smbconfoption>
-<smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>MORIA</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>NOLDOR</value></smbconfoption>
+<smbconfoption name="security">user</smbconfoption>
+<smbconfoption name="encrypt passwords">yes</smbconfoption>
+<smbconfoption name="netbios name">MORIA</smbconfoption>
+<smbconfoption name="workgroup">NOLDOR</smbconfoption>
 
 <smbconfcomment>ldap related parameters</smbconfcomment>
 
@@ -1110,32 +1110,32 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfcomment>must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the</smbconfcomment>
 <smbconfcomment>passphrase in the secrets.tdb file. If the "ldap admin dn" values</smbconfcomment>
 <smbconfcomment>change, this password will need to be reset.</smbconfcomment>
-<smbconfoption><name>ldap admin dn</name><value>"cn=Manager,dc=quenya,dc=org"</value></smbconfoption>
+<smbconfoption name="ldap admin dn">"cn=Manager,dc=quenya,dc=org"</smbconfoption>
 
 <smbconfcomment>Define the SSL option when connecting to the directory</smbconfcomment>
 <smbconfcomment>('off', 'start tls', or 'on' (default))</smbconfcomment>
-<smbconfoption><name>ldap ssl</name><value>start tls</value></smbconfoption>
+<smbconfoption name="ldap ssl">start tls</smbconfoption>
 
 <smbconfcomment>syntax: passdb backend = ldapsam:ldap://server-name[:port]</smbconfcomment>
-<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://frodo.quenya.org</value></smbconfoption>
+<smbconfoption name="passdb backend">ldapsam:ldap://frodo.quenya.org</smbconfoption>
 
 <smbconfcomment>smbpasswd -x delete the entire dn-entry</smbconfcomment>
-<smbconfoption><name>ldap delete dn</name><value>no</value></smbconfoption>
+<smbconfoption name="ldap delete dn">no</smbconfoption>
 
 <smbconfcomment>the machine and user suffix added to the base suffix</smbconfcomment>
 <smbconfcomment>wrote WITHOUT quotes. NULL suffixes by default</smbconfcomment>
-<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-<smbconfoption><name>ldap machine suffix</name><value>ou=Computers</value></smbconfoption>
+<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=Computers</smbconfoption>
 
 <smbconfcomment>Trust UNIX account information in LDAP</smbconfcomment>
 <smbconfcomment> (see the smb.conf man page for details)</smbconfcomment>
 
 <smbconfcomment> specify the base DN to use when searching the directory</smbconfcomment>
-<smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
+<smbconfoption name="ldap suffix">dc=quenya,dc=org</smbconfoption>
 
 <smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
-<smbconfoption><name>ldap filter</name><value>(uid=%u)</value></smbconfoption>
+<smbconfoption name="ldap filter">(uid=%u)</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -1197,13 +1197,13 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 			<para>
-			To remedy the first security issue, the <smbconfoption><name>ldap ssl</name></smbconfoption> &smb.conf; parameter defaults
-			to require an encrypted session (<smbconfoption><name>ldap ssl</name><value>on</value></smbconfoption>) using
+			To remedy the first security issue, the <smbconfoption name="ldap ssl"/> &smb.conf; parameter defaults
+			to require an encrypted session (<smbconfoption name="ldap ssl">on</smbconfoption>) using
 			the default port of <constant>636</constant>
 			when contacting the directory server. When using an OpenLDAP server, it
 			is possible to use the StartTLS LDAP extended  operation in the place of
 			LDAPS. In either case, you are strongly discouraged to disable this security
-			(<smbconfoption><name>ldap ssl</name><value>off</value></smbconfoption>).
+			(<smbconfoption name="ldap ssl">off</smbconfoption>).
 			</para>
 
 			<para>
@@ -1279,12 +1279,12 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 				<row><entry><constant>sambaLogonScript</constant></entry><entry>The sambaLogonScript property specifies the path of
 				the user's logon script, .CMD, .EXE, or .BAT file. The string can be null. The path
-				is relative to the netlogon share. Refer to the <smbconfoption><name>logon script</name></smbconfoption> parameter in the
+				is relative to the netlogon share. Refer to the <smbconfoption name="logon script"/> parameter in the
 				&smb.conf; man page for more information.</entry></row>
 
 				<row><entry><constant>sambaProfilePath</constant></entry><entry>Specifies a path to the user's profile.
 				This value can be a null string, a local absolute path, or a UNC path. Refer to the
-				<smbconfoption><name>logon path</name></smbconfoption> parameter in the &smb.conf; man page for more information.</entry></row>
+				<smbconfoption name="logon path"/> parameter in the &smb.conf; man page for more information.</entry></row>
 
 				<row><entry><constant>sambaHomePath</constant></entry><entry>The sambaHomePath property specifies the path of
 				the home directory for the user. The string can be null. If sambaHomeDrive is set and specifies
@@ -1336,12 +1336,12 @@ access to attrs=SambaLMPassword,SambaNTPassword
 			<para>
 			These attributes are only stored with the sambaSamAccount entry if
 			the values are non-default values. For example, assume MORIA has now been
-			configured as a PDC and that <smbconfoption><name>logon home</name><value>\\%L\%u</value></smbconfoption> was defined in
+			configured as a PDC and that <smbconfoption name="logon home">\\%L\%u</smbconfoption> was defined in
 			its &smb.conf; file. When a user named <quote>becky</quote> logons to the domain,
-			the <smbconfoption><name>logon home</name></smbconfoption> string is expanded to \\MORIA\becky.
+			the <smbconfoption name="logon home"/> string is expanded to \\MORIA\becky.
 			If the smbHome attribute exists in the entry <quote>uid=becky,ou=People,dc=samba,dc=org</quote>,
 			this value is used. However, if this attribute does not exist, then the value
-			of the <smbconfoption><name>logon home</name></smbconfoption> parameter is used in its place. Samba
+			of the <smbconfoption name="logon home"/> parameter is used in its place. Samba
 			will only write the attribute value to the directory entry if the value is
 			something other than the default (e.g., <filename>\\MOBY\becky</filename>).
 			</para>
@@ -1420,7 +1420,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 		using pam_ldap, this allows changing both UNIX and Windows passwords at once.
 		</para>
 
-		<para>The <smbconfoption><name>ldap passwd sync</name></smbconfoption> options can have the  values shown in
+		<para>The <smbconfoption name="ldap passwd sync"/> options can have the  values shown in
 		<link linkend="ldappwsync">the next table</link>.</para>
 
 		<table iframe="all" id="ldappwsync">
@@ -1484,15 +1484,15 @@ access to attrs=SambaLMPassword,SambaNTPassword
 		<title>Configuring</title>
 
 			<para>This plug-in lacks some good documentation, but here is some brief information. Add the following to the
-			<smbconfoption><name>passdb backend</name></smbconfoption> variable in your &smb.conf;:
+			<smbconfoption name="passdb backend"/> variable in your &smb.conf;:
 <smbconfblock>
-<smbconfoption><name>passdb backend</name><value>[other-plugins] mysql:identifier [other-plugins]</value></smbconfoption>
+<smbconfoption name="passdb backend">[other-plugins] mysql:identifier [other-plugins]</smbconfoption>
 </smbconfblock>
 			</para>
 
 			<para>The identifier can be any string you like, as long as it does not collide with 
 			the identifiers of other plugins or other instances of pdb_mysql. If you 
-			specify multiple pdb_mysql.so entries in <smbconfoption><name>passdb backend</name></smbconfoption>, you also need to 
+			specify multiple pdb_mysql.so entries in <smbconfoption name="passdb backend"/>, you also need to 
 			use different identifiers.
 			</para>
 
@@ -1552,7 +1552,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 				<row><entry>domain column</entry><entry>varchar(255)</entry><entry>NT domain user belongs to</entry></row>
 				<row><entry>nt username column</entry><entry>varchar(255)</entry><entry>NT username</entry></row>
 				<row><entry>fullname column</entry><entry>varchar(255)</entry><entry>Full name of user</entry></row>
-				<row><entry>home dir column</entry><entry>varchar(255)</entry><entry>UNIX homedir path (equivalent of the <smbconfoption><name>logon home</name></smbconfoption> parameter.</entry></row>
+				<row><entry>home dir column</entry><entry>varchar(255)</entry><entry>UNIX homedir path (equivalent of the <smbconfoption name="logon home"/> parameter.</entry></row>
 				<row><entry>dir drive column</entry><entry>varchar(2)</entry><entry>Directory drive path (e.g., <quote>H:</quote>)</entry></row>
 				<row><entry>logon script column</entry><entry>varchar(255)</entry><entry>Batch file to run on client side when logging on</entry></row>
 				<row><entry>profile path column</entry><entry>varchar(255)</entry><entry>Path of profile</entry></row>
@@ -1587,19 +1587,19 @@ access to attrs=SambaLMPassword,SambaNTPassword
 			<smbconfexample id="mysqlsam">
 				<title>Example configuration for the MySQL passdb backend</title>
 			<smbconfsection>[global]</smbconfsection>
-			<smbconfoption><name>passdb backend</name><value>mysql:foo</value></smbconfoption>
-			<smbconfoption><name>foo:mysql user</name><value>samba</value></smbconfoption>
-			<smbconfoption><name>foo:mysql password</name><value>abmas</value></smbconfoption>
-			<smbconfoption><name>foo:mysql database</name><value>samba</value></smbconfoption>
+			<smbconfoption name="passdb backend">mysql:foo</smbconfoption>
+			<smbconfoption name="foo:mysql user">samba</smbconfoption>
+			<smbconfoption name="foo:mysql password">abmas</smbconfoption>
+			<smbconfoption name="foo:mysql database">samba</smbconfoption>
 			<smbconfcomment>domain name is static and can't be changed</smbconfcomment>
-			<smbconfoption><name>foo:domain column</name><value>'MYWORKGROUP':</value></smbconfoption>
+			<smbconfoption name="foo:domain column">'MYWORKGROUP':</smbconfoption>
 			<smbconfcomment>The fullname column comes from several other columns</smbconfcomment>
-			<smbconfoption><name>foo:fullname column</name><value>CONCAT(firstname,' ',surname):</value></smbconfoption>
+			<smbconfoption name="foo:fullname column">CONCAT(firstname,' ',surname):</smbconfoption>
 			<smbconfcomment>Samba should never write to the password columns</smbconfcomment>
-			<smbconfoption><name>foo:lanman pass column</name><value>lm_pass:</value></smbconfoption>
-			<smbconfoption><name>foo:nt pass column</name><value>nt_pass:</value></smbconfoption>
+			<smbconfoption name="foo:lanman pass column">lm_pass:</smbconfoption>
+			<smbconfoption name="foo:nt pass column">nt_pass:</smbconfoption>
 			<smbconfcomment>The unknown 3 column is not stored</smbconfcomment>
-			<smbconfoption><name>foo:unknown 3 column</name><value>NULL</value></smbconfoption>
+			<smbconfoption name="foo:unknown 3 column">NULL</smbconfoption>
 			</smbconfexample>
 		</sect3>
 
@@ -1680,7 +1680,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 		<para><quote>I've installed Samba, but now I can't log on with my UNIX account! </quote></para>
 
-		<para>Make sure your user has been added to the current Samba <smbconfoption><name>passdb backend</name></smbconfoption>. 
+		<para>Make sure your user has been added to the current Samba <smbconfoption name="passdb backend"/>. 
 		Read the section <link linkend="acctmgmttools">Account Management Tools</link> for details.</para>
 
 	</sect2>
@@ -1698,7 +1698,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 	<smbconfblock>
 	<smbconfsection>[global]</smbconfsection>
 	<member>...</member>
-	<smbconfoption><name>passdb backend</name><value>smbpasswd, tdbsam</value></smbconfoption>
+	<smbconfoption name="passdb backend">smbpasswd, tdbsam</smbconfoption>
 	<member>...</member>
 	</smbconfblock>
 	</para>
@@ -1712,7 +1712,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 <smbconfblock>
 [globals]
 ...
-<smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>
+<smbconfoption name="passdb backend">tdbsam, smbpasswd</smbconfoption>
 ...
 </smbconfblock>
 	</para>
@@ -1723,9 +1723,9 @@ access to attrs=SambaLMPassword,SambaNTPassword
 	<title>Configuration of <parameter>auth methods</parameter></title>
 
 	<para>
-	When explicitly setting an <smbconfoption><name>auth methods</name></smbconfoption> parameter,
+	When explicitly setting an <smbconfoption name="auth methods"/> parameter,
 	<parameter>guest</parameter> must be specified as the first entry on the line,
-	for example, <smbconfoption><name>auth methods</name><value>guest sam</value></smbconfoption>.
+	for example, <smbconfoption name="auth methods">guest sam</smbconfoption>.
 	</para>
 
 	</sect2>
