@@ -200,7 +200,7 @@ print_expire (krb5_context context,
     }
 }
 
-krb5_error_code
+static krb5_error_code
 get_init_creds_common(krb5_context context,
 		      krb5_creds *creds,
 		      krb5_principal client,
@@ -266,7 +266,7 @@ get_init_creds_common(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+static krb5_error_code
 change_password (krb5_context context,
 		 krb5_principal client,
 		 char *password,
