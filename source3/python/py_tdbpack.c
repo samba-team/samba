@@ -69,9 +69,9 @@ tdbpack format strings:
 
     'P':  same as 'f'
 
-    'd':  4 byte little-endian number
+    'd':  4 byte little-endian unsigned number
 
-    'w':  2 byte little-endian number
+    'w':  2 byte little-endian unsigned number
 
     'P': \"Pointer\" value -- in the subset of DCERPC used by Samba, this is
           really just an \"exists\" or \"does not exist\" flag.  The boolean
@@ -391,7 +391,7 @@ static PyObject *pytdbpack_bad_type(char ch,
   realize this is kind of dumb because we'll almost always be on x86, but
   being safe is important.
 */
-static void pack_int32(unsigned long val_long, unsigned char **pbuf)
+static void pack_uint32(unsigned long val_long, unsigned char **pbuf)
 {
 	(*pbuf)[0] =         val_long & 0xff;
 	(*pbuf)[1] = (val_long >> 8)  & 0xff;
@@ -418,9 +418,9 @@ unpack_err_too_short(void)
 
 
 static PyObject *
-unpack_int32(char **pbuf, int *plen)
+unpack_uint32(char **pbuf, int *plen)
 {
-	long v;
+	unsigned long v;
 	unsigned char *b;
 	
 	if (*plen < 4) {
@@ -434,7 +434,7 @@ unpack_int32(char **pbuf, int *plen)
 	(*pbuf) += 4;
 	(*plen) -= 4;
 
-	return PyInt_FromLong(v);
+	return PyLong_FromUnsignedLong(v);
 }
 
 
@@ -539,7 +539,7 @@ static PyObject *pytdbpack_unpack_item(char ch,
 	}
 	else if (ch == 'd' || ch == 'p') { /* 32-bit int */
 		/* pointers can just come through as integers */
-		return unpack_int32(pbuf, plen);
+		return unpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
 		return unpack_string(pbuf, plen);
@@ -595,13 +595,13 @@ pytdbpack_pack_data(const char *format_str,
 		}
 		else if (ch == 'd') {
 			/* 4-byte LE number */
-			pack_int32(PyInt_AsLong(val_obj), &packed);
+			pack_uint32(PyInt_AsLong(val_obj), &packed);
 		}
 		else if (ch == 'p') {
 			/* "Pointer" value -- in the subset of DCERPC used by Samba,
 			   this is really just an "exists" or "does not exist"
 			   flag. */
-			pack_int32(PyObject_IsTrue(val_obj), &packed);
+			pack_uint32(PyObject_IsTrue(val_obj), &packed);
 		}
 		else if (ch == 'f' || ch == 'P') {
 			int size;
@@ -620,7 +620,7 @@ pytdbpack_pack_data(const char *format_str,
 			char *sval;
 
 			size = PyInt_AsLong(val_obj);
-			pack_int32(size, &packed);
+			pack_uint32(size, &packed);
 
 			val_obj = PySequence_GetItem(val_seq, ++i);
 			if (!val_obj)
