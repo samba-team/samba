@@ -305,12 +305,21 @@ change_password (krb5_context context,
     krb5_copy_principal (context, server, &cred.server);
     cred.times.endtime = time(NULL) + 300;
 
+    {
+	char *tmp;
+	krb5_unparse_name(context, principal, &p);
+	asprintf(&tmp, "%s's password: ", p);
+	free (p);
+	des_read_pw_string(passwd, sizeof(passwd), tmp, 0);
+	free(tmp);
+    }
+
     ret = krb5_get_in_tkt_with_password (context,
 					 0,
 					 NULL,
 					 NULL,
 					 pre_auth_types,
-					 NULL,
+					 passwd,
 					 ccache,
 					 &cred,
 					 NULL);
@@ -318,10 +327,6 @@ change_password (krb5_context context,
 	errx (1, "krb5_get_in_tkt_with_password: %s",
 	      krb5_get_err_text(context, ret));
   
-    krb5_unparse_name(context, principal, &p);
-    fprintf (stderr, "%s's old ", p);
-    free (p);
-
     des_read_pw_string (passwd, sizeof(passwd), "New password: ", 1);
 
     sock = socket (AF_INET, SOCK_DGRAM, 0);
