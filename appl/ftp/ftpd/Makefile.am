@@ -18,16 +18,16 @@ ftpd_SOURCES =		\
 	kauth.c		\
 	gssapi.c
 
-$(ftpd_SOURCES): security.h
+$(ftpd_OBJECTS): security.h
 
 security.c:
-	$(LN_S) $(srcdir)/../ftp/security.c .
+	@test -f security.c || $(LN_S) $(srcdir)/../ftp/security.c .
 security.h:
-	$(LN_S) $(srcdir)/../ftp/security.h .
+	@test -f security.c || $(LN_S) $(srcdir)/../ftp/security.h .
 krb4.c:
-	$(LN_S) $(srcdir)/../ftp/krb4.c .
+	@test -f security.c || $(LN_S) $(srcdir)/../ftp/krb4.c .
 gssapi.c:
-	$(LN_S) $(srcdir)/../ftp/gssapi.c .
+	@test -f security.c || $(LN_S) $(srcdir)/../ftp/gssapi.c .
 
 CLEANFILES = security.c security.h krb4.c gssapi.c
 
