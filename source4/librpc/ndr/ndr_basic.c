@@ -103,6 +103,20 @@ NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
 }
 
 /*
+  pull an array of uint8
+*/
+NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, char *data, uint32 n)
+{
+	uint32 len;
+	NDR_CHECK(ndr_pull_uint32(ndr, &len));
+	if (len != n) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}	
+	return ndr_pull_bytes(ndr, data, len);
+}
+
+
+/*
   parse a GUID
 */
 NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
@@ -177,6 +191,15 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 	memcpy(ndr->data + ndr->offset, data, n);
 	ndr->offset += n;
 	return NT_STATUS_OK;
+}
+
+/*
+  push an array of uint8
+*/
+NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, const char *data, uint32 n)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, n));
+	return ndr_push_bytes(ndr, data, n);
 }
 
 /*

@@ -22,116 +22,43 @@
 
 #include "includes.h"
 
-/*
-  addone interface
-*/
-NTSTATUS dcerpc_rpcecho_addone(struct dcerpc_pipe *p,
-			       int in_data, int *out_data)
+NTSTATUS dcerpc_echo_AddOne(struct dcerpc_pipe *p,
+			    TALLOC_CTX *mem_ctx,
+			    struct echo_AddOne *r)
 {
-	struct rpcecho_addone r;
-	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("dcerpc_rpcecho_addone");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* fill the .in side of the call */
-	r.in.data = in_data;
-
-	/* make the call */
-	status = dcerpc_ndr_request(p, RPCECHO_CALL_ADDONE, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_rpcecho_addone,
-				    (ndr_pull_fn_t) ndr_pull_rpcecho_addone,
-				    &r);
-
-	/* and extract the .out parameters */
-	*out_data = r.out.data;
-
-	talloc_destroy(mem_ctx);
-	return status;
+	return dcerpc_ndr_request(p, DCERPC_ECHO_ADDONE, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_echo_AddOne,
+				  (ndr_pull_fn_t) ndr_pull_echo_AddOne,
+				  r);
 }
 
 
-/*
-  echodata interface
-*/
-NTSTATUS dcerpc_rpcecho_echodata(struct dcerpc_pipe *p,
-				 TALLOC_CTX *mem_ctx,
-				 int len,
-				 const char *in_data, 
-				 int *out_len,
-				 char **out_data)
+NTSTATUS dcerpc_echo_EchoData(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      struct echo_EchoData *r)
 {
-	struct rpcecho_echodata r;
-	NTSTATUS status;
-
-	/* fill the .in side of the call */
-	r.in.len  = len;
-	r.in.data = in_data;
-
-	/* make the call */
-	status = dcerpc_ndr_request(p, RPCECHO_CALL_ECHODATA, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_rpcecho_echodata,
-				    (ndr_pull_fn_t) ndr_pull_rpcecho_echodata,
-				    &r);
-
-	/* and extract the .out parameters */
-	*out_len = r.out.len;
-	*out_data = r.out.data;
-
-	return status;
+	return dcerpc_ndr_request(p, DCERPC_ECHO_ECHODATA, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_echo_EchoData,
+				  (ndr_pull_fn_t) ndr_pull_echo_EchoData,
+				  r);
 }
 
-/*
-  sourcedata interface
-*/
-NTSTATUS dcerpc_rpcecho_sourcedata(struct dcerpc_pipe *p,
-				 TALLOC_CTX *mem_ctx,
-				 int len,
-				 int *out_len,
-				 char **out_data)
+NTSTATUS dcerpc_echo_SinkData(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      struct echo_SinkData *r)
 {
-	struct rpcecho_sourcedata r;
-	NTSTATUS status;
-
-	/* fill the .in side of the call */
-	r.in.len  = len;
-
-	/* make the call */
-	status = dcerpc_ndr_request(p, RPCECHO_CALL_SOURCEDATA, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_rpcecho_sourcedata,
-				    (ndr_pull_fn_t) ndr_pull_rpcecho_sourcedata,
-				    &r);
-
-	/* and extract the .out parameters */
-	*out_len = r.out.len;
-	*out_data = r.out.data;
-
-	return status;
+	return dcerpc_ndr_request(p, DCERPC_ECHO_SINKDATA, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_echo_SinkData,
+				  (ndr_pull_fn_t) ndr_pull_echo_SinkData,
+				  r);
 }
 
-/*
-  sinkdata interface
-*/
-NTSTATUS dcerpc_rpcecho_sinkdata(struct dcerpc_pipe *p,
-				 TALLOC_CTX *mem_ctx,
-				 int len,
-				 char *data)
+NTSTATUS dcerpc_echo_SourceData(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      struct echo_SourceData *r)
 {
-	struct rpcecho_sinkdata r;
-	NTSTATUS status;
-
-	/* fill the .in side of the call */
-	r.in.len  = len;
-	r.in.data = data;
-
-	/* make the call */
-	status = dcerpc_ndr_request(p, RPCECHO_CALL_SINKDATA, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_rpcecho_sinkdata,
-				    (ndr_pull_fn_t) ndr_pull_rpcecho_sinkdata,
-				    &r);
-
-	return status;
+	return dcerpc_ndr_request(p, DCERPC_ECHO_SOURCEDATA, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_echo_SourceData,
+				  (ndr_pull_fn_t) ndr_pull_echo_SourceData,
+				  r);
 }
