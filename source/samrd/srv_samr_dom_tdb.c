@@ -983,3 +983,12 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 	return NT_STATUS_NOPROBLEMO;
 }
 
+
+/*******************************************************************
+ samr_reply_unknown_2d
+ ********************************************************************/
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid)
+{
+	DEBUG(0,("_samr_unknown_2d: not implemented, returning OK\n"));
+	return NT_STATUS_NOPROBLEMO;
+}

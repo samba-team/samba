@@ -3765,6 +3765,7 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 uint32 _samr_set_groupinfo(const POLICY_HND *pol,
 				uint16 switch_level,
 				const GROUP_INFO_CTR* ctr);
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
 
 /*The following definitions come from  samrd/srv_samr_dom_tdb.c  */
 
@@ -3814,6 +3815,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 				uint16 switch_value,
 				SAM_UNK_CTR *ctr);
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
 
 /*The following definitions come from  samrd/srv_samr_grp_tdb.c  */
 
@@ -3866,6 +3868,7 @@ BOOL pwdbsam_initialise(void);
 /*The following definitions come from  samrd/srv_samr_passdb.c  */
 
 uint32 _samr_close(POLICY_HND *hnd);
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 				uint32 ace_perms,
 				const DOM_SID *sid,

@@ -205,6 +205,25 @@ uint32 _samr_close(POLICY_HND *hnd)
 }
 
 /*******************************************************************
+ samr_reply_unknown_2d
+ ********************************************************************/
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+
+	/* associate the domain SID with the (unique) handle. */
+	if (!get_policy_samr_sid(get_global_hnd_cache(), domain_pol, &dom_sid))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(0,("_samr_unknown_2d: not implemented, returning OK\n"));
+	DEBUG(5,("_samr_unknown_2d: %d\n", __LINE__));
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/*******************************************************************
  samr_reply_open_domain
  ********************************************************************/
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,

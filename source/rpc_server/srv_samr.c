@@ -45,14 +45,26 @@ static BOOL api_samr_close_hnd( rpcsrv_struct *p, prs_struct *data, prs_struct *
 	{
 		return False;
 	}
-
-
 	r_u.status = _samr_close(&q_u.pol);
-
 	memcpy(&r_u.pol, &q_u.pol, sizeof(q_u.pol));
 	return samr_io_r_close_hnd("", &r_u, rdata, 0);
 }
 
+
+/*******************************************************************
+ api_samr_unknown_2d
+ ********************************************************************/
+static BOOL api_samr_unknown_2d( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_UNKNOWN_2D q_u;
+	SAMR_R_UNKNOWN_2D r_u;
+	if (!samr_io_q_unknown_2d("", &q_u, data, 0))
+	{
+		return False;
+	}
+	r_u.status = _samr_unknown_2d(&q_u.dom_pol, &q_u.sid.sid);
+	return samr_io_r_unknown_2d("", &r_u, rdata, 0);
+}
 
 /*******************************************************************
  api_samr_open_domain
@@ -1143,6 +1155,7 @@ static const struct api_struct api_samr_cmds [] =
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
 	{ "SAMR_OPEN_GROUP"       , SAMR_OPEN_GROUP       , api_samr_open_group       },
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
+	{ "SAMR_UNKNOWN_2D"       , SAMR_UNKNOWN_2D       , api_samr_unknown_2d       },
 	{ "SAMR_LOOKUP_DOMAIN"    , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
 	{ "SAMR_QUERY_SEC_OBJECT" , SAMR_QUERY_SEC_OBJECT , api_samr_query_sec_obj    },
 	{ "SAMR_GET_USRDOM_PWINFO", SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},

@@ -611,3 +611,13 @@ uint32 _samr_set_groupinfo(const POLICY_HND *pol,
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
+
+/*******************************************************************
+ samr_reply_unknown_2d
+ ********************************************************************/
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid)
+{
+	DEBUG(0,("_samr_unknown_2d: not implemented, returning OK\n"));
+
+	return NT_STATUS_NOPROBLEMO;
+}
