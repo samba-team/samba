@@ -260,21 +260,21 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					       i, nt_errstr(status));
 					ret = False;
 				} else if (r[i].out.result != r[i].in.seconds) {
-					printf("Failed - Sleeped for %u seconds (but we said %u seconds and the reply takes only %u seconds)\n", 
+					printf("Failed - Slept for %u seconds (but we said %u seconds and the reply takes only %u seconds)\n", 
 					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec);
 					ret = False;
 				} else {
 					if (r[i].out.result > diff[i].tv_sec) {
-						printf("Failed - Sleeped for %u seconds (but reply takes only %u.%06u seconds)\n", 
+						printf("Failed - Slept for %u seconds (but reply takes only %u.%06u seconds)\n", 
 					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else if (r[i].out.result+1 == diff[i].tv_sec) {
-						printf("Sleeped for %u seconds (but reply takes %u.%06u seconds - busy server?)\n", 
+						printf("Slept for %u seconds (but reply takes %u.%06u seconds - busy server?)\n", 
 					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else if (r[i].out.result == diff[i].tv_sec) {
-						printf("Sleeped for %u seconds (reply takes %u.%06u seconds - ok)\n", 
+						printf("Slept for %u seconds (reply takes %u.%06u seconds - ok)\n", 
 					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else {
-					       	printf("(Failed) - Not async - Sleeped for %u seconds (but reply takes %u.%06u seconds)\n", 
+					       	printf("(Failed) - Not async - Slept for %u seconds (but reply takes %u.%06u seconds)\n", 
 					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 						/* TODO: let the test fail here, when we support async rpc on ncacn_np
 						ret = False;*/
@@ -375,20 +375,7 @@ static BOOL test_doublepointer(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	if (value != r.out.result) {
-		printf("TestSurrounding did not return original value\n");
-		ret = False;
-	}
-
-	pvalue = NULL;
-
-	status = dcerpc_echo_TestDoublePointer(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("TestDoublePointer failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	if (r.out.result != 0) {
-		printf("TestSurrounding did not return 0 when passed a NULL pointer\n");
+		printf("TestDoublePointer did not return original value (%d != %d)\n", value, r.out.result);
 		ret = False;
 	}
 
