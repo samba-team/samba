@@ -56,6 +56,15 @@ BOOL cli_session_setup(struct cli_state *cli,
 {
 	char *p;
 	fstring pword, ntpword;
+	fstring user2;
+
+	/* allow for workgroups as part of the username */
+	fstrcpy(user2, user);
+	if ((p=strchr(user2,'\\')) || (p=strchr(user2,'/'))) {
+		*p = 0;
+		user = p+1;
+		workgroup = user2;
+	}
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
 		return True;
