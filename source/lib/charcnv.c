@@ -59,7 +59,7 @@ static const char *charset_name(charset_t ch)
 	return ret;
 }
 
-static void lazy_initialize_conv(void)
+void lazy_initialize_conv(void)
 {
 	static int initialized = False;
 
@@ -114,6 +114,10 @@ void init_iconv(void)
 	}
 
 	if (did_reload) {
+		/* XXX: Does this really get called every time the dos
+		 * codepage changes? */
+		/* XXX: Is the did_reload test too strict? */
+		init_doschar_table();
 		init_valid_table();
 	}
 }
