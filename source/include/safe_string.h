@@ -113,18 +113,12 @@ size_t __unsafe_string_function_usage_here_char__(void);
 
 #endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
-/* the addition of the DEVELOPER checks in safe_strcpy means we must
- * update a lot of code. To make this a little easier here are some
- * functions that provide the lengths with less pain */
-#define pstrcpy_base(dest, src, pstring_base) \
-    safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
-
 #define safe_strcpy_base(dest, src, base, size) \
     safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
 
-/* String copy functions - macro hell below adds 'type checking' (limited, but the best we can
-   do in C) and may tag with function name/number to record the last 'clobber region' on
-   that string */
+/* String copy functions - macro hell below adds 'type checking' (limited,
+   but the best we can do in C) and may tag with function name/number to
+   record the last 'clobber region' on that string */
 
 #define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
