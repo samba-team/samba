@@ -106,6 +106,14 @@ case "$host_os" in
 				;;
       esac
       ;;
+
+#
+# CRAY Unicos has broken const handling
+       *unicos*)
+	  AC_MSG_RESULT([disabling const])
+	  CPPFLAGS="$CPPFLAGS -Dconst="
+	  ;;
+	
 #
 # AIX4.x doesn't even admit to having large
 # files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
