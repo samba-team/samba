@@ -2157,7 +2157,7 @@ static int do_message_op(void)
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || !cli_connect(cli, desthost, &ip)) {
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) == 0) || !cli_connect(cli, desthost, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", desthost));
 		return 1;
 	}
