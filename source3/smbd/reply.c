@@ -1490,7 +1490,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
      open by this user */
   if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
     int i;
-    for (i=0;i<MAX_OPEN_FILES;i++) {
+    for (i=0;i<MAX_FNUMS;i++) {
       files_struct *fsp = &Files[i];
       if ((fsp->vuid == vuid) && fsp->open) {
         if(!fsp->is_directory)
@@ -2396,7 +2396,7 @@ int reply_flush(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   if (fnum == 0xFFFF)
     {
       int i;
-      for (i=0;i<MAX_OPEN_FILES;i++)
+      for (i=0;i<MAX_FNUMS;i++)
 	if (OPEN_FNUM(i))
 	  sync_file(i);
     }

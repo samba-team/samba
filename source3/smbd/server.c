@@ -67,7 +67,7 @@ extern int dcelogin_atmost_once;
 extern DOM_SID global_machine_sid;
 
 connection_struct Connections[MAX_CONNECTIONS];
-files_struct Files[MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES];
+files_struct Files[MAX_FNUMS];
 
 /*
  * Indirection for file fd's. Needed as POSIX locking
@@ -3145,7 +3145,7 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   /* We need to search the file open table for the
      entry containing this dev and inode, and ensure
      we have an oplock on it. */
-  for( fnum = 0; fnum < MAX_OPEN_FILES; fnum++)
+  for( fnum = 0; fnum < MAX_FNUMS; fnum++)
   {
     if(OPEN_FNUM(fnum))
     {
@@ -4002,14 +4002,14 @@ int find_free_file(void )
 	   increases the chance that the errant client will get an error rather
 	   than causing corruption */
 	if (first_file == 0) {
-		first_file = (getpid() ^ (int)time(NULL)) % MAX_OPEN_FILES;
+		first_file = (getpid() ^ (int)time(NULL)) % MAX_FNUMS;
 		if (first_file == 0) first_file = 1;
 	}
 
-	if (first_file >= MAX_OPEN_FILES)
+	if (first_file >= MAX_FNUMS)
 		first_file = 1;
 
-	for (i=first_file;i<MAX_OPEN_FILES;i++)
+	for (i=first_file;i<MAX_FNUMS;i++)
 		if (!Files[i].open && !Files[i].reserved) {
 			memset(&Files[i], 0, sizeof(Files[i]));
 			first_file = i+1;
@@ -4035,7 +4035,7 @@ int find_free_file(void )
          * files batch oplocked for quite a long time
          * after they have finished with them.
          */
-        for (i=first_file;i<MAX_OPEN_FILES;i++) {
+        for (i=first_file;i<MAX_FNUMS;i++) {
           if(attempt_close_oplocked_file( &Files[i])) {
             memset(&Files[i], 0, sizeof(Files[i]));
             first_file = i+1;
@@ -4044,7 +4044,7 @@ int find_free_file(void )
           }
         }
 
-        for (i=1;i<MAX_OPEN_FILES;i++) {
+        for (i=1;i<MAX_FNUMS;i++) {
           if(attempt_close_oplocked_file( &Files[i])) {
             memset(&Files[i], 0, sizeof(Files[i]));
             first_file = i+1;
@@ -4487,7 +4487,7 @@ close all open files for a connection
 static void close_open_files(int cnum)
 {
   int i;
-  for (i=0;i<MAX_OPEN_FILES;i++)
+  for (i=0;i<MAX_FNUMS;i++)
     if( Files[i].cnum == cnum && Files[i].open) {
       if(Files[i].is_directory)
         close_directory(i); 
@@ -5367,7 +5367,7 @@ static void init_structs(void )
       string_init(&Connections[i].origpath,"");
     }
 
-  for (i=0;i<MAX_OPEN_FILES;i++)
+  for (i=0;i<MAX_FNUMS;i++)
     {
       Files[i].open = False;
       string_init(&Files[i].name,"");
