@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -91,12 +91,28 @@ krb5_rd_cred (krb5_context      context,
     /* check sender address */
 
     if (enc_krb_cred_part.s_address
-	&& auth_context->remote_address
-	&& !krb5_address_compare (context,
+	&& auth_context->remote_address) {
+	krb5_address *a;
+	int cmp;
+
+	ret = krb5_make_addrport (&a,
 				  auth_context->remote_address,
-				  enc_krb_cred_part.s_address)) {
-	ret = KRB5KRB_AP_ERR_BADADDR;
-	goto out;
+				  auth_context->remote_port);
+	if (ret)
+	    goto out;
+
+
+	cmp = krb5_address_compare (context,
+				    a,
+				    enc_krb_cred_part.s_address);
+
+	krb5_free_address (context, a);
+	free (a);
+
+	if (cmp == 0) {
+	    ret = KRB5KRB_AP_ERR_BADADDR;
+	    goto out;
+	}
     }
 
     /* check receiver address */
