@@ -69,9 +69,6 @@ Changes since 3.0.11rc1
 
 commits
 -------
-o   Jeremy Allison <jra@samba.org>
-
-
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 2263: Guard base64_encode_data_blob() against empty blobs.
 
@@ -87,12 +84,23 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix bug enumerating domain trusts in security = ads.
     * Fix segv in rpcclient's dsenumdomtrusts.
     * Fix bug in expansion of %U and %G in included filesnames.
+    * BUG 2291: Restrict creation of server trust and domain trust
+      accounts to members of the "Domain Admins" group.
     
 
 o   Guenther Deschner <gd@samba.org>
+    * BUG 2291: Call the 'add machine script' for server trust and 
+      domain trust accounts as well as workstation accounts.
 
 
-o   Volker Lendecke <vl@samba.org>
+o   Levente Farkas <lfarkas@lfarkas.org>
+    * BUG 2299: Better logrotate scripts for RedHat and Fedora 
+      packages.
+
+
+o   Deryck Hodge <deryck@samba.org>
+    * Add -P (--password-only-menu) to SWAT for displaying only the
+      password change page to non-root users.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>

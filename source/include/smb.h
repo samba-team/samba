@@ -226,7 +226,7 @@ typedef struct nttime_info
 #define ACB_MNS        0x0020  /* 1 = MNS logon user account */
 #define ACB_DOMTRUST   0x0040  /* 1 = Interdomain trust account */
 #define ACB_WSTRUST    0x0080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account */
+#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account (BDC) */
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  

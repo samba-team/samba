@@ -29,11 +29,11 @@
 
 static SE_PRIV se_priv_all  = SE_ALL_PRIVS;
 static SE_PRIV se_priv_end  = SE_END;
-static SE_PRIV se_priv_none = SE_NONE;
 
 /* Define variables for all privileges so we can use the
    SE_PRIV* in the various se_priv_XXX() functions */
 
+const SE_PRIV se_priv_none       = SE_NONE;
 const SE_PRIV se_machine_account = SE_MACHINE_ACCOUNT;
 const SE_PRIV se_print_operator  = SE_PRINT_OPERATOR;
 const SE_PRIV se_add_users       = SE_ADD_USERS;
