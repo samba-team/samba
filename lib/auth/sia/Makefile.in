@@ -76,5 +76,4 @@ $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken @LIB_getpwnam_r@ -lc
-#	ld -shared -o $@ -hidden -exported_symbol siad_\* $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a ../../roken/libroken.a @LIB_getpwnam_r@ -lc
+	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) -L../../kafs -lkafs -L../../kadm -lkadm -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken @LIB_getpwnam_r@ -lc
