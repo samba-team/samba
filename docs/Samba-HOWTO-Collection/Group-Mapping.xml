@@ -219,6 +219,27 @@
 	</orderedlist>
 
 	<para>
+	Versions of Samba up to and including 3.0.10 do not provide a means for assigning rights and privileges
+	that are necessary for system administration tasks from a Windows Domain Member Client machine so that
+	domain administration tasks such as adding/deleting/changing user and group account information, and
+	managing workstation domain membership accounts, can be handled by any account other than root.
+	</para>
+
+	<para>
+	Samba-3.0.11 introduced a new privilege management interface (see <link linkend="rights">Chapter on Rights and Privileges</link>)
+	that permits these tasks to be delegated to non-root (i.e.: accounts other than the equivalent of the
+	MS Windows Administrator) account.
+	</para>
+
+	<para>
+	Administrative tasks on a Windows Domain Member workstation, can be done by anyone who is a member of the
+	<constant>Domain Admins</constant> group. This group can be mapped to any convenient UNIX group.
+	</para>
+
+	<sect3>
+	<title>Applicable Only to Version Earlier than 3.0.11</title>
+
+	<para>
 	Administrative tasks on UNIX/Linux systems, such as adding users or groups, requires <constant>root</constant>
 	level privilege. The addition of a Windows client to a Samba Domain involves the addition of a user account
 	for the Windows client.
@@ -240,10 +261,7 @@
 	level ACLs.
 	</para>
 
-	<para>
-	Administrative tasks on a Windows Domain Member workstation, can be done by anyone who is a member of the
-	<constant>Domain Admins</constant> group. This group can be mapped to any convenient UNIX group.
-	</para>
+	</sect3>
 
 	</sect2>
 
