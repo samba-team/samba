@@ -720,10 +720,9 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 		get_username(username);
 		
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					&server_ip, 0,
-					"IPC$", "IPC",  
-					username, domain,
-					password, 0, NULL);
+					&server_ip, 0, "IPC$", "IPC",  
+					username, domain, password, 
+					CLI_FULL_CONNECTION_USE_KERBEROS,NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));

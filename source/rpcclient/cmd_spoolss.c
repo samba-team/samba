@@ -1882,6 +1882,88 @@ done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS cmd_spoolss_setprinterdataex(struct cli_state *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, char **argv)
+{
+	WERROR result;
+	uint32 needed;
+	fstring servername, printername, user;
+	POLICY_HND pol;
+	BOOL opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	PRINTER_INFO_0 info;
+	REGISTRY_VALUE value;
+
+	/* parse the command arguements */
+	if (argc != 5) {
+		printf ("Usage: %s <printer> <key> <value> <data>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
+					     MAXIMUM_ALLOWED_ACCESS, servername, 
+					     user, &pol);
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	opened_hnd = True;
+
+	ctr.printers_0 = &info;
+
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+                                        &pol, 0, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+		
+	printf("%s\n", timestring(True));
+	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
+
+	/* Set the printer data */
+	
+	fstrcpy(value.valuename, argv[3]);
+	value.type = REG_SZ;
+	value.size = strlen(argv[4]) + 1;
+	value.data_p = talloc_memdup(mem_ctx, argv[4], value.size);
+
+	result = cli_spoolss_setprinterdataex(cli, mem_ctx, &pol, 
+					      argv[2], &value);
+		
+	if (!W_ERROR_IS_OK(result)) {
+		printf ("Unable to set [%s=%s]!\n", argv[3], argv[4]);
+		goto done;
+	}
+	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[3], argv[4]);
+
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, 0, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+		
+	printf("%s\n", timestring(True));
+	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
+
+done:
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 static void display_job_info_1(JOB_INFO_1 *job)
 {
 	fstring username = "", document = "", text_status = "";
@@ -2307,6 +2389,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumforms",          cmd_spoolss_enum_forms,         PI_SPOOLSS, "Enumerate forms",                     "" },
 	{ "setprinter",	        cmd_spoolss_setprinter,         PI_SPOOLSS, "Set printer comment",                 "" },
 	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PI_SPOOLSS, "Set REG_SZ printer data",             "" },
+	{ "setprinterdataex",	cmd_spoolss_setprinterdataex,	PI_SPOOLSS, "Set REG_SZ printer data inside key",  "" },
 	{ "rffpcnex",           cmd_spoolss_rffpcnex,           PI_SPOOLSS, "Rffpcnex test", "" },
 
 	{ NULL }
