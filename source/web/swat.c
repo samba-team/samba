@@ -172,6 +172,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 static void write_config(FILE *f, BOOL show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
+	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
 	fprintf(f, "# Date: %s\n\n", timestring());
 	
 	lp_dump(f, show_defaults);	

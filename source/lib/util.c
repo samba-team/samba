@@ -3716,73 +3716,81 @@ void reset_globals_after_fork()
 /*******************************************************************
  return the DNS name of the client 
  ******************************************************************/
-char *client_name(void)
+char *client_name(int fd)
 {
-  struct sockaddr sa;
-  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-  int     length = sizeof(sa);
-  static pstring name_buf;
-  struct hostent *hp;
-
-  if (global_client_name_done) 
-    return name_buf;
-
-  strcpy(name_buf,"UNKNOWN");
-
-  if (Client == -1) {
-	  return name_buf;
-  }
-
-  if (getpeername(Client, &sa, &length) < 0) {
-    DEBUG(0,("getpeername failed\n"));
-    return name_buf;
-  }
-
-  /* Look up the remote host name. */
-  if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
-			  sizeof(sockin->sin_addr),
-			  AF_INET)) == 0) {
-    DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr()));
-    StrnCpy(name_buf,client_addr(),sizeof(name_buf) - 1);
-  } else {
-    StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
-    if (!matchname(name_buf, sockin->sin_addr)) {
-      DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr()));
-      strcpy(name_buf,"UNKNOWN");
-    }
-  }
-  global_client_name_done = True;
-  return name_buf;
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	int     length = sizeof(sa);
+	static pstring name_buf;
+	struct hostent *hp;
+	static int last_fd=-1;
+	
+	if (global_client_name_done && last_fd == fd) 
+		return name_buf;
+	
+	last_fd = fd;
+	global_client_name_done = False;
+	
+	strcpy(name_buf,"UNKNOWN");
+	
+	if (fd == -1) {
+		return name_buf;
+	}
+	
+	if (getpeername(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed\n"));
+		return name_buf;
+	}
+	
+	/* Look up the remote host name. */
+	if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
+				sizeof(sockin->sin_addr),
+				AF_INET)) == 0) {
+		DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr(fd)));
+		StrnCpy(name_buf,client_addr(fd),sizeof(name_buf) - 1);
+	} else {
+		StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
+		if (!matchname(name_buf, sockin->sin_addr)) {
+			DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr(fd)));
+			strcpy(name_buf,"UNKNOWN");
+		}
+	}
+	global_client_name_done = True;
+	return name_buf;
 }
 
 /*******************************************************************
  return the IP addr of the client as a string 
  ******************************************************************/
-char *client_addr(void)
+char *client_addr(int fd)
 {
-  struct sockaddr sa;
-  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-  int     length = sizeof(sa);
-  static fstring addr_buf;
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	int     length = sizeof(sa);
+	static fstring addr_buf;
+	static int last_fd = -1;
 
-  if (global_client_addr_done) 
-    return addr_buf;
+	if (global_client_addr_done && fd == last_fd) 
+		return addr_buf;
 
-  strcpy(addr_buf,"0.0.0.0");
+	last_fd = fd;
+	global_client_addr_done = False;
 
-  if (Client == -1) {
-	  return addr_buf;
-  }
+	strcpy(addr_buf,"0.0.0.0");
 
-  if (getpeername(Client, &sa, &length) < 0) {
-    DEBUG(0,("getpeername failed\n"));
-    return addr_buf;
-  }
-
-  fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-
-  global_client_addr_done = True;
-  return addr_buf;
+	if (fd == -1) {
+		return addr_buf;
+	}
+	
+	if (getpeername(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed\n"));
+		return addr_buf;
+	}
+	
+	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+	
+	global_client_addr_done = True;
+	return addr_buf;
 }
 
 /*******************************************************************
@@ -3946,9 +3954,9 @@ void standard_sub_basic(char *str)
 				break;
 			}
 			case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr()); break;
+			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name()); break;
+			case 'M' : string_sub(p,"%M", client_name(Client)); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
 			case 'U' : string_sub(p,"%U", username); break;

@@ -227,10 +227,11 @@ static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
  ******************************************************************/
 static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 {
-    struct smb_passwd *smb_pass;
+	struct smb_passwd *smb_pass;
+	extern int Client;
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_name(), client_addr()))
+	                  client_name(Client), client_addr(Client)))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;

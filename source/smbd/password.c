@@ -1640,21 +1640,21 @@ BOOL check_hosts_equiv(char *user)
   fname = lp_hosts_equiv();
 
   /* note: don't allow hosts.equiv on root */
-  if (fname && *fname && (pass->pw_uid != 0))
-    {
-      if (check_user_equiv(user,client_name(),fname))
-	return(True);
-    }
+  if (fname && *fname && (pass->pw_uid != 0)) {
+	  extern int Client;
+	  if (check_user_equiv(user,client_name(Client),fname))
+		  return(True);
+  }
   
   if (lp_use_rhosts())
     {
       char *home = get_home_dir(user);
-      if (home)
-	{
-	  sprintf(rhostsfile, "%s/.rhosts", home);
-	  if (check_user_equiv(user,client_name(),rhostsfile))
-	    return(True);
-	}
+      if (home) {
+	      extern int Client;
+	      sprintf(rhostsfile, "%s/.rhosts", home);
+	      if (check_user_equiv(user,client_name(Client),rhostsfile))
+		      return(True);
+      }
     }
 
   return(False);

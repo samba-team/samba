@@ -115,6 +115,7 @@ simple routines to do connection counting
 ****************************************************************************/
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 {
+	extern int Client;
 	struct connect_record crec;
 	pstring fname;
 	int fd=-1;
@@ -200,7 +201,7 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 	crec.start = time(NULL);
 	
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,client_addr(),sizeof(crec.addr)-1);
+	StrnCpy(crec.addr,client_addr(Client),sizeof(crec.addr)-1);
 	
 	/* make our mark */
 	if (lseek(fd,foundi*sizeof(crec),SEEK_SET) != foundi*sizeof(crec) ||
