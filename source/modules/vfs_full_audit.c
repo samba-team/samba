@@ -84,7 +84,7 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 			   SMB_DISK_QUOTA *qt);
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
 			  const char *fname);
-static struct dirent *smb_full_audit_readdir(vfs_handle_struct *handle,
+static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 				    connection_struct *conn, DIR *dirp);
 static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
 		       const char *path, mode_t mode);
