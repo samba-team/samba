@@ -220,23 +220,27 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-			if (len1 & 1) {
-				/* if odd length and unicode */
-				return False;
-			}
-
 			ps = va_arg(ap, char **);
-			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
-					    len1, 
-					    STR_UNICODE|STR_NOALIGN);
-				(*ps) = smb_xstrdup(p);
+			if (len1 == 0 && len2 == 0) {
+				*ps = smb_xstrdup("");
 			} else {
-				(*ps) = smb_xstrdup("");
+				/* make sure its in the right format - be strict */
+				if (len1 != len2 || ptr + len1 > blob->length) {
+					return False;
+				}
+				if (len1 & 1) {
+					/* if odd length and unicode */
+					return False;
+				}
+				
+				if (0 < len1) {
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_UNICODE|STR_NOALIGN);
+					(*ps) = smb_xstrdup(p);
+				} else {
+					(*ps) = smb_xstrdup("");
+				}
 			}
 			break;
 		case 'A':
@@ -245,19 +249,23 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-
 			ps = va_arg(ap, char **);
-			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
-					    len1, 
-					    STR_ASCII|STR_NOALIGN);
-				(*ps) = smb_xstrdup(p);
+			/* make sure its in the right format - be strict */
+			if (len1 == 0 && len2 == 0) {
+				*ps = smb_xstrdup("");
 			} else {
-				(*ps) = smb_xstrdup("");
+				if (len1 != len2 || ptr + len1 > blob->length) {
+					return False;
+				}
+				
+				if (0 < len1) {
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_ASCII|STR_NOALIGN);
+					(*ps) = smb_xstrdup(p);
+				} else {
+					(*ps) = smb_xstrdup("");
+				}
 			}
 			break;
 		case 'B':
@@ -265,12 +273,17 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
+
 			b = (DATA_BLOB *)va_arg(ap, void *);
-			*b = data_blob(blob->data + ptr, len1);
+			if (len1 == 0 && len2 == 0) {
+				*b = data_blob(NULL, 0);
+			} else {
+				/* make sure its in the right format - be strict */
+				if (len1 != len2 || ptr + len1 > blob->length) {
+					return False;
+				}
+				*b = data_blob(blob->data + ptr, len1);
+			}
 			break;
 		case 'b':
 			b = (DATA_BLOB *)va_arg(ap, void *);

@@ -642,176 +642,45 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
 }
 
 
-
-/***************************************************************************
- api_lsa_enum_acctrights
- ***************************************************************************/
-static BOOL api_lsa_enum_acct_rights(pipes_struct *p)
-{
-	LSA_Q_ENUM_ACCT_RIGHTS q_u;
-	LSA_R_ENUM_ACCT_RIGHTS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_enum_acct_rights("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_enum_acct_rights: failed to unmarshall LSA_Q_ENUM_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_enum_acct_rights(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_enum_acct_rights("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_enum_acct_rights: Failed to marshall LSA_R_ENUM_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-
-/***************************************************************************
- api_lsa_enum_acct_with_right
- ***************************************************************************/
-static BOOL api_lsa_enum_acct_with_right(pipes_struct *p)
-{
-	LSA_Q_ENUM_ACCT_WITH_RIGHT q_u;
-	LSA_R_ENUM_ACCT_WITH_RIGHT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_enum_acct_with_right("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_enum_acct_with_right: failed to unmarshall LSA_Q_ENUM_ACCT_WITH_RIGHT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_enum_acct_with_right(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_enum_acct_with_right("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_enum_acct_with_right: Failed to marshall LSA_R_ENUM_ACCT_WITH_RIGHT.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-
-/***************************************************************************
- api_lsa_add_acctrights
- ***************************************************************************/
-static BOOL api_lsa_add_acct_rights(pipes_struct *p)
-{
-	LSA_Q_ADD_ACCT_RIGHTS q_u;
-	LSA_R_ADD_ACCT_RIGHTS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_add_acct_rights("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_add_acct_rights: failed to unmarshall LSA_Q_ADD_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_add_acct_rights(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_add_acct_rights("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_add_acct_rights: Failed to marshall LSA_R_ADD_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-
-/***************************************************************************
- api_lsa_remove_acctrights
- ***************************************************************************/
-static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
-{
-	LSA_Q_REMOVE_ACCT_RIGHTS q_u;
-	LSA_R_REMOVE_ACCT_RIGHTS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_remove_acct_rights("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_remove_acct_rights: failed to unmarshall LSA_Q_REMOVE_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_remove_acct_rights(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_remove_acct_rights("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_remove_acct_rights: Failed to marshall LSA_R_REMOVE_ACCT_RIGHTS.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-
 /***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
-
 NTSTATUS rpc_lsa_init(void)
 {
-  static const struct api_struct api_lsa_cmds[] =
-    {
-      { "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
-      { "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
-      { "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
-      { "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
-      { "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
-      { "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
-      { "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
-      { "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
-      { "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
-      { "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
-      { "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
-      { "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
-      { "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
-      { "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
-      { "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
-      { "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
-      { "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
-      { "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
-      { "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
-      { "LSA_ENUMACCTRIGHTS"  , LSA_ENUMACCTRIGHTS  , api_lsa_enum_acct_rights },
-      { "LSA_ENUMACCTWITHRIGHT", LSA_ENUMACCTWITHRIGHT, api_lsa_enum_acct_with_right },
-      { "LSA_ADDACCTRIGHTS"   , LSA_ADDACCTRIGHTS   , api_lsa_add_acct_rights  },
-      { "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights},
-      /* be careful of the adding of new RPC's.  See commentrs below about
-       * ADS DC capabilities                                               */
-      { "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      },
-    };
-
+static const struct api_struct api_lsa_cmds[] =
+{
+	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
+	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
+	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
+	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
+	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
+	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
+	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
+	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
+	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
+	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
+	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
+	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
+	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
+	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
+	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
+	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
+	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
+	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
+	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
+	/* be careful of the adding of new RPC's.  See commentrs below about
+	   ADS DC capabilities                                               */
+	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
+};
 /*
  * NOTE: Certain calls can not be enabled if we aren't an ADS DC.  Make sure
  * these calls are always last and that you decrement by the amount of calls
  * to disable.
- */ 
+ */
   int funcs = sizeof(api_lsa_cmds) / sizeof(struct api_struct);
 
   if (!(SEC_ADS == lp_security() && ROLE_DOMAIN_PDC == lp_server_role())) {
-    funcs -= 1;
+	  funcs -= 1;
   }
 
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 

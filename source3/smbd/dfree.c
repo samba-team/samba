@@ -80,7 +80,7 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 
 	dfree_command = lp_dfree_command();
 	if (dfree_command && *dfree_command) {
-		char *p;
+		const char *p;
 		char **lines;
 		pstring syscmd;
 
@@ -93,15 +93,15 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 
 			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
 
-			*dsize = (SMB_BIG_UINT)strtoul(line, &p, 10);
-			while (p && *p & isspace(*p))
+			*dsize = STR_TO_SMB_BIG_UINT(line, &p);
+			while (p && *p && isspace(*p))
 				p++;
 			if (p && *p)
-				*dfree = (SMB_BIG_UINT)strtoul(p, &p, 10);
-			while (p && *p & isspace(*p))
+				*dfree = STR_TO_SMB_BIG_UINT(p, &p);
+			while (p && *p && isspace(*p))
 				p++;
 			if (p && *p)
-				*bsize = (SMB_BIG_UINT)strtoul(p, NULL, 10);
+				*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
 			else
 				*bsize = 1024;
 			file_lines_free(lines);

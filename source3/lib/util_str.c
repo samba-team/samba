@@ -38,6 +38,7 @@
 BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	const char *s;
+	char *pbuf;
 	BOOL quoted;
 	size_t len=1;
 
@@ -59,17 +60,18 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 		return(False);
 	
 	/* copy over the token */
+	pbuf = buff;
 	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
 			len++;
-			*buff++ = *s;
+			*pbuf++ = *s;
 		}
 	}
 	
 	*ptr = (*s) ? s+1 : s;  
-	*buff = 0;
+	*pbuf = 0;
 	
 	return(True);
 }
@@ -312,7 +314,7 @@ char *strupper_static(const char *s)
 	static pstring str;
 
 	pstrcpy(str, s);
-	strupper(str);
+	strupper_m(str);
 
 	return str;
 }
@@ -325,9 +327,9 @@ void strnorm(char *s)
 {
 	extern int case_default;
 	if (case_default == CASE_UPPER)
-		strupper(s);
+		strupper_m(s);
 	else
-		strlower(s);
+		strlower_m(s);
 }
 
 /**
@@ -1109,6 +1111,26 @@ char *strrchr_m(const char *s, char c)
 	return (char *)(s+strlen(s2));
 }
 
+/***********************************************************************
+ Return the equivalent of doing strrchr 'n' times - always going
+ backwards.
+***********************************************************************/
+
+char *strnrchr_m(const char *s, char c, unsigned int n)
+{
+	wpstring ws;
+	pstring s2;
+	smb_ucs2_t *p;
+
+	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+	p = strnrchr_w(ws, UCS2_CHAR(c), n);
+	if (!p)
+		return NULL;
+	*p = 0;
+	pull_ucs2_pstring(s2, ws);
+	return (char *)(s+strlen(s2));
+}
+
 /**
  Convert a string to lower case.
 **/
@@ -1469,6 +1491,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 
 
 #define IPSTR_LIST_SEP	","
+#define IPSTR_LIST_CHAR	','
 
 /**
  * Add ip string representation to ipstr list. Used also
@@ -1483,19 +1506,20 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
  *         reallocated to new length
  **/
 
-char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
+char* ipstr_list_add(char** ipstr_list, const struct ip_service *service)
 {
 	char* new_ipstr = NULL;
 	
 	/* arguments checking */
-	if (!ipstr_list || !ip) return NULL;
+	if (!ipstr_list || !service) return NULL;
 
 	/* attempt to convert ip to a string and append colon separator to it */
 	if (*ipstr_list) {
-		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,inet_ntoa(*ip));
+		asprintf(&new_ipstr, "%s%s%s:%d", *ipstr_list, IPSTR_LIST_SEP,
+			inet_ntoa(service->ip), service->port);
 		SAFE_FREE(*ipstr_list);
 	} else {
-		asprintf(&new_ipstr, "%s", inet_ntoa(*ip));
+		asprintf(&new_ipstr, "%s:%d", inet_ntoa(service->ip), service->port);
 	}
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;
@@ -1512,7 +1536,7 @@ char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
  * @return pointer to allocated ip string
  **/
  
-char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_count)
+char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int ip_count)
 {
 	int i;
 	
@@ -1531,7 +1555,8 @@ char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_c
 
 /**
  * Parse given ip string list into array of ip addresses
- * (as in_addr structures)
+ * (as ip_service structures)  
+ *    e.g. 192.168.1.100:389,192.168.1.78, ...
  *
  * @param ipstr ip string list to be parsed 
  * @param ip_list pointer to array of ip addresses which is
@@ -1539,28 +1564,40 @@ char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_c
  * @return number of succesfully parsed addresses
  **/
  
-int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
+int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
 {
 	fstring token_str;
-	int count;
+	size_t count;
+	int i;
 
-	if (!ipstr_list || !ip_list) return 0;
+	if (!ipstr_list || !ip_list) 
+		return 0;
 	
-	for (*ip_list = NULL, count = 0;
-	     next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN);
-	     count++) {
-	     
+	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
+	if ( (*ip_list = (struct ip_service*)malloc(count * sizeof(struct ip_service))) == NULL ) {
+		DEBUG(0,("ipstr_list_parse: malloc failed for %d entries\n", count));
+		return 0;
+	}
+	
+	for ( i=0; 
+		next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN) && i<count; 
+		i++ ) 
+	{
 		struct in_addr addr;
+		unsigned port = 0;	
+		char *p = strchr(token_str, ':');
+		
+		if (p) {
+			*p = 0;
+			port = atoi(p+1);
+		}
 
 		/* convert single token to ip address */
 		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
 			break;
-		
-		/* prepare place for another in_addr structure */
-		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
-		if (!*ip_list) return -1;
-		
-		(*ip_list)[count] = addr;
+				
+		(*ip_list)[i].ip = addr;
+		(*ip_list)[i].port = port;
 	}
 	
 	return count;
@@ -1713,3 +1750,25 @@ char * base64_encode_data_blob(DATA_BLOB data)
     return result;
 }
 
+/* read a SMB_BIG_UINT from a string */
+SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
+{
+
+	SMB_BIG_UINT val = -1;
+	const char *p = nptr;
+	
+	while (p && *p && isspace(*p))
+		p++;
+#ifdef LARGE_SMB_OFF_T
+	sscanf(p,"%llu",&val);	
+#else /* LARGE_SMB_OFF_T */
+	sscanf(p,"%lu",&val);
+#endif /* LARGE_SMB_OFF_T */
+	if (entptr) {
+		while (p && *p && isdigit(*p))
+			p++;
+		*entptr = p;
+	}
+
+	return val;
+}

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 <!ENTITY NetBIOS SYSTEM "NetBIOS.xml">
 <!ENTITY Architecture SYSTEM "architecture.xml">
 <!ENTITY debug SYSTEM "debug.xml">
@@ -17,6 +18,8 @@
 <!ENTITY modules SYSTEM "modules.xml">
 <!ENTITY packagers SYSTEM "packagers.xml">
 <!ENTITY contributing SYSTEM "contributing.xml">
+<!ENTITY vfs SYSTEM "vfs.xml">
+<!ENTITY windows-deb SYSTEM "windows-debug.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -28,13 +31,9 @@
 		<surname>SAMBA Team</surname>
 	</author>
 	<address><email>samba@samba.org</email></address>
-</bookinfo>
-
-<dedication>
-<title>Abstract</title>
-
+<abstract>
 <para>
-<emphasis>Last Update</emphasis> : Mon Sep 30 15:23:53 CDT 2002
+<emphasis>Last Update</emphasis> : Fri Jun  6 00:45:54 CEST 2003
 </para>
 
 <para>
@@ -45,7 +44,7 @@ the internals of various parts of samba and the SMB protocol. It's still incompl
 The most recent version of this document
 can be found at <ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>.
 Please send updates to <ulink 
-url="mailto:jelmer@samba.org">Jelmer Veenrooij</ulink>.
+url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>.
 </para>
 
 <para>
@@ -55,7 +54,20 @@ distribution.  A copy can be found on-line at <ulink
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
-</dedication>
+</abstract>
+
+<legalnotice>
+
+<formalpara>
+	<title>Attributions</title>
+
+	<para>
+	&attributions-dev;
+	</para>
+</formalpara>
+	
+</legalnotice>
+</bookinfo>
 
 <!-- Contents -->
 <toc/>
@@ -69,6 +81,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &parsing;
 &unix-smb;
 &Tracing;
+&windows-deb;
 &cifsntdomain;
 &printing;
 &wins;
@@ -76,6 +89,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &encryption;
 &modules;
 &rpc-plugin;
+&vfs;
 &packagers;
 &contributing;
 

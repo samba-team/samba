@@ -13,6 +13,32 @@
 <title>Unicode/Charsets</title>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Every industry eventually matures. One of the great areas of maturation is in
+the focus that has been given over the past decade to make it possible for anyone
+anywhere to use a computer. It has not always been that way, in fact, not so long
+ago it was common for software to be written for exclusive use in the country of
+origin.
+</para>
+
+<para>
+Of all the effort that has been brought to bear on providing native language support
+for all computer users, the efforts of the Openi18n organisation is deserving of
+special mention. For more information about Openi18n please refer to: 
+<link url="http://www.openi18n.org/">http://www.openi18n.org/</link>.
+</para>
+
+<para>
+Samba-2.x supported a single locale through a mechanism called 
+<emphasis>codepages</emphasis>. Samba-3 is destined to become a truly trans-global
+file and printer sharing platform.
+</para>
+
+</sect1>
+
+<sect1>
 <title>What are charsets and unicode?</title>
 
 <para>
@@ -44,7 +70,7 @@ communicating.
 </para>
 
 <para>Old windows clients used to use single-byte charsets, named 
-'codepages' by microsoft. However, there is no support for 
+'codepages' by Microsoft. However, there is no support for 
 negotiating the charset to be used in the smb protocol. Thus, you 
 have to make sure you are using the same charset when talking to an old client.
 Newer clients (Windows NT, 2K, XP) talk unicode over the wire.
@@ -61,7 +87,7 @@ samba knows of three kinds of character sets:
 
 <variablelist>
 	<varlistentry>
-		<term>unix charset</term>
+		<term><parameter>unix charset</parameter></term>
 		<listitem><para>
 		This is the charset used internally by your operating system. 
 		The default is <constant>ASCII</constant>, which is fine for most 
@@ -70,14 +96,14 @@ samba knows of three kinds of character sets:
 	</varlistentry>
 
 	<varlistentry>
-		<term>display charset</term>
+		<term><parameter>display charset</parameter></term>
 		<listitem><para>This is the charset samba will use to print messages
 		on your screen. It should generally be the same as the <command>unix charset</command>.
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term>dos charset</term>
+		<term><parameter>dos charset</parameter></term>
 		<listitem><para>This is the charset samba uses when communicating with 
 		DOS and Windows 9x clients. It will talk unicode to all newer clients.
 		The default depends on the charsets you have installed on your system.
@@ -114,24 +140,24 @@ points of attention when setting it up:</para>
 
 <itemizedlist>
 
-<listitem><para>You should set <command>mangling method =
-hash</command></para></listitem>
+<listitem><para>You should set <parameter>mangling method =
+hash</parameter></para></listitem>
 
 <listitem><para>There are various iconv() implementations around and not
 all of  them work equally well. glibc2's iconv() has a critical problem
 in CP932.  libiconv-1.8 works with CP932 but still has some problems and
 does not  work with EUC-JP.</para></listitem>
 
-<listitem><para>You should set <command>dos charset = CP932</command>, not
+<listitem><para>You should set <parameter>dos charset = CP932</parameter>, not
 Shift_JIS, SJIS...</para></listitem>
 
-<listitem><para>Currently only <command>unix charset = CP932</command>
+<listitem><para>Currently only <parameter>unix charset = CP932</parameter>
 will work (but still has some problems...) because of iconv() issues.
-<command>unix charset = EUC-JP</command> doesn't work well because of
+<parameter>unix charset = EUC-JP</parameter> doesn't work well because of
 iconv() issues.</para></listitem>
 
-<listitem><para>Currently Samba 3.0 does not support <command>unix charset
-= UTF8-MAC/CAP/HEX/JIS*</command></para></listitem>
+<listitem><para>Currently Samba 3.0 does not support <parameter>unix charset
+= UTF8-MAC/CAP/HEX/JIS*</parameter></para></listitem>
 
 </itemizedlist>
 

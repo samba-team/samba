@@ -65,7 +65,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
-		extern struct winbindd_methods msrpc_methods;
+		extern struct winbindd_methods msrpc_methods, cache_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);
@@ -75,7 +75,11 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		if (status.error_type == ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
 			DEBUG(1,("Trying MSRPC methods\n"));
-			domain->methods = &msrpc_methods;
+			if (domain->methods == &cache_methods) {
+				domain->backend = &msrpc_methods;
+			} else {
+				domain->methods = &msrpc_methods;
+			}
 		}
 		return NULL;
 	}
@@ -112,7 +116,11 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	DEBUG(3,("ads: query_user_list\n"));
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
 	if (!ADS_ERR_OK(rc)) {
@@ -209,7 +217,11 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	DEBUG(3,("ads: enum_dom_groups\n"));
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
 	if (!ADS_ERR_OK(rc)) {
@@ -232,7 +244,9 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	i = 0;
 	
 	group_flags = ATYPE_GLOBAL_GROUP;
-	if ( domain->native_mode )
+
+	/* only grab domain local groups for our domain */
+	if ( domain->native_mode && strequal(lp_realm(), domain->alt_name)  )
 		group_flags |= ATYPE_LOCAL_GROUP;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
@@ -282,7 +296,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 {
 	/*
 	 * This is a stub function only as we returned the domain 
-	 * ocal groups in enum_dom_groups() if the domain->native field
+	 * local groups in enum_dom_groups() if the domain->native field
 	 * was true.  This is a simple performance optimization when
 	 * using LDAP.
 	 *
@@ -307,8 +321,11 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	DEBUG(3,("ads: name_to_sid\n"));
 
 	ads = ads_cached_connection(domain);
-	if (!ads) 
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return ads_name_to_sid(ads, name, sid, type);
 }
@@ -322,9 +339,13 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 {
 	ADS_STRUCT *ads = NULL;
 	DEBUG(3,("ads: sid_to_name\n"));
+
 	ads = ads_cached_connection(domain);
-	if (!ads) 
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return ads_sid_to_name(ads, mem_ctx, sid, name, type);
 }
@@ -338,7 +359,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		      const char *dn,
 		      char **name, uint32 *name_type, DOM_SID *sid)
 {
-	char *exp;
+	char *ldap_exp;
 	void *res = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
 			       "objectSid", "sAMAccountType", NULL};
@@ -346,13 +367,15 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	uint32 atype;
 	char *escaped_dn = escape_ldap_string_alloc(dn);
 
+	DEBUG(3,("ads: dn_lookup\n"));
+
 	if (!escaped_dn) {
 		return False;
 	}
 
-	asprintf(&exp, "(distinguishedName=%s)", dn);
-	rc = ads_search_retry(ads, &res, exp, attrs);
-	SAFE_FREE(exp);
+	asprintf(&ldap_exp, "(distinguishedName=%s)", dn);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -392,7 +415,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -402,12 +425,16 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	DEBUG(3,("ads: query_user\n"));
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	sidstr = sid_binstring(sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
+	asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
@@ -461,22 +488,28 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	int count;
 	void *res = NULL;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
 
+	DEBUG(3,("ads: lookup_usergroups_alt\n"));
+
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	/* buggy server, no tokenGroups.  Instead lookup what groups this user
 	   is a member of by DN search on member*/
-	if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+	if (asprintf(&ldap_exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	rc = ads_search_retry(ads, &res, exp, group_attrs);
-	free(exp);
+	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
+	free(ldap_exp);
 	
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
@@ -540,7 +573,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	char *user_dn;
 	DOM_SID *sids;
 	int i;
@@ -554,22 +587,26 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*num_groups = 0;
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	if (!(sidstr = sid_binstring(sid))) {
 		DEBUG(1,("lookup_usergroups(sid=%s) sid_binstring returned NULL\n", sid_to_string(sid_string, sid)));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	if (asprintf(&exp, "(objectSid=%s)", sidstr) == -1) {
+	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
 		free(sidstr);
 		DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -648,7 +685,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int count;
 	void *res=NULL;
 	ADS_STRUCT *ads = NULL;
-	char *exp;
+	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
 	const char *attrs[] = {"member", NULL};
@@ -656,17 +693,23 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int i, num_members;
 	fstring sid_string;
 
+	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
+
 	*num_names = 0;
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
 	sidstr = sid_binstring(group_sid);
 
 	/* search for all members of the group */
-	asprintf(&exp, "(objectSid=%s)",sidstr);
-	rc = ads_search_retry(ads, &res, exp, attrs);
-	free(exp);
+	asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -730,10 +773,16 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
 
+	DEBUG(3,("ads: fetch sequence_number for %s\n", domain->name));
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	ads = ads_cached_connection(domain);
-	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	rc = ads_USN(ads, seq);
 	if (!ADS_ERR_OK(rc)) {
@@ -755,11 +804,17 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 
+	DEBUG(3,("ads: trusted_domains\n"));
+
 	*num_domains = 0;
 	*names = NULL;
 
 	ads = ads_cached_connection(domain);
-	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	rc = ads_trusted_domains(ads, mem_ctx, num_domains, names, alt_names, dom_sids);
 
@@ -772,8 +827,14 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 
+	DEBUG(3,("ads: domain_sid\n"));
+
 	ads = ads_cached_connection(domain);
-	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	rc = ads_domain_sid(ads, sid);
 
@@ -796,8 +857,14 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	TALLOC_CTX *ctx;
 	char *workgroup;
 
+	DEBUG(3,("ads: alternate_name\n"));
+
 	ads = ads_cached_connection(domain);
-	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (!(ctx = talloc_init("alternate_name"))) {
 		return NT_STATUS_NO_MEMORY;
@@ -808,8 +875,8 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	if (ADS_ERR_OK(rc)) {
 		fstrcpy(domain->name, workgroup);
 		fstrcpy(domain->alt_name, ads->config.realm);
-		strupper(domain->alt_name);
-		strupper(domain->name);
+		strupper_m(domain->alt_name);
+		strupper_m(domain->name);
 	}
 
 	talloc_destroy(ctx);

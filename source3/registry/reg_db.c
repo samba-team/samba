@@ -250,7 +250,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	pstring_sub( path, "\\", "/" ); 
 	strupper_m( path );
 	
-	dbuf = tdb_fetch_by_string( tdb_reg, path );
+	dbuf = tdb_fetch_bystring( tdb_reg, path );
 	
 	buf = dbuf.dptr;
 	buflen = dbuf.dsize;

@@ -654,8 +654,8 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 {
   struct sockaddr_in sock_out;
   int res,ret;
-  int connect_loop = 250; /* 250 milliseconds */
-  int loops = (timeout) / connect_loop;
+  int connect_loop = 10;
+  int increment = 10;
 
   /* create a socket to write to */
   res = socket(PF_INET, type, 0);
@@ -681,8 +681,13 @@ connect_again:
 
   /* Some systems return EAGAIN when they mean EINPROGRESS */
   if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-        errno == EAGAIN) && loops--) {
+        errno == EAGAIN) && (connect_loop < timeout) ) {
     msleep(connect_loop);
+    connect_loop += increment;
+    if (increment < 250) {
+	    /* After 8 rounds we end up at a max of 255 msec */
+	    increment *= 1.5;
+    }
     goto connect_again;
   }
 
@@ -762,6 +767,19 @@ char *client_name(void)
 char *client_addr(void)
 {
 	return get_socket_addr(client_fd);
+}
+
+struct in_addr *client_inaddr(struct sockaddr *sa)
+{
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (sa);
+	int     length = sizeof(*sa);
+	
+	if (getpeername(client_fd, sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return NULL;
+	}
+	
+	return &sockin->sin_addr;
 }
 
 /*******************************************************************

@@ -41,6 +41,9 @@
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
+  
+  TODO : add a negative connection cache in here leveraged off of the one
+  found in the rpc code.  --jerry
  */
 static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 {
@@ -90,133 +93,81 @@ static BOOL ads_try_connect_uri(ADS_STRUCT *ads)
 	return False;
 }
 
-/* used by the IP comparison function */
-struct ldap_ip {
-	struct in_addr ip;
-	unsigned port;
-};
+/**********************************************************************
+ Try to find an AD dc using our internal name resolution routines
+ Try the realm first and then then workgroup name if netbios is not 
+ disabled
+**********************************************************************/
 
-/* compare 2 ldap IPs by nearness to our interfaces - used in qsort */
-static int ldap_ip_compare(struct ldap_ip *ip1, struct ldap_ip *ip2)
-{
-	return ip_compare(&ip1->ip, &ip2->ip);
-}
-
-/* try connecting to a ldap server via DNS */
-static BOOL ads_try_dns(ADS_STRUCT *ads)
+static BOOL ads_find_dc(ADS_STRUCT *ads)
 {
 	const char *c_realm;
-	const char *ptr;
-	char *realm;
-	char *list = NULL;
-	pstring tok;
-	struct ldap_ip *ip_list;
 	int count, i=0;
+	struct ip_service *ip_list;
+	pstring realm;
+	BOOL got_realm = False;
 
+	/* realm */
 	c_realm = ads->server.realm;
 	if (!c_realm || !*c_realm) {
 		c_realm = lp_realm();
 	}
-	if (!c_realm || !*c_realm) {
+	if ( c_realm )
+		got_realm = True;
+
+	   
+again:
+	/* we need to try once with the realm name and fallback to the 
+	   netbios domain name if we fail (if netbios has not been disabled */
+	   
+	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
+		if (!c_realm || !*c_realm) 
+			c_realm = lp_workgroup();
+		if (!c_realm)
+			return False;
 	}
-	if (!c_realm || !*c_realm) {
-		c_realm = lp_workgroup();
-	}
-	if (!c_realm) {
-		return False;
-	}
-	realm = smb_xstrdup(c_realm);
+	
+	pstrcpy( realm, c_realm );
 
-	DEBUG(6,("ads_try_dns: looking for realm '%s'\n", realm));
-	if (ldap_domain2hostlist(realm, &list) != LDAP_SUCCESS) {
-		SAFE_FREE(realm);
-		return False;
-	}
+	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
+		(got_realm ? "realm" : "domain"), realm));
 
-	DEBUG(6,("ads_try_dns: ldap realm '%s' host list '%s'\n", realm, list));
-	SAFE_FREE(realm);
-
-	count = count_chars(list, ' ') + 1;
-	ip_list = malloc(count * sizeof(struct ldap_ip));
-	if (!ip_list) {
-		return False;
-	}
-
-	ptr = list;
-	while (next_token(&ptr, tok, " ", sizeof(tok))) {
-		unsigned port = LDAP_PORT;
-		char *p = strchr(tok, ':');
-		if (p) {
-			*p = 0;
-			port = atoi(p+1);
+	if ( !get_sorted_dc_list(realm, &ip_list, &count, got_realm) ) {
+		/* fall back to netbios if we can */
+		if ( got_realm && !lp_disable_netbios() ) {
+			got_realm = False;
+			goto again;
 		}
-		ip_list[i].ip = *interpret_addr2(tok);
-		ip_list[i].port = port;
-		if (!is_zero_ip(ip_list[i].ip)) {
-			i++;
-		}
+		
+		return False;
 	}
-	free(list);
-
-	count = i;
-
-	/* we sort the list of addresses by closeness to our interfaces. This
-	   tries to prevent us using a DC on the other side of the country */
-	if (count > 1) {
-		qsort(ip_list, count, sizeof(struct ldap_ip), 
-		      QSORT_CAST ldap_ip_compare);	
-	}
-
-	for (i=0;i<count;i++) {
-		if (ads_try_connect(ads, inet_ntoa(ip_list[i].ip), ip_list[i].port)) {
-			free(ip_list);
+			
+	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
+	for ( i=0; i<count; i++ ) {
+		/* since this is an ads conection request, default to LDAP_PORT is not set */
+		int port = (ip_list[i].port!=PORT_NONE) ? ip_list[i].port : LDAP_PORT;
+		fstring server;
+		
+		fstrcpy( server, inet_ntoa(ip_list[i].ip) );
+		
+		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
+			continue;
+			
+		if ( ads_try_connect(ads, server, port) ) {
+			SAFE_FREE(ip_list);
 			return True;
 		}
+		
+		/* keep track of failures */
+		add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
 	}
 
 	SAFE_FREE(ip_list);
+	
 	return False;
 }
 
-/* try connecting to a ldap server via netbios */
-static BOOL ads_try_netbios(ADS_STRUCT *ads)
-{
-	struct in_addr *ip_list, pdc_ip;
-	int count;
-	int i;
-	const char *workgroup = ads->server.workgroup;
-	BOOL list_ordered;
-
-	if (!workgroup) {
-		workgroup = lp_workgroup();
-	}
-
-	DEBUG(6,("ads_try_netbios: looking for workgroup '%s'\n", workgroup));
-
-	/* try the PDC first */
-	if (get_pdc_ip(workgroup, &pdc_ip)) { 
-		DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
-			 inet_ntoa(pdc_ip)));
-		if (ads_try_connect(ads, inet_ntoa(pdc_ip), LDAP_PORT))
-			return True;
-	}
-
-	/* now any DC, including backups */
-	if (get_dc_list(workgroup, &ip_list, &count, &list_ordered)) { 
-		for (i=0;i<count;i++) {
-			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
-				 inet_ntoa(ip_list[i])));
-			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
-				free(ip_list);
-				return True;
-			}
-		}
-		free(ip_list);
-	}
-
-	return False;
-}
 
 /**
  * Connect to the LDAP server
@@ -244,20 +195,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	/* try with a smb.conf ads server setting if we are connecting
-           to the primary workgroup or realm */
-	if (!ads->server.foreign &&
-	    ads_try_connect(ads, lp_ads_server(), LDAP_PORT)) {
-		goto got_connection;
-	}
-
-	/* try via DNS */
-	if (ads_try_dns(ads)) {
-		goto got_connection;
-	}
-
-	/* try via netbios lookups */
-	if (!lp_disable_netbios() && ads_try_netbios(ads)) {
+	if (ads_find_dc(ads)) {
 		goto got_connection;
 	}
 
@@ -278,7 +216,7 @@ got_connection:
 		/* by default use the machine account */
 		fstring myname;
 		fstrcpy(myname, global_myname());
-		strlower(myname);
+		strlower_m(myname);
 		asprintf(&ads->auth.user_name, "HOST/%s", myname);
 	}
 
@@ -400,7 +338,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  *  again when the entire search is complete 
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in utf8 or ascii
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -540,7 +478,7 @@ done:
  * all entries in a large search.
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -587,7 +525,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
  *  runs the function as each page is returned, using ads_process_results()
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in UTF-8 or ascii
  * @param fn Function which takes attr name, values list, and data_area
@@ -629,7 +567,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * Do a search with a timeout.
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -749,14 +687,15 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 /**
  * Get a dn from search results
  * @param ads connection to ads server
- * @param res Search results
+ * @param msg Search result
  * @return dn string
  **/
-char *ads_get_dn(ADS_STRUCT *ads, void *res)
+char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 {
 	char *utf8_dn, *unix_dn;
 
-	utf8_dn = ldap_get_dn(ads->ld, res);
+	utf8_dn = ldap_get_dn(ads->ld, msg);
+
 	pull_utf8_allocate((void **) &unix_dn, utf8_dn);
 	ldap_memfree(utf8_dn);
 	return unix_dn;
@@ -998,7 +937,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	ret = ldap_delete(ads->ld, utf8_dn);
+	ret = ldap_delete_s(ads->ld, utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -1058,13 +997,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
 			      hostname, 
 			      ads->config.realm);
-	strlower(&psp[5]);
+	strlower_m(&psp[5]);
 	servicePrincipalName[1] = psp;
 	servicePrincipalName[2] = talloc_asprintf(ctx, "CIFS/%s", hostname);
 	psp2 = talloc_asprintf(ctx, "CIFS/%s.%s", 
 			       hostname, 
 			       ads->config.realm);
-	strlower(&psp2[5]);
+	strlower_m(&psp2[5]);
 	servicePrincipalName[3] = psp2;
 
 	free(ou_str);
@@ -1078,6 +1017,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 #ifndef ENCTYPE_ARCFOUR_HMAC
 	acct_control |= UF_USE_DES_KEY_ONLY;
 #endif
+
 	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control)))
 		goto done;
 
@@ -1142,7 +1082,7 @@ static void dump_guid(const char *field, struct berval **values)
 	GUID guid;
 	for (i=0; values[i]; i++) {
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		printf("%s: %s\n", field, uuid_string_static(guid));
+		printf("%s: %s\n", field, smb_uuid_string_static(guid));
 	}
 }
 
@@ -1345,7 +1285,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
@@ -1384,13 +1324,13 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	ADS_STATUS status;
-	void *res;
+	void *res, *msg;
 	char *hostnameDN, *host; 
 	int rc;
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, &res, host);
 	if (!ADS_ERR_OK(status)) {
@@ -1398,7 +1338,12 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	    return status;
 	}
 
-	hostnameDN = ads_get_dn(ads, (LDAPMessage *)res);
+	msg = ads_first_entry(ads, res);
+	if (!msg) {
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
+
+	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
 	rc = ldap_delete_s(ads->ld, hostnameDN);
 	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {

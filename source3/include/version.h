@@ -1,1 +1,1 @@
-#define VERSION "post3.0-HEAD"
+#define VERSION "3.0.0beta3"

@@ -35,7 +35,7 @@
 		<arg choice="opt">--sequence</arg>
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">-a user%password</arg>
-		<arg choice="opt">-A user%password</arg>
+		<arg choice="opt">--set-auth-user user%password</arg>
 		<arg choice="opt">--get-auth-user</arg>
 		<arg choice="opt">-p</arg>
 	</cmdsynopsis>
@@ -207,7 +207,7 @@
 
 
 		<varlistentry>
-		<term>-A username%password</term>
+		<term>--set-auth-user username%password</term>
 		<listitem><para>Store username and password used by winbindd 
 		during session setup to a domain controller.  This enables
 		winbindd to operate in a Windows 2000 domain with Restrict

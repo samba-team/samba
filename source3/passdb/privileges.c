@@ -107,7 +107,7 @@ NTSTATUS privilege_enum_account_with_right(const char *right,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	data = tdb_fetch_by_string(tdb, right);
+	data = tdb_fetch_bystring(tdb, right);
 	if (!data.dptr) {
 		*count = 0;
 		*sids = NULL;
@@ -168,7 +168,7 @@ static NTSTATUS privilege_set_accounts_with_right(const char *right,
 
 	data.dsize = PTR_DIFF(p, data.dptr);
 
-	if (tdb_store_by_string(tdb, right, data, TDB_REPLACE) != 0) {
+	if (tdb_store_bystring(tdb, right, data, TDB_REPLACE) != 0) {
 		free(data.dptr);
 		return NT_STATUS_INTERNAL_ERROR;
 	}

@@ -1180,7 +1180,7 @@ BOOL print_notify_register_pid(int snum)
 	}
 
 	/* Store back the record. */
-	if (tdb_store_by_string(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -1270,7 +1270,7 @@ printer %s database\n", printername));
 		SAFE_FREE(data.dptr);
 
 	/* Store back the record. */
-	if (tdb_store_by_string(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -1465,7 +1465,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	else
 		remove_from_jobs_changed(snum, jobid);
 
-	/* Delete the tdb entry if the delete suceeded or the job hasn't
+	/* Delete the tdb entry if the delete succeeded or the job hasn't
 	   been spooled. */
 
 	if (result == 0) {

@@ -62,7 +62,7 @@ that are specified when a file is open.
 </para>
 
 <para>
-Record locking semantics under Unix is very different from record locking under
+Record locking semantics under Unix are very different from record locking under
 Windows. Versions of Samba before 2.2 have tried to use the native fcntl() unix
 system call to implement proper record locking between different Samba clients.
 This can not be fully correct due to several reasons. The simplest is the fact
@@ -82,33 +82,34 @@ All other locks can not be seen by unix anyway.
 <para>
 Strictly a SMB server should check for locks before every read and write call on
 a file. Unfortunately with the way fcntl() works this can be slow and may overstress
-the rpc.lockd. It is also almost always unnecessary as clients are supposed to
+the <command>rpc.lockd</command>. It is also almost always unnecessary as clients are supposed to
 independently make locking calls before reads and writes anyway if locking is
 important to them. By default Samba only makes locking calls when explicitly asked
-to by a client, but if you set <emphasis>strict locking = yes</emphasis> then it
+to by a client, but if you set <parameter>strict locking = yes</parameter> then it
 will make lock checking calls on every read and write.
 </para>
 
 <para>
-You can also disable by range locking completely using <emphasis>locking = no</emphasis>.
+You can also disable byte range locking completely using <parameter>locking = no</parameter>.
 This is useful for those shares that don't support locking or don't need it
 (such as cdroms). In this case Samba fakes the return codes of locking calls to
 tell clients that everything is OK.
 </para>
 
 <para>
-The second class of locking is the <emphasis>deny modes</emphasis>. These 
+The second class of locking is the <parameter>deny modes</parameter>. These 
 are set by an application when it opens a file to determine what types of
 access should be allowed simultaneously with its open. A client may ask for
-DENY_NONE, DENY_READ, DENY_WRITE or DENY_ALL. There are also special compatibility
-modes called DENY_FCB and  DENY_DOS.
+<constant>DENY_NONE</constant>, <constant>DENY_READ</constant>, 
+<constant>DENY_WRITE</constant> or <constant>DENY_ALL</constant>. There are also special compatibility
+modes called <constant>DENY_FCB</constant> and <constant>DENY_DOS</constant>.
 </para>
 
 <sect2>
 <title>Opportunistic Locking Overview</title>
 
 <para>
-OPPORTUNISTIC LOCKING (Oplocks) is invoked by the Windows file system
+Opportunistic locking (Oplocks) is invoked by the Windows file system
 (as opposed to an API) via registry entries (on the server AND client)
 for the purpose of enhancing network performance when accessing a file
 residing on a server. Performance is enhanced by caching the file
@@ -129,7 +130,7 @@ locally on the client which allows:
 	</varlistentry>
 
         <varlistentry><term>Lock caching:</term>
-                <listitem><para>
+        <listitem><para>
 		The client caches application locks locally, eliminating network latency
 		</para></listitem>
         </varlistentry>
@@ -149,8 +150,8 @@ other processes.
 		The redirector sees that the file was opened with deny
                 none (allowing concurrent access), verifies that no
                 other process is accessing the file, checks that
-                oplocks are enabled, then grants deny-all/read-write/ex-
-                clusive access to the file.  The client now performs
+                oplocks are enabled, then grants deny-all/read-write/exclusive
+                access to the file.  The client now performs
                 operations on the cached local file.
 		</para>
 
@@ -339,7 +340,7 @@ exposes the file to likely data corruption.
 </para>
 
 <para>
-If files are shared between Windows clients, and either loca Unix 
+If files are shared between Windows clients, and either local Unix 
 or NFS users, then turn opportunistic locking off.
 </para>
 
@@ -408,7 +409,7 @@ the share.
 <title>Beware of Force User</title>
 
 <para>
-Samba includes an smb.conf parameter called "force user" that changes
+Samba includes an &smb.conf; parameter called <parameter>force user</parameter> that changes
 the user accessing a share from the incoming user to whatever user is
 defined by the smb.conf variable.  If opportunistic locking is enabled
 on a share, the change in user access causes an oplock break to be sent
@@ -425,7 +426,7 @@ Avoid the combination of the following:
 
 <itemizedlist>
 	<listitem><para>
-	<emphasis>force user</emphasis> in the &smb.conf; share configuration.
+	<parameter>force user</parameter> in the &smb.conf; share configuration.
 	</para></listitem>
 
 	<listitem><para>
@@ -447,8 +448,9 @@ Samba provides opportunistic locking parameters that allow the
 administrator to adjust various properties of the oplock mechanism to
 account for timing and usage levels.  These parameters provide good
 versatility for implementing oplocks in environments where they would
-likely cause problems.  The parameters are: <emphasis>oplock break wait time,
-oplock contention limit</emphasis>.
+likely cause problems.  The parameters are: 
+<parameter>oplock break wait time</parameter>,
+<parameter>oplock contention limit</parameter>.
 </para>
 
 <para>
@@ -541,7 +543,7 @@ Level1 Oplocks (aka just plain "oplocks") is another term for opportunistic lock
 </para>
 
 <para>
-Level2 Oplocks provids opportunistic locking for a file that will be treated as
+Level2 Oplocks provides opportunistic locking for a file that will be treated as
 <emphasis>read only</emphasis>. Typically this is used on files that are read-only or
 on files that the client has no initial intention to write to at time of opening the file.
 </para>
@@ -558,7 +560,7 @@ Unless your system supports kernel oplocks, you should disable oplocks if you ar
 accessing the same files from both Unix/Linux and SMB clients. Regardless, oplocks should
 always be disabled if you are sharing a database file (e.g., Microsoft Access) between
 multiple clients, as any break the first client receives will affect synchronisation of
-the entire file (not just the single record), which will result in a noticable performance
+the entire file (not just the single record), which will result in a noticeable performance
 impairment and, more likely, problems accessing the database in the first place. Notably,
 Microsoft Outlook's personal folders (*.pst) react very badly to oplocks. If in doubt,
 disable oplocks and tune your system from that point.
@@ -581,7 +583,7 @@ measurable speed benefit on your network, it might not be worth the hassle of de
 <title>Example Configuration</title>
 
 <para>
-In the following we examine two destinct aspects of samba locking controls.
+In the following we examine two distinct aspects of Samba locking controls.
 </para>
 
 <sect3>
@@ -622,7 +624,7 @@ you may want to play it safe and disable oplocks and level2 oplocks.
 </sect3>
 
 <sect3>
-<title>Diabling Kernel OpLocks</title>
+<title>Disabling Kernel OpLocks</title>
 
 <para>
 Kernel OpLocks is an &smb.conf; parameter that notifies Samba (if
@@ -639,12 +641,11 @@ basis in the &smb.conf; file.
 </para>
 
 <para>
-<programlisting><title>Example:</title>
+<programlisting>
 [global]
-       kernel oplocks = yes
-
-The default is "no".
+kernel oplocks = yes
 </programlisting>
+The default is "no".
 </para>
 
 <para>
@@ -676,7 +677,7 @@ enabled on a per-share basis, or globally for the entire server, in the
 interval for Samba to reply to an oplock break request.  Samba
 recommends "DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND
 UNDERSTOOD THE SAMBA OPLOCK CODE."  Oplock Break Wait Time can only be
-configured globally in the smb.conf file:
+configured globally in the &smb.conf; file:
 </para>
 
 <para>
@@ -701,7 +702,7 @@ the entire server, in the &smb.conf; file:
 [global]
           oplock break contention limit =  2 (default)
 
- [share_name]
+[share_name]
          oplock break contention limit =  2 (default)
 </programlisting>
 </para>
@@ -722,7 +723,7 @@ operating system known as <emphasis>Opportunistic Locking</emphasis>. When a wor
 attempts to access shared data files located on another Windows 2000/XP computer,
 the Windows 2000/XP operating system will attempt to increase performance by locking the
 files and caching information locally. When this occurs, the application is unable to
-properly function, which results in an <emphasis>Access Denied</emphasis>
+properly function, which results in an <errorname>Access Denied</errorname>
  error message being displayed during network operations.
 </para>
 
@@ -939,8 +940,8 @@ our Knowledge Base.
 
 <para>
 In some sites locking problems surface as soon as a server is installed, in other sites
-locking problems may not surface for a long time. Almost without exeception, when a locking
-problem does surface it will cause embarassment and potential data corruption.
+locking problems may not surface for a long time. Almost without exception, when a locking
+problem does surface it will cause embarrassment and potential data corruption.
 </para>
 
 <para>
@@ -978,6 +979,26 @@ so far:
 	of the problem (an essential step in problem isolation and correction).
 	</para></listitem>
 </itemizedlist>
+
+	<sect2>
+	<title>locking.tdb error messages</title>
+
+	<para>
+	<screen>
+	> We are seeing lots of errors in the samba logs like:
+	>
+	>    tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
+	> 0x4d6f4b61 at offset=36116
+	>
+	> What do these mean?
+	</screen>
+	</para>
+
+	<para>
+	Corrupted tdb.  Stop all instances of smbd, delete locking.tdb, restart smbd.
+	</para>
+
+	</sect2>
 
 </sect1>
 

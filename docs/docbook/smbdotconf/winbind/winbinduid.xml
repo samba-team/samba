@@ -3,11 +3,12 @@
                  advanced="1" developer="1" hide="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para>The winbind gid parameter specifies the range of group 
-	ids that are allocated by the <citerefentry><refentrytitle>winbindd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> daemon.  This range of ids should have no 
-	existing local or NIS users within it as strange conflicts can 
-	occur otherwise.</para>
+	<para>This parameter is now an alias for <command moreinfo="none">idmap uid</command></para>
+
+	<para>The winbind gid parameter specifies the range of user ids that are allocated by the
+	<citerefentry><refentrytitle>winbindd</refentrytitle> <manvolnum>8</manvolnum></citerefentry>
+	daemon.  This range of ids should have no existing local or NIS users within it as strange
+	conflicts can occur otherwise.</para>
 
 	<para>Default: <command moreinfo="none">winbind uid = &lt;empty string&gt;</command></para>
 		

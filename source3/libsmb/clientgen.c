@@ -203,12 +203,9 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 	fstrcpy(cli->domain   , usr->domain);
 	fstrcpy(cli->user_name, usr->user_name);
 	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
-        cli->ntlmssp_flags = usr->ntlmssp_flags;
-        cli->ntlmssp_cli_flgs = usr != NULL ? usr->ntlmssp_flags : 0;
 
-        DEBUG(10,("cli_init_creds: user %s domain %s flgs: %x\nntlmssp_cli_flgs:%x\n",
-               cli->user_name, cli->domain,
-               cli->ntlmssp_flags,cli->ntlmssp_cli_flgs));
+        DEBUG(10,("cli_init_creds: user %s domain %s\n",
+               cli->user_name, cli->domain));
 }
 
 /****************************************************************************
@@ -264,6 +261,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	if (lp_client_signing()) 
 		cli->sign_info.allow_smb_signing = True;
+
+	if (lp_client_signing() == Required) 
+		cli->sign_info.mandatory_signing = True;
                                    
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
@@ -287,6 +287,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->initialised = 1;
 	cli->allocated = alloced_cli;
 
+	cli->pipe_idx = -1;
+
 	return cli;
 
         /* Clean up after malloc() error */
@@ -303,16 +305,49 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
+close the session
+****************************************************************************/
+
+void cli_nt_session_close(struct cli_state *cli)
+{
+	if (cli->ntlmssp_pipe_state) {
+		ntlmssp_client_end(&cli->ntlmssp_pipe_state);
+	}
+
+	cli_close(cli, cli->nt_pipe_fnum);
+	cli->nt_pipe_fnum = 0;
+	cli->pipe_idx = -1;
+}
+
+/****************************************************************************
+close the NETLOGON session holding the session key for NETSEC
+****************************************************************************/
+
+void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
+{
+	if (cli->saved_netlogon_pipe_fnum != 0) {
+		cli_close(cli, cli->saved_netlogon_pipe_fnum);
+		cli->saved_netlogon_pipe_fnum = 0;
+	}
+}
+
+/****************************************************************************
  Close a client connection and free the memory without destroying cli itself.
 ****************************************************************************/
 
 void cli_close_connection(struct cli_state *cli)
 {
+	cli_nt_session_close(cli);
+	cli_nt_netlogon_netsec_session_close(cli);
+
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
 	cli_free_signing_context(cli);
 	data_blob_free(&cli->secblob);
+
+	if (cli->ntlmssp_pipe_state) 
+		ntlmssp_client_end(&cli->ntlmssp_pipe_state);
 
 	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);

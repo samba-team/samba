@@ -49,7 +49,6 @@ int net_rpc_join_ok(const char *domain)
 	int retval = 1;
 	uint32 channel;
 	NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -68,10 +67,12 @@ int net_rpc_join_ok(const char *domain)
 		goto done;
 	}
 	
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
-					 channel,
-					 stored_md4_trust_password, &neg_flags, 2),
-			  "error in domain join verification");
+	/* ensure that schannel uses the right domain */
+	fstrcpy(cli->domain, domain);
+	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
+		DEBUG(0,("Error in domain join verfication\n"));
+		goto done;
+	}
 	
 	retval = 0;		/* Success! */
 	
@@ -131,7 +132,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
-	uint32 neg_flags = 0x000001ff;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -167,7 +167,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Fetch domain sid */
 
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
-		DEBUG(0, ("Error connecting to SAM pipe\n"));
+		DEBUG(0, ("Error connecting to LSA pipe\n"));
 		goto done;
 	}
 
@@ -204,7 +204,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Create domain user */
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
-	strlower(acct_name);
+	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
@@ -240,7 +240,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 			     acct_name, nt_errstr(result)));
 
 	if (name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account\n", acct_name));
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
 		goto done;
 	}
 
@@ -315,14 +315,29 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
-					 sec_channel_type,
-					 md4_trust_password, &neg_flags, 2),
-			  "error in domain join verification");
-	
+	/* ensure that schannel uses the right domain */
+	fstrcpy(cli->domain, domain);
+
+	result = cli_nt_establish_netlogon(cli, sec_channel_type, 
+					   md4_trust_password);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Error domain join verification: %s\n\n",
+			  nt_errstr(result)));
+
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
+		     (sec_channel_type == SEC_CHAN_BDC) ) {
+			d_printf("Please make sure that no computer account\n"
+				 "named like this machine (%s) exists in the domain\n",
+				 global_myname());
+		}
+
+		goto done;
+	}
+
 	/* Now store the secret in the secrets database */
 
-	strupper(domain);
+	strupper_m(domain);
 
 	if (!secrets_store_domain_sid(domain, &domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));
@@ -366,7 +381,7 @@ done:
  **/
 int net_rpc_testjoin(int argc, const char **argv) 
 {
-	char *domain = smb_xstrdup(lp_workgroup());
+	char *domain = smb_xstrdup(opt_target_workgroup);
 
 	/* Display success or failure */
 	if (net_rpc_join_ok(domain) != 0) {

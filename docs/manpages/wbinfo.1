@@ -25,7 +25,7 @@ wbinfo \- Query information from winbind daemon
 .nf
 \fBwbinfo\fR [-u] [-g] [-N netbios-name] [-I ip] [-n name] [-s sid] [-U uid] [-G gid]
        [-S sid] [-Y sid] [-t] [-m] [--sequence] [-r user] [-a user%password]
-       [-A user%password] [--get-auth-user] [-p]
+       [--set-auth-user user%password] [--get-auth-user] [-p]
 .fi
 
 .SH "DESCRIPTION"
@@ -117,7 +117,7 @@ Attempt to authenticate a user via winbindd\&. This checks both authenticaion me
 
 
 .TP
--A username%password
+--set-auth-user username%password
 Store username and password used by winbindd during session setup to a domain controller\&. This enables winbindd to operate in a Windows 2000 domain with Restrict Anonymous turned on (a\&.k\&.a\&. Permissions compatiable with Windows 2000 servers only)\&.
 
 

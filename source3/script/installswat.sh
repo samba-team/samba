@@ -1,5 +1,5 @@
 #!/bin/sh
-#fist version March 1998, Andrew Tridgell
+#first version March 1998, Andrew Tridgell
 
 SWATDIR=$1
 SRCDIR=$2/

@@ -480,7 +480,7 @@ void notify_printer_location(int snum, char *location)
 		snum, strlen(location) + 1, location);
 }
 
-void notify_printer_byname( char *printername, uint32 change, char *value )
+void notify_printer_byname( const char *printername, uint32 change, char *value )
 {
 	int snum = print_queue_snum(printername);
 	int type = PRINTER_NOTIFY_TYPE;

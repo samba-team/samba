@@ -299,12 +299,35 @@ static BOOL reload_nmbd_services(BOOL test)
 }
 
 /**************************************************************************** **
+ * React on 'smbcontrol nmbd reload-config' in the same way as to SIGHUP
+ * We use buf here to return BOOL result to process() when reload_interfaces()
+ * detects that there are no subnets.
+ **************************************************************************** */
+static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t len)
+{
+	write_browse_list( 0, True );
+	dump_all_namelists();
+	reload_nmbd_services( True );
+	reopen_logs();
+	
+	if(buf) {
+		/* We were called from process() */
+		/* If reload_interfaces() returned True */
+		/* we need to shutdown if there are no subnets... */
+		/* pass this info back to process() */
+		*((BOOL*)buf) = reload_interfaces(0);  
+	}
+}
+
+
+/**************************************************************************** **
  The main select loop.
  **************************************************************************** */
 
 static void process(void)
 {
 	BOOL run_election;
+	BOOL no_subnets;
 
 	while( True ) {
 		time_t t = time(NULL);
@@ -513,11 +536,8 @@ static void process(void)
 
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			write_browse_list( 0, True );
-			dump_all_namelists();
-			reload_nmbd_services( True );
-			reopen_logs();
-			if(reload_interfaces(0))
+			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, (void*) &no_subnets, 0);
+			if(no_subnets)
 				return;
 			reload_after_sighup = 0;
 		}
@@ -573,8 +593,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
  **************************************************************************** */
  int main(int argc, const char *argv[])
 {
-	static BOOL opt_interactive = False;
+	pstring logfile;
+	static BOOL opt_interactive;
 	poptContext pc;
+	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
@@ -586,46 +608,47 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	POPT_COMMON_SAMBA
 	{ NULL }
 	};
-	pstring logfile;
 
-  global_nmb_port = NMB_PORT;
-  global_in_nmbd = True;
+	global_nmb_port = NMB_PORT;
 
-  StartupTime = time(NULL);
+	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
+	while ((opt = poptGetNextOpt(pc)) != -1) ;
+	poptFreeContext(pc);
 
-  sys_srandom(time(NULL) ^ sys_getpid());
-
-  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
-  lp_set_logfile(logfile);
-
-  fault_setup((void (*)(void *))fault_continue );
-
-  /* POSIX demands that signals are inherited. If the invoking process has
-   * these signals masked, we will have problems, as we won't receive them. */
-  BlockSignals(False, SIGHUP);
-  BlockSignals(False, SIGUSR1);
-  BlockSignals(False, SIGTERM);
-
-  CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
-  CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
-
+	global_in_nmbd = True;
+	
+	StartupTime = time(NULL);
+	
+	sys_srandom(time(NULL) ^ sys_getpid());
+	
+	slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+	
+	fault_setup((void (*)(void *))fault_continue );
+	
+	/* POSIX demands that signals are inherited. If the invoking process has
+	 * these signals masked, we will have problems, as we won't receive them. */
+	BlockSignals(False, SIGHUP);
+	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGTERM);
+	
+	CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
+	CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
+	
 #if defined(SIGFPE)
-  /* we are never interested in SIGFPE */
-  BlockSignals(True,SIGFPE);
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
 #endif
 
-  /* We no longer use USR2... */
+	/* We no longer use USR2... */
 #if defined(SIGUSR2)
-  BlockSignals(True, SIGUSR2);
+	BlockSignals(True, SIGUSR2);
 #endif
-  pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-  
-  poptFreeContext(pc);
 
-  if ( opt_interactive ) {
-    Fork = False;
-    log_stdout = True;
-  }
+	if ( opt_interactive ) {
+		Fork = False;
+		log_stdout = True;
+	}
 
   if ( log_stdout && Fork ) {
     DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
@@ -693,6 +716,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   message_register(MSG_FORCE_ELECTION, nmbd_message_election);
   message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
   message_register(MSG_SHUTDOWN, nmbd_terminate);
+  message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

@@ -2,8 +2,9 @@
  * Auditing VFS module for samba.  Log selected file operations to syslog
  * facility.
  *
- * Copyright (C) Tim Potter, 1999-2000
- * Copyright (C) Alexander Bokovoy, 2002
+ * Copyright (C) Tim Potter			1999-2000
+ * Copyright (C) Alexander Bokovoy		2002
+ * Copyright (C) Stefan (metze) Metzmacher	2002
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,118 +21,111 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
-#include <stdio.h>
-#include <sys/stat.h>
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
-#include <syslog.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#include <errno.h>
-#include <string.h>
-#include <includes.h>
-#include <vfs.h>
 
-#ifndef SYSLOG_FACILITY
-#define SYSLOG_FACILITY   LOG_USER
-#endif
+#include "includes.h"
 
-#ifndef SYSLOG_PRIORITY
-#define SYSLOG_PRIORITY   LOG_NOTICE
-#endif
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
 
 /* Function prototypes */
 
-static int audit_connect(struct connection_struct *conn, const char *svc, const char *user);
-static void audit_disconnect(struct connection_struct *conn);
-static DIR *audit_opendir(struct connection_struct *conn, const char *fname);
-static int audit_mkdir(struct connection_struct *conn, const char *path, mode_t mode);
-static int audit_rmdir(struct connection_struct *conn, const char *path);
-static int audit_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode);
-static int audit_close(struct files_struct *fsp, int fd);
-static int audit_rename(struct connection_struct *conn, const char *old, const char *new);
-static int audit_unlink(struct connection_struct *conn, const char *path);
-static int audit_chmod(struct connection_struct *conn, const char *path, mode_t mode);
-static int audit_chmod_acl(struct connection_struct *conn, const char *name, mode_t mode);
-static int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode);
-static int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode);
+static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, const char *svc, const char *user);
+static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn);
+static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname);
+static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
+static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path);
+static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode);
+static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
+static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new);
+static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path);
+static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
+static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode);
+static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode);
+static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode);
 
 /* VFS operations */
 
-static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
-static struct smb_vfs_handle_struct *audit_handle;
-
-static vfs_op_tuple audit_ops[] = {
+static vfs_op_tuple audit_op_tuples[] = {
     
 	/* Disk operations */
 
-	{audit_connect, 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
-	{audit_disconnect, 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
 
 	/* Directory operations */
 
-	{audit_opendir, 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
-	{audit_mkdir, 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
-	{audit_rmdir, 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
 
 	/* File operations */
 
-	{audit_open, 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
-	{audit_close, 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
-	{audit_rename, 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
-	{audit_unlink, 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
-	{audit_chmod, 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{audit_fchmod, 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{audit_chmod_acl, 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-	{audit_fchmod_acl, 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
 	
 	/* Finish VFS operations definition */
 	
-	{NULL, 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
 };
 
-/* VFS initialisation function.  Return vfs_op_tuple array back to SAMBA. */
 
-static vfs_op_tuple *audit_init(const struct vfs_ops *def_vfs_ops, 
-			struct smb_vfs_handle_struct *vfs_handle)
+static int audit_syslog_facility(vfs_handle_struct *handle)
 {
-	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
-	
-	audit_handle = vfs_handle;
+	/* fix me: let this be configurable by:
+	 *	lp_param_enum(SNUM(handle->conn),(handle->param?handle->param:"audit"),"syslog facility",
+	 *		audit_enum_facility,LOG_USER); 
+	 */
+	return LOG_USER;
+}
 
-	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
-	syslog(SYSLOG_PRIORITY, "VFS_INIT: vfs_ops loaded\n");
-	return audit_ops;
+
+static int audit_syslog_priority(vfs_handle_struct *handle)
+{
+	/* fix me: let this be configurable by:
+	 *	lp_param_enum(SNUM(handle->conn),(handle->param?handle->param:"audit"),"syslog priority",
+	 *		audit_enum_priority,LOG_NOTICE); 
+	 */
+	return LOG_NOTICE;
 }
 
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
-static int audit_connect(struct connection_struct *conn, const char *svc, const char *user)
+static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, const char *svc, const char *user)
 {
-	syslog(SYSLOG_PRIORITY, "connect to service %s by user %s\n", 
+	int result;
+	
+	openlog("smbd_audit", LOG_PID, audit_syslog_facility(handle));
+
+	syslog(audit_syslog_priority(handle), "connect to service %s by user %s\n", 
 	       svc, user);
 
-	return default_vfs_ops.connect(conn, svc, user);
+	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
+
+	return result;
 }
 
-static void audit_disconnect(struct connection_struct *conn)
+static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn)
 {
-	syslog(SYSLOG_PRIORITY, "disconnected\n");
-	default_vfs_ops.disconnect(conn);
+	syslog(audit_syslog_priority(handle), "disconnected\n");
+	SMB_VFS_NEXT_DISCONNECT(handle, conn);
+
+	return;
 }
 
-static DIR *audit_opendir(struct connection_struct *conn, const char *fname)
+static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
 {
-	DIR *result = default_vfs_ops.opendir(conn, fname);
+	DIR *result;
+	
+	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
 
-	syslog(SYSLOG_PRIORITY, "opendir %s %s%s\n",
+	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
 	       fname,
 	       (result == NULL) ? "failed: " : "",
 	       (result == NULL) ? strerror(errno) : "");
@@ -139,11 +133,13 @@ static DIR *audit_opendir(struct connection_struct *conn, const char *fname)
 	return result;
 }
 
-static int audit_mkdir(struct connection_struct *conn, const char *path, mode_t mode)
+static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
 {
-	int result = default_vfs_ops.mkdir(conn, path, mode);
-
-	syslog(SYSLOG_PRIORITY, "mkdir %s %s%s\n", 
+	int result;
+	
+	result = SMB_VFS_NEXT_MKDIR(handle, conn, path, mode);
+	
+	syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
 	       path,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -151,11 +147,13 @@ static int audit_mkdir(struct connection_struct *conn, const char *path, mode_t 
 	return result;
 }
 
-static int audit_rmdir(struct connection_struct *conn, const char *path)
+static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-	int result = default_vfs_ops.rmdir(conn, path);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "rmdir %s %s%s\n", 
+	result = SMB_VFS_NEXT_RMDIR(handle, conn, path);
+
+	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
 	       path, 
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -163,11 +161,13 @@ static int audit_rmdir(struct connection_struct *conn, const char *path)
 	return result;
 }
 
-static int audit_open(struct connection_struct *conn, const char *fname, int flags, mode_t mode)
+static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode)
 {
-	int result = default_vfs_ops.open(conn, fname, flags, mode);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "open %s (fd %d) %s%s%s\n", 
+	result = SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
+
+	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
 	       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "", 
 	       (result < 0) ? "failed: " : "",
@@ -176,11 +176,13 @@ static int audit_open(struct connection_struct *conn, const char *fname, int fla
 	return result;
 }
 
-static int audit_close(struct files_struct *fsp, int fd)
+static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
-	int result = default_vfs_ops.close(fsp, fd);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "close fd %d %s%s\n",
+	result = SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
+
+	syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
 	       fd,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -188,11 +190,13 @@ static int audit_close(struct files_struct *fsp, int fd)
 	return result;
 }
 
-static int audit_rename(struct connection_struct *conn, const char *old, const char *new)
+static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
 {
-	int result = default_vfs_ops.rename(conn, old, new);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "rename %s -> %s %s%s\n",
+	result = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
+
+	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
 	       old, new,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -200,11 +204,13 @@ static int audit_rename(struct connection_struct *conn, const char *old, const c
 	return result;    
 }
 
-static int audit_unlink(struct connection_struct *conn, const char *path)
+static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-	int result = default_vfs_ops.unlink(conn, path);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "unlink %s %s%s\n",
+	result = SMB_VFS_NEXT_UNLINK(handle, conn, path);
+
+	syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
 	       path,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -212,28 +218,13 @@ static int audit_unlink(struct connection_struct *conn, const char *path)
 	return result;
 }
 
-static int audit_chmod(struct connection_struct *conn, const char *path, mode_t mode)
-{
-	int result = default_vfs_ops.chmod(conn, path, mode);
-
-	syslog(SYSLOG_PRIORITY, "chmod %s mode 0x%x %s%s\n",
-	       path, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
-
-	return result;
-}
-
-static int audit_chmod_acl(struct connection_struct *conn, const char *path, mode_t mode)
+static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
 {
 	int result;
 
-	if ( !default_vfs_ops.chmod_acl )
-		return 0;
+	result = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
 
-	result = default_vfs_ops.chmod_acl(conn, path, mode);
-
-	syslog(SYSLOG_PRIORITY, "chmod_acl %s mode 0x%x %s%s\n",
+	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -241,11 +232,27 @@ static int audit_chmod_acl(struct connection_struct *conn, const char *path, mod
 	return result;
 }
 
-static int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode)
+static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
 {
-	int result = default_vfs_ops.fchmod(fsp, fd, mode);
+	int result;
 
-	syslog(SYSLOG_PRIORITY, "fchmod %s mode 0x%x %s%s\n",
+	result = SMB_VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
+
+	syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
+	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+
+	return result;
+}
+
+static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
+
+	syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -253,16 +260,13 @@ static int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode)
 	return result;
 }
 
-static int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
+static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
 {
 	int result;
 
-	if ( !default_vfs_ops.fchmod_acl )
-		return 0;
+	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
 
-	result = default_vfs_ops.fchmod_acl(fsp, fd, mode);
-
-	syslog(SYSLOG_PRIORITY, "fchmod_acl %s mode 0x%x %s%s\n",
+	syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
@@ -272,5 +276,5 @@ static int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
 
 NTSTATUS vfs_audit_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "audit", audit_init);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "audit", audit_op_tuples);
 }

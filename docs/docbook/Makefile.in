@@ -30,16 +30,23 @@ MANPAGES_NAMES=findsmb.1 smbclient.1 \
 
 XSLTPROC = @XSLTPROC@
 PDFLATEX = @PDFLATEX@
+LATEX = @LATEX@
+DVIPS = @DVIPS@
 HTMLDOC = @HTMLDOC@
+PNGTOPNM = @PNGTOPNM@
+PNMTOPS = @PNMTOPS@
+XMLTO = @XMLTO@
 SRCDIR = @srcdir@
 MANDIR=../manpages
 HTMLDIR=../htmldocs
 MANPROJDOC = manpages
 PROJDOC = projdoc
+IMAGEPROJDIR = $(PROJDOC)/imagefiles
 DEVDOC = devdoc
 SMBDOTCONFDOC = smbdotconf
 PSDIR = ..
 PDFDIR = ..
+DVIDIR = ..
 TXTDIR = ../textdocs
 FAQPROJDOC = faq
 FAQDIR = ../faq
@@ -47,52 +54,113 @@ FAQDIR = ../faq
 MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 
+PROJDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
+PROJDOC_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
+PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml
+DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
+
 all: 
 	@echo "Supported make targets:"
 	@echo "manpages - Build manpages"
-	@echo "pdf - Build PDF version of HOWTO Collection"
+	@echo "pdf - Build PDF version of HOWTO Collection and Developers Guide"
+	@echo "tex - Build Latex version of HOWTO Collection and Developers Guide"
+	@echo "dvi - Build Device Independant Files of HOWTO Collection and Developers Guide"
+	@echo "ps - Build PostScript version of HOWTO Collection and Developers Guide"
+	@echo "txt - Build plain text version of HOWTO Collection and Developers Guide"
 	@echo -n "html-single - Build single file HTML version of HOWTO Collection"
 	@echo " and developers guide"
-	@echo "html - Build HTML version of HOWTO Collection"
+	@echo "html - Build HTML version of HOWTO Collection and Developers Guide"
 	@echo "htmlman - Build html version of manpages"
 	@echo "htmlfaq - Build html version of the FAQ"
+	@echo "undocumented - Output list of undocumented smb.conf options"
 	@echo "everything - Build all of the above"
 
-everything: manpages pdf html-single html htmlman htmlfaq
+everything: manpages pdf html-single html htmlman htmlfaq txt ps
 
 # Global rules
 
 manpages: $(MANDIR) $(MANPAGES)
+tex: samba-doc.tex dev-doc.tex
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
+dvi: $(DVIDIR) $(DVIDIR)/Samba-HOWTO-Collection.dvi $(DVIDIR)/Samba-Developers-Guide.dvi
+ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.ps
+hpdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf
+txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
 	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
-html: $(HTMLDIR) CSS
+html: $(HTMLDIR) CSS $(PROJDOC_DEPS)
 	@$(XSLTPROC) xslt/html-chunk.xsl $(PROJDOC)/samba-doc.xml
 
 # Text files
+$(TXTDIR):
+	mkdir $(TXTDIR)
+
+$(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
+	@echo "Converting samba-doc to plain text..."
+	@$(XMLTO) txt -o $(TXTDIR) $<
+	@mv $(TXTDIR)/samba-doc.txt $(TXTDIR)/Samba-HOWTO-Collection.txt
+
+$(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
+	@echo "Converting dev-doc to plain text..."
+	@$(XMLTO) txt -o $(TXTDIR) $<
+	@mv $(TXTDIR)/dev-doc.txt $(TXTDIR)/Samba-Developers-Guide.txt
+
+# Tex files
+samba-doc.tex: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
+	@echo "Converting samba-doc to LaTeX..."
+	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
+	
+dev-doc.tex: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
+	@echo "Converting dev-doc to LaTeX..."
+	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 # Adobe PDF files
-$(PDFDIR)/Samba-HOWTO-Collection.pdf: $(PROJDOC)/samba-doc.xml
-	@echo "Converting samba-doc to LaTeX..."
-	@$(XSLTPROC) --output samba-doc.tex xslt/latex.xsl $<
+$(PDFDIR)/Samba-HOWTO-Collection.pdf: samba-doc.tex $(PROJDOC_IMAGES_PNG)
 	@echo "Building LaTeX sources via $(PDFLATEX)..."
-	@$(PDFLATEX) samba-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) samba-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) samba-doc.tex || echo
+	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< || echo
 	@echo "done"
 	@mv samba-doc.pdf $@
 
-$(PDFDIR)/Samba-Developers-Guide.pdf: $(DEVDOC)/dev-doc.xml
-	@echo "Converting dev-doc to LaTeX..."
-	@$(XSLTPROC) --output dev-doc.tex xslt/latex.xsl $<
+$(PDFDIR)/Samba-Developers-Guide.pdf: dev-doc.tex
 	@echo "Building LaTeX sources via $(PDFLATEX)..."
-	@$(PDFLATEX) dev-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) dev-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) dev-doc.tex || echo 
+	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< || echo 
 	@echo "done"
 	@mv dev-doc.pdf $@
+
+epsimages: $(PROJDOC_IMAGES_EPS)
+
+# DVI files
+$(DVIDIR)/Samba-HOWTO-Collection.dvi: samba-doc.tex $(PROJDOC_IMAGES_EPS)
+	@echo "Building LaTeX sources via $(LATEX)..."
+	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 || echo
+	@echo "done"
+	@mv samba-doc.dvi $@
+
+$(DVIDIR)/Samba-Developers-Guide.dvi: dev-doc.tex
+	@echo "Building LaTeX sources via $(LATEX)..."
+	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 || echo 
+	@echo "done"
+	@mv dev-doc.dvi $@
+
+$(IMAGEPROJDIR)/%.eps: $(IMAGEPROJDIR)/%.png
+	@$(PNGTOPNM) $< | $(PNMTOPS) > $@
+
+# PostScript files
+$(PSDIR)/Samba-HOWTO-Collection.ps: $(DVIDIR)/Samba-HOWTO-Collection.dvi
+	$(DVIPS) -o $@ $<
+
+$(PSDIR)/Samba-Developers-Guide.ps: $(DVIDIR)/Samba-Developers-Guide.dvi
+	$(DVIPS) -o $@ $<
 
 # Single large HTML files
 
@@ -102,10 +170,10 @@ $(HTMLDIR):
 CSS: $(HTMLDIR) xslt/html/samba.css
 	@cp xslt/html/samba.css $(HTMLDIR)/
 
-$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml
+$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-$(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml
+$(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 
@@ -139,14 +207,28 @@ $(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/p
  			$(SMBDOTCONFDOC)/expand-smb.conf.xsl
 	@$(XSLTPROC) --xinclude --output $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/expand-smb.conf.xsl $(SMBDOTCONFDOC)/smb.conf.5.xml
 
+$(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
+	@echo > $@ # Make sure we don't get recursive dependencies, etc!
+	@echo "Generating attributions page"
+	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+
+$(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
+	@echo > $@ # Make sure we don't get recursive dependencies, etc!
+	@echo "Generating attributions page"
+	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+
 $(MANDIR): 
 	mkdir $(MANDIR)
 
 $(MANDIR)/%: $(MANPROJDOC)/%.xml
 	@$(XSLTPROC) xslt/man.xsl $<
 
+undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
+	$(PERL) scripts/find_missing_doc.pl ../..
+
 clean: 
 	@rm -f $(MANPAGES) $(MANPAGES_HTML) $(HTMLDIR)/*.html $(HTMLDIR)/*.css $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
-	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml
-	@rm -f samba-doc.* dev-doc.*
+	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
+	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
+	@rm -f $(IMAGEPROJDIR)/*.eps
 

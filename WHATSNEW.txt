@@ -1,378 +1,743 @@
-                 WHATS NEW IN Samba 3.0 alpha21
-                       26th November 2002
-                 ===============================
+                  WHATS NEW IN Samba 3.0.0 beta4
+                           July 16 2003
+                  ==============================
 
-This is a pre-release of Samba 3.0. This is NOT a stable release.
-Use at your own risk.
+This is the third beta release of Samba 3.0.0. This is a 
+non-production release intended for testing purposes.  Use 
+at your own risk. 
 
-The purpose of this alpha release is to get wider testing of the major
-new pieces of code in the current Samba 3.0 development tree. We have 
-officially ceased development on the 2.2.x release of Samba and are 
-concentrating on Samba 3.0. To reduce the time before the final Samba 3.0 
-release we need as many people as possible to start testing these alpha 
-releases, and hopefully giving us some high quality feedback on what needs 
-fixing.
+The purpose of this beta release is to get wider testing of the major
+new pieces of code in the current Samba 3.0 development tree. We have
+officially ceased development on the 2.2.x release of Samba and are
+concentrating on Samba 3.0. To reduce the time before the final 
+Samba 3.0 release we need as many people as possible to start testing 
+these beta releases, and to provide high quality feedback on what 
+needs fixing.
 
-Note that Samba 3.0 is not feature complete yet. There is a more
-coding we have planned, but unless we get what we have done already more 
-widely tested we will have a hard time doing a stable release in a 
-reasonable time frame.
+Samba 3.0 is feature complete. However there is still some final 
+work to be done on certain pieces of functionality.  Please refer to 
+the section on "Known Issues" for more details.
+
 
 Major new features:
 -------------------
 
-- Active Directory support. This release is able to join a ADS realm
-  as a member server and authenticate users using LDAP/kerberos. 
+1)  Active Directory support.  Samba 3.0 is now able to  
+    to join a ADS realm as a member server and authenticate 
+    users using LDAP/Kerberos.
 
-- Unicode support. Samba will now negotiate UNICODE on the wire and
-  internally there is now a much better infrastructure for multi-byte
-  and UNICODE character sets.
+2)  Unicode support. Samba will now negotiate UNICODE on the wire and
+    internally there is now a much better infrastructure for multi-byte
+    and UNICODE character sets.
 
-- New authentication system. The internal authentication system has
-  been almost completely rewritten. Most of the changes are internal,
-  but the new auth system is also very configurable. 
+3)  New authentication system. The internal authentication system has
+    been almost completely rewritten. Most of the changes are internal,
+    but the new auth system is also very configurable.
 
-- new filename mangling system. The filename mangling system has been
-  completely rewritten. An internal database now stores mangling maps
-  persistently. This needs lots of testing.
+4)  New filename mangling system. The filename mangling system has been
+    completely rewritten. An internal database now stores mangling maps
+    persistently. This needs lots of testing.
 
-- new "net" command. A new "net" command has been added. It is
-  somewhat similar to the "net" command in windows. Eventually we plan
-  to replace a bunch of other utilities (such as smbpasswd) with
-  subcommands in "net", at the moment only a few things are
-  implemented.
+5)  A new "net" command has been added. It is somewhat similar to 
+    the "net" command in windows. Eventually we plan to replace 
+    numerous other utilities (such as smbpasswd) with subcommands 
+    in "net".
 
-- Samba now negotiates NT-style status32 codes on the wire. This
-  improves error handling a lot.
+6)  Samba now negotiates NT-style status32 codes on the wire. This
+    improves error handling a lot.
 
-- better w2k printing support. The support for printing from win2000
-  clients has improved greatly.
+7)  Better Windows 2000/XP/2003 printing support including publishing 
+    printer attributes in active directory.
 
-Plus lots of other changes!
+8)  New loadable RPC modules.
+
+9)  New dual-daemon winbindd support for better performance.
+
+10) Support for migrating from a Windows NT 4.0 domain to a Samba 
+    domain and maintaining user, group and domain SIDs.
+
+11) Support for establishing trust relationships with Windows NT 4.0
+    domain controllers.
+  
+12) Initial support for a distributed Winbind architecture using
+    an LDAP directory for storing SID to uid/gid mappings.
+  
+13) Major updates to the Samba documentation tree.
+
+Plus lots of other improvements!
 
 
+Additional Documentation
+------------------------
+
+Please refer to Samba documentation tree (including in the docs/ 
+subdirectory) for extensive explanations of installing, configuring
+and maintaining Samba 3.0 servers and clients.  It is advised to 
+begin with the Samba-HOWTO-Collection for overviews and specific 
+tasks (the current book is up to approximately 400 pages) and to 
+refer to the various man pages for information on individual options.
+
+######################################################################
+Changes since 3.0beta2
+######################
+
+Please refer to the CVS log for the SAMBA_3_0 branch for complete 
+details
+
+1)  Added fix for Japanese case names in statcache code; 
+    these can change size on upper casing.
+2)  Correct issues with iconv detection in configure script
+    (support needed to find iconv libraries on FreeBSD).
+3)  Fix bug that caused a WINS server to be marked as dead
+    incorrectly (bug #190).
+4)  Removing additional deadlocks conditions that prevented 
+    winbindd from running on a Samba PDC (used for trust 
+    relationships).
+5)  Add support for searching for Active Directory for 
+    published printers (net ads printer search).
+6)  Separate UNIX username from DOMAIN\username in pipe 
+    credentials.
+7)  Auth modules now support returning NT_STATUS_NOT_IMPLEMENTED
+    for cases that they cannot handle.
+8)  Flush winbindd connection cache when the machine trust account
+    password is changed while a connection is open (bug #200).
+9)  Add support for 'OSVersion' server printer data string
+    (corrects problem with uploading printer drivers from 
+    WinXP clients).
+10) Numerous memory leak fixes.
+11) LDAP fixes ("passdb backend = ldapsam" & "idmap backend = ldap"):
+    - Store domain SID in LDAP directory.
+    - store idmap information in existing entries (use sambaSID=... 
+      if adding a new entry).
+12) Fix incorrect usage of primary group SID when looking up user 
+    groups (bug #109).
+13) Remove idmap_XX_to_XX calls from smbd.  Move back to the the
+    winbind_XXX and local_XXX calls used in 2.2.
+14) All uid/gid allocation must involve winbindd now
+    (we no attempt to map unknown SIDs to a UNIX identify).
+15) Add 'winbind trusted domains only' parameter to force a domain
+    member.  The server to use matching users names from /etc/passwd 
+    for its domain   (needed for domain member of a Samba domain).
+16) Rename 'idmap only' to 'enable rid algorithm' for better clarity 
+    (defaults to "yes").
+17) Add support for multi-byte statcache code (bug #185)
+18) Fix open mode race condition.
+19) Implement winbindd local account management functions.  Refer to
+    the "Winbind Changes" section for details.
+20) Move RID allocation functions into idmap backend.
+21) Fix parsing error that prevented publishing printers from a 
+    Samba server in an AD domain.
+22) Revive NTLMSSP support for named pipes.
+23) More SCHANNEL fixes.
+24) Correct SMB signing with NTLMSSP.
+25) Fix coherency bug in print handle/printer object caching code
+    that could cause XP clients to infinitely loop while updating 
+    their local printer cache.
+26) Make winbindd use its dual-daemon mode by default (use -Y to 
+    start as a single process).
+27) Add support to nmbd and winbindd for 'smbcontrol <pid> 
+    reload-config'.
+28) Correct problem with smbtar when dealing with files > 8Gb 
+    (bug #102).
+
+
+
+Changes since 3.0beta1
+######################
+
+1)  Rework our smb signing code again, this factors out some of 
+    the common MAC calculation code, and now supports multiple 
+    outstanding packets (bug #40).
+2)  Enforce 'client plaintext auth', 'client lanman auth' and 'client
+    ntlmv2 auth'.
+3)  Correct timestamp problem on 64-bit machines (bug #140).
+4)  Add extra debugging statements to winbindd for tracking down
+    failures.
+5)  Fix bug when aliased 'winbind uid/gid' parameters are used.
+    ('winbind uid/gid' are now replaced with 'idmap uid/gid').
+6)  Added an auth flag that indicates if we should be allowed 
+    to fall back to NTLMSSP for SASL if krb5 fails.
+7)  Fixed the bug that forced us not to use the winbindd cache when 
+    we have a primary ADS domain and a secondary (trusted) NT4 
+    domain. 
+8)  Use lp_realm() to find the default realm for 'net ads password'.
+9)  Removed editreg from standard build until it is portable..
+10) Fix domain membership for servers not running winbindd.
+11) Correct race condition in determining the high water mark
+    in the idmap backend (bug #181).
+12) Set the user's primary unix group from usrmgr.exe (partial 
+    fix for bug #45).
+13) Show comments when doing 'net group -l' (bug #3).
+14) Add trivial extension to 'net' to dump current local idmap
+    and restore mappings as well.
+15) Modify 'net rpc vampire' to add new and existing users to
+    both the idmap and the SAM.  This code needs further testing.
+16) Fix crash bug in ADS searches.
+17) Build libnss_wins.so as part of nsswitch target (bug #160).
+18) Make net rpc vampire return an error if the sam sync RPC 
+    returns an error.
+19) Fail to join an NT 4 domain as a BDC if a workstation account
+    using our name exists.
+20) Fix various memory leaks in server and client code
+21) Remove the short option to --set-auth-user for wbinfo (-A) to 
+    prevent confusion with the -a option (bug #158).
+22) Added new 'map acl inherit' parameter.
+23) Removed unused 'privileges' code from group mapping database.
+24) Don't segfault on empty passdb backend list (bug #136).
+25) Fixed acl sorting algorithm for Windows 2000 clients.
+26) Replace universal group cache with netsamlogon_cache 
+    from APPLIANCE_HEAD branch.
+27) Fix autoconf detection issues surrounding --with-ads=yes
+    but no Krb5 header files installed (bug #152).
+28) Add LDAP lookup for domain sequence number in case we are 
+    joined using NT4 protocols to a native mode AD domain.
+29) Fix backend method selection for trusted NT 4 (or 2k 
+    mixed mode) domains. 
+30) Fixed bug that caused us to enumerate domain local groups
+    from native mode AD domains other than our own.
+31) Correct group enumeration for viewing in the Windows 
+    security tab (bug #110).
+32) Consolidate the DC location code.
+33) Moved 'ads server' functionality into 'password server' for
+    backwards compatibility.
+34) Fix winbindd_idmap tdb upgrades from a 2.2 installation.
+    ( if you installed beta1, be sure to 
+      'mv idmap.tdb winbindd_idmap.tdb' ).
+35) Fix pdb_ldap segfaults, and wrong default values for 
+    ldapsam_compat.
+36) Enable negative connection cache for winbindd's ADS backend 
+    functions.
+37) Enable address caching for active directory DC's so we don't 
+    have to hit DNS so much.
+38) Fix bug in idmap code that caused mapping to randomly be 
+    redefined.
+39) Add tdb locking code to prevent race condition when adding a 
+    new mapping to idmap.
+40) Fix 'map to guest = bad user' when acting as a PDC supporting 
+    trust relationships.
+41) Prevent deadlock issues when running winbindd on a Samba PDC 
+    to handle allocating uids & gids for trusted users and groups
+42) added LOCALE patch from Steve Langasek (bug #122).
+43) Add the 'guest' passdb backend automatically to the end of 
+    the 'passdb backend' list if 'guest account' has a valid 
+    username.
+44) Remove samstrict_dc auth method.  Rework 'samstrict' to only 
+    handle our local names (or domain name if we are a PDC).  
+    Move existing permissive 'sam' method to 'sam_ignoredomain' 
+    and make 'samstrict' the new default 'sam' auth method.
+45) Match Windows NT4/2k behavior when authenticating a user with
+    and unknown domain (default to our domain if we are a DC or 
+    domain member; default to our local name if we are a 
+    standalone server).
+46) Fix Get_Pwnam() to always fall back to lookup 'user' if the 
+    'DOMAIN\user' lookup fails.  This matches 2.2. behavior.
+47) Fix the trustdom_cache code to update the list of trusted 
+    domains when operating as a domain member and not using 
+    winbindd.
+48) Remove 'nisplussam' passdb backend since it has suffered for 
+    too long without a maintainer.
+    
+
+
+
+######################################################################
+Upgrading from Samba 2.2
+########################
+
+This section is provided to help administrators understand the details
+involved with upgrading a Samba 2.2 server to Samba 3.0.
+
+
+Building
+--------
+
+Many of the options to the GNU autoconf script have been modified 
+in the 3.0 release.  The most noticeable are:
+
+  * removal of --with-tdbsam (is now included by default; see section
+    on passdb backends and authentication for more details)
+    
+  * --with-ldapsam is now on used to provided backward compatible
+    parameters for LDAP enabled Samba 2.2 servers.  Refer to the passdb 
+    backend and authentication section for more details
+  
+  * inclusion of non-standard passdb modules may be enabled using
+    --with-expsam.  This includes an XML backend and a mysql backend.
+      
+  * removal of --with-msdfs (is now enabled by default)
+  
+  * removal of --with-ssl (no longer supported)
+  
+  * --with-utmp now defaults to 'yes' on supported systems
+  
+  * --with-sendfile-support is now enabled by default on supported 
+    systems
+  
+    
+Parameters
+----------
+
+This section contains a brief listing of changes to smb.conf options
+in the 3.0.0 release.  Please refer to the smb.conf(5) man page for
+complete descriptions of new or modified parameters.
+
+Removed Parameters (order alphabetically):
+
+  * admin log
+  * alternate permissions
+  * character set
+  * client codepage
+  * code page directory
+  * coding system
+  * domain admin group
+  * domain guest group
+  * force unknown acl user
+  * nt smb support
+  * post script
+  * printer driver
+  * printer driver file
+  * printer driver location
+  * status
+  * total print jobs
+  * use rhosts
+  * valid chars
+  * vfs options
+
+New Parameters (new parameters have been grouped by function):
+
+  Remote management
+  -----------------
+  * abort shutdown script
+  * shutdown script
+
+  User and Group Account Management
+  ---------------------------------
+  * add group script
+  * add machine script
+  * add user to group script
+  * algorithmic rid base
+  * delete group script
+  * delete user from group script
+  * passdb backend
+  * set primary group script
+
+  Authentication
+  --------------
+  * auth methods
+  * realm
+
+  Protocol Options
+  ----------------
+  * client lanman auth
+  * client NTLMv2 auth
+  * client schannel
+  * client signing
+  * client use spnego
+  * disable netbios
+  * ntlm auth
+  * paranoid server security
+  * server schannel
+  * smb ports
+  * use spnego
+
+  File Service
+  ------------
+  * get quota command
+  * hide special files
+  * hide unwriteable files
+  * hostname lookups
+  * kernel change notify
+  * mangle prefix
+  * map acl inherit
+  * msdfs proxy
+  * set quota command
+  * use sendfile
+  * vfs objects
+  
+  Printing
+  --------
+  * max reported print jobs
+
+  UNICODE and Character Sets
+  --------------------------
+  * display charset
+  * dos charset
+  * unicode
+  * unix charset
+  
+  SID to uid/gid Mappings
+  -----------------------
+  * idmap backend
+  * idmap gid
+  * idmap uid
+  * winbind enable local accounts
+  * winbind trusted domains only
+  * template primary group
+  * enable rid algorithm
+
+  LDAP
+  ----
+  * ldap delete dn
+  * ldap group suffix
+  * ldap idmap suffix
+  * ldap machine suffix
+  * ldap passwd sync
+  * ldap trust ids
+  * ldap user suffix
+  
+  General Configuration
+  ---------------------
+  * preload modules
+  * privatedir
+
+Modified Parameters (changes in behavior):
+
+  * encrypt passwords (enabled by default)
+  * mangling method (set to 'hash2' by default)
+  * passwd chat
+  * passwd program
+  * restrict anonymous (integer value)
+  * security (new 'ads' value)
+  * strict locking (enabled by default)
+  * winbind cache time (increased to 5 minutes)
+  * winbind uid (deprecated in favor of 'idmap uid')
+  * winbind gid (deprecated in favor of 'idmap gid')
+
+
+Databases
+---------
+
+This section contains brief descriptions of any new databases 
+introduced in Samba 3.0.  Please remember to backup your existing 
+${lock directory}/*tdb before upgrading to Samba 3.0.  Samba will 
+upgrade databases as they are opened (if necessary), but downgrading 
+from 3.0 to 2.2 is an unsupported path.
+
+Name			Description				Backup?
+----			-----------				-------
+account_policy		User policy settings			yes
+gencache		Generic caching db			no
+group_mapping		Mapping table from Windows		yes
+			groups/SID to unix groups	
+winbindd_idmap		ID map table from SIDS to UNIX		yes
+			uids/gids.
+namecache		Name resolution cache entries		no
+netsamlogon_cache	Cache of NET_USER_INFO_3 structure	no
+			returned as part of a successful
+			net_sam_logon request 
+printing/*.tdb		Cached output from 'lpq 		no
+			command' created on a per print 
+			service basis
+registry		Read-only samba registry skeleton	no
+			that provides support for exporting
+			various db tables via the winreg RPCs
+
+
+Changes in Behavior
+-------------------
+
+The following issues are known changes in behavior between Samba 2.2 and 
+Samba 3.0 that may affect certain installations of Samba.
+
+  1)  When operating as a member of a Windows domain, Samba 2.2 would 
+      map any users authenticated by the remote DC to the 'guest account'
+      if a uid could not be obtained via the getpwnam() call.  Samba 3.0
+      rejects the connection as NT_STATUS_LOGON_FAILURE.  There is no 
+      current work around to re-establish the 2.2 behavior.
+      
+  2)  When adding machines to a Samba 2.2 controlled domain, the 
+      'add user script' was used to create the UNIX identity of the 
+      machine trust account.  Samba 3.0 introduces a new 'add machine 
+      script' that must be specified for this purpose.  Samba 3.0 will
+      not fall back to using the 'add user script' in the absence of 
+      an 'add machine script'
+  
+
+######################################################################
+Passdb Backends and Authentication
+##################################
+
+There have been a few new changes that Samba administrators should be
+aware of when moving to Samba 3.0.
+
+  1) encrypted passwords have been enabled by default in order to 
+     inter-operate better with out-of-the-box Windows client 
+     installations.  This does mean that either (a) a samba account
+     must be created for each user, or (b) 'encrypt passwords = no'
+     must be explicitly defined in smb.conf.
+    
+  2) Inclusion of new 'security = ads' option for integration 
+     with an Active Directory domain using the native Windows
+     Kerberos 5 and LDAP protocols.
+
+Samba 3.0 also includes the possibility of setting up chains
+of authentication methods (auth methods) and account storage 
+backends (passdb backend).  Please refer to the smb.conf(5) 
+man page for details.  While both parameters assume sane default 
+values, it is likely that you will need to understand what the 
+values actually mean in order to ensure Samba operates correctly.
+
+The recommended passdb backends at this time are
+
+  * smbpasswd - 2.2 compatible flat file format
+  * tdbsam - attribute rich database intended as an smbpasswd
+    replacement for stand alone servers
+  * ldapsam - attribute rich account storage and retrieval 
+    backend utilizing an LDAP directory.  
+  * ldapsam_compat - a 2.2 backward compatible LDAP account 
+    backend
+    
+Certain functions of the smbpasswd(8) tool have been split between the 
+new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8) 
+utility.  See the respective man pages for details.
+    
+     
+######################################################################
+LDAP
+####
+
+This section outlines the new features affecting Samba / LDAP 
+integration.
+
+New Schema
+----------
+  
+A new object class (sambaSamAccount) has been introduced to replace 
+the old sambaAccount.  This change aids us in the renaming of attributes 
+to prevent clashes with attributes from other vendors.  There is a 
+conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF 
+file to the new schema.
+  
+Example:
+  
+	$ ldapsearch .... -b "ou=people,dc=..." > old.ldif
+	$ convertSambaAccount <DOM SID> old.ldif new.ldif
+	
+The <DOM SID> can be obtained by running 'net getlocalsid <DOMAINNAME>' 
+on the Samba PDC as root.
+    
+The old sambaAccount schema may still be used by specifying the 
+"ldapsam_compat" passdb backend.  However, the sambaAccount and
+associated attributes have been moved to the historical section of
+the schema file and must be uncommented before use if needed.
+The 2.2 object class declaration for a sambaAccount has not changed
+in the 3.0 samba.schema file. 
+  
+Other new object classes and their uses include:
+  
+  * sambaDomain - domain information used to allocate rids 
+    for users and groups as necessary.  The attributes are added
+    in 'ldap suffix' directory entry automatically if 
+    an idmap uid/gid range has been set and the 'ldapsam'
+    passdb backend has been selected.
+      
+  * sambaGroupMapping - an object representing the 
+    relationship between a posixGroup and a Windows
+    group/SID.  These entries are stored in the 'ldap 
+    group suffix' and managed by the 'net groupmap' command.
+    
+  * sambaUnixIdPool - created in the 'ldap idmap suffix' entry 
+    automatically and contains the next available 'idmap uid' and 
+    'idmap gid'
+    
+  * sambaIdmapEntry - object storing a mapping between a 
+    SID and a UNIX uid/gid.  These objects are created by the 
+    idmap_ldap module as needed.
+
+  * sambaSidEntry - object representing a SID alone, as a Structural
+    class on which to build the sambaIdmapEntry.
+
+    
+New Suffix for Searching
+------------------------
+  
+The following new smb.conf parameters have been added to aid in directing
+certain LDAP queries when 'passdb backend = ldapsam://...' has been
+specified.
+
+  * ldap suffix         - used to search for user and computer accounts
+  * ldap user suffix    - used to store user accounts
+  * ldap machine suffix - used to store machine trust accounts
+  * ldap group suffix   - location of posixGroup/sambaGroupMapping entries
+  * ldap idmap suffix   - location of sambaIdmapEntry objects
+
+If an 'ldap suffix' is defined, it will be appended to all of the 
+remaining sub-suffix parameters.  In this case, the order of the suffix
+listings in smb.conf is important.  Always place the 'ldap suffix' first
+in the list.  
+
+Due to a limitation in Samba's smb.conf parsing, you should not surround 
+the DN's with quotation marks.
+
+
+IdMap LDAP support
+------------------
+
+Samba 3.0 supports an ldap backend for the idmap subsystem.  The 
+following options would inform Samba that the idmap table should be
+stored on the directory server onterose in the "ou=idmap,dc=plainjoe,
+dc=org" partition.
+
+ [global]
+    ...
+    idmap backend     = ldap:ldap://onterose/
+    ldap idmap suffix = ou=idmap,dc=plainjoe,dc=org
+    idmap uid         = 40000-50000
+    idmap gid         = 40000-50000
+
+This configuration allows winbind installations on multiple servers to
+share a uid/gid number space, thus avoiding the interoperability problems
+with NFS that were present in Samba 2.2.
+    
+
+
+######################################################################
+Trust Relationships and a Samba Domain
+######################################
+
+Samba 3.0.0beta2 is able to utilize winbindd as the means of 
+allocating uids and gids to trusted users and groups.  More
+information regarding Samba's support for establishing trust 
+relationships can be found in the Samba-HOWTO-Collection included
+in the docs/ directory of this release.
+
+First create your Samba PDC and ensure that everything is 
+working correctly before moving on the trusts.
+
+To establish Samba as the trusting domain (named SAMBA) from a Windows NT
+4.0 domain named WINDOWS:
+
+  1) create the trust account for SAMBA in "User Manager for Domains"
+  2) connect the trust from the Samba domain using
+     'net rpc trustdom establish GLASS'
+
+To create a trustlationship with SAMBA as the trusted domain:
+
+  1) create the initial trust account for GLASS using
+     'smbpasswd -a -i GLASS'.  You may need to create a UNIX
+     account for GLASS$ prior to this step (depending on your
+     local configuration).
+  2) connect the trust from a WINDOWS DC using "User Manager
+     for Domains"
+
+Now join winbindd on the Samba PDC to the SAMBA domain using
+the normal steps for adding a Samba server to an NT4 domain:
+(note that smbd & nmbd must be running at this point)
+
+   root# net rpc join -U root
+   Password: <enter root password from smbpasswd file here>
+
+Start winbindd and test the join with 'wbinfo -t'.
+
+Now test the trust relationship by connecting to the SAMBA DC
+(e.g. POGO) as a user from the WINDOWS domain:
+
+   $ smbclient //pogo/netlogon -U Administrator -W WINDOWS
+   Password:
+
+Now connect to the WINDOWS DC (e.g. CRYSTAL) as a Samba user:
+
+   $ smbclient //crystal/netlogon -U root -W WINDOWS
+   Password:
+
+######################################################################
+Changes in Winbind
+##################
+
+Beginning with Samba3.0.0beta3, winbindd has been given new account
+manage functionality equivalent to the 'add user script' family of
+smb.conf parameters.  The idmap design has also been changed to 
+centralize control of foreign SID lookups and matching to UNIX 
+uids and gids.
+
+
+Brief Description of Changes
+----------------------------
+
+1) The sid_to_uid() family of functions (smbd/uid.c) have been 
+   reverted to the 2.2.x design.  This means that when resolving a 
+   SID to a UID or similar mapping:
+
+        a) First consult winbindd
+        b) perform a local lookup only if winbindd fails to
+           return a successful answer
+
+   There are some variations to this, but these two rules generally
+   apply.
+
+2) All idmap lookups have been moved into winbindd.  This means that
+   a server must run winbindd (and support NSS) in order to achieve
+   any mappings of SID to dynamically allocated UNIX ids.  This was
+   a conscious design choice.
+
+3) New functions have been added to winbindd to emulate the 'add user 
+   script' family of smbd functions without requiring that external
+   scripts be defined.  This functionality is controlled by the 'winbind 
+   enable local accounts' smb.conf parameter (enabled by default).
+
+   However, this account management functionality is only supported 
+   in a local tdb (winbindd_idmap.tdb).  If these new UNIX accounts 
+   must be shared among multiple Samba servers (such as a PDC and BDCs), 
+   it will be necessary to define your own 'add user script', et. al.
+   programs that place the accounts/groups in some form of directory
+   such as NIS or LDAP.  This requirement was deemed beyond the scope
+   of winbind's account management functions.  Solutions for 
+   distributing UNIX system information have been deployed and tested 
+   for many years.  We saw no need to reinvent the wheel.
+
+4) A member of a Samba controlled domain running winbindd is now able 
+   to map domain users directly onto existing UNIX accounts while still
+   automatically creating accounts for trusted users and groups.  This
+   behavior is controlled by the 'winbind trusted domains only' smb.conf
+   parameter (disabled by default to provide 2.2.x winbind behavior).
+
+5) Group mapping support is wrapped in the local_XX_to_XX() functions
+   in smbd/uid.c.  The reason that group mappings are not included
+   in winbindd is because the purpose of Samba's group map is to
+   match any Windows SID with an existing UNIX group.  These UNIX
+   groups can be created by winbindd (see next section), but the
+   SID<->gid mapping is retreived by smbd, not winbindd.
+
+
+Examples
+--------
+
+* security = server running winbindd to allocate accounts on demand
+
+* Samba PDC running winbindd to handle the automatic creation of UNIX
+  identities for machine trust accounts
+
+* Automtically creating UNIX user and groups when migrating a Windows NT
+  4.0 PDC to a Samba PDC.  Winbindd must be running when executing
+  'net rpc vampire' for this to work.
+
+   
+######################################################################
+Known Issues
+############
+
+* The smbldap perl scripts for managing user entries in an LDAP
+  directory have not be updated to function with the Samba 3.0
+  schema changes.  This (or an equivalent solution) work is planned
+  to be completed prior to the stable 3.0.0 release.
+
+Please refer to https://bugzilla.samba.org/ for a current list of bugs 
+filed against the Samba 3.0 codebase.
+
+
+######################################################################
 Reporting bugs & Development Discussion
----------------------------------------
+#######################################
 
 Please discuss this release on the samba-technical mailing list or by
-joining the #samba-technical IRC channel on irc.openprojects.net
+joining the #samba-technical IRC channel on irc.freenode.net.
 
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
-the problem then you will probably be ignored.
+the problem then you will probably be ignored.  
 
-
-Removed Parameters
-------------------
-
-  * postscript
-  * printer driver
-  * printer driver location
-  * printer driver file
-
-Added Parameters
----------------
-
-  * ldap trust ids
-  * acl compatibility
-  * mangle prefix
-
-
-Modified Parameters
--------------------
-
-  * restrict anonymous
-  * password server
-
-
-Changes in alpha21:
-
- See cvs log for SAMBA_3_0 for complete details.  There are many
- smaller numerous changes that would clutter the release notes.
-
-1)  Numerous documentation updates including new Samba FAQ
-2)  Fixed logic error in checking wins server lists
-3)  Added more Solaris sendfile checks
-4)  Added --with-ldapsam for compatibility with 2.2.x Samba/LDAP setups
-5)  Add new client side support the Win2k LSARPC UUID in rpcbinds
-    Detect a native mode Win2k DC when in "security = domain"
-6)  Include Domain Local Groups in listing when a member of a native
-    mode Win2k domain
-7)  Fix ACL inheritance problem
-8)  Register <0x1c> name on unicast subnet
-9)  Removed stat() call in lp_add_home()
-10) Change default of max_xmit to match W2K. Ensure NT negprot uses it
-11) Merge the new ACL mapping code from Andreas Gruenbacher
-12) Removed make_printerdef tool from build
-13) Fix fd leak on printer queue tdb's
-14) Better error/status loggin in both the pam_winbind client and
-    winbindd_pam
-15) Fix fd leak with kernel change notify
-16) Fix slowdown because of enumerating all print queues on every smbd startup
-17) Fix --set-auth-user command to delete entries from the secrets file
-    when an empty username/password is passed on the command line
-18) Added --get-auth-user to wbinfo for displaying account information
-    used to enumerate users and groups
-19) Numerous updates for 'net rpc vampire' to migrate from an NT 4.0 Domain
-20) Merge of scalable printing code from APP_HEAD
-21) Numerous changes the passdb layer
-22) More work on printer publishing in Active Directory
-23) Enable "make modules" to build VFS libraries
-24) Enable print notify messages on printer attributes from smbcontrol
-25) Enable auto lookup of domain controllers when adding '*' to
-    "password server" parameter.  Allows to have preferred list
-    of DC's, but not authoritative (e.g. password server = DC1 DC2 *)
-
-
-
-                 ===============================
-
-Changes in older alpha releases follow:
-
----------------------------------------------------------------------
-
-Changes in alpha20:
-
-1)   Rework the 'guest account gets RID 501' code again...
-2)   Change to use NT-based session key negotiated for Win2k SPNEGO
-3)   Support printer data registry keys other than the default
-     PrinterDriverData
-4)   Moved internal printerdata to REGISTRY_VALUE object
-5)   Corrected bug in dependentfiles list of DRIVER_INFO_3
-6)   fixed logic bug in blocking locks code
-7)   Updated registry api code to work with new printer data key
-     support
-8)   Added vfstest tool
-9)   round lock timeouts in lockingX upwards to multiples of 1 second
-10)  Fixed bugs in Printer Change Notify code
-11)  added a 'net ads lookup' command that does a CLDAP NetLogon
-     query to a win2000 server
-12)  Added script to find undocumented smb.conf parameters
-13)  Added missing parameters to smb.conf(5)
-14)  receive & parse main CLDAP reply from win2k server
-15)  removed "admin log" & "alternate permissions" parameters from smb.conf
-16)  added a generic print_guid utility, and get the byte order handing
-17)  fixed memory corruption in cli_full_connection()
-18)  remove unused 'max packet' and 'packet size' options
-19)  add support for the "value,OID" format described in MSDN for Printer
-     Data values
-20)  moves NT_TOKEN generation into our authentication code
-21)  Update documentation build system
-22)  Several fixes for IRIX compiler
-23)  Correctly handle "max data count" value in smb transacts
-24)  Fix for permissions error when adding/modifying using a Print
-     server handle
-25)  Fix pam_smbpass to always check the return value of pdb_getsampwnam()
-26)  Use the 'init' flag to determine if the UID is set, rather than testing
-     the uid for -1
-27)  Cope with non-unix accounts ) we just won't get the groups for those users
-28)  Add 'net rpc getsid' to fetch the PDC's SID into the local secrets.tdb.
-     Print domain SID on 'net rpc info'
-29)  don't use lp_passwd_file() to retrieve NIS domain name, but use location
-     instead
-30)  Various POSIX compatibility fixes
-31)  Show only non-default values in testparm
-32)  Fix longstanding bug in Win2k clients by clearing the shortname
-     buffer before returning ascii short name.
-33)  Add example backtrace script
-34)  Added NETLOGON NetServerAuthenticate3 include and parser file
-35)  fix for difference in strsep and strtok semantics in nmbd
-36)  Ensure we don't change to a user that we can't get an NT_TOKEN for
-37)  Put back in BDC support in set_server_role()
-38)  added a 'net rpc samdump' command for dumping the whole sam via
-     samsync operations (as a BDC)
-39)  don't use spnego in the client unless enabled in smb.conf
-40)  Added some new delta types discovered by Ronnie from ethereal
-41)  Cope with negative cache dns entries better
-42)  do not expose special files, only files, directories and links
-43)  attempts to simplify Samba's external lib dependencies
-44)  support non-root-mode systems without getgrouplist()
-45)  Some fixes for SMB signing
-46)  Pass the object name down to the enum_printers client rpc
-47)  add the netatalk VFS module
-48)  Ensure we have at least smb_size bytes before processing a packet
-49)  Allow us to "lock" printer tdb entries in memory to stop them being
-     re-used as cache
-50)  fix 2 byte alignment/offset bug that prevented Win2k/XP clients
-     from receiving all the printer data in EnumPrinterDataEx()
-51)  Add option to compile new sam system can be enabled with the
-     configure option --with-sam
-52)  Added SGML/DocBook version of developer oriented docs to build process
-53)  Return correct FILE_SUPERSEDED response
-54)  Added example sam module (skeleton)
-55)  Add plugin support for the sam system (based on passdb code)
-56)  show builtin groups in samdump
-57)  Adding samtest utility used to test sam backends
-58)  fix connecting to a BDC when the PDC is down but in WINS and no bcast
-     can be used to find a BDC
-58)  convert the LDAP/SASL code to use GSS-SPNEGO if possible
-59)  added cli_net_auth_3 client code
-60)  merge of phant0m key fix from APP_HEAD
-61)  allow rpcclient's samlogon command to use cli_net_3()
-62)  Added attribute specific OPEN tests
-63)  Fix bug with stat mode open being done on read-only open with
-     truncate
-64)  Add lots of const casts to function parameters
-65)  Implemented some more client side spoolss functions
-66)  usrmgr expects UNICODE as ProductType
-67)  Change JOB_INFO_CTR to return a pointer to an array rather than array of
-     pointers in client code
-68)  Various NTLMSSP fixes
-69)  fixed crash bug in cli_connection code
-70)  DeletePrinterDriver[Ex]() fixes from APP_HEAD
-71)  remove some inet_aton() calls for portability
-72)  Set default ACB attributes on 'unixsam' accounts
-73)  Add bcast_msg_flags to connection struct
-74)  aggregate change notify events in the smbd sender and when transmitting
-75)  Added better error code on out of space in printer spool directory
-76)  Removed total jobs check ) not applicable any more
-77)  fixed bug in share enumeration RPC code
-78)  extend the ADS_STATUS system to include NTSTATUS
-79)  commit trusted domain patch n+3
-80)  remove block VFS module
-81)  restrict readline headers to readline.c
-82)  merge of various recycle bin VFS patches
-83)  Winbind client-side cleanups
-84)  change parametric option name to vfs_recycle_bin it is more
-     sane and do not pollute standard options namespace too much
-85)  added --enable-python configure option for building the samba-python
-     unit tests
-86)  correct trans2 bugs in client for enumerating files/directories
-87)  Re-add OS/2 EA error codes
-88)  Added patch for required attributes in directory listings to reply code
-89)  Fix browse synchronization bug by noticing that W2K DMB's return empty
-     NetServerEnum2 on port 445, but not on port 139
-90)  Fix semantics of AbortPrinter() spoolss call in server code
-91)  Ensure we've failed a lock with a lock denied message before automatically
-     pushing it onto the blocking queue
-92)  Added experimental sendfile code
-93)  Initialize user_rid value in WINBIND_USERINFO structure returned by
-     the rpc version of query_user()
-94)  added gencache implementation
-95)  Merge the cli_shutdown change from 2_2
-96)  Fixes for DeletePrinterDriverEx()
-97)  Fixed alignment error in spoolss code
-98)  Changed Major/Minor version info reported to Server Manager to 4.9
-99)  Applied new display mode FLAGS for SWAT
-100) Update to add DEVELOPER option to more parameters
-101) Added --with-ads option, defaults to yes
-102) Added --with-ldap option to configure
-103) Add clock skew handling to our kerberos code
-104) correct race condition in password change code for out machine account
-     when a member of a domain
-105) First implementation for 'net rpc vampire'
-106) store current handle's Device Mode with print job
-107) Move functionality to check whether entries for lp_workgroup() and
-     "BUILTIN" exist and add them if necessary from check_correct_backend_entries
-     into sam_context_check_default_backends
-108) allow --with-krb5 to override the location of the kerberos libs on
-    redhat
-109) unlink spool file after submitting print job when using CUPS api
-110) Add framework for samtest commands
-111) Add the ability to view/set the current local domain SIDs to net command
-112) When creating a group you have to take care of the fact that the
-     underlying unix might not like the group name
-113) Don't uppercase the username and domain in a session setup
-114) Merge of "profile acls" code from SAMBA_2_2
-115) Check for existing of security descriptor in PRINTER_INFO_2 structure
-     in rpc client code
-116) Move to common user token debugging, and ensure we always print both the
-     NT_TOKEN and the unix credentials
-117) If adding a user to ldap, make sure we have the 'account' structural class,
-     or else we can't add to OpenLDAP 2.1
-118) Kill of Get_Pwnam_Modify and smb_getpwnam()
-119) add a 'ldap passwd sync' option to smb.conf
-120) Whenever we deal with adding machine/trusted domain accounts, always reset
-     the flag to what we expect
-121) Fix the circular dependency that was preventing 'domain master = auto' (the
-     default) from working
-122) move all the passdb internal interface to NTSTATUS
-123) to expand % values (ie we go \\%L\%U -> \\server\user, we don't want to
-     store \\server\user back) and to correctly notice 'not set' compared to 'null
-     string' etc.
-124) get some more of our access control bits right on the SAMR pipe
-125) Add -r parameter to smbgroupedit. With -r you can manually choose
-     a rid
-
-Changes in alpha19
-1)  Virtual registry framework with printing hooks (jerry)
-2)  Heavy registry updates (jerry)
-3)  Use 850 as the default DOS character set in smb.conf (tpot)
-4)  printer fixes ) removed encoding of queueid in job number (jra)
-5)  A lot of small fixes (jra)
-6)  Don't crash on setfileinfo on printer fsp(jra)
-7)  fixed line buffer mode in XFILE(jra)
-8)  update samba.schema from 2.2 (jerry,idra)
-9)  Fix problem with oplock breaks and win2k )
-    noticed by Lev Iserovich <lev@ciprico.com> (jra)
-10) Update smbgroupedit to document -d ) thanks to metze (abartlet)
-11) Support weird behaviour used by win9x pass-through auth (abartlet,tpot)
-12) Support for duplicating stderr in log files (abartlet)
-13) Move startup time initialisation to server.c (abartlet)
-14) *A lot* of fixes and cleanups (abartlet)
-15) Fix up compiler warnings (abartlet)
-16) Few small fixes (tpot)
-17) Renamed new_cli_netlogon_* -> cli_netlogon_* (tpot)
-18) Fixed segfault in net time when host is unavailable (tridge)
-19) Ensure to be root when opening printer backend tdb (jra)
-20) Merges from APPLIANCE_HEAD (tpot,jerry)
-21) configure updates (tridge)
-22) getgrouplist() updates (tridge)
-23) Support for pdbedit to query account policy values (abartlet)
-24) Allow one to create trusting domain account using smbpasswd (mimir,abartlet)
-25) 'Net rpc trustdom list' (mimir, abartlet)
-26) Fix fallback to anonymous connection (mimir, abartlet)
-27) Fix for pdb_ldap and OpenLDAP 2.1
-28) Added support in swat to determine whether winbind is running (idra)
-29) Add 'hide unwritable' option (idra)
-30) Correct pickup of [homes] share after subsequent session setups (abartlet)
-31) Update rebind code in pdb_ldap (abartlet)
-32) Add some info levels to RPC srvsvc code )
-   thanks to Nigel Williams" <nigel@veritas.com> (abartlet)
-33) Small doc fixes (tridge)
-34) good security patch from Timothy.Sell@unisys.com (tridge)
-35) fix minor nits in nmbd from adtam@cup.hp.com (tridge)
-36) make sure async dns nmbd child dies (tridge)
-37) interim fix for nmbd not registering DOMAIN#1b (tridge)
-38) fix for smbtar filename matching (tridge)
-39) Better quote handling in smb.conf (abartlet)
-40) Support browsers setting multiple languages in swat (idra)
-41) Changed str_list_make to be able to use a different separator string (idra)
-42) Samsync support to insert account info into the pdb (tpot)
-43) Don't hide unwritable dirs when 'hide unwritable' is enabled )
-    suggested by Alexander Oswald <oswald@is.haw-hamburg.de> (idra)
-44) Fix for handling sparse files in smbd (tridge)
-45) Merges from 2_2 (jerry)
-46) Minor printer fixes (jerry)
-47) Add some checks to SID lookup code (abartlet)
-48) Cascaded VFS (Alexander Bokovoy, idra)
-49) Some netbios-less connections support in ADS mode (tridge)
-50) ADS tweaks (tridge)
-51) Fix plaintext passwords with win2k (tridge)
-52) 'net ads info' reports IP of LDAP server (tridge)
-53) Add some more RPC functions (jmcd)
-54) Add 'smb ports = ' option (tridge)
-55) Various small fixes (tridge)
-56) Passdb security checks (abartlet)
-57) Large winbind updates (abartlet)
-58) Moved rpc client routines from libsmb to rpc_client (tpot)
-59) Few nmbd fixes (jmcd)
-60) Fix swat to handle new debug level code (idra)
-61) Fix name length bug in namequeries (tridge)
-62) Don't have client binaries depend on libs they don't use )
-   patch from Steve Langasek <vorlon@netexpress.net> (abartlet)
-63) Printing change notification (merged from HEAD_APPLIANCE) (jerry)
-64) fix delete printer driver (from HEAD_APPLIANCE) (jerry)
-65) Added pdb_xml and pdb_mysql (jelmer)
-66) Update pdb_test (jelmer)
-67) Fix security issues with %m (abartlet)
-68) Support for service joins from win2k AND use SPNEGO (jmcd)
-69) pdbedit -i and -e fix, add -b (idra)
-70) textdocs converted to sgml (jelmer, jerry)
-71) Merge netbios namecache code from APPLIANCE_HEAD (tpot)
-72) Fix segs in new NTLMSSP code (abartlet)
-73) Always make guest rid 501 (abartlet)
-
-
-
+A new bugzilla installation has been established to help support the 
+Samba 3.0 community of users.  This server, located at 
+https://bugzilla.samba.org/, will replace the existing jitterbug server 
+and the old http://bugs.samba.org now points to the new bugzilla server.
 

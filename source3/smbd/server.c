@@ -634,6 +634,12 @@ static BOOL init_structs(void )
  main program.
 ****************************************************************************/
 
+/* Declare prototype for build_options() to avoid having to run it through
+   mkproto.h.  Mixing $(builddir) and $(srcdir) source files in the current
+   prototype generation system is too complicated. */
+
+void build_options(BOOL screen);
+
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
@@ -836,28 +842,23 @@ static BOOL init_structs(void )
 	if (!init_registry())
 		exit(1);
 
+	/* Initialise the password backed before the global_sam_sid
+	   to ensure that we fetch from ldap before we make a domain sid up */
+
 	if(!initialize_password_db(False))
 		exit(1);
-
-	if (!idmap_init())
-		exit(1);
-
-	if (!idmap_init_wellknown_sids())
-		exit(1);
-
-	static_init_rpc;
-
-	init_modules();
-
-	uni_group_cache_init(); /* Non-critical */
-	
-	/* possibly reload the services file. */
-	reload_services(True);
 
 	if(!get_global_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}
+
+	static_init_rpc;
+
+	init_modules();
+
+	/* possibly reload the services file. */
+	reload_services(True);
 
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
@@ -877,10 +878,6 @@ static BOOL init_structs(void )
 	if (!init_change_notify())
 		exit(1);
 
-	/* Setup privileges database */
-	if (!privilege_init())
-		exit(1);
-
 	/* re-initialise the timezone */
 	TimeInit();
 
@@ -889,7 +886,6 @@ static BOOL init_structs(void )
 
 	smbd_process();
 	
-	uni_group_cache_shutdown();
 	namecache_shutdown();
 	exit_server("normal exit");
 	return(0);

@@ -1,2 +1,2 @@
 . torture_setup.fns
-test_torture "FDPASS"
+test_torture "FDSESS"

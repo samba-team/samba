@@ -2,6 +2,7 @@
  * AppleTalk VFS module for Samba-3.x
  *
  * Copyright (C) Alexei Kotovich, 2002
+ * Copyright (C) Stefan (metze) Metzmacher, 2003
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,22 +19,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
-#include <stdio.h>
-#include <sys/stat.h>
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#include <errno.h>
-#include <string.h>
-#include <includes.h>
-#include <vfs.h>
+#include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
 
 #define APPLEDOUBLE	".AppleDouble"
 #define ADOUBLEMODE	0777
@@ -45,9 +34,6 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path,
   SMB_STRUCT_STAT *adbl_info, SMB_STRUCT_STAT *orig_info);
 
 static int atalk_unlink_file(const char *path);
-
-static struct vfs_ops default_vfs_ops;	/* For passthrough operation */
-static struct smb_vfs_handle_struct *atalk_handle;
 
 static int atalk_get_path_ptr(char *path)
 {
@@ -187,11 +173,11 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-DIR *atalk_opendir(struct connection_struct *conn, const char *fname)
+DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname)
 {
 	DIR *ret = 0;
-	
-	ret = default_vfs_ops.opendir(conn, fname);
+
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
 
 	/*
 	 * when we try to perform delete operation upon file which has fork
@@ -208,7 +194,7 @@ DIR *atalk_opendir(struct connection_struct *conn, const char *fname)
 	return ret;
 }
 
-static int atalk_rmdir(struct connection_struct *conn, const char *path)
+static int atalk_rmdir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
 {
 	BOOL add = False;
 	TALLOC_CTX *ctx = 0;
@@ -233,12 +219,12 @@ static int atalk_rmdir(struct connection_struct *conn, const char *path)
 
 exit_rmdir:
 	talloc_destroy(ctx);
-	return default_vfs_ops.rmdir(conn, path);
+	return SMB_VFS_NEXT_RMDIR(handle, conn, path);
 }
 
 /* File operations */
 
-static int atalk_rename(struct connection_struct *conn, const char *old, const char *new)
+static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -247,7 +233,7 @@ static int atalk_rename(struct connection_struct *conn, const char *old, const c
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = default_vfs_ops.rename(conn, old, new);
+	ret = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
 
 	if (!conn || !old) return ret;
 
@@ -270,7 +256,7 @@ exit_rename:
 	return ret;
 }
 
-static int atalk_unlink(struct connection_struct *conn, const char *path)
+static int atalk_unlink(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
 {
 	int ret = 0, i;
 	char *adbl_path = 0;
@@ -279,7 +265,7 @@ static int atalk_unlink(struct connection_struct *conn, const char *path)
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = default_vfs_ops.unlink(conn, path);
+	ret = SMB_VFS_NEXT_UNLINK(handle, conn, path);
 
 	if (!conn || !path) return ret;
 
@@ -326,7 +312,7 @@ exit_unlink:
 	return ret;
 }
 
-static int atalk_chmod(struct connection_struct *conn, const char *path, mode_t mode)
+static int atalk_chmod(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, mode_t mode)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -335,7 +321,7 @@ static int atalk_chmod(struct connection_struct *conn, const char *path, mode_t 
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = default_vfs_ops.chmod(conn, path, mode);
+	ret = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
 
 	if (!conn || !path) return ret;
 
@@ -358,7 +344,7 @@ exit_chmod:
 	return ret;
 }
 
-static int atalk_chown(struct connection_struct *conn, const char *path, uid_t uid, gid_t gid)
+static int atalk_chown(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, uid_t uid, gid_t gid)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -367,7 +353,7 @@ static int atalk_chown(struct connection_struct *conn, const char *path, uid_t u
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = default_vfs_ops.chown(conn, path, uid, gid);
+	ret = SMB_VFS_NEXT_CHOWN(handle, conn, path, uid, gid);
 
 	if (!conn || !path) return ret;
 
@@ -394,34 +380,22 @@ static vfs_op_tuple atalk_ops[] = {
     
 	/* Directory operations */
 
-	{atalk_opendir, 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
-	{atalk_rmdir, 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 
 	/* File operations */
 
-	{atalk_rename, 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_TRANSPARENT},
-	{atalk_unlink, 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
-	{atalk_chmod, 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
-	{atalk_chown,		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_chown),		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* Finish VFS operations definition */
 	
-	{NULL, 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
 };
-
-/* VFS initialisation function.  Return vfs_op_tuple array back to SAMBA. */
-static vfs_op_tuple *netatalk_init(const struct vfs_ops *def_vfs_ops,
-  struct smb_vfs_handle_struct *vfs_handle)
-{
-	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
-	
-	atalk_handle = vfs_handle;
-
-	DEBUG(3, ("ATALK: vfs module loaded\n"));
-	return atalk_ops;
-}
 
 NTSTATUS vfs_netatalk_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk", netatalk_init);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk", atalk_ops);
 }

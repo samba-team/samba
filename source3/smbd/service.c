@@ -237,7 +237,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 		}
 	}
 
-	strupper(dev);
+	strupper_m(dev);
 
 	if (lp_print_ok(snum)) {
 		if (!strequal(dev, "LPT1:")) {
@@ -359,13 +359,15 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		guest = True;
 		pass = getpwnam_alloc(guestname);
 		if (!pass) {
-			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
+			DEBUG(0,("make_connection_snum: Invalid guest account %s??\n",guestname));
 			conn_free(conn);
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
 		fstrcpy(user,pass->pw_name);
 		conn->force_user = True;
+		conn->uid = pass->pw_uid;
+		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
 		passwd_free(&pass);
 		DEBUG(3,("Guest only user %s\n",user));
@@ -704,14 +706,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Invoke VFS make connection hook */
 
-	if (conn->vfs_ops.connect) {
-		if (conn->vfs_ops.connect(conn, lp_servicename(snum), user) < 0) {
-			DEBUG(0,("make_connection: VFS make connection failed!\n"));
-			change_to_root_user();
-			conn_free(conn);
-			*status = NT_STATUS_UNSUCCESSFUL;
-			return NULL;
-		}
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		change_to_root_user();
+		conn_free(conn);
+		*status = NT_STATUS_UNSUCCESSFUL;
+		return NULL;
 	}
 
 	/* we've finished with the user stuff - go back to root */
@@ -828,7 +828,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	
 	fstrcpy(service, service_in);
 
-	strlower(service);
+	strlower_m(service);
 
 	snum = find_service(service);
 
@@ -872,13 +872,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 				 get_remote_machine_name(),conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
-	if (conn->vfs_ops.disconnect != NULL) {
-
-	    /* Call VFS disconnect hook */
-	    
-	    conn->vfs_ops.disconnect(conn);
-	    
-	}
+	/* Call VFS disconnect hook */    
+	SMB_VFS_DISCONNECT(conn);
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
 

@@ -6,7 +6,7 @@
 
 <xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
 <xsl:variable name="latex.documentclass">xslt/latex/sambadoc</xsl:variable>
-<xsl:variable name="latex.documentclass.common">english,final,titlepage</xsl:variable>
+<xsl:variable name="latex.documentclass.common">english,final,titlepage,parskip</xsl:variable>
 <xsl:variable name="latex.documentclass.book"></xsl:variable>
 <xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=blue,urlcolor=blue</xsl:variable>
 <xsl:variable name="latex.document.font">default</xsl:variable>

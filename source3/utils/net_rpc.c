@@ -74,7 +74,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = cli_lsa_open_policy(cli, mem_ctx, False, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -235,16 +235,27 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
+static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx, 
 					    int argc, const char **argv) {
 	
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	NTSTATUS result;
+	uint32 sec_channel_type;
 
+	/* 
+	   check what type of join - if the user want's to join as
+	   a BDC, the server must agree that we are a BDC.
+	*/
+	if (argc >= 0) {
+		sec_channel_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_channel_type = get_sec_channel_type(NULL);
+	}
+	
 	fstrcpy(trust_passwd, global_myname());
-	strlower(trust_passwd);
+	strlower_m(trust_passwd);
 
 	/*
 	 * Machine names can be 15 characters, but the max length on
@@ -257,11 +268,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	result = trust_pw_change_and_store_it(cli, mem_ctx, opt_target_workgroup,
 					      orig_trust_passwd_hash,
-					      SEC_CHAN_WKSTA);
-
-	/* SEC_CHAN_WKSTA specified specifically, as you cannot use this
-	   to join a BDC to the domain (MS won't allow it, and is *really*
-	   insecure) */
+					      sec_channel_type);
 
 	if (NT_STATUS_IS_OK(result))
 		printf("Joined domain %s.\n",opt_target_workgroup);
@@ -285,40 +292,11 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
  * @return A shell status integer (0 for success)
  **/
 
-static int net_rpc_join_oldstyle(int argc, const char **argv) 
-{
-	uint32 sec_channel_type;
-	/* check what type of join */
-	if (argc >= 0) {
-		sec_channel_type = get_sec_channel_type(argv[0]);
-	} else {
-		sec_channel_type = get_sec_channel_type(NULL);
-	}
-	
-	if (sec_channel_type != SEC_CHAN_WKSTA) 
-		return 1;
-
-	return run_rpc_command(NULL, PI_NETLOGON, 
-			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
-			       rpc_join_oldstyle_internals,
-			       argc, argv);
-}
-
-/** 
- * Join a domain, the old way.
- *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
- *
- * @return A shell status integer (0 for success)
- **/
-
 static int net_rpc_oldjoin(int argc, const char **argv) 
 {
 	return run_rpc_command(NULL, PI_NETLOGON, 
 			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
-			       rpc_join_oldstyle_internals,
+			       rpc_oldjoin_internals,
 			       argc, argv);
 }
 
@@ -351,13 +329,13 @@ static int rpc_join_usage(int argc, const char **argv)
  *
  * Main 'net_rpc_join()' (where the admain username/password is used) is 
  * in net_rpc_join.c
- * Assume if a -U is specified, it's the new style, otherwise it's the
- * old style.  If 'oldstyle' is specfied explicity, do it and don't prompt.
+ * Try to just change the password, but if that doesn't work, use/prompt
+ * for a username/password.
  **/
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((net_rpc_join_oldstyle(argc, argv) == 0))
+	if ((net_rpc_oldjoin(argc, argv) == 0))
 		return 0;
 	
 	return net_rpc_join_newstyle(argc, argv);
@@ -862,11 +840,11 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc)-1);
 			
 			if (opt_long_list_entries)
-				printf("%-21.21s %-50.50s\n", user, desc);
+				printf("%-21.21s %s\n", user, desc);
 			else
 				printf("%s\n", user);
 		}
-	} while (!NT_STATUS_IS_OK(result));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
@@ -937,7 +915,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, num_entries, i;
+	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
 	DOM_SID global_sid_Builtin;
 
@@ -965,34 +943,75 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
-		result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
+		SAM_DISPINFO_CTR ctr;
+		SAM_DISPINFO_3 info3;
+		uint32 max_size;
+
+		ZERO_STRUCT(ctr);
+		ZERO_STRUCT(info3);
+		ctr.sam.info3 = &info3;
+
+		get_query_dispinfo_params(
+			loop_count, &max_entries, &max_size);
+
+		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+						 &start_idx, 3, &num_entries,
+						 max_entries, max_size, &ctr);
 						 
 		for (i = 0; i < num_entries; i++) {
+
+			fstring group, desc;
+
+			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group)-1);
+			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc)-1);
+			
 			if (opt_long_list_entries)
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
-				       groups[i].acct_desc);
+				printf("%-21.21s %-50.50s\n",
+				       group, desc);
 			else
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%-21.21s\n", group);
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
+	start_idx = 0;
 	do {
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
-						 
+
 		for (i = 0; i < num_entries; i++) {
-			if (opt_long_list_entries)
+
+			char *description = NULL;
+
+			if (opt_long_list_entries) {
+
+				POLICY_HND alias_pol;
+				ALIAS_INFO_CTR ctr;
+
+				if ((NT_STATUS_IS_OK(cli_samr_open_alias(cli, mem_ctx,
+									 &domain_pol,
+									 0x8,
+									 groups[i].rid,
+									 &alias_pol))) &&
+				    (NT_STATUS_IS_OK(cli_samr_query_alias_info(cli, mem_ctx,
+									       &alias_pol, 3,
+									       &ctr))) &&
+				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
+								    &alias_pol)))) {
+					description = unistr2_tdup(mem_ctx,
+								   &ctr.alias.info3.uni_acct_desc);
+				}
+			}
+			
+			if (description != NULL) {
 				printf("%-21.21s %-50.50s\n", 
 				       groups[i].acct_name,
-				       groups[i].acct_desc);
-			else
+				       description);
+			} else {
 				printf("%-21.21s\n", groups[i].acct_name);
+			}
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	cli_samr_close(cli, mem_ctx, &domain_pol);
 	/* Get builtin policy handle */
 	
@@ -1003,20 +1022,45 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		goto done;
 	}
 	/* query builtin aliases */
+	start_idx = 0;
 	do {
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 						 
 		for (i = 0; i < num_entries; i++) {
-			if (opt_long_list_entries)
+
+			char *description = NULL;
+
+			if (opt_long_list_entries) {
+
+				POLICY_HND alias_pol;
+				ALIAS_INFO_CTR ctr;
+
+				if ((NT_STATUS_IS_OK(cli_samr_open_alias(cli, mem_ctx,
+									 &domain_pol,
+									 0x8,
+									 groups[i].rid,
+									 &alias_pol))) &&
+				    (NT_STATUS_IS_OK(cli_samr_query_alias_info(cli, mem_ctx,
+									       &alias_pol, 3,
+									       &ctr))) &&
+				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
+								    &alias_pol)))) {
+					description = unistr2_tdup(mem_ctx,
+								   &ctr.alias.info3.uni_acct_desc);
+				}
+			}
+			
+			if (description != NULL) {
 				printf("%-21.21s %-50.50s\n", 
 				       groups[i].acct_name,
-				       groups[i].acct_desc);
-			else
-				printf("%s\n", groups[i].acct_name);
+				       description);
+			} else {
+				printf("%-21.21s\n", groups[i].acct_name);
+			}
 		}
-	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
@@ -1576,8 +1620,8 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	uint16 acb_info;
 	uint32 unknown, user_rid;
 
-	if (argc != 1) {
-		d_printf("Usage: net rpc trustdom add <domain_name>\n");
+	if (argc != 2) {
+		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1589,7 +1633,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strupper(acct_name);
+	strupper_m(acct_name);
 
 	/* Get samr policy handle */
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
@@ -1608,7 +1652,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 
 	/* Create trusting domain's account */
 	acb_info = ACB_DOMTRUST;
-	unknown = 0xe005000b; /* No idea what this is - a permission mask?
+	unknown = 0xe00500b0; /* No idea what this is - a permission mask?
 	                         mimir: yes, most probably it is */
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
@@ -1616,6 +1660,37 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
+
+	{
+		SAM_USERINFO_CTR ctr;
+		SAM_USER_INFO_24 p24;
+		fstring ucs2_trust_password;
+		int ucs2_pw_len;
+		uchar pwbuf[516];
+
+		ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, argv[1],
+					sizeof(ucs2_trust_password), 0);
+
+		encode_pw_buffer((char *)pwbuf, ucs2_trust_password,
+				 ucs2_pw_len);
+
+		ZERO_STRUCT(ctr);
+		ZERO_STRUCT(p24);
+
+		init_sam_user_info24(&p24, (char *)pwbuf, 24);
+
+		ctr.switch_value = 24;
+		ctr.info.id24 = &p24;
+
+		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24,
+					       cli->user_session_key, &ctr);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("Could not set trust account password: %s\n",
+				 nt_errstr(result)));
+			goto done;
+		}
 	}
 
  done:
@@ -1689,11 +1764,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	domain_name = smb_xstrdup(argv[0]);
-	strupper(domain_name);
+	strupper_m(domain_name);
 
 	/* account name used at first is our domain's name with '$' */
 	asprintf(&acct_name, "%s$", lp_workgroup());
-	strupper(acct_name);
+	strupper_m(acct_name);
 	
 	/*
 	 * opt_workgroup will be used by connection functions further,
@@ -1706,7 +1781,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	opt_user_name = acct_name;
 
 	/* find the domain controller */
-	if (!net_find_dc(&server_ip, pdc_name, domain_name)) {
+	if (!net_find_pdc(&server_ip, pdc_name, domain_name)) {
 		DEBUG(0, ("Coulnd find domain controller for domain %s\n", domain_name));
 		return -1;
 	}
@@ -1785,7 +1860,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -1803,6 +1878,9 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			nt_errstr(nt_status)));
 		return -1;
 	}
+
+
+
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -1855,7 +1933,7 @@ static int rpc_trustdom_revoke(int argc, const char **argv)
 	
 	/* generate upper cased domain name */
 	domain_name = smb_xstrdup(argv[0]);
-	strupper(domain_name);
+	strupper_m(domain_name);
 
 	/* delete password of the trust */
 	if (!trusted_domain_password_delete(domain_name)) {
@@ -2089,7 +2167,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			do padding[--pad_len] = ' '; while (pad_len);
 
 			/* set opt_* variables to remote domain */
-			strupper(trusting_dom_names[i]);
+			strupper_m(trusting_dom_names[i]);
 			opt_workgroup = talloc_strdup(mem_ctx, trusting_dom_names[i]);
 			opt_target_workgroup = opt_workgroup;
 			

@@ -1,6 +1,6 @@
-diff -uNr samba-3.0alpha23.orig/source/client/smbmount.c samba-3.0alpha23/source/client/smbmount.c
---- samba-3.0alpha23.orig/source/client/smbmount.c	2003-03-30 20:28:28.000000000 -0600
-+++ samba-3.0alpha23/source/client/smbmount.c	2003-04-04 21:05:58.000000000 -0600
+diff -uNr samba-3.0.0beta1.orig/source/client/smbmount.c samba-3.0.0beta1/source/client/smbmount.c
+--- samba-3.0.0beta1.orig/source/client/smbmount.c	2003-06-07 12:57:32.000000000 -0500
++++ samba-3.0.0beta1/source/client/smbmount.c	2003-06-30 20:12:22.000000000 -0500
 @@ -765,7 +765,7 @@
  					*lp = 0;
  					pstrcpy(password,lp+1);
@@ -19,18 +19,18 @@ diff -uNr samba-3.0alpha23.orig/source/client/smbmount.c samba-3.0alpha23/source
  			} else if(!strcmp(opts, "credentials")) {
  				pstrcpy(credentials,opteq+1);
  			} else if(!strcmp(opts, "netbiosname")) {
-@@ -889,7 +889,7 @@
+@@ -889,7 +901,7 @@
  			*p = 0;
  			pstrcpy(password,p+1);
  			got_pass = True;
 -			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 +			memset(strchr_m(getenv("USER"),'%')+1,'\0',strlen(password));
  		}
- 		strupper(username);
+ 		strupper_m(username);
  	}
-diff -uNr samba-3.0alpha23.orig/source/script/installbin.sh samba-3.0alpha23/source/script/installbin.sh
---- samba-3.0alpha23.orig/source/script/installbin.sh	2002-04-22 13:16:20.000000000 -0500
-+++ samba-3.0alpha23/source/script/installbin.sh	2003-04-04 21:05:58.000000000 -0600
+diff -uNr samba-3.0.0beta1.orig/source/script/installbin.sh samba-3.0.0beta1/source/script/installbin.sh
+--- samba-3.0.0beta1.orig/source/script/installbin.sh	2002-04-22 13:16:20.000000000 -0500
++++ samba-3.0.0beta1/source/script/installbin.sh	2003-06-30 20:12:22.000000000 -0500
 @@ -22,9 +22,11 @@
   chmod $INSTALLPERMS $BINDIR/$p2
  
@@ -46,27 +46,31 @@ diff -uNr samba-3.0alpha23.orig/source/script/installbin.sh samba-3.0alpha23/sou
  done
  
  
-diff -uNr samba-3.0alpha23.orig/source/smbd/service.c samba-3.0alpha23/source/smbd/service.c
---- samba-3.0alpha23.orig/source/smbd/service.c	2003-03-30 20:28:31.000000000 -0600
-+++ samba-3.0alpha23/source/smbd/service.c	2003-04-04 21:05:58.000000000 -0600
-@@ -895,6 +895,14 @@
- 		change_to_root_user();
+diff -uNr samba-3.0.0beta1.orig/source/smbd/service.c samba-3.0.0beta1/source/smbd/service.c
+--- samba-3.0.0beta1.orig/source/smbd/service.c	2003-06-07 12:57:39.000000000 -0500
++++ samba-3.0.0beta1/source/smbd/service.c	2003-06-30 20:12:57.000000000 -0500
+@@ -880,6 +880,9 @@
+ 	file_close_conn(conn);
+ 	dptr_closecnum(conn);
+ 
++	/* make sure we leave the directory available for unmount */
++	vfs_ChDir(conn, "/");
++
+ 	/* execute any "postexec = " line */
+ 	if (*lp_postexec(SNUM(conn)) && 
+ 	    change_to_user(conn, vuid))  {
+@@ -899,8 +902,5 @@
+ 		smbrun(cmd,NULL);
  	}
  
-+	/* If our root postexec command includes a call to 'unmount', we want
-+	   to make sure we aren't blocking the mount point. */
-+	/* I think this patch should go here, but I am not sure since
-+	   the code looks very different than in Samba 2.2.2. Will come
-+	   back later; should check what change_to_root_user() does. Eloy.-
-+	vfs_ChDir(conn,"/");
-+	/*
-+
- 	change_to_root_user();
- 	/* execute any "root postexec = " line */
- 	if (*lp_rootpostexec(SNUM(conn)))  {
-diff -uNr samba-3.0alpha23.orig/source/smbwrapper/smbsh.c samba-3.0alpha23/source/smbwrapper/smbsh.c
---- samba-3.0alpha23.orig/source/smbwrapper/smbsh.c	2003-03-30 20:28:31.000000000 -0600
-+++ samba-3.0alpha23/source/smbwrapper/smbsh.c	2003-04-04 21:05:58.000000000 -0600
+-	/* make sure we leave the directory available for unmount */
+-	vfs_ChDir(conn, "/");
+-
+ 	conn_free(conn);
+ }
+diff -uNr samba-3.0.0beta1.orig/source/smbwrapper/smbsh.c samba-3.0.0beta1/source/smbwrapper/smbsh.c
+--- samba-3.0.0beta1.orig/source/smbwrapper/smbsh.c	2003-06-07 12:57:40.000000000 -0500
++++ samba-3.0.0beta1/source/smbwrapper/smbsh.c	2003-06-30 20:12:22.000000000 -0500
 @@ -36,7 +36,7 @@
  int main(int argc, char *argv[])
  {
@@ -76,9 +80,9 @@ diff -uNr samba-3.0alpha23.orig/source/smbwrapper/smbsh.c samba-3.0alpha23/sourc
  	pstring line, wd;
  	int opt;
  	extern char *optarg;
-diff -uNr samba-3.0alpha23.orig/source/web/diagnose.c samba-3.0alpha23/source/web/diagnose.c
---- samba-3.0alpha23.orig/source/web/diagnose.c	2003-01-18 13:03:58.000000000 -0600
-+++ samba-3.0alpha23/source/web/diagnose.c	2003-04-04 21:05:58.000000000 -0600
+diff -uNr samba-3.0.0beta1.orig/source/web/diagnose.c samba-3.0.0beta1/source/web/diagnose.c
+--- samba-3.0.0beta1.orig/source/web/diagnose.c	2003-06-07 12:57:41.000000000 -0500
++++ samba-3.0.0beta1/source/web/diagnose.c	2003-06-30 20:12:22.000000000 -0500
 @@ -70,6 +70,7 @@
  	static struct cli_state cli;
  	extern struct in_addr loopback_ip;

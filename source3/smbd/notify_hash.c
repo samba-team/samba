@@ -48,7 +48,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 
 	ZERO_STRUCTP(data);
 
-	if(vfs_stat(conn,path, &st) == -1)
+	if(SMB_VFS_STAT(conn,path, &st) == -1)
 		return False;
 
 	data->modify_time = st.st_mtime;
@@ -100,7 +100,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		/*
 		 * Do the stat - but ignore errors.
 		 */		
-		vfs_stat(conn,full_name, &st);
+		SMB_VFS_STAT(conn,full_name, &st);
 
 		/*
 		 * Always sum the times.

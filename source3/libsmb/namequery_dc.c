@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Gerald Carter 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,16 +25,60 @@
 
 #include "includes.h"
 
-
-/*
-  find the DC for a domain using methods appropriate for a RPC domain
-*/
-BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
+/**************************************************************************
+ Find the name and IP address for a server in he realm/domain
+ *************************************************************************/
+ 
+static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
-	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
+	ADS_STRUCT *ads;
+	const char *realm = domain;
+
+	if (strcasecmp(realm, lp_workgroup()) == 0)
+		realm = lp_realm();
+
+	ads = ads_init(realm, domain, NULL);
+	if (!ads)
+		return False;
+
+	/* we don't need to bind, just connect */
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
+
+#ifdef HAVE_ADS
+	/* a full ads_connect() is actually overkill, as we don't srictly need
+	   to do the SASL auth in order to get the info we need, but libads
+	   doesn't offer a better way right now */
+	ads_connect(ads);
+#endif
+
+	if (!ads->config.realm)
+		return False;
+
+	fstrcpy(srv_name, ads->config.ldap_server_name);
+	strupper_m(srv_name);
+	*dc_ip = ads->ldap_ip;
+	ads_destroy(&ads);
+	
+	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
+		 srv_name, inet_ntoa(*dc_ip)));
+	
+	return True;
+}
+
+/****************************************************************************
+ Utility function to return the name of a DC. The name is guaranteed to be 
+ valid since we have already done a name_status_find on it 
+ ***************************************************************************/
+
+static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+{
+	struct ip_service *ip_list = NULL;
+	struct in_addr dc_ip, exclude_ip;
 	int count, i;
-	BOOL list_ordered;
 	BOOL use_pdc_only;
+	NTSTATUS result;
 	
 	zero_ip(&exclude_ip);
 
@@ -41,11 +86,17 @@ BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
 	
 	/* Lookup domain controller name */
 	   
-	if ( use_pdc_only && get_pdc_ip(domain, &dc_ip) ) {
-		DEBUG(10,("rpc_find_dc: Atempting to lookup PDC to avoid sam sync delays\n"));
+	if ( use_pdc_only && get_pdc_ip(domain, &dc_ip) ) 
+	{
+		DEBUG(10,("rpc_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
 		
-		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
-			goto done;
+		/* check the connection cache and perform the node status 
+		   lookup only if the IP is not found to be bad */
+
+		if (name_status_find(domain, 0x1b, 0x20, dc_ip, srv_name) ) {
+			result = check_negative_conn_cache( domain, srv_name );
+			if ( NT_STATUS_IS_OK(result) )
+				goto done;
 		}
 		/* Didn't get name, remember not to talk to this DC. */
 		exclude_ip = dc_ip;
@@ -53,7 +104,7 @@ BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	/* get a list of all domain controllers */
 	
-	if (!get_dc_list( domain, &ip_list, &count, &list_ordered) ) {
+	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
@@ -62,37 +113,37 @@ BOOL rpc_find_dc(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	if ( use_pdc_only ) {
 		for (i = 0; i < count; i++) {	
-			if (ip_equal( exclude_ip, ip_list[i]))
-				zero_ip(&ip_list[i]);
+			if (ip_equal( exclude_ip, ip_list[i].ip))
+				zero_ip(&ip_list[i].ip);
 		}
-	}
-
-	/* Pick a nice close server, but only if the list was not ordered */
-	if (!list_ordered && (count > 1) ) {
-		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
 
 	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
+		if (is_zero_ip(ip_list[i].ip))
 			continue;
 
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i].ip, srv_name)) {
+			result = check_negative_conn_cache( domain, srv_name );
+			if ( NT_STATUS_IS_OK(result) ) {
+				dc_ip = ip_list[i].ip;
+				goto done;
+			}
 		}
 	}
-
+	
 
 	SAFE_FREE(ip_list);
 
-	return False;
-done:
+	/* No-one to talk to )-: */
+	return False;		/* Boo-hoo */
+	
+ done:
 	/* We have the netbios name and IP address of a domain controller.
 	   Ideally we should sent a SAMLOGON request to determine whether
 	   the DC is alive and kicking.  If we can catch a dead DC before
 	   performing a cli_connect() we can avoid a 30-second timeout. */
 
-	DEBUG(3, ("rpc_find_dc: Returning DC %s (%s) for domain %s\n", srv_name,
+	DEBUG(3, ("rpc_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
 
 	*ip_out = dc_ip;
@@ -100,5 +151,30 @@ done:
 	SAFE_FREE(ip_list);
 
 	return True;
+}
+
+/**********************************************************************
+ wrapper around ads and rpc methods of finds DC's
+**********************************************************************/
+
+BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+{
+	struct in_addr dc_ip;
+	BOOL ret;
+
+	zero_ip(&dc_ip);
+
+	ret = False;
+	if (lp_security() == SEC_ADS)
+		ret = ads_dc_name(domain, &dc_ip, srv_name);
+
+	if (!ret) {
+		/* fall back on rpc methods if the ADS methods fail */
+		ret = rpc_dc_name(domain, srv_name, &dc_ip);
+	}
+
+	*ip_out = dc_ip;
+
+	return ret;
 }
 

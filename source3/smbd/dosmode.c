@@ -56,7 +56,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
 
     dname = parent_dirname(fname);
     DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
-    if (vfs_stat(conn,dname,&sbuf) != 0) {
+    if (SMB_VFS_STAT(conn,dname,&sbuf) != 0) {
       DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
       return(0);      /* *** shouldn't happen! *** */
     }
@@ -191,7 +191,7 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 
 	if (!st) {
 		st = &st1;
-		if (vfs_stat(conn,fname,st))
+		if (SMB_VFS_STAT(conn,fname,st))
 			return(-1);
 	}
 
@@ -235,7 +235,7 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
-	if ((ret = vfs_chmod(conn,fname,unixmode)) == 0)
+	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0)
 		return 0;
 
 	if((errno != EPERM) && (errno != EACCES))
@@ -262,7 +262,7 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 		if (!fsp)
 			return -1;
 		become_root();
-		ret = conn->vfs_ops.fchmod(fsp, fsp->fd, unixmode);
+		ret = SMB_VFS_FCHMOD(fsp, fsp->fd, unixmode);
 		unbecome_root();
 		close_file_fchmod(fsp);
 	}
@@ -283,7 +283,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 
   errno = 0;
 
-  if(conn->vfs_ops.utime(conn,fname, times) == 0)
+  if(SMB_VFS_UTIME(conn,fname, times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -298,7 +298,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
      (as DOS does).
    */
 
-  if(vfs_stat(conn,fname,&sb) != 0)
+  if(SMB_VFS_STAT(conn,fname,&sb) != 0)
     return -1;
 
   /* Check if we have write access. */
@@ -311,7 +311,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root();
-		  ret = conn->vfs_ops.utime(conn,fname, times);
+		  ret = SMB_VFS_UTIME(conn,fname, times);
 		  unbecome_root();
 	  }
   }

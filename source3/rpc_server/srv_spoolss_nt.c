@@ -273,7 +273,34 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 }
 
 /****************************************************************************
-  find printer index by handle
+ look for a printer object cached on an open printer handle
+****************************************************************************/
+
+WERROR find_printer_in_print_hnd_cache( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 **info2, 
+                                        const char *printername )
+{
+	Printer_entry *p;
+	
+	DEBUG(10,("find_printer_in_print_hnd_cache: printer [%s]\n", printername));
+
+	for ( p=printers_list; p; p=p->next )
+	{
+		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
+			&& p->printer_info
+			&& StrCaseCmp(p->dev.handlename, printername) == 0 )
+		{
+			DEBUG(10,("Found printer\n"));
+			*info2 = dup_printer_2( ctx, p->printer_info->info_2 );
+			if ( *info2 )
+				return WERR_OK;
+		}
+	}
+
+	return WERR_INVALID_PRINTER_NAME;
+}
+
+/****************************************************************************
+  destroy any cached printer_info_2 structures on open handles
 ****************************************************************************/
 
 void invalidate_printer_hnd_cache( char *printername )
@@ -1025,9 +1052,9 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-				data_len, data, p->notify.change, 0 );
-	}
+			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+					data_len, data, p->notify.change, 0 );
+		}
 	}
 	
 done:
@@ -2339,7 +2366,6 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-#if 0	/* JERRY */	
 	/* REG_BINARY
 	 *  uint32 size	 	 = 0x114
 	 *  uint32 major	 = 5
@@ -2348,14 +2374,23 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
 	if (!StrCaseCmp(value, "OSVersion")) {
-		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		*type = 0x3;
+		*needed = 0x114;
+
+		if((*data = (uint8 *)talloc(ctx, (*needed)*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-		SIVAL(*data, 0, 2);
-		*needed = 0x4;
+		ZERO_STRUCTP( *data );
+		
+		SIVAL(*data, 0, *needed);	/* size */
+		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
+		SIVAL(*data, 8, 0);
+		SIVAL(*data, 12, 2195);		/* build */
+		
+		/* leave extra string empty */
+		
 		return WERR_OK;
 	}
-#endif
+
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		fstring string;
@@ -4330,8 +4365,8 @@ static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 	GUID guid;
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
-		asprintf(&guid_str, "{%s}", uuid_string_static(guid));
-		strupper(guid_str);
+		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
+		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		printer->action = SPOOL_DS_PUBLISH;
 	} else {
@@ -4681,7 +4716,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 */
 
 	unistr2_to_ascii(name, servername, sizeof(name)-1);
-	strupper(name);
+	strupper_m(name);
 
 	switch (level) {
 	case 1:
@@ -7609,12 +7644,12 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 {
 	pstring path;
 	pstring long_archi;
-	pstring short_archi;
+	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==False)
+	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
@@ -8440,7 +8475,7 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
 	BOOL found=False;
@@ -8453,7 +8488,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 		
 	for (i=0; i<count && found==False; i++) { 
-		if (queue[i].job==(int)jobid)
+		if ((*queue)[i].job==(int)jobid)
 			found=True;
 	}
 	
@@ -8463,7 +8498,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		return WERR_INVALID_PARAM;
 	}
 	
-	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
+	fill_job_info_1(info_1, &((*queue)[i-1]), i, snum);
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
@@ -8485,7 +8520,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int 		i = 0;
 	BOOL 		found = False;
@@ -8506,7 +8541,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	for ( i=0; i<count && found==False; i++ ) 
 	{
-		if (queue[i].job == (int)jobid)
+		if ((*queue)[i].job == (int)jobid)
 			found = True;
 	}
 	
@@ -8537,7 +8572,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		}
 	}
 	
-	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
+	fill_job_info_2(info_2, &((*queue)[i-1]), i, snum, ntprinter, devmode);
 	
 	*needed += spoolss_size_job_info_2(info_2);
 
@@ -8601,11 +8636,11 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 		
 	switch ( level ) {
 	case 1:
-			wstatus = getjob_level_1(queue, count, snum, jobid, 
+			wstatus = getjob_level_1(&queue, count, snum, jobid, 
 				buffer, offered, needed);
 			break;
 	case 2:
-			wstatus = getjob_level_2(queue, count, snum, jobid, 
+			wstatus = getjob_level_2(&queue, count, snum, jobid, 
 				buffer, offered, needed);
 			break;
 	default:
@@ -9143,12 +9178,12 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 {
 	pstring path;
 	pstring long_archi;
-	pstring short_archi;
+        const char *short_archi;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==False)
+	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)

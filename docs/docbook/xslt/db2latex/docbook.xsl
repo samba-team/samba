@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: docbook.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $		
 |- #############################################################################
-|	$Author: ab $												
 |														
 |   PURPOSE: 
 | 	This is the "parent" stylesheet. The used "modules" are included here.
@@ -103,9 +101,6 @@
 	<xsl:message> XSLT stylesheets DocBook - LaTeX 2e                                            </xsl:message>
 	<xsl:message> Reqs: LaTeX 2e installation common packages                                    </xsl:message>
 	<xsl:message>################################################################################</xsl:message>
-	<xsl:message> RELEASE : <xsl:value-of select="$VERSION"/>                                    </xsl:message>
-	<xsl:message> VERSION : <xsl:value-of select="$CVSVERSION"/>                                 </xsl:message>
-	<xsl:message>     TAG : <xsl:value-of select="$TAG"/>                                        </xsl:message>
 	<xsl:message>     WWW : http://db2latex.sourceforge.net                                      </xsl:message>
 	<xsl:message> SUMMARY : http://www.sourceforge.net/projects/db2latex                         </xsl:message>
 	<xsl:message>  AUTHOR : Ramon Casellas   casellas@infres.enst.fr                             </xsl:message>

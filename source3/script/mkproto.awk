@@ -142,7 +142,11 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST|^PyObject|^SORTED_TREE|^REGISTRY_HOOK|^REGISTRY_VALUE|^DEVICEMODE|^PAC_DATA/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST|^PyObject|^SORTED_TREE|^REGISTRY_HOOK|^REGISTRY_VALUE|^DEVICEMODE|^PAC_DATA|^NET_USER_INFO_3|^smb_event_id_t/ ) {
+    gotstart = 1;
+  }
+
+  if( $0 ~ /^WINBINDD_PW|^WINBINDD_GR|^NT_PRINTER_INFO_LEVEL_2/ ) {
     gotstart = 1;
   }
 

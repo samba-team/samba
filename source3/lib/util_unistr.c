@@ -391,8 +391,9 @@ size_t strnlen_w(const smb_ucs2_t *src, size_t max)
 }
 
 /*******************************************************************
-wide strchr()
+ Wide strchr().
 ********************************************************************/
+
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	while (*s != 0) {
@@ -409,6 +410,10 @@ smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c)
 	return strchr_w(s, UCS2_CHAR(c));
 }
 
+/*******************************************************************
+ Wide strrchr().
+********************************************************************/
+
 smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	const smb_ucs2_t *p = s;
@@ -422,8 +427,30 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 }
 
 /*******************************************************************
-wide strstr()
+ Wide version of strrchr that returns after doing strrchr 'n' times.
 ********************************************************************/
+
+smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
+{
+	const smb_ucs2_t *p = s;
+	int len = strlen_w(s);
+	if (len == 0 || !n)
+		return NULL;
+	p += (len - 1);
+	do {
+		if (c == *p)
+			n--;
+
+		if (!n)
+			return (smb_ucs2_t *)p;
+	} while (p-- != s);
+	return NULL;
+}
+
+/*******************************************************************
+ Wide strstr().
+********************************************************************/
+
 smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 {
 	smb_ucs2_t *r;

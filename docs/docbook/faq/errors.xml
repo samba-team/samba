@@ -45,7 +45,7 @@ SMB password encryption.
 <member>enable SMB password encryption in Samba. See the encryption part of 
 the samba HOWTO Collection</member>
 
-<member>disable this new behaviour in NT. See the section about 
+<member>disable this behaviour in NT. See the section about 
 Windows NT in the chapter "Portability" of the samba HOWTO collection
 </member>
 </simplelist>
@@ -96,81 +96,6 @@ To overcome this problem use conv=binary when mounting the cdrom
 before exporting it with Samba.
 </para>
 
-</sect1>
-
-<sect1>
-<title>Why can users access home directories of other users?</title>
-
-<para>
-<quote>
-We are unable to keep individual users from mapping to any other user's
-home directory once they have supplied a valid password! They only need
-to enter their own password. I have not found *any* method that I can
-use to configure samba to enforce that only a user may map their own
-home directory.
-</quote>
-</para>
- 
-<para><quote>
-User xyzzy can map his home directory. Once mapped user xyzzy can also map
-*anyone* elses home directory!
-</quote></para>
-
-<para>
-This is not a security flaw, it is by design. Samba allows
-users to have *exactly* the same access to the UNIX filesystem
-as they would if they were logged onto the UNIX box, except
-that it only allows such views onto the file system as are
-allowed by the defined shares.
-</para>
-
-<para>
-This means that if your UNIX home directories are set up
-such that one user can happily cd into another users
-directory and do an ls, the UNIX security solution is to 
-change the UNIX file permissions on the users home directories
-such that the cd and ls would be denied.
-</para>
-
-<para>
-Samba tries very hard not to second guess the UNIX administrators
-security policies, and trusts the UNIX admin to set
-the policies and permissions he or she desires.
-</para>
-
-<para>
-Samba does allow the setup you require when you have set the
-"only user = yes" option on the share, is that you have not set the
-valid users list for the share.
-</para>
-
-<para>
-Note that only user works in conjunction with the users= list,
-so to get the behavior you require, add the line :
-<programlisting>
-users = %S
-</programlisting>
-this is equivalent to:
-<programlisting>
-valid users = %S
-</programlisting>
-to the definition of the [homes] share, as recommended in
-the smb.conf man page.
-</para>
-
-</sect1>
-
-<sect1>
-<title>Until a few minutes after samba has started, clients get the error "Domain Controller Unavailable"</title>
-<para>
-A domain controller has to announce on the network who it is. This usually takes a while.
-</para>
-</sect1>
-
-<sect1>
-<title>I'm getting "open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested" in the logs</title>
-<para>Your loopback device isn't working correctly. Make sure it's running.
-</para>
 </sect1>
 
 </chapter>

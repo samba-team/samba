@@ -454,6 +454,8 @@ static int get_sid(DOM_SID *sid, const unsigned char *sid_str)
   return 1;
 }
 
+#if 0
+
 /* 
  * Replace SID1, component by component with SID2
  * Assumes will never be called with unequal length SIDS
@@ -469,6 +471,8 @@ static void change_sid(DOM_SID *s1, DOM_SID *s2)
     s1->sub_auths[i] = s2->sub_auths[i];
   }
 }
+
+#endif
 
 static void print_sid(DOM_SID *sid)
 {

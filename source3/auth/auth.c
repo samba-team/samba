@@ -63,7 +63,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 	struct auth_init_function_entry *entry = backends;
 
 	while(entry) {
-		if (strequal(entry->name, name)) return entry;
+		if (strcmp(entry->name, name)==0) return entry;
 		entry = entry->next;
 	}
 	
@@ -203,9 +203,9 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
 				    struct auth_serversupplied_info **server_info)
 {
-	
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	const char *pdb_username;
+	/* if all the modules say 'not for me' this is reasonable */
+	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
+	const char *unix_username;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
@@ -244,12 +244,24 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
+		NTSTATUS result;
+		
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
-		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+
+		/* check if the module did anything */
+		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
+			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
+			talloc_destroy(mem_ctx);
+			continue;
+		}
+
+		nt_status = result;
+
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] suceeded\n", 
+			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
 				  auth_method->name, user_info->smb_name.str));
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
@@ -258,40 +270,36 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		talloc_destroy(mem_ctx);
 
-		if (NT_STATUS_IS_OK(nt_status))
-			break;
+		if ( NT_STATUS_IS_OK(nt_status))
+		{
+				break;			
+		}
 	}
 
-	/* This is one of the few places the *relies* (rather than just sets defaults
-	   on the value of lp_security().  This needs to change.  A new paramater 
-	   perhaps? */
-	if (lp_security() >= SEC_SERVER)
-		smb_user_control(user_info, *server_info, nt_status);
-
 	if (NT_STATUS_IS_OK(nt_status)) {
-		pdb_username = pdb_get_username((*server_info)->sam_account);
+		unix_username = (*server_info)->unix_name;
 		if (!(*server_info)->guest) {
 			/* We might not be root if we are an RPC call */
 			become_root();
-			nt_status = smb_pam_accountcheck(pdb_username);
+			nt_status = smb_pam_accountcheck(unix_username);
 			unbecome_root();
 			
 			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] suceeded\n", 
-					  pdb_username));
+				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] succeeded\n", 
+					  unix_username));
 			} else {
 				DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] FAILED with error %s\n", 
-					  pdb_username, nt_errstr(nt_status)));
+					  unix_username, nt_errstr(nt_status)));
 			} 
 		}
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] suceeded\n", 
+			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
 			       user_info->smb_name.str, 
 			       user_info->internal_username.str, 
-			       pdb_username));
+			       unix_username));
 		}
 	}
 
@@ -451,8 +459,13 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
-				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make("guest sam", NULL);
+				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+					DEBUG(5,("Making default auth method list for DC, security=user, encrypt passwords = yes\n"));
+					auth_method_list = str_list_make("guest sam winbind:trustdomain", NULL);
+				} else {
+					DEBUG(5,("Making default auth method list for standalone security=user, encrypt passwords = yes\n"));
+					auth_method_list = str_list_make("guest sam", NULL);
+				}
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
 				auth_method_list = str_list_make("guest unix", NULL);

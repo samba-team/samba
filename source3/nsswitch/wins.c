@@ -112,8 +112,8 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd = -1;
-	struct in_addr *ret = NULL;
-	struct in_addr  p;
+	struct ip_service *address = NULL;
+	struct in_addr *ret;
 	int j, flags = 0;
 
 	if (!initialised) {
@@ -123,7 +123,13 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	*count = 0;
 
 	/* always try with wins first */
-	if (resolve_wins(name,0x20,&ret,count)) {
+	if (resolve_wins(name,0x20,&address,count)) {
+		if ( (ret = (struct in_addr *)malloc(sizeof(struct in_addr))) == NULL ) {
+			free( address );
+			return NULL;
+		}
+		*ret = address[0].ip;
+		free( address );
 		return ret;
 	}
 
@@ -139,7 +145,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		if (ret) break;
 	}
 
-out:
 	close(fd);
 	return ret;
 }

@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+                  
 <!ENTITY general SYSTEM "general.xml">
 <!ENTITY install SYSTEM "install.xml">
 <!ENTITY errors SYSTEM "errors.xml">
 <!ENTITY clientapp SYSTEM "clientapp.xml">
 <!ENTITY features SYSTEM "features.xml">
-<!ENTITY config SYSTEM "config.xml">
-<!ENTITY printing SYSTEM "printing.xml">
 ]>
 
 <book id="Samba-FAQ">
@@ -34,9 +33,7 @@ and the old samba text documents which were mostly written by John Terpstra.
 
 &general;
 &install;
-&config;
 &clientapp;
 &errors;
 &features;
-&printing;
 </book>

@@ -153,9 +153,9 @@ workgroup %s. This is a bug.\n", name, work->work_group));
  
   servrec->subnet = work->subnet;
  
-  StrnCpy(servrec->serv.name,name,sizeof(servrec->serv.name)-1);
-  StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
-  strupper(servrec->serv.name);
+  fstrcpy(servrec->serv.name,name);
+  fstrcpy(servrec->serv.comment,comment);
+  strupper_m(servrec->serv.name);
   servrec->serv.type  = servertype;
 
   update_server_ttl(servrec, ttl);

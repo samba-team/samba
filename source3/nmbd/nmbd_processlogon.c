@@ -304,19 +304,19 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	pstring hostname;
 	char *component, *dc, *q1;
 	uint8 size;
+	char *q_orig = q;
+	int str_offset;
 
 	get_mydomname(domain);
 	get_myname(hostname);
 	
 	if (SVAL(uniuser, 0) == 0) {
-	  SSVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
+	  SIVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
 	} else {
-	  SSVAL(q, 0, SAMLOGON_AD_R);
+	  SIVAL(q, 0, SAMLOGON_AD_R);
 	}
-	q += 2;
+	q += 4;
 
-	SSVAL(q, 0, 0);
-	q += 2;
 	SIVAL(q, 0, ADS_PDC|ADS_GC|ADS_LDAP|ADS_DS|
 	            ADS_KDC|ADS_TIMESERV|ADS_CLOSEST|ADS_WRITABLE);
 	q += 4;
@@ -329,7 +329,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	memcpy(q, &domain_guid, sizeof(domain_guid));
 	q += sizeof(domain_guid);
 
-	/* Push domain components */
+	/* Forest */
+	str_offset = q - q_orig;
 	dc = domain;
 	q1 = q;
 	while ((component = strtok(dc, "."))) {
@@ -338,44 +339,60 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	  SCVAL(q, 0, size);
 	  q += (size + 1);
 	}
-	SCVAL(q, 0, 0); q++;
-	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
-	q += 2;              /* it must follow the domain name. */
 
-	/* Push dns host name */
+	/* Unk0 */
+	SCVAL(q, 0, 0); q++;
+
+	/* Domain */
+	SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+	SCVAL(q, 1, str_offset & 0xFF);
+	q += 2;
+
+	/* Hostname */
 	size = push_ascii(&q[1], hostname, -1, 0);
 	SCVAL(q, 0, size);
 	q += (size + 1);
-	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
-	q += 2;              /* it must follow the domain name. */
+	SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+	SCVAL(q, 1, str_offset & 0xFF);
+	q += 2;
 
-	/* Push NETBIOS of domain */
+	/* NETBIOS of domain */
 	size = push_ascii(&q[1], lp_workgroup(), -1, STR_UPPER);
 	SCVAL(q, 0, size);
 	q += (size + 1);
-	SCVAL(q, 0, 0); q++; /* is this a null terminator or empty field */
-	/* null terminator would not be needed because size is included */
 
-	/* Push NETBIOS of hostname */
+	/* Unk1 */
+	SCVAL(q, 0, 0); q++;
+
+	/* NETBIOS of hostname */
 	size = push_ascii(&q[1], my_name, -1, 0);
 	SCVAL(q, 0, size);
 	q += (size + 1);
-	SCVAL(q, 0, 0); q++; /* null terminator or empty field? */
 
-	/* Push user account */
-	size = push_ascii(&q[1], ascuser, -1, 0);
-	SCVAL(q, 0, size);
-	q += (size + 1);
+	/* Unk2 */
+	SCVAL(q, 0, 0); q++;
 
-	/* Push 'Default-First-Site-Name' */
+	/* User name */
+	if (SVAL(uniuser, 0) != 0) {
+		size = push_ascii(&q[1], ascuser, -1, 0);
+		SCVAL(q, 0, size);
+		q += (size + 1);
+	}
+
+	q_orig = q;
+	/* Site name */
 	size = push_ascii(&q[1], "Default-First-Site-Name", -1, 0);
 	SCVAL(q, 0, size);
 	q += (size + 1);
 
-	SSVAL(q, 0, 0xc000); /* unknown */
-	SCVAL(q, 2, PTR_DIFF(q,q1));
-	SCVAL(q, 3, 0x10); /* unknown */
-	q += 4;
+	/* Site name (2) */
+	str_offset = q - q_orig;
+	SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+	SCVAL(q, 1, str_offset & 0xFF);
+	q += 2;
+
+	SCVAL(q, 0, PTR_DIFF(q,q1));
+	SCVAL(q, 1, 0x10); /* unknown */
 
 	SIVAL(q, 0, 0x00000002); q += 4; /* unknown */
 	SIVAL(q, 0, (iface_ip(p->ip))->s_addr); q += 4;

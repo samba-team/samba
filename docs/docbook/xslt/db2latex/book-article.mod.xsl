@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: book-article.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 |- #############################################################################
-|	$Author: ab $												
 |														
 |   PURPOSE:
 |	This template matches a book / article
@@ -20,7 +18,6 @@
     <doc:reference id="book-article" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: book-article.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -467,9 +464,7 @@
 
 
     <!--############################################################################# 
-    |	$Id: book-article.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
     |- #############################################################################
-    |	$Author: ab $
     |														
     |   PURPOSE: Table of Contents, Figures, ...
     + ############################################################################## -->

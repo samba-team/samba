@@ -198,6 +198,22 @@ static const nt_forms_struct default_forms[] = {
 	{"PRC Envelope #10 Rotated",0x1,0x6fd10,0x4f1a0,0x0,0x0,0x6fd10,0x4f1a0}
 };
 
+struct table_node {
+	const char 	*long_archi;
+	const char 	*short_archi;
+	int	version;
+};
+ 
+static const struct table_node archi_table[]= {
+
+	{"Windows 4.0",          "WIN40",	0 },
+	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT R4000",     "W32MIPS",	2 },
+	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
+	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{NULL,                   "",		-1 }
+};
+
 static BOOL upgrade_to_version_3(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
@@ -638,12 +654,12 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 {
 	int total=0;
-	fstring short_archi;
+	const char *short_archi;
 	fstring *fl;
 	pstring key;
 	TDB_DATA kbuf, newkey;
 
-	get_short_archi(short_archi, architecture);
+	short_archi = get_short_archi(architecture);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
@@ -667,52 +683,32 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 }
 
 /****************************************************************************
- Function to do the mapping between the long architecture name and
- the short one.
+function to do the mapping between the long architecture name and
+the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, const char *long_archi)
+const char *get_short_archi(const char *long_archi)
 {
-	struct table {
-		const char *long_archi;
-		const char *short_archi;
-	};
-	
-	struct table archi_table[]=
-	{
-		{"Windows 4.0",          "WIN40"    },
-		{"Windows NT x86",       "W32X86"   },
-		{"Windows NT R4000",     "W32MIPS"  },
-		{"Windows NT Alpha_AXP", "W32ALPHA" },
-		{"Windows NT PowerPC",   "W32PPC"   },
-		{NULL,                   ""         }
-	};
-	
-	int i=-1;
+        int i=-1;
 
-	DEBUG(107,("Getting architecture dependant directory\n"));
+        DEBUG(107,("Getting architecture dependant directory\n"));
+        do {
+                i++;
+        } while ( (archi_table[i].long_archi!=NULL ) &&
+                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
-	if (long_archi == NULL) {
-		DEBUGADD(107,("Bad long_archi param.!\n"));
-		return False;
-	}
+        if (archi_table[i].long_archi==NULL) {
+                DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
+                return NULL;
+        }
 
-	do {
-		i++;
-	} while ( (archi_table[i].long_archi!=NULL ) &&
-	          StrCaseCmp(long_archi, archi_table[i].long_archi) );
+	/* this might be client code - but shouldn't this be an fstrcpy etc? */
 
-	if (archi_table[i].long_archi==NULL) {
-		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
-		return False;
-	}
 
-	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
+        DEBUGADD(108,("index: [%d]\n", i));
+        DEBUGADD(108,("long architecture: [%s]\n", archi_table[i].long_archi));
+        DEBUGADD(108,("short architecture: [%s]\n", archi_table[i].short_archi));
 
-	DEBUGADD(108,("index: [%d]\n", i));
-	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
-	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
-	
-	return True;
+	return archi_table[i].short_archi;
 }
 
 /****************************************************************************
@@ -750,7 +746,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (SMB_VFS_LSEEK(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
 				fname, errno));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -810,7 +806,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				/* Seek to the start of the .rsrc section info */
-				if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+				if (SMB_VFS_LSEEK(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
 					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
 							fname, errno));
 					goto error_exit;
@@ -903,7 +899,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				 * twice, as it is simpler to read the code. */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
 					/* Compute skip alignment to next long address */
-					int skip = -(fsp->conn->vfs_ops.lseek(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
+					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
 								 sizeof(VS_SIGNATURE)) & 3;
 					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
 
@@ -996,7 +992,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
 			old_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
@@ -1025,7 +1021,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
 			new_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
@@ -1066,7 +1062,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
+static uint32 get_correct_cversion(const char *architecture, fstring driverpath_in,
 				   struct current_user *user, WERROR *perr)
 {
 	int               cversion;
@@ -1111,7 +1107,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	}
 
 	/* We are temporarily becoming the connection user. */
-	if (!become_user(conn, conn->vuid)) {
+	if (!become_user(conn, user->vuid)) {
 		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
 		*perr = WERR_ACCESS_DENIED;
 		return -1;
@@ -1192,7 +1188,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
 											 struct current_user *user)
 {
-	fstring architecture;
+	const char *architecture;
 	fstring new_name;
 	char *p;
 	int i;
@@ -1232,7 +1228,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 		}
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 	
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1256,7 +1252,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 ****************************************************************************/
 static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver, struct current_user *user)
 {
-	fstring architecture;
+	const char *architecture;
 	fstring new_name;
 	char *p;
 	int i;
@@ -1296,7 +1292,7 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 		}
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1382,7 +1378,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
-	fstring architecture;
+	const char *architecture;
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
@@ -1409,7 +1405,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		return False;
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/*
 	 * Connect to the print$ share under the same account as the user connected to the rpc pipe.
@@ -1589,7 +1585,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
 	int len, buflen;
-	fstring architecture;
+	const char *architecture;
 	pstring directory;
 	fstring temp_name;
 	pstring key;
@@ -1597,7 +1593,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	int i, ret;
 	TDB_DATA kbuf, dbuf;
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/* The names are relative. We store them in the form: \print$\arch\version\driver.xxx
 	 * \\server is added in the rpc server layer.
@@ -1751,14 +1747,14 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
-	fstring architecture;
+	const char *architecture;
 	int len = 0;
 	int i;
 	pstring key;
 
 	ZERO_STRUCT(driver);
 
-	get_short_archi(architecture, arch);
+	architecture = get_short_archi(arch);
 
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
@@ -2447,6 +2443,7 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 	return num_subkeys;
 }
 
+#ifdef HAVE_ADS
 static void map_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name, 
 			    const char *sz)
 {
@@ -2559,7 +2556,6 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	return True;
 }
 
-#ifdef HAVE_ADS
 static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, GUID guid)
 {
 	int i;
@@ -2605,12 +2601,19 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
 		    printer->info_2->sharename);
 
-	/* connect to the ADS server */
-	ads = ads_init(NULL, NULL, lp_ads_server());
+	/* initial ads structure */
+	
+	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
 	}
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+		NULL, NULL);
+		
+	/* ads_connect() will find the DC for us */					    
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
@@ -2663,11 +2666,17 @@ WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
 		return win_rc;
 	}
 	
-	ads = ads_init(NULL, NULL, lp_ads_server());
+	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
 	}
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+		NULL, NULL);
+
+	/* ads_connect() will find the DC for us */					    
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
@@ -3813,7 +3822,7 @@ static NTSTATUS copy_printer_data( NT_PRINTER_DATA *dst, NT_PRINTER_DATA *src )
  Caller must free.
 ****************************************************************************/
 
-static NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
+NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
 {
 	NT_PRINTER_INFO_LEVEL_2 *copy;
 	
@@ -3845,8 +3854,6 @@ static NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 
-#define ENABLE_PRINT_HND_CACHE	1
-
 WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
 			const char *sharename)
 {
@@ -3871,7 +3878,6 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 			 * is actually for a printer and that the printer_info pointer 
 			 * is valid
 			 */
-#ifdef ENABLE_PRINT_HND_CACHE	/* JERRY */
 			if ( print_hnd 
 				&& (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER) 
 				&& print_hnd->printer_info )
@@ -3890,20 +3896,27 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				
 				break;
 			}
-#endif 
 
-			/* no cache; look it up on disk */
+			/* no cache for this handle; see if we can match one from another handle */
 			
-			result=get_a_printer_2(&printer->info_2, sharename);
-			if (W_ERROR_IS_OK(result)) {
-				dump_a_printer(*printer, level);
+			if ( print_hnd )
+				result = find_printer_in_print_hnd_cache(print_hnd->ctx, &printer->info_2, sharename);
+			
+			/* fail to disk if we don't have it with any open handle */
 
-#if ENABLE_PRINT_HND_CACHE	/* JERRY */								
+			if ( !print_hnd || !W_ERROR_IS_OK(result) )
+				result = get_a_printer_2(&printer->info_2, sharename);				
+			
+			/* we have a new printer now.  Save it with this handle */
+			
+			if ( W_ERROR_IS_OK(result) ) {
+				dump_a_printer(*printer, level);
+					
 				/* save a copy in cache */
 				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
 					if ( !print_hnd->printer_info )
 						print_hnd->printer_info = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL));
-					
+
 					if ( print_hnd->printer_info ) {
 						print_hnd->printer_info->info_2 = dup_printer_2(print_hnd->ctx, printer->info_2);
 						
@@ -3911,16 +3924,14 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 						if ( !print_hnd->printer_info->info_2 )
 							DEBUG(0,("get_a_printer: unable to copy new printer info!\n"));
 					}
-					
 				}
-#endif
-				*pp_printer = printer;
+				*pp_printer = printer;	
 			}
-			else 
+			else
 				SAFE_FREE(printer);
-	
-
+			
 			break;
+			
 		default:
 			result=WERR_UNKNOWN_LEVEL;
 			break;
@@ -4405,13 +4416,13 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
                               uint32 version, BOOL delete_files )
 {
 	pstring 	key;
-	fstring		arch;
+	const char     *arch;
 	TDB_DATA 	kbuf, dbuf;
 	NT_PRINTER_DRIVER_INFO_LEVEL	ctr;
 
 	/* delete the tdb data first */
 
-	get_short_archi(arch, info_3->environment);
+	arch = get_short_archi(info_3->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		arch, version, info_3->name);
 

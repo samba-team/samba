@@ -5,9 +5,7 @@
  <!ENTITY % mmlextra PUBLIC "MathML extra" "ent/mmlextra.ent">  %mmlextra;
 ]>
 <!--############################################################################# 
- |	$Id: mathml.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $		
  |- #############################################################################
- |	$Author: ab $
  |														
  |   PURPOSE: MathML presentation and content markup.
  |	Note: these elements are not part of the DocBook DTD. I have extended

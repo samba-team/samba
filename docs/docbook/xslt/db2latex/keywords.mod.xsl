@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: keywords.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 |- #############################################################################
-|	$Author: ab $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,7 +16,6 @@
     <doc:reference id="keywords" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: keywords.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

@@ -172,7 +172,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
       /* Update the record. */
       servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
       update_server_ttl( servrec, ttl);
-      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+      fstrcpy(servrec->serv.comment,comment);
     }
   }
   else
@@ -343,7 +343,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
       /* Update the record. */
       servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
       update_server_ttl(servrec, ttl);
-      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+      fstrcpy(servrec->serv.comment,comment);
     }
 
     set_workgroup_local_master_browser_name( work, server_name );
@@ -520,7 +520,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
       /* Update the record. */
       servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
       update_server_ttl( servrec, ttl);
-      StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+      fstrcpy(servrec->serv.comment,comment);
     }
   }
   else
@@ -559,6 +559,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 #if 0
   struct server_record *servrec;
 #endif
+  fstring myname;
 
   memset(outbuf,'\0',sizeof(outbuf));
 
@@ -578,8 +579,11 @@ static void send_backup_list_response(struct subnet_record *subrec,
   
   /* We always return at least one name - our own. */
   count = 1;
-  StrnCpy(p,global_myname(),15);
-  strupper(p);
+  fstrcpy(myname, global_myname());
+  strupper_m(myname);
+  myname[15]='\0';
+  push_pstring_base(p, myname, outbuf);
+
   p = skip_string(p,1);
 
   /* Look for backup browsers in this workgroup. */
@@ -610,7 +614,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
       continue;
 
     StrnCpy(p, servrec->serv.name, 15);
-    strupper(p);
+    strupper_m(p);
     count++;
 
     DEBUG(5,("send_backup_list_response: Adding server %s number %d\n",

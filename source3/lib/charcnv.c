@@ -55,6 +55,30 @@ static const char *charset_name(charset_t ch)
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
 	else if (ch == CH_UTF8) ret = "UTF8";
 
+#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
+	if (ret && strcasecmp(ret, "LOCALE") == 0) {
+		const char *ln = NULL;
+
+#ifdef HAVE_SETLOCALE
+		setlocale(LC_ALL, "");
+#endif
+		ln = nl_langinfo(CODESET);
+		if (ln) {
+			/* Check whether the charset name is supported
+			   by iconv */
+			smb_iconv_t handle = smb_iconv_open(ln,"UCS-2LE");
+			if (handle == (smb_iconv_t) -1) {
+				DEBUG(5,("Locale charset '%s' unsupported, using ASCII instead\n", ln));
+				ln = NULL;
+			} else {
+				DEBUG(5,("Substituting charset '%s' for LOCALE\n", ln));
+				smb_iconv_close(handle);
+			}
+		}
+		ret = ln;
+	}
+#endif
+
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
 }
@@ -363,11 +387,11 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE)
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
 	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
@@ -464,7 +488,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
@@ -542,7 +566,7 @@ static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 
 	if (flags & STR_UPPER) {
 		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
+		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
@@ -723,8 +747,21 @@ size_t pull_utf8_allocate(void **dest, const char *src)
 
 size_t push_string_fn(const char *function, unsigned int line, const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
+#ifdef DEVELOPER
+	/* We really need to zero fill here, not clobber
+	 * region, as we want to ensure that valgrind thinks
+	 * all of the outgoing buffer has been written to
+	 * so a send() or write() won't trap an error.
+	 * JRA.
+	 */
+#if 0
 	if (dest_len != (size_t)-1)
 		clobber_region(function, line, dest, dest_len);
+#else
+	if (dest_len != (size_t)-1)
+		memset(dest, '\0', dest_len);
+#endif
+#endif
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
