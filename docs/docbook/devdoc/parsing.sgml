@@ -196,7 +196,7 @@ terminating character, and the rest of the line is ignored.  The lines
   &lt;section&gt;         :==  &lt;section header&gt; { &lt;parameter line&gt; }
   &lt;section header&gt;  :==  '[' NAME ']'
   &lt;parameter line&gt;  :==  NAME '=' VALUE NL
-</programlisting><para>
+</programlisting></para>
 
 <para>Basically, this means that</para>
 

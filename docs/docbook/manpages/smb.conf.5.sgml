@@ -656,8 +656,9 @@
 		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPSSL"><parameter>ldap ssl</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
-		<listitem><para><link linkend="LDAPUSERSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
-		<listitem><para><link linkend="LDAPMACHINESUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPUSERSUFFIX"><parameter>ldap user suffix</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPMACHINESUFFIX"><parameter>ldap machine suffix</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPPASSWDSYNC"><parameter>ldap passwd sync</parameter></link></para></listitem>
 
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
@@ -1138,7 +1139,16 @@
 		
 		<varlistentry><term><anchor id="ADDGROUPSCRIPT">add group script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
-		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)</ulink> when a new group is requested. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		be run <emphasis>AS ROOT</emphasis> by <ulink
+                url="smbd.8.html">smbd(8)</ulink> when a new group is
+                requested. It will expand any
+                <parameter>%g</parameter> to the group name passed.
+                This script is only useful for installations using the
+                Windows NT domain administration tools. The script is
+                free to create a group with an arbitrary name to
+                circumvent unix group name restrictions. In that case
+                the script must print the numeric gid of the created
+                group on stdout.
 		</para></listitem>
 		</varlistentry>
 
@@ -3484,13 +3494,16 @@
 		
 		<para>
 		The <parameter>ldap ssl</parameter> can be set to one of three values:
-		(a) <constant>on</constant> - Always use SSL when contacting the 
-		<parameter>ldap	server</parameter>, (b) <constant>off</constant> -
-		Never use SSL when querying the directory, or (c) <constant>start_tls</constant> 
-		- Use the LDAPv3 StartTLS extended operation 
-		(RFC2830) for communicating with the directory server.
-		</para>
-		
+		</para>	
+		<itemizedlist>
+			<listitem><para><parameter>On</parameter>  =  Always use SSL when contacting the 
+			<parameter>ldap	server</parameter>.</para></listitem>
+			
+			<listitem><para><parameter>Off</parameter> = Never use SSL when querying the directory.</para></listitem>
+
+			<listitem><para><parameter>Start_tls</parameter> = Use the LDAPv3 StartTLS extended operation 
+			(RFC2830) for communicating with the directory server.</para></listitem>
+		</itemizedlist>		
 		
 		<para>Default : <command>ldap ssl = on</command></para>
 		</listitem>
@@ -3533,7 +3546,29 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="LDAPPASSWDSYNC">ldap passwd sync (G)</term>
+		<listitem><para>This option is used to define whether
+		or not Samba should sync the LDAP password with the NT
+		and LM hashes for normal accounts (NOT for
+		workstation, server or domain trusts) on a password
+		change via SAMBA.  
+		</para>
 
+		<para>
+		The <parameter>ldap passwd sync</parameter> can be set to one of three values:
+		</para>
+		<itemizedlist>
+			<listitem><para><parameter>Yes</parameter>  =  Try to update the LDAP, NT and LM passwords and update the pwdLastSet time.</para></listitem>
+			
+			<listitem><para><parameter>No</parameter> = Update NT and LM passwords and update the pwdLastSet time.</para></listitem>
+
+			<listitem><para><parameter>Only</parameter> = Only update the LDAP password and let the LDAP server do the rest.</para></listitem>
+		</itemizedlist>		
+		
+		<para>Default : <command>ldap passwd sync = no</command></para>
+		</listitem>
+		</varlistentry>
 
 
 
