@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
@@ -38,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "5"
+#define MOUNT_CIFS_VERSION_MINOR "6"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -657,6 +658,7 @@ int main(int argc, char ** argv)
 	int gid = 0;
 	int optlen = 0;
 	int orgoptlen = 0;
+	int retry = 0; /* set when we have to retry mount with uppercase */
 	struct stat statbuf;
 	struct utsname sysinfo;
 	struct mntent mountent;
@@ -846,6 +848,7 @@ int main(int argc, char ** argv)
 	}
 	/* FIXME launch daemon (handles dfs name resolution and credential change) 
 	   remember to clear parms and overwrite password field before launching */
+mount_retry:
 	if(orgoptions) {
 		optlen = strlen(orgoptions);
 		orgoptlen = optlen;
@@ -897,6 +900,8 @@ int main(int argc, char ** argv)
 		printf("\nmount.cifs kernel mount options %s \n",options);
 	if(mount(share_name, mountpoint, "cifs", flags, options)) {
 	/* remember to kill daemon on error */
+		char * tmp;
+
 		switch (errno) {
 		case 0:
 			printf("mount failed but no error number set\n");
@@ -904,7 +909,21 @@ int main(int argc, char ** argv)
 		case ENODEV:
 			printf("mount error: cifs filesystem not supported by the system\n");
 			break;
+		case ENXIO:
+			if(retry == 0) {
+				retry = 1;
+				tmp = share_name;
+				while (*tmp && !(((unsigned char)tmp[0]) & 0x80)) {
+					*tmp = toupper((unsigned char)*tmp);
+		        		tmp++;
+				}
+				if(!*tmp) {
+					printf("retrying with upper case share name\n");
+					goto mount_retry;
+				}
+			}
 		default:
+			
 			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
