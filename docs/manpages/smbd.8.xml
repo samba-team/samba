@@ -28,7 +28,7 @@
 		<arg choice="opt">-b</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
-		<arg choice="opt">-p &lt;port number&gt;</arg>
+		<arg choice="opt">-p &lt;port number(s)&gt;</arg>
 		<arg choice="opt">-O &lt;socket option&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 	</cmdsynopsis>
@@ -136,28 +136,15 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-p &lt;port number&gt;</term>
-		<listitem><para><replaceable>port number</replaceable> is a positive integer 
-		value.  The default value if this parameter is not 
-		specified is 139.</para>
+		<term>-p &lt;port number(s)&gt;</term>
+		<listitem><para><replaceable>port number(s)</replaceable> is a 
+		space or comma-seperated list of TCP ports smbd should listen on.
+		The default value is taken from the <smbconfoption><name>ports</name></smbconfoption> parameter in &smb.conf;</para>
+
+		<para>The default ports are 139 (used for SMB over NetBIOS over TCP)
+			and port 445 (used for plain SMB over TCP).
+	</para></listitem>
 		
-		<para>This number is the port number that will be 
-		used when making connections to the server from client 
-		software. The standard (well-known) port number for the 
-		SMB over TCP is 139, hence the default. If you wish to 
-		run the server as an ordinary user rather than
-		as root, most systems will require you to use a port 
-		number greater than 1024 - ask your system administrator 
-		for help if you are in this situation.</para>
-		
-		<para>In order for the server to be useful by most 
-		clients, should you configure it on a port other 
-		than 139, you will require port redirection services 
-		on port 139, details of which are outlined in rfc1002.txt 
-		section 4.3.5.</para>
-		
-		<para>This parameter is not normally specified except 
-		in the above situation.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
