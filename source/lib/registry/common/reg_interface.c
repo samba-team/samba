@@ -124,8 +124,7 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 {
 	char *fullname;
-	WERROR status;
-	REG_KEY *ret = NULL;
+	WERROR error;
 	TALLOC_CTX *mem_ctx;
 
 	if(!parent) {
@@ -143,10 +142,10 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 
 		while(curbegin && *curbegin) {
 			if(curend)*curend = '\0';
-			status = reg_key_get_subkey_by_name(curkey, curbegin, result);
-			if(!NT_STATUS_IS_OK(status)) {
+			error = reg_key_get_subkey_by_name(curkey, curbegin, result);
+			if(!W_ERROR_IS_OK(error)) {
 				SAFE_FREE(orig);
-				return status;
+				return error;
 			}
 			if(!curend) break;
 			curbegin = curend + 1;
@@ -168,20 +167,18 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 		return WERR_NOT_SUPPORTED;
 	}
 
-	status = parent->handle->functions->open_key(parent->handle, fullname, result);
+	error = parent->handle->functions->open_key(parent->handle, fullname, result);
 
-	if(!NT_STATUS_IS_OK(status)) {
+	if(!W_ERROR_IS_OK(error)) {
 		talloc_destroy(mem_ctx);
-		return status;
+		return error;
 	}
 		
-	ret->handle = parent->handle;
-	ret->path = fullname;
-	talloc_steal(mem_ctx, ret->mem_ctx, fullname);
+	(*result)->handle = parent->handle;
+	(*result)->path = fullname;
+	talloc_steal(mem_ctx, (*result)->mem_ctx, fullname);
 
 	talloc_destroy(mem_ctx);
-
-	*result = ret;
 
 	return WERR_OK;
 }
@@ -294,32 +291,29 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subkey)
 {
 	int i;
-	REG_KEY *ret = NULL;
 	WERROR error = WERR_OK;
 
 	if(!key) return WERR_INVALID_PARAM;
 
 	if(key->handle->functions->get_subkey_by_name) {
 		error = key->handle->functions->get_subkey_by_name(key,name,subkey);
-	} else {
+	} else if(key->handle->functions->get_subkey_by_index || key->handle->functions->fetch_subkeys) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(key, i, subkey);
 			if(W_ERROR_IS_OK(error) && !strcmp((*subkey)->name, name)) {
-				break;
+				return error;
 			}
 			reg_key_free(*subkey);
 		}
-
+	} else {
+		return WERR_NOT_SUPPORTED;
 	}
 
-	if(!W_ERROR_IS_OK(error) && W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
-		return error;
+	if(!W_ERROR_IS_OK(error)) return error;
 
-	ret->path = talloc_asprintf(ret->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", ret->name);
-	ret->handle = key->handle;
+	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
+	(*subkey)->handle = key->handle;
 
-	*subkey = ret;
-		
 	return WERR_OK; 
 }
 
