@@ -27,19 +27,109 @@ extern int DEBUGLEVEL;
 static fstring password;
 static fstring username;
 static int got_pass;
-
+static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 
+/* a test fn for LANMAN mask support */
+int ms_fnmatch_lanman_core(char *pattern, char *string)
+{
+	char *p = pattern, *n = string;
+	char c;
+
+	//	printf("ms_fnmatch_lanman_core(%s, %s)\n", pattern, string);
+
+	while ((c = *p++)) {
+		switch (c) {
+		case '?':
+			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) return 0;
+			if (! *n && !*p) return 0;
+			n++;
+			break;
+
+		case '>':
+			if (n[0] == '.') {
+				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) return 0;
+				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
+				return -1;
+			}
+			if (! *n) return ms_fnmatch_lanman_core(p, n);
+			n++;
+			break;
+
+		case '*':
+			for (; *n; n++) {
+				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
+			}
+			break;
+
+		case '<':
+			for (; *n; n++) {
+				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
+				if (*n == '.' && !strchr(n+1,'.')) {
+					n++;
+					break;
+				}
+			}
+			break;
+
+		case '"':
+			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) return 0;
+			if (*n != '.') return -1;
+			n++;
+			break;
+
+		default:
+			if (c != *n) return -1;
+			n++;
+		}
+	}
+	
+	if (! *n) return 0;
+	
+	return -1;
+}
+
+int ms_fnmatch_lanman(char *pattern, char *string)
+{
+	pstring p_base, p_ext="", s_base, s_ext="";
+	char *p;
+
+	pstrcpy(p_base, pattern);
+	pstrcpy(s_base, string);
+
+	p = strrchr(p_base,'.');
+	if (p) {
+		*p = 0;
+		pstrcpy(p_ext, p+1);
+	}
+
+	p = strrchr(s_base,'.');
+	if (p) {
+		*p = 0;
+		pstrcpy(s_ext, p+1);
+	}
+
+	//printf("[%s/%s] [%s/%s] [%s/%s]\n", 
+	//      pattern, string, p_base, s_base, p_ext, s_ext);
+
+	return ms_fnmatch_lanman_core(p_base, s_base) ||
+		ms_fnmatch_lanman_core(p_ext, s_ext);
+}
+
 static BOOL reg_match_one(char *pattern, char *file)
 {
-	if (strcmp(file,"..") == 0) file = ".";
-	if (strcmp(pattern,".") == 0) return False;
-
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
+
+	if (max_protocol <= PROTOCOL_LANMAN2) {
+		return ms_fnmatch_lanman(pattern, file)==0;
+	}
+
+	if (strcmp(file,"..") == 0) file = ".";
+	if (strcmp(pattern,".") == 0) return False;
 
 	return ms_fnmatch(pattern, file)==0;
 }
@@ -50,7 +140,7 @@ static char *reg_test(char *pattern, char *file, char *short_name)
 	fstrcpy(ret, "---");
 
 	pattern = 1+strrchr(pattern,'\\');
-	file = 1+strrchr(file,'\\');
+	// file = 1+strrchr(file,'\\');
 
 	if (reg_match_one(pattern, ".")) ret[0] = '+';
 	if (reg_match_one(pattern, "..")) ret[1] = '+';
@@ -94,6 +184,8 @@ struct cli_state *connect_one(char *share)
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
+
+	c->protocol = max_protocol;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
@@ -170,12 +262,14 @@ void listfn(file_info *f, const char *s, void *state)
 }
 
 static void get_short_name(struct cli_state *cli, 
-			   char *name, fstring short_name)
+			   char *name, pstring long_name, fstring short_name)
 {
-	cli_list(cli, name, aHIDDEN | aDIR, listfn, NULL);
+	cli_list(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
+		pstrcpy(long_name, finfo->name);
+		strlower(long_name);
 	}
 }
 
@@ -186,6 +280,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	char *res2;
 	static int count;
 	fstring short_name;
+	pstring long_name;
 
 	count++;
 
@@ -204,13 +299,13 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	if (old_list) {
 		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 	} else {
-		get_short_name(cli, file, short_name);
+		get_short_name(cli, file, long_name, short_name);
 		finfo = NULL;
 		fstrcpy(res1, "---");
 		cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 	}
 
-	res2 = reg_test(mask, file, short_name);
+	res2 = reg_test(mask, long_name, short_name);
 
 	if (showall || strcmp(res1, res2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
@@ -341,8 +436,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:")) != EOF) {
 		switch (opt) {
+		case 'M':
+			max_protocol = interpret_protocol(optarg, max_protocol);
+			break;
 		case 'U':
 			pstrcpy(username,optarg);
 			p = strchr(username,'%');
