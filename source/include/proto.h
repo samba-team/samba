@@ -50,6 +50,35 @@ BOOL get_unixalias_members(struct group *grp,
 				int *num_mem, LOCAL_GRP_MEMBER **members);
 struct aliasdb_ops *unix_initialise_alias_db(void);
 
+/*The following definitions come from  groupdb/builtindb.c  */
+
+BOOL initialise_builtin_db(void);
+LOCAL_GRP *iterate_getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
+LOCAL_GRP *iterate_getbuiltinrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
+LOCAL_GRP *iterate_getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
+BOOL add_domain_builtin(LOCAL_GRP **blts, int *num_blts, LOCAL_GRP *blt);
+BOOL iterate_getuserbuiltinntnam(const char *user_name, LOCAL_GRP **blts, int *num_blts);
+BOOL enumdombuiltins(LOCAL_GRP **blts, int *num_blts);
+void *startbuiltinent(BOOL update);
+void endbuiltinent(void *vp);
+LOCAL_GRP *getbuiltinent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
+BOOL add_builtin_entry(LOCAL_GRP *newblt);
+BOOL mod_builtin_entry(LOCAL_GRP* blt);
+LOCAL_GRP *getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
+LOCAL_GRP *getbuiltinrid(uint32 builtin_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
+LOCAL_GRP *getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
+BOOL getuserbuiltinntnam(const char *user_name, LOCAL_GRP **blt, int *num_blts);
+void bidb_init_blt(LOCAL_GRP *blt);
+BOOL make_builtin_line(char *p, int max_len,
+				LOCAL_GRP *blt,
+				LOCAL_GRP_MEMBER **mem, int *num_mem);
+
+/*The following definitions come from  groupdb/builtinunix.c  */
+
+BOOL get_unixbuiltin_members(struct group *grp,
+				int *num_mem, LOCAL_GRP_MEMBER **members);
+struct aliasdb_ops *unix_initialise_builtin_db(void);
+
 /*The following definitions come from  groupdb/groupdb.c  */
 
 BOOL initialise_group_db(void);
@@ -232,7 +261,7 @@ char *rep_inet_ntoa(struct in_addr ip);
 void get_sam_domain_name(void);
 BOOL get_member_domain_sid(void);
 void generate_wellknown_sids(void);
-BOOL generate_sam_sid(void);
+BOOL generate_sam_sid(char *domain_name);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL split_domain_name(char *fullname, char *domain, char *name);

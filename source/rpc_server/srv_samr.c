@@ -732,6 +732,7 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 {
 	uint32 status = 0;
 
+	LOCAL_GRP *mem_grp = NULL;
 	uint32 *rid = NULL;
 	int num_rids = 0;
 	struct sam_passwd *sam_pass;
@@ -781,21 +782,32 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 
 	if (status == 0x0)
 	{
+		DEBUG(10,("sid is %s\n", dom_sid_str));
+
 		if (sid_equal(&dom_sid, &global_sid_S_1_5_20))
 		{
 			DEBUG(10,("lookup on S-1-5-20\n"));
+
+			become_root(True);
+			getuserbuiltinntnam(sam_pass->nt_name, &mem_grp, &num_rids);
+			unbecome_root(True);
 		}
 		else if (sid_equal(&dom_sid, &usr_sid))
 		{
-			LOCAL_GRP *mem_grp = NULL;
-			num_rids = 0;
-
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
 			getuseraliasntnam(sam_pass->nt_name, &mem_grp, &num_rids);
 			unbecome_root(True);
+		}
+		else
+		{
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+		}
+	}
 
+	if (status == 0x0 && num_rids > 0)
+	{
 			rid = malloc(num_rids * sizeof(uint32));
 			if (mem_grp != NULL && rid != NULL)
 			{
@@ -805,11 +817,6 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 					rid[i] = mem_grp[i].rid;
 				}
 				free(mem_grp);
-			}
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 		}
 	}
 

@@ -306,10 +306,11 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 
 				if (dom_idx != 0xffffffff)
 				{
-					fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
-					fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
+					fstrcpy(dom_name, unistr2_to_str(&ref.ref_dom[dom_idx].uni_dom_name));
+					fstrcpy(name    , unistr2_to_str(&t_names.uni_name[i]));
 					
-					slprintf(full_name, sizeof(full_name), "%s\\%s",
+					memset(full_name, 0, sizeof(full_name));
+					slprintf(full_name, sizeof(full_name)-1, "%s\\%s",
 						 dom_name, name);
 
 					(*names)[i] = strdup(full_name);

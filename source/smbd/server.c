@@ -676,6 +676,11 @@ static void usage(char *pname)
 		exit(1);
 	}
 
+	if(!initialise_builtin_db())
+	{
+		exit(1);
+	}
+
 	if (!get_member_domain_sid())
 	{
 		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
