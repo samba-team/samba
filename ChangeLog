@@ -1,3 +1,10 @@
+2004-04-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/config_file.c: allow parsing directly from strings with
+	krb5_config_parse_string_multi
+	
+	* lib/krb5/verify_krb5_conf.c: try to resolve hostnames
+	
 2004-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/store_fd.c (krb5_storage_from_fd): dup the file
