@@ -146,7 +146,7 @@ void pidfile_create(char *name);
 /*The following definitions come from  lib/readline.c  */
 
 char *smb_readline(char *prompt, void (*callback)(void), 
-		   char **(completion_fn)(char *text, int start, int end));
+		   char **(completion_fn)(const char *text, int start, int end));
 void cmd_history(void);
 
 /*The following definitions come from  lib/replace.c  */

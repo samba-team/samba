@@ -26,7 +26,7 @@
 display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
 char *smb_readline(char *prompt, void (*callback)(void), 
-		   char **(completion_fn)(char *text, int start, int end))
+		   char **(completion_fn)(const char *text, int start, int end))
 {
 	char *ret;
 #if HAVE_LIBREADLINE

@@ -35,7 +35,7 @@ static struct cmd_list {
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
-static char **completion_fn(char *text, int start, int end)
+static char **completion_fn(const char *text, int start, int end)
 {
 #define MAX_COMPLETIONS 100
 	char **matches;
