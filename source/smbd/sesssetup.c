@@ -495,13 +495,17 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 /****************************************************************************
  On new VC == 0, shutdown *all* old connections and users.
+ It seems that only NT4.x does this. At W2K and above (XP etc.).
+ a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
 static void setup_new_vc_session(void)
 {
-	DEBUG(2,("setup_new_vc_session: New VC == 0, closing all old resources.\n"));
+	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x compatible we would close all old resources.\n"));
+#if 0
 	conn_close_all();
 	invalidate_all_vuids();
+#endif
 }
 
 /****************************************************************************
