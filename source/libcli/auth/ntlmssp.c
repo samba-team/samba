@@ -1104,7 +1104,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				      ntlmssp_state->domain, 
 				      ntlmssp_state->password, &challenge_blob, 
 				      &struct_blob, 
-				      &lm_response, &nt_response, &session_key)) {
+				      &lm_response, &nt_response, 
+				      NULL, &session_key)) {
 			data_blob_free(&challenge_blob);
 			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
