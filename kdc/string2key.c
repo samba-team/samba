@@ -18,4 +18,5 @@ int main(int argc, char **argv)
     for(i = 0; i < key.keyvalue.length; i++)
 	printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
     printf("\n");
+    return 0;
 }
