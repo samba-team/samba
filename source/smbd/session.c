@@ -89,7 +89,14 @@ BOOL session_claim(uint16 vuid)
 	}
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
+#if WITH_UTMP	
 	fstrcpy(sessionid.hostname, lp_utmp_hostname());
+#else
+	{
+		extern fstring remote_machine;
+		fstrcpy(sessionid.hostname, remote_machine);
+	}
+#endif
 	slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_TEMPLATE, i);
 	sessionid.id_num = i;
 	sessionid.pid = pid;
