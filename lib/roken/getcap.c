@@ -44,7 +44,9 @@ RCSID("$Id$");
 
 #include <sys/types.h>
 #include <ctype.h>
-#ifdef HAVE_DB_H
+#if defined(HAVE_DB_185_H)
+#include <db_185.h>
+#elif defined(HAVE_DB_H)
 #include <db.h>
 #endif
 #include <errno.h>	
