@@ -24,22 +24,30 @@
 #include "librpc/gen_ndr/ndr_dssetup.h"
 
 
-static BOOL test_RolerGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
-	struct ds_RolerGetPrimaryDomainInformation r;
+	struct dssetup_DsRoleGetPrimaryDomainInformation r;
 	NTSTATUS status;
 	BOOL ret = True;
 	int i;
 
-	printf("\ntesting RolerGetPrimaryDomainInformation\n");
+	printf("\ntesting DsRoleGetPrimaryDomainInformation\n");
 
-	for (i=DS_BASIC_INFORMATION;i<=DS_ROLE_OP_STATUS;i++) {
+	for (i=DS_ROLE_BASIC_INFORMATION; i <= DS_ROLE_OP_STATUS; i++) {
 		r.in.level = i;
 
-		status = dcerpc_ds_RolerGetPrimaryDomainInformation(p, mem_ctx, &r);
+		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("RolerGetPrimaryDomainInformation level %d failed - %s\n",
-			       i, nt_errstr(status));
+			const char *errstr = nt_errstr(status);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			}
+			printf("dcerpc_dssetup_DsRoleGetPrimaryDomainInformation level %d failed - %s\n",
+				i, errstr);
+			ret = False;
+		} else if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("DsRoleGetPrimaryDomainInformation level %d failed - %s\n",
+				i, win_errstr(r.out.result));
 			ret = False;
 		}
 	}
@@ -64,7 +72,7 @@ BOOL torture_rpc_dssetup(void)
 		return False;
 	}
 
-	ret &= test_RolerGetPrimaryDomainInformation(p, mem_ctx);
+	ret &= test_DsRoleGetPrimaryDomainInformation(p, mem_ctx);
 
 	talloc_destroy(mem_ctx);
 
