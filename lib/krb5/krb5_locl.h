@@ -157,6 +157,10 @@ krb5_boolean krb5_config_vget_bool (krb5_config_section *c, va_list args);
 
 krb5_boolean krb5_config_get_bool (krb5_config_section *c, ...);
 
+int krb5_config_vget_time (krb5_config_section *c, va_list args);
+
+int krb5_config_get_time (krb5_config_section *c, ...);
+
 const krb5_config_binding *krb5_config_get_list (krb5_config_section *c,
 						 ...);
 const krb5_config_binding *krb5_config_vget_list (krb5_config_section *c,
