@@ -45,7 +45,7 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
 
 struct print_queue_update_context {
 	char* sharename;
-	enum printing_types printing_type;
+	int printing_type;
 	char* lpqcommand;
 };
 
