@@ -381,6 +381,26 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		return False;
 	}
 
+	if (*lp_msdfs_proxy(snum) != '\0') {
+		struct referral* ref;
+		jn->referral_count = 1;
+		if ((ref = (struct referral*) malloc(sizeof(struct referral)))
+		    == NULL) {
+			DEBUG(0, ("malloc failed for referral\n"));
+			return False;
+		}
+
+		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
+		if (dp.reqpath[0] != '\0')
+			pstrcat(ref->alternate_path, dp.reqpath);
+		ref->proximity = 0;
+		ref->ttl = REFERRAL_TTL;
+		jn->referral_list = ref;
+		if (consumedcntp)
+			*consumedcntp = strlen(pathname);
+		return True;
+	}
+
 	/* If not remote & not a self referral, return False */
 	if (!resolve_dfs_path(pathname, &dp, conn, False, 
 			      &jn->referral_list, &jn->referral_count,
@@ -630,7 +650,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 			dbgtext(".\n");
 		}
 	}
-	
+
 	/* create the referral depeding on version */
 	DEBUG(10,("max_referral_level :%d\n",max_referral_level));
 	if(max_referral_level<2 || max_referral_level>3)
