@@ -124,10 +124,10 @@
 #undef WITH_SSL
 #undef WITH_LDAP
 #undef WITH_NISPLUS
+#undef WITH_PAM
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
 #undef WITH_SMBMOUNT
-#undef HAVE_PAM_AUTHENTICATE
 #undef HAVE_BROKEN_GETGROUPS
 #undef REPLACE_GETPASS
 #undef REPLACE_INET_NTOA
@@ -521,9 +521,6 @@
 /* Define if you have the open64 function.  */
 #undef HAVE_OPEN64
 
-/* Define if you have the pam_authenticate function.  */
-#undef HAVE_PAM_AUTHENTICATE
-
 /* Define if you have the pathconf function.  */
 #undef HAVE_PATHCONF
 
@@ -850,9 +847,6 @@
 
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
-
-/* Define if you have the dl library (-ldl).  */
-#undef HAVE_LIBDL
 
 /* Define if you have the inet library (-linet).  */
 #undef HAVE_LIBINET

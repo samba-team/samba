@@ -288,19 +288,6 @@ fi
 
 
 ###############################################
-# test for where we get pam_authenticate() from
-# might need libdl for this to work
-if test "$ac_cv_header_security_pam_appl_h" = "yes"; then
-  AC_CHECK_LIB(dl,main)
-fi
-AC_CHECK_FUNCS(pam_authenticate)
-if test x"$ac_cv_func_pam_authenticate" = x"no"; then
-    AC_CHECK_LIB(pam, pam_authenticate, [LIBS="$LIBS -lpam"
-	AC_DEFINE(HAVE_PAM_AUTHENTICATE)])
-fi
-
-
-###############################################
 # test for where we get readline() from
 if test "$ac_cv_header_readline_h" = "yes" ||
    test "$ac_cv_header_readline_readline_h" = "yes"; then
@@ -1097,6 +1084,27 @@ AC_ARG_WITH(smbmount,
   AC_MSG_RESULT(no)
   MPROGS=
 )
+
+
+#################################################
+# check for a PAM password database
+AC_MSG_CHECKING(whether to use PAM password database)
+AC_ARG_WITH(pam,
+[  --with-pam     Include PAM password database support
+  --without-pam  Don't include PAM password database support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_PAM)
+    LIBS="$LIBS -lpam"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 
 #################################################
 # check for a LDAP password database
