@@ -64,7 +64,11 @@ hookup(char *host, int port)
 	} else {
 		hp = gethostbyname(host);
 		if (hp == NULL) {
+#ifdef __CYGWIN32__
+			warnx("%s: %s", host, "unknown error");
+#else
 			warnx("%s: %s", host, hstrerror(h_errno));
+#endif
 			code = -1;
 			return NULL;
 		}

@@ -2213,7 +2213,11 @@ tn(int argc, char **argv)
 	srp = 0;
 	temp = sourceroute(hostp, &srp, &srlen);
 	if (temp == 0) {
+#ifdef __CYGWIN32__
+	    fprintf (stderr, "%s: %s\n", srp ? srp : "", "unknown error");
+#else
 	    fprintf (stderr, "%s: %s\n", srp ? srp : "", hstrerror(h_errno));
+#endif
 	    setuid(getuid());
 	    return 0;
 	} else if (temp == -1) {
@@ -2247,8 +2251,13 @@ tn(int argc, char **argv)
 		_hostname[sizeof(_hostname)-1] = '\0';
 		hostname = _hostname;
 	    } else {
+#ifdef __CYGWIN32__
+	        fprintf (stderr, "%s: %s\n", hostp ? hostp : "",
+			 "unknown error");
+#else
 	        fprintf (stderr, "%s: %s\n", hostp ? hostp : "",
 			 hstrerror(h_errno));
+#endif
 		setuid(getuid());
 		return 0;
 	    }
