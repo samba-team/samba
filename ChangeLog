@@ -1,5 +1,9 @@
 2001-07-31  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.4d
+
+2001-07-31  Assar Westerlund  <assar@sics.se>
+
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): update version to
 	18:1:1
 
