@@ -40,7 +40,7 @@ DOCS_TARGET_REQUIRE_PROGRAM(PNMTOPS, pnmtops, PS)
 DOCS_TARGET_REQUIRE_PROGRAM(LATEX, latex, PS)
 DOCS_TARGET_REQUIRE_PROGRAM(DVIPS, dvips, PS)
 DOCS_TARGET_REQUIRE_PROGRAM(PLUCKERBUILD, plucker-build, PLUCKER)
-DOCS_TARGET_REQUIRE_PROGRAM(XMLTO, xmlto, TXT)
+DOCS_TARGET_REQUIRE_PROGRAM(HTML2TEXT, html2text, TXT)
 DOCS_TARGET_REQUIRE_PROGRAM(PERL, perl, UNDOCUMENTED)
 
 AC_MSG_RESULT([])
@@ -56,7 +56,7 @@ DOCS_DEFINE_TARGET(HTML, ALL, [HTML versions], [html])
 DOCS_DEFINE_TARGET(MANPAGES, ALL, [manpages], [manpages])
 DOCS_DEFINE_TARGET(PLUCKER, HTML, [plucker versions], [plucker])
 DOCS_DEFINE_TARGET(UNDOCUMENTED, MANPAGES, [list of undocumented options], [undocumented])
-DOCS_DEFINE_TARGET(TXT, ALL, [text versions], [txt])
+DOCS_DEFINE_TARGET(TXT, HTML, [text versions], [txt])
 
 if test x"$TARGETS" = x; then 
 	AC_MSG_ERROR([You won't be able to build any of the docs])
