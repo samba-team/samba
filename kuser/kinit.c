@@ -53,7 +53,7 @@ do_v4_fallback (krb5_context context,
 		const krb5_principal principal,
 		int lifetime,
 		int use_srvtab, const char *srvtab_str,
-		char *passwd, size_t passwd_size)
+		const char *passwd)
 {
     int ret;
     krb_principal princ;
@@ -93,7 +93,6 @@ do_v4_fallback (krb5_context context,
 				 KRB_TICKET_GRANTING_TICKET, princ.realm, 
 				 lifetime, passwd, &key);
     }
-    memset (passwd, 0, passwd_size);
     memset (key, 0, sizeof(key));
     if (ret) {
 	warnx ("%s", krb_get_err_text(ret));
@@ -286,6 +285,8 @@ do_524init(krb5_context context, krb5_ccache ccache,
 	krb5_cc_get_principal(context, ccache, &client);
 	memset(&in_creds, 0, sizeof(in_creds));
 	ret = get_server(context, client, server, &in_creds.server);
+	if(ret)
+	    return ret;
 	ret = krb5_get_credentials(context, 0, ccache, &in_creds, &real_creds);
 	if(ret)
 	    return ret;
@@ -325,21 +326,10 @@ renew_validate(krb5_context context,
 	krb5_warn(context, ret, "krb5_cc_get_principal");
 	return ret;
     }
-    if(server) {
-	ret = krb5_parse_name(context, server, &in.server);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_parse_name");
-	    goto out;
-	}
-    } else {
-	krb5_realm *client_realm = krb5_princ_realm (context, in.client);
-
-	ret = krb5_make_principal(context, &in.server, *client_realm,
-				  KRB5_TGS_NAME, *client_realm, NULL);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_make_principal");
-	    goto out;
-	}
+    ret = get_server(context, in.client, server, &in.server);
+    if(ret) {
+	krb5_warn(context, ret, "get_server");
+	goto out;
     }
     flags.i = 0;
     flags.b.renewable         = flags.b.renew = renew;
@@ -509,8 +499,7 @@ get_new_tickets(krb5_context context,
 	int exit_val;
 
 	exit_val = do_v4_fallback (context, principal, ticket_life,
-				   use_keytab, keytab_str,
-				   passwd, sizeof(passwd));
+				   use_keytab, keytab_str, passwd);
 	memset(passwd, 0, sizeof(passwd));
 	if (exit_val == 0 || ret == KRB5KRB_AP_ERR_V4_REPLY) {
 	    krb5_free_context (context);
@@ -524,11 +513,9 @@ get_new_tickets(krb5_context context,
     case 0:
 	break;
     case KRB5_LIBOS_PWDINTR: /* don't print anything if it was just C-c:ed */
-	memset(passwd, 0, sizeof(passwd));
 	exit(1);
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
-	memset(passwd, 0, sizeof(passwd));
 	krb5_errx(context, 1, "Password incorrect");
 	break;
     default:
