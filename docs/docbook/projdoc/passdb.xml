@@ -105,9 +105,11 @@ Samba-3 introduces the following new password backend capabilities:
 			<para>
 			This is <emphasis>always</emphasis> required as the last backend specified.
 			It provides the ability to handle guest account requirements for access to
-			resources like <parameter>IPC$</paramter> which is used for browsing.
+			resources like <parameter>IPC$</parameter> which is used for browsing.
 			</para>
-		<listitem>
+		</listitem>
+	</varlistentry>
+
 	<varlistentry><term>tdbsam:</term>
 		<listitem>
 			<para>
@@ -1527,7 +1529,7 @@ access to attrs=lmPassword,ntPassword
 	</para>
 
 	<para>
-	This is the exact opposite of the requirement for the <parameter>passdb backed<parameter>
+	This is the exact opposite of the requirement for the <parameter>passdb backed</parameter>
 	option, where it must be the <emphasis>LAST</emphasis> parameter on the line.
 	</para>
 

@@ -631,7 +631,7 @@ connection, whose session key would be different.  So server_validate() must giv
 
 <para>
 Indeed. That's why security = server is at best a nasty hack. Please use security = domain.
-<parameter>security = server<parameter> mode is also known as pass-through authentication.
+<parameter>security = server</parameter> mode is also known as pass-through authentication.
 </para>
 
 </sect2>
