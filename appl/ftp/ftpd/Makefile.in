@@ -19,8 +19,9 @@ libdir = $(exec_prefix)/lib
 
 ATHENA	= /usr/athena
 
-LDFLAGS	= @LDFLAGS@
-LIBS	= @LIBS@
+LIBTOP = ../../../lib
+
+LIBS = ../common/libcommon.a $(LIBTOP)/kafs/libkafs.a $(LIBTOP)/krb/libkrb.a $(LIBTOP)/des/libdes.a $(LIBTOP)/broken/libbroken.a
 
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 
@@ -32,8 +33,8 @@ all: ftpd
 install:
 
 
-ftpd: $(ftpd_OBJS) ../common/libcommon.a
-	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LDFLAGS) $(LIBS)
+ftpd: $(ftpd_OBJS) $(LIBS)
+	$(CC) -o ftpd $(ftpd_OBJS) $(LIBS)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

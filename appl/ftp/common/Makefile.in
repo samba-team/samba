@@ -19,7 +19,7 @@ libdir = $(exec_prefix)/lib
 
 ATHENA = /usr/athena
 
-libcommon_OBJS = base64.o glob.o @LIBOBJS@
+libcommon_OBJS = base64.o glob.o
 
 all: libcommon.a
 
