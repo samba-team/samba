@@ -10,27 +10,15 @@ file.
 
 * appl
 
-more programs here
-
 ** appl/popper
 
 Implement RFC1731 and 1734, pop over GSS-API
-
-** appl/test
-
-should test more stuff
 
 ** appl/rsh
 
 add rcp program
 
 ** appl/ftp
-
-* doc
-
-there's some room for improvement here.
-
-* kdc
 
 * kadmin
 
@@ -46,8 +34,6 @@ prepend a prefix on all generated symbols
 
 PAM
 
-** lib/des
-
 ** lib/gssapi
 
 process_context_token, display_status, add_cred, inquire_cred_by_mech,
@@ -62,9 +48,7 @@ init_sec_context: `initiator_cred_handle' and `time_req' ignored.
 
 anonymous credentials not implemented
 
-add 3DES
-
-** lib/hdb
+add 3des, rc4
 
 ** lib/kadm5
 
@@ -80,20 +64,12 @@ using krb5_get_krbhst.
 
 the replay cache is, in its current state, not very useful
 
-the following encryption types have been implemented: DES-CBC-CRC,
-DES-CBC-MD4, DES-CBC-MD5, DES3-CBC-MD5, DES3-CBC-SHA1
-
-supports the following checksums: CRC32, RSA-MD4, RSA-MD5,
-RSA-MD4-DES, RSA-MD5-DES, RSA-MD5-DES3, SHA1, HMAC-SHA1-DES3
-
 always generates a new subkey in an authenticator
 
 should the sequence numbers be XORed?
-
-fix pre-authentication with pa-afs3-salt
 
 OTP?
 
 ** lib/roken
 
-** lib/sl
+getifaddrs
