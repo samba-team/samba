@@ -2214,8 +2214,16 @@ int find_service(char *service)
    /* just possibly it's a default service? */
    if (iService < 0) 
      {
-       char *defservice = lp_defaultservice();
-       if (defservice && *defservice && !strequal(defservice,service)) {
+       char *pdefservice = lp_defaultservice();
+       if (pdefservice && *pdefservice && !strequal(pdefservice,service)) {
+         /*
+          * We need to do a local copy here as lp_defaultservice() 
+          * returns one of the rotating lp_string buffers that
+          * could get overwritten by the recursive find_service() call
+          * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
+          */
+         pstring defservice;
+         pstrcpy(defservice, pdefservice);
 	 iService = find_service(defservice);
 	 if (iService >= 0) {
 	   string_sub(service,"_","/");
