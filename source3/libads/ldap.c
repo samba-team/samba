@@ -1337,9 +1337,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
 	char           *exp     = 0;
 	size_t          sd_size = 0;
-	struct berval **bvals   = 0;
 	struct berval   bval = {0, NULL};
-	prs_struct      ps;
 	prs_struct      ps_wire;
 
 	LDAPMessage *res  = 0;
@@ -1356,37 +1354,39 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	ret = ADS_ERROR(LDAP_SUCCESS);
 
-	asprintf(&exp, "(samAccountName=%s$)", hostname);
+	if (asprintf(&exp, "(samAccountName=%s$)", hostname) == -1) {
+		DEBUG(1, ("ads_set_machine_sd: asprintf failed!\n"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
 	ret = ads_search(ads, (void *) &res, exp, attrs);
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
 	msg   = ads_first_entry(ads, res);
-	bvals = ldap_get_values_len(ads->ld, msg, attrs[0]);
 	ads_pull_sid(ads, msg, attrs[1], &sid);	
-	ads_msgfree(ads, res);
-#if 0
-	file_save("/tmp/sec_desc.old", bvals[0]->bv_val, bvals[0]->bv_len);
-#endif
-	if (!(ctx = talloc_init_named("sec_io_desc")))
-		return ADS_ERROR(LDAP_NO_MEMORY);
-
-	prs_init(&ps, bvals[0]->bv_len, ctx, UNMARSHALL);
-	prs_append_data(&ps, bvals[0]->bv_val, bvals[0]->bv_len);
-	ps.data_offset = 0;
-	ldap_value_free_len(bvals);
-
-	if (!sec_io_desc("sd", &psd, &ps, 1))
+	if (!(ctx = talloc_init_named("sec_io_desc"))) {
+		ret =  ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
+	}
+
+	if (!ads_pull_sd(ads, ctx, msg, attrs[0], &psd)) {
+		ret = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		goto ads_set_sd_error;
+	}
 
 	status = sec_desc_add_sid(ctx, &psd, &sid, SEC_RIGHTS_FULL_CTRL, &sd_size);
 
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = ADS_ERROR_NT(status);
 		goto ads_set_sd_error;
+	}
 
 	prs_init(&ps_wire, sd_size, ctx, MARSHALL);
-	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1))
+	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1)) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
+	}
 
 #if 0
 	file_save("/tmp/sec_desc.new", ps_wire.data_p, sd_size);
@@ -1398,16 +1398,11 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	ads_mod_ber(ctx, &mods, attrs[0], &bval);
 	ret = ads_gen_mod(ads, dn, mods);
 
-	prs_mem_free(&ps);
+ads_set_sd_error:
+	ads_msgfree(ads, res);
 	prs_mem_free(&ps_wire);
 	talloc_destroy(ctx);
 	return ret;
-
-ads_set_sd_error:
-	prs_mem_free(&ps);
-	prs_mem_free(&ps_wire);
-	talloc_destroy(ctx);
-	return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
 /**
@@ -1611,6 +1606,60 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	
 	ldap_value_free_len(values);
 	return count;
+}
+
+/**
+ * pull a SEC_DESC from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param sd Pointer to *SEC_DESC to store result (talloc()ed)
+ * @return boolean inidicating success
+*/
+BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		  void *msg, const char *field, SEC_DESC **sd)
+{
+	struct berval **values;
+	prs_struct      ps;
+	BOOL ret = False;
+
+	values = ldap_get_values_len(ads->ld, msg, field);
+
+	if (!values) return False;
+
+	if (values[0]) {
+		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
+		prs_append_data(&ps, values[0]->bv_val, values[0]->bv_len);
+		ps.data_offset = 0;
+
+		ret = sec_io_desc("sd", sd, &ps, 1);
+	}
+	
+	ldap_value_free_len(values);
+	return ret;
+}
+
+/* 
+ * in order to support usernames longer than 21 characters we need to 
+ * use both the sAMAccountName and the userPrincipalName attributes 
+ * It seems that not all users have the userPrincipalName attribute set
+ *
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @return the username
+ */
+char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+{
+	char *ret, *p;
+
+	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
+	if (ret && (p = strchr(ret, '@'))) {
+		*p = 0;
+		return ret;
+	}
+	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 }
 
 
