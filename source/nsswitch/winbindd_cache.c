@@ -47,6 +47,35 @@ void winbindd_cache_init(void)
 	}
 }
 
+/* find the sequence number for a domain */
+
+static uint32 domain_sequence_number(char *domain_name)
+{
+        return DOM_SEQUENCE_NONE;
+
+#if 0
+	struct winbindd_domain *domain;
+	SAM_UNK_CTR ctr;
+
+	domain = find_domain_from_name(domain_name);
+	if (!domain) return DOM_SEQUENCE_NONE;
+
+	if (!wb_samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
+
+		/* If this fails, something bad has gone wrong */
+
+		DEBUG(2,("domain sequence query failed\n"));
+		return DOM_SEQUENCE_NONE;
+	}
+
+	DEBUG(4,("got domain sequence number for %s of %u\n", 
+		 domain_name, (unsigned)ctr.info.inf2.seq_num));
+	
+	return ctr.info.inf2.seq_num;
+#endif
+
+}
+
 /* get the domain sequence number, possibly re-fetching */
 static uint32 cached_sequence_number(char *domain_name)
 {

@@ -130,91 +130,92 @@ static void sighup_handler(int signum)
 
 static int create_sock(void)
 {
-    struct sockaddr_un sunaddr;
-    struct stat st;
-    int sock;
-    mode_t old_umask;
-    pstring path;
-
-    /* Create the socket directory or reuse the existing one */
-
-    if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
-
-        if (errno == ENOENT) {
-
-            /* Create directory */
-
-            if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
-                DEBUG(0, ("error creating socket directory %s: %s\n",
-                          WINBINDD_SOCKET_DIR, strerror(errno)));
-                return -1;
-            }
-
+        struct sockaddr_un sunaddr;
+        struct stat st;
+        int sock;
+        mode_t old_umask;
+        pstring path;
+        
+        /* Create the socket directory or reuse the existing one */
+        
+        if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
+                
+                if (errno == ENOENT) {
+                        
+                        /* Create directory */
+                        
+                        if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
+                                DEBUG(0, ("error creating socket directory "
+                                          "%s: %s\n", WINBINDD_SOCKET_DIR, 
+                                          strerror(errno)));
+                                return -1;
+                        }
+                        
+                } else {
+                        
+                        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
+                                  WINBINDD_SOCKET_DIR, strerror(errno)));
+                        return -1;
+                }
+                
         } else {
-
-            DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-                      WINBINDD_SOCKET_DIR, strerror(errno)));
-            return -1;
+                
+                /* Check ownership and permission on existing directory */
+                
+                if (!S_ISDIR(st.st_mode)) {
+                        DEBUG(0, ("socket directory %s isn't a directory\n",
+                                  WINBINDD_SOCKET_DIR));
+                        return -1;
+                }
+                
+                if ((st.st_uid != sec_initial_uid()) || 
+                    ((st.st_mode & 0777) != 0755)) {
+                        DEBUG(0, ("invalid permissions on socket directory "
+                                  "%s\n", WINBINDD_SOCKET_DIR));
+                        return -1;
+                }
         }
-
-    } else {
-
-        /* Check ownership and permission on existing directory */
         
-        if (!S_ISDIR(st.st_mode)) {
-            DEBUG(0, ("socket directory %s isn't a directory\n",
-                      WINBINDD_SOCKET_DIR));
-            return -1;
+        /* Create the socket file */
+        
+        old_umask = umask(0);
+        
+        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        
+        if (sock == -1) {
+                perror("socket");
+                return -1;
         }
         
-        if ((st.st_uid != sec_initial_uid()) || 
-	    ((st.st_mode & 0777) != 0755)) {
-            DEBUG(0, ("invalid permissions on socket directory %s\n",
-                      WINBINDD_SOCKET_DIR));
-            return -1;
+        snprintf(path, sizeof(path), "%s/%s", 
+                 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
+        
+        unlink(path);
+        memset(&sunaddr, 0, sizeof(sunaddr));
+        sunaddr.sun_family = AF_UNIX;
+        safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+        
+        if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
+                DEBUG(0, ("bind failed on winbind socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+                return -1;
         }
-    }
-
-    /* Create the socket file */
-
-    old_umask = umask(0);
-
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    
-    if (sock == -1) {
-        perror("socket");
-        return -1;
-    }
-
-    snprintf(path, sizeof(path), "%s/%s", 
-	     WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-
-    unlink(path);
-    memset(&sunaddr, 0, sizeof(sunaddr));
-    sunaddr.sun_family = AF_UNIX;
-    safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
-    
-    if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
-        DEBUG(0, ("bind failed on winbind socket %s: %s\n",
-                  path,
-                  strerror(errno)));
-        close(sock);
-        return -1;
-    }
-    
-    if (listen(sock, 5) == -1) {
-        DEBUG(0, ("listen failed on winbind socket %s: %s\n",
-                  path,
-                  strerror(errno)));
-        close(sock);
-        return -1;
-    }
-    
-    umask(old_umask);
-    
-    /* Success! */
-    
-    return sock;
+        
+        if (listen(sock, 5) == -1) {
+                DEBUG(0, ("listen failed on winbind socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+                return -1;
+        }
+        
+        umask(old_umask);
+        
+        /* Success! */
+        
+        return sock;
 }
 
 struct dispatch_table {
@@ -228,9 +229,13 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user },
 	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid },
+
+#if 0
+
 	{ WINBINDD_SETPWENT, winbindd_setpwent },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent },
 	{ WINBINDD_GETPWENT, winbindd_getpwent },
+
 	{ WINBINDD_GETGROUPS, winbindd_getgroups },
 
 	/* Group functions */
@@ -269,6 +274,8 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct },
 
+#endif
+
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL }
@@ -290,8 +297,6 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* Process command */
 
-	if (!server_state.lsa_handle_open) return;
-
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request.cmd == table->cmd) {
 			state->response.result = table->fn(state);
@@ -301,9 +306,8 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* In case extra data pointer is NULL */
 
-	if (!state->response.extra_data) {
+	if (!state->response.extra_data)
 		state->response.length = sizeof(struct winbindd_response);
-	}
 }
 
 /* Process a new connection by adding it to the client connection list */
@@ -319,20 +323,16 @@ static void new_connection(int accept_sock)
 	
 	len = sizeof(sunaddr);
 	if ((sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len)) 
-	    == -1) {
-		
+	    == -1)
 		return;
-	}
 	
 	DEBUG(6,("accepted socket %d\n", sock));
 	
 	/* Create new connection structure */
 	
-	if ((state = (struct winbindd_cli_state *)
-	     malloc(sizeof(*state))) == NULL) {
-		
+	if ((state = (struct winbindd_cli_state *) 
+             malloc(sizeof(*state))) == NULL)
 		return;
-	}
 	
 	ZERO_STRUCTP(state);
 	state->sock = sock;
@@ -508,10 +508,6 @@ static void process_loop(int accept_sock)
 
 		lp_talloc_free();
 
-		/* Do any connection establishment that is needed */
-
-		establish_connections(False);	    /* Honour timeout */
-
 		/* Initialise fd lists for select() */
 
 		FD_ZERO(&r_fds);
@@ -544,15 +540,13 @@ static void process_loop(int accept_sock)
 
 			/* Add fd for reading */
 
-			if (state->read_buf_len != sizeof(state->request)) {
+			if (state->read_buf_len != sizeof(state->request))
 				FD_SET(state->sock, &r_fds);
-			}
 
 			/* Add fd for writing */
 
-			if (state->write_buf_len) {
+			if (state->write_buf_len)
 				FD_SET(state->sock, &w_fds);
-			}
 
 			state = state->next;
 		}
@@ -565,12 +559,6 @@ static void process_loop(int accept_sock)
 
 			do_flush_caches();
 			reload_services_file(True);
-
-			/* Close and re-open all connections.  This will also
-			   refresh the trusted domains list */
-
-			winbindd_kill_all_connections();
-			establish_connections(True); /* Force re-establish */
 
 			do_sighup = False;
 		}
@@ -598,9 +586,8 @@ static void process_loop(int accept_sock)
 
 		if (selret > 0) {
 
-			if (FD_ISSET(accept_sock, &r_fds)) {
+			if (FD_ISSET(accept_sock, &r_fds))
 				new_connection(accept_sock);
-			}
             
 			/* Process activity on client connections */
             
@@ -625,9 +612,8 @@ static void process_loop(int accept_sock)
                 
 				/* Data available for writing */
                 
-				if (FD_ISSET(state->sock, &w_fds)) {
+				if (FD_ISSET(state->sock, &w_fds))
 					client_write(state);
-				}
 			}
 		}
 	}
@@ -645,10 +631,13 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
+        /* Initialise for running in non-root mode */
+
 	sec_init();
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
+
 	SETENV(WINBINDD_DONT_ENV, "1", 1);
 
 	/* Initialise samba/rpc client stuff */
@@ -689,9 +678,8 @@ int main(int argc, char **argv)
 
 		fstrcpy(global_myname, myhostname());
 		p = strchr(global_myname, '.');
-		if (p) {
+		if (p)
 			*p = 0;
-		}
 	}
 
 	TimeInit();
@@ -701,13 +689,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (new_debuglevel != -1) {
+	if (new_debuglevel != -1)
 		DEBUGLEVEL = new_debuglevel;
-	}
 
-	if (!interactive) {
+	if (!interactive)
 		become_daemon();
-	}
 
 	load_interfaces();
 
@@ -717,13 +703,11 @@ int main(int argc, char **argv)
 
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_param_init()) {
+	if (!winbindd_param_init())
 		return 1;
-	}
 
-	if (!winbindd_idmap_init()) {
+	if (!winbindd_idmap_init())
 		return 1;
-	}
 
 	winbindd_cache_init();
 

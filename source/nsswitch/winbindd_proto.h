@@ -45,6 +45,15 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 void winbindd_flush_cache(void);
 void winbindd_cache_dump_status(void);
 
+/* The following definitions come from nsswitch/winbindd_cm.c  */
+
+BOOL cm_get_dc_name(char *domain, fstring srv_name);
+CLI_POLICY_HND *cm_get_lsa_handle(char *domain);
+CLI_POLICY_HND *cm_get_sam_handle(char *domain);
+CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain);
+CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, char *user);
+CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, char *group);
+
 /* The following definitions come from nsswitch/winbindd_group.c  */
 
 enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
@@ -73,8 +82,8 @@ BOOL winbindd_idmap_init(void);
 void winbindd_idmap_dump_status(void);
 
 /* The following definitions come from nsswitch/winbindd_misc.c  */
-enum winbindd_result winbindd_check_machine_acct(
-	struct winbindd_cli_state *state);
+
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 						   *state);
 
@@ -106,7 +115,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_util.c  */
 
-void debug_conn_state(void);
 BOOL domain_handles_open(struct winbindd_domain *domain);
 void winbindd_kill_all_connections(void);
 void establish_connections(BOOL force_reestablish) ;
@@ -121,8 +129,6 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups);
-BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
-                              uint32 group_rid, GROUP_INFO_CTR *info);
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
@@ -131,10 +137,9 @@ struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
-char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
-uint32 domain_sequence_number(char *domain_name);
 NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint32 *start_ndx, uint16 info_level, 
-			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
+				 uint32 *start_ndx, uint16 info_level, 
+				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
+void parse_domain_user(char *domuser, fstring domain, fstring user);
 #endif /* _PROTO_H_ */

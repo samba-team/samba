@@ -98,7 +98,6 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	SAM_USERINFO_CTR *user_info;
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
-	struct winbindd_domain *domain;
 	enum SID_NAME_USE name_type;
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
@@ -116,18 +115,6 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
-	/* Get info for the domain */
-	
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not find domain entry for domain %s\n", 
-			  name_domain));
-		return WINBINDD_ERROR;
-	}
-
-	if (!domain_handles_open(domain)) {
-		return WINBINDD_ERROR;
-	}
-
 	/* Check for cached user entry */
 
 	if (winbindd_fetch_user_cache_entry(name_domain, name_user,
@@ -158,6 +145,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	/* The following costs 3 packets */
 
+#if 0
+
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
@@ -167,10 +156,15 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	group_rid = user_info->info.id21->group_rid;
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
+
+#endif
+
+        group_rid = DOMAIN_GROUP_RID_GUESTS;
+        fstrcpy(gecos_name, "foo");
 	
 	/* Now take all this information and fill in a passwd structure */
 	
-	if (!winbindd_fill_pwent(domain->name, state->request.data.username, 
+	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
 				 user_rid, group_rid, gecos_name,
 				 &state->response.data.pw)) {
 		return WINBINDD_ERROR;
@@ -214,10 +208,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
-	if (!domain_handles_open(domain)) {
-		return WINBINDD_ERROR;
-	}
-
 	/* Check for cached uid entry */
 
 	if (winbindd_fetch_uid_cache_entry(domain->name, 
@@ -246,6 +236,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	/* Get some user info */
 	
+#if 0
+
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
@@ -255,6 +247,10 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	group_rid = user_info->info.id21->group_rid;
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
+#endif
+
+        group_rid = DOMAIN_GROUP_RID_GUESTS;
+        fstrcpy(gecos_name, "foo");
 
 	/* Resolve gid number */
 
@@ -275,6 +271,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	
 	return WINBINDD_OK;
 }
+
+#if 0
 
 /*
  * set/get/endpwent functions
@@ -694,3 +692,5 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	return WINBINDD_OK;
 }
+
+#endif

@@ -55,7 +55,7 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	fstring name_domain, name_user;
+	fstring name_domain, name_user, auth_dc;
 	int passlen;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
@@ -127,12 +127,18 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
+        if (!cm_get_dc_name(lp_workgroup(), auth_dc)) {
+                DEBUG(3, ("Could not find dc for workgroup %s\n",
+                          lp_workgroup()));
+                return WINBINDD_ERROR;
+        }
+
 	/* So domain_client_validate() actually opens a new connection
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
 	result = domain_client_validate(&user_info, &server_info,
-                                        server_state.controller, trust_passwd,
+                                        auth_dc, trust_passwd, 
                                         last_change_time);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
@@ -143,7 +149,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	fstring name_domain, name_user;
+	fstring name_domain, name_user, auth_dc;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 	auth_usersupplied_info user_info;
@@ -198,12 +204,18 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
+        if (!cm_get_dc_name(lp_workgroup(), auth_dc)) {
+                DEBUG(3, ("Could not find dc for workgroup %s\n",
+                          lp_workgroup()));
+                return WINBINDD_ERROR;
+        }
+
 	/* So domain_client_validate() actually opens a new connection
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
 	result = domain_client_validate(&user_info, &server_info,
-                                        server_state.controller, trust_passwd,
+                                        auth_dc, trust_passwd,
                                         last_change_time);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
