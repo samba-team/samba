@@ -106,6 +106,11 @@ typedef void **ADS_MODLIST;
 /* timeout on searches */
 #define ADS_SEARCH_TIMEOUT 10
 
+/* ldap control oids */
+#define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
+#define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
+#define ADS_SERVER_SORT_OID "1.2.840.113556.1.4.473"
+
 #define UF_DONT_EXPIRE_PASSWD           0x10000
 #define UF_MNS_LOGON_ACCOUNT            0x20000
 #define UF_SMARTCARD_REQUIRED           0x40000
