@@ -1112,7 +1112,8 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
-static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
+
+static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
 {		
 	int i;
 	
@@ -1120,7 +1121,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		
 	if (!strcmp(value, "BeepEnabled")) {
 		*type = 0x4;
-		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
 		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;			
@@ -1129,7 +1130,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 
 	if (!strcmp(value, "EventLog")) {
 		*type = 0x4;
-		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
 		SIVAL(*data, 0, 0x1B);
 		*needed = 0x4;			
@@ -1138,7 +1139,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 
 	if (!strcmp(value, "NetPopup")) {
 		*type = 0x4;
-		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
 		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;
@@ -1147,7 +1148,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 
 	if (!strcmp(value, "MajorVersion")) {
 		*type = 0x4;
-		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
 		SIVAL(*data, 0, 0x02);
 		*needed = 0x4;
@@ -1158,9 +1159,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		pstring string="You are using a Samba server";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
-		if((*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+		if((*data  = (uint8 *)talloc_zero( ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
 			return False;
-		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		
 		/* it's done by hand ready to go on the wire */
 		for (i=0; i<strlen(string); i++) {
@@ -1174,9 +1174,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		pstring string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
-		if((*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+		if((*data  = (uint8 *)talloc_zero( ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
 			return False;
-		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(string); i++) {
 			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
@@ -1190,7 +1189,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 /********************************************************************
  GetPrinterData on a printer Handle.
 ********************************************************************/
-static BOOL getprinterdata_printer(POLICY_HND *handle,
+static BOOL getprinterdata_printer(TALLOC_CTX *ctx, POLICY_HND *handle,
 				fstring value, uint32 *type,
                         	uint8 **data, uint32 *needed, uint32 in_size )
 {
@@ -1223,11 +1222,10 @@ static BOOL getprinterdata_printer(POLICY_HND *handle,
 	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
 
 	if (in_size) {
-		if((*data  = (uint8 *)malloc( in_size *sizeof(uint8) )) == NULL) {
+		if((*data  = (uint8 *)talloc_zero(ctx, in_size *sizeof(uint8) )) == NULL) {
 			return False;
 		}
 
-		memset(*data, 0, in_size *sizeof(uint8));
 		/* copy the min(in_size, len) */
 		memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
 	} else {
@@ -1277,7 +1275,7 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if (!OPEN_HANDLE(Printer)) {
-		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
+		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
 			return ERROR_NOT_ENOUGH_MEMORY;
 		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
@@ -1286,9 +1284,9 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
 	if (handle_is_printserver(handle))
-		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
+		found=getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
 	else
-		found= getprinterdata_printer(handle, value, type, data, needed, *out_size);
+		found= getprinterdata_printer(p->mem_ctx, handle, value, type, data, needed, *out_size);
 
 	if (found==False) {
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
