@@ -57,8 +57,8 @@ static int unlog_flag;
 static int verbose;
 
 struct getargs args[] = {
-    { "cell",	'c', arg_strings, &cells, "cells to get tokens for", "cells" },
-    { "file",	'p', arg_strings, &files, "files to get tokens for", "paths" },
+    { "cell",	'c', arg_strings, &cells, "cells to get tokens for", "cell" },
+    { "file",	'p', arg_strings, &files, "files to get tokens for", "path" },
     { "realm",	'k', arg_string, &realm, "realm for afs cell", "realm" },
     { "unlog",	'u', arg_flag, &unlog_flag, "remove tokens" },
 #if 0
@@ -157,7 +157,7 @@ createuser (char *cell)
 static void
 usage(int ecode)
 {
-    arg_printusage(args, num_args, NULL, "[cell]... [path]...");
+    arg_printusage(args, num_args, NULL, "[cell|path]...");
     exit(ecode);
 }
 
