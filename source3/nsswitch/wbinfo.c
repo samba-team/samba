@@ -46,7 +46,7 @@ static char winbind_separator(void)
 
 	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind seperator!\n");
+		d_printf("could not obtain winbind separator!\n");
 		/* HACK: (this module should not call lp_ funtions) */
 		return *lp_winbind_separator();
 	}
