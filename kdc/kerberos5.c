@@ -1097,6 +1097,15 @@ tgs_rep2(KDC_REQ_BODY *b,
 	goto out2;
     }
     
+    if(ap_req.ticket.enc_part.kvno && 
+       *ap_req.ticket.enc_part.kvno != krbtgt->kvno){
+	kdc_log(0, "Ticket kvno = %d, DB kvno = %d", 
+		*ap_req.ticket.enc_part.kvno,
+		krbtgt->kvno);
+	ret = KRB5KRB_AP_ERR_BADKEYVER;
+	goto out2;
+    }
+
     ret = hdb_etype2key(context, krbtgt, ap_req.ticket.enc_part.etype, &tkey);
     if(ret){
 	char *str;
