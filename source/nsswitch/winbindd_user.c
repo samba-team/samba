@@ -115,6 +115,17 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 			       name_user))
 		return WINBINDD_ERROR;
 	
+	/* don't handle our own domain if we are a DC.  This code handles cases where
+	   the account doesn't exist anywhere and gets passed on down the NSS layer */
+
+	if ( ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role()==ROLE_DOMAIN_BDC)) &&
+		strequal(name_domain, lp_workgroup()) ) 
+	{
+		DEBUG(7,("winbindd_getpwnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
+			name_domain, name_user));
+		return WINBINDD_ERROR;
+	}	
+	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(5, ("no such domain: %s\n", name_domain));
 		return WINBINDD_ERROR;

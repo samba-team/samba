@@ -644,7 +644,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 							 p->dc.sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
 		} else {
+			become_root();
 			status = auth_context->check_ntlm_password(auth_context, user_info, &server_info);
+			unbecome_root();
 		}
 
 		(auth_context->free)(&auth_context);
