@@ -51,9 +51,9 @@ static NTSTATUS rid_idmap_parse(const char *init_param,
 	int i;
 	fstring sid_str;
 	BOOL known_domain = False;
-	p = init_param;
 	fstring tok;
 
+	p = init_param;
 	trust.number = 0;
 
 	/* falling back to automatic mapping when there were no options given */
@@ -146,9 +146,9 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	fstring dc_name;
 	struct in_addr dc_ip;
-	char *password = NULL;
-	char *username = NULL;
-	char *domain = NULL;
+	const char *password = NULL;
+	const char *username = NULL;
+	const char *domain = NULL;
 	uint32 info_class = 5;
 	char *domain_name = NULL;
 	DOM_SID *domain_sid, sid;
@@ -159,6 +159,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	DOM_SID *trusted_domain_sids;
 	uint32 enum_ctx = 0;
 	DOM_SID builtin_sid;
+	int own_domains = 2;
 
 	/* put the results together */
 	*num_domains = 1;
@@ -270,7 +271,6 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 					i, trusted_domain_names[i], sid_str));
 	}
 
-	int own_domains = 2;
 	if (!sid_equal(domain_sid, get_global_sam_sid()))
 		++own_domains;
 
