@@ -2300,7 +2300,7 @@ static int do_message_op(void)
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

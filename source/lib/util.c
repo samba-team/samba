@@ -991,7 +991,7 @@ void safe_free(void *p)
 /****************************************************************************
 get my own name and IP
 ****************************************************************************/
-BOOL get_myname(char *my_name, struct in_addr *ip)
+BOOL get_myname(char *my_name)
 {
 	struct hostent *hp;
 	pstring hostname;
@@ -1024,8 +1024,10 @@ BOOL get_myname(char *my_name, struct in_addr *ip)
 		fstrcpy(my_name, hostname);
 	}
 
+#if 0
 	if (ip)
 		putip((char *)ip, (char *)hp->h_addr);
+#endif
 
 	return (True);
 }
@@ -2507,7 +2509,7 @@ char *myhostname(void)
 	static pstring ret;
 	if (ret[0] == 0)
 	{
-		get_myname(ret, NULL);
+		get_myname(ret);
 	}
 	return ret;
 }

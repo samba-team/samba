@@ -1164,7 +1164,7 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	*p = 0;
 	fstrcpy(share, p+1);
 
-	get_myname(myname,NULL);
+	get_myname(myname);
 
 	if (*username == 0 && getenv("LOGNAME")) {
 	  pstrcpy(username,getenv("LOGNAME"));

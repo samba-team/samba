@@ -950,7 +950,7 @@ static void usage(char *pname)
 
   DEBUG( 3, ( "Client started (version %s)\n", VERSION ) );
 
-  if(!get_myname(myhostname,NULL))
+  if(!get_myname(myhostname))
   {
     DEBUG(0,("Failed to get my hostname.\n"));
   }
@@ -967,7 +967,7 @@ static void usage(char *pname)
     pstrcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  get_myname((*global_myname)?NULL:global_myname,NULL);  
+  get_myname((*global_myname)?NULL:global_myname);
   strupper(global_myname);
 
   if (cli_open_sockets(port))

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpc_client.h"
 #include "rpc_validate.h"
 #include "nterr.h"
 
@@ -63,7 +64,7 @@ BOOL rpc_initialise(void)
 	myumask = umask(0);
 	umask(myumask);
 
-	if (!get_myname(global_myname, NULL))
+	if (!get_myname(global_myname))
 	{
 		fprintf(stderr, "Failed to get my hostname.\n");
 		return False;

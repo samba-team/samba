@@ -573,7 +573,7 @@ int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p, size_t size);
 BOOL memcpy_zero(void *to, const void *from, size_t size);
 void safe_free(void *p);
-BOOL get_myname(char *my_name, struct in_addr *ip);
+BOOL get_myname(char *my_name);
 int interpret_protocol(char *str, int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
