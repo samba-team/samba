@@ -34,6 +34,7 @@ struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 	struct nmb_name calling, called;
 	fstring dest_host;
 	extern pstring global_myname;
+	struct ntuser_creds anon;
 
 	/* Initialise cli_state information */
 
@@ -41,6 +42,12 @@ struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 
 	if (!cli_initialise(cli)) {
 		return NULL;
+	}
+
+	if (!creds) {
+		ZERO_STRUCT(anon);
+		anon.pwd.null_pwd = 1;
+		creds = &anon;
 	}
 
 	cli_init_creds(cli, creds);
@@ -109,17 +116,15 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 	if (!lsa_io_q_open_pol("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY, &qbuf, &rbuf)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!lsa_io_r_open_pol("", &r, &rbuf, 0)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = r.status;
@@ -130,8 +135,10 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 		*hnd = r.pol;
 	}
 
+ done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
+
 	return result;
 }
 
@@ -158,17 +165,15 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_CLOSE, &qbuf, &rbuf)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Unmarshall response */
 
 	if (!lsa_io_r_close("", &r, &rbuf, 0)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = r.status;
@@ -179,8 +184,10 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 		*hnd = r.pol;
 	}
 
+ done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
+
 	return result;
 }
 
@@ -212,9 +219,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Unmarshall response */
@@ -226,9 +232,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 	r.names = &t_names;
 
 	if (!lsa_io_r_lookup_sids("", &r, &rbuf, 0)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = r.status;
@@ -320,9 +325,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	
 	/* Unmarshall response */
@@ -331,9 +335,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 	r.dom_ref = &ref;
 
 	if (!lsa_io_r_lookup_names("", &r, &rbuf, 0)) {
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	result = r.status;
