@@ -93,9 +93,9 @@ void CloseDir(void *p);
 char *ReadDirName(void *p);
 BOOL SeekDir(void *p,int pos);
 int TellDir(void *p);
-void DirCacheAdd(char *path,char *name,char *dname,int snum);
-char *DirCacheCheck(char *path,char *name,int snum);
-void DirCacheFlush(int snum);
+void DirCacheAdd( char *path, char *name, char *dname, int snum );
+char *DirCacheCheck( char *path, char *name, int snum );
+void DirCacheFlush( int snum );
 
 /*The following definitions come from  fault.c  */
 
@@ -111,6 +111,7 @@ void load_interfaces(void);
 void iface_set_default(char *ip,char *bcast,char *nmask);
 BOOL ismyip(struct in_addr ip);
 BOOL ismybcast(struct in_addr bcast);
+BOOL is_local_net(struct in_addr from);
 int iface_count(void);
 struct in_addr *iface_n_ip(int n);
 struct in_addr *iface_bcast(struct in_addr ip);
@@ -372,11 +373,6 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 		 int name_type,
                  struct subnet_record *d,
 		 struct in_addr ip);
-void do_announce_host(int command,
-		char *from_name, int from_type, struct in_addr from_ip,
-		char *to_name  , int to_type  , struct in_addr to_ip,
-		time_t announce_interval,
-		char *server_name, int server_type, char *server_comment);
 void announce_my_servers_removed(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
@@ -503,7 +499,7 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
 				char *data,int len);
 void queue_packet(struct packet_struct *packet);
 void run_packet_queue();
-void listen_for_packets(BOOL run_election);
+BOOL listen_for_packets(BOOL run_election);
 BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,char *buf,int len,char *srcname,
 			 char *dstname,int src_type,int dest_type,
 			 struct in_addr dest_ip,struct in_addr src_ip);
@@ -945,6 +941,9 @@ int reply_findclose(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_transs2(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize);
+
+/*The following definitions come from  ubi_dLinkList.c  */
+
 
 /*The following definitions come from  ufc.c  */
 

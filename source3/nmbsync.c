@@ -24,9 +24,6 @@
 #define REPLACE_GETPASS
 #include "includes.h"
 
-extern int ClientNMB;
-extern int ClientDGRAM;
-
 extern int DEBUGLEVEL;
 
 extern pstring myname;

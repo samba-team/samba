@@ -33,6 +33,7 @@
 
 extern int ClientNMB;
 extern int ClientDGRAM;
+extern int global_nmb_port;
 
 extern int DEBUGLEVEL;
 
@@ -130,14 +131,60 @@ struct subnet_record *find_subnet_all(struct in_addr bcast_ip)
 }
 
 /****************************************************************************
-  create a domain entry
+  create a subnet entry
   ****************************************************************************/
-static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr mask_ip, BOOL add)
+static struct subnet_record *make_subnet(struct in_addr myip, struct in_addr bcast_ip, 
+                                         struct in_addr mask_ip, BOOL add)
 {
-  struct subnet_record *d;
+  struct subnet_record *d = NULL;
+  int nmb_sock, dgram_sock;
+
+  /* Check if we are creating the WINS subnet - if so don't create
+     sockets, use the ClientNMB and ClientDGRAM sockets instead.
+   */
+
+  if(ip_equal(bcast_ip, wins_ip))
+  {
+    nmb_sock = -1;
+    dgram_sock = -1;
+  }
+  else
+  {
+    /*
+     * Attempt to open the sockets on port 137/138 for this interface
+     * and bind them.
+     * Fail the subnet creation if this fails.
+     */
+
+    if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr)) == -1)
+    {
+      DEBUG(0,("make_subnet: Failed to open nmb socket on interface %s \
+for port %d. Error was %s\n", inet_ntoa(myip), global_nmb_port, strerror(errno)));
+      return NULL;
+    }
+
+    if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr)) == -1)
+    {
+      DEBUG(0,("make_subnet: Failed to open dgram socket on interface %s \
+for port %d. Error was %s\n", inet_ntoa(myip), DGRAM_PORT, strerror(errno)));
+      return NULL;
+    }
+
+    /* Make sure we can broadcast from these sockets. */
+    set_socket_options(nmb_sock,"SO_BROADCAST");
+    set_socket_options(dgram_sock,"SO_BROADCAST");
+
+  }
+
   d = (struct subnet_record *)malloc(sizeof(*d));
   
-  if (!d) return(NULL);
+  if (!d) 
+  {
+    DEBUG(0,("make_subnet: malloc fail !\n"));
+    close(nmb_sock);
+    close(dgram_sock);
+    return(NULL);
+  }
   
   bzero((char *)d,sizeof(*d));
   
@@ -146,6 +193,9 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   
   d->bcast_ip = bcast_ip;
   d->mask_ip  = mask_ip;
+  d->myip = myip;
+  d->nmb_sock = nmb_sock;
+  d->dgram_sock = dgram_sock;
   d->workgrouplist = NULL;
   
   if(add)
@@ -158,7 +208,8 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   add a domain entry. creates a workgroup, if necessary, and adds the domain
   to the named a workgroup.
   ****************************************************************************/
-static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
+static struct subnet_record *add_subnet_entry(struct in_addr myip,
+                                       struct in_addr bcast_ip, 
 				       struct in_addr mask_ip, char *name, 
                                        BOOL create_subnets, BOOL add)
 {
@@ -175,7 +226,7 @@ static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
   if(create_subnets == True)
   {
     /* Create new subnets. */
-    if((d = make_subnet(bcast_ip, mask_ip, add)) == NULL)
+    if((d = make_subnet(myip, bcast_ip, mask_ip, add)) == NULL)
     {
       DEBUG(0,("add_subnet_entry: Unable to create subnet %s\n",
                inet_ntoa(bcast_ip) ));
@@ -265,7 +316,7 @@ void add_my_subnets(char *group)
    */
   for (i = local_interfaces; i; i = i->next)
   {
-    add_subnet_entry(i->bcast,i->nmask,group, create_subnets, True);
+    add_subnet_entry(i->ip, i->bcast,i->nmask,group, create_subnets, True);
   }
 
   /* If we are using WINS, then we must add the workgroup to the WINS
@@ -278,7 +329,7 @@ void add_my_subnets(char *group)
   if (lp_wins_support() || lp_wins_server())
   {
     struct in_addr wins_nmask = ipzero;
-    wins_subnet = add_subnet_entry(wins_ip, wins_nmask, group, create_subnets, False);
+    wins_subnet = add_subnet_entry(ipzero, wins_ip, wins_nmask, group, create_subnets, False);
   }
 
   /* Ensure we only create the subnets once. */

@@ -67,7 +67,7 @@ void announce_request(struct work_record *work, struct in_addr ip)
   work->needannounce = True;
 
   DEBUG(2,("sending announce request to %s for workgroup %s\n",
-	   inet_ntoa(ip),work->work_group));
+            inet_ntoa(ip),work->work_group));
 
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
@@ -84,9 +84,9 @@ void announce_request(struct work_record *work, struct in_addr ip)
      of 0x1e, then we could get the master browser to announce to
      us instead of the members of the workgroup. wha-hey! */
 
-  send_mailslot_reply(False, BROWSE_MAILSLOT,ClientDGRAM,
-              outbuf,PTR_DIFF(p,outbuf),
-		      myname,work->work_group,0x20,0x1e,ip,*iface_ip(ip));
+  send_mailslot_reply(False, BROWSE_MAILSLOT, ClientDGRAM,
+                      outbuf,PTR_DIFF(p,outbuf),
+                      myname,work->work_group,0x20,0x1e,ip,*iface_ip(ip));
 }
 
 
@@ -106,15 +106,15 @@ void do_announce_request(char *info, char *to_name, int announce_type,
   p++;
   
   DEBUG(2,("sending announce type %d: info %s to %s - server %s(%x)\n",
-	   announce_type, info, inet_ntoa(dest_ip),to_name,to));
+            announce_type, info, inet_ntoa(dest_ip),to_name,to));
   
   StrnCpy(p,info,16);
   strupper(p);
   p = skip_string(p,1);
   
-  send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,
-              outbuf,PTR_DIFF(p,outbuf),
-		      myname,to_name,from,to,dest_ip,*iface_ip(dest_ip));
+  send_mailslot_reply(False,BROWSE_MAILSLOT, ClientDGRAM,
+                      outbuf,PTR_DIFF(p,outbuf),
+                      myname,to_name,from,to,dest_ip,*iface_ip(dest_ip));
 }
 
 
@@ -144,48 +144,48 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 /****************************************************************************
   send a host announcement packet
   **************************************************************************/
-void do_announce_host(int command,
+static void do_announce_host(int command,
 		char *from_name, int from_type, struct in_addr from_ip,
 		char *to_name  , int to_type  , struct in_addr to_ip,
 		time_t announce_interval,
 		char *server_name, int server_type, char *server_comment)
 {
-	pstring outbuf;
-	char *p;
+  pstring outbuf;
+  char *p;
 
-	bzero(outbuf,sizeof(outbuf));
-	p = outbuf+1;
+  bzero(outbuf,sizeof(outbuf));
+  p = outbuf+1;
 
-	/* command type */
-	CVAL(outbuf,0) = command;
+  /* command type */
+  CVAL(outbuf,0) = command;
 
-	/* announcement parameters */
-	CVAL(p,0) = updatecount;
-	SIVAL(p,1,announce_interval*1000); /* ms - despite the spec */
+  /* announcement parameters */
+  CVAL(p,0) = updatecount;
+  SIVAL(p,1,announce_interval*1000); /* ms - despite the spec */
 
-	StrnCpy(p+5,server_name,16);
-	strupper(p+5);
+  StrnCpy(p+5,server_name,16);
+  strupper(p+5);
 
-	CVAL(p,21) = lp_major_announce_version(); /* major version */
-	CVAL(p,22) = lp_minor_announce_version(); /* minor version */
+  CVAL(p,21) = lp_major_announce_version(); /* major version */
+  CVAL(p,22) = lp_minor_announce_version(); /* minor version */
 
-	SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
-	/* browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT)*/
-	SSVAL(p,27,BROWSER_ELECTION_VERSION);
-	SSVAL(p,29,BROWSER_CONSTANT); /* browse signature */
+  SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
+  /* browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT)*/
+  SSVAL(p,27,BROWSER_ELECTION_VERSION);
+  SSVAL(p,29,BROWSER_CONSTANT); /* browse signature */
 
-	pstrcpy(p+31,server_comment);
-	p += 31;
-	p = skip_string(p,1);
+  pstrcpy(p+31,server_comment);
+  p += 31;
+  p = skip_string(p,1);
 
-	debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
+  debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
 
-	/* send the announcement */
-	send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-					  PTR_DIFF(p,outbuf),
-					  from_name, to_name,
-					  from_type, to_type,
-					  to_ip, from_ip);
+  /* send the announcement */
+  send_mailslot_reply(False,BROWSE_MAILSLOT, ClientDGRAM, outbuf,
+			  PTR_DIFF(p,outbuf),
+			  from_name, to_name,
+			  from_type, to_type,
+			  to_ip, from_ip);
 }
 
 
@@ -217,58 +217,58 @@ void announce_my_servers_removed(void)
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type)
 {
-    /* domain type cannot have anything in it that might confuse
-       a client into thinking that the domain is in fact a server.
-       (SV_TYPE_SERVER_UNIX, for example)
-     */
-	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
-	BOOL wins_iface = ip_equal(d->bcast_ip, wins_ip);
+  /* domain type cannot have anything in it that might confuse
+     a client into thinking that the domain is in fact a server.
+     (SV_TYPE_SERVER_UNIX, for example)
+   */
+  uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
+  BOOL wins_iface = ip_equal(d->bcast_ip, wins_ip);
 
-    if(wins_iface)
-    {
-      DEBUG(0,("announce_server: error - announcement requested on WINS \
+  if(wins_iface)
+  {
+    DEBUG(0,("announce_server: error - announcement requested on WINS \
 interface for workgroup %s, name %s\n", work->work_group, name));
-      return;
+    return;
+  }
+
+  /* Only do domain announcements if we are a master and it's
+     our name we're being asked to announce. */
+  if (AM_MASTER(work) && strequal(myname,name))
+  {
+    DEBUG(3,("sending local master announce to %s for %s(1e)\n",
+              inet_ntoa(d->bcast_ip),work->work_group));
+
+    do_announce_host(ANN_LocalMasterAnnouncement,
+                     name            , 0x00, d->myip,
+                     work->work_group, 0x1e, d->bcast_ip,
+                     ttl,
+                     name, server_type, comment);
+
+    DEBUG(3,("sending domain announce to %s for %s\n",
+              inet_ntoa(d->bcast_ip),work->work_group));
+
+    /* XXXX should we do a domain-announce-kill? */
+    if (server_type != 0)
+    {
+      do_announce_host(ANN_DomainAnnouncement,
+                       name    , 0x00, d->myip,
+                       MSBROWSE, 0x01, d->bcast_ip,
+                       ttl,
+                       work->work_group, server_type ? domain_type : 0,
+                       name);
     }
+  }
+  else
+  {
+    DEBUG(3,("sending host announce to %s for %s(1d)\n",
+              inet_ntoa(d->bcast_ip),work->work_group));
 
-    /* Only do domain announcements if we are a master and it's
-       our name we're being asked to announce. */
-	if (AM_MASTER(work) && strequal(myname,name))
-	{
-		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
-
-		do_announce_host(ANN_LocalMasterAnnouncement,
-						name            , 0x00, d->myip,
-						work->work_group, 0x1e, d->bcast_ip,
-						ttl,
-						name, server_type, comment);
-
-		DEBUG(3,("sending domain announce to %s for %s\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
-
-		/* XXXX should we do a domain-announce-kill? */
-		if (server_type != 0)
-		{
-			do_announce_host(ANN_DomainAnnouncement,
-						name    , 0x00, d->myip,
-						MSBROWSE, 0x01, d->bcast_ip,
-						ttl,
-						work->work_group, server_type ? domain_type : 0,
-						name);
-		}
-	}
-	else
-	{
-		DEBUG(3,("sending host announce to %s for %s(1d)\n",
-						inet_ntoa(d->bcast_ip),work->work_group));
-
-		do_announce_host(ANN_HostAnnouncement,
-						name            , 0x00, d->myip,
-						work->work_group, 0x1d, d->bcast_ip,
-						ttl,
-						name, server_type, comment);
-	}
+    do_announce_host(ANN_HostAnnouncement,
+                     name            , 0x00, d->myip,
+                     work->work_group, 0x1d, d->bcast_ip,
+                     ttl,
+                     name, server_type, comment);
+  }
 }
 
 /****************************************************************************

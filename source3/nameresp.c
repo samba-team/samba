@@ -25,7 +25,6 @@
 #include "includes.h"
 
 extern int ClientNMB;
-extern int ClientDGRAM;
 
 extern struct subnet_record *subnetlist;
 

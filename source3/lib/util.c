@@ -3284,8 +3284,8 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
     { 
       if (port) {
 	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d socket_addr=%x (%s)\n",
-			port,socket_addr,strerror(errno))); 
+	  DEBUG(dlevel,("bind failed on port %d socket_addr=%s (%s)\n",
+			port,inet_ntoa(sock.sin_addr),strerror(errno))); 
 	close(res); 
 
 	if (dlevel > 0 && port < 1000)

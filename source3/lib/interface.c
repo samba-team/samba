@@ -400,6 +400,18 @@ BOOL ismybcast(struct in_addr bcast)
 }
 
 /****************************************************************************
+  check if a packet is from a local (known) net
+  **************************************************************************/
+BOOL is_local_net(struct in_addr from)
+{
+  struct interface *i;
+  for (i=local_interfaces;i;i=i->next)
+    if((from.s_addr & i->nmask.s_addr) == (i->ip.s_addr & i->nmask.s_addr))
+      return True;
+  return False;
+}
+
+/****************************************************************************
   how many interfaces do we have
   **************************************************************************/
 int iface_count(void)

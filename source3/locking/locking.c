@@ -716,6 +716,31 @@ static BOOL share_name(int cnum, uint32 dev, uint32 inode, char *name)
 }
 
 /*******************************************************************
+Force a share file to be deleted.
+********************************************************************/
+
+static int delete_share_file( int cnum, char *fname )
+{
+  /* the share file could be owned by anyone, so do this as root */
+  become_root(False);
+
+  if(unlink(fname) != 0)
+  {
+    DEBUG(0,("delete_share_file: Can't delete share file %s (%s)\n",
+            fname, strerror(errno)));
+  } 
+  else 
+  {
+    DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
+  }
+
+  /* return to our previous privilage level */
+  unbecome_root(False);
+
+  return 0;
+}
+
+/*******************************************************************
   lock a share mode file.
   ******************************************************************/
 BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok)
@@ -820,6 +845,31 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
 {
   int fd = (int)token;
   int ret = True;
+  struct stat sb;
+  pstring fname;
+
+  /* Fix for zero length share files from
+     Gerald Werner <wernerg@mfldclin.edu> */
+    
+  share_name(cnum, dev, inode, fname);
+
+  /* get the share mode file size */
+  if(fstat((int)token, &sb) != 0)
+  {
+    DEBUG(0,("ERROR: unlock_share_entry: Failed to do stat on share file %s (%s)\n",
+              fname, strerror(errno)));
+    sb.st_size = 1;
+    ret = False;
+  }
+
+  /* If the file was zero length, we must delete before
+     doing the unlock to avoid a race condition (see
+     the code in lock_share_mode_entry for details.
+   */
+
+  /* remove the share file if zero length */    
+  if(sb.st_size == 0)  
+    delete_share_file(cnum, fname);
 
   /* token is the fd of the open share mode file. */
   /* Unlock the first byte. */
@@ -832,31 +882,6 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
  
   close(fd);
   return ret;
-}
-
-/*******************************************************************
-Force a share file to be deleted.
-********************************************************************/
-
-static int delete_share_file( int cnum, char *fname )
-{
-  /* the share file could be owned by anyone, so do this as root */
-  become_root(False);
-
-  if(unlink(fname) != 0)
-  {
-    DEBUG(0,("delete_share_file: Can't delete share file %s (%s)\n",
-            fname, strerror(errno)));
-  } 
-  else 
-  {
-    DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
-  }
-
-  /* return to our previous privilage level */
-  unbecome_root(False);
-
-  return 0;
 }
 
 /*******************************************************************
