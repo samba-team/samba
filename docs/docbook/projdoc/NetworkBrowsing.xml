@@ -1315,7 +1315,8 @@ you looked in it on a particular network right now).
 </para>
 
 <para>
-<table>
+<table frame="all">
+	<title>Browse subnet example 1</title>		
 	<tgroup align="left" cols="3">
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
@@ -1357,7 +1358,8 @@ are done the browse lists look like :
 </para>
 
 <para>
-<table>
+<table frame="all">
+	<title>Browse subnet example 2</title>		
 	<tgroup	align="left" cols="3">
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
@@ -1390,7 +1392,8 @@ the browse lists look like.
 </para>
 
 <para>
-<table>
+<table frame="all">
+	<title>Browse subnet example 3</title>		
 	<tgroup cols="3" align="left">
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
@@ -1421,7 +1424,8 @@ are removed or shut off) the browse lists will look like :
 </para>
 
 <para>
-<table>
+<table frame="all">
+	<title>Browse subnet example 4</title>		
 	<tgroup cols="3" align="left">
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>

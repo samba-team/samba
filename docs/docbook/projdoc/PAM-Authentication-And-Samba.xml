@@ -222,7 +222,8 @@ recommended that you use pam_winbind instead.
 
 <para>
 Options recognized by this module are as follows:
-<table>
+<table frame="all">
+	<title>Options recognized by pam_mkpass</title>
 	<tgroup cols="2" align="left">
 	<tbody>
 		<row><entry>debug</entry><entry>log more debugging info</entry></row>
