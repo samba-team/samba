@@ -61,11 +61,13 @@ process_it(int sock,
 				   NULL,
 				   NULL);
     if (GSS_ERROR(maj_stat))
-	gss_err (1, min_stat, "gss_verify_mic");
+	gss_err (1, min_stat, "gss_inquire_context");
 
     print_gss_name("Server is", server_name);
 
-
+    maj_stat = gss_release_name(&min_stat, &server_name);
+    if (GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_release_name");
 
     /* gss_verify_mic */
 
