@@ -879,12 +879,18 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       if (lp_security() >= SEC_USER) 
       {
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
+        {
+          DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
           return(ERROR(ERRSRV,ERRbadpw));
+        }
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-         if (Get_Pwnam(user,True))
+	  if (Get_Pwnam(user,True))
+	  {
+            DEBUG(1,("Rejecting user '%s': bad password\n", user));
             return(ERROR(ERRSRV,ERRbadpw));
+	  }
         }
 
         /*

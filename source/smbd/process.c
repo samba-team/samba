@@ -822,13 +822,31 @@ static int setup_select_timeout(void)
 }
 
 /****************************************************************************
+ Check if services need reloading.
+****************************************************************************/
+
+void check_reload(int time)
+{
+  static time_t last_smb_conf_reload_time = 0;
+
+  if(last_smb_conf_reload_time == 0)
+    last_smb_conf_reload_time = time;
+
+  if (reload_after_sighup || (time >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
+  {
+    reload_services(True);
+    reload_after_sighup = False;
+    last_smb_conf_reload_time = time;
+  }
+}
+
+/****************************************************************************
  Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
 
 static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
   extern int Client;
-  static time_t last_smb_conf_reload_time = 0;
   static time_t last_keepalive_sent_time = 0;
   static time_t last_idle_closed_check = 0;
   time_t t;
@@ -850,9 +868,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 
   *last_timeout_processing_time = t = time(NULL);
 
-  if(last_smb_conf_reload_time == 0)
-    last_smb_conf_reload_time = t;
-
   if(last_keepalive_sent_time == 0)
     last_keepalive_sent_time = t;
 
@@ -862,31 +877,8 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   /* become root again if waiting */
   unbecome_user();
 
-  /* check for smb.conf reload */
-  if (t >= last_smb_conf_reload_time + SMBD_RELOAD_CHECK)
-  {
-    /* reload services, if files have changed. */
-    reload_services(True);
-    last_smb_conf_reload_time = t;
-  }
-
-  /*
-   * If reload_after_sighup == True then we got a SIGHUP
-   * and are being asked to reload. Fix from <branko.cibej@hermes.si>
-   */
-
-  if (reload_after_sighup)
-  {
-    DEBUG(0,("Reloading services after SIGHUP\n"));
-    reload_services(False);
-    reopen_logs();
-    reload_after_sighup = False;
-    last_smb_conf_reload_time = t;
-    /*
-     * Use this as an excuse to print some stats.
-     */
-    print_stat_cache_statistics();
-  }
+  /* check if we need to reload services */
+  check_reload(t);
 
   /* automatic timeout if all connections are closed */      
   if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) 

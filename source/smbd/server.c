@@ -192,6 +192,9 @@ max can be %d\n",
 		if (num == -1 && errno == EINTR)
 			continue;
 		
+		/* check if we need to reload services */
+		check_reload(time(NULL));
+
 		/* Find the sockets that are read-ready -
 		   accept on these. */
 		for( ; num > 0; num--) {

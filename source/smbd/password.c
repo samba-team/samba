@@ -520,7 +520,7 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
 	{
-		DEBUG(1,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
+		DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
 		return(True);
 	}
 
@@ -529,7 +529,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 	
-	DEBUG(1,("smb_password_check failed. Invalid password given for user '%s'\n", user));
+	DEBUG(2,("pass_check_smb failed - invalid password for user [%s]\n", user));
 	return False;
 }
 
