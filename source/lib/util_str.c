@@ -1076,7 +1076,7 @@ if len==0 then no length check is performed
 void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p, *s1;
-	ssize_t ls,lp,li, lm, i;
+	ssize_t ls,lp,li, i;
 
 	if (!insert || !pattern || !s) return;
 
@@ -1084,7 +1084,6 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
-	lm = ls + 1 - lp;
 
 	if (!*pattern) return;
 	
@@ -1096,7 +1095,7 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 			break;
 		}
 		if (li != lp) {
-			memmove(p+li,p+lp,lm - PTR_DIFF(p, s1));
+			memmove(p+li,p+lp,strlen(p+lp)+1);
 		}
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
@@ -1137,7 +1136,7 @@ if len==0 then no length check is performed
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p, *s1;
-	ssize_t ls,lp,li, lm;
+	ssize_t ls,lp,li;
 
 	if (!insert || !pattern || !s) return;
 
@@ -1145,7 +1144,6 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
-	lm = ls + 1 - lp;
 
 	if (!*pattern) return;
 	
@@ -1157,7 +1155,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 			break;
 		}
 		if (li != lp) {
-			memmove(p+li,p+lp,lm - PTR_DIFF(p, s1));
+			memmove(p+li,p+lp,strlen(p+lp)+1);
 		}
 		memcpy(p, insert, li);
 		s = p + li;
