@@ -1827,54 +1827,24 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 }
 
 /*******************************************************************
- samr_reply_unknown_32
+ api_samr_create_user
  ********************************************************************/
-static BOOL samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
-				prs_struct *rdata,
-				int status)
-{
-	int i;
-	SAMR_R_UNKNOWN_32 r_u;
-
-	/* set up the SAMR unknown_32 response */
-	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
-	if (status == 0)
-	{
-		for (i = 4; i < POL_HND_SIZE; i++)
-		{
-			r_u.pol.data[i] = i+1;
-		}
-	}
-
-	init_dom_rid4(&(r_u.rid4), 0x0030, 0, 0);
-	r_u.status    = status;
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_unknown_32("", &r_u, rdata, 0))
-		return False;
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-	return True;
-}
-
-/*******************************************************************
- api_samr_unknown_32
- ********************************************************************/
-static BOOL api_samr_unknown_32(pipes_struct *p)
+static BOOL api_samr_create_user(pipes_struct *p)
 {
 	uint32 status = 0;
 	struct sam_passwd *sam_pass;
 	fstring mach_acct;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
+	int i;
 
-	SAMR_Q_UNKNOWN_32 q_u;
+	SAMR_Q_CREATE_USER q_u;
+	SAMR_R_CREATE_USER r_u;
 
-	/* grab the samr unknown 32 */
-	samr_io_q_unknown_32("", &q_u, data, 0);
+	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
+
+	/* grab the samr create user */
+	samr_io_q_create_user("", &q_u, data, 0);
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -1882,28 +1852,37 @@ static BOOL api_samr_unknown_32(pipes_struct *p)
 	   reply if the account already exists...
 	 */
 
-	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer,
-	                            q_u.uni_mach_acct.uni_str_len));
+	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer, q_u.uni_mach_acct.uni_str_len));
 
 	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root();
 
-	if (sam_pass != NULL)
-	{
+	if (sam_pass != NULL) {
 		/* machine account exists: say so */
 		status = 0xC0000000 | NT_STATUS_USER_EXISTS;
-	}
-	else
-	{
+	} else {
 		/* this could cause trouble... */
 		DEBUG(0,("trouble!\n"));
 		status = 0;
 	}
 
-	/* construct reply. */
-	if(!samr_reply_unknown_32(&q_u, rdata, status))
+	/* set up the SAMR create_user response */
+	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+	if (status == 0) {
+		for (i = 4; i < POL_HND_SIZE; i++) {
+			r_u.pol.data[i] = i+1;
+		}
+	}
+
+	init_dom_rid4(&(r_u.rid4), 0x0030, 0, 0);
+	r_u.status    = status;
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_create_user("", &r_u, rdata, 0))
 		return False;
+
+	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
 
 	return True;
 }
@@ -2197,7 +2176,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
-	{ "SAMR_0x32"             , 0x32                  , api_samr_unknown_32       },
+	{ "SAMR_CREATE_USER"      , SAMR_CREATE_USER      , api_samr_create_user      },
 	{ "SAMR_UNKNOWN_12"       , SAMR_UNKNOWN_12       , api_samr_unknown_12       },
 	{ "SAMR_UNKNOWN_38"       , SAMR_UNKNOWN_38       , api_samr_unknown_38       },
 	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },
