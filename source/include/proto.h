@@ -1960,11 +1960,26 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush(int snum);
 
+/*The following definitions come from  smbd/dosmode.c  */
+
+mode_t unix_mode(connection_struct *conn,int dosmode);
+int dos_mode(connection_struct *conn,char *path,struct stat *sbuf);
+int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st);
+
 /*The following definitions come from  smbd/fileio.c  */
 
 int seek_file(files_struct *fsp,uint32 pos);
 int read_file(files_struct *fsp,char *data,uint32 pos,int n);
 int write_file(files_struct *fsp,char *data,int n);
+void sync_file(connection_struct *conn, files_struct *fsp);
+
+/*The following definitions come from  smbd/filename.c  */
+
+BOOL fname_equal(char *name1, char *name2);
+BOOL mangled_equal(char *name1, char *name2);
+BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path);
+BOOL check_name(char *name,connection_struct *conn);
+BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
 
 /*The following definitions come from  smbd/files.c  */
 
@@ -2153,15 +2168,9 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 
 void  *dflt_sig(void);
 void  killkids(void);
-mode_t unix_mode(connection_struct *conn,int dosmode);
-int dos_mode(connection_struct *conn,char *path,struct stat *sbuf);
-int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st);
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
 BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
-BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path);
-BOOL check_name(char *name,connection_struct *conn);
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-void sync_file(connection_struct *conn, files_struct *fsp);
 void close_file(files_struct *fsp, BOOL normal_close);
 void close_directory(files_struct *fsp);
 int open_directory(files_struct *fsp,connection_struct *conn,

@@ -115,3 +115,15 @@ int write_file(files_struct *fsp,char *data,int n)
   return(write_data(fsp->fd_ptr->fd,data,n));
 }
 
+
+/*******************************************************************
+sync a file
+********************************************************************/
+void sync_file(connection_struct *conn, files_struct *fsp)
+{
+#ifdef HAVE_FSYNC
+    if(lp_strict_sync(SNUM(conn)))
+      fsync(fsp->fd_ptr->fd);
+#endif
+}
+
