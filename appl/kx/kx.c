@@ -534,8 +534,8 @@ check_for_passive (const char *disp)
 static void
 usage(void)
 {
-    fprintf (stderr, "Usage: %s [-p port] [-d] [-t] [-l remoteuser] host\n",
-	     __progname);
+    fprintf(stderr, "Usage: %s [-p port] [-d] [-D] [-t] [-l remoteuser] host\n",
+	    __progname);
     exit (1);
 }
 
@@ -555,10 +555,13 @@ main(int argc, char **argv)
      int port = 0;
 
      set_progname (argv[0]);
-     while((c = getopt(argc, argv, "ktdl:p:P")) != EOF) {
+     while((c = getopt(argc, argv, "ktdDl:p:P")) != EOF) {
 	 switch(c) {
 	 case 'd' :
 	     debugp = 1;
+	     break;
+	 case 'D':
+	     krb_enable_debug();
 	     break;
 	 case 'k':
 	     keepalivep = 0;
