@@ -609,7 +609,6 @@ static void api_net_sam_logon( uint16 vuid,
 	NTTIME pass_can_change_time ;
 	NTTIME pass_must_change_time;
 
-	fstring nt_name     ;
 	fstring full_name   ;
 	fstring logon_script;
 	fstring profile_path;
@@ -706,7 +705,6 @@ static void api_net_sam_logon( uint16 vuid,
 		pass_can_change_time  = sam_pass->pass_can_change_time;
 		pass_must_change_time = sam_pass->pass_must_change_time;
 
-		fstrcpy(nt_name     , sam_pass->nt_name);
 		fstrcpy(full_name   , sam_pass->full_name);
 		fstrcpy(logon_script, sam_pass->logon_script);
 		fstrcpy(profile_path, sam_pass->profile_path);
@@ -771,7 +769,7 @@ static void api_net_sam_logon( uint16 vuid,
 				&pass_can_change_time,
 				&pass_must_change_time,
 
-				nt_name         , /* user_name */
+				nt_username     , /* user_name */
 				full_name       , /* full_name */
 				logon_script    , /* logon_script */
 				profile_path    , /* profile_path */
