@@ -2288,6 +2288,11 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 			if (!set_user_info_10(ctr->info.id10, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
+		case 18:
+			/* Used by AS/U JRA. */
+			if (!set_user_info_12(ctr->info.id12, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
