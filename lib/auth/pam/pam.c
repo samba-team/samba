@@ -153,7 +153,7 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     }
     pmsg = &msg;
     msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    sprintf(prompt, "%s%s%s's Password: ", name, inst[0]?".":"", inst);
+    sprintf(prompt, "%s's Password: ", krb_unparse_name(name, inst, NULL));
     msg.msg = prompt;
 
     ret = conv->conv(1, (const struct pam_message**)&pmsg, 
