@@ -597,7 +597,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 {
 	struct printjob pj, *old_pj;
 
-	if (jobid == (uint32)-1)
+	if (jobid == (uint32)-1) 
 		jobid = q->job + UNIX_JOB_START;
 
 	/* Preserve the timestamp on an existing unix print job */
@@ -671,9 +671,11 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
 						(unsigned int)jobid ));
 			pjob_delete(ts->snum, jobid);
-		} else
-			ts->total_jobs++;
-		return 0;
+			return 0;
+		} 
+
+		/* need to continue the the bottom of the function to
+		   save the correct attributes */
 	}
 
 	/* maybe it hasn't been spooled yet */
@@ -690,10 +692,14 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		return 0;
 	}
 
-	for (i=0;i<ts->qcount;i++) {
-		uint32 curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
-		if (jobid == curr_jobid)
-			break;
+	/* this check only makes sense for jobs submitted from Windows clients */
+	
+	if ( pjob.smbjob ) {
+		for (i=0;i<ts->qcount;i++) {
+			uint32 curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
+			if (jobid == curr_jobid)
+				break;
+		}
 	}
 	
 	/* The job isn't in the system queue - we have to assume it has
@@ -720,7 +726,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	}
 
 	/* Save the pjob attributes we will store. */
-	ts->queue[i].job = jobid;
+	/* FIXME!!! This is the only place where queue->job 
+	   represents the SMB jobid      --jerry */
+	ts->queue[i].job = jobid;		
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
