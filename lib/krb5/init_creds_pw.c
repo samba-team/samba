@@ -40,39 +40,44 @@
 
 RCSID("$Id$");
 
-static const char *
-get_config_string (krb5_context context,
-		   char *realm,
-		   char *name,
-		   const char *def)
+static int
+get_config_time (krb5_context context,
+		 char *realm,
+		 char *name,
+		 int def)
 {
-    const char *ret;
+    int ret;
 
-    ret = krb5_config_get_string (context->cf,
-				  "libdefaults",
-				  realm,
-				  name,
-				  NULL);
-    if (ret)
+    ret = krb5_config_get_time (context->cf,
+				"realms",
+				realm,
+				name,
+				NULL);
+    if (ret >= 0)
 	return ret;
-    ret = krb5_config_get_string (context->cf,
-				  "libdefaults",
-				  name,
-				  NULL);
-    if (ret)
+    ret = krb5_config_get_time (context->cf,
+				"libdefaults",
+				name,
+				NULL);
+    if (ret >= 0)
 	return ret;
     return def;
 }
 
-static int
-ison (const char *s)
+static krb5_boolean
+get_config_bool (krb5_context context,
+		 char *realm,
+		 char *name)
 {
-    return strcasecmp (s, "y") == 0
-	|| strcasecmp (s, "yes") == 0
-	|| strcasecmp (s, "t") == 0
-	|| strcasecmp (s, "true") == 0
-	|| strcasecmp (s, "1") == 0
-	|| strcasecmp (s, "on") == 0;
+    return krb5_config_get_bool (context->cf,
+				 "realms",
+				 realm,
+				 name,
+				 NULL)
+	|| krb5_config_get_bool (context->cf,
+				 "libdefaults",
+				 name,
+				 NULL);
 }
 
 static krb5_error_code
@@ -109,22 +114,20 @@ init_cred (krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)
 	tmp = options->tkt_life;
     else
-	tmp = parse_time(get_config_string (context,
-					    *client_realm,
-					    "ticket_lifetime",
-					    "10h"),
-			 NULL);
+	tmp = get_config_time (context,
+			       *client_realm,
+			       "ticket_lifetime",
+			       10 * 60 * 60);
     cred->times.endtime = now + tmp;
 
     tmp = 0;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
 	tmp = options->renew_life;
     else
-	tmp = parse_time(get_config_string (context,
-					    *client_realm,
-					    "renew_lifetime",
-					    "0"),
-			 NULL);
+	tmp = get_config_time (context,
+			       *client_realm,
+			       "renew_lifetime",
+			       0);
     if (tmp)
 	cred->times.renew_till = now + tmp;
 
@@ -168,11 +171,10 @@ print_expire (krb5_context context,
 
     krb5_timeofday (context, &sec);
 
-    t = sec + parse_time(get_config_string (context,
-					    *realm,
-					    "warn_pwexpire",
-					    "1 week"),
-			 NULL);
+    t = sec + get_config_time (context,
+			       *realm,
+			       "warn_pwexpire",
+			       7 * 24 * 60 * 60);
 
     for (i = 0; i < lr->len; ++i) {
 	if (lr->val[i].lr_type == 6
@@ -226,18 +228,16 @@ get_init_creds_common(krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
 	flags->b.forwardable = 1;
     else
-	flags->b.forwardable = ison(get_config_string (context,
-						      *client_realm,
-						      "forwardable",
-						      "no"));
+	flags->b.forwardable = get_config_bool (context,
+						*client_realm,
+						"forwardable");
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
 	flags->b.proxiable = 1;
     else
-	flags->b.proxiable = ison(get_config_string (context,
-						    *client_realm,
-						    "proxiable",
-						    "no"));
+	flags->b.proxiable = get_config_bool (context,
+					      *client_realm,
+					      "proxiable");
 
     if (cred->times.renew_till)
 	flags->b.renewable = 1;
