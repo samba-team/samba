@@ -923,6 +923,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 /****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
+
 static int call_nt_transact_create(connection_struct *conn,
 				   char *inbuf, char *outbuf, int length, 
                                    int bufsize, 
@@ -1161,14 +1162,20 @@ static int call_nt_transact_create(connection_struct *conn,
 		}
       } 
   
-      if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-        close_file(fsp,False);
-
-        restore_case_semantics(file_attributes);
-
-        return(ERROR(ERRDOS,ERRnoaccess));
-      } 
-  
+      if(fsp->is_directory) {
+          if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+              close_file(fsp,True);
+              restore_case_semantics(file_attributes);
+              return(ERROR(ERRDOS,ERRnoaccess));
+          }
+      } else {
+          if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+              close_file(fsp,False);
+              restore_case_semantics(file_attributes);
+              return(ERROR(ERRDOS,ERRnoaccess));
+          } 
+      }
+ 
       file_len = sbuf.st_size;
       fmode = dos_mode(conn,fname,&sbuf);
       if(fmode == 0)
