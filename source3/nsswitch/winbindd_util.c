@@ -124,13 +124,11 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	/* see if this is a native mode win2k domain, but only for our own domain */
+	/* see if this is a native mode win2k domain */
 	   
-	if ( strequal( lp_workgroup(), domain_name) ) 	{
-		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
-		DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
-					domain->native_mode ? "native" : "mixed" ));
-	}	
+	domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
+	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+		domain->native_mode ? "native" : "mixed (or NT4)" ));
 
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
