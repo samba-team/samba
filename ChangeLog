@@ -1,3 +1,40 @@
+Mon Sep 29 15:58:43 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c (krb5_rd_req): redone because we don't know
+ 	the kvno or keytype before receiving the AP-REQ
+
+	* lib/krb5/mk_safe.c (krb5_mk_safe): figure out what cksumtype to
+ 	use from the keytype.
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_extended): figure out what
+ 	cksumtype to use from the keytype.
+
+	* lib/krb5/mk_priv.c (krb5_mk_priv): figure out what etype to use
+ 	from the keytype.
+
+	* lib/krb5/keytab.c (krb5_kt_get_entry): check the keytype
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): figure out
+ 	what etype to use from the keytype.
+
+	* lib/krb5/generate_seq_number.c (krb5_generate_seq_number):
+ 	handle other key types than DES
+
+	* lib/krb5/encrypt.c (key_type): add `best_cksumtype'
+	(krb5_keytype_to_cksumtype): new function
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): figure out
+ 	what etype to use from the keytype.
+
+	* lib/krb5/auth_context.c (krb5_auth_con_init): set `cksumtype'
+ 	and `enctype' to 0
+
+	* admin/extkeytab.c (ext_keytab): extract all keys
+
+	* appl/telnet/telnet/commands.c: INET6_ADDRSTRLEN kludge
+
+	* configure.in: check for <netinet6/in6.h>. check for -linet6
+	
 Tue Sep 23 03:00:53 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/encrypt.c: fix checksumtype for des3-cbc-sha1
