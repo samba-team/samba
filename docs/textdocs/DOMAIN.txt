@@ -1,5 +1,5 @@
-Samba now supports domain logons and network logon scripts. The
-support is still experimental, but it seems to work.
+Samba now supports domain logons, network logon scripts and user profiles.
+The support is still experimental, but it seems to work.
 
 The support is also not complete. Samba does not yet support the
 sharing of the SAM database with other systems yet, or remote
@@ -11,10 +11,11 @@ NT and OS/2 clients is still being worked on and currently does not
 work. 
 
 Using these features you can make your clients verify their logon via
-the Samba server and make clients run a batch file when they logon to
-the network. The latter is particularly useful.
+the Samba server, make clients run a batch file when they logon to
+the network and download their preferences, desktop and start menu.
 
-To use domain logons you need to do the following:
+
+To use domain logons and profiles you need to do the following:
 
 1) Setup nmbd and smbd and configure the smb.conf so that Samba is
 acting as the master browser. See INSTALL.txt and BROWSING.txt for
@@ -24,7 +25,8 @@ details.
 be readable by all users, and probably should not be writeable. This
 share will hold your network logon scripts, and the CONFIG.POL file
 (Note: for details on the CONFIG.POL file, refer to the Microsoft
-Windows NT Server Help documentation)
+Windows NT Administration documentation.  The format of these files
+is not known, so you will need to use Microsoft tools.)
 
 For example I have used:
 
@@ -67,9 +69,34 @@ and they are readable by the users.
 \\SERVER\NETLOGON share as drive z: while logging in. You can put some
 useful programs there to execute from the batch files.
 
-
 NOTE: You must be using "security = user" or "security = server" for
 domain logons to work correctly. Share level security won't work
 correctly.
+
+
+User Profiles
+
+1) in the [global] section of smb.conf set the following:
+
+  logon path = \\profileserver\profileshare\profilepath\%U
+
+The default for this option is \\%L\%U, namely \\sambaserver\username,
+The \\L%\%U services is created automatically by the [homes] service.
+
+If you are using a samba server for the profiles, you _must_ make the
+share specified in the logon path browseable.  Windows 95 appears to
+check that it can see the share and any subdirectories within that share
+specified by the logon path option, rather than just connecting straight
+away.  
+
+When a user first logs in on Windows 95, the file user.dat is created,
+as are folders "start menu", "desktop", "programs" and "nethood".  
+These directories and their contents will be merged with the local
+versions stored in c:\windows\profiles\username on subsequent logins,
+taking the most recent from each.
+
+The user.dat file contains all the user's preferences.  If you wish to
+enforce a set of preferences, rename their user.dat file to user.man,
+and deny them write access to the file.
 
 
