@@ -20,29 +20,6 @@
 
 #include "python/py_spoolss.h"
 
-struct pyconv py_FORM[] = {
-	{ "flags", PY_UINT32, offsetof(FORM, flags) },
-	{ "width", PY_UINT32, offsetof(FORM, size_x) },
-	{ "length", PY_UINT32, offsetof(FORM, size_y) },
-	{ "top", PY_UINT32, offsetof(FORM, top) },
-	{ "left", PY_UINT32, offsetof(FORM, left) },
-	{ "right", PY_UINT32, offsetof(FORM, right) },
-	{ "bottom", PY_UINT32, offsetof(FORM, bottom) },
-	{ NULL }
-};
-
-struct pyconv py_FORM_1[] = {
-	{ "flags", PY_UINT32, offsetof(FORM_1, flag) },
-	{ "width", PY_UINT32, offsetof(FORM_1, width) },
-	{ "length", PY_UINT32, offsetof(FORM_1, length) },
-	{ "top", PY_UINT32, offsetof(FORM_1, top) },
-	{ "left", PY_UINT32, offsetof(FORM_1, left) },
-	{ "right", PY_UINT32, offsetof(FORM_1, right) },
-	{ "bottom", PY_UINT32, offsetof(FORM_1, bottom) },
-	{ "name", PY_UNISTR, offsetof(FORM_1, name) },
-	{ NULL }
-};
-
 /* Add a form */
 
 PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
@@ -67,7 +44,10 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 		PyObject *py_form_name;
 		char *form_name;
 
-		to_struct(&form, py_form, py_FORM);
+		if (!py_to_FORM(&form, py_form)) {
+			PyErr_SetString(spoolss_error, "invalid form");
+			return NULL;
+		}
 
 		py_form_name = PyDict_GetItemString(py_form, "name");
 		form_name = PyString_AsString(py_form_name);
@@ -86,8 +66,7 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -125,8 +104,7 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 			form_name, 1, &form);
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -134,7 +112,7 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 	switch(level) {
 	case 1:
-		result = from_struct(&form, py_FORM_1);
+		py_from_FORM_1(&result, &form);
 		break;
 	}
 
@@ -163,16 +141,18 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 
-	to_struct(&form, py_form, py_FORM);
+	if (!py_to_FORM(&form, py_form)) {
+		PyErr_SetString(spoolss_error, "invalid form");
+		return NULL;
+	}
+
 	init_unistr2(&form.name, form_name, strlen(form_name) + 1);
 
 	werror = cli_spoolss_setform(hnd->cli, hnd->mem_ctx, &hnd->pol,
 				     level, form_name, &form);
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror, 
-				PyInt_FromLong(W_ERROR_V(werror)));
-
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -202,8 +182,7 @@ PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 		hnd->cli, hnd->mem_ctx, &hnd->pol, form_name);
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -240,8 +219,7 @@ PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 			&num_forms, &forms);
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -252,7 +230,7 @@ PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 
 		switch(level) {
 		case 1:
-			obj = from_struct(&forms[i], py_FORM_1);
+			py_from_FORM_1(&obj, &forms[i]);
 			break;
 		}
 
