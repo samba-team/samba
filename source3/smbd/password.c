@@ -940,7 +940,14 @@ Hence we make a direct return to avoid a second chance!!!
 #endif
 
 #ifdef OSF1_ENH_SEC
-  return(strcmp(osf1_bigcrypt(password,this_salt),this_crypted) == 0);
+  {
+    BOOL ret = (strcmp(osf1_bigcrypt(password,this_salt),this_crypted) == 0);
+    if(!ret) {
+      DEBUG(2,("password_check: OSF1_ENH_SEC failed. Trying normal crypt.\n"));
+      ret = (strcmp((char *)crypt(password,this_salt),this_crypted) == 0);
+    }
+    return ret;
+  }
 #endif
 
 #ifdef ULTRIX_AUTH
