@@ -1985,6 +1985,9 @@ BOOL domain_client_validate( char *user, char *domain,
 	if (!ret && winbindd_ok)
 		return ret;
 
+	DEBUG(0,("domain_client_validate: winbindd auth failed, falling back to smbd auth \
+for user %s\\%s\n", domain, user ));
+
 	return domain_client_validate_direct(user, domain,
 			smb_apasswd, smb_apasslen,
 			smb_ntpasswd, smb_ntpasslen,
