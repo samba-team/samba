@@ -1890,7 +1890,7 @@ static BOOL run_maxfidtest(struct cli_state *cli, int dummy)
 static BOOL run_negprot_nowait(int dummy)
 {
 	int i;
-	struct cli_state *cli;
+	struct cli_state *cli, *cli2;
 	BOOL correct = True;
 
 	printf("starting negprot nowait test\n");
@@ -1900,13 +1900,45 @@ static BOOL run_negprot_nowait(int dummy)
 		return False;
 	}
 
-	printf("Establishing protocol negotiations - connect with another client\n");
+	printf("Filling send buffer\n");
 
-	for (i=0;i<50000;i++) {
-		smb_negprot_send(cli->transport, PROTOCOL_NT1);
+	for (i=0;i<10000;i++) {
+		struct cli_request *req;
+		time_t t1 = time(NULL);
+		req = smb_negprot_send(cli->transport, PROTOCOL_NT1);
+		while (req->state == CLI_REQUEST_SEND && time(NULL) < t1+5) {
+			cli_transport_process(cli->transport);
+		}
+		if (req->state == CLI_REQUEST_ERROR) {
+			printf("Failed to fill pipe - %s\n", nt_errstr(req->status));
+			torture_close_connection(cli);
+			return correct;
+		}
+		if (req->state == CLI_REQUEST_SEND) {
+			break;
+		}
+	}
+
+	if (i == 10000) {
+		printf("send buffer failed to fill\n");
+		if (!torture_close_connection(cli)) {
+			correct = False;
+		}
+		return correct;
+	}
+
+	printf("send buffer filled after %d requests\n", i);
+
+	printf("Opening secondary connection\n");
+	if (!torture_open_connection(&cli2)) {
+		return False;
 	}
 
 	if (!torture_close_connection(cli)) {
+		correct = False;
+	}
+
+	if (!torture_close_connection(cli2)) {
 		correct = False;
 	}
 
