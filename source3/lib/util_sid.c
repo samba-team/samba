@@ -351,6 +351,19 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	return True;
 }
 
+DOM_SID *string_sid_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
+{
+	DOM_SID *result = TALLOC_P(mem_ctx, DOM_SID);
+
+	if (result == NULL)
+		return NULL;
+
+	if (!string_to_sid(result, sidstr))
+		return NULL;
+
+	return result;
+}
+
 /*****************************************************************
  Add a rid to the end of a sid
 *****************************************************************/  
@@ -652,9 +665,14 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
+void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+		      DOM_SID **sids, int *num)
 {
-	*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
+	if (mem_ctx != NULL)
+		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
+					     (*num)+1);
+	else
+		*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
 
 	if (*sids == NULL)
 		return;
@@ -670,7 +688,8 @@ void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
  Add SID to an array SIDs ensuring that it is not already there
 ********************************************************************/
 
-void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
+void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			     DOM_SID **sids, int *num_sids)
 {
 	int i;
 
@@ -679,7 +698,7 @@ void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
 			return;
 	}
 
-	add_sid_to_array(sid, sids, num_sids);
+	add_sid_to_array(mem_ctx, sid, sids, num_sids);
 }
 
 /********************************************************************

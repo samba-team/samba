@@ -693,12 +693,37 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	return 0;
 }
 
+static BOOL print_alias_memberships(TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    const DOM_SID *member)
+{
+	uint32 *alias_rids;
+	int i, num_alias_rids;
+
+	alias_rids = NULL;
+	num_alias_rids = 0;
+
+	if (!pdb_enum_alias_memberships(mem_ctx, domain_sid, member, 1,
+					&alias_rids, &num_alias_rids)) {
+		d_printf("Could not list memberships for sid %s\n",
+			 sid_string_static(member));
+		return False;
+	}
+
+	for (i = 0; i < num_alias_rids; i++) {
+		DOM_SID alias;
+		sid_copy(&alias, domain_sid);
+		sid_append_rid(&alias, alias_rids[i]);
+		printf("%s\n", sid_string_static(&alias));
+	}
+
+	return True;
+}
+
 static int net_groupmap_memberships(int argc, const char **argv)
 {
-	DOM_SID member;
-	DOM_SID *aliases;
-	int i, num;
-	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	DOM_SID *domain_sid, *builtin_sid, member;
 
 	if ( (argc != 1) || 
 	     !string_to_sid(&member, argv[0]) ) {
@@ -706,17 +731,24 @@ static int net_groupmap_memberships(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_enum_alias_memberships(&member, 1, &aliases, &num)) {
-		d_printf("Could not list memberships for sid %s: %s\n",
-			 argv[0], nt_errstr(result));
+	mem_ctx = talloc_init("net_groupmap_memberships");
+	if (mem_ctx == NULL) {
+		d_printf("talloc_init failed\n");
 		return -1;
 	}
 
-	for (i = 0; i < num; i++) {
-		printf("%s\n", sid_string_static(&(aliases[i])));
+	domain_sid = get_global_sam_sid();
+	builtin_sid = string_sid_talloc(mem_ctx, "S-1-5-32");
+	if ((domain_sid == NULL) || (builtin_sid == NULL)) {
+		d_printf("Could not get domain sid\n");
+		return -1;
 	}
 
-	SAFE_FREE(aliases);
+	if (!print_alias_memberships(mem_ctx, domain_sid, &member) ||
+	    !print_alias_memberships(mem_ctx, builtin_sid, &member))
+		return -1;
+
+	talloc_destroy(mem_ctx);
 
 	return 0;
 }
