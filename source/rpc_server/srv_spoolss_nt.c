@@ -2479,7 +2479,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
+	if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) && !get_printer_snum(p, handle, &snum) )
 		return WERR_BADFID;
 
 	Printer->notify.flags=flags;
