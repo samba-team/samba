@@ -160,7 +160,7 @@ BOOL torture_nbt_register(void)
 	NTSTATUS status;
 	BOOL ret = True;
 	
-	name.name = lp_parm_string(-1, "torture", "host");
+	name.name = strupper_talloc(mem_ctx, lp_parm_string(-1, "torture", "host"));
 	name.type = NBT_NAME_SERVER;
 	name.scope = NULL;
 
