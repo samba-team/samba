@@ -344,7 +344,9 @@ static struct api_cmd api_fd_commands[] =
     { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
     { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
     { "NETLOGON", "lsass",   api_netlog_rpc },
+#if DISABLED_IN_2_0
     { "winreg",   "winreg",  api_reg_rpc },
+#endif
     { NULL,       NULL,      NULL }
 };
 
