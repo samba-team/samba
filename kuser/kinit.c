@@ -622,6 +622,10 @@ main (int argc, char **argv)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
 				"krb4_get_tickets", TRUE, &get_v4_tgt);
+    if(do_afslog == -1)
+	krb5_appdefault_boolean(context, "kinit", 
+				krb5_principal_get_realm(context, principal), 
+				"afslog", TRUE, &do_afslog);
 #endif
 
     
