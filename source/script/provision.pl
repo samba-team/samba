@@ -4,11 +4,11 @@ use strict;
 
 my $hostname = `hostname`;
 chomp $hostname;
-my $realm = "tridgell.net";
+my $realm = "bludom.tridgell.net";
 my $domain = "BLUDOM";
 my $dnsname = "$hostname.$realm";
 
-my $basedn = "DC=" . join(",DN=", split(/\./, $dnsname));
+my $basedn = "DC=" . join(",DN=", split(/\./, $realm));
 
 # return the current NTTIME as an integer
 sub nttime()

@@ -56,18 +56,20 @@ struct samr_domain_state {
 	uint32 access_mask;
 	const char *domain_sid;
 	const char *domain_name;
+	const char *basedn;
 };
 
 /*
-  state associated with a open user handle
+  state associated with a open account handle
 */
-struct samr_user_state {
+struct samr_account_state {
 	struct samr_domain_state *domain_state;
 	void *sam_ctx;
 	TALLOC_CTX *mem_ctx;
 	uint32 access_mask;
-	const char *user_sid;
-	const char *user_name;
+	const char *account_sid;
+	const char *account_name;
+	const char *basedn;
 };
 
 
@@ -147,10 +149,11 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static NTSTATUS samr_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			   struct samr_Close *r)
 {
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, 
-						      r->in.handle, 
-						      DCESRV_HANDLE_ANY);
-	DCESRV_CHECK_HANDLE(h);
+	struct dcesrv_handle *h;
+
+	*r->out.handle = *r->in.handle;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
 	/* this causes the callback samr_XXX_destroy() to be called by
 	   the handle destroy code which destroys the state associated
@@ -209,20 +212,18 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct dom_sid2 *sid;
 	const char *sidstr;
 		
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, SAMR_HANDLE_CONNECT);
+	r->out.sid = NULL;
 
-	DCESRV_CHECK_HANDLE(h);
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_CONNECT);
 
 	state = h->data;
-
-	r->out.sid = NULL;
 
 	if (r->in.domain->name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	sidstr = samdb_search_string(state->sam_ctx,
-				     mem_ctx, "objectSid",
+				     mem_ctx, NULL, "objectSid",
 				     "(&(name=%s)(objectclass=domain))",
 				     r->in.domain->name);
 	if (sidstr == NULL) {
@@ -253,21 +254,19 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct samr_connect_state *state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
-	char **domains;
+	const char **domains;
 	int count, i, start_i;
-
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, SAMR_HANDLE_CONNECT);
-
-	DCESRV_CHECK_HANDLE(h);
-
-	state = h->data;
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
 	r->out.num_entries = 0;
 
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_CONNECT);
+
+	state = h->data;
+
 	count = samdb_search_string_multiple(state->sam_ctx,
-					     mem_ctx, &domains, 
+					     mem_ctx, NULL, &domains, 
 					     "name", "(objectclass=domain)");
 	if (count == -1) {
 		DEBUG(1,("samdb: no domains found in EnumDomains\n"));
@@ -310,16 +309,25 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 
 /*
-  destroy an open domain context
+  close an open domain context
 */
-static void samr_Domain_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+static void samr_Domain_close(struct dcesrv_connection *conn, 
+			      struct samr_domain_state *state)
 {
-	struct samr_domain_state *state = h->data;
 	state->reference_count--;
 	if (state->reference_count == 0) {
 		samr_Connect_close(state->connect_state);
 		talloc_destroy(state->mem_ctx);
 	}
+}
+
+/*
+  destroy an open domain context
+*/
+static void samr_Domain_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+	struct samr_domain_state *state = h->data;
+	samr_Domain_close(conn, state);
 }
 
 /* 
@@ -329,25 +337,38 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_OpenDomain *r)
 {
 	struct dcesrv_handle *h_conn, *h_domain;
-	char *sidstr, *domain_name;
+	const char *sidstr, *domain_name;
 	struct samr_connect_state *c_state;
 	struct samr_domain_state *state;
 	TALLOC_CTX *mem_ctx2;
+	const char * const attrs[2] = { "name", NULL};
+	struct ldb_message **msgs;
+	int ret;
 
-	h_conn = dcesrv_handle_fetch(dce_call->conn, r->in.handle, SAMR_HANDLE_CONNECT);
-	DCESRV_CHECK_HANDLE(h_conn);
+	ZERO_STRUCTP(r->out.domain_handle);
+
+	DCESRV_PULL_HANDLE(h_conn, r->in.handle, SAMR_HANDLE_CONNECT);
 
 	c_state = h_conn->data;
+
+	if (r->in.sid == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	sidstr = dom_sid_string(mem_ctx, r->in.sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	domain_name = samdb_search_string(c_state->sam_ctx,
-					  mem_ctx, "name",
-					  "(&(objectSid=%s)(objectclass=domain))", 
-					  sidstr);
+	ret = samdb_search(c_state->sam_ctx,
+			   mem_ctx, NULL, &msgs, attrs,
+			   "(&(objectSid=%s)(objectclass=domain))", 
+			   sidstr);
+	if (ret != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	domain_name = ldb_msg_find_string(msgs[0], "name", NULL);
 	if (domain_name == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -367,8 +388,13 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	state->connect_state = c_state;
 	state->sam_ctx = c_state->sam_ctx;
 	state->mem_ctx = mem_ctx2;
-	state->domain_sid = talloc_steal(mem_ctx, mem_ctx2, sidstr);
-	state->domain_name = talloc_steal(mem_ctx, mem_ctx2, domain_name);
+	state->domain_sid = talloc_strdup(mem_ctx2, sidstr);
+	state->domain_name = talloc_strdup(mem_ctx2, domain_name);
+	state->basedn = talloc_strdup(mem_ctx2, msgs[0]->dn);
+	if (!state->domain_sid || !state->domain_name || !state->basedn) {
+		talloc_destroy(mem_ctx2);
+		return NT_STATUS_NO_MEMORY;		
+	}
 	state->access_mask = r->in.access_mask;
 
 	h_domain = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_DOMAIN);
@@ -426,43 +452,140 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 }
 
 
+/*
+  destroy an open account context
+*/
+static void samr_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+	struct samr_account_state *state = h->data;
+	samr_Domain_close(conn, state->domain_state);
+	talloc_destroy(state->mem_ctx);
+}
+
+
 /* 
   samr_CreateUser2 
+
+  TODO: This should do some form of locking, especially around the rid allocation
 */
 static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_CreateUser2 *r)
 {
 	struct samr_domain_state *d_state;
-	struct samr_user_state *state;
-	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, 
-						      r->in.handle, 
-						      SAMR_HANDLE_DOMAIN);
+	struct samr_account_state *state;
+	struct dcesrv_handle *h;
 	const char *name;
+	struct ldb_message msg;
+	uint32 rid;
+	const char *username, *sidstr;
+	time_t now = time(NULL);
+	TALLOC_CTX *mem_ctx2;
+	struct dcesrv_handle *u_handle;
+	int ret;
+	NTSTATUS status;
 
-	DCESRV_CHECK_HANDLE(h);
+	ZERO_STRUCTP(r->out.acct_handle);
+	*r->out.access_granted = 0;
+	*r->out.rid = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
 
 	d_state = h->data;
 
-	if (r->in.username->name == NULL) {
+	username = r->in.username->name;
+
+	if (username == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, "name",
-				   "(&(name=%s)(objectclass=user))",
-				   r->in.username->name);
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
+				   "name", "(&(name=%s)(objectclass=user))", username);
 	if (name != NULL) {
 		return NT_STATUS_USER_EXISTS;
 	}
 
-	/* read the default user template */
-	/* allocate a rid */
-	/* create a ldb_message for the user */
-	/* create the user */
-	/* create user state and new policy handle */
-	
+	ZERO_STRUCT(msg);
 
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* pull in all the template attributes */
+	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+				  "(&(name=TemplateUser)(objectclass=userTemplate))");
+	if (ret != 0) {
+		DEBUG(1,("Failed to load TemplateUser from samdb\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	/* allocate a rid */
+	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
+					d_state->basedn, "nextRid", &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* and the users SID */
+	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, rid);
+	if (!sidstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* add core elements to the ldb_message for the user */
+	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", username, d_state->basedn);
+	if (!msg.dn) {
+		return NT_STATUS_NO_MEMORY;		
+	}
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "name", username);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "cn", username);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "sAMAccountName", username);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectClass", "user");
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectSid", sidstr);
+	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg, "whenCreated", now);
+	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg, "whenChanged", now);
+
+	/* create the user */
+	ret = samdb_add(d_state->sam_ctx, mem_ctx, &msg);
+	if (ret != 0) {
+		DEBUG(1,("Failed to create user record %s\n", msg.dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* create user state and new policy handle */
+	mem_ctx2 = talloc_init("CreateUser(%s)", username);
+	if (!mem_ctx2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->mem_ctx = mem_ctx2;
+	state->sam_ctx = d_state->sam_ctx;
+	state->access_mask = r->in.access_mask;
+	state->domain_state = d_state;
+	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	state->account_name = talloc_strdup(mem_ctx2, username);
+	if (!state->account_name || !state->account_sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create the policy handle */
+	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
+	if (!u_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	u_handle->data = state;
+	u_handle->destroy = samr_Account_destroy;
+
+	/* the domain state is in use one more time */
+	d_state->reference_count++;
+
+	*r->out.acct_handle = u_handle->wire_handle;
+	*r->out.access_granted = 0xf07ff; /* TODO: fix access mask calculations */
+	*r->out.rid = rid;	
+
+	return NT_STATUS_OK;
 }
 
 
@@ -473,7 +596,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_CreateUser *r)
 {
 	struct samr_CreateUser2 r2;
-	uint32 access_granted, rid;
+	uint32 access_granted;
 
 
 	/* a simple wrapper around samr_CreateUser2 works nicely */
@@ -483,7 +606,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.access_mask = r->in.access_mask;
 	r2.out.acct_handle = r->out.acct_handle;
 	r2.out.access_granted = &access_granted;
-	r2.out.rid = &rid;
+	r2.out.rid = r->out.rid;
 
 	return samr_CreateUser2(dce_call, mem_ctx, &r2);
 }
@@ -533,9 +656,90 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
   samr_LookupNames 
 */
 static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_LookupNames *r)
+				 struct samr_LookupNames *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *state;
+	int i;
+	NTSTATUS status = NT_STATUS_OK;
+	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
+	int count;
+
+	ZERO_STRUCT(r->out.rids);
+	ZERO_STRUCT(r->out.types);
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	state = h->data;
+
+	if (r->in.num_names == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->out.rids.ids = talloc_array_p(mem_ctx, uint32, r->in.num_names);
+	r->out.types.ids = talloc_array_p(mem_ctx, uint32, r->in.num_names);
+	if (!r->out.rids.ids || !r->out.types.ids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	r->out.rids.count = r->in.num_names;
+	r->out.types.count = r->in.num_names;
+
+	for (i=0;i<r->in.num_names;i++) {
+		struct ldb_message **res;
+		struct dom_sid2 *sid;
+		const char *sidstr;
+		uint32 atype, rtype;
+
+		r->out.rids.ids[i] = 0;
+		r->out.types.ids[i] = SID_NAME_UNKNOWN;
+
+		count = samdb_search(state->sam_ctx, mem_ctx, state->basedn, &res, attrs, 
+				     "sAMAccountName=%s", r->in.names[i].name);
+		if (count != 1) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		sidstr = samdb_result_string(res[0], "objectSid", NULL);
+		if (sidstr == NULL) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+		
+		sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		if (sid == NULL) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+		if (atype == 0) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		switch (atype & 0xF0000000) {
+		case ATYPE_ACCOUNT:
+			rtype = SID_NAME_USER;
+			break;
+		case ATYPE_GLOBAL_GROUP:
+			rtype = SID_NAME_DOM_GRP;
+			break;
+		case ATYPE_LOCAL_GROUP:
+			rtype = SID_NAME_ALIAS;
+			break;
+		default:
+			DEBUG(1,("Unknown sAMAccountType 0x%08x\n", atype));
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		r->out.rids.ids[i] = sid->sub_auths[sid->num_auths-1];
+		r->out.types.ids[i] = rtype;
+	}
+	
+
+	return status;
 }
 
 
@@ -703,9 +907,86 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
   samr_OpenUser 
 */
 static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_OpenUser *r)
+			      struct samr_OpenUser *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_domain_state *d_state;
+	struct samr_account_state *state;
+	struct dcesrv_handle *h;
+	const char *username, *sidstr;
+	TALLOC_CTX *mem_ctx2;
+	struct ldb_message **msgs;
+	struct dcesrv_handle *u_handle;
+	const char * const attrs[2] = { "sAMAccountName", NULL };
+	int ret;
+
+	ZERO_STRUCTP(r->out.acct_handle);
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	/* form the users SID */
+	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, r->in.rid);
+	if (!sidstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the user record */
+	ret = samdb_search(d_state->sam_ctx,
+			   mem_ctx, d_state->basedn, &msgs, attrs,
+			   "(&(objectSid=%s)(objectclass=user))", 
+			   sidstr);
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	if (ret != 1) {
+		DEBUG(1,("Found %d records matching sid %s\n", ret, sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	username = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	if (username == NULL) {
+		DEBUG(1,("sAMAccountName field missing for sid %s\n", sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* create user state and new policy handle */
+	mem_ctx2 = talloc_init("OpenUser(%u)", r->in.rid);
+	if (!mem_ctx2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->mem_ctx = mem_ctx2;
+	state->sam_ctx = d_state->sam_ctx;
+	state->access_mask = r->in.access_mask;
+	state->domain_state = d_state;
+	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	state->account_name = talloc_strdup(mem_ctx2, username);
+	if (!state->account_name || !state->account_sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create the policy handle */
+	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
+	if (!u_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	u_handle->data = state;
+	u_handle->destroy = samr_Account_destroy;
+
+	/* the domain state is in use one more time */
+	d_state->reference_count++;
+
+	*r->out.acct_handle = u_handle->wire_handle;
+
+	return NT_STATUS_OK;
+
 }
 
 
@@ -713,9 +994,26 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
   samr_DeleteUser 
 */
 static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_DeleteUser *r)
+				struct samr_DeleteUser *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	int ret;
+
+	*r->out.handle = *r->in.handle;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+
+	state = h->data;
+
+	ret = samdb_delete(state->sam_ctx, mem_ctx, state->basedn);
+	if (ret != 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ZERO_STRUCTP(r->out.handle);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -919,7 +1217,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 {
 	struct ldb_message **msgs;
 	int ret;
-	char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
+	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 	void *sam_ctx;
 
 	if (r->in.name == NULL || r->in.name->name == NULL) {
@@ -932,7 +1230,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	ret = samdb_search(sam_ctx, 
-			   mem_ctx, &msgs, attrs, 
+			   mem_ctx, NULL, &msgs, attrs, 
 			   "(&(name=%s)(objectclass=domain))",
 			   r->in.name->name);
 	if (ret <= 0) {

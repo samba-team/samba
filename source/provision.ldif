@@ -7,6 +7,7 @@ dn: @INDEXLIST
 dn: @ATTRIBUTES
 name: CASE_INSENSITIVE WILDCARD
 sAMAccountName: CASE_INSENSITIVE WILDCARD
+objectClass: CASE_INSENSITIVE
 
 dn: @SUBCLASSES
 top: domain
@@ -38,7 +39,7 @@ maxPwdAge: -37108517437440
 minPwdAge: 0
 minPwdLength: 7
 modifiedCountAtLastProm: 0
-nextRid: 1000
+nextRid: 1001
 pwdProperties: 1
 pwdHistoryLength: 24
 objectSid: ${DOMAINSID}
@@ -732,3 +733,41 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+
+dn: CN=Templates,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Templates
+description: Container for SAM account templates
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+name: Templates
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=TemplateUser,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: userTemplate
+cn: TemplateUser
+name: TemplateUser
+instanceType: 4
+userAccountControl: 0x222
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 0x30000000
