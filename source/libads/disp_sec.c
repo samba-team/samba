@@ -123,7 +123,7 @@ void ads_disp_ace(SEC_ACE *sec_ace)
 	} else if (sec_ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
 		access_type = "ALLOWED OBJECT";
 	} else if (sec_ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT) {
-		access_type = "DEINED OBJECT";
+		access_type = "DENIED OBJECT";
 	} else if (sec_ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT) {
 		access_type = "AUDIT OBJECT";
 	}
