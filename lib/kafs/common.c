@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -260,8 +260,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
    Return 0 on success, -1 otherwise.
    */
 
-static int
-realm_of_cell(kafs_data *data, const char *cell, char **realm)
+int
+_kafs_realm_of_cell(kafs_data *data, const char *cell, char **realm)
 {
     FILE *F;
     char buf[1024];
@@ -354,7 +354,7 @@ _kafs_get_cred(kafs_data *data,
     if (ret == 0) return 0;
     
     /* this might work in some cases */
-    if (realm_of_cell(data, cell, &vl_realm) == 0) {
+    if (_kafs_realm_of_cell(data, cell, &vl_realm) == 0) {
 	ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, vl_realm, c);
 	if (ret)
 	    ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", vl_realm, c);
