@@ -82,9 +82,9 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
     }
 
   euser_id=geteuid();
-  seteuid(0);  
+  set_effective_uid(0);  
   r=quotactl(QCMD(Q_GETQUOTA,USRQUOTA), mnt->mnt_fsname, euser_id, (caddr_t)&D);
-      seteuid(euser_id);
+  set_effective_uid(euser_id);
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;
@@ -313,16 +313,12 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   }
 
   euser_id = geteuid();
-  user_id = getuid();
-
-  setuid(0);  /* Solaris seems to want to give info only to super-user */
-  seteuid(0);
+  set_effective_uid(0);
 
 #if defined(SUNOS5)
   DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
   if((file=sys_open(name, O_RDONLY,0))<0) {
-    setuid(user_id);  /* Restore the original UID status */
-    seteuid(euser_id);
+    set_effective_uid(euser_id);
     return(False);
   }
   command.op = Q_GETQUOTA;
@@ -335,8 +331,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-  setuid(user_id); /* Restore the original uid status. */
-  seteuid(euser_id);
+  set_effective_uid(euser_id);
 
   if (ret < 0) {
     DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
@@ -382,6 +377,12 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   int r, save_errno;
   struct dqblk D;
   SMB_STRUCT_STAT S;
+
+  /*
+   * This code presumes that OSF1 will only
+   * give out quota info when the real uid 
+   * matches the effective uid. JRA.
+   */
 
   euser_id = geteuid();
   user_id = getuid();
@@ -469,7 +470,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   }
 
   euser_id=geteuid();
-  seteuid(0);  
+  set_effective_uid(0);  
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 
@@ -479,7 +480,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   {
     r=quotactl (Q_GETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &D);
 
-    seteuid(euser_id); /* Restore the original uid status. */
+    set_effective_uid(euser_id); /* Restore the original uid status. */
 
     if (r==-1)
       return(False);
@@ -510,7 +511,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   {
     r=quotactl (Q_XGETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &F);
 
-    seteuid(euser_id); /* Restore the original uid status. */
+    set_effective_uid(euser_id); /* Restore the original uid status. */
 
     if (r==-1)
       return(False);
@@ -539,7 +540,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   }
   else
   {
-    seteuid(euser_id); /* Restore the original uid status. */
+    set_effective_uid(euser_id); /* Restore the original uid status. */
     return(False);
   }
 
@@ -601,19 +602,15 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
     uid_t user_id;
     gid_t egrp_id;
  
-    /* Need to be root to get quotas in FreeBSD */
-    user_id = getuid();
     egrp_id = getegid();
-    setuid(0);
-    seteuid(0);
+    set_effective_uid(0);
     r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
 
     /* As FreeBSD has group quotas, if getting the user
        quota fails, try getting the group instead. */
     if (r)
       r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
-    setuid(user_id);
-    seteuid(euser_id);
+    set_effective_uid(euser_id);
   }
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 

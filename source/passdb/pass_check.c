@@ -202,6 +202,7 @@ static BOOL dfs_auth(char *user,char *password)
 	sec_passwd_rec_t passwd_rec;
 	sec_login_auth_src_t auth_src = sec_login_auth_src_network;
 	unsigned char dce_errstr[dce_c_error_string_len];
+	gid_t egid;
 
 	if (dcelogin_atmost_once) return(False);
 
@@ -329,14 +330,16 @@ static BOOL dfs_auth(char *user,char *password)
 	 * back to being root on error though. JRA.
 	 */
 	
-	if (setregid(-1, pw->pw_gid) != 0) {
+	egid = getegid();
+
+	if (set_effective_gid(pw->pw_gid) != 0) {
 		DEBUG(0,("Can't set egid to %d (%s)\n", 
 			 pw->pw_gid, strerror(errno)));
 		return False;
 	}
 
-	if (setreuid(-1, pw->pw_uid) != 0) {
-		setgid(0);
+	if (set_effective_uid(pw->pw_uid) != 0) {
+		set_effective_gid(egid);
 		DEBUG(0,("Can't set euid to %d (%s)\n", 
 			 pw->pw_uid, strerror(errno)));
 		return False;
@@ -347,24 +350,17 @@ static BOOL dfs_auth(char *user,char *password)
 				     &my_dce_sec_context,
 				     &err) == 0) {
 		dce_error_inq_text(err, dce_errstr, &err2);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
 		DEBUG(0,("DCE Setup Identity for %s failed: %s\n",
 			 user,dce_errstr));
-		return(False);
+		goto err;
 	}
 
 	sec_login_get_pwent(my_dce_sec_context, 
 			    (sec_login_passwd_t*)&pw, &err);
 	if (err != error_status_ok ) {
 		dce_error_inq_text(err, dce_errstr, &err2);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
 		DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
-		
-		return(False);
+		goto err;
 	}
 
 	passwd_rec.version_number = sec_passwd_c_version_none;
@@ -377,24 +373,16 @@ static BOOL dfs_auth(char *user,char *password)
 				    &auth_src, &err);
 	if (err != error_status_ok ) { 
 		dce_error_inq_text(err, dce_errstr, &err2);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
 		DEBUG(0,("DCE Identity Validation failed for principal %s: %s\n",
 			 user,dce_errstr));
-		
-		return(False);
+		goto err;
 	}
 
 	sec_login_certify_identity(my_dce_sec_context, &err);
 	if (err != error_status_ok) { 
 		dce_error_inq_text(err, dce_errstr, &err2);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
 		DEBUG(0,("DCE certify identity failed: %s\n", dce_errstr));
-		
-		return(False);
+		goto err;
 	}
 
 	if (auth_src != sec_login_auth_src_network) { 
@@ -408,10 +396,7 @@ static BOOL dfs_auth(char *user,char *password)
 			 user,dce_errstr));
 		
 		sec_login_purge_context(&my_dce_sec_context, &err);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
-		return(False);
+		goto err;
 	}
 	
 	sec_login_get_pwent(my_dce_sec_context, 
@@ -419,11 +404,7 @@ static BOOL dfs_auth(char *user,char *password)
 	if (err != error_status_ok) {
 		dce_error_inq_text(err, dce_errstr, &err2);
 		DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
-
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
-		return(False);
+		goto err;
 	}
 	
 	DEBUG(0,("DCE login succeeded for principal %s on pid %d\n",
@@ -441,21 +422,24 @@ static BOOL dfs_auth(char *user,char *password)
 	sec_login_get_expiration(my_dce_sec_context, &expire_time, &err);
 	if (err != error_status_ok) {
 		dce_error_inq_text(err, dce_errstr, &err2);
-		/* Go back to root, JRA. */
-		setuid(0);
-		setgid(0);
 		DEBUG(0,("DCE can't get expiration. %s\n", dce_errstr));
-		
-		return(False);
+		goto err;
 	}
 	
-	setuid(0);
-	setgid(0);
+	set_effective_uid(0);
+	set_effective_gid(0);
 	
 	DEBUG(0,("DCE context expires: %s",asctime(localtime(&expire_time))));
 	
 	dcelogin_atmost_once = 1;
 	return (True);
+
+err:
+
+	/* Go back to root, JRA. */
+	set_effective_uid(0);
+	set_effective_gid(egid);
+	return(False);
 }
 
 void dfs_unlogin(void)

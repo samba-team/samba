@@ -98,7 +98,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
 		lib/util_str.o lib/util_sid.o \
 		lib/util_unistr.o lib/util_file.o \
-		lib/util.o lib/util_sock.o
+		lib/util.o lib/util_sock.o lib/util_sec.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
@@ -176,7 +176,7 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(UBIQX_OBJ) $(LIB_OBJ) $(PRINTING_OBJ)
 
-SMBRUN_OBJ = utils/smbrun.o
+SMBRUN_OBJ = utils/smbrun.o lib/util_sec.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)

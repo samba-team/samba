@@ -296,7 +296,6 @@ void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
-BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -310,6 +309,14 @@ SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
+
+/*The following definitions come from  lib/util_sec.c  */
+
+void gain_root_privilage(void);
+void gain_root_group_privilage(void);
+int set_effective_uid(uid_t uid);
+int set_effective_gid(gid_t gid);
+BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
 

@@ -23,33 +23,23 @@
 
 extern int DEBUGLEVEL;
 
-static uid_t initial_uid;
-static gid_t initial_gid;
-
 /* what user is current? */
 extern struct current_user current_user;
 
 pstring OriginalDir;
 
 /****************************************************************************
-initialise the uid routines
+ Initialise the uid routines.
 ****************************************************************************/
+
 void init_uid(void)
 {
-	initial_uid = current_user.uid = geteuid();
-	initial_gid = current_user.gid = getegid();
+	current_user.uid = geteuid();
+	current_user.gid = getegid();
 
-	if (initial_gid != 0 && initial_uid == 0) {
-#ifdef HAVE_SETRESGID
-		setresgid(0,0,0);
-#else
-		setgid(0);
-		setegid(0);
-#endif
+	if (current_user.gid != 0 && current_user.uid == 0) {
+		gain_root_group_privilage();
 	}
-
-	initial_uid = geteuid();
-	initial_gid = getegid();
 
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
@@ -57,16 +47,14 @@ void init_uid(void)
 	dos_ChDir(OriginalDir);
 }
 
-
 /****************************************************************************
-  become the specified uid 
+ Become the specified uid.
 ****************************************************************************/
+
 static BOOL become_uid(uid_t uid)
 {
-	if (initial_uid != 0) {
-		return(True);
-	}
-	
+	uid_t euid;
+
 	if (uid == (uid_t)-1 || ((sizeof(uid_t) == 2) && (uid == (uid_t)65535))) {
 		static int done;
 		if (!done) {
@@ -75,94 +63,75 @@ static BOOL become_uid(uid_t uid)
 		}
 	}
 
-#ifdef HAVE_TRAPDOOR_UID
-#ifdef HAVE_SETUIDX
-	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	if (setuidx(ID_EFFECTIVE, uid) != 0) {
-		if (seteuid(uid) != 0) {
-			DEBUG(1,("Can't set uid %d (setuidx)\n", (int)uid));
-			return False;
-		}
-	}
-#endif
-#endif
+	if(set_effective_uid(uid) != 0) {
+		DEBUG(0,("Couldn't set effective uid to %d. Currently set to (real=%d,eff=%d). \
+Error was %s\n", (int)uid,(int)getuid(), (int)geteuid(), strerror(errno) ));
 
-#ifdef HAVE_SETRESUID
-    if (setresuid(-1,uid,-1) != 0)
-#else
-    if ((seteuid(uid) != 0) && 
-	(setuid(uid) != 0))
-#endif
-      {
-	DEBUG(0,("Couldn't set uid %d currently set to (%d,%d)\n",
-		 (int)uid,(int)getuid(), (int)geteuid()));
-	if (uid > (uid_t)32000) {
-		DEBUG(0,("Looks like your OS doesn't like high uid values - try using a different account\n"));
+		if (uid > (uid_t)32000)
+			DEBUG(0,("Could be your OS doesn't like high uid values - \
+try using a different account\n"));
+		return(False);
 	}
-	return(False);
-      }
 
-    if (((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535))) && (geteuid() != uid)) {
-	    DEBUG(0,("Invalid uid -1. perhaps you have a account with uid 65535?\n"));
+	/* Paranioa.... JRA. */
+
+	euid = geteuid();
+
+	if(euid != uid) {
+		DEBUG(0,("become_uid: Unable to become uid %d.\n", (int)uid ));
+
+    	if ((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535)))
+		    DEBUG(0,("Invalid uid -1. perhaps you have a account with uid 65535?\n"));
+
 	    return(False);
     }
-
     current_user.uid = uid;
-
     return(True);
 }
 
 
 /****************************************************************************
-  become the specified gid
+ Become the specified gid.
 ****************************************************************************/
+
 static BOOL become_gid(gid_t gid)
 {
-  if (initial_uid != 0)
-    return(True);
-
-  if (gid == (gid_t)-1 || ((sizeof(gid_t) == 2) && (gid == (gid_t)65535))) {
-    DEBUG(1,("WARNING: using gid %d is a security risk\n",(int)gid));    
-  }
-  
-#ifdef HAVE_SETRESGID
-  if (setresgid(-1,gid,-1) != 0)
-#else
-  if (setgid(gid) != 0)
-#endif
-      {
-	DEBUG(0,("Couldn't set gid %d currently set to (%d,%d)\n",
-		 (int)gid,(int)getgid(),(int)getegid()));
-	if (gid > 32000) {
-		DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
+	if (gid == (gid_t)-1 || ((sizeof(gid_t) == 2) && (gid == (gid_t)65535))) {
+		DEBUG(1,("WARNING: using gid %d is a security risk\n",(int)gid));    
 	}
-	return(False);
-      }
+  
+	if(set_effective_gid(gid) != 0) {
+		DEBUG(0,("Couldn't set effective gid to %d currently set to (real=%d,eff=%d)\n",
+			(int)gid,(int)getgid(),(int)getegid()));
+		if (gid > 32000) {
+			DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
+		}
+		return(False);
+	}
 
-  current_user.gid = gid;
+	current_user.gid = gid;
 
-  return(True);
+	return(True);
 }
 
 
 /****************************************************************************
-  become the specified uid and gid
+ Become the specified uid and gid.
 ****************************************************************************/
+
 static BOOL become_id(uid_t uid,gid_t gid)
 {
 	return(become_gid(gid) && become_uid(uid));
 }
 
 /****************************************************************************
-become the guest user
+ Become the guest user.
 ****************************************************************************/
+
 BOOL become_guest(void)
 {
   BOOL ret;
   static struct passwd *pass=NULL;
-
-  if (initial_uid != 0) 
-    return(True);
 
   if (!pass)
     pass = Get_Pwnam(lp_guestaccount(-1),True);
@@ -186,8 +155,9 @@ BOOL become_guest(void)
 }
 
 /*******************************************************************
-check if a username is OK
+ Check if a username is OK.
 ********************************************************************/
+
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
   int i;
@@ -207,8 +177,9 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 
 /****************************************************************************
-  become the user of a connection number
+ Become the user of a connection number.
 ****************************************************************************/
+
 BOOL become_user(connection_struct *conn, uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
@@ -268,23 +239,21 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		current_user.groups  = vuser->groups;
 	}
 	
-	if (initial_uid == 0)  {
-		if (!become_gid(gid)) return(False);
+	if (!become_gid(gid)) return(False);
 
 #ifdef HAVE_SETGROUPS      
-		if (!(conn && conn->ipc)) {
-			/* groups stuff added by ih/wreu */
-			if (current_user.ngroups > 0)
-				if (setgroups(current_user.ngroups,
-					      current_user.groups)<0) {
-					DEBUG(0,("setgroups call failed!\n"));
-				}
-		}
+	if (!(conn && conn->ipc)) {
+		/* groups stuff added by ih/wreu */
+		if (current_user.ngroups > 0)
+			if (setgroups(current_user.ngroups,
+				      current_user.groups)<0) {
+				DEBUG(0,("setgroups call failed!\n"));
+			}
+	}
 #endif
 
-		if (!conn->admin_user && !become_uid(uid))
-			return(False);
-	}
+	if (!conn->admin_user && !become_uid(uid))
+		return(False);
 	
 	current_user.conn = conn;
 	current_user.vuid = vuid;
@@ -296,56 +265,39 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 }
 
 /****************************************************************************
-  unbecome the user of a connection number
+ Unbecome the user of a connection number.
 ****************************************************************************/
+
 BOOL unbecome_user(void )
 {
-  if (!current_user.conn)
-    return(False);
+	if (!current_user.conn)
+		return(False);
 
-  dos_ChDir(OriginalDir);
+	dos_ChDir(OriginalDir);
 
-  if (initial_uid == 0)
-    {
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
-      setresuid(-1,getuid(),-1);
-      setresgid(-1,getgid(),-1);
-#else
-      if (seteuid(initial_uid) != 0) 
-	setuid(initial_uid);
-      setgid(initial_gid);
-#endif
-    }
+	set_effective_uid(0);
+	set_effective_gid(0);
 
-#ifdef NO_EID
-  if (initial_uid == 0)
-    DEBUG(2,("Running with no EID\n"));
-  initial_uid = getuid();
-  initial_gid = getgid();
-#else
-  if (geteuid() != initial_uid) {
-	  DEBUG(0,("Warning: You appear to have a trapdoor uid system\n"));
-	  initial_uid = geteuid();
-  }
-  if (getegid() != initial_gid) {
-	  DEBUG(0,("Warning: You appear to have a trapdoor gid system\n"));
-	  initial_gid = getegid();
-  }
-#endif
+	if (geteuid() != 0) {
+		DEBUG(0,("Warning: You appear to have a trapdoor uid system\n"));
+	}
+	if (getegid() != 0) {
+		DEBUG(0,("Warning: You appear to have a trapdoor gid system\n"));
+	}
 
-  current_user.uid = initial_uid;
-  current_user.gid = initial_gid;
+	current_user.uid = 0;
+	current_user.gid = 0;
   
-  if (dos_ChDir(OriginalDir) != 0)
-    DEBUG( 0, ( "chdir(%s) failed in unbecome_user\n", OriginalDir ) );
+	if (dos_ChDir(OriginalDir) != 0)
+		DEBUG( 0, ( "chdir(%s) failed in unbecome_user\n", OriginalDir ) );
 
-  DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
-	(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+	DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
+		(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
-  current_user.conn = NULL;
-  current_user.vuid = UID_FIELD_INVALID;
+	current_user.conn = NULL;
+	current_user.vuid = UID_FIELD_INVALID;
 
-  return(True);
+	return(True);
 }
 
 static struct current_user current_user_saved;
@@ -360,6 +312,7 @@ after the operation
 
 Set save_dir if you also need to save/restore the CWD 
 ****************************************************************************/
+
 void become_root(BOOL save_dir) 
 {
 	if (become_root_depth) {
@@ -380,6 +333,7 @@ When the privilaged operation is over call this
 
 Set save_dir if you also need to save/restore the CWD 
 ****************************************************************************/
+
 void unbecome_root(BOOL restore_dir)
 {
 	if (become_root_depth != 1) {
@@ -421,5 +375,3 @@ void unbecome_root(BOOL restore_dir)
 
 	become_root_depth = 0;
 }
-
-

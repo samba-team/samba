@@ -673,9 +673,9 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
       break;
     }
   if (!ok) {
-    DEBUG(10,("parse_nmb: discarding packet id = %d\n", 
+    DEBUG(10,("read_packet: discarding packet id = %d\n", 
                  packet->packet.nmb.header.name_trn_id));
-    free(packet);
+    free_packet(packet);
     return(NULL);
   }
 

@@ -40,14 +40,9 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
   close(1);
 
   if (shared) {
-	  /* become root - unprivilaged users can't delete these files */
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
-	  setresgid(0,0,0);
-	  setresuid(0,0,0);
-#else      
-	  setuid(0);
-	  seteuid(0);
-#endif
+	/* become root - unprivilaged users can't delete these files */
+	gain_root_privilage();
+	gain_root_group_privilage();
   }
 
   if(sys_stat(outfile, &st) == 0) {
@@ -86,8 +81,8 @@ if shared is not set then open the file with O_EXCL set
 int smbrun(char *cmd,char *outfile,BOOL shared)
 {
 	int fd,pid;
-	int uid = current_user.uid;
-	int gid = current_user.gid;
+	uid_t uid = current_user.uid;
+	gid_t gid = current_user.gid;
 
     /*
      * Lose any kernel oplock capabilities we may have.
@@ -110,7 +105,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	}
 
 	slprintf(syscmd,sizeof(syscmd)-1,"%s %d %d \"(%s 2>&1) > %s\"",
-		 path,uid,gid,cmd,
+		 path,(int)uid,(int)gid,cmd,
 		 outfile?outfile:"/dev/null");
 	
 	DEBUG(5,("smbrun - running %s ",syscmd));
@@ -143,20 +138,9 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	
 	/* now completely lose our privilages. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
-	setresgid(0,0,0);
-	setresuid(0,0,0);
-	setresgid(gid,gid,gid);
-	setresuid(uid,uid,uid);      
-#else      
-	setuid(0);
-	seteuid(0);
-	setgid(gid);
-	setegid(gid);
-	setuid(uid);
-	seteuid(uid);
-#endif
-	
+
+	become_user_permanently(uid, gid);
+
 	if (getuid() != uid || geteuid() != uid ||
 	    getgid() != gid || getegid() != gid) {
 		/* we failed to lose our privilages - do not execute

@@ -3893,7 +3893,7 @@ else
 fi
 done
 
-for ac_func in initgroups select rdchk getgrnam pathconf 
+for ac_func in initgroups select rdchk getgrnam pathconf setreuid setregid seteuid setegid
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3900: checking for $ac_func" >&5

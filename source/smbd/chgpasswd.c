@@ -120,11 +120,8 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   gid = pass->pw_gid;
   uid = pass->pw_uid;
-#ifdef HAVE_SETRESUID
-  setresuid(0,0,0);
-#else 
-  setuid(0);
-#endif
+
+  gain_root_privilage();
 
   /* Start new session - gets rid of controlling terminal. */
   if (setsid() < 0) {
@@ -184,19 +181,10 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   /* make us completely into the right uid */
   if (!as_root) {
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
-	  setresgid(0,0,0);
-	  setresuid(0,0,0);
-	  setresgid(gid,gid,gid);
-	  setresuid(uid,uid,uid);      
-#else      
-	  setuid(0);
-	  seteuid(0);
-	  setgid(gid);
-	  setegid(gid);
-	  setuid(uid);
-	  seteuid(uid);
-#endif
+    if(!become_user_permanently(uid, gid)) {
+      DEBUG(0,("dochild: unable to permanently become uid %d, gid %d\n", (int)uid, (int)gid));
+      return False;
+    }
   }
 
   DEBUG(10, ("Invoking '%s' as password change program.\n", passwordprogram));
@@ -360,8 +348,12 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
     DEBUG(3,("Dochild for user %s (uid=%d,gid=%d)\n",name,(int)getuid(),(int)getgid()));
     chstat = dochild(master, slavedev, name, passwordprogram, as_root);
 
-    if (as_root)
-      unbecome_root(False);
+	/*
+	 * The child should never return from dochild() ....
+	 */
+
+	DEBUG(0,("chat_with_program: Error: dochild() returned %d\n", chstat ));
+	exit(1);
   }
 
   if (chstat)

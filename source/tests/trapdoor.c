@@ -12,13 +12,20 @@ non-trapdoor system\n");
                 exit(0);
         }
 
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID)
         if (setresuid(1,1,-1) != 0) exit(1);
         if (getuid() != 1) exit(1);
         if (geteuid() != 1) exit(1);
         if (setresuid(0,0,0) != 0) exit(1);
         if (getuid() != 0) exit(1);
         if (geteuid() != 0) exit(1);
+#elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+		if (setreuid(1,1) != 0) exit(1);
+		if (getuid() != 1) exit(1);
+		if (geteuid() != 1) exit(1);
+		if (setreuid(0,0) != 0) exit(1);
+		if (getuid() != 0) exit(1);
+		if (geteuid() != 0) exit(1);
 #else
         if (seteuid(1) != 0) exit(1);
         if (geteuid() != 1) exit(1);
@@ -26,13 +33,20 @@ non-trapdoor system\n");
         if (geteuid() != 0) exit(1);
 #endif
 
-#ifdef HAVE_SETRESGID
+#if defined(HAVE_SETRESGID)
         if (setresgid(1,1,1) != 0) exit(1);
         if (getgid() != 1) exit(1);
         if (getegid() != 1) exit(1);
         if (setresgid(0,0,0) != 0) exit(1);
         if (getgid() != 0) exit(1);
         if (getegid() != 0) exit(1);
+#elif defined(HAVE_SETREGID) && !defined(HAVE_SETEGID)
+		if (setresgid(1,1) != 0) exit(1);
+		if (getgid() != 1) exit(1);
+		if (getegid() != 1) exit(1);
+		if (setregid(0,0) != 0) exit(1);
+		if (getgid() != 0) exit(1);
+		if (getegid() != 0) exit(1);
 #else
         if (setegid(1) != 0) exit(1);
         if (getegid() != 1) exit(1);
