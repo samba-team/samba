@@ -99,10 +99,10 @@ static void ncacn_np_use_free(struct ncacn_np_use *cli)
                         ncacn_np_shutdown(cli->cli);
                 }
                 ZERO_STRUCTP(cli->cli);
-                free(cli->cli);
+                SAFE_FREE(cli->cli);
         }
         ZERO_STRUCTP(cli);
-        free(cli);
+        SAFE_FREE(cli);
 }
 
 /****************************************************************************
