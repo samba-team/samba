@@ -78,7 +78,17 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-struct cli_state {
+struct user_credentials
+{
+	fstring user_name;
+	fstring domain;
+	struct pwd_info pwd;
+
+	uint32 ntlmssp_flags;
+};
+
+struct cli_state
+{
 	int port;
 	int fd;
 	uint16 cnum;
@@ -88,12 +98,12 @@ struct cli_state {
 	int protocol;
 	int sec_mode;
 	int rap_error;
-	int privilages;
+	int privileges;
+
+	struct user_credentials usr;
 
 	fstring eff_name;
 	fstring desthost;
-	fstring user_name;
-	fstring domain;
 
 	/*
 	 * The following strings are the
@@ -108,10 +118,8 @@ struct cli_state {
 	fstring dev;
 	struct nmb_name called;
 	struct nmb_name calling;
-	fstring full_dest_host_name;
 	struct in_addr dest_ip;
 
-	struct pwd_info pwd;
 	unsigned char cryptkey[8];
 	unsigned char lm_cli_chal[8];
 	unsigned char nt_cli_chal[128];

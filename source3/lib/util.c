@@ -3228,3 +3228,24 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	return(True);
 }
 
+BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
+				struct in_addr *ip)
+{
+	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
+
+	if (srv_name == NULL || strequal("\\\\.", srv_name))
+	{
+		fstrcpy(dest_host, global_myname);
+		ip = interpret_addr2("127.0.0.1");
+		return True;
+	}
+
+	if (!strnequal("\\\\", srv_name, 2))
+	{
+		return False;
+	}
+
+	fstrcpy(dest_host, &srv_name[2]);
+	return resolve_name(dest_host, ip, 0x20);
+}
+

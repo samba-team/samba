@@ -34,6 +34,7 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
+extern struct user_credentials *usr_creds;
 
 extern FILE* out_hnd;
 
@@ -151,7 +152,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
 
 	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
-	pwd_get_lm_nt_16(&(smb_cli->pwd), lm_oldhash, nt_oldhash );
+	pwd_get_lm_nt_16(&(usr_creds->pwd), lm_oldhash, nt_oldhash );
 	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
 	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
@@ -176,7 +177,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 
 	/* establish a connection. */
 	res = res ? samr_chgpasswd_user(smb_cli, fnum,
-	                                   srv_name, smb_cli->user_name,
+	                                   srv_name, usr_creds->user_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
 	/* close the session */

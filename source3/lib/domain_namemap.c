@@ -882,7 +882,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	struct cli_state cli;
 	POLICY_HND lsa_pol;
 	fstring srv_name;
-	extern struct cli_state *rpc_smb_cli;
+	extern struct user_credentials *usr_creds;
+	struct user_credentials usr;
 
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -891,7 +892,10 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	uint8 *types;
 	char *names[1];
 
-	rpc_smb_cli = &cli;
+	usr_creds = &usr;
+
+	ZERO_STRUCT(usr);
+	pwd_set_nullpwd(&usr.pwd);
 
 	DEBUG(5,("lookup_remote_ntname: %s\n", ntname));
 

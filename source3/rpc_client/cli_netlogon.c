@@ -572,8 +572,8 @@ BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
 
 	*num_deltas = 0;
 
-	DEBUG(5,("Attempting SAM sync with PDC, domain: %s name: %s\n",
-		cli->domain, srv_name));
+	DEBUG(5,("Attempting SAM sync with PDC: %s\n",
+		srv_name));
 
 	/* open NETLOGON session.  negotiate credentials */
 	res = res ? cli_nt_session_open(cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;

@@ -903,7 +903,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 fnum,
 	                    ntlmssp_auth ? &auth_ntlm : NULL,
 	                    rpc_call_id,
 	                    abstract, transfer,
-	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
+	                    global_myname, cli->usr.domain, cli->usr.ntlmssp_flags);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
 	prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
@@ -967,16 +967,16 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 fnum,
 			prs_init(&hdr_autha, 1024, 4, SAFETY_MARGIN, False);
 			prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
 
-			pwd_make_lm_nt_owf(&cli->pwd, rhdr_chal.challenge);
+			pwd_make_lm_nt_owf(&cli->usr.pwd, rhdr_chal.challenge);
 
-			create_rpc_bind_resp(&cli->pwd, cli->domain,
-			                     cli->user_name, global_myname, 
+			create_rpc_bind_resp(&cli->usr.pwd, cli->usr.domain,
+			                     cli->usr.user_name, global_myname, 
 			                     cli->ntlmssp_cli_flgs,
 			                     rpc_call_id,
 			                     &hdra, &hdr_autha, &auth_resp);
 			                    
-			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL, NULL, NULL);
-			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
+			pwd_get_lm_nt_owf(&cli->usr.pwd, lm_owf, NULL, NULL, NULL);
+			pwd_get_lm_nt_16(&cli->usr.pwd, lm_hash, NULL);
 			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
 			{
 				unsigned char j = 0;

@@ -73,7 +73,7 @@ addresses. Cannot add to ourselves.\n", remote_machine));
 
 	cli.protocol = PROTOCOL_NT1;
 
-	pwd_set_nullpwd(&cli.pwd);
+	pwd_set_nullpwd(&cli.usr.pwd);
 
 	if (!cli_establish_connection(&cli, remote_machine, &cli.dest_ip,
 	                              &calling, &called,

@@ -31,8 +31,6 @@
 
 extern int DEBUGLEVEL;
 
-extern struct cli_state *rpc_smb_cli;
-
 /****************************************************************************
  obtain the sid from the PDC.  do some verification along the way...
 ****************************************************************************/
@@ -45,8 +43,12 @@ BOOL get_domain_sids(const char *myname,
 	BOOL res = True;
 	fstring dom3;
 	fstring dom5;
-
-	rpc_smb_cli = &cli;
+	extern struct user_credentials *usr_creds;
+	struct user_credentials usr;
+	
+	usr_creds = &usr;
+	ZERO_STRUCT(usr);
+	pwd_set_nullpwd(&usr.pwd);
 
 	if (sid3 == NULL && sid5 == NULL)
 	{
@@ -142,7 +144,12 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	fstring dom3;
 	fstring dom5;
 
-	rpc_smb_cli = &cli;
+	extern struct user_credentials *usr_creds;
+	struct user_credentials usr;
+	
+	usr_creds = &usr;
+	ZERO_STRUCT(usr);
+	pwd_set_nullpwd(&usr.pwd);
 
 	if (!cli_connect_serverlist(&cli, server))
 	{
@@ -478,7 +485,7 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
 			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
 			valid_info = nt_decrypt_string2(secret, &enc_secret,
-			             (char*)(cli->pwd.smb_nt_pwd));
+			             (char*)(cli->usr.pwd.smb_nt_pwd));
 		}
 	}
 

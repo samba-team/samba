@@ -34,6 +34,7 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
+extern struct user_credentials *usr_creds;
 
 extern FILE* out_hnd;
 extern pstring global_myname;
@@ -68,7 +69,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 1)
 	{
-		fstrcpy(nt_user_name, smb_cli->user_name);
+		fstrcpy(nt_user_name, usr_creds->user_name);
 		if (nt_user_name[0] == 0)
 		{
 			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
@@ -94,12 +95,12 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5,("do_nt_login_test: username %s\n", nt_user_name));
 
-	res = res ? trust_get_passwd(trust_passwd, smb_cli->domain, info->myhostname) : False;
+	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, info->myhostname) : False;
 
 #if 0
 	/* check whether the user wants to change their machine password */
 	res = res ? trust_account_check(info->dest_ip, info->dest_host,
-	                                info->myhostname, smb_cli->domain,
+	                                info->myhostname, usr_creds->domain,
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
@@ -130,7 +131,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	/* do an NT login */
 	res = res ? cli_nt_login_interactive(smb_cli, nt_pipe_fnum,
-	                 smb_cli->domain, nt_user_name,
+	                 usr_creds->domain, nt_user_name,
 	                 getuid(), nt_password,
 	                 &info->dom.ctr, &info->dom.user_info3) : False;
 
@@ -174,7 +175,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(inter_dom_acct, nt_trust_dom);
 	fstrcat(inter_dom_acct, "$");
 
-	res = res ? trust_get_passwd(trust_passwd, smb_cli->domain, nt_trust_dom) : False;
+	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, nt_trust_dom) : False;
 
 	/* open NETLOGON session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
@@ -203,7 +204,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	uchar trust_passwd[16];
 	extern pstring global_myname;
 
-	if (!trust_get_passwd(trust_passwd, smb_cli->domain, global_myname))
+	if (!trust_get_passwd(trust_passwd, usr_creds->domain, global_myname))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;

@@ -46,9 +46,10 @@ static int process_tok(fstring tok);
 static void cmd_help(struct client_info *info, int argc, char *argv[]);
 static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 
+static struct user_credentials usr;
+
 static struct cli_state smbcli;
 struct cli_state *smb_cli = &smbcli;
-extern struct cli_state *rpc_smb_cli;
 
 static struct client_info cli_info;
 
@@ -56,52 +57,6 @@ static char  **cmd_argv = NULL;
 static uint32 cmd_argc = 0;
 
 FILE *out_hnd;
-
-/****************************************************************************
-initialise smb client structure
-****************************************************************************/
-void rpcclient_init(void)
-{
-	bzero(smb_cli, sizeof(smb_cli));
-	rpc_smb_cli = smb_cli;
-	cli_initialise(smb_cli);
-	smb_cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
-}
-
-/****************************************************************************
-make smb client connection
-****************************************************************************/
-static BOOL rpcclient_connect(struct client_info *info)
-{
-	struct nmb_name calling;
-	struct nmb_name called;
-
-	make_nmb_name(&called , dns_to_netbios_name(info->dest_host ), info->name_type, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(info->myhostname), 0x0            , scope);
-
-	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
-
-	if (!cli_establish_connection(smb_cli, 
-	                          info->dest_host, &info->dest_ip, 
-	                          &calling, &called,
-	                          info->share, info->svc_type,
-	                          False, True))
-	{
-		DEBUG(0,("rpcclient_connect: connection failed\n"));
-		cli_shutdown(smb_cli);
-		return False;
-	}
-
-	return True;
-}
-
-/****************************************************************************
-stop the smb connection(s?)
-****************************************************************************/
-static void rpcclient_stop(void)
-{
-	cli_shutdown(smb_cli);
-}
 
 #define COMPL_NONE 0
 #define COMPL_REGKEY 1
@@ -618,7 +573,6 @@ do a (presumably graceful) quit...
 ****************************************************************************/
 static void cmd_quit(struct client_info *info, int argc, char *argv[])
 {
-	rpcclient_stop();
 #ifdef MEM_MAN
 	{
 		extern FILE* dbf;
@@ -1375,14 +1329,17 @@ static char *complete_cmd_null(char *text, int state)
 	char *cmd_str="";
 	mode_t myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
+	extern struct user_credentials *usr_creds;
 
 	pstring password; /* local copy only, if one is entered */
 
+	usr.ntlmssp_flags = 0x0;
+
+	usr_creds = &usr;
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);
 
 	init_policy_hnd(64);
-	rpcclient_init();
 
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
@@ -1414,8 +1371,8 @@ static char *complete_cmd_null(char *text, int state)
 	pstrcpy(cli_info.cur_dir , "\\");
 	pstrcpy(cli_info.file_sel, "");
 	pstrcpy(cli_info.base_dir, "");
-	pstrcpy(smb_cli->domain, "");
-	pstrcpy(smb_cli->user_name, "");
+	pstrcpy(usr.domain, "");
+	pstrcpy(usr.user_name, "");
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
 
@@ -1455,19 +1412,19 @@ static char *complete_cmd_null(char *text, int state)
 
 	if (getenv("USER"))
 	{
-		pstrcpy(smb_cli->user_name,getenv("USER"));
+		pstrcpy(usr.user_name,getenv("USER"));
 
 		/* modification to support userid%passwd syntax in the USER var
 		25.Aug.97, jdblair@uab.edu */
 
-		if ((p=strchr(smb_cli->user_name,'%')))
+		if ((p=strchr(usr.user_name,'%')))
 		{
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
 			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(smb_cli->user_name);
+		strupper(usr.user_name);
 	}
 
 	password[0] = 0;
@@ -1479,10 +1436,10 @@ static char *complete_cmd_null(char *text, int state)
 		pstrcpy(password,getenv("PASSWD"));
 	}
 
-	if (*smb_cli->user_name == 0 && getenv("LOGNAME"))
+	if (*usr.user_name == 0 && getenv("LOGNAME"))
 	{
-		pstrcpy(smb_cli->user_name,getenv("LOGNAME"));
-		strupper(smb_cli->user_name);
+		pstrcpy(usr.user_name,getenv("LOGNAME"));
+		strupper(usr.user_name);
 	}
 
 	if (argc < 2)
@@ -1573,8 +1530,8 @@ static char *complete_cmd_null(char *text, int state)
 			case 'U':
 			{
 				char *lp;
-				pstrcpy(smb_cli->user_name,optarg);
-				if ((lp=strchr(smb_cli->user_name,'%')))
+				pstrcpy(usr.user_name,optarg);
+				if ((lp=strchr(usr.user_name,'%')))
 				{
 					*lp = 0;
 					pstrcpy(password,lp+1);
@@ -1586,7 +1543,7 @@ static char *complete_cmd_null(char *text, int state)
 
 			case 'W':
 			{
-				pstrcpy(smb_cli->domain,optarg);
+				pstrcpy(usr.domain,optarg);
 				break;
 			}
 
@@ -1707,37 +1664,21 @@ static char *complete_cmd_null(char *text, int state)
 	{
 		if (password[0] == 0)
 		{
-			pwd_set_nullpwd(&(smb_cli->pwd));
+			pwd_set_nullpwd(&(usr.pwd));
 		}
 		else
 		{
 			/* generate 16 byte hashes */
-			pwd_make_lm_nt_16(&(smb_cli->pwd), password);
+			pwd_make_lm_nt_16(&(usr.pwd), password);
 		}
 	}
 	else 
 	{
-		pwd_read(&(smb_cli->pwd), "Enter Password:", True);
+		pwd_read(&(usr.pwd), "Enter Password:", True);
 	}
-
-	mdfour(smb_cli->sess_key, smb_cli->pwd.smb_nt_pwd, 16);
 
 	/* paranoia: destroy the local copy of the password */
 	bzero(password, sizeof(password)); 
-
-	/* establish connections.  nothing to stop these being re-established. */
-	rpcclient_connect(&cli_info);
-
-	smb_cli->ntlmssp_cli_flgs = 0x0;
-
-	DEBUG(5,("rpcclient_connect: smb_cli->fd:%d\n", smb_cli->fd));
-	if (smb_cli->fd <= 0)
-	{
-		fprintf(stderr, "warning: connection could not be established to %s<%02x>\n",
-		                 cli_info.dest_host, cli_info.name_type);
-		fprintf(stderr, "this version of smbclient may crash if you proceed\n");
-		exit(-1);
-	}
 
 	switch (cli_action)
 	{
@@ -1753,8 +1694,6 @@ static char *complete_cmd_null(char *text, int state)
 			break;
 		}
 	}
-
-	rpcclient_stop();
 
 	return(0);
 }
