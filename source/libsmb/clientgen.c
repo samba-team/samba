@@ -1268,7 +1268,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash);
+  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
 
   /* 
    * Now place the old password hash in the data.
