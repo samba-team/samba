@@ -1,5 +1,5 @@
 !==
-!== CVS_ACCESS.txt for Samba release 2.0.6 11 Nov 1999
+!== CVS_ACCESS.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:    Modified from the Web pages by Jeremy Allison.
 Date:           23 Dec 1997

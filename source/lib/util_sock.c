@@ -76,6 +76,9 @@ struct
 #ifdef IPTOS_THROUGHPUT
   {"IPTOS_THROUGHPUT",  IPPROTO_IP,    IP_TOS,          IPTOS_THROUGHPUT,  OPT_ON},
 #endif
+#ifdef SO_REUSEPORT
+  {"SO_REUSEPORT",      SOL_SOCKET,    SO_REUSEPORT,    0,                 OPT_BOOL},
+#endif
 #ifdef SO_SNDBUF
   {"SO_SNDBUF",         SOL_SOCKET,    SO_SNDBUF,       0,                 OPT_INT},
 #endif
@@ -221,10 +224,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = recv(fd, buf + nread, maxcnt - nread, 0);
+        readret = read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = recv(fd, buf + nread, maxcnt - nread, 0);
+      readret = read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret == 0) {
@@ -278,10 +281,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = recv(fd, buf + nread, maxcnt - nread, 0);
+      readret = read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = recv(fd, buf+nread, maxcnt-nread, 0);
+    readret = read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret == 0) {
@@ -457,10 +460,10 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
-      ret = recv(fd,buffer + total,N - total, 0);
+      ret = read(fd,buffer + total,N - total);
     }
 #else /* WITH_SSL */
-    ret = recv(fd,buffer + total,N - total, 0);
+    ret = read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
     if (ret == 0)
@@ -841,7 +844,14 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebin
 		val=1;
 	else
 		val=0;
-    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
+    if(setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1)
+		DEBUG(dlevel,("setsockopt: SO_REUSEADDR=%d on port %d failed with error = %s\n",
+			val, port, strerror(errno) ));
+#ifdef SO_REUSEPORT
+    if(setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1)
+		DEBUG(dlevel,("setsockopt: SO_REUSEPORT=%d on port %d failed with error = %s\n",
+			val, port, strerror(errno) ));
+#endif /* SO_REUSEPORT */
   }
 
   /* now we've got a socket - we need to bind it */

@@ -1661,8 +1661,9 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
 }
 
 /****************************************************************************
-  set the user password
-  ****************************************************************************/
+ Set the user password.
+*****************************************************************************/
+
 static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -1704,20 +1705,59 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   (void)Get_Pwnam( user, True);
 
   /*
-   * Attempt the plaintext password change first.
-   * Older versions of Windows seem to do this.
+   * Attempt to verify the old password against smbpasswd entries
+   * Win98 clients send old and new password in plaintext for this call.
    */
 
-  if (password_ok(user, pass1,strlen(pass1),NULL) &&
-      chgpasswd(user,pass1,pass2,False))
   {
-    SSVAL(*rparam,0,NERR_Success);
+    fstring saved_pass2;
+    struct smb_passwd *smbpw = NULL;
+
+    /*
+     * Save the new password as change_oem_password overwrites it
+     * with zeros.
+     */
+
+    fstrcpy(saved_pass2, pass2);
+
+    if (check_plaintext_password(user,pass1,strlen(pass1),&smbpw) &&
+        change_oem_password(smbpw,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+
+      /*
+       * If unix password sync was requested, attempt to change
+       * the /etc/passwd database also. Return failure if this cannot
+       * be done.
+       */
+
+      if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
+        SSVAL(*rparam,0,NERR_badpass);
+    }
+  }
+
+  /*
+   * If the above failed, attempt the plaintext password change.
+   * This tests against the /etc/passwd database only.
+   */
+
+  if(SVAL(*rparam,0) != NERR_Success)
+  {
+    if (password_ok(user, pass1,strlen(pass1),NULL) &&
+        chgpasswd(user,pass1,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+    }
   }
 
   /*
    * If the plaintext change failed, attempt
-   * the encrypted. NT will generate this
-   * after trying the samr method.
+   * the old encrypted method. NT will generate this
+   * after trying the samr method. Note that this
+   * method is done as a last resort as this
+   * password change method loses the NT password hash
+   * and cannot change the UNIX password as no plaintext
+   * is received.
    */
 
   if(SVAL(*rparam,0) != NERR_Success)
@@ -3164,12 +3204,12 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 		return False;
 	}
 
-	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
+	if((data_len = (int)read_from_pipe( p, rdata, (size_t)p->max_trans_reply)) < 0) {
 		free(rdata);
 		return False;
 	}
 
-	send_trans_reply(outbuf, NULL, 0, rdata, data_len, (int)prs_offset(&p->rdata) > data_len);
+	send_trans_reply(outbuf, NULL, 0, rdata, data_len, (int)prs_offset(&p->out_data.rdata) > data_len);
 
 	free(rdata);
 	return True;
@@ -3285,7 +3325,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	switch (subcommand) {
 	case 0x26:
 		/* dce/rpc command */
-		reply = rpc_command(p, data, tdscnt);
+		reply = write_to_pipe(p, data, tdscnt);
 		if (reply)
 			reply = api_rpc_trans_reply(outbuf, p);
 		break;

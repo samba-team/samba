@@ -1,8 +1,8 @@
 !==
-!== DIAGNOSIS.txt for Samba release 2.0.6 11 Nov 1999
+!== DIAGNOSIS.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:	Andrew Tridgell
-Updated:	October 14, 1997
+Updated:	November 1, 1999
 
 Subject:	DIAGNOSING YOUR SAMBA SERVER
 ===========================================================================
@@ -16,9 +16,6 @@ You should do ALL the tests, in the order shown. I have tried to
 carefully choose them so later tests only use capabilities verified in
 the earlier tests.
 
-I would welcome additions to this set of tests. Please mail them to
-samba-bugs@samba.org
-
 If you send me an email saying "it doesn't work" and you have not
 followed this test procedure then you should not be surprised if I
 ignore your email.
@@ -28,9 +25,10 @@ ASSUMPTIONS
 -----------
 
 In all of the tests I assume you have a Samba server called BIGSERVER
-and a PC called ACLIENT. I also assume the PC is running windows for
-workgroups with a recent copy of the microsoft tcp/ip stack. Alternatively,
-your PC may be running Windows 95 or Windows NT (Workstation or Server).
+and a PC called ACLIENT both in workgroup TESTGROUP. I also assume the
+PC is running windows for workgroups with a recent copy of the
+microsoft tcp/ip stack. Alternatively, your PC may be running Windows
+95 or Windows NT (Workstation or Server).
 
 The procedure is similar for other types of clients.
 
@@ -44,7 +42,7 @@ smb.conf. I will assume this share is called "tmp". You can add a
  read only = yes
 
 
-THESE TESTS ASSUME VERSION 1.9.16 OR LATER OF THE SAMBA SUITE. SOME
+THESE TESTS ASSUME VERSION 2.0.6 OR LATER OF THE SAMBA SUITE. SOME
 COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS
 
 Please pay attention to the error messages you receive. If any error message
@@ -102,7 +100,7 @@ valid. Check what your guest account is using "testparm" and
 temporarily remove any "hosts allow", "hosts deny", "valid users" or
 "invalid users" lines.
 
-If you get a "connection refused" response then the smbd server could
+If you get a "connection refused" response then the smbd server may
 not be running. If you installed it in inetd.conf then you probably edited
 that file incorrectly. If you installed it as a daemon then check that
 it is running, and check that the netbios-ssn port is in a LISTEN
@@ -170,6 +168,9 @@ You should get the PCs IP address back. If you don't then the client
 software on the PC isn't installed correctly, or isn't started, or you
 got the name of the PC wrong. 
 
+If ACLIENT doesn't resolve via DNS then use the IP address of the
+client in the above test.
+
 
 TEST 6:
 -------
@@ -199,7 +200,7 @@ not correct. (Refer to TEST 3 notes above).
 TEST 7:
 -------
 
-Run the command "smbclient '\\BIGSERVER\TMP'". You should then be
+Run the command "smbclient //BIGSERVER/TMP". You should then be
 prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
 another account then add the -U <accountname> option to the end of
@@ -281,8 +282,21 @@ USERNAME" to the [tmp] section of smb.conf where "USERNAME" is the
 username corresponding to the password you typed. If you find this
 fixes things you may need the username mapping option.
 
-
 TEST 10:
+--------
+
+Run the command "nmblookup -M TESTGROUP" where TESTGROUP is the name
+of the workgroup that your Samba server and Windows PCs belong to. You
+should get back the IP address of the master browser for that
+workgroup.
+
+If you don't then the election process has failed. Wait a minute to
+see if it is just being slow then try again. If it still fails after
+that then look at the browsing options you have set in smb.conf. Make
+sure you have "preferred master = yes" to ensure that an election is
+held at startup.
+
+TEST 11:
 --------
 
 From file manager try to browse the server. Your samba server should

@@ -264,7 +264,7 @@ static void check_log_size( void )
     (void)fclose( dbf );
     dbf = NULL;
     reopen_logs();
-    if( dbf && file_size( debugf ) > maxlog )
+    if( dbf && get_file_size( debugf ) > maxlog )
       {
       pstring name;
 
@@ -318,7 +318,8 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    (void)vfprintf( dbf, format_str, ap );
+    if(dbf)
+      (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
     errno = old_errno;
     return( 0 );
@@ -397,9 +398,11 @@ va_dcl
     va_start( ap );
     format_str = va_arg( ap, char * );
 #endif
-    (void)vfprintf( dbf, format_str, ap );
+    if(dbf)
+      (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
-    (void)fflush( dbf );
+    if(dbf)
+      (void)fflush( dbf );
     }
 
   errno = old_errno;
@@ -488,7 +491,8 @@ static void format_debug_text( char *msg )
 void dbgflush( void )
   {
   bufr_print();
-  (void)fflush( dbf );
+  if(dbf)
+    (void)fflush( dbf );
   } /* dbgflush */
 
 /* ************************************************************************** **

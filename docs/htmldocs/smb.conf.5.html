@@ -108,7 +108,7 @@ as the default guest user (specified elsewhere):
 
  	[aprinter]
  		path = /usr/spool/public
- 		read only = true
+ 		writeable = false
  		printable = true
  		guest ok = true
 
@@ -176,7 +176,7 @@ make any auto home directories visible.
 <p><a name="printers"></a>
 <p></p><dt><strong><strong>The [printers] section</strong></strong><dd>
 <p>This section works like <a href="smb.conf.5.html#homes"><strong>[homes]</strong></a>, but for printers.
-<p>If a [printers] section occurs in the configuration file, users are
+<p>If a <strong>[printers]</strong> section occurs in the configuration file, users are
 able to connect to any printer specified in the local host's printcap
 file.
 <p>When a connection request is made, the existing sections are
@@ -185,7 +185,7 @@ scanned. If a match is found, it is used. If no match is found, but a
 above. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
 requested section name is a valid printer share name. If a match is
-found, a new printer share is created by cloning the [printers]
+found, a new printer share is created by cloning the <strong>[printers]</strong>
 section.
 <p>A few modifications are then made to the newly created share:
 <p><dl>
@@ -195,10 +195,10 @@ located printer name
 <p><li > If the share does not permit guest access and no username was
 given, the username is set to the located printer name.
 <p></dl>
-<p>Note that the [printers] service MUST be printable - if you specify
+<p>Note that the <strong>[printers]</strong> service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file.
 <p>Typically the path specified would be that of a world-writeable spool
-directory with the sticky bit set on it. A typical [printers] entry
+directory with the sticky bit set on it. A typical <strong>[printers]</strong> entry
 would look like this:
 <p><pre>
 
@@ -417,7 +417,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#debugpid"><strong>debug pid</strong></a>
 <p><li > <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
 <p><li > <a href="smb.conf.5.html#debuguid"><strong>debug uid</strong></a>
-<p><li > <a href="smb.conf.5.html#debuglevel"><strong>debuglevel</strong></a>
+<p><li > <a href="smb.conf.5.html#debuglevel"><strong>debug level</strong></a>
 <p><li > <a href="smb.conf.5.html#default"><strong>default</strong></a>
 <p><li > <a href="smb.conf.5.html#defaultservice"><strong>default service</strong></a>
 <p><li > <a href="smb.conf.5.html#deleteuserscript"><strong>delete user script</strong></a>
@@ -425,7 +425,6 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#dnsproxy"><strong>dns proxy</strong></a>
 <p><li > <a href="smb.conf.5.html#domainadmingroup"><strong>domain admin group</strong></a>
 <p><li > <a href="smb.conf.5.html#domainadminusers"><strong>domain admin users</strong></a>
-<p><li > <a href="smb.conf.5.html#domaincontroller"><strong>domain controller</strong></a>
 <p><li > <a href="smb.conf.5.html#domaingroups"><strong>domain groups</strong></a>
 <p><li > <a href="smb.conf.5.html#domainguestgroup"><strong>domain guest group</strong></a>
 <p><li > <a href="smb.conf.5.html#domainguestusers"><strong>domain guest users</strong></a>
@@ -470,10 +469,12 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#maxxmit"><strong>max xmit</strong></a>
 <p><li > <a href="smb.conf.5.html#messagecommand"><strong>message command</strong></a>
 <p><li > <a href="smb.conf.5.html#minpasswdlength"><strong>min passwd length</strong></a>
+<p><li > <a href="smb.conf.5.html#minpasswordlength"><strong>min password length</strong></a>
 <p><li > <a href="smb.conf.5.html#minwinsttl"><strong>min wins ttl</strong></a>
 <p><li > <a href="smb.conf.5.html#nameresolveorder"><strong>name resolve order</strong></a>
 <p><li > <a href="smb.conf.5.html#netbiosaliases"><strong>netbios aliases</strong></a>
 <p><li > <a href="smb.conf.5.html#netbiosname"><strong>netbios name</strong></a>
+<p><li > <a href="smb.conf.5.html#netbiosscope"><strong>netbios scope</strong></a>
 <p><li > <a href="smb.conf.5.html#nishomedir"><strong>nis homedir</strong></a>
 <p><li > <a href="smb.conf.5.html#ntaclsupport"><strong>nt acl support</strong></a>
 <p><li > <a href="smb.conf.5.html#ntpipesupport"><strong>nt pipe support</strong></a>
@@ -513,6 +514,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#smbrun"><strong>smbrun</strong></a>
 <p><li > <a href="smb.conf.5.html#socketaddress"><strong>socket address</strong></a>
 <p><li > <a href="smb.conf.5.html#socketoptions"><strong>socket options</strong></a>
+<p><li > <a href="smb.conf.5.html#sourceenvironment"><strong>source environment</strong></a>
 <p><li > <a href="smb.conf.5.html#ssl"><strong>ssl</strong></a>
 <p><li > <a href="smb.conf.5.html#sslCAcertDir"><strong>ssl CA certDir</strong></a>
 <p><li > <a href="smb.conf.5.html#sslCAcertFile"><strong>ssl CA certFile</strong></a>
@@ -541,10 +543,11 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#userhosts"><strong>use rhosts</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamelevel"><strong>username level</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamemap"><strong>username map</strong></a>
+<p><li > <a href="smb.conf.5.html#utmpdirectory"><strong>utmp directory</strong></a>
 <p><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
+<p><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
 <p><li > <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a>
-<p><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
@@ -599,6 +602,7 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a>
 <p><li > <a href="smb.conf.5.html#hostsdeny"><strong>hosts deny</strong></a>
 <p><li > <a href="smb.conf.5.html#include"><strong>include</strong></a>
+<p><li > <a href="smb.conf.5.html#inheritpermissions"><strong>inherit permissions</strong></a>
 <p><li > <a href="smb.conf.5.html#invalidusers"><strong>invalid users</strong></a>
 <p><li > <a href="smb.conf.5.html#level2oplocks"><strong>level2 oplocks</strong></a>
 <p><li > <a href="smb.conf.5.html#locking"><strong>locking</strong></a>
@@ -620,8 +624,8 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#minprintspace"><strong>min print space</strong></a>
 <p><li > <a href="smb.conf.5.html#onlyguest"><strong>only guest</strong></a>
 <p><li > <a href="smb.conf.5.html#onlyuser"><strong>only user</strong></a>
-<p><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
 <p><li > <a href="smb.conf.5.html#oplockcontentionlimit"><strong>oplock contention limit</strong></a>
+<p><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
 <p><li > <a href="smb.conf.5.html#path"><strong>path</strong></a>
 <p><li > <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>
 <p><li > <a href="smb.conf.5.html#postscript"><strong>postscript</strong></a>
@@ -644,8 +648,8 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#revalidate"><strong>revalidate</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
-<p><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexecclose"><strong>root preexec close</strong></a>
+<p><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
 <p><li > <a href="smb.conf.5.html#setdirectory"><strong>set directory</strong></a>
 <p><li > <a href="smb.conf.5.html#sharemodes"><strong>share modes</strong></a>
 <p><li > <a href="smb.conf.5.html#shortpreservecase"><strong>short preserve case</strong></a>
@@ -656,12 +660,14 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#user"><strong>user</strong></a>
 <p><li > <a href="smb.conf.5.html#username"><strong>username</strong></a>
 <p><li > <a href="smb.conf.5.html#users"><strong>users</strong></a>
+<p><li > <a href="smb.conf.5.html#utmp"><strong>utmp</strong></a>
 <p><li > <a href="smb.conf.5.html#validusers"><strong>valid users</strong></a>
 <p><li > <a href="smb.conf.5.html#vetofiles"><strong>veto files</strong></a>
 <p><li > <a href="smb.conf.5.html#vetooplockfiles"><strong>veto oplock files</strong></a>
 <p><li > <a href="smb.conf.5.html#volume"><strong>volume</strong></a>
 <p><li > <a href="smb.conf.5.html#widelinks"><strong>wide links</strong></a>
 <p><li > <a href="smb.conf.5.html#writable"><strong>writable</strong></a>
+<p><li > <a href="smb.conf.5.html#writecachesize"><strong>write cache size</strong></a>
 <p><li > <a href="smb.conf.5.html#writelist"><strong>write list</strong></a>
 <p><li > <a href="smb.conf.5.html#writeok"><strong>write ok</strong></a>
 <p><li > <a href="smb.conf.5.html#writeable"><strong>writeable</strong></a>
@@ -1077,6 +1083,7 @@ which is set to 000 by default.
 for forcing particular mode bits to be set on created files. See also
 the <a href="smb.conf.5.html#directorymode"><strong>"directory mode"</strong></a> parameter for masking
 mode bits on created directories.
+See also the <a href="smb.conf.5.html#inheritpermissions"><strong>"inherit permissions"</strong></a> parameter.
 <p><strong>Default:</strong>
 <code>	create mask = 0744</code>
 <p><strong>Example:</strong>
@@ -1117,7 +1124,7 @@ must be on for this to have an effect.
 <p></p><dt><strong><strong>debug timestamp (G)</strong></strong><dd>
 <p>Samba2.0 debug log messages are timestamped by default. If you are
 running at a high <a href="smb.conf.5.html#debuglevel"><strong>"debug level"</strong></a> these timestamps
-can be distracting. This boolean parameter allows them to be turned
+can be distracting. This boolean parameter allows timestamping to be turned
 off.
 <p><strong>Default:</strong>
 <code>	debug timestamp = Yes</code>
@@ -1337,6 +1344,7 @@ to cause particular mode bits to always be set on created directories.
 <p>See also the <a href="smb.conf.5.html#createmode"><strong>"create mode"</strong></a> parameter for masking
 mode bits on created files, and the <a href="smb.conf.5.html#directorysecuritymask"><strong>"directory security mask"</strong></a>
 parameter.
+<p>See also the <a href="smb.conf.5.html#inheritpermissions"><strong>"inherit permissions"</strong></a> parameter.
 <p><strong>Default:</strong>
 <code>	directory mask = 0755</code>
 <p><strong>Example:</strong>
@@ -1400,11 +1408,6 @@ To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
 <a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
-<p><a name="domaincontroller"></a>
-<p></p><dt><strong><strong>domain controller (G)</strong></strong><dd>
-<p>This is a <strong>DEPRECATED</strong> parameter. It is currently not used within
-the Samba source and should be removed from all current smb.conf
-files. It is left behind for compatibility reasons.
 <p><a name="domaingroups"></a>
 <p></p><dt><strong><strong>domain groups (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
@@ -1595,13 +1598,15 @@ symbolic links) by default.
 <p><a name="forcecreatemode"></a>
 <p></p><dt><strong><strong>force create mode (S)</strong></strong><dd>
 <p>This parameter specifies a set of UNIX mode bit permissions that will
-<em>*always*</em> be set on a file created by Samba. This is done by
-bitwise 'OR'ing these bits onto the mode bits of a file that is being
-created. The default for this parameter is (in octal) 000. The modes
-in this parameter are bitwise 'OR'ed onto the file mode after the mask
-set in the <a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a> parameter is applied.
+<em>*always*</em> be set on a file by Samba. This is done by bitwise
+'OR'ing these bits onto the mode bits of a file that is being created
+or having its permissions changed. The default for this parameter is
+(in octal) 000. The modes in this parameter are bitwise 'OR'ed onto
+the file mode after the mask set in the <a href="smb.conf.5.html#createmask"><strong>"create
+mask"</strong></a> parameter is applied.
 <p>See also the parameter <a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a> for details
-on masking mode bits on created files.
+on masking mode bits on files.
+<p>See also the <a href="smb.conf.5.html#inheritpermissions"><strong>"inherit permissions"</strong></a> parameter.
 <p><strong>Default:</strong>
 <code>	force create mode = 000</code>
 <p><strong>Example:</strong>
@@ -1620,6 +1625,7 @@ operation is done after the mode mask in the parameter
 <a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a> is applied.
 <p>See also the parameter <a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a> for
 details on masking mode bits on created directories.
+<p>See also the <a href="smb.conf.5.html#inheritpermissions"><strong>"inherit permissions"</strong></a> parameter.
 <p><strong>Default:</strong>
 <code>	force directory mode = 000</code>
 <p><strong>Example:</strong>
@@ -1920,6 +1926,33 @@ kids. And only if you <em>really</em> trust them :-).
 is included literally, as though typed in place.
 <p>It takes the standard substitutions, except <a href="smb.conf.5.html#percentu"><strong>%u</strong></a>,
 <a href="smb.conf.5.html#percentP"><strong>%P</strong></a> and <a href="smb.conf.5.html#percentS"><strong>%S</strong></a>.
+<p><a name="inheritpermissions"></a>
+<p></p><dt><strong><strong>inherit permissions (S)</strong></strong><dd>
+<p>The permissions on new files and directories are normally governed by
+<a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a>,
+<a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a>,
+<a href="smb.conf.5.html#forcecreatemode"><strong>"force create mode"</strong></a> and
+<a href="smb.conf.5.html#forcedirectorymode"><strong>"force directory mode"</strong></a>
+but the boolean inherit permissions parameter overrides this.
+<p>New directories inherit the mode of the parent directory,
+including bits such as setgid.
+<p>New files inherit their read/write bits from the parent directory.
+Their execute bits continue to be determined by
+<a href="smb.conf.5.html#maparchive"><strong>"map archive"</strong></a>,
+<a href="smb.conf.5.html#maphidden"><strong>"map hidden"</strong></a> and
+<a href="smb.conf.5.html#mapsystem"><strong>"map system"</strong></a> as usual.
+<p>Note that the setuid bit is *never* set via inheritance
+(the code explicitly prohibits this).
+<p>This can be particularly useful on large systems with many users,
+perhaps several thousand,
+to allow a single <strong>[homes]</strong> share to be used flexibly by each user.
+<p>See also <a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a>, <a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a>,
+<a href="smb.conf.5.html#forcecreatemode"><strong>"force create mode"</strong></a> and
+<a href="smb.conf.5.html#forcedirectorymode"><strong>"force directory mode"</strong></a>.
+<p><strong>Default</strong>
+<code>   inherit permissions = no</code>
+<p><strong>Example</strong>
+<code>   inherit permissions = yes</code>
 <p><a name="interfaces"></a>
 <p></p><dt><strong><strong>interfaces (G)</strong></strong><dd>
 <p>This option allows you to override the default network interfaces list
@@ -1933,10 +1966,10 @@ any of the following forms:
 <li > a network interface name (such as eth0). This may include
      shell-like wildcards so eth* will match any interface starting
      with the substring "eth"
-if() a IP address. In this case the netmask is determined
+<li > an IP address. In this case the netmask is determined
      from the list of interfaces obtained from the kernel
-if() a IP/mask pair. 
-if() a broadcast/mask pair. 
+<li > an IP/mask pair. 
+<li > a broadcast/mask pair. 
 </dl>
 <p>The "mask" parameters can either be a bit length (such as 24 for a C
 class network) or a full netmask in dotted decmal form.
@@ -2076,7 +2109,7 @@ for an entry in the LDAP password database.
 <p><a name="level2oplocks"></a>
 <p></p><dt><strong><strong>level2 oplocks (S)</strong></strong><dd>
 <p>This parameter (new in Samba 2.0.5) controls whether Samba supports
-level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+level2 (read-only) oplocks on a share. In Samba 2.0.5 this parameter
 defaults to "False" as the code is new, but will default to "True"
 in a later release.
 <p>Level2, or read-only oplocks allow Windows NT clients that have an
@@ -2216,6 +2249,18 @@ NT Workstation logs into a Samba PDC.  It allows you to do
 <p>from a command prompt, for example.
 <p>This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
+<p>This parameter can be used with Win9X workstations to ensure that
+roaming profiles are stored in a subdirectory of the user's home
+directory.  This is done in the following way:
+<p><code>"     logon home = \\%L\%U\profile"</code>
+<p>This tells Samba to return the above string, with substitutions made
+when a client requests the info, generally in a NetUserGetInfo request.
+Win9X clients truncate the info to \\server\share when a user does <code>"net use /home"</code>,
+but use the whole string when dealing with profiles.
+<p>Note that in prior versions of Samba, the <code>"logon path"</code> was returned rather than
+<code>"logon home"</code>.  This broke <code>"net use /home"</code> but allowed profiles outside the 
+home directory.  The current implementation is correct, and can be used for profiles
+if you use the above trick.
 <p>Note that this option is only useful if Samba is set up as a
 <a href="smb.conf.5.html#domainlogons"><strong>logon server</strong></a>.
 <p><strong>Example:</strong>
@@ -2225,21 +2270,24 @@ separate logon scripts for each user or machine.
 <p><a name="logonpath"></a>
 <p></p><dt><strong><strong>logon path (G)</strong></strong><dd>
 <p>This parameter specifies the home directory where roaming profiles
-(USER.DAT / USER.MAN files for Windows 95/98) are stored.
+(NTuser.dat etc files for Windows NT) are stored.  Contrary to previous 
+versions of these manual pages, it has nothing to do with Win 9X roaming
+profiles.  To find out how to handle roaming profiles for Win 9X system, see 
+the <code>"logon home"</code> parameter.
 <p>This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.  It also specifies
-the directory from which the <code>"desktop"</code>, <code>"start menu"</code>,
-<code>"network neighborhood"</code> and <code>"programs"</code> folders, and their
-contents, are loaded and displayed on your Windows 95/98 client.
+the directory from which the <code>"application data"</code>, (<code>"desktop"</code>, <code>"start menu"</code>,
+<code>"network neighborhood"</code>, <code>"programs"</code> and other folders, and their
+contents, are loaded and displayed on your Windows NT client.
 <p>The share and the path must be readable by the user for the
-preferences and directories to be loaded onto the Windows 95/98
+preferences and directories to be loaded onto the Windows NT
 client.  The share must be writeable when the logs in for the first
-time, in order that the Windows 95/98 client can create the user.dat
+time, in order that the Windows NT client can create the NTuser.dat
 and other directories.
 <p>Thereafter, the directories and any of the contents can, if required, be
-made read-only.  It is not advisable that the USER.DAT file be made
-read-only - rename it to USER.MAN to achieve the desired effect (a
-<em>MAN</em>datory profile).
+made read-only.  It is not advisable that the NTuser.dat file be made
+read-only - rename it to NTuser.man to achieve the desired effect (a
+<em>MAN</em>datory profile). 
 <p>Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is vital
 that the logon path does not include a reference to the homes share
@@ -2681,7 +2729,7 @@ so you should never need to touch this parameter.
 <code>	max open files = 10000</code>
 <p><a name="maxpacket"></a>
 <p></p><dt><strong><strong>max packet (G)</strong></strong><dd>
-<p>Synonym for <a name="<strong>"packetsize"</strong>"></a>(packetsize).
+<p>Synonym for <a href="smb.conf.5.html#packetsize"><strong>"packet size"</strong></a>.
 <p><a name="maxttl"></a>
 <p></p><dt><strong><strong>max ttl (G)</strong></strong><dd>
 <p>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> what the default 'time
@@ -2762,13 +2810,16 @@ job.
 <code>	min print space = 2000</code>
 <p><a name="minpasswdlength"></a>
 <p></p><dt><strong><strong>min passwd length (G)</strong></strong><dd>
+<p>Synonym for <a href="smb.conf.5.html#minpasswordlength"><strong>"min password length"</strong></a>.
+<p><a name="minpasswordlength"></a>
+<p></p><dt><strong><strong>min password length (G)</strong></strong><dd>
 <p>This option sets the minimum length in characters of a plaintext password
 than smbd will accept when performing UNIX password changing.
 <p>See also <a href="smb.conf.5.html#unixpasswordsync"><strong>"unix password sync"</strong></a>,
 <a href="smb.conf.5.html#passwdprogram"><strong>"passwd program"</strong></a> and <a href="smb.conf.5.html#passwdchatdebug"><strong>"passwd chat
 debug"</strong></a>.
 <p><strong>Default:</strong>
-<code>	min passwd length = 5</code>
+<code>	min password length = 5</code>
 <p><a name="minwinsttl"></a>
 <p></p><dt><strong><strong>min wins ttl (G)</strong></strong><dd>
 <p>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
@@ -2838,6 +2889,10 @@ advertised under.
 <code>	Machine DNS name.</code>
 <p><strong>Example:</strong>
 <code>	netbios name = MYNAME</code>
+<p><a name="netbiosscope"></a>
+<p></p><dt><strong><strong>netbios scope (G)</strong></strong><dd>
+<p>This sets the NetBIOS scope that Samba will operate under. This should
+not be set unless every machine on your LAN also sets this value.
 <p><a name="nishomedir"></a>
 <p></p><dt><strong><strong>nis homedir (G)</strong></strong><dd>
 <p>Get the home share server from a NIS map. For UNIX systems that use an
@@ -2994,7 +3049,7 @@ docs/ directory for details.
 <code>	os level = 65    ; This will win against any NT Server</code>
 <p><a name="packetsize"></a>
 <p></p><dt><strong><strong>packet size (G)</strong></strong><dd>
-<p>This is a deprecated parameter that how no effect on the current
+<p>This is a deprecated parameter that has no effect on the current
 Samba code. It is left in the parameter list to prevent breaking
 old <strong>smb.conf</strong> files.
 <p><a name="panicaction"></a>
@@ -3057,7 +3112,7 @@ option as it will allow plaintext passwords to be seen in the
 debug their <a href="smb.conf.5.html#passwdchat"><strong>"passwd chat"</strong></a> scripts when calling
 the <a href="smb.conf.5.html#passwdprogram"><strong>"passwd program"</strong></a> and should be turned off
 after this has been done. This parameter is off by default.
-<p>See also <a href="??"><strong>"passwd chat"</strong></a>, <a href="smb.conf.5.html#passwdprogram"><strong>"passwd
+<p>See also <a href="smb.conf.5.html#passwdchat"><strong>"passwd chat"</strong></a>, <a href="smb.conf.5.html#passwdprogram"><strong>"passwd
 program"</strong></a>.
 <p><strong>Example:</strong>
 <code>     passwd chat debug = True</code>
@@ -3347,7 +3402,7 @@ parameter.
 submit spool files on the directory specified for the service.
 <p>Note that a printable service will ALWAYS allow writing to the service
 path (user privileges permitting) via the spooling of print data. The
-<a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a> parameter controls only non-printing
+<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> parameter controls only non-printing
 access to the resource.
 <p><strong>Default:</strong>
 <code> 	printable = no</code>
@@ -3453,18 +3508,19 @@ directory, PRINTER_DRIVER.txt.
 <p><a name="printing"></a>
 <p></p><dt><strong><strong>printing (S)</strong></strong><dd>
 <p>This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the
+on your system. It also affects the default values for the
 <a href="smb.conf.5.html#printcommand"><strong>"print command"</strong></a>, <a href="smb.conf.5.html#lpqcommand"><strong>"lpq
 command"</strong></a> <a href="smb.conf.5.html#lppausecommand"><strong>"lppause command"</strong></a>,
 <a href="smb.conf.5.html#lpresumecommand"><strong>"lpresume command"</strong></a>, and <a href="smb.conf.5.html#lprmcommand"><strong>"lprm
-command"</strong></a>.
+command"</strong></a> if specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a>
+section.
 <p>Currently eight printing styles are supported. They are
 <strong>"printing=BSD"</strong>, <strong>"printing=AIX"</strong>, <strong>"printing=LPRNG"</strong>,
 <strong>"printing=PLP"</strong>,
 <strong>"printing=SYSV"</strong>,<strong>"printing="HPUX"</strong>,<strong>"printing=QNX"</strong> and
 <strong>"printing=SOFTQ"</strong>.
 <p>To see what the defaults are for the other print commands when using
-these three options use the <a href="testparm.1.html"><strong>"testparm"</strong></a> program.
+the various options use the <a href="testparm.1.html"><strong>"testparm"</strong></a> program.
 <p>This option can be set on a per printer basis
 <p>See also the discussion in the <a href="smb.conf.5.html#printers"><strong>[printers]</strong></a> section.
 <p><a name="protocol"></a>
@@ -3538,7 +3594,7 @@ and defaults to off. You should never need to set this parameter.
 <p></p><dt><strong><strong>read list (S)</strong></strong><dd>
 <p>This is a list of users that are given read-only access to a
 service. If the connecting user is in this list then they will not be
-given write access, no matter what the <a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a>
+given write access, no matter what the <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>
 option is set to. The list can include group names using the syntax
 described in the <a href="smb.conf.5.html#invalidusers"><strong>"invalid users"</strong></a> parameter.
 <p>See also the <a href="smb.conf.5.html#writelist"><strong>"write list"</strong></a> parameter and
@@ -3550,9 +3606,7 @@ the <a href="smb.conf.5.html#invalidusers"><strong>"invalid users"</strong></a> 
 <p><a name="readonly"></a>
 <p></p><dt><strong><strong>read only (S)</strong></strong><dd>
 <p>Note that this is an inverted synonym for
-<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> and <a href="smb.conf.5.html#writeok"><strong>"write ok"</strong></a>.
-<p>See also <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> and <a href="smb.conf.5.html#writeok"><strong>"write
-ok"</strong></a>.
+<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>.
 <p><a name="readprediction"></a>
 <p></p><dt><strong><strong>read prediction (G)</strong></strong><dd>
 <p><em>NOTE</em>: This code is currently disabled in Samba2.0 and
@@ -4076,6 +4130,25 @@ completely. Use these options with caution!
 <code>	socket options = TCP_NODELAY</code>
 <p><strong>Example:</strong>
 <code>	socket options = IPTOS_LOWDELAY</code>
+<p><a name="sourceenvironment"></a>
+<p></p><dt><strong><strong>source environment (G)</strong></strong><dd>
+<p>This parameter causes Samba to set environment variables as per the
+content of the file named.
+<p>The file <strong>must</strong> be owned by root and not world writable in order
+to be read (this is a security check).
+<p>If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe. This command must not be world writable
+and must reside in a directory that is not world writable.
+<p>The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command. This is of the form :
+<p>Example environment entry:
+<code> SAMBA_NETBIOS_NAME=myhostname </code>
+<p><strong>Default:</strong>
+<code>No default value</code>
+<p><strong>Examples:</strong>
+<p><code>	source environment = |/etc/smb.conf.sh</code>
+<p><code>	source environment = /usr/local/smb_env_vars</code>
 <p><a name="ssl"></a>
 <p></p><dt><strong><strong>ssl (G)</strong></strong><dd>
 <p>This variable is part of SSL-enabled Samba. This is only available if
@@ -4389,13 +4462,7 @@ itself as a time server to Windows clients. The default is False.
 <code>	time server = True</code>
 <p><a name="timestamplogs"></a>
 <p></p><dt><strong><strong>timestamp logs (G)</strong></strong><dd>
-<p>Samba2.0 will a timestamps to all log entries by default. This
-can be distracting if you are attempting to debug a problem. This
-parameter allows the timestamping to be turned off.
-<p><strong>Default:</strong>
-<code>	timestamp logs = True</code>
-<p><strong>Example:</strong>
-<code>	timestamp logs = False</code>
+<p>Synonym for <a href="debugtimestamp"><strong>"debug timestamp"</strong></a>.
 <p><a name="unixpasswordsync"></a>
 <p></p><dt><strong><strong>unix password sync (G)</strong></strong><dd>
 <p>This boolean parameter controls whether Samba attempts to synchronize
@@ -4600,6 +4667,30 @@ print job.
 <code>	no username map</code>
 <p><strong>Example:</strong>
 <code>	username map = /usr/local/samba/lib/users.map</code>
+<p><a name="utmp"></a>
+<p></p><dt><strong><strong>utmp (S)</strong></strong><dd>
+<p>This boolean parameter is only available if Samba has been configured and compiled 
+with the option <code>--with-utmp</code>. If set to True then Samba will attempt
+to add utmp or utmpx records (depending on the UNIX system) whenever a
+connection is made to a Samba server. Sites may use this to record the
+user connecting to a Samba share.
+<p>See also the <a href="smb.conf.5.html#utmpdirectory"><strong>"utmp directory"</strong></a> parameter.
+<p><strong>Default:</strong>
+<code>utmp = False</code>
+<p><strong>Example:</strong>
+<code>utmp = True</code>
+<p><a name="utmpdirectory"></a>
+<p></p><dt><strong><strong>utmp directory(G)</strong></strong><dd>
+<p>This parameter is only available if Samba has been configured and compiled
+with the option <code>--with-utmp</code>. It specifies a directory pathname that is
+used to store the utmp or utmpx files (depending on the UNIX system) that
+record user connections to a Samba server. See also the <a href="smb.conf.5.html#utmp"><strong>"utmp"</strong></a>
+parameter. By default this is not set, meaning the system will use whatever
+utmp file the native system is set to use (usually /var/run/utmp on Linux).
+<p><strong>Default:</strong>
+<code>no utmp directory</code>
+<p><strong>Example:</strong>
+<code>utmp directory = /var/adm/</code>
 <p><a name="validchars"></a>
 <p></p><dt><strong><strong>valid chars (G)</strong></strong><dd>
 <p>The option allows you to specify additional characters that should be
@@ -4826,7 +4917,7 @@ setting.
 <p></p><dt><strong><strong>write list (S)</strong></strong><dd>
 <p>This is a list of users that are given read-write access to a
 service. If the connecting user is in this list then they will be
-given write access, no matter what the <a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a>
+given write access, no matter what the <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>
 option is set to. The list can include group names using the @group
 syntax.
 <p>Note that if a user is in both the read list and the write list then
@@ -4836,6 +4927,26 @@ they will be given write access.
 <code>     write list = &lt;empty string&gt;</code>
 <p><strong>Example:</strong>
 <code>	write list = admin, root, @staff</code>
+<p><a name="writecachesize"></a>
+<p></p><dt><strong><strong>write cache size (S)</strong></strong><dd>
+<p>This integer parameter (new with Samba 2.0.7) if set to non-zero causes Samba to create an in-memory
+cache for each oplocked file (it does <strong>not</strong> do this for non-oplocked files). All
+writes that the client does not request to be flushed directly to disk will be
+stored in this cache if possible. The cache is flushed onto disk when a write
+comes in whose offset would not fit into the cache or when the file is closed
+by the client. Reads for the file are also served from this cache if the data
+is stored within it.
+<p>This cache allows Samba to batch client writes into a more efficient write
+size for RAID disks (ie. writes may be tuned to be the RAID stripe size) and
+can improve performance on systems where the disk subsystem is a bottleneck
+but there is free memory for userspace programs.
+<p>The integer parameter specifies the size of this cache (per oplocked file)
+in bytes.
+<p><strong>Default:</strong>
+<code>     write cache size = 0</code>
+<p><strong>Example:</strong>
+<code>	     write cache size = 262144</code>
+for a 256k cache size per file.
 <p><a name="writeok"></a>
 <p></p><dt><strong><strong>write ok (S)</strong></strong><dd>
 <p>Synonym for <a href="smb.conf.5.html#writeable"><strong>writeable</strong></a>.

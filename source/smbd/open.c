@@ -338,7 +338,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
    * JRA.
    */
 
-  if (conn->read_only && !conn->printer) {
+  if (!CAN_WRITE(conn) && !conn->printer) {
     /* It's a read-only share - fail if we wanted to write. */
     if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
@@ -541,8 +541,6 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->size = 0;
     fsp->pos = -1;
     fsp->open = True;
-    fsp->mmap_ptr = NULL;
-    fsp->mmap_size = 0;
     fsp->can_lock = True;
     fsp->can_read = ((flags & O_WRONLY)==0);
     fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
@@ -564,6 +562,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
      */
     string_set(&fsp->fsp_name,fname);
     fsp->wbmpx_ptr = NULL;      
+    fsp->wcp = NULL; /* Write cache pointer. */
 
     /*
      * If the printer is marked as postscript output a leading
@@ -583,35 +582,6 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 	     conn->num_files_open));
 
   }
-}
-
-/****************************************************************************
- If it's a read-only file, and we were compiled with mmap enabled,
- try and mmap the file. This is split out from open_file() above
- as mmap'ing the file can cause the kernel reference count to
- be incremented, which can cause kernel oplocks to be refused.
- Splitting this call off allows the kernel oplock to be granted, then
- the file mmap'ed.
-****************************************************************************/
-
-static void mmap_open_file(files_struct *fsp)
-{
-#if WITH_MMAP
-  /* mmap it if read-only */
-  if (!fsp->can_write) {
-	  fsp->mmap_size = dos_file_size(fsp->fsp_name);
-	  if (fsp->mmap_size < MAX_MMAP_SIZE && fsp->mmap_size > 0) {
-		  fsp->mmap_ptr = (char *)sys_mmap(NULL,fsp->mmap_size,
-					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,(SMB_OFF_T)0);
-
-		  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
-			  DEBUG(3,("Failed to mmap() %s - %s\n",
-				   fsp->fsp_name,strerror(errno)));
-			  fsp->mmap_ptr = NULL;
-		  }
-	  }
-  }
-#endif
 }
 
 /****************************************************************************
@@ -645,59 +615,117 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 	}
 }
 
+
+/*******************************************************************
+return True if the filename is one of the special executable types
+********************************************************************/
+static BOOL is_executable(char *fname)
+{
+	if ((fname = strrchr(fname,'.'))) {
+		if (strequal(fname,".com") ||
+		    strequal(fname,".dll") ||
+		    strequal(fname,".exe") ||
+		    strequal(fname,".sym")) {
+			return True;
+		}
+	}
+	return False;
+}
+
 enum {AFAIL,AREAD,AWRITE,AALL};
 
 /*******************************************************************
 reproduce the share mode access table
+this is horrendoously complex, and really can't be justified on any
+rational grounds except that this is _exactly_ what NT does. See
+the DENY1 and DENY2 tests in smbtorture for a comprehensive set of
+test routines.
 ********************************************************************/
-
 static int access_table(int new_deny,int old_deny,int old_mode,
-			pid_t share_pid,char *fname)
+			BOOL same_pid, BOOL isexe)
 {
-  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
+	  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
-  if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    pid_t pid = getpid();
-    if (old_deny == new_deny && share_pid == pid) 
-	return(AALL);    
+	  if (same_pid) {
+		  if (isexe && old_mode == DOS_OPEN_RDONLY && 
+		      old_deny == DENY_DOS && new_deny == DENY_READ) {
+			  return AFAIL;
+		  }
+		  if (!isexe && old_mode == DOS_OPEN_RDONLY && 
+		      old_deny == DENY_DOS && new_deny == DENY_DOS) {
+			  return AREAD;
+		  }
+		  if (new_deny == DENY_FCB && old_deny == DENY_DOS) {
+			  if (isexe) return AFAIL;
+			  if (old_mode == DOS_OPEN_RDONLY) return AFAIL;
+			  return AALL;
+		  }
+		  if (old_mode == DOS_OPEN_RDONLY && old_deny == DENY_DOS) {
+			  if (new_deny == DENY_FCB || new_deny == DENY_READ) {
+				  if (isexe) return AREAD;
+				  return AFAIL;
+			  }
+		  }
+		  if (old_deny == DENY_FCB) {
+			  if (new_deny == DENY_DOS || new_deny == DENY_FCB) return AALL;
+			  return AFAIL;
+		  }
+	  }
 
-    if (old_mode == 0) return(AREAD);
+	  if (old_deny == DENY_DOS || new_deny == DENY_DOS || 
+	      old_deny == DENY_FCB || new_deny == DENY_FCB) {
+		  if (isexe) {
+			  if (old_deny == DENY_FCB || new_deny == DENY_FCB) {
+				  return AFAIL;
+			  }
+			  if (old_deny == DENY_DOS) {
+				  if (new_deny == DENY_READ && 
+				      (old_mode == DOS_OPEN_RDONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  if (new_deny == DENY_WRITE && 
+				      (old_mode == DOS_OPEN_WRONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  return AALL;
+			  }
+			  if (old_deny == DENY_NONE) return AALL;
+			  if (old_deny == DENY_READ) return AWRITE;
+			  if (old_deny == DENY_WRITE) return AREAD;
+		  }
+		  /* it isn't a exe, dll, sym or com file */
+		  if (old_deny == new_deny && same_pid)
+			  return(AALL);    
 
-    /* the new smbpub.zip spec says that if the file extension is
-       .com, .dll, .exe or .sym then allow the open. I will force
-       it to read-only as this seems sensible although the spec is
-       a little unclear on this. */
-    if ((fname = strrchr(fname,'.'))) {
-      if (strequal(fname,".com") ||
-	  strequal(fname,".dll") ||
-	  strequal(fname,".exe") ||
-	  strequal(fname,".sym"))
-	return(AREAD);
-    }
-
-    return(AFAIL);
-  }
-
-  switch (new_deny) 
-    {
-    case DENY_WRITE:
-      if (old_deny==DENY_WRITE && old_mode==0) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==0) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==0) return(AALL);
-      return(AFAIL);
-    case DENY_READ:
-      if (old_deny==DENY_WRITE && old_mode==1) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==1) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==1) return(AALL);
-      return(AFAIL);
-    case DENY_NONE:
-      if (old_deny==DENY_WRITE) return(AREAD);
-      if (old_deny==DENY_READ) return(AWRITE);
-      if (old_deny==DENY_NONE) return(AALL);
-      return(AFAIL);      
-    }
-  return(AFAIL);      
+		  if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
+		  if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
+		  
+		  return(AFAIL);
+	  }
+	  
+	  switch (new_deny) 
+		  {
+		  case DENY_WRITE:
+			  if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_RDONLY) return(AREAD);
+			  if (old_deny==DENY_READ && old_mode==DOS_OPEN_RDONLY) return(AWRITE);
+			  if (old_deny==DENY_NONE && old_mode==DOS_OPEN_RDONLY) return(AALL);
+			  return(AFAIL);
+		  case DENY_READ:
+			  if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_WRONLY) return(AREAD);
+			  if (old_deny==DENY_READ && old_mode==DOS_OPEN_WRONLY) return(AWRITE);
+			  if (old_deny==DENY_NONE && old_mode==DOS_OPEN_WRONLY) return(AALL);
+			  return(AFAIL);
+		  case DENY_NONE:
+			  if (old_deny==DENY_WRITE) return(AREAD);
+			  if (old_deny==DENY_READ) return(AWRITE);
+			  if (old_deny==DENY_NONE) return(AALL);
+			  return(AFAIL);      
+		  }
+	  return(AFAIL);      
 }
+
 
 /****************************************************************************
 check if we can open a file with a share mode
@@ -724,25 +752,14 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
     return False;
   }
 
-  if (old_deny_mode > 4 || old_open_mode > 2)
-  {
-    DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
-               deny_mode,old_deny_mode,old_open_mode,fname));
-
-    unix_ERR_class = ERRDOS;
-    unix_ERR_code = ERRbadshare;
-
-    return False;
-  }
-
   {
     int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-                                share->pid,fname);
+				      (share->pid == getpid()),is_executable(fname));
 
     if ((access_allowed == AFAIL) ||
         (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
-        (access_allowed == AREAD && *flags == O_WRONLY) ||
-        (access_allowed == AWRITE && *flags == O_RDONLY))
+        (access_allowed == AREAD && *flags != O_RDONLY) ||
+        (access_allowed == AWRITE && *flags != O_WRONLY))
     {
       DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
@@ -875,9 +892,6 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     errno = EINVAL;
     return;
   }
-
-  if (deny_mode == DENY_FCB)
-    deny_mode = DENY_DOS;
 
   if (lp_share_modes(SNUM(conn))) 
   {
@@ -1063,13 +1077,6 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fsp,conn,token,&share_locked);
-
-    /*
-     * Attempt to mmap a read only file.
-     * Moved until after a kernel oplock may
-     * be granted due to reference count issues. JRA.
-     */
-    mmap_open_file(fsp);
   }
 
   if (share_locked && lp_share_modes(SNUM(conn)))
@@ -1113,8 +1120,6 @@ int open_file_stat(files_struct *fsp,connection_struct *conn,
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->open = True;
-	fsp->mmap_ptr = NULL;
-	fsp->mmap_size = 0;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -1136,6 +1141,7 @@ int open_file_stat(files_struct *fsp,connection_struct *conn,
 	 */
 	string_set(&fsp->fsp_name,fname);
 	fsp->wbmpx_ptr = NULL;
+    fsp->wcp = NULL; /* Write cache pointer. */
 
 	return 0;
 }
@@ -1177,13 +1183,13 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 			 * Try and create the directory.
 			 */
 
-			if(conn->read_only) {
+			if(!CAN_WRITE(conn)) {
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
 				errno = EACCES;
 				return -1;
 			}
 
-			if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
+			if(dos_mkdir(fname, unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				return -1;
@@ -1226,8 +1232,6 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->open = True;
-	fsp->mmap_ptr = NULL;
-	fsp->mmap_size = 0;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;

@@ -301,8 +301,8 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   
     p = &buf[offset+1];
     while ((p = strchr(p,'.'))) {
-      buf[offset] = PTR_DIFF(p,&buf[offset]);
-      offset += buf[offset];
+      buf[offset] = PTR_DIFF(p,&buf[offset+1]);
+      offset += (buf[offset] + 1);
       p = &buf[offset+1];
     }
     buf[offset] = strlen(&buf[offset+1]);
@@ -805,13 +805,14 @@ static int build_dgram(char *buf,struct packet_struct *p)
 /*******************************************************************
   build a nmb name
  *******************************************************************/
-void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope )
+void make_nmb_name( struct nmb_name *n, const char *name, int type )
 {
+	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	StrnCpy( n->name, name, 15 );
 	strupper( n->name );
 	n->name_type = (unsigned int)type & 0xFF;
-	StrnCpy( n->scope, this_scope, 63 );
+	StrnCpy( n->scope, global_scope, 63 );
 	strupper( n->scope );
 }
 

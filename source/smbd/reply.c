@@ -222,11 +222,10 @@ int reply_tcon(connection_struct *conn,
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
     /*
-     * Ensure the user, password and service names are in UNIX codepage format.
+     * Ensure the user and password names are in UNIX codepage format.
      */
 
     dos_to_unix(user,True);
-    dos_to_unix(service,True);
 	if (!doencrypt)
     	dos_to_unix(password,True);
 
@@ -312,11 +311,10 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	DEBUG(4,("Got device type %s\n",devicename));
 
     /*
-     * Ensure the user, password and service names are in UNIX codepage format.
+     * Ensure the user and password names are in UNIX codepage format.
      */
 
     dos_to_unix(user,True);
-    dos_to_unix(service,True);
 	if (!doencrypt)
 		dos_to_unix(password,True);
 
@@ -628,6 +626,23 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 }
 
 /****************************************************************************
+ Return a bad password error configured for the correct client type.
+****************************************************************************/       
+
+static int bad_password_error(char *inbuf,char *outbuf)
+{
+  enum remote_arch_types ra_type = get_remote_arch();
+
+  if(((ra_type == RA_WINNT) || (ra_type == RA_WIN2K)) &&
+      (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
+    SSVAL(outbuf,smb_flg2,FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0,0xc0000000|NT_STATUS_LOGON_FAILURE));
+  }
+
+  return(ERROR(ERRSRV,ERRbadpw));
+}
+
+/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
 
@@ -680,16 +695,17 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     if(global_client_caps == 0)
       global_client_caps = IVAL(inbuf,smb_vwv11);
 
+    DEBUG(10,("reply_sesssetup_and_X: global_client_caps = 0x%X\n", (unsigned int)global_client_caps));
+
     /* client_caps is used as final determination if client is NT or Win95. 
        This is needed to return the correct error codes in some
        circumstances.
      */
     
-    if(ra_type == RA_WINNT || ra_type == RA_WIN95) {
-      if(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))
-        set_remote_arch( RA_WINNT);
-      else
+    if(ra_type == RA_WINNT || ra_type == RA_WIN2K || ra_type == RA_WIN95) {
+      if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
         set_remote_arch( RA_WIN95);
+      }
     }
 
     if (passlen1 != 24 && passlen2 != 24)
@@ -907,16 +923,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
         {
           DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
-          return(ERROR(ERRSRV,ERRbadpw));
+          return bad_password_error(inbuf,outbuf);
         }
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-	  if (Get_Pwnam(user,True))
-	  {
+          if (Get_Pwnam(user,True))
+          {
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
-            return(ERROR(ERRSRV,ERRbadpw));
-	  }
+            return bad_password_error(inbuf,outbuf);
+          }
         }
 
         /*
@@ -942,7 +958,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       lp_servicenumber(user) < 0)      
   {
     int homes = lp_servicenumber(HOMES_NAME);
-    char *home = get_home_dir(user);
+    char *home = get_user_home_dir(user);
     if (homes >= 0 && home)
       lp_add_home(user,homes,home);
   }
@@ -970,7 +986,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     struct passwd *pw = Get_Pwnam(user,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
-      return(ERROR(ERRSRV,ERRbadpw));
+      return bad_password_error(inbuf,outbuf);
     }
     gid = pw->pw_gid;
     uid = pw->pw_uid;
@@ -1320,7 +1336,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     p = mask;
     while(*p)
     {
-      if((skip = skip_multibyte_char( *p )) != 0 )
+      if((skip = get_character_len( *p )) != 0 )
       {
         p += skip;
       }
@@ -1533,7 +1549,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
-  unixmode = unix_mode(conn,aARCH);
+  unixmode = unix_mode(conn,aARCH,fname);
       
   open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
                    unixmode, oplock_request,&rmode,NULL);
@@ -1635,7 +1651,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  unixmode = unix_mode(conn,smb_attr | aARCH);
+  unixmode = unix_mode(conn,smb_attr | aARCH, fname);
       
   open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
 	               oplock_request, &rmode,&smb_action);
@@ -1759,7 +1775,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
     }
   
-  unixmode = unix_mode(conn,createmode);
+  unixmode = unix_mode(conn,createmode,fname);
   
   fsp = file_new();
   if (!fsp)
@@ -1839,7 +1855,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   pstrcat(fname,"/TMXXXXXX");
   unix_convert(fname,conn,0,&bad_path,NULL);
   
-  unixmode = unix_mode(conn,createmode);
+  unixmode = unix_mode(conn,createmode,fname);
   
   fsp = file_new();
   if (fsp)
@@ -2072,6 +2088,8 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   }
 
   CHECK_FSP(fsp,conn);
+
+  flush_write_cache(fsp, READRAW_FLUSH);
 
   startpos = IVAL(inbuf,smb_vwv1);
   if(CVAL(inbuf,smb_wct) == 10) {
@@ -2534,9 +2552,10 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
-  if(numtowrite == 0)
-    nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
-  else
+  if(numtowrite == 0) {
+    if((nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos)) >= 0)
+      set_filelen_write_cache(fsp, startpos); 
+  } else
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
@@ -2654,6 +2673,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
+
+  flush_write_cache(fsp, SEEK_FLUSH);
 
   mode = SVAL(inbuf,smb_vwv1) & 3;
   startpos = IVALS(inbuf,smb_vwv2);
@@ -3058,7 +3079,7 @@ int reply_printopen(connection_struct *conn,
 
 	/* Open for exclusive use, write only. */
 	open_file_shared(fsp,conn,fname2, SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unix_mode(conn,0), 0, NULL, NULL);
+                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unix_mode(conn,0,fname2), 0, NULL, NULL);
 
 	if (!fsp->open) {
 		file_free(fsp);
@@ -3217,7 +3238,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR,directory));
   
   if (ret < 0)
   {
@@ -4273,7 +4294,12 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* If any of the above locks failed, then we must unlock
      all of the previous locks (X/Open spec). */
   if(i != num_locks && num_locks != 0) {
-    for(; i >= 0; i--) {
+    /*
+     * Ensure we don't do a remove on the lock that just failed,
+     * as under POSIX rules, if we have a lock already there, we
+     * will delete it (and we shouldn't) .....
+     */
+    for(i--; i >= 0; i--) {
       count = get_lock_count( data, i, large_file_format, &err1);
       offset = get_lock_offset( data, i, large_file_format, &err2);
 

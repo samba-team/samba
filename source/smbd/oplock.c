@@ -382,6 +382,8 @@ void release_file_oplock(files_struct *fsp)
 
   fsp->oplock_type = NO_OPLOCK;
   fsp->sent_oplock_break = NO_BREAK_SENT;
+
+  flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
 }
 
 /****************************************************************************

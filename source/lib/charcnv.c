@@ -51,17 +51,22 @@ static void update_map(char *str) {
     }
 }
 
-static void init_iso8859_1(int codepage) {
-
+static void setupmaps(void)
+{
     int i;
     if (!mapsinited) initmaps();
 
     /* Do not map undefined characters to some accidental code */
-    for (i = 128; i < 256; i++) 
+    for (i = 128; i < 256; i++)
     {
        unix2dos[i] = CTRLZ;
        dos2unix[i] = CTRLZ;
     }
+}
+
+static void init_iso8859_1(int codepage) {
+
+	setupmaps();
 
     if (codepage == 437) {
         /* MSDOS Code Page 437 -> ISO-8859-1 */
@@ -94,15 +99,7 @@ static void init_iso8859_1(int codepage) {
 
 static void init_iso8859_2(void) {
 
-    int i;
-    if (!mapsinited) initmaps();
-
-    /* Do not map undefined characters to some accidental code */
-    for (i = 128; i < 256; i++) 
-    {
-       unix2dos[i] = CTRLZ;
-       dos2unix[i] = CTRLZ;
-    }
+	setupmaps();
 
 /*
  * Tranlation table created by Petr Hubeny <psh@capitol.cz>
@@ -111,6 +108,7 @@ static void init_iso8859_2(void) {
  */
 
 /* MSDOS Code Page 852 -> ISO-8859-2 */
+update_map("\240\377"); /* Fix for non-breaking space */
 update_map("\241\244\242\364\243\235\244\317\245\225\246\227\247\365");
 update_map("\250\371\251\346\252\270\253\233\254\215\256\246\257\275");
 update_map("\261\245\262\362\263\210\264\357\265\226\266\230\267\363");
@@ -131,15 +129,7 @@ update_map("\370\375\371\205\372\243\373\373\374\201\375\354\376\356\377\372");
 
 static void init_iso8859_5(void)
 {
-  int i;
-  if (!mapsinited) initmaps();
-
-  /* Do not map undefined characters to some accidental code */
-  for (i = 128; i < 256; i++) 
-  {
-     unix2dos[i] = CTRLZ;
-     dos2unix[i] = CTRLZ;
-  }
+	setupmaps();
 
 /* MSDOS Code Page 866 -> ISO8859-5 */
 update_map("\260\200\261\201\262\202\263\203\264\204\265\205\266\206\267\207");
@@ -158,15 +148,7 @@ update_map("\360\374\240\377");
 
 static void init_iso8859_7(void)
 {
-  int i;
-  if (!mapsinited) initmaps();
-
-  /* Do not map undefined characters to some accidental code */
-  for (i = 128; i < 256; i++) 
-  {
-     unix2dos[i] = CTRLZ;
-     dos2unix[i] = CTRLZ;
-  }
+	setupmaps();
 
 /* MSDOS Code Page 737 -> ISO-8859-7 (Greek-Hellenic) */
 
@@ -188,9 +170,7 @@ update_map("\270\353\271\354\272\355\274\356\276\357\277\360");
 
 static void init_koi8_r(void)
 {
-  if (!mapsinited) initmaps();
-
-  /* There aren't undefined characters between 128 and 255 */
+	setupmaps();
 
 /* MSDOS Code Page 866 -> KOI8-R */
 update_map("\200\304\201\263\202\332\203\277\204\300\205\331\206\303\207\264");
@@ -209,6 +189,28 @@ update_map("\340\236\341\200\342\201\343\226\344\204\345\205\346\224\347\203");
 update_map("\350\225\351\210\352\211\353\212\354\213\355\214\356\215\357\216");
 update_map("\360\217\361\237\362\220\363\221\364\222\365\223\366\206\367\202");
 update_map("\370\234\371\233\372\207\373\230\374\235\375\231\376\227\377\232");
+}
+
+
+/* Init for ROMAN-8 (HP-UX) */
+
+static void init_roman8(void) {
+
+	setupmaps();
+
+/* MSDOS Code Page 850 -> ROMAN8 */
+update_map("\240\377\241\267\242\266\243\324\244\322\245\323\246\327\247\330");
+update_map("\250\357\253\371\255\353\256\352\257\234");
+update_map("\260\356\261\355\262\354\263\370\264\200\265\207\266\245\267\244");
+update_map("\270\255\271\250\272\317\273\234\274\276\275\365\276\237\277\275");
+update_map("\300\203\301\210\302\223\303\226\304\240\305\202\306\242\307\243");
+update_map("\310\205\311\212\312\225\313\227\314\204\315\211\316\224\317\201");
+update_map("\320\217\321\214\322\235\323\222\324\206\325\241\326\233\327\221");
+update_map("\330\216\331\215\332\231\333\232\334\220\335\213\336\341\337\342");
+update_map("\340\265\341\307\342\306\343\321\344\320\345\326\346\336\347\340");
+update_map("\350\343\351\345\352\344\355\351\357\230");
+update_map("\360\350\361\347\362\372\363\346\364\364\365\363\366\360\367\254");
+update_map("\370\253\371\246\372\247\373\256\374\376\375\257\376\361");
 }
 
 /*
@@ -273,7 +275,11 @@ void interpret_character_set(char *str, int codepage)
         init_iso8859_7();
     } else if (strequal (str, "koi8-r")) {
         init_koi8_r();
+    } else if (strequal (str, "roman8")) {
+        init_roman8();
     } else {
         DEBUG(0,("unrecognized character set %s\n", str));
     }
+
+    load_unix_unicode_map(str);
 }

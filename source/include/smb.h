@@ -333,6 +333,16 @@ implemented */
 typedef char pstring[1024];
 typedef char fstring[128];
 
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ */
+
+typedef uint16 smb_ucs2_t;
+
+/* ucs2 string types. */
+typedef smb_ucs2_t wpstring[1024];
+typedef smb_ucs2_t wfstring[128];
+
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
@@ -608,6 +618,23 @@ struct current_user
 	gid_t *groups;
 };
 
+typedef struct write_cache
+{
+    SMB_OFF_T file_size;
+    SMB_OFF_T offset;
+    size_t alloc_size;
+    size_t data_size;
+    char *data;
+} write_cache;
+
+/*
+ * Reasons for cache flush.
+ */
+
+#define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
+enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
+                         OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };     
+
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
@@ -618,9 +645,8 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
-	char *mmap_ptr;
-	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
+    write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
 	time_t pending_modtime;
@@ -787,6 +813,7 @@ struct passdb_ops {
    */
   BOOL (*add_smbpwd_entry)(struct smb_passwd *);
   BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
+  BOOL (*del_smbpwd_entry)(const char *);
 
   /*
    * Functions that manupulate a struct sam_passwd.
@@ -823,6 +850,17 @@ struct passdb_ops {
 #endif
 };
 
+/*
+ * Flags for local user manipulation.
+ */
+
+#define LOCAL_ADD_USER 0x1
+#define LOCAL_DELETE_USER 0x2
+#define LOCAL_DISABLE_USER 0x4
+#define LOCAL_ENABLE_USER 0x8
+#define LOCAL_TRUST_ACCOUNT 0x10
+#define LOCAL_SET_NO_PASSWORD 0x20
+
 /* this is used for smbstatus */
 
 struct connect_record
@@ -849,6 +887,9 @@ typedef enum
 {
   P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
+
+/* passed to br lock code */
+enum brl_type {READ_LOCK, WRITE_LOCK};
 
 struct enum_list {
 	int value;
@@ -1190,6 +1231,10 @@ struct bitmap {
 /* this is used on a TConX. I'm not sure the name is very helpful though */
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
 
+/* Named pipe write mode flags. Used in writeX calls. */
+#define PIPE_RAW_MODE 0x4
+#define PIPE_START_MESSAGE 0x8
+
 /* these are the constants used in the above call. */
 /* DesiredAccess */
 /* File Specific access rights. */
@@ -1305,10 +1350,17 @@ struct bitmap {
 #define RENAME_REPLACE_IF_EXISTS 1
 
 /* Filesystem Attributes. */
-#define FILE_CASE_SENSITIVE_SEARCH 0x1
-#define FILE_CASE_PRESERVED_NAMES 0x2
-#define FILE_UNICODE_ON_DISK 0x4
-#define FILE_PERSISTENT_ACLS 0x8
+#define FILE_CASE_SENSITIVE_SEARCH 0x01
+#define FILE_CASE_PRESERVED_NAMES 0x02
+#define FILE_UNICODE_ON_DISK 0x04
+/* According to cifs9f, this is 4, not 8 */
+/* Acconding to testing, this actually sets the security attribute! */
+#define FILE_PERSISTENT_ACLS 0x08
+/* These entries added from cifs9f --tsb */
+#define FILE_FILE_COMPRESSION 0x08
+#define FILE_VOLUME_QUOTAS 0x10
+#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
 #define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
@@ -1324,6 +1376,76 @@ struct bitmap {
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
+/* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
+#define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
+#define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
+
+/* Note that chain_size must be available as an extern int to this macro. */
+#define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
+
+#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
+#define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
+        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
+
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* Case can be significant or not.
+**********************************************************/
+
+#define exact_match(str, regexp, case_sig) \
+  ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0)
+
+/*******************************************************************
+find the difference in milliseconds between two struct timeval
+values
+********************************************************************/
+
+#define TvalDiff(tvalold,tvalnew) \
+  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
+	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
+
+/****************************************************************************
+true if two IP addresses are equal
+****************************************************************************/
+
+#define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+
+/*****************************************************************
+ splits out the last subkey of a key
+ *****************************************************************/  
+
+#define reg_get_subkey(full_keyname, key_name, subkey_name) \
+	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
+
+/****************************************************************************
+ Used by dptr_zero.
+****************************************************************************/
+
+#define DPTR_MASK ((uint32)(((uint32)1)<<31))
+
+/****************************************************************************
+ Return True if the offset is at zero.
+****************************************************************************/
+
+#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
+
+/*******************************************************************
+copy an IP address from one buffer to another
+********************************************************************/
+
+#define putip(dest,src) memcpy(dest,src,4)
+
+/****************************************************************************
+ Make a filename into unix format.
+****************************************************************************/
+
+#define unix_format(fname) string_replace(fname,'\\','/')
+
+/****************************************************************************
+ Make a file into DOS format.
+****************************************************************************/
+
+#define dos_format(fname) string_replace(fname,'/','\\')
 
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */
@@ -1475,6 +1597,8 @@ char *strdup(char *s);
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
 #define FLAGS2_UNICODE_STRINGS        0x8000
 
+#define FLAGS2_WIN2K_SIGNATURE        0xC852
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE         0x0001
@@ -1489,6 +1613,7 @@ char *strdup(char *s);
 #define CAP_NT_FIND          0x0200
 #define CAP_DFS              0x1000
 #define CAP_LARGE_READX      0x4000
+#define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
@@ -1571,6 +1696,11 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
 #endif /* KANJI */
 
+/* Global val set if multibyte codepage. */
+extern int global_is_multibyte_codepage;
+
+#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
+
 /* 
  * Size of buffer to use when moving files across filesystems. 
  */
@@ -1581,6 +1711,11 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
+
+/*
+ * Used in chaining code.
+ */
+extern int chain_size;
 
 /*
  * Map the Core and Extended Oplock requesst bits down
@@ -1755,11 +1890,5 @@ struct nmb_name {
 #define NEVER_MAP_TO_GUEST 0
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
-
-/*
- * SMB UCS2 (16-bit unicode) internal type.
- */
-
-typedef uint16 smb_ucs2_t;
 
 #endif /* _SMB_H */

@@ -1,11 +1,11 @@
-.TH SMBSTATUS 1 "11 Nov 1999" "smbstatus 2.0.6"
+.TH "smbstatus " "1" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbstatus \- report on current Samba connections
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbstatus\fP [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
+\fBsmbstatus\fP [-P] [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -16,6 +16,10 @@ connections\&.
 .PP 
 .SH "OPTIONS" 
 .PP 
+.IP 
+.IP "\fB-P\fP" 
+If samba has been compiled with the profiling option,
+print only the contents of the profiling shared memory area\&.
 .IP 
 .IP "\fB-b\fP" 
 gives brief output\&.

@@ -1,6 +1,3 @@
-!==
-!== NT_Security.txt for Samba release 2.0.6 11 Nov 1999
-!==
 
 TITLE INFORMATION: Viewing and changing UNIX permissions using the NT security dialogs in Samba 2.0.4 
 AUTHOR INFORMATION: Jeremy Allison, Samba Team 

@@ -26,33 +26,68 @@ extern int DEBUGLEVEL;
 /****************************************************************************
   change a dos mode to a unix mode
     base permission for files:
-         everybody gets read bit set
+         if inheriting
+           apply read/write bits from parent directory.
+         else   
+           everybody gets read bit set
          dos readonly is represented in unix by removing everyone's write bit
          dos archive is represented in unix by the user's execute bit
          dos system is represented in unix by the group's execute bit
          dos hidden is represented in unix by the other's execute bit
-         Then apply create mask,
-         then add force bits.
+         if !inheriting {
+           Then apply create mask,
+           then add force bits.
+         }
     base permission for directories:
          dos directory is represented in unix by unix's dir bit and the exec bit
-         Then apply create mask,
-         then add force bits.
+         if !inheriting {
+           Then apply create mask,
+           then add force bits.
+         }
 ****************************************************************************/
-mode_t unix_mode(connection_struct *conn,int dosmode)
+mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
 {
   mode_t result = (S_IRUSR | S_IRGRP | S_IROTH);
+  mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
 
   if ( !IS_DOS_READONLY(dosmode) )
     result |= (S_IWUSR | S_IWGRP | S_IWOTH);
- 
+
+  if (fname && lp_inherit_perms(SNUM(conn))) {
+    char *dname;
+    SMB_STRUCT_STAT sbuf;
+
+    dname = parent_dirname(fname);
+    DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
+    if (dos_stat(dname,&sbuf) != 0) {
+      DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
+      return(0);      /* *** shouldn't happen! *** */
+    }
+
+    /* Save for later - but explicitly remove setuid bit for safety. */
+    dir_mode = sbuf.st_mode & ~S_ISUID;
+    DEBUG(2,("unix_mode(%s) inherit mode %o\n",fname,(int)dir_mode));
+    /* Clear "result" */
+    result = 0;
+  } 
+
   if (IS_DOS_DIR(dosmode)) {
     /* We never make directories read only for the owner as under DOS a user
        can always create a file in a read-only directory. */
-    result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
-    /* Apply directory mask */
-    result &= lp_dir_mask(SNUM(conn));
-    /* Add in force bits */
-    result |= lp_force_dir_mode(SNUM(conn));
+    result |= (S_IFDIR | S_IWUSR);
+
+    if (dir_mode) {
+      /* Inherit mode of parent directory. */
+      result |= dir_mode;
+    } else {
+      /* Provisionally add all 'x' bits */
+      result |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
+
+      /* Apply directory mask */
+      result &= lp_dir_mask(SNUM(conn));
+      /* Add in force bits */
+      result |= lp_force_dir_mode(SNUM(conn));
+    }
   } else { 
     if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
       result |= S_IXUSR;
@@ -62,11 +97,17 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
  
     if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
       result |= S_IXOTH;  
- 
-    /* Apply mode mask */
-    result &= lp_create_mask(SNUM(conn));
-    /* Add in force bits */
-    result |= lp_force_create_mode(SNUM(conn));
+
+    if (dir_mode) {
+      /* Inherit 666 component of parent directory mode */
+      result |= dir_mode
+        &  (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
+    } else {
+      /* Apply mode mask */
+      result &= lp_create_mask(SNUM(conn));
+      /* Add in force bits */
+      result |= lp_force_create_mode(SNUM(conn));
+    }
   }
   return(result);
 }
@@ -155,7 +196,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
   if (dos_mode(conn,fname,st) == dosmode) return(0);
 
-  unixmode = unix_mode(conn,dosmode);
+  unixmode = unix_mode(conn,dosmode,fname);
 
   /* preserve the s bits */
   mask |= (S_ISUID | S_ISGID);
@@ -249,9 +290,8 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 
   if (file_utime(conn, fname, &times)) {
     DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+    return False;
   }
   
   return(True);
 } 
-
-

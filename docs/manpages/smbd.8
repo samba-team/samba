@@ -1,11 +1,11 @@
-.TH SMBD 8 "11 Nov 1999" "smbd 2.0.6"
+.TH "smbd " "8" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbd \- server to provide SMB/CIFS services to clients
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbd\fP [-D] [-a] [-o] [-P] [-h] [-V] [-d debuglevel] [-l log file] [-p port number] [-O socket options] [-s configuration file] [-i scope]
+\fBsmbd\fP [-D] [-a] [-o] [-P] [-h] [-V] [-d debuglevel] [-l log file] [-p port number] [-O socket options] [-s configuration file]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -136,14 +136,6 @@ information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide\&. See \fBsmb\&.conf
 (5)\fP for more information\&.
 The default configuration file name is determined at compile time\&.
-.IP 
-.IP "\fB-i scope\fP" 
-This specifies a NetBIOS scope that the server will use
-to communicate with when generating NetBIOS names\&. For details on the
-use of NetBIOS scopes, see rfc1001\&.txt and rfc1002\&.txt\&. NetBIOS scopes
-are \fIvery\fP rarely used, only set this parameter if you are the
-system administrator in charge of all the NetBIOS systems you
-communicate with\&.
 .IP 
 .PP 
 .SH "FILES" 

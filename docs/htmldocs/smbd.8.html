@@ -24,7 +24,7 @@
 <p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><strong>smbd</strong> [<a href="smbd.8.html#minusD">-D</a>] [<a href="smbd.8.html#minusa">-a</a>] [<a href="smbd.8.html#minuso">-o</a>] [<a href="smbd.8.html#minusP">-P</a>] [<a href="smbd.8.html#minush">-h</a>] [<a href="smbd.8.html#minusV">-V</a>] [<a href="smbd.8.html#minusd">-d debuglevel</a>] [<a href="smbd.8.html#minusl">-l log file</a>] [<a href="smbd.8.html#minusp">-p port number</a>] [<a href="smbd.8.html#minusO">-O socket options</a>] [<a href="smbd.8.html#minuss">-s configuration file</a>] [<a href="smbd.8.html#minusi">-i scope</a>]
+<p><strong>smbd</strong> [<a href="smbd.8.html#minusD">-D</a>] [<a href="smbd.8.html#minusa">-a</a>] [<a href="smbd.8.html#minuso">-o</a>] [<a href="smbd.8.html#minusP">-P</a>] [<a href="smbd.8.html#minush">-h</a>] [<a href="smbd.8.html#minusV">-V</a>] [<a href="smbd.8.html#minusd">-d debuglevel</a>] [<a href="smbd.8.html#minusl">-l log file</a>] [<a href="smbd.8.html#minusp">-p port number</a>] [<a href="smbd.8.html#minusO">-O socket options</a>] [<a href="smbd.8.html#minuss">-s configuration file</a>]
 <p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -133,13 +133,6 @@ information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide. See <strong>smb.conf
 (5)</strong> for more information.
 The default configuration file name is determined at compile time.
-<p><a name="minusi"></a>
-<p></p><dt><strong><strong>-i scope</strong></strong><dd> This specifies a NetBIOS scope that the server will use
-to communicate with when generating NetBIOS names. For details on the
-use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
-are <em>very</em> rarely used, only set this parameter if you are the
-system administrator in charge of all the NetBIOS systems you
-communicate with.
 <p></dl>
 <p><a name="FILES"></a>
 <h2>FILES</h2>

@@ -104,11 +104,17 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 
 /*******************************************************************
  Mkdir() that calls dos_to_unix.
+ Cope with UNIXes that don't allow high order mode bits on mkdir.
+ Patch from gcarter@lanier.com.
 ********************************************************************/
 
 int dos_mkdir(char *dname,mode_t mode)
 {
-  return(mkdir(dos_to_unix(dname,False),mode));
+  int ret = mkdir(dos_to_unix(dname,False),mode);
+  if(!ret)
+    return(dos_chmod(dname,mode));
+  else
+    return ret;
 }
 
 /*******************************************************************
@@ -315,7 +321,7 @@ time_t dos_file_modtime(char *fname)
 
 SMB_OFF_T dos_file_size(char *file_name)
 {
-  return file_size(dos_to_unix(file_name, False));
+  return get_file_size(dos_to_unix(file_name, False));
 }
 
 /*******************************************************************
@@ -401,7 +407,7 @@ char *dos_GetWd(char *path)
     getwd_cache_init = True;
     for (i=0;i<MAX_GETWDCACHE;i++)
     {
-      string_init(&ino_list[i].dos_path,"");
+      string_set(&ino_list[i].dos_path,"");
       ino_list[i].valid = False;
     }
   }
@@ -411,7 +417,7 @@ char *dos_GetWd(char *path)
 
   if (sys_stat(".",&st) == -1)
   {
-    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
+    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
     return(dos_getwd(path));
   }
 

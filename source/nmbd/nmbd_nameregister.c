@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern fstring global_myworkgroup;
 
 /****************************************************************************
@@ -333,7 +332,7 @@ BOOL register_name(struct subnet_record *subrec,
 {
   struct nmb_name nmbname;
 
-  make_nmb_name(&nmbname, name, type, scope);
+  make_nmb_name(&nmbname, name, type);
 
   /* Always set the NB_ACTIVE flag on the name we are
      registering. Doesn't make sense without it.

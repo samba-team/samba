@@ -25,7 +25,7 @@ naming services to clients
 <p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><strong>nmbd</strong> [<a href="nmbd.8.html#minusD">-D</a>] [<a href="nmbd.8.html#minusa">-a</a>] [<a href="nmbd.8.html#minuso">-o</a>] [<a href="nmbd.8.html#minush">-h</a>] [<a href="nmbd.8.html#minusV">-V</a>] [<a href="nmbd.8.html#minusH">-H lmhosts file</a>] [<a href="nmbd.8.html#minusd">-d debuglevel</a>] [<a href="nmbd.8.html#minusl">-l log file basename</a>] [<a href="nmbd.8.html#minusn">-n primary NetBIOS name</a>] [<a href="nmbd.8.html#minusp">-p port number</a>] [<a href="nmbd.8.html#minuss">-s configuration file</a>] [<a href="nmbd.8.html#minusi">-i NetBIOS scope</a>]
+<p><strong>nmbd</strong> [<a href="nmbd.8.html#minusD">-D</a>] [<a href="nmbd.8.html#minusa">-a</a>] [<a href="nmbd.8.html#minuso">-o</a>] [<a href="nmbd.8.html#minush">-h</a>] [<a href="nmbd.8.html#minusV">-V</a>] [<a href="nmbd.8.html#minusH">-H lmhosts file</a>] [<a href="nmbd.8.html#minusd">-d debuglevel</a>] [<a href="nmbd.8.html#minusl">-l log file basename</a>] [<a href="nmbd.8.html#minusn">-n primary NetBIOS name</a>] [<a href="nmbd.8.html#minusp">-p port number</a>] [<a href="nmbd.8.html#minuss">-s configuration file</a>]
 <p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -130,13 +130,6 @@ set at build time, typically as <em>/usr/local/samba/lib/smb.conf</em>, but
 this may be changed when Samba is autoconfigured.
 <p>The file specified contains the configuration details required by the
 server. See <a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a> for more information.
-<p><a name="minusi"></a>
-<p></p><dt><strong><strong>-i scope</strong></strong><dd> This specifies a NetBIOS scope that <strong>nmbd</strong> will use
-to communicate with when generating NetBIOS names. For details on the
-use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
-are <em>very</em> rarely used, only set this parameter if you are the
-system administrator in charge of all the NetBIOS systems you
-communicate with.
 <p></dl>
 <p><a name="FILES"></a>
 <h2>FILES</h2>

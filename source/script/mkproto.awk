@@ -94,7 +94,11 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID/ ) {
+  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID|^smb_ucs2_t/ ) {
+    gotstart = 1;
+  }
+
+  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element/ ) {
     gotstart = 1;
   }
 

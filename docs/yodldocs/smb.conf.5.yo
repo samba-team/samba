@@ -107,7 +107,7 @@ as the default guest user (specified elsewhere):
 verb(
  	[aprinter]
  		path = /usr/spool/public
- 		read only = true
+ 		writeable = false
  		printable = true
  		guest ok = true
 )
@@ -193,7 +193,7 @@ dit(bf(The [printers] section))
 
 This section works like link(bf([homes]))(homes), but for printers.
 
-If a [printers] section occurs in the configuration file, users are
+If a bf([printers]) section occurs in the configuration file, users are
 able to connect to any printer specified in the local host's printcap
 file.
 
@@ -203,7 +203,7 @@ link(bf([homes]))(homes) section exists, it is used as described
 above. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
 requested section name is a valid printer share name. If a match is
-found, a new printer share is created by cloning the [printers]
+found, a new printer share is created by cloning the bf([printers])
 section.
 
 A few modifications are then made to the newly created share:
@@ -220,11 +220,11 @@ given, the username is set to the located printer name.
 
 endit()
 
-Note that the [printers] service MUST be printable - if you specify
+Note that the bf([printers]) service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file.
 
 Typically the path specified would be that of a world-writeable spool
-directory with the sticky bit set on it. A typical [printers] entry
+directory with the sticky bit set on it. A typical bf([printers]) entry
 would look like this:
 
 verb(
@@ -512,7 +512,7 @@ it() link(bf(debug timestamp))(debugtimestamp)
 
 it() link(bf(debug uid))(debuguid)
 
-it() link(bf(debuglevel))(debuglevel)
+it() link(bf(debug level))(debuglevel)
 
 it() link(bf(default))(default)
 
@@ -527,8 +527,6 @@ it() link(bf(dns proxy))(dnsproxy)
 it() link(bf(domain admin group))(domainadmingroup)
 
 it() link(bf(domain admin users))(domainadminusers)
-
-it() link(bf(domain controller))(domaincontroller)
 
 it() link(bf(domain groups))(domaingroups)
 
@@ -618,6 +616,8 @@ it() link(bf(message command))(messagecommand)
 
 it() link(bf(min passwd length))(minpasswdlength)
 
+it() link(bf(min password length))(minpasswordlength)
+
 it() link(bf(min wins ttl))(minwinsttl)
 
 it() link(bf(name resolve order))(nameresolveorder)
@@ -625,6 +625,8 @@ it() link(bf(name resolve order))(nameresolveorder)
 it() link(bf(netbios aliases))(netbiosaliases)
 
 it() link(bf(netbios name))(netbiosname)
+
+it() link(bf(netbios scope))(netbiosscope)
 
 it() link(bf(nis homedir))(nishomedir)
 
@@ -704,6 +706,8 @@ it() link(bf(socket address))(socketaddress)
 
 it() link(bf(socket options))(socketoptions)
 
+it() link(bf(source environment))(sourceenvironment)
+
 it() link(bf(ssl))(ssl)
 
 it() link(bf(ssl CA certDir))(sslCAcertDir)
@@ -760,13 +764,15 @@ it() link(bf(username level))(usernamelevel)
 
 it() link(bf(username map))(usernamemap)
 
+it() link(bf(utmp directory))(utmpdirectory)
+
 it() link(bf(valid chars))(validchars)
+
+it() link(bf(wins hook))(winshook)
 
 it() link(bf(wins proxy))(winsproxy)
 
 it() link(bf(wins server))(winsserver)
-
-it() link(bf(wins hook))(winshook)
 
 it() link(bf(wins support))(winssupport)
 
@@ -872,6 +878,8 @@ it() link(bf(hosts deny))(hostsdeny)
 
 it() link(bf(include))(include)
 
+it() link(bf(inherit permissions))(inheritpermissions)
+
 it() link(bf(invalid users))(invalidusers)
 
 it() link(bf(level2 oplocks))(level2oplocks)
@@ -914,9 +922,9 @@ it() link(bf(only guest))(onlyguest)
 
 it() link(bf(only user))(onlyuser)
 
-it() link(bf(oplocks))(oplocks)
-
 it() link(bf(oplock contention limit))(oplockcontentionlimit)
+
+it() link(bf(oplocks))(oplocks)
 
 it() link(bf(path))(path)
 
@@ -962,9 +970,9 @@ it() link(bf(root postexec))(rootpostexec)
 
 it() link(bf(root preexec))(rootpreexec)
 
-it() link(bf(security mask))(securitymask)
-
 it() link(bf(root preexec close))(rootpreexecclose)
+
+it() link(bf(security mask))(securitymask)
 
 it() link(bf(set directory))(setdirectory)
 
@@ -986,6 +994,8 @@ it() link(bf(username))(username)
 
 it() link(bf(users))(users)
 
+it() link(bf(utmp))(utmp)
+
 it() link(bf(valid users))(validusers)
 
 it() link(bf(veto files))(vetofiles)
@@ -997,6 +1007,8 @@ it() link(bf(volume))(volume)
 it() link(bf(wide links))(widelinks)
 
 it() link(bf(writable))(writable)
+
+it() link(bf(write cache size))(writecachesize)
 
 it() link(bf(write list))(writelist)
 
@@ -1563,6 +1575,7 @@ See also the link(bf("force create mode"))(forcecreatemode) parameter
 for forcing particular mode bits to be set on created files. See also
 the link(bf("directory mode"))(directorymode) parameter for masking
 mode bits on created directories.
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
 
   bf(Default:)
 tt(	create mask = 0744)
@@ -1622,7 +1635,7 @@ dit(bf(debug timestamp (G)))
 
 Samba2.0 debug log messages are timestamped by default. If you are
 running at a high link(bf("debug level"))(debuglevel) these timestamps
-can be distracting. This boolean parameter allows them to be turned
+can be distracting. This boolean parameter allows timestamping to be turned
 off.
 
   bf(Default:)
@@ -1906,6 +1919,8 @@ See also the link(bf("create mode"))(createmode) parameter for masking
 mode bits on created files, and the link(bf("directory security mask"))(directorysecuritymask)
 parameter.
 
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
+
   bf(Default:)
 tt(	directory mask = 0755)
 
@@ -1990,13 +2005,6 @@ To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.org)
-
-label(domain controller)
-dit(bf(domain controller (G)))
-
-This is a bf(DEPRECATED) parameter. It is currently not used within
-the Samba source and should be removed from all current smb.conf
-files. It is left behind for compatibility reasons.
 
 label(domaingroups)
 dit(bf(domain groups (G)))
@@ -2237,14 +2245,17 @@ label(forcecreatemode)
 dit(bf(force create mode (S)))
 
 This parameter specifies a set of UNIX mode bit permissions that will
-em(*always*) be set on a file created by Samba. This is done by
-bitwise 'OR'ing these bits onto the mode bits of a file that is being
-created. The default for this parameter is (in octal) 000. The modes
-in this parameter are bitwise 'OR'ed onto the file mode after the mask
-set in the link(bf("create mask"))(createmask) parameter is applied.
+em(*always*) be set on a file by Samba. This is done by bitwise
+'OR'ing these bits onto the mode bits of a file that is being created
+or having its permissions changed. The default for this parameter is
+(in octal) 000. The modes in this parameter are bitwise 'OR'ed onto
+the file mode after the mask set in the link(bf("create
+mask"))(createmask) parameter is applied.
 
 See also the parameter link(bf("create mask"))(createmask) for details
-on masking mode bits on created files.
+on masking mode bits on files.
+
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
 
   bf(Default:)
 tt(	force create mode = 000)
@@ -2269,6 +2280,8 @@ link(bf("directory mask"))(directorymask) is applied.
 
 See also the parameter link(bf("directory mask"))(directorymask) for
 details on masking mode bits on created directories.
+
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
 
   bf(Default:)
 tt(	force directory mode = 000)
@@ -2683,6 +2696,42 @@ is included literally, as though typed in place.
 It takes the standard substitutions, except link(bf(%u))(percentu),
 link(bf(%P))(percentP) and link(bf(%S))(percentS).
 
+label(inheritpermissions)
+dit(bf(inherit permissions (S)))
+
+The permissions on new files and directories are normally governed by
+link(bf("create mask"))(createmask),
+link(bf("directory mask"))(directorymask),
+link(bf("force create mode"))(forcecreatemode) and
+link(bf("force directory mode"))(forcedirectorymode)
+but the boolean inherit permissions parameter overrides this.
+
+New directories inherit the mode of the parent directory,
+including bits such as setgid.
+
+New files inherit their read/write bits from the parent directory.
+Their execute bits continue to be determined by
+link(bf("map archive"))(maparchive),
+link(bf("map hidden"))(maphidden) and
+link(bf("map system"))(mapsystem) as usual.
+
+Note that the setuid bit is *never* set via inheritance
+(the code explicitly prohibits this).
+
+This can be particularly useful on large systems with many users,
+perhaps several thousand,
+to allow a single bf([homes]) share to be used flexibly by each user.
+
+See also link(bf("create mask"))(createmask), link(bf("directory mask"))(directorymask),
+link(bf("force create mode"))(forcecreatemode) and
+link(bf("force directory mode"))(forcedirectorymode).
+
+  bf(Default)
+tt(   inherit permissions = no)
+
+  bf(Example)
+tt(   inherit permissions = yes)
+
 label(interfaces)
 dit(bf(interfaces (G)))
 
@@ -2699,10 +2748,10 @@ startit()
 it() a network interface name (such as eth0). This may include
      shell-like wildcards so eth* will match any interface starting
      with the substring "eth"
-if() a IP address. In this case the netmask is determined
+it() an IP address. In this case the netmask is determined
      from the list of interfaces obtained from the kernel
-if() a IP/mask pair. 
-if() a broadcast/mask pair. 
+it() an IP/mask pair. 
+it() a broadcast/mask pair. 
 endit()
 
 The "mask" parameters can either be a bit length (such as 24 for a C
@@ -2895,7 +2944,7 @@ label(level2oplocks)
 dit(bf(level2 oplocks (S)))
 
 This parameter (new in Samba 2.0.5) controls whether Samba supports
-level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+level2 (read-only) oplocks on a share. In Samba 2.0.5 this parameter
 defaults to "False" as the code is new, but will default to "True"
 in a later release.
 
@@ -3091,6 +3140,22 @@ from a command prompt, for example.
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
 
+This parameter can be used with Win9X workstations to ensure that
+roaming profiles are stored in a subdirectory of the user's home
+directory.  This is done in the following way:
+
+tt("     logon home = \\%L\%U\profile")
+
+This tells Samba to return the above string, with substitutions made
+when a client requests the info, generally in a NetUserGetInfo request.
+Win9X clients truncate the info to \\server\share when a user does tt("net use /home"),
+but use the whole string when dealing with profiles.
+
+Note that in prior versions of Samba, the tt("logon path") was returned rather than
+tt("logon home").  This broke tt("net use /home") but allowed profiles outside the 
+home directory.  The current implementation is correct, and can be used for profiles
+if you use the above trick.
+
 Note that this option is only useful if Samba is set up as a
 link(bf(logon server))(domainlogons).
 
@@ -3104,24 +3169,27 @@ label(logonpath)
 dit(bf(logon path (G)))
 
 This parameter specifies the home directory where roaming profiles
-(USER.DAT / USER.MAN files for Windows 95/98) are stored.
+(NTuser.dat etc files for Windows NT) are stored.  Contrary to previous 
+versions of these manual pages, it has nothing to do with Win 9X roaming
+profiles.  To find out how to handle roaming profiles for Win 9X system, see 
+the tt("logon home") parameter.
 
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.  It also specifies
-the directory from which the tt("desktop"), tt("start menu"),
-tt("network neighborhood") and tt("programs") folders, and their
-contents, are loaded and displayed on your Windows 95/98 client.
+the directory from which the tt("application data"), (tt("desktop"), tt("start menu"),
+tt("network neighborhood"), tt("programs") and other folders, and their
+contents, are loaded and displayed on your Windows NT client.
 
 The share and the path must be readable by the user for the
-preferences and directories to be loaded onto the Windows 95/98
+preferences and directories to be loaded onto the Windows NT
 client.  The share must be writeable when the logs in for the first
-time, in order that the Windows 95/98 client can create the user.dat
+time, in order that the Windows NT client can create the NTuser.dat
 and other directories.
 
 Thereafter, the directories and any of the contents can, if required, be
-made read-only.  It is not advisable that the USER.DAT file be made
-read-only - rename it to USER.MAN to achieve the desired effect (a
-em(MAN)datory profile).
+made read-only.  It is not advisable that the NTuser.dat file be made
+read-only - rename it to NTuser.man to achieve the desired effect (a
+em(MAN)datory profile). 
 
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is vital
@@ -3735,7 +3803,7 @@ tt(	max open files = 10000)
 label(maxpacket)
 dit(bf(max packet (G)))
 
-Synonym for label(bf("packet size"))(packetsize).
+Synonym for link(bf("packet size"))(packetsize).
 
 label(maxttl)
 dit(bf(max ttl (G)))
@@ -3855,6 +3923,11 @@ tt(	min print space = 2000)
 label(minpasswdlength)
 dit(bf(min passwd length (G)))
 
+Synonym for link(bf("min password length"))(minpasswordlength).
+
+label(minpasswordlength)
+dit(bf(min password length (G)))
+
 This option sets the minimum length in characters of a plaintext password
 than smbd will accept when performing UNIX password changing.
 
@@ -3863,7 +3936,7 @@ link(bf("passwd program"))(passwdprogram) and link(bf("passwd chat
 debug"))(passwdchatdebug).
 
   bf(Default:)
-tt(	min passwd length = 5)
+tt(	min password length = 5)
 
 
 label(minwinsttl)
@@ -3960,6 +4033,12 @@ tt(	Machine DNS name.)
 
   bf(Example:)
 tt(	netbios name = MYNAME)
+
+label(netbiosscope)
+dit(bf(netbios scope (G)))
+
+This sets the NetBIOS scope that Samba will operate under. This should
+not be set unless every machine on your LAN also sets this value.
 
 label(nishomedir)
 dit(bf(nis homedir (G)))
@@ -4171,7 +4250,7 @@ tt(	os level = 65    ; This will win against any NT Server)
 label(packetsize)
 dit(bf(packet size (G)))
 
-This is a deprecated parameter that how no effect on the current
+This is a deprecated parameter that has no effect on the current
 Samba code. It is left in the parameter list to prevent breaking
 old bf(smb.conf) files.
 
@@ -4246,7 +4325,7 @@ debug their link(bf("passwd chat"))(passwdchat) scripts when calling
 the link(bf("passwd program"))(passwdprogram) and should be turned off
 after this has been done. This parameter is off by default.
 
-See also link(bf("passwd chat"))(passwdchat"), link(bf("passwd
+See also link(bf("passwd chat"))(passwdchat), link(bf("passwd
 program"))(passwdprogram).
 
   bf(Example:)
@@ -4639,7 +4718,7 @@ submit spool files on the directory specified for the service.
 
 Note that a printable service will ALWAYS allow writing to the service
 path (user privileges permitting) via the spooling of print data. The
-link(bf("read only"))(readonly) parameter controls only non-printing
+link(bf("writeable"))(writeable) parameter controls only non-printing
 access to the resource.
 
   bf(Default:)
@@ -4783,11 +4862,12 @@ label(printing)
 dit(bf(printing (S)))
 
 This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the
+on your system. It also affects the default values for the
 link(bf("print command"))(printcommand), link(bf("lpq
 command"))(lpqcommand) link(bf("lppause command"))(lppausecommand),
 link(bf("lpresume command"))(lpresumecommand), and link(bf("lprm
-command"))(lprmcommand).
+command"))(lprmcommand) if specified in the link(bf([global]))(global)
+section.
 
 Currently eight printing styles are supported. They are
 bf("printing=BSD"), bf("printing=AIX"), bf("printing=LPRNG"),
@@ -4796,7 +4876,7 @@ bf("printing=SYSV"),bf("printing="HPUX"),bf("printing=QNX") and
 bf("printing=SOFTQ").
 
 To see what the defaults are for the other print commands when using
-these three options use the url(bf("testparm"))(testparm.1.html) program.
+the various options use the url(bf("testparm"))(testparm.1.html) program.
 
 This option can be set on a per printer basis
 
@@ -4908,7 +4988,7 @@ dit(bf(read list (S)))
 
 This is a list of users that are given read-only access to a
 service. If the connecting user is in this list then they will not be
-given write access, no matter what the link(bf("read only"))(readonly)
+given write access, no matter what the link(bf("writeable"))(writeable)
 option is set to. The list can include group names using the syntax
 described in the link(bf("invalid users"))(invalidusers) parameter.
 
@@ -4925,10 +5005,7 @@ label(readonly)
 dit(bf(read only (S)))
 
 Note that this is an inverted synonym for
-link(bf("writeable"))(writeable) and link(bf("write ok"))(writeok).
-
-See also link(bf("writeable"))(writeable) and link(bf("write
-ok"))(writeok).
+link(bf("writeable"))(writeable).
 
 label(readprediction)
 dit(bf(read prediction (G)))
@@ -5649,6 +5726,35 @@ tt(	socket options = TCP_NODELAY)
   bf(Example:)
 tt(	socket options = IPTOS_LOWDELAY)
 
+label(sourceenvironment)
+dit(bf(source environment (G)))
+
+This parameter causes Samba to set environment variables as per the
+content of the file named.
+
+The file bf(must) be owned by root and not world writable in order
+to be read (this is a security check).
+
+If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe. This command must not be world writable
+and must reside in a directory that is not world writable.
+
+The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command. This is of the form :
+
+Example environment entry:
+tt( SAMBA_NETBIOS_NAME=myhostname )
+
+  bf(Default:)
+tt(No default value)
+
+  bf(Examples:)
+
+tt(	source environment = |/etc/smb.conf.sh)
+
+tt(	source environment = /usr/local/smb_env_vars)
+
 label(ssl)
 dit(bf(ssl (G)))
 
@@ -6076,15 +6182,7 @@ tt(	time server = True)
 label(timestamplogs)
 dit(bf(timestamp logs (G)))
 
-Samba2.0 will a timestamps to all log entries by default. This
-can be distracting if you are attempting to debug a problem. This
-parameter allows the timestamping to be turned off.
-
-  bf(Default:)
-tt(	timestamp logs = True)
-
-  bf(Example:)
-tt(	timestamp logs = False)
+Synonym for url(bf("debug timestamp"))(debugtimestamp).
 
 label(unixpasswordsync)
 dit(bf(unix password sync (G)))
@@ -6347,6 +6445,39 @@ tt(	no username map)
 
   bf(Example:)
 tt(	username map = /usr/local/samba/lib/users.map)
+
+label(utmp)
+dit(bf(utmp (S)))
+
+This boolean parameter is only available if Samba has been configured and compiled 
+with the option tt(--with-utmp). If set to True then Samba will attempt
+to add utmp or utmpx records (depending on the UNIX system) whenever a
+connection is made to a Samba server. Sites may use this to record the
+user connecting to a Samba share.
+
+See also the link(bf("utmp directory"))(utmpdirectory) parameter.
+
+  bf(Default:)
+tt(utmp = False)
+
+  bf(Example:)
+tt(utmp = True)
+
+label(utmpdirectory)
+dit(bf(utmp directory(G)))
+
+This parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp). It specifies a directory pathname that is
+used to store the utmp or utmpx files (depending on the UNIX system) that
+record user connections to a Samba server. See also the link(bf("utmp"))(utmp)
+parameter. By default this is not set, meaning the system will use whatever
+utmp file the native system is set to use (usually /var/run/utmp on Linux).
+
+  bf(Default:)
+tt(no utmp directory)
+
+  bf(Example:)
+tt(utmp directory = /var/adm/)
 
 label(validchars)
 dit(bf(valid chars (G)))
@@ -6639,7 +6770,7 @@ dit(bf(write list (S)))
 
 This is a list of users that are given read-write access to a
 service. If the connecting user is in this list then they will be
-given write access, no matter what the link(bf("read only"))(readonly)
+given write access, no matter what the link(bf("writeable"))(writeable)
 option is set to. The list can include group names using the @group
 syntax.
 
@@ -6653,6 +6784,32 @@ tt(     write list = <empty string>)
 
   bf(Example:)
 tt(	write list = admin, root, @staff)
+
+label(writecachesize)
+dit(bf(write cache size (S)))
+
+This integer parameter (new with Samba 2.0.7) if set to non-zero causes Samba to create an in-memory
+cache for each oplocked file (it does bf(not) do this for non-oplocked files). All
+writes that the client does not request to be flushed directly to disk will be
+stored in this cache if possible. The cache is flushed onto disk when a write
+comes in whose offset would not fit into the cache or when the file is closed
+by the client. Reads for the file are also served from this cache if the data
+is stored within it.
+
+This cache allows Samba to batch client writes into a more efficient write
+size for RAID disks (ie. writes may be tuned to be the RAID stripe size) and
+can improve performance on systems where the disk subsystem is a bottleneck
+but there is free memory for userspace programs.
+
+The integer parameter specifies the size of this cache (per oplocked file)
+in bytes.
+
+  bf(Default:)
+tt(     write cache size = 0)
+
+  bf(Example:)
+tt(	     write cache size = 262144)
+for a 256k cache size per file.
 
 label(writeok)
 dit(bf(write ok (S)))

@@ -34,15 +34,15 @@ and <code>DOMBDC2</code>.
 command
 <p><code>smbpasswd -j DOM -r DOMPDC</code>
 <p>as we are joining the domain DOM and the PDC for that domain (the only
-machine that has write access to the domain SAM database). If this is
+machine that has write access to the domain SAM database) is DOMPDC. If this is
 successful you will see the message:
 <p><code>smbpasswd: Joined domain DOM.</code>
 <p>in your terminal window. See the <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a>
 man page for more details.
 <p>This command goes through the machine account password change
 protocol, then writes the new (random) machine account password for
-this Samba server into the a file in the same directory in which an
-smbpasswd file would be stored (normally :
+this Samba server into a file in the same directory in which an
+smbpasswd file would be stored - normally :
 <p><code>/usr/local/samba/private</code>
 <p>The filename looks like this:
 <p><code>&lt;NT DOMAIN NAME&gt;.&lt;Samba Server Name&gt;.mac</code>

@@ -22,7 +22,6 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 extern int Client;
-extern int chain_size;
 extern char *OutBuffer;
 
 /****************************************************************************
@@ -208,7 +207,13 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
    * of smb_lkrng structs.
    */
 
-  for(i = blr->lock_num; i >= 0; i--) {
+  /*
+   * Ensure we don't do a remove on the lock that just failed,
+   * as under POSIX rules, if we have a lock already there, we
+   * will delete it (and we shouldn't) .....
+   */
+
+  for(i = blr->lock_num - 1; i >= 0; i--) {
     int dummy1;
     uint32 dummy2;
     BOOL err;

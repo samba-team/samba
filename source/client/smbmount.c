@@ -37,7 +37,6 @@
 extern struct in_addr ipzero;
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern BOOL in_client;
 extern pstring user_socket_options;
 
@@ -142,8 +141,8 @@ static struct cli_state *do_connection(char *service)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, my_netbios_name, 0x0, "");
-	make_nmb_name(&called , server, 0x20, "");
+	make_nmb_name(&calling, my_netbios_name, 0x0);
+	make_nmb_name(&called , server, 0x20);
 
  again:
 	ip = ipzero;
@@ -160,7 +159,7 @@ static struct cli_state *do_connection(char *service)
 		fprintf(stderr, "session request to %s failed\n", called.name);
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
 		return NULL;
@@ -517,6 +516,7 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opteq;
 	extern char *optarg;
 	int val;
+	extern pstring global_scope;
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
@@ -591,7 +591,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "sockopt")) {
 				pstrcpy(user_socket_options,opteq+1);
 			} else if(!strcmp(opts, "scope")) {
-				pstrcpy(scope,opteq+1);
+				pstrcpy(global_scope,opteq+1);
 			} else {
 				usage();
 				exit(1);

@@ -44,6 +44,7 @@ static int iNumNonAutoPrintServices = 0;
 #define CHG_S_PASSWD_FLAG "chg_s_passwd_flag"
 #define CHG_R_PASSWD_FLAG "chg_r_passwd_flag"
 #define ADD_USER_FLAG "add_user_flag"
+#define DELETE_USER_FLAG "delete_user_flag"
 #define DISABLE_USER_FLAG "disable_user_flag"
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
@@ -617,7 +618,7 @@ change a password either locally or remotely
 *************************************************************/
 static BOOL change_password(const char *remote_machine, char *user_name, 
 			    char *old_passwd, char *new_passwd, 
-			    BOOL add_user, BOOL enable_user, BOOL disable_user)
+				int local_flags)
 {
 	BOOL ret = False;
 	pstring err_str;
@@ -641,8 +642,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return False;
 	}
 	
-	ret = local_password_change(user_name, False, add_user, enable_user, 
-				     disable_user, False, new_passwd, err_str, sizeof(err_str),
+	ret = local_password_change(user_name, local_flags, new_passwd, err_str, sizeof(err_str),
 					 msg_str, sizeof(msg_str));
 
 	if(*msg_str)
@@ -660,6 +660,7 @@ static void chg_passwd(void)
 {
 	char *host;
 	BOOL rslt;
+	int local_flags = 0;
 
 	/* Make sure users name has been specified */
 	if (strlen(cgi_variable(SWAT_USER)) == 0) {
@@ -668,10 +669,10 @@ static void chg_passwd(void)
 	}
 
 	/*
-	 * smbpasswd doesn't require anything but the users name to disable or enable the user,
+	 * smbpasswd doesn't require anything but the users name to delete, disable or enable the user,
 	 * so if that's what we're doing, skip the rest of the checks
 	 */
-	if (!cgi_variable(DISABLE_USER_FLAG) && !cgi_variable(ENABLE_USER_FLAG)) {
+	if (!cgi_variable(DISABLE_USER_FLAG) && !cgi_variable(ENABLE_USER_FLAG) && !cgi_variable(DELETE_USER_FLAG)) {
 
 		/*
 		 * If current user is not root, make sure old password has been specified 
@@ -710,18 +711,27 @@ static void chg_passwd(void)
 	} else {
 		host = "127.0.0.1";
 	}
+
+	/*
+	 * Set up the local flags.
+	 */
+
+	local_flags |= (cgi_variable(ADD_USER_FLAG) ? LOCAL_ADD_USER : 0);
+	local_flags |= (cgi_variable(DELETE_USER_FLAG) ? LOCAL_DELETE_USER : 0);
+	local_flags |= (cgi_variable(ENABLE_USER_FLAG) ? LOCAL_ENABLE_USER : 0);
+	local_flags |= (cgi_variable(DISABLE_USER_FLAG) ? LOCAL_DISABLE_USER : 0);
+
 	rslt = change_password(host,
 			       cgi_variable(SWAT_USER),
 			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
-			       cgi_variable(ADD_USER_FLAG)? True : False,
-			       cgi_variable(ENABLE_USER_FLAG)? True : False,
-			       cgi_variable(DISABLE_USER_FLAG)? True : False);
+				   local_flags);
 
-
-	if (rslt == True) {
-		printf("<p> The passwd for '%s' has been changed. \n", cgi_variable(SWAT_USER));
-	} else {
-		printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(SWAT_USER));
+	if(local_flags == 0) {
+		if (rslt == True) {
+			printf("<p> The passwd for '%s' has been changed. \n", cgi_variable(SWAT_USER));
+		} else {
+			printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(SWAT_USER));
+		}
 	}
 	
 	return;
@@ -773,6 +783,8 @@ static void passwd_page(void)
 	if (demo_mode || am_root()) {
 		printf("<input type=submit name=%s value=\"Add New User\">\n",
 		       ADD_USER_FLAG);
+		printf("<input type=submit name=%s value=\"Delete User\">\n",
+		       DELETE_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Disable User\">\n", 
 		       DISABLE_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Enable User\">\n", 
@@ -784,7 +796,7 @@ static void passwd_page(void)
 	 * Do some work if change, add, disable or enable was
 	 * requested. It could be this is the first time through this
 	 * code, so there isn't anything to do.  */
-	if ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) ||
+	if ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) || (cgi_variable(DELETE_USER_FLAG)) ||
 	    (cgi_variable(DISABLE_USER_FLAG)) || (cgi_variable(ENABLE_USER_FLAG))) {
 		chg_passwd();		
 	}

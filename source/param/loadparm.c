@@ -71,6 +71,7 @@ BOOL bLoaded = False;
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 extern pstring global_myname;
+pstring global_scope = "";
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -158,6 +159,10 @@ typedef struct
   char *szAddUserScript;
   char *szDelUserScript;
   char *szWINSHook;
+#ifdef WITH_UTMP
+  char *szUtmpDir;
+#endif /* WITH_UTMP */
+  char *szSourceEnv;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -296,6 +301,7 @@ typedef struct
   char *volume;
   char *fstype;
   int  iMinPrintSpace;
+  int  iWriteCacheSize;
   int  iCreate_mask;
   int  iCreate_force_mode;
   int  iSecurity_mask;
@@ -331,6 +337,9 @@ typedef struct
   BOOL bMap_archive;
   BOOL bLocking;
   BOOL bStrictLocking;
+#ifdef WITH_UTMP
+  BOOL bUtmp;
+#endif
   BOOL bShareModes;
   BOOL bOpLocks;
   BOOL bLevel2OpLocks;
@@ -349,6 +358,7 @@ typedef struct
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
+  BOOL bInheritPerms; 
   char dummy[3]; /* for alignment */
 } service;
 
@@ -397,6 +407,7 @@ static service sDefault =
   NULL,    /* volume */
   NULL,    /* fstype */
   0,       /* iMinPrintSpace */
+  0,       /* iWriteCacheSize */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
   -1,      /* iSecurity_mask */
@@ -432,9 +443,12 @@ static service sDefault =
   True,  /* bMap_archive */
   True,  /* bLocking */
   False,  /* bStrictLocking */
+#ifdef WITH_UTMP
+  False,  /* bUtmp */
+#endif
   True,  /* bShareModes */
   True,  /* bOpLocks */
-  False, /* bLevel2OpLocks */
+  True, /* bLevel2OpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
@@ -450,6 +464,7 @@ static service sDefault =
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
+  False, /* bInheritPerms */
   ""     /* dummy */
 };
 
@@ -472,7 +487,9 @@ static BOOL handle_copy(char *pszParmValue, char **ptr);
 static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
-
+static BOOL handle_source_env(char *pszParmValue,char **ptr);
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
+ 
 static void set_default_server_announce_type(void);
 
 static struct enum_list enum_protocol[] = {{PROTOCOL_NT1, "NT1"}, {PROTOCOL_LANMAN2, "LANMAN2"}, 
@@ -534,12 +551,15 @@ static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3,
 static struct parm_struct parm_table[] =
 {
   {"Base Options", P_SEP, P_SEPARATOR},
+  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
+  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	handle_client_code_page,   NULL,  0},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
   {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
   {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_DOS_STRING},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,              handle_netbios_name,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
+  {"netbios scope",    P_UGSTRING,P_GLOBAL, global_scope,               NULL,   NULL,  FLAG_DOS_STRING},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
@@ -551,8 +571,8 @@ static struct parm_struct parm_table[] =
   {"allow trusted domains",P_BOOL,P_GLOBAL, &Globals.bAllowTrustedDomains,NULL, NULL,  0},
   {"alternate permissions",P_BOOL,P_LOCAL,  &sDefault.bAlternatePerm,   NULL,   NULL,  FLAG_GLOBAL|FLAG_DEPRECATED},
   {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
-  {"min passwd length",     P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
   {"min password length",   P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
+  {"min passwd length",     P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
   {"map to guest",     P_ENUM,    P_GLOBAL, &Globals.map_to_guest,      NULL,   enum_map_to_guest, 0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
@@ -582,10 +602,10 @@ static struct parm_struct parm_table[] =
   {"force user",       P_STRING,  P_LOCAL,  &sDefault.force_user,       NULL,   NULL,  FLAG_SHARE},
   {"force group",      P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  FLAG_SHARE},
   {"group",            P_STRING,  P_LOCAL,  &sDefault.force_group,      NULL,   NULL,  0},
-  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE},
+  {"writeable",        P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE},
   {"write ok",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
-  {"writeable",        P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
   {"writable",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
+  {"read only",        P_BOOL,    P_LOCAL,  &sDefault.bRead_only,       NULL,   NULL,  0},
   {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
   {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
@@ -596,6 +616,7 @@ static struct parm_struct parm_table[] =
   {"force directory mode",   P_OCTAL,P_LOCAL,&sDefault.iDir_force_mode, NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"directory security mask",P_OCTAL,P_LOCAL,&sDefault.iDir_Security_mask,NULL, NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"force directory security mode",P_OCTAL, P_LOCAL,  &sDefault.iDir_Security_force_mode,NULL,NULL,FLAG_GLOBAL|FLAG_SHARE},
+  {"inherit permissions",P_BOOL,  P_LOCAL,  &sDefault.bInheritPerms,    NULL,   NULL,  FLAG_SHARE},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  FLAG_SHARE},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
   {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
@@ -625,14 +646,14 @@ static struct parm_struct parm_table[] =
 #endif        /* WITH_SSL */
 
   {"Logging Options", P_SEP, P_SEPARATOR},
-  {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
-  {"debuglevel",       P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  0},
+  {"debug level",      P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
+  {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  0},
   {"syslog",           P_INTEGER, P_GLOBAL, &Globals.syslog,            NULL,   NULL,  0},
   {"syslog only",      P_BOOL,    P_GLOBAL, &Globals.bSyslogOnly,       NULL,   NULL,  0},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL,   NULL,  0},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL,  0},
-  {"timestamp logs",   P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
   {"debug timestamp",  P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
+  {"timestamp logs",   P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
   {"debug hires timestamp",  P_BOOL,    P_GLOBAL, &Globals.bDebugHiresTimestamp,    NULL,   NULL,  0},
   {"debug pid",        P_BOOL,    P_GLOBAL, &Globals.bDebugPid,         NULL,   NULL,  0},
   {"debug uid",        P_BOOL,    P_GLOBAL, &Globals.bDebugUid,         NULL,   NULL,  0},
@@ -651,8 +672,8 @@ static struct parm_struct parm_table[] =
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL,  0},
   {"max xmit",         P_INTEGER, P_GLOBAL, &Globals.max_xmit,          NULL,   NULL,  0},
   {"name resolve order",P_STRING, P_GLOBAL, &Globals.szNameResolveOrder,NULL,   NULL, 0},
+  {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  FLAG_DEPRECATED},
   {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
-  {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL,  0},
   {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL,  0},
   {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL,  0},
@@ -675,14 +696,15 @@ static struct parm_struct parm_table[] =
   {"stat cache size",  P_INTEGER, P_GLOBAL, &Globals.stat_cache_size,   NULL,   NULL,  0},
   {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  FLAG_SHARE},
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  FLAG_SHARE},
+  {"write cache size", P_INTEGER, P_LOCAL,  &sDefault.iWriteCacheSize,  NULL,   NULL,  FLAG_SHARE},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  FLAG_PRINT},
   {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  FLAG_PRINT},
   {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
   {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL,  FLAG_PRINT},
-  {"print ok",         P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  FLAG_PRINT},
-  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
+  {"printable",        P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  FLAG_PRINT},
+  {"print ok",         P_BOOL,    P_LOCAL,  &sDefault.bPrint_ok,        NULL,   NULL,  0},
   {"postscript",       P_BOOL,    P_LOCAL,  &sDefault.bPostscript,      NULL,   NULL,  FLAG_PRINT},
   {"printing",         P_ENUM,    P_LOCAL,  &sDefault.iPrinting,        NULL,   enum_printing, FLAG_PRINT|FLAG_GLOBAL},
   {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
@@ -693,8 +715,8 @@ static struct parm_struct parm_table[] =
   {"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_PRINT|FLAG_GLOBAL},
   {"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_PRINT|FLAG_GLOBAL},
 
-  {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  FLAG_PRINT},
-  {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
+  {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  FLAG_PRINT},
+  {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  FLAG_PRINT},
   {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
 
@@ -703,8 +725,6 @@ static struct parm_struct parm_table[] =
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL,  0},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set, NULL,  0},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL,   NULL,  0},
-  {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
-  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	handle_client_code_page,   NULL,  0},
   {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case, FLAG_SHARE},
   {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"casesignames",     P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  0},
@@ -768,6 +788,9 @@ static struct parm_struct parm_table[] =
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  FLAG_SHARE},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#ifdef WITH_UTMP
+  {"utmp",             P_BOOL,    P_LOCAL,  &sDefault.bUtmp,            NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#endif
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -790,10 +813,14 @@ static struct parm_struct parm_table[] =
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL,   NULL,  0},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL,   NULL,  FLAG_HIDE},
-  {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
   {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
-  {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
+  {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
   {"lock directory",   P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
+  {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
+#ifdef WITH_UTMP
+  {"utmp directory",   P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+  {"utmp dir",         P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+#endif /* WITH_UTMP */
   {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"message command",  P_STRING,  P_GLOBAL, &Globals.szMsgCommand,      NULL,   NULL,  0},
@@ -809,17 +836,18 @@ static struct parm_struct parm_table[] =
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL,  FLAG_HIDE},
   {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,           handle_copy, NULL,  FLAG_HIDE},
   {"include",          P_STRING,  P_LOCAL,  &sDefault.szInclude,        handle_include, NULL,  FLAG_HIDE},
-  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
-  {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
-  {"preexec close",    P_BOOL,    P_LOCAL,  &sDefault.bPreexecClose,    NULL,   NULL,  0},
+  {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
+  {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
+  {"preexec close",    P_BOOL,    P_LOCAL,  &sDefault.bPreexecClose,    NULL,   NULL,  FLAG_SHARE},
   {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
-  {"root preexec close", P_BOOL,  P_LOCAL,  &sDefault.bRootpreexecClose,NULL,   NULL,  0},
+  {"root preexec close", P_BOOL,  P_LOCAL,  &sDefault.bRootpreexecClose,NULL,   NULL,  FLAG_SHARE},
   {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  FLAG_SHARE},
   {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  FLAG_SHARE},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  FLAG_SHARE},
+  {"source environment",P_STRING, P_GLOBAL, &Globals.szSourceEnv,       handle_source_env,NULL,0},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL,  FLAG_SHARE},
@@ -854,7 +882,7 @@ static void init_globals(void)
 	if ((parm_table[i].type == P_STRING ||
 	     parm_table[i].type == P_USTRING) && 
 	    parm_table[i].ptr)
-	  string_init(parm_table[i].ptr,"");
+	  string_set(parm_table[i].ptr,"");
 
       string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
       string_set(&sDefault.szPrinterDriver, "NULL");
@@ -877,6 +905,9 @@ static void init_globals(void)
   string_set(&Globals.szDriverFile, DRIVERFILE);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
+#ifdef WITH_UTMP
+  string_set(&Globals.szUtmpDir, "");
+#endif /* WITH_UTMP */
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   pstrcpy(s, "Samba ");
@@ -1020,16 +1051,6 @@ static void init_globals(void)
 }
 
 /***************************************************************************
-check if a string is initialised and if not then initialise it
-***************************************************************************/
-static void string_initial(char **s,char *v)
-{
-  if (!*s || !**s)
-    string_init(s,v);
-}
-
-
-/***************************************************************************
 Initialise the sDefault parameter structure.
 ***************************************************************************/
 static void init_locals(void)
@@ -1041,102 +1062,86 @@ static void init_locals(void)
     case PRINT_AIX:
     case PRINT_LPRNG:
     case PRINT_PLP:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
       break;
 
     case PRINT_CUPS:
-      string_initial(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
-      string_initial(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
-      string_initial(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
-      string_initial(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
+      string_set(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
+      string_set(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
+      string_set(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
       break;
 
     case PRINT_SYSV:
     case PRINT_HPUX:
-      string_initial(&sDefault.szLpqcommand,"lpstat -o%p");
-      string_initial(&sDefault.szLprmcommand,"cancel %p-%j");
-      string_initial(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef HPUX
-      string_initial(&sDefault.szQueuepausecommand, "disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "enable %p");
-#else /* SYSV */
-      string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
-      string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
+      string_set(&sDefault.szLpqcommand,"lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
+      string_set(&sDefault.szQueuepausecommand, "disable %p");
+      string_set(&sDefault.szQueueresumecommand, "enable %p");
+#ifndef HPUX
+      string_set(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
+      string_set(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
 #endif /* SYSV */
       break;
 
     case PRINT_QNX:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lp -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lp -r -P%p %s");
       break;
 
     case PRINT_SOFTQ:
-      string_initial(&sDefault.szLpqcommand,"qstat -l -d%p");
-      string_initial(&sDefault.szLprmcommand,"qstat -s -j%j -c");
-      string_initial(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
-      string_initial(&sDefault.szLppausecommand,"qstat -s -j%j -h");
-      string_initial(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
+      string_set(&sDefault.szLpqcommand,"qstat -l -d%p");
+      string_set(&sDefault.szLprmcommand,"qstat -s -j%j -c");
+      string_set(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
+      string_set(&sDefault.szLppausecommand,"qstat -s -j%j -h");
+      string_set(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
       break;
       
     }
 }
 
+static TALLOC_CTX *lp_talloc;
 
 /******************************************************************* a
-convenience routine to grab string parameters into a rotating buffer,
+free up temporary memory - called from the main loop
+********************************************************************/
+void lp_talloc_free(void)
+{
+	if (!lp_talloc) return;
+	talloc_destroy(lp_talloc);
+	lp_talloc = NULL;
+}
+
+/*******************************************************************
+convenience routine to grab string parameters into temporary memory
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
 static char *lp_string(const char *s)
 {
-  static char *bufs[10];
-  static size_t buflen[10];
-  static int next = -1;  
-  char *ret;
-  int i;
-  size_t len = s?strlen(s):0;
+	size_t len = s?strlen(s):0;
+	char *ret;
 
-  if (next == -1) {
-    /* initialisation */
-    for (i=0;i<10;i++) {
-      bufs[i] = NULL;
-      buflen[i] = 0;
-    }
-    next = 0;
-  }
+	if (!lp_talloc) lp_talloc = talloc_init();
+  
+	ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
 
-  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
-					 substitution room */
+	if (!ret) return NULL;
 
-  if (buflen[next] != len) {
-    buflen[next] = len;
-    if (bufs[next])
-      free(bufs[next]);
-    bufs[next] = (char *)malloc(len);
-    if (!bufs[next]) {
-      DEBUG(0,("out of memory in lp_string()"));
-      exit(1);
-    }
-  } 
+	if (!s) 
+		*ret = 0;
+	else
+		StrnCpy(ret,s,len);
 
-  ret = &bufs[next][0];
-  next = (next+1)%10;
+	trim_string(ret, "\"", "\"");
 
-  if (!s) 
-    *ret = 0;
-  else
-    StrnCpy(ret,s,len-1);
-
-  trim_string(ret, "\"", "\"");
-
-  standard_sub_basic(ret);
-  return(ret);
+	standard_sub_basic(ret);
+	return(ret);
 }
 
 
@@ -1170,9 +1175,14 @@ FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
+#ifdef WITH_UTMP
+FN_GLOBAL_STRING(lp_utmpdir,&Globals.szUtmpDir)
+#endif /* WITH_UTMP */
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
+FN_GLOBAL_STRING(lp_source_environment,&Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice,&Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command,&Globals.szMsgCommand)
+FN_GLOBAL_STRING(lp_dfree_command,&Globals.szDfree)
 FN_GLOBAL_STRING(lp_hosts_equiv,&Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services,&Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program,&Globals.szPasswdProgram)
@@ -1362,6 +1372,9 @@ FN_LOCAL_BOOL(lp_map_hidden,bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
+#ifdef WITH_UTMP
+FN_LOCAL_BOOL(lp_utmp,bUtmp)
+#endif
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
 FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks,bLevel2OpLocks)
@@ -1379,6 +1392,7 @@ FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
+FN_LOCAL_BOOL(lp_inherit_perms,bInheritPerms)
 
 FN_LOCAL_INTEGER(lp_create_mask,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
@@ -1393,6 +1407,7 @@ FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
 FN_LOCAL_INTEGER(lp_printing,iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit,iOplockContentionLimit)
+FN_LOCAL_INTEGER(lp_write_cache_size,iWriteCacheSize)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
@@ -1878,6 +1893,154 @@ BOOL lp_file_list_changed(void)
 }
 
 /***************************************************************************
+ Run standard_sub_basic on netbios name... needed because global_myname
+ is not accessed through any lp_ macro.
+***************************************************************************/
+
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
+{
+	pstring netbios_name;
+
+	pstrcpy(netbios_name,pszParmValue);
+
+	standard_sub_basic(netbios_name);
+	strupper(netbios_name);
+	string_set(ptr,netbios_name);
+
+	/*
+	 * Convert from UNIX to DOS string - the UNIX to DOS converter
+	 * isn't called on the special handlers.
+	 */
+	unix_to_dos(netbios_name, True);
+	pstrcpy(global_myname,netbios_name);
+
+	DEBUG(4,("handle_netbios_name: set global_myname to: %s\n", global_myname));
+
+	return(True);
+}
+
+/***************************************************************************
+ Do the work of sourcing in environment variable/value pairs.
+***************************************************************************/
+
+static BOOL source_env(FILE *fenv)
+{
+	pstring line;
+	char *varval;
+	size_t len;
+	char *p;
+
+	while (!feof(fenv)) {
+		if (fgets(line, sizeof(line), fenv) == NULL)
+			break;
+
+		if(feof(fenv))
+			break;
+
+		if((len = strlen(line)) == 0)
+			continue;
+
+		if (line[len - 1] == '\n')
+			line[--len] = '\0';
+
+		if ((varval=malloc(len+1)) == NULL) {
+			DEBUG(0,("source_env: Not enough memory!\n"));
+			return(False);
+		}
+
+		DEBUG(4,("source_env: Adding to environment: %s\n", line));
+		strncpy(varval, line, len);
+		varval[len] = '\0';
+
+		p=strchr(line, (int) '=');
+		if (p == NULL) {
+			DEBUG(4,("source_env: missing '=': %s\n", line));
+			continue;
+		}
+
+		if (putenv(varval)) {
+			DEBUG(0,("source_env: Failed to put environment variable %s\n", varval ));
+			continue;
+		}
+
+		*p='\0';
+		p++;
+		DEBUG(4,("source_env: getting var %s = %s\n", line, getenv(line)));
+	}
+
+	DEBUG(4,("source_env: returning successfully\n"));
+	return(True);
+}
+
+/***************************************************************************
+ Handle the source environment operation
+***************************************************************************/
+
+static BOOL handle_source_env(char *pszParmValue,char **ptr)
+{
+	pstring fname;
+	char *p = fname;
+	FILE *env;
+	BOOL result;
+
+	pstrcpy(fname,pszParmValue);
+
+	standard_sub_basic(fname);
+
+	string_set(ptr,pszParmValue);
+
+	DEBUG(4, ("handle_source_env: checking env type\n"));
+
+	/*
+	 * Filename starting with '|' means popen and read from stdin.
+	 */
+
+	if (*p == '|') {
+
+		DEBUG(4, ("handle_source_env: source env from pipe\n"));
+		p++;
+
+		if ((env = sys_popen(p, "r", True)) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
+			return(False);
+		}
+
+		DEBUG(4, ("handle_source_env: calling source_env()\n"));
+		result = source_env(env);
+		sys_pclose(env);
+
+	} else {
+
+		SMB_STRUCT_STAT st;
+
+		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
+		if ((env = sys_fopen(fname, "r")) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
+			return(False);
+		}
+
+		/*
+		 * Ensure this file is owned by root and not writable by world.
+		 */
+		if(fstat(fileno(env), &st) != 0) {
+			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
+			fclose(env);
+			return False;
+		}
+
+		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
+			DEBUG(0,("handle_source_env: unsafe to source env file %s. Not owned by root or world writable\n", fname ));
+			fclose(env);
+			return False;
+		}
+
+		result=source_env(env);
+		fclose(env);
+	}
+	return(result);
+}
+
+/***************************************************************************
   handle the interpretation of the coding system parameter
   *************************************************************************/
 static BOOL handle_coding_system(char *pszParmValue,char **ptr)
@@ -2270,9 +2433,14 @@ static BOOL do_section(char *pszSectionName)
 		    (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
    bRetval = False;
 
+   /* removed this because it broke setting printer commands in global
+    * section. init_locals now uses string_set so it overwrites any
+    * parameters you just changed with the defaults */
+#ifdef notdef
    /* if we were in a global section then do the local inits */
    if (bInGlobalSection && !isglobal)
      init_locals();
+#endif
 
    /* if we've just struck a global section, note the fact. */
    bInGlobalSection = isglobal;   
@@ -2351,6 +2519,7 @@ static void dump_globals(FILE *f)
 		if (parm_table[i].class == P_GLOBAL &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
+			if (parm_table[i].flags & FLAG_DEPRECATED) continue;
 			if (defaults_saved && is_default(i)) continue;
 			fprintf(f,"\t%s = ",parm_table[i].label);
 			print_parameter(&parm_table[i],parm_table[i].ptr, f);
@@ -2387,6 +2556,7 @@ static void dump_a_service(service *pService, FILE *f)
 		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
 			int pdiff = PTR_DIFF(parm_table[i].ptr,&sDefault);
 			
+			if (parm_table[i].flags & FLAG_DEPRECATED) continue;
 			if (pService == &sDefault) {
 				if (defaults_saved && is_default(i)) continue;
 			} else {
@@ -2500,7 +2670,7 @@ static void lp_add_auto_services(char *str)
 	homes = lp_servicenumber(HOMES_NAME);
 	
 	for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
-		char *home = get_home_dir(p);
+		char *home = get_user_home_dir(p);
 		
 		if (lp_servicenumber(p) >= 0) continue;
 		
@@ -2596,7 +2766,7 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 {
   pstring n2;
   BOOL bRetval;
- 
+
   add_to_file_list(pszFname);
 
   bRetval = False;
@@ -2606,8 +2776,8 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
   
   init_globals();
 
+  init_locals();
   if (save_defaults) {
-	  init_locals();
 	  lp_save_defaults();
   }
   

@@ -97,7 +97,7 @@ files_struct *file_new(void )
 	files_used++;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
-	string_init(&fsp->fsp_name,"");
+	string_set(&fsp->fsp_name,"");
 	
 	DLIST_ADD(Files, fsp);
 

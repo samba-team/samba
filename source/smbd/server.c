@@ -35,7 +35,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern pstring scope;
 extern int DEBUGLEVEL;
 
 extern pstring user_socket_options;
@@ -321,6 +320,7 @@ BOOL reload_services(BOOL test)
 	}
 
 	reset_mangled_cache();
+    reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
 	become_service(NULL,True);
@@ -478,7 +478,7 @@ static void usage(char *pname)
 {
 
 	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
-	printf("       [-O socket options] [-s services file] [-i scope]\n");
+	printf("       [-O socket options] [-s services file]\n");
 	printf("\t-D                    Become a daemon\n");
 	printf("\t-a                    Append to log file (default)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
@@ -491,7 +491,6 @@ static void usage(char *pname)
 	printf("\t-p port               Listen on the specified port\n");
 	printf("\t-O socket options     Socket options\n");
 	printf("\t-s services file.     Filename of services file\n");
-	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
 
@@ -504,6 +503,7 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
@@ -524,10 +524,6 @@ static void usage(char *pname)
 			pstrcpy(user_socket_options,optarg);
 			break;
 
-		case 'i':
-			pstrcpy(scope,optarg);
-			break;
-
 		case 'P':
 			{
 				extern BOOL passive;
@@ -540,6 +536,7 @@ static void usage(char *pname)
 			break;
 
 		case 'l':
+			specified_logfile = True;
 			pstrcpy(debugf,optarg);
 			break;
 
@@ -601,7 +598,8 @@ static void usage(char *pname)
 
 	TimeInit();
 
-	pstrcpy(debugf,SMBLOGFILE);  
+	if(!specified_logfile)
+		pstrcpy(debugf,SMBLOGFILE);  
 
 	pstrcpy(remote_machine, "smb");
 
@@ -660,6 +658,13 @@ static void usage(char *pname)
 
 	init_structs();
 	
+#ifdef WITH_PROFILE
+	if (!profile_setup(False)) {
+		DEBUG(0,("ERROR: failed to setup profiling\n"));
+		return -1;
+	}
+#endif
+
 #ifdef WITH_SSL
 	{
 		extern BOOL sslEnabled;
@@ -718,10 +723,16 @@ static void usage(char *pname)
 		pidfile_create("smbd");
 	}
 
-	if (!locking_init(0))
+	if (!open_sockets(is_daemon,port))
 		exit(1);
 
-	if (!open_sockets(is_daemon,port))
+	/*
+	 * Note that this call should be done after the fork() call
+	 * in open_sockets(), as some versions of the locking shared
+	 * memory code register openers in a flat file.
+	 */
+
+	if (!locking_init(0))
 		exit(1);
 
 	if(!initialize_password_db())

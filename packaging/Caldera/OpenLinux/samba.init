@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # description: Starts and stops the Samba smbd and nmbd daemons
 #	       used to provide SMB network services.
@@ -21,7 +21,7 @@ case "$1" in
   [ ${NETWORKING} = "no" ] && exit 2
   [ -x $DAEMON_S -a -x $DAEMON_N ] || exit 2
 
-  #SVIbool true "$CONFIGURED" || 
+  #[ "$CONFIGURED"  != "no" -a "$CONFIGURED"  != "false" ] || {
   SVIemptyConfig /etc/samba.d/smb.conf && {
     echo "$DESCRIPTIVE: not configured! Skipped..."
     exit 2
@@ -47,7 +47,7 @@ case "$1" in
   ;;
 
  restart)
-  echo "Restarting $IDENT: "
+  echo -n "Restarting $IDENT: "
   $0 stop
   $0 start
   exit $?

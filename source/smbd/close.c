@@ -69,6 +69,8 @@ static void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     
+    flush_write_cache(fsp, CLOSE_FLUSH);
+
 	fsp->open = False;
 	fsp->is_directory = False; 
     
@@ -77,13 +79,6 @@ static void close_filestruct(files_struct *fsp)
 		free((char *)fsp->wbmpx_ptr);
 		fsp->wbmpx_ptr = NULL; 
 	}  
-     
-#if WITH_MMAP
-	if(fsp->mmap_ptr) {
-		munmap(fsp->mmap_ptr,fsp->mmap_size);
-		fsp->mmap_ptr = NULL;
-	}  
-#endif 
 }    
 
 /****************************************************************************

@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
+
 # we want to be compatibe with older versions of Samba
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
@@ -198,6 +199,12 @@ AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 
+# For experimental utmp support
+AC_CHECK_HEADERS(utmp.h utmpx.h)
+
+# For quotas on Veritas VxFS filesystems
+AC_CHECK_HEADERS(sys/fs/vx_quota.h)
+
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
 AC_CHECK_SIZEOF(short,cross)
@@ -349,7 +356,7 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups mktime rename ftruncate stat64 fstat64)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid yp_get_default_domain getpwanam)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep mmap64 strcasecmp fcvt fcvtl)
@@ -840,6 +847,14 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA)
 fi
 
+AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
+AC_TRY_RUN([#include <unistd.h>
+main() { exit(sysconf(_SC_NGROUPS_MAX) == -1 ? 1 : 0); }],
+samba_cv_SYSCONF_SC_NGROUPS_MAX=yes,samba_cv_SYSCONF_SC_NGROUPS_MAX=no,samba_cv_SYSCONF_SC_NGROUPS_MAX=cross)])
+if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
+    AC_DEFINE(SYSCONF_SC_NGROUPS_MAX)
+fi
+
 AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[
 AC_TRY_RUN([main() { exit(getuid() != 0); }],
            samba_cv_HAVE_ROOT=yes,samba_cv_HAVE_ROOT=no,samba_cv_HAVE_ROOT=cross)])
@@ -1018,6 +1033,13 @@ if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
 
+AC_CACHE_CHECK([for IRIX sysv ipc semun problem using gcc],samba_cv_NEED_SGI_SEMUN_HACK,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/sgi_sysv_hack.c"],
+           samba_cv_NEED_SGI_SEMUN_HACK=yes,samba_cv_NEED_SGI_SEMUN_HACK=no,samba_cv_NEED_SGI_SEMUN_HACK=cross)])
+if test x"$samba_cv_NEED_SGI_SEMUN_HACK" = x"yes"; then
+    AC_DEFINE(NEED_SGI_SEMUN_HACK)
+fi
+
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
            samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
@@ -1116,7 +1138,7 @@ AC_ARG_WITH(dfs,
 AC_MSG_CHECKING(whether to use Kerberos IV)
 AC_ARG_WITH(krb4,
 [  --with-krb4=base-dir     Include Kerberos IV support
-  --whithout-krb4          Don't include Kerbers IV support (default)],
+  --without-krb4          Don't include Kerbers IV support (default)],
 [   AC_MSG_RESULT(yes)
     AC_DEFINE(KRB4_AUTH)
     AC_CHECK_LIB(resolv, dn_expand)
@@ -1131,7 +1153,7 @@ AC_ARG_WITH(krb4,
 AC_MSG_CHECKING(whether to use Kerberos 5)
 AC_ARG_WITH(krb5,
 [  --with-krb5=base-dir     Include Kerberos 5 support
-  --whithout-krb5          Don't include Kerbers 5 support (default)],
+  --without-krb5          Don't include Kerbers 5 support (default)],
 [   AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
     LIBS="$LIBS -ldes425 -lkrb5 -lcrypto -lcom_err"
@@ -1308,25 +1330,6 @@ AC_ARG_WITH(ssl,
   AC_MSG_RESULT(no)
 )
 
-
-#################################################
-# check for experimental mmap support
-AC_MSG_CHECKING(whether to use MMAP)
-AC_ARG_WITH(mmap,
-[  --with-mmap     Include experimental MMAP support
-  --without-mmap  Don't include MMAP support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_MMAP)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 #################################################
 # check for syslog logging
 AC_MSG_CHECKING(whether to use syslog logging)
@@ -1344,6 +1347,25 @@ AC_ARG_WITH(syslog,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+#################################################
+# check for a shared memory profiling support
+AC_MSG_CHECKING(whether to use profiling)
+AC_ARG_WITH(profile,
+[  --with-profile     Include profile support
+  --without-profile  Don't include profile support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_PROFILE)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 
 #################################################
 # check for experimental netatalk resource fork support
@@ -1383,6 +1405,25 @@ AC_ARG_WITH(quotas,
   AC_MSG_RESULT(no)
 )
 AC_SUBST(QUOTAOBJS)
+
+#################################################
+# check for experimental utmp accounting
+
+AC_MSG_CHECKING(whether to support utmp accounting)
+AC_ARG_WITH(utmp,
+[  --with-utmp     Include experimental utmp accounting
+  --without-utmp  Don't include experimental utmp accounting (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_UTMP)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # set private directory location
@@ -1445,6 +1486,29 @@ AC_ARG_WITH(swatdir,
   AC_SUBST(swatdir)],
   [swatdir='${prefix}/swat'
    AC_SUBST(swatdir)]
+)
+
+################################################
+# include Using Samba O'Reilly book
+AC_ARG_WITH(sambabook,
+[  --with-sambabook=DIR  Where to put Using Samba book ($ac_default_prefix/swat/using_samba) (default)
+  --without-sambabook   Don't install Using Samba book],
+[ case "$withval" in
+  yes)
+    AC_MSG_WARN([--with-sambabook called without argument - will use default])
+    sambabook="${prefix}/swat/using_samba"
+  ;;
+  no)
+    AC_MSG_RESULT(no)
+  ;;
+  *)
+    AC_MSG_RESULT(yes)
+    sambabook="$withval"
+    ;;
+  esac
+  AC_SUBST(sambabook)],
+  [sambabook='${prefix}/swat/using_samba'
+   AC_SUBST(sambabook)]
 )
 
 #################################################

@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
@@ -133,7 +132,7 @@ in workgroup %s on subnet %s\n",
        will stop us syncing with ourself if we are also
        a local master browser. */
 
-    make_nmb_name(&nmbname, global_myname, 0x20, scope);
+    make_nmb_name(&nmbname, global_myname, 0x20);
 
     work->dmb_name = nmbname;
     /* Pick the first interface ip address as the domain master browser ip. */
@@ -282,7 +281,7 @@ static void become_domain_master_browser_bcast(char *workgroup_name)
     if (work && (work->dom_state == DOMAIN_NONE))
     {
       struct nmb_name nmbname;
-      make_nmb_name(&nmbname,workgroup_name,0x1b,scope);
+      make_nmb_name(&nmbname,workgroup_name,0x1b);
 
       /*
        * Check for our name on the given broadcast subnet first, only initiate
@@ -330,7 +329,7 @@ static void become_domain_master_browser_wins(char *workgroup_name)
   {
     struct nmb_name nmbname;
 
-    make_nmb_name(&nmbname,workgroup_name,0x1b,scope);
+    make_nmb_name(&nmbname,workgroup_name,0x1b);
 
     /*
      * Check for our name on the unicast subnet first, only initiate

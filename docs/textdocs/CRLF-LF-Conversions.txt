@@ -1,5 +1,5 @@
 !==
-!== CRLF-LF-Conversions.txt for Samba release 2.0.6 11 Nov 1999
+!== CRLF-LF-Conversions.txt for Samba release 2.0.4 18 May 1999
 !==
 We get many requests for CRLF/LF format conversion handling by samba.
 The problem is that there is no clean way to determine which files

@@ -562,6 +562,20 @@ void sys_srandom(unsigned int seed)
 }
 
 /**************************************************************************
+ Returns equivalent to NGROUPS_MAX - using sysconf if needed.
+****************************************************************************/
+
+int groups_max(void)
+{
+#if defined(SYSCONF_SC_NGROUPS_MAX)
+  int ret = sysconf(_SC_NGROUPS_MAX);
+  return (ret == -1) ? NGROUPS_MAX : ret;
+#else
+  return NGROUPS_MAX;
+#endif
+}
+
+/**************************************************************************
  Wrapper for getgroups. Deals with broken (int) case.
 ****************************************************************************/
 
@@ -590,7 +604,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
   } 
 
   if (setlen == 0)
-    setlen = 1;
+    setlen = groups_max();
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -631,20 +645,15 @@ int sys_setgroups(int setlen, gid_t *gidset)
   if (setlen == 0)
     return 0 ;
 
-#ifdef NGROUPS_MAX
-  if (setlen > NGROUPS_MAX) {
+  if (setlen < 0 || setlen > groups_max()) {
     errno = EINVAL; 
     return -1;   
   }
-#endif
 
   /*
    * Broken case. We need to allocate a
    * GID_T array of size setlen.
    */
-
-  if (setlen == 0)
-    setlen = 1;
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_setgroups: Malloc fail.\n"));
@@ -721,4 +730,266 @@ struct passwd *sys_getpwnam(const char *name)
 struct passwd *sys_getpwuid(uid_t uid)
 {
 	return setup_pwret(getpwuid(uid));
+}
+
+/**************************************************************************
+ Extract a command into an arg list. Uses a static pstring for storage.
+ Caller frees returned arg list (which contains pointers into the static pstring).
+****************************************************************************/
+
+static char **extract_args(const char *command)
+{
+	static pstring trunc_cmd;
+	char *ptr;
+	int argcl;
+	char **argl = NULL;
+	int i;
+
+	pstrcpy(trunc_cmd, command);
+
+	if(!(ptr = strtok(trunc_cmd, " \t"))) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/*
+	 * Count the args.
+	 */
+
+	for( argcl = 1; ptr; ptr = strtok(NULL, " \t"))
+		argcl++;
+
+	if((argl = (char **)malloc((argcl + 1) * sizeof(char *))) == NULL)
+		return NULL;
+
+	/*
+	 * Now do the extraction.
+	 */
+
+	pstrcpy(trunc_cmd, command);
+
+	ptr = strtok(trunc_cmd, " \t");
+	i = 0;
+	argl[i++] = ptr;
+
+	while((ptr = strtok(NULL, " \t")) != NULL)
+		argl[i++] = ptr;
+
+	argl[i++] = NULL;
+	return argl;
+}
+
+/**************************************************************************
+ Wrapper for popen. Safer as it doesn't search a path.
+ Modified from the glibc sources.
+****************************************************************************/
+
+typedef struct _popen_list
+{
+	FILE *fp;
+	pid_t child_pid;
+	struct _popen_list *next;
+} popen_list;
+
+static popen_list *popen_chain;
+
+FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
+{
+	int parent_end, child_end;
+	int pipe_fds[2];
+    popen_list *entry = NULL;
+	char **argl = NULL;
+
+	if (pipe(pipe_fds) < 0)
+		return NULL;
+
+	if (mode[0] == 'r' && mode[1] == '\0') {
+		parent_end = pipe_fds[0];
+		child_end = pipe_fds[1];
+    } else if (mode[0] == 'w' && mode[1] == '\0') {
+		parent_end = pipe_fds[1];
+		child_end = pipe_fds[0];
+    } else {
+		errno = EINVAL;
+		goto err_exit;
+    }
+
+	if (!*command) {
+		errno = EINVAL;
+		goto err_exit;
+	}
+
+	if((entry = (popen_list *)malloc(sizeof(popen_list))) == NULL)
+		goto err_exit;
+
+	/*
+	 * Extract the command and args into a NULL terminated array.
+	 */
+
+	if(!(argl = extract_args(command)))
+		goto err_exit;
+
+	if(paranoid) {
+		/*
+		 * Do some basic paranioa checks. Do a stat on the parent
+		 * directory and ensure it's not world writable. Do a stat
+		 * on the file itself and ensure it's owned by root and not
+		 * world writable. Note this does *not* prevent symlink races,
+		 * but is a generic "don't let the admin screw themselves"
+		 * check.
+		 */
+
+		SMB_STRUCT_STAT st;
+		pstring dir_name;
+		char *ptr = strrchr(argl[0], '/');
+	
+		if(sys_stat(argl[0], &st) != 0)
+			goto err_exit;
+
+		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
+			errno = EACCES;
+			goto err_exit;
+		}
+		
+		if(!ptr) {
+			/*
+			 * No '/' in name - use current directory.
+			 */
+			pstrcpy(dir_name, ".");
+		} else {
+
+			/*
+			 * Copy into a pstring and do the checks
+			 * again (in case we were length tuncated).
+			 */
+
+			pstrcpy(dir_name, argl[0]);
+			ptr = strrchr(dir_name, '/');
+			if(!ptr) {
+				errno = EINVAL;
+				goto err_exit;
+			}
+			if(strcmp(dir_name, "/") != 0)
+				*ptr = '\0';
+			if(!dir_name[0])
+				pstrcpy(dir_name, ".");
+		}
+
+		if(sys_stat(argl[0], &st) != 0)
+			goto err_exit;
+
+		if(!S_ISDIR(st.st_mode) || (st.st_mode & S_IWOTH)) {
+			errno = EACCES;
+			goto err_exit;
+		}
+	}
+
+	entry->child_pid = fork();
+
+	if (entry->child_pid == -1) {
+
+		/*
+		 * Error !
+		 */
+
+		goto err_exit;
+	}
+
+	if (entry->child_pid == 0) {
+
+		/*
+		 * Child !
+		 */
+
+		int child_std_end = (mode[0] == 'r') ? STDOUT_FILENO : STDIN_FILENO;
+		popen_list *p;
+
+		close(parent_end);
+		if (child_end != child_std_end) {
+			dup2 (child_end, child_std_end);
+			close (child_end);
+		}
+
+		/*
+		 * POSIX.2:  "popen() shall ensure that any streams from previous
+		 * popen() calls that remain open in the parent process are closed
+		 * in the new child process."
+		 */
+
+		for (p = popen_chain; p; p = p->next)
+			close(fileno(p->fp));
+
+		execv(argl[0], argl);
+		_exit (127);
+	}
+
+	/*
+	 * Parent.
+	 */
+
+	close (child_end);
+	free((char *)argl);
+
+	/*
+	 * Create the FILE * representing this fd.
+	 */
+    entry->fp = fdopen(parent_end, mode);
+
+	/* Link into popen_chain. */
+	entry->next = popen_chain;
+	popen_chain = entry;
+
+	return entry->fp;
+
+err_exit:
+
+	if(entry)
+		free((char *)entry);
+	if(argl)
+		free((char *)argl);
+	close(pipe_fds[0]);
+	close(pipe_fds[1]);
+	return NULL;
+}
+
+/**************************************************************************
+ Wrapper for pclose. Modified from the glibc sources.
+****************************************************************************/
+
+int sys_pclose( FILE *fp)
+{
+	int wstatus;
+	popen_list **ptr = &popen_chain;
+	popen_list *entry = NULL;
+	pid_t wait_pid;
+	int status = -1;
+
+	/* Unlink from popen_chain. */
+	for ( ; *ptr != NULL; ptr = &(*ptr)->next) {
+		if ((*ptr)->fp == fp) {
+			entry = *ptr;
+			*ptr = (*ptr)->next;
+			status = 0;
+			break;
+		}
+	}
+
+	if (status < 0 || close(fileno(entry->fp)) < 0)
+		return -1;
+
+	/*
+	 * As Samba is catching and eating child process
+	 * exits we don't really care about the child exit
+	 * code, a -1 with errno = ECHILD will do fine for us.
+	 */
+
+	do {
+		wait_pid = sys_waitpid (entry->child_pid, &wstatus, 0);
+	} while (wait_pid == -1 && errno == EINTR);
+
+	free((char *)entry);
+
+	if (wait_pid == -1)
+		return -1;
+	return wstatus;
 }

@@ -93,6 +93,8 @@ static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 	fstring sid_str;
 	int domlen = strlen(dom_name);
 
+	*sid_str = '\0';
+
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
 
@@ -102,8 +104,10 @@ static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 	/* this string is supposed to be character short */
 	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
 
-	sid_to_string(sid_str, dom_sid);
-	init_dom_sid2(&d_q->dom_sid, dom_sid);
+	if(dom_sid) {
+		sid_to_string(sid_str, dom_sid);
+		init_dom_sid2(&d_q->dom_sid, dom_sid);
+	}
 }
 
 /***************************************************************************
@@ -131,7 +135,7 @@ lsa_reply_query_info
  ***************************************************************************/
 
 static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, DOM_SID *dom_sid)
+				char *dom_name, DOM_SID *dom_sid, uint32 status_code)
 {
 	LSA_R_QUERY_INFO r_q;
 
@@ -139,12 +143,14 @@ static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 
 	/* set up the LSA QUERY INFO response */
 
-	r_q.undoc_buffer = 0x22000000; /* bizarre */
-	r_q.info_class = q_q->info_class;
+	if(status_code == 0) {
+		r_q.undoc_buffer = 0x22000000; /* bizarre */
+		r_q.info_class = q_q->info_class;
 
-	init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+		init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+	}
 
-	r_q.status = 0x0;
+	r_q.status = status_code;
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_query("", &r_q, rdata, 0)) {
@@ -490,7 +496,8 @@ static BOOL api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
 	ZERO_STRUCT(q_e);
 
 	/* grab the enum trust domain context etc. */
-	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
+	if(!lsa_io_q_enum_trust_dom("", &q_e, data, 0))
+		return False;
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
@@ -507,6 +514,8 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
 	LSA_Q_QUERY_INFO q_i;
 	fstring name;
 	DOM_SID *sid = NULL;
+	uint32 status_code = 0;
+
 	memset(name, 0, sizeof(name));
 
 	ZERO_STRUCT(q_i);
@@ -519,20 +528,26 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
 
 	switch (q_i.info_class) {
 	case 0x03:
+/* JRATEST */
+#if 0
 		fstrcpy(name, global_myworkgroup);
 		sid = &global_sam_sid;
+#else
+		*name = '\0';
+#endif
 		break;
 	case 0x05:
 		fstrcpy(name, global_myname);
 		sid = &global_sam_sid;
 		break;
 	default:
-		DEBUG(0,("api_lsa_query_info: unknown info level in Lsa Query: %d\n", q_i.info_class));
+		DEBUG(3,("api_lsa_query_info: unknown info level in Lsa Query: %d\n", q_i.info_class));
+		status_code = (NT_STATUS_INVALID_INFO_CLASS | 0xC0000000);
 		break;
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	if(!lsa_reply_query_info(&q_i, rdata, name, sid))
+	if(!lsa_reply_query_info(&q_i, rdata, name, sid, status_code))
 		return False;
 
 	return True;

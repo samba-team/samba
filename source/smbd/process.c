@@ -504,7 +504,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         if (flags & AS_GUEST) 
           flags &= ~AS_USER;
         else
-          return(ERROR(ERRSRV,ERRinvnid));
+          return(ERROR(ERRSRV,ERRaccess));
       }
       /* this code is to work around a bug is MS client 3 without
          introducing a security hole - it needs to be able to do
@@ -556,7 +556,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int type = CVAL(inbuf,smb_com);
   int outsize = 0;
   int msg_type = CVAL(inbuf,0);
-  extern int chain_size;
 
   GetTimeOfDay(&smb_last_time);
 
@@ -594,6 +593,10 @@ void process_smb(char *inbuf, char *outbuf)
   int msg_type = CVAL(inbuf,0);
   int32 len = smb_len(inbuf);
   int nread = len + 4;
+
+#ifdef WITH_PROFILE
+  profile_p->smb_count++;
+#endif
 
   if (trans_num == 0) {
 	  /* on the first packet, check the global hosts allow/ hosts
@@ -717,7 +720,6 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int outsize2;
   char inbuf_saved[smb_wct];
   char outbuf_saved[smb_wct];
-  extern int chain_size;
   int wct = CVAL(outbuf,smb_wct);
   int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
 
@@ -1013,6 +1015,9 @@ void smbd_process(void)
 #endif
 
     errno = 0;      
+
+    /* free up temporary memory */
+    lp_talloc_free();
 
     while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {

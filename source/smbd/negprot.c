@@ -315,7 +315,7 @@ static struct {
   {"MICROSOFT NETWORKS 3.0",  "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
   {"MICROSOFT NETWORKS 1.03", "COREPLUS", reply_coreplus, PROTOCOL_COREPLUS},
   {"PC NETWORK PROGRAM 1.0",  "CORE",     reply_corep,    PROTOCOL_CORE}, 
-  {NULL,NULL},
+  {NULL,NULL,NULL,0},
 };
 
 
@@ -362,7 +362,7 @@ int reply_negprot(connection_struct *conn,
  
       p += strlen(p) + 2;
     }
-    
+
   switch ( arch ) {
   case ARCH_SAMBA:
     set_remote_arch(RA_SAMBA);
@@ -374,7 +374,10 @@ int reply_negprot(connection_struct *conn,
     set_remote_arch(RA_WIN95);
     break;
   case ARCH_WINNT:
-    set_remote_arch(RA_WINNT);
+    if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
+      set_remote_arch(RA_WIN2K);
+    else
+      set_remote_arch(RA_WINNT);
     break;
   case ARCH_WIN2K:
     set_remote_arch(RA_WIN2K);

@@ -27,7 +27,6 @@ extern int Protocol;
 extern int Client;  
 extern int smb_read_error;
 extern int global_oplock_break;
-extern int chain_size;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -252,14 +251,61 @@ static void my_wcstombs(char *dst, uint16 *src, size_t len)
     dst[i] = (char)SVAL(src,i*2);
 }
 
+/****************************************************************************
+ (Hopefully) temporary call to fix bugs in NT5.0beta2. This OS sends unicode
+ strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+
+  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
   if(data_len - fname_len > 1) {
     /*
      * NT 5.0 Beta 2 has kindly sent us a UNICODE string
      * without bothering to set the unicode bit. How kind.
      *
      * Firstly - ensure that the data offset is aligned
+     * on a 2 byte boundary - add one if not.
+     */
+    fname_len = fname_len/2;
+    if(data_offset & 1)
+      data_offset++;
+    my_wcstombs( fname, (uint16 *)(inbuf+data_offset), fname_len);
+  } else {
+    StrnCpy(fname,inbuf+data_offset,fname_len);
+  }
+  fname[fname_len] = '\0';
+}
+
+/****************************************************************************
+ Fix bugs in Win2000 final release. In trans calls this OS sends unicode
+ strings AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
+static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
+{
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+
+  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+           data_offset, data_len, fname_len ));
+
+  /*
+   * Win2K sends a unicode filename plus one extra alingment byte.
+   * WinNT4.x send an ascii string with multiple garbage bytes on
+   * the end here.
+   */
+
+  if((data_len - fname_len == 1) || (inbuf[data_offset] == '\0')) {
+    /*
+     * Ensure that the data offset is aligned
      * on a 2 byte boundary - add one if not.
      */
     fname_len = fname_len/2;
@@ -638,6 +684,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
         dir_name_len++;
       }
 
+      /*
+       * This next calculation can refuse a correct filename if we're dealing
+       * with the Win2k unicode bug, but that would be rare. JRA.
+       */
+
       if(fname_len + dir_name_len >= sizeof(pstring))
         return(ERROR(ERRSRV,ERRfilespecs));
 
@@ -726,7 +777,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	} 
 		
-	unixmode = unix_mode(conn,smb_attr | aARCH);
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
@@ -928,25 +979,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 ****************************************************************************/
 
 static int call_nt_transact_create(connection_struct *conn,
-				   char *inbuf, char *outbuf, int length, 
-                                   int bufsize, 
-                                   char **ppsetup, char **ppparams, 
-				   char **ppdata)
+					char *inbuf, char *outbuf, int length, 
+					int bufsize, char **ppsetup, char **ppparams, 
+					char **ppdata)
 {
   pstring fname;
   char *params = *ppparams;
-  uint32 flags = IVAL(params,0);
-  uint32 desired_access = IVAL(params,8);
-  uint32 file_attributes = IVAL(params,20);
-  uint32 share_access = IVAL(params,24);
-  uint32 create_disposition = IVAL(params,28);
-  uint32 create_options = IVAL(params,32);
-  uint32 fname_len = MIN(((uint32)IVAL(params,44)),
-                         ((uint32)sizeof(fname)-1));
-  uint16 root_dir_fid = (uint16)IVAL(params,4);
-  int smb_ofun;
-  int smb_open_mode;
-  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+  int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = 0;
@@ -960,6 +999,38 @@ static int call_nt_transact_create(connection_struct *conn,
   files_struct *fsp = NULL;
   char *p = NULL;
   BOOL stat_open_only = False;
+  uint32 flags;
+  uint32 desired_access;
+  uint32 file_attributes;
+  uint32 share_access;
+  uint32 create_disposition;
+  uint32 create_options;
+  uint32 fname_len;
+  uint16 root_dir_fid;
+  int smb_ofun;
+  int smb_open_mode;
+  int smb_attr;
+
+  DEBUG(5,("call_nt_transact_create\n"));
+
+  /*
+   * Ensure minimum number of parameters sent.
+   */
+
+  if(total_parameter_count < 54) {
+    DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+    return(ERROR(ERRDOS,ERRbadaccess));
+  }
+
+  flags = IVAL(params,0);
+  desired_access = IVAL(params,8);
+  file_attributes = IVAL(params,20);
+  share_access = IVAL(params,24);
+  create_disposition = IVAL(params,28);
+  create_options = IVAL(params,32);
+  fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
+  root_dir_fid = (uint16)IVAL(params,4);
+  smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
   /* 
    * We need to construct the open_and_X ofun value from the
@@ -967,7 +1038,7 @@ static int call_nt_transact_create(connection_struct *conn,
    */    
 
   if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
+    return(ERROR(ERRDOS,ERRbadmem));
 
   /*
    * Get the file name.
@@ -989,8 +1060,8 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      StrnCpy(fname,params+53,fname_len);
-      fname[fname_len] = '\0';
+      get_filename_transact(&fname[0], params, 53,
+                            total_parameter_count - 53 - fname_len, fname_len);
 
       if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -1016,15 +1087,20 @@ static int call_nt_transact_create(connection_struct *conn,
       dir_name_len++;
     }
 
+    /*
+     * This next calculation can refuse a correct filename if we're dealing
+     * with the Win2k unicode bug, but that would be rare. JRA.
+     */
+
     if(fname_len + dir_name_len >= sizeof(pstring))
       return(ERROR(ERRSRV,ERRfilespecs));
 
-    StrnCpy(&fname[dir_name_len], params+53, fname_len);
-    fname[dir_name_len+fname_len] = '\0';
+    get_filename_transact(&fname[dir_name_len], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
 
   } else {
-    StrnCpy(fname,params+53,fname_len);
-    fname[fname_len] = '\0';
+    get_filename_transact(&fname[0], params, 53,
+                 total_parameter_count - 53 - fname_len, fname_len);
   }
 
   /* If it's an IPC, use the pipe handler. */
@@ -1073,7 +1149,7 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     } 
   
-    unixmode = unix_mode(conn,smb_attr | aARCH);
+    unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
     /*
      * If it's a request for a directory open, deal with it separately.
@@ -1265,6 +1341,8 @@ static int call_nt_transact_create(connection_struct *conn,
     p += 8;
     SOFF_T(p,0,file_len);
   }
+
+  DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
   /* Send the required number of replies */
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
@@ -1757,13 +1835,26 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 }
 
 /****************************************************************************
+ Function to create owner and group SIDs from a SMB_STRUCT_STAT.
+****************************************************************************/
+
+static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
+{
+  extern DOM_SID global_sam_sid;
+
+  sid_copy(powner_sid, &global_sam_sid);
+  sid_copy(pgroup_sid, &global_sam_sid);
+  sid_append_rid(powner_sid, pdb_uid_to_user_rid(psbuf->st_uid));
+  sid_append_rid(pgroup_sid, pdb_gid_to_group_rid(psbuf->st_gid));
+}
+
+/****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns True.
 ****************************************************************************/
 
 static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
-  extern DOM_SID global_sam_sid;
   extern DOM_SID global_sid_World;
   SMB_STRUCT_STAT sbuf;
   SEC_ACE ace_list[6];
@@ -1800,10 +1891,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
      * Get the owner, group and world SIDs.
      */
 
-    sid_copy(&owner_sid, &global_sam_sid);
-    sid_copy(&group_sid, &global_sam_sid);
-    sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
-    sid_append_rid(&group_sid, pdb_gid_to_group_rid(sbuf.st_gid));
+    create_file_sids(&sbuf, &owner_sid, &group_sid);
 
     /*
      * Create the generic 3 element UNIX acl.
@@ -1834,7 +1922,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
        * ACE entries. These are the permissions a file would get when
        * being created in the directory.
        */
-      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE);
+      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
 
       owner_access = map_unix_perms(&owner_acl_type, mode,
                             S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
@@ -2052,25 +2140,37 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
  Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
 ****************************************************************************/
 
-static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint32 security_info_sent,
-                                  SEC_DESC *psd, BOOL is_directory)
+static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, mode_t *pmode,
+                                  uint32 security_info_sent, SEC_DESC *psd, BOOL is_directory)
 {
   extern DOM_SID global_sid_World;
   DOM_SID owner_sid;
   DOM_SID grp_sid;
+  DOM_SID file_owner_sid;
+  DOM_SID file_grp_sid;
   uint32 owner_rid;
   uint32 grp_rid;
   SEC_ACL *dacl = psd->dacl;
+  BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
 
   *pmode = 0;
   *puser = (uid_t)-1;
-  *pgrp = (uid_t)-1;
+  *pgrp = (gid_t)-1;
 
   if(security_info_sent == 0) {
-    DEBUG(0,("unpack_unix_permissions: no security info sent !\n"));
+    DEBUG(0,("unpack_nt_permissions: no security info sent !\n"));
     return False;
   }
+
+  /*
+   * Windows 2000 sends the owner and group SIDs as the logged in
+   * user, not the connected user. But it still sends the file
+   * owner SIDs on an ACL set. So we need to check for the file
+   * owner and group SIDs as well as the owner SIDs. JRA.
+   */
+
+  create_file_sids(psbuf, &file_owner_sid, &file_grp_sid);
 
   /*
    * Validate the owner and group SID's.
@@ -2079,7 +2179,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
   memset(&owner_sid, '\0', sizeof(owner_sid));
   memset(&grp_sid, '\0', sizeof(grp_sid));
 
-  DEBUG(5,("unpack_unix_permissions: validating owner_sid.\n"));
+  DEBUG(5,("unpack_nt_permissions: validating owner_sid.\n"));
 
   /*
    * Don't immediately fail if the owner sid cannot be validated.
@@ -2087,7 +2187,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
    */
 
   if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid))
-    DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
+    DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
   else if(security_info_sent & OWNER_SECURITY_INFORMATION)
     *puser = pdb_user_rid_to_uid(owner_rid);
 
@@ -2097,7 +2197,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
    */
 
   if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid))
-    DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
+    DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
   else if(security_info_sent & GROUP_SECURITY_INFORMATION)
     *pgrp = pdb_user_rid_to_gid(grp_rid);
 
@@ -2121,7 +2221,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
        (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
-      DEBUG(3,("unpack_unix_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
+      DEBUG(3,("unpack_nt_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
       return False;
     }
 
@@ -2131,15 +2231,28 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     if(is_directory) {
       if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-        DEBUG(3,("unpack_unix_permissions: ignoring inherit only ACE.\n"));
+        DEBUG(3,("unpack_nt_permissions: ignoring inherit only ACE.\n"));
         continue;
       }
 
-      psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
+      /*
+       * At least one of the ACE entries wasn't inherit only.
+       * Flag this so we know the returned mode is valid.
+       */
+
+      all_aces_are_inherit_only = False;
     }
 
+    /*
+     * Windows 2000 sets these flags even on *file* ACE's. This is wrong
+     * but we can ignore them for now. Revisit this when we go to POSIX
+     * ACLs on directories.
+     */
+
+    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
+
     if(psa->flags != 0) {
-      DEBUG(1,("unpack_unix_permissions: unable to set ACE flags (%x).\n", 
+      DEBUG(1,("unpack_nt_permissions: unable to set ACE flags (%x).\n", 
             (unsigned int)psa->flags));
       return False;
     }
@@ -2159,7 +2272,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     sid_copy(&ace_sid, &psa->sid);
 
-    if(sid_equal(&ace_sid, &owner_sid)) {
+    if(sid_equal(&ace_sid, &file_owner_sid)) {
       /*
        * Map the desired permissions into owner perms.
        */
@@ -2169,7 +2282,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
       else
         *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
 
-    } else if( sid_equal(&ace_sid, &grp_sid)) {
+    } else if( sid_equal(&ace_sid, &file_grp_sid)) {
       /*
        * Map the desired permissions into group perms.
        */
@@ -2190,9 +2303,20 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
         *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
 
     } else {
-      DEBUG(0,("unpack_unix_permissions: unknown SID used in ACL.\n"));
+      DEBUG(0,("unpack_nt_permissions: unknown SID used in ACL.\n"));
       return False;
     }
+  }
+
+  if (is_directory && all_aces_are_inherit_only) {
+    /*
+     * Windows 2000 is doing one of these weird 'inherit acl'
+     * traverses to conserve NTFS ACL resources. Just pretend
+     * there was no DACL sent. JRA.
+     */
+
+    DEBUG(10,("unpack_nt_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
+    free_sec_acl(&psd->dacl);
   }
 
   return True;
@@ -2263,25 +2387,12 @@ security descriptor.\n"));
   }
 
   /*
-   * Unpack the user/group/world id's and permissions.
-   */
-
-  if(!unpack_nt_permissions( &user, &grp, &perms, security_info_sent, psd, fsp->is_directory)) {
-    free_sec_desc(&psd);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  if (psd->dacl != NULL)
-    got_dacl = True;
-
-  free_sec_desc(&psd);
-
-  /*
    * Get the current state of the file.
    */
 
   if(fsp->is_directory) {
     if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      free_sec_desc(&psd);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   } else {
@@ -2294,9 +2405,24 @@ security descriptor.\n"));
       ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
 
     if(ret != 0) {
+      free_sec_desc(&psd);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   }
+
+  /*
+   * Unpack the user/group/world id's and permissions.
+   */
+
+  if(!unpack_nt_permissions( &sbuf, &user, &grp, &perms, security_info_sent, psd, fsp->is_directory)) {
+    free_sec_desc(&psd);
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  if (psd->dacl != NULL)
+    got_dacl = True;
+
+  free_sec_desc(&psd);
 
   /*
    * Do we need to chown ?

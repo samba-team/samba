@@ -145,17 +145,20 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 }
 
 /****************************************************************************
-  reply to a write and X
+ Reply to a write and X.
 
-  This code is basically stolen from reply_write_and_X with some
-  wrinkles to handle pipes.
+ This code is basically stolen from reply_write_and_X with some
+ wrinkles to handle pipes.
 ****************************************************************************/
+
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
+	BOOL pipe_start_message_raw = ((SVAL(inbuf, smb_vwv7) & (PIPE_START_MESSAGE|PIPE_RAW_MODE)) ==
+									(PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	char *data;
 
 	if (!p)
@@ -165,14 +168,31 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	if (numtowrite == 0)
 		nwritten = 0;
-	else
+	else {
+		if(pipe_start_message_raw) {
+			/*
+			 * For the start of a message in named pipe byte mode,
+			 * the first two bytes are a length-of-pdu field. Ignore
+			 * them (we don't trust the client. JRA.
+			 */
+	        if(numtowrite < 2) {
+				DEBUG(0,("reply_pipe_write_and_X: start of message set and not enough data sent.(%u)\n",
+					(unsigned int)numtowrite ));
+				return (UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+
+			data += 2;
+			numtowrite -= 2;
+    	}                        
 		nwritten = write_to_pipe(p, data, numtowrite);
+	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
   
 	set_message(outbuf,6,0,True);
 
+	nwritten = (pipe_start_message_raw ? nwritten + 2 : nwritten);
 	SSVAL(outbuf,smb_vwv2,nwritten);
   
 	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n",
@@ -207,7 +227,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_from_pipe(p, data, smb_maxcnt);
+	nread = (int)read_from_pipe(p, data, (size_t)smb_maxcnt);
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));

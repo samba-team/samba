@@ -42,7 +42,6 @@ static char *cmdstr;
 static BOOL got_pass;
 static int io_bufsize = 65520;
 extern struct in_addr ipzero;
-extern pstring scope;
 
 static int name_type = 0x20;
 
@@ -104,10 +103,6 @@ int put_total_time_ms = 0;
 static double dir_total;
 
 #define USENMB
-
-#define CNV_LANG(s) dos_to_unix(s,False)
-#define CNV_INPUT(s) unix_to_dos(s,True)
-
 
 /****************************************************************************
 write to a local file with CR/LF->LF translation if appropriate. return the 
@@ -195,6 +190,13 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
+		/*
+		 * The message is in UNIX codepage format. Convert to
+		 * DOS before sending.
+		 */
+
+		unix_to_dos(msg, True);
+
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
@@ -237,8 +239,8 @@ show cd/pwd
 ****************************************************************************/
 static void cmd_pwd(void)
 {
-	DEBUG(0,("Current directory is %s",CNV_LANG(service)));
-	DEBUG(0,("%s\n",CNV_LANG(cur_dir)));
+	DEBUG(0,("Current directory is %s",service));
+	DEBUG(0,("%s\n",cur_dir));
 }
 
 
@@ -288,7 +290,7 @@ static void cmd_cd(void)
 	if (next_token(NULL,buf,NULL,sizeof(buf)))
 		do_cd(buf);
 	else
-		DEBUG(0,("Current directory is %s\n",CNV_LANG(cur_dir)));
+		DEBUG(0,("Current directory is %s\n",cur_dir));
 }
 
 
@@ -326,7 +328,7 @@ static void display_finfo(file_info *finfo)
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
 		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
-			 CNV_LANG(finfo->name),
+			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
 			 asctime(LocalTime(&t))));
@@ -549,7 +551,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
-				DEBUG(0,("\n%s\n",CNV_LANG(next_file)));
+				DEBUG(0,("\n%s\n",next_file));
 				if (save_ch)
 				{
 					*save_ch = '\\';
@@ -659,7 +661,7 @@ static void do_get(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
 		return;
 	}
 
@@ -707,7 +709,7 @@ static void do_get(char *rname,char *lname)
 
 	if (nread < size) {
 		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
-               CNV_LANG(rname), (long)nread));
+               rname, (long)nread));
 	}
 
 	free(data);
@@ -789,10 +791,10 @@ static void do_mget(file_info *finfo)
 
 	if (finfo->mode & aDIR)
 		slprintf(quest,sizeof(pstring)-1,
-			 "Get directory %s? ",CNV_LANG(finfo->name));
+			 "Get directory %s? ",finfo->name);
 	else
 		slprintf(quest,sizeof(pstring)-1,
-			 "Get file %s? ",CNV_LANG(finfo->name));
+			 "Get file %s? ",finfo->name);
 
 	if (prompt && !yesno(quest)) return;
 
@@ -813,15 +815,15 @@ static void do_mget(file_info *finfo)
 	if (lowercase)
 		strlower(finfo->name);
 	
-	if (!dos_directory_exist(finfo->name,NULL) && 
-	    dos_mkdir(finfo->name,0777) != 0) {
-		DEBUG(0,("failed to create directory %s\n",CNV_LANG(finfo->name)));
+	if (!directory_exist(finfo->name,NULL) && 
+	    mkdir(finfo->name,0777) != 0) {
+		DEBUG(0,("failed to create directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
 	
-	if (dos_chdir(finfo->name) != 0) {
-		DEBUG(0,("failed to chdir to directory %s\n",CNV_LANG(finfo->name)));
+	if (chdir(finfo->name) != 0) {
+		DEBUG(0,("failed to chdir to directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
@@ -914,7 +916,7 @@ static BOOL do_mkdir(char *name)
 {
 	if (!cli_mkdir(cli, name)) {
 		DEBUG(0,("%s making remote directory %s\n",
-			 cli_errstr(cli),CNV_LANG(name)));
+			 cli_errstr(cli),name));
 		return(False);
 	}
 
@@ -989,7 +991,7 @@ static void do_put(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE);
   
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
 		return;
 	}
 
@@ -1009,7 +1011,7 @@ static void do_put(char *rname,char *lname)
 
   
 	DEBUG(1,("putting file %s as %s ",lname,
-		 CNV_LANG(rname)));
+		 rname));
   
 	buf = (char *)malloc(maxwrite);
 	while (!feof(f)) {
@@ -1017,7 +1019,10 @@ static void do_put(char *rname,char *lname)
 		int ret;
 
 		if ((n = readfile(buf,1,n,f)) < 1) {
-			DEBUG(0,("Error reading local file\n"));
+			if((n == 0) && feof(f))
+				break; /* Empty local file. */
+
+			DEBUG(0,("Error reading local file: %s\n", strerror(errno) ));
 			break;
 		}
 
@@ -1032,7 +1037,7 @@ static void do_put(char *rname,char *lname)
 	}
 
 	if (!cli_close(cli, fnum)) {
-		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),rname));
 		fclose(f);
 		if (buf) free(buf);
 		return;
@@ -1115,8 +1120,8 @@ static BOOL seek_list(FILE *f,char *name)
 {
 	pstring s;
 	while (!feof(f)) {
-		if (fscanf(f,"%s",s) != 1) return(False);
-		trim_string(s,"./",NULL);
+		if (!fgets(s,sizeof(s),f)) return(False);
+		trim_string(s,"./","\n");
 		if (strncmp(s,name,strlen(name)) != 0) {
 			pstrcpy(name,s);
 			return(True);
@@ -1157,10 +1162,10 @@ static void cmd_mput(void)
 			 "%s/ls.smb.%d",tmpdir(),(int)getpid());
 		if (recurse)
 			slprintf(cmd,sizeof(pstring)-1,
-				 "find . -name \"%s\" -print > %s",p,tmpname);
+				"find . -name \"%s\" -print > %s",p,tmpname);
 		else
 			slprintf(cmd,sizeof(pstring)-1,
-				 "/bin/ls %s > %s",p,tmpname);
+				"find . -maxdepth 1 -name \"%s\" -print > %s",p,tmpname);
 		system(cmd);
 
 		f = sys_fopen(tmpname,"r");
@@ -1169,8 +1174,8 @@ static void cmd_mput(void)
 		while (!feof(f)) {
 			pstring quest;
 
-			if (fscanf(f,"%s",lname) != 1) break;
-			trim_string(lname,"./",NULL);
+			if (!fgets(lname,sizeof(lname),f)) break;
+			trim_string(lname,"./","\n");
 			
 		again1:
 			
@@ -1188,6 +1193,7 @@ static void cmd_mput(void)
 	      
 				pstrcpy(rname,cur_dir);
 				pstrcat(rname,lname);
+				dos_format(rname);
 				if (!cli_chkpath(cli, rname) && !do_mkdir(rname)) {
 					pstrcat(lname,"/");
 					if (!seek_list(f,lname))
@@ -1304,7 +1310,7 @@ static void do_del(file_info *finfo)
 		return;
 
 	if (!cli_unlink(cli, mask)) {
-		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),CNV_LANG(mask)));
+		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),mask));
 	}
 }
 
@@ -1368,7 +1374,7 @@ static void cmd_rmdir(void)
 
 	if (!cli_rmdir(cli, mask)) {
 		DEBUG(0,("%s removing remote directory file %s\n",
-			 cli_errstr(cli),CNV_LANG(mask)));
+			 cli_errstr(cli),mask));
 	}  
 }
 
@@ -1419,7 +1425,7 @@ static void cmd_newer(void)
 	SMB_STRUCT_STAT sbuf;
 
 	ok = next_token(NULL,buf,NULL,sizeof(buf));
-	if (ok && (dos_stat(buf,&sbuf) == 0)) {
+	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
 			 asctime(LocalTime(&newer_than))));
@@ -1555,10 +1561,15 @@ try and browse available connections on a host
 ****************************************************************************/
 static BOOL browse_host(BOOL sort)
 {
+	int ret;
+
         printf("\n\tSharename      Type      Comment\n");
         printf("\t---------      ----      -------\n");
 
-	return cli_RNetShareEnum(cli, browse_fn);
+	if((ret = cli_RNetShareEnum(cli, browse_fn)) == -1)
+		printf("Error returning browse list: %s\n", cli_errstr(cli));
+
+	return (ret != -1);
 }
 
 /****************************************************************************
@@ -1781,9 +1792,6 @@ static void process_command_string(char *cmd)
 			cmd = p + 1;
 		}
 		
-		/* input language code to internal one */
-		CNV_INPUT (line);
-		
 		/* and get the first part of the command */
 		ptr = line;
 		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
@@ -1791,9 +1799,9 @@ static void process_command_string(char *cmd)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
 }	
@@ -1808,8 +1816,11 @@ static void process_stdin(void)
 
 #ifdef HAVE_LIBREADLINE
 /* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
-	const int PromptSize = 2048;
-	char prompt_str[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
+#ifdef PROMPTSIZE
+#undef PROMPTSIZE
+#endif
+#define PROMPTSIZE 2048
+	char prompt_str[PROMPTSIZE];	/* This holds the buffer "smb: \dir1\> " */
 	
         char *temp;			/* Gets the buffer from readline() */
 	temp = (char *)NULL;
@@ -1824,7 +1835,7 @@ static void process_stdin(void)
 			temp = (char *)NULL;
 		}
 
-		snprintf( prompt_str, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", cur_dir );
 
 		temp = readline( prompt_str );		/* We read the line here */
 
@@ -1837,7 +1848,7 @@ static void process_stdin(void)
 		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
 #else 
 		/* display a prompt */
-		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
+		DEBUG(0,("smb: %s> ", cur_dir));
 		dbgflush( );
 		
 		wait_keyboard();
@@ -1847,9 +1858,6 @@ static void process_stdin(void)
 			break;
 #endif
 
-		/* input language code to internal one */
-		CNV_INPUT (line);
-		
 		/* special case - first char is ! */
 		if (*line == '!') {
 			system(line + 1);
@@ -1863,9 +1871,9 @@ static void process_stdin(void)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
 }
@@ -1894,8 +1902,8 @@ struct cli_state *do_connect(char *server, char *share)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , server, name_type, "");
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , server, name_type);
 
  again:
 	ip = ipzero;
@@ -1918,7 +1926,7 @@ struct cli_state *do_connect(char *server, char *share)
 			goto again;
 		}
 		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
 		return NULL;
@@ -1943,8 +1951,13 @@ struct cli_state *do_connect(char *server, char *share)
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		return NULL;
+		/* if a password was not supplied then try again with a null username */
+		if (password[0] || !username[0] || 
+		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
+			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+			return NULL;
+		}
+		DEBUG(0,("Anonymous login successful\n"));
 	}
 
 	/*
@@ -2140,11 +2153,17 @@ static int do_message_op(void)
 
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , desthost, name_type, "");
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , desthost, name_type);
 
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
+	else {
+		if (!resolve_name( desthost, &ip, name_type )) {
+			DEBUG(0,("Unable to resolve name %s\n", desthost));
+			return 1;
+		}
+	}
 
 	if (!(cli=cli_initialise(NULL)) || !cli_connect(cli, desthost, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", desthost));
@@ -2177,7 +2196,6 @@ static int do_message_op(void)
 	extern int optind;
 	pstring query_host;
 	BOOL message = False;
-	BOOL explicit_user = False;
 	extern char tar_type;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
@@ -2329,7 +2347,11 @@ static int do_message_op(void)
 			message = True;
 			break;
 		case 'i':
-			pstrcpy(scope,optarg);
+			{
+				extern pstring global_scope;
+				pstrcpy(global_scope,optarg);
+				strupper(global_scope);
+			}
 			break;
 		case 'N':
 			got_pass = True;
@@ -2370,7 +2392,6 @@ static int do_message_op(void)
 		case 'U':
 			{
 				char *lp;
-				explicit_user = True;
 				pstrcpy(username,optarg);
 				if ((lp=strchr(username,'%'))) {
 					*lp = 0;
@@ -2385,9 +2406,6 @@ static int do_message_op(void)
 			while(*p == '\\' || *p == '/')
 				p++;
 			pstrcpy(query_host,p);
-			
-			if(!explicit_user)
-				*username = '\0';
 			break;
 		case 't':
 			pstrcpy(term_code, optarg);

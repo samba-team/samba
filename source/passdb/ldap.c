@@ -19,10 +19,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
 */
+/* Must have this here if we want to test WITH_LDAP ... */
+#include "includes.h"
 
 #ifdef WITH_LDAP
-
-#include "includes.h"
 
 #include <lber.h>
 #include <ldap.h>
@@ -970,6 +970,11 @@ static BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
   return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
+static BOOL del_ldappwd_entry(const char *name)
+{
+  return False; /* Dummy... */
+}
+
 static struct sam_disp_info *getldapdispnam(char *name)
 {
 	return pdb_sam_to_dispinfo(getldap21pwnam(name));
@@ -1002,6 +1007,7 @@ static struct passdb_ops ldap_ops =
 	getldappwent,
 	add_ldappwd_entry,
 	mod_ldappwd_entry,
+	del_ldappwd_entry,
 	getldap21pwent,
 	iterate_getsam21pwnam,       /* From passdb.c */
 	iterate_getsam21pwuid,       /* From passdb.c */

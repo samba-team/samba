@@ -127,7 +127,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 {
 	fstring temp;
 	int i;
-	pstring sid_name;
+	fstring sid_name;
 	fstring srv_name;
 	DOM_SID sid[10];
 	DOM_SID *sids[10];

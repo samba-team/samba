@@ -91,7 +91,15 @@ int find_service(char *service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_home_dir(service);
+     int iHomeService;
+
+     /* We check that the HOMES_NAME exists before calling expensive
+	functions like get_user_home_dir */
+
+     if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
+     {
+
+      char *phome_dir = get_user_home_dir(service);
 
       if(!phome_dir)
       {
@@ -100,7 +108,7 @@ int find_service(char *service)
          * be a Windows to unix mapped user name.
          */
         if(map_username(service))
-          phome_dir = get_home_dir(service);
+          phome_dir = get_user_home_dir(service);
       }
 
       DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -108,13 +116,10 @@ int find_service(char *service)
 
       if (phome_dir)
       {   
-        int iHomeService;
-        if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
-        {
-          lp_add_home(service,iHomeService,phome_dir);
-          iService = lp_servicenumber(service);
-        }
+	lp_add_home(service,iHomeService,phome_dir);
+	iService = lp_servicenumber(service);
       }
+     }
    }
 
    /* If we still don't have a service, attempt to add it as a printer. */
@@ -212,21 +217,31 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	if (strequal(service,HOMES_NAME)) {
-		if (*user && Get_Pwnam(user,True))
-			return(make_connection(user,user,password,
+		if (*user && Get_Pwnam(user,True)) {
+			fstring dos_username;
+			fstrcpy(dos_username, user);
+			unix_to_dos(dos_username, True);
+			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
+		}
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
-				pstrcpy(user,validated_username(vuid));
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,validated_username(vuid));
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
 			/* Security = share. Try with sesssetup_user
 			 * as the username.  */
 			if(*sesssetup_user) {
-				pstrcpy(user,sesssetup_user);
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,sesssetup_user);
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}
 	}

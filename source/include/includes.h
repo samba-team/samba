@@ -198,7 +198,6 @@
 #endif
 
 #include <pwd.h>
-#include <grp.h>
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
@@ -269,7 +268,24 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#endif
+
+/*
+ * The following is needed if compiling
+ * with gcc on SGI IRIX 6.5.x systems as
+ * the structure packing for system calls is
+ * different between IRIX cc and gcc.
+ */
+
+#ifdef NEED_SGI_SEMUN_HACK
+union semun_hack {
+        int val;
+        struct semid_ds *buf;
+        unsigned short *array;
+       char __dummy[5];
+};
+#define semun semun_hack
+#endif /* NEED_SGI_SEMUN_HACK */
+#endif /* HAVE_SYSV_IPC */
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
@@ -609,12 +625,17 @@ extern int errno;
 #define GID_T gid_t
 #endif
 
+#ifndef NGROUPS_MAX
+#define NGROUPS_MAX 32 /* Guess... */
+#endif
 
 /* Lists, trees, caching, datbase... */
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
+#include "talloc.h"
 #include "interfaces.h"
+#include "hash.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
@@ -639,6 +660,10 @@ extern int errno;
 #include "charset.h"
 
 #include "nterr.h"
+
+#ifdef WITH_PROFILE
+#include "profile.h"
+#endif
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
@@ -679,6 +704,14 @@ extern int errno;
 #if (defined(STAT_STATVFS) || defined(STAT_STATVFS64)) && !defined(SYSV)
 #define SYSV 1
 #endif
+
+/*
+ * Veritas File System.  Often in addition to native.
+ * Quotas different.
+ */
+#if defined(HAVE_SYS_FS_VX_QUOTA_H)
+#define VXFS_QUOTA
+#endif  
 
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_LIBCUPS

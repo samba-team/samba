@@ -208,7 +208,7 @@ BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 ****************************************************************************/
 BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
-	pstring sidstr;
+	fstring sidstr;
 	struct policy *p = find_lsa_policy(hnd);
 
 	if (p && p->open) {
@@ -233,7 +233,7 @@ BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 
 	if (p != NULL && p->open)
 	{
-		pstring sidstr;
+		fstring sidstr;
 		memcpy(sid, &p->dev.samr.sid, sizeof(*sid));
 		DEBUG(3,("Getting policy sid=%s pnum=%x\n",
 			 sid_to_string(sidstr, sid), p->pnum));

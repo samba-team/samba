@@ -95,7 +95,14 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     total_sent_thistime = params_to_send + data_to_send + 
                             alignment_offset + data_alignment_offset;
     /* We can never send more than useable_space */
-    total_sent_thistime = MIN(total_sent_thistime, useable_space);
+    /*
+     * Note that 'useable_space' does not include the alignment offsets,
+     * but we must include the alignment offsets in the calculation of
+     * the length of the data we send over the wire, as the alignment offsets
+     * are sent here. Fix from Marc_Jacobsen@hp.com.
+     */
+    total_sent_thistime = MIN(total_sent_thistime, useable_space +
+                                alignment_offset + data_alignment_offset);
 
     set_message(outbuf, 10, total_sent_thistime, True);
 
@@ -232,7 +239,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  unixmode = unix_mode(conn,open_attr | aARCH);
+  unixmode = unix_mode(conn,open_attr | aARCH, fname);
       
   open_file_shared(fsp,conn,fname,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
@@ -1163,7 +1170,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       int fstype_len;
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-            lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0); /* FS ATTRIBUTES */
+			FILE_DEVICE_IS_MOUNTED|
+            (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
 #endif /* Old code. */
@@ -1694,14 +1702,25 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     case SMB_SET_FILE_BASIC_INFO:
     {
+      /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
+      time_t write_time;
+      time_t changed_time;
+
       /* Ignore create time at offset pdata. */
 
       /* access time */
       tvs.actime = interpret_long_date(pdata+8);
 
-      /* write time + changed time, combined. */
-      tvs.modtime=MIN(interpret_long_date(pdata+16),
-                      interpret_long_date(pdata+24));
+      write_time = interpret_long_date(pdata+16);
+      changed_time = interpret_long_date(pdata+24);
+
+      tvs.modtime = MIN(write_time, changed_time);
+
+      /* Prefer a defined time to an undefined one. */
+      if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+       tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
+                      ? changed_time
+                      : write_time);
 
 #if 0 /* Needs more testing... */
       /* Test from Luke to prevent Win95 from
@@ -1971,6 +1990,9 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
     } else {
       set_filelen(fd, size);
     }
+
+    if(fsp)
+      set_filelen_write_cache(fsp, size);
   }
 
   SSVAL(params,0,0);
@@ -2001,7 +2023,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR,directory));
   
   if(ret < 0)
     {

@@ -157,28 +157,42 @@ static int EatComment( FILE *InFile )
   return( c );
   } /* EatComment */
 
+/*****************************************************************************
+ * Scan backards within a string to discover if the last non-whitespace
+ * character is a line-continuation character ('\\').
+ *
+ *  Input:  line  - A pointer to a buffer containing the string to be
+ *                  scanned.
+ *          pos   - This is taken to be the offset of the end of the
+ *                  string.  This position is *not* scanned.
+ *
+ *  Output: The offset of the '\\' character if it was found, or -1 to
+ *          indicate that it was not.
+ *
+ *****************************************************************************/
+
 static int Continuation( char *line, int pos )
-  /* ------------------------------------------------------------------------ **
-   * Scan backards within a string to discover if the last non-whitespace
-   * character is a line-continuation character ('\\').
-   *
-   *  Input:  line  - A pointer to a buffer containing the string to be
-   *                  scanned.
-   *          pos   - This is taken to be the offset of the end of the
-   *                  string.  This position is *not* scanned.
-   *
-   *  Output: The offset of the '\\' character if it was found, or -1 to
-   *          indicate that it was not.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
+{
+  int pos2 = 0;
+
   pos--;
   while( (pos >= 0) && isspace(line[pos]) )
      pos--;
 
-  return( ((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
-  } /* Continuation */
+  /* we should recognize if `\` is part of a multibyte character or not. */
+  while(pos2 <= pos) {
+    size_t skip = 0;
+    skip = get_character_len(line[pos2]);
+    if (skip) {
+        pos2 += skip;
+    } else if (pos == pos2) {
+        return( ((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
+    } else  {
+        pos2++;
+    }
+  }
+  return (-1);
+}
 
 
 static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )

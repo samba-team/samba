@@ -28,7 +28,6 @@ extern struct in_addr ipzero;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -176,14 +175,10 @@ int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_gro
 	ngroups = sys_getgroups(0,&grp);
 	if (ngroups <= 0)
 	{
-		ngroups = 32;
+		ngroups = groups_max();
 	}
 
-#ifdef NGROUPS_MAX
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*NGROUPS_MAX)) == NULL)
-#else /* NGROUPS_MAX */
 	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
-#endif /* NGROUPS_MAX */
 	{
 		DEBUG(0,("setup_groups malloc fail !\n"));
 		return -1;
@@ -618,24 +613,61 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 #ifdef HAVE_GETGRENT
 	{
 		struct group *gptr;
-		char **member;
 		setgrent();
 		while ((gptr = (struct group *)getgrent())) {
-			if (!strequal(gptr->gr_name,group))
-				continue;
-			member = gptr->gr_mem;
-			while (member && *member) {
+			if (strequal(gptr->gr_name,group))
+				break;
+		}
+
+		/*
+		 * As user_ok can recurse doing a getgrent(), we must
+		 * copy the member list into a pstring on the stack before
+		 * use. Bug pointed out by leon@eatworms.swmed.edu.
+		 */
+
+		if (gptr) {
+			pstring member_list;
+			char *member;
+			size_t copied_len = 0;
+			int i;
+
+			*member_list = '\0';
+			member = member_list;
+
+			for(i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
+				size_t member_len = strlen(gptr->gr_mem[i]) + 1;
+				if( copied_len + member_len < sizeof(pstring)) { 
+
+					DEBUG(10,("validate_group: = gr_mem = %s\n", gptr->gr_mem[i]));
+
+					safe_strcpy(member, gptr->gr_mem[i], sizeof(pstring) - copied_len - 1);
+					copied_len += member_len;
+					member += copied_len;
+				} else {
+					*member = '\0';
+				}
+			}
+
+			endgrent();
+
+			member = member_list;
+			while (*member) {
 				static fstring name;
-				fstrcpy(name,*member);
+				fstrcpy(name,member);
 				if (user_ok(name,snum) &&
 				    password_ok(name,password,pwlen,NULL)) {
 					endgrent();
 					return(&name[0]);
 				}
-				member++;
+
+				DEBUG(10,("validate_group = member = %s\n", member));
+
+				member += strlen(member) + 1;
 			}
+		} else {
+			endgrent();
+			return NULL;
 		}
-		endgrent();
 	}
 #endif
 	return(NULL);
@@ -927,7 +959,7 @@ BOOL check_hosts_equiv(char *user)
   
   if (lp_use_rhosts())
     {
-      char *home = get_home_dir(user);
+      char *home = get_user_home_dir(user);
       if (home) {
 	      extern int Client;
 	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
@@ -1123,7 +1155,8 @@ use this machine as the password server.\n"));
  given a name or IP address.
 ************************************************************************/
 
-static BOOL connect_to_domain_password_server(struct cli_state *pcli, char *remote_machine)
+static BOOL connect_to_domain_password_server(struct cli_state *pcli, char *remote_machine,
+                                              unsigned char *trust_passwd)
 {
   struct in_addr dest_ip;
 
@@ -1203,8 +1236,36 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
   }
 
   /*
-   * We have an anonymous connection to IPC$ on the domain password server.
+   * We now have an anonymous connection to IPC$ on the domain password server.
    */
+
+  /*
+   * Even if the connect succeeds we need to setup the netlogon
+   * pipe here. We do this as we may just have changed the domain
+   * account password on the PDC and yet we may be talking to
+   * a BDC that doesn't have this replicated yet. In this case
+   * a successful connect to a DC needs to take the netlogon connect
+   * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
+   */
+
+  if(cli_nt_session_open(pcli, PIPE_NETLOGON) == False) {
+    DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
+    cli_nt_session_close(pcli);
+    cli_ulogoff(pcli);
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  if (cli_nt_setup_creds(pcli, trust_passwd) == False) {
+    DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
+%s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
+    cli_nt_session_close(pcli);
+    cli_ulogoff(pcli);
+    cli_shutdown(pcli);
+    return(False);
+  }
+
   return True;
 }
 
@@ -1212,7 +1273,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip)
+static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
   fstring dc_name;
 
@@ -1226,7 +1287,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip)
   if(!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
     return False;
 
-  return connect_to_domain_password_server(pcli, dc_name);
+  return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
 }
 
 /***********************************************************************
@@ -1346,7 +1407,7 @@ BOOL domain_client_validate( char *user, char *domain,
         if(!is_local_net(ip_list[i]))
           continue;
 
-        if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
+        if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
           break;
 
         ip_list[i] = ipzero; /* Tried and failed. */
@@ -1359,7 +1420,7 @@ BOOL domain_client_validate( char *user, char *domain,
       if(!connected_ok) {
         i = (sys_random() % count);
 
-        if(!(connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
+        if(!(connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
           ip_list[i] = ipzero; /* Tried and failed. */
       }
 
@@ -1372,10 +1433,11 @@ BOOL domain_client_validate( char *user, char *domain,
 
         /*
          * Try and connect to any of the other IP addresses in the PDC/BDC list.
+         * Note that from a WINS server the #1 IP address is the PDC.
          */
 
         for(i = 0; i < count; i++) {
-          if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i])))
+          if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
             break;
         }
       }
@@ -1384,35 +1446,12 @@ BOOL domain_client_validate( char *user, char *domain,
         free((char *)ip_list);
 
     } else {
-      connected_ok = connect_to_domain_password_server(&cli, remote_machine);
+      connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
     }
   }
 
   if (!connected_ok) {
     DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-    cli_shutdown(&cli);
-    return False;
-  }
-
-  /*
-   * Ok - we have an anonymous connection to the IPC$ share.
-   * Now start the NT Domain stuff :-).
-   */
-
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
-    DEBUG(0,("domain_client_validate: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False; 
-  }
-
-  if(cli_nt_setup_creds(&cli, trust_passwd) == False) {
-    DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   }

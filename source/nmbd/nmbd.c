@@ -32,8 +32,6 @@ extern int DEBUGLEVEL;
 extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
-extern pstring scope;
-
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
@@ -470,6 +468,9 @@ static void process(void)
 
     /* check for new network interfaces */
     reload_interfaces(t);
+
+    /* free up temp memory */
+    lp_talloc_free();
   }
 } /* process */
 
@@ -598,7 +599,7 @@ static void usage(char *pname)
 {
 
   printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
-  printf( "       [-n name] [-p port] [-s configuration file] [-i scope]\n" );
+  printf( "       [-n name] [-p port] [-s configuration file]\n" );
   printf( "\t-D                    Become a daemon\n" );
   printf( "\t-a                    Append to log file (default)\n" );
   printf( "\t-o                    Overwrite log file, don't append\n" );
@@ -610,7 +611,6 @@ static void usage(char *pname)
   printf( "\t-n netbiosname.       Primary netbios name\n" );
   printf( "\t-p port               Listen on the specified port\n" );
   printf( "\t-s configuration file Configuration file name\n" );
-  printf( "\t-i scope              NetBIOS scope\n" );
   printf( "\n");
 } /* usage */
 
@@ -703,10 +703,6 @@ static void usage(char *pname)
           break;
         case 'l':
           slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
-          break;
-        case 'i':
-          pstrcpy(scope,optarg);
-          strupper(scope);
           break;
         case 'a':
           append_log = True;

@@ -18,12 +18,13 @@ $patch = 0;
 if (/alpha/) {
   $_ =~ s/alpha/.00./;
 }
-elsif (/-pre/) {
-  $_ =~ s/-pre/.00./;
-}
 elsif (/-HEAD/) {
   $_ =~ s/-HEAD/.01/;
   $_ .= '.99';
+}
+elsif (/pre-/) {
+  $_ =~ s/pre-//;
+  $_ .= '.00';
 }
 elsif (/p/) {
   $_ =~ s/p/./;

@@ -203,8 +203,8 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
                                          struct packet_struct *incoming_packet,
                                          struct nmb_name *question_name)
 {
-  char ud[sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
-          sizeof(struct packet_struct *)];
+  long *ud[(sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
+          sizeof(struct packet_struct *))/sizeof(long *) + 1];
   struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
   memset(ud, '\0', sizeof(ud));

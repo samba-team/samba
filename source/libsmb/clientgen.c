@@ -27,7 +27,6 @@
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
-extern pstring scope;
 
 static void cli_process_oplock(struct cli_state *cli);
 
@@ -53,7 +52,8 @@ static BOOL cli_receive_smb(struct cli_state *cli)
 	
 	if (ret) {
 		/* it might be an oplock break request */
-		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
+		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
 			if (cli->use_oplocks) cli_process_oplock(cli);
@@ -600,7 +600,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -618,12 +618,16 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
   pstrcpy(p,"B13BWz");
   p = skip_string(p,1);
   SSVAL(p,0,1);
-  SSVAL(p,2,0xFFFF);
+  /*
+   * Win2k needs a *smaller* buffer than 0xFFFF here -
+   * it returns "out of server memory" with 0xFFFF !!! JRA.
+   */
+  SSVAL(p,2,0xFFE0);
   p += 4;
 
   if (cli_api(cli, 
               param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-              NULL, 0, 0xFFFF,            /* data, length, maxlen */
+              NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
               &rparam, &rprcnt,                /* return params, length */
               &rdata, &rdrcnt))                /* return data, length */
     {
@@ -1059,7 +1063,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         SSVAL(cli->outbuf,smb_tid,cli->cnum);
         cli_setup_packet(cli);
 
-        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
+        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
 
         p = smb_buf(cli->outbuf);
         *p++ = 4;
@@ -1232,18 +1236,13 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 
 /****************************************************************************
 open a file
+WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;
 	unsigned accessmode=0;
-
-	/* you must open for RW not just write - otherwise getattrE doesn't
-	   work! */
-	if ((flags & O_ACCMODE) == O_WRONLY && strncmp(cli->dev, "LPT", 3)) {
-		flags = (flags & ~O_ACCMODE) | O_RDWR;
-	}
 
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
@@ -1267,6 +1266,10 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= (1<<14);
 	}
 #endif /* O_SYNC */
+
+	if (share_mode == DENY_FCB) {
+		accessmode = 0xFF;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -1294,7 +1297,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
   
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
-    unix_to_dos(p,True);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 
 	cli_send_smb(cli);
@@ -1345,7 +1348,8 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 /****************************************************************************
   lock a file
 ****************************************************************************/
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_lock(struct cli_state *cli, int fnum, 
+	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
 	char *p;
         int saved_timeout = cli->timeout;
@@ -1361,7 +1365,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	CVAL(cli->outbuf,smb_vwv3) = 0;
+	CVAL(cli->outbuf,smb_vwv3) = (lock_type == READ_LOCK? 1 : 0);
 	SIVALS(cli->outbuf, smb_vwv4, timeout);
 	SSVAL(cli->outbuf,smb_vwv6,0);
 	SSVAL(cli->outbuf,smb_vwv7,1);
@@ -1372,7 +1376,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SIVAL(p, 6, len);
 	cli_send_smb(cli);
 
-        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
+        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
 
 	if (!cli_receive_smb(cli)) {
                 cli->timeout = saved_timeout;
@@ -1391,7 +1395,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 /****************************************************************************
   unlock a file
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 {
 	char *p;
 
@@ -1407,7 +1411,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	CVAL(cli->outbuf,smb_vwv3) = 0;
-	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SIVALS(cli->outbuf, smb_vwv4, 0);
 	SSVAL(cli->outbuf,smb_vwv6,1);
 	SSVAL(cli->outbuf,smb_vwv7,0);
 
@@ -2162,7 +2166,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int dirlist_len = 0;
 	int total_received = -1;
 	BOOL First = True;
-	int ff_resume_key = 0;
 	int ff_searchcount=0;
 	int ff_eos=0;
 	int ff_lastname=0;
@@ -2199,12 +2202,12 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,0,ff_dir_handle);
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
-			SIVAL(param,6,ff_resume_key); /* ff_resume_key */
+			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
 			pstrcpy(param+12,mask);
 
-			DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
-				 ff_dir_handle,ff_resume_key,ff_lastname,mask));
+			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
+				 ff_dir_handle,ff_lastname,mask));
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
@@ -2257,13 +2260,11 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			switch(info_level)
 				{
 				case 260:
-					ff_resume_key =0;
 					StrnCpy(mask,p+ff_lastname,
 						MIN(sizeof(mask)-1,data_len-ff_lastname));
 					break;
 				case 1:
 					pstrcpy(mask,p + ff_lastname + 1);
-					ff_resume_key = 0;
 					break;
 				}
 		} else {
@@ -2295,8 +2296,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		if (rdata) free(rdata); rdata = NULL;
 		if (rparam) free(rparam); rparam = NULL;
 		
-		DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
-			 ff_searchcount,ff_eos,ff_resume_key));
+		DEBUG(3,("received %d entries (eos=%d)\n",
+			 ff_searchcount,ff_eos));
 
 		if (ff_searchcount > 0) loop_count = 0;
 
@@ -2688,12 +2689,21 @@ void cli_shutdown(struct cli_state *cli)
 ****************************************************************************/
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
 {
-	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
+	int  flgs2;
 	char rcls;
 	int code;
 
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
+	if (nt_rpc_error) *nt_rpc_error = 0;
+
+	if(!cli->initialised)
+		return EINVAL;
+
+	if(!cli->inbuf)
+		return ENOMEM;
+
+	flgs2 = SVAL(cli->inbuf,smb_flg2);
 	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
@@ -3222,11 +3232,11 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 ****************************************************************************/
 
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
-                                            struct in_addr *pdest_ip)
+                                     struct in_addr *pdest_ip)
 {
   struct nmb_name calling, called;
 
-  make_nmb_name(&calling, srchost, 0x0, scope);
+  make_nmb_name(&calling, srchost, 0x0);
 
   /*
    * If the called name is an IP address
@@ -3234,28 +3244,39 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
    */
 
   if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20, scope);
+    make_nmb_name(&called, "*SMBSERVER", 0x20);
   else
-    make_nmb_name(&called, desthost, 0x20, scope);
+    make_nmb_name(&called, desthost, 0x20);
 
   if (!cli_session_request(cli, &calling, &called)) {
     struct nmb_name smbservername;
+
+    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
 
     /*
      * If the name wasn't *SMBSERVER then
      * try with *SMBSERVER if the first name fails.
      */
 
+    if (nmb_name_equal(&called, &smbservername)) {
+
+        /*
+         * The name used was *SMBSERVER, don't bother with another name.
+         */
+
+        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER<20> \
+with error %s.\n", desthost, cli_errstr(cli) ));
+	    cli_shutdown(cli);
+		return False;
+	}
+
     cli_shutdown(cli);
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20, scope);
-
-    if (!nmb_name_equal(&called, &smbservername) ||
-        !cli_initialise(cli) ||
+    if (!cli_initialise(cli) ||
         !cli_connect(cli, desthost, pdest_ip) ||
         !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER.",
-                desthost));
+          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
+name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
           cli_shutdown(cli);
           return False;
     }

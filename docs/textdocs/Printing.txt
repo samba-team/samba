@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 2.0.6 11 Nov 1999
+!== Printing.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:	Unknown <samba-bugs@samba.org>
 Date:		Unknown
@@ -54,7 +54,7 @@ might be:
 
 then you print a file and look at the /tmp/tmp.print file to see what
 is produced. Try printing this file with lpr. Does it work? If not
-then your problem with with your lpr system, not with Samba. Often
+then the problem is with your lpr system, not with Samba. Often
 people have problems with their /etc/printcap file or permissions on
 various print queues. 
 
@@ -95,18 +95,32 @@ If the above debug tips don't help, then maybe you need to bring in
 the bug gun, system tracing. See Tracing.txt in this directory.
 
 =====================================================================
-From Caldera Inc., the following documentation has been contributed:
+From Caldera Inc., the following documentation has been
+contributed. Note that it contains stuff that is only relevant on some
+systems (specifically Caldera OpenLinux systems).
 
 
 8.6 Setting up a raw SAMBA printer.
 
-Note: this is not a guide on setting up SAMBA. It merely addresses creating a printer configuration that will allow the output of regular (i.e. not PostScript) Windows printer drivers to print through SAMBA.
+Note: this is not a guide on setting up SAMBA. It merely addresses
+creating a printer configuration that will allow the output of regular
+(i.e. not PostScript) Windows printer drivers to print through SAMBA.
 
-Regular Windows printer drivers can be used to print via SAMBA, but you must set up a raw printer entry in "/etc/printcap" to accomplish this. Also, a print command will need to be specified in "/etc/smb.conf" that forces binary printing.
+Regular Windows printer drivers can be used to print via SAMBA, but
+you must set up a raw printer entry in "/etc/printcap" to accomplish
+this. Also, a print command will need to be specified in
+"/etc/smb.conf" that forces binary printing.
 
-The best way to start is to use printtool under X to create a new entry specifically for this printer. All you really need for it to do is create the necessary directories and set the permissions correctly, so don't worry about setting up a filter for a specific printer.  Filters are not going to be used at all for this entry.
+The best way to start is to use printtool under X to create a new
+entry specifically for this printer. All you really need for it to do
+is create the necessary directories and set the permissions correctly,
+so don't worry about setting up a filter for a specific printer.
+Filters are not going to be used at all for this entry.
 
-Next, go into "/etc" and edit the printcap entry you just created, changing it to look like this (if you named it something other than raw, the entry name and spool directory should be changed here to match):
+Next, go into "/etc" and edit the printcap entry you just created,
+changing it to look like this (if you named it something other than
+raw, the entry name and spool directory should be changed here to
+match):
 
 raw:\
 	:rw:sh: \
@@ -114,12 +128,15 @@ raw:\
 	:sd=/var/spool/lpd/raw: \
 	:fx=flp:
 
-When this is done and saved, edit the section of the smb.conf file that applies to the printer. Make sure the name of the section (enclosed in brackets) matches the name of the raw printer you just set up, then go down a line or two and add this line:
+When this is done and saved, edit the section of the smb.conf file
+that applies to the printer. Make sure the name of the section
+(enclosed in brackets) matches the name of the raw printer you just
+set up, then go down a line or two and add this line:
  
 print command = lpr -b -P%p %s
 
-Save the file, change to "/etc/rc.d/init.d", and type the following commands
-to restart the necessary daemons:
+Save the file, change to "/etc/rc.d/init.d", and type the following
+commands to restart the necessary daemons:
 
 ./lpd stop
 ./lpd start
