@@ -60,6 +60,7 @@ static char *local_realm=NULL;
 #ifdef KASERVER_DB
 static int kaspecials_flag;
 static int ka_db;
+static int ka_use_null_salt;
 #endif
 #endif
 
@@ -298,9 +299,15 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent,
     hdb.keys.val = malloc(hdb.keys.len * sizeof(*hdb.keys.val));
     hdb.keys.val[0].mkvno = NULL;
     hdb.keys.val[0].salt = calloc(1, sizeof(*hdb.keys.val[0].salt));
-    hdb.keys.val[0].salt->type = hdb_afs3_salt;
-    hdb.keys.val[0].salt->salt.data = strdup(cell);
-    hdb.keys.val[0].salt->salt.length = strlen(cell);
+    if (ka_use_null_salt) {
+	hdb.keys.val[0].salt->type = hdb_pw_salt;
+	hdb.keys.val[0].salt->salt.data = NULL;
+	hdb.keys.val[0].salt->salt.length = 0;
+    } else {
+	hdb.keys.val[0].salt->type = hdb_afs3_salt;
+	hdb.keys.val[0].salt->salt.data = strdup(cell);
+	hdb.keys.val[0].salt->salt.length = strlen(cell);
+    }
     
     hdb.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
     krb5_data_copy(&hdb.keys.val[0].key.keyvalue, ent->key, sizeof(ent->key));
@@ -317,7 +324,9 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent,
 	*hdb.valid_end = ntohl(ent->valid_end);
     }
     
-    if (ntohl(ent->pw_change) != NEVERDATE && ent->pw_expire != 255) {
+    if (ntohl(ent->pw_change) != NEVERDATE && 
+	ent->pw_expire != 255 &&
+	ent->pw_expire != 0) {
 	ALLOC(hdb.pw_end);
 	*hdb.pw_end = ntohl(ent->pw_change)
 	    + 24 * 60 * 60 * ent->pw_expire;
@@ -771,6 +780,11 @@ main(int argc, char **argv)
     case HPROP_KASERVER:
 	if (database == NULL)
 	    database = DEFAULT_DATABASE;
+	ka_use_null_salt = krb5_config_get_bool_default(context, NULL, FALSE, 
+							"hprop", 
+							"afs_uses_null_salt", 
+							NULL);
+
 	break;
 #endif
 #endif /* KRB4 */
