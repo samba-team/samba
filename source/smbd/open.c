@@ -55,21 +55,7 @@ static int fd_open(struct connection_struct *conn, char *fname,
 
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
-	int ret = 0;
-
-	/*
-	 * Deal with transferring any pending fd's if there
-	 * are POSIX locks outstanding.
-	 */
-
-	if(!fd_close_posix_locks(conn,fsp))
-		return -1;
-
-	if(fsp->fd != -1)
-		ret = conn->vfs_ops.close(fsp->fd);
-
-	fsp->fd = -1;
-	return ret;
+	return fd_close_posix(conn, fsp);
 }
 
 
