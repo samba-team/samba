@@ -67,7 +67,7 @@ static void append (Member *l, Member *r);
 }
 
 %token INTEGER SEQUENCE OF OCTET STRING GeneralizedTime GeneralString
-%token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS
+%token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS EXTERNAL
 %token <name> IDENTIFIER 
 %token <constant> CONSTANT
 
@@ -86,8 +86,16 @@ specification	:
 		| specification declaration
 		;
 
-declaration	: type_decl
+declaration	: extern_decl
+		| type_decl
 		| constant_decl
+		;
+
+extern_decl	: IDENTIFIER EXTERNAL
+		{
+			Symbol *s = addsym($1);
+			s->stype = Stype;
+		}
 		;
 
 type_decl	: IDENTIFIER EEQUAL type
