@@ -570,7 +570,7 @@ void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int
 void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				POLICY_HND *user_pol, uint16 switch_value);
 void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
-void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sidstr);
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
 void sam_io_dom_sid3(char *desc,  DOM_SID3 *sid3, prs_struct *ps, int depth);
 void make_sam_sid_stuff(SAM_SID_STUFF *stf,
 				uint16 unknown_2, uint16 unknown_3,
@@ -1585,6 +1585,7 @@ char *encode_acct_ctrl(uint16 acct_ctrl);
 uint16 decode_acct_ctrl(char *p);
 int gethexpwd(char *p, char *pwd);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
+BOOL generate_machine_sid(void);
 uid_t user_rid_to_uid(uint32 u_rid);
 uid_t group_rid_to_uid(uint32 u_gid);
 uint32 uid_to_user_rid(uint32 uid);
