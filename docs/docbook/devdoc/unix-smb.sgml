@@ -144,10 +144,8 @@ details.
 <sect1>
 <title>Locking</title>
 <para>
-<note>
 Since samba 2.2, samba supports other types of locking as well. This 
 section is outdated.
-</note>
 </para>
 
 <para>
