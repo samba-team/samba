@@ -96,7 +96,8 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 	/* Lookup the names */
 
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      &argv[1], &sids, &types, &num_names);
+				      (const char **)&argv[1], &sids, 
+				      &types, &num_names);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
