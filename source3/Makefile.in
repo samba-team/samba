@@ -132,7 +132,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@a \
+VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ \
 	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
 PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
 MODULES = bin/developer.@SHLIBEXT@ 
