@@ -1188,7 +1188,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			to require an encrypted session (<smbconfoption><name>ldap ssl</name><value>on</value></smbconfoption>) using
 			the default port of <constant>636</constant>
 			when contacting the directory server. When using an OpenLDAP server, it
-			is possible to use the use the StartTLS LDAP extended  operation in the place of
+			is possible to use the StartTLS LDAP extended  operation in the place of
 			LDAPS. In either case, you are strongly discouraged to disable this security
 			(<smbconfoption><name>ldap ssl</name><value>off</value></smbconfoption>).
 			</para>
