@@ -30,7 +30,7 @@ Region                             Number of entries
     AMERICA - USA                                25
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        7
+    CANADA                                        8
     EUROPE                                       29
     MIDDLE EAST                                   1
 
@@ -911,6 +911,32 @@ We install, support and can resolve most system/Samba problems
 on Linux. We are also an internet provider and use Samba to 
 provide a remote office solution to our customers. This solution
 provides access to the shared resources on a corporate lan.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+FSC Internet
+The FSC Building
+188 Davenport Rd
+Toronto, Ontario
+Canada  M5R 1J2
+
+(416) 921-4280
+fax (416) 966-2451
+
+info@fscinternet.com
+
+FSC Internet is one of Canada's largest UNIX and NT networking
+consulting firms.  FSC's clients include numerous top-tier
+corporations (e.g. Mazda, Heinz), as well as mid-sized companies
+(e.g. the Vermont Telephone Company) and the public sector. FSC
+provides full consulting, implementation, support, and training
+services for all UNIX and NT network applications, including a
+special focus on internetworking (extensive Samba experience),
+security, high-performance Web applications, and Intranets. Please
+email us at info@fscinternet.com or call us at (416) 921-4280 for
+further information. 
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
