@@ -118,6 +118,7 @@ DECL(init);
 DECL(dump);
 DECL(load);
 DECL(merge);
+DECL(password_quality);
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
