@@ -73,22 +73,6 @@ struct security_descriptor {
 };
 
 
-/*
-  a security descriptor encapsulated in a buffer.
-  It is like this IDL:
-  typedef struct {
-       uint32 size;
-       [size_is(size)] uint8 *buf;
-  } sec_desc_buf;
-*/
-struct sec_desc_buf {
-	uint32 size; /* the sd wire size - auto-generated */
-	struct security_descriptor *sd;
-};
-
-
-
-
 /* query security descriptor */
 struct smb_query_secdesc {
 	struct {
