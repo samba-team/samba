@@ -84,12 +84,13 @@ kadm5_s_get_principal(void *server_handle,
     }
     if(mask & KADM5_MAX_LIFE && ent.max_life)
 	out->max_life = *ent.max_life;
-    if(mask & KADM5_MOD_TIME)
+    if(mask & KADM5_MOD_TIME) {
 	if(ent.modified_by)
 	    out->mod_date = ent.modified_by->time;
 	else
 	    out->mod_date = ent.created_by.time;
-    if(mask & KADM5_MOD_NAME)
+    }
+    if(mask & KADM5_MOD_NAME) {
 	if(ent.modified_by)
 	    ret = krb5_copy_principal(context->context, 
 				      ent.modified_by->principal,
@@ -98,6 +99,7 @@ kadm5_s_get_principal(void *server_handle,
 	    ret = krb5_copy_principal(context->context, 
 				      ent.created_by.principal,
 				      &out->mod_name);
+    }
     if(ret)
 	goto out;
 
