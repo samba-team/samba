@@ -1,3 +1,7 @@
+Wed Aug  5 12:39:54 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
+
+	* Release 0.0s
+
 Thu Jul 30 23:12:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* appl/rsh/rsh.c: kludges for parsing `rsh hostname -l user'
