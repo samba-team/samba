@@ -158,6 +158,7 @@ DES_string_to_key(krb5_context context,
     char *s;
     size_t len;
     des_cblock tmp;
+
     len = password.length + salt.saltvalue.length + 1;
     s = malloc(len);
     if(s == NULL)
@@ -387,8 +388,60 @@ DES3_string_to_key_derived(krb5_context context,
     return ret;
 }
 
+/*
+ * RC4
+ */
+
+static void
+RC4_random_key(krb5_context context, krb5_keyblock *key)
+{
+    krb5_generate_random_block (key->keyvalue.data,
+				key->keyvalue.length);
+}
+
+static void
+RC4_schedule(krb5_context context, struct key_data *kd)
+{
+    RC4_set_key (kd->schedule->data,
+		 kd->key->keyvalue.length, kd->key->keyvalue.data);
+}
+
+static krb5_error_code
+RC4_string_to_key(krb5_context context,
+		  krb5_enctype enctype,
+		  krb5_data password,
+		  krb5_data salt,
+		  krb5_keyblock *key)
+{
+    char *s, *p;
+    size_t len;
+    int i;
+    struct md4 m;
+
+    len = 2 * (password.length + salt.length);
+    s = malloc (len);
+    if (len != 0 && s == NULL)
+	return ENOMEM;
+    for (p = s, i = 0; i < password.length; ++i) {
+	*p++ = 0;
+	*p++ = ((char *)password.data)[i];
+    }
+    for (i = 0; i < salt.length; ++i) {
+	*p++ = 0;
+	*p++ = ((char *)salt.data)[i];
+    }
+    md4_init(&m);
+    md4_update(&m, s, len);
+    key->keytype = enctype;
+    krb5_data_alloc (&key->keyvalue, 16);
+    md4_finito(&m, key->keyvalue.data);
+    memset (s, 0, len);
+    free (s);
+    return 0;
+}
+
 extern struct salt_type des_salt[], 
-    des3_salt[], des3_salt_derived[];
+    des3_salt[], des3_salt_derived[], rc4_salt[];
 
 struct key_type keytype_null = {
     KEYTYPE_NULL,
@@ -434,11 +487,23 @@ struct key_type keytype_des3_derived = {
     des3_salt_derived
 };
 
+struct key_type keytype_rc4 = {
+    KEYTYPE_RC4,
+    "rc4",
+    128,
+    16,
+    sizeof(RC4_KEY),
+    RC4_random_key,
+    RC4_schedule,
+    rc4_salt
+};
+
 struct key_type *keytypes[] = {
     &keytype_null,
     &keytype_des,
     &keytype_des3_derived,
-    &keytype_des3
+    &keytype_des3,
+    &keytype_rc4
 };
 
 static int num_keytypes = sizeof(keytypes) / sizeof(keytypes[0]);
@@ -482,6 +547,15 @@ struct salt_type des3_salt_derived[] = {
 	KRB5_PW_SALT,
 	"pw-salt",
 	DES3_string_to_key_derived
+    },
+    { 0 }
+};
+
+struct salt_type rc4_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	RC4_string_to_key
     },
     { 0 }
 };
@@ -1361,6 +1435,15 @@ DES3_CBC_encrypt(struct key_data *key,
     des_key_schedule *s = key->schedule->data;
     memset(&ivec, 0, sizeof(ivec));
     des_ede3_cbc_encrypt(data, data, len, s[0], s[1], s[2], &ivec, encrypt);
+}
+
+static void
+RC4_encrypt(struct key_data *key,
+	    void *data,
+	    size_t len,
+	    krb5_boolean encrypt)
+{
+
 }
 
 /*
