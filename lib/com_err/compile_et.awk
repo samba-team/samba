@@ -17,9 +17,6 @@ $1 == "error_table" || $1 == "et" {
 	}
 	split(name, x, "\\.")
 	name=x[1]
-# for normal awk:
-#	split(name, foo, "\\.")
-#	name = foo[1]
 	c_file = name "_err.c"
 	h_file = name "_err.h"
 	h = ""
@@ -33,14 +30,18 @@ $1 == "error_table" || $1 == "et" {
 	H_FILE= "__" h "__"
 	number = 0
 	print "/* Generated from " FILENAME " */" > c_file
+	if(id_str != "")
+		print id_str > c_file
+	print "" > c_file
 	print "#include <stddef.h>" > c_file # NULL
-	print "#include <stdlib.h>" > c_file # malloc
 	print "#include <error.h>" > c_file
 	print "#include <" h_file ">" > c_file
 	print "" > c_file
 	print "static const char *text[] = {" > c_file
 
 	print "/* Generated from " FILENAME " */" > h_file
+	if(id_str != "")
+		print id_str > h_file
 	print "" > h_file
 	print "#ifndef " H_FILE > h_file
 	print "#define " H_FILE > h_file
@@ -81,32 +82,21 @@ $1 == "error_code" {
 	number++;
 	next
 }
+$1 == "id" {
+#	sub("id *", "")
+	for(i = 3; i <= length && substr($0, i, 1) ~ /[ \t]/; i++);
+	id_str ="/* " substr($0, i, length($0)) " */"
+}
 END {
 	print "\tNULL" > c_file
 	print "};" > c_file
 	print "" > c_file
 	print "void initialize_" name "_error_table (struct error_table **list)" > c_file
 	print "{" > c_file
-	print "    struct error_table *et = malloc(sizeof(*et));" > c_file
-	print "    if (et == NULL)" > c_file
-	print "        return;" > c_file
-	print "    et->msgs = text;" > c_file
-	print "    et->n_msgs = " name "_num_errors;" > c_file
-	print "    et->base = ERROR_TABLE_BASE_" name ";" > c_file
-	print "    et->next = *list;" > c_file
-	print "    *list = et;" > c_file
+	printf "    initialize_error_table(list, text, " > c_file
+	print name "_num_errors, ERROR_TABLE_BASE_" name ");" > c_file
 	print "}" > c_file
 	print "" > c_file
-	print "void destroy_" name "_error_table (struct error_table *list)" > c_file
-	print "{" > c_file
-	print "     struct error_table *next;" > c_file
-	print "" > c_file
-	print "     while(list) {" > c_file
-	print "         next = list->next;" > c_file
-	print "         free(list);" > c_file
-        print "         list = next;" > c_file
-	print "     }" > c_file
-	print "}" > c_file
 	close(c_file)
 
 	print "\t" name "_num_errors = " number > h_file
