@@ -73,7 +73,7 @@ static int find_service(const char *service)
 
 	iService = lp_servicenumber(service);
 
-	if (iService >= 0 && !VALID_SNUM(iService)) {
+	if (iService >= 0 && !lp_snum_ok(iService)) {
 		DEBUG(0,("Invalid snum %d for %s\n",iService, service));
 		iService = -1;
 	}
@@ -117,7 +117,8 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(req, type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(tcon))));
+		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", 
+			  lp_servicename(tcon->service)));
 		return status;
 	}
 

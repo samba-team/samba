@@ -223,7 +223,7 @@ static int open_socket_out(int type, struct ipv4_addr *addr, int port, int timeo
 	if (type != SOCK_STREAM) return(res);
 	
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
-	putip((char *)&sock_out.sin_addr,(char *)addr);
+	sock_out.sin_addr.s_addr = addr->addr;
 	
 	sock_out.sin_port = htons( port );
 	sock_out.sin_family = PF_INET;
@@ -385,7 +385,7 @@ struct ldap_connection *ldap_connect(TALLOC_CTX *mem_ctx, const char *url)
 		return NULL;
 	}
 
-	putip((char *)&ip, (char *)hp->h_addr);
+	memcpy((char *)&ip, (char *)hp->h_addr, 4);
 
 	conn->sock = open_socket_out(SOCK_STREAM, &ip, conn->port, LDAP_CONNECTION_TIMEOUT);
 	if (conn->sock < 0) {

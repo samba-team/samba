@@ -44,7 +44,7 @@ pid_t pidfile_pid(const char *name)
 		return 0;
 	}
 
-	ZERO_ARRAY(pidstr);
+	ZERO_STRUCT(pidstr);
 
 	if (read(fd, pidstr, sizeof(pidstr)-1) <= 0) {
 		goto noproc;

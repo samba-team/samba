@@ -527,6 +527,8 @@ static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 	return correct;
 }
 
+#define BOOLSTR(b) ((b) ? "Yes" : "No")
+
 static BOOL run_readwritetest(void)
 {
 	struct smbcli_state *cli1, *cli2;

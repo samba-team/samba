@@ -52,7 +52,7 @@ static int smbsrv_tcon_destructor(void *ptr)
 
 	DEBUG(3,("%s closed connection to service %s\n",
 		 socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon),
-		 lp_servicename(SNUM(tcon))));
+		 lp_servicename(tcon->service)));
 
 	/* tell the ntvfs backend that we are disconnecting */
 	ntvfs_disconnect(tcon);
