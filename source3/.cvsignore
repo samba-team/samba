@@ -1,6 +1,7 @@
 .headers.stamp
 .proto.stamp
 ID
+ID
 Makefile
 bin
 config.cache
@@ -10,3 +11,6 @@ cvs.log
 dox
 libtool
 so_locations
+testdir
+testtmp
+*.po
