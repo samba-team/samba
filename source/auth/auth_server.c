@@ -142,11 +142,14 @@ static DATA_BLOB auth_get_challenge_server(void **my_private_data, const struct 
 	
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
+
 		if ((cli->sec_mode & 2) == 0) {
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
 			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
-
+			
+			/* However, it is still a perfectly fine connection
+			   to pass that unencrypted password over */
 			*my_private_data = (void *)cli;
 			return data_blob(NULL, 0);
 			
@@ -204,7 +207,7 @@ static NTSTATUS check_smbserver_security(void *my_private_data,
 	}
 
 	if (!cli || !cli->initialised) {
-		DEBUG(1,("password server %s is not connected\n", cli->desthost));
+		DEBUG(1,("password server is not connected (cli not initilised)\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}  
 	
