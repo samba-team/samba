@@ -113,26 +113,23 @@ parse_ports(const char *str)
 	if(strcmp(p, "+") == 0) {
 #ifdef HAVE_IPV6
 	    add_standard_ports(AF_INET6);
-#else
-	    add_standard_ports(AF_INET);
 #endif
+	    add_standard_ports(AF_INET);
 	} else {
 	    char *q = strchr(p, '/');
 	    if(q){
 		*q++ = 0;
 #ifdef HAVE_IPV6
 		add_port(AF_INET6, p, q);
-#else
-		add_port(AF_INET, p, q);
 #endif
+		add_port(AF_INET, p, q);
 	    }else {
 #ifdef HAVE_IPV6
 		add_port(AF_INET6, p, "udp");
 		add_port(AF_INET6, p, "tcp");
-#else
+#endif
 		add_port(AF_INET, p, "udp");
 		add_port(AF_INET, p, "tcp");
-#endif
 	    }
 	}
 	    
