@@ -498,6 +498,10 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			dump_data(10, request.negTokenInit.mechToken.data,
 				  request.negTokenInit.mechToken.length);
 
+			response.type = SPNEGO_NEG_TOKEN_TARG;
+			response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+
 			status = ntlmssp_server_update(ntlmssp_state,
 						       request.negTokenInit.mechToken,
 						       &response.negTokenTarg.responseToken);
@@ -505,10 +509,18 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 
 	} else {
 
-		/* request.type == SPNEGO_NEG_TOKEN_TARG */
+		if ( (request.negTokenTarg.supportedMech == NULL) ||
+		     ( strcmp(request.negTokenTarg.supportedMech, OID_NTLMSSP) != 0 ) ) {
+			/* Kerberos should never send a negTokenTarg, OID_NTLMSSP
+			   is the only one we support that sends this stuff */
+			DEBUG(1, ("Got a negTokenTarg for something non-NTLMSSP: %s\n",
+				  request.negTokenTarg.supportedMech));
+			x_fprintf(x_stdout, "BH\n");
+			return;
+		}
 
 		if (request.negTokenTarg.responseToken.data == NULL) {
-			DEBUG(1, ("Got a negTokenArg without a responseToken!\n"));
+			DEBUG(1, ("Got a negTokenTarg without a responseToken!\n"));
 			x_fprintf(x_stdout, "BH\n");
 			return;
 		}
@@ -516,6 +528,10 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		status = ntlmssp_server_update(ntlmssp_state,
 					       request.negTokenTarg.responseToken,
 					       &response.negTokenTarg.responseToken);
+
+		response.type = SPNEGO_NEG_TOKEN_TARG;
+		response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+		response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 
 		if (NT_STATUS_IS_OK(status)) {
 			user = strdup(ntlmssp_state->user);
@@ -525,10 +541,6 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	}
 
 	free_spnego_data(&request);
-
-	response.type = SPNEGO_NEG_TOKEN_TARG;
-	response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
-	response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 
 	if (NT_STATUS_IS_OK(status)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
@@ -724,16 +736,102 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 
 static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
-	DEBUG(1, ("to be done ... \n"));
-	return False;
+	char *principal;
+	DATA_BLOB tkt, to_server;
+	unsigned char session_key_krb5[16];
+	SPNEGO_DATA reply;
+	char *reply_base64;
+	
+	const char *my_mechs[] = {OID_KERBEROS5_OLD, NULL};
+	ssize_t len;
+
+	if ( (spnego.negTokenInit.mechListMIC.data == NULL) ||
+	     (spnego.negTokenInit.mechListMIC.length == 0) ) {
+		DEBUG(1, ("Did not get a principal for krb5\n"));
+		return False;
+	}
+
+	principal = malloc(spnego.negTokenInit.mechListMIC.length+1);
+
+	if (principal == NULL) {
+		DEBUG(1, ("Could not malloc principal\n"));
+		return False;
+	}
+
+	memcpy(principal, spnego.negTokenInit.mechListMIC.data,
+	       spnego.negTokenInit.mechListMIC.length);
+	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
+
+	tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+
+	if (tkt.data == NULL) {
+
+		pstring user;
+
+		/* Let's try to first get the TGT, for that we need a
+                   password. */
+
+		if (opt_password == NULL) {
+			DEBUG(10, ("Requesting password\n"));
+			x_fprintf(x_stdout, "PW\n");
+			return True;
+		}
+
+		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
+
+		if (kerberos_kinit_password(user, opt_password, 0) != 0) {
+			DEBUG(10, ("Requesting TGT failed\n"));
+			x_fprintf(x_stdout, "NA\n");
+			return True;
+		}
+
+		tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+	}
+
+	ZERO_STRUCT(reply);
+
+	reply.type = SPNEGO_NEG_TOKEN_INIT;
+	reply.negTokenInit.mechTypes = my_mechs;
+	reply.negTokenInit.reqFlags = 0;
+	reply.negTokenInit.mechToken = tkt;
+	reply.negTokenInit.mechListMIC = data_blob(NULL, 0);
+
+	len = write_spnego_data(&to_server, &reply);
+	data_blob_free(&tkt);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not write SPNEGO data blob\n"));
+		return False;
+	}
+
+	reply_base64 = base64_encode_data_blob(to_server);
+	x_fprintf(x_stdout, "KK %s *\n", reply_base64);
+
+	SAFE_FREE(reply_base64);
+	data_blob_free(&to_server);
+	DEBUG(10, ("sent GSS-SPNEGO KERBEROS5 negTokenInit\n"));
+	return True;
 }
 
 static void manage_client_krb5_targ(SPNEGO_DATA spnego)
 {
-	DEBUG(1, ("Got a negTokenTarg with a Kerberos token. This should not "
-		  "happen!\n"));
-	x_fprintf(x_stdout, "BH\n");
-	return;
+	switch (spnego.negTokenTarg.negResult) {
+	case SPNEGO_ACCEPT_INCOMPLETE:
+		DEBUG(1, ("Got a Kerberos negTokenTarg with ACCEPT_INCOMPLETE\n"));
+		x_fprintf(x_stdout, "BH\n");
+		break;
+	case SPNEGO_ACCEPT_COMPLETED:
+		DEBUG(10, ("Accept completed\n"));
+		x_fprintf(x_stdout, "AF\n");
+		break;
+	case SPNEGO_REJECT:
+		DEBUG(10, ("Rejected\n"));
+		x_fprintf(x_stdout, "NA\n");
+		break;
+	default:
+		DEBUG(1, ("Got an invalid negTokenTarg\n"));
+		x_fprintf(x_stdout, "AF\n");
+	}
 }
 
 static void manage_gss_spnego_client_request(enum squid_mode squid_mode,

@@ -618,7 +618,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(TDBBASE_OBJ)
 
 NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
-		libsmb/asn1.o libsmb/spnego.o
+		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o
 
 ######################################################################
 # now the rules...
@@ -1079,7 +1079,7 @@ bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(UBIQX_OBJ) $(LIBS) @POPTLIBS@
+		$(UBIQX_OBJ) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
