@@ -487,7 +487,7 @@ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_
  */
 
 void gensec_want_feature(struct gensec_security *gensec_security,
-			 uint32 feature) 
+			 uint32_t feature) 
 {
 	gensec_security->want_features |= feature;
 }
@@ -498,7 +498,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
  */
 
 BOOL gensec_have_feature(struct gensec_security *gensec_security,
-			 uint32 feature) 
+			 uint32_t feature) 
 {
 	if (!gensec_security->ops->have_feature) {
 		return False;
