@@ -183,10 +183,133 @@ static int pvfs_fd_destructor(void *p)
 	return 0;
 }
 
+
+/*
+  form the lock context used for byte range locking and opendb
+  locking. Note that we must zero here to take account of
+  possible padding on some architectures
+*/
+static NTSTATUS pvfs_locking_key(struct pvfs_filename *name, 
+				 TALLOC_CTX *mem_ctx, DATA_BLOB *key)
+{
+	struct {
+		dev_t device;
+		ino_t inode;
+	} lock_context;
+	ZERO_STRUCT(lock_context);
+
+	lock_context.device = name->st.st_dev;
+	lock_context.inode = name->st.st_ino;
+
+	*key = data_blob_talloc(mem_ctx, &lock_context, sizeof(lock_context));
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	return NT_STATUS_OK;
+}
+
+
+/*
+  create a new file
+*/
+static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs, 
+				 struct smbsrv_request *req, 
+				 struct pvfs_filename *name, 
+				 union smb_open *io)
+{
+	struct pvfs_file *f;
+	NTSTATUS status;
+	int flags, fnum, fd;
+	struct odb_lock *lck;
+
+	flags = O_RDWR;
+
+	f = talloc_p(req, struct pvfs_file);
+	if (f == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	if (fnum == -1) {
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
+	/* create the file */
+	fd = open(name->full_name, flags | O_CREAT | O_EXCL, 0644);
+	if (fd == -1) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	/* re-resolve the open fd */
+	status = pvfs_resolve_name_fd(pvfs, fd, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return status;
+	}
+
+	/* form the lock context used for byte range locking and
+	   opendb locking */
+	status = pvfs_locking_key(name, f, &f->locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return status;
+	}
+
+	/* grab a lock on the open file record */
+	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+			 name->full_name));
+		/* we were supposed to do a blocking lock, so something
+		   is badly wrong! */
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	f->fnum = fnum;
+	f->fd = fd;
+	f->name = talloc_steal(f, name);
+	f->session = req->session;
+	f->smbpid = req->smbpid;
+	f->pvfs = pvfs;
+	f->pending_list = NULL;
+	f->lock_count = 0;
+
+	DLIST_ADD(pvfs->open_files, f);
+
+	/* setup a destructor to avoid file descriptor leaks on
+	   abnormal termination */
+	talloc_set_destructor(f, pvfs_fd_destructor);
+
+	ZERO_STRUCT(io->generic.out);
+	
+	io->generic.out.create_time = name->dos.create_time;
+	io->generic.out.access_time = name->dos.access_time;
+	io->generic.out.write_time = name->dos.write_time;
+	io->generic.out.change_time = name->dos.change_time;
+	io->generic.out.fnum = f->fnum;
+	io->generic.out.alloc_size = name->dos.alloc_size;
+	io->generic.out.size = name->st.st_size;
+	io->generic.out.attrib = name->dos.attrib;
+	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
+	io->generic.out.is_directory = 0;
+	io->generic.out.file_type = FILE_TYPE_DISK;
+
+	/* success - keep the file handle */
+	talloc_steal(pvfs, f);
+
+	/* release the opendb lock (in case a chained request
+	   blocks) */
+	talloc_free(lck);
+
+	return NT_STATUS_OK;
+}
+
+
 /*
   open a file
-  TODO: this is a temporary implementation derived from the simple backend
-  its purpose is to allow other tests to run 
 */
 NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		   struct smbsrv_request *req, union smb_open *io)
@@ -196,12 +319,14 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
 	NTSTATUS status;
-	struct {
-		dev_t device;
-		ino_t inode;
-	} lock_context;
 	int fnum;
+	struct odb_lock *lck;
 
+	/* use the generic mapping code to avoid implementing all the
+	   different open calls. This won't allow openx to work
+	   perfectly as the mapping code has no way of knowing if two
+	   opens are on the same connection, so this will need to
+	   change eventually */	   
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io, ntvfs);
 	}
@@ -229,7 +354,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case NTCREATEX_DISP_OVERWRITE_IF:
-		flags = O_CREAT | O_TRUNC;
+		flags = O_TRUNC;
 		break;
 
 	case NTCREATEX_DISP_OPEN:
@@ -250,11 +375,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (name->exists) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
-		flags = O_CREAT | O_EXCL;
+		flags = 0;
 		break;
 
 	case NTCREATEX_DISP_OPEN_IF:
-		flags = O_CREAT;
+		flags = 0;
 		break;
 
 	default:
@@ -263,30 +388,65 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	flags |= O_RDWR;
 
+	/* handle creating a new file separately */
+	if (!name->exists) {
+		status = pvfs_create_file(pvfs, req, name, io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			return status;
+		}
+
+		/* we've hit a race - the file was created during this call */
+		if (io->generic.in.open_disposition == NTCREATEX_DISP_CREATE) {
+			return status;
+		}
+
+		/* try re-resolving the name */
+		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname,
+					   PVFS_RESOLVE_NO_WILDCARD, &name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		/* fall through to a normal open */
+	}
+
 	f = talloc_p(req, struct pvfs_file);
 	if (f == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
-	if (fnum == -1) {
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	/* form the lock context used for byte range locking and
+	   opendb locking */
+	status = pvfs_locking_key(name, f, &f->locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	fd = open(name->full_name, flags, 0644);
+	/* get a lock on this file before the actual open */
+	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+			 name->full_name));
+		/* we were supposed to do a blocking lock, so something
+		   is badly wrong! */
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* do the actual open */
+	fd = open(name->full_name, flags);
 	if (fd == -1) {
-		if (errno == 0) {
-			errno = ENOENT;
-		}
-		idr_remove(pvfs->idtree_fnum, fnum);
 		return pvfs_map_errno(pvfs, errno);
 	}
 
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(pvfs, fd, name);
 	if (!NT_STATUS_IS_OK(status)) {
-		idr_remove(pvfs->idtree_fnum, fnum);
 		return status;
+	}
+
+	/* allocate a fnum */
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	if (fnum == -1) {
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
 	f->fnum = fnum;
@@ -298,17 +458,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->pending_list = NULL;
 	f->lock_count = 0;
 
-	/* we must zero here to take account of padding */
-	ZERO_STRUCT(lock_context);
-	lock_context.device = name->st.st_dev;
-	lock_context.inode = name->st.st_ino;
-	f->locking_key = data_blob_talloc(f, &lock_context, sizeof(lock_context));
+	DLIST_ADD(pvfs->open_files, f);
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
 	talloc_set_destructor(f, pvfs_fd_destructor);
-
-	DLIST_ADD(pvfs->open_files, f);
 
 	ZERO_STRUCT(io->generic.out);
 	
@@ -320,10 +474,15 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	io->generic.out.alloc_size = name->dos.alloc_size;
 	io->generic.out.size = name->st.st_size;
 	io->generic.out.attrib = name->dos.attrib;
-	io->generic.out.is_directory = (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)?1:0;
+	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
+	io->generic.out.is_directory = 0;
+	io->generic.out.file_type = FILE_TYPE_DISK;
 
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
+
+	/* unlock the locking database */
+	talloc_free(lck);
 
 	return NT_STATUS_OK;
 }
@@ -349,7 +508,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (f->fd != -1 && 
-	    close(f->fd) != 0) {
+	    close(f->fd) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
 	} else {
 		status = NT_STATUS_OK;
