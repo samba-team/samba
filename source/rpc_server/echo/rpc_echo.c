@@ -137,6 +137,20 @@ static void echo_TestSleep_handler(struct event_context *ev, struct timed_event 
 	}
 }
 
+static NTSTATUS echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSurrounding *r)
+{
+	if (!r->in.data) {
+		r->out.data = NULL;
+		return NT_STATUS_OK;
+	}
+
+	r->out.data = talloc(mem_ctx, struct echo_Surrounding);
+	r->out.data->x = 2 * r->in.data->x;
+	r->out.data->surrounding = talloc_zero_array(mem_ctx, uint16_t, r->out.data->x);
+
+	return NT_STATUS_OK;
+}
+
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
 	struct echo_TestSleep_private *p;
