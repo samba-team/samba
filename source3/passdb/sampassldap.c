@@ -83,11 +83,10 @@ static void ldap_read_time(char *attribute, NTTIME *nttime)
         time_t t;
 
         if(ldap_get_attribute(attribute, timestr))
+        {
                 t = (time_t)strtol(timestr, NULL, 16);
-        else
-                t = (time_t)(-1);
-
-        unix_to_nt_time(nttime, t);
+                unix_to_nt_time(nttime, t);
+        }
 }
 
 
@@ -116,48 +115,30 @@ static struct sam_passwd *ldapsam_getsam()
 
 	if(ldap_get_attribute("gidNumber", temp))
 		sam21->unix_gid = atoi(temp);
-	else
-		sam21->unix_gid = (gid_t)(-1);
 	
 	if(ldap_get_attribute("grouprid", temp))
 		sam21->group_rid = strtol(temp, NULL, 16);
-	else
-		sam21->group_rid = 0xFFFFFFFF;
 	
 	if(ldap_get_attribute("cn", full_name))
 		sam21->full_name = full_name;
-	else
-		sam21->full_name = NULL;
 
 	if(ldap_get_attribute("description", acct_desc))
 		sam21->acct_desc = acct_desc;
-	else
-		sam21->acct_desc = NULL;
 
 	if(ldap_get_attribute("smbHome", home_dir))
 		sam21->home_dir = home_dir;
-	else
-		sam21->home_dir = NULL;
 
 	if(ldap_get_attribute("homeDrive", home_drive))
 		sam21->dir_drive = home_drive;
-	else
-		sam21->dir_drive = NULL;
 
 	if(ldap_get_attribute("script", logon_script))
 		sam21->logon_script = logon_script;
-	else
-		sam21->logon_script = NULL;
 
 	if(ldap_get_attribute("profile", profile_path))
 		sam21->profile_path = profile_path;
-	else
-		sam21->profile_path = NULL;
 
 	if(ldap_get_attribute("workstations", workstations))
 		sam21->workstations = workstations;
-	else
-		sam21->workstations = NULL;
 
 	ldap_read_time("pwdCanChange", &sam21->pass_can_change_time);
 	ldap_read_time("pwdMustChange", &sam21->pass_must_change_time);
