@@ -1924,7 +1924,13 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Init the parse struct we will marshall into.
    */
 
-  prs_init(&pd, sec_desc_size, 4, MARSHALL);
+  prs_init(&pd, 0, 4, MARSHALL);
+
+  /*
+   * copy the data out of the marshalled structure
+   */
+
+  prs_give_memory( &pd, data, (uint32)sec_desc_size, False);
 
   /*
    * Finally, linearize into the outgoing buffer.
@@ -1942,12 +1948,6 @@ security descriptor.\n"));
      */ 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
-
-  /*
-   * copy the data out of the marshalled structure
-   */
-
-  prs_give_memory( &pd, data, (uint32)sec_desc_size, False);
 
   /*
    * Now we can delete the security descriptor.

@@ -408,6 +408,29 @@ struct smb_message_struct
    {SMBgetmac,"SMBgetmac",NULL,AS_GUEST}
  };
 
+/*******************************************************************
+dump a prs to a file
+ ********************************************************************/
+static void smb_dump(char *name, int type, char *data, ssize_t len)
+{
+	int fd, i;
+	pstring fname;
+	if (DEBUGLEVEL < 50) return;
+
+	if (len < 4) len = smb_buflen(data);
+	for (i=1;i<100;i++) {
+		slprintf(fname,sizeof(fname), "/tmp/%s.%d.%s", name, i,
+				type ? "req" : "resp");
+		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+		if (fd != -1 || errno != EEXIST) break;
+	}
+	if (fd != -1) {
+		write(fd, data, len);
+		close(fd);
+		DEBUG(0,("created %s len %d\n", fname, len));
+	}
+}
+
 
 /****************************************************************************
 do a switch on the message type, and return the response size
@@ -445,12 +468,14 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   if (match == num_smb_messages)
   {
     DEBUG(0,("Unknown message type %d!\n",type));
+    smb_dump("Unknown", 1, inbuf, size);
     outsize = reply_unknown(inbuf,outbuf);
   }
   else
   {
     DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,(int)pid));
 
+    smb_dump(smb_messages[match].name, 1, inbuf, size);
     if(global_oplock_break)
     {
       int flags = smb_messages[match].flags;
@@ -547,6 +572,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       outsize = reply_unknown(inbuf,outbuf);
     }
   }
+
+  smb_dump(smb_messages[match].name, 0, outbuf, outsize);
 
   return(outsize);
 }
