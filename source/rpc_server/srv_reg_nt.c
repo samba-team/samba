@@ -322,8 +322,6 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 
 	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
 	
-	DEBUG(5,("reg_open_entry: Enter\n"));
-		   
 	result = open_registry_key( p, &pol, key, name, 0x0 );
 	
 	init_reg_r_open_entry( r_u, &pol, result );
