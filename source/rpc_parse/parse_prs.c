@@ -146,6 +146,15 @@ void prs_mem_free(prs_struct *ps)
 }
 
 /*******************************************************************
+ Clear the memory in a parse structure.
+ ********************************************************************/
+
+void prs_mem_clear(prs_struct *ps)
+{
+	memset(ps->data_p, '\0', (size_t)ps->buffer_size);
+}
+
+/*******************************************************************
  Allocate memory when unmarshalling... Always zero clears.
  ********************************************************************/
 
@@ -261,7 +270,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
-		memset(new_data, '\0', new_size );
+		memset(new_data, '\0', (size_t)new_size );
 	} else {
 		/*
 		 * If the current buffer size is bigger than the space needed, just 
@@ -275,7 +284,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 			return False;
 		}
 
-		memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
+		memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 	}
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
@@ -306,7 +315,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
+	memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
