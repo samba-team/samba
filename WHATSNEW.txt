@@ -1,22 +1,14 @@
-                  WHATS NEW IN Samba 3.0.0 beta3
-                           July 16 2003
+                   WHATS NEW IN Samba 3.0.0 RC1
+                          Auguest 15 2003
                   ==============================
 
-This is the third beta release of Samba 3.0.0. This is a 
-non-production release intended for testing purposes.  Use 
-at your own risk. 
+This is the first release candiate snapshot of Samba 3.0.0. A release candiate 
+implies that the code is close to a final release, remember that this is still
+a non-production release intended for testing purposes.  Use at your own risk. 
 
 The purpose of this beta release is to get wider testing of the major
-new pieces of code in the current Samba 3.0 development tree. We have
-officially ceased development on the 2.2.x release of Samba and are
-concentrating on Samba 3.0. To reduce the time before the final 
-Samba 3.0 release we need as many people as possible to start testing 
-these beta releases, and to provide high quality feedback on what 
-needs fixing.
-
-Samba 3.0 is feature complete. However there is still some final 
-work to be done on certain pieces of functionality.  Please refer to 
-the section on "Known Issues" for more details.
+new pieces of code in the current Samba 3.0 development tree. 
+Please refer to the section on "Known Issues" for more details.
 
 
 Major new features:
@@ -78,11 +70,114 @@ tasks (the current book is up to approximately 400 pages) and to
 refer to the various man pages for information on individual options.
 
 ######################################################################
-Changes since 3.0beta2
+Changes since 3.0beta3
 ######################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details
+
+1)  Various memory leak fixes.
+2)  Provide full support SMB signing (server and client)
+3)  Check for broken getgrouplist() in glibc.
+4)  Don't get stuck in an infinite loop listing directories 
+    recursively if the server returns an empty directory name
+    (bug 222).
+5)  Idle LDAP connections after 150 seconds.
+6)  Patched make uninstallmodules (bug 236).
+7)  Fix bug that caused smbd to return incomplete directory listings
+    when UNIX files contained MS wildcards characters.
+8)  Quiet default debug messages in command line tools.
+9)  Fixes to avoid panics on invalid multi-byte strings.
+10) Fix error messages when creating a new smbpasswd file (bug 198).
+11) Implemented better detection routines in autoconf scripts for 
+    locating ads support on the host os.
+12) Fix bug that cuased libraries in /usr/local/lib to be ignored 
+    (bug 174).
+13) Ensure winbind_ads uses the correct realm or domain name when 
+    connecting to trusted DC.
+14) Ensure a correct prototype is created for snprintf() (bug 187)
+15) Stop files being created on read-only shares in some circumstances.
+16) Fix wbinfo -p (bug 251)
+17) Support schannel on any tcp/ip connection if neccessary
+18) Correct bug in user_in_list() so that it works with winbind groups 
+    again.
+19) Ensure the schannel bind credentials default to the domain 
+    of the destination host.
+20) Default password expiration time in account_pol.tdb to never 
+    expire.
+21) Add buttons to SWAT to change the view of smb.conf (bug 212)
+22) Fix incorrect checks that determine whether or not the 'add user 
+    script' has been set.
+23) More cleanup for internal character set conversions.
+24) Fixes for multi-byte strings in stat cache code.
+25) Ensure that the net comand honors the 'workgroup' parameter 
+    in smb.conf when not overidden from the command line.
+26) Add gss-spnego support to the ntlm_auth tool.
+27) Add vfs_default_quota VFS module.
+28) Added server support for NT quota interfaces.
+29) Prevent Krb5 replay attacks by adding a replay_cache.
+30) Fix problems with winbindd and transitive trusts in AD domains.
+31) Added -S to client tools for setting SMB signing options on the 
+    command line.
+32) Fix bug causing the passwd change program to not be called as root.
+33) Fixed data corruption bug in byte-range locking (e.g. affected MS Excel).
+34) Support winbindd on FreeBSD is possible.
+35) Look at the only first OID in the security blob sent in the session 
+    setup request to determine the token type.
+36) Only push locks onto a blocking lock queue if the posix lock failed with 
+    EACCES or EAGAIN (this means another lock conflicts). Else return an 
+    error and don't queue the request.
+37) Fix command line arguement processing for smbtar.
+38) Correct issue that caused smbd to return generic unix_user.<uid> 
+    for lookupsid().
+39) Default to algorithimic mapping when generating a rid for a group
+    mapping.
+40) Expand %g and %G in logon script, profile path, etc... during
+    a domain logon (bug 208).
+41) Make sure smbclient client obeys '-s <config>'
+42) Added win2k3 shadow copy operations to VFS interface.
+43) Allow connections to samba domain member as SERVER\user (don't
+    always default to DOMAIN\user).
+44) Remove checks in winbindd that caused it to attempt to use 
+    non-transitive trust relationships.
+45) Remove delays in winbindd caused by invalid DNS lookups.
+46) Fix supplementary group memberships on systems with slightly 
+    broken NSS implementations (bug 267).
+47) Correct issue that prevented smbclient from view shares on 
+    a win2k server when using a non-anonymous connection (bug 284).
+48) Add --domain=DOMAIN_NAME to wbinfo for limiting operations like 
+    'wbinfo -u' to a single domain.  The '.' character represents 
+    our domain.
+49) Fix group enumeration bug when using an LDAP directory for 
+    storing group mappings.
+50) Fallback to not using NTLMv2 when the extended security 
+    capability bit is not set.
+51) Fix crash in 'wbinfo -a' when using extended characters in the username
+    (bug 269).
+52) Fix multi-byte strupper() panics (bug 205).
+53) Add vfs_readonly VFS module.
+54) Make sure to initialize the sambaNextUserRid and sambaNextGroupRid
+    attributes when using 'idmap backend = ldap' (bug 280).
+55) Make sure that UNIX users shared between a Samba PDC and member 
+    samba server are seen as domain users and not local users on the 
+    domain member.
+56) Fix Query FS Info level 2.
+57) Allow enumeration of users and groups by win9x "file server" (bug 
+    286).
+58) Create symlinks during instal for modules that support mutliple
+    functions (bug 91).
+59) More inconv detection fixes.
+60) Fix path length error in vfs_recycle module (bug 291).
+61) Added server support for the LSA_DS UUID on the \lsarpc pipe.
+    (server DsRoleGetPrimaryDomainInfo() is currently disabled).
+62) Fix SMBseek and get/set position calls.
+62) Fix SetFileInfo level 1.
+63) Added tool to convert smbd log file to a pcap file (log2pcaphex).
+64) 
+
+
+Changes since 3.0beta3
+######################
 
 1)  Added fix for Japanese case names in statcache code; 
     these can change size on upper casing.
