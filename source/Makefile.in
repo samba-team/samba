@@ -29,6 +29,7 @@ SBINDIR = @bindir@
 LIBDIR = @libdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
+SAMBABOOK = @sambabook@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -478,7 +479,7 @@ installcp: installdirs
 	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir) $(SAMBABOOK)
 
 # revert to the previously installed version
 revert:

@@ -1469,6 +1469,29 @@ AC_ARG_WITH(swatdir,
    AC_SUBST(swatdir)]
 )
 
+################################################
+# include Using Samba O'Reilly book
+AC_ARG_WITH(sambabook,
+[  --with-sambabook=DIR  Where to put Using Samba book ($ac_default_prefix/swat/using_samba) (default)
+  --without-sambabook   Don't install Using Samba book],
+[ case "$withval" in
+  yes)
+    AC_MSG_WARN([--with-sambabook called without argument - will use default])
+    sambabook="${prefix}/swat/using_samba"
+  ;;
+  no)
+    AC_MSG_RESULT(no)
+  ;;
+  *)
+    AC_MSG_RESULT(yes)
+    sambabook="$withval"
+    ;;
+  esac
+  AC_SUBST(sambabook)],
+  [sambabook='${prefix}/swat/using_samba'
+   AC_SUBST(sambabook)]
+)
+
 #################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
