@@ -1,3 +1,8 @@
+2004-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.[ch]: add and use and bind9 version of rr type
+	(rk_ns_t_XXX) instead of the old bind4 version (T_XXX)
+
 2004-05-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c (stot): add AAAA
