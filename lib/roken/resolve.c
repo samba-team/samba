@@ -110,8 +110,11 @@ dns_free_data(struct dns_reply *r)
     free (r);
 }
 
-static struct dns_reply*
-parse_reply(unsigned char *data, int len)
+#ifndef TEST_RESOLVE
+static
+#endif
+struct dns_reply*
+parse_reply(const unsigned char *data, size_t len)
 {
     const unsigned char *p;
     char host[128];
