@@ -552,12 +552,12 @@ standard winbind pam module for authentication.  Use caution configuring
 loadable authentication modules as it is possible to make it impossible
 to logon to the system.  More information about the AIX authentication
 module API can be found at &quot;Kernel Extensions and Device Support
-Programming Concepts for AIX&quot;: <link
+Programming Concepts for AIX&quot;: <ulink
 url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/kernextc/sec_load_mod.htm">
-Chapter 18. Loadable Authentication Module Programming Interface</link> 
-and more information on administering the  modules at <link
+Chapter 18. Loadable Authentication Module Programming Interface</ulink> 
+and more information on administering the  modules at <ulink
 url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixbman/baseadmn/iandaadmin.htm">
-&quot;System Management Guide: Operating System and Devices&quot;</link>.
+&quot;System Management Guide: Operating System and Devices&quot;</ulink>.
 </para>
 </sect3>
 
