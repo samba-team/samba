@@ -1,3 +1,31 @@
+2003-03-18  Love  <lha@stacken.kth.se>
+
+	* Makefile.am: always build the libkafs library now that the
+	kerberos 5 can stand on their own
+	
+	* kafs.3: expose the krb5 functions
+	
+	* common.c (kafs_settoken_rxkad): move all content kerberos
+	version from kafs_settoken to kafs_settoken_rxkad
+	(_kafs_fixup_viceid): move the fixup the timestamp to make client
+	happy code here.
+	(_kafs_v4_to_kt): move all the kerberos 4 dependant parts from
+	kafs_settoken here.
+	(*): adapt to kafs_token
+
+	* afskrb5.c (kafs_settoken5): new function, inserts a krb5_creds
+	into kernel
+	(v5_to_kt): new function, stores a krb5_creds in struct kafs_token
+	(get_cred): add a appdefault boolean ("libkafs", realm, "afs-use-524")
+	that can used to toggle if there should v5 token should be used
+	directly or converted via 524 first.
+
+	* afskrb.c: move kafs_settoken here, use struct kafs_token
+	
+	* kafs_locl.h: include krb5-v4compat.h if needed, define an
+	internal structure struct kafs_token that carries around for rxkad
+	data that is independant of kerberos version
+	
 2003-02-18  Love Hörquist Åstrand <lha@it.su.se>
 
 	* dlfcn.h: s/intialize/initialize, from
