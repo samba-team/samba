@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -107,6 +107,8 @@ parse_something (const char *s, const struct units *units,
 	    ++p;
 	    val = -1;
 	}
+	if (val == 0)
+	    val = 1;
 	u_len = strcspn (p, ", \t");
 	partial = 0;
 	partial_unit = NULL;
@@ -149,9 +151,6 @@ parse_something (const char *s, const struct units *units,
 static int
 acc_units(int res, int val, unsigned mult)
 {
-    if (val == 0)
-	val = 1;
-
     return res + val * mult;
 }
 
