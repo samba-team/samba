@@ -2259,7 +2259,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	pw = Get_Pwnam(account);
 
 	/* determine which user right we need to check based on the acb_info */
-	if ( acb_info == ACB_WSTRUST ) {
+	if ( acb_info & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) {
 		se_priv_copy( &se_rights, &se_machine_account );
 		pstrcpy(add_script, lp_addmachine_script());
 	}
