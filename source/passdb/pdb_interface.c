@@ -61,13 +61,13 @@ static void pdb_force_pw_initialization(SAM_ACCOUNT *pass)
 		{
 			lm_pwd = pdb_get_lanman_passwd(pass);
 			if (lm_pwd) 
-				pdb_set_lanman_passwd(pass, NULL, PDB_SET);
+				pdb_set_lanman_passwd(pass, NULL, PDB_CHANGED);
 		}
 		if (pdb_get_init_flags(pass, PDB_NTPASSWD) != PDB_DEFAULT) 
 		{
 			nt_pwd = pdb_get_nt_passwd(pass);
 			if (nt_pwd) 
-				pdb_set_nt_passwd(pass, NULL, PDB_SET);
+				pdb_set_nt_passwd(pass, NULL, PDB_CHANGED);
 		}
 	}
 
@@ -828,8 +828,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 	acb_flags = pdb_get_acct_ctrl( sam_acct );
 	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
 		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
-		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
@@ -853,8 +852,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 	acb_flags = pdb_get_acct_ctrl( sam_acct );
 	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
 		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
-		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
