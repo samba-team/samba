@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "16 May 2002" "" ""
+.TH "SMB.CONF" "5" "13 June 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -424,6 +424,18 @@ All of these options can be set separately for each service
 .PP
 The options are: 
 .TP
+\fBmangling method\fR
+controls the algorithm used for the generating
+the mangled names. Can take two different values, "hash" and
+"hash2". "hash" is the default and is the algorithm that has been
+used in Samba for many years. "hash2" is a newer and considered
+a better algorithm (generates less collisions) in the names.
+However, many Win32 applications store the
+mangled names and so changing to the new algorithm must not be done
+lightly as these applications may break unless reinstalled.
+New installations of Samba may set the default to hash2.
+Default \fBhash\fR.
+.TP
 \fBmangle case = yes/no\fR
 controls if names that have characters that 
 aren't of the "default" case are mangled. For example, 
@@ -721,6 +733,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImangled stack\fR
+.TP 0.2i
+\(bu
+\fImangling method\fR
 .TP 0.2i
 \(bu
 \fImap to guest\fR
@@ -1157,6 +1172,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIforce security mode\fR
+.TP 0.2i
+\(bu
+\fIforce unknown acl user\fR
 .TP 0.2i
 \(bu
 \fIforce user\fR
@@ -2977,6 +2995,28 @@ Default: \fBforce security mode = 0\fR
 
 Example: \fBforce security mode = 700\fR
 .TP
+\fBforce unknown acl user (S)\fR
+If this parameter is set, a Windows NT ACL that contains
+an unknown SID (security descriptor, or representation of a user or group id)
+as the owner or group owner of the file will be silently mapped into the
+current UNIX uid or gid of the currently connected user.
+
+This is designed to allow Windows NT clients to copy files and
+folders containing ACLs that were created locally on the client machine
+and contain users local to that machine only (no domain users) to be
+copied to a Samba server (usually with XCOPY /O) and have the unknown
+userid and groupid of the file owner map to the current connected user.
+This can only be fixed correctly when winbindd allows arbitrary mapping
+from any Windows NT SID to a UNIX uid or gid.
+
+Try using this parameter when XCOPY /O gives an ACCESS_DENIED error.
+
+See also \fIforce group
+\fR
+Default: \fBFalse\fR
+
+Example: \fBforce unknown acl user = yes\fR
+.TP
 \fBforce user (S)\fR
 This specifies a UNIX user name that will be 
 assigned as the default user for all users connecting to this service. 
@@ -4072,7 +4112,7 @@ or whether non-DOS names should simply be ignored.
 
 See the section on  NAME MANGLING for details on how to control the mangling process.
 
-If mangling is used then the mangling algorithm is as follows:
+If mangling algorithm "hash" is used then the mangling algorithm is as follows:
 .RS
 .TP 0.2i
 \(bu
@@ -4118,6 +4158,43 @@ in a directory share the same first five alphanumeric characters.
 The probability of such a clash is 1/1300.
 .PP
 .PP
+If mangling algorithm "hash2" is used then the mangling algorithm is as follows:
+.PP
+.RS
+.TP 0.2i
+\(bu
+The first alphanumeric character 
+before the rightmost dot of the filename is preserved, forced 
+to upper case, and appears as the first character of the mangled name.
+.TP 0.2i
+\(bu
+A base63 hash of 5 characters is generated and the
+first 4 characters of that hash are appended to the first character.
+.TP 0.2i
+\(bu
+A tilde "~" is appended to the first part of the mangled
+name, followed by the final character of the base36 hash of the name.
+
+Note that the character to use may be specified using 
+the \fImangling char\fR
+option, if you don't like '~'.
+.TP 0.2i
+\(bu
+The first three alphanumeric characters of the final 
+extension are preserved, forced to upper case and appear as the 
+extension of the mangled name. The final extension is defined as that 
+part of the original filename after the rightmost dot. If there are no 
+dots in the filename, the mangled name will have no extension (except 
+in the case of "hidden files" - see below).
+.TP 0.2i
+\(bu
+Files whose UNIX name begins with a dot will be 
+presented as DOS hidden files. The mangled name will be created as 
+for other filenames, but with the leading dot removed and "___" as 
+its extension regardless of actual original extension (that's three 
+underscores).
+.RE
+.PP
 The name mangling (if enabled) allows a file to be 
 copied between UNIX directories from Windows/DOS while retaining 
 the long UNIX filename. UNIX files can be renamed to a new extension 
@@ -4157,6 +4234,21 @@ it to whatever you prefer.
 Default: \fBmangling char = ~\fR
 
 Example: \fBmangling char = ^\fR
+.TP
+\fBmangling mathod(G)\fR
+controls the algorithm used for the generating
+the mangled names. Can take two different values, "hash" and
+"hash2". "hash" is the default and is the algorithm that has been
+used in Samba for many years. "hash2" is a newer and considered
+a better algorithm (generates less collisions) in the names.
+However, many Win32 applications store the mangled names and so
+changing to the new algorithm must not be done
+lightly as these applications may break unless reinstalled.
+New installations of Samba may set the default to hash2.
+
+Default: \fBmangling method = hash\fR
+
+Example: \fBmangling method = hash2\fR
 .TP
 \fBmap archive (S)\fR
 This controls whether the DOS archive attribute 

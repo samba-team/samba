@@ -500,8 +500,10 @@
 		lightly as these applications may break unless reinstalled.
 		New installations of Samba may set the default to hash2.
 		Default <emphasis>hash</emphasis>.</para></listitem>
-		</varlistentry> 
+		</varlistentry>
+		
 	
+		<varlistentry>
 		<term>mangle case = yes/no</term>
 		<listitem><para> controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
