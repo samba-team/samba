@@ -51,6 +51,12 @@ void cmd_help(char *dum_in, char *dum_out);
 
 /*The following definitions come from  clientgen.c  */
 
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
+                  char *params, uint32 param_count, uint32 max_param_count,
+                  char *data, uint32 data_count, uint32 max_data_count,
+                  char **rparam, uint32 *rparam_count,
+                  char **rdata, uint32 *rdata_count);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
