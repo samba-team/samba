@@ -1159,7 +1159,8 @@ AC_ARG_WITH(ssl,
     fi
 
     if test ! -d ${withval}; then
-      { echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2; exit 1 }
+      echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2
+      exit 1
     fi 
 
     CFLAGS="-DHAVE_CRYPT_DECL $CFLAGS"  # Damn, SSLeay defines its own

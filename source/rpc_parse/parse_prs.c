@@ -180,7 +180,7 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len/2)
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len)
 	ps->offset += str->buf_len;
 
 	return True;
