@@ -419,6 +419,15 @@ int getpty(int *ptynum)
 	}
 	return -1;
 #else
+#if IRIX == 4
+	int master, slave;
+	char *p;
+	p = _getpty(&master, O_RDWR, 0600, 1);
+	if(p == NULL)
+	    return -1;
+	strcpy(line, p);
+	return master;
+#else
 
         int p;
 	char *cp, *p1, *p2;
@@ -541,6 +550,7 @@ int getpty(int *ptynum)
 #endif	/* STREAMSPTY */
 #endif /* OPENPTY */
 	return(-1);
+#endif
 #endif
 }
 
