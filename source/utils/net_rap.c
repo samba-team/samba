@@ -28,29 +28,13 @@
 #include "../utils/net.h"
 
 /* The following messages were for error checking that is not properly 
-   reported at the moment.  At least some of them need to be reinstated */
-#define ERRMSG_NOCONN_BROWSE_MSTR	"\nUnable to connect to browse master\n"
-#define ERRMSG_FILEID_MISSING		"\nMissing fileid of file to close\n\n"
-#define ERRMSG_GROUPNAME_MISSING        "\n\nGroup name not specified\n"
-#define ERRMSG_USERNAME_MISSING        "\n\nUser name not specified\n"
-#define ERRMSG_SHARENAME_MISSING        "\n\nShare name not specified\n"
+   reported at the moment.  Which should be reinstated? */
 #define ERRMSG_TARGET_WG_NOT_VALID      "\nTarget workgroup option not valid "\
 					"except on net rap server command, ignored"
 #define ERRMSG_INVALID_HELP_OPTION	"\nInvalid help option\n"
 
-#define ERRMSG_SPURIOUS_PARM            "\nInvalid paramater ignored: %s\n"
 #define ERRMSG_BOTH_SERVER_IPADDRESS    "\nTarget server and IP address both "\
   "specified. Do not set both at the same time.  The target IP address was used\n"
-
-/* Column headers */
-#define COMMENT_STR   "Comment "
-#define USER_STR      "User name "
-#define GROUP_STR     "Group name "  
-#define SERVICE_STR   "Service name"
-#define HOMED_STR     "Home directory "
-#define LOGONS_STR    "Logon script "
-
-#define COMMENT_USAGE     "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 
 static const char *share_type[] = {
   "Disk",
@@ -58,7 +42,6 @@ static const char *share_type[] = {
   "Dev",
   "IPC"
 };
-
 
 static int errmsg_not_implemented(void)
 {
@@ -126,8 +109,10 @@ static int rap_file_close(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc == 0)
+	if (argc == 0) {
+		d_printf("\nMissing fileid of file to close\n\n");
 		return net_rap_file_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -205,7 +190,8 @@ int net_rap_share_usage(int argc, const char **argv)
 	 "\nnet rap share CLOSE <sharename> [misc. options] [targets]"\
 	 "\n\tDeletes a share from a server (makes the export inactive)\n");
 	general_rap_usage(argc, argv);
-	d_printf(COMMENT_USAGE);
+	d_printf(
+	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	d_printf("\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
 	return -1;
 }
@@ -229,8 +215,8 @@ static int rap_share_delete(int argc, const char **argv)
 	int ret;
 	
 	if (argc == 0) {
-		d_printf(ERRMSG_SHARENAME_MISSING);
-		return -1;
+		d_printf("\n\nShare name not specified\n");
+		return net_rap_share_usage(argc, argv);
 	}
 
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -251,8 +237,8 @@ static int rap_share_add(int argc, const char **argv)
 	char *sharename;
 
 	if (argc == 0) {
-		d_printf(ERRMSG_SHARENAME_MISSING);
-		return -1;
+		d_printf("\n\nShare name not specified\n");
+		return net_rap_share_usage(argc, argv);
 	}
 			
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -652,7 +638,8 @@ int net_rap_user_usage(int argc, const char **argv)
 		 " [targets]\n\tAdd specified user\n");
 
 	general_rap_usage(argc, argv);
-	d_printf(COMMENT_USAGE);
+	d_printf(
+	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	return -1;
 } 
 	
@@ -681,8 +668,10 @@ static int rap_user_delete(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nUser name not specified\n");
                 return net_rap_user_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -698,8 +687,10 @@ static int rap_user_add(int argc, const char **argv)
 	int ret;
 	RAP_USER_INFO_1 userinfo;
 
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nUser name not specified\n");
                 return net_rap_user_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -724,8 +715,10 @@ static int rap_user_info(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nUser name not specified\n");
                 return net_rap_user_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -779,7 +772,8 @@ int net_rap_group_usage(int argc, const char **argv)
 		 " [targets]\n\tCreate specified group\n");
 
 	general_rap_usage(argc, argv);
-	d_printf(COMMENT_USAGE);
+	d_printf(
+	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	return -1;
 }
 
@@ -798,8 +792,10 @@ static int rap_group_delete(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nGroup name not specified\n");
                 return net_rap_group_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -815,8 +811,10 @@ static int rap_group_add(int argc, const char **argv)
 	int ret;
 	RAP_GROUP_INFO_1 grinfo;
 
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nGroup name not specified\n");
                 return net_rap_group_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -845,7 +843,7 @@ int net_rap_group(int argc, const char **argv)
 		if (!(cli = net_make_ipc_connection(0)))
                         return -1;
 		if (opt_long_list_entries) {
-			d_printf("%-21.21s %-50.50s\n", GROUP_STR, COMMENT_STR); 
+			d_printf("Group name            Comment\n");
 			d_printf("-----------------------------\n");
 			ret = cli_RNetGroupEnum(cli, long_group_fn, NULL);
 			cli_shutdown(cli);
@@ -878,8 +876,10 @@ static int rap_groupmember_add(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc != 2) 
+	if (argc != 2) {
+		d_printf("\n\nGroup or user name not specified\n");
                 return net_rap_groupmember_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -893,8 +893,10 @@ static int rap_groupmember_delete(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc != 2) 
+	if (argc != 2) {
+		d_printf("\n\nGroup or user name not specified\n");
                 return net_rap_groupmember_usage(argc, argv);
+	}
 	
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -908,8 +910,10 @@ static int rap_groupmember_list(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	if (argc == 0) 
+	if (argc == 0) {
+		d_printf("\n\nGroup name not specified\n");
                 return net_rap_groupmember_usage(argc, argv);
+	}
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -985,8 +989,7 @@ int net_rap_service(int argc, const char **argv)
 			return -1;
 
 		if (opt_long_list_entries) {
-			d_printf("%-15.15s %-50.50s\n", 
-				 SERVICE_STR, COMMENT_STR); 
+			d_printf("Service name          Comment\n");
 			d_printf("-----------------------------\n");
 			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
 		}
