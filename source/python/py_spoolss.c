@@ -51,27 +51,22 @@ static PyMethodDef spoolss_methods[] = {
 	/* Open/close printer handles */
 	
 	{ "openprinter", (PyCFunction)spoolss_openprinter, METH_VARARGS | METH_KEYWORDS, 
-	  "openprinter(printername, [creds, access]) -> <spoolss hnd object>
+	  "Open a printer by name in UNC format.
 
-Open a printer given by printername in UNC format.  Optionally a dictionary
-of (domain, username, password) may be given in which case they are used
-when opening the RPC pipe.  An access mask may also be given which defaults
-to MAXIMUM_ALLOWED_ACCESS.
+Optionally a dictionary of (domain, username, password) may be given in
+which case they are used when opening the RPC pipe.  An access mask may
+also be given which defaults to MAXIMUM_ALLOWED_ACCESS.
 
 Example:
 
->>> hnd = spoolss.openprinter(\"\\\\\\\\NPSD-PDC2\\\\meanie\")
-"},
+>>> hnd = spoolss.openprinter(\"\\\\\\\\NPSD-PDC2\\\\meanie\")"},
 	
 	{ "closeprinter", spoolss_closeprinter, METH_VARARGS, 
-	  "closeprinter()
-
-Close a printer handle opened with openprinter or addprinter.
+	  "Close a printer handle opened with openprinter or addprinter.
 
 Example:
 
->>> spoolss.closeprinter(hnd)
-"},
+>>> spoolss.closeprinter(hnd)"},
 
 	{ "addprinterex", (PyCFunction)spoolss_addprinterex, METH_VARARGS, 
 	  "addprinterex()"},
@@ -80,7 +75,7 @@ Example:
 
 	{ "enumprinters", (PyCFunction)spoolss_enumprinters, 
 	  METH_VARARGS | METH_KEYWORDS,
-	  "enumprinters(server, [creds, level, flags]) -> list
+	  "Enumerate printers on a print server.
 
 Return a list of printers on a print server.  The credentials, info level
 and flags may be specified as keyword arguments.
@@ -91,12 +86,11 @@ Example:
 [{'comment': 'i am a comment', 'printer_name': 'meanie', 'flags': 8388608, 
   'description': 'meanie,Generic / Text Only,i am a location'}, 
  {'comment': '', 'printer_name': 'fileprint', 'flags': 8388608, 
-  'description': 'fileprint,Generic / Text Only,'}]
-"},
+  'description': 'fileprint,Generic / Text Only,'}]"},
 
 	{ "enumports", (PyCFunction)spoolss_enumports, 
 	  METH_VARARGS | METH_KEYWORDS,
-	  "enumports(server, [creds, level]) -> list
+	  "Enumerate ports on a print server.
 
 Return a list of ports on a print server.
 
@@ -104,46 +98,71 @@ Example:
 
 >>> print spoolss.enumports(\"\\\\\\\\npsd-pdc2\")
 [{'name': 'LPT1:'}, {'name': 'LPT2:'}, {'name': 'COM1:'}, {'name': 'COM2:'}, 
- {'name': 'FILE:'}, {'name': '\\\\nautilus1\\zpekt3r'}]
-"},
+ {'name': 'FILE:'}, {'name': '\\\\nautilus1\\zpekt3r'}]"},
 
 	{ "enumprinterdrivers", (PyCFunction)spoolss_enumprinterdrivers, 
 	  METH_VARARGS | METH_KEYWORDS, 
-	  "enumprinterdrivers(server, [creds, level, arch]) -> list
+	  "Enumerate printer drivers on a print server.
 
-Return a list of printer drivers.
-"},
+Return a list of printer drivers."},
 	/* Miscellaneous other commands */
 
-	{ "getprinterdriverdir", (PyCFunction)spoolss_getprinterdriverdir, METH_VARARGS |
-	  METH_KEYWORDS, "getprinterdriverdir(server, [creds]) -> string
+	{ "getprinterdriverdir", (PyCFunction)spoolss_getprinterdriverdir, 
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Return printer driver directory.
 
 Return the printer driver directory for a given architecture.  The 
-architecture defaults to \"Windows NT x86\".
-"},
+architecture defaults to \"Windows NT x86\"."},
 
 	/* Other stuff - this should really go into a samba config module
   	   but for the moment let's leave it here. */
 
 	{ "setup_logging", (PyCFunction)py_setup_logging, 
-	  METH_VARARGS | METH_KEYWORDS, "" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Set up debug logging.
 
-	{ "get_debuglevel", (PyCFunction)get_debuglevel, METH_VARARGS, "" },
-	{ "set_debuglevel", (PyCFunction)set_debuglevel, METH_VARARGS, "" },
+Initialises Samba's debug logging system.  One argument is expected which
+is a boolean specifying whether debugging is interactive and sent to stdout
+or logged to a file.
+
+Example:
+
+>>> spoolss.setup_logging(interactive = 1)" },
+
+	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
+	  METH_VARARGS, 
+	  "Set the current debug level.
+
+Example:
+
+>>> spoolss.get_debuglevel()
+0" },
+
+	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
+	  METH_VARARGS, 
+	  "Get the current debug level.
+
+Example:
+
+>>> spoolss.set_debuglevel(10)"
 
 	/* Printer driver routines */
 
 	{ "addprinterdriver", (PyCFunction)spoolss_addprinterdriver, 
-	  METH_VARARGS | METH_KEYWORDS, "" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Add a printer driver." },
 
 	{ "addprinterdriverex", (PyCFunction)spoolss_addprinterdriverex, 
-	  METH_VARARGS | METH_KEYWORDS, "" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Add a printer driver." },
 
 	{ "deleteprinterdriver", (PyCFunction)spoolss_deleteprinterdriver, 
-	  METH_VARARGS | METH_KEYWORDS, "" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Delete a printer driver." },
 
 	{ "deleteprinterdriverex", (PyCFunction)spoolss_deleteprinterdriverex, 
-	  METH_VARARGS | METH_KEYWORDS, "" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Delete a printer driver." },
 
 	{ NULL }
 };
@@ -156,7 +175,7 @@ static PyMethodDef spoolss_hnd_methods[] = {
 
 	{ "getprinter", (PyCFunction)spoolss_hnd_getprinter, 
            METH_VARARGS | METH_KEYWORDS,
-	  "getprinter([level]) -> dict
+	  "Get printer information.
 
 Return a dictionary of print information.  The info level defaults to 1.
 
@@ -165,66 +184,60 @@ Example:
 >>> hnd.getprinter()
 {'comment': 'i am a comment', 'printer_name': '\\\\NPSD-PDC2\\meanie', 
  'description': '\\\\NPSD-PDC2\\meanie,Generic / Text Only,i am a location',
- 'flags': 8388608}
-"},
+ 'flags': 8388608}"},
 
 	{ "setprinter", (PyCFunction)spoolss_hnd_setprinter, 
           METH_VARARGS | METH_KEYWORDS,
-	  "setprinter(dict) -> None
-
-Set printer information.
-"},
+	  "Set printer information."},
 
 	/* Printer drivers */
 
 	{ "getprinterdriver", (PyCFunction)spoolss_hnd_getprinterdriver, 
 	  METH_VARARGS | METH_KEYWORDS, 
-	  "getprinterdriver([level = 1, arch = \"Windows NT x86\"] -> dict
+	  "Return printer driver information.
 
-Return a dictionary of printer driver information.
-"},
+Return a dictionary of printer driver information for the printer driver
+bound to this printer."},
 
 	/* Forms */
 
 	{ "enumforms", (PyCFunction)spoolss_hnd_enumforms, 
           METH_VARARGS | METH_KEYWORDS,
-	  "enumforms([level = 1]) -> list
+	  "Enumerate supported forms.
 
-Return a list of forms supported by a printer.
-"},
+Return a list of forms supported by this printer or print server."},
 
 	{ "setform", (PyCFunction)spoolss_hnd_setform, 
           METH_VARARGS | METH_KEYWORDS,
-	  "setform(dict) -> None
+	  "Set form data.
 
-Set the form given by the dictionary argument.
-"},
+Set the form given by the dictionary argument."},
 
 	{ "addform", (PyCFunction)spoolss_hnd_addform, 
           METH_VARARGS | METH_KEYWORDS,
-	  "Insert a form" },
+	  "Add a new form." },
 
 	{ "getform", (PyCFunction)spoolss_hnd_getform, 
           METH_VARARGS | METH_KEYWORDS,
-	  "Fetch form properties" },
+	  "Get form properties." },
 
 	{ "deleteform", (PyCFunction)spoolss_hnd_deleteform, 
           METH_VARARGS | METH_KEYWORDS,
-	  "Delete a form" },
+	  "Delete a form." },
 
         /* Job related methods */
 
         { "enumjobs", (PyCFunction)spoolss_hnd_enumjobs, 
           METH_VARARGS | METH_KEYWORDS,
-          "Enumerate jobs" },
+          "Enumerate jobs." },
 
         { "setjob", (PyCFunction)spoolss_hnd_setjob, 
           METH_VARARGS | METH_KEYWORDS,
-          "Set job information" },
+          "Set job information." },
 
         { "getjob", (PyCFunction)spoolss_hnd_getjob, 
           METH_VARARGS | METH_KEYWORDS,
-          "Get job information" },
+          "Get job information." },
 
         { "startpageprinter", (PyCFunction)spoolss_hnd_startpageprinter, 
            METH_VARARGS | METH_KEYWORDS,
