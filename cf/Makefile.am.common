@@ -42,7 +42,7 @@ install-suid-programs:
 
 install-exec-hook: install-suid-programs
 
-install-build-headers: 
+install-build-headers::
 	@foo='$(include_HEADERS) $(build_HEADERZ)'; \
 	for f in $$foo; do \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
