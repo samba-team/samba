@@ -102,7 +102,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
-	BOOL ok = False;
+	NTSTATUS status;
 
 	if (!lp_locking(SNUM(conn)))
 		return NT_STATUS_OK;
@@ -114,12 +114,12 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      lock_pid, sys_getpid(), conn->cnum, 
-			      offset, count, 
-			      lock_type);
+		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
+				  lock_pid, sys_getpid(), conn->cnum, 
+				  offset, count, 
+				  lock_type);
 
-		if (ok && lp_posix_locking(SNUM(conn))) {
+		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
 
 			/*
 			 * Try and get a POSIX lock on this range.
@@ -127,9 +127,8 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 			 * overlapping on a different fd. JRA.
 			 */
 
-			ok = set_posix_lock(fsp, offset, count, lock_type);
-
-			if (!ok) {
+			if (!set_posix_lock(fsp, offset, count, lock_type)) {
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -141,9 +140,7 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		}
 	}
 
-	if (!ok) return NT_STATUS_FILE_LOCK_CONFLICT;
-
-	return NT_STATUS_OK; /* Got lock */
+	return status;
 }
 
 /****************************************************************************

@@ -278,15 +278,16 @@ static int lock_compare(struct lock_struct *lck1,
  Lock a range of bytes.
 ****************************************************************************/
 
-BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-	      uint16 smbpid, pid_t pid, uint16 tid,
-	      br_off start, br_off size, 
-	      enum brl_type lock_type)
+NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
+		  uint16 smbpid, pid_t pid, uint16 tid,
+		  br_off start, br_off size, 
+		  enum brl_type lock_type)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
 	char *tp;
+	NTSTATUS status = NT_STATUS_OK;
 
 	kbuf = locking_key(dev,ino);
 
@@ -295,7 +296,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 #if !ZERO_ZERO
 	if (start == 0 && size == 0) {
 		DEBUG(0,("client sent 0/0 lock - please report this\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 #endif
 
@@ -316,6 +317,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
 			if (brl_conflict(&locks[i], &lock)) {
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				goto fail;
 			}
 #if ZERO_ZERO
@@ -329,8 +331,12 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	/* no conflicts - add it to the list of locks */
 	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!tp) goto fail;
-	else dbuf.dptr = tp;
+	if (!tp) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	} else {
+		dbuf.dptr = tp;
+	}
 	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
 	dbuf.dsize += sizeof(lock);
 
@@ -343,12 +349,12 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	free(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
-	return True;
+	return NT_STATUS_OK;
 
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
-	return False;
+	return status;
 }
 
 /****************************************************************************
