@@ -915,4 +915,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 /* Size of buffer to use when moving files across filesystems. */
 #define COPYBUF_SIZE (8*1024)
 
+/* service-based parameter - files are not visible, but are accessible */
+#define DEFAULT_FILES_TO_HIDE "*/.*"
+
 /* _SMB_H */
