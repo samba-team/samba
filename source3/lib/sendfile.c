@@ -38,17 +38,21 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 {
 	size_t total=0;
 	ssize_t ret;
+	ssize_t hdr_len = 0;
 
 	/*
 	 * Send the header first.
 	 * Use MSG_MORE to cork the TCP output until sendfile is called.
 	 */
 
-	while (total < header->length) {
-		ret = sys_send(outfd, header->data + total,header->length - total, MSG_MORE);
-		if (ret == -1)
-			return -1;
-		total += ret;
+	if (header) {
+		hdr_len = header->length;
+		while (total < hd_len) {
+			ret = sys_send(outfd, header->data + total,hdr_len - total, MSG_MORE);
+			if (ret == -1)
+				return -1;
+			total += ret;
+		}
 	}
 
 	total = count;
@@ -67,7 +71,7 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 			return -1; /* I think we're at EOF here... */
 		total -= nwritten;
 	}
-	return count + header->length;
+	return count + hdr_len;
 }
 
 #elif defined(SOLARIS_SENDFILE_API)
@@ -85,16 +89,30 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 {
 	size_t total=0;
 	struct iovec hdtrl[2];
+	size_t hdr_len = 0;
 
-	/* Set up the header/trailer iovec. */
-	hdtrl[0].iov_base = header->data;
-	hdtrl[0].iov_len = header->length;
+	if (header) {
+		/* Set up the header/trailer iovec. */
+		hdtrl[0].iov_base = header->data;
+		hdtrl[0].iov_len = hdr_len = header->length;
+	} else {
+		hdtrl[0].iov_base = NULL;
+		hdtrl[0].iov_len = hdr_len = 0;
+	}
 	hdtrl[1].iov_base = NULL;
 	hdtrl[1].iov_base = 0;
 
 	total = count;
-	while (total) {
+	while (total + hdtrl[0].iov_len) {
 		ssize_t nwritten;
+
+		/*
+		 * HPUX guarantees that if any data was written before
+		 * a signal interrupt then sendfile returns the number of
+		 * bytes written (which may be less than requested) not -1.
+		 * nwritten includes the header data sent.
+		 */
+
 		do {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
 			nwritten = sendfile64(outfd, infd, &offset, total, &hdtrl, 0);
@@ -104,9 +122,31 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1)
 			return -1;
+		if (nwritten == 0)
+			return -1; /* I think we're at EOF here... */
+
+		/*
+		 * If this was a short (signal interrupted) write we may need
+		 * to subtract it from the header data, or null out the header
+		 * data altogether if we wrote more than hdtrl[0].iov_len bytes.
+		 * We change nwritten to be the number of file bytes written.
+		 */
+
+		if (hdtrl[0].iov_base && hdtrl[0].iov_len) {
+			if (nwritten >= hdtrl[0].iov_len) {
+				nwritten -= hdtrl[0].iov_len;
+				hdtrl[0].iov_base = NULL;
+				hdtrl[0].iov_len = 0;
+			} else {
+				nwritten = 0;
+				hdtrl[0].iov_base += nwritten;
+				hdtrl[0].iov_len -= nwritten;
+			}
+		}
 		total -= nwritten;
+		offset += nwritten;
 	}
-	return count + header->length;
+	return count + hdr_len;
 }
 
 #elif defined(FREEBSD_SENDFILE_API)
