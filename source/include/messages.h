@@ -29,6 +29,8 @@
 #define MSG_PROFILE		4
 #define MSG_REQ_DEBUGLEVEL	5
 #define MSG_DEBUGLEVEL		6
+#define MSG_REQ_PROFILELEVEL	7
+#define MSG_PROFILELEVEL	8
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
