@@ -2373,6 +2373,8 @@ BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r,
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
+BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_c, prs_struct *ps, int depth);
+BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 

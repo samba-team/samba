@@ -360,4 +360,23 @@ typedef struct lsa_r_lookup_names
 
 } LSA_R_LOOKUP_NAMES;
 
+/* This is probably a policy handle but at the moment we
+   never read it - so use a dummy struct. */
+
+typedef struct lsa_q_open_secret
+{
+	uint32 dummy;
+} LSA_Q_OPEN_SECRET;
+
+/* We always return "not found" at present - so just marshal the minimum. */
+
+typedef struct lsa_r_open_secret
+{
+	uint32 dummy1;
+	uint32 dummy2;
+	uint32 dummy3;
+	uint32 dummy4;
+	uint32 status;
+} LSA_R_OPEN_SECRET;
+
 #endif /* _RPC_LSA_H */

@@ -1256,3 +1256,42 @@ BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth)
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes an LSA_Q_OPEN_SECRET structure.
+********************************************************************/
+
+BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_open_secret");
+	depth++;
+
+	/* Don't bother to read or write at present... */
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_OPEN_SECRET structure.
+********************************************************************/
+
+BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_open_secret");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint32("dummy1", ps, depth, &r_c->dummy1))
+		return False;
+	if(!prs_uint32("dummy2", ps, depth, &r_c->dummy2))
+		return False;
+	if(!prs_uint32("dummy3", ps, depth, &r_c->dummy3))
+		return False;
+	if(!prs_uint32("dummy4", ps, depth, &r_c->dummy4))
+		return False;
+	if(!prs_uint32("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
