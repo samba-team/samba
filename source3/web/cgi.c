@@ -43,6 +43,7 @@ static int content_length;
 static int request_post;
 static int request_get;
 static char *query_string;
+static char *baseurl;
 
 static void unescape(char *buf)
 {
@@ -610,12 +611,20 @@ void cgi_setup(char *rootdir)
 		*p = 0;
 	}
 
-	if (strcmp(url,"/")) {
+	if (strstr(url+1,"..")==0 && file_exist(url+1)) {
 		cgi_download(url+1);
 	}
 
 	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
-	
+
+	baseurl = url+1;
 }
 
 
+/***************************************************************************
+return the current pages URL
+  ***************************************************************************/
+char *cgi_baseurl(void)
+{
+	return baseurl;
+}
