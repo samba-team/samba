@@ -1,5 +1,6 @@
 #include "kdc_locl.h"
 
+#define MIN(x,y) (((x)<(y))?(x):(y))
 RCSID("$Id$");
 
 struct timeval now;
