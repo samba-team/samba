@@ -239,7 +239,7 @@ edit_timet (const char *prompt, krb5_timestamp *value, int *mask, int bit)
 
     for (;;) {
 	get_response(prompt, buf, resp, sizeof(resp));
-	if (parse_timet (resp, value, mask, bit))
+	if (parse_timet (resp, value, mask, bit) == 0)
 	    break;
     }
     return 0;
