@@ -303,11 +303,18 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name,
 	vuser->n_groups = 0;
 	vuser->groups  = NULL;
 
-        vuser->printer_admin = 
-                user_in_list(unix_name, lp_printer_admin()) || (uid == 0);
+	{
+		fstring dos_name;
 
-	DEBUG(3, ("register_vuid: user is %sa printer admin\n",
-		  vuser->printer_admin ? "" : "NOT "));
+		fstrcpy(dos_name, unix_name);
+		unix_to_dos(dos_name, True);
+		
+		vuser->printer_admin = 
+			user_in_list(dos_name, lp_printer_admin()) || (uid == 0);
+
+		DEBUG(3, ("register_vuid: user is %sa printer admin\n",
+			  vuser->printer_admin ? "" : "NOT "));
+	}
 
 	/* Find all the groups this uid is in and store them. 
 		Used by become_user() */
