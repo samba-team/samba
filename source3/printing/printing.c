@@ -479,16 +479,20 @@ static BOOL print_job_delete1(int jobid)
 }
 
 /****************************************************************************
-return true if the uid owns the print job
+return true if the current user owns the print job
 ****************************************************************************/
-static BOOL is_owner(uid_t uid, int jobid)
+static BOOL is_owner(struct current_user *user, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	struct passwd *pw;
+	user_struct *vuser;
 
-	if (!pjob || !(pw = sys_getpwuid(uid))) return False;
+	if (!pjob || !user) return False;
 
-	return (pw && pjob && strequal(pw->pw_name, pjob->user));
+	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
+		return strequal(pjob->user, vuser->user.smb_name);
+	} else {
+		return strequal(pjob->user, uidtoname(user->uid));
+	}
 }
 
 /****************************************************************************
@@ -501,7 +505,7 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 	
 	if (!user) return False;
 
-	owner = is_owner(user->uid, jobid);
+	owner = is_owner(user, jobid);
 	
 	/* Check access against security descriptor or whether the user
 	   owns their job. */
@@ -539,7 +543,7 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
-	owner = is_owner(user->uid, jobid);
+	owner = is_owner(user, jobid);
 
 	if (!owner &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
@@ -576,9 +580,9 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
-	owner = is_owner(user->uid, jobid);
+	owner = is_owner(user, jobid);
 
-	if (!is_owner(user->uid, jobid) &&
+	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		return False;
@@ -620,7 +624,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	char *path;
 	struct printjob pjob;
 	int next_jobid;
-	extern struct current_user current_user;
+	user_struct *vuser;
 
 	errno = 0;
 
@@ -664,7 +668,13 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	pjob.smbjob = True;
 
 	fstrcpy(pjob.jobname, jobname);
-	fstrcpy(pjob.user, uidtoname(current_user.uid));
+
+	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
+		fstrcpy(pjob.user, vuser->user.smb_name);
+	} else {
+		fstrcpy(pjob.user, uidtoname(user->uid));
+	}
+
 	fstrcpy(pjob.qname, lp_servicename(snum));
 
 	/* lock the database */
