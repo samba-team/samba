@@ -41,7 +41,7 @@ typedef struct interactive_password
 	OWF_INFO          nt_owf;              /* NT OWF Password */
 } auth_interactive_password;
 
-typedef struct usersupplied_info
+typedef struct auth_usersupplied_info
 {
 	
  	DATA_BLOB lm_resp;
@@ -67,7 +67,7 @@ typedef struct usersupplied_info
 #define SAM_FILL_UNIX  0x08
 #define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
 
-typedef struct serversupplied_info 
+typedef struct auth_serversupplied_info 
 {
 	BOOL guest;
 	
@@ -91,7 +91,7 @@ typedef struct serversupplied_info
 	
 } auth_serversupplied_info;
 
-typedef struct authsupplied_info {
+struct auth_context {
 	DATA_BLOB challenge; 
 
 	/* Who set this up in the first place? */ 
@@ -100,22 +100,30 @@ typedef struct authsupplied_info {
 	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 
 	struct auth_methods *auth_method_list;	
-} auth_authsupplied_info;
+
+	TALLOC_CTX *mem_ctx;
+	const uint8 *(*get_ntlm_challenge)(struct auth_context *auth_context);
+	NTSTATUS (*check_ntlm_password)(const struct auth_context *auth_context,
+					const struct auth_usersupplied_info *user_info, 
+					struct auth_serversupplied_info **server_info);
+	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
+	void (*free)(struct auth_context **auth_context);
+};
 
 typedef struct auth_methods
 {
 	struct auth_methods *prev, *next;
 	char *name; /* What name got this module */
 
-	NTSTATUS (*auth)(void *my_private_data, 
+	NTSTATUS (*auth)(const struct auth_context *auth_context,
+			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
-			 const auth_usersupplied_info *user_info, 
-			 const struct authsupplied_info *auth_info,
+			 const struct auth_usersupplied_info *user_info, 
 			 auth_serversupplied_info **server_info);
 
-	DATA_BLOB (*get_chal)(void **my_private_data, 
-			      TALLOC_CTX *mem_ctx, 
-			      const struct authsupplied_info *auth_info);
+	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
+			      void **my_private_data, 
+			      TALLOC_CTX *mem_ctx);
 	
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
@@ -128,11 +136,11 @@ typedef struct auth_methods
 
 } auth_methods;
 
-typedef struct auth_init_function {
+struct auth_init_function {
 	char *name;
 	/* Function to create a member of the authmethods list */
-	BOOL (*init)(struct auth_methods **auth_method);
-} auth_init_function;
+	BOOL (*init)(struct auth_context *auth_context, struct auth_methods **auth_method);
+};
 
 
 #endif /* _SMBAUTH_H_ */

@@ -568,19 +568,24 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	switch (ctr->switch_value) {
 	case NET_LOGON_TYPE:
 	{
-		auth_authsupplied_info *auth_info = NULL;
-		make_auth_info_fixed(&auth_info, ctr->auth.id2.lm_chal);
-		/* Standard challenge/response authenticaion */
-		make_user_info_netlogon_network(&user_info, 
-						nt_username, nt_domain, 
-						nt_workstation, 
-						ctr->auth.id2.lm_chal_resp.buffer,
-						ctr->auth.id2.lm_chal_resp.str_str_len,
-						ctr->auth.id2.nt_chal_resp.buffer,
-						ctr->auth.id2.nt_chal_resp.str_str_len);
+		struct auth_context *auth_context = NULL;
+		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
+			return status;
+		}
 
-		status = check_password(user_info, auth_info, &server_info);
-		free_auth_info(&auth_info);
+		/* Standard challenge/response authenticaion */
+		if (!make_user_info_netlogon_network(&user_info, 
+						     nt_username, nt_domain, 
+						     nt_workstation, 
+						     ctr->auth.id2.lm_chal_resp.buffer,
+						     ctr->auth.id2.lm_chal_resp.str_str_len,
+						     ctr->auth.id2.nt_chal_resp.buffer,
+						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
+			status = NT_STATUS_NO_MEMORY;
+		} else {
+			status = auth_context->check_ntlm_password(auth_context, user_info, &server_info);
+		}
+		auth_context->free(&auth_context);
 			
 		break;
 	}
@@ -590,23 +595,26 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		   convert this to chellange/responce for the auth
 		   subsystem to chew on */
 	{
-		auth_authsupplied_info *auth_info = NULL;
-		DATA_BLOB chal;
-		if (!make_auth_info_subsystem(&auth_info)) {
-			return NT_STATUS_NO_MEMORY;
+		struct auth_context *auth_context = NULL;
+		const uint8 *chal;
+		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
+			return status;
 		}
 		
-		chal = auth_get_challenge(auth_info);
+		chal = auth_context->get_ntlm_challenge(auth_context);
 
-		make_user_info_netlogon_interactive(&user_info, 
-						    nt_username, nt_domain, 
-						    nt_workstation, chal.data,
-						    ctr->auth.id1.lm_owf.data, 
-						    ctr->auth.id1.nt_owf.data, 
-						    p->dc.sess_key);
-		status = check_password(user_info, auth_info, &server_info);
-		data_blob_free(&chal);
-		free_auth_info(&auth_info);
+		if (!make_user_info_netlogon_interactive(&user_info, 
+							 nt_username, nt_domain, 
+							 nt_workstation, chal,
+							 ctr->auth.id1.lm_owf.data, 
+							 ctr->auth.id1.nt_owf.data, 
+							 p->dc.sess_key)) {
+			status = NT_STATUS_NO_MEMORY;
+		} else {
+			status = auth_context->check_ntlm_password(auth_context, user_info, &server_info);
+		}
+
+		auth_context->free(&auth_context);
 
 		break;
 	}

@@ -125,8 +125,10 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, struct in_addr *ip, 
-				  unsigned char *trust_passwd)
+static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, 
+				      const char *domain, 
+				      struct in_addr *ip, 
+				      unsigned char *trust_passwd)
 {
 	fstring dc_name;
 
@@ -137,7 +139,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, struct in_addr *ip
 	if (is_zero_ip(*ip))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
+	if (!lookup_dc_name(global_myname, domain, ip, dc_name))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	return connect_to_domain_password_server(cli, dc_name, trust_passwd);
@@ -145,11 +147,12 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, struct in_addr *ip
 
 /***********************************************************************
  We have been asked to dynamcially determine the IP addresses of
- the PDC and BDC's for this DOMAIN, and query them in turn.
+ the PDC and BDC's for DOMAIN, and query them in turn.
 ************************************************************************/
 static NTSTATUS find_connect_pdc(struct cli_state **cli, 
-				unsigned char *trust_passwd, 
-				time_t last_change_time)
+				 const char *domain,
+				 unsigned char *trust_passwd, 
+				 time_t last_change_time)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
@@ -169,7 +172,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	if (time_now - last_change_time < 3600)
 		use_pdc_only = True;
 
-	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
+	if (!get_dc_list(use_pdc_only, domain, &ip_list, &count))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/*
@@ -180,7 +183,9 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		if(!is_local_net(ip_list[i]))
 			continue;
 
-		if(NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd))) 
+		if(NT_STATUS_IS_OK(nt_status = 
+				   attempt_connect_to_dc(cli, domain, 
+							 &ip_list[i], trust_passwd))) 
 			break;
 		
 		zero_ip(&ip_list[i]); /* Tried and failed. */
@@ -192,7 +197,9 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	if(!NT_STATUS_IS_OK(nt_status)) {
 		i = (sys_random() % count);
 
-		if (!NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd)))
+		if (!NT_STATUS_IS_OK(nt_status = 
+				     attempt_connect_to_dc(cli, domain, 
+							   &ip_list[i], trust_passwd)))
                         zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
 
@@ -206,7 +213,9 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		 * Note that from a WINS server the #1 IP address is the PDC.
 		 */
 		for(i = 0; i < count; i++) {
-			if (NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, &ip_list[i], trust_passwd)))
+			if (NT_STATUS_IS_OK(nt_status = 
+					    attempt_connect_to_dc(cli, domain, 
+								  &ip_list[i], trust_passwd)))
 				break;
 		}
 	}
@@ -224,6 +233,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 
 static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       const auth_usersupplied_info *user_info, 
+				       const char *domain,
 				       uchar chal[8],
 				       auth_serversupplied_info **server_info, 
 				       char *server, unsigned char *trust_passwd,
@@ -246,7 +256,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	while (!NT_STATUS_IS_OK(nt_status) &&
 	       next_token(&server,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(strequal(remote_machine, "*")) {
-			nt_status = find_connect_pdc(&cli, trust_passwd, last_change_time);
+			nt_status = find_connect_pdc(&cli, domain, trust_passwd, last_change_time);
 		} else {
 			nt_status = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
 		}
@@ -376,18 +386,19 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
 
-static NTSTATUS check_ntdomain_security(void *my_private_data,
+static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
+					void *my_private_data, 
 					TALLOC_CTX *mem_ctx,
 					const auth_usersupplied_info *user_info, 
-					const auth_authsupplied_info *auth_info,
 					auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	char *p, *pserver;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
+	char *domain = lp_workgroup();
 
-	if (!user_info || !server_info || !auth_info) {
+	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -409,7 +420,7 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	 * Get the machine account password for our primary domain
 	 */
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
+	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
 	{
 		DEBUG(0, ("check_domain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
 		unbecome_root();
@@ -433,18 +444,22 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	if (! *pserver) pserver = "*";
 	p = pserver;
 
-	nt_status = domain_client_validate(mem_ctx, user_info, (uchar *)auth_info->challenge.data,server_info, 
+	nt_status = domain_client_validate(mem_ctx, user_info, domain,
+					   (uchar *)auth_context->challenge.data, 
+					   server_info, 
 					   p, trust_passwd, last_change_time);
 	
 	return nt_status;
 }
 
-BOOL auth_init_ntdomain(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_ntdomain(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
 	(*auth_method)->auth = check_ntdomain_security;
 	return True;
 }
+

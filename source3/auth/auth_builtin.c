@@ -29,10 +29,10 @@
  * and pass onto the next module.
  **/
 
-static NTSTATUS check_guest_security(void *my_private_data, 
+static NTSTATUS check_guest_security(const struct auth_context *auth_context,
+				     void *my_private_data, 
 				     TALLOC_CTX *mem_ctx,
 				     const auth_usersupplied_info *user_info, 
-				     const auth_authsupplied_info *auth_info,
 				     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -50,9 +50,9 @@ static NTSTATUS check_guest_security(void *my_private_data,
 }
 
 /* Guest modules initialisation */
-BOOL auth_init_guest(auth_methods **auth_method) 
+BOOL auth_init_guest(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
@@ -73,10 +73,10 @@ BOOL auth_init_guest(auth_methods **auth_method)
  * @return An NTSTATUS value based on the username
  **/
 
-static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
+static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_context,
+						void *my_private_data, 
 						TALLOC_CTX *mem_ctx,
 						const auth_usersupplied_info *user_info, 
-						const auth_authsupplied_info *auth_info,
 						auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
@@ -100,16 +100,13 @@ static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
 }
 
 /** Module initailisation function */
-BOOL auth_init_name_to_ntstatus(auth_methods **auth_method) 
+BOOL auth_init_name_to_ntstatus(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
 	(*auth_method)->auth = check_name_to_ntstatus_security;
 	return True;
 }
-
-
-
 

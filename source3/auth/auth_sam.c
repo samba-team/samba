@@ -27,9 +27,9 @@
 core of smb password checking routine.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
-				const uchar *part_passwd,
-				DATA_BLOB sec_blob,
-				uint8 user_sess_key[16])
+				 const uchar *part_passwd,
+				 DATA_BLOB sec_blob,
+				 uint8 user_sess_key[16])
 {
 	/* Finish the encryption of part_passwd. */
 	uchar p24[24];
@@ -75,10 +75,10 @@ static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
 core of smb password checking routine.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
-				const uchar *part_passwd,
-				const DATA_BLOB sec_blob,
-				const char *user, const char *domain,
-				uint8 user_sess_key[16])
+				 const uchar *part_passwd,
+				 const DATA_BLOB sec_blob,
+				 const char *user, const char *domain,
+				 uint8 user_sess_key[16])
 {
 	/* Finish the encryption of part_passwd. */
 	uchar kr[16];
@@ -132,10 +132,10 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
+static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
+				TALLOC_CTX *mem_ctx,
 				SAM_ACCOUNT *sampass, 
 				const auth_usersupplied_info *user_info, 
-				const auth_authsupplied_info *auth_info,
 				uint8 user_sess_key[16])
 {
 	uint16 acct_ctrl;
@@ -175,7 +175,7 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 		*/
 		DEBUG(4,("sam_password_ok: Checking NTLMv2 password\n"));
 		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-					  nt_pw, auth_info->challenge, 
+					  nt_pw, auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
 					  user_sess_key))
@@ -192,7 +192,7 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 			*/
 			DEBUG(4,("sam_password_ok: Checking NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
-						 nt_pw, auth_info->challenge,
+						 nt_pw, auth_context->challenge,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -225,7 +225,7 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 		
 		DEBUG(4,("sam_password_ok: Checking LM password\n"));
 		if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-					 lm_pw, auth_info->challenge,
+					 lm_pw, auth_context->challenge,
 					 user_sess_key)) 
 		{
 			return NT_STATUS_OK;
@@ -337,10 +337,10 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-static NTSTATUS check_sam_security(void *my_private_data,
+static NTSTATUS check_sam_security(const struct auth_context *auth_context,
+				   void *my_private_data, 
 				   TALLOC_CTX *mem_ctx,
 				   const auth_usersupplied_info *user_info, 
-				   const auth_authsupplied_info *auth_info,
 				   auth_serversupplied_info **server_info)
 {
 	SAM_ACCOUNT *sampass=NULL;
@@ -349,8 +349,8 @@ static NTSTATUS check_sam_security(void *my_private_data,
 	uint8 user_sess_key[16];
 	const uint8* lm_hash;
 
-	if (!user_info || !auth_info) {
-		return NT_STATUS_LOGON_FAILURE;
+	if (!user_info || !auth_context) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (!pdb_init_sam(&sampass)) {
@@ -370,7 +370,7 @@ static NTSTATUS check_sam_security(void *my_private_data,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(mem_ctx, sampass, user_info, auth_info, user_sess_key);
+	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
@@ -399,9 +399,10 @@ static NTSTATUS check_sam_security(void *my_private_data,
 	return nt_status;
 }
 
-BOOL auth_init_sam(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_sam(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
@@ -409,20 +410,19 @@ BOOL auth_init_sam(auth_methods **auth_method)
 	return True;
 }
 
+
 /****************************************************************************
-check if a username/password is OK assuming the password is a 24 byte
-SMB hash supplied in the user_info structure
-return an NT_STATUS constant.
+Check SAM security (above) but with a few extra checks.
 ****************************************************************************/
 
-static NTSTATUS check_samstrict_security(void *my_private_data,
+static NTSTATUS check_samstrict_security(const struct auth_context *auth_context,
+					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
 					 const auth_usersupplied_info *user_info, 
-					 const auth_authsupplied_info *auth_info,
 					 auth_serversupplied_info **server_info)
 {
 
-	if (!user_info || !auth_info) {
+	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -434,16 +434,18 @@ static NTSTATUS check_samstrict_security(void *my_private_data,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	return check_sam_security(my_private_data, mem_ctx, user_info, auth_info, server_info);
+	return check_sam_security(auth_context, my_private_data, mem_ctx, user_info, server_info);
 }
 
-BOOL auth_init_samstrict(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_samstrict(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
 	(*auth_method)->auth = check_samstrict_security;
 	return True;
 }
+
 

@@ -33,10 +33,10 @@ NSS_STATUS winbindd_request(int req_type,
 
 /* Authenticate a user with a challenge/response */
 
-static NTSTATUS check_winbind_security(void *my_private_data,
+static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
+				       void *my_private_data, 
 				       TALLOC_CTX *mem_ctx,
 				       const auth_usersupplied_info *user_info, 
-				       const auth_authsupplied_info *auth_info,
 				       auth_serversupplied_info **server_info)
 {
 	struct winbindd_request request;
@@ -46,13 +46,13 @@ static NTSTATUS check_winbind_security(void *my_private_data,
 	NTSTATUS nt_status;
 
 	if (!user_info) {
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!auth_info) {
+	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
 			 user_info->internal_username.str));		
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_UNSUCCESSFUL;
 	}		
 
 	/* Send off request */
@@ -63,7 +63,7 @@ static NTSTATUS check_winbind_security(void *my_private_data,
 	snprintf(request.data.auth_crap.user, sizeof(request.data.auth_crap.user),
 		 "%s\\%s", user_info->domain.str, user_info->smb_name.str);
 
-	memcpy(request.data.auth_crap.chal, auth_info->challenge.data, sizeof(request.data.auth_crap.chal));
+	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));
 	
 	request.data.auth_crap.lm_resp_len = MIN(user_info->lm_resp.length, 
 						 sizeof(request.data.auth_crap.lm_resp));
@@ -97,16 +97,13 @@ static NTSTATUS check_winbind_security(void *my_private_data,
         return nt_status;
 }
 
-BOOL auth_init_winbind(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_winbind(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 
 	(*auth_method)->auth = check_winbind_security;
 	return True;
 }
-
-
-
-

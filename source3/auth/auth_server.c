@@ -134,9 +134,9 @@ static void send_server_keepalive(void **private_data_pointer)
  Get the challenge out of a password server.
 ****************************************************************************/
 
-static DATA_BLOB auth_get_challenge_server(void **my_private_data, 
-					   TALLOC_CTX *mem_ctx,
-					   const struct authsupplied_info *auth_info) 
+static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_context,
+					   void **my_private_data, 
+					   TALLOC_CTX *mem_ctx)
 {
 	struct cli_state *cli = server_cryptkey(mem_ctx);
 	
@@ -161,8 +161,10 @@ static DATA_BLOB auth_get_challenge_server(void **my_private_data,
 		}
 
 		*my_private_data = (void *)cli;
-		
-		return data_blob(cli->secblob.data,8);
+
+		/* The return must be allocated on the caller's mem_ctx, as our own will be
+		   destoyed just after the call. */
+		return data_blob_talloc(auth_context->mem_ctx, cli->secblob.data,8);
 	} else {
 		return data_blob(NULL, 0);
 	}
@@ -174,10 +176,10 @@ static DATA_BLOB auth_get_challenge_server(void **my_private_data,
   - Validate a password with the password server.
 ****************************************************************************/
 
-static NTSTATUS check_smbserver_security(void *my_private_data, 
+static NTSTATUS check_smbserver_security(const struct auth_context *auth_context,
+					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
 					 const auth_usersupplied_info *user_info, 
-					 const auth_authsupplied_info *auth_info,
 					 auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
@@ -218,7 +220,7 @@ static NTSTATUS check_smbserver_security(void *my_private_data,
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	} else {
-		if (memcmp(cli->secblob.data, auth_info->challenge.data, 8) != 0) {
+		if (memcmp(cli->secblob.data, auth_context->challenge.data, 8) != 0) {
 			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
 			return NT_STATUS_LOGON_FAILURE;		
 		}
@@ -353,9 +355,9 @@ use this machine as the password server.\n"));
 	return(nt_status);
 }
 
-BOOL auth_init_smbserver(auth_methods **auth_method) 
+BOOL auth_init_smbserver(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
 	(*auth_method)->auth = check_smbserver_security;

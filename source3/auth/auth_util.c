@@ -276,13 +276,13 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
-					 char *smb_name, 
-					 char *client_domain, 
-					 char *wksta_name, 
-					 uchar chal[8], 
-					 uchar lm_interactive_pwd[16], 
-					 uchar nt_interactive_pwd[16], 
-					 uchar *dc_sess_key)
+					 const char *smb_name, 
+					 const char *client_domain, 
+					 const char *wksta_name, 
+					 const uchar chal[8], 
+					 const uchar lm_interactive_pwd[16], 
+					 const uchar nt_interactive_pwd[16], 
+					 const uchar *dc_sess_key)
 {
 	char lm_pwd[16];
 	char nt_pwd[16];
@@ -360,7 +360,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
 			      char *smb_name, 
 			      char *client_domain,
-			      unsigned char chal[8],
+			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password)
 {
 
@@ -383,7 +383,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 
-		SMBencrypt( (const uchar *)plaintext_password.data, chal, local_lm_response);
+		SMBencrypt( (const uchar *)plaintext_password.data, (const uchar*)chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
 		/* We can't do an NT hash here, as the password needs to be
@@ -415,8 +415,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
 			      char *smb_name,
 			      char *client_domain, 
-			      DATA_BLOB lm_resp, DATA_BLOB nt_resp,
-			      DATA_BLOB plaintext_password)
+			      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	uint32 ntlmssp_flags = 0;
 
@@ -572,9 +571,17 @@ BOOL make_server_info_guest(auth_serversupplied_info **server_info)
  Make an auth_methods struct
 ***************************************************************************/
 
-BOOL make_auth_methods(auth_methods **auth_method) 
+BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	*auth_method = malloc(sizeof(**auth_method));
+	if (!auth_context) {
+		smb_panic("no auth_context supplied to make_auth_methods()!\n");
+	}
+
+	if (!auth_method) {
+		smb_panic("make_auth_methods: pointer to auth_method pointer is NULL!\n");
+	}
+
+	*auth_method = talloc(auth_context->mem_ctx, sizeof(**auth_method));
 	if (!*auth_method) {
 		DEBUG(0,("make_auth_method: malloc failed!\n"));
 		return False;
@@ -623,3 +630,33 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 
 	return token;
 }
+
+/**
+ * Squash an NT_STATUS in line with security requirements.
+ * In an attempt to avoid giving the whole game away when users
+ * are authenticating, NT replaces both NT_STATUS_NO_SUCH_USER and 
+ * NT_STATUS_WRONG_PASSWORD with NT_STATUS_LOGON_FAILURE in certain situations 
+ * (session setups in particular).
+ *
+ * @param nt_status NTSTATUS input for squashing.
+ * @return the 'squashed' nt_status
+ **/
+
+NTSTATUS nt_status_squash(NTSTATUS nt_status)
+{
+	if NT_STATUS_IS_OK(nt_status) {
+		return nt_status;		
+	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
+		/* Match WinXP and don't give the game away */
+		return NT_STATUS_LOGON_FAILURE;
+		
+	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
+		/* Match WinXP and don't give the game away */
+		return NT_STATUS_LOGON_FAILURE;
+	} else {
+		return nt_status;
+	}  
+}
+
+
+

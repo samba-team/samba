@@ -23,7 +23,7 @@
 #include "includes.h"
 
 uint32 global_client_caps = 0;
-static auth_authsupplied_info *ntlmssp_auth_info;
+static struct auth_context *ntlmssp_auth_context;
 
 /*
   on a logon error possibly map the error to success if "map to guest"
@@ -72,8 +72,7 @@ static void add_signature(char *outbuf)
 ****************************************************************************/
 static NTSTATUS check_guest_password(auth_serversupplied_info **server_info) 
 {
-
-	auth_authsupplied_info *auth_info;
+	struct auth_context *auth_context;
 	auth_usersupplied_info *user_info = NULL;
 	
 	NTSTATUS nt_status;
@@ -83,11 +82,17 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 
 	DEBUG(3,("Got anonymous request\n"));
 
-	make_user_info_guest(&user_info);
-	make_auth_info_fixed(&auth_info, chal);
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_fixed(&auth_context, chal))) {
+		return nt_status;
+	}
+
+	if (!make_user_info_guest(&user_info)) {
+		auth_context->free(&auth_context);
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	nt_status = check_password(user_info, auth_info, server_info);
-	free_auth_info(&auth_info);
+	nt_status = auth_context->check_ntlm_password(auth_context, user_info, server_info);
+	auth_context->free(&auth_context);
 	free_user_info(&user_info);
 	return nt_status;
 }
@@ -233,8 +238,9 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	int i;
 	uint32 ntlmssp_command, neg_flags;
 	DATA_BLOB sess_key, chal, spnego_chal;
-	DATA_BLOB cryptkey;
+	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
+	NTSTATUS nt_status;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -282,11 +288,15 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
 
-	if (!make_auth_info_subsystem(&ntlmssp_auth_info)) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	if (!ntlmssp_auth_context) {
+		ntlmssp_auth_context->free(&ntlmssp_auth_context);
 	}
 
-	cryptkey = auth_get_challenge(ntlmssp_auth_info);
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&ntlmssp_auth_context))) {
+		return ERROR_NT(nt_status);
+	}
+
+	cryptkey = ntlmssp_auth_context->get_ntlm_challenge(ntlmssp_auth_context);
 
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
@@ -301,7 +311,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		  0,
 		  0x30, /* ?? */
 		  neg_flags,
-		  cryptkey.data, cryptkey.length,
+		  cryptkey, sizeof(cryptkey),
 		  0, 0, 0,
 		  0x3000); /* ?? */
 
@@ -314,7 +324,6 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	reply_sesssetup_blob(conn, outbuf, spnego_chal);
 
 	data_blob_free(&chal);
-	data_blob_free(&cryptkey);
 	data_blob_free(&spnego_chal);
 
 	/* and tell smbd that we have already replied to this packet */
@@ -382,7 +391,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
+	nt_status = ntlmssp_auth_context->check_ntlm_password(ntlmssp_auth_context, user_info, &server_info); 
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = do_map_to_guest(nt_status, &server_info, user, workgroup);
@@ -391,7 +400,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	SAFE_FREE(workgroup);
 	SAFE_FREE(machine);
 			
-	free_auth_info(&ntlmssp_auth_info);
+	ntlmssp_auth_context->free(&ntlmssp_auth_context);
 
 	free_user_info(&user_info);
 	
@@ -544,7 +553,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern int max_send;
 
 	auth_usersupplied_info *user_info = NULL;
-	extern auth_authsupplied_info *negprot_global_auth_info;
+	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;
@@ -672,13 +681,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
 
 	if (*user) {
-		if (global_spnego_negotiated) {
-			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
-			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-		}
-	}
-
-	if (*user) {
 		pstrcpy(sub_user, user);
 	} else {
 		pstrcpy(sub_user, lp_guestaccount());
@@ -702,37 +704,46 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!*user) {
+		if (global_spnego_negotiated) {
+
+			/* This has to be here, becouse this is a perfectly valid behaviour for guest logons :-( */
+
+			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
+			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		}
 
 		nt_status = check_guest_password(&server_info);
 
 	} else if (doencrypt) {
 		if (!make_user_info_for_reply_enc(&user_info, 
 						  user, domain, 
-						  lm_resp, nt_resp,
-						  plaintext_password)) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+						  lm_resp, nt_resp)) {
+			nt_status = NT_STATUS_NO_MEMORY;
+		} else {
+			nt_status = negprot_global_auth_context->check_ntlm_password(negprot_global_auth_context, 
+										     user_info, 
+										     &server_info);
 		}
-		
-		nt_status = check_password(user_info, negprot_global_auth_info, &server_info); 
 	} else {
-		auth_authsupplied_info *plaintext_auth_info = NULL;
-		DATA_BLOB chal;
-		if (!make_auth_info_subsystem(&plaintext_auth_info)) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-
-		chal = auth_get_challenge(plaintext_auth_info);
-
-		if (!make_user_info_for_reply(&user_info, 
-					      user, domain, chal.data,
-					      plaintext_password)) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
+		struct auth_context *plaintext_auth_context = NULL;
+		const uint8 *chal;
+		if (NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
+			chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
+			
+			if (!make_user_info_for_reply(&user_info, 
+						      user, domain, chal,
+						      plaintext_password)) {
+				nt_status = NT_STATUS_NO_MEMORY;
+			}
 		
-		nt_status = check_password(user_info, plaintext_auth_info, &server_info); 
-		
-		data_blob_free(&chal);
-		free_auth_info(&plaintext_auth_info);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
+											user_info, 
+											&server_info); 
+				
+				plaintext_auth_context->free(&plaintext_auth_context);
+			}
+		}
 	}
 
 	free_user_info(&user_info);
