@@ -1308,15 +1308,14 @@ clean: delheaders python_clean
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h smbd/build_options.c \
-	include/tdbsam2_parse_info.h
+	client/client_proto.h utils/net_proto.h smbd/build_options.c
 
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/proto.h include/build_env.h  include/wrepld_proto.h \
 		nsswitch/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
-		smbd/build_options.c include/tdbsam2_parse_info.h
+		smbd/build_options.c
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
 
@@ -1378,8 +1377,12 @@ headers:
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/net_proto.h; \
+	$(MAKE) utils/net_proto.h;
+
+prebuiltheaders:
 	$(MAKE) include/tdbsam2_parse_info.h
+
+genparse: prebuiltheaders
 
 proto: headers 
 
