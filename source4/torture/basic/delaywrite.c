@@ -109,6 +109,102 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	return ret;
 }
 
+/* 
+ * Do as above, but using 2 connections.
+ */
+
+static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	struct smbcli_state *cli2=NULL;
+	union smb_fileinfo finfo1, finfo2;
+	const char *fname = BASEDIR "\\torture_file.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	BOOL ret = True;
+	ssize_t written;
+	time_t t;
+
+	printf("Testing delayed update of write time using 2 connections\n");
+
+	if (!torture_open_connection(&cli2)) {
+		return False;
+	}
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("Failed to open %s\n", fname);
+		return False;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	
+	printf("Initial write time %s\n", 
+	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+
+	/* 3 second delay to ensure we get past any 2 second time
+	   granularity (older systems may have that) */
+	sleep(3);
+
+	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+
+	if (written != 1) {
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	t = time(NULL);
+
+	while (time(NULL) < t+120) {
+		finfo2.basic_info.in.fname = fname;
+	
+		status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			break;
+		}
+		printf("write time %s\n", 
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+			printf("Server updated write_time after %d seconds\n",
+			       (int)(time(NULL) - t));
+			break;
+		}
+		sleep(1);
+		fflush(stdout);
+	}
+	
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		printf("Server did not update write time?!\n");
+		ret = False;
+	}
+
+
+	if (cli2 != NULL) {
+		torture_close_connection(cli2);
+	}
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
 
 /* Windows does obviously not update the stat info during a write call. I
  * *think* this is the problem causing a spurious Excel 2003 on XP error
@@ -277,6 +373,7 @@ BOOL torture_delay_write(void)
 
 	ret &= test_finfo_after_write(cli, mem_ctx);
 	ret &= test_delayed_write_update(cli, mem_ctx);
+	ret &= test_delayed_write_update2(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
