@@ -1,5 +1,7 @@
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
+	* have-type.m4: stolen from Arla
+
 	* krb-struct-sockaddr-sa-len.m4: not used any longer.  removed.
 
 1999-06-13  Assar Westerlund  <assar@sics.se>

@@ -1,3 +1,7 @@
+1999-07-24  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (struct sockaddr_storage): define it needed
+
 1999-07-19  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in: <netdb.h>: include
