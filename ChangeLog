@@ -1,3 +1,9 @@
+2003-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/lex.l: add BOOLEAN
+	
+	* lib/asn1/parse.y: add BOOLEAN
+	
 2003-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: When running kinit in "fork mode" do pagsh
