@@ -159,6 +159,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 	ads_destroy(&ads);
 
+	/* setup the string used by %U */
+	sub_set_smb_name(user);
+
+	reload_services(True);
+
 	/* the password is good - let them in */
 	pw = Get_Pwnam(user);
 	if (!pw && !strstr(user, lp_winbind_separator())) {
@@ -422,6 +427,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
 
 	set_remote_machine_name(machine);
+
+	/* setup the string used by %U */
+	sub_set_smb_name(user);
 
 	reload_services(True);
 
@@ -749,6 +757,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		}
 		pstrcpy(sub_user, user);
+
+		/* setup the string used by %U */
+		sub_set_smb_name(user);
 	} else {
 		pstrcpy(sub_user, lp_guestaccount());
 	}
