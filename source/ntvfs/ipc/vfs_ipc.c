@@ -26,6 +26,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
