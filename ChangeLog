@@ -1,5 +1,13 @@
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/send_to_kdc.c: use krb5_eai_to_heim_errno
+
+	* lib/krb5/get_for_creds.c: use krb5_eai_to_heim_errno
+
+	* lib/krb5/changepw.c: use krb5_eai_to_heim_errno
+
+	* lib/krb5/addr_families.c: use krb5_eai_to_heim_errno
+
 	* lib/krb5/eai_to_heim_errno.c: convert getaddrinfo error codes to
 	something that can be passed to get_err_text
 
