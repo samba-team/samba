@@ -184,7 +184,9 @@ fi
 
 AC_CHECK_MAN
 
-AC_TEST_PACKAGE_NEW(readline,[#include <readline.h>],-lreadline)
+AC_TEST_PACKAGE_NEW(readline,
+[#include <stdio.h>
+ #include <readline.h>],-lreadline)
 
 AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
 
@@ -667,6 +669,8 @@ dnl
 dnl Tests for editline
 dnl
 
+dnl el_init
+
 AC_FIND_FUNC_NO_LIBS(el_init, edit)
 if test "$ac_cv_func_el_init" = yes ; then
 	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[
@@ -679,7 +683,13 @@ if test "$ac_cv_func_el_init" = yes ; then
 		AC_DEFINE(HAVE_FOUR_VALUED_EL_INIT, 1, [Define if el_init takes four arguments.])
 	fi
 fi
+
+dnl readline
+
+save_LIBS="$LIBS"
+LIBS="$LIB_tgetent $LIBS"
 AC_FIND_FUNC_NO_LIBS(readline, edit readline)
+LIBS="$save_LIBS"
 ac_foo=no
 if test "$with_readline" = yes; then
 	:
