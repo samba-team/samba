@@ -565,6 +565,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	time_t c_time;
 	START_PROFILE(SMBntcreateX);
 
+	DEBUG(10,("reply_ntcreateX: flags = 0x%x, desired_access = 0x%x \
+file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
+create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attributes,
+			share_access, create_disposition,
+			root_dir_fid, create_options ));
+
 	/* If it's an IPC, use the pipe handler. */
 
 	if (IS_IPC(conn)) {
@@ -577,6 +583,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 			
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -1070,6 +1080,11 @@ static int call_nt_transact_create(connection_struct *conn,
 	sd_len = IVAL(params,36);
 	root_dir_fid = (uint16)IVAL(params,4);
 	smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
