@@ -30,6 +30,7 @@ GRPID=`id -g`
 VERSION='PVERSION'
 
 RPMVER=`rpm --version | awk '{print $3}'`
+RPM="rpm"
 echo The RPM Version on this machine is: $RPMVER
 
 case $RPMVER in
@@ -42,6 +43,12 @@ case $RPMVER in
        echo Building for RPM v3.x
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
+       ;;
+    4.1*)
+       echo Building for RPM v4.1
+       RPM="rpmbuild"
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba.spec
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2-devel.spec > samba-devel.spec
        ;;
     4*)
        echo Building for RPM v4.x
