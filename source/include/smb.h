@@ -255,19 +255,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
-/* SID Types */
-enum SID_NAME_USE
-{
-	SID_NAME_USE_NONE = 0,/* NOTUSED */
-	SID_NAME_USER    = 1, /* user */
-	SID_NAME_DOM_GRP = 2, /* domain group */
-	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
-	SID_NAME_ALIAS   = 4, /* local group */
-	SID_NAME_WKN_GRP = 5, /* well-known group */
-	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
-	SID_NAME_INVALID = 7, /* invalid account */
-	SID_NAME_UNKNOWN = 8  /* oops. */
-};
+/* for compatibility */
+#define SID_NAME_USE samr_SidType
 
 /**
  * @brief Security Identifier
