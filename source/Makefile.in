@@ -722,40 +722,40 @@ bin/.dummy:
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(ADSLIBS) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(ACLLIBS) $(PASSDBLIBS) $(LIBS) @BUILD_POPT@
+	  $(AUTHLIBS) $(ACLLIBS) $(PASSDBLIBS) $(LIBS) @POPTLIBS@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS)  @BUILD_POPT@ $(KRB5LIBS)
+	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS)  @POPTLIBS@ $(KRB5LIBS)
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
-bin/editreg@EXEEXT@: utils/editreg.o @BUILD_POPT@ bin/.dummy
+bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -775,7 +775,7 @@ bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -783,7 +783,7 @@ bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
 
 bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
@@ -791,7 +791,7 @@ bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
 
 bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -799,11 +799,11 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@ $(PASSDBLIBS) $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDBLIBS) $(ADSLIBS)
 
 bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -811,7 +811,7 @@ bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 
 bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -831,7 +831,7 @@ bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
 
 bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
@@ -843,7 +843,7 @@ bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
 
 bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(ACLLIBS) $(LIBS) @BUILD_POPT@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(ACLLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
@@ -947,7 +947,7 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(IDMAP_OBJ) $(DYNEXP) $(LIBS) @BUILD_POPT@ $(ADSLIBS)
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(IDMAP_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
@@ -1061,13 +1061,13 @@ bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
+		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @POPTLIBS@
 
 bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
+		$(UBIQX_OBJ) $(LIBS) @POPTLIBS@
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
