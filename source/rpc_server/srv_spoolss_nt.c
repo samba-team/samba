@@ -2156,12 +2156,12 @@ static void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, 
 	info_data->enc_type = type_of_notify_info_data(type, field);
 }
 
-
 /*******************************************************************
  *
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 					  snum, SPOOL_NOTIFY_OPTION_TYPE
 					  *option_type, uint32 id,
@@ -2174,8 +2174,6 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
-	size_t realloc_size = 0;
-	SPOOL_NOTIFY_INFO_DATA *info_data_ptr = NULL;
 
 	type=option_type->type;
 
@@ -2193,11 +2191,10 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		if (!search_notify(type, field, &j) )
 			continue;
 		
-		realloc_size = (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA);
-		if((info_data_ptr=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info_data_ptr, realloc_size)) == NULL) {
+		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
 			return False;
 		}
-		current_data=&info_data_ptr[info->count];
+		current_data=&info->data[info->count];
 
 		construct_info_data(current_data, type, field, id);		
 
@@ -2210,12 +2207,6 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		info->count++;
 	}
 
-	if (realloc_size)
-		info->data = talloc_memdup(mem_ctx, info_data_ptr, realloc_size);
-	else
-		info->data = NULL;
-
-	safe_free(info_data_ptr);
 	free_a_printer(&printer, 2);
 	return True;
 }
@@ -2225,6 +2216,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 				       SPOOL_NOTIFY_INFO *info,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -2235,7 +2227,6 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 	int field_num,j;
 	uint16 type;
 	uint16 field;
-
 	SPOOL_NOTIFY_INFO_DATA *current_data;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
@@ -2256,9 +2247,13 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 			return False;
 		}
 
-		current_data=&(info->data[info->count]);
+		current_data=&info->data[info->count];
 
 		construct_info_data(current_data, type, field, id);
+
+		DEBUG(10,("construct_notify_jobs_info: calling [%s]  snum=%d  printername=[%s])\n",
+				notify_info_data_table[j].name, snum, printer->info_2->printername ));
+
 		notify_info_data_table[j].fn(snum, current_data, queue,
 					     printer, mem_ctx);
 		info->count++;
@@ -2334,7 +2329,7 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
 	 * Debugging information, don't delete.
 	 */
 	/*
-	DEBUG(1,("dumping the NOTIFY_INFO\n"));
+	DEBUG(1,("printserver_notify_info: dumping the NOTIFY_INFO\n"));
 	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
 	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
 	
@@ -2414,17 +2409,17 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 	/*
 	 * Debugging information, don't delete.
 	 */
-	/*
-	DEBUG(1,("dumping the NOTIFY_INFO\n"));
-	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
-	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
+
+	DEBUG(10,("printer_notify_info: dumping the NOTIFY_INFO\n"));
+	DEBUGADD(10,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
+	DEBUGADD(10,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
 	
 	for (i=0; i<info->count; i++) {
-		DEBUGADD(1,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
+		DEBUGADD(10,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
 		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
 	}
-	*/
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 
@@ -2476,7 +2471,25 @@ uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 			result = printer_notify_info(handle, info, p->mem_ctx);
 			break;
 	}
-	
+
+	/*
+	 * The data returned in info->data is realloced. We need to
+	 * convert to talloc for return. The data really should come
+	 * back as a linked list, not a realloced array, as realloc can
+	 * fail... JRA.
+	 */
+
+	if (info->data) {
+		SPOOL_NOTIFY_INFO_DATA *new_data = (SPOOL_NOTIFY_INFO_DATA *)talloc_memdup(p->mem_ctx,
+																			info->data,
+																			info->count * sizeof(SPOOL_NOTIFY_INFO_DATA));
+		if (!new_data)
+			return NT_STATUS_NO_MEMORY;
+
+		safe_free(info->data);
+		info->data = new_data;
+	}
+
  done:
 	return result;
 }
@@ -5023,7 +5036,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
-	/* fill the buffer with the form structures */
+	/* fill the buffer with the driver structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
