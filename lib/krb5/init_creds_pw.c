@@ -257,7 +257,7 @@ change_password (krb5_context context,
     krb5_error_code ret;
     krb5_creds cpw_cred;
     char buf1[BUFSIZ], buf2[BUFSIZ];
-    krb5_data password_data;
+    krb5_data password_data[2];
     int result_code;
     krb5_data result_code_string;
     krb5_data result_string;
@@ -291,20 +291,20 @@ change_password (krb5_context context,
 	goto out;
 
     for(;;) {
-	password_data.data   = buf1;
-	password_data.length = sizeof(buf1);
+	password_data[0].data   = buf1;
+	password_data[0].length = sizeof(buf1);
 
 	prompts[0].hidden = 1;
 	prompts[0].prompt = "New password: ";
-	prompts[0].reply  = &password_data;
+	prompts[0].reply  = &password_data[0];
 	prompts[0].type   = KRB5_PROMPT_TYPE_NEW_PASSWORD;
 
-	password_data.data   = buf2;
-	password_data.length = sizeof(buf2);
+	password_data[1].data   = buf2;
+	password_data[1].length = sizeof(buf2);
 
 	prompts[1].hidden = 1;
 	prompts[1].prompt = "Repeat new password: ";
-	prompts[1].reply  = &password_data;
+	prompts[1].reply  = &password_data[1];
 	prompts[1].type   = KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN;
 
 	ret = (*prompter) (context, data, NULL, "Changing password",
