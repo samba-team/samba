@@ -149,7 +149,7 @@ static void calc_maxfd(struct event_context *ev)
 
   this is used by modules that need to call on the events of a lower module
 */
-void event_context_merge(struct event_context *ev, struct event_context *ev2)
+struct event_context * event_context_merge(struct event_context *ev, struct event_context *ev2)
 {
 	DLIST_CONCATENATE(ev->fd_events, ev2->fd_events, struct fd_event *);
 	DLIST_CONCATENATE(ev->timed_events, ev2->timed_events, struct timed_event *);
@@ -164,6 +164,8 @@ void event_context_merge(struct event_context *ev, struct event_context *ev2)
 	event_context_destroy(ev2);
 
 	calc_maxfd(ev);
+
+	return ev;
 }
 
 

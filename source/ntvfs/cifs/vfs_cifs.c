@@ -163,10 +163,8 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename)
 	private->transport->event.fde->handler = cifs_socket_handler;
 	private->transport->event.fde->private = private;
 
-	event_context_merge(tcon->smb_conn->connection->event.ctx,
-			    private->transport->event.ctx);
-
-	private->transport->event.ctx = tcon->smb_conn->connection->event.ctx;
+	private->transport->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
+			    					private->transport->event.ctx);
 
 	return NT_STATUS_OK;
 }
