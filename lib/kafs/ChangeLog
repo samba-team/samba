@@ -1,3 +1,28 @@
+2003-04-14  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: (libkafs_la_LDFLAGS): update version
+	
+	* Makefile.am (ROKEN_SRCS): drop strupr.c
+	
+	* kafs.3: document kafs_set_verbose
+	
+	* common.c (kafs_set_verbose): add function that (re)sets the
+	logging function
+	(_kafs_try_get_cred): add function that does (krb_data->get_cred) to
+	make logging easier (that is now done in this function)
+	(*): use _kafs_try_get_cred
+
+	* afskrb5.c (get_cred): handle that inst can be the empty string too
+	(v5_convert): use _kafs_foldup
+	(krb5_afslog_uid_home): set name
+	(krb5_afslog_uid_home): ditto
+
+	* afskrb.c (krb_afslog_uid_home): set name
+	(krb_afslog_uid_home): ditto
+
+	* kafs_locl.h (kafs_data): add name
+	(_kafs_foldup): internally export
+
 2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: tell that cell-name is uppercased

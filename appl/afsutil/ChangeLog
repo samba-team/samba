@@ -1,3 +1,7 @@
+2003-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afslog.c: set kafs log function if verbose is turned on
+	
 2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* Makefile.am (LDADD): use LIB_kafs
