@@ -1942,6 +1942,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	canon_ace *file_ace_list = NULL;
 	canon_ace *dir_ace_list = NULL;
 	BOOL acl_perms = False;
+	mode_t orig_mode = (mode_t)0;
+	uid_t orig_uid;
+	gid_t orig_gid;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -1957,6 +1960,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			return False;
 	}
 
+	/* Save the original elements we check against. */
+	orig_mode = sbuf.st_mode;
+	orig_uid = sbuf.st_uid;
+	orig_gid = sbuf.st_gid;
+
 	/*
 	 * Unpack the user/group/world id's.
 	 */
@@ -1968,7 +1976,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Do we need to chown ?
 	 */
 
-	if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
+	if((user != (uid_t)-1 || grp != (uid_t)-1) && (orig_uid != user || orig_gid != grp)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -2000,6 +2008,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			if(ret != 0)
 				return False;
 		}
+
+		/* Save the original elements we check against. */
+		orig_mode = sbuf.st_mode;
+		orig_uid = sbuf.st_uid;
+		orig_gid = sbuf.st_gid;
 	}
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
@@ -2067,7 +2080,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 				return False;
 			}
 
-			if (sbuf.st_mode != posix_perms) {
+			if (orig_mode != posix_perms) {
 
 				DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
 					fsp->fsp_name, (unsigned int)posix_perms ));
