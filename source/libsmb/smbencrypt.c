@@ -45,23 +45,6 @@ void SMBencrypt(uchar * pwrd, uchar * c8, uchar * p24)
 #endif
 }
 
-void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24)
-{
-	uchar p21[21];
-
-	ZERO_STRUCT(p21);
-
-	nt_owf_gen(pwrd, p21);
-	SMBOWFencrypt(p21, c8, p24);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBNTencrypt: nt#, challenge, response\n"));
-	dump_data(100, p21, 16);
-	dump_data(100, c8, 8);
-	dump_data(100, p24, 24);
-#endif
-}
-
 /* Routines for Windows NT MD4 Hash functions. */
 static int _my_wcslen(int16 * str)
 {
@@ -78,14 +61,14 @@ static int _my_wcslen(int16 * str)
  * format.
  */
 
-static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
+static int _my_mbstowcs(int16 * dst, const uchar * src, int len)
 {
 	int i;
 	int16 val;
 
 	for (i = 0; i < len; i++)
 	{
-		val = toupper(*src);
+		val = *src;
 		SSVAL(dst, 0, val);
 		dst++;
 		src++;
@@ -95,14 +78,14 @@ static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
 	return i;
 }
 
-static int _my_mbstowcs(int16 * dst, const uchar * src, int len)
+static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
 {
 	int i;
 	int16 val;
 
 	for (i = 0; i < len; i++)
 	{
-		val = *src;
+		val = toupper(*src);
 		SSVAL(dst, 0, val);
 		dst++;
 		src++;
@@ -135,34 +118,6 @@ void E_md4hash(uchar * pwrd, uchar * p16)
 }
 
 /* Does the LM owf of a user's password */
-void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
-{
-	char pwrd[15];
-
-	ZERO_STRUCT(pwrd);
-	if (pwd != NULL)
-	{
-		unistr2_to_ascii(pwrd, pwd, sizeof(pwrd) - 1);
-	}
-
-	/* Mangle the passwords into Lanman format */
-	pwrd[14] = '\0';
-	strupper(pwrd);
-
-	/* Calculate the SMB (lanman) hash functions of the password */
-
-	E_P16((uchar *) pwrd, (uchar *) p16);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("lm_owf_genW: pwd, lm#\n"));
-	dump_data(120, pwrd, strlen(pwrd));
-	dump_data(100, p16, 16);
-#endif
-	/* clear out local copy of user's password (just being paranoid). */
-	ZERO_STRUCT(pwrd);
-}
-
-/* Does the LM owf of a user's password */
 void lm_owf_gen(const char *pwd, uchar p16[16])
 {
 	char pwrd[15];
@@ -192,26 +147,6 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 }
 
 /* Does both the NT and LM owfs of a user's password */
-void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
-{
-	char buf[512];
-	int i;
-	
-	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf)/2); i++)
-	{
-		SIVAL(buf, i*2, pwd->buffer[i]);
-	}
-	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
-
-	dump_data_pw("nt_owf_genW:", buf, pwd->uni_str_len * 2);
-	dump_data_pw("nt#:", nt_p16, 16);
-
-	/* clear out local copy of user's password (just being paranoid). */
-	ZERO_STRUCT(buf);
-}
-
-/* Does both the NT and LM owfs of a user's password */
 void nt_owf_gen(const char *pwd, uchar nt_p16[16])
 {
 	char pwrd[130];
@@ -234,13 +169,6 @@ void nt_owf_gen(const char *pwd, uchar nt_p16[16])
 	ZERO_STRUCT(pwrd);
 }
 
-/* Does both the NT and LM owfs of a user's UNICODE password */
-void nt_lm_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16], uchar lm_p16[16])
-{
-	nt_owf_genW(pwd, nt_p16);
-	lm_owf_genW(pwd, lm_p16);
-}
-
 /* Does both the NT and LM owfs of a user's password */
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16])
 {
@@ -257,6 +185,43 @@ void SMBOWFencrypt(const uchar pwrd[16], const uchar * c8, uchar p24[24])
 
 	memcpy(p21, pwrd, 16);
 	E_P24(p21, c8, p24);
+}
+
+/* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
+void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
+				uchar p24[24])
+{
+	uchar p21[21];
+
+	ZERO_STRUCT(p21);
+	memcpy(p21, pwrd, 8);
+	memset(p21 + 8, 0xbd, 8);
+
+	E_P24(p21, ntlmchalresp, p24);
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("NTLMSSPOWFencrypt: p21, c8, p24\n"));
+	dump_data(100, p21, 21);
+	dump_data(100, ntlmchalresp, 8);
+	dump_data(100, p24, 24);
+#endif
+}
+
+
+void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24)
+{
+	uchar p21[21];
+
+	ZERO_STRUCT(p21);
+
+	nt_owf_gen(pwrd, p21);
+	SMBOWFencrypt(p21, c8, p24);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBNTencrypt: nt#, challenge, response\n"));
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
+#endif
 }
 
 void SMBOWFencrypt_ntv2(const uchar kr[16],
@@ -396,23 +361,59 @@ void ntv2_owf_gen(const uchar owf[16],
 #endif
 }
 
-/* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
-void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
-				uchar p24[24])
+/* Does the LM owf of a user's password */
+void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
 {
-	uchar p21[21];
+	char pwrd[15];
 
-	ZERO_STRUCT(p21);
-	memcpy(p21, pwrd, 8);
-	memset(p21 + 8, 0xbd, 8);
+	ZERO_STRUCT(pwrd);
+	if (pwd != NULL)
+	{
+		unistr2_to_ascii(pwrd, pwd, sizeof(pwrd) - 1);
+	}
 
-	E_P24(p21, ntlmchalresp, p24);
+	/* Mangle the passwords into Lanman format */
+	pwrd[14] = '\0';
+	strupper(pwrd);
+
+	/* Calculate the SMB (lanman) hash functions of the password */
+
+	E_P16((uchar *) pwrd, (uchar *) p16);
+
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("NTLMSSPOWFencrypt: p21, c8, p24\n"));
-	dump_data(100, p21, 21);
-	dump_data(100, ntlmchalresp, 8);
-	dump_data(100, p24, 24);
+	DEBUG(100, ("lm_owf_genW: pwd, lm#\n"));
+	dump_data(120, pwrd, strlen(pwrd));
+	dump_data(100, p16, 16);
 #endif
+	/* clear out local copy of user's password (just being paranoid). */
+	ZERO_STRUCT(pwrd);
+}
+
+/* Does both the NT and LM owfs of a user's password */
+void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
+{
+	char buf[512];
+	int i;
+	
+	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf)/2); i++)
+	{
+		SIVAL(buf, i*2, pwd->buffer[i]);
+	}
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
+
+	dump_data_pw("nt_owf_genW:", buf, pwd->uni_str_len * 2);
+	dump_data_pw("nt#:", nt_p16, 16);
+
+	/* clear out local copy of user's password (just being paranoid). */
+	ZERO_STRUCT(buf);
+}
+
+/* Does both the NT and LM owfs of a user's UNICODE password */
+void nt_lm_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16], uchar lm_p16[16])
+{
+	nt_owf_genW(pwd, nt_p16);
+	lm_owf_genW(pwd, lm_p16);
 }
 
 BOOL make_oem_passwd_hash(uchar data[516],
