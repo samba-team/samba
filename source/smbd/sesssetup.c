@@ -252,8 +252,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		
 		SSVAL(outbuf, smb_uid, sess_vuid);
 
-		if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
-			exit_server("reply_spnego_kerberos: bad smb signature");
+		if (!server_info->guest) {
+			/* We need to start the signing engine
+			 * here but a W2K client sends the old
+			 * "BSRSPYL " signature instead of the
+			 * correct one. Subsequent packets will
+			 * be correct.
+			 */
+		       	srv_check_sign_mac(inbuf);
 		}
 	}
 
@@ -327,7 +333,6 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 				 */
 			       	srv_check_sign_mac(inbuf);
 			}
-
 		}
 	}
 
