@@ -1209,7 +1209,7 @@ void smbd_process(void)
 		
 		/* free up temporary memory */
 		lp_talloc_free();
-		parse_talloc_free();
+		main_loop_talloc_free();
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))

@@ -708,7 +708,7 @@ static BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		d_q->auditsettings = (uint32 *)talloc(ps->mem_ctx, d_q->count2 * sizeof(uint32));
+		d_q->auditsettings = (uint32 *)talloc_zero(ps->mem_ctx, d_q->count2 * sizeof(uint32));
 	}
 
 	if (d_q->auditsettings == NULL) {
@@ -829,13 +829,13 @@ void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
 
 	if (num_entries == 0) return;
 
-	if ((sen->ptr_sid = (uint32 *)talloc(mem_ctx, num_entries * 
+	if ((sen->ptr_sid = (uint32 *)talloc_zero(mem_ctx, num_entries * 
 					     sizeof(uint32))) == NULL) {
 		DEBUG(3, ("init_lsa_sid_enum(): out of memory for ptr_sid\n"));
 		return;
 	}
 
-	if ((sen->sid = (DOM_SID2 *)talloc(mem_ctx, num_entries * 
+	if ((sen->sid = (DOM_SID2 *)talloc_zero(mem_ctx, num_entries * 
 					   sizeof(DOM_SID2))) == NULL) {
 		DEBUG(3, ("init_lsa_sid_enum(): out of memory for sids\n"));
 		return;
@@ -1070,13 +1070,13 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	q_l->num_entries2 = num_names;
 	q_l->lookup_level = 1;
 
-	if ((q_l->uni_name = (UNISTR2 *)talloc(
+	if ((q_l->uni_name = (UNISTR2 *)talloc_zero(
 		mem_ctx, num_names * sizeof(UNISTR2))) == NULL) {
 		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
 		return;
 	}
 
-	if ((q_l->hdr_name = (UNIHDR *)talloc(
+	if ((q_l->hdr_name = (UNIHDR *)talloc_zero(
 		mem_ctx, num_names * sizeof(UNIHDR))) == NULL) {
 		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
 		return;
