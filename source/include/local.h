@@ -221,4 +221,6 @@
 /* Number in seconds for winbindd to wait for the mutex. Make this 2 * smbd wait time. */
 #define WINBIND_SERVER_MUTEX_WAIT_TIME (( ((NUM_CLI_AUTH_CONNECT_RETRIES) * ((CLI_AUTH_TIMEOUT)/1000)) + 5)*2)
 
+/* Max number of simultaneous winbindd socket connections. */
+#define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
 #endif
