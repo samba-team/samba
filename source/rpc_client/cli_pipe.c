@@ -863,22 +863,37 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	int fnum;
 
 	/******************* open the pipe *****************/
-	if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
+	if (IS_BITS_SET_ALL(cli->capabilities, CAP_NT_SMBS))
 	{
-		DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
-		         pipe_name, cli->desthost, cli_errstr(cli)));
-		return False;
+		if ((fnum = cli_nt_create(cli, &(pipe_name[5]))) == -1)
+		{
+			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
+				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));
+			return False;
+		}
+
+		cli->nt_pipe_fnum = (uint16)fnum;
 	}
-
-	cli->nt_pipe_fnum = (uint16)fnum;
-
-	/**************** Set Named Pipe State ***************/
-	if (!rpc_pipe_set_hnd_state(cli, pipe_name, 0x4300))
+	else
 	{
-		DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
-		          cli_errstr(cli)));
-		cli_close(cli, cli->nt_pipe_fnum);
-		return False;
+		if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
+		{
+			DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
+				 pipe_name, cli->desthost, cli_errstr(cli)));
+			return False;
+		}
+
+		cli->nt_pipe_fnum = (uint16)fnum;
+
+		/**************** Set Named Pipe State ***************/
+		if (!rpc_pipe_set_hnd_state(cli, pipe_name, 0x4300))
+		{
+			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
+				  cli_errstr(cli)));
+			cli_close(cli, cli->nt_pipe_fnum);
+			return False;
+		}
+
 	}
 
 	/******************* bind request on pipe *****************/

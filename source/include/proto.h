@@ -385,6 +385,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
+int cli_nt_create(struct cli_state *cli, char *fname);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
@@ -498,8 +499,8 @@ void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
-void NTLMSSPhash( unsigned char hash[256], unsigned char const key[5]);
-void NTLMSSPcalc( unsigned char hash[256], unsigned char *data, int len);
+void NTLMSSPhash( unsigned char hash[258], unsigned char key[5]);
+void NTLMSSPcalc( unsigned char hash[258], unsigned char *data, int len);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
