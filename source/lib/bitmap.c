@@ -43,7 +43,7 @@ struct bitmap *bitmap_allocate(int n)
 		return NULL;
 	}
 
-	memset(bm->b, 0, sizeof(bm->b[0])*bm->n);
+	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
 
 	return bm;
 }
@@ -66,6 +66,16 @@ BOOL bitmap_set(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) return False;
 	bm->b[i/32] |= (1<<(i%32));
+	return True;
+}
+
+/****************************************************************************
+clear a bit in a bitmap
+****************************************************************************/
+BOOL bitmap_clear(struct bitmap *bm, unsigned i)
+{
+	if (i >= bm->n) return False;
+	bm->b[i/32] &= ~(1<<(i%32));
 	return True;
 }
 

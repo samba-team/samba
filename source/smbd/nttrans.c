@@ -754,7 +754,7 @@ static int call_nt_transact_create(connection_struct *conn,
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-      fsp->reserved = False;
+      file_free(fsp);
 
       restore_case_semantics(file_attributes);
 

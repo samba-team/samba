@@ -885,8 +885,9 @@ static int fd_attempt_close(file_fd_struct *fd_ptr)
       fd_ptr->dev = (uint32)-1;
       fd_ptr->inode = (uint32)-1;
       fd_ptr->uid_cache_count = 0;
-    } else
+    } else {
       fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
+    }
   } 
  return fd_ptr->ref_count;
 }
@@ -1308,7 +1309,6 @@ static void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     
-	fsp->reserved = False;
 	fsp->open = False;
 	fsp->is_directory = False; 
     
