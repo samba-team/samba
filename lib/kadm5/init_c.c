@@ -106,8 +106,10 @@ kadm5_c_init_with_password_ctx(krb5_context context,
     if(hp == NULL)
 	return KADM5_BAD_SERVER_NAME;
     memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
-    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0)
-	return KADM5_FAILURE;
+    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
+	close(s);
+	return KADM5_RPC_ERROR;
+    }
     krb5_cc_default(context, &cc);
     krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
     ctx->ac = NULL;
