@@ -70,6 +70,8 @@ typedef struct krb5_crypto_data *krb5_crypto;
 
 typedef CKSUMTYPE krb5_cksumtype;
 
+typedef Checksum krb5_checksum;
+
 typedef enum krb5_enctype {
     ETYPE_NULL			= 0,
     ENCTYPE_NULL			= ETYPE_NULL,
@@ -181,6 +183,8 @@ typedef enum krb5_key_usage {
     KRB5_KU_USAGE_SEQ = 24
     /* SEQ in GSSAPI krb5 mechanism */
 } krb5_key_usage;
+
+typedef krb5_key_usage krb5_keyusage;
 
 typedef enum krb5_salttype {
     KRB5_PW_SALT = KRB5_PADATA_PW_SALT,
