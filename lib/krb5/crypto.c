@@ -1568,6 +1568,35 @@ krb5_keytype_to_enctypes (krb5_context context,
     return 0;
 }
 
+/*
+ * First take the configured list of etypes for `keytype' if available,
+ * else, do `krb5_keytype_to_enctypes'.
+ */
+
+krb5_error_code
+krb5_keytype_to_enctypes_default (krb5_context context,
+				  krb5_keytype keytype,
+				  unsigned *len,
+				  int **val)
+{
+    int i, n;
+    int *ret;
+
+    if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
+	return krb5_keytype_to_enctypes (context, keytype, len, val);
+
+    for (n = 0; context->etypes_des[n]; ++n)
+	;
+    ret = malloc (n * sizeof(*ret));
+    if (ret == NULL && n != 0)
+	return ENOMEM;
+    for (i = 0; i < n; ++i)
+	ret[i] = context->etypes_des[i];
+    *len = n;
+    *val = ret;
+    return 0;
+}
+
 krb5_error_code
 krb5_enctype_valid(krb5_context context, 
 		 krb5_enctype etype)
