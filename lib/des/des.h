@@ -202,6 +202,7 @@ void des_init_random_number_generator(des_cblock *key);
 void des_set_random_generator_seed(des_cblock *key);
 void des_set_sequence_number(des_cblock new_sequence_number);
 void des_generate_random_block(des_cblock *block);
+void des_rand_data(unsigned char *data, int size);
 
 #else
 
@@ -251,6 +252,7 @@ void des_init_random_number_generator();
 void des_set_random_generator_seed();
 void des_set_sequence_number();
 void des_generate_random_block();
+void des_rand_data();
 
 #endif
 #endif
