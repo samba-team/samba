@@ -32,8 +32,11 @@ struct
   {5,    "User has insufficient privilege" },
   {86,   "The specified password is invalid" },
   {2226, "Operation only permitted on a Primary Domain Controller"  },
-  {2243, "The password cannot be changed" },
-  {2246, "The password is too short" },
+  {2242, "The password of this user has expired." },
+  {2243, "The password of this user cannot change." },
+  {2244, "This password cannot be used now (password history conflict)." },
+  {2245, "The password is shorter than required." },
+  {2246, "The password of this user is too recent to change."},
   {0, NULL}
 };
 
