@@ -481,15 +481,15 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		ber_printf(cookie_be, "{io}", (ber_int_t) 1000, "", 0);
 	}
 	ber_flatten(cookie_be, &cookie_bv);
-	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
+	PagedResults.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
 	PagedResults.ldctl_iscritical = (char) 1;
 	PagedResults.ldctl_value.bv_len = cookie_bv->bv_len;
 	PagedResults.ldctl_value.bv_val = cookie_bv->bv_val;
 
-	NoReferrals.ldctl_oid = ADS_NO_REFERRALS_OID;
+	NoReferrals.ldctl_oid = CONST_DISCARD(char *, ADS_NO_REFERRALS_OID);
 	NoReferrals.ldctl_iscritical = (char) 0;
 	NoReferrals.ldctl_value.bv_len = 0;
-	NoReferrals.ldctl_value.bv_val = "";
+	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
 
 
 	controls[0] = &NoReferrals;
@@ -962,7 +962,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	   non-existent attribute (but allowable for the object) to run
 	*/
 	LDAPControl PermitModify = {
-		ADS_PERMIT_MODIFY_OID,
+                CONST_DISCARD(char *, ADS_PERMIT_MODIFY_OID),
 		{0, NULL},
 		(char) 1};
 	LDAPControl *controls[2];

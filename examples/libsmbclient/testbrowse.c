@@ -5,71 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <popt.h>
-#include <libsmbclient.h>
 #include <stdlib.h>
+#include <libsmbclient.h>
+#include "get_auth_data_fn.h"
 
 void error_message(char * pMessage)
 {
     printf("ERROR: %s\n", pMessage);
-}
-
-
-static void
-get_auth_data_fn(const char * pServer,
-                 const char * pShare,
-                 char * pWorkgroup,
-                 int maxLenWorkgroup,
-                 char * pUsername,
-                 int maxLenUsername,
-                 char * pPassword,
-                 int maxLenPassword)
-    
-{
-    char temp[128];
-    
-    printf("Entered get_auth_data_fn\n");
-
-    fprintf(stdout, "Need password for //%s/%s\n", pServer, pShare);
-    
-    fprintf(stdout, "Username: [%s] ", pUsername);
-    fgets(temp, sizeof(temp), stdin);
-    
-    if (temp[strlen(temp) - 1] == '\n') /* A new line? */
-    {
-        temp[strlen(temp) - 1] = '\0';
-    }
-    
-    if (temp[0] != '\0')
-    {
-        strncpy(pUsername, temp, maxLenUsername - 1);
-    }
-    
-    strcpy(temp, getpass("Password: "));
-    
-    if (temp[strlen(temp) - 1] == '\n') /* A new line? */
-    {
-        temp[strlen(temp) - 1] = '\0';
-    }
-    
-    if (temp[0] != '\0')
-    {
-        strncpy(pPassword, temp, maxLenPassword - 1);
-    }
-
-    fprintf(stdout, "Workgroup: ");
-    fgets(temp, sizeof(temp), stdin);
-    
-    if (temp[strlen(temp) - 1] == '\n') /* A new line? */
-    {
-        temp[strlen(temp) - 1] = '\0';
-    }
-    
-    if (temp[0] != '\0')
-    {
-        strncpy(pWorkgroup, temp, maxLenWorkgroup - 1);
-    }
-
-    putchar('\n');
 }
 
 

@@ -81,7 +81,7 @@ static int net_ads_lookup(int argc, const char **argv)
 		d_printf("Didn't find the cldap server!\n");
 		return -1;
 	} if (!ads->config.realm) {
-                ads->config.realm = (char *) opt_target_workgroup;
+                ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
 		ads->ldap_port = 389;
 	}
 
@@ -1168,7 +1168,7 @@ static int net_ads_password(int argc, const char **argv)
 	}
 
 	if (argv[1]) {
-		new_password = (char *)argv[1];
+		new_password = CONST_DISCARD(char *, argv[1]);
 	} else {
 		asprintf(&prompt, "Enter new password for %s:", user);
 		new_password = getpass(prompt);
