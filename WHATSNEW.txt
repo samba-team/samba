@@ -69,7 +69,7 @@ of email exchanges) and will be updated over the coming releases.
 The document covers the task of getting roving profiles to work with
 a Samba server with Windows 95 and Windows NT clients.
 
-Bugfixes added since 1.9.18p3
+Bugfixes added since 1.9.18p4
 -----------------------------
 
 1). Samba should now compile cleanly with the gcc -Wstrict-prototypes
