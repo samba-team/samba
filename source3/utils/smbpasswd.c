@@ -396,9 +396,9 @@ static void usage(char *name)
   /* Set read buffer to 16k for effiecient reads */
   setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
   
-  /* make sure it is only rw by the owner */
-  chmod(pfile, 0600);
-  
+  /* need locking permission on smbpasswd file */
+  chmod(pfile, 0666);
+
   /* Lock the smbpasswd file for write. */
   if ((lockfd = pw_file_lock(pfile, F_WRLCK, 5)) < 0) {
     err = errno;

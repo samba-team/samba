@@ -504,7 +504,6 @@ static int make_rpc_reply(char *inbuf, char *q, int data_len)
 static int lsa_reply_open_policy(char *q, char *base)
 {
 	int i;
-	char *start = q;
 	LSA_R_OPEN_POL r_o;
 
 	/* set up the LSA QUERY INFO response */
@@ -519,7 +518,7 @@ static int lsa_reply_open_policy(char *q, char *base)
 	q = lsa_io_r_open_pol(False, &r_o, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
@@ -593,7 +592,6 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 				char *dom_name, char *dom_sid)
 {
-	char *start = q;
 	LSA_R_QUERY_INFO r_q;
 
 	/* set up the LSA QUERY INFO response */
@@ -609,7 +607,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	q = lsa_io_r_query(False, &r_q, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 /* pretty much hard-coded choice of "other" sids, unfortunately... */
@@ -693,7 +691,6 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
-	char *start = q;
 	LSA_R_LOOKUP_SIDS r_l;
 
 	/* set up the LSA Lookup SIDs response */
@@ -705,7 +702,7 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static int lsa_reply_lookup_rids(char *q, char *base,
@@ -713,7 +710,6 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
 {
-	char *start = q;
 	LSA_R_LOOKUP_RIDS r_l;
 
 	/* set up the LSA Lookup RIDs response */
@@ -725,35 +721,35 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 	q = lsa_io_r_lookup_rids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static void make_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c,
                                 DOM_CHAL *srv_chal, int status)
 {
-	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(r_c->srv_chal.data));
+	DEBUG(6,("make_lsa_r_req_chal: %d\n", __LINE__));
+	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
 	r_c->status = status;
-
-	DEBUG(5,("make_lsa_r_req_chal srv_chal: %lx %lx\n",
-		*(uint32*)(&((r_c->srv_chal.data[0]))),
-		*(uint32*)(&((r_c->srv_chal.data[4]))) ));
 }
 
 static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 					DOM_CHAL *srv_chal)
 {
-	char *start = q;
 	LSA_R_REQ_CHAL r_c;
 
-	/* set up the LSA REQUEST CHALLENGE response */
+	DEBUG(6,("lsa_reply_req_chal: %d\n", __LINE__));
 
+	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
+	/* set up the LSA REQUEST CHALLENGE response */
 	make_lsa_r_req_chal(&r_c, srv_chal, 0);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_req_chal(False, &r_c, q, base, 4, 0);
 
+	DEBUG(6,("lsa_reply_req_chal: %d\n", __LINE__));
+
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
@@ -767,7 +763,6 @@ static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
 static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 				DOM_CHAL *resp_cred, int status)
 {
-	char *start = q;
 	LSA_R_AUTH_2 r_a;
 
 	/* set up the LSA AUTH 2 response */
@@ -778,7 +773,7 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	q = lsa_io_r_auth_2(False, &r_a, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
@@ -791,7 +786,6 @@ static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
 static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, int status)
 {
-	char *start = q;
 	LSA_R_SRV_PWSET r_s;
 
 	/* set up the LSA Server Password Set response */
@@ -801,7 +795,7 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 static void make_lsa_user_info(LSA_USER_INFO *usr,
@@ -920,7 +914,6 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, LSA_USER_INFO *user_info)
 {
-	char *start = q;
 	LSA_R_SAM_LOGON r_s;
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
@@ -936,7 +929,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 
@@ -944,7 +937,6 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 				DOM_CRED *srv_cred, 
 				uint32 status)
 {
-	char *start = q;
 	LSA_R_SAM_LOGOFF r_s;
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
@@ -957,55 +949,41 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 	q = lsa_io_r_sam_logoff(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
-	return q - start; 
+	return PTR_DIFF(q, base);
 }
 
 
 static void api_lsa_open_policy( char *param, char *data,
                              char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	/* we might actually want to decode the query, but it's not necessary */
 	/* lsa_io_q_open_policy(...); */
 
 	/* return a 20 byte policy handle */
-	reply_len = lsa_reply_open_policy(*rdata + 0x18, *rdata + 0x18);
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
+	*rdata_len = lsa_reply_open_policy(*rdata + 0x18, *rdata);
 }
 
 static void api_lsa_query_info( char *param, char *data,
                                 char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	LSA_Q_QUERY_INFO q_i;
 	pstring dom_name;
 	pstring dom_sid;
 
 	/* grab the info class and policy handle */
-	lsa_io_q_query(True, &q_i, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_query(True, &q_i, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata + 0x18, 
+	*rdata_len = lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata, 
 									 dom_name, dom_sid);
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 static void api_lsa_lookup_sids( char *param, char *data,
                                  char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	int i;
 	LSA_Q_LOOKUP_SIDS q_l;
 	pstring dom_name;
@@ -1013,7 +991,7 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	fstring dom_sids[MAX_LOOKUP_SIDS];
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
@@ -1025,21 +1003,15 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_lookup_sids(*rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_lookup_sids(*rdata + 0x18, *rdata,
 	            q_l.num_entries, dom_sids, /* text-converted SIDs */
 				dom_name, dom_sid, /* domain name, domain SID */
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 static void api_lsa_lookup_names( char *param, char *data,
                                   char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	int i;
 	LSA_Q_LOOKUP_RIDS q_l;
 	pstring dom_name;
@@ -1047,7 +1019,7 @@ static void api_lsa_lookup_names( char *param, char *data,
 	uint32 dom_rids[MAX_LOOKUP_SIDS];
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
@@ -1060,14 +1032,10 @@ static void api_lsa_lookup_names( char *param, char *data,
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_lookup_rids(*rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_lookup_rids(*rdata + 0x18, *rdata,
 	            q_l.num_entries, dom_rids, /* text-converted SIDs */
 				dom_name, dom_sid, /* domain name, domain SID */
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
-
-	/* construct header, now that we know the reply length */
-	make_rpc_reply(data, *rdata, reply_len);
-	*rdata_len = reply_len + 0x18;
 }
 
 BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
@@ -1092,6 +1060,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENPOLICY\n"));
 			api_lsa_open_policy(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1100,6 +1069,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			DEBUG(3,("LSA_QUERYINFOPOLICY\n"));
 
 			api_lsa_query_info(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1161,6 +1131,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENSECRET\n"));
 			api_lsa_lookup_sids(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1168,6 +1139,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_LOOKUPNAMES\n"));
 			api_lsa_lookup_names(param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1180,10 +1152,15 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 	return True;
 }
 
-static BOOL update_dcinfo(struct dcinfo *dc, DOM_CHAL *clnt_chal, char *mach_acct)
+static BOOL update_dcinfo(int cnum, uint16 vuid,
+		struct dcinfo *dc, DOM_CHAL *clnt_chal, char *mach_acct)
 {
-    struct smb_passwd *smb_pass = get_smbpwnam(mach_acct);
+    struct smb_passwd *smb_pass;
 	int i;
+
+	unbecome_user();
+	smb_pass = get_smbpwnam(mach_acct);
+	become_user(cnum, vuid);
 
 	if (smb_pass != NULL)
 	{
@@ -1219,43 +1196,39 @@ static BOOL update_dcinfo(struct dcinfo *dc, DOM_CHAL *clnt_chal, char *mach_acc
 		dc->srv_chal.data[i] = 0xA5;
 	}
 
+	DEBUG(6,("update_dcinfo: %d\n", __LINE__));
+
 	return True;
 }
 
-static void api_lsa_req_chal( user_struct *vuser,
+static void api_lsa_req_chal( int cnum, uint16 vuid,
+                              user_struct *vuser,
                               char *param, char *data,
                               char **rdata, int *rdata_len )
 {
-	int reply_len;
-
 	LSA_Q_REQ_CHAL q_r;
 
 	fstring mach_acct;
 
 	/* grab the challenge... */
-	lsa_io_q_req_chal(True, &q_r, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_req_chal(True, &q_r, data + 0x18, data, 4, 0);
 
 	fstrcpy(mach_acct, unistr2(q_r.uni_logon_clnt.buffer));
 
 	strcat(mach_acct, "$");
 
-	update_dcinfo(&(vuser->dc), &(q_r.clnt_chal), mach_acct);
+	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
 
 	/* construct reply.  return status is always 0x0 */
-	reply_len = lsa_reply_req_chal(&q_r, *rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_req_chal(&q_r, *rdata + 0x18, *rdata,
 					&(vuser->dc.srv_chal));
 
-	/* construct header, now that we know the reply length */
-	reply_len += make_rpc_reply(data, *rdata, reply_len);
-
-	*rdata_len = reply_len;
 }
 
 static void api_lsa_auth_2( user_struct *vuser,
                             char *param, char *data,
                             char **rdata, int *rdata_len )
 {
-	int reply_len;
 	LSA_Q_AUTH_2 q_a;
 
 	DOM_CHAL srv_chal;
@@ -1264,7 +1237,7 @@ static void api_lsa_auth_2( user_struct *vuser,
 	srv_time.time = 0;
 
 	/* grab the challenge... */
-	lsa_io_q_auth_2(True, &q_a, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_auth_2(True, &q_a, data + 0x18, data, 4, 0);
 
 	/* check that the client credentials are valid */
 	cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
@@ -1274,13 +1247,8 @@ static void api_lsa_auth_2( user_struct *vuser,
 	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), srv_time, &srv_chal);
 
 	/* construct reply.  */
-	reply_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata,
 					&srv_chal, 0x0);
-
-	/* construct header, now that we know the reply length */
-	reply_len += make_rpc_reply(data, *rdata, reply_len);
-
-	*rdata_len = reply_len;
 }
 
 
@@ -1316,26 +1284,20 @@ static void api_lsa_srv_pwset( user_struct *vuser,
                                char *param, char *data,
                                char **rdata, int *rdata_len )
 {
-	int reply_len;
 	LSA_Q_SRV_PWSET q_a;
 
 	DOM_CRED srv_cred;
 
 	/* grab the challenge and encrypted password ... */
-	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_a.clnt_id.cred), &srv_cred);
 
 	/* construct reply.  always indicate failure.  nt keeps going... */
-	reply_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata,
 					&srv_cred,
 	                NT_STATUS_WRONG_PASSWORD|0xC000000);
-
-	/* construct header, now that we know the reply length */
-	reply_len += make_rpc_reply(data, *rdata, reply_len);
-
-	*rdata_len = reply_len;
 }
 
 
@@ -1343,26 +1305,20 @@ static void api_lsa_sam_logoff( user_struct *vuser,
                                char *param, char *data,
                                char **rdata, int *rdata_len )
 {
-	int reply_len;
 	LSA_Q_SAM_LOGOFF q_l;
 
 	DOM_CRED srv_cred;
 
 	/* grab the challenge... */
-	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_cred);
 
 	/* construct reply.  always indicate success */
-	reply_len = lsa_reply_sam_logoff(&q_l, *rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_sam_logoff(&q_l, *rdata + 0x18, *rdata,
 					&srv_cred,
 	                0x0);
-
-	/* construct header, now that we know the reply length */
-	reply_len += make_rpc_reply(data, *rdata, reply_len);
-
-	*rdata_len = reply_len;
 }
 
 
@@ -1370,14 +1326,13 @@ static void api_lsa_sam_logon( user_struct *vuser,
                                char *param, char *data,
                                char **rdata, int *rdata_len )
 {
-	int reply_len;
 	LSA_Q_SAM_LOGON q_l;
 	LSA_USER_INFO usr_info;
 	LSA_USER_INFO *p_usr_info = NULL;
 
 	DOM_CRED srv_creds;
 
-	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data + 0x18, 4, 0);
+	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_creds);
@@ -1454,207 +1409,10 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		               NULL); /* char *other_sids */
 	}
 
-	reply_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata + 0x18,
+	*rdata_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata,
 					&srv_creds, p_usr_info);
-
-	/* construct header, now that we know the reply length */
-	reply_len += make_rpc_reply(data, *rdata, reply_len);
-
-	*rdata_len = reply_len;
 }
 
-
-#if 0
-case LSASAMLOGON:
-	DEBUG(1,("LSASAMLOGON\n"));
-	dump_data(1,data,128);
-	q = data + 0x18;
-	logonsrv = q + 16;
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	q = skip_unicode_string(logonsrv,1)+16;
-	q = align4(q, data);
-	unicomp = q;
-	q = skip_unicode_string(unicomp,1)+4;
-	DEBUG(1,("SMLOG %d  logonsrv=%s unicomp=%s\n", 
-		 __LINE__, unistr(logonsrv), unistr(unicomp)));
-	q = align4(q, data);
-	rcvcred[0] = qIVAL;
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	rcvcred[1] = qIVAL;
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	clnttime = qIVAL;
-	checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
-	q += 2;
-	rtncred[0] = qIVAL; /* all these are ignored */
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	rtncred[1] = qIVAL;
-	rtntime = qIVAL;
-	logonlevel = qSVAL;
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	switchval = qSVAL;
-	switch (switchval)
-		{
-		case 1:
-			
-			q += 6;
-			domlen = qSVAL;
-			dommaxlen = qSVAL; q += 4;
-			paramcontrol = qIVAL;
-			logonid[0] = qIVAL; /* low part */
-			logonid[1] = qIVAL; /* high part */
-			
-			usernamelen = qSVAL;
-			
-			DEBUG(1,("SMLOG %d\n", __LINE__));
-			usernamemaxlen = qSVAL; q += 4;
-			
-			DEBUG(1,("usernamelen=%d maxlen=%d dommaxlen=%d\n", 
-				 usernamelen, usernamemaxlen, dommaxlen));
-			
-			dump_data(1,q,128);
-			
-			wslen = qSVAL;
-			wsmaxlen = qSVAL; q += 4;
-			rc4lmowfpass = q; q += 16;
-			rc4ntowfpass = q; q += 16;
-			
-			q += 12; domain = q; q += dommaxlen + 12;
-			q = align4(q, data);
-			username = q; q += usernamemaxlen + 12; 
-			q = align4(q, data);
-			ws = q;
-			DEBUG(1,("domain=%s username=%s ws=%s\n",
-				 unistr(domain), unistr(username),
-				 unistr(ws)));
-			break;
-		default: 
-			DEBUG(0,("unknown switch in SAMLOGON %d\n",
-				 switchval));
-		}
-	for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",username[i]);
-	DEBUG(1,("userNAME %s  [%s]\n", foo, username));
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	q = *rdata + 0x18;
-	qSIVAL(0x16a4b4); /* magic buffer pointer ? */
-	makecred(cnum, clnttime+1, q);
-	dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
-	q += 8;
-	qSIVAL(0); /* timestamp. client doesn't care */
-	qSSVAL(3); /* switch value 3. May be others? */
-	qSSVAL(0); /* undocumented */
-	DEBUG(1,("SMLOG %d\n", __LINE__));
-	
-	memset(rc4key, 0, sizeof rc4key);
-	SIVAL(rc4key, 0, dcauth[cnum].sesskey[0]);
-	SIVAL(rc4key, 4, dcauth[cnum].sesskey[1]);
-	for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",rc4ntowfpass[i]);
-	DEBUG(1,("rc4ntowf %s\n", foo));
-	arcfour_init(&c, rc4key, sizeof rc4key);
-	arcfour_encrypt(&c, ntowfpass, rc4ntowfpass, sizeof ntowfpass);
-	for(i=0;i<16;i++) sprintf(foo+i*2,"%02x",ntowfpass[i]);
-	DEBUG(1,("ntowf %s\n", foo));
-	
-	if(!(userinfo = getuserinfo(username, usernamelen, ntowfpass))) {
-		qSIVAL(0); /* no buffer */
-		qSCVAL(1); /* Authoratitive. Change if passthrough? */
-		qSCVAL(0); /* pad for above boolean */
-		qSSVAL(0); /* pad for above boolean */
-		
-		endrpcreply(data, *rdata, q-*rdata, 0xc0000064, rdata_len);
-		break;
-	}
-
-	qSIVAL(2); /* another magic bufptr? */
-  DEBUG(1,("SMLOG %d %lx\n", __LINE__, userinfo));
-  qSIVAL(userinfo->logontime[0]); qSIVAL(userinfo->logontime[1]);
-  qSIVAL(userinfo->logofftime[0]); qSIVAL(userinfo->logofftime[1]);
-  DEBUG(1,("SMLOG %d %lx\n", __LINE__, userinfo->passlastsettime[1]));
-  qSIVAL(userinfo->kickofftime[0]); qSIVAL(userinfo->kickofftime[1]);
-  qSIVAL(userinfo->passlastsettime[0]); qSIVAL(userinfo->passlastsettime[1]);
-  qSIVAL(userinfo->passcanchgtime[0]); qSIVAL(userinfo->passcanchgtime[1]);
-  qSIVAL(userinfo->passmustchgtime[0]); qSIVAL(userinfo->passmustchgtime[1]);
-  DEBUG(1,("SMLOG %d %s\n", __LINE__, userinfo->effectivename));
-  qunihdr(userinfo->effectivename);
-  qunihdr(userinfo->fullname);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qunihdr(userinfo->logonscript);
-  qunihdr(userinfo->profilepath);
-  qunihdr(userinfo->homedirectory);
-  qunihdr(userinfo->homedirectorydrive);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSSVAL(userinfo->logoncount);
-  qSSVAL(userinfo->badpwcount);
-  qSIVAL(userinfo->uid);
-  qSIVAL(userinfo->gid);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(userinfo->ngroups);
-  qSIVAL(8); /* ptr to groups */
-  qSIVAL(userinfo->userflags);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(0); qSIVAL(0); qSIVAL(0); qSIVAL(0); /* unused user session key */
-  qunihdr(userinfo->logonserver);
-  qunihdr(userinfo->logondomain);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(2); /* logon domain id ptr */
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  memset(q,0,40); q += 40; /* expansion room */
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(userinfo->nsids);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(0); /* ptr to sids and values */
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qunistr(userinfo->effectivename);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qunistr(userinfo->fullname);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qunistr(userinfo->logonscript);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qunistr(userinfo->profilepath);
-  qunistr(userinfo->homedirectory);
-  qunistr(userinfo->homedirectorydrive);
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  qSIVAL(userinfo->ngroups);
-  for (i = 0; i < userinfo->ngroups; i++)
-  {
-	qSIVAL(userinfo->groups[i].gid);
-	qSIVAL(userinfo->groups[i].attr);
-  }
-  qunistr(userinfo->logonserver);
-  qunistr(userinfo->logondomain);
-  for (i = 0; i < userinfo->nsids; i++)
-  {
-	/* put the extra sids: PAXX: TODO */
-  }
-  /* Assumption. This is the only domain, sending our SID */
-  /* PAXX: may want to do passthrough later */
-  strcpy(domsid,lp_domainsid());
-DEBUG(4,("netlogon LINE %d %lx %s\n",__LINE__, q, domsid));
-  /* assume, but should check, that domsid starts "S-" */
-  p = strtok(domsid+2,"-");
-  revision = atoi(p);
-DEBUG(4,("netlogon LINE %d %lx %s rev %d\n",__LINE__, q, p, revision));
-  identauth = atoi(strtok(0,"-"));
-DEBUG(4,("netlogon LINE %d %lx %s ia %d\n",__LINE__, q, p, identauth));
-  numsubauths = 0;
-  while (p = strtok(0, "-"))
-	subauths[numsubauths++] = atoi(p);
-  qSIVAL(numsubauths);
-  qSCVAL(revision);
-  qSCVAL(numsubauths);
-  qRSSVAL(0); /* PAXX: FIX. first 2 bytes identifier authority */
-  qRSIVAL(identauth); /* next 4 bytes */
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  for (i = 0; i < numsubauths; i++)
-  {
-	qSIVAL(subauths[i]);
-  }
-  qSCVAL(1); /* Authoratitive. Change if passthrough? */
-  qSCVAL(0); /* pad for above boolean */
-  qSSVAL(0); /* pad for above boolean */
-
-  endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
-  break;
-#endif
 
 BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
@@ -1687,7 +1445,8 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		case LSA_REQCHAL:
 		{
 			DEBUG(3,("LSA_REQCHAL\n"));
-			api_lsa_req_chal(vuser, param, data, rdata, rdata_len);
+			api_lsa_req_chal(cnum, uid, vuser, param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1695,6 +1454,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_AUTH2\n"));
 			api_lsa_auth_2(vuser, param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1702,6 +1462,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SRVPWSET\n"));
 			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 
@@ -1709,6 +1470,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SAMLOGON\n"));
 			api_lsa_sam_logon(vuser, param, data, rdata, rdata_len);
+			make_rpc_reply(data, *rdata, *rdata_len);
 			break;
 		}
 

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-
+extern int DEBUGLEVEL;
 /****************************************************************************
   setup the session key. 
 Input: 8 byte challenge block
@@ -37,14 +37,24 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	char sum2[8];
 	char buf[8];
 
+	DEBUG(4,("cred_session_key\n"));
+
+	DEBUG(5,("	clnt_chal: %lx %lx srv_chal: %lx %lx\n",
+			
+	          IVAL(clnt_chal->data, 0), IVAL(clnt_chal->data, 4),
+	          IVAL(srv_chal->data, 0), IVAL(srv_chal->data, 4)));
+
 	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
 	sum[1] = IVAL(clnt_chal->data, 4) + IVAL(srv_chal->data, 4);
 
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	smbhash(pass, sum2, buf);
-	smbhash(pass+9,buf,session_key);
+	smbhash(pass  , sum2, buf);
+	smbhash(pass+9, buf , session_key);
+
+	DEBUG(5,("	session_key: "));
+	dump_data(5, session_key, 16);
 }
 
 
