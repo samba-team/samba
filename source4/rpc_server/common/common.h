@@ -34,3 +34,14 @@
 /* a useful macro for checking the validity of a dcerpc policy handle
    and giving the right fault code if invalid */
 #define DCESRV_CHECK_HANDLE(h) do {if (!(h)) DCESRV_FAULT(DCERPC_FAULT_CONTEXT_MISMATCH); } while (0)
+
+/* this checks for a valid policy handle, and gives a fault if an
+   invalid handle or NT_STATUS_INVALID_HANDLE if the handle is of the
+   wrong type */
+#define DCESRV_PULL_HANDLE(h, inhandle, t) do { \
+	(h) = dcesrv_handle_fetch(dce_call->conn, (inhandle), DCESRV_HANDLE_ANY); \
+	DCESRV_CHECK_HANDLE(h); \
+	if ((t) != DCESRV_HANDLE_ANY && (h)->wire_handle.handle_type != (t)) { \
+		return NT_STATUS_INVALID_HANDLE; \
+	} \
+} while (0)
