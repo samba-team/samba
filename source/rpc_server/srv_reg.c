@@ -153,52 +153,22 @@ static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
 
 
 /*******************************************************************
- reg_reply_info
- ********************************************************************/
-static BOOL reg_reply_info(REG_Q_INFO *q_u,
-				prs_struct *rdata)
-{
-	uint32 status     = 0;
-
-	REG_R_INFO r_u;
-	uint32 type = 0xcafeface;
-	BUFFER2 buf;
-	fstring name;
-
-	ZERO_STRUCT(buf);
-
-	DEBUG(5,("reg_info: %d\n", __LINE__));
-
-	if (status == 0x0 && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (status == 0 &&
-	   strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
-	{
-		char *key = "LanmanNT";
-		make_buffer2(&buf, key, strlen(key));
-		type = 0x1;
-	}
-	else
-	{
-		status = 0x2; /* Win32 status code.  ick */
-	}
-
-	make_reg_r_info(&r_u, &type, &buf, status);
-
-	/* store the response in the SMB stream */
-	return reg_io_r_info("", &r_u, rdata, 0);
-}
-
-/*******************************************************************
  api_reg_info
  ********************************************************************/
 static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
+	REG_R_INFO r_u;
 	REG_Q_INFO q_u;
+	BUFFER2 buf;
+
+	uint32 status;
+	uint32 type = 0xcafeface;
+
+	ZERO_STRUCT(r_u);
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(buf);
+
 
 	/* grab the reg unknown 0x11*/
 	if (!reg_io_q_info("", &q_u, data, 0))
@@ -206,8 +176,14 @@ static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
+
 	/* construct reply.  always indicate success */
-	return reg_reply_info(&q_u, rdata);
+	status = _reg_info(&q_u.pol, &buf, &type);
+
+	make_reg_r_info(&r_u, &type, &buf, status);
+
+	/* store the response in the SMB stream */
+	return reg_io_r_info("", &r_u, rdata, 0);	
 }
 
 

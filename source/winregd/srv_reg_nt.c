@@ -50,7 +50,6 @@ static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND * hnd,
 	return False;
 }
 
-#if 0
 /****************************************************************************
   get reg name 
 ****************************************************************************/
@@ -70,6 +69,7 @@ static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND * hnd,
 	return False;
 }
 
+#if 0
 /*******************************************************************
  reg_reply_unknown_1
  ********************************************************************/
@@ -167,70 +167,33 @@ uint32 _reg_open_entry(const POLICY_HND * pol, const UNISTR2 * uni_name,
 	return NT_STATUS_NOPROBLEMO;
 }
 
-#if 0
-
 /*******************************************************************
- reg_reply_info
+ _reg_info
  ********************************************************************/
-static void reg_reply_info(REG_Q_INFO * q_u, prs_struct * rdata)
-{
-	uint32 status = 0;
-
-	REG_R_INFO r_u;
-	uint32 type = 0xcafeface;
-	BUFFER2 buf;
+uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type)
+{      
 	fstring name;
 
-	ZERO_STRUCT(buf);
-
-	DEBUG(5, ("reg_info: %d\n", __LINE__));
-
-	if (status == 0x0
-	    && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
+	if (!get_policy_reg_name(get_global_hnd_cache(), pol, name))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0 &&
-	    strequal(name,
-		     "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+	if (strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key = "LanmanNT";
-		make_buffer2(&buf, key, strlen(key));
-		type = 0x1;
+		make_buffer2(buf, key, strlen(key));
+		*type = 0x1;
 	}
 	else
 	{
-		status = 0x2;	/* Win32 status code.  ick */
-	}
-
-	make_reg_r_info(&r_u, &type, &buf, status);
-
-	/* store the response in the SMB stream */
-	reg_io_r_info("", &r_u, rdata, 0);
-
-	DEBUG(5, ("reg_open_entry: %d\n", __LINE__));
+		return 0x2; /* Win32 status code.  ick */
+	}	
+	
+	return NT_STATUS_NOPROBLEMO;
 }
 
-/*******************************************************************
- api_reg_info
- ********************************************************************/
-static BOOL api_reg_info(rpcsrv_struct * p, prs_struct * data,
-			 prs_struct * rdata)
-{
-	REG_Q_INFO q_u;
-
-	/* grab the reg unknown 0x11 */
-	if (!reg_io_q_info("", &q_u, data, 0))
-	{
-		return False;
-	}
-
-
-	/* construct reply.  always indicate success */
-	reg_reply_info(&q_u, rdata);
-}
-
+#if 0
 
 /*******************************************************************
  array of \PIPE\reg operations
