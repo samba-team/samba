@@ -6272,6 +6272,9 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 		return WERR_OK;
 	}
 
+	if (*returned > lp_max_reported_jobs(snum))
+		*returned = lp_max_reported_jobs(snum);
+
 	switch (level) {
 	case 1:
 		return enumjobs_level1(queue, snum, buffer, offered, needed, returned);
