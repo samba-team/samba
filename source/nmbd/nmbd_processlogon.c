@@ -114,7 +114,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				}
 				q = skip_string(getdc,1);
 
-				if (PTR_DIFF(q + 5, buf) >= len) {
+				if (PTR_DIFF(q + 5, buf) > len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
@@ -215,7 +215,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 						q += 16;
 					}
 
-					if (PTR_DIFF(q + 8, buf) >= len) {
+					if (PTR_DIFF(q + 8, buf) > len) {
 						DEBUG(0,("process_logon_packet: bad packet\n"));
 						return;
 					}
@@ -334,7 +334,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 16;
 				}
 
-				if (PTR_DIFF(q + 8, buf) >= len) {
+				if (PTR_DIFF(q + 8, buf) > len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
