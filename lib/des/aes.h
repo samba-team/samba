@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -33,14 +33,11 @@
 
 /* $Id$ */
 
-#ifdef KRB5
-#include <krb5-types.h>
-#elif defined(KRB4)
-#include <ktypes.h>
-#endif
-
 #define AES_BLOCK_SIZE 16
 #define AES_MAXNR 14
+
+#define AES_ENCRYPT 1
+#define AES_DECRYPT 0
 
 typedef struct aes_key {
     u_int32_t key[(AES_MAXNR+1)*4];
