@@ -428,11 +428,15 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
   static pstring workgroup;
   pstring conf;
   int p, pid;
-  char *user = NULL, *host = NULL, *home = NULL;
+  char *user = NULL, *host = NULL, *home = NULL, *pname="libsmbclient";
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
   smbc_debug = debug;
+
+  DEBUGLEVEL = -1;
+
+  setup_logging(pname, False);
 
   /*
    * We try to construct our netbios name from our hostname etc
@@ -458,7 +462,7 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 
   slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
 
-    load_interfaces();  /* Load the list of interfaces ... */
+  load_interfaces();  /* Load the list of interfaces ... */
 
   in_client = True; /* FIXME, make a param */
 
@@ -476,6 +480,8 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
     return -1;
 
   }
+
+  reopen_logs();  /* Get logging working ... */
 
   /* 
    * Now initialize the file descriptor array and figure out what the
