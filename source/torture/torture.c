@@ -4034,7 +4034,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	if (p) {
 		unc_list = file_lines_load(p, &num_unc_names);
 		if (!unc_list || num_unc_names <= 0) {
-			printf("Failed to load unc names list from %s\n", p);
+			printf("Failed to load unc names list from '%s'\n", p);
 			exit(1);
 		}
 	}
@@ -4381,21 +4381,22 @@ static void usage(poptContext pc)
 	int argc_new;
 	char **argv_new;
 	poptContext pc;
+	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,OPT_DANGEROUS};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL, 		0,	"SMB ports", 	NULL},
-		{"seed",	's', POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
-		{"num-progs",	'N', POPT_ARG_INT, &torture_nprocs, 	4,	"num progs",	NULL},
-		{"num-ops",	'o', POPT_ARG_INT, &torture_numops, 	100, 	"num ops",	NULL},
-		{"entries",	'e', POPT_ARG_INT, &torture_entries, 	1000,	"entries",	NULL},
-		{"use-oplocks",	'L', POPT_ARG_NONE, &use_oplocks, 	True,	"use oplocks", 	NULL},
-		{"show-all",	'A', POPT_ARG_NONE, &torture_showall, 	True,	"show all", 	NULL},
-		{"loadfile",	'c', POPT_ARG_STRING,	NULL, 		0,	"loadfile", 	NULL},
-		{"unclist",	'C', POPT_ARG_STRING,	NULL, 		0,	"unclist", 	NULL},
-		{"timelimit",	't', POPT_ARG_STRING,	NULL, 		0,	"timelimit", 	NULL},
-		{"failures",	'f', POPT_ARG_INT, &torture_failures, 	1,	"failures", 	NULL},
-		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 		0,	"parse-dns", 	NULL},
-		{"dangerous",	'X', POPT_ARG_NONE,	NULL, 		0,	"dangerous", 	NULL},
+		{"seed",	 0, POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
+		{"num-progs",	 0, POPT_ARG_INT, &torture_nprocs, 	0,	"num progs",	NULL},
+		{"num-ops",	 0, POPT_ARG_INT, &torture_numops, 	0, 	"num ops",	NULL},
+		{"entries",	 0, POPT_ARG_INT, &torture_entries, 	0,	"entries",	NULL},
+		{"use-oplocks",	'L', POPT_ARG_NONE, &use_oplocks, 	0,	"use oplocks", 	NULL},
+		{"show-all",	'A', POPT_ARG_NONE, &torture_showall, 	0,	"show all", 	NULL},
+		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"loadfile", 	NULL},
+		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
+		{"timelimit",	't', POPT_ARG_STRING,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
+		{"failures",	'f', POPT_ARG_INT, &torture_failures, 	0,	"failures", 	NULL},
+		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
+		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,	"dangerous", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4416,23 +4417,21 @@ static void usage(poptContext pc)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'c':
+		case OPT_LOADFILE:
 			lp_set_cmdline("torture:loadfile", poptGetOptArg(pc));
 			break;
-		case 'C':
+		case OPT_UNCLIST:
 			lp_set_cmdline("torture:unclist", poptGetOptArg(pc));
 			break;
-		case 't':
+		case OPT_TIMELIMIT:
 			lp_set_cmdline("torture:timelimit", poptGetOptArg(pc));
 			break;
-		case 'D':
+		case OPT_DNS:
 			parse_dns(poptGetOptArg(pc));
 			break;
-
-		case 'X':
+		case OPT_DANGEROUS:
 			lp_set_cmdline("torture:dangerous", "1");
 			break;
-
 		default:
 			d_printf("Invalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
