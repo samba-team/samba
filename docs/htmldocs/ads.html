@@ -5,7 +5,8 @@
 >Samba as a ADS domain member</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,14 +73,10 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="ADS"
-></A
->Chapter 9. Samba as a ADS domain member</H1
+NAME="ADS">Chapter 8. Samba as a ADS domain member</H1
 ><P
->This is a VERY ROUGH guide to setting up the current (November 2001)
-pre-alpha version of Samba 3.0 with kerberos authentication against a
-Windows2000 KDC. The procedures listed here are likely to change as
-the code develops.</P
+>This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
+Windows2000 KDC. </P
 ><P
 >Pieces you need before you begin:
 <P
@@ -113,9 +110,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1203"
-></A
->9.1. Installing the required packages for Debian</H1
+NAME="AEN1187">8.1. Installing the required packages for Debian</H1
 ><P
 >On Debian you need to install the following packages:
 <P
@@ -142,9 +137,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1209"
-></A
->9.2. Installing the required packages for RedHat</H1
+NAME="AEN1193">8.2. Installing the required packages for RedHat</H1
 ><P
 >On RedHat this means you should have at least: 
 <P
@@ -180,9 +173,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1218"
-></A
->9.3. Compile Samba</H1
+NAME="AEN1202">8.3. Compile Samba</H1
 ><P
 >If your kerberos libraries are in a non-standard location then
   remember to add the configure option --with-krb5=DIR.</P
@@ -206,13 +197,22 @@ CLASS="PROGRAMLISTING"
 ><PRE
 CLASS="PROGRAMLISTING"
 >  realm = YOUR.KERBEROS.REALM
-  ads server = your.kerberos.server
   security = ADS
   encrypt passwords = yes</PRE
 ></P
 ><P
->Strictly speaking, you can omit the realm name and you can use an IP
-  address for the ads server. In that case Samba will auto-detect these.</P
+>In case samba can't figure out your ads server using your realm name, use the 
+<B
+CLASS="COMMAND"
+>ads server</B
+> option in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>:
+<PRE
+CLASS="PROGRAMLISTING"
+>  ads server = your.kerberos.server</PRE
+></P
 ><P
 >You do *not* need a smbpasswd file, although it won't do any harm
   and if you have one then Samba will be able to fall back to normal
@@ -225,9 +225,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1230"
-></A
->9.4. Setup your /etc/krb5.conf</H1
+NAME="AEN1217">8.4. Setup your /etc/krb5.conf</H1
 ><P
 >The minimal configuration for krb5.conf is:</P
 ><P
@@ -264,9 +262,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1240"
-></A
->9.5. Create the computer account</H1
+NAME="AEN1227">8.5. Create the computer account</H1
 ><P
 >Do a "kinit" as a user that has authority to change arbitrary
 passwords on the KDC ("Administrator" is a good choice). Then as a
@@ -281,9 +277,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1244"
-></A
->9.5.1. Possible errors</H2
+NAME="AEN1231">8.5.1. Possible errors</H2
 ><P
 ><P
 ></P
@@ -312,9 +306,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1256"
-></A
->9.6. Test your server setup</H1
+NAME="AEN1243">8.6. Test your server setup</H1
 ><P
 >On a Windows 2000 client try <B
 CLASS="COMMAND"
@@ -332,9 +324,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1261"
-></A
->9.7. Testing with smbclient</H1
+NAME="AEN1248">8.7. Testing with smbclient</H1
 ><P
 >On your Samba server try to login to a Win2000 server or your Samba
 server using smbclient and kerberos. Use smbclient as usual, but
@@ -345,9 +335,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1264"
-></A
->9.8. Notes</H1
+NAME="AEN1251">8.8. Notes</H1
 ><P
 >You must change administrator password at least once after DC install,
  to create the right encoding types</P

@@ -5,7 +5,8 @@
 >Samba performance issues</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,17 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SPEED"
-></A
->Chapter 23. Samba performance issues</H1
+NAME="SPEED">Chapter 22. Samba performance issues</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3065"
-></A
->23.1. Comparisons</H1
+NAME="AEN3055">22.1. Comparisons</H1
 ><P
 >The Samba server uses TCP to talk to the client. Thus if you are
 trying to see if it performs well you should really compare it to
@@ -111,98 +108,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3071"
-></A
->23.2. Oplocks</H1
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3073"
-></A
->23.2.1. Overview</H2
-><P
->Oplocks are the way that SMB clients get permission from a server to
-locally cache file operations. If a server grants an oplock
-(opportunistic lock) then the client is free to assume that it is the
-only one accessing the file and it will agressively cache file
-data. With some oplock types the client may even cache file open/close
-operations. This can give enormous performance benefits.</P
-><P
->With the release of Samba 1.9.18 we now correctly support opportunistic 
-locks. This is turned on by default, and can be turned off on a share-
-by-share basis by setting the parameter :</P
-><P
-><B
-CLASS="COMMAND"
->oplocks = False</B
-></P
-><P
->We recommend that you leave oplocks on however, as current benchmark
-tests with NetBench seem to give approximately a 30% improvement in
-speed with them on. This is on average however, and the actual 
-improvement seen can be orders of magnitude greater, depending on
-what the client redirector is doing.</P
-><P
->Previous to Samba 1.9.18 there was a 'fake oplocks' option. This
-option has been left in the code for backwards compatibility reasons
-but it's use is now deprecated. A short summary of what the old
-code did follows.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3081"
-></A
->23.2.2. Level2 Oplocks</H2
-><P
->With Samba 2.0.5 a new capability - level2 (read only) oplocks is
-supported (although the option is off by default - see the smb.conf
-man page for details). Turning on level2 oplocks (on a share-by-share basis)
-by setting the parameter :</P
-><P
-><B
-CLASS="COMMAND"
->level2 oplocks = true</B
-></P
-><P
->should speed concurrent access to files that are not commonly written
-to, such as application serving shares (ie. shares that contain common
-.EXE files - such as a Microsoft Office share) as it allows clients to
-read-ahread cache copies of these files.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3087"
-></A
->23.2.3. Old 'fake oplocks' option - deprecated</H2
-><P
->Samba can also fake oplocks, by granting a oplock whenever a client 
-asks for one. This is controlled using the smb.conf option "fake 
-oplocks". If you set "fake oplocks = yes" then you are telling the 
-client that it may agressively cache the file data for all opens.</P
-><P
->Enabling 'fake oplocks' on all read-only shares or shares that you know
-will only be accessed from one client at a time you will see a big
-performance improvement on many operations. If you enable this option
-on shares where multiple clients may be accessing the files read-write
-at the same time you can get data corruption.</P
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3091"
-></A
->23.3. Socket options</H1
+NAME="AEN3061">22.2. Socket options</H1
 ><P
 >There are a number of socket options that can greatly affect the
 performance of a TCP based server like Samba.</P
@@ -228,9 +134,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3098"
-></A
->23.4. Read size</H1
+NAME="AEN3068">22.3. Read size</H1
 ><P
 >The option "read size" affects the overlap of disk reads/writes with
 network reads/writes. If the amount of data being transferred in
@@ -254,9 +158,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3103"
-></A
->23.5. Max xmit</H1
+NAME="AEN3073">22.4. Max xmit</H1
 ><P
 >At startup the client and server negotiate a "maximum transmit" size,
 which limits the size of nearly all SMB commands. You can set the
@@ -277,56 +179,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3108"
-></A
->23.6. Locking</H1
-><P
->By default Samba does not implement strict locking on each read/write
-call (although it did in previous versions). If you enable strict
-locking (using "strict locking = yes") then you may find that you
-suffer a severe performance hit on some systems.</P
-><P
->The performance hit will probably be greater on NFS mounted
-filesystems, but could be quite high even on local disks.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3112"
-></A
->23.7. Share modes</H1
-><P
->Some people find that opening files is very slow. This is often
-because of the "share modes" code needed to fully implement the dos
-share modes stuff. You can disable this code using "share modes =
-no". This will gain you a lot in opening and closing files but will
-mean that (in some cases) the system won't force a second user of a
-file to open the file read-only if the first has it open
-read-write. For many applications that do their own locking this
-doesn't matter, but for some it may. Most Windows applications
-depend heavily on "share modes" working correctly and it is
-recommended that the Samba share mode support be left at the
-default of "on".</P
-><P
->The share mode code in Samba has been re-written in the 1.9.17
-release following tests with the Ziff-Davis NetBench PC Benchmarking
-tool. It is now believed that Samba 1.9.17 implements share modes
-similarly to Windows NT.</P
-><P
->NOTE: In the most recent versions of Samba there is an option to use
-shared memory via mmap() to implement the share modes. This makes
-things much faster. See the Makefile for how to enable this.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3117"
-></A
->23.8. Log level</H1
+NAME="AEN3078">22.5. Log level</H1
 ><P
 >If you set the log level (also known as "debug level") higher than 2
 then you may suffer a large drop in performance. This is because the
@@ -338,23 +191,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3120"
-></A
->23.9. Wide lines</H1
-><P
->The "wide links" option is now enabled by default, but if you disable
-it (for better security) then you may suffer a performance hit in
-resolving filenames. The performance loss is lessened if you have
-"getwd cache = yes", which is now the default.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3123"
-></A
->23.10. Read raw</H1
+NAME="AEN3081">22.6. Read raw</H1
 ><P
 >The "read raw" operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
@@ -374,9 +211,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3128"
-></A
->23.11. Write raw</H1
+NAME="AEN3086">22.7. Write raw</H1
 ><P
 >The "write raw" operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
@@ -391,56 +226,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3132"
-></A
->23.12. Read prediction</H1
-><P
->Samba can do read prediction on some of the SMB commands. Read
-prediction means that Samba reads some extra data on the last file it
-read while waiting for the next SMB command to arrive. It can then
-respond more quickly when the next read request arrives.</P
-><P
->This is disabled by default. You can enable it by using "read
-prediction = yes".</P
-><P
->Note that read prediction is only used on files that were opened read
-only.</P
-><P
->Read prediction should particularly help for those silly clients (such
-as "Write" under NT) which do lots of very small reads on a file.</P
-><P
->Samba will not read ahead more data than the amount specified in the
-"read size" option. It always reads ahead on 1k block boundaries.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3139"
-></A
->23.13. Memory mapping</H1
-><P
->Samba supports reading files via memory mapping them. One some
-machines this can give a large boost to performance, on others it
-makes not difference at all, and on some it may reduce performance.</P
-><P
->To enable you you have to recompile Samba with the -DUSE_MMAP option
-on the FLAGS line of the Makefile.</P
-><P
->Note that memory mapping is only used on files opened read only, and
-is not used by the "read raw" operation. Thus you may find memory
-mapping is more effective if you disable "read raw" using "read raw =
-no".</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3144"
-></A
->23.14. Slow Clients</H1
+NAME="AEN3090">22.8. Slow Clients</H1
 ><P
 >One person has reported that setting the protocol to COREPLUS rather
 than LANMAN2 gave a dramatic speed improvement (from 10k/s to 150k/s).</P
@@ -455,9 +241,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3148"
-></A
->23.15. Slow Logins</H1
+NAME="AEN3094">22.9. Slow Logins</H1
 ><P
 >Slow logins are almost always due to the password checking time. Using
 the lowest practical "password level" will improve things a lot. You
@@ -468,9 +252,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3151"
-></A
->23.16. Client tuning</H1
+NAME="AEN3097">22.10. Client tuning</H1
 ><P
 >Often a speed problem can be traced to the client. The client (for
 example Windows for Workgroups) can often be tuned for better TCP
@@ -545,11 +327,13 @@ turned out I was better off without any!!!!!</P
 and a DX2-66 20MB server with a crappy NE2000 compatible and old IDE 
 drive (Kernel 2.0.30). The transfer rate was reasonable for 10 baseT.</P
 ><P
->FIXME
-The figures are:          Put              Get 
+><PRE
+CLASS="PROGRAMLISTING"
+>The figures are:          Put              Get 
 P166 client 3Com card:    420-440kB/s      500-520kB/s
 P100 client 3Com card:    390-410kB/s      490-510kB/s
-DX4-75 client NE2000:     370-380kB/s      330-350kB/s</P
+DX4-75 client NE2000:     370-380kB/s      330-350kB/s</PRE
+></P
 ><P
 >I based these test on transfer two files a 4.5MB text file and a 15MB 
 textfile. The results arn't bad considering the hardware Samba is 
@@ -566,35 +350,6 @@ on get.</P
 upwards). I suppose there is more going on in the samba protocol, but 
 if it could get up to the rate of FTP the perfomance would be quite 
 staggering.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3183"
-></A
->23.17. My Results</H1
-><P
->Some people want to see real numbers in a document like this, so here
-they are. I have a 486sx33 client running WfWg 3.11 with the 3.11b
-tcp/ip stack. It has a slow IDE drive and 20Mb of ram. It has a SMC
-Elite-16 ISA bus ethernet card. The only WfWg tuning I've done is to
-set DefaultRcvWindow in the [MSTCP] section of system.ini to 16384. My
-server is a 486dx3-66 running Linux. It also has 20Mb of ram and a SMC
-Elite-16 card. You can see my server config in the examples/tridge/
-subdirectory of the distribution.</P
-><P
->I get 490k/s on reading a 8Mb file with copy.
-I get 441k/s writing the same file to the samba server.</P
-><P
->Of course, there's a lot more to benchmarks than 2 raw throughput
-figures, but it gives you a ballpark figure.</P
-><P
->I've also tested Win95 and WinNT, and found WinNT gave me the best
-speed as a samba client. The fastest client of all (for me) is
-smbclient running on another linux box. Maybe I'll add those results
-here someday ...</P
 ></DIV
 ></DIV
 ><DIV

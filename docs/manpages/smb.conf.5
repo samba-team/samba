@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "29 December 2002" "" ""
+.TH "SMB.CONF" "5" "15 January 2003" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -671,6 +671,12 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIldap filter\fR
+.TP 0.2i
+\(bu
+\fIldap port\fR
+.TP 0.2i
+\(bu
+\fIldap server\fR
 .TP 0.2i
 \(bu
 \fIldap ssl\fR
@@ -3388,6 +3394,31 @@ objectclass.  Note that this filter should only return one entry.
 
 Default : \fBldap filter = (&(uid=%u)(objectclass=sambaAccount))\fR
 .TP
+\fBldap port (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time.
+
+This option is used to control the tcp port number used to contact
+the \fIldap server\fR.
+The default is to use the stand LDAPS port 636.
+
+See Also: ldap ssl
+
+Default : \fBldap port = 636 ; if ldap ssl = on\fR
+
+Default : \fBldap port = 389 ; if ldap ssl = off\fR
+.TP
+\fBldap server (G)\fR
+This parameter is only available if Samba has been
+configure to include the \fB--with-ldapsam\fR option
+at compile time.
+
+This parameter should contain the FQDN of the ldap directory
+server which should be queried to locate user account information.
+
+Default : \fBldap server = localhost\fR
+.TP
 \fBldap ssl (G)\fR
 This option is used to define whether or not Samba should
 use SSL when connecting to the ldap server
@@ -4725,9 +4756,9 @@ This is a boolean option that controls whether
 connections with usernames not in the \fIuser\fR 
 list will be allowed. By default this option is disabled so that a 
 client can supply a username to be used by the server.  Enabling
-this parameter will force the server to only user the login 
+this parameter will force the server to only use the login 
 names from the \fIuser\fR list and is only really
-useful in shave level
+useful in share level
 security.
 
 Note that this also means Samba won't try to deduce 

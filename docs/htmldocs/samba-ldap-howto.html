@@ -5,7 +5,8 @@
 >Storing Samba's User/Machine Account information in an LDAP Directory</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,17 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SAMBA-LDAP-HOWTO"
-></A
->Chapter 20. Storing Samba's User/Machine Account information in an LDAP Directory</H1
+NAME="SAMBA-LDAP-HOWTO">Chapter 19. Storing Samba's User/Machine Account information in an LDAP Directory</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2747"
-></A
->20.1. Purpose</H1
+NAME="AEN2737">19.1. Purpose</H1
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
 account information traditionally stored in the smbpasswd(5) file.  It is
@@ -125,7 +122,7 @@ early summer, 2002.</P
 ><LI
 ><P
 >The <A
-HREF="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html"
+HREF="http://www.unav.es/cti/ldap-smb/ldap-smb-3-howto.html"
 TARGET="_top"
 >Samba-PDC-LDAP-HOWTO</A
 >
@@ -148,9 +145,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2767"
-></A
->20.2. Introduction</H1
+NAME="AEN2757">19.2. Introduction</H1
 ><P
 >Traditionally, when configuring <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
@@ -265,9 +260,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2796"
-></A
->20.3. Supported LDAP Servers</H1
+NAME="AEN2786">19.3. Supported LDAP Servers</H1
 ><P
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
@@ -290,9 +283,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2801"
-></A
->20.4. Schema and Relationship to the RFC 2307 posixAccount</H1
+NAME="AEN2791">19.4. Schema and Relationship to the RFC 2307 posixAccount</H1
 ><P
 >Samba 2.2.3 includes the necessary schema file for OpenLDAP 2.0 in
 <TT
@@ -349,17 +340,13 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2813"
-></A
->20.5. Configuring Samba with LDAP</H1
+NAME="AEN2803">19.5. Configuring Samba with LDAP</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2815"
-></A
->20.5.1. OpenLDAP configuration</H2
+NAME="AEN2805">19.5.1. OpenLDAP configuration</H2
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
@@ -439,9 +426,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2832"
-></A
->20.5.2. Configuring Samba</H2
+NAME="AEN2822">19.5.2. Configuring Samba</H2
 ><P
 >The following parameters are available in smb.conf only with <TT
 CLASS="PARAMETER"
@@ -559,9 +544,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2860"
-></A
->20.6. Accounts and Groups management</H1
+NAME="AEN2850">19.6. Accounts and Groups management</H1
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
 modify you existing administration tools to deal with sambaAccount attributes.</P
@@ -584,9 +567,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2865"
-></A
->20.7. Security and sambaAccount</H1
+NAME="AEN2855">19.7. Security and sambaAccount</H1
 ><P
 >There are two important points to remember when discussing the security
 of sambaAccount entries in the directory.</P
@@ -663,9 +644,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2885"
-></A
->20.8. LDAP specials attributes for sambaAccounts</H1
+NAME="AEN2875">19.8. LDAP specials attributes for sambaAccounts</H1
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
 ><P
@@ -874,9 +853,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2955"
-></A
->20.9. Example LDIF Entries for a sambaAccount</H1
+NAME="AEN2945">19.9. Example LDIF Entries for a sambaAccount</H1
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
 ><P
@@ -932,9 +909,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2963"
-></A
->20.10. Comments</H1
+NAME="AEN2953">19.10. Comments</H1
 ><P
 >Please mail all comments regarding this HOWTO to <A
 HREF="mailto:jerry@samba.org"

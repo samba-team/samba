@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "FINDSMB" "1" "05 November 2002" "" ""
+.TH "FINDSMB" "1" "15 January 2003" "" ""
 .SH NAME
 findsmb \- list info about machines that respond to SMB  name queries on a subnet
 .SH SYNOPSIS
@@ -19,6 +19,14 @@ prints out several pieces of information about machines
 on a subnet that respond to SMB  name query requests.
 It uses \fB nmblookup(1)\fR to obtain this information.
 .SH "OPTIONS"
+.TP
+\fB-r\fR
+Controls whether \fBfindsmb\fR takes
+bugs in Windows95 into account when trying to find a Netbios name
+registered of the remote machine. This option is disabled by default
+because it is specific to Windows 95 and Windows 95 machines only. 
+If set, \fBnmblookup\fR
+will be called with -B option.
 .TP
 \fBsubnet broadcast address\fR
 Without this option, \fBfindsmb
@@ -41,14 +49,16 @@ Machines that are running Windows, Windows 95 or Windows 98 will
 not show any information about the operating system or server 
 version.
 .PP
-The command must be run on a system without \fBnmbd\fR running. 
+The command with -r option
+must be run on a system without \fBnmbd\fR running. 
 If \fBnmbd\fR is running on the system, you will 
 only  get the IP address and the DNS name of the machine. To 
 get proper responses  from Windows 95 and Windows 98 machines, 
-the command must be run as root. 
+the command must be run as root and with -r
+option on a machine without \fBnmbd\fR running.
 .PP
-For example, running \fBfindsmb\fR on a machine 
-without \fBnmbd\fR running would yield output similar
+For example, running \fBfindsmb\fR without 
+-r option set would yield output similar
 to the following
 
 .nf
