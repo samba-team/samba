@@ -243,6 +243,7 @@ add_hostent (int port, int protocol, int socktype,
 {
     int ret;
     char *canonname = NULL;
+    char **h;
 
     if (*flags & AI_CANONNAME) {
 	canonname = find_fqdn (he);
