@@ -20,4 +20,3 @@ SUBDIRS = 					\
 	  kx					\
 	  kf					\
 	  $(APPL_dce)
-	  # kauth
