@@ -1,3 +1,15 @@
+2001-10-22  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c: make all high-level encrypting and decrypting
+	functions check the return value of the underlying function and
+	handle errors more consistently.  noted by Sam Hartman
+	<hartmans@mit.edu>
+
+2001-10-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (enctype_arcfour_hmac_md5): actually use a
+	non-keyed checksum when it should be non-keyed
+
 2001-09-29  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.1: add the kauth alias
