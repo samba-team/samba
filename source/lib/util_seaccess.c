@@ -241,7 +241,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 	/* The user sid is the first in the token */
 
-	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[0]) ));
+	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
 
 	for (i = 1; i < token->num_sids; i++) {
 		DEBUG(3, ("se_access_check: also %s\n",
