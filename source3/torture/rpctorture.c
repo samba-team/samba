@@ -225,7 +225,6 @@ enum client_action
 	int opt;
 	extern char *optarg;
 	extern int optind;
-	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	BOOL got_pass = False;
 	char *cmd_str="";
@@ -246,9 +245,9 @@ enum client_action
 	*term_code = 0;
 #endif /* KANJI */
 
-	if (!lp_load(servicesf,True, False, False))
+	if (!lp_load(dyn_CONFIGFILE,True, False, False))
 	{
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 	}
 
 	DEBUGLEVEL = 0;
@@ -469,7 +468,7 @@ enum client_action
 
 			case 's':
 			{
-				pstrcpy(servicesf, optarg);
+				pstrcpy(dyn_CONFIGFILE, optarg);
 				break;
 			}
 

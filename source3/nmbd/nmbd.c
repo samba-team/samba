@@ -1,6 +1,5 @@
 /*
    Unix SMB/Netbios implementation.
-   Version 1.9.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -28,7 +27,6 @@
 #include "includes.h"
 
 extern pstring debugf;
-pstring servicesf = CONFIGFILE;
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
@@ -276,9 +274,9 @@ static BOOL reload_nmbd_services(BOOL test)
   {
     pstring fname;
     pstrcpy( fname,lp_configfile());
-    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
+    if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE))
     {
-      pstrcpy(servicesf,fname);
+      pstrcpy(dyn_CONFIGFILE,fname);
       test = False;
     }
   }
@@ -286,7 +284,7 @@ static BOOL reload_nmbd_services(BOOL test)
   if ( test && !lp_file_list_changed() )
     return(True);
 
-  ret = lp_load( servicesf, True , False, False);
+  ret = lp_load( dyn_CONFIGFILE, True , False, False);
 
   /* perhaps the config filename is now set */
   if ( !test )
@@ -679,7 +677,7 @@ static void usage(char *pname)
 
   TimeInit();
 
-  slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", LOGFILEBASE);
+  slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
   setup_logging( argv[0], False );
 
 #ifdef LMHOSTSFILE
@@ -720,7 +718,7 @@ static void usage(char *pname)
       switch (opt)
         {
         case 's':
-          pstrcpy(servicesf,optarg);
+          pstrcpy(dyn_CONFIGFILE, optarg);
           break;          
         case 'N':
         case 'B':

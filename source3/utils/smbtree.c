@@ -327,7 +327,6 @@ static BOOL print_tree(struct user_auth_info *user_info)
 	extern int optind;
 	int opt;
 	char *p;
-	pstring servicesf = CONFIGFILE;
 	struct user_auth_info user_info;
 	BOOL got_pass = False;
 
@@ -341,7 +340,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	TimeInit();
 
-	lp_load(servicesf,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
 	if (getenv("USER")) {

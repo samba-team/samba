@@ -45,7 +45,6 @@ void smbw_init(void)
 {
 	extern BOOL in_client;
 	static int initialised;
-	static pstring servicesf = CONFIGFILE;
 	char *p;
 	int eno;
 	pstring line;
@@ -76,10 +75,10 @@ void smbw_init(void)
 	load_interfaces();
 
 	if ((p=smbw_getshared("SERVICESF"))) {
-		pstrcpy(servicesf, p);
+		pstrcpy(dyn_CONFIGFILE, p);
 	}
 
-	lp_load(servicesf,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False);
 
 	get_myname(global_myname);
 

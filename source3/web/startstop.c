@@ -21,11 +21,12 @@
 
 #include "includes.h"
 #include "smb.h"
+#include "dynconfig.h"
 
-/* need to wait for daemons to startup */
+/** Need to wait for daemons to startup */
 #define SLEEP_TIME 3
 
-/* startup smbd */
+/** Startup smbd from web interface. */
 void start_smbd(void)
 {
 	pstring binfile;
@@ -37,7 +38,7 @@ void start_smbd(void)
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", SBINDIR);
+	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", dyn_SBINDIR);
 
 	become_daemon();
 
@@ -58,7 +59,7 @@ void start_nmbd(void)
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", SBINDIR);
+	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", dyn_SBINDIR);
 	
 	become_daemon();
 

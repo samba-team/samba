@@ -193,7 +193,6 @@ int main(int argc,char *argv[])
   extern char *optarg;
   BOOL find_master=False;
   int i;
-  static pstring servicesf = CONFIGFILE;
   BOOL lookup_by_ip = False;
   int commandline_debuglevel = -2;
 
@@ -240,7 +239,7 @@ int main(int argc,char *argv[])
 	commandline_debuglevel = DEBUGLEVEL = atoi(optarg);
 	break;
       case 's':
-	pstrcpy(servicesf, optarg);
+	pstrcpy(dyn_CONFIGFILE, optarg);
 	break;
       case 'r':
         RootPort = True;
@@ -262,8 +261,8 @@ int main(int argc,char *argv[])
     exit(1);
   }
 
-  if (!lp_load(servicesf,True,False,False)) {
-    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+  if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+    fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
   }
 
   /*

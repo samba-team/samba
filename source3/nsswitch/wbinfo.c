@@ -461,7 +461,7 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
-	if (!lp_load(CONFIGFILE, True, False, False)) {
+	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}

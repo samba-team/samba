@@ -536,7 +536,6 @@ account without a valid local system user.\n", user_name);
 int main (int argc, char **argv)
 {
 	int ch;
-	static pstring servicesf = CONFIGFILE;
 	BOOL list_users = False;
 	BOOL verbose = False;
 	BOOL spstyle = False;
@@ -567,9 +566,9 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
-	if (!lp_load(servicesf,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			servicesf);
+			dyn_CONFIGFILE);
 		exit(1);
 	}
 	

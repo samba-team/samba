@@ -658,6 +658,7 @@ extern int errno;
 #include "messages.h"
 #include "util_list.h"
 #include "charset.h"
+#include "dynconfig.h"
 
 #include "util_getent.h"
 

@@ -33,6 +33,9 @@ SHELL=/bin/sh
 # will search for a POSIX-compliant shell, and that might not be
 # /bin/sh on some platforms.  I guess it's not a big problem -- mbp
 
+# See the autoconf manual "Installation Directory Variables" for a
+# discussion of thesubtle use of these variables.
+
 BASEDIR= @prefix@
 BINDIR = @bindir@
 # sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
@@ -67,13 +70,15 @@ LOCKDIR = @lockdir@
 man_langs = "@manlangs@"
 
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
-FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
+FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -I. -I$(srcdir)
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
-FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\"
-FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\" -DLIBDIR=\"$(LIBDIR)\"
+FLAGS3 = -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\"
+FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\" -DLIBDIR=\"$(LIBDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H 
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
+
+PATH_FLAGS = -DSBINDIR=\"$(SBINDIR)\" -DBINDIR=\"$(BINDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 
 WINBIND_PROGS = bin/wbinfo
 WINBIND_SPROGS = bin/winbindd
@@ -113,14 +118,14 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o lib/smbpasswd.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
-	  intl/lang_tdb.o $(TDB_OBJ)
+	  intl/lang_tdb.o $(TDB_OBJ) 
 
 READLINE_OBJ = lib/readline.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
 
-PARAM_OBJ = param/loadparm.o param/params.o
+PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
@@ -475,6 +480,24 @@ MAKEDIR = || exec false; \
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+
+# These dependencies are only approximately correct: we want to make
+# sure Samba's paths are updated if ./configure is re-run.  Really it
+# would be nice if "make prefix=/opt/samba all" also rebuilt things,
+# but since we also require "make install prefix=/opt/samba" *not* to
+# rebuild it's a bit hard.
+
+dynconfig.o: dynconfig.c Makefile
+	@echo Compiling $*.c
+	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
+
+dynconfig.po: dynconfig.c Makefile
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@echo Compiling $*.c with @PICFLAG@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAG@ -c $< -o $*.@PICSUFFIX@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
+@POBAD_CC@	@mv $*.po.o $@
 
 .c.po: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \

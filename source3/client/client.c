@@ -28,6 +28,8 @@
 #define REGISTER 0
 #endif
 
+const char prog_name[] = "smbclient";
+
 struct cli_state *cli;
 extern BOOL in_client;
 static int port = 0;
@@ -2404,7 +2406,6 @@ static int do_message_op(void)
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
-	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	pstring new_name_resolve_order;
 	char *p;
@@ -2436,12 +2437,12 @@ static int do_message_op(void)
 			dbf = x_stderr;
 		else if(strncmp(argv[opt], "-s", 2) == 0) {
 			if(argv[opt][2] != '\0')
-				pstrcpy(servicesf, &argv[opt][2]);
+				pstrcpy(dyn_CONFIGFILE, &argv[opt][2]);
 			else if(argv[opt+1] != NULL) {
 				/*
 				 * At least one more arg left.
 				 */
-				pstrcpy(servicesf, argv[opt+1]);
+				pstrcpy(dyn_CONFIGFILE, argv[opt+1]);
 			} else {
 				usage(pname);
 				exit(1);
@@ -2454,8 +2455,9 @@ static int do_message_op(void)
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	old_debug = DEBUGLEVEL;
-	if (!lp_load(servicesf,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			prog_name, dyn_CONFIGFILE);
 	}
 	DEBUGLEVEL = old_debug;
 	
@@ -2536,7 +2538,7 @@ static int do_message_op(void)
 		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:k")) != EOF) {
 		switch (opt) {
 		case 's':
-			pstrcpy(servicesf, optarg);
+			pstrcpy(dyn_CONFIGFILE, optarg);
 			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);

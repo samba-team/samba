@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -357,8 +356,8 @@ BOOL reload_services(BOOL test)
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
-		if (file_exist(fname,NULL) && !strcsequal(fname,servicesf)) {
-			pstrcpy(servicesf,fname);
+		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
+			pstrcpy(dyn_CONFIGFILE,fname);
 			test = False;
 		}
 	}
@@ -370,7 +369,7 @@ BOOL reload_services(BOOL test)
 
 	lp_killunused(conn_snum_used);
 	
-	ret = lp_load(servicesf,False,False,True);
+	ret = lp_load(dyn_CONFIGFILE,False,False,True);
 
 	load_printers();
 
@@ -588,7 +587,7 @@ static void usage(char *pname)
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
-	
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -606,7 +605,7 @@ static void usage(char *pname)
 			break;
 
 		case 's':
-			pstrcpy(servicesf,optarg);
+			pstrcpy(dyn_CONFIGFILE,optarg);
 			break;
 
 		case 'l':
@@ -671,7 +670,8 @@ static void usage(char *pname)
 	TimeInit();
 
 	if(!specified_logfile) {
-		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", LOGFILEBASE);
+		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd",
+			 dyn_LOGFILEBASE);
 	}
 
 	pstrcpy(remote_machine, "smbd");

@@ -200,7 +200,7 @@ int listgroup(enum SID_NAME_USE sid_type)
 int main (int argc, char **argv)
 {
 	int ch;
-	static pstring servicesf = CONFIGFILE;
+	static pstring servicesf = dyn_CONFIGFILE;
 	BOOL add_group = False;
 	BOOL view_group = False;
 	BOOL change_group = False;

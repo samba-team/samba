@@ -374,7 +374,6 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 	int opt;
 	char temp[255];
 	extern int optind;
-	pstring servicesf = CONFIGFILE;
 	BOOL interactive = False;
 
 	TimeInit();
@@ -388,7 +387,7 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 			interactive = True;
 			break;
 		case 's':
-			pstrcpy(servicesf, optarg);
+			pstrcpy(dyn_CONFIGFILE, optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
@@ -396,7 +395,7 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		}
 	}
 
-	lp_load(servicesf,False,False,False);
+	lp_load(dyn_CONFIGFILE,False,False,False);
 
 	if (!message_init()) exit(1);
 

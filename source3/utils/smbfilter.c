@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
 	setup_logging(argv[0],True);
   
-	pstrcpy(configfile,CONFIGFILE);
+	pstrcpy(configfile,dyn_CONFIGFILE);
  
 	if (argc < 2) {
 		fprintf(stderr,"smbfilter <desthost> <netbiosname>\n");

@@ -403,9 +403,9 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 }
 
 
-/****************************************************************************
-mount smbfs
-****************************************************************************/
+/**
+ * Mount a smbfs
+ **/
 static void init_mount(void)
 {
 	char mount_point[MAXPATHLEN+1];
@@ -475,13 +475,22 @@ static void init_mount(void)
 	}
 
 	if (sys_fork() == 0) {
-		if (file_exist(BINDIR "/smbmnt", NULL)) {
-			execv(BINDIR "/smbmnt", args);
-			fprintf(stderr,"execv of %s failed. Error was %s.", BINDIR "/smbmnt", strerror(errno));
+		char *smbmnt_path;
+
+		smbmnt_path = asprintf("%s/smbmnt", dyn_BINDIR);
+		
+		if (file_exist(smbmnt_path, NULL)) {
+			execv(smbmnt_path, args);
+			fprintf(stderr,
+				"smbfs/init_mount: execv of %s failed. Error was %s.",
+				smbmnt_path, strerror(errno));
 		} else {
 			execvp("smbmnt", args);
-			fprintf(stderr,"execvp of smbmnt failed. Error was %s.", strerror(errno) );
+			fprintf(stderr,
+				"smbfs/init_mount: execv of %s failed. Error was %s.",
+				"smbmnt", strerror(errno));
 		}
+		free(smbmnt_path);
 		exit(1);
 	}
 
@@ -801,7 +810,7 @@ static void parse_mount_smb(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	static pstring servicesf = CONFIGFILE;
+	static pstring servicesf = dyn_CONFIGFILE;
 	char *p;
 
 	DEBUGLEVEL = 1;

@@ -22,7 +22,7 @@
 /**
  * @file dynconfig.c
  *
- * @brief Compile-time configured constants.
+ * @brief Global configurations, initialized to configured defaults.
  *
  * This file should be the only file that depends on path
  * configuration (--prefix, etc), so that if ./configure is re-run,

@@ -544,7 +544,6 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	pstring fname;
 	int c;
-	static pstring servicesf = CONFIGFILE;
 	extern char *optarg;
 	int profile_only = 0, new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
@@ -588,7 +587,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 			shares_only = 1;
 			break;
 		case 's':
-			pstrcpy(servicesf, optarg);
+			pstrcpy(dyn_CONFIGFILE, optarg);
 			break;
 		case 'u':                                      
 			Ucrit_addUsername(optarg);             
@@ -599,8 +598,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		}
 	}
 	
-	if (!lp_load(servicesf,False,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+	if (!lp_load(dyn_CONFIGFILE,False,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		return (-1);
 	}
 	
@@ -609,7 +608,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	}
 
 	if (verbose) {
-		d_printf("using configfile = %s\n", servicesf);
+		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
 	}
 	
 	if (profile_only) {
