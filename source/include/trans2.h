@@ -194,16 +194,19 @@ Byte offset   Type     name                description
 } FSINFO;
 *************************************************************/
 
-#define SMB_INFO_STANDARD               1
-#define SMB_INFO_QUERY_EA_SIZE          2
-#define SMB_INFO_QUERY_EAS_FROM_LIST    3
-#define SMB_INFO_QUERY_ALL_EAS          4
+#define SMB_INFO_STANDARD               1  /* FILESTATUS3 struct */
+#define SMB_INFO_SET_EA                 2  /* EAOP2 struct, only valid on set not query */
+#define SMB_INFO_QUERY_EA_SIZE          2  /* FILESTATUS4 struct, only valid on query not set */
+#define SMB_INFO_QUERY_EAS_FROM_LIST    3  /* only valid on query not set */
+#define SMB_INFO_QUERY_ALL_EAS          4  /* only valid on query not set */
 #define SMB_INFO_IS_NAME_VALID          6
-#define SMB_QUERY_FS_LABEL_INFO			0x101
-#define SMB_QUERY_FS_VOLUME_INFO		0x102
-#define SMB_QUERY_FS_SIZE_INFO			0x103
-#define SMB_QUERY_FS_DEVICE_INFO		0x104
-#define SMB_QUERY_FS_ATTRIBUTE_INFO		0x105
+#define SMB_INFO_STANDARD_LONG          11  /* similar to level 1, ie struct FileStatus3 */
+#define SMB_QUERY_EA_SIZE_LONG          12  /* similar to level 2, ie struct FileStatus4 */
+#define SMB_QUERY_FS_LABEL_INFO         0x101
+#define SMB_QUERY_FS_VOLUME_INFO        0x102
+#define SMB_QUERY_FS_SIZE_INFO          0x103
+#define SMB_QUERY_FS_DEVICE_INFO        0x104
+#define SMB_QUERY_FS_ATTRIBUTE_INFO     0x105
 
 
 #define l2_vol_fdateCreation 0
