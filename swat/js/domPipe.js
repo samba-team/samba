@@ -33,7 +33,8 @@ function setStage()
 	sandbox.setAttribute('id', 'stage');
 	page.appendChild(sandbox);
 
-	var curtain = document.getElementById('stage');
+	// Don't declare this one local, either
+	curtain = document.getElementById('stage');
 	curtain.style.position = 'absolute';
 	curtain.style.top = '-1200px';
 }
@@ -100,8 +101,9 @@ function removeLink(url)
 // Ensure iframe has finished loading before cut-n-paste
 function checkStage(target)
 {
-	if (stage.document.getElementsByTagName('body')[0]) {
+	if ( (stage.document.getElementsByTagName('body')[0]) && (stage.document.getElementsByTagName('body')[0].childNodes.length >= 1) ) {
 		getPage(target);
+		page.removeChild(curtain)
 		clearInterval(docCheck);
 	}
 }
@@ -111,6 +113,7 @@ function loadDoc(url, id)
 {
 	var target;
 
+	// Pass id as quoted string if not 'page'
 	if (id == 'page') {
 		target = id;
 	} else {
