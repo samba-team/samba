@@ -210,7 +210,6 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 		     char *domain,BOOL guest)
 {
 	user_struct *vuser = NULL;
-	user_struct *vsp;
 	struct passwd *pwfile; /* for getting real name from passwd file */
 
 	/* Ensure no vuid gets registered in share level security. */
@@ -232,7 +231,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 				unix_name, requested_name, domain, guest ));
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
-	while( (vsp = get_valid_user_struct(next_vuid)) != NULL ) {
+	while( get_valid_user_struct(next_vuid) != NULL ) {
 		next_vuid++;
 		/* Check for vuid wrap. */
 		if (next_vuid == UID_FIELD_INVALID)
