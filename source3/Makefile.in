@@ -326,8 +326,9 @@ CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ)
 
-NET_OBJ = utils/net.o utils/net_ads.o utils/net_rap.o utils/net_rpc.o \
-	utils/net_rpc_join.o \
+NET_OBJ = utils/net.o utils/net_ads.o \
+          utils/net_rap.o utils/net_rpc.o \
+	utils/net_rpc_join.o utils/net_time.o \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 	$(GROUPDB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
 
