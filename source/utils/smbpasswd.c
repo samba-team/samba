@@ -498,7 +498,8 @@ static int process_nonroot(int local_flags)
 {
 	struct passwd  *pwd = NULL;
 	int result = 0;
-	char *old_passwd = NULL;
+	char *old_pw = NULL;
+	char *new_pw = NULL;
 
 	if (local_flags & ~(LOCAL_AM_ROOT | LOCAL_SET_PASSWORD)) {
 		/* Extra flags that we can't honor non-root */
@@ -529,19 +530,21 @@ static int process_nonroot(int local_flags)
 	}
 
 	if (remote_machine != NULL) {
-		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+		old_pw = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
 	if (!new_passwd) {
-		new_passwd = prompt_for_new_password(stdin_passwd_get);
+		new_pw = prompt_for_new_password(stdin_passwd_get);
 	}
+	else
+		new_pw = smb_xstrdup(new_passwd);
 	
-	if (!new_passwd) {
+	if (!new_pw) {
 		fprintf(stderr, "Unable to get new password.\n");
 		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, 0)) {
+	if (!password_change(remote_machine, user_name, old_pw, new_pw, 0)) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		result = 1;
 		goto done;
@@ -550,8 +553,8 @@ static int process_nonroot(int local_flags)
 	printf("Password changed for user %s\n", user_name);
 
  done:
-	SAFE_FREE(old_passwd);
-	SAFE_FREE(new_passwd);
+	SAFE_FREE(old_pw);
+	SAFE_FREE(new_pw);
 
 	return result;
 }
