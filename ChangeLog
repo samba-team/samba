@@ -1,3 +1,7 @@
+2002-09-04  Assar Westerlund  <assar@kth.se>
+
+	* kdc/kerberos5.c (encode_reply): correct error logging
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* appl/kf/kf.c: handle new protocol

@@ -1,3 +1,11 @@
+2002-09-04  Assar Westerlund  <assar@kth.se>
+
+	* getifaddrs.c: remove some warnings from the linux-portion
+
+	* getnameinfo_verified.c (getnameinfo_verified): handle the case
+	of forward but no backward DNS information, and also describe the
+	desired behaviour.  from Love <lha@stacken.kth.se>
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* resolve.c: use res_nsearch if we have it (from Larry Greenfield)
