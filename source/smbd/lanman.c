@@ -1754,82 +1754,104 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
 {
+	int i;
+	int errflags=0;
+	int resume_context, cli_buf_size;
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	int uLevel = SVAL(p,0);
-	char *p2;
-	int count=0;
 
-	if (!prefix_ok(str1,"WrLeh")) return False;
-  
-	/* check it's a supported variant */
-	switch( uLevel )
-	{
-		case 0: 
-			p2 = "B21"; 
-			break;
-		default: 
-			return False;
+	GROUP_MAP *group_list;
+	int num_entries;
+ 
+	if (strcmp(str1,"WrLeh") != 0)
+		return False;
+
+	  /* parameters  
+	   * W-> resume context (number of users to skip)
+	   * r -> return parameter pointer to receive buffer 
+	   * L -> length of receive buffer
+	   * e -> return parameter number of entries
+	   * h -> return parameter total number of users
+	   */
+	if (strcmp("B21",str2) != 0)
+		return False;
+
+	/* get list of domain groups SID_DOMAIN_GRP=2 */
+	if(!enum_group_mapping(2 , &group_list, &num_entries, False, False)) {
+		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
+		return False;
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	resume_context = SVAL(p,0); 
+	cli_buf_size=SVAL(p+2,0);
+	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
 
-	*rdata_len = mdrcnt + 1024;
+	*rdata_len = cli_buf_size;
 	*rdata = REALLOC(*rdata,*rdata_len);
-
-	SSVAL(*rparam,0,NERR_Success);
-	SSVAL(*rparam,2,0);		/* converter word */
 
 	p = *rdata;
 
-	/* XXXX we need a real SAM database some day */
-	pstrcpy(p,"Users"); p += 21; count++;
-	pstrcpy(p,"Domain Users"); p += 21; count++;
-	pstrcpy(p,"Guests"); p += 21; count++;
-	pstrcpy(p,"Domain Guests"); p += 21; count++;
+	for(i=resume_context; i<num_entries; i++) {	
+		char* name=group_list[i].nt_name;
+		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
+			/* truncate the name at 21 chars. */
+			memcpy(p, name, 21); 
+			DEBUG(10,("adding entry %d group %s\n", i, p));
+			p += 21; 
+		} else {
+			/* set overflow error */
+			DEBUG(3,("overflow on entry %d group %s\n", i, name));
+			errflags=234;
+			break;
+		}
+	}
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam,*rparam_len);
 
-	SSVAL(*rparam,4,count);	/* is this right?? */
-	SSVAL(*rparam,6,count);	/* is this right?? */
-
-	DEBUG(3,("api_RNetGroupEnum gave %d entries\n", count));
+  	SSVAL(*rparam, 0, errflags);
+  	SSVAL(*rparam, 2, 0);		/* converter word */
+  	SSVAL(*rparam, 4, i-resume_context);	/* is this right?? */
+ 	SSVAL(*rparam, 6, num_entries);	/* is this right?? */
 
 	return(True);
 }
 
-/****************************************************************************
-  view list of groups available
-  ****************************************************************************/
-static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+/*******************************************************************
+  get groups that a user is a member of
+  ******************************************************************/
+static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
 {
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
-	char *p = skip_string(str2,1);
+	char *UserName = skip_string(str2,1);
+	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
 	char *p2;
 	int count=0;
 
-	if (!prefix_ok(str1,"WrLeh")) return False;
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
   
-	/* check it's a supported variant */
-	switch( uLevel )
-	{
-		case 0: 
-			p2 = "B21"; 
+	/* check it's a supported varient */
+	if (!strcmp(str1,"zWrLeh"))
+		return False;
+	switch( uLevel ) {
+		case 0:
+			p2 = "B21";
 			break;
-		default: 
+		default:
 			return False;
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	if (strcmp(p2,str2) != 0)
+		return False;
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata,*rdata_len);
@@ -1847,15 +1869,101 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
-	*rparam_len = 8;
-	*rparam = REALLOC(*rparam,*rparam_len);
-
 	SSVAL(*rparam,4,count);	/* is this right?? */
 	SSVAL(*rparam,6,count);	/* is this right?? */
 
-	DEBUG(3,("api_RNetUserEnum gave %d entries\n", count));
-
 	return(True);
+}
+
+/*******************************************************************
+  get all users 
+  ******************************************************************/
+static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
+				 int *rdata_len,int *rparam_len)
+{
+	SAM_ACCOUNT  *pwd=NULL;
+	int count_sent=0;
+	int count_total=0;
+	int errflags=0;
+	int resume_context, cli_buf_size;
+
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+
+	if (strcmp(str1,"WrLeh") != 0)
+		return False;
+	/* parameters
+	  * W-> resume context (number of users to skip)
+	  * r -> return parameter pointer to receive buffer
+	  * L -> length of receive buffer
+	  * e -> return parameter number of entries
+	  * h -> return parameter total number of users
+	  */
+  
+	resume_context = SVAL(p,0);
+	cli_buf_size=SVAL(p+2,0);
+	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
+
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
+
+	/* check it's a supported varient */
+	if (strcmp("B21",str2) != 0)
+		return False;
+
+	*rdata_len = cli_buf_size;
+	*rdata = REALLOC(*rdata,*rdata_len);
+
+	p = *rdata;
+
+	/* to get user list enumerations for NetUserEnum in B21 format */
+	pdb_init_sam(&pwd);
+	
+	/* Open the passgrp file - not for update. */
+	become_root();
+	if(!pdb_setsampwent(False)) {
+		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
+		unbecome_root();
+		return False;
+	}
+	errflags=NERR_Success;
+
+	while ( pdb_getsampwent(pwd) ) {
+		const char *name=pdb_get_username(pwd);	
+		if( *(name+strlen(name)-1)!='$' ) { 
+			count_total++;
+			if(count_total>=resume_context) {
+				if( ((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)  ) {
+					pstrcpy(p,name); 
+					DEBUG(10,("api_RNetUserEnum:adding entry %d username %s\n",count_sent,p));
+					p += 21; 
+					count_sent++; 
+				} else {
+					/* set overflow error */
+					DEBUG(10,("api_RNetUserEnum:overflow on entry %d username %s\n",count_sent,name));
+					errflags=234;
+					break;
+				}
+			}
+		}	
+	} ;
+
+	pdb_endsampwent();
+	unbecome_root();
+
+	pdb_free_sam(&pwd);
+
+	*rdata_len = PTR_DIFF(p,*rdata);
+
+	SSVAL(*rparam,0,errflags);
+	SSVAL(*rparam,2,0);	      /* converter word */
+	SSVAL(*rparam,4,count_sent);  /* is this right?? */
+	SSVAL(*rparam,6,count_total); /* is this right?? */
+
+	return True;
 }
 
 
@@ -2768,56 +2876,6 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	return(True);
 }
-
-/*******************************************************************
-  get groups that a user is a member of
-  ******************************************************************/
-static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
-				 int mdrcnt,int mprcnt,
-				 char **rdata,char **rparam,
-				 int *rdata_len,int *rparam_len)
-{
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *UserName = skip_string(str2,1);
-  char *p = skip_string(UserName,1);
-  int uLevel = SVAL(p,0);
-  char *p2;
-  int count=0;
-
-  *rparam_len = 8;
-  *rparam = REALLOC(*rparam,*rparam_len);
-
-  /* check it's a supported varient */
-  if (strcmp(str1,"zWrLeh") != 0) return False;
-  switch( uLevel ) {
-  case 0: p2 = "B21"; break;
-  default: return False;
-  }
-  if (strcmp(p2,str2) != 0) return False;
-
-  *rdata_len = mdrcnt + 1024;
-  *rdata = REALLOC(*rdata,*rdata_len);
-
-  SSVAL(*rparam,0,NERR_Success);
-  SSVAL(*rparam,2,0);		/* converter word */
-
-  p = *rdata;
-
-  /* XXXX we need a real SAM database some day */
-  pstrcpy(p,"Users"); p += 21; count++;
-  pstrcpy(p,"Domain Users"); p += 21; count++;
-  pstrcpy(p,"Guests"); p += 21; count++;
-  pstrcpy(p,"Domain Guests"); p += 21; count++;
-
-  *rdata_len = PTR_DIFF(p,*rdata);
-
-  SSVAL(*rparam,4,count);	/* is this right?? */
-  SSVAL(*rparam,6,count);	/* is this right?? */
-
-  return(True);
-}
-
 
 static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
