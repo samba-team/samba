@@ -61,7 +61,7 @@ void nb_warmup_done(void)
 }
 
 
-void nb_alarm(void)
+void nb_alarm(int sig)
 {
 	int i;
 	int lines=0, num_clients=0;
