@@ -787,6 +787,22 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	if (io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE ||
+	    io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE_IF) {
+		/* for overwrite we need to replace file permissions */
+		uint32_t attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE;
+		mode_t mode = pvfs_fileperms(pvfs, attrib);
+		if (fchmod(fd, mode) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		name->dos.attrib = attrib;
+		status = pvfs_dosattrib_save(pvfs, name, fd);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	    
+
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum	      = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
