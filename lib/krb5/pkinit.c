@@ -96,7 +96,7 @@ struct krb5_pk_init_ctx_data {
 #define oid_enc(n) { sizeof(n)/sizeof(n[0]), n }
 
 static unsigned sha1_num[] = 
-    { 1, 3 ,14, 3, 2, 26 };
+    { 1, 3, 14, 3, 2, 26 };
 heim_oid heim_sha1_oid = 
 	oid_enc(sha1_num);
 static unsigned rsaEncryption_num[] = 
@@ -152,6 +152,20 @@ _krb5_pk_cert_free(struct krb5_pk_cert *cert)
     free(cert);
 }
 
+static krb5_error_code
+BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
+{
+    integer->length = BN_num_bytes(bn);
+    integer->data = malloc(integer->length);
+    if (integer->data == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
+    }
+    BN_bn2bin(bn, integer->data);
+    integer->negative = bn->neg;
+    return 0;
+}
+
 krb5_error_code
 _krb5_pk_create_sign(krb5_context context,
 		     const heim_oid *eContentType,
@@ -178,7 +192,7 @@ _krb5_pk_create_sign(krb5_context context,
 	return EINVAL; /* XXX */
     if (id->cert == NULL)
 	return HEIM_PKINIT_NO_CERTIFICATE;
-    if (id->private_key)
+    if (id->private_key == NULL)
 	return HEIM_PKINIT_NO_PRIVATE_KEY;
 
     if (sk_X509_num(id->cert) == 0)
@@ -240,15 +254,22 @@ _krb5_pk_create_sign(krb5_context context,
     signer_info->sid.u.issuerAndSerialNumber.issuer.length = buf.length;
 
     serial = &signer_info->sid.u.issuerAndSerialNumber.serialNumber;
-    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER,
-			       serial->data,
-			       serial->length,
-			       X509_get_serialNumber(user_cert),
-			       ret);
-    if (ret) {
-	krb5_set_error_string(context, "pkinit: failed encoding "
-			      "serial number");
-	goto out;
+    {
+	ASN1_INTEGER *isn = X509_get_serialNumber(user_cert);
+	BIGNUM *bn = ASN1_INTEGER_to_BN(isn, NULL);
+	if (bn == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "pkinit: failed allocating "
+				  "serial number");
+	    goto out;
+	}
+	ret = BN_to_integer(context, bn, serial);
+	BN_free(bn);
+	if (ret) {
+	    krb5_set_error_string(context, "pkinit: failed encoding "
+				  "serial number");
+	    goto out;
+	}
     }
 
     if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
@@ -264,27 +285,30 @@ _krb5_pk_create_sign(krb5_context context,
 	goto out;
     }
 
-    /* Fill in NULL as argument */ 
-    signer_info->digestAlgorithm.parameters = 
-	malloc(sizeof(*signer_info->digestAlgorithm.parameters));
-    if (signer_info->digestAlgorithm.parameters == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
+    /* CMS really requires NULL, but Windows gets unhappy then */
+    if ((context->pkinit_flags & KRB5_PKINIT_WIN2K) == 0) {
+
+	signer_info->digestAlgorithm.parameters = 
+	    malloc(sizeof(*signer_info->digestAlgorithm.parameters));
+	if (signer_info->digestAlgorithm.parameters == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	signer_info->digestAlgorithm.parameters->data = malloc(2);
+	if (signer_info->digestAlgorithm.parameters->data == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	memcpy(signer_info->digestAlgorithm.parameters->data, "\x05\x00", 2);
+	signer_info->digestAlgorithm.parameters->length = 2;
     }
-    signer_info->digestAlgorithm.parameters->data = malloc(2);
-    if (signer_info->digestAlgorithm.parameters->data == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
-    }
-    memcpy(signer_info->digestAlgorithm.parameters->data, "\x05\x00", 2);
-    signer_info->digestAlgorithm.parameters->length = 2;
 
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
-    copy_oid(&heim_rsaEncryption_oid, 
+    copy_oid(&heim_rsaEncryption_oid,
 	     &signer_info->signatureAlgorithm.algorithm);
     signer_info->signatureAlgorithm.parameters = NULL;
 
@@ -319,7 +343,12 @@ _krb5_pk_create_sign(krb5_context context,
 	goto out;
     }
 
-    copy_oid(&heim_rsaEncryption_oid, &sd.digestAlgorithms.val[0].algorithm);
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
+	digest_oid = &heim_sha1_oid;
+    else
+	digest_oid = &heim_rsaEncryption_oid;
+
+    copy_oid(digest_oid, &sd.digestAlgorithms.val[0].algorithm);
     sd.digestAlgorithms.val[0].parameters = NULL;
 
     ALLOC(sd.certificates, 1);
@@ -374,24 +403,6 @@ _krb5_pk_create_sign(krb5_context context,
     return ret;
 }
 
-static int
-BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
-{
-    ASN1_INTEGER *i;
-    int ret;
-
-    i = BN_to_ASN1_INTEGER(bn, NULL);
-    if (i == NULL) {
-	krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
-	return ENOMEM;
-    }
-    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, integer->data, integer->length,
-			       i, ret);
-    ASN1_INTEGER_free(i);
-    return ret;
-}
-
 static krb5_error_code
 build_auth_pack(krb5_context context,
                 unsigned nonce,
@@ -406,10 +417,13 @@ build_auth_pack(krb5_context context,
     krb5_timestamp sec;
     int32_t usec;
 
+#if 0 /* 0.6 of heimdal doesn't support always support sha1 */
     if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
 	cksum = CKSUMTYPE_RSA_MD5;
     else
 	cksum = CKSUMTYPE_SHA1;
+#endif
+    cksum = CKSUMTYPE_RSA_MD5;
 
     krb5_us_timeofday(context, &sec, &usec);
     a->pkAuthenticator.ctime = sec;
@@ -464,19 +478,11 @@ build_auth_pack(krb5_context context,
 	dp.j = NULL;
 	dp.validationParms = NULL;
 
-#if 0
-	ALLOC(a->clientPublicValue->algorithm.parameters, 1);
-	if (a->clientPublicValue->algorithm.parameters == NULL) {
-	    free_DomainParameters(&dp);
-	    return ENOMEM;
-	}
-#endif
 	ASN1_MALLOC_ENCODE(DomainParameters,
 			   a->clientPublicValue->algorithm.parameters.data,
 			   a->clientPublicValue->algorithm.parameters.length,
 			   &dp, &size, ret);
 	free_DomainParameters(&dp);
-
 	if (ret)
 	    return ret;
 	if (size != a->clientPublicValue->algorithm.parameters.length)
@@ -648,12 +654,21 @@ _krb5_pk_mk_padata(krb5_context context,
   
     if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
+
 	pa_type = KRB5_PADATA_PK_AS_REQ + 1;
-#if 1
 	memset(&winreq, 0, sizeof(winreq));
-#else
-	convert_req_to_req_win(&req, &winreq);
-#endif
+
+	ASN1_MALLOC_ENCODE(ContentInfo,
+			   winreq.signed_auth_pack.data,
+			   winreq.signed_auth_pack.length,
+			   &req.signedAuthPack,
+			   &size,
+			   ret);
+	if (ret)
+	    goto out;
+	if (winreq.signed_auth_pack.length != size)
+	    abort();
+
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_Win2k, buf.data, buf.length,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
