@@ -245,7 +245,7 @@ static void usage(void)
 	printf("Usage: tdbbackup [options] <fname...>\n\n");
 	printf("   -h            this help message\n");
 	printf("   -s suffix     set the backup suffix\n");
-	printf("   -v            veryify mode (restore if corrupt)\n");
+	printf("   -v            verify mode (restore if corrupt)\n");
 }
 		
 
