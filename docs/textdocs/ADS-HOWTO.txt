@@ -1,0 +1,115 @@
+Samba 3.0 prealpha guide to Kerberos authentication
+---------------------------------------------------
+
+Andrew Tridgell
+tridge@samba.org
+
+This is a VERY ROUGH guide to setting up the current (October 2001)
+pre-alpha version of Samba 3.0 with kerberos authentication against a
+Windows2000 KDC. The procedures listed here are likely to change as
+the code develops.
+
+Pieces you need before you begin:
+
+- a Windows 2000 server running at least service pack 2
+- the latest CVS source code for Samba. See http://cvs.samba.org/ for how to
+  fetch this.
+- the MIT kerberos development libraries (either install from the
+  above sources or use a package). Under debian you need "libkrb5-dev"
+  and "krb5-user". The heimdal libraries will not work.
+- the OpenLDAP development libraries. These must be compiled
+  with Cyrus SASL enabled.
+
+Also check that you have the latest copy of this HOWTO. It is
+available from http://samba.org/ftp/tridge/kerberos/HOWTO
+
+
+Step 1: Compile Samba
+  
+  If your kerberos libraries are in a non-standard location then
+  remember to add the configure option --with-krb5=DIR. For example,
+  on RedHat you will need --with-krb5=/usr/kerberos
+
+  After you run configure make sure that include/config.h contains a
+  line like this:
+
+  #define HAVE_KRB5 1
+
+  If it doesn't then configure did not find your krb5 libraries. Look
+  in config.log to figure out why and fix it.
+
+  Then compile and install Samba as usual. You must use at least the
+  following 3 options in smb.conf:
+
+  realm = YOUR.KERBEROS.REALM
+  ads server = your.kerberos.server
+  security = ADS
+  encrypt passwords = yes
+
+  You do *not* need a smbpasswd file, although it won't do any harm
+  and if you have one then Samba will be able to fall back to normal
+  password security for older clients. I expect that the above
+  required options will change soon when we get better active
+  directory integration.
+
+
+Step 2: Setup your /etc/krb5.conf
+
+  The minimal configuration for krb5.conf is:
+
+    [libdefaults]
+	    default_realm = YOUR.KERBEROS.REALM
+
+    [realms]
+    YOUR.KERBEROS.REALM = {
+	kdc = your.kerberos.server
+    }
+
+
+  Test your config by doing a "kinit USERNAME" and making sure that
+  your password is accepted by the Win2000 KDC. 
+
+  NOTE: The realm must be uppercase. 
+
+  You also must ensure that you can do a reverse DNS lookup on the IP
+  address of your KDC. This usually either involves setting up a PTR
+  record in your DNS server or adding your KDC to /etc/hosts.
+
+
+* If all you want is kerberos support in smbclient then you can skip
+* straight to step 5 now. Step 3 is only needed if you want kerberos
+* support in smbd.
+
+
+Step 3: Create the computer account
+
+  Do a "kinit" as a user that has authority to change arbitrary
+  passwords on the KDC ("Administrator" is a good choice). Then as a
+  user that has write permission on the Samba private directory
+  (usually root) run:
+
+     net ads join
+
+Step 4: Test your server setup
+
+  On a Windows 2000 client try "net use * \\server\share". You should
+  be logged in with kerberos without needing to know a password. If
+  this fails then run "klist tickets". Did you get a ticket for the
+  server? Does it have an encoding type of DES-CBC-MD5 ? 
+
+Step 5: Testing with smbclient
+
+  On your Samba server try to login to a Win2000 server or your Samba
+  server using smbclient and kerberos. Use smbclient as usual, but
+  specify the -k option to choose kerberos authentication.
+
+
+--------
+
+NOTES: 
+ - must change administrator password at least once after DC install,
+ to create the right encoding types
+
+ - w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
+   their defaults DNS setup. Maybe fixed in service packs?
+
