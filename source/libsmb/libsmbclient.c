@@ -1902,8 +1902,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                      * the first choice and fall back to MSBROWSE if the
                      * wildcard query fails.
                      */
-		    if (!name_status_find("*", 0, 0x1d, server_ip, server) &&
-                        !name_status_find(MSBROWSE, 1, 0x1d, server_ip, server)) {
+		    if (!name_status_find("*", 0, 0x20, server_ip, server) &&
+                        !name_status_find(MSBROWSE, 1, 0x1b, server_ip, server)) {
 			errno = ENOENT;
 			return NULL;
 		    }
