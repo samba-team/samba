@@ -2,10 +2,10 @@
 <HTML
 ><HEAD
 ><TITLE
->Creating Group Profiles</TITLE
+>Creating Group Prolicy Files</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -16,8 +16,8 @@ REL="PREVIOUS"
 TITLE="Samba performance issues"
 HREF="speed.html"><LINK
 REL="NEXT"
-TITLE="Appendixes"
-HREF="appendixes.html"></HEAD
+TITLE="Securing Samba"
+HREF="securing-samba.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="appendixes.html"
+HREF="securing-samba.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="GROUPPROFILES"
 ></A
->Chapter 20. Creating Group Profiles</H1
+>Chapter 19. Creating Group Prolicy Files</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3123"
-></A
->20.1. Windows '9x</H1
+NAME="AEN2980"
+>19.1. Windows '9x</A
+></H1
 ><P
 >You need the Win98 Group Policy Editor to
 set Group Profiles up under Windows '9x. It can be found on the Original
@@ -106,25 +106,28 @@ CLASS="FILENAME"
 > that needs to be placed in
 the root of the [NETLOGON] share. If your Win98 is configured to log onto
 the Samba Domain, it will automatically read this file and update the
-Win98 registry of the machine that is logging on.</P
+Win9x/Me registry of the machine that is logging on.</P
 ><P
 >All of this is covered in the Win98 Resource Kit documentation.</P
 ><P
->If you do not do it this way, then every so often Win98 will check the
+>If you do not do it this way, then every so often Win9x/Me will check the
 integrity of the registry and will restore it's settings from the back-up
-copy of the registry it stores on each Win98 machine. Hence, you will notice
-things changing back to the original settings.</P
+copy of the registry it stores on each Win9x/Me machine. Hence, you will
+occasionally notice things changing back to the original settings.</P
+><P
+>The following all refers to Windows NT/200x profile migration - not to policies.
+We need a separate section on policies (NTConfig.Pol) for NT4/200x.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3132"
-></A
->20.2. Windows NT 4</H1
+NAME="AEN2990"
+>19.2. Windows NT 4</A
+></H1
 ><P
->Unfortunately, the Resource Kit info is Win NT4/2K version specific.</P
+>Unfortunately, the Resource Kit info is Win NT4 or 200x specific.</P
 ><P
 >Here is a quick guide:</P
 ><P
@@ -159,7 +162,7 @@ ALT="Note"></TD
 ALIGN="LEFT"
 VALIGN="TOP"
 ><P
->I am using the term &quot;migrate&quot; lossely. You can copy a profile to
+>I am using the term "migrate" lossely. You can copy a profile to
 create a group profile. You can give the user 'Everyone' rights to the
 profile you copy this to. That is what you need to do, since your samba
 domain is not a member of a trust relationship with your NT4 PDC.</P
@@ -201,9 +204,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3155"
-></A
->20.2.1. Side bar Notes</H2
+NAME="AEN3013"
+>19.2.1. Side bar Notes</A
+></H2
 ><P
 >You should obtain the SID of your NT4 domain. You can use smbpasswd to do
 this. Read the man page.</P
@@ -217,9 +220,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3159"
-></A
->20.2.2. Mandatory profiles</H2
+NAME="AEN3017"
+>19.2.2. Mandatory profiles</A
+></H2
 ><P
 >The above method can be used to create mandatory profiles also. To convert
 a group profile into a mandatory profile simply locate the NTUser.DAT file
@@ -230,9 +233,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3162"
-></A
->20.2.3. moveuser.exe</H2
+NAME="AEN3020"
+>19.2.3. moveuser.exe</A
+></H2
 ><P
 >The W2K professional resource kit has moveuser.exe. moveuser.exe changes
 the security of a profile from one user to another.  This allows the account 
@@ -243,9 +246,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3165"
-></A
->20.2.4. Get SID</H2
+NAME="AEN3023"
+>19.2.4. Get SID</A
+></H2
 ><P
 >You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
 Resource Kit.</P
@@ -266,9 +269,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3170"
-></A
->20.3. Windows 2000/XP</H1
+NAME="AEN3028"
+>19.3. Windows 2000/XP</A
+></H1
 ><P
 >You must first convert the profile from a local profile to a domain
 profile on the MS Windows workstation as follows:</P
@@ -532,7 +535,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="appendixes.html"
+HREF="securing-samba.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -556,7 +559,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Appendixes</TD
+>Securing Samba</TD
 ></TR
 ></TABLE
 ></DIV

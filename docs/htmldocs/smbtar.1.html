@@ -5,7 +5,7 @@
 >smbtar</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -105,12 +105,10 @@ CLASS="VARIABLELIST"
 >-d directory</DT
 ><DD
 ><P
->Change to initial <TT
+>Change to initial <VAR
 CLASS="PARAMETER"
-><I
 >directory
-		</I
-></TT
+		</VAR
 > before restoring / backing up files. </P
 ></DD
 ><DT
@@ -138,11 +136,9 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >Tape device. May be regular file or tape 
-		device. Default: <TT
+		device. Default: <VAR
 CLASS="PARAMETER"
-><I
->$TAPE</I
-></TT
+>$TAPE</VAR
 > environmental 
 		variable; if not set, a file called <TT
 CLASS="FILENAME"
@@ -188,11 +184,9 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Log (debug) level. Corresponds to the 
-		<TT
+		<VAR
 CLASS="PARAMETER"
-><I
->-d</I
-></TT
+>-d</VAR
 > flag of <SPAN
 CLASS="CITEREFENTRY"
 ><SPAN
@@ -212,11 +206,9 @@ NAME="AEN100"
 ><H2
 >ENVIRONMENT VARIABLES</H2
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->$TAPE</I
-></TT
+>$TAPE</VAR
 > variable specifies the 
 	default tape device to write to. May be overridden
 	with the -t option. </P

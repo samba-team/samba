@@ -5,7 +5,7 @@
 >Portability</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -84,9 +84,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3251"
-></A
->21.1. HPUX</H1
+NAME="AEN3156"
+>21.1. HPUX</A
+></H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
 hysterical reasons).  There are two group files, /etc/group and
@@ -114,9 +114,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3257"
-></A
->21.2. SCO Unix</H1
+NAME="AEN3162"
+>21.2. SCO Unix</A
+></H1
 ><P
 > 
 If you run an old version of  SCO Unix then you may need to get important 
@@ -131,9 +131,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3261"
-></A
->21.3. DNIX</H1
+NAME="AEN3166"
+>21.3. DNIX</A
+></H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX
@@ -238,9 +238,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3290"
-></A
->21.4. RedHat Linux Rembrandt-II</H1
+NAME="AEN3195"
+>21.4. RedHat Linux Rembrandt-II</A
+></H1
 ><P
 >By default RedHat Rembrandt-II during installation adds an
 entry to /etc/hosts as follows:
@@ -256,6 +256,27 @@ is the master browse list holder and who is the master browser.</P
 ><P
 >Corrective Action:	Delete the entry after the word loopback
 	in the line starting 127.0.0.1</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3201"
+>21.5. AIX</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3203"
+>21.5.1. Sequential Read Ahead</A
+></H2
+><P
+>Disabling Sequential Read Ahead using "vmtune -r 0" improves 
+samba performance significally.</P
+></DIV
 ></DIV
 ></DIV
 ><DIV

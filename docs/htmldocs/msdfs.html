@@ -5,7 +5,7 @@
 >Hosting a Microsoft Distributed File System tree on Samba</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -81,9 +81,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1993"
-></A
->12.1. Instructions</H1
+NAME="AEN1896"
+>12.1. Instructions</A
+></H1
 ><P
 >The Distributed File System (or Dfs) provides a means of 
 	separating the logical view of files and directories that users 
@@ -99,21 +99,17 @@ TARGET="_top"
 	machine (for Dfs-aware clients to browse) using Samba.</P
 ><P
 >To enable SMB-based DFS for Samba, configure it with the 
-	<TT
+	<VAR
 CLASS="PARAMETER"
-><I
->--with-msdfs</I
-></TT
+>--with-msdfs</VAR
 > option. Once built, a 
 	Samba server can be made a Dfs server by setting the global 
 	boolean <A
 HREF="smb.conf.5.html#HOSTMSDFS"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->	host msdfs</I
-></TT
+>	host msdfs</VAR
 ></A
 > parameter in the <TT
 CLASS="FILENAME"
@@ -123,18 +119,16 @@ CLASS="FILENAME"
 	level boolean <A
 HREF="smb.conf.5.html#MSDFSROOT"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->	msdfs root</I
-></TT
+>	msdfs root</VAR
 ></A
 > parameter. A Dfs root directory on 
 	Samba hosts Dfs links in the form of symbolic links that point 
 	to other servers. For example, a symbolic link
 	<TT
 CLASS="FILENAME"
->junction-&gt;msdfs:storage1\share1</TT
+>junction-&#62;msdfs:storage1\share1</TT
 > in 
 	the share directory acts as the Dfs junction. When Dfs-aware 
 	clients attempt to access the junction link, they are redirected 
@@ -162,54 +156,44 @@ CLASS="PROGRAMLISTING"
 >In the /export/dfsroot directory we set up our dfs links to 
 	other servers on the network.</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->cd /export/dfsroot</B
-></TT
+>cd /export/dfsroot</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->chown root /export/dfsroot</B
-></TT
+>chown root /export/dfsroot</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->chmod 755 /export/dfsroot</B
-></TT
+>chmod 755 /export/dfsroot</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->ln -s msdfs:storageA\\shareA linka</B
-></TT
+>ln -s msdfs:storageA\\shareA linka</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
-><TT
+>root# </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->ln -s msdfs:serverB\\share,serverC\\share linkb</B
-></TT
+>ln -s msdfs:serverB\\share,serverC\\share linkb</KBD
 ></P
 ><P
 >You should set up the permissions and ownership of 
@@ -229,9 +213,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2028"
-></A
->12.1.1. Notes</H2
+NAME="AEN1931"
+>12.1.1. Notes</A
+></H2
 ><P
 ></P
 ><UL

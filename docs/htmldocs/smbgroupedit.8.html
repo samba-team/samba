@@ -5,7 +5,7 @@
 >smbgroupedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -179,9 +179,9 @@ TYPE="1"
 	<TT
 CLASS="FILENAME"
 >/etc/group</TT
->), let's call it <TT
+>), let's call it <CODE
 CLASS="CONSTANT"
->domadm</TT
+>domadm</CODE
 >.
 	</P
 ></LI
@@ -210,9 +210,9 @@ TYPE="a"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
 >smbgroupedit -vs | grep "Domain Admins"</B
@@ -226,9 +226,9 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; -1</PRE
 		"Domain Admins" group, by running the command:
 <PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
 >smbgroupedit \
@@ -254,9 +254,9 @@ CLASS="EMPHASIS"
 >To verify that your mapping has taken effect:
 <PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
 >smbgroupedit -vs|grep "Domain Admins"</B
@@ -269,9 +269,9 @@ NT/W2K or a samba server running winbind) to some users who are member
 of a group on your samba PDC, flag that group as a domain group:
 <PRE
 CLASS="PROGRAMLISTING"
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
 >smbgroupedit -a unixgroup -td</B

@@ -5,7 +5,7 @@
 >wbinfo</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -140,11 +140,9 @@ CLASS="REFENTRYTITLE"
 >-N name</DT
 ><DD
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->-N</I
-></TT
+>-N</VAR
 > option 
 		queries <SPAN
 CLASS="CITEREFENTRY"
@@ -154,11 +152,9 @@ CLASS="REFENTRYTITLE"
 >(8)</SPAN
 > to query the WINS
 		server for the IP address associated with the NetBIOS name
-		specified by the <TT
+		specified by the <VAR
 CLASS="PARAMETER"
-><I
->name</I
-></TT
+>name</VAR
 > parameter.
 		</P
 ></DD
@@ -166,11 +162,9 @@ CLASS="PARAMETER"
 >-I ip</DT
 ><DD
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->-I</I
-></TT
+>-I</VAR
 > option 
 		queries <SPAN
 CLASS="CITEREFENTRY"
@@ -180,11 +174,9 @@ CLASS="REFENTRYTITLE"
 >(8)</SPAN
 > to send a node status
 		request to get the NetBIOS name associated with the IP address
-		specified by the <TT
+		specified by the <VAR
 CLASS="PARAMETER"
-><I
->ip</I
-></TT
+>ip</VAR
 > parameter.
 		</P
 ></DD
@@ -192,11 +184,9 @@ CLASS="PARAMETER"
 >-n name</DT
 ><DD
 ><P
->The <TT
+>The <VAR
 CLASS="PARAMETER"
-><I
->-n</I
-></TT
+>-n</VAR
 > option 
 		queries <SPAN
 CLASS="CITEREFENTRY"
@@ -215,30 +205,24 @@ CLASS="CITEREFENTRY"
 CLASS="REFENTRYTITLE"
 >smb.conf</SPAN
 >(5)</SPAN
->	<TT
+>	<VAR
 CLASS="PARAMETER"
-><I
 >workgroup
-		</I
-></TT
+		</VAR
 > parameter. </P
 ></DD
 ><DT
 >-s sid</DT
 ><DD
 ><P
->Use <TT
+>Use <VAR
 CLASS="PARAMETER"
-><I
->-s</I
-></TT
+>-s</VAR
 > to resolve
-		a SID to a name.  This is the inverse of the <TT
+		a SID to a name.  This is the inverse of the <VAR
 CLASS="PARAMETER"
-><I
 >-n
-		</I
-></TT
+		</VAR
 > option above.  SIDs must be specified as ASCII strings 
 		in the traditional Microsoft format. For example,
 		S-1-5-21-1455342024-3071081365-2475485837-500. </P

@@ -5,7 +5,7 @@
 >smbmount</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -124,27 +124,27 @@ NAME="AEN35"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->username=&lt;arg&gt;</DT
+>username=&#60;arg&#62;</DT
 ><DD
 ><P
 >specifies the username to connect as. If
-		this is not given, then the environment variable <TT
+		this is not given, then the environment variable <VAR
 CLASS="ENVAR"
->		USER</TT
+>		USER</VAR
 > is used. This option can also take the
 		form "user%password" or "user/workgroup" or
 		"user/workgroup%password" to allow the password and workgroup
 		to be specified as part of the username.</P
 ></DD
 ><DT
->password=&lt;arg&gt;</DT
+>password=&#60;arg&#62;</DT
 ><DD
 ><P
 >specifies the SMB password. If this
 		option is not given then the environment variable
-		<TT
+		<VAR
 CLASS="ENVAR"
->PASSWD</TT
+>PASSWD</VAR
 > is used. If it can find
 		no password <B
 CLASS="COMMAND"
@@ -161,15 +161,15 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->credentials=&lt;filename&gt;</DT
+>credentials=&#60;filename&#62;</DT
 ><DD
 ><P
 >specifies a file that contains a username and/or password. 
 The format of the file is:
 <PRE
 CLASS="PROGRAMLISTING"
->username = &lt;value&gt;
-password = &lt;value&gt;</PRE
+>username = &#60;value&#62;
+password = &#60;value&#62;</PRE
 ></P
 ><P
 >This is preferred over having passwords in plaintext in a
@@ -181,14 +181,14 @@ CLASS="FILENAME"
 		</P
 ></DD
 ><DT
->netbiosname=&lt;arg&gt;</DT
+>netbiosname=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the source NetBIOS name. It defaults 
 		to the local hostname. </P
 ></DD
 ><DT
->uid=&lt;arg&gt;</DT
+>uid=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the uid that will own all files on
@@ -197,7 +197,7 @@ CLASS="FILENAME"
 		</P
 ></DD
 ><DT
->gid=&lt;arg&gt;</DT
+>gid=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the gid that will own all files on
@@ -206,14 +206,14 @@ CLASS="FILENAME"
 		gid. </P
 ></DD
 ><DT
->port=&lt;arg&gt;</DT
+>port=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the remote SMB port number. The default 
 		is 139. </P
 ></DD
 ><DT
->fmask=&lt;arg&gt;</DT
+>fmask=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the file mask. This determines the 
@@ -221,7 +221,7 @@ CLASS="FILENAME"
 		The default is based on the current umask. </P
 ></DD
 ><DT
->dmask=&lt;arg&gt;</DT
+>dmask=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the directory mask. This determines the 
@@ -229,7 +229,7 @@ CLASS="FILENAME"
 		The default is based on the current umask. </P
 ></DD
 ><DT
->debug=&lt;arg&gt;</DT
+>debug=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the debug level. This is useful for 
@@ -238,20 +238,20 @@ CLASS="FILENAME"
 		output, possibly hiding the useful output.</P
 ></DD
 ><DT
->ip=&lt;arg&gt;</DT
+>ip=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the destination host or IP address.
 		</P
 ></DD
 ><DT
->workgroup=&lt;arg&gt;</DT
+>workgroup=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the workgroup on the destination </P
 ></DD
 ><DT
->sockopt=&lt;arg&gt;</DT
+>sockopt=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the TCP socket options. See the <A
@@ -264,16 +264,14 @@ CLASS="REFENTRYTITLE"
 >smb.conf</SPAN
 >(5)</SPAN
 ></A
-> <TT
+> <VAR
 CLASS="PARAMETER"
-><I
->socket options</I
-></TT
+>socket options</VAR
 > option.
 		</P
 ></DD
 ><DT
->scope=&lt;arg&gt;</DT
+>scope=&#60;arg&#62;</DT
 ><DD
 ><P
 >sets the NetBIOS scope </P
@@ -297,7 +295,7 @@ CLASS="PARAMETER"
 >mount read-write </P
 ></DD
 ><DT
->iocharset=&lt;arg&gt;</DT
+>iocharset=&#60;arg&#62;</DT
 ><DD
 ><P
 >		sets the charset used by the Linux side for codepage
@@ -307,7 +305,7 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
->codepage=&lt;arg&gt;</DT
+>codepage=&#60;arg&#62;</DT
 ><DD
 ><P
 >		sets the codepage the server uses. See the iocharset
@@ -316,7 +314,7 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
->ttl=&lt;arg&gt;</DT
+>ttl=&#60;arg&#62;</DT
 ><DD
 ><P
 >		sets how long a directory listing is cached in milliseconds
@@ -341,26 +339,26 @@ NAME="AEN130"
 ><H2
 >ENVIRONMENT VARIABLES</H2
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->USER</TT
+>USER</VAR
 > may contain the username of the
 	person using the client.  This information is used only if the
 	protocol level is high enough to support session-level
 	passwords. The variable can be used to set both username and
 	password by using the format username%password.</P
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->PASSWD</TT
+>PASSWD</VAR
 > may contain the password of the
 	person using the client.  This information is used only if the
 	protocol level is high enough to support session-level
 	passwords.</P
 ><P
->The variable <TT
+>The variable <VAR
 CLASS="ENVAR"
->PASSWD_FILE</TT
+>PASSWD_FILE</VAR
 > may contain the pathname
 	of a file to read the password from. A single line of input is
 	read and used as the password.</P

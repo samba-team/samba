@@ -5,7 +5,7 @@
 >rpcclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >rpcclient</B
->  [-A authfile] [-c &lt;command string&gt;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &lt;smb config file&gt;] [-U username[%password]] [-W workgroup] [-N] [-I destinationIP] {server}</P
+>  [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N] [-I destinationIP] {server}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -86,11 +86,9 @@ CLASS="VARIABLELIST"
 		resolved using the <A
 HREF="smb.conf.5.html#NAMERESOLVEORDER"
 TARGET="_top"
->		<TT
+>		<VAR
 CLASS="PARAMETER"
-><I
->name resolve order</I
-></TT
+>name resolve order</VAR
 ></A
 > line from <SPAN
 CLASS="CITEREFENTRY"
@@ -111,9 +109,9 @@ CLASS="REFENTRYTITLE"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->username = &lt;value&gt; 
-password = &lt;value&gt;
-domain   = &lt;value&gt;</PRE
+>username = &#60;value&#62; 
+password = &#60;value&#62;
+domain   = &#60;value&#62;</PRE
 ></P
 ><P
 >Make certain that the permissions on the file restrict 
@@ -136,11 +134,9 @@ domain   = &lt;value&gt;</PRE
 >-d|--debug=debuglevel</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->debuglevel</I
-></TT
+>debuglevel</VAR
 > is an integer 
 from 0 to 10.  The default value if this parameter is 
 not specified is zero.</P
@@ -177,21 +173,17 @@ CLASS="FILENAME"
 >-I IP-address</DT
 ><DD
 ><P
-><TT
+><VAR
 CLASS="REPLACEABLE"
-><I
->IP address</I
-></TT
+>IP address</VAR
 > is the address of the server to connect to. 
 		It should be specified in standard "a.b.c.d" notation. </P
 ><P
 >Normally the client would attempt to locate a named 
 		SMB/CIFS server by looking it up via the NetBIOS name resolution 
-		mechanism described above in the <TT
+		mechanism described above in the <VAR
 CLASS="PARAMETER"
-><I
->name resolve order</I
-></TT
+>name resolve order</VAR
 > 
 		parameter above. Using this parameter will force the client
 		to assume that the server is on the machine with the specified IP 
@@ -207,9 +199,9 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >File name for log/debug files. The extension 
-		<TT
+		<CODE
 CLASS="CONSTANT"
->'.client'</TT
+>'.client'</CODE
 > will be appended. The log file is
 		never removed by the client.
 		</P
@@ -226,11 +218,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >rpcclient</B
 > will
-		prompt for a password.  See also the <TT
+		prompt for a password.  See also the <VAR
 CLASS="PARAMETER"
-><I
->-U</I
-></TT
+>-U</VAR
 >
 		option.</P
 ></DD
@@ -251,18 +241,18 @@ CLASS="FILENAME"
 >Sets the SMB username or username and password. </P
 ><P
 >If %password is not specified, the user will be prompted. The 
-		client will first check the <TT
+		client will first check the <VAR
 CLASS="ENVAR"
->USER</TT
+>USER</VAR
 > environment variable, then the 
-		<TT
+		<VAR
 CLASS="ENVAR"
->LOGNAME</TT
+>LOGNAME</VAR
 > variable and if either exists, the 
 		string is uppercased. If these environmental variables are not 
-		found, the username <TT
+		found, the username <CODE
 CLASS="CONSTANT"
->GUEST</TT
+>GUEST</CODE
 > is used. </P
 ><P
 >A third option is to use a credentials file which 
@@ -271,11 +261,9 @@ CLASS="CONSTANT"
 		wish to pass the credentials on the command line or via environment 
 		variables. If this method is used, make certain that the permissions 
 		on the file restrict access from unwanted users.  See the 
-		<TT
+		<VAR
 CLASS="PARAMETER"
-><I
->-A</I
-></TT
+>-A</VAR
 > for more details. </P
 ><P
 >Be cautious about including passwords in scripts. Also, on 
@@ -441,7 +429,7 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->adddriver &lt;arch&gt; &lt;config&gt;</B
+>adddriver &#60;arch&#62; &#60;config&#62;</B
 > 
 		- Execute an AddPrinterDriver() RPC to install the printer driver 
 		information on the server.  Note that the driver files should 
@@ -450,21 +438,17 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >getdriverdir</B
 >.  Possible values for 
-		<TT
+		<VAR
 CLASS="PARAMETER"
-><I
->arch</I
-></TT
+>arch</VAR
 > are the same as those for 
 		the <B
 CLASS="COMMAND"
 >getdriverdir</B
 > command.
-		The <TT
+		The <VAR
 CLASS="PARAMETER"
-><I
->config</I
-></TT
+>config</VAR
 > parameter is defined as 
 		follows: </P
 ><P
@@ -493,8 +477,8 @@ Comma Separated list of Files</PRE
 ><P
 ><B
 CLASS="COMMAND"
->addprinter &lt;printername&gt; 
-		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</B
+>addprinter &#60;printername&#62; 
+		&#60;sharename&#62; &#60;drivername&#62; &#60;port&#62;</B
 > 
 		- Add a printer on the remote server.  This printer 
  		will be automatically shared.  Be aware that the printer driver 
@@ -502,11 +486,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >adddriver</B
 >) 
-		and the <TT
+		and the <VAR
 CLASS="PARAMETER"
-><I
->port</I
-></TT
+>port</VAR
 >must be a valid port name (see
 		<B
 CLASS="COMMAND"
@@ -540,7 +522,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->enumjobs &lt;printer&gt;</B
+>enumjobs &#60;printer&#62;</B
 > 
 		- List the jobs and status of a given printer. 
 		This command corresponds to the MS Platform SDK EnumJobs() 
@@ -582,7 +564,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdata &lt;printername&gt;</B
+>getdata &#60;printername&#62;</B
 > 
 		- Retrieve the data for a given printer setting.  See 
 		the  <B
@@ -596,7 +578,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriver &lt;printername&gt;</B
+>getdriver &#60;printername&#62;</B
 > 
 		- Retrieve the printer driver information (such as driver file, 
 		config file, dependent files, etc...) for 
@@ -608,16 +590,14 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriverdir &lt;arch&gt;</B
+>getdriverdir &#60;arch&#62;</B
 > 
 		- Execute a GetPrinterDriverDirectory()
 		RPC to retrieve the SMB share name and subdirectory for 
 		storing printer driver files for a given architecture.  Possible 
-		values for <TT
+		values for <VAR
 CLASS="PARAMETER"
-><I
->arch</I
-></TT
+>arch</VAR
 > are "Windows 4.0" 
 		(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
 		Alpha_AXP", and "Windows NT R4000". </P
@@ -626,7 +606,7 @@ CLASS="PARAMETER"
 ><P
 ><B
 CLASS="COMMAND"
->getprinter &lt;printername&gt;</B
+>getprinter &#60;printername&#62;</B
 > 
 		- Retrieve the current printer information.  This command 
 		corresponds to the GetPrinter() MS Platform SDK function. 
@@ -636,7 +616,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->openprinter &lt;printername&gt;</B
+>openprinter &#60;printername&#62;</B
 > 
 		- Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </P
@@ -645,8 +625,8 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->setdriver &lt;printername&gt;
-		&lt;drivername&gt;</B
+>setdriver &#60;printername&#62;
+		&#60;drivername&#62;</B
 >
 		- Execute a SetPrinter() command to update the printer driver
 		associated with an installed printer.  The printer driver must

@@ -5,13 +5,13 @@
 >Appendixes</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
-TITLE="Creating Group Profiles"
-HREF="groupprofiles.html"><LINK
+TITLE="Securing Samba"
+HREF="securing-samba.html"><LINK
 REL="NEXT"
 TITLE="Portability"
 HREF="portability.html"></HEAD
@@ -42,7 +42,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="groupprofiles.html"
+HREF="securing-samba.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -91,24 +91,38 @@ HREF="portability.html"
 ><DL
 ><DT
 >21.1. <A
-HREF="portability.html#AEN3251"
+HREF="portability.html#AEN3156"
 >HPUX</A
 ></DT
 ><DT
 >21.2. <A
-HREF="portability.html#AEN3257"
+HREF="portability.html#AEN3162"
 >SCO Unix</A
 ></DT
 ><DT
 >21.3. <A
-HREF="portability.html#AEN3261"
+HREF="portability.html#AEN3166"
 >DNIX</A
 ></DT
 ><DT
 >21.4. <A
-HREF="portability.html#AEN3290"
+HREF="portability.html#AEN3195"
 >RedHat Linux Rembrandt-II</A
 ></DT
+><DT
+>21.5. <A
+HREF="portability.html#AEN3201"
+>AIX</A
+></DT
+><DD
+><DL
+><DT
+>21.5.1. <A
+HREF="portability.html#AEN3203"
+>Sequential Read Ahead</A
+></DT
+></DL
+></DD
 ></DL
 ></DD
 ><DT
@@ -120,37 +134,37 @@ HREF="other-clients.html"
 ><DL
 ><DT
 >22.1. <A
-HREF="other-clients.html#AEN3311"
+HREF="other-clients.html#AEN3221"
 >Macintosh clients?</A
 ></DT
 ><DT
 >22.2. <A
-HREF="other-clients.html#AEN3320"
+HREF="other-clients.html#AEN3230"
 >OS2 Client</A
 ></DT
 ><DD
 ><DL
 ><DT
 >22.2.1. <A
-HREF="other-clients.html#AEN3322"
+HREF="other-clients.html#AEN3232"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >22.2.2. <A
-HREF="other-clients.html#AEN3337"
+HREF="other-clients.html#AEN3247"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >22.2.3. <A
-HREF="other-clients.html#AEN3346"
+HREF="other-clients.html#AEN3256"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >22.2.4. <A
-HREF="other-clients.html#AEN3350"
+HREF="other-clients.html#AEN3260"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -158,168 +172,230 @@ HREF="other-clients.html#AEN3350"
 ></DD
 ><DT
 >22.3. <A
-HREF="other-clients.html#AEN3360"
+HREF="other-clients.html#AEN3270"
 >Windows for Workgroups</A
 ></DT
 ><DD
 ><DL
 ><DT
 >22.3.1. <A
-HREF="other-clients.html#AEN3362"
+HREF="other-clients.html#AEN3272"
 >Use latest TCP/IP stack from Microsoft</A
 ></DT
 ><DT
 >22.3.2. <A
-HREF="other-clients.html#AEN3367"
+HREF="other-clients.html#AEN3277"
 >Delete .pwl files after password change</A
 ></DT
 ><DT
 >22.3.3. <A
-HREF="other-clients.html#AEN3372"
+HREF="other-clients.html#AEN3282"
 >Configure WfW password handling</A
 ></DT
 ><DT
 >22.3.4. <A
-HREF="other-clients.html#AEN3376"
+HREF="other-clients.html#AEN3286"
 >Case handling of passwords</A
+></DT
+><DT
+>22.3.5. <A
+HREF="other-clients.html#AEN3291"
+>Use TCP/IP as default protocol</A
 ></DT
 ></DL
 ></DD
 ><DT
 >22.4. <A
-HREF="other-clients.html#AEN3381"
+HREF="other-clients.html#AEN3294"
 >Windows '95/'98</A
 ></DT
 ><DT
 >22.5. <A
-HREF="other-clients.html#AEN3397"
+HREF="other-clients.html#AEN3310"
 >Windows 2000 Service Pack 2</A
 ></DT
 ></DL
 ></DD
 ><DT
 >23. <A
+HREF="compiling.html"
+>How to compile SAMBA</A
+></DT
+><DD
+><DL
+><DT
+>23.1. <A
+HREF="compiling.html#AEN3337"
+>Access Samba source code via CVS</A
+></DT
+><DD
+><DL
+><DT
+>23.1.1. <A
+HREF="compiling.html#AEN3339"
+>Introduction</A
+></DT
+><DT
+>23.1.2. <A
+HREF="compiling.html#AEN3344"
+>CVS Access to samba.org</A
+></DT
+></DL
+></DD
+><DT
+>23.2. <A
+HREF="compiling.html#AEN3380"
+>Accessing the samba sources via rsync and ftp</A
+></DT
+><DT
+>23.3. <A
+HREF="compiling.html#AEN3386"
+>Building the Binaries</A
+></DT
+><DT
+>23.4. <A
+HREF="compiling.html#AEN3414"
+>Starting the smbd and nmbd</A
+></DT
+><DD
+><DL
+><DT
+>23.4.1. <A
+HREF="compiling.html#AEN3424"
+>Starting from inetd.conf</A
+></DT
+><DT
+>23.4.2. <A
+HREF="compiling.html#AEN3453"
+>Alternative: starting it as a daemon</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>24. <A
 HREF="bugreport.html"
 >Reporting Bugs</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.1. <A
-HREF="bugreport.html#AEN3421"
+>24.1. <A
+HREF="bugreport.html#AEN3476"
 >Introduction</A
 ></DT
 ><DT
->23.2. <A
-HREF="bugreport.html#AEN3431"
+>24.2. <A
+HREF="bugreport.html#AEN3486"
 >General info</A
 ></DT
 ><DT
->23.3. <A
-HREF="bugreport.html#AEN3437"
+>24.3. <A
+HREF="bugreport.html#AEN3492"
 >Debug levels</A
 ></DT
 ><DT
->23.4. <A
-HREF="bugreport.html#AEN3454"
+>24.4. <A
+HREF="bugreport.html#AEN3509"
 >Internal errors</A
 ></DT
 ><DT
->23.5. <A
-HREF="bugreport.html#AEN3464"
+>24.5. <A
+HREF="bugreport.html#AEN3519"
 >Attaching to a running process</A
 ></DT
 ><DT
->23.6. <A
-HREF="bugreport.html#AEN3467"
+>24.6. <A
+HREF="bugreport.html#AEN3522"
 >Patches</A
 ></DT
 ></DL
 ></DD
 ><DT
->24. <A
+>25. <A
 HREF="diagnosis.html"
->Diagnosing your samba server</A
+>The samba checklist</A
 ></DT
 ><DD
 ><DL
 ><DT
->24.1. <A
-HREF="diagnosis.html#AEN3490"
+>25.1. <A
+HREF="diagnosis.html#AEN3545"
 >Introduction</A
 ></DT
 ><DT
->24.2. <A
-HREF="diagnosis.html#AEN3495"
+>25.2. <A
+HREF="diagnosis.html#AEN3550"
 >Assumptions</A
 ></DT
 ><DT
->24.3. <A
-HREF="diagnosis.html#AEN3505"
+>25.3. <A
+HREF="diagnosis.html#AEN3560"
 >Tests</A
 ></DT
 ><DD
 ><DL
 ><DT
->24.3.1. <A
-HREF="diagnosis.html#AEN3507"
+>25.3.1. <A
+HREF="diagnosis.html#AEN3562"
 >Test 1</A
 ></DT
 ><DT
->24.3.2. <A
-HREF="diagnosis.html#AEN3513"
+>25.3.2. <A
+HREF="diagnosis.html#AEN3568"
 >Test 2</A
 ></DT
 ><DT
->24.3.3. <A
-HREF="diagnosis.html#AEN3519"
+>25.3.3. <A
+HREF="diagnosis.html#AEN3574"
 >Test 3</A
 ></DT
 ><DT
->24.3.4. <A
-HREF="diagnosis.html#AEN3534"
+>25.3.4. <A
+HREF="diagnosis.html#AEN3589"
 >Test 4</A
 ></DT
 ><DT
->24.3.5. <A
-HREF="diagnosis.html#AEN3539"
+>25.3.5. <A
+HREF="diagnosis.html#AEN3594"
 >Test 5</A
 ></DT
 ><DT
->24.3.6. <A
-HREF="diagnosis.html#AEN3545"
+>25.3.6. <A
+HREF="diagnosis.html#AEN3600"
 >Test 6</A
 ></DT
 ><DT
->24.3.7. <A
-HREF="diagnosis.html#AEN3553"
+>25.3.7. <A
+HREF="diagnosis.html#AEN3608"
 >Test 7</A
 ></DT
 ><DT
->24.3.8. <A
-HREF="diagnosis.html#AEN3579"
+>25.3.8. <A
+HREF="diagnosis.html#AEN3634"
 >Test 8</A
 ></DT
 ><DT
->24.3.9. <A
-HREF="diagnosis.html#AEN3596"
+>25.3.9. <A
+HREF="diagnosis.html#AEN3651"
 >Test 9</A
 ></DT
 ><DT
->24.3.10. <A
-HREF="diagnosis.html#AEN3604"
+>25.3.10. <A
+HREF="diagnosis.html#AEN3659"
 >Test 10</A
 ></DT
 ><DT
->24.3.11. <A
-HREF="diagnosis.html#AEN3610"
+>25.3.11. <A
+HREF="diagnosis.html#AEN3665"
 >Test 11</A
 ></DT
 ></DL
 ></DD
 ><DT
->24.4. <A
-HREF="diagnosis.html#AEN3615"
+>25.4. <A
+HREF="diagnosis.html#AEN3670"
 >Still having troubles?</A
 ></DT
 ></DL
@@ -344,7 +420,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="groupprofiles.html"
+HREF="securing-samba.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -372,7 +448,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Creating Group Profiles</TD
+>Securing Samba</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

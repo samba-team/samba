@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "18 February 2003" "" ""
+.TH "SMB.CONF" "5" "18 March 2003" "" ""
 
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
@@ -739,6 +739,9 @@ each parameter for details.  Note that some are synonyms.
 \fImachine password timeout\fR
 .TP 0.2i
 \(bu
+\fImangle prefix\fR
+.TP 0.2i
+\(bu
 \fImangled stack\fR
 .TP 0.2i
 \(bu
@@ -874,9 +877,6 @@ each parameter for details.  Note that some are synonyms.
 \fIprintcap name\fR
 .TP 0.2i
 \(bu
-\fIprinter driver file\fR
-.TP 0.2i
-\(bu
 \fIprivate dir\fR
 .TP 0.2i
 \(bu
@@ -992,9 +992,6 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIuse mmap\fR
-.TP 0.2i
-\(bu
-\fIuse rhosts\fR
 .TP 0.2i
 \(bu
 \fIuse sendfile\fR
@@ -1298,9 +1295,6 @@ each parameter for details. Note that some are synonyms.
 \fIpostexec\fR
 .TP 0.2i
 \(bu
-\fIpostscript\fR
-.TP 0.2i
-\(bu
 \fIpreexec\fR
 .TP 0.2i
 \(bu
@@ -1323,12 +1317,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIprinter admin\fR
-.TP 0.2i
-\(bu
-\fIprinter driver\fR
-.TP 0.2i
-\(bu
-\fIprinter driver location\fR
 .TP 0.2i
 \(bu
 \fIprinter name\fR
@@ -1497,6 +1485,10 @@ Once the \fIaddprinter command\fR has
 been executed, \fBsmbd\fR will reparse the \fI  smb.conf\fR to determine if the share defined by the APW
 exists.  If the sharename is still invalid, then \fBsmbd
 \fR will return an ACCESS_DENIED error to the client.
+
+The "add printer command" program can output a single line of text,
+which Samba will set as the port the new printer is connected to. 
+If this line isn't output, Samba won't reload its printer shares.
 
 See also \fI  deleteprinter command\fR, \fIprinting\fR,
 \fIshow add
@@ -5264,17 +5256,6 @@ Default: \fBnone (no command executed)\fR
 Example: \fBpostexec = echo \\"%u disconnected from %S 
 from %m (%I)\\" >> /tmp/log\fR
 .TP
-\fB>postscript (S)\fR
-This parameter forces a printer to interpret 
-the print files as PostScript. This is done by adding a %!
-to the start of print output.
-
-This is most useful when you have lots of PCs that persist 
-in putting a control-D at the start of print jobs, which then 
-confuses your printer.
-
-Default: \fBpostscript = no\fR
-.TP
 \fB>preexec (S)\fR
 This option specifies a command to be run whenever 
 the service is connected to. It takes the usual substitutions.
@@ -5509,87 +5490,6 @@ has admin rights.
 Default: \fBprinter admin = <empty string>\fR
 
 Example: \fBprinter admin = admin, @staff\fR
-.TP
-\fB>printer driver (S)\fR
-\fBNote :\fRThis is a deprecated 
-parameter and will be removed in the next major release
-following version 2.2.  Please see the instructions in
-the Samba 2.2. Printing
-HOWTO for more information
-on the new method of loading printer drivers onto a Samba server.
-
-This option allows you to control the string 
-that clients receive when they ask the server for the printer driver 
-associated with a printer. If you are using Windows95 or Windows NT 
-then you can use this to automate the setup of printers on your 
-system.
-
-You need to set this parameter to the exact string (case 
-sensitive) that describes the appropriate printer driver for your 
-system. If you don't know the exact string to use then you should 
-first try with no \fI  printer driver\fR option set and the client will 
-give you a list of printer drivers. The appropriate strings are 
-shown in a scroll box after you have chosen the printer manufacturer.
-
-See also \fIprinter
-driver file\fR.
-
-Example: \fBprinter driver = HP LaserJet 4L\fR
-.TP
-\fB>printer driver file (G)\fR
-\fBNote :\fRThis is a deprecated 
-parameter and will be removed in the next major release
-following version 2.2.  Please see the instructions in
-the Samba 2.2. Printing
-HOWTO for more information
-on the new method of loading printer drivers onto a Samba server.
-
-This parameter tells Samba where the printer driver 
-definition file, used when serving drivers to Windows 95 clients, is 
-to be found. If this is not set, the default is :
-
-\fISAMBA_INSTALL_DIRECTORY
-/lib/printers.def\fR
-
-This file is created from Windows 95 \fImsprint.inf
-\fR files found on the Windows 95 client system. For more 
-details on setting up serving of printer drivers to Windows 95 
-clients, see the outdated documentation file in the \fIdocs/\fR 
-directory, \fIPRINTER_DRIVER.txt\fR.
-
-See also \fI  printer driver location\fR.
-
-Default: \fBNone (set in compile).\fR
-
-Example: \fBprinter driver file = 
-/usr/local/samba/printers/drivers.def\fR
-.TP
-\fB>printer driver location (S)\fR
-\fBNote :\fRThis is a deprecated 
-parameter and will be removed in the next major release
-following version 2.2.  Please see the instructions in
-the Samba 2.2. Printing
-HOWTO for more information
-on the new method of loading printer drivers onto a Samba server.
-
-This parameter tells clients of a particular printer 
-share where to find the printer driver files for the automatic 
-installation of drivers for Windows 95 machines. If Samba is set up 
-to serve printer drivers to Windows 95 machines, this should be set to
-
-\fB\\\\MACHINE\\PRINTER$\fR
-
-Where MACHINE is the NetBIOS name of your Samba server, 
-and PRINTER$ is a share you set up for serving printer driver 
-files. For more details on setting this up see the outdated documentation 
-file in the \fIdocs/\fR directory, \fI  PRINTER_DRIVER.txt\fR.
-
-See also \fI  printer driver file\fR.
-
-Default: \fBnone\fR
-
-Example: \fBprinter driver location = \\\\MACHINE\\PRINTER$
-\fR
 .TP
 \fB>printer name (S)\fR
 This parameter specifies the name of the printer 
@@ -6724,20 +6624,6 @@ parameter is provided to help the Samba developers track down problems with
 the tdb internal code.
 
 Default: \fBuse mmap = yes\fR
-.TP
-\fB>use rhosts (G)\fR
-If this global parameter is yes, it specifies 
-that the UNIX user's \fI.rhosts\fR file in their home directory 
-will be read to find the names of hosts and users who will be allowed 
-access without specifying a password.
-
-\fBNOTE:\fR The use of \fIuse rhosts
-\fR can be a major security hole. This is because you are 
-trusting the PC to supply the correct username. It is very easy to 
-get a PC to supply a false username. I recommend that the \fI  use rhosts\fR option be only used if you really know what 
-you are doing.
-
-Default: \fBuse rhosts = no\fR
 .TP
 \fB>user (S)\fR
 Synonym for \fI  username\fR.

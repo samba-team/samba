@@ -5,7 +5,7 @@
 >User information database</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -80,9 +80,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN324"
-></A
->3.1. Introduction</H1
+NAME="AEN227"
+>3.1. Introduction</A
+></H1
 ><P
 >Old windows clients send plain text passwords over the wire. 
 	Samba can check these passwords by crypting them and comparing them 
@@ -121,9 +121,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN331"
-></A
->3.2. Important Notes About Security</H1
+NAME="AEN234"
+>3.2. Important Notes About Security</A
+></H1
 ><P
 >The unix and SMB password encryption techniques seem similar 
 	on the surface. This similarity is, however, only skin deep. The unix 
@@ -229,9 +229,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN346"
-></A
->3.2.1. Advantages of SMB Encryption</H2
+NAME="AEN249"
+>3.2.1. Advantages of SMB Encryption</A
+></H2
 ><P
 ></P
 ><TABLE
@@ -263,9 +263,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN351"
-></A
->3.2.2. Advantages of non-encrypted passwords</H2
+NAME="AEN254"
+>3.2.2. Advantages of non-encrypted passwords</A
+></H2
 ><P
 ></P
 ><TABLE
@@ -299,9 +299,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN357"
-></A
->3.3. The smbpasswd Command</H1
+NAME="AEN260"
+>3.3. The smbpasswd Command</A
+></H1
 ><P
 >The smbpasswd utility is a utility similar to the 
 	<B
@@ -331,47 +331,39 @@ CLASS="COMMAND"
 ><P
 >To run smbpasswd as a normal user just type :</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->$ </TT
-><TT
+>$ </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->smbpasswd</B
-></TT
+>smbpasswd</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->Old SMB password: </TT
-><TT
+>Old SMB password: </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->&lt;type old value here - 
-	or hit return if there was no old password&gt;</B
-></TT
+>&#60;type old value here - 
+	or hit return if there was no old password&#62;</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->New SMB Password: </TT
-><TT
+>New SMB Password: </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->&lt;type new value&gt;
-	</B
-></TT
+>&#60;type new value&#62;
+	</KBD
 ></P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->Repeat New SMB Password: </TT
-><TT
+>Repeat New SMB Password: </SAMP
+><KBD
 CLASS="USERINPUT"
-><B
->&lt;re-type new value
-	</B
-></TT
+>&#60;re-type new value
+	</KBD
 ></P
 ><P
 >If the old value does not match the current value stored for 
@@ -411,9 +403,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN388"
-></A
->3.4. Plain text</H1
+NAME="AEN291"
+>3.4. Plain text</A
+></H1
 ><P
 >Older versions of samba retrieved user information from the unix user database 
 and eventually some other fields from the file <TT
@@ -431,9 +423,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN393"
-></A
->3.5. TDB</H1
+NAME="AEN296"
+>3.5. TDB</A
+></H1
 ><P
 >Samba can also store the user data in a "TDB" (Trivial Database). Using this backend 
 doesn't require any additional configuration. This backend is recommended for new installations who 
@@ -444,17 +436,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN396"
-></A
->3.6. LDAP</H1
+NAME="AEN299"
+>3.6. LDAP</A
+></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN398"
-></A
->3.6.1. Introduction</H2
+NAME="AEN301"
+>3.6.1. Introduction</A
+></H2
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
 account information traditionally stored in the smbpasswd(5) file.  It is
@@ -520,9 +512,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN418"
-></A
->3.6.2. Introduction</H2
+NAME="AEN321"
+>3.6.2. Introduction</A
+></H2
 ><P
 >Traditionally, when configuring <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
@@ -577,35 +569,27 @@ Identified (RID).</P
 used by smbd was developed.  The API which defines access to user accounts
 is commonly referred to as the samdb interface (previously this was called the passdb
 API, and is still so named in the CVS trees). In Samba 2.2.3, enabling support
-for a samdb backend (e.g. <TT
+for a samdb backend (e.g. <VAR
 CLASS="PARAMETER"
-><I
->--with-ldapsam</I
-></TT
+>--with-ldapsam</VAR
 > or
-<TT
+<VAR
 CLASS="PARAMETER"
-><I
->--with-tdbsam</I
-></TT
+>--with-tdbsam</VAR
 >) requires compile time support.</P
 ><P
->When compiling Samba to include the <TT
+>When compiling Samba to include the <VAR
 CLASS="PARAMETER"
-><I
->--with-ldapsam</I
-></TT
+>--with-ldapsam</VAR
 > autoconf
 option, smbd (and associated tools) will store and lookup user accounts in
 an LDAP directory.  In reality, this is very easy to understand.  If you are
 comfortable with using an smbpasswd file, simply replace "smbpasswd" with
 "LDAP directory" in all the documentation.</P
 ><P
->There are a few points to stress about what the <TT
+>There are a few points to stress about what the <VAR
 CLASS="PARAMETER"
-><I
->--with-ldapsam</I
-></TT
+>--with-ldapsam</VAR
 >
 does not provide.  The LDAP support referred to in the this documentation does not
 include:</P
@@ -637,9 +621,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN447"
-></A
->3.6.3. Supported LDAP Servers</H2
+NAME="AEN350"
+>3.6.3. Supported LDAP Servers</A
+></H2
 ><P
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
@@ -662,9 +646,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN452"
-></A
->3.6.4. Schema and Relationship to the RFC 2307 posixAccount</H2
+NAME="AEN355"
+>3.6.4. Schema and Relationship to the RFC 2307 posixAccount</A
+></H2
 ><P
 >Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
 <TT
@@ -698,9 +682,9 @@ CLASS="FILENAME"
 >/etc/passwd</TT
 > entry, so is the sambaAccount object
 meant to supplement the UNIX user account information.  A sambaAccount is a
-<TT
+<CODE
 CLASS="CONSTANT"
->STRUCTURAL</TT
+>STRUCTURAL</CODE
 > objectclass so it can be stored individually
 in the directory.  However, there are several fields (e.g. uid) which overlap
 with the posixAccount objectclass outlined in RFC2307.  This is by design.</P
@@ -719,24 +703,24 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN464"
-></A
->3.6.5. Configuring Samba with LDAP</H2
+NAME="AEN367"
+>3.6.5. Configuring Samba with LDAP</A
+></H2
 ><DIV
 CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN466"
-></A
->3.6.5.1. OpenLDAP configuration</H3
+NAME="AEN369"
+>3.6.5.1. OpenLDAP configuration</A
+></H3
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
 ><P
-><TT
+><SAMP
 CLASS="PROMPT"
->root# </TT
+>root# </SAMP
 ><B
 CLASS="COMMAND"
 >cp samba.schema /etc/openldap/schema/</B
@@ -809,15 +793,13 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN483"
-></A
->3.6.5.2. Configuring Samba</H3
+NAME="AEN386"
+>3.6.5.2. Configuring Samba</A
+></H3
 ><P
->The following parameters are available in smb.conf only with <TT
+>The following parameters are available in smb.conf only with <VAR
 CLASS="PARAMETER"
-><I
->--with-ldapsam</I
-></TT
+>--with-ldapsam</VAR
 >
 was included with compiling Samba.</P
 ><P
@@ -895,11 +877,9 @@ CLASS="PROGRAMLISTING"
 
      # define the DN to use when binding to the directory servers
      # The password for this DN is not stored in smb.conf.  Rather it
-     # must be set by using 'smbpasswd -w <TT
+     # must be set by using 'smbpasswd -w <VAR
 CLASS="REPLACEABLE"
-><I
->secretpw</I
-></TT
+>secretpw</VAR
 >' to store the
      # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
      # changes, this password will need to be reset.
@@ -920,7 +900,7 @@ CLASS="REPLACEABLE"
      ldap suffix = "ou=people,dc=samba,dc=org"
 
      # generally the default ldap search filter is ok
-     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"</PRE
+     # ldap filter = "(&#38;(uid=%u)(objectclass=sambaAccount))"</PRE
 ></P
 ></DIV
 ></DIV
@@ -929,9 +909,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN511"
-></A
->3.6.6. Accounts and Groups management</H2
+NAME="AEN414"
+>3.6.6. Accounts and Groups management</A
+></H2
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
 modify you existing administration tools to deal with sambaAccount attributes.</P
@@ -954,9 +934,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN516"
-></A
->3.6.7. Security and sambaAccount</H2
+NAME="AEN419"
+>3.6.7. Security and sambaAccount</A
+></H2
 ><P
 >There are two important points to remember when discussing the security
 of sambaAccount entries in the directory.</P
@@ -1033,9 +1013,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN536"
-></A
->3.6.8. LDAP specials attributes for sambaAccounts</H2
+NAME="AEN439"
+>3.6.8. LDAP specials attributes for sambaAccounts</A
+></H2
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
 ><P
@@ -1043,84 +1023,84 @@ NAME="AEN536"
 ><UL
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->lmPassword</TT
+>lmPassword</CODE
 >: the LANMAN password 16-byte hash stored as a character
 	representation of a hexidecimal string.</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->ntPassword</TT
+>ntPassword</CODE
 >: the NT password hash 16-byte stored as a character
 	representation of a hexidecimal string.</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->pwdLastSet</TT
+>pwdLastSet</CODE
 >: The integer time in seconds since 1970 when the
-	<TT
+	<CODE
 CLASS="CONSTANT"
->lmPassword</TT
-> and <TT
+>lmPassword</CODE
+> and <CODE
 CLASS="CONSTANT"
->ntPassword</TT
+>ntPassword</CODE
 > attributes were last set.
 	</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->acctFlags</TT
+>acctFlags</CODE
 >: string of 11 characters surrounded by square brackets []
 	representing account flags such as U (user), W(workstation), X(no password expiration), and
 	D(disabled).</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->logonTime</TT
+>logonTime</CODE
 >: Integer value currently unused</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->logoffTime</TT
+>logoffTime</CODE
 >: Integer value currently unused</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->kickoffTime</TT
+>kickoffTime</CODE
 >: Integer value currently unused</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->pwdCanChange</TT
+>pwdCanChange</CODE
 >: Integer value currently unused</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->pwdMustChange</TT
+>pwdMustChange</CODE
 >: Integer value currently unused</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->homeDrive</TT
+>homeDrive</CODE
 >: specifies the drive letter to which to map the
 	UNC path specified by homeDirectory. The drive letter must be specified in the form "X:"
 	where X is the letter of the drive to map. Refer to the "logon drive" parameter in the
@@ -1128,9 +1108,9 @@ CLASS="CONSTANT"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->scriptPath</TT
+>scriptPath</CODE
 >: The scriptPath property specifies the path of
 	the user's logon script, .CMD, .EXE, or .BAT file. The string can be null. The path
 	is relative to the netlogon share.  Refer to the "logon script" parameter in the
@@ -1138,18 +1118,18 @@ CLASS="CONSTANT"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->profilePath</TT
+>profilePath</CODE
 >: specifies a path to the user's profile.
 	This value can be a null string, a local absolute path, or a UNC path.  Refer to the
 	"logon path" parameter in the smb.conf(5) man page for more information.</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->smbHome</TT
+>smbHome</CODE
 >: The homeDirectory property specifies the path of
 	the home directory for the user. The string can be null. If homeDrive is set and specifies
 	a drive letter, homeDirectory should be a UNC path. The path must be a network
@@ -1159,25 +1139,25 @@ CLASS="CONSTANT"
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->userWorkstation</TT
+>userWorkstation</CODE
 >: character string value currently unused.
 	</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->rid</TT
+>rid</CODE
 >: the integer representation of the user's relative identifier
 	(RID).</P
 ></LI
 ><LI
 ><P
-><TT
+><CODE
 CLASS="CONSTANT"
->primaryGroupID</TT
+>primaryGroupID</CODE
 >: the relative identifier (RID) of the primary group
 	of the user.</P
 ></LI
@@ -1222,19 +1202,15 @@ its <TT
 CLASS="FILENAME"
 >smb.conf</TT
 > file. When a user named "becky" logons to the domain,
-the <TT
+the <VAR
 CLASS="PARAMETER"
-><I
->logon home</I
-></TT
+>logon home</VAR
 > string is expanded to \\TASHTEGO\becky.
 If the smbHome attribute exists in the entry "uid=becky,ou=people,dc=samba,dc=org",
 this value is used.  However, if this attribute does not exist, then the value
-of the <TT
+of the <VAR
 CLASS="PARAMETER"
-><I
->logon home</I
-></TT
+>logon home</VAR
 > parameter is used in its place.  Samba
 will only write the attribute value to the directory entry is the value is
 something other than the default (e.g. \\MOBY\becky).</P
@@ -1244,9 +1220,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN606"
-></A
->3.6.9. Example LDIF Entries for a sambaAccount</H2
+NAME="AEN509"
+>3.6.9. Example LDIF Entries for a sambaAccount</A
+></H2
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
 ><P
@@ -1303,17 +1279,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN614"
-></A
->3.7. MySQL</H1
+NAME="AEN517"
+>3.7. MySQL</A
+></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN616"
-></A
->3.7.1. Building</H2
+NAME="AEN519"
+>3.7.1. Building</A
+></H2
 ><P
 >To build the plugin, run <B
 CLASS="COMMAND"
@@ -1332,9 +1308,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN622"
-></A
->3.7.2. Creating the database</H2
+NAME="AEN525"
+>3.7.2. Creating the database</A
+></H2
 ><P
 >You either can set up your own table and specify the field names to pdb_mysql (see below
 for the column names) or use the default table. The file <TT
@@ -1345,26 +1321,18 @@ contains the correct queries to create the required tables. Use the command :
 
 <B
 CLASS="COMMAND"
->mysql -u<TT
+>mysql -u<VAR
 CLASS="REPLACEABLE"
-><I
->username</I
-></TT
-> -h<TT
+>username</VAR
+> -h<VAR
 CLASS="REPLACEABLE"
-><I
->hostname</I
-></TT
-> -p<TT
+>hostname</VAR
+> -p<VAR
 CLASS="REPLACEABLE"
-><I
->password</I
-></TT
-> <TT
+>password</VAR
+> <VAR
 CLASS="REPLACEABLE"
-><I
->databasename</I
-></TT
+>databasename</VAR
 > &#60; <TT
 CLASS="FILENAME"
 >/path/to/samba/examples/pdb/mysql/mysql.dump</TT
@@ -1376,9 +1344,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN632"
-></A
->3.7.3. Configuring</H2
+NAME="AEN535"
+>3.7.3. Configuring</A
+></H2
 ><P
 >This plugin lacks some good documentation, but here is some short info:</P
 ><P
@@ -1487,9 +1455,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN649"
-></A
->3.7.4. Using plaintext passwords or encrypted password</H2
+NAME="AEN552"
+>3.7.4. Using plaintext passwords or encrypted password</A
+></H2
 ><P
 >I strongly discourage the use of plaintext passwords, however, you can use them:</P
 ><P
@@ -1502,9 +1470,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN654"
-></A
->3.7.5. Getting non-column data from the table</H2
+NAME="AEN557"
+>3.7.5. Getting non-column data from the table</A
+></H2
 ><P
 >It is possible to have not all data in the database and making some 'constant'.</P
 ><P
@@ -1528,17 +1496,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN662"
-></A
->3.8. Passdb XML plugin</H1
+NAME="AEN565"
+>3.8. Passdb XML plugin</A
+></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN664"
-></A
->3.8.1. Building</H2
+NAME="AEN567"
+>3.8.1. Building</A
+></H2
 ><P
 >This module requires libxml2 to be installed.</P
 ><P
@@ -1556,9 +1524,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN670"
-></A
->3.8.2. Usage</H2
+NAME="AEN573"
+>3.8.2. Usage</A
+></H2
 ><P
 >The usage of pdb_xml is pretty straightforward. To export data, use:
 

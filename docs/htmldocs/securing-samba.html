@@ -1,0 +1,307 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Securing Samba</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="optional.html"><LINK
+REL="PREVIOUS"
+TITLE="Creating Group Prolicy Files"
+HREF="groupprofiles.html"><LINK
+REL="NEXT"
+TITLE="Appendixes"
+HREF="appendixes.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="groupprofiles.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SECURING-SAMBA"
+></A
+>Chapter 20. Securing Samba</H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3109"
+>20.1. Introduction</A
+></H1
+><P
+>This note was attached to the Samba 2.2.8 release notes as it contained an
+important security fix.  The information contained here applies to Samba
+installations in general.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3112"
+>20.2. Using host based protection</A
+></H1
+><P
+>In many installations of Samba the greatest threat comes for outside
+your immediate network. By default Samba will accept connections from
+any host, which means that if you run an insecure version of Samba on
+a host that is directly connected to the Internet you can be
+especially vulnerable.</P
+><P
+>One of the simplest fixes in this case is to use the 'hosts allow' and
+'hosts deny' options in the Samba smb.conf configuration file to only
+allow access to your server from a specific range of hosts. An example
+might be:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  hosts allow = 127.0.0.1 192.168.2.0/24 192.168.3.0/24
+  hosts deny = 0.0.0.0/0</PRE
+></P
+><P
+>The above will only allow SMB connections from 'localhost' (your own
+computer) and from the two private networks 192.168.2 and
+192.168.3. All other connections will be refused connections as soon
+as the client sends its first packet. The refusal will be marked as a
+'not listening on called name' error.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3119"
+>20.3. Using interface protection</A
+></H1
+><P
+>By default Samba will accept connections on any network interface that
+it finds on your system. That means if you have a ISDN line or a PPP
+connection to the Internet then Samba will accept connections on those
+links. This may not be what you want.</P
+><P
+>You can change this behaviour using options like the following:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  interfaces = eth* lo
+  bind interfaces only = yes</PRE
+></P
+><P
+></P
+><P
+>This tells Samba to only listen for connections on interfaces with a
+name starting with 'eth' such as eth0, eth1, plus on the loopback
+interface called 'lo'. The name you will need to use depends on what
+OS you are using, in the above I used the common name for Ethernet
+adapters on Linux.</P
+><P
+>If you use the above and someone tries to make a SMB connection to
+your host over a PPP interface called 'ppp0' then they will get a TCP
+connection refused reply. In that case no Samba code is run at all as
+the operating system has been told not to pass connections from that
+interface to any process.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3128"
+>20.4. Using a firewall</A
+></H1
+><P
+>Many people use a firewall to deny access to services that they don't
+want exposed outside their network. This can be a very good idea,
+although I would recommend using it in conjunction with the above
+methods so that you are protected even if your firewall is not active
+for some reason.</P
+><P
+>If you are setting up a firewall then you need to know what TCP and
+UDP ports to allow and block. Samba uses the following:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>UDP/137    - used by nmbd
+UDP/138    - used by nmbd
+TCP/139    - used by smbd
+TCP/445    - used by smbd</PRE
+></P
+><P
+>The last one is important as many older firewall setups may not be
+aware of it, given that this port was only added to the protocol in
+recent years. </P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3135"
+>20.5. Using a IPC$ share deny</A
+></H1
+><P
+>If the above methods are not suitable, then you could also place a
+more specific deny on the IPC$ share that is used in the recently
+discovered security hole. This allows you to offer access to other
+shares while denying access to IPC$ from potentially untrustworthy
+hosts.</P
+><P
+>To do that you could use:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  [ipc$]
+     hosts allow = 192.168.115.0/24 127.0.0.1
+     hosts deny = 0.0.0.0/0</PRE
+></P
+><P
+>this would tell Samba that IPC$ connections are not allowed from
+anywhere but the two listed places (localhost and a local
+subnet). Connections to other shares would still be allowed. As the
+IPC$ share is the only share that is always accessible anonymously
+this provides some level of protection against attackers that do not
+know a username/password for your host.</P
+><P
+>If you use this method then clients will be given a 'access denied'
+reply when they try to access the IPC$ share. That means that those
+clients will not be able to browse shares, and may also be unable to
+access some other resources. </P
+><P
+>This is not recommended unless you cannot use one of the other
+methods listed above for some reason.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3144"
+>20.6. Upgrading Samba</A
+></H1
+><P
+>Please check regularly on http://www.samba.org/ for updates and
+important announcements.  Occasionally security releases are made and 
+it is highly recommended to upgrade Samba when a security vulnerability
+is discovered.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="groupprofiles.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Creating Group Prolicy Files</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="optional.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Appendixes</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

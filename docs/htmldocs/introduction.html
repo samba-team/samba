@@ -5,7 +5,7 @@
 >General installation</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -104,104 +104,60 @@ HREF="install.html"
 ><DT
 >1.1. <A
 HREF="install.html#AEN26"
->Read the man pages</A
+>Obtaining and installing samba</A
 ></DT
 ><DT
 >1.2. <A
-HREF="install.html#AEN36"
->Building the Binaries</A
-></DT
-><DT
->1.3. <A
-HREF="install.html#AEN64"
->The all important step</A
-></DT
-><DT
->1.4. <A
-HREF="install.html#AEN68"
->Create the smb configuration file.</A
-></DT
-><DT
->1.5. <A
-HREF="install.html#AEN82"
->Test your config file with 
-	<B
-CLASS="COMMAND"
->testparm</B
-></A
-></DT
-><DT
->1.6. <A
-HREF="install.html#AEN90"
->Starting the smbd and nmbd</A
+HREF="install.html#AEN31"
+>Configuring samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->1.6.1. <A
-HREF="install.html#AEN100"
->Starting from inetd.conf</A
+>1.2.1. <A
+HREF="install.html#AEN36"
+>Editing the smb.conf file</A
 ></DT
 ><DT
->1.6.2. <A
-HREF="install.html#AEN129"
->Alternative: starting it as a daemon</A
+>1.2.2. <A
+HREF="install.html#AEN58"
+>SWAT</A
 ></DT
 ></DL
 ></DD
 ><DT
->1.7. <A
-HREF="install.html#AEN145"
+>1.3. <A
+HREF="install.html#AEN64"
 >Try listing the shares available on your 
 	server</A
 ></DT
 ><DT
->1.8. <A
-HREF="install.html#AEN154"
+>1.4. <A
+HREF="install.html#AEN73"
 >Try connecting with the unix client</A
 ></DT
 ><DT
->1.9. <A
-HREF="install.html#AEN170"
+>1.5. <A
+HREF="install.html#AEN89"
 >Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</A
 ></DT
 ><DT
->1.10. <A
-HREF="install.html#AEN184"
+>1.6. <A
+HREF="install.html#AEN103"
 >What If Things Don't Work?</A
 ></DT
 ><DD
 ><DL
 ><DT
->1.10.1. <A
-HREF="install.html#AEN189"
->Diagnosing Problems</A
-></DT
-><DT
->1.10.2. <A
-HREF="install.html#AEN193"
+>1.6.1. <A
+HREF="install.html#AEN108"
 >Scope IDs</A
 ></DT
 ><DT
->1.10.3. <A
-HREF="install.html#AEN196"
->Choosing the Protocol Level</A
-></DT
-><DT
->1.10.4. <A
-HREF="install.html#AEN205"
->Printing from UNIX to a Client PC</A
-></DT
-><DT
->1.10.5. <A
-HREF="install.html#AEN210"
+>1.6.2. <A
+HREF="install.html#AEN111"
 >Locking</A
-></DT
-><DT
->1.10.6. <A
-HREF="install.html#AEN219"
->Mapping Usernames</A
 ></DT
 ></DL
 ></DD
@@ -216,32 +172,32 @@ HREF="browsing-quick.html"
 ><DL
 ><DT
 >2.1. <A
-HREF="browsing-quick.html#AEN230"
+HREF="browsing-quick.html#AEN130"
 >Discussion</A
 ></DT
 ><DT
 >2.2. <A
-HREF="browsing-quick.html#AEN238"
+HREF="browsing-quick.html#AEN139"
 >Use of the "Remote Announce" parameter</A
 ></DT
 ><DT
 >2.3. <A
-HREF="browsing-quick.html#AEN252"
+HREF="browsing-quick.html#AEN153"
 >Use of the "Remote Browse Sync" parameter</A
 ></DT
 ><DT
 >2.4. <A
-HREF="browsing-quick.html#AEN257"
+HREF="browsing-quick.html#AEN158"
 >Use of WINS</A
 ></DT
 ><DT
 >2.5. <A
-HREF="browsing-quick.html#AEN268"
+HREF="browsing-quick.html#AEN169"
 >Do NOT use more than one (1) protocol on MS Windows machines</A
 ></DT
 ><DT
 >2.6. <A
-HREF="browsing-quick.html#AEN274"
+HREF="browsing-quick.html#AEN177"
 >Name Resolution Order</A
 ></DT
 ></DL
@@ -255,146 +211,146 @@ HREF="passdb.html"
 ><DL
 ><DT
 >3.1. <A
-HREF="passdb.html#AEN324"
+HREF="passdb.html#AEN227"
 >Introduction</A
 ></DT
 ><DT
 >3.2. <A
-HREF="passdb.html#AEN331"
+HREF="passdb.html#AEN234"
 >Important Notes About Security</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.2.1. <A
-HREF="passdb.html#AEN346"
+HREF="passdb.html#AEN249"
 >Advantages of SMB Encryption</A
 ></DT
 ><DT
 >3.2.2. <A
-HREF="passdb.html#AEN351"
+HREF="passdb.html#AEN254"
 >Advantages of non-encrypted passwords</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.3. <A
-HREF="passdb.html#AEN357"
+HREF="passdb.html#AEN260"
 >The smbpasswd Command</A
 ></DT
 ><DT
 >3.4. <A
-HREF="passdb.html#AEN388"
+HREF="passdb.html#AEN291"
 >Plain text</A
 ></DT
 ><DT
 >3.5. <A
-HREF="passdb.html#AEN393"
+HREF="passdb.html#AEN296"
 >TDB</A
 ></DT
 ><DT
 >3.6. <A
-HREF="passdb.html#AEN396"
+HREF="passdb.html#AEN299"
 >LDAP</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.6.1. <A
-HREF="passdb.html#AEN398"
+HREF="passdb.html#AEN301"
 >Introduction</A
 ></DT
 ><DT
 >3.6.2. <A
-HREF="passdb.html#AEN418"
+HREF="passdb.html#AEN321"
 >Introduction</A
 ></DT
 ><DT
 >3.6.3. <A
-HREF="passdb.html#AEN447"
+HREF="passdb.html#AEN350"
 >Supported LDAP Servers</A
 ></DT
 ><DT
 >3.6.4. <A
-HREF="passdb.html#AEN452"
+HREF="passdb.html#AEN355"
 >Schema and Relationship to the RFC 2307 posixAccount</A
 ></DT
 ><DT
 >3.6.5. <A
-HREF="passdb.html#AEN464"
+HREF="passdb.html#AEN367"
 >Configuring Samba with LDAP</A
 ></DT
 ><DT
 >3.6.6. <A
-HREF="passdb.html#AEN511"
+HREF="passdb.html#AEN414"
 >Accounts and Groups management</A
 ></DT
 ><DT
 >3.6.7. <A
-HREF="passdb.html#AEN516"
+HREF="passdb.html#AEN419"
 >Security and sambaAccount</A
 ></DT
 ><DT
 >3.6.8. <A
-HREF="passdb.html#AEN536"
+HREF="passdb.html#AEN439"
 >LDAP specials attributes for sambaAccounts</A
 ></DT
 ><DT
 >3.6.9. <A
-HREF="passdb.html#AEN606"
+HREF="passdb.html#AEN509"
 >Example LDIF Entries for a sambaAccount</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.7. <A
-HREF="passdb.html#AEN614"
+HREF="passdb.html#AEN517"
 >MySQL</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.7.1. <A
-HREF="passdb.html#AEN616"
+HREF="passdb.html#AEN519"
 >Building</A
 ></DT
 ><DT
 >3.7.2. <A
-HREF="passdb.html#AEN622"
+HREF="passdb.html#AEN525"
 >Creating the database</A
 ></DT
 ><DT
 >3.7.3. <A
-HREF="passdb.html#AEN632"
+HREF="passdb.html#AEN535"
 >Configuring</A
 ></DT
 ><DT
 >3.7.4. <A
-HREF="passdb.html#AEN649"
+HREF="passdb.html#AEN552"
 >Using plaintext passwords or encrypted password</A
 ></DT
 ><DT
 >3.7.5. <A
-HREF="passdb.html#AEN654"
+HREF="passdb.html#AEN557"
 >Getting non-column data from the table</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.8. <A
-HREF="passdb.html#AEN662"
+HREF="passdb.html#AEN565"
 >Passdb XML plugin</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.8.1. <A
-HREF="passdb.html#AEN664"
+HREF="passdb.html#AEN567"
 >Building</A
 ></DT
 ><DT
 >3.8.2. <A
-HREF="passdb.html#AEN670"
+HREF="passdb.html#AEN573"
 >Usage</A
 ></DT
 ></DL

@@ -5,7 +5,7 @@
 >Printing Support</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -80,9 +80,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2054"
-></A
->13.1. Introduction</H1
+NAME="AEN1957"
+>13.1. Introduction</A
+></H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
 the native Windows NT printing mechanisms implemented via 
@@ -163,9 +163,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2076"
-></A
->13.2. Configuration</H1
+NAME="AEN1979"
+>13.2. Configuration</A
+></H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -204,19 +204,15 @@ a printer$ service which provides read-only access via no
 password in order to support printer driver downloads.</P
 ><P
 >However, the initial implementation allowed for a 
-parameter named <TT
+parameter named <VAR
 CLASS="PARAMETER"
-><I
->printer driver location</I
-></TT
+>printer driver location</VAR
 > 
 to be used on a per share basis to specify the location of 
 the driver files associated with that printer.  Another 
-parameter named <TT
+parameter named <VAR
 CLASS="PARAMETER"
-><I
->printer driver</I
-></TT
+>printer driver</VAR
 > provided 
 a means of defining the printer driver name to be sent to 
 the client.</P
@@ -229,9 +225,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2084"
-></A
->13.2.1. Creating [print$]</H2
+NAME="AEN1987"
+>13.2.1. Creating [print$]</A
+></H2
 ><P
 >In order to support the uploading of printer driver 
 files, you must first configure a file share named [print$].  
@@ -270,11 +266,9 @@ CLASS="PROGRAMLISTING"
 >The <A
 HREF="smb.conf.5.html#WRITELIST"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->write list</I
-></TT
+>write list</VAR
 ></A
 > is used to allow administrative 
 level user accounts to have write access in order to update files 
@@ -414,12 +408,10 @@ one of two conditions must hold true:</P
 	must be a member of the <A
 HREF="smb.conf.5.html#PRINTERADMIN"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >printer 
-	admin</I
-></TT
+	admin</VAR
 ></A
 > list.</P
 ></LI
@@ -435,11 +427,9 @@ that all file shares are set to 'read only' by default.</P
 ><P
 >Once you have created the required [print$] service and 
 associated subdirectories, simply log onto the Samba server using 
-a root (or <TT
+a root (or <VAR
 CLASS="PARAMETER"
-><I
->printer admin</I
-></TT
+>printer admin</VAR
 >) account
 from a Windows NT 4.0/2k client.  Open "Network Neighbourhood" or
 "My Network Places" and browse for the Samba host.  Once you have located
@@ -452,9 +442,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2119"
-></A
->13.2.2. Setting Drivers for Existing Printers</H2
+NAME="AEN2022"
+>13.2.2. Setting Drivers for Existing Printers</A
+></H2
 ><P
 >The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
@@ -524,9 +514,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2135"
-></A
->13.2.3. Support a large number of printers</H2
+NAME="AEN2038"
+>13.2.3. Support a large number of printers</A
+></H2
 ><P
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
@@ -547,9 +537,9 @@ of how this could be accomplished:</P
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
-<TT
+<SAMP
 CLASS="PROMPT"
->$ </TT
+>$ </SAMP
 >rpcclient pogo -U root%secret -c "enumdrivers"
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
  
@@ -563,9 +553,9 @@ Printer Driver Info 1:
 Printer Driver Info 1:
      Driver Name: [HP LaserJet 4Si/4SiMX PS]
 				  
-<TT
+<SAMP
 CLASS="PROMPT"
->$ </TT
+>$ </SAMP
 >rpcclient pogo -U root%secret -c "enumprinters"
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
      flags:[0x800000]
@@ -573,13 +563,13 @@ Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
      description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
      comment:[]
 				  
-<TT
+<SAMP
 CLASS="PROMPT"
->$ </TT
+>$ </SAMP
 >rpcclient pogo -U root%secret \
-<TT
+<SAMP
 CLASS="PROMPT"
->&gt; </TT
+>&#62; </SAMP
 > -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
 Successfully set hp-print to driver HP LaserJet 4000 Series PS.</PRE
@@ -590,9 +580,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2146"
-></A
->13.2.4. Adding New Printers via the Windows NT APW</H2
+NAME="AEN2049"
+>13.2.4. Adding New Printers via the Windows NT APW</A
+></H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
 CLASS="FILENAME"
@@ -607,11 +597,9 @@ Add Printer Wizard icon.  The APW will be show only if</P
 ><P
 >The connected user is able to successfully
 	execute an OpenPrinterEx(\\server) with administrative
-	privileges (i.e. root or <TT
+	privileges (i.e. root or <VAR
 CLASS="PARAMETER"
-><I
->printer admin</I
-></TT
+>printer admin</VAR
 >).
 	</P
 ></LI
@@ -620,12 +608,10 @@ CLASS="PARAMETER"
 ><A
 HREF="smb.conf.5.html#SHOWADDPRINTERWIZARD"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >show 
-	add printer wizard = yes</I
-></TT
+	add printer wizard = yes</VAR
 ></A
 > (the default).
 	</P
@@ -636,12 +622,10 @@ CLASS="PARAMETER"
 server, the <A
 HREF="smb.conf.5.html#ADDPRINTERCOMMAND"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >add 
-printer command</I
-></TT
+printer command</VAR
 ></A
 > must have a defined value.  The program
 hook must successfully add the printer to the system (i.e. 
@@ -658,35 +642,29 @@ CLASS="FILENAME"
 not exist, <B
 CLASS="COMMAND"
 >smbd</B
-> will execute the <TT
+> will execute the <VAR
 CLASS="PARAMETER"
-><I
 >add printer 
-command</I
-></TT
+command</VAR
 > and reparse to the <TT
 CLASS="FILENAME"
 >smb.conf</TT
 >
 to attempt to locate the new printer share.  If the share is still not defined,
 an error of "Access Denied" is returned to the client.  Note that the 
-<TT
+<VAR
 CLASS="PARAMETER"
-><I
->add printer program</I
-></TT
+>add printer program</VAR
 > is executed under the context
 of the connected user, not necessarily a root account.</P
 ><P
 >There is a complementary <A
 HREF="smb.conf.5.html#DELETEPRINTERCOMMAND"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >delete
-printer command</I
-></TT
+printer command</VAR
 ></A
 > for removing entries from the "Printers..."
 folder.</P
@@ -694,11 +672,9 @@ folder.</P
 >The following is an example <A
 HREF="smb.conf.5.html#ADDPRINTERCOMMAN"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->add printer command</I
-></TT
+>add printer command</VAR
 ></A
 > script. It adds the appropriate entries to <TT
 CLASS="FILENAME"
@@ -733,8 +709,8 @@ echo "  :sd=/var/spool/lpd/$2:\\" 			&#62;&#62; $PRINTCAP
 echo "  :mx=0:ml=0:sh:\\" 				&#62;&#62; $PRINTCAP
 echo "  :lp=/usr/local/samba/var/print/$5.prn:" 	&#62;&#62; $PRINTCAP
 
-touch "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&amp;1
-chown $LP "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&amp;1
+touch "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
+chown $LP "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
 
 mkdir /var/spool/lpd/$2
 chmod 700 /var/spool/lpd/$2
@@ -759,9 +735,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2176"
-></A
->13.2.5. Samba and Printer Ports</H2
+NAME="AEN2079"
+>13.2.5. Samba and Printer Ports</A
+></H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
@@ -780,12 +756,10 @@ CLASS="FILENAME"
 > possesses a <A
 HREF="smb.conf.5.html#ENUMPORTSCOMMAND"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
 >enumports 
-command</I
-></TT
+command</VAR
 ></A
 > which can be used to define an external program 
 that generates a listing of ports on a system.</P
@@ -796,9 +770,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2184"
-></A
->13.3. The Imprints Toolset</H1
+NAME="AEN2087"
+>13.3. The Imprints Toolset</A
+></H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
 	Windows NT Add Printer Wizard.  For complete information, please 
@@ -814,9 +788,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2188"
-></A
->13.3.1. What is Imprints?</H2
+NAME="AEN2091"
+>13.3.1. What is Imprints?</A
+></H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
 		of</P
@@ -846,9 +820,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2198"
-></A
->13.3.2. Creating Printer Driver Packages</H2
+NAME="AEN2101"
+>13.3.2. Creating Printer Driver Packages</A
+></H2
 ><P
 >The process of creating printer driver packages is beyond
 		the scope of this document (refer to Imprints.txt also included
@@ -862,9 +836,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2201"
-></A
->13.3.3. The Imprints server</H2
+NAME="AEN2104"
+>13.3.3. The Imprints server</A
+></H2
 ><P
 >The Imprints server is really a database server that 
 		may be queried via standard HTTP mechanisms.  Each printer 
@@ -886,9 +860,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2205"
-></A
->13.3.4. The Installation Client</H2
+NAME="AEN2108"
+>13.3.4. The Installation Client</A
+></H2
 ><P
 >More information regarding the Imprints installation client 
 		is available in the <TT
@@ -980,17 +954,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2227"
-></A
->13.4. Diagnosis</H1
+NAME="AEN2130"
+>13.4. Diagnosis</A
+></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2229"
-></A
->13.4.1. Introduction</H2
+NAME="AEN2132"
+>13.4.1. Introduction</A
+></H2
 ><P
 >This is a short description of how to debug printing problems with
 Samba. This describes how to debug problems with printing from a SMB
@@ -1052,7 +1026,7 @@ and it should be periodically cleaned out.  Samba used the lpq
 command to determine the "job number" assigned to your print job
 by the spooler.</P
 ><P
->The %&gt;letter&lt; are "macros" that get dynamically replaced with appropriate
+>The %&#62;letter&#60; are "macros" that get dynamically replaced with appropriate
 values when they are used. The %s gets replaced with the name of the spool
 file that Samba creates and the %p gets replaced with the name of the
 printer. The %j gets replaced with the "job number" which comes from
@@ -1063,9 +1037,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2245"
-></A
->13.4.2. Debugging printer problems</H2
+NAME="AEN2148"
+>13.4.2. Debugging printer problems</A
+></H2
 ><P
 >One way to debug printing problems is to start by replacing these
 command with shell scripts that record the arguments and the contents
@@ -1081,7 +1055,7 @@ CLASS="PROGRAMLISTING"
     /usr/bin/id -p &#62;/tmp/tmp.print
     # we run the command and save the error messages
     # replace the command with the one appropriate for your system
-    /usr/bin/lpr -r -P$1 $2 2&#62;&#62;&amp;/tmp/tmp.print</PRE
+    /usr/bin/lpr -r -P$1 $2 2&#62;&#62;&#38;/tmp/tmp.print</PRE
 ></P
 ><P
 >Then you print a file and try removing it.  You may find that the
@@ -1120,9 +1094,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2254"
-></A
->13.4.3. What printers do I have?</H2
+NAME="AEN2157"
+>13.4.3. What printers do I have?</A
+></H2
 ><P
 >You can use the 'testprns' program to check to see if the printer
 name you are using is recognized by Samba.  For example,  you can
@@ -1149,9 +1123,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2262"
-></A
->13.4.4. Setting up printcap and print servers</H2
+NAME="AEN2165"
+>13.4.4. Setting up printcap and print servers</A
+></H2
 ><P
 >You may need to set up some printcaps for your Samba system to use.
 It is strongly recommended that you use the facilities provided by
@@ -1233,9 +1207,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2290"
-></A
->13.4.5. Job sent, no output</H2
+NAME="AEN2193"
+>13.4.5. Job sent, no output</A
+></H2
 ><P
 >This is the most frustrating part of printing.  You may have sent the
 job,  verified that the job was forwarded,  set up a wrapper around
@@ -1278,9 +1252,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2301"
-></A
->13.4.6. Job sent, strange output</H2
+NAME="AEN2204"
+>13.4.6. Job sent, strange output</A
+></H2
 ><P
 >Once you have the job printing, you can then start worrying about
 making it print nicely.</P
@@ -1324,9 +1298,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2313"
-></A
->13.4.7. Raw PostScript printed</H2
+NAME="AEN2216"
+>13.4.7. Raw PostScript printed</A
+></H2
 ><P
 >This is a problem that is usually caused by either the print spooling
 system putting information at the start of the print job that makes
@@ -1339,9 +1313,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2316"
-></A
->13.4.8. Advanced Printing</H2
+NAME="AEN2219"
+>13.4.8. Advanced Printing</A
+></H2
 ><P
 >Note that you can do some pretty magic things by using your
 imagination with the "print command" option and some shell scripts.
@@ -1355,9 +1329,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2319"
-></A
->13.4.9. Real debugging</H2
+NAME="AEN2222"
+>13.4.9. Real debugging</A
+></H2
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
 the bug guns, system tracing. See Tracing.txt in this directory.</P

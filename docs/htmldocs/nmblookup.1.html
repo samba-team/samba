@@ -5,7 +5,7 @@
 >nmblookup</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -38,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmblookup</B
->  [-M] [-R] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] [-f] {name}</P
+>  [-M] [-R] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] [-f] {name}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -82,24 +82,20 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >Searches for a master browser by looking 
-		up the  NetBIOS name <TT
+		up the  NetBIOS name <VAR
 CLASS="REPLACEABLE"
-><I
->name</I
-></TT
+>name</VAR
 > with a 
-		type of <TT
+		type of <CODE
 CLASS="CONSTANT"
->0x1d</TT
->. If <TT
+>0x1d</CODE
+>. If <VAR
 CLASS="REPLACEABLE"
-><I
->		name</I
-></TT
+>		name</VAR
 > is "-" then it does a lookup on the special name 
-		<TT
+		<CODE
 CLASS="CONSTANT"
->__MSBROWSE__</TT
+>__MSBROWSE__</CODE
 >.</P
 ></DD
 ><DT
@@ -145,11 +141,9 @@ CLASS="REFENTRYTITLE"
 >-A</DT
 ><DD
 ><P
->Interpret <TT
+>Interpret <VAR
 CLASS="REPLACEABLE"
-><I
->name</I
-></TT
+>name</VAR
 > as 
 		an IP Address and do a node status query on this address.</P
 ></DD
@@ -160,7 +154,7 @@ CLASS="REPLACEABLE"
 >Print a help (usage) message.</P
 ></DD
 ><DT
->-B &lt;broadcast address&gt;</DT
+>-B &#60;broadcast address&#62;</DT
 ><DD
 ><P
 >Send the query to the given broadcast address. Without 
@@ -169,11 +163,9 @@ CLASS="REPLACEABLE"
 		either auto-detected or defined in the <A
 HREF="smb.conf.5.html#INTERFACES"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->interfaces</I
-></TT
+>interfaces</VAR
 >
 		</A
 > parameter of the <SPAN
@@ -186,26 +178,22 @@ CLASS="REFENTRYTITLE"
 		</P
 ></DD
 ><DT
->-U &lt;unicast address&gt;</DT
+>-U &#60;unicast address&#62;</DT
 ><DD
 ><P
 >Do a unicast query to the specified address or 
-		host <TT
+		host <VAR
 CLASS="REPLACEABLE"
-><I
->unicast address</I
-></TT
+>unicast address</VAR
 >. This option 
-		(along with the <TT
+		(along with the <VAR
 CLASS="PARAMETER"
-><I
->-R</I
-></TT
+>-R</VAR
 > option) is needed to 
 		query a WINS server.</P
 ></DD
 ><DT
->-d &lt;debuglevel&gt;</DT
+>-d &#60;debuglevel&#62;</DT
 ><DD
 ><P
 >debuglevel is an integer from 0 to 10.</P
@@ -229,11 +217,9 @@ CLASS="COMMAND"
 		the <A
 HREF="smb.conf.5.html#LOGLEVEL"
 TARGET="_top"
-><TT
+><VAR
 CLASS="PARAMETER"
-><I
->		log level</I
-></TT
+>		log level</VAR
 ></A
 > parameter in the <TT
 CLASS="FILENAME"
@@ -241,7 +227,7 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-s &lt;smb.conf&gt;</DT
+>-s &#60;smb.conf&#62;</DT
 ><DD
 ><P
 >This parameter specifies the pathname to 
@@ -253,7 +239,7 @@ TARGET="_top"
 		the Samba setup on the machine.</P
 ></DD
 ><DT
->-i &lt;scope&gt;</DT
+>-i &#60;scope&#62;</DT
 ><DD
 ><P
 >This specifies a NetBIOS scope that
@@ -307,7 +293,7 @@ CLASS="EMPHASIS"
 >This is the NetBIOS name being queried. Depending 
 		upon the previous options this may be a NetBIOS name or IP address. 
 		If a NetBIOS name then the different name types may be specified 
-		by appending '#&lt;type&gt;' to the name. This name may also be
+		by appending '#&#60;type&#62;' to the name. This name may also be
 		'*', which will return all registered names within a broadcast 
 		area.</P
 ></DD
