@@ -25,13 +25,6 @@ for f in $SRCDIR../swat/images/*.gif; do
       chmod 0644 $FNAME
 done
 
-for f in $SRCDIR../swat/images/*.jpg; do
-      FNAME=$SWATDIR/images/`basename $f`
-      echo $FNAME
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      chmod 0644 $FNAME
-done
-
 for f in $SRCDIR../swat/help/*.html; do
       FNAME=$SWATDIR/help/`basename $f`
       echo $FNAME
