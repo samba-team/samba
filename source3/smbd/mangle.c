@@ -515,7 +515,7 @@ char *dos_unmangle(const char *dos_mangled)
 		return NULL;
 	}
 
-	out = mangle(in);
+	out = unmangle(in);
 	if (!out)
 	{
 		SAFE_FREE(in);
