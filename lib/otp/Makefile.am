@@ -14,7 +14,7 @@ otptest_LDADD = libotp.la \
 include_HEADERS = otp.h
 
 lib_LTLIBRARIES = libotp.la
-libotp_la_LDFLAGS = -version-info 1:1:1
+libotp_la_LDFLAGS = -version-info 1:2:1
 
 libotp_la_SOURCES = \
 	otp.c \
