@@ -154,7 +154,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 
 	    k_get_int (cred->addresses.val[j].address.data,
 		       &foo, 4);
-	    a.s_addr = foo;
+	    a.s_addr = htonl(foo);
 	    
 	    printf("IPv4: %s", inet_ntoa(a));
 	    break;
