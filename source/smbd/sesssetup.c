@@ -272,7 +272,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 			set_message(outbuf,4,0,True);
 			SSVAL(outbuf, smb_vwv3, 0);
 			
-			if ((*auth_ntlmssp_state)->server_info->guest) {
+			if ((*auth_ntlmssp_state)->server_info && (*auth_ntlmssp_state)->server_info->guest) {
 				SSVAL(outbuf,smb_vwv2,1);
 			}
 			
