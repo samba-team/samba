@@ -114,6 +114,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       char *q = buf + 2;
       char *machine = q;
 
+      if (!lp_domain_master())
+      {  
+         /* We're not Primary Domain Controller -- ignore this */
+         goto done;
+      }
+
       getdc = skip_string(machine,1);
       q = skip_string(getdc,1);
       q = ALIGN2(q, buf);
