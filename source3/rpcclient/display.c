@@ -1156,31 +1156,31 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 			unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp));
 			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_full_name, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp));
 			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_home_dir, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp));
 			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_dir_drive, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp));
 			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_profile_path, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp));
 			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_logon_script, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp));
 			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_acct_desc, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp));
 			fprintf(out_hnd, "\t\tDescription :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_workstations, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp));
 			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_unknown_str, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp));
 			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", temp);
 
-			unistr2_to_ascii(temp, &user->uni_munged_dial, sizeof(temp));
+			unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp));
 			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", temp);
 
 			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
