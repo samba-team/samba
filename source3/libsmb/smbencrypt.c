@@ -400,3 +400,32 @@ BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16])
 
 	return True;
 }
+
+/*******************************************************************
+ creates a DCE/RPC bind authentication response
+
+ - initialises the parse structure.
+ - dynamically allocates the header data structure
+ - caller is expected to free the header data structure once used.
+
+ ********************************************************************/
+void create_ntlmssp_resp(struct pwd_info *pwd,
+				char *domain, char *user_name, char *my_name,
+				uint32 ntlmssp_cli_flgs,
+                                prs_struct *auth_resp)
+{
+	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
+	unsigned char lm_owf[24];
+	unsigned char nt_owf[128];
+	size_t nt_owf_len;
+
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
+			
+	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
+			         lm_owf, nt_owf, nt_owf_len,
+			         domain, user_name, my_name,
+			         ntlmssp_cli_flgs);
+
+	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
+	mem_realloc_data(auth_resp->data, auth_resp->offset);
+}
