@@ -134,7 +134,7 @@ createuser (char *cell)
 }
 #endif
 
-void
+static void
 usage(int ecode)
 {
     arg_printusage(args, num_args, "[cell]... [path]...");
@@ -172,14 +172,15 @@ afslog_file(krb5_context context, krb5_ccache id,
     return afslog_cell(context, id, cell, 0);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     int optind = 0;
     krb5_context context;
     krb5_ccache id;
-    char cellbuf[64];
     int i;
     int num;
+    int ret = 0;
     
     set_progname(argv[0]);
 
@@ -217,6 +218,9 @@ int main(int argc, char **argv)
 	else
 	    afslog_cell(context, id, argv[i], 1);
     }    
-    if(num == 0)
+    if(num == 0) {
 	krb5_afslog(context, id, NULL, NULL);
+    }
+
+    return ret;
 }
