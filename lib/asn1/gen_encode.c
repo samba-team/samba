@@ -91,9 +91,9 @@ encode_type (char *name, Type *t)
       break;
 
     for (m = t->members->prev; m && tag != m->val; m = m->prev) {
-      char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+      char *s;
 
-      sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
+      asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
       if (m->optional)
 	fprintf (codefile,
 		 "if(%s)\n",
@@ -124,7 +124,7 @@ encode_type (char *name, Type *t)
     break;
   }
   case TSequenceOf: {
-    char *n = malloc(strlen(name) + 12);
+    char *n;
 
     fprintf (codefile,
 	     "for(i = (%s)->len - 1; i >= 0; --i) {\n"
@@ -135,7 +135,7 @@ encode_type (char *name, Type *t)
 	     ,
 #endif
 	     name);
-    sprintf (n, "&(%s)->val[i]", name);
+    asprintf (&n, "&(%s)->val[i]", name);
     encode_type (n, t->subtype);
     fprintf (codefile,
 #if 1

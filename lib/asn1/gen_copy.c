@@ -36,11 +36,13 @@ copy_type (char *from, char *to, Type *t)
 	  break;
       
       for (m = t->members; m && tag != m->val; m = m->next) {
-	  char *f = malloc(2 + strlen(from) + 1 + strlen(m->gen_name) + 3);
-	  char *t = malloc(2 + strlen(to) + 1 + strlen(m->gen_name) + 3);
+	  char *f;
+	  char *t;
 
-	  sprintf (f, "%s(%s)->%s", m->optional ? "" : "&", from, m->gen_name);
-	  sprintf (t, "%s(%s)->%s", m->optional ? "" : "&", to, m->gen_name);
+	  asprintf (&f, "%s(%s)->%s",
+		    m->optional ? "" : "&", from, m->gen_name);
+	  asprintf (&t, "%s(%s)->%s",
+		    m->optional ? "" : "&", to, m->gen_name);
 	  if(m->optional){
 	      fprintf(codefile, "if(%s) {\n", f);
 	      fprintf(codefile, "%s = malloc(sizeof(*%s));\n", t, t);
@@ -58,15 +60,17 @@ copy_type (char *from, char *to, Type *t)
       break;
   }
   case TSequenceOf: {
-      char *f = malloc(strlen(from) + strlen(to) + 17);
-      char *T = malloc(strlen(to) + strlen(to) + 17);
+      char *f;
+      char *T;
 
       fprintf (codefile, "(%s)->val = "
 	       "malloc((%s)->len * sizeof(*(%s)->val));\n", 
 	       to, from, to);
-      fprintf(codefile, "for((%s)->len = 0; (%s)->len < (%s)->len; (%s)->len++){\n", to, to, from, to);
-      sprintf(f, "&(%s)->val[(%s)->len]", from, to);
-      sprintf(T, "&(%s)->val[(%s)->len]", to, to);
+      fprintf(codefile,
+	      "for((%s)->len = 0; (%s)->len < (%s)->len; (%s)->len++){\n",
+	      to, to, from, to);
+      asprintf(&f, "&(%s)->val[(%s)->len]", from, to);
+      asprintf(&T, "&(%s)->val[(%s)->len]", to, to);
       copy_type(f, T, t->subtype);
       fprintf(codefile, "}\n");
       free(f);

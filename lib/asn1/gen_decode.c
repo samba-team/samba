@@ -80,9 +80,9 @@ decode_type (char *name, Type *t)
 	     "return ASN1_BAD_FORMAT;\n");
 
     for (m = t->members; m && tag != m->val; m = m->next) {
-      char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+      char *s;
 
-      sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
+      asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
       if (0 && m->type->type == TType){
 	  if(m->optional)
 	      fprintf (codefile,
@@ -105,49 +105,49 @@ decode_type (char *name, Type *t)
 	  fprintf (codefile, "FORW;\n");
 	  
       }else{
-      fprintf (codefile, "{\n"
-	       "size_t newlen, oldlen;\n\n"
-	       "e = der_match_tag (p, len, CONTEXT, CONS, %d, &l);\n",
-	       m->val);
-      fprintf (codefile,
-	       "if (e)\n");
-      if(m->optional)
-	  /* XXX should look at e */
+	  fprintf (codefile, "{\n"
+		   "size_t newlen, oldlen;\n\n"
+		   "e = der_match_tag (p, len, CONTEXT, CONS, %d, &l);\n",
+		   m->val);
 	  fprintf (codefile,
-		   "%s = NULL;\n", s);
-      else
+		   "if (e)\n");
+	  if(m->optional)
+	      /* XXX should look at e */
+	      fprintf (codefile,
+		       "%s = NULL;\n", s);
+	  else
+	      fprintf (codefile,
+		       "return e;\n");
+	  fprintf (codefile, 
+		   "else {\n");
 	  fprintf (codefile,
-		   "return e;\n");
-      fprintf (codefile, 
-	       "else {\n");
-      fprintf (codefile,
-	       "p += l;\n"
-	       "len -= l;\n"
-	       "ret += l;\n"
-	       "e = der_get_length (p, len, &newlen, &l);\n"
-	       "FORW;\n"
-	       "{\n"
+		   "p += l;\n"
+		   "len -= l;\n"
+		   "ret += l;\n"
+		   "e = der_get_length (p, len, &newlen, &l);\n"
+		   "FORW;\n"
+		   "{\n"
 	       
-	       "int dce_fix;\n"
-	       "oldlen = len;\n"
-	       "if((dce_fix = fix_dce(newlen, &len)) < 0)"
-	       "return ASN1_BAD_FORMAT;\n");
-      if (m->optional)
-	fprintf (codefile,
-		 "%s = malloc(sizeof(*%s));\n",
-		 s, s);
-      decode_type (s, m->type);
-      fprintf (codefile,
-	       "if(dce_fix){\n"
-	       "e = der_match_tag_and_length (p, len, 0, 0, 0, "
-	       "&reallen, &l);\n"
-	       "FORW;\n"
-	       "}else \n"
-	       "len = oldlen - newlen;\n"
-	       "}\n"
-	       "}\n");
-      fprintf (codefile,
-		 "}\n");
+		   "int dce_fix;\n"
+		   "oldlen = len;\n"
+		   "if((dce_fix = fix_dce(newlen, &len)) < 0)"
+		   "return ASN1_BAD_FORMAT;\n");
+	  if (m->optional)
+	      fprintf (codefile,
+		       "%s = malloc(sizeof(*%s));\n",
+		       s, s);
+	  decode_type (s, m->type);
+	  fprintf (codefile,
+		   "if(dce_fix){\n"
+		   "e = der_match_tag_and_length (p, len, 0, 0, 0, "
+		   "&reallen, &l);\n"
+		   "FORW;\n"
+		   "}else \n"
+		   "len = oldlen - newlen;\n"
+		   "}\n"
+		   "}\n");
+	  fprintf (codefile,
+		   "}\n");
       }
       if (tag == -1)
 	tag = m->val;
@@ -163,7 +163,7 @@ decode_type (char *name, Type *t)
     break;
   }
   case TSequenceOf: {
-    char *n = malloc(2*strlen(name) + 20);
+    char *n;
 
     fprintf (codefile,
 	     "e = der_match_tag_and_length (p, len, UNIV, CONS, UT_Sequence,"
@@ -180,7 +180,7 @@ decode_type (char *name, Type *t)
 	     "(%s)->len++;\n"
 	     "(%s)->val = realloc((%s)->val, sizeof(*((%s)->val)) * (%s)->len);\n",
 	     name, name, name, name, name, name, name);
-    sprintf (n, "&(%s)->val[(%s)->len-1]", name, name);
+    asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
     decode_type (n, t->subtype);
     fprintf (codefile, 
 	     "}\n");

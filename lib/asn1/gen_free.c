@@ -34,9 +34,10 @@ free_type (char *name, Type *t)
 	  break;
       
       for (m = t->members; m && tag != m->val; m = m->next) {
-	  char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+	  char *s;
 
-	  sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
+	  asprintf (&s, "%s(%s)->%s",
+		    m->optional ? "" : "&", name, m->gen_name);
 	  if(m->optional)
 	      fprintf(codefile, "if(%s) {\n", s);
 	  free_type (s, m->type);
@@ -51,10 +52,10 @@ free_type (char *name, Type *t)
       break;
   }
   case TSequenceOf: {
-      char *n = malloc(2*strlen(name) + 20);
+      char *n;
 
       fprintf (codefile, "while((%s)->len){\n", name);
-      sprintf (n, "&(%s)->val[(%s)->len-1]", name, name);
+      asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
       free_type(n, t->subtype);
       fprintf(codefile, 
 	      "(%s)->len--;\n"

@@ -41,9 +41,10 @@ length_type (char *name, Type *t, char *variable)
 	  break;
       
       for (m = t->members; m && tag != m->val; m = m->next) {
-	  char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+	  char *s;
 
-	  sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
+	  asprintf (&s, "%s(%s)->%s",
+		    m->optional ? "" : "&", name, m->gen_name);
 	  if (m->optional)
 	      fprintf (codefile, "if(%s)", s);
 	  fprintf (codefile, "{\n"
@@ -62,7 +63,7 @@ length_type (char *name, Type *t, char *variable)
       break;
   }
   case TSequenceOf: {
-      char *n = malloc(2*strlen(name) + 20);
+      char *n;
 
       fprintf (codefile,
 	       "{\n"
@@ -72,7 +73,7 @@ length_type (char *name, Type *t, char *variable)
 	       variable, variable);
 
       fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
-      sprintf (n, "&(%s)->val[i]", name);
+      asprintf (&n, "&(%s)->val[i]", name);
       length_type(n, t->subtype, variable);
       fprintf (codefile, "}\n");
 
