@@ -23,37 +23,28 @@
 #include "includes.h"
 #include "vfstest.h"
 
-static char *null_string = "";
+static const char *null_string = "";
 
-static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	struct smb_vfs_handle_struct *handle;
-	char *path = lp_vfs_path(0);
-	char name[PATH_MAX];
+	int i;
 	
-	if (argc != 2) {
-		printf("Usage: load <module path>\n");
+	if (argc < 2) {
+		printf("Usage: load <modules>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (path != NULL && *path != '\0') {
-		snprintf(name, PATH_MAX, "%s/%s", path, argv[1]);
-	} else {
-		snprintf(name, PATH_MAX, "%s", argv[1]);
-	}
-	vfs->conn->vfs_private = NULL;
-	handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
-	handle->handle = NULL;
-	DLIST_ADD(vfs->conn->vfs_private, handle)
-	if (!vfs_init_custom(vfs->conn, name)) {
-		DEBUG(0, ("load: error=-1 (vfs_init_custom failed for %s)\n", argv[1]));
-		return NT_STATUS_UNSUCCESSFUL;
+	for (i=argc-1;i>0;i--) {
+		if (!vfs_init_custom(vfs->conn, argv[i])) {
+			DEBUG(0, ("load: (vfs_init_custom failed for %s)\n", argv[i]));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 	printf("load: ok\n");
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	char c;
 	size_t size;
@@ -73,7 +64,7 @@ static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	size_t offset;
 	size_t len;
@@ -101,19 +92,19 @@ static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_connect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_connect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	vfs->conn->vfs_ops.connect(vfs->conn, lp_servicename(vfs->conn->service), "vfstest");
+	VFS_CONNECT(vfs->conn, lp_servicename(vfs->conn->service), "vfstest");
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_disconnect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_disconnect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	vfs->conn->vfs_ops.disconnect(vfs->conn);
+	VFS_DISCONNECT(vfs->conn);
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SMB_BIG_UINT diskfree, bsize, dfree, dsize;
 	if (argc != 2) {
@@ -121,7 +112,7 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	diskfree = vfs->conn->vfs_ops.disk_free(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
+	diskfree = VFS_DISK_FREE(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
 	printf("disk_free: %lu, bsize = %lu, dfree = %lu, dsize = %lu\n",
 			(unsigned long)diskfree,
 			(unsigned long)bsize,
@@ -131,14 +122,14 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 }
 
 
-static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	if (argc != 2) {
 		printf("Usage: opendir <fname>\n");
 		return NT_STATUS_OK;
 	}
 
-	vfs->currentdir = vfs->conn->vfs_ops.opendir(vfs->conn, argv[1]);
+	vfs->currentdir = VFS_OPENDIR(vfs->conn, argv[1]);
 	if (vfs->currentdir == NULL) {
 		printf("opendir error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -149,7 +140,7 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 }
 
 
-static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct dirent *dent;
 
@@ -158,7 +149,7 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dent = vfs->conn->vfs_ops.readdir(vfs->conn, vfs->currentdir);
+	dent = VFS_READDIR(vfs->conn, vfs->currentdir);
 	if (dent == NULL) {
 		printf("readdir: NULL\n");
 		return NT_STATUS_OK;
@@ -169,14 +160,14 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 }
 
 
-static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	if (argc != 2) {
 		printf("Usage: mkdir <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.mkdir(vfs->conn, argv[1], 00755) == -1) {
+	if (VFS_MKDIR(vfs->conn, argv[1], 00755) == -1) {
 		printf("mkdir error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -186,7 +177,7 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
 	
@@ -195,7 +186,7 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ret = vfs->conn->vfs_ops.closedir(vfs->conn, vfs->currentdir);
+	ret = VFS_CLOSEDIR(vfs->conn, vfs->currentdir);
 	if (ret == -1) {
 		printf("closedir failure: %s\n", strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -207,11 +198,11 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 }
 
 
-static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int flags, fd;
 	mode_t mode;
-	char *flagstr;
+	const char *flagstr;
 
 	mode = 00400;
 
@@ -287,7 +278,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		}
 	}
 
-	fd = vfs->conn->vfs_ops.open(vfs->conn, argv[1], flags, mode);
+	fd = VFS_OPEN(vfs->conn, argv[1], flags, mode);
 	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -302,7 +293,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 }
 
 
-static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret = -1;
 
@@ -312,11 +303,11 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	}
 
 	if (strcmp("rmdir", argv[0]) == 0 ) {
-		ret = vfs->conn->vfs_ops.rmdir(vfs->conn, argv[1]);
+		ret = VFS_RMDIR(vfs->conn, argv[1]);
 	} else if (strcmp("unlink", argv[0]) == 0 ) {
-		ret = vfs->conn->vfs_ops.unlink(vfs->conn, argv[1]);
+		ret = VFS_UNLINK(vfs->conn, argv[1]);
 	} else if (strcmp("chdir", argv[0]) == 0 ) {
-		ret = vfs->conn->vfs_ops.chdir(vfs->conn, argv[1]);
+		ret = VFS_CHDIR(vfs->conn, argv[1]);
 	} else {
 		printf("%s: error=%d (invalid function name!)\n", argv[0], errno);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -332,7 +323,7 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 }
 
 
-static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd, ret;
 
@@ -347,7 +338,7 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	ret = vfs->conn->vfs_ops.close(vfs->files[fd], fd);
+	ret = VFS_CLOSE(vfs->files[fd], fd);
 	if (ret == -1 )
 		printf("close: error=%d (%s)\n", errno, strerror(errno));
 	else
@@ -360,7 +351,7 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
 	size_t size, rsize;
@@ -380,7 +371,7 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	vfs->data_size = size;
 	
-	rsize = vfs->conn->vfs_ops.read(vfs->files[fd], fd, vfs->data, size);
+	rsize = VFS_READ(vfs->files[fd], fd, vfs->data, size);
 	if (rsize == -1) {
 		printf("read: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -391,7 +382,7 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 }
 
 
-static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd, size, wsize;
 
@@ -413,7 +404,7 @@ static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	wsize = vfs->conn->vfs_ops.write(vfs->files[fd], fd, vfs->data, size);
+	wsize = VFS_WRITE(vfs->files[fd], fd, vfs->data, size);
 
 	if (wsize == -1) {
 		printf("write: error=%d (%s)\n", errno, strerror(errno));
@@ -425,7 +416,7 @@ static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd, offset, whence;
 	SMB_OFF_T pos;
@@ -444,7 +435,7 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		default:	whence = SEEK_END;
 	}
 
-	pos = vfs->conn->vfs_ops.lseek(vfs->files[fd], fd, offset, whence);
+	pos = VFS_LSEEK(vfs->files[fd], fd, offset, whence);
 	if (pos == (SMB_OFF_T)-1) {
 		printf("lseek: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -455,7 +446,7 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
 	if (argc != 3) {
@@ -463,7 +454,7 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	ret = vfs->conn->vfs_ops.rename(vfs->conn, argv[1], argv[2]);
+	ret = VFS_RENAME(vfs->conn, argv[1], argv[2]);
 	if (ret == -1) {
 		printf("rename: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -474,7 +465,7 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 }
 
 
-static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret, fd;
 	if (argc != 2) {
@@ -483,7 +474,7 @@ static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 
 	fd = atoi(argv[1]);
-	ret = vfs->conn->vfs_ops.fsync(vfs->files[fd], fd);
+	ret = VFS_FSYNC(vfs->files[fd], fd);
 	if (ret == -1) {
 		printf("fsync: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -494,11 +485,11 @@ static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
-	char *user;
-	char *group;
+	const char *user;
+	const char *group;
 	struct passwd *pwd;
 	struct group *grp;
 	SMB_STRUCT_STAT st;
@@ -508,17 +499,17 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_OK;
 	}
 
-	ret = vfs->conn->vfs_ops.stat(vfs->conn, argv[1], &st);
+	ret = VFS_STAT(vfs->conn, argv[1], &st);
 	if (ret == -1) {
 		printf("stat: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	pwd = sys_getpwuid(st.st_uid);
-	if (pwd != NULL) user = strdup(pwd->pw_name);
+	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_gid);
-	if (grp != NULL) group = strdup(grp->gr_name);
+	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("stat: ok\n");
@@ -541,17 +532,17 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
-	if (user != null_string) SAFE_FREE(user);
-	if (group!= null_string) SAFE_FREE(group);
+	SAFE_FREE(pwd);
+	SAFE_FREE(grp);
 	return NT_STATUS_OK;
 }
 
 
-static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
-	char *user;
-	char *group;
+	const char *user;
+	const char *group;
 	struct passwd *pwd;
 	struct group *grp;
 	SMB_STRUCT_STAT st;
@@ -572,16 +563,16 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.fstat(vfs->files[fd], fd, &st) == -1) {
+	if (VFS_FSTAT(vfs->files[fd], fd, &st) == -1) {
 		printf("fstat: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	pwd = sys_getpwuid(st.st_uid);
-	if (pwd != NULL) user = strdup(pwd->pw_name);
+	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_gid);
-	if (grp != NULL) group = strdup(grp->gr_name);
+	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("fstat: ok\n");
@@ -603,16 +594,16 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
-	if (user != null_string) SAFE_FREE(user);
-	if (group!= null_string) SAFE_FREE(group);
+	SAFE_FREE(pwd);
+	SAFE_FREE(grp);
 	return NT_STATUS_OK;
 }
 
 
-static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	char *user;
-	char *group;
+	const char *user;
+	const char *group;
 	struct passwd *pwd;
 	struct group *grp;
 	SMB_STRUCT_STAT st;
@@ -622,16 +613,16 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.lstat(vfs->conn, argv[1], &st) == -1) {
+	if (VFS_LSTAT(vfs->conn, argv[1], &st) == -1) {
 		printf("lstat: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	pwd = sys_getpwuid(st.st_uid);
-	if (pwd != NULL) user = strdup(pwd->pw_name);
+	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_gid);
-	if (grp != NULL) group = strdup(grp->gr_name);
+	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("lstat: ok\n");
@@ -653,13 +644,13 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
 	printf("  Change: %s", ctime(&(st.st_ctime)));
-	if (user != null_string) SAFE_FREE(user);
-	if (group!= null_string) SAFE_FREE(group);
+	SAFE_FREE(pwd);
+	SAFE_FREE(grp);
 	return NT_STATUS_OK;
 }
 
 
-static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	mode_t mode;
 	if (argc != 3) {
@@ -668,7 +659,7 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 
 	mode = atoi(argv[2]);
-	if (vfs->conn->vfs_ops.chmod(vfs->conn, argv[1], mode) == -1) {
+	if (VFS_CHMOD(vfs->conn, argv[1], mode) == -1) {
 		printf("chmod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -678,7 +669,7 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
 	mode_t mode;
@@ -698,7 +689,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.fchmod(vfs->files[fd], fd, mode) == -1) {
+	if (VFS_FCHMOD(vfs->files[fd], fd, mode) == -1) {
 		printf("fchmod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -708,7 +699,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 }
 
 
-static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	uid_t uid;
 	gid_t gid;
@@ -719,7 +710,7 @@ static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 	uid = atoi(argv[2]);
 	gid = atoi(argv[3]);
-	if (vfs->conn->vfs_ops.chown(vfs->conn, argv[1], uid, gid) == -1) {
+	if (VFS_CHOWN(vfs->conn, argv[1], uid, gid) == -1) {
 		printf("chown: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -729,7 +720,7 @@ static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 }
 
 
-static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	uid_t uid;
 	gid_t gid;
@@ -750,7 +741,7 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		printf("fchown: error=%d (invalid file descriptor)\n", EBADF);
 		return NT_STATUS_OK;
 	}
-	if (vfs->conn->vfs_ops.fchown(vfs->files[fd], fd, uid, gid) == -1) {
+	if (VFS_FCHOWN(vfs->files[fd], fd, uid, gid) == -1) {
 		printf("fchown error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -760,10 +751,10 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 }
 
 
-static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	char buf[PATH_MAX];
-	if (vfs->conn->vfs_ops.getwd(vfs->conn, buf) == NULL) {
+	if (VFS_GETWD(vfs->conn, buf) == NULL) {
 		printf("getwd: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -772,7 +763,7 @@ static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct utimbuf times;
 	if (argc != 4) {
@@ -781,7 +772,7 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 	times.actime = atoi(argv[2]);
 	times.modtime = atoi(argv[3]);
-	if (vfs->conn->vfs_ops.utime(vfs->conn, argv[1], &times) != 0) {
+	if (VFS_UTIME(vfs->conn, argv[1], &times) != 0) {
 		printf("utime: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -790,7 +781,7 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
 	SMB_OFF_T off;
@@ -810,7 +801,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.ftruncate(vfs->files[fd], fd, off) == -1) {
+	if (VFS_FTRUNCATE(vfs->files[fd], fd, off) == -1) {
 		printf("ftruncate: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -819,7 +810,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	BOOL ret;
 	int fd;
@@ -827,7 +818,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	long offset;
 	long count;
 	int type;
-	char *typestr;
+	const char *typestr;
 	
 	if (argc != 6) {
 		printf("Usage: lock <fd> <op> <offset> <count> <type>\n");
@@ -893,7 +884,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	printf("lock: debug lock(fd=%d, op=%d, offset=%ld, count=%ld, type=%d))\n", fd, op, offset, count, type);
 
-	if ((ret = vfs->conn->vfs_ops.lock(vfs->files[fd], fd, op, offset, count, type)) == False) {
+	if ((ret = VFS_LOCK(vfs->files[fd], fd, op, offset, count, type)) == False) {
 		printf("lock: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -902,14 +893,14 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	if (argc != 3) {
 		printf("Usage: symlink <path> <link>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.symlink(vfs->conn, argv[1], argv[2]) == -1) {
+	if (VFS_SYMLINK(vfs->conn, argv[1], argv[2]) == -1) {
 		printf("symlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -919,7 +910,7 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 }
 
 
-static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	char buffer[PATH_MAX];
 	int size;
@@ -929,7 +920,7 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
-	if ((size = vfs->conn->vfs_ops.readlink(vfs->conn, argv[1], buffer, PATH_MAX)) == -1) {
+	if ((size = VFS_READLINK(vfs->conn, argv[1], buffer, PATH_MAX)) == -1) {
 		printf("readlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -940,14 +931,14 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 }
 
 
-static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	if (argc != 3) {
 		printf("Usage: link <path> <link>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.link(vfs->conn, argv[1], argv[2]) == -1) {
+	if (VFS_LINK(vfs->conn, argv[1], argv[2]) == -1) {
 		printf("link: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -956,7 +947,7 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	mode_t mode;
 	unsigned int dev_val;
@@ -980,7 +971,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 	dev = (SMB_DEV_T)dev_val;
 
-	if (vfs->conn->vfs_ops.mknod(vfs->conn, argv[1], mode, dev) == -1) {
+	if (VFS_MKNOD(vfs->conn, argv[1], mode, dev) == -1) {
 		printf("mknod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -989,7 +980,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	char respath[PATH_MAX];
 	
@@ -998,7 +989,7 @@ static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
-	if (vfs->conn->vfs_ops.realpath(vfs->conn, argv[1], respath) == NULL) {
+	if (VFS_REALPATH(vfs->conn, argv[1], respath) == NULL) {
 		printf("realpath: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

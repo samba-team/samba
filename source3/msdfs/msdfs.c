@@ -169,14 +169,14 @@ BOOL is_msdfs_link(connection_struct* conn, char* path,
 	if (sbufp == NULL)
 		sbufp = &st;
 
-	if (conn->vfs_ops.lstat(conn, path, sbufp) != 0) {
+	if (VFS_LSTAT(conn, path, sbufp) != 0) {
 		DEBUG(5,("is_msdfs_link: %s does not exist.\n",path));
 		return False;
 	}
   
 	if (S_ISLNK(sbufp->st_mode)) {
 		/* open the link and read it */
-		referral_len = conn->vfs_ops.readlink(conn, path, referral, 
+		referral_len = VFS_READLINK(conn, path, referral, 
 						      sizeof(pstring));
 		if (referral_len == -1) {
 			DEBUG(0,("is_msdfs_link: Error reading msdfs link %s: %s\n", path, strerror(errno)));
@@ -785,10 +785,10 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n", path, msdfs_link));
 
 	if(exists)
-		if(conn->vfs_ops.unlink(conn,path)!=0)
+		if(VFS_UNLINK(conn,path)!=0)
 			return False;
 
-	if(conn->vfs_ops.symlink(conn, msdfs_link, path) < 0) {
+	if(VFS_SYMLINK(conn, msdfs_link, path) < 0) {
 		DEBUG(1,("create_msdfs_link: symlink failed %s -> %s\nError: %s\n", 
 				path, msdfs_link, strerror(errno)));
 		return False;
@@ -805,7 +805,7 @@ BOOL remove_msdfs_link(struct junction_map* jn)
 	if(!junction_to_local_path(jn, path, sizeof(path), conn))
 		return False;
      
-	if(conn->vfs_ops.unlink(conn, path)!=0)
+	if(VFS_UNLINK(conn, path)!=0)
 		return False;
   
 	return True;
@@ -862,7 +862,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	cnt++;
 	
 	/* Now enumerate all dfs links */
-	dirp = conn->vfs_ops.opendir(conn, connect_path);
+	dirp = VFS_OPENDIR(conn, connect_path);
 	if(!dirp)
 		return False;
 
@@ -881,7 +881,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		}
 	}
 	
-	conn->vfs_ops.closedir(conn,dirp);
+	VFS_CLOSEDIR(conn,dirp);
 	*jn_count = cnt;
 	return True;
 }

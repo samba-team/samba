@@ -185,7 +185,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if (normal_close && delete_on_close) {
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
-		if(fsp->conn->vfs_ops.unlink(conn,fsp->fsp_name) != 0) {
+		if(VFS_UNLINK(conn,fsp->fsp_name) != 0) {
 			/*
 			 * This call can potentially fail as another smbd may have
 			 * had the file open with delete on close set and deleted
