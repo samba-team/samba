@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -114,12 +114,16 @@ OM_uint32 gss_display_status
       asprintf (&buf, "%s %s",
 		calling_error(GSS_CALLING_ERROR(status_value)),
 		routine_error(GSS_ROUTINE_ERROR(status_value)));
-      if (buf == NULL)
+      if (buf == NULL) {
+	  *minor_status = ENOMEM;
 	  return GSS_S_FAILURE;
+      }
   } else if (status_type == GSS_C_MECH_CODE) {
       buf = strdup(krb5_get_err_text (gssapi_krb5_context, status_value));
-      if (buf == NULL)
+      if (buf == NULL) {
+	  *minor_status = ENOMEM;
 	  return GSS_S_FAILURE;
+      }
   } else
       return GSS_S_BAD_STATUS;
 
