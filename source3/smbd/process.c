@@ -746,6 +746,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 void smbd_process(void)
 {
   extern int Client;
+  extern int ClientPort;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -771,6 +772,33 @@ void smbd_process(void)
 
   /* re-initialise the timezone */
   TimeInit();
+
+  /* if connection on port 445, fake session setup... */
+  if(ClientPort == 445)
+  {
+    extern fstring remote_machine;
+    extern fstring local_machine;
+    char *s;
+
+    fstrcpy(remote_machine, dns_to_netbios_name(client_name(Client)));
+    fstrcpy(local_machine, global_myname);
+    remote_machine[15] = 0;
+    local_machine[15] = 0;
+    strlower(remote_machine);
+    strlower(local_machine);
+
+    DEBUG(2, ("smbd_process(): faking session setup\n"
+              "client_name: %s my_name: %s\n", remote_machine, local_machine));
+
+    add_session_user(remote_machine);
+
+    reload_services(True);
+    reopen_logs();
+
+    if(lp_status(-1)) {
+      claim_connection(NULL,"STATUS.",MAXSTATUS,True);
+    }
+  }
 
   while (True)
   {
