@@ -168,27 +168,27 @@ mini_inetd (int port)
     int max_fd = -1;
     int sock_v4 = -1;
     int sock_v6 = -1;
-    fd_set read_set;
+    fd_set orig_read_set, read_set;
 
-    FD_ZERO(&read_set);
+    FD_ZERO(&orig_read_set);
 
     sock_v4 = listen_v4 (port);
     if (sock_v4 >= 0) {
 	max_fd  = max(max_fd, sock_v4);
-	FD_SET(sock_v4, &read_set);
+	FD_SET(sock_v4, &orig_read_set);
     }
 #ifdef HAVE_IPV6
     sock_v6 = listen_v6 (port);
     if (sock_v6 >= 0) {
-	max_fd  = max(max_fd, sock_v4);
-	FD_SET(sock_v6, &read_set);
+	max_fd  = max(max_fd, sock_v6);
+	FD_SET(sock_v6, &orig_read_set);
     }
 #endif    
 
     do {
-	fd_set rset = read_set;
+	read_set = orig_read_set;
 
-	ret = select (max_fd + 1, &rset, NULL, NULL, NULL);
+	ret = select (max_fd + 1, &read_set, NULL, NULL, NULL);
 	if (ret < 0 && ret != EINTR) {
 	    perror ("select");
 	    exit (1);
