@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -100,7 +100,7 @@ int
 main(int argc, char **argv)
 {
     krb5_error_code ret;
-    krb5_config_section *cf;
+    char **files;
     int optind = 0;
     int e;
     krb5_log_facility *logf;
@@ -136,8 +136,17 @@ main(int argc, char **argv)
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
 
-    if(krb5_config_parse_file(context, config_file, &cf) == 0) {
-	const char *p = krb5_config_get_string (context, cf, 
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+    
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if(ret) 
+	krb5_err(context, 1, ret, "reading configuration files");
+    
+    {
+	const char *p = krb5_config_get_string (context, NULL, 
 						"kdc", "key-file", NULL);
 	if (p)
 	    keyfile = strdup(p);
