@@ -229,6 +229,39 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 }
 
 /***********************************************************
+ encode a password buffer
+************************************************************/
+BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
+		      int new_pw_len, BOOL nt_pass_set)
+{
+	generate_random_buffer(buffer, 516, True);
+
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode.  last char overwrites NULL
+		 * in ascii_to_unibuf, so use SIVAL *afterwards*.
+		 */
+		new_pw_len *= 2;
+		ascii_to_unistr((uint16 *)&buffer[512 - new_pw_len], new_pass,
+				new_pw_len);
+	}
+	else
+	{
+		memcpy(&buffer[512 - new_pw_len], new_pass, new_pw_len);
+	}
+
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	SIVAL(buffer, 512, new_pw_len);
+
+	return True;
+}
+
+/***********************************************************
  decode a password buffer
 ************************************************************/
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
@@ -319,3 +352,19 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 
 }
 
+/* Calculate the NT owfs of a user's password */
+void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
+{
+	char buf[512];
+	int i;
+
+	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf) / 2); i++)
+	{
+		SIVAL(buf, i * 2, pwd->buffer[i]);
+	}
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
+
+	/* clear out local copy of user's password (just being paranoid). */
+	ZERO_STRUCT(buf);
+}
