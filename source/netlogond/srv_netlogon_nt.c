@@ -23,7 +23,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* strikerXXXX Luke, do I need all these? */
 #include "includes.h"
 #include "nterr.h"
 #include "sids.h"
@@ -268,7 +267,6 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	const UNISTR2 *uni_samusr = &id2->uni_user_name;
 	fstring user;
 	fstring domain;
-	struct smb_passwd pwd;
 
 	SAM_USERINFO_CTR ctr;
 
@@ -295,17 +293,13 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 
 	DEBUG(0,("net_login_network: HACK alert - unix name is nt name\n"));
 
-	pwd.acct_ctrl     = acb_info;
-	pwd.unix_name     = user;
-	pwd.smb_passwd    = ctr.info.id12->lm_pwd;
-	pwd.smb_nt_passwd = ctr.info.id12->nt_pwd;
-
-	if (pass_check_smb(&pwd,
-	                    domain,
+	if (smb_password_ok(acb_info, ctr.info.id12->lm_pwd,
+	                    ctr.info.id12->nt_pwd,
 	                    id2->lm_chal, 
-	                    (uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
-	                    (uchar *)id2->nt_chal_resp.buffer, nt_pw_len,
-	                    NULL, usr_sess_key)) 
+	                    user, domain,
+	                    (const uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
+	                    (const uchar *)id2->nt_chal_resp.buffer, nt_pw_len,
+	                    usr_sess_key)) 
 	{
 		unsigned char key[16];
 
@@ -713,9 +707,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 
 	if (!ret)
 	{
-		/* bogus! */
-		/* strikerXXXX Luke could you have a look at this and make up some
-               reasonable return code? */
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
@@ -1076,9 +1068,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	if ((vp = startsmbpwent(False)) == NULL)
 	{
-		/* bogus! */
-		/* strikerXXXX Luke could you have a look at this and make up some
-               reasonable return code? */
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Give the poor BDC some accounts */

@@ -184,7 +184,7 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 
 void smbhash(uchar *out, const uchar *in, const uchar *key, int forw);
 void E_P16(uchar *p14,uchar *p16);
-void E_P24(uchar *p21, uchar *c8, uchar *p24);
+void E_P24(const uchar *p21, const uchar *c8, uchar *p24);
 void D_P16(const uchar *p14, const uchar *in, uchar *out);
 void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
 void cred_hash1(uchar *out,uchar *in,uchar *key);
@@ -204,7 +204,7 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
 void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
 void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
-void SMBOWFencrypt(uchar pwrd[16], uchar *c8, uchar p24[24]);
+void SMBOWFencrypt(const uchar pwrd[16], const uchar *c8, uchar p24[24]);
 void SMBOWFencrypt_ntv2(const uchar kr[16], 
 				const uchar *srv_chal, int srv_chal_len,
 				const uchar *cli_chal, int cli_chal_len,

@@ -253,7 +253,7 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16])
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(uchar pwrd[16], uchar *c8, uchar p24[24])
+void SMBOWFencrypt(const uchar pwrd[16], const uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  
