@@ -648,6 +648,7 @@ send_accept (OM_uint32 *minor_status,
     u_char *buf;
     OM_uint32 ret;
     gss_buffer_desc mech_buf, mech_mic_buf;
+    krb5_boolean require_mic;
 
     memset(&targ, 0, sizeof(targ));
     ALLOC(targ.negResult, 1);
@@ -689,7 +690,14 @@ send_accept (OM_uint32 *minor_status,
 	targ.responseToken = NULL;
     }
 
-    if (major_status == GSS_S_COMPLETE) {
+    ret = _gss_spnego_require_mechlist_mic(minor_status, context_handle,
+					   &require_mic);
+    if (ret) {
+	free_NegTokenTarg(&targ);
+	return ret;
+    }
+
+    if (major_status == GSS_S_COMPLETE && require_mic) {
 	size_t buf_len;
 
 	ALLOC(targ.mechListMIC, 1);
