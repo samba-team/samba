@@ -2193,7 +2193,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			setup = TRANSACT2_FINDFIRST;
 			SSVAL(param,0,attribute); /* attribute */
 			SSVAL(param,2,max_matches); /* max count */
-			SSVAL(param,4,8+4+2);	/* resume required + close on end + continue */
+			SSVAL(param,4,4+2);	/* resume required + close on end */
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
 			pstrcpy(param+12,mask);
@@ -2203,7 +2203,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
 			SIVAL(param,6,0); /* ff_resume_key */
-			SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
+			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			pstrcpy(param+12,mask);
 
 			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
