@@ -94,16 +94,16 @@ set_forward_options(void)
 #ifdef FORWARD
 	switch(forward_option) {
 	case 'f':
-		forward(1);
-		forwardable(0);
+		kerberos5_set_forward(1);
+		kerberos5_set_forwardable(0);
 		break;
 	case 'F':
-		forward(1);
-		forwardable(1);
+		kerberos5_set_forward(1);
+		kerberos5_set_forwardable(1);
 		break;
 	case 'G':
-		forward(0);
-		forwardable(0);
+		kerberos5_set_forward(0);
+		kerberos5_set_forwardable(0);
 		break;
 	default:
 		break;
@@ -128,11 +128,11 @@ krb5_init(void)
 #if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
     if (krb5_config_get_bool (context, NULL,
          "libdefaults", "forward", NULL)) {
-	    forward(1);
+	    kerberos5_set_forward(1);
     }
     if (krb5_config_get_bool (context, NULL,
          "libdefaults", "forwardable", NULL)) {
-	    forwardable(1);
+	    kerberos5_set_forwardable(1);
     }
 #endif
 #ifdef  ENCRYPTION
