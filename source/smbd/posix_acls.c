@@ -2047,28 +2047,28 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 
 	/* try the direct way first */
 	ret = vfs_chown(conn, fname, uid, gid);
-	if (ret == 0) return 0;
+	if (ret == 0)
+		return 0;
 
 	if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
 		return -1;
 
-	if (vfs_stat(conn,fname,&st)) {
+	if (vfs_stat(conn,fname,&st))
 		return -1;
-	}
 
 	fsp = open_file_fchmod(conn,fname,&st);
-	if (!fsp) {
+	if (!fsp)
 		return -1;
-	}
 
 	/* only allow chown to the current user. This is more secure,
 	   and also copes with the case where the SID in a take ownership ACL is
 	   a local SID on the users workstation 
 	*/
 	uid = current_user.uid;
-	
+
 	become_root();
-	ret = vfswrap_fchown(fsp, fsp->fd, uid, gid);
+	/* Keep the current file gid the same. */
+	ret = vfswrap_fchown(fsp, fsp->fd, uid, (gid_t)-1);
 	unbecome_root();
 
 	close_file_fchmod(fsp);
