@@ -808,7 +808,8 @@ static BOOL filter_server_info(struct srv_info_struct *server,
   number of entries
   ******************************************************************/
 static int get_server_info(uint32 servertype, 
-			   struct srv_info_struct **servers, BOOL domains, char *domain)
+			   struct srv_info_struct **servers, BOOL domains, 
+			   char *domain)
 {
   FILE *f;
   pstring fname;
@@ -831,7 +832,7 @@ static int get_server_info(uint32 servertype,
   /* request for everything is code for request all servers */
   if (servertype == SV_TYPE_ALL) servertype &= ~SV_TYPE_DOMAIN_ENUM;
 
-  DEBUG(4, ("Servertype search: %8x domains:%s\n", servertype,BOOLSTR(domains)));
+  DEBUG(4,("Servertype search: %8x domains:%s\n",servertype,BOOLSTR(domains)));
 
   while (!feof(f))
   {
@@ -861,10 +862,16 @@ static int get_server_info(uint32 servertype,
       strcpy(s->domain,my_workgroup()); 
     }
     
-    if (sscanf(stype,"%X",&s->type) != 1) { DEBUG(4,("r:host file ")); ok = False; }
+    if (sscanf(stype,"%X",&s->type) != 1) { 
+      DEBUG(4,("r:host file ")); 
+      ok = False; 
+    }
     
     /* doesn't match up: don't want it */
-    if (!(servertype & s->type)) { DEBUG(4,("r:serv type ")); ok = False; }
+    if (!(servertype & s->type)) { 
+      DEBUG(4,("r:serv type ")); 
+      ok = False; 
+    }
     
     if ((servertype == ~SV_TYPE_DOMAIN_ENUM) &&
 	(s->type & SV_TYPE_DOMAIN_ENUM))
@@ -901,6 +908,7 @@ static int get_server_info(uint32 servertype,
   fclose(f);
   return(count);
 }
+
 
 /*******************************************************************
   fill in a server info structure
@@ -981,6 +989,11 @@ static int fill_srv_info(struct srv_info_struct *service,
 }
 
 
+static BOOL srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
+{
+  return(strcmp(s1->name,s2->name));
+}
+
 /****************************************************************************
   view list of servers available (or possibly domains). The info is
   extracted from lists saved by nmbd on the local host
@@ -1038,23 +1051,30 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
 
   data_len = fixed_len = string_len = 0;
 
+  qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
+
   {
+    char *lastname=NULL;
+
     for (i=0;i<total;i++)
     {
       struct srv_info_struct *s = &servers[i];
-	  if (filter_server_info(s,domains,domain,local_request|domain_request))
-      {
-        data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
-  		DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-       		 s->name, s->type, s->comment, s->domain));
-
-        if (data_len <= buf_len)
+      if (filter_server_info(s,domains,domain,
+			     local_request|domain_request))
+	{
+	  if (lastname && strequal(lastname,s->name)) continue;
+	  lastname = s->name;
+	  data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
+	  DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+		   s->name, s->type, s->comment, s->domain));
+	  
+	  if (data_len <= buf_len)
 	    {
 	      counted++;
 	      fixed_len += f_len;
 	      string_len += s_len;
 	    }
-      }
+	}
     }
   }
 
@@ -1068,18 +1088,21 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   s_len = string_len;
 
   {
+    char *lastname=NULL;
     int count2 = counted;
     for (i = 0; i < total && count2;i++)
-    {
-      struct srv_info_struct *s = &servers[i];
-	  if (filter_server_info(s,domains,domain,local_request|domain_request))
       {
-        fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
-  		DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-       		 s->name, s->type, s->comment, s->domain));
-        count2--;
+	struct srv_info_struct *s = &servers[i];
+	if (filter_server_info(s,domains,domain,local_request|domain_request))
+	  {
+	    if (lastname && strequal(lastname,s->name)) continue;
+	    lastname = s->name;
+	    fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
+	    DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+		     s->name, s->type, s->comment, s->domain));
+	    count2--;
+	  }
       }
-    }
   }
   
   *rparam_len = 8;

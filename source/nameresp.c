@@ -21,13 +21,14 @@
 */
 
 #include "includes.h"
-#include "localnet.h"
 #include "loadparm.h"
+
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 /* this is our initiated name query response database */
 struct name_response_record *nameresponselist = NULL;
 
-extern struct in_addr myip;
 extern int DEBUGLEVEL;
 
 static uint16 name_trn_id=0;
@@ -75,21 +76,11 @@ void expire_netbios_response_entries(time_t t)
 	  DEBUG(3,("Removing dead name query for %s %s (num_msgs=%d)\n",
 		   inet_ntoa(n->to_ip), namestr(&n->name), n->num_msgs));
 
-	  if (n->cmd_type == CHECK_MASTER && n->num_msgs == 0)
+	  if (n->cmd_type == CHECK_MASTER)
 	    {
-	      if (n->num_msgs > 1)
-		{
-		  /* more than one master browser detected on a subnet.
-		     there is a configuration problem. force an election */
-		  struct domain_record *d;
-		  if ((d = find_domain(n->to_ip)))
-		    {
-		      send_election(d,n->name.name,0,0,myname);
-		    }
-		}
-	      
 	      /* if no response received, the master browser must have gone */
-	      browser_gone(n->name.name, n->to_ip);
+	      if (n->num_msgs == 0)
+		browser_gone(n->name.name, n->to_ip);
 	    }
 	  
 	  nextn = n->next;
@@ -230,7 +221,7 @@ uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
       nmb->additional->ttl = quest_type == NMB_REG ? lp_max_ttl() : 0;
       nmb->additional->rdlength = 6;
       nmb->additional->rdata[0] = nb_flags;
-      putip(&nmb->additional->rdata[2],(char *)&myip);
+      putip(&nmb->additional->rdata[2],(char *)iface_ip(to_ip));
     }
   
   p.ip = to_ip;
@@ -434,7 +425,7 @@ void listen_for_packets(BOOL run_election)
       struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
       if (packet) {
 #if 1
-	if (ip_equal(packet->ip,myip) &&
+	if (ismyip(packet->ip) &&
 	    (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
 	  DEBUG(5,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
@@ -452,7 +443,7 @@ void listen_for_packets(BOOL run_election)
       struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
       if (packet) {
 #if 1
-	if (ip_equal(packet->ip,myip) &&
+	if (ismyip(packet->ip) &&
 	      (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
 	  DEBUG(5,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
@@ -501,6 +492,7 @@ BOOL interpret_node_status(char *p, struct nmb_name *name,int t,
       StrnCpy(qname,p,15);
       type = CVAL(p,15);
       nb_flags = p[16];
+      trim_string(qname,NULL," ");
       
       p += 18;
       
@@ -520,17 +512,14 @@ BOOL interpret_node_status(char *p, struct nmb_name *name,int t,
 	  struct in_addr nameip;
 	  enum name_source src;
 	  
-	  if (ip_equal(ip, myip))
-	    {
-	      nameip = ipzero;
-	      src = SELF;
-	    }
-	  else
-	    {
-	      nameip = ip;
-	      src = STATUS_QUERY;
-	    }
-	  add_netbios_entry(qname,type,nb_flags,2*60*60,src,nameip);
+	  if (ismyip(ip)) {
+	    nameip = ipzero;
+	    src = SELF;
+	  } else {
+	    nameip = ip;
+	    src = STATUS_QUERY;
+	  }
+	  add_netbios_entry(qname,type,nb_flags,2*60*60,src,nameip,True);
 	} 
 
       /* we want the server name */

@@ -43,7 +43,6 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-  extern void E1(char *,char *,char *);
   static int counter = 0;
   struct timeval tval;
   int v1,v2;
@@ -1257,7 +1256,6 @@ BOOL server_cryptkey(char *buf)
   int len;
   fstring desthost;
   struct in_addr dest_ip;
-  extern struct in_addr myip;
   int port = SMB_PORT;
   BOOL ret;
 
@@ -1285,7 +1283,7 @@ BOOL server_cryptkey(char *buf)
       continue;
     }
 
-    if (memcmp(&dest_ip,&myip,sizeof(dest_ip)) == 0) {
+    if (ismyip(dest_ip)) {
       DEBUG(1,("Password server loop - disabling password server %s\n",p));
       continue;
     }

@@ -27,7 +27,9 @@
 
 #include "includes.h"
 #include "loadparm.h"
-#include "localnet.h"
+
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 extern int DEBUGLEVEL;
 extern pstring scope;
@@ -59,7 +61,7 @@ void check_master_browser(void)
   struct domain_record *d;
 
   if (!lastrun) lastrun = t;
-  if (t < lastrun + 2*60) return;
+  if (t < lastrun + 5*60) return;
   lastrun = t;
 
   dump_workgroups();
@@ -94,11 +96,13 @@ void browser_gone(char *work_name, struct in_addr ip)
 
   if (!work || !d) return;
 
-  DEBUG(2,("Forcing election on %s\n",work->work_group));
-
   if (strequal(work->work_group, lp_workgroup()) &&
-      ip_equal(bcast_ip, d->bcast_ip))
+      ismybcast(d->bcast_ip))
     {
+
+      DEBUG(2,("Forcing election on %s %s\n",
+	       work->work_group,inet_ntoa(d->bcast_ip)));
+
       /* we can attempt to become master browser */
       work->needelection = True;
     }
@@ -116,6 +120,7 @@ void browser_gone(char *work_name, struct in_addr ip)
 	 */
     }
 }
+
 /****************************************************************************
   send an election packet
   **************************************************************************/
@@ -144,7 +149,7 @@ void send_election(struct domain_record *d, char *group,uint32 criterion,
   p = skip_string(p,1);
   
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      name,group,0,0x1e,d->bcast_ip,myip);
+		      name,group,0,0x1e,d->bcast_ip,*iface_ip(d->bcast_ip));
 }
 
 
@@ -188,7 +193,7 @@ static void become_master(struct domain_record *d, struct work_record *work)
   add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
   add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
   
-  if (ip_equal(bcast_ip, d->bcast_ip))
+  if (ismybcast(d->bcast_ip))
     {
       /* ask all servers on our local net to announce to us */
       announce_request(work, d->bcast_ip);
@@ -244,7 +249,8 @@ void run_elections(void)
 	      if (work->ElectionCount++ >= 4)
 		{
 		  /* I won! now what :-) */
-		  DEBUG(2,(">>> Won election on %s <<<\n",work->work_group));
+		  DEBUG(2,(">>> Won election on %s %s <<<\n",
+			   work->work_group,inet_ntoa(d->bcast_ip)));
 		  
 		  work->RunningElection = False;
 		  become_master(d, work);
@@ -309,7 +315,7 @@ void process_election(struct packet_struct *p,char *buf)
     {
       if (listening_name(work, &dgram->dest_name) && 
 	  strequal(work->work_group, lp_workgroup()) &&
-	  ip_equal(d->bcast_ip, bcast_ip))
+	  ismybcast(d->bcast_ip))
 	{
 	  if (win_election(work, version,criterion,timeup,name))
 	    {
@@ -326,7 +332,8 @@ void process_election(struct packet_struct *p,char *buf)
 	      if (work->RunningElection)
 		{
 		  work->RunningElection = False;
-		  DEBUG(3,(">>> Lost election on %s <<<\n",work->work_group));
+		  DEBUG(3,(">>> Lost election on %s %s <<<\n",
+			   work->work_group,inet_ntoa(d->bcast_ip)));
 		  
 		  /* if we are the master then remove our masterly names */
 		  if (AM_MASTER(work))
@@ -345,25 +352,26 @@ void process_election(struct packet_struct *p,char *buf)
   ***************************************************************************/
 BOOL check_elections(void)
 {
-	struct domain_record *d;
-	BOOL run_any_election = False;
+  struct domain_record *d;
+  BOOL run_any_election = False;
 
-	for (d = domainlist; d; d = d->next)
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
-		for (work = d->workgrouplist; work; work = work->next)
-		{
-			run_any_election |= work->RunningElection;
-
-			if (work->needelection && !work->RunningElection)
-			{
-				DEBUG(3,(">>> Starting election on %s <<<\n",work->work_group));
-				work->ElectionCount = 0;
-				work->RunningElection = True;
-				work->needelection = False;
-			}
-		}
+	  run_any_election |= work->RunningElection;
+	  
+	  if (work->needelection && !work->RunningElection)
+	    {
+	      DEBUG(3,(">>> Starting election on %s %s <<<\n",
+		       work->work_group,inet_ntoa(d->bcast_ip)));
+	      work->ElectionCount = 0;
+	      work->RunningElection = True;
+	      work->needelection = False;
+	    }
 	}
-	return run_any_election;
+    }
+  return run_any_election;
 }
 

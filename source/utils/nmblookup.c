@@ -30,11 +30,8 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 
-extern struct in_addr bcast_ip;
 extern pstring myhostname;
-
-static BOOL got_bcast = False;
-struct in_addr ipzero;
+extern struct in_addr ipzero;
 
 int ServerFD= -1;
 
@@ -69,23 +66,8 @@ static BOOL open_sockets(void)
 ****************************************************************************/
 static BOOL init_structs(void )
 {
-  struct in_addr myip;
-
-  if (!get_myname(myhostname,&myip))
+  if (!get_myname(myhostname,NULL))
     return(False);
-
-  /* Read the broadcast address from the interface */
-  {
-    struct in_addr ip0,ip2;
-
-    ip0 = myip;
-
-    if (!got_bcast) {
-      get_broadcast(&ip0,&bcast_ip,&ip2);
-
-      DEBUG(2,("Using broadcast %s\n",inet_ntoa(bcast_ip)));
-    }
-  }
 
   return True;
 }
@@ -124,8 +106,6 @@ int main(int argc,char *argv[])
 
   TimeInit();
 
-  ipzero = *interpret_addr2("0.0.0.0");
-
   setup_logging(argv[0],True);
 
   charset_initialise();
@@ -134,11 +114,7 @@ int main(int argc,char *argv[])
     switch (opt)
       {
       case 'B':
-	{
-	  unsigned long a = interpret_addr(optarg);
-	  putip((char *)&bcast_ip,(char *)&a);
-	  got_bcast = True;
-	}
+	iface_set_default(NULL,optarg,NULL);
 	break;
       case 'i':
 	strcpy(scope,optarg);
@@ -167,10 +143,11 @@ int main(int argc,char *argv[])
     exit(1);
   }
 
+  load_interfaces();
   init_structs();
   if (!open_sockets()) return(1);
 
-  DEBUG(1,("Sending queries to %s\n",inet_ntoa(bcast_ip)));
+  DEBUG(1,("Sending queries to %s\n",inet_ntoa(*iface_bcast(ipzero))));
 
 
   for (i=optind;i<argc;i++)
@@ -201,7 +178,7 @@ int main(int argc,char *argv[])
       }
 
       if (name_query(ServerFD,lookup,lookup_type,bcast,True,
-		     bcast_ip,&ip,NULL)) 
+		     *iface_bcast(ipzero),&ip,NULL)) 
 	{
 	  printf("%s %s\n",inet_ntoa(ip),lookup);
 	  if (find_status) 

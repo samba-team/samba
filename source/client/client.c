@@ -41,9 +41,7 @@ char *cmdstr="";
 BOOL got_pass = False;
 BOOL connect_as_printer = False;
 BOOL connect_as_ipc = False;
-extern struct in_addr bcast_ip;
-static BOOL got_bcast=False;
-struct in_addr ipzero;
+extern struct in_addr ipzero;
 
 char cryptkey[8];
 BOOL doencrypt=False;
@@ -64,8 +62,6 @@ int max_protocol = PROTOCOL_NT1;
 
 time_t newer_than = 0;
 int archive_level = 0;
-
-extern struct in_addr myip;
 
 extern pstring debugf;
 extern int DEBUGLEVEL;
@@ -3845,13 +3841,13 @@ static BOOL open_sockets(int port )
       strcpy(desthost,host);
     }
 
-  DEBUG(3,("Opening sockets\n"));
-
   if (*myname == 0)
     {
       get_myname(myname,NULL);
       strupper(myname);
     }
+
+  DEBUG(3,("Opening sockets\n"));
 
   if (!have_ip)
     {
@@ -3864,17 +3860,12 @@ static BOOL open_sockets(int port )
 #ifdef USENMB
 	/* Try and resolve the name with the netbios server */
 	int           	bcast;
-	pstring		hs;
-	struct in_addr	ip1, ip2;
-	
+
 	if ((bcast = open_socket_in(SOCK_DGRAM, 0, 3)) != -1) {
-	  set_socket_options (bcast, "SO_BROADCAST");
+	  set_socket_options(bcast, "SO_BROADCAST");
 
-	  if (!got_bcast && get_myname(hs, &ip1)) {
-	    get_broadcast(&ip1, &bcast_ip, &ip2);
-	  }
-
-	  if (name_query(bcast, host, 0x20, True, True, bcast_ip, &dest_ip,0)){
+	  if (name_query(bcast, host, 0x20, True, True, *iface_bcast(dest_ip),
+			 &dest_ip,0)) {
 	    failed = False;
 	  }
 	  close (bcast);
@@ -4181,8 +4172,6 @@ static void usage(char *pname)
   TimeInit();
   charset_initialise();
 
-  ipzero = *interpret_addr2("0.0.0.0");
-
   pid = getpid();
   uid = getuid();
   gid = getgid();
@@ -4261,8 +4250,7 @@ static void usage(char *pname)
 	message = True;
 	break;
       case 'B':
-	bcast_ip = *interpret_addr2(optarg);
-	got_bcast = True;
+	iface_set_default(NULL,optarg,NULL);
 	break;
       case 'D':
 	strcpy(base_directory,optarg);
@@ -4359,7 +4347,8 @@ static void usage(char *pname)
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
-  get_myname(*myname?NULL:myname,&myip);  
+  load_interfaces();
+  get_myname(*myname?NULL:myname,NULL);  
   strupper(myname);
 
   if (tar_type) {
