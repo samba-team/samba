@@ -537,7 +537,7 @@
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
 		[in]     uint32 value_offered,
-		[out]	 DATA_BLOB value,
+		[out]	 lstring value,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
 		[out]    DATA_BLOB data,

@@ -1000,7 +1000,7 @@ struct spoolss_EnumPrinterData {
 	} in;
 
 	struct {
-		DATA_BLOB value;
+		const char * value;
 		uint32 value_needed;
 		uint32 printerdata_type;
 		DATA_BLOB data;

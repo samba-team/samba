@@ -1790,7 +1790,7 @@ NTSTATUS ndr_pull_spoolss_47(struct ndr_pull *ndr, struct spoolss_47 *r)
 
 NTSTATUS ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, struct spoolss_EnumPrinterData *r)
 {
-	NDR_CHECK(ndr_pull_DATA_BLOB(ndr, &r->out.value));
+	NDR_CHECK(ndr_pull_lstring(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.value));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_needed));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.printerdata_type));
 	NDR_CHECK(ndr_pull_DATA_BLOB(ndr, &r->out.data));
@@ -3663,7 +3663,7 @@ void ndr_print_spoolss_EnumPrinterData(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EnumPrinterData");
 	ndr->depth++;
-	ndr_print_DATA_BLOB(ndr, "value", r->out.value);
+	ndr_print_lstring(ndr, "value", &r->out.value);
 	ndr_print_uint32(ndr, "value_needed", r->out.value_needed);
 	ndr_print_uint32(ndr, "printerdata_type", r->out.printerdata_type);
 	ndr_print_DATA_BLOB(ndr, "data", r->out.data);
