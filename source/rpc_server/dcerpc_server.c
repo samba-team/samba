@@ -130,6 +130,8 @@ NTSTATUS dcesrv_endpoint_connect_ops(struct dcesrv_context *dce,
 	(*p)->handles = NULL;
 	(*p)->next_handle = 0;
 	(*p)->partial_input = data_blob(NULL, 0);
+	(*p)->auth_state.ntlmssp_state = NULL;
+	(*p)->auth_state.auth_info = NULL;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -182,7 +184,6 @@ void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
 */
 static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 {
-	struct ndr_push *push;
 	struct dcerpc_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
@@ -203,23 +204,16 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
 
-	/* now form the NDR for the fault */
-	push = ndr_push_init_ctx(call->mem_ctx);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rep->data = ndr_push_blob(push);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
@@ -249,7 +243,6 @@ static NTSTATUS dcesrv_fault_nt(struct dcesrv_call_state *call, NTSTATUS status)
 */
 static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 {
-	struct ndr_push *push;
 	struct dcerpc_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
@@ -268,23 +261,16 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 	pkt.u.bind_nak.reject_reason = reason;
 	pkt.u.bind_nak.num_versions = 0;
 
-	/* now form the NDR for the bind_nak */
-	push = ndr_push_init_ctx(call->mem_ctx);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rep->data = ndr_push_blob(push);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
@@ -301,7 +287,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	const char *uuid, *transfer_syntax;
 	uint32 if_version, transfer_syntax_version;
 	struct dcerpc_packet pkt;
-	struct ndr_push *push;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 	uint32 result=0, reason=0;
@@ -338,6 +323,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->dce->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
 	}
 
+	/* handle any authentication that is being requested */
+	if (!dcesrv_auth_bind(call)) {
+		return dcesrv_bind_nak(call, 0);
+	}
+
 	/* setup a bind_ack */
 	pkt.rpc_vers = 5;
 	pkt.rpc_vers_minor = 0;
@@ -370,15 +360,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.ctx_list[0].syntax.minor_version = 0;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
-	/* now form the NDR for the bind_ack */
-	push = ndr_push_init_ctx(call->mem_ctx);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!dcesrv_auth_bind_ack(call, &pkt)) {
+		return dcesrv_bind_nak(call, 0);
 	}
 
 	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
@@ -386,7 +369,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rep->data = ndr_push_blob(push);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
@@ -486,17 +473,12 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-		push = ndr_push_init_ctx(call->mem_ctx);
-		if (!push) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+
+		status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		
-		rep->data = ndr_push_blob(push);
+
 		SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
 
 		DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
@@ -544,29 +526,15 @@ static void dce_partial_advance(struct dcesrv_state *dce, uint32 offset)
 }
 
 /*
-  provide some input to a dcerpc endpoint server. This passes data
-  from a dcerpc client into the server
+  process some input to a dcerpc endpoint server.
 */
-NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
+NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 {
 	struct ndr_pull *ndr;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
-
-	dce->partial_input.data = talloc_realloc(dce->mem_ctx,
-						 dce->partial_input.data,
-						 dce->partial_input.length + data->length);
-	if (!dce->partial_input.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	memcpy(dce->partial_input.data + dce->partial_input.length,
-	       data->data, data->length);
-	dce->partial_input.length += data->length;
-
-	if (!dce_full_packet(&dce->partial_input)) {
-		return NT_STATUS_OK;
-	}
+	DATA_BLOB blob;
 
 	mem_ctx = talloc_init("dcesrv_input");
 	if (!mem_ctx) {
@@ -582,7 +550,10 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	call->dce = dce;
 	call->replies = NULL;
 
-	ndr = ndr_pull_init_blob(&dce->partial_input, mem_ctx);
+	blob = dce->partial_input;
+	blob.length = SVAL(blob.data, DCERPC_FRAG_LEN_OFFSET);
+
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 	if (!ndr) {
 		talloc_free(dce->mem_ctx, dce->partial_input.data);
 		talloc_destroy(mem_ctx);
@@ -671,6 +642,38 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	}
 
 	return status;
+}
+
+
+/*
+  provide some input to a dcerpc endpoint server. This passes data
+  from a dcerpc client into the server
+*/
+NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
+{
+	struct ndr_pull *ndr;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct dcesrv_call_state *call;
+
+	dce->partial_input.data = talloc_realloc(dce->mem_ctx,
+						 dce->partial_input.data,
+						 dce->partial_input.length + data->length);
+	if (!dce->partial_input.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(dce->partial_input.data + dce->partial_input.length,
+	       data->data, data->length);
+	dce->partial_input.length += data->length;
+
+	while (dce_full_packet(&dce->partial_input)) {
+		status = dcesrv_input_process(dce);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*

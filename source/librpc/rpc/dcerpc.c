@@ -173,47 +173,6 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 
 
 /* 
-   push a dcerpc_packet into a blob. This handles both input and
-   output packets
-*/
-static NTSTATUS dcerpc_push(struct dcerpc_pipe *p, 
-			    DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			    struct dcerpc_packet *pkt)
-{
-	NTSTATUS status;
-	struct ndr_push *ndr;
-
-	ndr = ndr_push_init_ctx(mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (p->auth_info) {
-		pkt->auth_length = p->auth_info->credentials.length;
-	} else {
-		pkt->auth_length = 0;
-	}
-
-	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (p->auth_info) {
-		status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, 
-					      p->auth_info);
-	}
-
-	*blob = ndr_push_blob(ndr);
-
-	/* fill in the frag length */
-	SSVAL(blob->data, 8, blob->length);
-
-	return NT_STATUS_OK;
-}
-
-
-/* 
    push a dcerpc request packet into a blob, possibly signing it.
 */
 static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p, 
@@ -225,7 +184,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 
 	/* non-signed packets are simpler */
 	if (!p->auth_info || !p->ntlmssp_state) {
-		return dcerpc_push(p, blob, mem_ctx, pkt);
+		return dcerpc_push_auth(blob, mem_ctx, pkt, p->auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -345,7 +304,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push(p, &blob, mem_ctx, &pkt);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -404,7 +363,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.u.auth.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push(p, &blob, mem_ctx, &pkt);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

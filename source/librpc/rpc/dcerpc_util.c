@@ -201,3 +201,43 @@ const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 	}
 	return NULL;
 }
+
+
+
+/* 
+   push a dcerpc_packet into a blob, potentially with auth info
+*/
+NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+			  struct dcerpc_packet *pkt,
+			  struct dcerpc_auth *auth_info)
+{
+	NTSTATUS status;
+	struct ndr_push *ndr;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (auth_info) {
+		pkt->auth_length = auth_info->credentials.length;
+	} else {
+		pkt->auth_length = 0;
+	}
+
+	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (auth_info) {
+		status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
+	}
+
+	*blob = ndr_push_blob(ndr);
+
+	/* fill in the frag length */
+	SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, blob->length);
+
+	return NT_STATUS_OK;
+}

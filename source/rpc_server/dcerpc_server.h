@@ -70,6 +70,13 @@ struct dcesrv_handle {
 	void *data;
 };
 
+/* hold the authentication state information */
+struct dcesrv_auth {
+	struct ntlmssp_state *ntlmssp_state;
+	struct dcerpc_auth *auth_info;
+};
+
+
 /* the state associated with a dcerpc server connection */
 struct dcesrv_state {
 	/* the top level context for this server */
@@ -105,6 +112,9 @@ struct dcesrv_state {
 	struct dcesrv_handle *handles;
 
 	DATA_BLOB partial_input;
+
+	/* the current authentication state */
+	struct dcesrv_auth auth_state;
 };
 
 
