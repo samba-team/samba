@@ -71,7 +71,11 @@ static void sync_child(char *name, int nm_type,
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 	struct nmb_name called, calling;
 
-	if (!cli_initialise(&cli) || !cli_connect(&cli, name, &ip)) {
+	/* W2K DMB's return empty browse lists on port 445. Use 139.
+	 * Patch from Andy Levine andyl@epicrealm.com.
+	 */
+
+	if (!cli_initialise(&cli) || !cli_set_port(&cli, 139) || !cli_connect(&cli, name, &ip)) {
 		return;
 	}
 
