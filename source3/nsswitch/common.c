@@ -59,224 +59,229 @@ void init_request(struct winbindd_request *req,int rq_type)
 
 void close_sock(void)
 {
-    if (established_socket != -1) {
-	    close(established_socket);
-	    established_socket = -1;
-    }
+	if (established_socket != -1) {
+		close(established_socket);
+		established_socket = -1;
+	}
 }
 
 /* Connect to winbindd socket */
 
 static int open_pipe_sock(void)
 {
-    struct sockaddr_un sunaddr;
-    static pid_t our_pid;
-    struct stat st;
-    pstring path;
+	struct sockaddr_un sunaddr;
+	static pid_t our_pid;
+	struct stat st;
+	pstring path;
+	
+	if (our_pid != getpid()) {
+		if (established_socket != -1) {
+			close(established_socket);
+		}
+		established_socket = -1;
+		our_pid = getpid();
+	}
+	
+	if (established_socket != -1) {
+		return established_socket;
+	}
+	
+	/* Check permissions on unix socket directory */
+	
+	if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
+		return -1;
+	}
+	
+	if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
+		return -1;
+	}
+	
+	/* Connect to socket */
+	
+	strncpy(path, WINBINDD_SOCKET_DIR, sizeof(path) - 1);
+	path[sizeof(path) - 1] = '\0';
+	
+	strncat(path, "/", sizeof(path) - 1);
+	path[sizeof(path) - 1] = '\0';
+	
+	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1);
+	path[sizeof(path) - 1] = '\0';
+	
+	ZERO_STRUCT(sunaddr);
+	sunaddr.sun_family = AF_UNIX;
+	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
+	
+	/* If socket file doesn't exist, don't bother trying to connect
+	   with retry.  This is an attempt to make the system usable when
+	   the winbindd daemon is not running. */
 
-    if (our_pid != getpid()) {
-        if (established_socket != -1) {
-            close(established_socket);
-        }
-        established_socket = -1;
-        our_pid = getpid();
-    }
-
-    if (established_socket != -1) {
-        return established_socket;
-    }
-
-    /* Check permissions on unix socket directory */
-
-    if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
-        return -1;
-    }
-
-    if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
-        return -1;
-    }
-
-    /* Connect to socket */
-
-    strncpy(path, WINBINDD_SOCKET_DIR, sizeof(path) - 1);
-    path[sizeof(path) - 1] = '\0';
-
-    strncat(path, "/", sizeof(path) - 1);
-    path[sizeof(path) - 1] = '\0';
-
-    strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1);
-    path[sizeof(path) - 1] = '\0';
-
-    ZERO_STRUCT(sunaddr);
-    sunaddr.sun_family = AF_UNIX;
-    strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
-
-    /* If socket file doesn't exist, don't bother trying to connect with
-       retry.  This is an attempt to make the system usable when the
-       winbindd daemon is not running. */
-
-    if (lstat(path, &st) == -1) {
-        return -1;
-    }
-
-    /* Check permissions on unix socket file */
-    
-    if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
-        return -1;
-    }
-
-    /* Connect to socket */
-
-    if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-        return -1;
-    }
-
-    if (connect(established_socket, (struct sockaddr *)&sunaddr, 
-                sizeof(sunaddr)) == -1) {
-        close_sock();
-        return -1;
-    }
+	if (lstat(path, &st) == -1) {
+		return -1;
+	}
+	
+	/* Check permissions on unix socket file */
+	
+	if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
+		return -1;
+	}
+	
+	/* Connect to socket */
+	
+	if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+		return -1;
+	}
+	
+	if (connect(established_socket, (struct sockaddr *)&sunaddr, 
+		    sizeof(sunaddr)) == -1) {
+		close_sock();
+		return -1;
+	}
         
-    return established_socket;
+	return established_socket;
 }
 
 /* Write data to winbindd socket with timeout */
 
 int write_sock(void *buffer, int count)
 {
-    int result, nwritten;
-
-    /* Open connection to winbind daemon */
-
+	int result, nwritten;
+	
+	/* Open connection to winbind daemon */
+	
  restart:
+	
+	if (open_pipe_sock() == -1) {
+		return -1;
+	}
+	
+	/* Write data to socket */
+	
+	nwritten = 0;
+	
+	while(nwritten < count) {
+		struct timeval tv;
+		fd_set r_fds;
+		int selret;
+		
+		/* Catch pipe close on other end by checking if a read()
+		   call would not block by calling select(). */
 
-    if (open_pipe_sock() == -1) {
-        return -1;
-    }
-
-    /* Write data to socket */
-
-    nwritten = 0;
-
-    while(nwritten < count) {
-        struct timeval tv;
-        fd_set r_fds;
-        int selret;
-
-        /* Catch pipe close on other end by checking if a read() call would 
-           not block by calling select(). */
-
-        FD_ZERO(&r_fds);
-        FD_SET(established_socket, &r_fds);
-        ZERO_STRUCT(tv);
-
-        if ((selret = select(established_socket + 1, &r_fds, NULL, NULL, 
-                             &tv)) == -1) {
-            close_sock();
-            return -1;                         /* Select error */
-        }
-
-        /* Write should be OK if fd not available for reading */
-
-        if (!FD_ISSET(established_socket, &r_fds)) {
-
-            /* Do the write */
-
-            result = write(established_socket, (char *)buffer + nwritten, 
-                           count - nwritten);
-
-            if ((result == -1) || (result == 0)) {
-
-                /* Write failed */
-            
-                close_sock();
-                return -1;
-            }
-
-            nwritten += result;
-
-        } else {
-
-            /* Pipe has closed on remote end */
-
-            close_sock();
-            goto restart;
-        }
-    }
-    
-    return nwritten;
+		FD_ZERO(&r_fds);
+		FD_SET(established_socket, &r_fds);
+		ZERO_STRUCT(tv);
+		
+		if ((selret = select(established_socket + 1, &r_fds, 
+				     NULL, NULL, &tv)) == -1) {
+			close_sock();
+			return -1;                   /* Select error */
+		}
+		
+		/* Write should be OK if fd not available for reading */
+		
+		if (!FD_ISSET(established_socket, &r_fds)) {
+			
+			/* Do the write */
+			
+			result = write(established_socket,
+				       (char *)buffer + nwritten, 
+				       count - nwritten);
+			
+			if ((result == -1) || (result == 0)) {
+				
+				/* Write failed */
+				
+				close_sock();
+				return -1;
+			}
+			
+			nwritten += result;
+			
+		} else {
+			
+			/* Pipe has closed on remote end */
+			
+			close_sock();
+			goto restart;
+		}
+	}
+	
+	return nwritten;
 }
 
 /* Read data from winbindd socket with timeout */
 
 static int read_sock(void *buffer, int count)
 {
-    int result, nread;
+	int result = 0, nread = 0;
 
-    /* Read data from socket */
-
-    nread = 0;
-
-    while(nread < count) {
-
-        result = read(established_socket, (char *)buffer + nread, 
-                      count - nread);
-        
-        if ((result == -1) || (result == 0)) {
-
-            /* Read failed.  I think the only useful thing we can do here 
-               is just return -1 and fail since the transaction has failed
-               half way through. */
-            
-            close_sock();
-            return -1;
-        }
-        
-        nread += result;
-    }
-
-    return result;
+	/* Read data from socket */
+	
+	while(nread < count) {
+		
+		result = read(established_socket, (char *)buffer + nread, 
+			      count - nread);
+		
+		if ((result == -1) || (result == 0)) {
+			
+			/* Read failed.  I think the only useful thing we
+			   can do here is just return -1 and fail since the
+			   transaction has failed half way through. */
+			
+			close_sock();
+			return -1;
+		}
+		
+		nread += result;
+	}
+	
+	return result;
 }
 
 /* Read reply */
 
 int read_reply(struct winbindd_response *response)
 {
-    int result1, result2 = 0;
+	int result1, result2 = 0;
 
-    if (!response) {
-        return -1;
-    }
+	if (!response) {
+		return -1;
+	}
+	
+	/* Read fixed length response */
+	
+	if ((result1 = read_sock(response, sizeof(struct winbindd_response)))
+	    == -1) {
+		
+		return -1;
+	}
+	
+	/* We actually send the pointer value of the extra_data field from
+	   the server.  This has no meaning in the client's address space
+	   so we clear it out. */
 
-    /* Read fixed length response */
+	response->extra_data = NULL;
 
-    if ((result1 = read_sock(response, sizeof(struct winbindd_response)))
-         == -1) {
-
-        return -1;
-    }
-
-    /* Read variable length response */
-
-    if (response->length > sizeof(struct winbindd_response)) {
-        int extra_data_len = response->length - 
-            sizeof(struct winbindd_response);
-
-        /* Mallocate memory for extra data */
-
-        if (!(response->extra_data = malloc(extra_data_len))) {
-            return -1;
-        }
-
-        if ((result2 = read_sock(response->extra_data, extra_data_len))
-            == -1) {
-            return -1;
-        }
-    }
-
-    /* Return total amount of data read */
-
-    return result1 + result2;
+	/* Read variable length response */
+	
+	if (response->length > sizeof(struct winbindd_response)) {
+		int extra_data_len = response->length - 
+			sizeof(struct winbindd_response);
+		
+		/* Mallocate memory for extra data */
+		
+		if (!(response->extra_data = malloc(extra_data_len))) {
+			return -1;
+		}
+		
+		if ((result2 = read_sock(response->extra_data, extra_data_len))
+		    == -1) {
+			return -1;
+		}
+	}
+	
+	/* Return total amount of data read */
+	
+	return result1 + result2;
 }
 
 /* Free a response structure */
@@ -287,6 +292,7 @@ void free_response(struct winbindd_response *response)
 
 	if (response && response->extra_data) {
 		free(response->extra_data);
+		response->extra_data = NULL;
 	}
 }
 
@@ -305,8 +311,15 @@ enum nss_status generic_request(int req_type,
 		return NSS_STATUS_NOTFOUND;
 	}
 
-	if (!response) response = &lresponse;
-	if (!request) request = &lrequest;
+	if (!response) {
+		ZERO_STRUCT(lresponse);
+		response = &lresponse;
+	}
+
+	if (!request) {
+		ZERO_STRUCT(lrequest);
+		request = &lrequest;
+	}
 	
 	/* Fill in request and send down pipe */
 	init_request(request, req_type);

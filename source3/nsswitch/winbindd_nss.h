@@ -104,6 +104,7 @@ struct winbindd_request {
                 } chauthtok;         /* pam_winbind passwd module */
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
 		fstring name;        /* lookupname */
+		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
         fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
@@ -128,7 +129,7 @@ struct winbindd_response {
 	
 	union {
 		
-		/* getpwnam, getpwuid, getpwent */
+		/* getpwnam, getpwuid */
 		
 		struct winbindd_pw {
 			fstring pw_name;
@@ -141,7 +142,7 @@ struct winbindd_response {
 			int pwent_ndx;
 		} pw;
 
-		/* getgrnam, getgrgid, getgrent */
+		/* getgrnam, getgrgid */
 
 		struct winbindd_gr {
 			fstring gr_name;
@@ -151,6 +152,7 @@ struct winbindd_response {
 			int grent_ndx;
 		} gr;
 
+		uint32 num_entries; /* getpwent, getgrent */
 		fstring sid;        /* lookupname, [ug]id_to_sid */
 		struct {
 			fstring name;       /* lookupsid */
