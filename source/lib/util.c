@@ -2395,7 +2395,7 @@ BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
 
 	DEBUG(10,("get_unix_grps\n"));
 
-	if (p_ngroups == NULL || *p_groups == NULL)
+	if (p_ngroups == NULL || p_groups == NULL)
 	{
 		return False;
 	}
@@ -2910,11 +2910,23 @@ enum remote_arch_types get_remote_arch(void)
 
 
 /*******************************************************************
+ align a pointer to a multiple of 4 bytes.  
+ ********************************************************************/
+char *align4(char *q, char *base)
+{
+	int mod = PTR_DIFF(q, base) & 3;
+	if (mod != 0)
+	{
+		q += mod;
+	}
+	return q;
+}
+/*******************************************************************
 align a pointer to a multiple of 2 bytes
 ********************************************************************/
 char *align2(char *q, char *base)
 {
-	if ((q - base) & 1)
+	if (PTR_DIFF(q, base) & 1)
 	{
 		q++;
 	}
