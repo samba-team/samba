@@ -2690,7 +2690,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info21.logon_script.string, "scriptPath");
 		IFSET(SAMR_FIELD_PROFILE_PATH)      
 			SET_STRING(msg, info21.profile_path.string, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATION)  
+		IFSET(SAMR_FIELD_WORKSTATIONS)  
 			SET_STRING(msg, info21.workstations.string, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info21.logon_hours,         "logonHours");
@@ -2722,7 +2722,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info23.info.logon_script.string, "scriptPath");
 		IFSET(SAMR_FIELD_PROFILE_PATH)      
 			SET_STRING(msg, info23.info.profile_path.string, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATION)  
+		IFSET(SAMR_FIELD_WORKSTATIONS)  
 			SET_STRING(msg, info23.info.workstations.string, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info23.info.logon_hours,         "logonHours");
@@ -2776,7 +2776,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info25.info.logon_script.string, "scriptPath");
 		IFSET(SAMR_FIELD_PROFILE_PATH)      
 			SET_STRING(msg, info25.info.profile_path.string, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATION)  
+		IFSET(SAMR_FIELD_WORKSTATIONS)  
 			SET_STRING(msg, info25.info.workstations.string, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info25.info.logon_hours,         "logonHours");
