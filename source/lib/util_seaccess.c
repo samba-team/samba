@@ -194,6 +194,31 @@ void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
 	}
 }
 
+/* Map standard access rights to object specific rights.  This technique is
+   used to give meaning to assigning read, write, execute and all access to
+   objects.  Each type of object has its own mapping of standard to object
+   specific access rights. */
+
+void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
+{
+	uint32 old_mask = *access_mask;
+
+	if (*access_mask & READ_CONTROL_ACCESS) {
+		*access_mask &= ~READ_CONTROL_ACCESS;
+		*access_mask |= mapping->std_read;
+	}
+
+	if (*access_mask & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)) {
+		*access_mask &= ~(DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS);
+		*access_mask |= mapping->std_all;
+	}
+
+	if (old_mask != *access_mask) {
+		DEBUG(10, ("se_map_standard(): mapped mask 0x%08x to 0x%08x\n",
+			   old_mask, *access_mask));
+	}
+}
+
 /*****************************************************************************
  Check access rights of a user against a security descriptor.  Look at
  each ACE in the security descriptor until an access denied ACE denies
