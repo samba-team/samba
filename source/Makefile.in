@@ -12,7 +12,7 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 
-LIBS=@LIBS@ @LDAP_LIBS@ @KRB5_LIBS@
+LIBS=@LIBS@ @LDAP_LIBS@ @KRB5_LIBS@ @LIBPOPT_LIBS@
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
@@ -57,7 +57,7 @@ LOCKDIR = @lockdir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-FLAGS = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I. $(CPPFLAGS) -I$(srcdir)
+FLAGS = $(CFLAGS) -Iinclude -I$(srcdir)/include $(CPPFLAGS) -I. -I$(srcdir)
 FLAGS32 =
 
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
@@ -111,6 +111,8 @@ LIBRPC_OBJS = @LIBRPC_OBJS@
 
 LIBSMB_OBJS = @LIBSMB_OBJS@
 
+LIBPOPT_OBJS = @LIBPOPT_OBJS@
+
 PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
 PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
 
@@ -158,14 +160,14 @@ SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
 		$(PARAM_OBJ) $(SECRETS_OBJ)  \
 		$(LIBBASIC_OBJS) $(POPT_LIB_OBJ) $(LIBSMB_OBJS)
 
-SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
-SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
+SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) $(LIBPOPT_OBJS)
+SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS) $(LIBPOPT_LIBS)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJS) $(SECRETS_OBJ) \
 	     $(LIBBASIC_OBJS) \
-             $(READLINE_OBJ) $(POPT_LIB_OBJ)
+             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(LIBPOPT_OBJS)
 
 SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJS) $(PARAM_OBJ) $(LIBBASIC_OBJS)
 SMBTORTURE_LIBS = $(LIBS)
@@ -189,9 +191,6 @@ PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
 	    $(LIBBASIC_OBJS) $(POPT_LIB_OBJ)
-
-POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
-          popt/popthelp.o popt/poptparse.o
 
 ######################################################################
 # now the rules...
@@ -310,9 +309,9 @@ bin/smbd@EXEEXT@: $(SMBD_OBJS) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJS) $(LDFLAGS) $(DYNEXP) $(SMBD_LIBS)
 
-bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbclient@EXEEXT@: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJS) bin/.dummy
 	@echo Linking $@
