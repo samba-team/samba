@@ -578,6 +578,35 @@ static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	return True;
 }
 
+static BOOL test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			const char *msg, uint32_t timeout)
+{
+	struct winreg_InitiateSystemShutdownEx r;
+	NTSTATUS status;
+	
+	r.in.hostname = NULL;
+	r.in.message = talloc_p(mem_ctx, struct winreg_String);
+	init_winreg_String(r.in.message, msg);
+	r.in.force_apps = 1;
+	r.in.timeout = timeout;
+	r.in.reboot = 1;
+	r.in.reason = 0;
+
+	status = dcerpc_winreg_InitiateSystemShutdownEx(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("InitiateSystemShutdownEx failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("InitiateSystemShutdownEx failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct winreg_AbortSystemShutdown r;
@@ -745,6 +774,8 @@ BOOL torture_rpc_winreg(void)
 		printf("winreg_InitiateShutdown disabled - enable dangerous tests to use\n");
 	} else {
 		ret &= test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30);
+		ret &= test_AbortSystemShutdown(p, mem_ctx);
+		ret &= test_InitiateSystemShutdownEx(p, mem_ctx, "spottyfood", 30);
 		ret &= test_AbortSystemShutdown(p, mem_ctx);
 	}
 
