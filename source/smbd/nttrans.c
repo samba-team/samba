@@ -784,13 +784,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			if(errno == EISDIR) {
 
 				/*
-				 * We only fall back to directory open if no oplock was
-				 * requested and no read/write data was requested.
+				 * Fail the open if it was explicitly a non-directory file.
 				 */
 
-				if(oplock_request || (desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|
-												FILE_APPEND_DATA|FILE_READ_ATTRIBUTES|FILE_READ_EA|
-												FILE_WRITE_ATTRIBUTES|FILE_WRITE_EA))) {
+				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
