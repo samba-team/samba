@@ -177,7 +177,7 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 
 	ref->undoc_buffer = 1;
 	ref->num_ref_doms_1 = num+1;
-	ref->undoc_buffer2 = 1;
+	ref->ptr_ref_dom  = 1;
 	ref->max_entries = MAX_REF_DOMAINS;
 	ref->num_ref_doms_2 = num+1;
 

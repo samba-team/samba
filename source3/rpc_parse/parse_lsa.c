@@ -73,40 +73,44 @@ static void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int de
 	
 	prs_uint32("undoc_buffer  ", ps, depth, &(r_r->undoc_buffer  )); /* undocumented buffer pointer. */
 	prs_uint32("num_ref_doms_1", ps, depth, &(r_r->num_ref_doms_1)); /* num referenced domains? */
-	prs_uint32("undoc_buffer2 ", ps, depth, &(r_r->undoc_buffer2 )); /* undocumented buffer pointer. */
+	prs_uint32("ptr_ref_dom   ", ps, depth, &(r_r->ptr_ref_dom   )); /* undocumented buffer pointer. */
 	prs_uint32("max_entries   ", ps, depth, &(r_r->max_entries   )); /* 32 - max number of entries */
-	prs_uint32("num_ref_doms_2", ps, depth, &(r_r->num_ref_doms_2)); /* 4 - num referenced domains? */
 
 	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1);
-	SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
 
-	for (i = 0; i < r_r->num_ref_doms_1; i++)
+	if (r_r->ptr_ref_dom != 0)
 	{
-		fstring t;
+		prs_uint32("num_ref_doms_2", ps, depth, &(r_r->num_ref_doms_2)); /* 4 - num referenced domains? */
+		SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
 
-		slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-		smb_io_unihdr(t, &(r_r->hdr_ref_dom[i].hdr_dom_name), ps, depth);
-
-		slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-		prs_uint32(t, ps, depth, &(r_r->hdr_ref_dom[i].ptr_dom_sid));
-	}
-
-	for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++)
-	{
-		fstring t;
-
-		if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0)
+		for (i = 0; i < r_r->num_ref_doms_1; i++)
 		{
+			fstring t;
+
 			slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-			smb_io_unistr2(t, &(r_r->ref_dom[n].uni_dom_name), True, ps, depth); /* domain name unicode string */
-			n++;
+			smb_io_unihdr(t, &(r_r->hdr_ref_dom[i].hdr_dom_name), ps, depth);
+
+			slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
+			prs_uint32(t, ps, depth, &(r_r->hdr_ref_dom[i].ptr_dom_sid));
 		}
 
-		if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0)
+		for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++)
 		{
-			slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-			smb_io_dom_sid2("", &(r_r->ref_dom[s].ref_dom), ps, depth); /* referenced domain SIDs */
-			s++;
+			fstring t;
+
+			if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0)
+			{
+				slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
+				smb_io_unistr2(t, &(r_r->ref_dom[n].uni_dom_name), True, ps, depth); /* domain name unicode string */
+				n++;
+			}
+
+			if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0)
+			{
+				slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
+				smb_io_dom_sid2("", &(r_r->ref_dom[s].ref_dom), ps, depth); /* referenced domain SIDs */
+				s++;
+			}
 		}
 	}
 }
