@@ -2896,11 +2896,14 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 
-	char *attrs[] = {
-		(char *)get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
-		(char *)get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
+	const char *attrs[] = {
+		NULL,
+		NULL,
 		NULL 
 	};
+
+	attrs[0] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME);
+	attrs[1] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL);
 
 	if (cache_account_policy_get(policy_index, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
@@ -3009,11 +3012,14 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 
-	char *attrs[] = {
-		(char *)get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
-		(char *)get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
+	const char *attrs[] = {
+		NULL,
+		NULL,
 		NULL 
 	};
+
+	attrs[0] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
+	attrs[1] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
 
 	policy_string = decode_account_policy_name(policy_index);
 	if (!policy_string) {
