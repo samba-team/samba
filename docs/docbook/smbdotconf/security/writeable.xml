@@ -1,8 +1,0 @@
-<samba:parameter name="writeable"
-                 context="S"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Inverted synonym for <link linkend="READONLY">
-    <parameter moreinfo="none">read only</parameter></link>.</para>
-</listitem>
-</samba:parameter>

@@ -1,8 +1,0 @@
-<samba:parameter name="casesignames"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>Synonym for <link linkend="CASESENSITIVE">case sensitive</link>.</para>
-</listitem>
-</samba:parameter>

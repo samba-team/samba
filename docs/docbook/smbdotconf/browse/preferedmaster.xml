@@ -1,9 +1,0 @@
-<samba:parameter name="prefered master"
-                 context="G"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>Synonym for <link linkend="PREFERREDMASTER"><parameter moreinfo="none">
-	preferred master</parameter></link> for people who cannot spell :-).</para>
-</listitem>
-</samba:parameter>
