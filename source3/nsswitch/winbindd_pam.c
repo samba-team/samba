@@ -174,6 +174,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	DATA_BLOB lm_resp, nt_resp;
 
+	if (!state->privilaged) {
+		DEBUG(2, ("winbindd_pam_auth_crap: non-privilaged access denied!\n"));
+		result =  NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
 	/* Ensure null termination */
 	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]='\0';
 
@@ -272,19 +278,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
 		}
 
-#if 0
-		/* we don't currently do this stuff right */
-		/* Doing an assert in a daemon is going to be a pretty bad 
-                   idea. - tpot */
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_NTKEY) {
-			SMB_ASSERT(sizeof(state->response.data.auth.nt_session_key) == sizeof(info3.user_sess_key)); 
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_LMKEY) {
-			SMB_ASSERT(sizeof(state->response.data.auth.nt_session_key) <= sizeof(info3.user_sess_key)); 
 			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
-#endif
 	}
 
 done:

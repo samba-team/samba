@@ -1066,6 +1066,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	SAFE_FREE(all_group_SIDs);
 	
+	memcpy((*server_info)->session_key, info3.user_sess_key, sizeof((*server_info)->session_key)/* 16 */);
+	memcpy((*server_info)->first_8_lm_hash, info3.padding, 8);
+
 	return NT_STATUS_OK;
 }
 
