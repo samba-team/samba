@@ -74,8 +74,6 @@ void smbw_init(void)
 	}
 
 	charset_initialise();
-	lp_load(CONFIGFILE,True,False,False);
-	codepage_initialise(lp_client_code_page());
 
 	in_client = True;
 
@@ -86,6 +84,7 @@ void smbw_init(void)
 	}
 
 	lp_load(servicesf,True,False,False);
+	codepage_initialise(lp_client_code_page());
 
 	get_myname(global_myname);
 
