@@ -331,8 +331,9 @@ static uint32 cmd_set_options = 0xffffffff;
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static BOOL do_command(struct client_info *info, char *line)
+static uint32 do_command(struct client_info *info, char *line)
 {
+	uint32 status = 0x0;
 	int i;
 
 	if (!get_cmd_args(line))
@@ -351,7 +352,7 @@ static BOOL do_command(struct client_info *info, char *line)
 		char **argv = cmd_argv;
 		optind = 0;
 
-		commands[i]->fn(info, argc, argv);
+		status = commands[i]->fn(info, argc, argv);
 	}
 	else if (i == -2)
 	{
@@ -366,15 +367,16 @@ static BOOL do_command(struct client_info *info, char *line)
 
 	free_char_array(cmd_argc, cmd_argv);
 
-	return True;
+	return status;
 }
 
 
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static BOOL process(struct client_info *info, char *cmd_str)
+static uint32 process(struct client_info *info, char *cmd_str)
 {
+	uint32 status = 0;
 	pstring line;
 	char *cmd = cmd_str;
 
@@ -402,11 +404,15 @@ static BOOL process(struct client_info *info, char *cmd_str)
 			/* input language code to internal one */
 			CNV_INPUT(line);
 
-			if (!do_command(info, line))
+			status = do_command(info, line);
+			if (status == 0x0)
+			{
 				continue;
+			}
 		}
 	}
 	else
+	{
 		while (!feof(stdin))
 		{
 #ifdef HAVE_READLINE
@@ -479,11 +485,14 @@ static BOOL process(struct client_info *info, char *cmd_str)
 
 			fprintf(out_hnd, "%s\n", line);
 
-			if (!do_command(info, line))
+			status = do_command(info, line);
+			if (status == 0x0)
+			{
 				continue;
+			}
 		}
-
-	return (True);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -1359,7 +1368,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 	if (cmd_str != NULL)
 	{
-		process(&cli_info, cmd_str);
+		return process(&cli_info, cmd_str);
 	}
 
 	return 0;
@@ -1430,6 +1439,7 @@ void readline_init(void)
 ****************************************************************************/
 int command_main(int argc, char *argv[])
 {
+	uint32 status;
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
 	char progname[255], path[255], *s;
@@ -1487,24 +1497,25 @@ int command_main(int argc, char *argv[])
 	read_user_env(&usr.ntc);
 
 	cmd_set_options &= ~CMD_HELP;
+	cmd_set_options &= ~CMD_STR;
 	cmd_set_options &= ~CMD_NOPW;
 	cmd_set_options &= ~CMD_USER;
 	cmd_set_options &= ~CMD_PASS;
 
 	codepage_initialise(lp_client_code_page());
 
-	cmd_set(&cli_info, argc, argv);
+	status = cmd_set(&cli_info, argc, argv);
 
-	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
+	if (IS_BITS_SET_SOME(cmd_set_options, CMD_HELP|CMD_STR))
 	{
 		free_connections();
-		exit(0);
+		exit(status);
 	}
 
 	DEBUG(3, ("%s client started (version %s)\n",
 		  timestring(False), VERSION));
 
-	process(&cli_info, NULL);
+	status = process(&cli_info, NULL);
 
 	free_connections();
 
@@ -1512,5 +1523,5 @@ int command_main(int argc, char *argv[])
 	num_commands = 0;
 	commands = NULL;
 
-	return (0);
+	return status;
 }
