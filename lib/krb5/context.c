@@ -185,8 +185,10 @@ krb5_init_context(krb5_context *context)
 #endif
 
     ret = init_context_from_config_file(p);
-    if(ret)
+    if(ret) {
+	krb5_free_context(p);
 	return ret;
+    }
 
     *context = p;
     return 0;
@@ -219,8 +221,8 @@ default_etypes(krb5_enctype **etype)
     krb5_enctype p[] = {
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_DES3_CBC_MD5,
-	ETYPE_DES_CBC_MD5,
 	ETYPE_ARCFOUR_HMAC_MD5,
+	ETYPE_DES_CBC_MD5,
 	ETYPE_DES_CBC_MD4,
 	ETYPE_DES_CBC_CRC,
 	ETYPE_NULL
