@@ -58,7 +58,7 @@ void cmd_wks_query_info(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_wks_query_info: server:%s info level: %d\n",
