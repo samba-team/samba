@@ -5,6 +5,7 @@
    Modified by Jeremy Allison 1995.
    Copyright (C) Jeremy Allison 1995-2000.
    Copyright (C) Luke Kennethc Casson Leighton 1996-2000.
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -294,6 +295,64 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
+DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
+				   DATA_BLOB server_chal, size_t client_chal_length)
+{
+	uchar ntlmv2_response[16];
+	DATA_BLOB ntlmv2_client_data;
+	DATA_BLOB final_response;
+	
+	/* NTLMv2 */
+
+	/* We also get to specify some random data */
+	ntlmv2_client_data = data_blob(NULL, client_chal_length);
+	generate_random_buffer(ntlmv2_client_data.data, ntlmv2_client_data.length, False);
+	
+	/* Given that data, and the challenge from the server, generate a response */
+	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, ntlmv2_client_data, ntlmv2_response);
+	
+	/* put it into nt_response, for the code below to put into the packet */
+	final_response = data_blob(NULL, ntlmv2_client_data.length + sizeof(ntlmv2_response));
+	memcpy(final_response.data, ntlmv2_response, sizeof(ntlmv2_response));
+	/* after the first 16 bytes is the random data we generated above, so the server can verify us with it */
+	memcpy(final_response.data + sizeof(ntlmv2_response), ntlmv2_client_data.data, ntlmv2_client_data.length);
+	data_blob_free(&ntlmv2_client_data);
+
+	return final_response;
+}
+
+BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+		      const DATA_BLOB server_chal, 
+		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
+		      DATA_BLOB *session_key) 
+{
+	uchar nt_hash[16];
+	uchar ntlm_v2_hash[16];
+	E_md4hash(password, nt_hash);
+
+	/* We don't use the NT# directly.  Instead we use it mashed up with
+	   the username and domain.
+	   This prevents username swapping during the auth exchange
+	*/
+	if (!ntv2_owf_gen(nt_hash, user, domain, ntlm_v2_hash)) {
+		return False;
+	}
+	
+	*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
+	
+	/* LMv2 */
+	
+	*lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
+	
+	*session_key = data_blob(NULL, 16);
+	
+	/* The NTLMv2 calculations also provide a session key, for signing etc later */
+	/* use only the first 16 bytes of nt_response for session key */
+	SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, session_key->data);
+
+	return True;
+}
+
 /***********************************************************
  encode a password buffer.  The caller gets to figure out 
  what to put in it.
@@ -362,20 +421,20 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
  SMB signing - setup the MAC key.
 ************************************************************/
 
-void cli_calculate_mac_key(struct cli_state *cli, const char *ntpasswd, const uchar resp[24])
+void cli_calculate_mac_key(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
 {
-	/* Get first 16 bytes. */
-	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);
-	memcpy(&cli->sign_info.mac_key[16],resp,24);
-	cli->sign_info.mac_key_len = 40;
+	
+	memcpy(&cli->sign_info.mac_key[0], user_session_key, 16);
+	memcpy(&cli->sign_info.mac_key[16],response.data, MIN(response.length, 40 - 16));
+	cli->sign_info.mac_key_len = MIN(response.length + 16, 40);
 	cli->sign_info.use_smb_signing = True;
 
 	/* These calls are INCONPATIBLE with SMB signing */
 	cli->readbraw_supported = False;
-	cli->writebraw_supported = False;    
+	cli->writebraw_supported = False;
 
 	/* Reset the sequence number in case we had a previous (aborted) attempt */
-	cli->sign_info.send_seq_num = 0;
+	cli->sign_info.send_seq_num = 2;
 }
 
 /***********************************************************
@@ -411,9 +470,47 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 	MD5Final(calc_md5_mac, &md5_ctx);
 
 	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
+
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signitures...*/
 	cli->sign_info.send_seq_num++;
 	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
 	cli->sign_info.send_seq_num++;
+}
+
+/***********************************************************
+ SMB signing - check a MAC sent by server.
+************************************************************/
+
+BOOL cli_check_sign_mac(struct cli_state *cli)
+{
+	unsigned char calc_md5_mac[16];
+	unsigned char server_sent_mac[8];
+	struct MD5Context md5_ctx;
+
+	if (cli->sign_info.temp_smb_signing) {
+		return True;
+	}
+
+	if (!cli->sign_info.use_smb_signing) {
+		return True;
+	}
+
+	/*
+	 * Firstly put the sequence number into the first 4 bytes.
+	 * and zero out the next 4 bytes.
+	 */
+
+	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
+
+	SIVAL(cli->inbuf, smb_ss_field, cli->sign_info.reply_seq_num);
+	SIVAL(cli->inbuf, smb_ss_field + 4, 0);
+
+	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
+	MD5Update(&md5_ctx, cli->inbuf + 4, smb_len(cli->inbuf));
+	MD5Final(calc_md5_mac, &md5_ctx);
+
+	return (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 }

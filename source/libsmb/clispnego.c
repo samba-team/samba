@@ -481,297 +481,50 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 }
 
 /*
-  this is a tiny msrpc packet generator. I am only using this to
-  avoid tying this code to a particular varient of our rpc code. This
-  generator is not general enough for all our rpc needs, its just
-  enough for the spnego/ntlmssp code
-
-  format specifiers are:
-
-  U = unicode string (input is unix string)
-  a = address (input is BOOL unicode, char *unix_string)
-      (1 byte type, 1 byte length, unicode/ASCII string, all inline)
-  A = ASCII string (input is unix string)
-  B = data blob (pointer + length)
-  b = data blob in header (pointer + length)
-  D
-  d = word (4 bytes)
-  C = constant ascii string
- */
-BOOL msrpc_gen(DATA_BLOB *blob,
-	       const char *format, ...)
+ parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+*/
+BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status, 
+				DATA_BLOB *auth)
 {
-	int i, n;
-	va_list ap;
-	char *s;
-	uint8 *b;
-	int head_size=0, data_size=0;
-	int head_ofs, data_ofs;
-	BOOL unicode;
+	ASN1_DATA data;
+	uint8 negResult;
 
-	/* first scan the format to work out the header and body size */
-	va_start(ap, format);
-	for (i=0; format[i]; i++) {
-		switch (format[i]) {
-		case 'U':
-			s = va_arg(ap, char *);
-			head_size += 8;
-			data_size += str_charnum(s) * 2;
-			break;
-		case 'A':
-			s = va_arg(ap, char *);
-			head_size += 8;
-			data_size += str_ascii_charnum(s);
-			break;
-		case 'a':
-			unicode = va_arg(ap, BOOL);
-			n = va_arg(ap, int);
-			s = va_arg(ap, char *);
-			if (unicode) {
-				data_size += (str_charnum(s) * 2) + 4;
-			} else {
-				data_size += (str_ascii_charnum(s)) + 4;
-			}
-			break;
-		case 'B':
-			b = va_arg(ap, uint8 *);
-			head_size += 8;
-			data_size += va_arg(ap, int);
-			break;
-		case 'b':
-			b = va_arg(ap, uint8 *);
-			head_size += va_arg(ap, int);
-			break;
-		case 'd':
-			n = va_arg(ap, int);
-			head_size += 4;
-			break;
-		case 'C':
-			s = va_arg(ap, char *);
-			head_size += str_charnum(s) + 1;
-			break;
-		}
+	if (NT_STATUS_IS_OK(nt_status)) {
+		negResult = SPNEGO_NEG_RESULT_ACCEPT;
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		negResult = SPNEGO_NEG_RESULT_INCOMPLETE;
+	} else {
+		negResult = SPNEGO_NEG_RESULT_REJECT;
 	}
-	va_end(ap);
 
-	/* allocate the space, then scan the format again to fill in the values */
-	*blob = data_blob(NULL, head_size + data_size);
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_check_enumerated(&data, negResult);
+	asn1_end_tag(&data);
 
-	head_ofs = 0;
-	data_ofs = head_size;
-
-	va_start(ap, format);
-	for (i=0; format[i]; i++) {
-		switch (format[i]) {
-		case 'U':
-			s = va_arg(ap, char *);
-			n = str_charnum(s);
-			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
-			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
-			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs, s, n*2, STR_UNICODE|STR_NOALIGN);
-			data_ofs += n*2;
-			break;
-		case 'A':
-			s = va_arg(ap, char *);
-			n = str_ascii_charnum(s);
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs, s, n, STR_ASCII|STR_NOALIGN);
-			data_ofs += n;
-			break;
-		case 'a':
-			unicode = va_arg(ap, BOOL);
-			n = va_arg(ap, int);
-			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-			s = va_arg(ap, char *);
-			if (unicode) {
-				n = str_charnum(s);
-				SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n*2,
-						    STR_UNICODE|STR_NOALIGN);
-				}
-				data_ofs += n*2;
-			} else {
-				n = str_ascii_charnum(s);
-				SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n,
-						    STR_ASCII|STR_NOALIGN);
-				}
-				data_ofs += n;
-			}
-			break;
-
-		case 'B':
-			b = va_arg(ap, uint8 *);
-			n = va_arg(ap, int);
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			memcpy(blob->data+data_ofs, b, n);
-			data_ofs += n;
-			break;
-		case 'd':
-			n = va_arg(ap, int);
-			SIVAL(blob->data, head_ofs, n); head_ofs += 4;
-			break;
-		case 'b':
-			b = va_arg(ap, uint8 *);
-			n = va_arg(ap, int);
-			memcpy(blob->data + head_ofs, b, n);
-			head_ofs += n;
-			break;
-		case 'C':
-			s = va_arg(ap, char *);
-			head_ofs += push_string(NULL, blob->data+head_ofs, s, -1, 
-						STR_ASCII|STR_TERMINATE);
-			break;
-		}
+	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+		asn1_start_tag(&data,ASN1_CONTEXT(1));
+		asn1_check_OID(&data, OID_NTLMSSP);
+		asn1_end_tag(&data);
+		
+		asn1_start_tag(&data,ASN1_CONTEXT(2));
+		asn1_read_OctetString(&data, auth);
+		asn1_end_tag(&data);
 	}
-	va_end(ap);
 
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data.ofs));
+		asn1_free(&data);
+		data_blob_free(auth);
+		return False;
+	}
+
+	asn1_free(&data);
 	return True;
-}
-
-
-/*
-  this is a tiny msrpc packet parser. This the the partner of msrpc_gen
-
-  format specifiers are:
-
-  U = unicode string (output is unix string)
-  A = ascii string
-  B = data blob
-  b = data blob in header
-  d = word (4 bytes)
-  C = constant ascii string
- */
-BOOL msrpc_parse(DATA_BLOB *blob,
-		 const char *format, ...)
-{
-	int i;
-	va_list ap;
-	char **ps, *s;
-	DATA_BLOB *b;
-	int head_ofs = 0;
-	uint16 len1, len2;
-	uint32 ptr;
-	uint32 *v;
-	pstring p;
-
-	va_start(ap, format);
-	for (i=0; format[i]; i++) {
-		switch (format[i]) {
-		case 'U':
-			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || (len1&1) || ptr + len1 > blob->length) {
-				return False;
-			}
-			ps = va_arg(ap, char **);
-			pull_string(NULL, p, blob->data + ptr, -1, len1, 
-				    STR_UNICODE|STR_NOALIGN);
-			(*ps) = strdup(p);
-			break;
-		case 'A':
-			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-			ps = va_arg(ap, char **);
-			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, -1, 
-					    len1, STR_ASCII|STR_NOALIGN);
-				(*ps) = strdup(p);
-			} else {
-				(*ps) = NULL;
-			}
-			break;
-		case 'B':
-			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
-			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-			b = (DATA_BLOB *)va_arg(ap, void *);
-			*b = data_blob(blob->data + ptr, len1);
-			break;
-		case 'b':
-			b = (DATA_BLOB *)va_arg(ap, void *);
-			len1 = va_arg(ap, unsigned);
-			*b = data_blob(blob->data + head_ofs, len1);
-			head_ofs += len1;
-			break;
-		case 'd':
-			v = va_arg(ap, uint32 *);
-			*v = IVAL(blob->data, head_ofs); head_ofs += 4;
-			break;
-		case 'C':
-			s = va_arg(ap, char *);
-			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 
-						blob->length - head_ofs, 
-						STR_ASCII|STR_TERMINATE);
-			if (strcmp(s, p) != 0) {
-				return False;
-			}
-			break;
-		}
-	}
-	va_end(ap);
-
-	return True;
-}
-
-/**
- * Print out the NTLMSSP flags for debugging 
- */
-
-void debug_ntlmssp_flags(uint32 neg_flags)
-{
-	DEBUG(3,("Got NTLMSSP neg_flags=0x%08x\n", neg_flags));
-	
-	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_UNICODE\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_OEM) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_OEM\n"));
-	if (neg_flags & NTLMSSP_REQUEST_TARGET) 
-		DEBUGADD(4, ("  NTLMSSP_REQUEST_TARGET\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_SEAL) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NETWARE\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
-	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
-		DEBUGADD(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_128) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_128\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
 }
 

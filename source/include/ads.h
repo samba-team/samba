@@ -205,3 +205,6 @@ typedef void **ADS_MODLIST;
 #define ADS_AUTH_NO_BIND          0x02
 #define ADS_AUTH_ANON_BIND        0x04
 #define ADS_AUTH_SIMPLE_BIND      0x08
+
+/* Kerberos environment variable names */
+#define KRB5_ENV_CCNAME "KRB5CCNAME"
