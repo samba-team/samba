@@ -122,6 +122,7 @@
 #undef WITH_SYSLOG
 #undef WITH_PROFILE
 #undef WITH_SSL
+#undef SSL_DIR
 #undef WITH_LDAP
 #undef WITH_NISPLUS
 #undef WITH_TDBPWD
@@ -129,6 +130,8 @@
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
 #undef WITH_SMBMOUNT
+#undef WITH_QUOTAS
+#undef WITH_WINBIND
 #undef HAVE_BROKEN_GETGROUPS
 #undef REPLACE_GETPASS
 #undef REPLACE_INET_NTOA
@@ -139,6 +142,7 @@
 #undef WITH_NETATALK
 #undef WITH_UTMP
 #undef WITH_MSDFS
+#undef WITH_LIBICONV
 #undef HAVE_INO64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
@@ -156,6 +160,8 @@
 #undef HAVE_UINT32_FROM_RPC_RPC_H
 #undef KRB4_AUTH
 #undef KRB5_AUTH
+#undef KRB4_DIR
+#undef KRB5_DIR
 #undef SEEKDIR_RETURNS_VOID
 #undef HAVE_DIRENT_D_OFF
 #undef HAVE_GETSPNAM
@@ -167,6 +173,7 @@
 #undef HAVE_SETRESGID
 #undef HAVE_SETRESGID_DECL
 #undef HAVE_SHADOW_H
+#undef HAVE_CUPS
 #undef HAVE_MEMSET
 #undef HAVE_STRCASECMP
 #undef HAVE_STRUCT_DIRENT64
@@ -1023,4 +1030,7 @@
 
 /* Define if you have working AF_LOCAL sockets */
 #undef HAVE_WORKING_AF_LOCAL
+
+/* Used for determining the compile time options */
+#undef SSL_DIR
 
