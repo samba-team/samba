@@ -1250,44 +1250,50 @@ void dos_format(char *fname)
   string_replace(fname,'/','\\');
 }
 
-
 /*******************************************************************
   show a smb message structure
 ********************************************************************/
 void show_msg(char *buf)
 {
-  int i;
-  int bcc=0;
+	int i;
+	int bcc=0;
 
-  if (DEBUGLEVEL < 5) return;
+	if (DEBUGLEVEL < 5) return;
 
-  DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
-	  smb_len(buf),
-	  (int)CVAL(buf,smb_com),
-	  (int)CVAL(buf,smb_rcls),
-	  (int)CVAL(buf,smb_reh),
-	  (int)SVAL(buf,smb_err),
-	  (int)CVAL(buf,smb_flg),
-	  (int)SVAL(buf,smb_flg2)));
-  DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
-	  (int)SVAL(buf,smb_tid),
-	  (int)SVAL(buf,smb_pid),
-	  (int)SVAL(buf,smb_uid),
-	  (int)SVAL(buf,smb_mid),
-	  (int)CVAL(buf,smb_wct)));
+	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
+			smb_len(buf),
+			(int)CVAL(buf,smb_com),
+			(int)CVAL(buf,smb_rcls),
+			(int)CVAL(buf,smb_reh),
+			(int)SVAL(buf,smb_err),
+			(int)CVAL(buf,smb_flg),
+			(int)SVAL(buf,smb_flg2)));
+	DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
+			(int)SVAL(buf,smb_tid),
+			(int)SVAL(buf,smb_pid),
+			(int)SVAL(buf,smb_uid),
+			(int)SVAL(buf,smb_mid),
+			(int)CVAL(buf,smb_wct)));
 
-  for (i=0;i<(int)CVAL(buf,smb_wct);i++)
-    DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
-	  SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
+	for (i=0;i<(int)CVAL(buf,smb_wct);i++)
+	{
+		DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
+			SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
+	}
 
-  bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
-  DEBUG(5,("smb_bcc=%d\n",bcc));
+	bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
 
-  if (DEBUGLEVEL < 10) return;
+	DEBUG(5,("smb_bcc=%d\n",bcc));
 
-  dump_data(10, smb_buf(buf), MIN(bcc, 512));
+	if (DEBUGLEVEL < 10) return;
+
+	if (DEBUGLEVEL < 50)
+	{
+		bcc = MIN(bcc, 512);
+	}
+
+	dump_data(10, smb_buf(buf), bcc);
 }
-
 /*******************************************************************
   return the length of an smb packet
 ********************************************************************/
