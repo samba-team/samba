@@ -177,9 +177,6 @@ void cli_setup_packet(struct cli_state *cli)
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		if (cli->use_spnego)
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
-		if (cli->sign_info.use_smb_signing 
-		    || cli->sign_info.temp_smb_signing)
-			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
@@ -262,6 +259,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
 
+	/* initialise signing */
+	cli_null_set_signing(cli);
+
 	if (lp_client_signing()) 
 		cli->sign_info.allow_smb_signing = True;
                                    
@@ -303,6 +303,7 @@ void cli_close_connection(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
+	cli_free_signing_context(cli);
 	data_blob_free(&cli->secblob);
 
 	if (cli->mem_ctx) {
@@ -314,6 +315,7 @@ void cli_close_connection(struct cli_state *cli)
 		close(cli->fd);
 	cli->fd = -1;
 	cli->smb_rw_error = 0;
+
 }
 
 /****************************************************************************
