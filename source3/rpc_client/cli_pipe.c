@@ -1453,6 +1453,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
 			cli_close(cli, cli->nt_pipe_fnum);
+			cli->nt_pipe_fnum = 0;
 			return False;
 		}
 	}
@@ -1463,6 +1464,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 		DEBUG(2,("cli_nt_session_open: rpc bind to %s failed\n",
 			 get_pipe_name_from_index(pipe_idx)));
 		cli_close(cli, cli->nt_pipe_fnum);
+		cli->nt_pipe_fnum = 0;
 		return False;
 	}
 
