@@ -2109,7 +2109,11 @@ my_telnet(char *user)
 		    printf("\nUser interrupt.\n");
 		    Exit(1);
 	    }
-	    telnet_spin();
+	    if (telnet_spin()) {
+		    printf("\nServer disconnected.\n");
+		    Exit(1);
+	    }
+		
 	}
 	if (printed_encrypt) {
 		printf("Encryption negotiated.\n");
