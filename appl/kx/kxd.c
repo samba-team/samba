@@ -108,7 +108,11 @@ cleanup(int nsockets, struct x_socket *sockets)
 static int
 recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	   struct sockaddr_in *thisaddr,
-	   struct sockaddr_in *thataddr)
+	   struct sockaddr_in *thataddr,
+	   int *dispnr,
+	   int *nsockets,
+	   struct x_socket **sockets,
+	   int tcpp)
 {
      int status;
      KTEXT_ST ticket;
@@ -122,7 +126,8 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      void *ret;
      int len;
      u_char msg[1024], *p;
-     u_int32_t tmp;
+     u_int32_t tmp32;
+     int tmp;
      int flags;
 
      addrlen = sizeof(*thisaddr);
@@ -175,10 +180,10 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 fatal(sock, key, schedule, thisaddr, thataddr,
 	       "Bad message");
      p++;
-     p += krb_get_int (p, &tmp, 4, 0);
-     len = min(sizeof(user), tmp);
+     p += krb_get_int (p, &tmp32, 4, 0);
+     len = min(sizeof(user), tmp32);
      memcpy (user, p, len);
-     p += tmp;
+     p += tmp32;
      user[len] = '\0';
 
      passwd = k_getpwnam (user);
@@ -192,6 +197,45 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 					auth.pinst,
 					auth.prealm),
 		 user);
+
+     flags = *p++;
+
+     if (flags & PASSIVE) {
+	 pid_t pid;
+
+	 tmp = get_xsockets (nsockets, sockets, tcpp);
+	 if (tmp < 0) {
+	     fatal (sock, key, schedule, thisaddr, thataddr,
+		    "Cannot create X socket(s): %s",
+		    strerror(errno));
+	 }
+	 *dispnr = tmp;
+
+	 if (chown_xsockets (*nsockets, *sockets,
+			    passwd->pw_uid, passwd->pw_gid)) {
+	     cleanup (*nsockets, *sockets);
+	     fatal (sock, key, schedule, thisaddr, thataddr,
+		    "Cannot chown sockets: %s",
+		    strerror(errno));
+	 }
+
+	 pid = fork();
+	 if (pid == -1) {
+	     cleanup (*nsockets, *sockets);
+	     fatal (sock, key, schedule, thisaddr, thataddr,
+		    "fork: %s", strerror(errno));
+	 } else if (pid != 0) {
+	     int status;
+
+	     while (waitpid (pid, &status, 0) != pid
+		    && !WIFEXITED(status)
+		    && !WIFSIGNALED(status))
+		 ;
+	     cleanup (*nsockets, *sockets);
+	     exit (0);
+	 }
+     }
+
      if (setgid (passwd->pw_gid) ||
 	 initgroups(passwd->pw_name, passwd->pw_gid) ||
 	 setuid(passwd->pw_uid)) {
@@ -204,18 +248,17 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	     krb_unparse_name_long (auth.pname, auth.pinst, auth.prealm),
 	     user);
      umask(077);
-     flags = *p++;
      if (!(flags & PASSIVE)) {
-	 p += krb_get_int (p, &tmp, 4, 0);
-	 len = min(tmp, display_size);
+	 p += krb_get_int (p, &tmp32, 4, 0);
+	 len = min(tmp32, display_size);
 	 memcpy (display, p, len);
 	 display[len] = '\0';
-	 p += tmp;
-	 p += krb_get_int (p, &tmp, 4, 0);
-	 len = min(tmp, xauthfile_size);
+	 p += tmp32;
+	 p += krb_get_int (p, &tmp32, 4, 0);
+	 len = min(tmp32, xauthfile_size);
 	 memcpy (xauthfile, p, len);
 	 xauthfile[len] = '\0';
-	 p += tmp;
+	 p += tmp32;
      }
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
      if (flags & KEEP_ALIVE) {
@@ -349,24 +392,16 @@ check_user_console (int fd, des_cblock *key, des_key_schedule schedule,
 
 static int
 doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
-	      struct sockaddr_in *me, struct sockaddr_in *him,
-	      int flags, int tcpp)
+	      struct sockaddr_in *me, struct sockaddr_in *him, int flags,
+	      int displaynr, int nsockets, struct x_socket *sockets,
+	      int tcpp)
 {
     int tmp;
     int len;
     size_t rem;
     u_char msg[1024], *p;
-    struct x_socket *sockets;
-    int nsockets;
 
-    tmp = get_xsockets (&nsockets, &sockets, tcpp);
-    if (tmp < 0) {
-	fatal (sock, key, schedule, me, him,
-	       "Cannot create X socket(s): %s",
-	       strerror(errno));
-	return 1;
-    }
-    display_num = tmp;
+    display_num = displaynr;
     if (tcpp)
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
@@ -509,7 +544,7 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
 	if (child < 0) {
 	    syslog (LOG_ERR, "fork: %m");
 	    return 1;
-	} else if (child != 0) {
+	} else if (child == 0) {
 	    for (i = 0; i < nsockets; ++i)
 		close (sockets[i].fd);
 	    return doit_conn (fd, sock, flags, cookiesp,
@@ -585,11 +620,14 @@ doit(int sock, int tcpp)
      u_char msg[1024], *p;
      struct x_socket *sockets;
      int nsockets;
+     int dispnr;
 
-     flags = recv_conn (sock, &key, schedule, &me, &him);
+     flags = recv_conn (sock, &key, schedule, &me, &him,
+			&dispnr, &nsockets, &sockets, tcpp);
 
      if (flags & PASSIVE)
-	 return doit_passive (sock, &key, schedule, &me, &him, flags, tcpp);
+	 return doit_passive (sock, &key, schedule, &me, &him, flags,
+			      dispnr, nsockets, sockets, tcpp);
      else
 	 return doit_active (sock, &key, schedule, &me, &him, flags, tcpp);
 }
