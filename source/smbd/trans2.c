@@ -1487,14 +1487,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	case SMB_FILE_STANDARD_INFORMATION:
 	case SMB_QUERY_FILE_STANDARD_INFO:
 
-		data_size = 22;
-		SOFF_T(pdata,0,size);
+		data_size = 24;
+		/* Fake up allocation size. */
+		SOFF_T(pdata,0,SMB_ROUNDUP(size + 1, ((SMB_OFF_T)0x100000)));
 		SOFF_T(pdata,8,size);
 		SIVAL(pdata,16,sbuf.st_nlink);
 		CVAL(pdata,20) = 0;
 		CVAL(pdata,21) = (mode&aDIR)?1:0;
-
-		DEBUG(5,("FILE_STANDARD_INFO: size = %.0f\n", (double)size ));
 		break;
 
 	case SMB_FILE_EA_INFORMATION:
