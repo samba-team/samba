@@ -51,7 +51,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-privatedir=/etc/samba \
 	--with-fhs \
 	--with-quotas \
-	--with-msdfs \
 	--with-smbmount \
 	--with-pam \
 	--with-pam_smbpass \
@@ -61,15 +60,9 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-swatdir=%{prefix}/share/swat \
 	--with-libsmbclient 
 make -j${NUMCPU} proto
-make -j${NUMCPU} all nsswitch/libnss_wins.so
+make -j${NUMCPU} all nsswitch/libnss_wins.so modules
 make -j${NUMCPU} debug2html
 make -j${NUMCPU} bin/smbspool
-
-## Build VFS modules
-#cd ../examples/VFS
-#make
-
-
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -91,7 +84,8 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt
+	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net smbgroupedit \
+	smbcacls pdbedit tdbbackup smbtree
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -102,7 +96,7 @@ do
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount debug2html winbindd
+for i in smbd nmbd swat smbmount smbumount debug2html winbindd wrepld
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -139,12 +133,9 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
-#install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-#install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-#install -m755 examples/VFS/netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-
-# clean out VFS directory since it will get installed as documentation later
-#(cd examples/VFS; make clean)
+install -m755 bin/vfs_recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 bin/vfs_audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 bin/vfs_netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 
 # libsmbclient
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
