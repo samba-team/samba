@@ -1,3 +1,15 @@
+2000-04-12  Assar Westerlund  <assar@sics.se>
+
+	* release_oid_set.c (gss_release_oid_set): clear set for
+	robustness.  From GOMBAS Gabor <gombasg@inf.elte.hu>
+	* release_name.c (gss_release_name): reset input_name for
+	robustness.  From GOMBAS Gabor <gombasg@inf.elte.hu>
+	* release_buffer.c (gss_release_buffer): set value to NULL to be
+	more robust.  From GOMBAS Gabor <gombasg@inf.elte.hu>
+	* add_oid_set_member.c (gss_add_oid_set_member): actually check if
+	the oid is a member first.  leave the oid_set unchanged if realloc
+	fails.
+
 2000-02-13  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 1:0:1
