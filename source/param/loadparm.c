@@ -1090,6 +1090,7 @@ static void init_locals(void)
     }
 }
 
+#define NUMBER_OF_STATIC_STRING_BUFS 20
 
 /******************************************************************* a
 convenience routine to grab string parameters into a rotating buffer,
@@ -1098,8 +1099,8 @@ callers without affecting the source string.
 ********************************************************************/
 static char *lp_string(const char *s)
 {
-  static char *bufs[10];
-  static size_t buflen[10];
+  static char *bufs[NUMBER_OF_STATIC_STRING_BUFS];
+  static size_t buflen[NUMBER_OF_STATIC_STRING_BUFS ];
   static int next = -1;  
   char *ret;
   int i;
@@ -1107,7 +1108,7 @@ static char *lp_string(const char *s)
 
   if (next == -1) {
     /* initialisation */
-    for (i=0;i<10;i++) {
+    for (i=0;i<NUMBER_OF_STATIC_STRING_BUFS ;i++) {
       bufs[i] = NULL;
       buflen[i] = 0;
     }
@@ -1129,7 +1130,7 @@ static char *lp_string(const char *s)
   } 
 
   ret = &bufs[next][0];
-  next = (next+1)%10;
+  next = (next+1)%NUMBER_OF_STATIC_STRING_BUFS ;
 
   if (!s) 
     *ret = 0;

@@ -276,6 +276,7 @@ static BOOL user_in_group_list(char *user,char *gname)
 			return(True); 
 	} 
 
+	setgrent();
 	while ((gptr = (struct group *)getgrent())) {
 		if (!strequal(gptr->gr_name,gname))
 			continue;

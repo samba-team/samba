@@ -345,8 +345,9 @@ int unistrcpy(char *dst, char *src)
 
 
 /*******************************************************************
- free any existing maps
+ Free any existing maps.
 ********************************************************************/
+
 static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 {
 	/* this handles identity mappings where we share the pointer */
@@ -555,4 +556,338 @@ BOOL load_unix_unicode_map(const char *unix_char_set)
   fstrcpy(upper_unix_char_set, unix_char_set);
   strupper(upper_unix_char_set);
   return load_unicode_map(upper_unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
+}
+
+/*******************************************************************
+ The following functions reproduce many of the non-UNICODE standard
+ string functions in Samba.
+********************************************************************/
+
+/*******************************************************************
+ Convert a UNICODE string to multibyte format. Note that the 'src' is in
+ native byte order, not little endian. Always zero terminates.
+ dst_len is in bytes.
+********************************************************************/
+
+static char *unicode_to_multibyte(char *dst, const smb_ucs2_t *src,
+                                  size_t dst_len, const uint16 *ucs2_to_cp)
+{
+	size_t i;
+
+	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
+		smb_ucs2_t val = ucs2_to_cp[*src];
+		if(val < 256) {
+			dst[i++] = (char)val;
+		} else if (i < (dst_len  - 2)) {
+
+			/*
+			 * A 2 byte value is always written as
+			 * high/low into the buffer stream.
+			 */
+
+			dst[i++] = (char)((val >> 8) & 0xff);
+			dst[i++] = (char)(val & 0xff);
+		}
+	} 	
+
+	dst[i] = '\0';
+
+	return dst;
+}
+
+/*******************************************************************
+ Convert a multibyte string to UNICODE format. Note that the 'dst' is in
+ native byte order, not little endian. Always zero terminates.
+ dst_len is in bytes.
+********************************************************************/
+
+smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
+                                 size_t dst_len, smb_ucs2_t *cp_to_ucs2)
+{
+	size_t i;
+
+	dst_len /= sizeof(smb_ucs2_t); /* Convert to smb_ucs2_t units. */
+
+	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
+		size_t skip = skip_multibyte_char(*src);
+		smb_ucs2_t val = (*src & 0xff);
+
+		/*
+		 * If this is a multibyte character
+		 * then work out the index value for the unicode conversion.
+		 */
+
+		if (skip == 2)
+			val = ((val << 8) | (src[1] & 0xff));
+
+		dst[i++] = cp_to_ucs2[val];
+		if (skip)
+			src += skip;
+		else
+			src++;
+	}
+
+	dst[i] = 0;
+
+	return dst;
+}
+
+/*******************************************************************
+ Convert a UNICODE string to multibyte format. Note that the 'src' is in
+ native byte order, not little endian. Always zero terminates.
+ This function may be replaced if the MB  codepage format is an
+ encoded one (ie. utf8, hex). See the code in lib/kanji.c
+ for details. dst_len is in bytes.
+********************************************************************/
+
+char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len)
+{
+	return unicode_to_multibyte(dst, src, dst_len, ucs2_to_unixcp);
+}
+
+/*******************************************************************
+ Convert a UNIX string to UNICODE format. Note that the 'dst' is in
+ native byte order, not little endian. Always zero terminates.
+ This function may be replaced if the UNIX codepage format is a
+ multi-byte one (ie. JIS, SJIS or utf8). See the code in lib/kanji.c
+ for details. dst_len is in bytes, not ucs2 units.
+********************************************************************/
+
+smb_ucs2_t *unix_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len)
+{
+	return multibyte_to_unicode(dst, src, dst_len, unixcp_to_ucs2);
+}
+
+/*******************************************************************
+ Convert a UNICODE string to DOS format. Note that the 'src' is in
+ native byte order, not little endian. Always zero terminates. 
+ dst_len is in bytes.
+********************************************************************/ 
+
+char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len)
+{
+	return unicode_to_multibyte(dst, src, dst_len, ucs2_to_doscp);
+}
+
+/*******************************************************************
+ Convert a DOS string to UNICODE format. Note that the 'dst' is in
+ native byte order, not little endian. Always zero terminates.
+ This function may be replaced if the DOS codepage format is a
+ multi-byte one (ie. JIS, SJIS or utf8). See the code in lib/kanji.c
+ for details. dst_len is in bytes, not ucs2 units.
+********************************************************************/
+
+smb_ucs2_t *dos_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len)
+{
+	return multibyte_to_unicode(dst, src, dst_len, doscp_to_ucs2);
+}
+
+/*******************************************************************
+ Count the number of characters in a smb_ucs2_t string.
+********************************************************************/
+
+size_t wstrlen(const smb_ucs2_t *src)
+{
+  size_t len;
+
+  for(len = 0; *src; len++)
+    ;
+
+  return len;
+}
+
+/*******************************************************************
+ Safe wstring copy into a known length string. maxlength includes
+ the terminating zero. maxlength is in bytes.
+********************************************************************/
+
+smb_ucs2_t *safe_wstrcpy(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxlength)
+{
+    size_t ucs2_len;
+
+    if (!dest) {
+        DEBUG(0,("ERROR: NULL dest in safe_wstrcpy\n"));
+        return NULL;
+    }
+
+    if (!src) {
+        *dest = 0;
+        return dest;
+    }
+
+	ucs2_len = wstrlen(src);
+
+    if (ucs2_len >= (maxlength/sizeof(smb_ucs2_t))) {
+		fstring out;
+        DEBUG(0,("ERROR: string overflow by %u bytes in safe_wstrcpy [%.50s]\n",
+			(unsigned int)((ucs2_len*sizeof(smb_ucs2_t))-maxlength),
+			unicode_to_unix(out,src,sizeof(out))) );
+		ucs2_len = (maxlength/sizeof(smb_ucs2_t)) - 1;
+    }
+
+    memcpy(dest, src, ucs2_len*sizeof(smb_ucs2_t));
+    dest[ucs2_len] = 0;
+    return dest;
+}
+
+/*******************************************************************
+ Safe string cat into a string. maxlength includes the terminating zero.
+ maxlength is in bytes.
+********************************************************************/
+
+smb_ucs2_t *safe_wstrcat(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength)
+{
+    size_t ucs2_src_len, ucs2_dest_len;
+
+    if (!dest) {
+        DEBUG(0,("ERROR: NULL dest in safe_wstrcat\n"));
+        return NULL;
+    }
+
+    if (!src) {
+        return dest;
+    }
+
+    ucs2_src_len = wstrlen(src);
+    ucs2_dest_len = wstrlen(dest);
+
+    if (ucs2_src_len + ucs2_dest_len >= (maxlength/sizeof(smb_ucs2_t))) {
+		fstring out;
+		int new_len = (maxlength/sizeof(smb_ucs2_t)) - ucs2_dest_len - 1;
+        DEBUG(0,("ERROR: string overflow by %u characters in safe_wstrcat [%.50s]\n",
+			(unsigned int)((sizeof(smb_ucs2_t)*(ucs2_src_len + ucs2_dest_len)) - maxlength),
+			unicode_to_unix(out,src,sizeof(out))) );
+        ucs2_src_len = (size_t)(new_len > 0 ? new_len : 0);
+    }
+
+    memcpy(&dest[ucs2_dest_len], src, ucs2_src_len*sizeof(smb_ucs2_t));
+    dest[ucs2_dest_len + ucs2_src_len] = 0;
+    return dest;
+}
+
+/*******************************************************************
+ Compare the two strings s1 and s2. len is in ucs2 units.
+********************************************************************/
+
+int wstrcmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	smb_ucs2_t c1, c2;
+
+	for (;;) {
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (c1 != c2)
+			return c1 - c2;
+
+		if (c1 == 0)
+            return 0;
+    }
+	return 0;
+}
+
+/*******************************************************************
+ Compare the first n characters of s1 to s2. len is in ucs2 units.
+********************************************************************/
+
+int wstrncmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len)
+{
+	smb_ucs2_t c1, c2;
+
+	for (; len != 0; --len) {
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (c1 != c2)
+			return c1 - c2;
+
+		if (c1 == 0)
+			return 0;
+
+    }
+	return 0;
+}
+
+/*******************************************************************
+ Search string s2 from s1.
+********************************************************************/
+
+smb_ucs2_t *wstrstr(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	size_t len = wstrlen(s2);
+
+	if (!*s2)
+		return (smb_ucs2_t *)s1;
+
+	for(;*s1; s1++) {
+		if (*s1 == *s2) {
+			if (wstrncmp(s1, s2, len) == 0)
+				return (smb_ucs2_t *)s1;
+		}
+	}
+	return NULL; 
+}
+
+/*******************************************************************
+ Search for ucs2 char c from the beginning of s.
+********************************************************************/ 
+
+smb_ucs2_t *wstrchr(const smb_ucs2_t *s, smb_ucs2_t c)
+{
+	do {
+		if (*s == c)
+			return (smb_ucs2_t *)s;
+	} while (*s++);
+
+	return NULL;
+}
+
+/*******************************************************************
+ Search for ucs2 char c from the end of s.
+********************************************************************/ 
+
+smb_ucs2_t *wstrrchr(const smb_ucs2_t *s, smb_ucs2_t c)
+{
+	smb_ucs2_t *retval = 0;
+
+	do {
+		if (*s == c)
+			retval = (smb_ucs2_t *)s;
+	} while (*s++);
+
+	return retval;
+}
+
+/*******************************************************************
+ Search token from s1 separated by any ucs2 char of s2.
+********************************************************************/
+
+smb_ucs2_t *wstrtok(smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	static smb_ucs2_t *s = NULL;
+	smb_ucs2_t *q;
+
+	if (!s1) {
+		if (!s)
+			return NULL;
+		s1 = s;
+	}
+
+	for (q = s1; *s1; s1++) {
+		smb_ucs2_t *p = wstrchr(s2, *s1);
+		if (p) {
+			if (s1 != q) {
+				s = s1 + 1;
+				*s1 = '\0';
+				return q;
+			}
+			q = s1 + 1;
+		}
+	}
+
+	s = NULL;
+	if (*q)
+		return q;
+
+	return NULL;
 }

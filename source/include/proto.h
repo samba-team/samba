@@ -422,6 +422,21 @@ void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_dos_unicode_map(int codepage);
 BOOL load_unix_unicode_map(const char *unix_char_set);
+smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
+                                 size_t dst_len, smb_ucs2_t *cp_to_ucs2);
+char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len);
+smb_ucs2_t *unix_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
+char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len);
+smb_ucs2_t *dos_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
+size_t wstrlen(const smb_ucs2_t *src);
+smb_ucs2_t *safe_wstrcpy(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxlength);
+smb_ucs2_t *safe_wstrcat(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength);
+int wstrcmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
+int wstrncmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len);
+smb_ucs2_t *wstrstr(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
+smb_ucs2_t *wstrchr(const smb_ucs2_t *s, smb_ucs2_t c);
+smb_ucs2_t *wstrrchr(const smb_ucs2_t *s, smb_ucs2_t c);
+smb_ucs2_t *wstrtok(smb_ucs2_t *s1, const smb_ucs2_t *s2);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
