@@ -260,7 +260,7 @@ do_afslog(const char *cell)
 }
 
 static void
-log_func(void *ctx, const char *str, int ret)
+log_func(void *ctx, const char *str)
 {
     fprintf(stderr, "%s\n", str);
 }
