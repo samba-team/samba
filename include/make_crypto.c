@@ -72,6 +72,11 @@ main(int argc, char **argv)
     fputs("#include <openssl/aes.h>\n", f);
     fputs("#include <openssl/ui.h>\n", f);
 #else
+    fputs("#ifdef KRB5\n", f);
+    fputs("#include <krb5-types.h>\n", f);
+    fputs("#elif defined(KRB4)\n", f);
+    fputs("#include <ktypes.h>\n", f);
+    fputs("#endif\n", f);
     fputs("#include <des.h>\n", f);
     fputs("#include <md4.h>\n", f);
     fputs("#include <md5.h>\n", f);
