@@ -45,37 +45,37 @@ BOOL epm_io_handle(const char *desc, EPM_HANDLE *handle, prs_struct *ps,
 /*******************************************************************
  inits an EPM_FLOOR structure.
 ********************************************************************/
-NTSTATUS init_epm_floor(EPM_FLOOR *floor, uint8 protocol)
+NTSTATUS init_epm_floor(EPM_FLOOR *efloor, uint8 protocol)
 {
 	/* handle lhs */
-	floor->lhs.protocol = protocol;
-	floor->lhs.length = sizeof(floor->lhs.protocol);
+	efloor->lhs.protocol = protocol;
+	efloor->lhs.length = sizeof(efloor->lhs.protocol);
 
-	switch(floor->lhs.protocol) {
+	switch(efloor->lhs.protocol) {
 	case EPM_FLOOR_UUID:
-		floor->lhs.length += sizeof(floor->lhs.uuid.uuid);
-		floor->lhs.length += sizeof(floor->lhs.uuid.version);
+		efloor->lhs.length += sizeof(efloor->lhs.uuid.uuid);
+		efloor->lhs.length += sizeof(efloor->lhs.uuid.version);
 		break;
 	default:
 		break;
 	}
 
 	/* handle rhs */
-	switch(floor->lhs.protocol) {
+	switch(efloor->lhs.protocol) {
 	case EPM_FLOOR_RPC:
 	case EPM_FLOOR_UUID:
-		floor->rhs.length = sizeof(floor->rhs.unknown);
+		efloor->rhs.length = sizeof(efloor->rhs.unknown);
 		break;
 	case EPM_FLOOR_TCP:
-		floor->rhs.length = sizeof(floor->rhs.tcp.port);
+		efloor->rhs.length = sizeof(efloor->rhs.tcp.port);
 		break;
 	case EPM_FLOOR_IP:
-		floor->rhs.length = sizeof(floor->rhs.ip.addr);
+		efloor->rhs.length = sizeof(efloor->rhs.ip.addr);
 		break;
 	case EPM_FLOOR_NMPIPES:
 	case EPM_FLOOR_LRPC:
 	case EPM_FLOOR_NETBIOS:
-		floor->rhs.length = strlen(floor->rhs.string) + 1;
+		efloor->rhs.length = strlen(efloor->rhs.string) + 1;
 		break;
 	default:
 		break;
@@ -87,118 +87,118 @@ NTSTATUS init_epm_floor(EPM_FLOOR *floor, uint8 protocol)
 /*******************************************************************
  inits an EPM_FLOOR structure with a UUID
 ********************************************************************/
-NTSTATUS init_epm_floor_uuid(EPM_FLOOR *floor,
+NTSTATUS init_epm_floor_uuid(EPM_FLOOR *efloor,
 			     const struct uuid uuid, uint16 version)
 {
-	memcpy(&floor->lhs.uuid.uuid, &uuid, sizeof(uuid));
-	floor->lhs.uuid.version = version;
-	floor->rhs.unknown = 0;
-	return init_epm_floor(floor, EPM_FLOOR_UUID);
+	memcpy(&efloor->lhs.uuid.uuid, &uuid, sizeof(uuid));
+	efloor->lhs.uuid.version = version;
+	efloor->rhs.unknown = 0;
+	return init_epm_floor(efloor, EPM_FLOOR_UUID);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for RPC
 ********************************************************************/
-NTSTATUS init_epm_floor_rpc(EPM_FLOOR *floor)
+NTSTATUS init_epm_floor_rpc(EPM_FLOOR *efloor)
 {
-	floor->rhs.unknown = 0;
-	return init_epm_floor(floor, EPM_FLOOR_RPC);
+	efloor->rhs.unknown = 0;
+	return init_epm_floor(efloor, EPM_FLOOR_RPC);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for TCP
 ********************************************************************/
-NTSTATUS init_epm_floor_tcp(EPM_FLOOR *floor, uint16 port)
+NTSTATUS init_epm_floor_tcp(EPM_FLOOR *efloor, uint16 port)
 {
-	floor->rhs.tcp.port = htons(port);
-	return init_epm_floor(floor, EPM_FLOOR_TCP);
+	efloor->rhs.tcp.port = htons(port);
+	return init_epm_floor(efloor, EPM_FLOOR_TCP);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for IP
 ********************************************************************/
-NTSTATUS init_epm_floor_ip(EPM_FLOOR *floor, uint8 addr[4])
+NTSTATUS init_epm_floor_ip(EPM_FLOOR *efloor, uint8 addr[4])
 {
-	memcpy(&floor->rhs.ip.addr, addr, sizeof(addr));
-	return init_epm_floor(floor, EPM_FLOOR_IP);
+	memcpy(&efloor->rhs.ip.addr, addr, sizeof(addr));
+	return init_epm_floor(efloor, EPM_FLOOR_IP);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for named pipe
 ********************************************************************/
-NTSTATUS init_epm_floor_np(EPM_FLOOR *floor, const char *pipe_name)
+NTSTATUS init_epm_floor_np(EPM_FLOOR *efloor, const char *pipe_name)
 {
-	safe_strcpy(floor->rhs.string, pipe_name, sizeof(floor->rhs.string)-1);
-	return init_epm_floor(floor, EPM_FLOOR_NMPIPES);
+	safe_strcpy(efloor->rhs.string, pipe_name, sizeof(efloor->rhs.string)-1);
+	return init_epm_floor(efloor, EPM_FLOOR_NMPIPES);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for named pipe
 ********************************************************************/
-NTSTATUS init_epm_floor_lrpc(EPM_FLOOR *floor, const char *pipe_name)
+NTSTATUS init_epm_floor_lrpc(EPM_FLOOR *efloor, const char *pipe_name)
 {
-	safe_strcpy(floor->rhs.string, pipe_name, sizeof(floor->rhs.string)-1);
-	return init_epm_floor(floor, EPM_FLOOR_LRPC);
+	safe_strcpy(efloor->rhs.string, pipe_name, sizeof(efloor->rhs.string)-1);
+	return init_epm_floor(efloor, EPM_FLOOR_LRPC);
 }
 
 /*******************************************************************
  inits an EPM_FLOOR structure for named pipe
 ********************************************************************/
-NTSTATUS init_epm_floor_nb(EPM_FLOOR *floor, char *host_name)
+NTSTATUS init_epm_floor_nb(EPM_FLOOR *efloor, char *host_name)
 {
-	safe_strcpy(floor->rhs.string, host_name, sizeof(floor->rhs.string)-1);
-	return init_epm_floor(floor, EPM_FLOOR_NETBIOS);
+	safe_strcpy(efloor->rhs.string, host_name, sizeof(efloor->rhs.string)-1);
+	return init_epm_floor(efloor, EPM_FLOOR_NETBIOS);
 }
 
 /*******************************************************************
  reads and writes EPM_FLOOR.
 ********************************************************************/
-BOOL epm_io_floor(const char *desc, EPM_FLOOR *floor,
+BOOL epm_io_floor(const char *desc, EPM_FLOOR *efloor,
 		  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "epm_io_floor");
 	depth++;
 
-	if (!prs_uint16("lhs_length", ps, depth, &floor->lhs.length))
+	if (!prs_uint16("lhs_length", ps, depth, &efloor->lhs.length))
 		return False;
-	if (!prs_uint8("protocol", ps, depth, &floor->lhs.protocol))
+	if (!prs_uint8("protocol", ps, depth, &efloor->lhs.protocol))
 		return False;
 
-	switch (floor->lhs.protocol) {
+	switch (efloor->lhs.protocol) {
 	case EPM_FLOOR_UUID:
-		if (!smb_io_uuid("uuid", &floor->lhs.uuid.uuid, ps, depth))
+		if (!smb_io_uuid("uuid", &efloor->lhs.uuid.uuid, ps, depth))
 			return False;
 		if (!prs_uint16("version", ps, depth, 
-				&floor->lhs.uuid.version))
+				&efloor->lhs.uuid.version))
 			return False;
 		break;
 	}
 
-	if (!prs_uint16("rhs_length", ps, depth, &floor->rhs.length))
+	if (!prs_uint16("rhs_length", ps, depth, &efloor->rhs.length))
 		return False;
 
-	switch (floor->lhs.protocol) {
+	switch (efloor->lhs.protocol) {
 	case EPM_FLOOR_UUID:
 	case EPM_FLOOR_RPC:
-		if (!prs_uint16("unknown", ps, depth, &floor->rhs.unknown))
+		if (!prs_uint16("unknown", ps, depth, &efloor->rhs.unknown))
 			return False;
 		break;
 	case EPM_FLOOR_TCP:
-		if (!prs_uint16("tcp_port", ps, depth, &floor->rhs.tcp.port))
+		if (!prs_uint16("tcp_port", ps, depth, &efloor->rhs.tcp.port))
 			return False;
 		break;
 	case EPM_FLOOR_IP:
 		if (!prs_uint8s(False, "ip_addr", ps, depth, 
-				floor->rhs.ip.addr,
-				sizeof(floor->rhs.ip.addr)))
+				efloor->rhs.ip.addr,
+				sizeof(efloor->rhs.ip.addr)))
 			return False;
 		break;
 	case EPM_FLOOR_NMPIPES:
 	case EPM_FLOOR_LRPC:
 	case EPM_FLOOR_NETBIOS:
 		if (!prs_uint8s(False, "string", ps, depth,
-				floor->rhs.string,
-				floor->rhs.length))
+				efloor->rhs.string,
+				efloor->rhs.length))
 			return False;
 		break;
 	default:
