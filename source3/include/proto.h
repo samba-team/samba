@@ -2656,8 +2656,8 @@ void init_sam_user_info21(SAM_USER_INFO_21 *usr,
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
-BOOL samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth);
+BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
+BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 void init_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				char *srv_name, uint32 unknown_0);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
