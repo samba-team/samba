@@ -350,6 +350,17 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 	talloc_free(ndr);
 }
 
+void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
+{
+	/* the big/little endian flags are inter-dependent */
+	if (new_flags & LIBNDR_FLAG_LITTLE_ENDIAN) {
+		(*pflags) &= ~LIBNDR_FLAG_BIGENDIAN;
+	}
+	if (new_flags & LIBNDR_FLAG_BIGENDIAN) {
+		(*pflags) &= ~LIBNDR_FLAG_LITTLE_ENDIAN;
+	}
+	(*pflags) |= new_flags;
+}
 
 static NTSTATUS ndr_map_error(enum ndr_err_code err)
 {
