@@ -50,7 +50,6 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t euser_id;
   int r;
-  char dev_disk[256];
   struct dqblk D;
   struct stat S;
   FILE *fp;
@@ -378,12 +377,12 @@ try to get the disk space from disk quotas - default version
 ****************************************************************************/
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
-  uid_t user_id, euser_id;
+  uid_t euser_id;
   int r;
-  char dev_disk[256];
   struct dqblk D;
-  struct stat S;
 #ifndef __FreeBSD__
+  char dev_disk[256];
+  struct stat S;
   /* find the block device file */
   if ((stat(path, &S)<0) ||
       (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);
@@ -392,12 +391,16 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   euser_id = geteuid();
 
 #ifdef USE_SETRES
-  /* for HPUX, real uid must be same as euid to execute quotactl for euid */
-  user_id = getuid();
-  setresuid(euser_id,-1,-1);
-  r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-  if (setresuid(user_id,-1,-1))
-    DEBUG(5,("Unable to reset uid to %d\n", user_id));
+  {
+    uid_t user_id;
+
+    /* for HPUX, real uid must be same as euid to execute quotactl for euid */
+    user_id = getuid();
+    setresuid(euser_id,-1,-1);
+    r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
+    if (setresuid(user_id,-1,-1))
+      DEBUG(5,("Unable to reset uid to %d\n", user_id));
+  }
 #else
 #if defined(__FreeBSD__)
   r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
