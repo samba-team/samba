@@ -40,6 +40,7 @@ struct ipc_private {
 		const char *pipe_name;
 		uint16 fnum;
 		struct dcesrv_state *pipe_state;
+		uint16 ipc_state;
 	} *pipe_list;
 
 };
@@ -223,6 +224,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 	while (p->pipe_name[0] == '\\') {
 		p->pipe_name++;
 	}
+	p->ipc_state = 0x5ff;
 
 	/*
 	  we're all set, now ask the dcerpc server subsystem to open the 
@@ -250,6 +252,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 
 	ZERO_STRUCT(oi->ntcreatex.out);
 	oi->ntcreatex.out.fnum = p->fnum;
+	oi->ntcreatex.out.ipc_state = p->ipc_state;
 
 	return NT_STATUS_OK;
 }
@@ -508,17 +511,12 @@ NTSTATUS ipc_search_close(struct request_context *req, union smb_search_close *i
 }
 
 
-/* SMBtrans - used to provide access to SMB pipes */
-static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
+/* SMBtrans - handle a DCERPC command */
+static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
 	struct ipc_private *private = req->conn->ntvfs_private;
 	NTSTATUS status;
-	
-	if (trans->in.setup_count != 2 ||
-	    trans->in.setup[0] != TRANSACT_DCERPCCMD) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	/* the fnum is in setup[1] */
 	p = pipe_state_find(private, trans->in.setup[1]);
@@ -555,6 +553,57 @@ static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
 	trans->out.params = data_blob(NULL, 0);
 
 	return NT_STATUS_OK;
+}
+
+
+/* SMBtrans - set named pipe state */
+static NTSTATUS ipc_set_nm_pipe_state(struct request_context *req, struct smb_trans2 *trans)
+{
+	struct pipe_state *p;
+	struct ipc_private *private = req->conn->ntvfs_private;
+
+	/* the fnum is in setup[1] */
+	p = pipe_state_find(private, trans->in.setup[1]);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (trans->in.params.length != 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	p->ipc_state = SVAL(trans->in.params.data, 0);
+
+	trans->out.setup_count = 0;
+	trans->out.setup = NULL;
+	trans->out.params = data_blob(NULL, 0);
+	trans->out.data = data_blob(NULL, 0);
+
+	return NT_STATUS_OK;
+}
+
+
+/* SMBtrans - used to provide access to SMB pipes */
+static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
+{
+	NTSTATUS status;
+
+       	if (trans->in.setup_count != 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (trans->in.setup[0]) {
+	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
+		status = ipc_set_nm_pipe_state(req, trans);
+		break;
+	case TRANSACT_DCERPCCMD:
+		status = ipc_dcerpc_cmd(req, trans);
+		break;
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	return status;
 }
 
 

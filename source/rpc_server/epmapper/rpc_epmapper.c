@@ -72,14 +72,14 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 	twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
 							   e->endpoint.info.smb_pipe);
-	twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data);
+	twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
 	
 	/* on an NetBIOS link ... */
 	twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
 	twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[4].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\\\%s", 
 							   lp_netbios_name());
-	twr->floors[4].rhs.rhs_data.length = strlen(twr->floors[4].rhs.rhs_data.data);
+	twr->floors[4].rhs.rhs_data.length = strlen(twr->floors[4].rhs.rhs_data.data)+1;
 
 	return True;
 }
@@ -175,6 +175,9 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 
 	if (num_ents == 0) {
 		r->out.entries = NULL;
+		r->out.status  = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		ZERO_STRUCTP(r->out.entry_handle);
+		dcesrv_handle_destroy(dce, h);
 		return NT_STATUS_OK;
 	}
 
@@ -185,7 +188,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 
 	for (i=0;i<num_ents;i++) {
 		ZERO_STRUCT(r->out.entries[i].object);
-		r->out.entries[i].annotation = "";
+		r->out.entries[i].annotation = eps->e[i].name;
 		r->out.entries[i].tower = talloc_p(mem_ctx, struct epm_twr_t);
 		if (!r->out.entries[i].tower) {
 			return NT_STATUS_NO_MEMORY;
@@ -270,7 +273,7 @@ static NTSTATUS epm_Map(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 
 failed:
 	r->out.num_towers = 0;
-	r->out.status = EPMAPPER_MAP_FAILED;
+	r->out.status = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	r->out.towers->twr = NULL;
 
 	return NT_STATUS_OK;
