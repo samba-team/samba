@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -669,7 +669,7 @@ BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int d
 		return False;
 	if(!smb_io_time("mod_time     ", &r_r->mod_time, ps, depth))
 		return False;
-	
+
 	if(!prs_ntstatus("status", ps, depth, &r_r->status))
 		return False;
 
@@ -685,6 +685,7 @@ void init_reg_q_unknown_1a(REG_Q_UNKNOWN_1A *q_o, POLICY_HND *hnd)
 	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
 }
 
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -699,7 +700,7 @@ BOOL reg_io_q_unknown_1a(char *desc,  REG_Q_UNKNOWN_1A *r_q, prs_struct *ps, int
 
 	if(!prs_align(ps))
 		return False;
-	
+
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
 		return False;
 
@@ -720,9 +721,60 @@ BOOL reg_io_r_unknown_1a(char *desc,  REG_R_UNKNOWN_1A *r_r, prs_struct *ps, int
 
 	if(!prs_align(ps))
 		return False;
-	
+
 	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
 		return False;
+	if(!prs_ntstatus("status" , ps, depth, &r_r->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL reg_io_q_save_key(char *desc,  REG_Q_SAVE_KEY *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_save_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
+
+	if(!smb_io_unihdr ("hdr_file", &r_q->hdr_file, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_file", &r_q->uni_file, r_q->hdr_file.buffer, ps, depth))
+		return False;
+
+	if(!prs_uint32("unknown", ps, depth, &r_q->unknown))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL reg_io_r_save_key(char *desc,  REG_R_SAVE_KEY *r_r, prs_struct *ps, int depth)
+{
+	if (r_r == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_save_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
 	if(!prs_ntstatus("status" , ps, depth, &r_r->status))
 		return False;
 
