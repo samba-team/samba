@@ -338,7 +338,6 @@ lstat_file (const char *file, struct stat *sb)
 	if (ret < 0)
 	    return ret;
 
-	sb->st_mode = S_IFDIR | 0755;
 	if (ino_last == sb->st_ino)
 	    ino_counter++;
 	else {
