@@ -182,6 +182,9 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
+dnl Check if we use GNU ld
+LD=ld
+AC_PROG_LD_GNU
 AC_PATH_PROG(passwd_program, passwd, /bin/passwd)
 AC_SUBST(passwd_program)
 
@@ -858,7 +861,9 @@ case "$host_os" in
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
-				DYNEXP="-Wl,-E"
+				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
+					DYNEXP="-Wl,-E"
+				fi
 			else
 				PICFLAG="-KPIC"
 				## ${CFLAGS} added for building 64-bit shared 
