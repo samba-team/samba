@@ -41,18 +41,10 @@ OM_uint32 gss_context_time
             OM_uint32 * time_rec
            )
 {
-    OM_uint32 lifetime;
-    OM_uint32 ret;
     krb5_error_code kret;
     krb5_timestamp timeret;
 
     GSSAPI_KRB5_INIT ();
-
-    ret = gss_inquire_context(minor_status, context_handle,
-			      NULL, NULL, &lifetime, NULL, NULL, NULL, NULL);
-    if (ret) {
-        return ret;
-    }
 
     kret = krb5_timeofday(gssapi_krb5_context, &timeret);
     if (kret) {
@@ -61,7 +53,13 @@ OM_uint32 gss_context_time
         return GSS_S_FAILURE;
     }
 
-    *time_rec = lifetime - timeret;
     *minor_status = 0;
+
+    if (context_handle->lifetime < timeret) {
+	*time_rec = 0;
+	return GSS_S_CONTEXT_EXPIRED;
+    }
+
+    *time_rec = context_handle->lifetime - timeret;
     return GSS_S_COMPLETE;
 }
