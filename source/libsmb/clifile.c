@@ -3,6 +3,7 @@
    Version 3.0
    client file operations
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jeremy Allison 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -628,3 +628,67 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 	SAFE_FREE(rparam);
 	return True;
 }
+
+/****************************************************************************
+ Send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call.
+****************************************************************************/
+
+NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+	int count=8;
+	char *p;
+	BOOL ret;
+	int len;
+
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_FILE_ALT_NAME_INFO);
+	p += 6;
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE);
+
+	param_len = PTR_DIFF(p, param);
+
+	do {
+		ret = (cli_send_trans(cli, SMBtrans2, 
+				      NULL,           /* Name */
+				      -1, 0,          /* fid, flags */
+				      &setup, 1, 0,   /* setup, length, max */
+				      param, param_len, 10, /* param, length, max */
+				      NULL, data_len, cli->max_xmit /* data, length, max */
+				      ) &&
+		       cli_receive_trans(cli, SMBtrans2, 
+					 &rparam, &param_len,
+					 &rdata, &data_len));
+		if (!ret && cli_is_dos_error(cli)) {
+			/* we need to work around a Win95 bug - sometimes
+			   it gives ERRSRV/ERRerror temprarily */
+			uint8 eclass;
+			uint32 ecode;
+			cli_dos_error(cli, &eclass, &ecode);
+			if (eclass != ERRSRV || ecode != ERRerror) break;
+			msleep(100);
+		}
+	} while (count-- && ret==False);
+
+	if (!ret || !rdata || data_len < 4) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	len = IVAL(rdata, 0);
+
+	if (len > data_len - 4) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	clistr_pull(cli, alt_name, rdata+4, sizeof(fstring), len, 0);
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return NT_STATUS_OK;
+}

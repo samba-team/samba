@@ -405,6 +405,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
 BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata);
+NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name);
 
 /*The following definitions come from  libsmb/clireadwrite.c  */
 

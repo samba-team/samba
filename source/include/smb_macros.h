@@ -215,6 +215,13 @@ copy an IP address from one buffer to another
 
 #define putip(dest,src) memcpy(dest,src,4)
 
+
+/*******************************************************************
+ Return True if a server has CIFS UNIX capabilities.
+********************************************************************/
+
+#define SERVER_HAS_UNIX_CIFS(c) ((c)->capabilities & CAP_UNIX)
+
 /****************************************************************************
  Make a filename into unix format.
 ****************************************************************************/

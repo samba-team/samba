@@ -925,6 +925,21 @@ static BOOL do_mkdir(char *name)
 	return(True);
 }
 
+/****************************************************************************
+ Show 8.3 name of a file.
+****************************************************************************/
+
+static BOOL do_altname(char *name)
+{
+	fstring altname;
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		DEBUG(0,("%s getting alt name for %s\n", cli_errstr(cli),name));
+		return(False);
+	}
+	DEBUG(0,("%s\n", altname));
+
+	return(True);
+}
 
 /****************************************************************************
  Exit client.
@@ -975,6 +990,26 @@ static void cmd_mkdir(void)
 	}
 }
 
+/****************************************************************************
+  show alt name
+  ****************************************************************************/
+
+static void cmd_altname(void)
+{
+	pstring name;
+	fstring buf;
+	char *p=buf;
+
+	pstrcpy(name,cur_dir);
+
+	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+		DEBUG(0,("altname <file>\n"));
+		return;
+	}
+	pstrcat(name,p);
+
+	do_altname(name);
+}
 
 /****************************************************************************
   put a single file
@@ -1481,6 +1516,11 @@ static void cmd_link(void)
 	pstring src,dest;
 	fstring buf,buf2;
   
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
   
@@ -1509,6 +1549,11 @@ static void cmd_symlink(void)
 	pstring src,dest;
 	fstring buf,buf2;
   
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
@@ -1538,6 +1583,11 @@ static void cmd_chmod(void)
 	mode_t mode;
 	fstring buf, buf2;
   
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
@@ -1567,6 +1617,11 @@ static void cmd_chown(void)
 	gid_t gid;
 	fstring buf, buf2, buf3;
   
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
@@ -1825,52 +1880,52 @@ struct
   char compl_args[2];      /* Completion argument info */
 } commands[] = 
 {
-  {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
-  {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
-  {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
-  {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
+  {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
+  {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
+  {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
+  {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
+  {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
-  {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
-  {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
-  {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
-  {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
-  {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
+  {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+  {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
-  {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
-  {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
-  {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
-  {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
-  {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
-  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
+  {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
+  {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
+  {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
+  {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
+  {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
+  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},
-  {"queue",cmd_queue,"show the print queue",{COMPL_NONE,COMPL_NONE}},
-  {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
-  {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
+  {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
   {"q",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
-  {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
-  {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
-  {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
-  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
-  {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
-  {"tarmode",cmd_tarmode,
-     "<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
+  {"queue",cmd_queue,"show the print queue",{COMPL_NONE,COMPL_NONE}},
+  {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
+  {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
-  {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
-  {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
+  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
+  {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
+  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
