@@ -1308,8 +1308,8 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		user_grpsids[num_groups] = &user_sid;
 
 		status = domain->methods->lookup_useraliases(domain, mem_ctx,
-							     num_groups,
-							     user_grpsids+1,
+							     num_groups+1,
+							     user_grpsids,
 							     &num_aliases,
 							     &alias_rids);
 
