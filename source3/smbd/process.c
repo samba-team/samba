@@ -1002,11 +1002,6 @@ void smbd_process(void)
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
 
-#if USE_READ_PREDICTION
-    if (lp_readprediction())
-      do_read_prediction();
-#endif
-
     errno = 0;      
 
     /* free up temporary memory */

@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* the Samba secrets database stores any geerated, private information
+/* the Samba secrets database stores any generated, private information
    such as the local SID and machine trust password */
 
 #include "includes.h"

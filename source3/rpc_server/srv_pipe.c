@@ -1107,7 +1107,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 		return True;
 	}
 
-	offset1 = p->out_data.rdata.data_offset;
+	offset1 = prs_offset(&p->out_data.rdata);
 
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(rpc_in, &p->out_data.rdata)) {
@@ -1117,10 +1117,10 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	}
 
 	slprintf(name, sizeof(name), "out_%s", rpc_name);
-	offset2 = p->out_data.rdata.data_offset;
-	p->out_data.rdata.data_offset = offset1;
+	offset2 = prs_offset(&p->out_data.rdata);
+	prs_set_offset(&p->out_data.rdata, offset1);
 	prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
-	p->out_data.rdata.data_offset = offset2;
+	prs_set_offset(&p->out_data.rdata, offset2);
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n", rpc_name));
 
