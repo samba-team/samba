@@ -256,7 +256,11 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 size_t sec_desc_size(SEC_DESC *psd)
 {
-	size_t offset = SD_HEADER_SIZE;
+	size_t offset;
+
+	if (!psd) return 0;
+
+	offset = SD_HEADER_SIZE;
 
 	if (psd->owner_sid != NULL)
 		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
@@ -410,7 +414,6 @@ SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
 	return make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
 			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
-
 
 /*******************************************************************
  Reads or writes a SEC_DESC structure.
