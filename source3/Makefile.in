@@ -113,7 +113,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_wks.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
-                 rpc_client/cli_pipe.o rpc_client/cli_lsarpc.o
+                 rpc_client/cli_pipe.o rpc_client/cli_lsarpc.o \
+                 rpc_client/cli_wkssvc.o
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
@@ -179,12 +180,12 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              rpcclient/cmd_lsarpc.o \
+             rpcclient/cmd_wkssvc.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 #             rpcclient/cmd_netlogon.o \
 #             rpcclient/cmd_samr.o \
 #             rpcclient/cmd_srvsvc.o \
-#             rpcclient/cmd_wkssvc.o \
 
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)

@@ -81,9 +81,9 @@ void cmd_srv_query_info(struct client_info *info)
 	{
 		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
 
-		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
-		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
-		display_srv_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+		display_srv_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 	else
 	{
@@ -138,9 +138,9 @@ void cmd_srv_enum_conn(struct client_info *info)
 
 	if (res)
 	{
-		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
-		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
-		display_srv_conn_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+		display_srv_conn_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_conn_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_conn_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 
 	/* close the session */
@@ -198,9 +198,9 @@ void cmd_srv_enum_shares(struct client_info *info)
 
 	if (res)
 	{
-		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
-		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
-		display_srv_share_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 
 	/* close the session */
@@ -309,9 +309,9 @@ void cmd_srv_enum_files(struct client_info *info)
 
 	if (res)
 	{
-		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
-		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
-		display_srv_file_info_ctr(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+		display_srv_file_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_file_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_file_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 
 	/* close the session */

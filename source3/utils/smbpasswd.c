@@ -19,6 +19,7 @@
 
 #include "includes.h"
 
+extern pstring scope;
 extern pstring myhostname;
 extern pstring global_myname;
 extern fstring global_myworkgroup;

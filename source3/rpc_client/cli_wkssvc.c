@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a WKS Open Policy
 ****************************************************************************/
-BOOL do_wks_query_info(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_wks_query_info(struct cli_state *cli, 
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100)
 {
@@ -59,7 +59,7 @@ BOOL do_wks_query_info(struct cli_state *cli, int t_idx, uint16 fnum,
 	wks_io_q_query_info("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, WKS_QUERY_INFO, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, WKS_QUERY_INFO, &buf, &rbuf))
 	{
 		WKS_R_QUERY_INFO r_o;
 		BOOL p;
