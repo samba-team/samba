@@ -143,6 +143,21 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 
 
 /****************************************************************************
+gets either a hex number (0xNNN) or decimal integer (NNN).
+****************************************************************************/
+int get_number(char *tmp)
+{
+	if (strnequal(tmp, "0x", 2))
+	{
+		return strtol(tmp, (char**)NULL, 16);
+	}
+	else
+	{
+		return strtol(tmp, (char**)NULL, 10);
+	}
+}
+
+/****************************************************************************
 like atoi but gets the value up to the separater character
 ****************************************************************************/
 char *Atoic(char *p, int *n, char *c)
@@ -153,7 +168,12 @@ char *Atoic(char *p, int *n, char *c)
 		return NULL;
 	}
 
-	(*n) = atoi(p);
+	(*n) = get_number(p);
+
+	if (strnequal(p, "0x", 2))
+	{
+		p += 2;
+	}
 
 	while ((*p) && isdigit(*p))
 	{

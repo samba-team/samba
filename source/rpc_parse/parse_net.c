@@ -665,8 +665,8 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
-    int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
-    int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
+ 	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
+	int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[24];
 

@@ -1403,8 +1403,10 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   files_struct *fsp;
 
   /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(conn) && lp_nt_pipe_support())
+  if (IS_IPC(conn) && lp_nt_pipe_support() && lp_security() != SEC_SHARE)
+  {
     return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
+  }
 
   /* XXXX we need to handle passed times, sattr and flags */
 

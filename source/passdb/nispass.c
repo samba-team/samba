@@ -361,22 +361,22 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
 
-	pdb_sethexpwd(smb_passwd   , newpwd->smb_passwd   , newpwd->acct_ctrl);
-	pdb_sethexpwd(smb_nt_passwd, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
+	pwdb_sethexpwd(smb_passwd   , newpwd->smb_passwd   , newpwd->acct_ctrl);
+	pwdb_sethexpwd(smb_nt_passwd, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
 
-	pdb_set_logon_time      (logon_t  , sizeof(logon_t  ), newpwd->logon_time           );
-	pdb_set_logoff_time     (logoff_t , sizeof(logoff_t ), newpwd->logoff_time          );
-	pdb_set_kickoff_time    (kickoff_t, sizeof(kickoff_t), newpwd->kickoff_time         );
-	pdb_set_last_set_time   (pwdlset_t, sizeof(pwdlset_t), newpwd->pass_last_set_time   ); 
-	pdb_set_can_change_time (pwdlchg_t, sizeof(pwdlchg_t), newpwd->pass_can_change_time ); 
-	pdb_set_must_change_time(pwdmchg_t, sizeof(pwdmchg_t), newpwd->pass_must_change_time); 
+	pwdb_set_logon_time      (logon_t  , sizeof(logon_t  ), newpwd->logon_time           );
+	pwdb_set_logoff_time     (logoff_t , sizeof(logoff_t ), newpwd->logoff_time          );
+	pwdb_set_kickoff_time    (kickoff_t, sizeof(kickoff_t), newpwd->kickoff_time         );
+	pwdb_set_last_set_time   (pwdlset_t, sizeof(pwdlset_t), newpwd->pass_last_set_time   ); 
+	pwdb_set_can_change_time (pwdlchg_t, sizeof(pwdlchg_t), newpwd->pass_can_change_time ); 
+	pwdb_set_must_change_time(pwdmchg_t, sizeof(pwdmchg_t), newpwd->pass_must_change_time); 
 
 	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
 	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
 	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
 
-	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)); 
+	safe_strcpy(acb, pwdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)); 
 
 	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)     , 0);
 	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                  , 0);
@@ -456,7 +456,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 
 	if (pw_buf == NULL || result == NULL) return False;
 
-	pdb_init_sam(pw_buf);
+	pwdb_init_sam(pw_buf);
 
 	if (result->status != NIS_SUCCESS)
 	{
@@ -482,7 +482,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 
 	/* Check the lanman password column. */
 	p = (uchar *)ENTRY_VAL(obj, NPF_LMPWD);
-	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbpwd))
+	if (strlen((char *)p) != 32 || !pwdb_gethexpwd((char *)p, (char *)smbpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed LM pwd entry.\n"));
 		return False;
@@ -490,7 +490,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 
 	/* Check the NT password column. */
 	p = (uchar *)ENTRY_VAL(obj, NPF_NTPWD);
-	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbntpwd))
+	if (strlen((char *)p) != 32 || !pwdb_gethexpwd((char *)p, (char *)smbntpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed NT pwd entry\n"));
 		return False;
@@ -603,52 +603,52 @@ static struct sam_passwd *getnisp21pwrid(uint32 rid)
 
 static struct smb_passwd *getnisppwent(void *vp)
 {
-	return pdb_sam_to_smb(getnisp21pwent(vp));
+	return pwdb_sam_to_smb(getnisp21pwent(vp));
 }
 
 static BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
 {
- 	return add_nisp21pwd_entry(pdb_smb_to_sam(newpwd));
+ 	return add_nisp21pwd_entry(pwdb_smb_to_sam(newpwd));
 }
 
 static BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override)
 {
- 	return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
+ 	return mod_nisp21pwd_entry(pwdb_smb_to_sam(pwd), override);
 }
 
 static struct smb_passwd *getnisppwnam(char *name)
 {
-	return pdb_sam_to_smb(getnisp21pwnam(name));
+	return pwdb_sam_to_smb(getnisp21pwnam(name));
 }
 
 static struct sam_passwd *getnisp21pwuid(uid_t smb_userid)
 {
-	return getnisp21pwrid(pdb_uid_to_user_rid(smb_userid));
+	return getnisp21pwrid(pwdb_uid_to_user_rid(smb_userid));
 }
 
 static struct smb_passwd *getnisppwrid(uid_t user_rid)
 {
-	return pdb_sam_to_smb(getnisp21pwuid(pdb_user_rid_to_uid(user_rid)));
+	return pwdb_sam_to_smb(getnisp21pwuid(pwdb_user_rid_to_uid(user_rid)));
 }
 
 static struct smb_passwd *getnisppwuid(uid_t smb_userid)
 {
-	return pdb_sam_to_smb(getnisp21pwuid(smb_userid));
+	return pwdb_sam_to_smb(getnisp21pwuid(smb_userid));
 }
 
 static struct sam_disp_info *getnispdispnam(char *name)
 {
-	return pdb_sam_to_dispinfo(getnisp21pwnam(name));
+	return pwdb_sam_to_dispinfo(getnisp21pwnam(name));
 }
 
 static struct sam_disp_info *getnispdisprid(uint32 rid)
 {
-	return pdb_sam_to_dispinfo(getnisp21pwrid(rid));
+	return pwdb_sam_to_dispinfo(getnisp21pwrid(rid));
 }
 
 static struct sam_disp_info *getnispdispent(void *vp)
 {
-	return pdb_sam_to_dispinfo(getnisp21pwent(vp));
+	return pwdb_sam_to_dispinfo(getnisp21pwent(vp));
 }
 
 static struct passdb_ops nispasswd_ops = {

@@ -122,17 +122,6 @@ interface/version dce/rpc pipe identification
 	}, 0x00                       \
 }                                 \
 
-/* pipe string names */
-#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
-#define PIPE_SAMR     "\\PIPE\\samr"
-#define PIPE_WINREG   "\\PIPE\\winreg"
-#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
-#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_NTLSA    "\\PIPE\\ntlsa"
-#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
-#define PIPE_LSASS    "\\PIPE\\lsass"
-#define PIPE_LSARPC   "\\PIPE\\lsarpc"
-
 struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */

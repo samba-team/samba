@@ -567,7 +567,7 @@ static void usage(char *pname)
 
   charset_initialise();
 
-  if(!initialize_password_db())
+  if(!initialise_password_db())
     exit(1);
 
 #ifdef LMHOSTSFILE
@@ -593,11 +593,11 @@ static void usage(char *pname)
      SIGUSR1 and SIGUSR2 to do debug level changes. */
 #ifndef MEM_MAN
 #if defined(SIGUSR1)
-  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+	CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
 
 #if defined(SIGUSR2)
-  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+	CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
 #endif /* MEM_MAN */
 

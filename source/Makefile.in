@@ -42,6 +42,9 @@ LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 PASSWD_PROGRAM = /bin/passwd
 SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp
+SMB_GROUP_FILE = $(BASEDIR)/private/smbgroup
+SMB_ALIAS_FILE = $(BASEDIR)/private/smbalias
 SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
 
 # This is where SWAT images and help files go
@@ -64,7 +67,13 @@ CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
 SMBRUN = $(BINDIR)/smbrun
 
 
-PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DSMB_PASSWD_PROGRAM=\"$(SMB_PASSWD_PROGRAM)\"
+PASSWD_FLAGS = \
+		-DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\"           \
+		-DSMB_PASSWD_PROGRAM=\"$(SMB_PASSWD_PROGRAM)\"   \
+		-DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"         \
+		-DSMB_PASSGRP_FILE=\"$(SMB_PASSGRP_FILE)\"       \
+		-DSMB_GROUP_FILE=\"$(SMB_GROUP_FILE)\"           \
+		-DSMB_ALIAS_FILE=\"$(SMB_ALIAS_FILE)\" 
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
@@ -90,11 +99,11 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
-		lib/util_str.o lib/util_sid.o \
-		lib/util_unistr.o lib/util_file.o \
-		lib/util.o lib/util_sock.o
+          lib/util.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
+	  lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
+		lib/util_str.o lib/util_unistr.o \
+		lib/util_file.o mem_man/mem_man.o \
+		lib/util_sock.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
@@ -106,12 +115,18 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/passchange.o
 
-RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
-                 rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
-                 rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
-                 rpc_server/srv_samr.o rpc_server/srv_srvsvc.o \
-                 rpc_server/srv_util.o rpc_server/srv_wkssvc.o \
-		rpc_server/srv_pipe.o
+RPC_SERVER_OBJ = \
+		rpc_server/srv_sid.o \
+		rpc_server/srv_lsa.o \
+		rpc_server/srv_lsa_hnd.o \
+		rpc_server/srv_netlog.o \
+		rpc_server/srv_pipe_hnd.o \
+		rpc_server/srv_reg.o \
+		rpc_server/srv_samr.o \
+		rpc_server/srv_srvsvc.o \
+		rpc_server/srv_pipe.o \
+		rpc_server/srv_lookup.o \
+		rpc_server/srv_wkssvc.o
 
 RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_net.o rpc_parse/parse_prs.o \
@@ -122,19 +137,24 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
 RPC_CLIENT_OBJ = \
 		rpc_client/cli_login.o    \
 		rpc_client/cli_netlogon.o \
+		rpc_client/cli_reg.o \
 		rpc_client/cli_pipe.o     \
 		rpc_client/cli_lsarpc.o   \
 		rpc_client/cli_wkssvc.o   \
 		rpc_client/cli_srvsvc.o   \
-		rpc_client/cli_reg.o   \
 		rpc_client/cli_samr.o 
 
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
+GROUPDB_OBJ = groupdb/groupdb.o groupdb/groupfile.o \
+		groupdb/aliasdb.o groupdb/aliasfile.o
+
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
-             passdb/pass_check.o passdb/ldap.o passdb/nispass.o passdb/smbpasschange.o
+             passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
+		passdb/passgrp.o passdb/smbpassgroup.o \
+		passdb/smbpasschange.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
@@ -142,13 +162,15 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
             smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
-	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o
+	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o \
+		smbd/groupname.o 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(PRINTING_OBJ) \
+		$(LIB_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -192,7 +214,8 @@ TESTPARM_OBJ = utils/testparm.o \
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
                $(LIB_OBJ)
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
+SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
+		$(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
@@ -204,7 +227,8 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+		$(PASSDB_OBJ) 
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -238,7 +262,8 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+		$(PASSDB_OBJ) 
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 

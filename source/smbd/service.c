@@ -387,7 +387,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!IS_IPC(conn)) {
 		/* Find all the groups this uid is in and
 		   store them. Used by become_user() */
-		setup_groups(conn->user,conn->uid,conn->gid,
+		get_unixgroups(conn->user,conn->uid,conn->gid,
 			     &conn->ngroups,&conn->groups);
 		
 		/* check number of connections */

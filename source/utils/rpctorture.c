@@ -49,7 +49,36 @@ struct cli_state *smb_cli = &smbcli;
 
 FILE *out_hnd;
 
+static pstring user_name; /* local copy only, if one is entered */
 static pstring password; /* local copy only, if one is entered */
+static pstring domain; /* local copy only, if one is entered */
+BOOL got_pass = False;
+
+static struct nmb_name calling;
+static struct nmb_name called;
+
+static void get_passwd(void)
+{
+	/* set the password cache info */
+	if (got_pass)
+	{
+		if (password[0] == 0)
+		{
+			pwd_set_nullpwd(&(smb_cli->pwd));
+		}
+		else
+		{
+			pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
+		}
+	}
+	else 
+	{
+		char *pwd = getpass("Enter Password:");
+		safe_strcpy(password, pwd, sizeof(password));
+		pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
+		got_pass = True;
+	}
+}
 
 /****************************************************************************
 initialise smb client structure
@@ -59,6 +88,23 @@ void rpcclient_init(void)
 	bzero(smb_cli, sizeof(smb_cli));
 	cli_initialise(smb_cli);
 	smb_cli->capabilities |= CAP_NT_SMBS;
+	smb_cli->capabilities |= CAP_STATUS32;
+
+	pstrcpy(smb_cli->user_name, user_name);
+	smb_cli->nt_pipe_fnum   = 0xffff;
+
+	get_passwd();
+
+	if (*domain == 0)
+	{
+		pstrcpy(smb_cli->domain,lp_workgroup());
+	}
+	else
+	{
+		pstrcpy(smb_cli->domain, domain);
+	}
+
+	strupper(smb_cli->domain);
 }
 
 /****************************************************************************
@@ -66,11 +112,7 @@ make smb client connection
 ****************************************************************************/
 static BOOL rpcclient_connect(struct client_info *info)
 {
-	struct nmb_name calling;
-	struct nmb_name called;
-
-	make_nmb_name(&called , dns_to_netbios_name(info->dest_host ), info->name_type, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(info->myhostname), 0x0            , scope);
+	rpcclient_init();
 
 	if (!cli_establish_connection(smb_cli, 
 	                          info->dest_host, &info->dest_ip, 
@@ -97,7 +139,7 @@ static void rpcclient_stop(void)
 /****************************************************************************
   log in as an nt user, log out again. 
 ****************************************************************************/
-void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
+void run_enums_test(int num_ops, struct client_info *cli_info)
 {
 	pstring cmd;
 	int i;
@@ -105,8 +147,8 @@ void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state 
 	/* establish connections.  nothing to stop these being re-established. */
 	rpcclient_connect(cli_info);
 
-	DEBUG(5,("rpcclient_connect: cli->fd:%d\n", cli->fd));
-	if (cli->fd <= 0)
+	DEBUG(5,("rpcclient_connect: smb_cli->fd:%d\n", smb_cli->fd));
+	if (smb_cli->fd <= 0)
 	{
 		fprintf(out_hnd, "warning: connection could not be established to %s<%02x>\n",
 		                 cli_info->dest_host, cli_info->name_type);
@@ -141,7 +183,7 @@ void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state 
 /****************************************************************************
   log in as an nt user, log out again. 
 ****************************************************************************/
-void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
+void run_ntlogin_test(int num_ops, struct client_info *cli_info)
 {
 	pstring cmd;
 	int i;
@@ -149,8 +191,8 @@ void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_stat
 	/* establish connections.  nothing to stop these being re-established. */
 	rpcclient_connect(cli_info);
 
-	DEBUG(5,("rpcclient_connect: cli->fd:%d\n", cli->fd));
-	if (cli->fd <= 0)
+	DEBUG(5,("rpcclient_connect: smb_cli->fd:%d\n", smb_cli->fd));
+	if (smb_cli->fd <= 0)
 	{
 		fprintf(out_hnd, "warning: connection could not be established to %s<%02x>\n",
 		                 cli_info->dest_host, cli_info->name_type);
@@ -159,7 +201,7 @@ void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_stat
 	
 	for (i = 0; i < num_ops; i++)
 	{
-		slprintf(cmd, sizeof(cmd)-1, "%s %s", cli->user_name, password);
+		slprintf(cmd, sizeof(cmd)-1, "%s %s", smb_cli->user_name, password);
 		set_first_token(cmd);
 
 		cmd_netlogon_login_test(cli_info);
@@ -169,12 +211,387 @@ void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_stat
 
 }
 
+/* generate a random buffer */
+static void rand_buf(char *buf, int len)
+{
+	while (len--) {
+		*buf = sys_random();
+		buf++;
+	}
+}
+
+/****************************************************************************
+do a random rpc command
+****************************************************************************/
+BOOL do_random_rpc(struct cli_state *cli, int max_len)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	uint8 opcode;
+	int param_len;
+	BOOL response = False;
+
+	if ((sys_random() % 20) == 0)
+	{
+		param_len = (sys_random() % 256) + 4;
+	}
+	else
+	{
+		param_len = (sys_random() % max_len) + 4;
+	}
+
+	prs_init(&buf , param_len, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0        , 4, SAFETY_MARGIN, True );
+
+	opcode = sys_random() % 256;
+
+	/* turn parameters into data stream */
+	rand_buf(mem_data(&buf.data, 0), param_len);
+	buf.offset = param_len;
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, opcode, &buf, &rbuf))
+	{
+		response = rbuf.offset != 0;
+
+		if (response)
+		{
+			DEBUG(0,("response! opcode: 0x%x\n", opcode));
+			DEBUG(0,("request: length %d\n", param_len));
+			dump_data(0, mem_data(&buf.data , 0), MIN(param_len, 128));
+			DEBUG(0,("response: length %d\n", rbuf.data->offset.end));
+			dump_data(0, mem_data(&rbuf.data, 0), rbuf.data->offset.end);
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return response;
+}
+
+
+/* send random IPC commands */
+static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
+		int numops)
+{
+	int i;
+
+	DEBUG(0,("starting random rpc test on %s (encryped)\n", pipe_name));
+
+	/* establish connections.  nothing to stop these being re-established. */
+	if (!rpcclient_connect(cli_info))
+	{
+		DEBUG(0,("random rpc test: connection failed\n"));
+		return;
+	}
+
+	cli_nt_set_ntlmssp_flgs(smb_cli,
+				    NTLMSSP_NEGOTIATE_UNICODE |
+				    NTLMSSP_NEGOTIATE_OEM |
+				    NTLMSSP_NEGOTIATE_SIGN |
+				    NTLMSSP_NEGOTIATE_SEAL |
+				    NTLMSSP_NEGOTIATE_LM_KEY |
+				    NTLMSSP_NEGOTIATE_NTLM |
+				    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+				    NTLMSSP_NEGOTIATE_00001000 |
+				    NTLMSSP_NEGOTIATE_00002000);
+
+	for (i = 1; i <= numops * 100; i++)
+	{
+		/* open session.  */
+		cli_nt_session_open(smb_cli, pipe_name);
+
+		do_random_rpc(smb_cli, 1024);
+		if (i % 500 == 0)
+		{
+			DEBUG(0,("calls: %i\n", i));
+		}
+
+		/* close the session */
+		cli_nt_session_close(smb_cli);
+	}
+
+	/* close the rpc pipe */
+	rpcclient_stop();
+
+	DEBUG(0,("finished random rpc test on %s\n", pipe_name));
+}
+
+/* send random IPC commands */
+static void random_rpc_pipe(char *pipe_name, struct client_info *cli_info,
+		int numops)
+{
+	int i;
+
+	DEBUG(0,("starting random rpc test on %s\n", pipe_name));
+
+	/* establish connections.  nothing to stop these being re-established. */
+	if (!rpcclient_connect(cli_info))
+	{
+		DEBUG(0,("random rpc test: connection failed\n"));
+		return;
+	}
+
+	/* open session.  */
+	if (!cli_nt_session_open(smb_cli, pipe_name))
+	{
+		DEBUG(0,("random rpc test: session open failed\n"));
+		return;
+	}
+
+	for (i = 1; i <= numops * 100; i++)
+	{
+		do_random_rpc(smb_cli, 8192);
+		if (i % 500 == 0)
+		{
+			DEBUG(0,("calls: %i\n", i));
+		}
+	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	/* close the rpc pipe */
+	rpcclient_stop();
+
+	DEBUG(0,("finished random rpc test on %s\n", pipe_name));
+}
+
+static void run_randomrpc(int numops, struct client_info *cli_info)
+{
+	char *pipes[] =
+	{
+		PIPE_SAMR     ,
+		PIPE_WINREG   ,
+		PIPE_SRVSVC   ,
+		PIPE_WKSSVC   ,
+		PIPE_NETLOGON ,
+		PIPE_NTSVCS   ,
+		PIPE_LSARPC   ,
+		NULL
+	};
+
+	int i = 0;
+
+	while (pipes[i] != NULL)
+	{
+		random_rpc_pipe(pipes[i], cli_info, numops);
+#if 0
+		random_rpc_pipe_enc(pipes[i], cli_info, numops);
+#endif
+
+		i++;
+	}
+}
+
+
+static void run_samhandles(int numops, struct client_info *cli_info)
+{
+	int i;
+	int count = 0;
+	int failed = 0;
+	int retry = 500;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(0,("starting sam handle test\n"));
+
+	/* establish connections.  nothing to stop these being re-established. */
+	while (retry > 0 && !rpcclient_connect(cli_info))
+	{
+		retry--;
+	}
+
+	if (retry == 0)
+	{
+		DEBUG(0,("samhandle test: connection failed\n"));
+		return;
+	}
+
+	/* open session.  */
+	if (!cli_nt_session_open(smb_cli, PIPE_SAMR))
+	{
+		DEBUG(0,("samhandle test: session open failed\n"));
+		return;
+	}
+
+	for (i = 1; i <= numops * 100; i++)
+	{
+		POLICY_HND pol;
+		POLICY_HND dom;
+		if (!do_samr_connect(smb_cli, srv_name, 0x20, &pol))
+		{
+			failed++;
+		}
+/*
+		if (!do_samr_open_domain(smb_cli, srv_name, 0x00000020, &pol))
+		{
+			DEBUG(0,("samhandle domain open test (%i): failed\n", i));
+		}
+ */
+		if (i % 500 == 0)
+		{
+			DEBUG(0,("calls: %i\n", i));
+		}
+		count++;
+	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	/* close the rpc pipe */
+	rpcclient_stop();
+
+	DEBUG(0,("finished samhandle test.  count: %d failed: %d\n", count, failed));
+}
+
+
+static void run_lsahandles(int numops, struct client_info *cli_info)
+{
+	int i;
+	int count = 0;
+	int failed = 0;
+	int retry = 500;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(0,("starting lsa handle test\n"));
+
+	/* establish connections.  nothing to stop these being re-established. */
+	while (retry > 0 && !rpcclient_connect(cli_info))
+	{
+		retry--;
+	}
+
+	if (retry == 0)
+	{
+		DEBUG(0,("lsahandle test: connection failed\n"));
+		return;
+	}
+	/* open session.  */
+	if (!cli_nt_session_open(smb_cli, PIPE_LSARPC))
+	{
+		DEBUG(0,("lsahandle test: session open failed\n"));
+		return;
+	}
+
+	for (i = 1; i <= numops * 100; i++)
+	{
+		POLICY_HND pol;
+		if (!do_lsa_open_policy(smb_cli, srv_name, &pol, False))
+		{
+			failed++;
+		}
+		if (i % 500 == 0)
+		{
+			DEBUG(0,("calls: %i\n", i));
+		}
+		count++;
+	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	/* close the rpc pipe */
+	rpcclient_stop();
+
+	DEBUG(0,("finished lsahandle test.  count: %d failed: %d\n", count, failed));
+}
+
+
+static void run_pipegobble(int numops, struct client_info *cli_info, char *pipe_name)
+{
+	int i;
+	int count = 0;
+	int failed = 0;
+	int retry = 500;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(0,("starting pipe gobble test (%s)\n", pipe_name));
+
+	/* establish connections.  nothing to stop these being re-established. */
+	while (retry > 0 && !rpcclient_connect(cli_info))
+	{
+		retry--;
+	}
+
+	if (retry == 0)
+	{
+		DEBUG(0,("pipe gobble test: connection failed\n"));
+		return;
+	}
+	for (i = 1; i <= numops * 100; i++)
+	{
+		/* open session.  */
+		if (!cli_nt_session_open(smb_cli, pipe_name))
+		{
+			DEBUG(0,("pipe gobble test: session open failed\n"));
+		}
+
+		if (i % 500 == 0)
+		{
+			DEBUG(0,("calls: %i\n", i));
+		}
+		count++;
+	}
+
+	rpcclient_stop();
+
+	DEBUG(0,("finished pipe gobble test (%s).  count: %d failed: %d\n",
+	          pipe_name, count, failed));
+}
+
+
+static void run_handles(int numops, struct client_info *cli_info)
+{
+	run_samhandles(numops, cli_info);
+	run_lsahandles(numops, cli_info);
+}
+
+static void run_pipegobbler(int numops, struct client_info *cli_info)
+{
+/*
+	run_pipegobble(numops, cli_info, PIPE_SAMR);
+*/
+	run_pipegobble(numops, cli_info, PIPE_LSARPC);
+}
+
+/****************************************************************************
+make tcp connection
+****************************************************************************/
+static void run_tcpconnect(int numops, struct client_info *info)
+{
+	int i;
+	int failed = 0;
+
+	for (i = 0; i < numops; i++)
+	{
+		rpcclient_init();
+
+		if (!cli_connect(smb_cli, info->dest_host, &info->dest_ip))
+		{
+			failed++;
+		}
+		cli_shutdown(smb_cli);
+	}
+
+	DEBUG(0,("tcp connections: count: %d failed: %d\n", numops, failed));
+}
+
 /****************************************************************************
   runs n simultaneous functions.
 ****************************************************************************/
 static void create_procs(int nprocs, int numops, 
-		struct client_info *cli_info, struct cli_state *cli,
-		void (*fn)(int, struct client_info *, struct cli_state *))
+		struct client_info *cli_info,
+		void (*fn)(int, struct client_info *))
 {
 	int i, status;
 
@@ -184,8 +601,8 @@ static void create_procs(int nprocs, int numops,
 		{
 			int mypid = getpid();
 			sys_srandom(mypid ^ time(NULL));
-			fn(numops, cli_info, cli);
-			fflush(out_hnd);
+			fn(numops, cli_info);
+			dbgflush();
 			_exit(0);
 		}
 	}
@@ -195,6 +612,8 @@ static void create_procs(int nprocs, int numops,
 		waitpid(0, &status, 0);
 	}
 }
+
+
 /****************************************************************************
 usage on the program - OUT OF DATE!
 ****************************************************************************/
@@ -235,7 +654,6 @@ enum client_action
 	extern int optind;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
-	BOOL got_pass = False;
 	char *cmd_str="";
 	mode_t myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
@@ -245,8 +663,6 @@ enum client_action
 	struct client_info cli_info;
 
 	out_hnd = stdout;
-
-	rpcclient_init();
 
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
@@ -285,8 +701,6 @@ enum client_action
 	pstrcpy(cli_info.cur_dir , "\\");
 	pstrcpy(cli_info.file_sel, "");
 	pstrcpy(cli_info.base_dir, "");
-	pstrcpy(smb_cli->domain, "");
-	pstrcpy(smb_cli->user_name, "");
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
 
@@ -299,7 +713,6 @@ enum client_action
 	ZERO_STRUCT(cli_info.dom.level5_sid);
 	pstrcpy(cli_info.dom.level5_dom, "");
 
-	smb_cli->nt_pipe_fnum   = 0xffff;
 
 	setup_logging(pname, True);
 
@@ -403,8 +816,8 @@ enum client_action
 			case 'U':
 			{
 				char *lp;
-				pstrcpy(smb_cli->user_name,optarg);
-				if ((lp=strchr(smb_cli->user_name,'%')))
+				pstrcpy(user_name,optarg);
+				if ((lp=strchr(user_name,'%')))
 				{
 					*lp = 0;
 					pstrcpy(password,lp+1);
@@ -416,7 +829,7 @@ enum client_action
 
 			case 'W':
 			{
-				pstrcpy(smb_cli->domain,optarg);
+				pstrcpy(domain,optarg);
 				break;
 			}
 
@@ -516,12 +929,6 @@ enum client_action
 
 	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
-	if (*smb_cli->domain == 0)
-	{
-		pstrcpy(smb_cli->domain,lp_workgroup());
-	}
-	strupper(smb_cli->domain);
-
 	load_interfaces();
 
 	if (cli_action == CLIENT_IPC)
@@ -534,31 +941,25 @@ enum client_action
 	strupper(cli_info.mach_acct);
 	fstrcat(cli_info.mach_acct, "$");
 
-	/* set the password cache info */
-	if (got_pass)
-	{
-		if (password[0] == 0)
-		{
-			pwd_set_nullpwd(&(smb_cli->pwd));
-		}
-		else
-		{
-			pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
-		}
-	}
-	else 
-	{
-		char *pwd = getpass("Enter Password:");
-		safe_strcpy(password, pwd, sizeof(password));
-		pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
-	}
+	make_nmb_name(&called , dns_to_netbios_name(cli_info.dest_host ), cli_info.name_type, scope);
+	make_nmb_name(&calling, dns_to_netbios_name(cli_info.myhostname), 0x0               , scope);
 
-	create_procs(nprocs, numops, &cli_info, smb_cli, run_enums_test);
+	get_passwd();
+/*
+	create_procs(nprocs, numops, &cli_info, run_enums_test);
 
 	if (password[0] != 0)
 	{
-		create_procs(nprocs, numops, &cli_info, smb_cli, run_ntlogin_test);
+		create_procs(nprocs, numops, &cli_info, run_ntlogin_test);
 	}
+*/
+
+	create_procs(nprocs, numops, &cli_info, run_tcpconnect);
+/*
+	create_procs(nprocs, numops, &cli_info, run_pipegobbler);
+	create_procs(nprocs, numops, &cli_info, run_handles);
+	create_procs(nprocs, numops, &cli_info, run_randomrpc);
+*/
 
 	fflush(out_hnd);
 

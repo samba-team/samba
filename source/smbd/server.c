@@ -25,6 +25,7 @@
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern fstring global_myworkgroup;
+extern fstring global_sam_name;
 extern pstring global_myname;
 
 int am_parent = 1;
@@ -428,6 +429,13 @@ void exit_server(char *reason)
 	locking_end();
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
+#ifdef MEM_MAN
+	{
+		extern FILE *dbf;
+		smb_mem_write_verbose(dbf);
+		dbgflush();
+	}
+#endif
 	exit(0);
 }
 
@@ -644,9 +652,39 @@ static void usage(char *pname)
 	codepage_initialise(lp_client_code_page());
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
+ 	memset(global_sam_name, 0, sizeof(global_sam_name));
 
-	if(!pdb_generate_sam_sid()) {
+	if (lp_domain_logons())
+	{
+		if (lp_security() == SEC_USER)
+		{
+			/* we are PDC (or BDC) for a Domain */
+			fstrcpy(global_sam_name, lp_workgroup());
+		}
+		else if (lp_security() == SEC_DOMAIN)
+		{
+			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
+			fstrcpy(global_sam_name, global_myname);
+		}
+		else if (lp_security() == SEC_SHARE)
+		{
+			DEBUG(0,("ERROR: no Domain functionality in security = share\n"));
+			exit(1);
+		}
+	}
+
+	generate_wellknown_sids();
+
+	if (!generate_sam_sid())
+	{
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
+	if (lp_security() == SEC_DOMAIN && !get_member_domain_sid())
+	{
+		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
+		          lp_passwordserver()));
 		exit(1);
 	}
 
@@ -696,7 +734,16 @@ static void usage(char *pname)
 	if (!locking_init(0))
 		exit(1);
 
-	if(!initialize_password_db())
+	if(!initialise_passgrp_db())
+		exit(1);
+
+	if(!initialise_password_db())
+		exit(1);
+
+	if(!initialise_group_db())
+		exit(1);
+
+	if(!initialise_alias_db())
 		exit(1);
 
 	/* possibly reload the services file. */

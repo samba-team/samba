@@ -1,4 +1,4 @@
-#if  (defined(NOMEMMAN) && !defined(MEM_MAN_MAIN))
+#if  (defined(NOMEMMAN) && !defined(MEM_MAN_MAIN) && defined(HAVE_MALLOC_H))
 #include <malloc.h>
 #else
 

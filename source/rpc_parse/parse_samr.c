@@ -993,7 +993,7 @@ void samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_s
 makes a SAMR_R_ENUM_DOM_ALIASES structure.
 ********************************************************************/
 void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
-		uint32 num_sam_entries, SAM_USER_INFO_21 grps[MAX_SAM_ENTRIES],
+		uint32 num_sam_entries, LOCAL_GRP *alss,
 		uint32 status)
 {
 	int i;
@@ -1022,11 +1022,13 @@ void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 
 		for (i = 0; i < num_sam_entries; i++)
 		{
-			make_sam_entry(&(r_u->sam[i]),
-			               grps[i].uni_user_name.uni_str_len,
-			               grps[i].user_rid);
+			int acct_name_len = strlen(alss[i].name);
 
-			copy_unistr2(&(r_u->uni_grp_name[i]), &(grps[i].uni_user_name));
+			make_sam_entry(&(r_u->sam[i]),
+			                acct_name_len,
+			                alss[i].rid);
+
+			make_unistr2(&(r_u->uni_grp_name[i]), alss[i].name   , acct_name_len);
 		}
 
 		r_u->num_entries4 = num_sam_entries;
@@ -1415,7 +1417,7 @@ makes a SAMR_R_ENUM_DOM_GROUPS structure.
 ********************************************************************/
 void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		uint32 start_idx, uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES],
+		DOMAIN_GRP *grp,
 		uint32 status)
 {
 	int i;
@@ -1436,14 +1438,17 @@ void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 	{
 		for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
 		{
+			int acct_name_len = strlen(grp[i].name);
+			int acct_desc_len = strlen(grp[i].comment);
+
 			make_sam_entry3(&(r_u->sam[entries_added]),
 			                start_idx + entries_added + 1,
-			                pass[i].uni_user_name.uni_str_len,
-			                pass[i].uni_acct_desc.uni_str_len,
-			                pass[i].user_rid);
+			                acct_name_len,
+			                acct_desc_len,
+			                grp[i].rid);
 
-			copy_unistr2(&(r_u->str[entries_added].uni_grp_name), &(pass[i].uni_user_name));
-			copy_unistr2(&(r_u->str[entries_added].uni_grp_desc), &(pass[i].uni_acct_desc));
+			make_unistr2(&(r_u->str[entries_added].uni_grp_name), grp[i].name   , acct_name_len);
+			make_unistr2(&(r_u->str[entries_added].uni_grp_desc), grp[i].comment, acct_desc_len);
 
 			entries_added++;
 		}
@@ -1793,7 +1798,7 @@ void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 makes a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-		uint32 num_rids, uint32 *rid, uint32 status)
+		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status)
 {
 	int i;
 	if (r_u == NULL) return;
@@ -1810,7 +1815,7 @@ void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 
 		for (i = 0; i < num_rids; i++)
 		{
-			make_dom_rid3(&(r_u->dom_rid[i]), rid[i], 0x01);
+			make_dom_rid3(&(r_u->dom_rid[i]), rid[i], type[i]);
 		}
 
 		r_u->num_entries3 = num_rids;
@@ -2100,7 +2105,7 @@ void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 	{
 		r_u->ptr_0        = 1;
 		r_u->num_entries  = num_gids;
-		r_u->ptr_1        = 1;
+		r_u->ptr_1        = (num_gids != 0) ? 1 : 0;
 		r_u->num_entries2 = num_gids;
 
 		r_u->gid = gid;

@@ -75,6 +75,7 @@
  *  debugf        - Debug file name.
  *  append_log    - If True, then the output file will be opened in append
  *                  mode.
+ *  timestamp_log - 
  *  DEBUGLEVEL    - System-wide debug message limit.  Messages with message-
  *                  levels higher than DEBUGLEVEL will not be processed.
  */
@@ -82,6 +83,7 @@
 FILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
+BOOL    timestamp_log = True;
 int     DEBUGLEVEL = 1;
 
 
@@ -119,7 +121,17 @@ static int     format_pos     = 0;
  * Functions...
  */
 
-#if defined(SIGUSR2)
+/* ************************************************************************** **
+ * tells us if interactive logging was requested
+ * ************************************************************************** **
+ */
+
+BOOL dbg_interactive(void)
+{
+	return stdout_logging;
+}
+
+#if defined(SIGUSR2) && !defined(MEM_MAN)
 /* ************************************************************************** **
  * catch a sigusr2 - decrease the debug log level.
  * ************************************************************************** **
@@ -140,7 +152,7 @@ void sig_usr2( int sig )
   } /* sig_usr2 */
 #endif /* SIGUSR2 */
 
-#if defined(SIGUSR1)
+#if defined(SIGUSR1) && !defined(MEM_MAN)
 /* ************************************************************************** **
  * catch a sigusr1 - increase the debug log level. 
  * ************************************************************************** **
@@ -429,7 +441,7 @@ static void bufr_print( void )
 static void format_debug_text( char *msg )
   {
   int i;
-  BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || 
+  BOOL timestamp = (timestamp_log && !stdout_logging && (lp_timestamp_logs() || 
 					!(lp_loaded())));
 
   for( i = 0; msg[i]; i++ )
@@ -527,7 +539,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   /* Print the header if timestamps are turned on.  If parameters are
    * not yet loaded, then default to timestamps on.
    */
-  if( lp_timestamp_logs() || !(lp_loaded()) )
+  if( timestamp_log && (lp_timestamp_logs() || !(lp_loaded()) ))
     {
     /* Print it all out at once to prevent split syslog output. */
     (void)Debug1( "[%s, %d] %s:%s(%d)\n",

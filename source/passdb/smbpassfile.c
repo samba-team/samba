@@ -21,52 +21,7 @@
 
 extern int DEBUGLEVEL;
 
-int pw_file_lock_depth = 0;
-
 BOOL global_machine_password_needs_changing = False;
-
-
-/***************************************************************
- Lock an fd. Abandon after waitsecs seconds.
-****************************************************************/
-
-BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
-{
-  if (fd < 0)
-    return False;
-
-  (*plock_depth)++;
-
-  if(pw_file_lock_depth == 0) {
-    if (!do_file_lock(fd, secs, type)) {
-      DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
-                 strerror(errno)));
-      return False;
-    }
-  }
-
-  return True;
-}
-
-/***************************************************************
- Unlock an fd. Abandon after waitsecs seconds.
-****************************************************************/
-
-BOOL pw_file_unlock(int fd, int *plock_depth)
-{
-  BOOL ret=True;
-
-  if(*plock_depth == 1)
-    ret = do_file_lock(fd, 5, F_UNLCK);
-
-  (*plock_depth)--;
-
-  if(!ret)
-    DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",
-                 strerror(errno)));
-  return ret;
-}
-
 static int mach_passwd_lock_depth;
 static FILE *mach_passwd_fp;
 
@@ -125,7 +80,7 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 
     chmod(mac_file, 0600);
 
-    if(!pw_file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
+    if(!file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
     {
       DEBUG(0,("trust_password_lock: cannot lock file %s\n", mac_file));
@@ -144,7 +99,7 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 
 BOOL trust_password_unlock(void)
 {
-  BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
+  BOOL ret = file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
   if(mach_passwd_lock_depth == 0)
     fclose(mach_passwd_fp);
   return ret;
@@ -212,7 +167,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
    * Get the hex password.
    */
 
-  if (!pdb_gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
+  if (!pwdb_gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
          strncmp(&linebuf[33], "TLC-", 4)) {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD

@@ -24,8 +24,6 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 
 /****************************************************************************
 Initialize domain session credentials.

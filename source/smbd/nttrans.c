@@ -562,8 +562,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	/* If it's an IPC, use the pipe handler. */
 
-	if (IS_IPC(conn) && lp_nt_pipe_support()) {
-
+	if (IS_IPC(conn) && lp_nt_pipe_support() && lp_security() != SEC_SHARE)
+	{
 		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
 		if(ret != 0)
 			return ret;

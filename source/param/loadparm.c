@@ -116,20 +116,16 @@ typedef struct
   char *szLogFile;
   char *szConfigFile;
   char *szSMBPasswdFile;
+  char *szSMBPassGroupFile;
+  char *szSMBGroupFile;
+  char *szSMBAliasFile;
   char *szPasswordServer;
   char *szSocketOptions;
   char *szValidChars;
   char *szWorkGroup;
-  char *szDomainAdminGroup;
-  char *szDomainGuestGroup;
-  char *szDomainAdminUsers;
-  char *szDomainGuestUsers;
-  char *szDomainHostsallow; 
-  char *szDomainHostsdeny;
   char *szUsernameMap;
-#ifdef USING_GROUPNAME_MAP
+  char *szAliasnameMap;
   char *szGroupnameMap;
-#endif /* USING_GROUPNAME_MAP */
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
@@ -146,7 +142,6 @@ typedef struct
   char *szAnnounceVersion; /* This is initialised in init_globals */
   char *szNetbiosAliases;
   char *szDomainOtherSIDs;
-  char *szDomainGroups;
   char *szDriverFile;
   char *szNameResolveOrder;
   char *szLdapServer;
@@ -501,6 +496,7 @@ static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3,
 static struct parm_struct parm_table[] =
 {
   {"Base Options", P_SEP, P_SEPARATOR},
+
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
   {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_PRINT},
   {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  0},
@@ -512,6 +508,7 @@ static struct parm_struct parm_table[] =
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
 
   {"Security Options", P_SEP, P_SEPARATOR},
+
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
@@ -520,6 +517,9 @@ static struct parm_struct parm_table[] =
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL,  0},
+  {"smb passgrp file", P_STRING,  P_GLOBAL, &Globals.szSMBPassGroupFile, NULL,   NULL,  0},
+  {"smb group file",   P_STRING,  P_GLOBAL, &Globals.szSMBGroupFile,    NULL,   NULL,  0},
+  {"smb alias file",   P_STRING,  P_GLOBAL, &Globals.szSMBAliasFile,    NULL,   NULL,  0},
   {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
   {"root directory",   P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
   {"root dir",         P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
@@ -567,6 +567,7 @@ static struct parm_struct parm_table[] =
 
 #ifdef WITH_SSL
   {"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
+
   {"ssl",              P_BOOL,    P_GLOBAL, &Globals.sslEnabled,        NULL,   NULL,  0 },
   {"ssl hosts",        P_STRING,  P_GLOBAL, &Globals.sslHostsRequire,   NULL,   NULL,  0 },
   {"ssl hosts resign", P_STRING,  P_GLOBAL, &Globals.sslHostsResign,   NULL,   NULL,  0} ,
@@ -584,6 +585,7 @@ static struct parm_struct parm_table[] =
 #endif        /* WITH_SSL */
 
   {"Logging Options", P_SEP, P_SEPARATOR},
+
   {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
   {"debuglevel",       P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  0},
   {"syslog",           P_INTEGER, P_GLOBAL, &Globals.syslog,            NULL,   NULL,  0},
@@ -595,6 +597,7 @@ static struct parm_struct parm_table[] =
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL},
 
   {"Protocol Options", P_SEP, P_SEPARATOR},
+
   {"protocol",         P_ENUM,    P_GLOBAL, &Globals.maxprotocol,       NULL,   enum_protocol, 0},
   {"read bmpx",        P_BOOL,    P_GLOBAL, &Globals.bReadbmpx,         NULL,   NULL,  0},
   {"read raw",         P_BOOL,    P_GLOBAL, &Globals.bReadRaw,          NULL,   NULL,  0},
@@ -614,6 +617,7 @@ static struct parm_struct parm_table[] =
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
+
   {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL,  0},
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
@@ -632,6 +636,7 @@ static struct parm_struct parm_table[] =
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
+
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  0},
   {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
   {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL,   NULL,  0},
@@ -652,7 +657,6 @@ static struct parm_struct parm_table[] =
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  0},
   {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_GLOBAL},
-
 
   {"Filename Handling", P_SEP, P_SEPARATOR},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL,  0},
@@ -680,17 +684,13 @@ static struct parm_struct parm_table[] =
   {"stat cache",       P_BOOL,    P_GLOBAL, &Globals.bStatCache,        NULL,   NULL,  0},
 
   {"Domain Options", P_SEP, P_SEPARATOR},
-  {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL,  0},
-  {"domain admin group",P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL,   NULL,  0},
-  {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
-  {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
-  {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
-#ifdef USING_GROUPNAME_MAP
-  {"groupname map",     P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
-#endif /* USING_GROUPNAME_MAP */
+
+  {"local group map",   P_STRING, P_GLOBAL, &Globals.szAliasnameMap,     NULL,   NULL,  0},
+  {"domain group map",  P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
+
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
   {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  0},
   {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL,  0},
@@ -698,6 +698,7 @@ static struct parm_struct parm_table[] =
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL,   NULL,  0},
 
   {"Browse Options", P_SEP, P_SEPARATOR},
+
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL,  FLAG_BASIC},
   {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce, 0},
   {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL,  0},
@@ -710,12 +711,14 @@ static struct parm_struct parm_table[] =
   {"browsable",        P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
 
   {"WINS Options", P_SEP, P_SEPARATOR},
+
   {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL,  0},
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL,  0},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL,  FLAG_BASIC},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
+
   {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
@@ -727,6 +730,7 @@ static struct parm_struct parm_table[] =
 
 #ifdef WITH_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},
+
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
   {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
@@ -737,6 +741,7 @@ static struct parm_struct parm_table[] =
 
 
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
+
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL,   NULL,  0},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL,   NULL,  FLAG_HIDE},
   {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
@@ -814,6 +819,9 @@ static void init_globals(void)
   DEBUG(3,("Initialising global parameters\n"));
 
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
+  string_set(&Globals.szSMBPassGroupFile, SMB_PASSGRP_FILE);
+  string_set(&Globals.szSMBGroupFile, SMB_GROUP_FILE);
+  string_set(&Globals.szSMBAliasFile, SMB_ALIAS_FILE);
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
@@ -1093,6 +1101,9 @@ FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
+FN_GLOBAL_STRING(lp_smb_passgrp_file,&Globals.szSMBPassGroupFile)
+FN_GLOBAL_STRING(lp_smb_group_file,&Globals.szSMBGroupFile)
+FN_GLOBAL_STRING(lp_smb_alias_file,&Globals.szSMBAliasFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
@@ -1107,9 +1118,8 @@ FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
-#ifdef USING_GROUPNAME_MAP
+FN_GLOBAL_STRING(lp_aliasname_map,&Globals.szAliasnameMap)
 FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
-#endif /* USING_GROUPNAME_MAP */
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 
@@ -1124,12 +1134,6 @@ static FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
-
-FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
-FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
-FN_GLOBAL_STRING(lp_domain_guest_group,&Globals.szDomainGuestGroup)
-FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
-FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
