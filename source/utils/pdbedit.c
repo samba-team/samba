@@ -732,13 +732,8 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	TALLOC_CTX *mem_ctx = NULL;
 	SAM_TRUST_PASSWD trust;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND connect_hnd;
-	DOM_SID *domain_sid = NULL;
 	smb_ucs2_t *uni_name = NULL;
-	char *givenpass, *domain_name = NULL;
-	struct in_addr srv_ip;
-	fstring srv_name, myname;
-	struct cli_state *cli;
+	char *givenpass;
 	time_t lct;
 	
 	if (!dom_name) return -1;
@@ -765,44 +760,10 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 
 	/* trusting SID */
 	if (!dom_sid) {
-		/* if sid is not specified in command line, do our best
-		   to establish it */
-
-		/* find domain PDC */
-		if (!get_pdc_ip(dom_name, &srv_ip))
-			return -1;
-		if (is_zero_ip(srv_ip))
-			return -1;
-		if (!name_status_find(dom_name, 0x1b, 0x20, srv_ip, srv_name))
-			return -1;
-			
-		get_myname(myname);
-			
-		/* Connect the domain pdc...  */
-		nt_status = cli_full_connection(&cli, myname, srv_name, &srv_ip, 139,
-		                                "IPC$", "IPC", "", "", "", 0, Undefined, NULL);
-		if (NT_STATUS_IS_ERR(nt_status))
-			return -1;
-		if (!cli_nt_session_open(cli, PI_LSARPC))
-			return -1;
+		/* copying zeroed sid to trust password structure
+		   it'll be handled and filled at nearest opportunity */
+		ZERO_STRUCT(trust.private.domain_sid);
 		
-		/* ...and query the domain sid */
-		nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
-		                                 &connect_hnd);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-
-		nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-		                                      5, &domain_name, &domain_sid);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-		
-		nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-		
-		cli_nt_session_close(cli);
-		cli_shutdown(cli);
-		
-		/* copying sid to trust password structure */
-		sid_copy(&trust.private.domain_sid, domain_sid);
 			
 	} else {
 		if (!string_to_sid(&trust.private.domain_sid, dom_sid)) {
