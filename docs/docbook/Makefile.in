@@ -177,7 +177,7 @@ $(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@cd $(SMBDOTCONFDOC) && \
-	@$(XSLTPROC) --xinclude \
+	$(XSLTPROC) --xinclude \
 	--param smb.context "'G'" \
 	--output parameters.global.xml \
 	generate-context.xsl parameters.all.xml && \
@@ -185,7 +185,7 @@ $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SM
 
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@cd $(SMBDOTCONFDOC) && \
-	@$(XSLTPROC) --xinclude \
+	$(XSLTPROC) --xinclude \
 	--param smb.context "'S'" \
 	--output parameters.service.xml \
 	generate-context.xsl parameters.all.xml && \
