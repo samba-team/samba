@@ -311,6 +311,7 @@ char *getwd(char *);
 #define SIGNAL_CAST (void(*)(int))
 #endif
 #define USE_DIRECT
+#define USE_WAITPID
 #endif
 
 #ifdef SGI
