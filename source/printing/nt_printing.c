@@ -181,7 +181,7 @@ static BOOL upgrade_to_version_2(void)
 	DEBUG(0,("upgrade_to_version_2: upgrading print tdb's to version 2\n"));
  
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
-			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+			newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
@@ -221,7 +221,7 @@ static BOOL upgrade_to_version_2(void)
 			}
 		}
  
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 	}
 
 	return True;
@@ -323,7 +323,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_forms, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
@@ -333,7 +333,7 @@ int get_ntforms(nt_forms_struct **list)
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
 		tl = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
@@ -512,7 +512,7 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((fl = Realloc(*list, sizeof(fstring)*(total+1))) == NULL) {
@@ -1536,13 +1536,8 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 			driver->datafile,
 			driver->configfile,
 			driver->helpfile,
-#if 0 	/* JERRY */
 			driver->monitorname,
 			driver->defaultdatatype);
-#else
-			"",
-			"RAW");
-#endif
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
@@ -1577,7 +1572,7 @@ done:
 	if (ret)
 		DEBUG(0,("add_a_printer_driver_3: Adding driver with key %s failed.\n", key ));
 
-	safe_free(buf);
+	SAFE_FREE(buf);
 	return ret;
 }
 
@@ -1688,10 +1683,10 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	if (driver.dependentfiles != NULL)
 		fstrcpy(driver.dependentfiles[i], "");
 
-	safe_free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	if (len != dbuf.dsize) {
-			safe_free(driver.dependentfiles);
+			SAFE_FREE(driver.dependentfiles);
 
 		return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
 	}
@@ -2011,7 +2006,7 @@ done:
 	if (!W_ERROR_IS_OK(ret))
 		DEBUG(8, ("error updating printer to tdb on disk\n"));
 
-	safe_free(buf);
+	SAFE_FREE(buf);
 
 	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n",
 		 info->sharename, info->drivername, info->portname, len));
@@ -2062,8 +2057,8 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	    (strlen(current->value)==strlen(param->value)) ) {
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
-		safe_free(current->data);
-		safe_free(current);
+		SAFE_FREE(current->data);
+		SAFE_FREE(current);
 		DEBUG(109,("deleted first value\n"));
 		return (True);
 	}
@@ -2075,8 +2070,8 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 		    strlen(current->value)==strlen(param->value) ) {
 			DEBUG(109,("deleting current value\n"));
 			previous->next=current->next;
-			safe_free(current->data);
-			safe_free(current);
+			SAFE_FREE(current->data);
+			SAFE_FREE(current);
 			DEBUG(109,("deleted current value\n"));
 			return(True);
 		}
@@ -2099,7 +2094,7 @@ void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 
 	DEBUG(106,("free_nt_printer_param: deleting param [%s]\n", param->value));
 
-		safe_free(param->data);
+		SAFE_FREE(param->data);
 	SAFE_FREE(*param_ptr);
 }
 
@@ -2186,7 +2181,7 @@ NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
 	new_nt_devicemode->private = NULL;
 	if (nt_devicemode->private != NULL) {
 		if ((new_nt_devicemode->private = memdup(nt_devicemode->private, nt_devicemode->driverextra)) == NULL) {
-			safe_free(new_nt_devicemode);
+			SAFE_FREE(new_nt_devicemode);
 			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
 			return NULL;
         }
@@ -2208,7 +2203,7 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 
 	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
 
-		safe_free(nt_devmode->private);
+		SAFE_FREE(nt_devmode->private);
 	SAFE_FREE(*devmode_ptr);
 }
 
@@ -2234,7 +2229,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 		free_nt_printer_param(&tofree);
 	}
 
-	safe_free(*info_ptr);
+	SAFE_FREE(*info_ptr);
 }
 
 
@@ -2589,7 +2584,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	if (get_remote_arch() == RA_OS2)
 		map_to_os2_driver(info.drivername);
 
-	safe_free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 
 	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
@@ -2796,8 +2791,8 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	 */
 	while ( (current=info_ptr->specific) != NULL ) {
 		info_ptr->specific=current->next;
-		safe_free(current->data);
-		safe_free(current);
+		SAFE_FREE(current->data);
+		SAFE_FREE(current);
 	}
 
 	/* 
@@ -2805,7 +2800,7 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	 */
 	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
 
-	safe_free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	return True;	
 }
@@ -2887,7 +2882,7 @@ done:
 	if (ret == -1)
 		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
 
-	safe_free(buf);
+	SAFE_FREE(buf);
 
 	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
 		 info->sharename, info->drivername));
@@ -3025,8 +3020,8 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
   done:
 	talloc_destroy(ctx);
 	if (nt_devmode)
-		safe_free(nt_devmode->private);
-	safe_free(nt_devmode);
+		SAFE_FREE(nt_devmode->private);
+	SAFE_FREE(nt_devmode);
 	printer->info_2->devmode = tmp_devmode;
 
 	return status;
@@ -3082,7 +3077,7 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 				dump_a_printer(*printer, level);
 				*pp_printer = printer;
 			} else {
-				safe_free(printer);
+				SAFE_FREE(printer);
 			}
 			break;
 		}
@@ -3200,9 +3195,9 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			if (driver.info_3 != NULL)
 			{
 				info3=driver.info_3;
-				safe_free(info3->dependentfiles);
+				SAFE_FREE(info3->dependentfiles);
 				ZERO_STRUCTP(info3);
-				safe_free(info3);
+				SAFE_FREE(info3);
 				result=0;
 			}
 			else
@@ -3217,10 +3212,10 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			if (driver.info_6 != NULL)
 			{
 				info6=driver.info_6;
-				safe_free(info6->dependentfiles);
-				safe_free(info6->previousnames);
+				SAFE_FREE(info6->dependentfiles);
+				SAFE_FREE(info6->previousnames);
 				ZERO_STRUCTP(info6);
-				safe_free(info6);
+				SAFE_FREE(info6);
 				result=0;
 			}
 			else
@@ -3255,7 +3250,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 	
 	/* loop through the printers.tdb and check for the drivername */
 	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	     newkey = tdb_nextkey(tdb_printers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) 
 	{
 
 		dbuf = tdb_fetch(tdb_printers, kbuf);
@@ -3289,7 +3284,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 			info.datatype,
 			info.parameters);
 
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 
 		if (ret == -1) {
 			DEBUG (0,("printer_driver_in_use: tdb_unpack failed for printer %s\n",
