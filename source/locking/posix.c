@@ -632,7 +632,6 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	return True;
 }
 
-#if defined(LARGE_SMB_OFF_T)
 /****************************************************************************
  Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
 ****************************************************************************/
@@ -664,7 +663,6 @@ uint32 map_lock_offset(uint32 high, uint32 low)
 
 	return (high|low);
 }
-#endif
 
 /****************************************************************************
  Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
