@@ -10,6 +10,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB
+		LIBSMB \
+		LIBRPC
 # End BINARY smbclient
 #################################

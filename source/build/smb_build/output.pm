@@ -101,7 +101,8 @@ sub create_output($)
 			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
 				$part->{OUTPUT_TYPE} eq "BINARY" and 
 				defined($elem->{INIT_FUNCTION}) and 
-				$elem->{INIT_FUNCTION} ne "";
+				$elem->{INIT_FUNCTION} ne "" and
+				$part->{OUTPUT_TYPE} ne "SHARED_LIBRARY";
 		}
 	}
 
