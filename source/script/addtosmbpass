@@ -41,7 +41,7 @@ BEGIN {
 {
   print $0;
   for(name in names) {
-    if($1 ~ name) {
+    if($1 == name) {
       delete names[name];
     }
   }
