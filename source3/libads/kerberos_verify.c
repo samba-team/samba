@@ -173,8 +173,11 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	krb5_rcache rcache = NULL;
 	int ret, i;
 	krb5_keyblock *key = NULL;
+
 	krb5_principal host_princ;
 	char *host_princ_s = NULL;
+	BOOL free_host_princ = False;
+
 	fstring myname;
 	char *password_s = NULL;
 	krb5_data password;
@@ -238,6 +241,8 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
+
+	free_host_princ = True;
 
 	/*
 	 * JRA. We must set the rcache here. This will prevent replay attacks.
@@ -339,10 +344,7 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	free(packet.data);
 
 	get_krb5_smb_session_key(context, auth_context, session_key, True);
-#ifdef DEBUG_PASSWORD
-	DEBUG(10,("SMB session key (from ticket) follows:\n"));
-	dump_data(10, session_key, 16);
-#endif
+	dump_data_pw("SMB session key (from ticket)\n", session_key->data, session_key->length);
 
 #if 0
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
@@ -386,7 +388,9 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	if (!NT_STATUS_IS_OK(sret))
 		data_blob_free(ap_rep);
 
-	krb5_free_principal(context, host_princ);
+	if (free_host_princ)
+		krb5_free_principal(context, host_princ);
+
 	if (tkt != NULL)
 		krb5_free_ticket(context, tkt);
 	free_kerberos_etypes(context, enctypes);
