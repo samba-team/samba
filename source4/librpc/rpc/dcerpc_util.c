@@ -711,3 +711,38 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
 	return NT_STATUS_NO_USER_SESSION_KEY;
 }
+
+
+/*
+  log a rpc packet in a format suitable for ndrdump. This is especially useful
+  for sealed packets, where ethereal cannot easily see the contents
+
+  this triggers on a debug level of >= 10
+*/
+void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
+		       uint32_t opnum, uint32_t flags, DATA_BLOB *pkt)
+{
+	const int num_examples = 20;
+	int i;
+
+	if (DEBUGLEVEL < 10) return;
+
+	for (i=0;i<num_examples;i++) {
+		char *name=NULL;
+		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
+			 lp_lockdir(), ndr->name, opnum, i,
+			 (flags&NDR_IN)?"in":"out");
+		if (name == NULL) {
+			return;
+		}
+		if (!file_exist(name, NULL)) {
+			if (file_save(name, pkt->data, pkt->length)) {
+				DEBUG(10,("Logged rpc packet to %s\n", name));
+			}
+			free(name);
+			break;
+		}
+		free(name);
+	}
+}
+

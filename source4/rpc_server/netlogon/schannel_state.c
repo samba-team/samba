@@ -53,11 +53,12 @@ static struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
   use a simple ldb structure
 */
 NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
-				    const char *computer_name, struct creds_CredentialState *creds)
+				    const char *computer_name, 
+				    struct creds_CredentialState *creds)
 {
 	struct ldb_context *ldb;
 	struct ldb_message msg;
-	struct ldb_val val;
+	struct ldb_val val, seed;
 	char *s = NULL;
 	time_t expiry = time(NULL) + SCHANNEL_CREDENTIALS_EXPIRY;
 	int ret;
@@ -85,7 +86,11 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	val.data = creds->session_key;
 	val.length = sizeof(creds->session_key);
 
+	seed.data = creds->seed.data;
+	seed.length = sizeof(creds->seed.data);
+
 	ldb_msg_add_value(ldb, &msg, "sessionKey", &val);
+	ldb_msg_add_value(ldb, &msg, "seed", &seed);
 	ldb_msg_add_string(ldb, &msg, "expiry", s);
 
 	ldb_delete(ldb, msg.dn);
@@ -104,10 +109,11 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 
 
 /*
-  read back a session key for a computer
+  read back a credentials back for a computer
 */
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
-				    const char *computer_name, uint8_t session_key[16])
+				    const char *computer_name, 
+				    struct creds_CredentialState *creds)
 {
 	struct ldb_context *ldb;
 	time_t expiry;
@@ -115,6 +121,8 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	int ret;
 	const struct ldb_val *val;
 	char *expr=NULL;
+
+	ZERO_STRUCTP(creds);
 
 	ldb = schannel_db_connect(mem_ctx);
 	if (ldb == NULL) {
@@ -146,7 +154,15 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	memcpy(session_key, val->data, 16);
+	memcpy(creds->session_key, val->data, 16);
+
+	val = ldb_msg_find_ldb_val(res[0], "seed");
+	if (val == NULL || val->length != 8) {
+		ldb_close(ldb);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	memcpy(creds->seed.data, val->data, 8);
 
 	ldb_close(ldb);
 

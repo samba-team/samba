@@ -914,7 +914,72 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1d */
-	WERROR netr_NETRLOGONGETDOMAININFO();
+
+	typedef struct {
+		uint32 length;
+		[size_is(length)] uint8 *data;
+	} netr_Blob;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint16 length;
+		uint16 size;
+		[size_is(size/2),length_is(length/2)] uint16 *data;
+	} netr_BinaryString;
+
+	typedef struct {
+		netr_Blob blob;
+		unistr *workstation_domain;
+		unistr *workstation_site;
+		unistr *foo2;
+		unistr *p1;
+		unistr *p2;
+		unistr *p3;
+		netr_BinaryString blob2;
+		netr_String product;
+		uint32 i1;
+		unistr *p4;
+		uint32 i2;
+		uint32 pp;
+		uint32 xx[4];
+	} netr_DomainQuery1;
+
+	typedef union {
+		[case(1)] netr_DomainQuery1 *query1;
+		[case(2)] netr_DomainQuery1 *query1;
+	} netr_DomainQuery;
+
+	typedef struct {
+		netr_String domainname;
+		netr_String fulldomainname;
+		netr_String forest;
+		GUID        guid;
+		dom_sid2    *sid;
+		netr_BinaryString unknown1[4];
+		uint32      unknown[4];
+	} netr_DomainTrustInfo;
+
+	typedef struct {
+		netr_DomainTrustInfo domaininfo;
+		uint32 num_trusts;
+		[size_is(num_trusts)] netr_DomainTrustInfo *trusts;
+		uint32 unknown[14]; /* room for expansion? */
+	} netr_DomainInfo1;
+
+	typedef union {
+		[case(1)] netr_DomainInfo1 *info1;
+		[case(2)] netr_DomainInfo1 *info1;
+	} netr_DomainInfo;
+	
+	NTSTATUS netr_LogonGetDomainInfo(
+		[in]         unistr server_name,
+		[in]         unistr *computer_name,
+		[in,out,ref] netr_Authenticator *credential,
+		[in]         uint32 unknown1,
+		[in]         uint32 *i1,
+		[in]	     uint32 level,
+		[in,switch_is(level)] netr_DomainQuery query,
+		[out,switch_is(level)] netr_DomainInfo info
+		);
 
 	/****************/
 	/* Function 0x1e */

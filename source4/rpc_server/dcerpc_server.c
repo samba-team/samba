@@ -548,40 +548,6 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 
 
 /*
-  log a rpc packet in a format suitable for ndrdump. This is especially useful
-  for sealed packets, where ethereal cannot easily see the contents
-
-  this triggers on a debug level of >= 10
-*/
-static void log_rpc_packet(const struct dcesrv_interface *iface, 
-			   uint32_t opnum, uint32_t flags, DATA_BLOB *pkt)
-{
-	const int num_examples = 20;
-	int i;
-
-	if (DEBUGLEVEL < 10) return;
-
-	for (i=0;i<num_examples;i++) {
-		char *name=NULL;
-		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
-			 lp_lockdir(), iface->ndr->name, opnum, i,
-			 (flags&NDR_IN)?"in":"out");
-		if (name == NULL) {
-			return;
-		}
-		if (!file_exist(name, NULL)) {
-			if (file_save(name, pkt->data, pkt->length)) {
-				DEBUG(10,("Logged rpc packet to %s\n", name));
-			}
-			free(name);
-			break;
-		}
-		free(name);
-	}
-}
-
-
-/*
   handle a dcerpc request packet
 */
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
@@ -622,8 +588,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* unravel the NDR for the packet */
 	status = call->conn->iface->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		log_rpc_packet(call->conn->iface, opnum, NDR_IN, 
-			       &call->pkt.u.request.stub_and_verifier);
+		dcerpc_log_packet(call->conn->iface->ndr, opnum, NDR_IN, 
+				  &call->pkt.u.request.stub_and_verifier);
 		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
@@ -632,8 +598,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* call the dispatch function */
 	status = call->conn->iface->dispatch(call, call->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		log_rpc_packet(call->conn->iface, opnum, NDR_IN, 
-			       &call->pkt.u.request.stub_and_verifier);
+		dcerpc_log_packet(call->conn->iface->ndr, opnum, NDR_IN, 
+				  &call->pkt.u.request.stub_and_verifier);
 		return dcesrv_fault(call, call->fault_code);
 	}
 
