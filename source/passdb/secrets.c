@@ -222,25 +222,40 @@ BOOL secrets_lock_trust_account_password(const char *domain, BOOL dolock)
 }
 
 /************************************************************************
+ Routine to get the default secure channel type for trust accounts
+************************************************************************/
+
+uint32 get_default_sec_channel(void) 
+{
+	if (lp_server_role() == ROLE_DOMAIN_BDC || 
+	    lp_server_role() == ROLE_DOMAIN_PDC) {
+		return SEC_CHAN_BDC;
+	} else {
+		return SEC_CHAN_WKSTA;
+	}
+}
+
+/************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
  the above call.
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
-					  time_t *pass_last_set_time)
+					  time_t *pass_last_set_time,
+					  uint32 *channel)
 {
 	struct machine_acct_pass *pass;
 	char *plaintext;
 	size_t size;
 
-	plaintext = secrets_fetch_machine_password();
+	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time, 
+						   channel);
 	if (plaintext) {
 		/* we have an ADS password - use that */
 		DEBUG(4,("Using ADS machine password\n"));
 		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
-		pass_last_set_time = 0;
 		return True;
 	}
 
@@ -257,6 +272,10 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
 	SAFE_FREE(pass);
+
+	if (channel) 
+		*channel = get_default_sec_channel();
+
 	return True;
 }
 
@@ -369,14 +388,42 @@ BOOL secrets_store_trusted_domain_password(const char* domain, smb_ucs2_t *uni_d
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
 
-BOOL secrets_store_machine_password(const char *pass)
+BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
-	char *key;
+	char *key = NULL;
 	BOOL ret;
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, lp_workgroup());
+	uint32 last_change_time;
+	uint32 sec_channel_type;
+
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
+	if (!key) 
+		return False;
 	strupper(key);
+
 	ret = secrets_store(key, pass, strlen(pass)+1);
-	free(key);
+	SAFE_FREE(key);
+
+	if (!ret)
+		return ret;
+	
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+	if (!key) 
+		return False;
+	strupper(key);
+
+	SIVAL(&last_change_time, 0, time(NULL));
+	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
+	SAFE_FREE(key);
+
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+	if (!key) 
+		return False;
+	strupper(key);
+
+	SIVAL(&sec_channel_type, 0, sec_channel);
+	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
+	SAFE_FREE(key);
+
 	return ret;
 }
 
@@ -385,14 +432,45 @@ BOOL secrets_store_machine_password(const char *pass)
  Routine to fetch the plaintext machine account password for a realm
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
-char *secrets_fetch_machine_password(void)
+char *secrets_fetch_machine_password(const char *domain, 
+				     time_t *pass_last_set_time,
+				     uint32 *channel)
 {
-	char *key;
+	char *key = NULL;
 	char *ret;
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, lp_workgroup());
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
 	strupper(key);
 	ret = (char *)secrets_fetch(key, NULL);
-	free(key);
+	SAFE_FREE(key);
+	
+	if (pass_last_set_time) {
+		size_t size;
+		uint32 *last_set_time;
+		asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+		strupper(key);
+		last_set_time = secrets_fetch(key, &size);
+		if (last_set_time) {
+			*pass_last_set_time = IVAL(last_set_time,0);
+		} else {
+			*pass_last_set_time = 0;
+		}
+		SAFE_FREE(key);
+	}
+	
+	if (channel) {
+		size_t size;
+		uint32 *channel_type;
+		asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+		strupper(key);
+		channel_type = secrets_fetch(key, &size);
+		if (channel_type) {
+			*channel = IVAL(channel_type,0);
+		} else {
+			*channel = get_default_sec_channel();
+		}
+		SAFE_FREE(key);
+	}
+	
 	return ret;
 }
 
@@ -637,7 +715,7 @@ BOOL must_use_pdc( const char *domain )
 	time_t  last_change_time;
 	unsigned char	passwd[16];   
 	
-	if ( !secrets_fetch_trust_account_password(domain, passwd, &last_change_time) )
+	if ( !secrets_fetch_trust_account_password(domain, passwd, &last_change_time, NULL) )
 		return False;
 		
 	/*

@@ -1024,6 +1024,7 @@ char *ads_ou_string(const char *org_unit)
   add a machine account to the ADS server
 */
 static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
+				       uint32 account_type,
 				       const char *org_unit)
 {
 	ADS_STATUS ret, status;
@@ -1073,7 +1074,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	if (!(samAccountName = talloc_asprintf(ctx, "%s$", hostname)))
 		goto done;
 
-	acct_control = UF_WORKSTATION_TRUST_ACCOUNT | UF_DONT_EXPIRE_PASSWD;
+	acct_control = account_type | UF_DONT_EXPIRE_PASSWD;
 #ifndef ENCTYPE_ARCFOUR_HMAC
 	acct_control |= UF_USE_DES_KEY_ONLY;
 #endif
@@ -1335,7 +1336,8 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param org_unit Organizational unit to place machine in
  * @return status of join
  **/
-ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
+ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, 
+			  uint32 account_type, const char *org_unit)
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
@@ -1356,7 +1358,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org
 		}
 	}
 
-	status = ads_add_machine_acct(ads, host, org_unit);
+	status = ads_add_machine_acct(ads, host, account_type, org_unit);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0, ("ads_add_machine_acct: %s\n", ads_errstr(status)));
 		return status;

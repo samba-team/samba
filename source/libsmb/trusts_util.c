@@ -31,12 +31,13 @@
 **********************************************************/
 static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					 unsigned char orig_trust_passwd_hash[16],
-					 unsigned char new_trust_passwd_hash[16])
+					 unsigned char new_trust_passwd_hash[16],
+					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
 	uint32 neg_flags = 0x000001ff;
 
-	result = cli_nt_setup_creds(cli, get_sec_chan(), orig_trust_passwd_hash, &neg_flags, 2);
+	result = cli_nt_setup_creds(cli, sec_channel_type, orig_trust_passwd_hash, &neg_flags, 2);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("just_change_the_password: unable to setup creds (%s)!\n",
@@ -60,7 +61,9 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 **********************************************************/
 
 NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				      unsigned char orig_trust_passwd_hash[16])
+				      const char *domain,
+				      unsigned char orig_trust_passwd_hash[16],
+				      uint32 sec_channel_type)
 {
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
@@ -74,7 +77,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = just_change_the_password(cli, mem_ctx, orig_trust_passwd_hash,
-					     new_trust_passwd_hash);
+					     new_trust_passwd_hash, sec_channel_type);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
@@ -83,7 +86,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
 		 */
-		if (!secrets_store_machine_password(new_trust_passwd)) {
+		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -97,22 +100,26 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
  already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, 
+					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
 	char *up_domain;
-	
+	uint32 sec_channel_type = 0;
+
 	up_domain = talloc_strdup(mem_ctx, domain);
 
 	if (!secrets_fetch_trust_account_password(domain,
 						  old_trust_passwd_hash, 
-						  NULL)) {
+						  NULL, &sec_channel_type)) {
 		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	return trust_pw_change_and_store_it(cli, mem_ctx, old_trust_passwd_hash);
+	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
+					    old_trust_passwd_hash,
+					    sec_channel_type);
 	
 }
 
@@ -127,35 +134,21 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *me
  
 BOOL is_trusted_domain(const char* dom_name)
 {
-	int enum_ctx = 0;
-	const int trustdom_size = 10;
-	int num_domains, i;
-	TRUSTDOM **domains;
-	NTSTATUS result;
-	fstring trustdom_name;
 	DOM_SID trustdom_sid;
-	TALLOC_CTX *mem_ctx;
-	
-	/*
-	 * Query the secrets db as an ultimate source of information
-	 * about trusted domain names. This is PDC or BDC case.
-	 */
-	mem_ctx = talloc_init("is_trusted_domain");
-	
-	do {
-		result = secrets_get_trusted_domains(mem_ctx, &enum_ctx, trustdom_size,
-		                                     &num_domains, &domains);
-		/* compare each returned entry against incoming connection's domain */
-		for (i = 0; i < num_domains; i++) {
-			pull_ucs2_fstring(trustdom_name, domains[i]->name);
-			if (strequal(trustdom_name, dom_name)) {
-				talloc_destroy(mem_ctx);
-				return True;
-			}
-		}
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+	char *pass = NULL;
+	time_t lct;
+	BOOL ret;
 
-	talloc_destroy(mem_ctx);
+	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
+		/*
+		 * Query the secrets db as an ultimate source of information
+		 * about trusted domain names. This is PDC or BDC case.
+		 */
+		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
+		SAFE_FREE(pass);
+		if (ret) 
+			return ret;
+	}
 
 	/*
 	 * Query the trustdom_cache updated periodically. The only

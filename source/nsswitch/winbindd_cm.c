@@ -853,7 +853,9 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
    netlogon pipe as no handle is returned. */
 
-NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_passwd,
+NTSTATUS cm_get_netlogon_cli(const char *domain, 
+			     const unsigned char *trust_passwd, 
+			     uint32 sec_channel_type,
 			     struct cli_state **cli)
 {
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
@@ -876,7 +878,7 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
 	}
 			
-	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
+	result = cli_nt_setup_creds(conn->cli, sec_channel_type, trust_passwd, &neg_flags, 2);
 	
 	if (got_mutex)
 		secrets_named_mutex_release(lock_name);
@@ -896,7 +898,7 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 			}
 			
 			/* Try again */
-			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
+			result = cli_nt_setup_creds( conn->cli, sec_channel_type,trust_passwd, &neg_flags, 2);
 			
 			if (got_mutex)
 				secrets_named_mutex_release(lock_name);

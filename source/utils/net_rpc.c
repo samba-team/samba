@@ -235,8 +235,9 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				       int argc, const char **argv) {
+static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx, 
+					    int argc, const char **argv) {
 	
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
@@ -254,10 +255,22 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
-	result = trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+	result = trust_pw_change_and_store_it(cli, mem_ctx, opt_target_workgroup,
+					      orig_trust_passwd_hash,
+					      SEC_CHAN_WKSTA);
+
+	/* SEC_CHAN_WKSTA specified specifically, as you cannot use this
+	   to join a BDC to the domain (MS won't allow it, and is *really*
+	   insecure) */
 
 	if (NT_STATUS_IS_OK(result))
-		printf("Joined domain %s.\n",lp_workgroup());
+		printf("Joined domain %s.\n",opt_target_workgroup);
+
+
+	if (!secrets_store_domain_sid(opt_target_workgroup, domain_sid)) {
+		DEBUG(0, ("error storing domain sid for %s\n", opt_target_workgroup));
+		result = NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return result;
 }
@@ -274,7 +287,38 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 static int net_rpc_join_oldstyle(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_join_oldstyle_internals,
+	uint32 sec_channel_type;
+	/* check what type of join */
+	if (argc >= 0) {
+		sec_channel_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_channel_type = get_sec_channel_type(NULL);
+	}
+	
+	if (sec_channel_type != SEC_CHAN_WKSTA) 
+		return 1;
+
+	return run_rpc_command(NULL, PI_NETLOGON, 
+			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_join_oldstyle_internals,
+			       argc, argv);
+}
+
+/** 
+ * Join a domain, the old way.
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int net_rpc_oldjoin(int argc, const char **argv) 
+{
+	return run_rpc_command(NULL, PI_NETLOGON, 
+			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_join_oldstyle_internals,
 			       argc, argv);
 }
 
@@ -287,11 +331,13 @@ static int net_rpc_join_oldstyle(int argc, const char **argv)
 
 static int rpc_join_usage(int argc, const char **argv) 
 {	
-	d_printf("net rpc join -U <username>[%%password] [options]\n"\
+	d_printf("net rpc join -U <username>[%%password] <type>[options]\n"\
 		 "\t to join a domain with admin username & password\n"\
-		 "\t\t password will be prompted if none is specified\n");
-	d_printf("net rpc join [options except -U]\n"\
-		 "\t to join a domain created in server manager\n\n\n");
+		 "\t\t password will be prompted if needed and none is specified\n"\
+		 "\t <type> can be (default MEMBER)\n"\
+		 "\t\t BDC - Join as a BDC\n"\
+		 "\t\t PDC - Join as a PDC\n"\
+		 "\t\t MEMBER - Join as a MEMBER server\n");
 
 	net_common_flags_usage(argc, argv);
 	return -1;
@@ -311,19 +357,10 @@ static int rpc_join_usage(int argc, const char **argv)
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	struct functable func[] = {
-		{"oldstyle", net_rpc_join_oldstyle},
-		{NULL, NULL}
-	};
-
-	if (argc == 0) {
-		if ((net_rpc_join_oldstyle(argc, argv) == 0))
-			return 0;
-		
-		return net_rpc_join_newstyle(argc, argv);
-	}
-
-	return net_run_function(argc, argv, func, rpc_join_usage);
+	if ((net_rpc_join_oldstyle(argc, argv) == 0))
+		return 0;
+	
+	return net_rpc_join_newstyle(argc, argv);
 }
 
 
@@ -2179,6 +2216,7 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
+	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n\n\n");
 	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
@@ -2245,6 +2283,7 @@ int net_rpc(int argc, const char **argv)
 	struct functable func[] = {
 		{"info", net_rpc_info},
 		{"join", net_rpc_join},
+		{"oldjoin", net_rpc_oldjoin},
 		{"testjoin", net_rpc_testjoin},
 		{"user", net_rpc_user},
 		{"group", net_rpc_group},

@@ -56,7 +56,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	/* the machine acct password might have change - fetch it every time */
 	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password();
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
 	if (primary_realm) {
 		SAFE_FREE(ads->auth.realm);
