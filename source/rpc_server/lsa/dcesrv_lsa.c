@@ -59,7 +59,7 @@ struct lsa_account_state {
 	uint32_t access_mask;
 	struct dom_sid *account_sid;
 	const char *account_sid_str;
-	const char *account_name;
+	const char *account_dn;
 };
 
 
@@ -794,10 +794,11 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	/* check it really exists */
-	astate->account_name = samdb_search_string(state->sam_ctx, astate,
-						   NULL, "sAMAccountName", 
-						   "objectSid=%s", astate->account_sid_str);
-	if (astate->account_name == NULL) {
+	astate->account_dn = samdb_search_string(state->sam_ctx, astate,
+						 NULL, "dn", 
+						 "(&(objectSid=%s)(objectClass=group))", 
+						 astate->account_sid_str);
+	if (astate->account_dn == NULL) {
 		talloc_free(astate);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -827,7 +828,52 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx,
 				     struct lsa_EnumPrivsAccount *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_account_state *astate;
+	int ret, i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "privilege", NULL};
+	struct ldb_message_element *el;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
+
+	astate = h->data;
+
+	r->out.privs = talloc_p(mem_ctx, struct lsa_PrivilegeSet);
+	r->out.privs->count = 0;
+	r->out.privs->unknown = 0;
+	r->out.privs->set = NULL;
+
+	ret = samdb_search(astate->policy->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "dn=%s", astate->account_dn);
+	if (ret != 1) {
+		return NT_STATUS_OK;
+	}
+
+	el = ldb_msg_find_element(res[0], "privilege");
+	if (el == NULL || el->num_values == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->out.privs->set = talloc_array_p(r->out.privs, 
+					   struct lsa_LUIDAttribute, el->num_values);
+	if (r->out.privs->set == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		int id = sec_privilege_id(el->values[i].data);
+		if (id == -1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		r->out.privs->set[i].attribute = 0;
+		r->out.privs->set[i].luid.low = id;
+		r->out.privs->set[i].luid.high = 0;
+	}
+
+	r->out.privs->count = el->num_values;
+
+	return NT_STATUS_OK;
 }
 
 
