@@ -95,6 +95,7 @@ BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
@@ -105,6 +106,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	size_t size;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
@@ -131,6 +133,7 @@ char *trust_keystr(char *domain)
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, domain);
+	strupper(keystr);
 
 	return keystr;
 }
@@ -147,6 +150,7 @@ char *trustdom_keystr(char *domain)
 	static char* keystr;
 
 	asprintf(&keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
+	strupper(keystr);
 		
 	return keystr;
 }
