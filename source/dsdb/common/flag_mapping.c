@@ -119,7 +119,7 @@ uint32_t samdb_gtype2atype(uint32_t gtype)
 }
 
 /* turn a sAMAccountType into a SID_NAME_USE */
-enum samr_SidType samdb_atype_map(uint32_t atype)
+enum lsa_SidType samdb_atype_map(uint32_t atype)
 {
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:
