@@ -2184,6 +2184,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 	AES_encrypt(tmp, out - AES_BLOCK_SIZE, key);
 
 	memcpy(out, ivec, len);
+	memcpy(ivec, out - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
     } else {
 	char tmp2[AES_BLOCK_SIZE];
