@@ -30,7 +30,7 @@ static void sesssetup_common_strings(struct request_context *req,
 				     char **os, char **lanman, char **domain)
 {
 	(*os) = talloc_asprintf(req->mem_ctx, "Unix");
-	(*lanman) = talloc_asprintf(req->mem_ctx, "Samba %s", SAMBA_VERSION);
+	(*lanman) = talloc_asprintf(req->mem_ctx, "Samba %s", SAMBA_VERSION_STRING);
 	(*domain) = talloc_asprintf(req->mem_ctx, "%s", lp_workgroup());
 }
 

@@ -373,7 +373,7 @@ catch serious errors
 static void thread_sig_fault(int sig)
 {
 	DEBUG(0,("===============================================================\n"));
-	DEBUG(0,("TERMINAL ERROR: Recursive signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION));
+	DEBUG(0,("TERMINAL ERROR: Recursive signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION_STRING));
 	DEBUG(0,("===============================================================\n"));
 	exit(1); /* kill the whole server for now */
 }
@@ -407,7 +407,7 @@ static void thread_fault_handler(int sig)
 	counter++;	/* count number of faults that have occurred */
 
 	DEBUG(0,("===============================================================\n"));
-	DEBUG(0,("INTERNAL ERROR: Signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION));
+	DEBUG(0,("INTERNAL ERROR: Signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION_STRING));
 	DEBUG(0,("Please read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
 #ifdef HAVE_BACKTRACE

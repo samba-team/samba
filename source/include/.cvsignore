@@ -6,3 +6,4 @@ proto.h
 stamp-h
 tdbsam2_parse_info.h
 wrepld_proto.h
+version.h
