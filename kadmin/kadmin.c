@@ -223,7 +223,6 @@ main(int argc, char **argv)
     krb5_config_section *cf = NULL;
     kadm5_config_params conf;
     int optind = 0;
-    int e;
 
     setprogname(argv[0]);
 
