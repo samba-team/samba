@@ -1372,7 +1372,7 @@ BOOL spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, 
 			return False;
 	}
 
-	if (!prs_uint8s( r_u->type&(REG_SZ|REG_MULTI_SZ), "data", ps, depth, r_u->data, r_u->size ))
+	if (!prs_uint8s( False, "data", ps, depth, r_u->data, r_u->size ))
 		return False;
 		
 	if (!prs_align(ps))

@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Gerald Carter		       2000-2002,
+ *  Copyright (C) Gerald Carter		       2000-2003,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -37,8 +37,7 @@
 
 #define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
 #define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
-#define PRINTER_HANDLE_IS_PRINTER	0
-#define PRINTER_HANDLE_IS_PRINTSERVER	1
+
 
 /* Table to map the driver version */
 /* to OS */
@@ -54,46 +53,6 @@ struct table_node {
 	const char    *short_archi;
 	int     version;
 };
-
-
-/* structure to store the printer handles */
-/* and a reference to what it's pointing to */
-/* and the notify info asked about */
-/* that's the central struct */
-typedef struct _Printer{
-	struct _Printer *prev, *next;
-	BOOL document_started;
-	BOOL page_started;
-	uint32 jobid; /* jobid in printing backend */
-	BOOL printer_type;
-	union {
-	  	fstring handlename;
-		fstring printerservername;
-	} dev;
-	uint32 type;
-	uint32 access_granted;
-	struct {
-		uint32 flags;
-		uint32 options;
-		fstring localmachine;
-		uint32 printerlocal;
-		SPOOL_NOTIFY_OPTION *option;
-		POLICY_HND client_hnd;
-		BOOL client_connected;
-		uint32 change;
-		/* are we in a FindNextPrinterChangeNotify() call? */
-		BOOL fnpcn;
-	} notify;
-	struct {
-		fstring machine;
-		fstring user;
-	} client;
-	
-	/* devmode sent in the OpenPrinter() call */
-	NT_DEVICEMODE	*nt_devmode;
-	
-	
-} Printer_entry;
 
 static Printer_entry *printers_list;
 
@@ -251,6 +210,9 @@ static void free_printer_entry(void *ptr)
 	Printer->notify.client_connected=False;
 	
 	free_nt_devicemode( &Printer->nt_devmode );
+	free_a_printer( &Printer->printer_info, 2 );
+	
+	talloc_destroy( Printer->ctx );
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
@@ -303,6 +265,29 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 	return find_printer;
 }
 
+/****************************************************************************
+  find printer index by handle
+****************************************************************************/
+
+void invalidate_printer_hnd_cache( char *printername )
+{
+	Printer_entry *p;
+	
+	DEBUG(10,("invalidate_printer_hnd_cache: printer [%s]\n", printername));
+
+	for ( p=printers_list; p; p=p->next )
+	{
+		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
+			&& StrCaseCmp(p->dev.handlename, printername)==0)
+		{
+			DEBUG(10,("invalidating printer_info cache for handl:\n"));
+			free_a_printer( &p->printer_info, 2 );
+			p->printer_info = NULL;
+		}
+	}
+
+	return;
+}
 /****************************************************************************
  Close printer index by handle.
 ****************************************************************************/
@@ -533,6 +518,11 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 		return False;
 
 	ZERO_STRUCTP(new_printer);
+	
+	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
+		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
+		return False;
+	}
 	
 	new_printer->notify.option=NULL;
 				
@@ -861,8 +851,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	
 	/* add a new group? */
 	
-	if ( i == ctr->num_groups )
-	{
+	if ( i == ctr->num_groups ) {
 		ctr->num_groups++;
 
 		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, sizeof(SPOOLSS_NOTIFY_MSG_GROUP)*ctr->num_groups)) ) {
@@ -929,8 +918,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 	
 	/* loop over all printers */
 	
-	for (p = printers_list; p; p = p->next) 
-	{
+	for (p = printers_list; p; p = p->next) {
 		SPOOL_NOTIFY_INFO_DATA *data;
 		uint32	data_len = 0;
 		uint32 	id;
@@ -961,8 +949,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		/* build the array of change notifications */
 		
-		for ( i=0; i<msg_group->num_msgs; i++ )
-		{
+		for ( i=0; i<msg_group->num_msgs; i++ ) {
 			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
 			/* Are we monitoring this event? */
@@ -995,8 +982,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 
 			/* Convert unix jobid to smb jobid */
 
-			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
-			{
+			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
 				id = sysjob_to_jobid(msg->id);
 
 				if (id == -1) {
@@ -1204,7 +1190,7 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 			WERROR result;
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
 			
-			result = get_a_printer(&printer, 2, lp_servicename(snum));
+			result = get_a_printer(NULL, &printer, 2, lp_const_servicename(snum));
 			if (!W_ERROR_IS_OK(result))
 				continue;
 				
@@ -1300,7 +1286,7 @@ void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
 			WERROR result;
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
 			
-			result = get_a_printer( &printer, 2, lp_servicename(snum) );
+			result = get_a_printer( NULL, &printer, 2, lp_const_servicename(snum) );
 			if ( !W_ERROR_IS_OK(result) )
 				continue;
 				
@@ -2157,9 +2143,7 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 
 static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value )
 {
-	delete_printer_data( printer->info_2, key, value );
-	
-	return mod_a_printer(*printer, 2);
+	return delete_printer_data( printer->info_2, key, value );
 }
 
 /****************************************************************************
@@ -2171,9 +2155,7 @@ static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *ke
 {
 	delete_printer_data( printer->info_2, key, value );
 	
-	add_printer_data( printer->info_2, key, value, type, data, real_len );
-	
-	return mod_a_printer(*printer, 2);
+	return add_printer_data( printer->info_2, key, value, type, data, real_len );
 }
 
 /********************************************************************
@@ -2349,7 +2331,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 			goto done;
 		}
 
-		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
 		if ( !W_ERROR_IS_OK(status) )
 			goto done;
 
@@ -3443,7 +3425,7 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
  *
  ********************************************************************/
 
-static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
+static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY_INFO *info, int
 					  snum, SPOOL_NOTIFY_OPTION_TYPE
 					  *option_type, uint32 id,
 					  TALLOC_CTX *mem_ctx) 
@@ -3462,11 +3444,10 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
 		option_type->count, lp_servicename(snum)));
 	
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &printer, 2, lp_const_servicename(snum))))
 		return False;
 
-	for(field_num=0; field_num<option_type->count; field_num++) 
-	{
+	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
 		
 		DEBUG(4,("construct_notify_printer_info: notify [%d]: type [%x], field [%x]\n", field_num, type, field));
@@ -3474,12 +3455,10 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((tid=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) 
-		{
+		if((tid=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			return False;
-		}
-		else 
+		} else 
 			info->data = tid;
 
 		current_data = &info->data[info->count];
@@ -3611,7 +3590,7 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 		for (snum=0; snum<n_services; snum++)
 		{
 			if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				construct_notify_printer_info ( info, snum, option_type, snum, mem_ctx );
+				construct_notify_printer_info ( Printer, info, snum, option_type, snum, mem_ctx );
 		}
 	}
 			
@@ -3671,7 +3650,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 		
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
-			if(construct_notify_printer_info(info, snum, 
+			if(construct_notify_printer_info(Printer, info, snum, 
 							 option_type, id,
 							 mem_ctx))  
 				id--;
@@ -3682,8 +3661,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 
 			count = print_queue_status(snum, &queue, &status);
 
-			if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, 
-							 lp_servicename(snum))))
+			if (!W_ERROR_IS_OK(get_a_printer(Printer, &printer, 2, lp_const_servicename(snum))))
 				goto done;
 
 			for (j=0; j<count; j++) {
@@ -3783,7 +3761,7 @@ done:
  * fill a printer_info_0 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
+static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *printer, int snum)
 {
 	pstring chaine;
 	int count;
@@ -3794,7 +3772,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	time_t setuptime;
 	print_status_struct status;
 	
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 
 	count = print_queue_length(snum, &status);
@@ -3892,13 +3870,13 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
  * construct_printer_info_1
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int snum)
+static BOOL construct_printer_info_1(Printer_entry *print_hnd, uint32 flags, PRINTER_INFO_1 *printer, int snum)
 {
 	pstring chaine;
 	pstring chaine2;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 
 	printer->flags=flags;
@@ -3997,7 +3975,7 @@ DEVICEMODE *construct_dev_mode(int snum)
 	
 	DEBUGADD(8,("getting printer characteristics\n"));
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum)))) 
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum)))) 
 		return NULL;
 
 	if ( !printer->info_2->devmode ) {
@@ -4030,14 +4008,14 @@ done:
  * fill a printer_info_2 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
+static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *printer, int snum)
 {
 	int count;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
 	print_status_struct status;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 		
 	count = print_queue_length(snum, &status);
@@ -4093,12 +4071,12 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
  * fill a printer_info_3 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_3(PRINTER_INFO_3 **pp_printer, int snum)
+static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **pp_printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	PRINTER_INFO_3 *printer = NULL;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 
 	*pp_printer = NULL;
@@ -4148,11 +4126,11 @@ static BOOL construct_printer_info_3(PRINTER_INFO_3 **pp_printer, int snum)
  * fill a printer_info_4 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_4(PRINTER_INFO_4 *printer, int snum)
+static BOOL construct_printer_info_4(Printer_entry *print_hnd, PRINTER_INFO_4 *printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 		
 	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
@@ -4168,11 +4146,11 @@ static BOOL construct_printer_info_4(PRINTER_INFO_4 *printer, int snum)
  * fill a printer_info_5 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
+static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
 		
 	init_unistr(&printer->printername, ntprinter->info_2->printername);
@@ -4194,12 +4172,12 @@ static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
  * fill a printer_info_7 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_7(PRINTER_INFO_7 *printer, int snum)
+static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
 	GUID guid;
 	
-	if (is_printer_published(snum, &guid)) {
+	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", uuid_string_static(guid));
 		strupper(guid_str);
 		init_unistr(&printer->guid, guid_str);
@@ -4230,7 +4208,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
-			if (construct_printer_info_1(flags, &current_prt, snum)) {
+			if (construct_printer_info_1(NULL, flags, &current_prt, snum)) {
 				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
 					DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
@@ -4399,7 +4377,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
-			if (construct_printer_info_2(&current_prt, snum)) {
+			if (construct_printer_info_2(NULL, &current_prt, snum)) {
 				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL) {
 					DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
@@ -4570,14 +4548,14 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_0(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_0 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0))) == NULL)
 		return WERR_NOMEM;
 
-	construct_printer_info_0(printer, snum);
+	construct_printer_info_0(print_hnd, printer, snum);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_0(printer);
@@ -4603,14 +4581,14 @@ static WERROR getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_1(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_1 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1))) == NULL)
 		return WERR_NOMEM;
 
-	construct_printer_info_1(PRINTER_ENUM_ICON8, printer, snum);
+	construct_printer_info_1(print_hnd, PRINTER_ENUM_ICON8, printer, snum);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);
@@ -4636,14 +4614,14 @@ static WERROR getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_2(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2)))==NULL)
 		return WERR_NOMEM;
 	
-	construct_printer_info_2(printer, snum);
+	construct_printer_info_2(print_hnd, printer, snum);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_2(printer);
@@ -4672,11 +4650,11 @@ static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_3(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_3 *printer=NULL;
 
-	if (!construct_printer_info_3(&printer, snum))
+	if (!construct_printer_info_3(print_hnd, &printer, snum))
 		return WERR_NOMEM;
 	
 	/* check the required size. */	
@@ -4703,14 +4681,14 @@ static WERROR getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_4(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_4 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_4*)malloc(sizeof(PRINTER_INFO_4)))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_4(printer, snum))
+	if (!construct_printer_info_4(print_hnd, printer, snum))
 		return WERR_NOMEM;
 	
 	/* check the required size. */	
@@ -4737,14 +4715,14 @@ static WERROR getprinter_level_4(int snum, NEW_BUFFER *buffer, uint32 offered, u
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_5(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_5(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_5 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_5*)malloc(sizeof(PRINTER_INFO_5)))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_5(printer, snum))
+	if (!construct_printer_info_5(print_hnd, printer, snum))
 		return WERR_NOMEM;
 	
 	/* check the required size. */	
@@ -4768,14 +4746,14 @@ static WERROR getprinter_level_5(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	return WERR_OK;	
 }
 
-static WERROR getprinter_level_7(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_7 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_7*)malloc(sizeof(PRINTER_INFO_7)))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_7(printer, snum))
+	if (!construct_printer_info_7(print_hnd, printer, snum))
 		return WERR_NOMEM;
 	
 	/* check the required size. */	
@@ -4809,6 +4787,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
 	int snum;
 
@@ -4823,19 +4802,19 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 
 	switch (level) {
 	case 0:
-		return getprinter_level_0(snum, buffer, offered, needed);
+		return getprinter_level_0(Printer, snum, buffer, offered, needed);
 	case 1:
-		return getprinter_level_1(snum, buffer, offered, needed);
+		return getprinter_level_1(Printer, snum, buffer, offered, needed);
 	case 2:		
-		return getprinter_level_2(snum, buffer, offered, needed);
+		return getprinter_level_2(Printer, snum, buffer, offered, needed);
 	case 3:		
-		return getprinter_level_3(snum, buffer, offered, needed);
+		return getprinter_level_3(Printer, snum, buffer, offered, needed);
 	case 4:		
-		return getprinter_level_4(snum, buffer, offered, needed);
+		return getprinter_level_4(Printer, snum, buffer, offered, needed);
 	case 5:		
-		return getprinter_level_5(snum, buffer, offered, needed);
+		return getprinter_level_5(Printer, snum, buffer, offered, needed);
 	case 7:
-		return getprinter_level_7(snum, buffer, offered, needed);
+		return getprinter_level_7(Printer, snum, buffer, offered, needed);
 	}
 	return WERR_UNKNOWN_LEVEL;
 }	
@@ -4860,7 +4839,7 @@ static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
 
 	ZERO_STRUCT(driver);
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version)))
@@ -4920,7 +4899,7 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
 	ZERO_STRUCT(printer);
 	ZERO_STRUCT(driver);
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version)))
@@ -5059,7 +5038,7 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 	WERROR status;
 	ZERO_STRUCT(driver);
 
-	status=get_a_printer(&printer, 2, lp_servicename(snum) );
+	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
 	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
@@ -5184,7 +5163,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum,
 	
 	ZERO_STRUCT(driver);
 
-	status=get_a_printer(&printer, 2, lp_servicename(snum) );
+	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
 	
 	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
 	
@@ -5853,13 +5832,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	result = WERR_OK;
 
-	if (level!=2) {
-		DEBUG(0,("update_printer: Send a mail to samba@samba.org\n"));
-		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		result = WERR_UNKNOWN_LEVEL;
-		goto done;
-	}
-
 	if (!Printer) {
 		result = WERR_BADFID;
 		goto done;
@@ -5870,8 +5842,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) ||
-	    (!W_ERROR_IS_OK(get_a_printer(&old_printer, 2, lp_servicename(snum))))) {
+	if (!W_ERROR_IS_OK(get_a_printer(Printer, &printer, 2, lp_const_servicename(snum))) ||
+	    (!W_ERROR_IS_OK(get_a_printer(Printer, &old_printer, 2, lp_const_servicename(snum))))) {
 		result = WERR_BADFID;
 		goto done;
 	}
@@ -5899,13 +5871,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			result =  WERR_NOMEM;
 			goto done;
 		}
-
-		/* 
-		 * make sure we actually reload the services after 
-		 * this as smb.conf could have a new section in it 
-		 * .... shouldn't .... but could
-		 */
-		reload_services(False);	
 	}
 
 	/* Do sanity check on the requested changes for Samba */
@@ -5964,9 +5929,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		notify_printer_driver(snum, printer->info_2->drivername);
 	}
 
-	/* Update printer info */
-	result = mod_a_printer(*printer, 2);
-
 	/* 
 	 * flag which changes actually occured.  This is a small subset of 
 	 * all the possible changes.  We also have to update things in the 
@@ -6022,6 +5984,9 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
 		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
+	/* Update printer info */
+	result = mod_a_printer(*printer, 2);
+
 done:
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
@@ -6051,7 +6016,7 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 	
-	nt_printer_publish(snum, info7->action);
+	nt_printer_publish(Printer, snum, info7->action);
 	
 	return WERR_OK;
 #else
@@ -6287,7 +6252,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		goto done;
 	}
 
-	result = get_a_printer(&ntprinter, 2, lp_servicename(snum));
+	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(result)) {
 		*returned = 0;
 		goto done;
@@ -7591,7 +7556,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	if (!get_printer_snum(p,handle, &snum))
 		return WERR_BADFID;
 	
-	result = get_a_printer(&printer, 2, lp_servicename(snum));
+	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(result))
 		return result;
 		
@@ -7655,9 +7620,9 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		/* out_value should default to "" or else NT4 has
 		   problems unmarshalling the response */
 
-		*out_max_value_len = (in_value_len/sizeof(uint16));
+		*out_max_value_len=(in_value_len/sizeof(uint16));
 		
-		if ( (*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
+		if((*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
 		{
 			result = WERR_NOMEM;
 			goto done;
@@ -7692,7 +7657,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		 */
 	
 		/* name */
-		*out_max_value_len = ( in_value_len / sizeof(uint16) );
+		*out_max_value_len=(in_value_len/sizeof(uint16));
 		if ( (*out_value = (uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
 		{
 			result = WERR_NOMEM;
@@ -7765,7 +7730,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		goto done;
 	}
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
@@ -7857,7 +7822,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
@@ -7901,7 +7866,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
 	 
-		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
         	if (!W_ERROR_IS_OK(status))
 			goto done;
 	}
@@ -7972,7 +7937,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
 	 
-		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
         	if (!W_ERROR_IS_OK(status))
 			goto done;
 	}
@@ -8040,7 +8005,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
 	 
-		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
         	if (!W_ERROR_IS_OK(status))
 			goto done;
 	}
@@ -8390,7 +8355,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		goto done;
 	}
 	
-	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
+	ret = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
 	
@@ -8543,7 +8508,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	if ( !get_printer_snum(p,handle, &snum) )
 		return WERR_BADFID;
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
 	if ( !W_ERROR_IS_OK(status) )
 		goto done;
 
@@ -8638,7 +8603,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
@@ -8657,11 +8622,10 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	
 	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len ); 
 	
-	/* save the OID if one was specified and the previous set call succeeded */
-	
-	if ( W_ERROR_IS_OK(status) && oid_string )
+	if ( W_ERROR_IS_OK(status) )
 	{
-
+		/* save the OID if one was specified */
+		if ( oid_string ) {
 		fstrcat( keyname, "\\" );
 		fstrcat( keyname, SPOOL_OID_KEY );
 		
@@ -8676,6 +8640,9 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
 	}
 	
+		status = mod_a_printer(*printer, 2);
+	}
+		
 	free_a_printer(&printer, 2);
 
 	return status;
@@ -8713,7 +8680,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
@@ -8757,7 +8724,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	if ( !get_printer_snum(p,handle, &snum) )
 		return WERR_BADFID;
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 		
@@ -8832,7 +8799,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 	
@@ -8901,7 +8868,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		return WERR_BADFID;
 	
 	ZERO_STRUCT(printer);
-	result = get_a_printer(&printer, 2, lp_servicename(snum));
+	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(result))
 		return result;
 	

@@ -500,7 +500,7 @@ static BOOL get_driver_name(int snum, pstring drivername)
 	NT_PRINTER_INFO_LEVEL *info = NULL;
 	BOOL in_tdb = False;
 
-	get_a_printer (&info, 2, lp_servicename(snum));
+	get_a_printer (NULL, &info, 2, lp_servicename(snum));
 	if (info != NULL) {
 		pstrcpy( drivername, info->info_2->drivername);
 		in_tdb = True;
@@ -522,7 +522,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
-	if ( !W_ERROR_IS_OK(get_a_printer( &printer, 2, lp_servicename(snum))) ) {
+	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
 		DEBUG(3,("fill_printq_info_52: Failed to lookup printer [%s]\n", 
 			lp_servicename(snum)));
 		goto err;
@@ -679,7 +679,7 @@ static int get_printerdrivernumber(int snum)
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
-	if ( !W_ERROR_IS_OK(get_a_printer( &printer, 2, lp_servicename(snum))) ) {
+	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
 		DEBUG(3,("get_printerdrivernumber: Failed to lookup printer [%s]\n", 
 			lp_servicename(snum)));
 		goto done;
