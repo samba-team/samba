@@ -1,5 +1,4 @@
 .cvsignore
-proto.h
 Makefile.RPM
 cvs.log
 make_printerdef
