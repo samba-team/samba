@@ -167,7 +167,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
 
-		if (status) {
+		if (status && name_type != SID_NAME_UNKNOWN) {
 			sid_split_rid(&sid, &rid);
 			dom_idx = init_dom_ref(ref, dom_name, &sid);
 			(*mapped_count)++;

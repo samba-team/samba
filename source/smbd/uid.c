@@ -465,11 +465,11 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	
 	if (ret) {
 		DEBUG(10,
-		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %u)\n",
+		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
 		       domain, name, sid_to_string(sid,psid),
-		       (unsigned int)*name_type ));
+		       sid_type_lookup(*name_type), (unsigned int)*name_type));
 		return True;
-	} else if (winbind_lookup_name(domain, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
+	} else if (winbind_lookup_name(domain, name, psid, name_type)) {
 		
 		DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
 			  domain, name, sid_to_string(sid, psid), 
