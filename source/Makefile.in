@@ -119,7 +119,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_wkssvc.o   \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_samr.o 
-		
+
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
@@ -197,7 +197,7 @@ SMBWRAPPER_OBJ = smbwrapper/open.o smbwrapper/stat.o \
 		smbwrapper/smbw.o smbwrapper/fstat.o smbwrapper/read.o \
 		smbwrapper/lstat.o smbwrapper/close.o smbwrapper/getdents.o \
 		smbwrapper/fcntl.o smbwrapper/access.o smbwrapper/chdir.o \
-		smbwrapper/write.o \
+		smbwrapper/write.o smbwrapper/readlink.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -398,7 +398,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o
+	-rm -f core */*~ *~ */*.o */*.p
 
 proto:
 	@echo rebuilding include/proto.h
