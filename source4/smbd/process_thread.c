@@ -221,7 +221,7 @@ static int thread_mutex_unlock(smb_mutex_t *mutex, const char *name)
 /*
   rwlock init function for thread model
 */
-static int thread_rwlock_init(rwlock_t *rwlock, const char *name)
+static int thread_rwlock_init(smb_rwlock_t *rwlock, const char *name)
 {
 	pthread_rwlock_t m = PTHREAD_RWLOCK_INITIALIZER;
 	rwlock->rwlock = memdup(&m, sizeof(m));
@@ -235,7 +235,7 @@ static int thread_rwlock_init(rwlock_t *rwlock, const char *name)
 /*
   rwlock destroy function for thread model
 */
-static int thread_rwlock_destroy(rwlock_t *rwlock, const char *name)
+static int thread_rwlock_destroy(smb_rwlock_t *rwlock, const char *name)
 {
 	return pthread_rwlock_destroy((pthread_rwlock_t *)rwlock->rwlock);
 }
@@ -243,7 +243,7 @@ static int thread_rwlock_destroy(rwlock_t *rwlock, const char *name)
 /*
   rwlock lock for read function for thread model
 */
-static int thread_rwlock_lock_read(rwlock_t *rwlockP, const char *name)
+static int thread_rwlock_lock_read(smb_rwlock_t *rwlockP, const char *name)
 {
 	pthread_rwlock_t *rwlock = (pthread_rwlock_t *)rwlockP->rwlock;
 	int rc;
@@ -272,7 +272,7 @@ static int thread_rwlock_lock_read(rwlock_t *rwlockP, const char *name)
 /*
   rwlock lock for write function for thread model
 */
-static int thread_rwlock_lock_write(rwlock_t *rwlockP, const char *name)
+static int thread_rwlock_lock_write(smb_rwlock_t *rwlockP, const char *name)
 {
 	pthread_rwlock_t *rwlock = (pthread_rwlock_t *)rwlockP->rwlock;
 	int rc;
@@ -302,7 +302,7 @@ static int thread_rwlock_lock_write(rwlock_t *rwlockP, const char *name)
 /* 
    rwlock unlock for thread model
 */
-static int thread_rwlock_unlock(rwlock_t *rwlock, const char *name)
+static int thread_rwlock_unlock(smb_rwlock_t *rwlock, const char *name)
 {
 	return pthread_rwlock_unlock((pthread_rwlock_t *)rwlock->rwlock);
 }

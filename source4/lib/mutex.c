@@ -72,7 +72,7 @@ int mutex_unlock(smb_mutex_t *mutex, const char *name)
 
 /* read/write lock routines */
 
-int rwlock_init(rwlock_t *rwlock, const char *name)
+int rwlock_init(smb_rwlock_t *rwlock, const char *name)
 {
 	if (mutex_handlers.ops.rwlock_init) {
 		return mutex_handlers.ops.rwlock_init(rwlock, name);
@@ -80,7 +80,7 @@ int rwlock_init(rwlock_t *rwlock, const char *name)
 	return 0;
 }
 
-int rwlock_destroy(rwlock_t *rwlock, const char *name)
+int rwlock_destroy(smb_rwlock_t *rwlock, const char *name)
 {
 	if (mutex_handlers.ops.rwlock_destroy) {
 		return mutex_handlers.ops.rwlock_destroy(rwlock, name);
@@ -88,7 +88,7 @@ int rwlock_destroy(rwlock_t *rwlock, const char *name)
 	return 0;
 }
 
-int rwlock_lock_write(rwlock_t *rwlock, const char *name)
+int rwlock_lock_write(smb_rwlock_t *rwlock, const char *name)
 {
 	if (mutex_handlers.ops.rwlock_lock_write) {
 		return mutex_handlers.ops.rwlock_lock_write(rwlock, name);
@@ -96,7 +96,7 @@ int rwlock_lock_write(rwlock_t *rwlock, const char *name)
 	return 0;
 }
 
-int rwlock_lock_read(rwlock_t *rwlock, const char *name)
+int rwlock_lock_read(smb_rwlock_t *rwlock, const char *name)
 {
 	if (mutex_handlers.ops.rwlock_lock_read) {
 		return mutex_handlers.ops.rwlock_lock_read(rwlock, name);
@@ -104,7 +104,7 @@ int rwlock_lock_read(rwlock_t *rwlock, const char *name)
 	return 0;
 }
 
-int rwlock_unlock(rwlock_t *rwlock, const char *name)
+int rwlock_unlock(smb_rwlock_t *rwlock, const char *name)
 {
 	if (mutex_handlers.ops.rwlock_unlock) {
 		return mutex_handlers.ops.rwlock_unlock(rwlock, name);
