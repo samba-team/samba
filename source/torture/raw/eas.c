@@ -191,7 +191,7 @@ done:
 /*
   test using NTTRANS CREATE to create a file with an initial EA set
 */
-static BOOL test_open_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -245,6 +245,26 @@ static BOOL test_open_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_ea(cli, mem_ctx, fname, "2nd EA", "Second Value");
 	ret &= check_ea(cli, mem_ctx, fname, "and 3rd", "final value");
 
+	smbcli_close(cli->tree, fnum);
+
+	printf("Trying to add EAs on non-create\n");
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.fname = fname;
+
+	ea_list.num_eas = 1;
+	eas[0].flags = 0;
+	eas[0].name.s = "Fourth EA";
+	eas[0].value = data_blob_string_const("Value Four");
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	
+	ret &= check_ea(cli, mem_ctx, fname, "1st EA", "Value One");
+	ret &= check_ea(cli, mem_ctx, fname, "2nd EA", "Second Value");
+	ret &= check_ea(cli, mem_ctx, fname, "and 3rd", "final value");
+	ret &= check_ea(cli, mem_ctx, fname, "Fourth EA", NULL);
+
 done:
 	smbcli_close(cli->tree, fnum);
 	return ret;
@@ -270,7 +290,7 @@ BOOL torture_raw_eas(void)
 	}
 
 	ret &= test_eas(cli, mem_ctx);
-	ret &= test_open_eas(cli, mem_ctx);
+	ret &= test_nttrans_create(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
