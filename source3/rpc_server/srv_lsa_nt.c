@@ -719,12 +719,12 @@ done:
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
-	if (mapped_count == 0)
-		r_u->status = NT_STATUS_NONE_MAPPED;
-	else if (mapped_count != num_entries)
-		r_u->status = STATUS_SOME_UNMAPPED;
-	else
-		r_u->status = NT_STATUS_OK;
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		if (mapped_count == 0)
+			r_u->status = NT_STATUS_NONE_MAPPED;
+		else if (mapped_count != num_entries)
+			r_u->status = STATUS_SOME_UNMAPPED;
+	}
 	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
 	return r_u->status;
