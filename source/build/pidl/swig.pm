@@ -47,12 +47,12 @@ sub XFromPython($$)
     # Special cases
 
     if (($e->{TYPE} eq "policy_handle" || $e->{TYPE} eq "string") && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python($obj);\n";
 	return $result;
     }
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = policy_handle_from_python($obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = policy_handle_ptr_from_python($obj);\n";
 	return $result;
     }
 
@@ -94,12 +94,12 @@ sub XToPython($$)
     # Special cases
 
     if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_to_python(s->$prefix$e->{NAME}));\n";
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_ptr_to_python(s->$prefix$e->{NAME}));\n";
 	return $result;
     }
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_to_python(s->$prefix$e->{NAME}));\n";
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_ptr_to_python(s->$prefix$e->{NAME}));\n";
 	return $result;
     }
 
@@ -122,7 +122,7 @@ sub XToPython($$)
 	    # Non-scalar type, no pointer
 	    $result .= DebugElement($e);
 	} elsif ($e->{POINTERS} == 1) {
-	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, obj);\n";
+	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	} else {
 	    # Non-scalar type, multiple pointers
 	    $result .= DebugElement($e);
@@ -158,7 +158,7 @@ sub ParseFunction($)
 
     $res .= "/* Convert struct $fn->{NAME}.out to Python dict */\n\n";
 
-    $res .= "PyObject *$fn->{NAME}_to_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s)\n";
+    $res .= "PyObject *$fn->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s)\n";
     $res .= "{\n";
 
     $res .= "\tPyObject *obj = PyDict_New();\n\n";
@@ -192,7 +192,7 @@ sub ParseFunction($)
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n";
     $res .= "\n";
-    $res .= "\tdict = $fn->{NAME}_to_python(mem_ctx, \$1);\n";
+    $res .= "\tdict = $fn->{NAME}_ptr_to_python(mem_ctx, \$1);\n";
 
     $res .= "\tresultobj = dict;\n";
     $res .= "}\n\n";
@@ -235,7 +235,7 @@ sub ParseStruct($)
 
     $res .= "/* Convert struct $s->{NAME} to Python dict */\n\n";
 
-    $res .= "PyObject *$s->{NAME}_to_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s)\n";
+    $res .= "PyObject *$s->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s)\n";
     $res .= "{\n";
     
     $res .= "\tPyObject *obj = PyDict_New();\n\n";
@@ -284,9 +284,9 @@ sub ParseUnion($)
 
     $res .= "/* Convert union $u->{NAME} to Python dict */\n\n";
 
-    $res .= "PyObject *$u->{NAME}_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
+    $res .= "PyObject *$u->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
     $res .= "{\n";
-    $res .= "\treturn NULL;\n";
+    $res .= "\treturn PyDict_New();\n";
     $res .= "}\n\n";
 
     $res .= "\n%}\n\n";    
