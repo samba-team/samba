@@ -133,7 +133,7 @@ krb5_rd_safe(krb5_context context,
       r = krb5_verify_checksum (context,
 				buf + sizeof(buf) - len,
 				len,
-				&auth_context->key,
+				auth_context->keyblock,
 				&c);
       free_Checksum (&c);
       if (r)

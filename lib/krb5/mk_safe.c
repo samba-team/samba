@@ -61,7 +61,7 @@ krb5_mk_safe(krb5_context context,
       cksumtype = auth_context->cksumtype;
   else {
       r = krb5_keytype_to_cksumtype (context,
-				     auth_context->key.keytype,
+				     auth_context->keyblock->keytype,
 				     &cksumtype);
       if (r)
 	  return r;
@@ -102,7 +102,7 @@ krb5_mk_safe(krb5_context context,
 			    cksumtype,
 			    buf + sizeof(buf) - len,
 			    len,
-			    &auth_context->key,
+			    auth_context->keyblock,
 			    &s.cksum);
   if (r)
     return r;

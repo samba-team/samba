@@ -66,7 +66,7 @@ krb5_mk_priv(krb5_context context,
   else if (auth_context->remote_subkey.keytype)
       key = &auth_context->remote_subkey;
   else
-      key = &auth_context->key;
+      key = auth_context->keyblock;
 
   if (auth_context->enctype)
       enctype = auth_context->enctype;

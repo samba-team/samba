@@ -169,12 +169,12 @@ krb5_verify_ap_req(krb5_context context,
     }else
 	krb5_auth_con_init(context, &ac);
 	
-    if (ap_req->ap_options.use_session_key && auth_context->keyblock){
+    if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
-				  auth_context->keyblock, 
+				  ac->keyblock, 
 				  &t.ticket);
-	krb5_free_keyblock(context, auth_context->keyblock);
-	auth_context->keyblock = NULL;
+	krb5_free_keyblock(context, ac->keyblock);
+	ac->keyblock = NULL;
     }else
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  keyblock, 
@@ -192,7 +192,7 @@ krb5_verify_ap_req(krb5_context context,
 
     /* save key */
 
-    copy_EncryptionKey(&t.ticket.key, &ac->key);
+    krb5_copy_keyblock(context, &t.ticket.key, &ac->keyblock);
 
     ret = decrypt_authenticator (context,
 				 &t.ticket.key,

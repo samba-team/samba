@@ -73,7 +73,7 @@ krb5_rd_priv(krb5_context context,
   else if (auth_context->remote_subkey.keytype)
       key = &auth_context->remote_subkey;
   else
-      key = &auth_context->key;
+      key = auth_context->keyblock;
 
   r = krb5_decrypt (context,
 		    priv.enc_part.cipher.data,

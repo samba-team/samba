@@ -59,19 +59,19 @@ krb5_mk_rep(krb5_context context,
   body.subkey = NULL;
   if ((*auth_context)->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     krb5_generate_seq_number (context,
-			      &(*auth_context)->key,
+			      (*auth_context)->keyblock,
 			      &(*auth_context)->local_seqnumber);
     body.seq_number = malloc (sizeof(*body.seq_number));
     *(body.seq_number) = (*auth_context)->local_seqnumber;
   } else
     body.seq_number = NULL;
 
-  ap.enc_part.etype = (*auth_context)->key.keytype;
+  ap.enc_part.etype = (*auth_context)->keyblock->keytype;
   ap.enc_part.kvno  = NULL;
   encode_EncAPRepPart (buf + sizeof(buf) - 1, sizeof(buf), &body, &len);
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
 		      ap.enc_part.etype,
-		      &(*auth_context)->key, &ap.enc_part.cipher);
+		      (*auth_context)->keyblock, &ap.enc_part.cipher);
   if (ret)
     return ret;
 

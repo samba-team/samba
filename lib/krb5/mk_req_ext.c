@@ -66,21 +66,20 @@ krb5_mk_req_extended(krb5_context context,
   if(r)
       return r;
       
-  free_EncryptionKey (&ac->key);
-  copy_EncryptionKey (&in_creds->session,
-		      &ac->key);
-
+  krb5_free_keyblock(context, ac->keyblock);
+  krb5_copy_keyblock(context, &in_creds->session, &ac->keyblock);
+  
   if (ac->cksumtype)
       cksumtype = ac->cksumtype;
   else
-      krb5_keytype_to_cksumtype (context, ac->key.keytype, &cksumtype);
+      krb5_keytype_to_cksumtype (context, ac->keyblock->keytype, &cksumtype);
 
   if (in_data) {
       r = krb5_create_checksum (context,
 				cksumtype,
 				in_data->data,
 				in_data->length,
-				&ac->key,
+				ac->keyblock,
 				&c);
       c_opt = &c;
   } else {

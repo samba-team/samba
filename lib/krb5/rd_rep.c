@@ -70,7 +70,7 @@ krb5_rd_rep(krb5_context context,
 		      ap_rep.enc_part.cipher.data,
 		      ap_rep.enc_part.cipher.length,
 		      ap_rep.enc_part.etype,
-		      &auth_context->key,
+		      auth_context->keyblock,
 		      &data);
   if (ret)
       goto out;
