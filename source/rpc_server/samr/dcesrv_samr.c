@@ -2724,7 +2724,201 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryDisplayInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	struct ldb_message **res;
+	int ldb_cnt, count, i;
+	const char * const attrs[4] = { "objectSid", "sAMAccountName",
+					"description", NULL };
+	struct dom_sid *domain_sid;
+	struct samr_DispEntryFull *entriesFull = NULL;
+	struct samr_DispEntryAscii *entriesAscii = NULL;
+	struct samr_DispEntryGeneral * entriesGeneral = NULL;
+	const char *filter;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	switch (r->in.level) {
+	case 1:
+	case 4:
+		filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)"
+					 "(sAMAccountType=%s))",
+					 ldb_hexstr(mem_ctx,
+						    ATYPE_NORMAL_ACCOUNT));
+		break;
+	case 2:
+		filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)"
+					 "(sAMAccountType=%s))",
+					 ldb_hexstr(mem_ctx,
+						    ATYPE_WORKSTATION_TRUST));
+		break;
+	case 3:
+	case 5:
+		filter = talloc_asprintf(mem_ctx, "(&(grouptype=%s)"
+					 "(objectclass=group))",
+					 ldb_hexstr(mem_ctx, GTYPE_SECURITY_GLOBAL_GROUP));
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* search for all domain groups in this domain. This could possibly be
+	   cached and resumed based on resume_key */
+	ldb_cnt = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+			       &res, attrs, "%s", filter);
+	if (ldb_cnt == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (ldb_cnt == 0 || r->in.max_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	switch (r->in.level) {
+	case 1:
+		entriesGeneral = talloc_array_p(mem_ctx,
+						struct samr_DispEntryGeneral,
+						ldb_cnt);
+		break;
+	case 2:
+	case 3:
+		entriesFull = talloc_array_p(mem_ctx,
+					     struct samr_DispEntryFull,
+					     ldb_cnt);
+		break;
+	case 4:
+	case 5:
+		entriesAscii = talloc_array_p(mem_ctx,
+					      struct samr_DispEntryAscii,
+					      ldb_cnt);
+		break;
+	}
+
+	if ((entriesGeneral == NULL) && (entriesFull == NULL) &&
+	    (entriesAscii == NULL))
+		return NT_STATUS_NO_MEMORY;
+
+	count = 0;
+	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
+
+	for (i=0; i<ldb_cnt; i++) {
+		struct dom_sid *objectsid;
+
+		objectsid = samdb_result_dom_sid(mem_ctx, res[i],
+						 "objectSid");
+		if (objectsid == NULL)
+			continue;
+
+		if (!dom_sid_in_domain(domain_sid, objectsid))
+			continue;
+
+		switch(r->in.level) {
+		case 1:
+			entriesGeneral[count].idx = count;
+			entriesGeneral[count].rid = 
+				objectsid->sub_auths[objectsid->num_auths-1];
+			entriesGeneral[count].acct_flags =
+				samdb_result_acct_flags(res[i], 
+							"userAccountControl");
+			entriesGeneral[count].account_name.string =
+				samdb_result_string(res[i],
+						    "sAMAccountName", "");
+			entriesGeneral[count].full_name.string =
+				samdb_result_string(res[i], "displayName", "");
+			entriesGeneral[count].description.string =
+				samdb_result_string(res[i], "description", "");
+			break;
+		case 2:
+		case 3:
+			entriesFull[count].idx = count;
+			entriesFull[count].rid =
+				objectsid->sub_auths[objectsid->num_auths-1];
+			entriesFull[count].acct_flags =
+				samdb_result_acct_flags(res[i], 
+							"userAccountControl");
+			if (r->in.level == 3) {
+				/* We get a "7" here for groups */
+				entriesFull[count].acct_flags = 7;
+			}
+			entriesFull[count].account_name.string =
+				samdb_result_string(res[i], "sAMAccountName",
+						    "");
+			entriesFull[count].description.string =
+				samdb_result_string(res[i], "description", "");
+			break;
+		case 4:
+		case 5:
+			entriesAscii[count].idx = count;
+			entriesAscii[count].account_name.string =
+				samdb_result_string(res[i], "sAMAccountName",
+						    "");
+			break;
+		}
+
+		count += 1;
+	}
+
+	r->out.total_size = count;
+
+	if (r->in.start_idx >= count) {
+		r->out.returned_size = 0;
+		switch(r->in.level) {
+		case 1:
+			r->out.info.info1.count = r->out.returned_size;
+			r->out.info.info1.entries = NULL;
+			break;
+		case 2:
+			r->out.info.info2.count = r->out.returned_size;
+			r->out.info.info2.entries = NULL;
+			break;
+		case 3:
+			r->out.info.info3.count = r->out.returned_size;
+			r->out.info.info3.entries = NULL;
+			break;
+		case 4:
+			r->out.info.info4.count = r->out.returned_size;
+			r->out.info.info4.entries = NULL;
+			break;
+		case 5:
+			r->out.info.info5.count = r->out.returned_size;
+			r->out.info.info5.entries = NULL;
+			break;
+		}
+	} else {
+		r->out.returned_size = MIN(count - r->in.start_idx,
+					   r->in.max_entries);
+		switch(r->in.level) {
+		case 1:
+			r->out.info.info1.count = r->out.returned_size;
+			r->out.info.info1.entries =
+				&(entriesGeneral[r->in.start_idx]);
+			break;
+		case 2:
+			r->out.info.info2.count = r->out.returned_size;
+			r->out.info.info2.entries =
+				&(entriesFull[r->in.start_idx]);
+			break;
+		case 3:
+			r->out.info.info3.count = r->out.returned_size;
+			r->out.info.info3.entries =
+				&(entriesFull[r->in.start_idx]);
+			break;
+		case 4:
+			r->out.info.info4.count = r->out.returned_size;
+			r->out.info.info4.entries =
+				&(entriesAscii[r->in.start_idx]);
+			break;
+		case 5:
+			r->out.info.info5.count = r->out.returned_size;
+			r->out.info.info5.entries =
+				&(entriesAscii[r->in.start_idx]);
+			break;
+		}
+	}
+
+	return (r->out.returned_size < (count - r->in.start_idx)) ?
+		STATUS_MORE_ENTRIES : NT_STATUS_OK;
 }
 
 
