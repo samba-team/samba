@@ -596,6 +596,7 @@ void unbecome_local_master(struct subnet_record *d, struct work_record *work,
   
     /* no longer a master browser of any sort */
 
+    work->ServerType &= ~SV_TYPE_MASTER_BROWSER;
     work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
     work->ElectionCriterion &= ~0x4;
     work->mst_state = MST_POTENTIAL;
