@@ -41,14 +41,6 @@ sub HeaderElement($)
 {
     my($element) = shift;
 
-    if (util::has_property($element, "struct_len")) {
-	    # a struct_len is an internal artifact - it is put on the 
-	    # wire but not exposed via the api, which means it does 
-	    # not appear in the header file
-	    return;
-    }
-
-
     (defined $element->{PROPERTIES}) && HeaderProperties($element->{PROPERTIES});
     $res .= tabs();
     HeaderType($element, $element->{TYPE}, "");
