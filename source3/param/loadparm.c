@@ -167,6 +167,7 @@ typedef struct
 	char *szDeleteShareCommand;
 	char *szGuestaccount;
 	char *szManglingMethod;
+	int mangle_prefix;
 	int max_log_size;
 	char *szLogLevel;
 	int mangled_stack;
@@ -899,6 +900,7 @@ static struct parm_struct parm_table[] = {
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"mangle prefix", P_INTEGER, P_GLOBAL, &Globals.mangle_prefix, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_SHARE},
@@ -1232,8 +1234,9 @@ static void init_globals(void)
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
-	/* use the new 'hash2' method by default */
+	/* use the new 'hash2' method by default, with a prefix of 1 */
 	string_set(&Globals.szManglingMethod, "hash2");
+	Globals.mangle_prefix = 1;
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
@@ -1520,6 +1523,7 @@ FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
+FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
