@@ -172,7 +172,6 @@ krb5_kt_free_entry(krb5_context context,
 {
   krb5_free_principal (context, entry->principal);
   krb5_free_keyblock (context, &entry->keyblock);
-  free (entry);
   return 0;
 }
 
