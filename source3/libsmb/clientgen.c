@@ -2526,6 +2526,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		if (cli->fd == -1) return False;
 	}
 
+	cli->port = port;
 
 	return True;
 }
