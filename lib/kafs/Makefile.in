@@ -69,7 +69,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a $(EXTRASOURCE)
+	rm -f $(LIB) *.o *.a *.so *.so.* so_locations $(EXTRA_SOURCE)
 
 mostlyclean: clean
 

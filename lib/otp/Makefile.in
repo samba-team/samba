@@ -79,7 +79,7 @@ check:	otptest$(EXECSUFFIX)
 	./otptest$(EXECSUFFIX)
 
 clean:
-	rm -f $(LIB) $(PROGS) *.o *.a
+	rm -f $(LIB) $(PROGS) *.o *.a *.so *.so.* so_locations
 
 mostlyclean: clean
 

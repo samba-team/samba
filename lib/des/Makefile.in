@@ -101,7 +101,7 @@ check: destest$(EXECSUFFIX) mdtest$(EXECSUFFIX)
 	./mdtest$(EXECSUFFIX)
 
 clean:
-	rm -f $(LIB) *.o *.a $(PROGS)
+	rm -f $(LIB) *.so *.so.* so_locations *.o *.a $(PROGS)
 
 mostlyclean: clean
 

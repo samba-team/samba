@@ -61,7 +61,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a
+	rm -f $(LIB) *.o *.a *.so *.so.* so_locations
 
 mostlyclean: clean
 

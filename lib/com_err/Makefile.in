@@ -94,8 +94,9 @@ TAGS: $(SOURCES)
 	etags $(SOURCES)
 
 clean:
-	rm -f $(LIB) *.o *.a krb_err.c krb_err.h parse.h parse.c lex.c \
-	$(lib_LIBRARIES) $(bin_PROGRAMS)
+	rm -f $(LIB) *.o *.a *.so *.so.* so_locations \
+	krb_err.c krb_err.h parse.h parse.c lex.c \
+	$(lib_LIBRARIES) $(bin_PROGRAMS) $(EXTRA_SOURCES)
 
 mostlyclean: clean
 

@@ -88,7 +88,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(sl_LIB) $(PROGS) *.o *.a
+	rm -f $(sl_LIB) $(PROGS) lex.c parse.c parse.h *.o *.a *.so *.so.* so_locations
 
 mostlyclean: clean
 
