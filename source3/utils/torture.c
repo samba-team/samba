@@ -2538,6 +2538,20 @@ static void run_opentest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
+
+	printf("testing ctemp\n");
+	{
+		char *tmp_path;
+		fnum1 = cli_ctemp(&cli1, "\\", &tmp_path);
+		if (fnum1 == -1) {
+			printf("ctemp failed (%s)\n", cli_errstr(&cli1));
+			return;
+		}
+		printf("ctemp gave path %s\n", tmp_path);
+		cli_close(&cli1, fnum1);
+		cli_unlink(&cli1, tmp_path);
+	}
+
     close_connection(&cli1);
 
 }
