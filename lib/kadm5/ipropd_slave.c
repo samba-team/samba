@@ -56,6 +56,7 @@ connect_to_master (krb5_context context, const char *master)
     he = roken_gethostbyname (master);
     if (he == NULL)
 	krb5_errx (context, 1, "gethostbyname: %s", hstrerror(h_errno));
+    memcpy (&addr.sin_addr, he->h_addr, sizeof(addr.sin_addr));
     if(connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	krb5_err (context, 1, errno, "connect");
     return fd;
@@ -70,18 +71,23 @@ get_creds(krb5_context context, krb5_ccache *cache)
     krb5_get_init_creds_opt init_opts;
     krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
     krb5_creds creds;
+    char hostname[128];
     
     ret = krb5_kt_default(context, &keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_default");
-    
-    ret = krb5_make_principal(context, &client, NULL, 
-			      "kadmin", IPROP_NAME, NULL);
-    if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
+
+    gethostname (hostname, sizeof(hostname));
+    ret = krb5_sname_to_principal (context, hostname, IPROP_NAME,
+				   KRB5_NT_SRV_HST, &client);
+    if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
     krb5_get_init_creds_opt_init(&init_opts);
+#if 0
     krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
+#endif
 
-    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, &init_opts);
+    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab,
+				     0, NULL, &init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
     
     ret = krb5_kt_close(context, keytab);
@@ -136,6 +142,12 @@ receive (krb5_context context,
 {
     int ret;
 
+    ret = server_context->db->open(context,
+				   server_context->db,
+				   O_RDWR | O_CREAT, 0);
+    if (ret)
+	krb5_err (context, 1, ret, "db->open");
+
     for (;;) {
 	int32_t vers, len, timestamp, tmp;
 	enum kadm_ops op;
@@ -146,7 +158,7 @@ receive (krb5_context context,
 	krb5_ret_int32 (sp, &tmp);
 	op = tmp;
 	krb5_ret_int32 (sp, &len);
-	if (tmp < server_context->log_context.version) {
+	if (vers < server_context->log_context.version) {
 	    sp->seek(sp, len, SEEK_CUR);
 	} else {
 	    ret = kadm5_log_replay (server_context,
@@ -158,6 +170,10 @@ receive (krb5_context context,
 	}
 	sp->seek (sp, 8, SEEK_CUR);
     }
+
+    ret = server_context->db->close (context, server_context->db);
+    if (ret)
+	krb5_err (context, 1, ret, "db->close");
 }
 
 int
@@ -229,7 +245,7 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_data_alloc");
 	ret = krb5_net_read (context, &master_fd, data.data, data.length);
-	if (ret)
+	if (ret != data.length)
 	    krb5_err (context, 1, ret, "krb5_net_read");
 	ret = krb5_rd_priv (context, auth_context,  &data, &out, NULL);
 	if (ret)
@@ -239,6 +255,9 @@ main(int argc, char **argv)
 	switch (tmp) {
 	case FOR_YOU :
 	    receive (context, sp, server_context);
+	    ihave (context, auth_context, master_fd,
+		   server_context->log_context.version);
+	    break;
 	case I_HAVE :
 	default :
 	    krb5_warnx (context, "Ignoring command %d", tmp);
