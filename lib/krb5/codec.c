@@ -174,3 +174,23 @@ krb5_encode_ETYPE_INFO (krb5_context context,
 {
     return encode_ETYPE_INFO (data, length, t, len);
 }
+
+krb5_error_code
+krb5_decode_ETYPE_INFO2 (krb5_context context,
+			const void *data,
+			size_t length,
+			ETYPE_INFO2 *t,
+			size_t *len)
+{
+    return decode_ETYPE_INFO2(data, length, t, len);
+}
+
+krb5_error_code
+krb5_encode_ETYPE_INFO2 (krb5_context context,
+			 void *data,
+			 size_t length,
+			 ETYPE_INFO2 *t,
+			 size_t *len)
+{
+    return encode_ETYPE_INFO2 (data, length, t, len);
+}
