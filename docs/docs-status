@@ -45,6 +45,7 @@ docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
 
 Stuff that needs to be documented:
+Doc for package maintainers
 Some kind of introduction to the various terms used (locking, wins, browsing, domain, ... )
 Merge the various docs about wins and browsing
 Windows NT 4.0 Style Trust Relationship

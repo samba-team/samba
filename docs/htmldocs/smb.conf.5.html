@@ -531,31 +531,6 @@ NAME="AEN112"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->%S</DT
-><DD
-><P
->the name of the current service, if any.</P
-></DD
-><DT
->%P</DT
-><DD
-><P
->the root directory of the current service, 
-		if any.</P
-></DD
-><DT
->%u</DT
-><DD
-><P
->user name of the current service, if any.</P
-></DD
-><DT
->%g</DT
-><DD
-><P
->primary group name of %u.</P
-></DD
-><DT
 >%U</DT
 ><DD
 ><P
@@ -567,19 +542,6 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >primary group name of %U.</P
-></DD
-><DT
->%H</DT
-><DD
-><P
->the home directory of the user given 
-		by %u.</P
-></DD
-><DT
->%v</DT
-><DD
-><P
->the Samba version.</P
 ></DD
 ><DT
 >%h</DT
@@ -612,29 +574,6 @@ CLASS="VARIABLELIST"
 ><P
 >the Internet name of the client machine.
 		</P
-></DD
-><DT
->%N</DT
-><DD
-><P
->the name of your NIS home directory server.  
-		This is obtained from your NIS auto.map entry.  If you have 
-		not compiled Samba with the <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->--with-automount</I
-></SPAN
-> 
-		option then this value will be the same as %L.</P
-></DD
-><DT
->%p</DT
-><DD
-><P
->the path of the service's home directory, 
-		obtained from your NIS auto.map entry. The NIS auto.map entry 
-		is split up as "%N:%p".</P
 ></DD
 ><DT
 >%R</DT
@@ -680,6 +619,12 @@ TARGET="_top"
 >the current date and time.</P
 ></DD
 ><DT
+>%D</DT
+><DD
+><P
+>Name of the domain or workgroup of the current user.</P
+></DD
+><DT
 >%$(<TT
 CLASS="REPLACEABLE"
 ><I
@@ -699,13 +644,78 @@ CLASS="REPLACEABLE"
 ></DL
 ></DIV
 ><P
+>The following substitutes apply only to some configuration options(only those 
+	that are used when a connection has been established):</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>%S</DT
+><DD
+><P
+>the name of the current service, if any.</P
+></DD
+><DT
+>%P</DT
+><DD
+><P
+>the root directory of the current service, 
+		if any.</P
+></DD
+><DT
+>%u</DT
+><DD
+><P
+>user name of the current service, if any.</P
+></DD
+><DT
+>%g</DT
+><DD
+><P
+>primary group name of %u.</P
+></DD
+><DT
+>%H</DT
+><DD
+><P
+>the home directory of the user given 
+		by %u.</P
+></DD
+><DT
+>%N</DT
+><DD
+><P
+>the name of your NIS home directory server.  
+		This is obtained from your NIS auto.map entry.  If you have 
+		not compiled Samba with the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>--with-automount</I
+></SPAN
+> 
+		option then this value will be the same as %L.</P
+></DD
+><DT
+>%p</DT
+><DD
+><P
+>the path of the service's home directory, 
+		obtained from your NIS auto.map entry. The NIS auto.map entry 
+		is split up as "%N:%p".</P
+></DD
+></DL
+></DIV
+><P
 >There are some quite creative things that can be done 
 	with these substitutions and other smb.conf options.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN203"
+NAME="AEN205"
 ></A
 ><H2
 >NAME MANGLING</H2
@@ -804,13 +814,13 @@ CLASS="EMPHASIS"
 ></DL
 ></DIV
 ><P
->By default, Samba 2.2 has the same semantics as a Windows 
+>By default, Samba 3.0 has the same semantics as a Windows 
 	NT server, in that it is case insensitive but case preserving.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN236"
+NAME="AEN238"
 ></A
 ><H2
 >NOTE ABOUT USERNAME/PASSWORD VALIDATION</H2
@@ -888,7 +898,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN255"
+NAME="AEN257"
 ></A
 ><H2
 >COMPLETE LIST OF GLOBAL PARAMETERS</H2
@@ -1662,6 +1672,18 @@ HREF="#LDAPPASSWDSYNC"
 CLASS="PARAMETER"
 ><I
 >ldap passwd sync</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPTRUSTIDS"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap trust ids</I
 ></TT
 ></A
 ></P
@@ -3147,7 +3169,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1007"
+NAME="AEN1013"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4650,7 +4672,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1507"
+NAME="AEN1513"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5482,12 +5504,12 @@ NAME="ANNOUNCEVERSION"
 ><P
 >This specifies the major and minor version numbers 
 		that nmbd will use when announcing itself as a server. The default 
-		is 4.2.  Do not change this parameter unless you have a specific 
+		is 4.9.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->announce version = 4.5</B
+>announce version = 4.9</B
 ></P
 ><P
 >Example: <B
@@ -5829,7 +5851,7 @@ TARGET="_top"
 		request has a time limit associated with it.</P
 ><P
 >If this parameter is set and the lock range requested 
-		cannot be immediately satisfied, Samba 2.2 will internally 
+		cannot be immediately satisfied, samba will internally 
 		queue the lock request, and periodically attempt to obtain 
 		the lock until the timeout period expires.</P
 ><P
@@ -5837,7 +5859,7 @@ TARGET="_top"
 CLASS="CONSTANT"
 >no</TT
 >, then 
-		Samba 2.2 will behave as previous versions of Samba would and 
+		samba will behave as previous versions of Samba would and 
 		will fail the lock request immediately if the lock range 
 		cannot be obtained.</P
 ><P
@@ -5953,7 +5975,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="#AEN203"
+HREF="#AEN205"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -6516,7 +6538,7 @@ NAME="DEBUGTIMESTAMP"
 >debug timestamp (G)</DT
 ><DD
 ><P
->Samba 2.2 debug log messages are timestamped 
+>Samba debug log messages are timestamped 
 		by default. If you are running at a high <A
 HREF="#DEBUGLEVEL"
 >		<TT
@@ -6604,7 +6626,7 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN203"
+HREF="#AEN205"
 >		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
@@ -8703,7 +8725,7 @@ CLASS="COMMAND"
 >		lp(1)</B
 >.</P
 ><P
->This paramater does not accept % macros, because
+>This parameter does not accept % macros, because
 	        many parts of the system require this value to be
 	        constant for correct operation.</P
 ><P
@@ -9972,21 +9994,6 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
->On</I
-></TT
->  =  Always use SSL when contacting the 
-			<TT
-CLASS="PARAMETER"
-><I
->ldap	server</I
-></TT
->.</P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
 >Off</I
 ></TT
 > = Never use SSL when querying the directory.</P
@@ -10001,11 +10008,40 @@ CLASS="PARAMETER"
 > = Use the LDAPv3 StartTLS extended operation 
 			(RFC2830) for communicating with the directory server.</P
 ></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>On</I
+></TT
+>  =
+			Use SSL on the ldaps port when contacting the 
+			<TT
+CLASS="PARAMETER"
+><I
+>ldap	server</I
+></TT
+>.  Only
+			available when the backwards-compatiblity <B
+CLASS="COMMAND"
+>			--with-ldapsam</B
+> option is specified
+			to configure.  See <A
+HREF="#PASSDBBACKEND"
+><TT
+CLASS="PARAMETER"
+><I
+>passdb backend</I
+></TT
+></A
+></P
+></LI
 ></UL
 ><P
 >Default : <B
 CLASS="COMMAND"
->ldap ssl = on</B
+>ldap ssl = start_tls</B
 ></P
 ></DD
 ><DT
@@ -10014,6 +10050,14 @@ NAME="LDAPSUFFIX"
 ></A
 >ldap suffix (G)</DT
 ><DD
+><P
+>Specifies where user and machine accounts are added to the tree. Can be overriden by <B
+CLASS="COMMAND"
+>ldap user suffix</B
+> and <B
+CLASS="COMMAND"
+>ldap machine suffix</B
+>. It also used as the base dn for all ldap searches. </P
 ><P
 >Default : <SPAN
 CLASS="emphasis"
@@ -10116,6 +10160,35 @@ CLASS="PARAMETER"
 >Default : <B
 CLASS="COMMAND"
 >ldap passwd sync = no</B
+></P
+></DD
+><DT
+><A
+NAME="LDAPTRUSTIDS"
+></A
+>ldap trust ids (G)</DT
+><DD
+><P
+>Normally, Samba validates each entry
+		in the LDAP server against getpwnam().  This allows
+		LDAP to be used for Samba with the unix system using
+		NIS (for example) and also ensures that Samba does not
+		present accounts that do not otherwise exist.  </P
+><P
+>This option is used to disable this functionality, and
+		instead to rely on the presence of the appropriate
+		attributes in LDAP directly, which can result in a
+		significant performance boost in some situations.  
+                Setting this option to yes effectivly assumes
+		that the local machine is running <B
+CLASS="COMMAND"
+>nss_ldap</B
+> against the
+		same LDAP server.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>ldap trust ids = No</B
 ></P
 ></DD
 ><DT
@@ -11468,7 +11541,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN203"
+HREF="#AEN205"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -11544,7 +11617,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="#AEN203"
+HREF="#AEN205"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -11631,17 +11704,39 @@ NAME="MANGLINGMETHOD"
 		a better algorithm (generates less collisions) in the names.
 		However, many Win32 applications store the mangled names and so
 		changing to the new algorithm must not be done
-		lightly as these applications may break unless reinstalled.
-		New installations of Samba may set the default to hash2.</P
+		lightly as these applications may break unless reinstalled.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->mangling method = hash</B
+>mangling method = hash2</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->mangling method = hash2</B
+>mangling method = hash</B
+></P
+></DD
+><DT
+><A
+NAME="MANGLEPREFIX"
+></A
+>mangle prefix (G)</DT
+><DD
+><P
+> controls the number of prefix
+		characters from the original name used when generating
+		the mangled names. A larger value will give a weaker
+		hash and therefore more name collisions. The minimum
+		value is 1 and the maximum value is 6.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>mangle prefix = 1</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>mangle prefix = 4</B
 ></P
 ></DD
 ><DT
@@ -11696,7 +11791,7 @@ CLASS="EMPHASIS"
 >magic</I
 ></SPAN
 > character in <A
-HREF="#AEN203"
+HREF="#AEN205"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -13677,15 +13772,41 @@ CLASS="COMMAND"
 >ldap://localhost</B
 >)</P
 ><P
+>Note:  In this module, any account
+                        without a matching POSIX account is regarded
+                        as 'non unix'.
+                        </P
+><P
 >See also <A
 HREF="#NONUNIXACCOUNTRANGE"
 >                        <TT
 CLASS="PARAMETER"
 ><I
->non unix account range</I
+>non unix account
+                        range</I
 ></TT
 ></A
 ></P
+><P
+>LDAP connections should be secured where
+                        possible.  This may be done using either
+                        Start-TLS (see <A
+HREF="#LDAPSSL"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>ldap ssl</I
+></TT
+></A
+>) or by
+                        specifying <TT
+CLASS="PARAMETER"
+><I
+>ldaps://</I
+></TT
+> in
+                        the URL argument.  
+                        </P
 ></LI
 ><LI
 ><P
@@ -14781,7 +14902,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="#AEN203"
+HREF="#AEN205"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -16547,7 +16668,7 @@ CLASS="EMPHASIS"
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="#AEN236"
+HREF="#AEN238"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16640,7 +16761,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN236"
+HREF="#AEN238"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16732,7 +16853,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN236"
+HREF="#AEN238"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -16871,7 +16992,7 @@ CLASS="COMMAND"
 		Domain Controller. This issue will be addressed in a future release.</P
 ><P
 >See also the section <A
-HREF="#AEN236"
+HREF="#AEN238"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -17143,7 +17264,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="#AEN203"
+HREF="#AEN205"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -18037,7 +18158,8 @@ NAME="UNICODE"
 ><DD
 ><P
 >Specifies whether Samba should try 
-		to use unicode on the wire by default. 
+		to use unicode on the wire by default. Note: This does NOT
+		mean that samba will assume that the unix machine uses unicode!
 		</P
 ><P
 >Default: <B
@@ -18060,6 +18182,11 @@ NAME="UNIXCHARSET"
 >Default: <B
 CLASS="COMMAND"
 >unix charset = ASCII</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>unix charset = UTF8</B
 ></P
 ></DD
 ><DT
@@ -18427,7 +18554,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="#AEN236"
+HREF="#AEN238"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -19763,7 +19890,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6113"
+NAME="AEN6150"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19793,18 +19920,18 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6119"
+NAME="AEN6156"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6122"
+NAME="AEN6159"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19883,7 +20010,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6142"
+NAME="AEN6179"
 ></A
 ><H2
 >AUTHOR</H2

@@ -2,19 +2,22 @@
 <HTML
 ><HEAD
 ><TITLE
->Printing Support in Samba 2.2.x</TITLE
+>Printing Support</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="p1346.html"><LINK
 REL="PREVIOUS"
-TITLE="UNIX Permission Bits and Windows NT Access Control Lists"
-HREF="unix-permissions.html"><LINK
+TITLE="Hosting a Microsoft Distributed File System tree on Samba"
+HREF="msdfs.html"><LINK
 REL="NEXT"
-TITLE="Debugging Printing Problems"
-HREF="printingdebug.html"></HEAD
+TITLE="Security levels"
+HREF="securitylevels.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="unix-permissions.html"
+HREF="msdfs.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="printingdebug.html"
+HREF="securitylevels.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTING"
 ></A
->Chapter 6. Printing Support in Samba 2.2.x</H1
+>Chapter 14. Printing Support</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN763"
+NAME="AEN1908"
 ></A
->6.1. Introduction</H1
+>14.1. Introduction</H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
 the native Windows NT printing mechanisms implemented via 
@@ -136,12 +139,7 @@ TARGET="_top"
 >There has been some initial confusion about what all this means
 and whether or not it is a requirement for printer drivers to be 
 installed on a Samba host in order to support printing from Windows 
-clients.  A bug existed in Samba 2.2.0 which made Windows NT/2000 clients 
-require that the Samba server possess a valid driver for the printer.  
-This is fixed in Samba 2.2.1 and once again, Windows NT/2000 clients
-can use the local APW for installing drivers to be used with a Samba 
-served printer.  This is the same behavior exhibited by Windows 9x clients.
-As a side note, Samba does not use these drivers in any way to process 
+clients. As a side note, Samba does not use these drivers in any way to process 
 spooled files.  They are utilized entirely by the clients.</P
 ><P
 >The following MS KB article, may be of some help if you are dealing with
@@ -165,9 +163,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN785"
+NAME="AEN1930"
 ></A
->6.2. Configuration</H1
+>14.2. Configuration</H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -222,20 +220,6 @@ CLASS="PARAMETER"
 > provided 
 a means of defining the printer driver name to be sent to 
 the client.</P
-><P
->These parameters, including <TT
-CLASS="PARAMETER"
-><I
->printer driver
-file</I
-></TT
-> parameter, are being deprecated and should not 
-be used in new installations.  For more information on this change, 
-you should refer to the <A
-HREF="printing.html#MIGRATION"
->Migration section</A
->
-of this document.</P
 ></TD
 ></TR
 ></TABLE
@@ -245,9 +229,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN796"
+NAME="AEN1938"
 ></A
->6.2.1. Creating [print$]</H2
+>14.2.1. Creating [print$]</H2
 ><P
 >In order to support the uploading of printer driver 
 files, you must first configure a file share named [print$].  
@@ -468,22 +452,14 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN831"
+NAME="AEN1973"
 ></A
->6.2.2. Setting Drivers for Existing Printers</H2
+>14.2.2. Setting Drivers for Existing Printers</H2
 ><P
 >The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
-to them.  By default, in Samba 2.2.0 this driver name was set to 
-<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NO PRINTER DRIVER AVAILABLE FOR THIS PRINTER</I
-></SPAN
->.
-Later versions changed this to a NULL string to allow the use
-tof the local Add Printer Wizard on NT/2000 clients.
+to them. This defaults to a NULL string to allow the use
+of the local Add Printer Wizard on NT/2000 clients.
 Attempting to view the printer properties for a printer
 which has this default driver assigned will result in 
 the error message:</P
@@ -548,9 +524,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN848"
+NAME="AEN1989"
 ></A
->6.2.3. Support a large number of printers</H2
+>14.2.3. Support a large number of printers</H2
 ><P
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
@@ -614,9 +590,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN859"
+NAME="AEN2000"
 ></A
->6.2.4. Adding New Printers via the Windows NT APW</H2
+>14.2.4. Adding New Printers via the Windows NT APW</H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
 CLASS="FILENAME"
@@ -783,9 +759,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN889"
+NAME="AEN2030"
 ></A
->6.2.5. Samba and Printer Ports</H2
+>14.2.5. Samba and Printer Ports</H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
@@ -820,9 +796,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN897"
+NAME="AEN2038"
 ></A
->6.3. The Imprints Toolset</H1
+>14.3. The Imprints Toolset</H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
 	Windows NT Add Printer Wizard.  For complete information, please 
@@ -838,9 +814,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN901"
+NAME="AEN2042"
 ></A
->6.3.1. What is Imprints?</H2
+>14.3.1. What is Imprints?</H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
 		of</P
@@ -870,9 +846,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN911"
+NAME="AEN2052"
 ></A
->6.3.2. Creating Printer Driver Packages</H2
+>14.3.2. Creating Printer Driver Packages</H2
 ><P
 >The process of creating printer driver packages is beyond
 		the scope of this document (refer to Imprints.txt also included
@@ -886,9 +862,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN914"
+NAME="AEN2055"
 ></A
->6.3.3. The Imprints server</H2
+>14.3.3. The Imprints server</H2
 ><P
 >The Imprints server is really a database server that 
 		may be queried via standard HTTP mechanisms.  Each printer 
@@ -910,9 +886,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN918"
+NAME="AEN2059"
 ></A
->6.3.4. The Installation Client</H2
+>14.3.4. The Installation Client</H2
 ><P
 >More information regarding the Imprints installation client 
 		is available in the <TT
@@ -1004,168 +980,388 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN940"
+NAME="AEN2081"
 ></A
->6.4. <A
-NAME="MIGRATION"
-></A
->Migration to from Samba 2.0.x to 2.2.x</H1
-><P
->Given that printer driver management has changed (we hope improved) in 
-2.2 over prior releases, migration from an existing setup to 2.2 can 
-follow several paths. Here are the possible scenarios for 
-migration:</P
-><P
-></P
-><UL
-><LI
-><P
->If you do not desire the new Windows NT 
-	print driver support, nothing needs to be done.  
-	All existing parameters work the same.</P
-></LI
-><LI
-><P
->If you want to take advantage of NT printer 
-	driver support but do not want to migrate the 
-	9x drivers to the new setup, the leave the existing 
-	<TT
-CLASS="FILENAME"
->printers.def</TT
-> file.  When smbd attempts 
-	to locate a 
-	9x driver for the printer in the TDB and fails it 
-	will drop down to using the printers.def (and all 
-	associated parameters).  The <B
-CLASS="COMMAND"
->make_printerdef</B
-> 
-	tool will also remain for backwards compatibility but will 
-	be removed in the next major release.</P
-></LI
-><LI
-><P
->If you install a Windows 9x driver for a printer 
-	on your Samba host (in the printing TDB), this information will 
-	take precedence and the three old printing parameters
-	will be ignored (including print driver location).</P
-></LI
-><LI
-><P
->If you want to migrate an existing <TT
-CLASS="FILENAME"
->printers.def</TT
-> 
-	file into the new setup, the current only solution is to use the Windows 
-	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
-	using <B
-CLASS="COMMAND"
->smbclient</B
-> and <B
-CLASS="COMMAND"
->rpcclient</B
->.  See the 
-	Imprints installation client at <A
-HREF="http://imprints.sourceforge.net/"
-TARGET="_top"
->http://imprints.sourceforge.net/</A
-> 
-	for an example.
-	</P
-></LI
-></UL
+>14.4. Diagnosis</H1
 ><DIV
-CLASS="WARNING"
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2083"
+></A
+>14.4.1. Introduction</H2
 ><P
+>This is a short description of how to debug printing problems with
+Samba. This describes how to debug problems with printing from a SMB
+client to a Samba server, not the other way around. For the reverse
+see the examples/printing directory.</P
+><P
+>Ok, so you want to print to a Samba server from your PC. The first
+thing you need to understand is that Samba does not actually do any
+printing itself, it just acts as a middleman between your PC client
+and your Unix printing subsystem. Samba receives the file from the PC
+then passes the file to a external "print command". What print command
+you use is up to you.</P
+><P
+>The whole things is controlled using options in smb.conf. The most
+relevant options (which you should look up in the smb.conf man page)
+are:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>      [global]
+        print command     - send a file to a spooler
+        lpq command       - get spool queue status
+        lprm command      - remove a job
+      [printers]
+        path = /var/spool/lpd/samba</PRE
 ></P
-><TABLE
-CLASS="WARNING"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/docbook-dsssl/warning.gif"
-HSPACE="5"
-ALT="Warning"></TD
-><TH
-ALIGN="LEFT"
-VALIGN="CENTER"
-><B
->Achtung!</B
-></TH
-></TR
-><TR
-><TD
->&nbsp;</TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
 ><P
->The following <TT
-CLASS="FILENAME"
->smb.conf</TT
-> parameters are considered to 
-be deprecated and will be removed soon.  Do not use them in new 
-installations</P
+>The following are nice to know about:</P
 ><P
+><PRE
+CLASS="PROGRAMLISTING"
+>        queuepause command   - stop a printer or print queue
+        queueresume command  - start a printer or print queue</PRE
 ></P
-><UL
-><LI
 ><P
-><TT
-CLASS="PARAMETER"
-><I
->printer driver file (G)</I
-></TT
->
-	</P
-></LI
-><LI
+>Example:</P
 ><P
-><TT
-CLASS="PARAMETER"
-><I
->printer driver (S)</I
-></TT
->
-	</P
-></LI
-><LI
+><PRE
+CLASS="PROGRAMLISTING"
+>        print command = /usr/bin/lpr -r -P%p %s
+        lpq command   = /usr/bin/lpq    -P%p %s
+        lprm command  = /usr/bin/lprm   -P%p %j
+        queuepause command = /usr/sbin/lpc -P%p stop
+        queuepause command = /usr/sbin/lpc -P%p start</PRE
+></P
 ><P
-><TT
-CLASS="PARAMETER"
-><I
->printer driver location (S)</I
-></TT
->
-	</P
-></LI
-></UL
-></TD
-></TR
-></TABLE
+>Samba should set reasonable defaults for these depending on your
+system type, but it isn't clairvoyant. It is not uncommon that you
+have to tweak these for local conditions.  The commands should
+always have fully specified pathnames,  as the smdb may not have
+the correct PATH values.</P
+><P
+>When you send a job to Samba to be printed,  it will make a temporary
+copy of it in the directory specified in the [printers] section.
+and it should be periodically cleaned out.  The lpr -r option
+requests that the temporary copy be removed after printing; If
+printing fails then you might find leftover files in this directory,
+and it should be periodically cleaned out.  Samba used the lpq
+command to determine the "job number" assigned to your print job
+by the spooler.</P
+><P
+>The %&gt;letter&lt; are "macros" that get dynamically replaced with appropriate
+values when they are used. The %s gets replaced with the name of the spool
+file that Samba creates and the %p gets replaced with the name of the
+printer. The %j gets replaced with the "job number" which comes from
+the lpq output.</P
 ></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2099"
+></A
+>14.4.2. Debugging printer problems</H2
 ><P
->The have been two new parameters add in Samba 2.2.2 to for 
-better support of Samba 2.0.x backwards capability (<TT
-CLASS="PARAMETER"
-><I
->disable
-spoolss</I
-></TT
->) and for using local printers drivers on Windows 
-NT/2000 clients (<TT
-CLASS="PARAMETER"
-><I
->use client driver</I
-></TT
->). Both of 
-these options are described in the smb.coinf(5) man page and are 
-disabled by default.</P
+>One way to debug printing problems is to start by replacing these
+command with shell scripts that record the arguments and the contents
+of the print file. A simple example of this kind of things might
+be:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	print command = /tmp/saveprint %p %s
+
+    #!/bin/saveprint
+    # we make sure that we are the right user
+    /usr/bin/id -p &#62;/tmp/tmp.print
+    # we run the command and save the error messages
+    # replace the command with the one appropriate for your system
+    /usr/bin/lpr -r -P$1 $2 2&#62;&#62;&#38;/tmp/tmp.print</PRE
+></P
+><P
+>Then you print a file and try removing it.  You may find that the
+print queue needs to be stopped in order to see the queue status
+and remove the job:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>&#13;h4: {42} % echo hi &#62;/tmp/hi
+h4: {43} % smbclient //localhost/lw4
+added interface ip=10.0.0.4 bcast=10.0.0.255 nmask=255.255.255.0
+Password: 
+Domain=[ASTART] OS=[Unix] Server=[Samba 2.0.7]
+smb: \&#62; print /tmp/hi
+putting file /tmp/hi as hi-17534 (0.0 kb/s) (average 0.0 kb/s)
+smb: \&#62; queue
+1049     3            hi-17534
+smb: \&#62; cancel 1049
+Error cancelling job 1049 : code 0
+smb: \&#62; cancel 1049
+Job 1049 cancelled
+smb: \&#62; queue
+smb: \&#62; exit</PRE
+></P
+><P
+>The 'code 0' indicates that the job was removed.  The comment
+by the  smbclient is a bit misleading on this.
+You can observe the command output and then and look at the
+/tmp/tmp.print file to see what the results are.  You can quickly
+find out if the problem is with your printing system.  Often people
+have problems with their /etc/printcap file or permissions on
+various print queues.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2108"
+></A
+>14.4.3. What printers do I have?</H2
+><P
+>You can use the 'testprns' program to check to see if the printer
+name you are using is recognized by Samba.  For example,  you can
+use:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>    testprns printer /etc/printcap</PRE
+></P
+><P
+>Samba can get its printcap information from a file or from a program.
+You can try the following to see the format of the extracted
+information:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>    testprns -a printer /etc/printcap
+
+    testprns -a printer '|/bin/cat printcap'</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2116"
+></A
+>14.4.4. Setting up printcap and print servers</H2
+><P
+>You may need to set up some printcaps for your Samba system to use.
+It is strongly recommended that you use the facilities provided by
+the print spooler to set up queues and printcap information.</P
+><P
+>Samba requires either a printcap or program to deliver printcap
+information.  This printcap information has the format:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  name|alias1|alias2...:option=value:...</PRE
+></P
+><P
+>For almost all printing systems, the printer 'name' must be composed
+only of alphanumeric or underscore '_' characters.  Some systems also
+allow hyphens ('-') as well.  An alias is an alternative name for the
+printer,  and an alias with a space in it is used as a 'comment'
+about the printer.  The printcap format optionally uses a \ at the end of lines
+to extend the printcap to multiple lines.</P
+><P
+>Here are some examples of printcap files:</P
+><P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>pr              just printer name</P
+></LI
+><LI
+><P
+>pr|alias        printer name and alias</P
+></LI
+><LI
+><P
+>pr|My Printer   printer name, alias used as comment</P
+></LI
+><LI
+><P
+>pr:sh:\        Same as pr:sh:cm= testing
+  :cm= \ 
+  testing</P
+></LI
+><LI
+><P
+>pr:sh           Same as pr:sh:cm= testing
+  :cm= testing</P
+></LI
+></OL
+></P
+><P
+>Samba reads the printcap information when first started.  If you make
+changes in the printcap information, then you must do the following:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>make sure that the print spooler is aware of these changes.
+The LPRng system uses the 'lpc reread' command to do this.</P
+></LI
+><LI
+><P
+>make sure that the spool queues, etc., exist and have the
+correct permissions.  The LPRng system uses the 'checkpc -f'
+command to do this.</P
+></LI
+><LI
+><P
+>You now should send a SIGHUP signal to the smbd server to have
+it reread the printcap information.</P
+></LI
+></OL
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2144"
+></A
+>14.4.5. Job sent, no output</H2
+><P
+>This is the most frustrating part of printing.  You may have sent the
+job,  verified that the job was forwarded,  set up a wrapper around
+the command to send the file,  but there was no output from the printer.</P
+><P
+>First,  check to make sure that the job REALLY is getting to the
+right print queue.  If you are using a BSD or LPRng print spooler,
+you can temporarily stop the printing of jobs.  Jobs can still be
+submitted, but they will not be printed.  Use:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  lpc -Pprinter stop</PRE
+></P
+><P
+>Now submit a print job and then use 'lpq -Pprinter' to see if the
+job is in the print queue.  If it is not in the print queue then
+you will have to find out why it is not being accepted for printing.</P
+><P
+>Next, you may want to check to see what the format of the job really
+was.  With the assistance of the system administrator you can view
+the submitted jobs files.  You may be surprised to find that these
+are not in what you would expect to call a printable format.
+You can use the UNIX 'file' utitily to determine what the job
+format actually is:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>    cd /var/spool/lpd/printer   # spool directory of print jobs
+    ls                          # find job files
+    file dfA001myhost</PRE
+></P
+><P
+>You should make sure that your printer supports this format OR that
+your system administrator has installed a 'print filter' that will
+convert the file to a format appropriate for your printer.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2155"
+></A
+>14.4.6. Job sent, strange output</H2
+><P
+>Once you have the job printing, you can then start worrying about
+making it print nicely.</P
+><P
+>The most common problem is extra pages of output: banner pages
+OR blank pages at the end.</P
+><P
+>If you are getting banner pages,  check and make sure that the
+printcap option or printer option is configured for no banners.
+If you have a printcap,  this is the :sh (suppress header or banner
+page) option.  You should have the following in your printer.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>   printer: ... :sh</PRE
+></P
+><P
+>If you have this option and are still getting banner pages,  there
+is a strong chance that your printer is generating them for you
+automatically.  You should make sure that banner printing is disabled
+for the printer.  This usually requires using the printer setup software
+or procedures supplied by the printer manufacturer.</P
+><P
+>If you get an extra page of output,  this could be due to problems
+with your job format,  or if you are generating PostScript jobs,
+incorrect setting on your printer driver on the MicroSoft client.
+For example, under Win95 there is a option:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>  Printers|Printer Name|(Right Click)Properties|Postscript|Advanced|</PRE
+></P
+><P
+>that allows you to choose if a Ctrl-D is appended to all jobs.
+This is a very bad thing to do, as most spooling systems will
+automatically add a ^D to the end of the job if it is detected as
+PostScript.  The multiple ^D may cause an additional page of output.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2167"
+></A
+>14.4.7. Raw PostScript printed</H2
+><P
+>This is a problem that is usually caused by either the print spooling
+system putting information at the start of the print job that makes
+the printer think the job is a text file, or your printer simply
+does not support PostScript.  You may need to enable 'Automatic
+Format Detection' on your printer.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2170"
+></A
+>14.4.8. Advanced Printing</H2
+><P
+>Note that you can do some pretty magic things by using your
+imagination with the "print command" option and some shell scripts.
+Doing print accounting is easy by passing the %U option to a print
+command shell script. You could even make the print command detect
+the type of output and its size and send it to an appropriate
+printer.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2173"
+></A
+>14.4.9. Real debugging</H2
+><P
+>If the above debug tips don't help, then maybe you need to bring in
+the bug guns, system tracing. See Tracing.txt in this directory.</P
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -1184,7 +1380,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="unix-permissions.html"
+HREF="msdfs.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -1202,7 +1398,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="printingdebug.html"
+HREF="securitylevels.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -1212,17 +1408,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->UNIX Permission Bits and Windows NT Access Control Lists</TD
+>Hosting a Microsoft Distributed File System tree on Samba</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p1346.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Debugging Printing Problems</TD
+>Security levels</TD
 ></TR
 ></TABLE
 ></DIV

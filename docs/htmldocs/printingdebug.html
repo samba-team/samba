@@ -9,8 +9,11 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="p1342.html"><LINK
 REL="PREVIOUS"
-TITLE="Printing Support in Samba 2.2.x"
+TITLE="Printing Support"
 HREF="printing.html"><LINK
 REL="NEXT"
 TITLE="Security levels"
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTINGDEBUG"
 ></A
->Chapter 7. Debugging Printing Problems</H1
+>Chapter 15. Debugging Printing Problems</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN986"
+NAME="AEN2081"
 ></A
->7.1. Introduction</H1
+>15.1. Introduction</H1
 ><P
 >This is a short description of how to debug printing problems with
 Samba. This describes how to debug problems with printing from a SMB
@@ -141,7 +144,7 @@ and it should be periodically cleaned out.  Samba used the lpq
 command to determine the "job number" assigned to your print job
 by the spooler.</P
 ><P
->The %&gt;letter&lt; are "macros" that get dynamically replaced with appropriate
+>The %&#62;letter&#60; are "macros" that get dynamically replaced with appropriate
 values when they are used. The %s gets replaced with the name of the spool
 file that Samba creates and the %p gets replaced with the name of the
 printer. The %j gets replaced with the "job number" which comes from
@@ -152,9 +155,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1002"
+NAME="AEN2097"
 ></A
->7.2. Debugging printer problems</H1
+>15.2. Debugging printer problems</H1
 ><P
 >One way to debug printing problems is to start by replacing these
 command with shell scripts that record the arguments and the contents
@@ -209,9 +212,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1011"
+NAME="AEN2106"
 ></A
->7.3. What printers do I have?</H1
+>15.3. What printers do I have?</H1
 ><P
 >You can use the 'testprns' program to check to see if the printer
 name you are using is recognized by Samba.  For example,  you can
@@ -238,9 +241,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1019"
+NAME="AEN2114"
 ></A
->7.4. Setting up printcap and print servers</H1
+>15.4. Setting up printcap and print servers</H1
 ><P
 >You may need to set up some printcaps for your Samba system to use.
 It is strongly recommended that you use the facilities provided by
@@ -322,9 +325,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1047"
+NAME="AEN2142"
 ></A
->7.5. Job sent, no output</H1
+>15.5. Job sent, no output</H1
 ><P
 >This is the most frustrating part of printing.  You may have sent the
 job,  verified that the job was forwarded,  set up a wrapper around
@@ -367,9 +370,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1058"
+NAME="AEN2153"
 ></A
->7.6. Job sent, strange output</H1
+>15.6. Job sent, strange output</H1
 ><P
 >Once you have the job printing, you can then start worrying about
 making it print nicely.</P
@@ -413,9 +416,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1070"
+NAME="AEN2165"
 ></A
->7.7. Raw PostScript printed</H1
+>15.7. Raw PostScript printed</H1
 ><P
 >This is a problem that is usually caused by either the print spooling
 system putting information at the start of the print job that makes
@@ -428,9 +431,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1073"
+NAME="AEN2168"
 ></A
->7.8. Advanced Printing</H1
+>15.8. Advanced Printing</H1
 ><P
 >Note that you can do some pretty magic things by using your
 imagination with the "print command" option and some shell scripts.
@@ -444,9 +447,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1076"
+NAME="AEN2171"
 ></A
->7.9. Real debugging</H1
+>15.9. Real debugging</H1
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
 the bug guns, system tracing. See Tracing.txt in this directory.</P
@@ -496,12 +499,16 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Printing Support in Samba 2.2.x</TD
+>Printing Support</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p1342.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"

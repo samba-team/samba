@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="General installation"
+HREF="p18.html"><LINK
 REL="PREVIOUS"
-TITLE="Using samba 3.0 with ActiveDirectory support"
-HREF="ads.html"><LINK
+TITLE="How to Install and Test SAMBA"
+HREF="install.html"><LINK
 REL="NEXT"
-TITLE="Quick Cross Subnet Browsing / Cross Workgroup Browsing guide"
-HREF="browsing-quick.html"></HEAD
+TITLE="Oplocks"
+HREF="oplocks.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="ads.html"
+HREF="install.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="browsing-quick.html"
+HREF="oplocks.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 15. Improved browsing in samba</H1
+>Chapter 2. Improved browsing in samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2517"
+NAME="AEN228"
 ></A
->15.1. Overview of browsing</H1
+>2.1. Overview of browsing</H1
 ><P
 >SMB networking provides a mechanism by which clients can access a list
 of machines in a network, a so-called "browse list".  This list
@@ -101,9 +104,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2521"
+NAME="AEN232"
 ></A
->15.2. Browsing support in samba</H1
+>2.2. Browsing support in samba</H1
 ><P
 >Samba now fully supports browsing.  The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see smb.conf(5)).</P
@@ -146,9 +149,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2530"
+NAME="AEN241"
 ></A
->15.3. Problem resolution</H1
+>2.3. Problem resolution</H1
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
 you track down the problem.  Try a debug level of 2 or 3 for finding
@@ -180,9 +183,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2537"
+NAME="AEN248"
 ></A
->15.4. Browsing across subnets</H1
+>2.4. Browsing across subnets</H1
 ><P
 >With the release of Samba 1.9.17(alpha1 and above) Samba has been
 updated to enable it to support the replication of browse lists
@@ -211,9 +214,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2542"
+NAME="AEN253"
 ></A
->15.4.1. How does cross subnet browsing work ?</H2
+>2.4.1. How does cross subnet browsing work ?</H2
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
 moving parts.  It has taken Microsoft several years to get the code
@@ -423,9 +426,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2577"
+NAME="AEN288"
 ></A
->15.5. Setting up a WINS server</H1
+>2.5. Setting up a WINS server</H1
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
 as a WINS server.  To set a Samba machine to be a WINS server you must
@@ -477,7 +480,7 @@ all smb.conf files :</P
 ><P
 ><B
 CLASS="COMMAND"
->		wins server = &gt;name or IP address&lt;</B
+>wins server = &gt;name or IP address&lt;</B
 ></P
 ><P
 >where &gt;name or IP address&lt; is either the DNS name of the WINS server
@@ -506,9 +509,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2596"
+NAME="AEN307"
 ></A
->15.6. Setting up Browsing in a WORKGROUP</H1
+>2.6. Setting up Browsing in a WORKGROUP</H1
 ><P
 >To set up cross subnet browsing on a network containing machines
 in up to be in a WORKGROUP, not an NT Domain you need to set up one
@@ -529,7 +532,7 @@ set the following option in the [global] section of the smb.conf file :</P
 ><P
 ><B
 CLASS="COMMAND"
->		domain master = yes</B
+>domain master = yes</B
 ></P
 ><P
 >The domain master browser should also preferrably be the local master
@@ -590,9 +593,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2614"
+NAME="AEN325"
 ></A
->15.7. Setting up Browsing in a DOMAIN</H1
+>2.7. Setting up Browsing in a DOMAIN</H1
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
 you must not set up a Samba server as a domain master browser.
@@ -641,9 +644,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2624"
+NAME="AEN335"
 ></A
->15.8. Forcing samba to be the master</H1
+>2.8. Forcing samba to be the master</H1
 ><P
 >Who becomes the "master browser" is determined by an election process
 using broadcasts.  Each election packet contains a number of parameters
@@ -689,9 +692,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2633"
+NAME="AEN344"
 ></A
->15.9. Making samba the domain master</H1
+>2.9. Making samba the domain master</H1
 ><P
 >The domain master is responsible for collating the browse lists of
 multiple subnets so that browsing can occur between subnets.  You can
@@ -762,9 +765,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2651"
+NAME="AEN362"
 ></A
->15.10. Note about broadcast addresses</H1
+>2.10. Note about broadcast addresses</H1
 ><P
 >If your network uses a "0" based broadcast address (for example if it
 ends in a 0) then you will strike problems.  Windows for Workgroups
@@ -776,9 +779,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2654"
+NAME="AEN365"
 ></A
->15.11. Multiple interfaces</H1
+>2.11. Multiple interfaces</H1
 ><P
 >Samba now supports machines with multiple network interfaces.  If you
 have multiple interfaces then you will need to use the "interfaces"
@@ -801,7 +804,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="ads.html"
+HREF="install.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -819,7 +822,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="browsing-quick.html"
+HREF="oplocks.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -829,17 +832,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Using samba 3.0 with ActiveDirectory support</TD
+>How to Install and Test SAMBA</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p18.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</TD
+>Oplocks</TD
 ></TR
 ></TABLE
 ></DIV

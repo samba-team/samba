@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="General installation"
+HREF="p18.html"><LINK
 REL="PREVIOUS"
-TITLE="SAMBA Project Documentation"
-HREF="samba-howto-collection.html"><LINK
+TITLE="General installation"
+HREF="p18.html"><LINK
 REL="NEXT"
-TITLE="Integrating MS Windows networks with Samba"
-HREF="integrate-ms-networks.html"></HEAD
+TITLE="Improved browsing in samba"
+HREF="improved-browsing.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="samba-howto-collection.html"
+HREF="p18.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="improved-browsing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -77,9 +80,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN20"
+NAME="AEN25"
 ></A
->1.1. Step 0: Read the man pages</H1
+>1.1. Read the man pages</H1
 ><P
 >The man pages distributed with SAMBA contain 
 	lots of useful info that will help to get you started. 
@@ -92,10 +95,20 @@ CLASS="PROMPT"
 ><TT
 CLASS="USERINPUT"
 ><B
+>man smbd.8</B
+></TT
+>
+	or 
+	<TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
 >nroff -man smbd.8 | more
 	</B
 ></TT
-></P
+> on older unixes.</P
 ><P
 >Other sources of information are pointed to 
 	by the Samba web site,<A
@@ -109,9 +122,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN28"
+NAME="AEN35"
 ></A
->1.2. Step 1: Building the Binaries</H1
+>1.2. Building the Binaries</H1
 ><P
 >To do this, first run the program <B
 CLASS="COMMAND"
@@ -208,9 +221,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN56"
+NAME="AEN63"
 ></A
->1.3. Step 2: The all important step</H1
+>1.3. The all important step</H1
 ><P
 >At this stage you must fetch yourself a 
 	coffee or other drink you find stimulating. Getting the rest 
@@ -225,9 +238,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN60"
+NAME="AEN67"
 ></A
->1.4. Step 3: Create the smb configuration file.</H1
+>1.4. Create the smb configuration file.</H1
 ><P
 >There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -281,9 +294,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN74"
+NAME="AEN81"
 ></A
->1.5. Step 4: Test your config file with 
+>1.5. Test your config file with 
 	<B
 CLASS="COMMAND"
 >testparm</B
@@ -299,15 +312,21 @@ CLASS="FILENAME"
 ><P
 >Make sure it runs OK and that the services look 
 	reasonable before proceeding. </P
+><P
+>Always run testparm again when you change 
+	<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>!</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN80"
+NAME="AEN89"
 ></A
->1.6. Step 5: Starting the smbd and nmbd</H1
+>1.6. Starting the smbd and nmbd</H1
 ><P
 >You must choose to start smbd and nmbd either
 	as daemons or from <B
@@ -345,9 +364,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN90"
+NAME="AEN99"
 ></A
->1.6.1. Step 5a: Starting from inetd.conf</H2
+>1.6.1. Starting from inetd.conf</H2
 ><P
 >NOTE; The following will be different if 
 		you use NIS or NIS+ to distributed services maps.</P
@@ -449,9 +468,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN119"
+NAME="AEN128"
 ></A
->1.6.2. Step 5b. Alternative: starting it as a daemon</H2
+>1.6.2. Alternative: starting it as a daemon</H2
 ><P
 >To start the server as a daemon you should create 
 		a script something like this one, perhaps calling 
@@ -506,9 +525,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN135"
+NAME="AEN144"
 ></A
->1.7. Step 6: Try listing the shares available on your 
+>1.7. Try listing the shares available on your 
 	server</H1
 ><P
 ><TT
@@ -547,9 +566,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN144"
+NAME="AEN153"
 ></A
->1.8. Step 7: Try connecting with the unix client</H1
+>1.8. Try connecting with the unix client</H1
 ><P
 ><TT
 CLASS="PROMPT"
@@ -610,9 +629,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN160"
+NAME="AEN169"
 ></A
->1.9. Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+>1.9. Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</H1
 ><P
 >Try mounting disks. eg:</P
@@ -659,7 +678,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN174"
+NAME="AEN183"
 ></A
 >1.10. What If Things Don't Work?</H1
 ><P
@@ -682,15 +701,16 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN179"
+NAME="AEN188"
 ></A
 >1.10.1. Diagnosing Problems</H2
 ><P
->If you have installation problems then go to 
-		<TT
-CLASS="FILENAME"
->DIAGNOSIS.txt</TT
-> to try to find the 
+>If you have installation problems then go to the
+		<A
+HREF="Diagnosis.html"
+TARGET="_top"
+>Diagnosis</A
+> chapter to try to find the 
 		problem.</P
 ></DIV
 ><DIV
@@ -698,7 +718,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN183"
+NAME="AEN192"
 ></A
 >1.10.2. Scope IDs</H2
 ><P
@@ -714,7 +734,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN186"
+NAME="AEN195"
 ></A
 >1.10.3. Choosing the Protocol Level</H2
 ><P
@@ -755,7 +775,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN195"
+NAME="AEN204"
 ></A
 >1.10.4. Printing from UNIX to a Client PC</H2
 ><P
@@ -776,7 +796,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN200"
+NAME="AEN209"
 ></A
 >1.10.5. Locking</H2
 ><P
@@ -836,7 +856,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN209"
+NAME="AEN218"
 ></A
 >1.10.6. Mapping Usernames</H2
 ><P
@@ -862,7 +882,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="samba-howto-collection.html"
+HREF="p18.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -880,7 +900,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="improved-browsing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -890,17 +910,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->SAMBA Project Documentation</TD
+>General installation</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p18.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Integrating MS Windows networks with Samba</TD
+>Improved browsing in samba</TD
 ></TR
 ></TABLE
 ></DIV
