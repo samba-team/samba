@@ -37,12 +37,26 @@ foreach { group } $domain_groups {
 # Lookup sids for all names
 
 foreach { user } $domain_users {
-    set test-desc "get sid for user $user"
-    set sid [util_start "bin/wbinfo" "-n \"$user\""]
+    set test_desc "get sid for user $user"
+    set output [util_start "bin/wbinfo" "-n \"$user\""]
+
+    # Split output into name and name_type
+
+    set list [split $output " "]
+    set sid_type [lindex $list [expr [llength $list] - 1]]
+    set sid [join [lrange $list 0 [expr [llength $list] - 2]] " "]
 
     if { ![regexp "S-" $sid] } {
 	fail $test_desc
-	puts $sid
+	puts $output
+    } else {
+	pass $test_desc
+    }
+
+    set test_desc "sid type for user $user"
+    if { $sid_type != 1 } {
+	fail $test_desc
+	puts $output
     } else {
 	pass $test_desc
     }
@@ -52,11 +66,25 @@ foreach { user } $domain_users {
 
 foreach { group } $domain_groups {
     set test_desc "get sid for group $group"
-    set sid [util_start "bin/wbinfo" "-n \"$group\""]
+    set output [util_start "bin/wbinfo" "-n \"$group\""]
+
+    # Split output into sid and sid type
+
+    set list [split $output " "]
+    set sid_type [lindex $list [expr [llength $list] - 1]]
+    set sid [join [lrange $list 0 [expr [llength $list] - 2]] " "]
 
     if { ![regexp "S-" $sid] } {
 	fail $test_desc
 	puts $sid
+    } else {
+	pass $test_desc
+    }
+
+    set test_desc "sid type for group group"
+    if { $sid_type != 2 } {
+	fail $test_desc
+	puts $output
     } else {
 	pass $test_desc
     }
@@ -136,10 +164,15 @@ set user_list [split $output "\n"]
 foreach { user_entry } $user_list {
     if { [regexp $domain $user_entry] } {
 	set field_list [split $user_entry ":"]
+	set name_output [util_start "bin/wbinfo" \
+		"-n \"[lindex $field_list 0]\""]
+	set list [split $name_output " "]
+	set name_type [lindex $list [expr [llength $list] - 1]]
+	set name [join [lrange $list 0 [expr [llength $list] - 2]] " "]
 	set username_uid_sid [lappend username_uid_sid [list \
 		[lindex $field_list 0] \
 		[lindex $field_list 2] \
-		[util_start "bin/wbinfo" "-n \"[lindex $field_list 0]\""]]]
+		$name]]
     }
 }
 
