@@ -770,7 +770,7 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
+static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
 				    uint32 *p_num_entries, uint32 max_entries)
 {
 	fstring sid_str;
@@ -789,7 +789,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 		
 		enum_group_mapping(SID_NAME_WKN_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
 	
-		*d_grp=(DOMAIN_GRP *)malloc(num_entries*sizeof(DOMAIN_GRP));
+		*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
 		if (*d_grp==NULL)
 			return NT_STATUS_NO_MEMORY;
 		
@@ -862,7 +862,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 				continue;
 			}
 
-			*d_grp=Realloc(*d_grp, (num_entries+1)*sizeof(DOMAIN_GRP));
+			*d_grp=talloc_realloc(ctx,*d_grp, (num_entries+1)*sizeof(DOMAIN_GRP));
 			if (*d_grp==NULL) {
 				grent_free(glist);
 				return NT_STATUS_NO_MEMORY;
@@ -885,7 +885,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_domain_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
+static BOOL get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
 				     uint32 *p_num_entries, uint32 max_entries)
 {
 	GROUP_MAP *map=NULL;
@@ -896,7 +896,7 @@ static BOOL get_group_domain_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 st
 
 	enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
 
-	*d_grp=(DOMAIN_GRP *)malloc(num_entries*sizeof(DOMAIN_GRP));
+	*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
 	if (*d_grp==NULL)
 		return False;
 	
@@ -934,7 +934,7 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	/* the domain group array is being allocated in the function below */
-	get_group_domain_entries(&grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+	get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
@@ -967,7 +967,7 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 	sid_to_string(sid_str, &sid);
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
-	if (!get_group_alias_entries(&grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
+	if (!get_group_alias_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
 		return NT_STATUS_ACCESS_DENIED;
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
@@ -1042,7 +1042,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x3:
 	case 0x5:
-		ret = get_group_domain_entries(&grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+		ret = get_group_domain_entries(p->mem_ctx, &grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
 		if (!ret)
 			return NT_STATUS_ACCESS_DENIED;
 		break;
@@ -1066,30 +1066,36 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	data_size = q_u->max_size;
 	orig_num_entries = num_entries;
 
-	ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR));
+	if (!(ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
+		return NT_STATUS_NO_MEMORY;
 
 	/* Now create reply structure */
 	switch (q_u->switch_level) {
 	case 0x1:
-		ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1));
-		init_sam_dispinfo_1(ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_1))))
+			return NT_STATUS_NO_MEMORY;
+		init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
 		break;
 	case 0x2:
-		ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2));
-		init_sam_dispinfo_2(ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_2))))
+			return NT_STATUS_NO_MEMORY;
+		init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
 		break;
 	case 0x3:
-		ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3));
-		init_sam_dispinfo_3(ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_3))))
+			return NT_STATUS_NO_MEMORY;
+		init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
 		safe_free(grps);
 		break;
 	case 0x4:
-		ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4));
-		init_sam_dispinfo_4(ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_4))))
+			return NT_STATUS_NO_MEMORY;
+		init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
 		break;
 	case 0x5:
-		ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5));
-		init_sam_dispinfo_5(ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_5))))
+			return NT_STATUS_NO_MEMORY;
+		init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
 		safe_free(grps);
 		break;
 	default:
