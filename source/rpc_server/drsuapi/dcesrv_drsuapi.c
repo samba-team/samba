@@ -42,6 +42,8 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 {
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *handle;
+	struct drsuapi_DsBindInfo *bind_info;
+	const uint8_t bind_info_data[] = DRSUAPI_DS_BIND_INFO_RESPONSE_W2K3;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
@@ -64,6 +66,14 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	handle->data = b_state;
 	handle->destroy = drsuapi_handle_destroy;
 
+	bind_info = talloc_p(mem_ctx, struct drsuapi_DsBindInfo);
+	WERR_TALLOC_CHECK(bind_info);
+	
+	bind_info->length = sizeof(bind_info_data);
+	bind_info->data = talloc_memdup(mem_ctx, bind_info_data, sizeof(bind_info_data));
+	WERR_TALLOC_CHECK(bind_info->data);
+
+	r->out.bind_info = bind_info;
 	*r->out.bind_handle = handle->wire_handle;
 
 	return WERR_OK;
@@ -94,12 +104,15 @@ static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 
 /* 
-  DRSUAPI_REPLICA_SYNC 
+  drsuapi_DsReplicaSync 
 */
-static WERROR DRSUAPI_REPLICA_SYNC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_REPLICA_SYNC *r)
+static WERROR drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsReplicaSync *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* TODO: implment this call correct!
+	 *       for now we just say yes
+	 */
+	return WERR_OK;
 }
 
 

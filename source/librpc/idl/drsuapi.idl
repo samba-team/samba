@@ -20,6 +20,18 @@ interface drsuapi
 	/* this is a magic guid you need to pass to DsBind to make drsuapi_DsWriteAccountSpn() work */
 	const string DRSUAPI_DS_BIND_GUID = "e24d201a-4fd6-11d1-a3da-0000f875ae0d";
 
+	/* this are the bind info blobs returned (seemed to be const):
+		w2k3 	7ffbff1f81a6ff5d80139441a372e9b779d70268f801000000000000
+		w2k  	7ffb1f00cb7fb9102391c143bda81fc90e0ff452f4000000
+	*/
+	const uint8 DRSUAPI_DS_BIND_INFO_RESPONSE_W2K3[] = {	0x7f,0xfb,0xff,0x1f,0x81,0xa6,0xff,0x5d,
+							    	0x80,0x13,0x94,0x41,0xa3,0x72,0xe9,0xb7,
+								0x79,0xd7,0x02,0x68,0xf8,0x01,0x00,0x00,
+								0x00,0x00,0x00,0x00};
+	const uint8 DRSUAPI_DS_BIND_INFO_RESPONSE_W2K[] = {	0x7f,0xfb,0x1f,0x00,0xcb,0x7f,0xb9,0x10,
+								0x23,0x91,0xc1,0x43,0xbd,0xa8,0x1f,0xc9,
+								0x0e,0x0f,0xf4,0x52,0xf4,0x00,0x00,0x00};
+
 	WERROR drsuapi_DsBind(
 		[in]	    GUID *bind_guid,
 		[in,out]    drsuapi_DsBindInfo *bind_info,
@@ -33,8 +45,31 @@ interface drsuapi
 		);
 
 	/*****************/
-        /* Function 0x02 */
-	WERROR DRSUAPI_REPLICA_SYNC();
+	/* Function 0x02 */
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		GUID guid1;
+		[size_is(28)] uint8 unknown3[28];
+		[flag(STR_LEN4|STR_CHARLEN)] string nc_dn;
+	} drsuapi_DsReplicaSyncRequest1Info;
+
+	typedef struct {
+		drsuapi_DsReplicaSyncRequest1Info *info;
+		GUID guid1;
+		asclstr string1;
+		uint32 unknown1;
+	} drsuapi_DsReplicaSyncRequest1;
+
+	typedef union {
+		[case(1)] drsuapi_DsReplicaSyncRequest1 req1;
+	} drsuapi_DsReplicaSyncRequest;
+
+	WERROR drsuapi_DsReplicaSync(
+		[in,ref] policy_handle *bind_handle,
+		[in] uint32 level,
+		[in,switch_is(level)] drsuapi_DsReplicaSyncRequest req
+		);
 
 	/*****************/
         /* Function 0x03 */
