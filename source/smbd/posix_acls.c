@@ -25,8 +25,8 @@
 
 typedef struct canon_ace {
 	struct canon_ace *next, *prev;
-	acl_tag_t type;
-	acl_perm_t perms;
+	SMB_ACL_TAG_T type;
+	SMB_ACL_PERM_T perms;
 	DOM_SID sid;
 } canon_ace;
 
@@ -51,9 +51,9 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
-	if((ace->perms & (ACL_READ|ACL_WRITE|ACL_EXECUTE)) == (ACL_READ|ACL_WRITE|ACL_EXECUTE)) {
+	if((ace->perms & (SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) == (SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) {
 		nt_mask = UNIX_ACCESS_RWX;
-	} else if((ace->perms & (ACL_READ|ACL_WRITE|ACL_EXECUTE)) == 0) {
+	} else if((ace->perms & (SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) == 0) {
 		/*
 		 * Here we differentiate between the owner and any other user.
 		 */
@@ -65,9 +65,9 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 			*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
 		}
 	} else {
-		nt_mask |= (perm & ACL_READ) ? UNIX_ACCESS_R : 0;
-		nt_mask |= (perm & ACL_WRITE) ? UNIX_ACCESS_W : 0;
-		nt_mask |= (perm & ACL_EXECUTE) ? UNIX_ACCESS_X : 0;
+		nt_mask |= (perm & SMB_ACL_READ) ? UNIX_ACCESS_R : 0;
+		nt_mask |= (perm & SMB_ACL_WRITE) ? UNIX_ACCESS_W : 0;
+		nt_mask |= (perm & SMB_ACL_EXECUTE) ? UNIX_ACCESS_X : 0;
 	}
 	init_sec_access(&sa,nt_mask);
 	return sa;
@@ -309,13 +309,13 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
  Map generic UNIX permissions to POSIX ACL perms.
 ****************************************************************************/
 
-static acl_perm_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
+static SMB_ACL_PERM_T unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
 {
 	acl_perm_t ret = 0;
 
-	ret |= (mode & r_mask) ? ACL_READ : 0;
-	ret |= (mode & w_mask) ? ACL_WRITE : 0;
-	ret |= (mode & x_mask) ? ACL_EXECUTE : 0;
+	ret |= (mode & r_mask) ? SMB_ACL_READ : 0;
+	ret |= (mode & w_mask) ? SMB_ACL_WRITE : 0;
+	ret |= (mode & x_mask) ? SMB_ACL_EXECUTE : 0;
 
 	return ret;
 }
@@ -382,13 +382,13 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	acl_perm_t perms;
 	DOM_SID sid;
 
-	owner_ace->type = ACL_USER_OBJ;
+	owner_ace->type = SMB_ACL_USER_OBJ;
 	owner_ace->sid = *powner;
 
-	group_ace->type = ACL_GROUP_OBJ;
+	group_ace->type = SMB_ACL_GROUP_OBJ;
 	group_ace->sid = *pgroup;
 
-	other_ace->type = ACL_OTHER_OBJ;
+	other_ace->type = SMB_ACL_OTHER_OBJ;
 	other_ace->sid = global_sid_World;
 
 	if (!fsp->is_directory) {
@@ -426,21 +426,21 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 {
 	extern DOM_SID global_sid_World;
-	acl_permset_t acl_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
+	SMB_ACL_PERMSET_T acl_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
 	canon_ace *list_head = NULL;
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
-	int entry_id = ACL_FIRST_ENTRY;
-	acl_entry_t entry;
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
 
-	while ( acl_get_entry(posix_acl, entry_id, &entry) == 1) {
-		acl_tag_t tagtype;
-		acl_permset_t permset;
+	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
 		DOM_SID sid;
 
 		/* get_next... */
-		if (entry_id == ACL_FIRST_ENTRY)
-			entry_id = ACL_NEXT_ENTRY;
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
 
 		/* Is this a MASK entry ? */
 		if (acl_get_tag_type(entry, &tagtype) == -1)
@@ -451,13 +451,13 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 
 		/* Decide which SID to use based on the ACL type. */
 		switch(tagtype) {
-			ACL_USER_OBJ:
+			SMB_ACL_USER_OBJ:
 				/* Get the SID from the owner. */
 				uid_to_sid( &sid, psbuf->st_uid );
 				break;
-			ACL_USER:
+			SMB_ACL_USER:
 				{
-					uid_t *puid = (uid_t *)acl_get_qualifier(entry);
+					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
 					if (puid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
 						continue;
@@ -465,13 +465,13 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 					uid_to_sid( &sid, *puid);
 					break;
 				}
-			ACL_GROUP_OBJ:
+			SMB_ACL_GROUP_OBJ:
 				/* Get the SID from the owning group. */
 				gid_to_sid( &sid, psbuf->st_gid );
 				break;
-			ACL_GROUP:
+			SMB_ACL_GROUP:
 				{
-					gid_t *pgid = (gid_t *)acl_get_qualifier(entry);
+					gid_t *pgid = (gid_t *)sys_acl_get_qualifier(entry);
 					if (pgid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get gid.\n"));
 						continue;
@@ -479,10 +479,10 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 					gid_to_sid( &sid, *pgid);
 					break;
 				}
-			ACL_MASK:
+			SMB_ACL_MASK:
 				acl_mask = permset;
 				continue; /* Don't count the mask as an entry. */
-			ACL_OTHER_OBJ:
+			SMB_ACL_OTHER_OBJ:
 				/* Use the Everyone SID */
 				sid = global_sid_World;
 				break;
@@ -521,13 +521,13 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 
 		if (ace->perms == 0) {
 			switch (ace->type) {
-				ACL_USER_OBJ:
-				ACL_GROUP_OBJ:
-				ACL_OTHER_OBJ:
+				SMB_ACL_USER_OBJ:
+				SMB_ACL_GROUP_OBJ:
+				SMB_ACL_OTHER_OBJ:
 					DLIST_REMOVE(list_head, ace);
 					break;
-				ACL_USER:
-				ACL_GROUP:
+				SMB_ACL_USER:
+				SMB_ACL_GROUP:
 					DLIST_PROMOTE(list_head, ace);
 					break;
 			}
@@ -562,8 +562,8 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	size_t num_acls = 0;
 	size_t num_dir_acls = 0;
 	size_t num_aces = 0;
-	acl_t posix_acl = NULL;
-	acl_t dir_acl = NULL;
+	SMB_ACL_T posix_acl = NULL;
+	SMB_ACL_T dir_acl = NULL;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
  
@@ -579,14 +579,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 * Get the ACL from the path.
 		 */
 
-		posix_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_ACCESS);
+		posix_acl = sys_acl_get_file( dos_to_unix(fsp->fsp_name, False), SMB_ACL_TYPE_ACCESS);
 
 		/*
 		 * If it's a directory get the default POSIX ACL.
 		 */
 
 		if(fsp->is_directory)
-			dir_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_DEFAULT);
+			dir_acl = sys_acl_get_file( dos_to_unix(fsp->fsp_name, False), SMB_ACL_TYPE_DEFAULT);
 
 	} else {
 
@@ -597,7 +597,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		/*
 		 * Get the ACL from the fd.
 		 */
-		posix_acl = acl_get_fd(fsp->fd);
+		posix_acl = sys_acl_get_fd(fsp->fd);
 	}
 
 	/*
@@ -672,9 +672,9 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   done:
 
 	if (posix_acl)	
-		acl_free(posix_acl);
+		sys_acl_free(posix_acl);
 	if (directory_acl)
-		acl_free(directory_acl);
+		sys_acl_free(directory_acl);
 	if (file_ace)
 		free_canon_ace_list(file_ace);
 	if (dir_ace)
