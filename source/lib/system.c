@@ -119,6 +119,21 @@ ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 }
 
 /*******************************************************************
+A sendto wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+{
+	ssize_t ret;
+
+	do {
+		errno = 0;
+		ret = sendto(s, msg, len, flags, to, tolen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A recvfrom wrapper that will deal with EINTR.
 ********************************************************************/
 
