@@ -162,28 +162,6 @@ static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_key *
 	return NULL; 
 }
 
-static struct registry_key *cmd_hive(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
-{
-	if (!cur->hive->reg_ctx) {
-		fprintf(stderr, "Only one hive loaded\n");
-		return cur;
-	}
-
-	if (argc == 1) {
-		printf("%s\n", cur->hive->root->name);
-	} else {
-		struct registry_key *newroot;
-		WERROR error = reg_get_hive_by_name(cur->hive->reg_ctx, argv[1], &newroot);
-		if (W_ERROR_IS_OK(error)) {
-			return newroot;
-		} else {
-			fprintf(stderr, "Can't switch to hive %s: %s\n", cur->hive->root->name, win_errstr(error));
-		}
-	}
-
-	return NULL;
-}
-
 static struct registry_key *cmd_exit(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
 {
 	exit(0);
@@ -199,7 +177,6 @@ struct {
 	struct registry_key *(*handle)(TALLOC_CTX *mem_ctx, struct registry_key *, int argc, char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
-	{"ch", "hive", "Change current hive", cmd_hive },
 	{"info", "i", "Show detailed information of a key", cmd_info },
 	{"list", "ls", "List values/keys in current key", cmd_ls },
 	{"mkkey", "mkdir", "Make new key", cmd_mkkey },
@@ -407,7 +384,7 @@ static char **reg_completion(const char *text, int start, int end)
 
 	if (h) {
 		/*FIXME: What if HKEY_CLASSES_ROOT is not present ? */
-		reg_get_hive(h, HKEY_CLASSES_ROOT, &curkey);
+		reg_get_predefined_key(h, HKEY_CLASSES_ROOT, &curkey);
 	}
 	
 	poptFreeContext(pc);

@@ -93,7 +93,7 @@ struct {
 
 static WERROR rpc_query_key(struct registry_key *k);
 
-static WERROR rpc_get_hive (struct registry_context *ctx, uint32 hkey_type, struct registry_key **k)
+static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32 hkey_type, struct registry_key **k)
 {
 	int n;
 	struct registry_hive *h;
@@ -113,7 +113,6 @@ static WERROR rpc_get_hive (struct registry_context *ctx, uint32 hkey_type, stru
 	h->functions = &reg_backend_rpc;
 	h->location = NULL;
 	h->backend_data = ctx->backend_data;
-	h->reg_ctx = ctx;
 	
 	(*k) = h->root = talloc_p(h, struct registry_key);
 	(*k)->hive = h;
@@ -380,7 +379,7 @@ WERROR reg_open_remote (struct registry_context **ctx, const char *user, const c
 		return ntstatus_to_werror(status);
 	}
 
-	(*ctx)->get_hive = rpc_get_hive;
+	(*ctx)->get_predefined_key = rpc_get_predefined_key;
 
 	talloc_set_destructor(*ctx, rpc_close);
 

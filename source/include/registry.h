@@ -150,14 +150,13 @@ struct registry_hive {
 	struct registry_key *root;
 	void *backend_data;
 	const char *location;
-	struct registry_context *reg_ctx;
 };
 
 /* Handle to a full registry
  * contains zero or more hives */
 struct registry_context {
     void *backend_data;
-	WERROR (*get_hive) (struct registry_context *, uint32 hkey, struct registry_key **);
+	WERROR (*get_predefined_key) (struct registry_context *, uint32 hkey, struct registry_key **);
 };
 
 struct reg_init_function_entry {
