@@ -68,7 +68,13 @@ make_pa_tgs_req(krb5_context context,
 	    krb5_auth_con_free(context, ac);
 	    return ret;
 	}
-	if(ticket.enc_part.etype == ETYPE_DES_CBC_CRC){
+	/*
+	 * If we get a ticket encrypted with DES-CBC-CRC, it's
+	 * probably an old DCE secd and then the usual heuristics of
+	 * using the best algorithm (in this case RSA-MD5 and
+	 * DES-CBC-MD5) will not work.
+	 */
+	if(ticket.enc_part.etype == ETYPE_DES_CBC_CRC) {
 	    krb5_auth_setcksumtype(context, ac, CKSUMTYPE_RSA_MD4);
 	    krb5_auth_setenctype(context, ac, ETYPE_DES_CBC_CRC);
 	}
