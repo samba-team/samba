@@ -55,7 +55,6 @@ void smbcli_session_close(struct smbcli_session *session)
 	session->reference_count--;
 	if (session->reference_count <= 0) {
 		smbcli_transport_close(session->transport);
-		talloc_free(session);
 	}
 }
 

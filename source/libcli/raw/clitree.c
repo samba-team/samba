@@ -55,7 +55,6 @@ void smbcli_tree_close(struct smbcli_tree *tree)
 	tree->reference_count--;
 	if (tree->reference_count <= 0) {
 		smbcli_session_close(tree->session);
-		talloc_free(tree);
 	}
 }
 
@@ -192,6 +191,8 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	if (!sock) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	talloc_set_name_const(sock, "smbcli_tree_full_connection");
 
 	/* open a TCP socket to the server */
 	if (!smbcli_sock_connect_byname(sock, dest_host, port)) {

@@ -104,6 +104,7 @@ void smbcli_sock_close(struct smbcli_socket *sock)
 	sock->reference_count--;
 	if (sock->reference_count <= 0) {
 		smbcli_sock_dead(sock);
+		talloc_free(sock);
 	}
 }
 
