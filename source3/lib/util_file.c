@@ -217,21 +217,24 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 		 */
 
 		linebuf_len = strlen(linebuf);
-		if (linebuf[linebuf_len - 1] != '\n')
+		if (linebuf_len > 0)
 		{
-			c = '\0';
-			while (!ferror(fp) && !feof(fp))
+			if (linebuf[linebuf_len - 1] != '\n')
 			{
-				c = fgetc(fp);
-				if (c == '\n')
+				c = '\0';
+				while (!ferror(fp) && !feof(fp))
 				{
-					break;
+					c = fgetc(fp);
+					if (c == '\n')
+					{
+						break;
+					}
 				}
 			}
-		}
-		else
-		{
-			linebuf[linebuf_len - 1] = '\0';
+			else
+			{
+				linebuf[linebuf_len - 1] = '\0';
+			}
 		}
 
 #ifdef DEBUG_PASSWORD
