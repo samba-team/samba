@@ -133,8 +133,8 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 	return status;
 }
 
-NTSTATUS socket_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-		     DATA_BLOB *blob, size_t wantlen, uint32_t flags)
+NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
+		     size_t wantlen, size_t *nread, uint32_t flags)
 {
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -149,11 +149,11 @@ NTSTATUS socket_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->recv(sock, mem_ctx, blob, wantlen, flags);
+	return sock->ops->recv(sock, buf, wantlen, nread, flags);
 }
 
-NTSTATUS socket_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-			const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+NTSTATUS socket_send(struct socket_context *sock, 
+		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -168,7 +168,7 @@ NTSTATUS socket_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->send(sock, mem_ctx, blob, sendlen, flags);
+	return sock->ops->send(sock, blob, sendlen, flags);
 }
 
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)

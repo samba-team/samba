@@ -64,17 +64,19 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 	ssize_t len, len2;
 	DATA_BLOB tmp_blob;
 	struct smbsrv_request *req;
+	char hdr[4];
+	size_t nread;
 
-	status = socket_recv(smb_conn->connection->socket, smb_conn, &tmp_blob, 4, SOCKET_FLAG_BLOCK|SOCKET_FLAG_PEEK);
+	status = socket_recv(smb_conn->connection->socket, hdr, 
+			     4, &nread, SOCKET_FLAG_BLOCK|SOCKET_FLAG_PEEK);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	if (tmp_blob.length != 4) {
+	if (nread != 4) {
 		return NULL;
 	}
 
-	len = smb_len(tmp_blob.data);
-	talloc_free(tmp_blob.data);
+	len = smb_len(hdr);
 
 	req = init_smb_request(smb_conn);
 
@@ -83,11 +85,18 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 
 	len2 = len + NBT_HDR_SIZE;
 
-	status = socket_recv(smb_conn->connection->socket, req, &tmp_blob, len2, SOCKET_FLAG_BLOCK);
+	tmp_blob = data_blob_talloc(req, NULL, len2);
+	if (tmp_blob.data == NULL) {
+		return NULL;
+	}
+
+	status = socket_recv(smb_conn->connection->socket, 
+			     tmp_blob.data, len2, 
+			     &nread, SOCKET_FLAG_BLOCK);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	if (tmp_blob.length != len2) {
+	if (nread != len2) {
 		return NULL;
 	}
 

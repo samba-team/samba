@@ -155,10 +155,17 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 	NTSTATUS status;
 	DATA_BLOB tmp_blob;
 	BOOL ret;
+	size_t nread;
 
-	status = socket_recv(sock, sock, &tmp_blob, 1024, 0);
+	tmp_blob = data_blob_talloc(sock, NULL, 1024);
+	if (tmp_blob.data == NULL) {
+		return False;
+	}
+
+	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
+		talloc_free(tmp_blob.data);
 		return False;
 	}
 
@@ -179,6 +186,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	int buf_length, sasl_length;
 	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
+	size_t nread;
 
 	if (!conn->gensec || !conn->session_info ||
 	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
@@ -192,12 +200,19 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 		return False;
 	}
 
-	status = socket_recv(sock, mem_ctx, &tmp_blob, 1024, 0);
+	tmp_blob = data_blob_talloc(mem_ctx, NULL, 1024);
+	if (tmp_blob.data == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);
 		return False;
 	}
+	tmp_blob.length = nread;
 
 	ret = ldapsrv_append_to_buf(&conn->sasl_in_buffer, tmp_blob.data, tmp_blob.length);
 	if (!ret) {
@@ -276,7 +291,7 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 	tmp_blob.data = buf->data;
 	tmp_blob.length = buf->length;
 
-	status = socket_send(sock, sock, &tmp_blob, &sendlen, 0);
+	status = socket_send(sock, &tmp_blob, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
 		return False;
@@ -360,7 +375,7 @@ nodata:
 	tmp_blob.data = conn->sasl_out_buffer.data;
 	tmp_blob.length = conn->sasl_out_buffer.length;
 
-	status = socket_send(sock, mem_ctx, &tmp_blob, &sendlen, 0);
+	status = socket_send(sock, &tmp_blob, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);

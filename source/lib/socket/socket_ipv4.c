@@ -166,17 +166,11 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-			      DATA_BLOB *blob, size_t wantlen, uint32_t flags)
+static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, void *buf, 
+			      size_t wantlen, size_t *nread, uint32_t flags)
 {
 	ssize_t gotlen;
-	void *buf;
 	int flgs = 0;
-
-	buf = talloc(mem_ctx, wantlen);
-	if (!buf) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* TODO: we need to map all flags here */
 	if (flags & SOCKET_FLAG_PEEK) {
@@ -187,42 +181,21 @@ static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		flgs |= MSG_WAITALL;
 	}
 
+	*nread = 0;
+
 	gotlen = recv(sock->fd, buf, wantlen, flgs);
 	if (gotlen == 0) {
-		talloc_free(buf);
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
-		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-		switch (errno) {
-			case EBADF:
-			case ENOTCONN:
-			case ENOTSOCK:
-			case EFAULT:
-			case EINVAL:
-				status = NT_STATUS_INVALID_PARAMETER;
-				break;
-			case EAGAIN:
-			case EINTR:
-				status = STATUS_MORE_ENTRIES;
-				break;
-			case ECONNREFUSED:
-				status = NT_STATUS_CONNECTION_REFUSED;
-				break;
-		}
-		talloc_free(buf);
-		return status;
+		return map_nt_error_from_unix(errno);
 	}
 
-	blob->length = gotlen;
-	blob->data = talloc_realloc(mem_ctx, buf, gotlen);
-	if (!blob->data) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	*nread = gotlen;
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
+static NTSTATUS ipv4_tcp_send(struct socket_context *sock, 
 			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	ssize_t len;

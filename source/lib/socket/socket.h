@@ -46,10 +46,10 @@ struct socket_ops {
 				struct socket_context **new_sock, uint32_t flags);
 
 	/* general ops */
-	NTSTATUS (*recv)(struct socket_context *sock, TALLOC_CTX *mem_ctx, 
-				DATA_BLOB *blob, size_t wantlen, uint32_t flags);
-	NTSTATUS (*send)(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-				const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+	NTSTATUS (*recv)(struct socket_context *sock, void *buf,
+			 size_t wantlen, size_t *nread, uint32_t flags);
+	NTSTATUS (*send)(struct socket_context *sock, 
+			 const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
 
 	void (*close)(struct socket_context *sock);
 

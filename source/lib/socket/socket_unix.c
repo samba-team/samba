@@ -155,17 +155,11 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS unixdom_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-			     DATA_BLOB *blob, size_t wantlen, uint32_t flags)
+static NTSTATUS unixdom_recv(struct socket_context *sock, void *buf, 
+			     size_t wantlen, size_t *nread, uint32_t flags)
 {
 	ssize_t gotlen;
-	void *buf;
 	int flgs = 0;
-
-	buf = talloc(mem_ctx, wantlen);
-	if (!buf) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* TODO: we need to map all flags here */
 	if (flags & SOCKET_FLAG_PEEK) {
@@ -176,26 +170,21 @@ static NTSTATUS unixdom_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		flgs |= MSG_WAITALL;
 	}
 
+	*nread = 0;
+
 	gotlen = recv(sock->fd, buf, wantlen, flgs);
 	if (gotlen == 0) {
-		talloc_free(buf);
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
-		NTSTATUS status = unixdom_error(errno);
-		talloc_free(buf);
-		return status;
+		return unixdom_error(errno);
 	}
 
-	blob->length = gotlen;
-	blob->data = talloc_realloc(mem_ctx, buf, gotlen);
-	if (!blob->data) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	*nread = gotlen;
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS unixdom_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
+static NTSTATUS unixdom_send(struct socket_context *sock,
 			     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	ssize_t len;
