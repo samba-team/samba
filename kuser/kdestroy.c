@@ -103,13 +103,18 @@ main (int argc, char **argv)
 			   cache, 
 			   &ccache);
 
-    if (ret)
-	errx (1, "krb5_cc_resolve(%s): %s", cache,
-	      krb5_get_err_text(context, ret));
+    if (ret == 0) {
+	ret = krb5_cc_destroy (context, ccache);
+	if (ret) {
+	    warnx ("krb5_cc_destroy: %s", krb5_get_err_text(context, ret));
+	    exit_val = 1;
+	}
+    } else {
+	warnx ("krb5_cc_resolve(%s): %s", cache,
+	       krb5_get_err_text(context, ret));
+	exit_val = 1;
+    }
 
-    ret = krb5_cc_destroy (context, ccache);
-    if (ret)
-	errx (1, "krb5_cc_destroy: %s", krb5_get_err_text(context, ret));
     krb5_free_context (context);
 
 #if KRB4
