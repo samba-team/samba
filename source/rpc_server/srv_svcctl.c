@@ -126,6 +126,42 @@ static void api_svc_open_service( uint16 vuid, prs_struct *data,
 }
 
 /*******************************************************************
+ svc_reply_start_service
+ ********************************************************************/
+static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
+				prs_struct *rdata)
+{
+	SVC_R_START_SERVICE r_s;
+
+	DEBUG(5,("svc_start_service: %d\n", __LINE__));
+
+	r_s.status = 0x0;
+
+	if (find_lsa_policy_by_hnd(&q_s->pol) == -1)
+	{
+		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* start the service here */
+
+	/* store the response in the SMB stream */
+	svc_io_r_start_service("", &r_s, rdata, 0);
+
+	DEBUG(5,("svc_start_service: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_svc_start_service
+ ********************************************************************/
+static void api_svc_start_service( uint16 vuid, prs_struct *data,
+                                    prs_struct *rdata )
+{
+	SVC_Q_START_SERVICE q_u;
+	svc_io_q_start_service("", &q_u, data, 0);
+	svc_reply_start_service(&q_u, rdata);
+}
+
+/*******************************************************************
  svc_reply_open_sc_man
  ********************************************************************/
 static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
@@ -338,6 +374,7 @@ static struct api_struct api_svc_cmds[] =
 	{ "SVC_OPEN_SERVICE"    , SVC_OPEN_SERVICE    , api_svc_open_service     },
 	{ "SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, api_svc_enum_svcs_status },
 	{ "SVC_QUERY_DISP_NAME" , SVC_QUERY_DISP_NAME , api_svc_query_disp_name  },
+	{ "SVC_START_SERVICE"   , SVC_START_SERVICE   , api_svc_start_service    },
 	{ NULL                  , 0                   , NULL                     }
 };
 
