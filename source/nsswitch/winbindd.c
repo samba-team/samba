@@ -25,7 +25,7 @@
 
 /* List of all connected clients */
 
-struct winbindd_cli_state *client_list;
+static struct winbindd_cli_state *client_list;
 static int num_clients;
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = False;

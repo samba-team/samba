@@ -30,7 +30,7 @@ extern BOOL AllowDebugChange;
  Add all currently available users to another db
  ********************************************************/
 
-int export_database (struct pdb_context *in, char *db){
+static int export_database (struct pdb_context *in, char *db){
 	struct pdb_context *context;
 	SAM_ACCOUNT *user = NULL;
 
