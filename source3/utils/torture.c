@@ -803,7 +803,7 @@ static void run_locktest4(int dummy)
 {
 	static struct cli_state cli1, cli2;
 	char *fname = "\\lockt4.lck";
-	int fnum1, fnum2;
+	int fnum1, fnum2, f;
 	BOOL ret;
 	char buf[1000];
 
@@ -939,6 +939,21 @@ static void run_locktest4(int dummy)
 	      (cli_read(&cli2, fnum2, buf, 190, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove the first lock first\n", ret?"does":"doesn't");
+
+	cli_close(&cli1, fnum1);
+	cli_close(&cli2, fnum2);
+	fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+	f = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+	ret = cli_lock(&cli1, fnum1, 0, 8, 0, READ_LOCK) &&
+	      cli_lock(&cli1, f, 0, 1, 0, READ_LOCK) &&
+	      cli_close(&cli1, fnum1) &&
+	      ((fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE)) != -1) &&
+	      cli_lock(&cli1, fnum1, 7, 1, 0, WRITE_LOCK);
+        cli_close(&cli1, f);
+	EXPECTED(ret, True);
+	printf("the server %s have the NT byte range lock bug\n", !ret?"does":"doesn't");
+	
+
 
  fail:
 	cli_close(&cli1, fnum1);
