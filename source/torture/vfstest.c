@@ -108,7 +108,24 @@ static char* next_command (char** cmdstr)
 	return command;
 }
 
+/* Load specified configuration file */
+static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+			int argc, char **argv)
+{
+	if (argc != 2) {
+		printf("Usage: %s <smb.conf>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
 
+	if (!lp_load(argv[1], False, True, False)) {
+		printf("Error loading \"%s\"\n", argv[1]);
+		return NT_STATUS_OK;
+	}
+
+	printf("\"%s\" successfully loaded\n", argv[1]);
+	return NT_STATUS_OK;
+}
+	
 /* Display help on commands */
 static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 			 int argc, char **argv)
@@ -206,10 +223,11 @@ static struct cmd_set vfstest_commands[] = {
 
 	{ "GENERAL OPTIONS" },
 
-	{ "help", 	cmd_help, 	"Get help on commands", "[command]" },
-	{ "?", 		cmd_help, 	"Get help on commands", "[command]" },
-	{ "debuglevel", cmd_debuglevel, "Set debug level", "level" },
-	{ "freemem",	cmd_freemem,	"Free currently allocated buffers", "freemem" },
+	{ "conf", 	cmd_conf, 	"Load smb configuration file", "conf <smb.conf>" },
+	{ "help", 	cmd_help, 	"Get help on commands", "" },
+	{ "?", 		cmd_help, 	"Get help on commands", "" },
+	{ "debuglevel", cmd_debuglevel, "Set debug level", "" },
+	{ "freemem",	cmd_freemem,	"Free currently allocated buffers", "" },
 	{ "exit", 	cmd_quit, 	"Exit program", "" },
 	{ "quit", 	cmd_quit, 	"Exit program", "" },
 
