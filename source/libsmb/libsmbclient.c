@@ -1610,8 +1610,10 @@ int smbc_opendir(const char *fname)
       }
 
       /* Check to see if <server><1D> translates, or <server><20> translates */
+      /* However, we check to see if <server> is an IP address first */
 
-      if (resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+      if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
+	  resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
 	pstring buserver;
 
 	smbc_file_table[slot]->dir_type = SMBC_SERVER;
