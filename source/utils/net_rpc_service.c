@@ -61,7 +61,7 @@ static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char
 		rpcstr_pull( servicename, services[i].servicename.buffer, sizeof(servicename), -1, STR_TERMINATE );
 		rpcstr_pull( displayname, services[i].displayname.buffer, sizeof(displayname), -1, STR_TERMINATE );
 		
-		d_printf("%s (%s)\n", displayname, servicename);
+		d_printf("%-20s    \"%s\"\n", servicename, displayname);
 	}
 
 done:	
