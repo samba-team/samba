@@ -268,8 +268,9 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->cli_max_recv_frag = 0;
 	(*p)->handles = NULL;
 	(*p)->partial_input = data_blob(NULL, 0);
-	(*p)->auth_state.crypto_state = NULL;
 	(*p)->auth_state.auth_info = NULL;
+	(*p)->auth_state.crypto_ctx.private_data = NULL;
+	(*p)->auth_state.crypto_ctx.ops = NULL;
 	(*p)->session_key = data_blob(NULL, 0);
 
 	return NT_STATUS_OK;
@@ -326,7 +327,11 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 	while (p->handles) {
 		dcesrv_handle_destroy(p, p->handles);
 	}
-	
+
+	if (p->auth_state.crypto_ctx.ops) {
+		p->auth_state.crypto_ctx.ops->end(&p->auth_state);
+	}
+
 	talloc_destroy(p->mem_ctx);
 }
 

@@ -45,6 +45,7 @@ struct dcesrv_ep_description {
 
 struct dcesrv_connection;
 struct dcesrv_call_state;
+struct dcesrv_auth;
 
 /* the dispatch functions for an interface take this form */
 typedef NTSTATUS (*dcesrv_dispatch_fn_t)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
@@ -93,10 +94,30 @@ struct dcesrv_handle {
 	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
 };
 
+struct dcesrv_cyrpto_ops {
+	const char *name;
+	uint8 auth_type;
+	NTSTATUS (*start)(struct dcesrv_auth *auth);
+	NTSTATUS (*update)(struct dcesrv_auth *auth, TALLOC_CTX *out_mem_ctx,
+				const DATA_BLOB in, DATA_BLOB *out);
+	NTSTATUS (*seal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*sign)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_sig)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx, 
+				const uint8_t *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*unseal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	void (*end)(struct dcesrv_auth *auth);
+};
+
 /* hold the authentication state information */
 struct dcesrv_auth {
-	void *crypto_state;
 	struct dcerpc_auth *auth_info;
+	struct {
+		void *private_data;
+		const struct dcesrv_cyrpto_ops *ops;
+	} crypto_ctx;
 };
 
 
