@@ -226,7 +226,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		if (info->basic_info.in.change_time) {
 			newstats.dos.change_time = info->basic_info.in.change_time;
 		}
-		if (info->basic_info.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+		if (info->basic_info.in.attrib != 0) {
 			newstats.dos.attrib = info->basic_info.in.attrib;
 		}
   		break;
