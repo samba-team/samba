@@ -407,6 +407,14 @@ nt2unixtime(const char *str)
     return (time_t)t;
 }
 
+static long long
+unix2nttime(time_t unix_time)
+{
+    long long wt;
+    wt = unix_time * (long long)10000000 + (long long)NTTIME_EPOCH;
+    return wt;
+}
+
 /* XXX create filter in a better way */
 
 static int
@@ -547,8 +555,7 @@ kadm5_ad_create_principal(void *server_handle,
     kadm5_ad_context *context = server_handle;
 
     /*
-     * principal
-     * KADM5_PRINCIPAL|KADM5_ATTRIBUTES|KADM5_PRINC_EXPIRE_TIME
+     * KADM5_PRINC_EXPIRE_TIME
      *
      * return 0 || KADM5_DUP;
      */
@@ -556,51 +563,96 @@ kadm5_ad_create_principal(void *server_handle,
 #ifdef OPENLDAP
     LDAPMod *attrs[6], rattrs[5], *a;
     char *useraccvals[2] = { NULL, NULL }, 
-	*samvals[2], *dnsvals[2], *spnvals[2];
+	*samvals[2], *dnsvals[2], *spnvals[4];
     char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
 			   "user", "computer", NULL}; 
-    char *p, *dn = NULL;
+    char *p, *realmless_p, *dn = NULL;
     const char *fqdn;
-    char *s, *shortname = NULL;
+    char *s, *samname = NULL, *short_spn = NULL;
     int ret, i;
+    int32_t uf_flags = 0;
+    
+    if ((mask & KADM5_PRINCIPAL) == 0)
+	return KADM5_BAD_MASK;
 
     for (i = 0; i < sizeof(rattrs)/sizeof(rattrs[0]); i++)
 	attrs[i] = &rattrs[i];
     attrs[i] = NULL;
-
+    
     ret = ad_get_cred(context, NULL);
     if (ret)
 	return ret;
-
+    
     ret = _kadm5_ad_connect(server_handle);
     if (ret)
 	return ret;
-
+    
     fqdn = get_fqdn(context->context, entry->principal);
-
+    
     ret = krb5_unparse_name(context->context, entry->principal, &p);
     if (ret)
 	return ret;
-
+    
     if (ad_find_entry(context, fqdn, p, NULL) == 0) {
 	free(p);
 	return KADM5_DUP;
     }
-
+    
+    if (mask & KADM5_ATTRIBUTES) {
+	if (entry->attributes & KRB5_KDB_DISALLOW_ALL_TIX)
+	    uf_flags |= UF_ACCOUNTDISABLE|UF_LOCKOUT;
+	if ((entry->attributes & KRB5_KDB_REQUIRES_PRE_AUTH) == 0)
+	    uf_flags |= UF_DONT_REQUIRE_PREAUTH;
+	if (entry->attributes & KRB5_KDB_REQUIRES_HW_AUTH)
+	    uf_flags |= UF_SMARTCARD_REQUIRED;
+    }
+    
+    realmless_p = strdup(p);
+    if (realmless_p == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    s = strrchr(realmless_p, '@');
+    if (s)
+	*s = '\0';
+    
     if (fqdn) {
 	/* create computer account */
-	asprintf(&shortname, "%s$", fqdn);
-	if (shortname == NULL) {
-	    free(p);
-	    return ENOMEM;
+	asprintf(&samname, "%s$", fqdn);
+	if (samname == NULL) {
+	    ret = ENOMEM;
+	    goto out;
 	}
-	s = strchr(shortname, '.');
+	s = strchr(samname, '.');
 	if (s) {
 	    s[0] = '$';
 	    s[1] = '\0';
 	}
+	
+	short_spn = strdup(p);
+	if (short_spn == NULL) {
+	    errno = ENOMEM;
+	    goto out;
+	}
+	{
+	    char *p1, *p2;
+	    
+	    p1 = strchr(short_spn, '.');
+	    p2 = strrchr(short_spn, '@');
+	    if (p1 == NULL && p2 == NULL) {
+		free(short_spn);
+		short_spn = NULL;
+	    } else {
+		memmove(p1, p2, strlen(p2));
+	    }
+	}
+
 
 	asprintf(&dn, "cn=%s, cn=Computers, %s", fqdn, CTX2BASE(context));
+	if (dn == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
 
 	a = &rattrs[0];
 	a->mod_op = LDAP_MOD_ADD;
@@ -611,7 +663,8 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userAccountControl";
 	a->mod_values = useraccvals;
-	asprintf(&useraccvals[0], "%d", 
+	asprintf(&useraccvals[0], "%d",
+		 uf_flags |
 		 UF_PASSWD_NOT_EXPIRE |
 		 UF_WORKSTATION_TRUST_ACCOUNT);
 	useraccvals[1] = NULL;
@@ -620,7 +673,7 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "sAMAccountName";
 	a->mod_values = samvals;
-	samvals[0] = shortname;
+	samvals[0] = samname;
 	samvals[1] = NULL;
 
 	a++;
@@ -636,31 +689,27 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_type = "servicePrincipalName";
 	a->mod_values = spnvals;
 	spnvals[0] = p;
-	spnvals[1] = NULL;
+	spnvals[1] = realmless_p;
+	spnvals[2] = short_spn; /* possibly NULL */
+	spnvals[3] = NULL;
 
     } else {
 	/* create user account */
-	shortname = strdup(p);
-	if (shortname == NULL) {
-	    free(p);
-	    return ENOMEM;
-	}
-	s = strrchr(shortname, '@');
-	if (s)
-	    *s = '\0';
 	
 	a = &rattrs[0];
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userAccountControl";
 	a->mod_values = useraccvals;
-	asprintf(&useraccvals[0], "%d", UF_PASSWD_NOT_EXPIRE);
+	asprintf(&useraccvals[0], "%d", 
+		 uf_flags |
+		 UF_PASSWD_NOT_EXPIRE);
 	useraccvals[1] = NULL;
 
 	a++;
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "sAMAccountName";
 	a->mod_values = samvals;
-	samvals[0] = shortname;
+	samvals[0] = realmless_p;
 	samvals[1] = NULL;
 
 	a++;
@@ -671,19 +720,21 @@ kadm5_ad_create_principal(void *server_handle,
 	spnvals[1] = NULL;
     }
 
-    printf("ldap_add\n");
     ret = ldap_add_s(CTX2LP(context), dn, attrs);
 
+ out:
     if (useraccvals[0])
 	free(useraccvals[0]);
-    if (shortname)
-	free(shortname);
+    if (realmless_p)
+	free(realmless_p);
+    if (samname)
+	free(samname);
+    if (short_spn)
+	free(short_spn);
     free(p);
 
     if (check_ldap(context, ret))
 	return KADM5_RPC_ERROR;
-
-    printf("write code here: %d\n", ret);
 
     return 0;
 #else
@@ -817,8 +868,8 @@ kadm5_ad_get_principal(void *server_handle,
 	*q = '/';
 
     asprintf(&filter, 
-	     "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
-	     u, p);
+	     "(|(userPrincipalName=%s)(servicePrincipalName=%s)(servicePrincipalName=%s))",
+	     u, p, u);
     free(p);
     free(u);
 
@@ -928,6 +979,10 @@ kadm5_ad_get_principals(void *server_handle,
 #ifdef OPENLDAP
     kadm5_ret_t ret;
 
+    ret = ad_get_cred(context, NULL);
+    if (ret)
+	return ret;
+
     ret = _kadm5_ad_connect(server_handle);
     if (ret)
 	return ret;
@@ -960,18 +1015,159 @@ kadm5_ad_modify_principal(void *server_handle,
      * KRB5_KDB_DISALLOW_ALL_TIX (| KADM5_KVNO)
      */
 
-    if (mask & KADM5_KVNO)
-	entry->kvno = 0;
-
 #ifdef OPENLDAP
+    LDAPMessage *m = NULL, *m0;
     kadm5_ret_t ret;
+    char **attr = NULL;
+    int attrlen = 0;
+    char *p = NULL, *s = NULL, *q;
+    char **vals;
+    LDAPMod *attrs[4], rattrs[3], *a;
+    char *uaf[2] = { NULL, NULL };
+    char *kvno[2] = { NULL, NULL };
+    char *tv[2] = { NULL, NULL };
+    char *filter, *dn;
+    int i;
+
+    for (i = 0; i < sizeof(rattrs)/sizeof(rattrs[0]); i++)
+	attrs[i] = &rattrs[i];
+    attrs[i] = NULL;
+    a = &rattrs[0];
 
     ret = _kadm5_ad_connect(server_handle);
     if (ret)
 	return ret;
 
-    krb5_set_error_string(context->context, "Function not implemented");
-    return KADM5_RPC_ERROR;
+    if (mask & KADM5_KVNO)
+	laddattr(&attr, &attrlen, "msDS-KeyVersionNumber");
+    if (mask & KADM5_PRINC_EXPIRE_TIME)
+	laddattr(&attr, &attrlen, "accountExpires");
+    if (mask & KADM5_ATTRIBUTES)
+	laddattr(&attr, &attrlen, "userAccountControl");
+    laddattr(&attr, &attrlen, "distinguishedName");
+
+    krb5_unparse_name(context->context, entry->principal, &p);
+
+    s = strdup(p);
+
+    q = strrchr(s, '@');
+    if (q && (p != q && *(q - 1) != '\\'))
+	*q = '\0';
+
+    asprintf(&filter, 
+	     "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
+	     s, s);
+    free(p);
+    free(s);
+
+    ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
+			LDAP_SCOPE_SUBTREE, 
+			filter, attr, 0, &m);
+    free(attr);
+    free(filter);
+    if (check_ldap(context, ret))
+	return KADM5_RPC_ERROR;
+
+    if (ldap_count_entries(CTX2LP(context), m) <= 0) {
+	ret = KADM5_RPC_ERROR;
+	goto out;
+    }
+
+    m0 = ldap_first_entry(CTX2LP(context), m);
+
+    if (mask & KADM5_ATTRIBUTES) {
+	int32_t i;
+
+	vals = ldap_get_values(CTX2LP(context), m0, "userAccountControl");
+	if (vals == NULL) {
+	    ret = KADM5_RPC_ERROR;
+	    goto out;
+	}
+
+	i = atoi(vals[0]);
+	if (i == 0)
+	    return KADM5_RPC_ERROR;
+
+	if (entry->attributes & KRB5_KDB_DISALLOW_ALL_TIX)
+	    i |= (UF_ACCOUNTDISABLE|UF_LOCKOUT);
+	else
+	    i &= ~(UF_ACCOUNTDISABLE|UF_LOCKOUT);
+	if (entry->attributes & KRB5_KDB_REQUIRES_PRE_AUTH)
+	    i &= ~UF_DONT_REQUIRE_PREAUTH;
+	else
+	    i |= UF_DONT_REQUIRE_PREAUTH;
+	if (entry->attributes & KRB5_KDB_REQUIRES_HW_AUTH)
+	    i |= UF_SMARTCARD_REQUIRED;
+	else
+	    i &= UF_SMARTCARD_REQUIRED;
+	if (entry->attributes & KRB5_KDB_DISALLOW_SVR)
+	    i &= ~UF_WORKSTATION_TRUST_ACCOUNT;
+	else
+	    i |= UF_WORKSTATION_TRUST_ACCOUNT;
+
+	asprintf(&uaf[0], "%d", i);
+
+	a->mod_op = LDAP_MOD_REPLACE;
+	a->mod_type = "userAccountControl";
+	a->mod_values = uaf;
+	a++;
+    }
+
+    if (mask & KADM5_KVNO) {
+	vals = ldap_get_values(CTX2LP(context), m0, "msDS-KeyVersionNumber");
+	if (vals == NULL) {
+	    entry->kvno = 0;
+	} else {
+	    asprintf(&kvno[0], "%d", entry->kvno);
+
+	    a->mod_op = LDAP_MOD_REPLACE;
+	    a->mod_type = "msDS-KeyVersionNumber";
+	    a->mod_values = kvno;
+	    a++;
+	}
+    }
+
+    if (mask & KADM5_PRINC_EXPIRE_TIME) {
+	long long wt;
+	vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
+	if (vals == NULL) {
+	    ret = KADM5_RPC_ERROR;
+	    goto out;
+	}
+
+	wt = unix2nttime(entry->princ_expire_time);
+
+	asprintf(&tv[0], "%llu", wt);
+
+	a->mod_op = LDAP_MOD_REPLACE;
+	a->mod_type = "accountExpires";
+	a->mod_values = tv;
+	a++;
+    }
+    
+    vals = ldap_get_values(CTX2LP(context), m0, "distinguishedName");
+    if (vals == NULL) {
+	ret = KADM5_RPC_ERROR;
+	goto out;
+    }
+    dn = vals[0];
+
+    attrs[a - &rattrs[0]] = NULL;
+
+    ret = ldap_modify_s(CTX2LP(context), dn, attrs);
+    if (check_ldap(context, ret))
+	return KADM5_RPC_ERROR;
+
+ out:
+    if (m)
+	ldap_msgfree(m);
+    if (uaf[0])
+	free(uaf[0]);
+    if (kvno[0])
+	free(kvno[0]);
+    if (tv[0])
+	free(tv[0]);
+    return ret;
 #else
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
