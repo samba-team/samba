@@ -197,7 +197,7 @@ int smbw_dir_open(const char *fname)
 	cur_dir = dir;
 
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
-	string_sub(mask,"\\\\","\\");
+	pstring_sub(mask,"\\\\","\\");
 
 	if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));

@@ -27,7 +27,10 @@ extern int DEBUGLEVEL;
 static int oplock_sock = -1;
 uint16 global_oplock_port = 0;
 static int oplock_pipe_read = -1;
+
+#if defined(HAVE_KERNEL_OPLOCKS)
 static int oplock_pipe_write = -1;
+#endif
 
 /* Current number of oplocks we have outstanding. */
 static int32 exclusive_oplocks_open = 0;
@@ -775,7 +778,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
 {
   extern uint32 global_client_caps;
   extern struct current_user current_user;
-  extern struct timeval smb_last_time;
   extern int Client;
   char *inbuf = NULL;
   char *outbuf = NULL;

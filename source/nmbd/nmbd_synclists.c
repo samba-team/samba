@@ -103,7 +103,7 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	/* Fetch a workgroup list. */
-	cli_NetServerEnum(&cli, workgroup, 
+	cli_NetServerEnum(&cli, cli.server_domain?cli.server_domain:workgroup, 
 			  local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 	

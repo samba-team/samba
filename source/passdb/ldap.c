@@ -121,7 +121,7 @@ static BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMess
 	   so in ldap filter, %u MUST exist :-)
 	*/	
 	pstrcpy(filter,lp_ldap_filter());
-	string_sub(filter,"%u",user);
+	pstring_sub(filter,"%u",user);
 	
 	if ( !ldap_search_one_user(ldap_struct, filter, result) )
 	{

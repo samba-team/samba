@@ -227,10 +227,10 @@ static int expect(int master,char *expected,char *buf)
 
 static void pwd_sub(char *buf)
 {
-  fstring_sub(buf,"\\n","\n");
-  fstring_sub(buf,"\\r","\r");
-  fstring_sub(buf,"\\s"," ");
-  fstring_sub(buf,"\\t","\t");
+	fstring_sub(buf,"\\n","\n");
+	fstring_sub(buf,"\\r","\r");
+	fstring_sub(buf,"\\s"," ");
+	fstring_sub(buf,"\\t","\t");
 }
 
 static void writestring(int fd,char *s)
