@@ -31,7 +31,7 @@ extern pstring global_myname;
 
 struct msrpc_use
 {
-	struct msrpc_local *cli;
+	struct cli_connection *cli;
 	uint32 num_users;
 };
 
@@ -60,16 +60,16 @@ free a client array
 ****************************************************************************/
 static void free_msrpc_array(uint32 num_entries, struct msrpc_use **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&msrpc_use_free;
-	free_void_array(num_entries, (void**)entries, *fn);
+	void (*fn) (void *) = (void (*)(void *))&msrpc_use_free;
+	free_void_array(num_entries, (void **)entries, *fn);
 }
 
 /****************************************************************************
 add a client state to the array
 ****************************************************************************/
-static struct msrpc_use* add_msrpc_to_array(uint32 *len,
-				struct msrpc_use ***array,
-				struct msrpc_use *cli)
+static struct msrpc_use *add_msrpc_to_array(uint32 * len,
+					    struct msrpc_use ***array,
+					    struct msrpc_use *cli)
 {
 	int i;
 	for (i = 0; i < num_msrpcs; i++)
@@ -81,9 +81,10 @@ static struct msrpc_use* add_msrpc_to_array(uint32 *len,
 		}
 	}
 
-	return (struct msrpc_use*)add_item_to_array(len,
-	                     (void***)array, (void*)cli);
-				
+	return (struct msrpc_use *)add_item_to_array(len,
+						     (void ***)array,
+						     (void *)cli);
+
 }
 
 /****************************************************************************
@@ -108,16 +109,17 @@ void free_msrpc_use(void)
 find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
-static struct msrpc_use *msrpc_find(const char* pipe_name, const vuser_key *key)
+static struct msrpc_use *msrpc_find(const char *pipe_name,
+				    const vuser_key * key)
 {
 	int i;
 
-	DEBUG(10,("msrpc_find: %s", pipe_name));
+	DEBUG(10, ("msrpc_find: %s", pipe_name));
 	if (key != NULL)
 	{
-		DEBUG(10,(" [%d, %x]", key->pid, key->vuid));
+		DEBUG(10, (" [%d, %x]", key->pid, key->vuid));
 	}
-	DEBUG(10,("\n"));
+	DEBUG(10, ("\n"));
 
 	for (i = 0; i < num_msrpcs; i++)
 	{
@@ -125,16 +127,18 @@ static struct msrpc_use *msrpc_find(const char* pipe_name, const vuser_key *key)
 		struct msrpc_use *c = msrpcs[i];
 		vuser_key k;
 
-		if (c == NULL) continue;
+		if (c == NULL)
+			continue;
 
 		msrpc_name = c->cli->pipe_name;
 		k = c->cli->nt.key;
 
-		DEBUG(10,("msrpc_find[%d]: %s [%d,%x]\n",
-		   i, msrpc_name, k.pid, k.vuid));
-				
+		DEBUG(10, ("msrpc_find[%d]: %s [%d,%x]\n",
+			   i, msrpc_name, k.pid, k.vuid));
+
 		if (strequal(msrpc_name, pipe_name) &&
-		    (key == NULL || (k.pid == key->pid && k.vuid == key->vuid)))
+		    (key == NULL
+		     || (k.pid == key->pid && k.vuid == key->vuid)))
 		{
 			return c;
 		}
@@ -146,10 +150,10 @@ static struct msrpc_use *msrpc_find(const char* pipe_name, const vuser_key *key)
 /****************************************************************************
 create a new client state from user credentials
 ****************************************************************************/
-static struct msrpc_use *msrpc_use_get(const char* pipe_name,
-				const vuser_key *key)
+static struct msrpc_use *msrpc_use_get(const char *pipe_name,
+				       const vuser_key * key)
 {
-	struct msrpc_use *cli = (struct msrpc_use*)malloc(sizeof(*cli));
+	struct msrpc_use *cli = (struct msrpc_use *)malloc(sizeof(*cli));
 
 	if (cli == NULL)
 	{
@@ -171,14 +175,14 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-struct msrpc_local *msrpc_use_add(const char* pipe_name,
-				const vuser_key *key,
-				BOOL redir)
+struct cli_connection *msrpc_use_add(const char *pipe_name,
+				     const vuser_key * key, BOOL redir)
 {
 	struct msrpc_use *cli;
-	DEBUG(10,("msrpc_use_add: %s redir: %s\n", pipe_name, BOOLSTR(redir)));
+	DEBUG(10,
+	      ("msrpc_use_add: %s redir: %s\n", pipe_name, BOOLSTR(redir)));
 
-	cli = msrpc_find(pipe_name, key); 
+	cli = msrpc_find(pipe_name, key);
 
 	if (cli != NULL)
 	{
@@ -189,7 +193,8 @@ struct msrpc_local *msrpc_use_add(const char* pipe_name,
 	/* reuse an existing connection requested, and one was not found */
 	if (redir)
 	{
-		DEBUG(0,("msrpc_use_add: reuse requested, but one not found\n"));
+		DEBUG(0,
+		      ("msrpc_use_add: reuse requested, but one not found\n"));
 		return False;
 	}
 
@@ -202,7 +207,7 @@ struct msrpc_local *msrpc_use_add(const char* pipe_name,
 
 	if (!msrpc_establish_connection(cli->cli, pipe_name))
 	{
-		DEBUG(0,("msrpc_use_add: connection failed\n"));
+		DEBUG(0, ("msrpc_use_add: connection failed\n"));
 		cli->cli = NULL;
 		msrpc_use_free(cli);
 		return NULL;
@@ -217,14 +222,13 @@ struct msrpc_local *msrpc_use_add(const char* pipe_name,
 /****************************************************************************
 delete a client state
 ****************************************************************************/
-BOOL msrpc_use_del(const char* pipe_name,
-				BOOL force_close,
-				BOOL *connection_closed)
+BOOL msrpc_use_del(const char *pipe_name,
+		   BOOL force_close, BOOL *connection_closed)
 {
 	int i;
 
-	DEBUG(10,("msrpc_net_use_del: %s. force close: %s\n",
-	           pipe_name, BOOLSTR(force_close)));
+	DEBUG(10, ("msrpc_net_use_del: %s. force close: %s\n",
+		   pipe_name, BOOLSTR(force_close)));
 
 	if (connection_closed != NULL)
 	{
@@ -235,17 +239,20 @@ BOOL msrpc_use_del(const char* pipe_name,
 	{
 		char *msrpc_name = NULL;
 
-		if (msrpcs[i] == NULL) continue;
-		if (msrpcs[i]->cli == NULL) continue;
+		if (msrpcs[i] == NULL)
+			continue;
+		if (msrpcs[i]->cli == NULL)
+			continue;
 
 		msrpc_name = msrpcs[i]->cli->pipe_name;
 
-		if (!strequal(msrpc_name, pipe_name)) continue;
+		if (!strequal(msrpc_name, pipe_name))
+			continue;
 
 		/* decrement number of users */
 		msrpcs[i]->num_users--;
 
-		DEBUG(10,("idx: %i num_users now: %d\n",
+		DEBUG(10, ("idx: %i num_users now: %d\n",
 			   i, msrpcs[i]->num_users));
 
 		if (force_close || msrpcs[i]->num_users == 0)
@@ -266,7 +273,7 @@ BOOL msrpc_use_del(const char* pipe_name,
 /****************************************************************************
 enumerate client states
 ****************************************************************************/
-void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use)
+void msrpc_net_use_enum(uint32 * num_cons, struct use_info ***use)
 {
 	int i;
 
@@ -279,17 +286,17 @@ void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use)
 
 		ZERO_STRUCT(item);
 
-		if (msrpcs[i] == NULL) continue;
+		if (msrpcs[i] == NULL)
+			continue;
 
 		item.connected = msrpcs[i]->cli != NULL ? True : False;
-	
+
 		if (item.connected)
 		{
-			item.srv_name  = msrpcs[i]->cli->pipe_name;
-			item.key       = msrpcs[i]->cli->nt.key;
+			item.srv_name = msrpcs[i]->cli->pipe_name;
+			item.key = msrpcs[i]->cli->nt.key;
 		}
 
 		add_use_info_to_array(num_cons, use, &item);
 	}
 }
-

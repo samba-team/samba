@@ -31,21 +31,22 @@ extern int DEBUGLEVEL;
   read an msrpc pdu from a fd. 
   The timeout is in milliseconds. 
 ****************************************************************************/
-BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
+BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout)
 {
-  	BOOL ok;
-  	size_t len;
-  	RPC_HDR hdr;
+	BOOL ok;
+	size_t len;
+	RPC_HDR hdr;
 
 	prs_init(data, 16, 4, True);
 
 	if (timeout > 0)
 	{
-		ok = (read_with_timeout(fd,data->data,16,16,timeout) == 16);
+		ok = (read_with_timeout(fd, data->data, 16, 16, timeout) ==
+		      16);
 	}
-	else 
+	else
 	{
-		ok = (read_data(fd,data->data,16) == 16);
+		ok = (read_data(fd, data->data, 16) == 16);
 	}
 
 	if (!ok)
@@ -84,14 +85,14 @@ BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
 /****************************************************************************
   send an smb to a fd and re-establish if necessary
 ****************************************************************************/
-BOOL msrpc_send(int fd, prs_struct *ps)
+BOOL msrpc_send(int fd, prs_struct * ps)
 {
 	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
-	size_t nwritten=0;
+	size_t nwritten = 0;
 	ssize_t ret;
 	char *outbuf = ps->data;
 
-	DEBUG(10,("msrpc_send_prs: data: %p len %d\n", outbuf, len));
+	DEBUG(10, ("ncalrpc_l_send_prs: data: %p len %d\n", outbuf, len));
 	dbgflush();
 
 	if (outbuf == NULL)
@@ -102,17 +103,17 @@ BOOL msrpc_send(int fd, prs_struct *ps)
 
 	while (nwritten < len)
 	{
-		ret = write_socket(fd,outbuf+nwritten,len - nwritten);
+		ret = write_socket(fd, outbuf + nwritten, len - nwritten);
 		if (ret <= 0)
 		{
-			DEBUG(0,("Error writing %d msrpc bytes. %d.\n",
-				 len,ret));
+			DEBUG(0, ("Error writing %d msrpc bytes. %d.\n",
+				  len, ret));
 			prs_free_data(ps);
 			return False;
 		}
 		nwritten += ret;
 	}
-	
+
 	prs_free_data(ps);
 	return True;
 }
@@ -120,11 +121,11 @@ BOOL msrpc_send(int fd, prs_struct *ps)
 /****************************************************************************
   receive msrpc packet
 ****************************************************************************/
-BOOL msrpc_receive(int fd, prs_struct *ps)
+BOOL msrpc_receive(int fd, prs_struct * ps)
 {
 	int len;
 
-	DEBUG(10,("msrpc_receive: %d\n", __LINE__));
+	DEBUG(10, ("ncalrpc_l_receive: %d\n", __LINE__));
 
 	if (!receive_msrpc(fd, ps, 0))
 	{
@@ -140,9 +141,9 @@ BOOL msrpc_receive(int fd, prs_struct *ps)
 
 	dump_data(10, ps->data, len);
 
-	DEBUG(10,("msrpc_receive: len %d\n", len));
+	DEBUG(10, ("ncalrpc_l_receive: len %d\n", len));
 
-	prs_debug_out(ps, "msrpc_receive_prs", 200);
+	prs_debug_out(ps, "ncalrpc_l_receive_prs", 200);
 
 	return True;
 }
@@ -150,13 +151,13 @@ BOOL msrpc_receive(int fd, prs_struct *ps)
 /****************************************************************************
 open the msrpcent sockets
 ****************************************************************************/
-BOOL msrpc_connect(struct msrpc_local *msrpc, const char *pipe_name)
+BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name)
 {
 	fstring path;
-	slprintf(path, sizeof(path)-1, "%s/.msrpc/%s", LOCKDIR, pipe_name);
+	slprintf(path, sizeof(path) - 1, "%s/.msrpc/%s", LOCKDIR, pipe_name);
 
 	fstrcpy(msrpc->pipe_name, pipe_name);
-	
+
 	msrpc->fd = open_pipe_sock(path);
 
 	if (msrpc->fd == -1)
@@ -171,9 +172,9 @@ BOOL msrpc_connect(struct msrpc_local *msrpc, const char *pipe_name)
 /****************************************************************************
 close the socket descriptor
 ****************************************************************************/
-void msrpc_close_socket(struct msrpc_local *msrpc)
+void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
 {
-	if (msrpc->fd != -1) 
+	if (msrpc->fd != -1)
 	{
 		close(msrpc->fd);
 	}
@@ -184,13 +185,13 @@ void msrpc_close_socket(struct msrpc_local *msrpc)
 /****************************************************************************
 set socket options on a open connection
 ****************************************************************************/
-void msrpc_sockopt(struct msrpc_local *msrpc, char *options)
+void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options)
 {
 	set_socket_options(msrpc->fd, options);
 }
 
 
-static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
+static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 {
 	int sock = msrpc->fd;
 	uint32 len;
@@ -205,9 +206,9 @@ static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
 	command = AGENT_CMD_CON;
 
 	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command,
-	                        &msrpc->nt.key, NULL))
+			       &msrpc->nt.key, NULL))
 	{
-		DEBUG(0,("could not parse credentials\n"));
+		DEBUG(0, ("could not parse credentials\n"));
 		close(sock);
 		return False;
 	}
@@ -218,13 +219,13 @@ static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
 	SIVAL(data, 0, len);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("data len: %d\n", len));
+	DEBUG(100, ("data len: %d\n", len));
 	dump_data(100, data, len);
 #endif
 
 	if (write(sock, data, len) <= 0)
 	{
-		DEBUG(0,("write failed\n"));
+		DEBUG(0, ("write failed\n"));
 		return False;
 	}
 	if (msrpc->redirect)
@@ -234,10 +235,10 @@ static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
 
 		if (len != sizeof(msrpc_redir))
 		{
-			DEBUG(0,("read failed\n"));
+			DEBUG(0, ("read failed\n"));
 			return False;
 		}
-		
+
 		memcpy(msrpc, &msrpc_redir, sizeof(msrpc_redir));
 		msrpc->inbuf = in;
 		msrpc->outbuf = out;
@@ -253,13 +254,13 @@ static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
 	return True;
 }
 
-static BOOL msrpc_init_redirect(struct msrpc_local *msrpc,
-				const char* pipe_name)
+static BOOL ncalrpc_l_init_redirect(struct msrpc_local *msrpc,
+				    const char *pipe_name)
 {
 	int sock;
 	fstring path;
 
-	slprintf(path, sizeof(path)-1, "/tmp/.msrpc/.%s/agent", pipe_name);
+	slprintf(path, sizeof(path) - 1, "/tmp/.msrpc/.%s/agent", pipe_name);
 
 	sock = open_pipe_sock(path);
 
@@ -270,9 +271,9 @@ static BOOL msrpc_init_redirect(struct msrpc_local *msrpc,
 
 	msrpc->fd = sock;
 
-	if (!msrpc_authenticate(msrpc))
+	if (!ncalrpc_l_authenticate(msrpc))
 	{
-		DEBUG(0,("authenticate failed\n"));
+		DEBUG(0, ("authenticate failed\n"));
 		close(msrpc->fd);
 		msrpc->fd = -1;
 		return False;
@@ -281,20 +282,19 @@ static BOOL msrpc_init_redirect(struct msrpc_local *msrpc,
 	return True;
 }
 
-BOOL msrpc_connect_auth(struct msrpc_local *msrpc,
-				const vuser_key *key,
-				const char* pipename)
+BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
+			    const vuser_key * key, const char *pipename)
 {
 	ZERO_STRUCTP(msrpc);
-	if (!msrpc_initialise(msrpc, key))
+	if (!ncalrpc_l_initialise(msrpc, key))
 	{
-		DEBUG(0,("unable to initialise msrpcent connection.\n"));
+		DEBUG(0, ("unable to initialise ncalrpc_l connection.\n"));
 		return False;
 	}
 
-	if (!msrpc_establish_connection(msrpc, pipename))
+	if (!ncalrpc_l_establish_connection(msrpc, pipename))
 	{
-		msrpc_shutdown(msrpc);
+		ncalrpc_l_shutdown(msrpc);
 		return False;
 	}
 
@@ -304,8 +304,8 @@ BOOL msrpc_connect_auth(struct msrpc_local *msrpc,
 /****************************************************************************
 initialise a msrpcent structure
 ****************************************************************************/
-struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
-				const vuser_key *key)
+struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
+					 const vuser_key * key)
 {
 	if (!msrpc)
 	{
@@ -317,14 +317,14 @@ struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
 
 	if (msrpc->initialised)
 	{
-		msrpc_shutdown(msrpc);
+		ncalrpc_l_shutdown(msrpc);
 	}
 
 	ZERO_STRUCTP(msrpc);
 
 	msrpc->fd = -1;
-	msrpc->outbuf = (char *)malloc(CLI_BUFFER_SIZE+4);
-	msrpc->inbuf = (char *)malloc(CLI_BUFFER_SIZE+4);
+	msrpc->outbuf = (char *)malloc(CLI_BUFFER_SIZE + 4);
+	msrpc->inbuf = (char *)malloc(CLI_BUFFER_SIZE + 4);
 	if (!msrpc->outbuf || !msrpc->inbuf)
 	{
 		return False;
@@ -347,9 +347,8 @@ struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
 
 		msrpc->nt.key.pid = getpid();
 		msrpc->nt.key.vuid = register_vuid(msrpc->nt.key.pid,
-		                             uid, gid,
-	                                     name, name, False,
-		                             &usr);
+						   uid, gid,
+						   name, name, False, &usr);
 	}
 
 	return msrpc;
@@ -359,9 +358,9 @@ struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
 /****************************************************************************
 shutdown a msrpcent structure
 ****************************************************************************/
-void msrpc_shutdown(struct msrpc_local *msrpc)
+void ncalrpc_l_shutdown(struct msrpc_local *msrpc)
 {
-	DEBUG(10,("msrpc_shutdown\n"));
+	DEBUG(10, ("msrpc_shutdown\n"));
 	if (msrpc->outbuf)
 	{
 		free(msrpc->outbuf);
@@ -370,18 +369,23 @@ void msrpc_shutdown(struct msrpc_local *msrpc)
 	{
 		free(msrpc->inbuf);
 	}
-	msrpc_close_socket(msrpc);
+	ncalrpc_l_close_socket(msrpc);
 	memset(msrpc, 0, sizeof(*msrpc));
 }
 
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
-BOOL msrpc_establish_connection(struct msrpc_local *msrpc,
-				const char *pipe_name)
+BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
+				    const char *pipe_name)
 {
-	DEBUG(5,("msrpc_establish_connection: connecting to %s\n",
-	          pipe_name));
+	if (strnequal("\\PIPE\\", pipe_name, 6))
+	{
+		pipe_name = &pipe_name[6];
+	}
+
+	DEBUG(5, ("ncalrpc_l_establish_connection: connecting to %s\n",
+		  pipe_name));
 
 	/* establish connection */
 
@@ -392,31 +396,34 @@ BOOL msrpc_establish_connection(struct msrpc_local *msrpc,
 
 	if (msrpc->fd == -1 && msrpc->redirect)
 	{
-		if (msrpc_init_redirect(msrpc, pipe_name))
+		if (ncalrpc_l_init_redirect(msrpc, pipe_name))
 		{
-			DEBUG(10,("msrpc_establish_connection: redirected OK\n"));
+			DEBUG(10,
+			      ("ncalrpc_l_establish_connection: redirected OK\n"));
 			return True;
 		}
 		else
 		{
-			DEBUG(10,("redirect FAILED\n"));
-			return False;
+			DEBUG(10,
+			      ("redirect failed, attempt direct connection\n"));
+			msrpc->redirect = False;
 		}
 	}
 	if (msrpc->fd == -1)
 	{
-		if (!msrpc_connect(msrpc, pipe_name))
+		if (!ncalrpc_l_connect(msrpc, pipe_name))
 		{
-			DEBUG(1,("msrpc_establish_connection: failed %s)\n",
-				pipe_name));
-					  
+			DEBUG(1,
+			      ("ncalrpc_l_establish_connection: failed %s)\n",
+			       pipe_name));
+
 			return False;
 		}
 	}
 
-	if (!msrpc_authenticate(msrpc))
+	if (!ncalrpc_l_authenticate(msrpc))
 	{
-		DEBUG(0,("authenticate failed\n"));
+		DEBUG(0, ("authenticate failed\n"));
 		close(msrpc->fd);
 		msrpc->fd = -1;
 		return False;
@@ -425,3 +432,165 @@ BOOL msrpc_establish_connection(struct msrpc_local *msrpc,
 	return True;
 }
 
+
+#if 0
+static struct cli_connection *cli_con_get(const char *srv_name,
+					  const char *pipe_name,
+					  cli_auth_fns * auth,
+					  void *auth_creds, BOOL reuse)
+{
+	struct cli_connection *con = NULL;
+
+	con = (struct cli_connection *)malloc(sizeof(*con));
+
+	if (con == NULL)
+	{
+		return NULL;
+	}
+
+	memset(con, 0, sizeof(*con));
+	con->type = MSRPC_NONE;
+
+	copy_user_creds(&con->usr_creds, usr_creds);
+	con->usr_creds.reuse = reuse;
+
+	if (srv_name != NULL)
+	{
+		con->srv_name = strdup(srv_name);
+	}
+	if (pipe_name != NULL)
+	{
+		con->pipe_name = strdup(pipe_name);
+	}
+
+	con->auth_info = NULL;
+	con->auth_creds = auth_creds;
+
+	if (auth != NULL)
+	{
+		con->auth = auth;
+	}
+	else
+	{
+		extern cli_auth_fns cli_noauth_fns;
+		con->auth = &cli_noauth_fns;
+	}
+
+	if (strequal(srv_name, "\\\\."))
+	{
+		become_root(False);
+		con->type = MSRPC_LOCAL;
+		con->usr_creds.reuse = False;
+		con->msrpc.local = ncalrpc_l_add(&pipe_name[6], user_key,
+						 False);
+		unbecome_root(False);
+	}
+	else
+	{
+		con->type = MSRPC_SMB;
+		con->msrpc.smb = malloc(sizeof(*con->msrpc.smb));
+		if (con->msrpc.smb == NULL)
+		{
+			cli_connection_free(con);
+			return NULL;
+		}
+		else
+		{
+			con->msrpc.smb->cli =
+				cli_net_use_add(srv_name, user_key,
+						&con->usr_creds.ntc,
+						True, reuse);
+			if (con->msrpc.smb->cli != NULL)
+			{
+				if (!cli_nt_session_open(con->msrpc.smb->cli,
+							 pipe_name,
+							 &con->msrpc.smb->
+							 fnum))
+				{
+					cli_connection_free(con);
+					return NULL;
+				}
+				dump_data_pw("sess key:",
+					     con->msrpc.smb->cli->nt.
+					     usr_sess_key, 16);
+			}
+			else
+			{
+				cli_connection_free(con);
+				return NULL;
+			}
+		}
+	}
+
+	if (con->msrpc.cli != NULL)
+	{
+		RPC_IFACE abstract;
+		RPC_IFACE transfer;
+
+		if (!rpc_pipe_bind(con, pipe_name, &abstract, &transfer))
+		{
+			DEBUG(0, ("rpc_pipe_bind failed\n"));
+			cli_connection_free(con);
+			return NULL;
+		}
+	}
+
+	if (con->msrpc.cli == NULL)
+	{
+		cli_connection_free(con);
+		return NULL;
+	}
+
+	add_con_to_array(&num_cons, &con_list, con);
+	return con;
+}
+
+/****************************************************************************
+terminate client state
+****************************************************************************/
+void cli_connection_unlink(struct cli_connection *con)
+{
+	if (con != NULL)
+	{
+		cli_connection_free(con);
+	}
+	return;
+}
+
+/****************************************************************************
+init client state
+****************************************************************************/
+BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
+			 struct cli_connection **con)
+{
+	return cli_connection_init_auth(srv_name, pipe_name, con, NULL, NULL);
+}
+
+/****************************************************************************
+init client state
+****************************************************************************/
+BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
+			      struct cli_connection **con,
+			      cli_auth_fns * auth, void *auth_creds)
+{
+	BOOL res = True;
+	BOOL reuse = False;
+
+	/*
+	 * allocate
+	 */
+
+	DEBUG(10, ("cli_connection_init_auth: %s %s\n",
+		   srv_name != NULL ? srv_name : "<null>", pipe_name));
+
+	*con = cli_con_get(srv_name, pipe_name, auth, auth_creds, reuse);
+
+	if ((*con) == NULL)
+	{
+		return False;
+	}
+
+	return res;
+}
+
+#endif

@@ -36,7 +36,7 @@ struct cli_use
 };
 
 static struct cli_use **clis = NULL;
-uint32 num_clis = 0;
+static uint32 num_clis = 0;
 
 /****************************************************************************
 terminate client connection
@@ -61,16 +61,16 @@ free a client array
 ****************************************************************************/
 static void free_cli_array(uint32 num_entries, struct cli_use **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&cli_use_free;
-	free_void_array(num_entries, (void**)entries, *fn);
+	void (*fn) (void *) = (void (*)(void *))&cli_use_free;
+	free_void_array(num_entries, (void **)entries, *fn);
 }
 
 /****************************************************************************
 add a client state to the array
 ****************************************************************************/
-static struct cli_use* add_cli_to_array(uint32 *len,
-				struct cli_use ***array,
-				struct cli_use *cli)
+static struct cli_use *add_cli_to_array(uint32 * len,
+					struct cli_use ***array,
+					struct cli_use *cli)
 {
 	int i;
 	for (i = 0; i < num_clis; i++)
@@ -82,9 +82,10 @@ static struct cli_use* add_cli_to_array(uint32 *len,
 		}
 	}
 
-	return (struct cli_use*)add_item_to_array(len,
-	                     (void***)array, (void*)cli);
-				
+	return (struct cli_use *)add_item_to_array(len,
+						   (void ***)array,
+						   (void *)cli);
+
 }
 
 /****************************************************************************
@@ -109,7 +110,8 @@ void free_cli_use(void)
 find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
-static struct cli_use *cli_find(const char* srv_name,
+static struct cli_use *cli_find(const char *srv_name,
+				const vuser_key * key,
 				const struct ntuser_creds *usr_creds,
 				BOOL reuse)
 {
@@ -119,31 +121,36 @@ static struct cli_use *cli_find(const char* srv_name,
 
 	copy_nt_creds(&null_usr, usr_creds);
 	usr_creds = &null_usr;
-		
+
 	if (strnequal("\\\\", sv_name, 2))
 	{
 		sv_name = &sv_name[2];
 	}
 
-	DEBUG(10,("cli_find: %s %s %s\n",
-			srv_name,
-			usr_creds->user_name,
-			usr_creds->domain));
+	DEBUG(10, ("cli_find: %s %s %s ",
+		   srv_name, usr_creds->user_name, usr_creds->domain));
+	if (key != NULL)
+	{
+		DEBUG(10, ("[%d,%x]", key->pid, key->vuid));
+	}
+	DEBUG(10, ("\n"));
+
 
 	for (i = 0; i < num_clis; i++)
 	{
 		char *cli_name = NULL;
 		struct cli_use *c = clis[i];
 
-		if (c == NULL) continue;
+		if (c == NULL)
+			continue;
 
 		cli_name = c->cli->desthost;
 
-		DEBUG(10,("cli_find[%d]: %s %s %s\n",
-				i, cli_name,
-		                c->cli->usr.user_name,
-				c->cli->usr.domain));
-				
+		DEBUG(10, ("cli_find[%d]: %s %s %s [%d,%x]\n",
+			   i, cli_name,
+			   c->cli->usr.user_name, c->cli->usr.domain,
+			   c->cli->nt.key.pid, c->cli->nt.key.vuid));
+
 		if (strnequal("\\\\", cli_name, 2))
 		{
 			cli_name = &cli_name[2];
@@ -157,10 +164,15 @@ static struct cli_use *cli_find(const char* srv_name,
 		{
 			continue;
 		}
-		if (!reuse &&
-		    !pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
+		if (!reuse
+		    && (key == NULL || key->pid != c->cli->nt.key.pid
+			|| key->vuid != c->cli->nt.key.vuid))
 		{
-			DEBUG(100,("password doesn't match\n"));
+			continue;
+		}
+		if (!reuse && !pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
+		{
+			DEBUG(100, ("password doesn't match\n"));
 			continue;
 		}
 		if (usr_creds->domain[0] == 0)
@@ -179,10 +191,10 @@ static struct cli_use *cli_find(const char* srv_name,
 /****************************************************************************
 create a new client state from user credentials
 ****************************************************************************/
-static struct cli_use *cli_use_get(const char* srv_name,
-				const struct ntuser_creds *usr_creds)
+static struct cli_use *cli_use_get(const char *srv_name,
+				   const struct ntuser_creds *usr_creds)
 {
-	struct cli_use *cli = (struct cli_use*)malloc(sizeof(*cli));
+	struct cli_use *cli = (struct cli_use *)malloc(sizeof(*cli));
 
 	if (cli == NULL)
 	{
@@ -206,10 +218,10 @@ static struct cli_use *cli_use_get(const char* srv_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-struct cli_state *cli_net_use_add(const char* srv_name,
-				const struct ntuser_creds *usr_creds,
-				BOOL redir,
-				BOOL reuse)
+struct cli_state *cli_net_use_add(const char *srv_name,
+				  const vuser_key * key,
+				  const struct ntuser_creds *usr_creds,
+				  BOOL redir, BOOL reuse, BOOL *is_new)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -219,13 +231,14 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 
 	struct cli_use *cli;
 
-	DEBUG(10,("cli_net_use_add\n"));
+	DEBUG(10, ("cli_net_use_add\n"));
 
-	cli = cli_find(srv_name, usr_creds, reuse); 
+	cli = cli_find(srv_name, key, usr_creds, reuse);
 
 	if (cli != NULL)
 	{
 		cli->num_users++;
+		(*is_new) = False;
 		return cli->cli;
 	}
 
@@ -252,27 +265,47 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 		return NULL;
 	}
 
-	make_nmb_name(&called , dns_to_netbios_name(dest_host    ), 32, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname),  0, scope);
+	make_nmb_name(&called, dns_to_netbios_name(dest_host), 32, scope);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0, scope);
 
 	/*
 	 * connect
 	 */
 
-	if (!cli_establish_connection(cli->cli, 
-	                          dest_host, dest_ip,
-	                          &calling, &called,
-	                          "IPC$", "IPC",
-	                          False, True))
+	if (!cli_establish_connection(cli->cli,
+				      dest_host, dest_ip,
+				      &calling, &called,
+				      "IPC$", "IPC", False, True))
 	{
-		DEBUG(0,("cli_net_use_add: connection failed\n"));
+		DEBUG(0, ("cli_net_use_add: connection failed\n"));
 		cli->cli = NULL;
 		cli_use_free(cli);
 		return NULL;
 	}
 
+	if (key != NULL)
+	{
+		cli->cli->nt.key = *key;
+	}
+	else
+	{
+		NET_USER_INFO_3 usr;
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		char *name = uidtoname(uid);
+
+		ZERO_STRUCT(usr);
+
+		cli->cli->nt.key.pid = getpid();
+		cli->cli->nt.key.vuid = register_vuid(cli->cli->nt.key.pid,
+						      uid, gid,
+						      name, name, False,
+						      &usr);
+	}
 	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
+
+	(*is_new) = True;
 
 	return cli->cli;
 }
@@ -280,18 +313,17 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 /****************************************************************************
 delete a client state
 ****************************************************************************/
-BOOL cli_net_use_del(const char* srv_name,
-				const struct ntuser_creds *usr_creds,
-				BOOL force_close,
-				BOOL *connection_closed)
+BOOL cli_net_use_del(const char *srv_name,
+		     const struct ntuser_creds *usr_creds,
+		     BOOL force_close, BOOL *connection_closed)
 {
 	int i;
 	const char *sv_name = srv_name;
 
-	DEBUG(10,("cli_net_use_del: %s. %s. %s. force close: %s\n",
-	           srv_name,
-	           usr_creds->user_name, usr_creds->domain,
-	           BOOLSTR(force_close)));
+	DEBUG(10, ("cli_net_use_del: %s. %s. %s. force close: %s\n",
+		   srv_name,
+		   usr_creds->user_name, usr_creds->domain,
+		   BOOLSTR(force_close)));
 
 	if (strnequal("\\\\", sv_name, 2))
 	{
@@ -307,31 +339,33 @@ BOOL cli_net_use_del(const char* srv_name,
 	{
 		char *cli_name = NULL;
 
-		if (clis[i] == NULL) continue;
-		if (clis[i]->cli == NULL) continue;
+		if (clis[i] == NULL)
+			continue;
+		if (clis[i]->cli == NULL)
+			continue;
 
 		cli_name = clis[i]->cli->desthost;
 
-		DEBUG(10,("connection: %s %s %s\n", cli_name,
-                             clis[i]->cli->usr.user_name,
-		             clis[i]->cli->usr.domain));
+		DEBUG(10, ("connection: %s %s %s\n", cli_name,
+			   clis[i]->cli->usr.user_name,
+			   clis[i]->cli->usr.domain));
 
 		if (strnequal("\\\\", cli_name, 2))
 		{
 			cli_name = &cli_name[2];
 		}
 
-		if (!strequal(cli_name, sv_name)) continue;
+		if (!strequal(cli_name, sv_name))
+			continue;
 
 		if (strequal(usr_creds->user_name,
-                             clis[i]->cli->usr.user_name) &&
-		    strequal(usr_creds->domain,
-		             clis[i]->cli->usr.domain))
+			     clis[i]->cli->usr.user_name) &&
+		    strequal(usr_creds->domain, clis[i]->cli->usr.domain))
 		{
 			/* decrement number of users */
 			clis[i]->num_users--;
 
-			DEBUG(10,("idx: %i num_users now: %d\n",
+			DEBUG(10, ("idx: %i num_users now: %d\n",
 				   i, clis[i]->num_users));
 
 			if (force_close || clis[i]->num_users == 0)
@@ -353,7 +387,7 @@ BOOL cli_net_use_del(const char* srv_name,
 /****************************************************************************
 enumerate client states
 ****************************************************************************/
-void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
+void cli_net_use_enum(uint32 * num_cons, struct use_info ***use)
 {
 	int i;
 
@@ -366,16 +400,17 @@ void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
 
 		ZERO_STRUCT(item);
 
-		if (clis[i] == NULL) continue;
+		if (clis[i] == NULL)
+			continue;
 
 		item.connected = clis[i]->cli != NULL ? True : False;
-	
+
 		if (item.connected)
 		{
 			item.srv_name = clis[i]->cli->desthost;
 			item.user_name = clis[i]->cli->usr.user_name;
 			item.key = clis[i]->cli->nt.key;
-			item.domain    = clis[i]->cli->usr.domain;
+			item.domain = clis[i]->cli->usr.domain;
 		}
 
 		add_use_info_to_array(num_cons, use, &item);
@@ -390,39 +425,39 @@ void cli_use_wait_keyboard(void)
 {
 	fd_set fds;
 	struct timeval timeout;
-  
+
 	while (1)
 	{
 		int i;
 		int maxfd = fileno(stdin);
 		FD_ZERO(&fds);
-		FD_SET(fileno(stdin),&fds);
+		FD_SET(fileno(stdin), &fds);
 		for (i = 0; i < num_clis; i++)
 		{
 			if (clis[i] != NULL && clis[i]->cli != NULL)
 			{
 				int fd = clis[i]->cli->fd;
-				FD_SET(fd,&fds);
+				FD_SET(fd, &fds);
 				maxfd = MAX(fd, maxfd);
 			}
 		}
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(maxfd+1,NULL, &fds,&timeout);
-      
-		if (FD_ISSET(fileno(stdin),&fds))
+		sys_select(maxfd + 1, NULL, &fds, &timeout);
+
+		if (FD_ISSET(fileno(stdin), &fds))
 			return;
 
 		/* We deliberately use receive_smb instead of
 		   client_receive_smb as we want to receive
 		   session keepalives and then drop them here.
-		*/
+		 */
 		for (i = 0; i < num_clis; i++)
 		{
 			int fd = clis[i]->cli->fd;
-			if (FD_ISSET(fd,&fds))
-					receive_smb(fd,clis[i]->cli->inbuf,0);
+			if (FD_ISSET(fd, &fds))
+				receive_smb(fd, clis[i]->cli->inbuf, 0);
 		}
-	}  
+	}
 }

@@ -21,8 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
-#define _NT_DOMAIN_H 
+#ifndef _NT_DOMAIN_H		/* _NT_DOMAIN_H */
+#define _NT_DOMAIN_H
 
 
 /* dce/rpc support */
@@ -36,7 +36,7 @@
 #include "rpc_misc.h"
 
 /* security descriptor structures */
-#include "rpc_secdes.h" 
+#include "rpc_secdes.h"
 
 /* different dce/rpc pipes */
 #include "rpc_lsa.h"
@@ -56,7 +56,7 @@
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
  */
- 
+
 #define CHECK_STRUCT(data) \
 { \
 	if ((data)->struct_start != 0xfefefefe || \
@@ -72,22 +72,23 @@ typedef struct parse_struct
 {
 	uint32 struct_start;
 
-	char *data; /* memory buffer */
-	size_t data_size; /* current memory buffer size */
+	char *data;		/* memory buffer */
+	size_t data_size;	/* current memory buffer size */
 	/* array memory offsets */
-	uint32 start; 
+	uint32 start;
 	uint32 end;
 
-	uint32 offset; /* offset currently being accessed in memory buffer */
-	uint8 align; /* data alignment */
-	BOOL io; /* parsing in or out of data stream */
-	BOOL error; /* error occurred while parsing (out of memory bounds) */
+	uint32 offset;		/* offset currently being accessed in memory buffer */
+	uint8 align;		/* data alignment */
+	BOOL io;		/* parsing in or out of data stream */
+	BOOL error;		/* error occurred while parsing (out of memory bounds) */
 
 	struct parse_struct *next;
 
 	uint32 struct_end;
 
-} prs_struct;
+}
+prs_struct;
 
 typedef struct netsec_auth_struct
 {
@@ -96,7 +97,8 @@ typedef struct netsec_auth_struct
 
 	uint32 seq_num;
 
-} netsec_auth_struct;
+}
+netsec_auth_struct;
 
 typedef struct ntlmssp_auth_struct
 {
@@ -105,14 +107,15 @@ typedef struct ntlmssp_auth_struct
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
 
-} ntlmssp_auth_struct;
+}
+ntlmssp_auth_struct;
 
 struct srv_auth_fns;
 
 typedef struct rpcsrv_struct
 {
-	prs_struct data_i; /* input data (intermediate, for fragments) */
-	prs_struct rdata;  /* output data (to create fragments from */
+	prs_struct data_i;	/* input data (intermediate, for fragments) */
+	prs_struct rdata;	/* output data (to create fragments from */
 
 	/* indicates how far in rdata we have got, creating fragments */
 	uint32 rdata_offset;
@@ -130,51 +133,55 @@ typedef struct rpcsrv_struct
 	BOOL auth_validated;
 	BOOL faulted_once_before;
 
-	RPC_HDR       hdr;
-	RPC_HDR_BA    hdr_ba;
-	RPC_HDR_RB    hdr_rb;
-	RPC_HDR_REQ   hdr_req;
+	RPC_HDR hdr;
+	RPC_HDR_BA hdr_ba;
+	RPC_HDR_RB hdr_rb;
+	RPC_HDR_REQ hdr_req;
 
 	vuser_key key;
 
-	int c; /* socket */
+	int c;			/* socket */
 
-} rpcsrv_struct;
+}
+rpcsrv_struct;
 
 struct cli_connection;
 
 typedef struct cli_auth_fns
 {
 	/* these three will do for now.  they *should* match with server-side */
-	BOOL (*create_bind_req)(struct cli_connection *, prs_struct *,
-	                        uint32, RPC_IFACE *, RPC_IFACE *);
-	BOOL (*decode_bind_resp)(struct cli_connection *, prs_struct *);
-	BOOL (*create_bind_cont)(struct cli_connection *, prs_struct *,
-	                         uint32);
+	BOOL (*create_bind_req) (struct cli_connection *, prs_struct *,
+				 uint32, RPC_IFACE *, RPC_IFACE *);
+	BOOL (*decode_bind_resp) (struct cli_connection *, prs_struct *);
+	BOOL (*create_bind_cont) (struct cli_connection *, prs_struct *,
+				  uint32);
 	/* creates an authenticated PDU */
-	BOOL (*cli_create_pdu)(struct cli_connection *, uint8,
-	                         prs_struct *, int, int*,
-	                         prs_struct *, uint8 *);
+	BOOL (*cli_create_pdu) (struct cli_connection *, uint8,
+				prs_struct *, int, int *,
+				prs_struct *, uint8 *);
 	/* decodes an authenticated PDU */
-	BOOL (*cli_decode_pdu)(struct cli_connection *, prs_struct *,
-	                         int, int);
- 
-} cli_auth_fns;
+	BOOL (*cli_decode_pdu) (struct cli_connection *, prs_struct *,
+				int, int);
+
+}
+cli_auth_fns;
 
 typedef struct srv_auth_fns
 {
-	BOOL (*api_is_auth)(RPC_HDR_AUTH*, void **auth_info);
+	BOOL (*api_is_auth) (RPC_HDR_AUTH *, void **auth_info);
 
 	/* state-based authentication: one to decode, one to generate */
-	BOOL (*api_auth_chk)(rpcsrv_struct *, enum RPC_PKT_TYPE);
-	BOOL (*api_auth_gen)(rpcsrv_struct *, prs_struct *, enum RPC_PKT_TYPE);
+	BOOL (*api_auth_chk) (rpcsrv_struct *, enum RPC_PKT_TYPE);
+	BOOL (*api_auth_gen) (rpcsrv_struct *, prs_struct *,
+			      enum RPC_PKT_TYPE);
 
 	/* decodes an authenticated PDU */
-	BOOL (*api_decode_pdu)(rpcsrv_struct *);
+	BOOL (*api_decode_pdu) (rpcsrv_struct *);
 	/* creates an authenticated PDU */
-	BOOL (*api_create_pdu)(rpcsrv_struct *, uint32, prs_struct *);
+	BOOL (*api_create_pdu) (rpcsrv_struct *, uint32, prs_struct *);
 
-} srv_auth_fns;
+}
+srv_auth_fns;
 
 typedef struct pipes_struct
 {
@@ -192,29 +199,31 @@ typedef struct pipes_struct
 	/* local, server-side rpc state processing */
 	rpcsrv_struct *l;
 
-} pipes_struct;
+}
+pipes_struct;
 
 typedef struct msrpc_service_fns
 {
-	void (*auth_init)(rpcsrv_struct *);
-	void (*service_init)(char* );
-	BOOL (*reload_services)(BOOL);
-	int (*main_init)(int,char *[]);
+	void (*auth_init) (rpcsrv_struct *);
+	void (*service_init) (char *);
+	BOOL (*reload_services) (BOOL);
+	int (*main_init) (int, char *[]);
 
-} msrpc_service_fns;
+}
+msrpc_service_fns;
 
 struct api_struct
-{  
-  char *name;
-  uint8 opnum;
-  BOOL (*fn) (rpcsrv_struct*, prs_struct*, prs_struct*);
+{
+	char *name;
+	uint8 opnum;
+	BOOL (*fn) (rpcsrv_struct *, prs_struct *, prs_struct *);
 };
 
 struct acct_info
 {
-    fstring acct_name; /* account name */
-    fstring acct_desc; /* account description */
-    uint32  rid; /* domain-relative RID */
+	fstring acct_name;	/* account name */
+	fstring acct_desc;	/* account description */
+	uint32 rid;		/* domain-relative RID */
 };
 
 /*
@@ -278,4 +287,3 @@ struct acct_info
 	void (*fn)(const char*, const char*, uint32, uint32, void *const *const)
 
 #endif /* _NT_DOMAIN_H */
-

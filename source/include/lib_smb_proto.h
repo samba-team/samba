@@ -5,16 +5,16 @@
 
 /*The following definitions come from  lib/crc32.c  */
 
-uint32 crc32_calc_buffer( uint32 count, char *buffer);
+uint32 crc32_calc_buffer(uint32 count, char *buffer);
 
 /*The following definitions come from  lib/hmacmd5.c  */
 
-void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
-			HMACMD5Context *ctx);
-void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx);
-void hmac_md5_final(uchar *digest, HMACMD5Context *ctx);
-void hmac_md5( uchar key[16], uchar* data, int data_len, uchar* digest);
+void hmac_md5_init_rfc2104(uchar * key, int key_len, HMACMD5Context * ctx);
+void hmac_md5_init_limK_to_64(const uchar * key, int key_len,
+			      HMACMD5Context * ctx);
+void hmac_md5_update(const uchar * text, int text_len, HMACMD5Context * ctx);
+void hmac_md5_final(uchar * digest, HMACMD5Context * ctx);
+void hmac_md5(uchar key[16], uchar * data, int data_len, uchar * digest);
 
 /*The following definitions come from  lib/md5.c  */
 
@@ -29,58 +29,54 @@ struct policy_cache *get_global_hnd_cache(void);
 struct policy_cache *init_policy_cache(int num_pol_hnds);
 void free_policy_cache(struct policy_cache *cache);
 BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from);
+		    POLICY_HND * hnd, const POLICY_HND * from);
 BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev);
-void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
-BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to);
+			 const vuser_key * key,
+			 POLICY_HND * hnd, uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache,
+		     const vuser_key * key,
+		     POLICY_HND * hnd, uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache,
+			  const POLICY_HND * parent_hnd,
+			  POLICY_HND * hnd, uint32 access_mask);
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND * hnd);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND * hnd,
+		      void (*fn) (void *), void *dev);
+void *get_policy_state_info(struct policy_cache *cache,
+			    const POLICY_HND * hnd);
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND * hnd);
+BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND * hnd,
+		     POLICY_HND * to);
 const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16]);
+				      const POLICY_HND * hnd);
+BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND * hnd,
+			 uchar usr_sess_key[16]);
 
 /*The following definitions come from  lib/vuser.c  */
 
-BOOL is_valid_user_struct(const vuser_key *key);
-user_struct *get_valid_user_struct(const vuser_key *key);
-void invalidate_vuid(vuser_key *key);
-BOOL validated_username(vuser_key *key, char *name, size_t len);
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
 uint16 create_vuid(pid_t pid,
-				uid_t uid, gid_t gid,
-				int n_groups, gid_t *groups,
-				const char *unix_name,
-				const char *requested_name,
-				const char *real_name,
-				BOOL guest, const NET_USER_INFO_3 *info3);
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
 uint16 register_vuid(pid_t pid,
-				uid_t uid,gid_t gid,
-				const char *unix_name,
-				const char *requested_name,
-				BOOL guest,
-				const NET_USER_INFO_3 *info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
+		     uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
 
 /*The following definitions come from  lib/vuser_db.c  */
 
-BOOL tdb_delete_vuid( const vuser_key *uk);
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
-BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
+BOOL tdb_delete_vuid(const vuser_key * uk);
+BOOL tdb_lookup_vuid(const vuser_key * uk, user_struct ** usr);
+BOOL tdb_store_vuid(const vuser_key * uk, user_struct * usr);
 BOOL vuid_init_db(void);
 
 /*The following definitions come from  libsmb/clientgen.c  */
@@ -90,39 +86,36 @@ char *cli_errstr(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
 BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
 void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
-BOOL cli_send_trans(struct cli_state *cli, int trans, 
-                           char *name, int pipe_name_len, 
-                           int fid, int flags,
-                           uint16 *setup, int lsetup, int msetup,
-                           char *param, int lparam, int mparam,
-                           char *data, int ldata, int mdata);
+BOOL cli_send_trans(struct cli_state *cli, int trans,
+		    char *name, int pipe_name_len,
+		    int fid, int flags,
+		    uint16 * setup, int lsetup, int msetup,
+		    char *param, int lparam, int mparam,
+		    char *data, int ldata, int mdata);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
-                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
-                  char *params, uint32 param_count, uint32 max_param_count,
-                  char *data, uint32 data_count, uint32 max_data_count,
-                  char **rparam, uint32 *rparam_count,
-                  char **rdata, uint32 *rdata_count);
+		  uint16 * setup, uint32 setup_count, uint32 max_setup_count,
+		  char *params, uint32 param_count, uint32 max_param_count,
+		  char *data, uint32 data_count, uint32 max_data_count,
+		  char **rparam, uint32 * rparam_count,
+		  char **rdata, uint32 * rdata_count);
 BOOL cli_api(struct cli_state *cli,
 	     char *param, int prcnt, int mprcnt,
 	     char *data, int drcnt, int mdrcnt,
-	     char **rparam, int *rprcnt,
-	     char **rdata, int *rdrcnt);
-BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+	     char **rparam, int *rprcnt, char **rdata, int *rdrcnt);
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli, char *user,
+			   char *workstation);
+BOOL cli_RNetShareEnum(struct cli_state *cli,
+		       void (*fn) (const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *));
-BOOL cli_session_setup_x(struct cli_state *cli, 
-				char *user, 
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
-BOOL cli_session_setup(struct cli_state *cli, 
-				char *myhostname, char *user,
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
+		       void (*fn) (const char *, uint32, const char *));
+BOOL cli_session_setup_x(struct cli_state *cli, char *user, char *pass,
+			 int passlen, char *ntpass, int ntpasslen,
+			 char *user_domain);
+BOOL cli_session_setup(struct cli_state *cli, char *myhostname, char *user,
+		       char *pass, int passlen, char *ntpass, int ntpasslen,
+		       char *user_domain);
 BOOL cli_ulogoff(struct cli_state *cli);
-BOOL cli_send_tconX(struct cli_state *cli, 
+BOOL cli_send_tconX(struct cli_state *cli,
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
 BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
@@ -131,36 +124,39 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, const char *fname);
 int cli_open(struct cli_state *cli, const char *fname,
-				int flags, int share_mode);
+	     int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
-ssize_t cli_write(struct cli_state *cli,
-		  int fnum, uint16 write_mode,
+BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len,
+	      int timeout);
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len,
+		int timeout);
+size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset,
+		    size_t size);
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset,
+		size_t size, BOOL overlap);
+ssize_t cli_write(struct cli_state *cli, int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size, size_t bytes_left);
-BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  uint16 *attr, size_t *size, 
-		  time_t *c_time, time_t *a_time, time_t *m_time);
-BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		uint16 *attr, size_t *size, time_t *t);
+BOOL cli_getattrE(struct cli_state *cli, int fd, uint16 * attr, size_t * size,
+		  time_t * c_time, time_t * a_time, time_t * m_time);
+BOOL cli_getatr(struct cli_state *cli, char *fname, uint16 * attr,
+		size_t * size, time_t * t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
-BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   size_t *size, uint16 *mode);
-BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
-		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint16 *mode,
-		    SMB_INO_T *ino);
-BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   uint16 *mode, size_t *size,
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   time_t *w_time, SMB_INO_T *ino);
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *));
-BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
-                             const char *old_password);
+BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
+		   time_t * c_time, time_t * a_time, time_t * m_time,
+		   size_t * size, uint16 * mode);
+BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
+		    time_t * c_time, time_t * a_time, time_t * m_time,
+		    time_t * w_time, size_t * size, uint16 * mode,
+		    SMB_INO_T * ino);
+BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
+		   uint16 * mode, size_t * size,
+		   time_t * c_time, time_t * a_time, time_t * m_time,
+		   time_t * w_time, SMB_INO_T * ino);
+int cli_list(struct cli_state *cli, const char *Mask, uint16 attribute,
+	     void (*fn) (file_info *, const char *));
+BOOL cli_oem_change_password(struct cli_state *cli, const char *user,
+			     const char *new_password,
+			     const char *old_password);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
@@ -169,29 +165,28 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
+int cli_error(struct cli_state *cli, uint8 * eclass, uint32 * num);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
-BOOL cli_establish_connection(struct cli_state *cli, 
-				const char *dest_host, struct in_addr *dest_ip,
-				struct nmb_name *calling, struct nmb_name *called,
-				char *service, char *service_type,
-				BOOL do_shutdown, BOOL do_tcon);
-BOOL cli_connect_auth(struct cli_state *cli,
-				const char* desthost,
-				struct in_addr *dest_ip,
-				const struct ntuser_creds *usr);
-BOOL cli_connect_servers_auth(struct cli_state *cli,
-				char *p,
-				const struct ntuser_creds *usr);
+BOOL cli_establish_connection(struct cli_state *cli,
+			      const char *dest_host, struct in_addr *dest_ip,
+			      struct nmb_name *calling,
+			      struct nmb_name *called, char *service,
+			      char *service_type, BOOL do_shutdown,
+			      BOOL do_tcon);
+BOOL cli_connect_auth(struct cli_state *cli, const char *desthost,
+		      struct in_addr *dest_ip,
+		      const struct ntuser_creds *usr);
+BOOL cli_connect_servers_auth(struct cli_state *cli, char *p,
+			      const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
 int cli_printjob_del(struct cli_state *cli, int job);
-int cli_print_queue(struct cli_state *cli, 
-		    void (*fn)(struct print_job_info *));
+int cli_print_queue(struct cli_state *cli,
+		    void (*fn) (struct print_job_info *));
 BOOL cli_chkpath(struct cli_state *cli, char *path);
-BOOL cli_message_start(struct cli_state *cli, char *host, char *username, 
-			      int *grp);
+BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
+		       int *grp);
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
@@ -199,18 +194,18 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
-char *credstr(const uchar *cred);
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
+char *credstr(const uchar * cred);
+void cred_session_key(DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal, char *pass,
 		      uchar session_key[8]);
-void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
-		 DOM_CHAL *cred);
-int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
-		DOM_CHAL *stored_cred, UTIME timestamp);
+void cred_create(uchar session_key[8], DOM_CHAL * stor_cred, UTIME timestamp,
+		 DOM_CHAL * cred);
+int cred_assert(const DOM_CHAL * cred, uchar session_key[8],
+		DOM_CHAL * stored_cred, UTIME timestamp);
 BOOL clnt_deal_with_creds(uchar sess_key[8],
-			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
+			  DOM_CRED * sto_clnt_cred, DOM_CRED * rcv_srv_cred);
 BOOL deal_with_creds(uchar sess_key[8],
-		     DOM_CRED *sto_clnt_cred, 
-		     const DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
+		     DOM_CRED * sto_clnt_cred,
+		     const DOM_CRED * rcv_clnt_cred, DOM_CRED * rtn_srv_cred);
 
 /*The following definitions come from  libsmb/nterr.c  */
 
@@ -228,74 +223,69 @@ void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_set_lm_nt_16(struct pwd_info *pwd,
-				const uchar lm_pwd[16],
-				const uchar nt_pwd[16]);
-void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
+		      const uchar lm_pwd[16], const uchar nt_pwd[16]);
+void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16],
+		      uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
 void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
-		const char *user, const char *server, const char *domain,
-					uchar sess_key[16]);
+			 const char *user, const char *server,
+			 const char *domain, uchar sess_key[16]);
 void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8],
-				uchar sess_key[16]);
-void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
-				uchar *nt_owf, size_t *nt_owf_len);
+			uchar sess_key[16]);
+void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar * nt_owf,
+		       size_t * nt_owf_len);
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
-void smbhash(uchar *out, const uchar *in, const uchar *key, int forw);
-void E_P16(uchar *p14,uchar *p16);
-void E_P24(const uchar *p21, const uchar *c8, uchar *p24);
-void D_P16(const uchar *p14, const uchar *in, uchar *out);
-void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
-void cred_hash1(uchar *out,uchar *in,uchar *key);
-void cred_hash2(uchar *out,uchar *in,uchar *key);
-void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw);
-void SamOEMhash( uchar *data, const uchar *key, int val);
-void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
+void smbhash(uchar * out, const uchar * in, const uchar * key, int forw);
+void E_P16(uchar * p14, uchar * p16);
+void E_P24(const uchar * p21, const uchar * c8, uchar * p24);
+void D_P16(const uchar * p14, const uchar * in, uchar * out);
+void E_old_pw_hash(const uchar * p14, const uchar * in, uchar * out);
+void cred_hash1(uchar * out, uchar * in, uchar * key);
+void cred_hash2(uchar * out, uchar * in, uchar * key);
+void cred_hash3(uchar * out, const uchar * in, uchar * key, int forw);
+void SamOEMhash(uchar * data, const uchar * key, int val);
+void sam_pwd_hash(uint32 rid, const uchar * in, uchar * out, int forw);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
-void SMBencrypt(uchar *pwrd, uchar *c8, uchar *p24);
-void SMBNTencrypt(uchar *pwrd, uchar *c8, uchar *p24);
-void E_md4hash(uchar *pwrd, uchar *p16);
-void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16]);
+void SMBencrypt(uchar * pwrd, uchar * c8, uchar * p24);
+void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24);
+void E_md4hash(uchar * pwrd, uchar * p16);
+void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16]);
 void lm_owf_gen(const char *pwd, uchar p16[16]);
-void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
+void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16]);
 void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
-void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16]);
+void nt_lm_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
-void SMBOWFencrypt(const uchar pwrd[16], const uchar *c8, uchar p24[24]);
-void SMBOWFencrypt_ntv2(const uchar kr[16], 
-				const uchar *srv_chal, int srv_chal_len,
-				const uchar *cli_chal, int cli_chal_len,
-				char resp_buf[16]);
-void SMBsesskeygen_ntv2(const uchar kr[16], 
-				const uchar *nt_resp, 
-				char sess_key[16]);
-void SMBsesskeygen_ntv1(const uchar kr[16], 
-				const uchar *nt_resp, 
-				char sess_key[16]);
+void SMBOWFencrypt(const uchar pwrd[16], const uchar * c8, uchar p24[24]);
+void SMBOWFencrypt_ntv2(const uchar kr[16],
+			const uchar * srv_chal, int srv_chal_len,
+			const uchar * cli_chal, int cli_chal_len,
+			char resp_buf[16]);
+void SMBsesskeygen_ntv2(const uchar kr[16],
+			const uchar * nt_resp, char sess_key[16]);
+void SMBsesskeygen_ntv1(const uchar kr[16],
+			const uchar * nt_resp, char sess_key[16]);
 void SMBgenclientchals(char *lm_cli_chal,
-				char *nt_cli_chal, int *nt_cli_chal_len,
-				const char *srv, const char *dom);
-void ntv2_owf_gen(const uchar owf[16], 
-				const char *user_n,
-				const char *domain_n,
-				uchar kr_buf[16]);
-void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
+		       char *nt_cli_chal, int *nt_cli_chal_len,
+		       const char *srv, const char *dom);
+void ntv2_owf_gen(const uchar owf[16],
+		  const char *user_n, const char *domain_n, uchar kr_buf[16]);
+void NTLMSSPOWFencrypt(uchar pwrd[8], uchar * ntlmchalresp, uchar p24[24]);
 BOOL make_oem_passwd_hash(uchar data[516],
-				const char *pwrd, int new_pw_len,
-				const uchar old_pw_hash[16], BOOL unicode);
-BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
-BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
+			  const char *pwrd, int new_pw_len,
+			  const uchar old_pw_hash[16], BOOL unicode);
+BOOL nt_encrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key);
+BOOL nt_decrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
-				char *domain, char *user_name, char *my_name,
-				uint32 ntlmssp_cli_flgs,
-                                prs_struct *auth_resp);
+			 char *domain, char *user_name, char *my_name,
+			 uint32 ntlmssp_cli_flgs, prs_struct * auth_resp);
 BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
-			int new_pwrd_size, uint32 *new_pw_len);
+		      int new_pwrd_size, uint32 * new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
-			int new_pw_len, BOOL nt_pass_set);
+		      int new_pw_len, BOOL nt_pass_set);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -306,385 +296,369 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL trust_password_lock( const char *domain, const char *name, BOOL update);
+BOOL trust_password_lock(const char *domain, const char *name, BOOL update);
 BOOL trust_password_unlock(void);
-BOOL trust_password_delete( char *domain, char *name );
-BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
-BOOL set_trust_account_password( uchar *md4_new_pwd);
-BOOL trust_get_passwd_time( uchar trust_passwd[16],
-				const char *domain, const char *myname,
-				NTTIME *modtime);
-BOOL trust_get_passwd( uchar trust_passwd[16],
-				const char *domain, const char *myname);
+BOOL trust_password_delete(char *domain, char *name);
+BOOL get_trust_account_password(uchar * ret_pwd, time_t * pass_last_set_time);
+BOOL set_trust_account_password(uchar * md4_new_pwd);
+BOOL trust_get_passwd_time(uchar trust_passwd[16],
+			   const char *domain, const char *myname,
+			   NTTIME * modtime);
+BOOL trust_get_passwd(uchar trust_passwd[16],
+		      const char *domain, const char *myname);
 BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
-BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
-				const char* requested_name,
-				const char* real_name,
-				BOOL guest);
-BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth);
-void creds_free_unix(CREDS_UNIX *r_u);
-BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
-		uint32 uid, uint32 gid, uint32 num_grps, gid_t *grps);
-BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int depth);
-void creds_free_unix_sec(CREDS_UNIX_SEC *r_u);
-BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth);
-BOOL creds_io_nt(char *desc, CREDS_NT *r_u, prs_struct *ps, int depth);
-void creds_free_nt(CREDS_NT *r_u);
-BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth);
-void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from);
-void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from);
-void copy_nt_creds(struct ntuser_creds *to,
-				const struct ntuser_creds *from);
-void copy_user_creds(struct user_creds *to,
-				const struct user_creds *from);
+BOOL make_creds_unix(CREDS_UNIX * r_u, const char *user_name,
+		     const char *requested_name,
+		     const char *real_name, BOOL guest);
+BOOL creds_io_unix(char *desc, CREDS_UNIX * r_u, prs_struct * ps, int depth);
+void creds_free_unix(CREDS_UNIX * r_u);
+BOOL make_creds_unix_sec(CREDS_UNIX_SEC * r_u,
+			 uint32 uid, uint32 gid, uint32 num_grps,
+			 gid_t * grps);
+BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC * r_u, prs_struct * ps,
+		       int depth);
+void creds_free_unix_sec(CREDS_UNIX_SEC * r_u);
+BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct * ps,
+		       int depth);
+BOOL creds_io_nt(char *desc, CREDS_NT * r_u, prs_struct * ps, int depth);
+void creds_free_nt(CREDS_NT * r_u);
+BOOL creds_io_hybrid(char *desc, CREDS_HYBRID * r_u, prs_struct * ps,
+		     int depth);
+void copy_unix_creds(CREDS_UNIX * to, const CREDS_UNIX * from);
+void copy_unix_sec_creds(CREDS_UNIX_SEC * to, const CREDS_UNIX_SEC * from);
+void copy_nt_creds(struct ntuser_creds *to, const struct ntuser_creds *from);
+void copy_user_creds(struct user_creds *to, const struct user_creds *from);
 void free_user_creds(struct user_creds *creds);
-BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
-BOOL create_ntuser_creds( prs_struct *ps,
-				const char* name, 
-				uint16 version, uint16 command,
-				const vuser_key *key,
-				const struct ntuser_creds *ntu,
-				BOOL reuse);
-BOOL create_user_creds( prs_struct *ps,
-				const char* name, 
-				uint16 version, uint16 command,
-				const vuser_key *key,
-				const struct user_creds *usr);
+BOOL creds_io_cmd(char *desc, CREDS_CMD * r_u, prs_struct * ps, int depth);
+BOOL create_ntuser_creds(prs_struct * ps,
+			 const char *name,
+			 uint16 version, uint16 command,
+			 const vuser_key * key,
+			 const struct ntuser_creds *ntu, BOOL reuse);
+BOOL create_user_creds(prs_struct * ps,
+		       const char *name,
+		       uint16 version, uint16 command,
+		       const vuser_key * key, const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
-BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
-BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
-uint32 get_enum_hnd(ENUM_HND *enh);
-BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
-BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
-BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
-BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-BOOL smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
-BOOL make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
-BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
-BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr(UNIHDR *hdr, int len);
-BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
-BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
-BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
-BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
-BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
-BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
-BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
-BOOL make_unistr(UNISTR *str, char *buf);
-BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
-BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
-BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len);
-BOOL make_buffer3_hex(BUFFER3 *str, char *buf);
-BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
-BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
-BOOL make_buffer4_str(BUFFER4 *str, const char *buf, int len);
-BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
-BOOL init_buffer5(BUFFER5 **str);
-BOOL clear_buffer5(BUFFER5 **str);
-BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
-BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
-BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
-BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
-BOOL make_string2(STRING2 *str, const char *buf, int len);
-BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
-BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
-BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
-BOOL make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
-BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
-BOOL make_log_info(DOM_LOG_INFO *log,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name);
-BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
-BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred);
-BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
-BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred);
-BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
-BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16]);
-BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
-BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
-BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
+BOOL smb_io_bigint(char *desc, BIGINT * bigint, prs_struct * ps, int depth);
+BOOL smb_io_time(char *desc, NTTIME * nttime, prs_struct * ps, int depth);
+BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL * level, prs_struct * ps,
+			 int depth);
+uint32 get_enum_hnd(ENUM_HND * enh);
+BOOL make_enum_hnd(ENUM_HND * enh, uint32 hnd);
+BOOL smb_io_enum_hnd(char *desc, ENUM_HND * hnd, prs_struct * ps, int depth);
+BOOL smb_io_dom_sid(char *desc, DOM_SID * sid, prs_struct * ps, int depth);
+BOOL make_dom_sid2(DOM_SID2 * sid2, const DOM_SID * sid);
+BOOL smb_io_dom_sid2(char *desc, DOM_SID2 * sid, prs_struct * ps, int depth);
+BOOL make_str_hdr(STRHDR * hdr, int max_len, int len, uint32 buffer);
+BOOL smb_io_strhdr(char *desc, STRHDR * hdr, prs_struct * ps, int depth);
+BOOL make_strhdr2(STRHDR2 * hdr, uint32 max_len, uint32 len, uint32 buffer);
+BOOL smb_io_strhdr2(char *desc, STRHDR2 * hdr, prs_struct * ps, int depth);
+BOOL make_uni_hdr(UNIHDR * hdr, int len);
+BOOL make_unihdr_from_unistr2(UNIHDR * hdr, const UNISTR2 * str);
+BOOL smb_io_unihdr(char *desc, UNIHDR * hdr, prs_struct * ps, int depth);
+BOOL make_buf_hdr(BUFHDR * hdr, int max_len, int len);
+BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR * hdr, prs_struct * ps, int depth,
+		       uint32 * offset);
+BOOL smb_io_hdrbuf_post(char *desc, BUFHDR * hdr, prs_struct * ps, int depth,
+			uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
+BOOL smb_io_hdrbuf(char *desc, BUFHDR * hdr, prs_struct * ps, int depth);
+BOOL make_bufhdr2(BUFHDR2 * hdr, uint32 info_level, uint32 length,
+		  uint32 buffer);
+BOOL smb_io_bufhdr2(char *desc, BUFHDR2 * hdr, prs_struct * ps, int depth);
+BOOL make_uni_hdr2(UNIHDR2 * hdr, int len);
+BOOL make_unihdr2_from_unistr2(UNIHDR2 * hdr, const UNISTR2 * str);
+BOOL smb_io_unihdr2(char *desc, UNIHDR2 * hdr2, prs_struct * ps, int depth);
+BOOL make_unistr(UNISTR * str, char *buf);
+BOOL smb_io_unistr(char *desc, UNISTR * uni, prs_struct * ps, int depth);
+BOOL make_buffer3_uint32(BUFFER3 * str, uint32 val);
+BOOL make_buffer3_str(BUFFER3 * str, const char *buf, int len);
+BOOL make_buffer3_hex(BUFFER3 * str, char *buf);
+BOOL make_buffer3_bytes(BUFFER3 * str, uint8 * buf, int len);
+BOOL smb_io_buffer3(char *desc, BUFFER3 * buf3, prs_struct * ps, int depth);
+BOOL make_buffer4_str(BUFFER4 * str, const char *buf, int len);
+BOOL smb_io_buffer4(char *desc, BUFFER4 * buf4, uint32 buffer,
+		    prs_struct * ps, int depth);
+BOOL init_buffer5(BUFFER5 ** str);
+BOOL clear_buffer5(BUFFER5 ** str);
+BOOL make_buffer5(BUFFER5 * str, char *buf, int len);
+BOOL smb_io_buffer5(char *desc, BUFFER5 * buf5, prs_struct * ps, int depth);
+BOOL make_buffer2_multi(BUFFER2 * str, char *const *const buf, uint32 num);
+BOOL make_buffer2(BUFFER2 * str, const char *buf, int len);
+BOOL smb_io_buffer2(char *desc, BUFFER2 * buf2, uint32 buffer,
+		    prs_struct * ps, int depth);
+BOOL make_buf_unistr2(UNISTR2 * str, uint32 * ptr, const char *buf);
+BOOL make_string2(STRING2 * str, const char *buf, int len);
+BOOL make_buf_string2(STRING2 * str, uint32 * ptr, const char *buf);
+BOOL smb_io_string2(char *desc, STRING2 * str2, uint32 buffer,
+		    prs_struct * ps, int depth);
+BOOL make_unistr2(UNISTR2 * str, const char *buf, int len);
+BOOL smb_io_unistr2(char *desc, UNISTR2 * uni2, uint32 buffer,
+		    prs_struct * ps, int depth);
+BOOL make_dom_rid2(DOM_RID2 * rid2, uint32 rid, uint8 type, uint32 idx);
+BOOL smb_io_dom_rid2(char *desc, DOM_RID2 * rid2, prs_struct * ps, int depth);
+BOOL make_dom_rid3(DOM_RID3 * rid3, uint32 rid, uint8 type);
+BOOL smb_io_dom_rid3(char *desc, DOM_RID3 * rid3, prs_struct * ps, int depth);
+BOOL make_log_info(DOM_LOG_INFO * log,
+		   const char *logon_srv, const char *acct_name,
+		   uint16 sec_chan, const char *comp_name);
+BOOL smb_io_log_info(char *desc, DOM_LOG_INFO * log, prs_struct * ps,
+		     int depth);
+BOOL smb_io_chal(char *desc, DOM_CHAL * chal, prs_struct * ps, int depth);
+BOOL smb_io_cred(char *desc, DOM_CRED * cred, prs_struct * ps, int depth);
+BOOL make_clnt_info2(DOM_CLNT_INFO2 * clnt,
+		     const char *logon_srv, const char *comp_name,
+		     DOM_CRED * clnt_cred);
+BOOL smb_io_clnt_info2(char *desc, DOM_CLNT_INFO2 * clnt, prs_struct * ps,
+		       int depth);
+BOOL make_clnt_info(DOM_CLNT_INFO * clnt, const char *logon_srv,
+		    const char *acct_name, uint16 sec_chan,
+		    const char *comp_name, DOM_CRED * cred);
+BOOL smb_io_clnt_info(char *desc, DOM_CLNT_INFO * clnt, prs_struct * ps,
+		      int depth);
+BOOL make_owf_info(OWF_INFO * hash, const uint8 data[16]);
+BOOL smb_io_owf_info(char *desc, OWF_INFO * hash, prs_struct * ps, int depth);
+BOOL smb_io_gid(char *desc, DOM_GID * gid, prs_struct * ps, int depth);
+BOOL smb_io_pol_hnd(char *desc, POLICY_HND * pol, prs_struct * ps, int depth);
+BOOL smb_io_dom_query_3(char *desc, DOM_QUERY_3 * d_q, prs_struct * ps,
+			int depth);
+BOOL smb_io_dom_query_5(char *desc, DOM_QUERY_3 * d_q, prs_struct * ps,
+			int depth);
+BOOL smb_io_unistr3(char *desc, UNISTR3 * name, prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
-BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, 
-				const char* srv_name,
-				uint32 function_code,
-				uint32 query_level,
-				uint32 switch_value);
-BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
-BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, 
-				uint32 switch_value,
-				NETLOGON_INFO *logon_info,
-				uint32 status);
-BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
-BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
-BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth);
-BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				const char *logon_srv, const char *logon_clnt,
-				DOM_CHAL *clnt_chal);
-BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
-BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);
-BOOL make_q_auth(NET_Q_AUTH *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal);
-BOOL net_io_q_auth(char *desc,  NET_Q_AUTH *q_a, prs_struct *ps, int depth);
-BOOL net_io_r_auth(char *desc,  NET_R_AUTH *r_a, prs_struct *ps, int depth);
-BOOL make_q_auth_2(NET_Q_AUTH_2 *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
-BOOL net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth);
-BOOL net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth);
-BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
-				const char *logon_srv, const char *acct_name, 
-                		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred, char nt_cypher[16]);
-BOOL net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth);
-BOOL net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth);
-BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low,
-				uint32 log_id_high,
-				const char *user_name,
-				const char *wksta_name,
-				const char sess_key[16],
-				const uchar lm_cypher[16],
-				const uchar nt_cypher[16]);
-BOOL make_id_info4(NET_ID_INFO_4 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
-				const char *general);
-BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
-				const uchar lm_challenge[8],
-				const uchar *lm_chal_resp,
-				int lm_chal_len,
-				const uchar *nt_chal_resp,
-				int nt_chal_len);
-BOOL make_sam_info(DOM_SAM_INFO *sam,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred,
-				DOM_CRED *rtn_cred, uint16 logon_level,
-				NET_ID_INFO_CTR *ctr);
-BOOL make_net_user_info3W(NET_USER_INFO_3 *usr,
-
-	const NTTIME *logon_time,
-	const NTTIME *logoff_time,
-	const NTTIME *kickoff_time,
-	const NTTIME *pass_last_set_time,
-	const NTTIME *pass_can_change_time,
-	const NTTIME *pass_must_change_time,
-
-	const UNISTR2 *user_name, 
-	const UNISTR2 *full_name,
-	const UNISTR2 *log_scr,
-	const UNISTR2 *prof_path,
-	const UNISTR2 *home_dir,
-	const UNISTR2 *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	const DOM_GID *gids,
-	uint32 user_flgs,
-
-	const char sess_key[16],
-
-	const UNISTR2 *logon_srv,
-	const UNISTR2 *logon_dom,
-
-	const char *padding,
-
-	const DOM_SID *dom_sid,
-	const char *other_sids);
-BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *logon_script,
-	char *profile_path,
-	char *home_dir,
-	char *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	DOM_GID *gids,
-	uint32 user_flgs,
-
-	char sess_key[16],
-
-	char *logon_srv,
-	char *logon_dom,
-
-	char *padding,
-
-	DOM_SID *dom_sid,
-	char *other_sids);
-BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth);
-BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth);
-BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s, 
-			    const DOM_CRED *srv_creds,
-			    uint16 switch_value,
-			    NET_USER_INFO_3 *user_info,
-			    uint32 status);
-BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
-BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
-BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF *r_s, 
-			    const DOM_CRED *srv_cred,
-			    uint32 status);
-BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
-BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
-				const char *srv_name,
-				const char *cli_name,
-				DOM_CRED *cli_creds, uint32 database_id);
-BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth);
-BOOL make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid);
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info,
-				const UNISTR2 *user_name,
-				const UNISTR2 *full_name,
-				uint32 user_rid, uint32 group_rid,
-				const UNISTR2 *home_dir,
-				const UNISTR2 *dir_drive,
-				const UNISTR2 *log_scr,
-				const UNISTR2 *desc,
-				uint32 acb_info,
-				const UNISTR2 *prof_path,
-				const UNISTR2 *wkstas,
-				const UNISTR2 *unk_str,
-				const UNISTR2 *mung_dial);
-BOOL make_r_sam_sync(NET_R_SAM_SYNC *r_s, 
-			   const DOM_CRED *srv_cred,
-			   uint32 sync_context,
-			   uint32 num_deltas,
-			   uint32 num_deltas2,
-			   SAM_DELTA_HDR *hdr_deltas,
-			   SAM_DELTA_CTR *deltas,
-			   uint32 status);
+BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 * q_l,
+			const char *srv_name,
+			uint32 function_code,
+			uint32 query_level, uint32 switch_value);
+BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 * q_l,
+			  prs_struct * ps, int depth);
+BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 * r_l, uint32 switch_value,
+			NETLOGON_INFO * logon_info, uint32 status);
+BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 * r_l,
+			  prs_struct * ps, int depth);
+BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST * r_t,
+			prs_struct * ps, int depth);
+BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST * q_l,
+			prs_struct * ps, int depth);
+BOOL make_q_req_chal(NET_Q_REQ_CHAL * q_c, const char *logon_srv,
+		     const char *logon_clnt, DOM_CHAL * clnt_chal);
+BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
+		       int depth);
+BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL * r_c, prs_struct * ps,
+		       int depth);
+BOOL make_q_auth(NET_Q_AUTH * q_a, const char *logon_srv,
+		 const char *acct_name, uint16 sec_chan,
+		 const char *comp_name, DOM_CHAL * clnt_chal);
+BOOL net_io_q_auth(char *desc, NET_Q_AUTH * q_a, prs_struct * ps, int depth);
+BOOL net_io_r_auth(char *desc, NET_R_AUTH * r_a, prs_struct * ps, int depth);
+BOOL make_q_auth_2(NET_Q_AUTH_2 * q_a,
+		   const char *logon_srv, const char *acct_name,
+		   uint16 sec_chan, const char *comp_name,
+		   DOM_CHAL * clnt_chal, uint32 clnt_flgs);
+BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 * q_a, prs_struct * ps,
+		     int depth);
+BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 * r_a, prs_struct * ps,
+		     int depth);
+BOOL make_q_srv_pwset(NET_Q_SRV_PWSET * q_s, const char *logon_srv,
+		      const char *acct_name, uint16 sec_chan,
+		      const char *comp_name, DOM_CRED * cred,
+		      char nt_cypher[16]);
+BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET * q_s, prs_struct * ps,
+			int depth);
+BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET * r_s, prs_struct * ps,
+			int depth);
+BOOL make_id_info1(NET_ID_INFO_1 * id, const char *domain_name,
+		   uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const char sess_key[16], const uchar lm_cypher[16],
+		   const uchar nt_cypher[16]);
+BOOL make_id_info4(NET_ID_INFO_4 * id, const char *domain_name,
+		   uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const char *general);
+BOOL make_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
+		   uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const uchar lm_challenge[8], const uchar * lm_chal_resp,
+		   int lm_chal_len, const uchar * nt_chal_resp,
+		   int nt_chal_len);
+BOOL make_sam_info(DOM_SAM_INFO * sam, const char *logon_srv,
+		   const char *comp_name, DOM_CRED * clnt_cred,
+		   DOM_CRED * rtn_cred, uint16 logon_level,
+		   NET_ID_INFO_CTR * ctr);
+BOOL make_net_user_info3W(NET_USER_INFO_3 * usr, const NTTIME * logon_time,
+			  const NTTIME * logoff_time,
+			  const NTTIME * kickoff_time,
+			  const NTTIME * pass_last_set_time,
+			  const NTTIME * pass_can_change_time,
+			  const NTTIME * pass_must_change_time,
+			  const UNISTR2 * user_name,
+			  const UNISTR2 * full_name, const UNISTR2 * log_scr,
+			  const UNISTR2 * prof_path, const UNISTR2 * home_dir,
+			  const UNISTR2 * dir_drive, uint16 logon_count,
+			  uint16 bad_pw_count, uint32 user_id,
+			  uint32 group_id, uint32 num_groups,
+			  const DOM_GID * gids, uint32 user_flgs,
+			  const char sess_key[16], const UNISTR2 * logon_srv,
+			  const UNISTR2 * logon_dom, const char *padding,
+			  const DOM_SID * dom_sid, const char *other_sids);
+BOOL make_net_user_info3(NET_USER_INFO_3 * usr, NTTIME * logon_time,
+			 NTTIME * logoff_time, NTTIME * kickoff_time,
+			 NTTIME * pass_last_set_time,
+			 NTTIME * pass_can_change_time,
+			 NTTIME * pass_must_change_time, char *user_name,
+			 char *full_name, char *logon_script,
+			 char *profile_path, char *home_dir, char *dir_drive,
+			 uint16 logon_count, uint16 bad_pw_count,
+			 uint32 user_id, uint32 group_id, uint32 num_groups,
+			 DOM_GID * gids, uint32 user_flgs, char sess_key[16],
+			 char *logon_srv, char *logon_dom, char *padding,
+			 DOM_SID * dom_sid, char *other_sids);
+BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
+		       int depth);
+BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct * ps,
+			int depth);
+BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s, const DOM_CRED * srv_creds,
+		      uint16 switch_value, NET_USER_INFO_3 * user_info,
+		      uint32 status);
+BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
+			int depth);
+BOOL net_io_q_sam_logoff(char *desc, NET_Q_SAM_LOGOFF * q_l, prs_struct * ps,
+			 int depth);
+BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF * r_s, const DOM_CRED * srv_cred,
+		       uint32 status);
+BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF * r_l, prs_struct * ps,
+			 int depth);
+BOOL make_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
+		     const char *cli_name, DOM_CRED * cli_creds,
+		     uint32 database_id);
+BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct * ps,
+		       int depth);
+BOOL make_sam_delta_hdr(SAM_DELTA_HDR * delta, uint16 type, uint32 rid);
+BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
+			   const UNISTR2 * user_name,
+			   const UNISTR2 * full_name,
+			   uint32 user_rid, uint32 group_rid,
+			   const UNISTR2 * home_dir,
+			   const UNISTR2 * dir_drive,
+			   const UNISTR2 * log_scr,
+			   const UNISTR2 * desc,
+			   uint32 acb_info,
+			   const UNISTR2 * prof_path,
+			   const UNISTR2 * wkstas,
+			   const UNISTR2 * unk_str,
+			   const UNISTR2 * mung_dial);
+BOOL make_r_sam_sync(NET_R_SAM_SYNC * r_s,
+		     const DOM_CRED * srv_cred,
+		     uint32 sync_context,
+		     uint32 num_deltas,
+		     uint32 num_deltas2,
+		     SAM_DELTA_HDR * hdr_deltas,
+		     SAM_DELTA_CTR * deltas, uint32 status);
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
-				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
+		       NET_R_SAM_SYNC * r_s, prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
-BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
-BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
-				uint32 neg_flgs,
-				fstring myname, fstring domain);
-BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
-				uint32 neg_flags,
+BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH * rai);
+BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG * neg,
+			       uint32 neg_flgs,
+			       fstring myname, fstring domain);
+BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG * neg,
+				 prs_struct * ps, int depth);
+BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL * chl, uint32 neg_flags,
 				uint8 challenge[8]);
-BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24],
-				uchar *nt_resp, size_t nt_len,
-				char *domain, char *user, char *wks,
-				uint32 neg_flags);
-BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
-BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num);
-BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
-				uint32 ver, uint32 crc32, uint32 seq_num);
-BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
+BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL * chl,
+				  prs_struct * ps, int depth);
+BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP * rsp,
+				uchar lm_resp[24], uchar * nt_resp,
+				size_t nt_len, char *domain, char *user,
+				char *wks, uint32 neg_flags);
+BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP * rsp,
+				  prs_struct * ps, int depth);
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK * chk, uint32 crc32,
+			  uint32 seq_num);
+BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK * chk, uint32 ver,
+			       uint32 crc32, uint32 seq_num);
+BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK * chk,
+				 prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
-void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
-void prs_debug_out(const prs_struct *ps, char *msg, int level);
-void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
-void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
-BOOL prs_copy(prs_struct *ps, const prs_struct *from);
-BOOL prs_alloc_data(prs_struct *buf, int size);
-BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
-				uint32 offset, uint32 len);
-void prs_struct_free(prs_struct **buf);
-void prs_free_data(prs_struct *buf);
-BOOL prs_realloc_data(prs_struct *buf, size_t new_size);
-BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow);
-uint32 prs_buf_len(const prs_struct *buf);
-char *prs_data(const prs_struct *buf, uint32 offset);
-void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
-void prs_align(prs_struct *ps);
-BOOL prs_grow(prs_struct *ps, uint32 new_size);
-BOOL prs_append_data(prs_struct *ps, const char *data, int len);
-BOOL prs_add_data(prs_struct *ps, const char *data, int len);
-BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
-BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
-BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
-BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
-BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
-BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
-BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
-BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
-BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
-BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
-BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size);
-BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
-BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
-				uint32 ptr_uint16, uint32 start_offset);
-BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
-BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 data_size);
-int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk);
-int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
-void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
+void prs_debug(prs_struct * ps, int depth, const char *desc,
+	       const char *fn_name);
+void prs_debug_out(const prs_struct * ps, char *msg, int level);
+void prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io);
+void prs_create(prs_struct * ps, char *data, uint32 size, uint8 align,
+		BOOL io);
+BOOL prs_copy(prs_struct * ps, const prs_struct * from);
+BOOL prs_alloc_data(prs_struct * buf, int size);
+BOOL prs_buf_copy(char *copy_into, const prs_struct * buf,
+		  uint32 offset, uint32 len);
+void prs_struct_free(prs_struct ** buf);
+void prs_free_data(prs_struct * buf);
+BOOL prs_realloc_data(prs_struct * buf, size_t new_size);
+BOOL prs_grow_data(prs_struct * buf, BOOL io, int new_size, BOOL force_grow);
+uint32 prs_buf_len(const prs_struct * buf);
+char *prs_data(const prs_struct * buf, uint32 offset);
+void prs_link(prs_struct * prev, prs_struct * ps, prs_struct * next);
+void prs_align(prs_struct * ps);
+BOOL prs_grow(prs_struct * ps, uint32 new_size);
+BOOL prs_append_data(prs_struct * ps, const char *data, int len);
+BOOL prs_add_data(prs_struct * ps, const char *data, int len);
+BOOL _prs_uint8(char *name, prs_struct * ps, int depth, uint8 * data8);
+BOOL _prs_uint16(char *name, prs_struct * ps, int depth, uint16 * data16);
+BOOL _prs_hash1(prs_struct * ps, uint32 offset, uint8 sess_key[16]);
+BOOL _prs_uint32(char *name, prs_struct * ps, int depth, uint32 * data32);
+BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		 uint8 * data8s, int len);
+BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint16 * data16s, int len);
+BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint32 * data32s, int len);
+BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  BUFFER2 * str);
+BOOL _prs_string2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  STRING2 * str);
+BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  UNISTR2 * str);
+BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 * str, prs_struct * ps,
+		  int depth);
+BOOL _prs_unistr(char *name, prs_struct * ps, int depth, UNISTR * str);
+BOOL _prs_string(char *name, prs_struct * ps, int depth, char *str,
+		 uint16 len, uint16 max_buf_size);
+BOOL _prs_uint16_pre(char *name, prs_struct * ps, int depth, uint16 * data16,
+		     uint32 * offset);
+BOOL _prs_uint16_post(char *name, prs_struct * ps, int depth, uint16 * data16,
+		      uint32 ptr_uint16, uint32 start_offset);
+BOOL _prs_uint32_pre(char *name, prs_struct * ps, int depth, uint32 * data32,
+		     uint32 * offset);
+BOOL _prs_uint32_post(char *name, prs_struct * ps, int depth, uint32 * data32,
+		      uint32 ptr_uint32, uint32 data_size);
+int prs_tdb_delete(TDB_CONTEXT * tdb, prs_struct * pk);
+int prs_tdb_store(TDB_CONTEXT * tdb, int flgs, prs_struct * pk,
+		  prs_struct * pd);
+void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct * pk, prs_struct * pd);
 
 /*The following definitions come from  rpc_parse/parse_vuid.c  */
 
-BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth);
-BOOL make_vuid_user_struct(user_struct *r_u,
-				uid_t uid, gid_t gid,
-				const char* name,
-				const char* requested_name,
-				const char* real_name,
-				BOOL guest,
-				uint32 n_groups, const gid_t *groups,
-				const NET_USER_INFO_3 *usr);
-BOOL vuid_io_user_struct(char *desc, user_struct *r_u, prs_struct *ps, int depth);
-void vuid_free_user_struct(user_struct *r_u);
+BOOL vuid_io_key(char *desc, vuser_key * r_u, prs_struct * ps, int depth);
+BOOL make_vuid_user_struct(user_struct * r_u,
+			   uid_t uid, gid_t gid,
+			   const char *name,
+			   const char *requested_name,
+			   const char *real_name,
+			   BOOL guest,
+			   uint32 n_groups, const gid_t * groups,
+			   const NET_USER_INFO_3 * usr);
+BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
+			 int depth);
+void vuid_free_user_struct(user_struct * r_u);
 #endif /* _LIB_SMB_PROTO_H_ */

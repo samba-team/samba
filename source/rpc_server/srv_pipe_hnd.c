@@ -49,10 +49,10 @@ static int pipe_handle_offset;
 
 void set_pipe_handle_offset(int max_open_files)
 {
-  if(max_open_files < 0x7000)
-    pipe_handle_offset = 0x7000;
-  else
-    pipe_handle_offset = max_open_files + 10; /* For safety. :-) */
+	if (max_open_files < 0x7000)
+		pipe_handle_offset = 0x7000;
+	else
+		pipe_handle_offset = max_open_files + 10;	/* For safety. :-) */
 }
 
 /****************************************************************************
@@ -69,7 +69,8 @@ void reset_chain_p(void)
 void init_rpc_pipe_hnd(void)
 {
 	bmap = bitmap_allocate(MAX_OPEN_PIPES);
-	if (!bmap) {
+	if (!bmap)
+	{
 		exit_server("out of memory in init_rpc_pipe_hnd\n");
 	}
 }
@@ -78,20 +79,20 @@ void init_rpc_pipe_hnd(void)
 /****************************************************************************
   find first available file slot
 ****************************************************************************/
-pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
-				rpcsrv_struct *l)
+pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key * key,
+			      rpcsrv_struct * l)
 {
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
 	struct msrpc_local *m = NULL;
 
-	DEBUG(4,("Open pipe requested %s by [%x,%d] (pipes_open=%d)\n",
-		 pipe_name, key->pid, key->vuid, pipes_open));
-	
+	DEBUG(4, ("Open pipe requested %s by [%d,%x] (pipes_open=%d)\n",
+		  pipe_name, key->pid, key->vuid, pipes_open));
+
 	if (!is_valid_user_struct(key))
 	{
-		DEBUG(4,("invalid vuid\n"));
+		DEBUG(4, ("invalid vuid\n"));
 		return NULL;
 	}
 
@@ -107,32 +108,39 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
 
 	if (i == -1)
 	{
-		DEBUG(0,("ERROR! Out of pipe structures\n"));
+		DEBUG(0, ("ERROR! Out of pipe structures\n"));
 		return NULL;
 	}
 
-	next_pipe = (i+1) % MAX_OPEN_PIPES;
+	next_pipe = (i + 1) % MAX_OPEN_PIPES;
 
 	for (p = Pipes; p; p = p->next)
 	{
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+		DEBUG(5, ("open pipes: name %s pnum=%x\n", p->name, p->pnum));
 	}
 
 	if (l == NULL)
 	{
-		become_root(False); /* to make pipe connection */
-		m = msrpc_use_add(pipe_name, key, False);
-		unbecome_root(False);
-
-		if (m == NULL)
+		BOOL ret = False;
+		m = ncalrpc_l_initialise(NULL, key);
+		if (m != NULL)
 		{
-			DEBUG(5,("open pipes: msrpc redirect failed\n"));
+			m->redirect = True;
+			become_root(False);	/* to make pipe connection */
+			ret = ncalrpc_l_establish_connection(m, pipe_name);
+			unbecome_root(False);
+		}
+		if (!ret)
+		{
+			ncalrpc_l_shutdown(m);
+			DEBUG(5, ("open pipes: msrpc redirect failed\n"));
 			return NULL;
 		}
 	}
 
-	p = (pipes_struct *)malloc(sizeof(*p));
-	if (!p) return NULL;
+	p = (pipes_struct *) malloc(sizeof(*p));
+	if (!p)
+		return NULL;
 
 	ZERO_STRUCTP(p);
 	DLIST_ADD(Pipes, p);
@@ -149,18 +157,18 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
 	p->device_state = 0;
 	p->priority = 0;
 	p->key = *key;
-	
+
 	fstrcpy(p->name, pipe_name);
 
-	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
-		 pipe_name, i, pipes_open));
-	
+	DEBUG(4, ("Opened pipe %s with handle %x (pipes_open=%d)\n",
+		  pipe_name, i, pipes_open));
+
 	chain_p = p;
-	
-	/* OVERWRITE p as a temp variable, to display all open pipes */ 
+
+	/* OVERWRITE p as a temp variable, to display all open pipes */
 	for (p = Pipes; p; p = p->next)
 	{
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+		DEBUG(5, ("open pipes: name %s pnum=%x\n", p->name, p->pnum));
 	}
 
 	return chain_p;
@@ -171,12 +179,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
 /****************************************************************************
   wait device state on a pipe.  exactly what this is for is unknown...
 ****************************************************************************/
-BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority)
+BOOL wait_rpc_pipe_hnd_state(pipes_struct * p, uint16 priority)
 {
-	if (p == NULL) return False;
+	if (p == NULL)
+		return False;
 
-	DEBUG(3,("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
-	         timestring(), priority, p->name));
+	DEBUG(3,
+	      ("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
+	       timestring(), priority, p->name));
 
 	p->priority = priority;
 	return True;
@@ -186,12 +196,13 @@ BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority)
 /****************************************************************************
   set device state on a pipe.  exactly what this is for is unknown...
 ****************************************************************************/
-BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
+BOOL set_rpc_pipe_hnd_state(pipes_struct * p, uint16 device_state)
 {
-	if (p == NULL) return False;
+	if (p == NULL)
+		return False;
 
-	DEBUG(3,("%s Setting pipe device state=%x on pipe (name=%s)\n",
-		         timestring(), device_state, p->name));
+	DEBUG(3, ("%s Setting pipe device state=%x on pipe (name=%s)\n",
+		  timestring(), device_state, p->name));
 
 	p->device_state = device_state;
 	return True;
@@ -200,10 +211,11 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 /****************************************************************************
   close an rpc pipe
 ****************************************************************************/
-BOOL close_rpc_pipe_hnd(pipes_struct *p)
+BOOL close_rpc_pipe_hnd(pipes_struct * p)
 {
-	if (!p) {
-		DEBUG(0,("Invalid pipe in close_rpc_pipe_hnd\n"));
+	if (!p)
+	{
+		DEBUG(0, ("Invalid pipe in close_rpc_pipe_hnd\n"));
 		return False;
 	}
 
@@ -211,27 +223,20 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p)
 
 	pipes_open--;
 
-	DEBUG(4,("closed pipe name %s pnum=%x (pipes_open=%d)\n", 
-		 p->name, p->pnum, pipes_open));  
+	DEBUG(4, ("closed pipe name %s pnum=%x (pipes_open=%d)\n",
+		  p->name, p->pnum, pipes_open));
 
 	DLIST_REMOVE(Pipes, p);
 
 	if (p->m != NULL)
 	{
-		DEBUG(4,("closed msrpc redirect: "));
-		if (msrpc_use_del(p->m->pipe_name, False, NULL))
-		{
-			DEBUG(4,("OK\n"));
-		}
-		else
-		{
-			DEBUG(4,("FAILED\n"));
-		}
+		DEBUG(4, ("closing msrpc redirect"));
+		ncalrpc_l_shutdown(p->m);
 	}
 
 	ZERO_STRUCTP(p);
 	free(p);
-	
+
 	return True;
 }
 
@@ -240,9 +245,10 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p)
 ****************************************************************************/
 pipes_struct *get_rpc_pipe_p(char *buf, int where)
 {
-	int pnum = SVAL(buf,where);
+	int pnum = SVAL(buf, where);
 
-	if (chain_p) return chain_p;
+	if (chain_p)
+		return chain_p;
 
 	return get_rpc_pipe(pnum);
 }
@@ -250,19 +256,19 @@ pipes_struct *get_rpc_pipe_p(char *buf, int where)
 /****************************************************************************
   get an rpc pipe
 ****************************************************************************/
-pipes_struct *get_rpc_vuser(const vuser_key *key)
+pipes_struct *get_rpc_vuser(const vuser_key * key)
 {
 	pipes_struct *p;
 
-	DEBUG(4,("search for pipe vuser [%d,%x]\n", key->pid, key->vuid));
+	DEBUG(4, ("search for pipe vuser [%d,%x]\n", key->pid, key->vuid));
 
-	for (p=Pipes;p;p=p->next)
+	for (p = Pipes; p; p = p->next)
 	{
-		DEBUG(5,("pipe name %s [%d,%x] (pipes_open=%d)\n", 
-		          p->name, p->key.pid, p->key.vuid, pipes_open));  
+		DEBUG(5, ("pipe name %s [%d,%x] (pipes_open=%d)\n",
+			  p->name, p->key.pid, p->key.vuid, pipes_open));
 	}
 
-	for (p=Pipes;p;p=p->next)
+	for (p = Pipes; p; p = p->next)
 	{
 		if (p->key.pid == key->pid && p->key.vuid == key->vuid)
 		{
@@ -280,15 +286,15 @@ pipes_struct *get_rpc_pipe(int pnum)
 {
 	pipes_struct *p;
 
-	DEBUG(4,("search for pipe pnum=%x\n", pnum));
+	DEBUG(4, ("search for pipe pnum=%x\n", pnum));
 
-	for (p=Pipes;p;p=p->next)
+	for (p = Pipes; p; p = p->next)
 	{
-		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d)\n", 
-		          p->name, p->pnum, pipes_open));  
+		DEBUG(5, ("pipe name %s pnum=%x (pipes_open=%d)\n",
+			  p->name, p->pnum, pipes_open));
 	}
 
-	for (p=Pipes;p;p=p->next)
+	for (p = Pipes; p; p = p->next)
 	{
 		if (p->pnum == pnum)
 		{
@@ -299,4 +305,3 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	return NULL;
 }
-

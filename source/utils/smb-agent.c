@@ -47,9 +47,8 @@ static void free_sock(void *sock)
 {
 	if (sock != NULL)
 	{
-		struct cli_state *n = (struct cli_state*)sock;
-		cli_net_use_del(n->desthost, &n->usr,
-		                False, NULL);
+		struct cli_state *n = (struct cli_state *)sock;
+		cli_net_use_del(n->desthost, &n->usr, False, NULL);
 	}
 }
 
@@ -71,13 +70,13 @@ static struct cli_state *init_client_connection(int c)
 
 	ZERO_STRUCT(usr);
 
-	DEBUG(10,("init_client_connection: first request\n"));
+	DEBUG(10, ("init_client_connection: first request\n"));
 
 	rl = read(c, &buf, sizeof(len));
 
 	if (rl != sizeof(len))
 	{
-		DEBUG(0,("Unable to read length\n"));
+		DEBUG(0, ("Unable to read length\n"));
 		dump_data(0, buf, sizeof(len));
 		return NULL;
 	}
@@ -86,7 +85,7 @@ static struct cli_state *init_client_connection(int c)
 
 	if (len > sizeof(buf))
 	{
-		DEBUG(0,("length %d too long\n", len));
+		DEBUG(0, ("length %d too long\n", len));
 		return NULL;
 	}
 
@@ -94,20 +93,20 @@ static struct cli_state *init_client_connection(int c)
 
 	if (rl < 0)
 	{
-		DEBUG(0,("Unable to read from connection\n"));
+		DEBUG(0, ("Unable to read from connection\n"));
 		return NULL;
 	}
-	
+
 #ifdef DEBUG_PASSWORD
 	dump_data(100, buf, rl);
 #endif
- 	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&ps, 0, 4, True);
- 	prs_append_data(&ps, buf, rl);
+	/* make a static data parsing structure from the api_fd_reply data */
+	prs_init(&ps, 0, 4, True);
+	prs_append_data(&ps, buf, rl);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
-		DEBUG(0,("Unable to parse credentials\n"));
+		DEBUG(0, ("Unable to parse credentials\n"));
 		prs_free_data(&ps);
 		return NULL;
 	}
@@ -116,7 +115,7 @@ static struct cli_state *init_client_connection(int c)
 
 	if (ps.offset != rl)
 	{
-		DEBUG(0,("Buffer size %d %d!\n", ps.offset, rl));
+		DEBUG(0, ("Buffer size %d %d!\n", ps.offset, rl));
 		return NULL;
 	}
 
@@ -135,7 +134,7 @@ static struct cli_state *init_client_connection(int c)
 		}
 		default:
 		{
-			DEBUG(0,("unknown command %d\n", cmd.command));
+			DEBUG(0, ("unknown command %d\n", cmd.command));
 			return NULL;
 		}
 	}
@@ -143,25 +142,27 @@ static struct cli_state *init_client_connection(int c)
 	if (new_con)
 	{
 		struct cli_state *n;
-		n = cli_net_use_add(cmd.name, &usr.ntc, False, reuse);
+		n =
+			cli_net_use_add(cmd.name, cmd.key, &usr.ntc, False,
+					reuse);
 
 		if (n == NULL)
 		{
-			DEBUG(0,("Unable to connect to %s\n", cmd.name));
+			DEBUG(0, ("Unable to connect to %s\n", cmd.name));
 			return NULL;
 		}
-		
+
 		mid_offset += MIN(MAX(n->max_mux, 1), MAX_MAX_MUX_LIMIT);
 
 		if (mid_offset > 0xffff)
 		{
 			mid_offset = 0x0;
 		}
-		DEBUG(10,("new mid offset: %d\n", mid_offset));
+		DEBUG(10, ("new mid offset: %d\n", mid_offset));
 
 		if (write(c, n, sizeof(*n)) < 0)
 		{
-			DEBUG(0,("Could not write connection down pipe.\n"));
+			DEBUG(0, ("Could not write connection down pipe.\n"));
 			cli_net_use_del(cmd.name, &usr.ntc, False, NULL);
 			return NULL;
 		}
@@ -172,10 +173,11 @@ static struct cli_state *init_client_connection(int c)
 
 static void filter_reply(char *buf, int moff)
 {
-	int msg_type = CVAL(buf,0);
+	int msg_type = CVAL(buf, 0);
 	int x;
 
-	if (msg_type != 0x0) return;
+	if (msg_type != 0x0)
+		return;
 
 	/* alter the mid */
 	x = SVAL(buf, smb_mid);
@@ -195,9 +197,9 @@ static void filter_reply(char *buf, int moff)
 }
 
 static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
-				struct sock_redir *sock)
+			     struct sock_redir *sock)
 {
-	struct cli_state *n = (struct cli_state*)sock->n;
+	struct cli_state *n = (struct cli_state *)sock->n;
 	if (n == NULL)
 	{
 		n = init_client_connection(sock->c);
@@ -205,7 +207,7 @@ static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
 		{
 			return False;
 		}
-		sock->n = (void*)n;
+		sock->n = (void *)n;
 		sock->s_id = mid_offset;
 		sock->s = n->fd;
 	}
@@ -213,7 +215,7 @@ static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
 	{
 		if (!receive_smb(sock->c, packet, 0))
 		{
-			DEBUG(0,("client closed connection\n"));
+			DEBUG(0, ("client closed connection\n"));
 			return False;
 		}
 
@@ -223,9 +225,9 @@ static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
 		{
 			if (!send_smb(sock->s, packet))
 			{
-				DEBUG(0,("server is dead\n"));
+				DEBUG(0, ("server is dead\n"));
 				return False;
-			}			
+			}
 		}
 	}
 	return True;
@@ -233,30 +235,30 @@ static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
 
 static int get_smbmid(char *buf)
 {
-	int msg_type = CVAL(buf,0);
+	int msg_type = CVAL(buf, 0);
 
 	if (msg_type != 0x0)
 	{
 		return -1;
 	}
 
-	return SVAL(buf,smb_mid);
+	return SVAL(buf, smb_mid);
 }
 
 static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
-				int fd)
+			     int fd)
 {
 	int smbmid;
 	int i;
 	if (!receive_smb(fd, packet, 0))
 	{
-		DEBUG(0,("server closed connection\n"));
+		DEBUG(0, ("server closed connection\n"));
 		return False;
 	}
 
 	smbmid = get_smbmid(packet);
 
-	DEBUG(10,("process_srv_sock:\tfd:\t%d\tmid:\t%d\n", fd, smbmid));
+	DEBUG(10, ("process_srv_sock:\tfd:\t%d\tmid:\t%d\n", fd, smbmid));
 
 	if (smbmid == -1)
 	{
@@ -272,11 +274,9 @@ static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
 			continue;
 		}
 		moff = socks[i]->s_id;
-		n = (struct cli_state*)socks[i]->n;
-		DEBUG(10,("list:\tfd:\t%d\tmid:\t%d\tmoff:\t%d\n",
-		           socks[i]->s,
-		           n->mid,
-		           moff));
+		n = (struct cli_state *)socks[i]->n;
+		DEBUG(10, ("list:\tfd:\t%d\tmid:\t%d\tmoff:\t%d\n",
+			   socks[i]->s, n->mid, moff));
 		if (smbmid != n->mid + moff)
 		{
 			continue;
@@ -284,9 +284,9 @@ static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
 		filter_reply(packet, -moff);
 		if (!send_smb(socks[i]->c, packet))
 		{
-			DEBUG(0,("client is dead\n"));
+			DEBUG(0, ("client is dead\n"));
 			return False;
-		}			
+		}
 		return True;
 	}
 	return False;
@@ -298,16 +298,17 @@ static int get_agent_sock(char *id)
 	fstring path;
 	fstring dir;
 
-	slprintf(dir, sizeof(dir)-1, "/tmp/.smb.%d", getuid());
-	slprintf(path, sizeof(path)-1, "%s/agent", dir);
+	slprintf(dir, sizeof(dir) - 1, "/tmp/.smb.%d", getuid());
+	slprintf(path, sizeof(path) - 1, "%s/agent", dir);
 
 	s = create_pipe_socket(dir, 0700, path, 0700);
 
 	if (s == -1)
 		return -1;
-		/* ready to listen */
-	if (listen(s, 5) == -1) {
-		DEBUG(0,("listen: %s\n", strerror(errno)));
+	/* ready to listen */
+	if (listen(s, 5) == -1)
+	{
+		DEBUG(0, ("listen: %s\n", strerror(errno)));
 		close(s);
 		return -1;
 	}
@@ -316,8 +317,7 @@ static int get_agent_sock(char *id)
 
 static void start_smb_agent(void)
 {
-	struct vagent_ops va =
-	{
+	struct vagent_ops va = {
 		free_sock,
 		get_agent_sock,
 		process_cli_sock,
@@ -326,7 +326,7 @@ static void start_smb_agent(void)
 		NULL,
 		0
 	};
-	
+
 	CatchChild();
 
 	start_agent(&va);
@@ -337,12 +337,12 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  printf("Usage: %s [-D]", pname);
+	printf("Usage: %s [-D]", pname);
 
-  printf("\nVersion %s\n",VERSION);
-  printf("\t-D 		run as a daemon\n");
-  printf("\t-h 		usage\n");
-  printf("\n");
+	printf("\nVersion %s\n", VERSION);
+	printf("\t-D 		run as a daemon\n");
+	printf("\t-h 		usage\n");
+	printf("\n");
 }
 
 int main(int argc, char *argv[])
@@ -354,8 +354,8 @@ int main(int argc, char *argv[])
 
 	TimeInit();
 
-	pstrcpy(configfile,CONFIGFILE);
- 
+	pstrcpy(configfile, CONFIGFILE);
+
 	while ((opt = getopt(argc, argv, "Dh")) != EOF)
 	{
 		switch (opt)
@@ -374,19 +374,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	slprintf(debugf, sizeof(debugf)-1, "log.%s", argv[0]);
+	slprintf(debugf, sizeof(debugf) - 1, "log.%s", argv[0]);
 	setup_logging(argv[0], !is_daemon);
-  
+
 	charset_initialise();
 
-	if (!lp_load(configfile,True,False,False))
+	if (!lp_load(configfile, True, False, False))
 	{
-		DEBUG(0,("Unable to load config file\n"));
+		DEBUG(0, ("Unable to load config file\n"));
 	}
 
 	if (is_daemon)
 	{
-		DEBUG(0,("%s: becoming daemon\n", argv[0]));
+		DEBUG(0, ("%s: becoming daemon\n", argv[0]));
 		become_daemon();
 	}
 
