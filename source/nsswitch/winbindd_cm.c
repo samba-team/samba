@@ -164,11 +164,19 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 					      &retry);
 
 		if (NT_STATUS_IS_OK(result)) {
+
+			/* reset the error code */
+			result = NT_STATUS_UNSUCCESSFUL; 
+
+			/* Krb5 session */
+			
 			if ((lp_security() == SEC_ADS) 
 				&& (new_conn->cli->protocol >= PROTOCOL_NT1 && new_conn->cli->capabilities & CAP_EXTENDED_SECURITY)) {
 				new_conn->cli->use_kerberos = True;
 				DEBUG(5, ("connecting to %s from %s with kerberos principal [%s]\n", 
 					  new_conn->controller, global_myname(), machine_krb5_principal));
+
+				result = NT_STATUS_OK;
 
 				if (!cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
 							      machine_password, 
@@ -180,32 +188,48 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 				}
 			}
 			new_conn->cli->use_kerberos = False;
-			if (!NT_STATUS_IS_OK(result) 
-			    && new_conn->cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {	
+			
+			/* only do this is we have a username/password for thr IPC$ connection */
+			
+			if ( !NT_STATUS_IS_OK(result) 
+				&& new_conn->cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE
+				&& strlen(ipc_username) )
+			{	
 				DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
 					  new_conn->controller, global_myname(), ipc_domain, ipc_username));
+
+				result = NT_STATUS_OK;
 
 				if (!cli_session_setup(new_conn->cli, ipc_username, 
 						       ipc_password, strlen(ipc_password)+1, 
 						       ipc_password, strlen(ipc_password)+1, 
 						       domain)) {
 					result = cli_nt_error(new_conn->cli);
-					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+					DEBUG(4,("failed authenticated session setup with %s\n", nt_errstr(result)));
 					if (NT_STATUS_IS_OK(result)) 
 						result = NT_STATUS_UNSUCCESSFUL;
 				}
 			}
+			
+			/* anonymous is all that is left if we get to here */
+			
 			if (!NT_STATUS_IS_OK(result)) {	
-				if (!cli_session_setup(new_conn->cli, "", NULL, 0, 
-						       NULL, 0, 
-						       "")) {
+			
+				DEBUG(5, ("anonymous connection attempt to %s from %s\n", 
+					  new_conn->controller, global_myname()));
+					  
+				result = NT_STATUS_OK;
+
+				if (!cli_session_setup(new_conn->cli, "", NULL, 0, NULL, 0, "")) 
+				{
 					result = cli_nt_error(new_conn->cli);
-					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+					DEBUG(4,("failed anonymous session setup with %s\n", nt_errstr(result)));
 					if (NT_STATUS_IS_OK(result)) 
 						result = NT_STATUS_UNSUCCESSFUL;
 				} 
 				
 			}
+
 			if (NT_STATUS_IS_OK(result) && !cli_send_tconX(new_conn->cli, "IPC$", "IPC",
 								       "", 0)) {
 				result = cli_nt_error(new_conn->cli);
