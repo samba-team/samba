@@ -418,14 +418,14 @@ typedef struct
 
 /* Structure used when SMBwritebmpx is active */
 typedef struct
-        {
-	int   wr_total_written; /* So we know when to discard this */
-	int32 wr_timeout;
-	int32 wr_errclass;
-	int32 wr_error; /* Cached errors */
-	BOOL  wr_mode; /* write through mode) */
-	BOOL  wr_discard; /* discard all further data */
-        } write_bmpx_struct;
+{
+  int   wr_total_written; /* So we know when to discard this */
+  int32 wr_timeout;
+  int32 wr_errclass;
+  int32 wr_error; /* Cached errors */
+  BOOL  wr_mode; /* write through mode) */
+  BOOL  wr_discard; /* discard all further data */
+} write_bmpx_struct;
 
 /*
  * Structure used to indirect fd's from the files_struct.
@@ -467,6 +467,7 @@ typedef struct
   BOOL modified;
   BOOL granted_oplock;
   BOOL sent_oplock_break;
+  BOOL is_directory;
   BOOL reserved;
   char *name;
 } files_struct;
@@ -781,7 +782,7 @@ struct parm_struct
 
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
-#define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open)
+#define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open && !Files[fnum].is_directory)
 #define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
 #define OPEN_CNUM(cnum)    (VALID_CNUM(cnum) && Connections[cnum].open)
 #define IS_IPC(cnum)       (VALID_CNUM(cnum) && Connections[cnum].ipc)

@@ -1511,6 +1511,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     fsp->modified = False;
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
+    fsp->is_directory = False;
     fsp->cnum = cnum;
     /*
      * Note that the file name here is the *untranslated* name
@@ -1609,15 +1610,43 @@ static void check_magic(int fnum,int cnum)
   }
 }
 
+/****************************************************************************
+  Common code to close a file or a directory.
+****************************************************************************/
+    
+static void close_filestruct(files_struct *fs_p)
+{   
+  int cnum = fs_p->cnum;
+    
+  fs_p->reserved = False; 
+  fs_p->open = False;
+  fs_p->is_directory = False; 
+    
+  Connections[cnum].num_files_open--;
+  if(fs_p->wbmpx_ptr)
+  {  
+    free((char *)fs_p->wbmpx_ptr);
+    fs_p->wbmpx_ptr = NULL; 
+  }  
+     
+#if USE_MMAP
+  if(fs_p->mmap_ptr) 
+  {
+    munmap(fs_p->mmap_ptr,fs_p->mmap_size);
+    fs_p->mmap_ptr = NULL;
+  }  
+#endif 
+}    
 
 /****************************************************************************
-close a file - possibly invalidating the read prediction
+ Close a file - possibly invalidating the read prediction.
 
-If normal_close is 1 then this came from a normal SMBclose (or equivalent)
-operation otherwise it came as the result of some other operation such as
-the closing of the connection. In the latter case printing and
-magic scripts are not run
+ If normal_close is 1 then this came from a normal SMBclose (or equivalent)
+ operation otherwise it came as the result of some other operation such as
+ the closing of the connection. In the latter case printing and
+ magic scripts are not run.
 ****************************************************************************/
+
 void close_file(int fnum, BOOL normal_close)
 {
   files_struct *fs_p = &Files[fnum];
@@ -1626,26 +1655,10 @@ void close_file(int fnum, BOOL normal_close)
   uint32 inode = fs_p->fd_ptr->inode;
   int token;
 
-  Files[fnum].reserved = False;
+  close_filestruct(fs_p);
 
 #if USE_READ_PREDICTION
   invalidate_read_prediction(fs_p->fd_ptr->fd);
-#endif
-
-  fs_p->open = False;
-  Connections[cnum].num_files_open--;
-  if(fs_p->wbmpx_ptr) 
-  {
-    free((char *)fs_p->wbmpx_ptr);
-    fs_p->wbmpx_ptr = NULL;
-  }
-
-#if USE_MMAP
-  if(fs_p->mmap_ptr) 
-  {
-    munmap(fs_p->mmap_ptr,fs_p->mmap_size);
-    fs_p->mmap_ptr = NULL;
-  }
 #endif
 
   if (lp_share_modes(SNUM(cnum)))
@@ -1682,6 +1695,69 @@ void close_file(int fnum, BOOL normal_close)
 
   /* we will catch bugs faster by zeroing this structure */
   memset(fs_p, 0, sizeof(*fs_p));
+}
+
+/****************************************************************************
+ Close a directory opened by an NT SMB call. 
+****************************************************************************/
+  
+void close_directory(int fnum)
+{
+  files_struct *fs_p = &Files[fnum];
+
+  /*
+   * Do the code common to files and directories.
+   */
+  close_filestruct(fs_p);
+
+  if (fs_p->name) {
+      string_free(&fs_p->name);
+  }
+
+  /* we will catch bugs faster by zeroing this structure */
+  memset(fs_p, 0, sizeof(*fs_p));
+}
+
+/****************************************************************************
+ Open a directory from an NT SMB call.
+****************************************************************************/
+
+void open_directory(int fnum,int cnum,char *fname, int *action)
+{
+  extern struct current_user current_user;
+  files_struct *fsp = &Files[fnum];
+
+  fsp->fd_ptr = NULL;
+  Connections[cnum].num_files_open++;
+  fsp->mode = 0;
+  GetTimeOfDay(&fsp->open_time);
+  fsp->vuid = current_user.vuid;
+  fsp->size = 0;
+  fsp->pos = -1;
+  fsp->open = True;
+  fsp->mmap_ptr = NULL;
+  fsp->mmap_size = 0;
+  fsp->can_lock = True;
+  fsp->can_read = False;
+  fsp->can_write = False;
+  fsp->share_mode = 0;
+  fsp->print_file = False;
+  fsp->modified = False;
+  fsp->granted_oplock = False;
+  fsp->sent_oplock_break = False;
+  fsp->is_directory = True;
+  fsp->cnum = cnum;
+  /*
+   * Note that the file name here is the *untranslated* name
+   * ie. it is still in the DOS codepage sent from the client.
+   * All use of this filename will pass though the sys_xxxx
+   * functions which will do the dos_to_unix translation before
+   * mapping into a UNIX filename. JRA.
+   */
+  string_set(&fsp->name,fname);
+  fsp->wbmpx_ptr = NULL;
+
+  *action = FILE_WAS_OPENED;
 }
 
 enum {AFAIL,AREAD,AWRITE,AALL};
@@ -4413,7 +4489,10 @@ static void close_open_files(int cnum)
   int i;
   for (i=0;i<MAX_OPEN_FILES;i++)
     if( Files[i].cnum == cnum && Files[i].open) {
-      close_file(i,False);
+      if(Files[i].is_directory)
+        close_directory(i); 
+      else                  
+        close_file(i,False); 
     }
 }
 

@@ -37,18 +37,18 @@
 #define MAX_CONNECTIONS 127
 #define MAX_OPEN_FILES 100
 
+/* max number of directories open at once */
+/* note that with the new directory code this no longer requires a
+   file handle per directory, but large numbers do use more memory */
+#define MAX_OPEN_DIRECTORIES 64
+
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
-#define SHMEM_SIZE (1024*MAX_OPEN_FILES)
+#define SHMEM_SIZE (1024*(MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES))
 #endif
 
 /* the max number of simultanous connections to the server by all clients */
 #define MAXSTATUS 100000
-
-/* max number of directories open at once */
-/* note that with the new directory code this no longer requires a
-   file handle per directory, but large numbers do use more memory */
-#define MAXDIR 64
 
 #define WORDMAX 0xFFFF
 

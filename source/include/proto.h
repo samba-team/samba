@@ -1815,6 +1815,8 @@ int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
 void sync_file(int fnum);
 void close_file(int fnum, BOOL normal_close);
+void close_directory(int fnum);
+void open_directory(int fnum,int cnum,char *fname, int *action);
 BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op);
 int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);

@@ -1490,10 +1490,15 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
      open by this user */
   if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
     int i;
-    for (i=0;i<MAX_OPEN_FILES;i++)
-      if ((Files[i].vuid == vuid) && Files[i].open) {
-	close_file(i,False);
+    for (i=0;i<MAX_OPEN_FILES;i++) {
+      files_struct *fsp = &Files[i];
+      if ((fsp->vuid == vuid) && fsp->open) {
+        if(!fsp->is_directory)
+          close_file(i,False);
+        else
+          close_directory(i);
       }
+    }
   }
 
   invalidate_vuid(vuid);
@@ -2416,14 +2421,16 @@ int reply_exit(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
 
 /****************************************************************************
-  reply to a close
+ Reply to a close - has to deal with closing a directory opened by NT SMB's.
 ****************************************************************************/
+
 int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = 0;
   time_t mtime;
   int32 eclass = 0, err = 0;
+  files_struct *fsp = NULL;
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -2435,23 +2442,43 @@ int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   fnum = GETFNUM(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,cnum);
+  /*
+   * We can only use CHECK_FNUM if we know it's not a directory.
+   */
+
+  if(!(VALID_FNUM(fnum) && Files[fnum].open && Files[fnum].is_directory))
+    CHECK_FNUM(fnum,cnum);
+
+  fsp = &Files[fnum];
 
   if(HAS_CACHED_ERROR(fnum)) {
-    eclass = Files[fnum].wbmpx_ptr->wr_errclass;
-    err = Files[fnum].wbmpx_ptr->wr_error;
+    eclass = fsp->wbmpx_ptr->wr_errclass;
+    err = fsp->wbmpx_ptr->wr_error;
   }
 
-  mtime = make_unix_date3(inbuf+smb_vwv1);
+  if(fsp->is_directory) {
+    /*
+     * Special case - close NT SMB directory
+     * handle.
+     */
+    DEBUG(3,("%s close directory fnum=%d cnum=%d\n",
+          timestring(), fnum, cnum ));
+    close_directory(fnum);
+  } else {
+    /*
+     * Close ordinary file.
+     */
+    mtime = make_unix_date3(inbuf+smb_vwv1);
 
-  /* try and set the date */
-  set_filetime(cnum, Files[fnum].name,mtime);
+    /* try and set the date */
+    set_filetime(cnum, fsp->name,mtime);
 
-  DEBUG(3,("%s close fd=%d fnum=%d cnum=%d (numopen=%d)\n",
-	   timestring(),Files[fnum].fd_ptr->fd,fnum,cnum,
-	   Connections[cnum].num_files_open));
+    DEBUG(3,("%s close fd=%d fnum=%d cnum=%d (numopen=%d)\n",
+          timestring(),fsp->fd_ptr->fd,fnum,cnum,
+          Connections[cnum].num_files_open));
   
-  close_file(fnum,True);
+    close_file(fnum,True);
+  }  
 
   /* We have a cached error */
   if(eclass || err)

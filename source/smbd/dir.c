@@ -115,7 +115,7 @@ static void *dptr_get(int key,uint32 lastused)
   if (dp->valid) {
     if (lastused) dp->lastused = lastused;
     if (!dp->ptr) {
-      if (dptrs_open >= MAXDIR)
+      if (dptrs_open >= MAX_OPEN_DIRECTORIES)
 	dptr_idleoldest();
       DEBUG(4,("Reopening dptr key %d\n",key));
       if ((dp->ptr = OpenDir(dp->cnum, dp->path, True)))
@@ -284,7 +284,7 @@ int dptr_create(int cnum,char *path, BOOL expect_close,int pid)
   if (!start_dir(cnum,path))
     return(-2); /* Code to say use a unix error return code. */
 
-  if (dptrs_open >= MAXDIR)
+  if (dptrs_open >= MAX_OPEN_DIRECTORIES)
     dptr_idleoldest();
 
   for (i=0;i<NUMDIRPTRS;i++)
