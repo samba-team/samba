@@ -584,17 +584,33 @@ sub RewriteC($$$)
 	   \);)
 	    /ndr_pull_$2(ndr, tree, hf_$4, $3);/smgx;
 
-	# Add subtree argument to calls dissecting structures, e.g
+	# Add subtree argument to calls dissecting structures/unions, e.g
 	#
 	# ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->command);
 	# ndr_pull_atsvc_enum_ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr);
 
-	s/(ndr_pull_([^\)]*?)\(
-	   ndr,\ 
-	   (NDR_[^,]*?),\ 
-	   (&?r->(in|out|)\.?([^\(].*?))\);)
-	    /ndr_pull_$2(ndr, $3, get_subtree(tree, \"$6\", ndr, ett_$2), $4);
-	/smgx;
+        # Three argument version is for structures
+
+        if (/ndr_pull([^\)]*?)\(ndr, (NDR_[^,]*?), ([^,]*?)\);/) {
+
+	    s/(ndr_pull_([^\)]*?)\(
+	       ndr,\ 
+	       (NDR_[^,]*?),\ 
+	       (&?r->(in|out|)\.?([^\(].*?))\);)
+		/ndr_pull_$2(ndr, $3, get_subtree(tree, \"$6\", ndr, ett_$2), $4);
+	    /smgx;
+	}
+
+        # Four argument version if for unions
+
+        if (/ndr_pull([^\)]*?)\(ndr, (NDR_[SB][^,]*?), ([^,]*?), ([^,]*?)\);/) {
+	    s/(ndr_pull_([^\)]*?)\(
+	       ndr,\ 
+	       (NDR_[^,]*?),\ 
+	       (&?r->(in|out|)\.?([^\(].*?))\);)
+		/ndr_pull_$2(ndr, $3, get_subtree(tree, \"$2\", ndr, ett_$2), $4);
+	    /smgx;
+	}
 
 	# Add proto_tree parameter to pull function prototypes, e.g
 	#
