@@ -3275,6 +3275,7 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		return False;
 	}
 
+	/* Attribute names to avoid extra calls get_attr_key2string and make code clearer */
 	attr_domain = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN);
 	attr_ntpw   = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW);
 	attr_sid    = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID);
@@ -3295,19 +3296,21 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	}
 
 	/* Trust password itself */
-	if (strlen(pdb_get_tp_pass(trustpw))) {
-		pdb_sethexpwd(hexpwd, pdb_get_tp_pass(trustpw), 0);
-		if (entry) {
+	pdb_sethexpwd(hexpwd, pdb_get_tp_pass(trustpw), 0);
+	if (entry) {
+		/* in case of updating we only need to do that if anything has been
+		   entered at new password prompt */
+		if (strlen(pdb_get_tp_pass(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_ntpw, attr_val, sizeof(attr_val));
 			if (ret)
 				if (strncmp(hexpwd, attr_val, sizeof(attr_val)))
 					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 							 attr_ntpw, hexpwd);
-		} else {
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-					 attr_ntpw, hexpwd);
 		}
+	} else {
+		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+				 attr_ntpw, hexpwd);
 	}
 
 	/* SID of the trust password */
@@ -3326,7 +3329,7 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	}
 
 	/* Last change time */
-	slprintf(mtime_str, sizeof(mtime_str) - 1, "%li", pdb_get_tp_mod_time(trustpw));
+	snprintf(mtime_str, sizeof(mtime_str) - 1, "%li", pdb_get_tp_mod_time(trustpw));
 	if (entry) {
 		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 						   attr_lct, attr_val, sizeof(attr_val));
@@ -3340,14 +3343,16 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	}
 	
 	/* Trust type flags */ 
-	slprintf(flags_str, sizeof(flags_str) - 1, "%i", pdb_get_tp_flags(trustpw));
+	snprintf(flags_str, sizeof(flags_str) - 1, "%i", pdb_get_tp_flags(trustpw));
 	if (entry) {
-		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						   attr_flags, attr_val, sizeof(attr_val));
-		if (ret)
-			if (strncmp(flags_str, attr_val, sizeof(attr_val)))
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-						 attr_flags, flags_str);
+		if (pdb_get_tp_flags(trustpw)) {
+			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+							   attr_flags, attr_val, sizeof(attr_val));
+			if (ret)
+				if (strncmp(flags_str, attr_val, sizeof(attr_val)))
+					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+							 attr_flags, flags_str);
+		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_flags, flags_str);
@@ -3649,7 +3654,7 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 	ldap_op = LDAP_MOD_ADD;
 
 	/* DN of the object being added */
-	slprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
+	snprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
 	         dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), lp_workgroup(),
 	         lp_ldap_suffix());
 
@@ -3753,7 +3758,7 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 	ldap_op = LDAP_MOD_REPLACE;
 
 	/* DN of the object being added */
-	slprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
+	snprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
 	         dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), lp_workgroup(),
 	         lp_ldap_suffix());
 
