@@ -127,9 +127,24 @@ PyObject *policy_handle_to_python(struct policy_handle *handle)
 	return PyString_FromStringAndSize((char *)handle, sizeof(*handle));
 }
 
-struct security_descriptor *security_descriptor_from_python(PyObject *obj)
+struct security_descriptor *security_descriptor_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	return NULL;
+}
+
+PyObject *security_descriptor_to_python(struct security_descriptor *obj)
+{
+	return Py_None;
+}
+
+struct dom_sid2 *dom_sid2_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+{
+	return NULL;
+}
+
+PyObject *dom_sid2_to_python(struct dom_sid2 *obj)
+{
+	return Py_None;
 }
 
 char *string_from_python(PyObject *obj)
@@ -146,6 +161,16 @@ PyObject *string_to_python(char *obj)
 		return Py_None;
 
 	return PyString_FromString(obj);
+}
+
+struct samr_Password *samr_Password_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+{
+	return NULL;
+}
+
+PyObject *samr_Password_to_python(struct samr_Password *obj)
+{
+	return NULL;
 }
 
 %}
