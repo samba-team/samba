@@ -32,95 +32,111 @@ extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
 extern pstring global_myname;
 
-/****************************************************************************
- decrypt data on an rpc pipe
- ****************************************************************************/
-
-static BOOL decode_netsec_pdu(struct cli_connection *con,
-				prs_struct *rdata,
-				int len, int auth_len)
+static void netsechash(uchar *key, uchar *data, int data_len)
 {
-#if 0
-	RPC_AUTH_NETSEC_CHK chk;
-	uint32 crc32;
+  uchar hash[256];
+  uchar index_i = 0;
+  uchar index_j = 0;
+  uchar j = 0;
+  int ind;
 
-	int data_len = len - 0x18 - auth_len - 8;
-	char *reply_data = prs_data(rdata, 0x18);
+  for (ind = 0; ind < 256; ind++)
+  {
+    hash[ind] = (uchar)ind;
+  }
 
-	BOOL auth_verify;
-	BOOL auth_seal  ;
+  for( ind = 0; ind < 256; ind++)
+  {
+     uchar tc;
 
-	netsec_auth_struct *a;
-	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
+     j += (hash[ind] + key[ind%16]);
 
-	if (a == NULL)
+     tc = hash[ind];
+     hash[ind] = hash[j];
+     hash[j] = tc;
+  }
+
+  for( ind = 0; ind < data_len; ind++)
+  {
+    uchar tc;
+    uchar t;
+
+    index_i++;
+    index_j += hash[index_i];
+
+    tc = hash[index_i];
+    hash[index_i] = hash[index_j];
+    hash[index_j] = tc;
+
+    t = hash[index_i] + hash[index_j];
+    data[ind] ^= hash[t];
+  }
+}
+
+
+static BOOL netsec_encode(struct netsec_auth_struct *a,
+				RPC_AUTH_NETSEC_CHK *verf,
+				char *data, size_t data_len)
+{
+	char dataN[4];
+	char digest1[16]; 
+	struct MD5Context ctx3; 
+	uchar sess_kf0[16];
+	int i;
+
+	/* store the sequence number */
+	SIVAL(dataN, 0, a->seq_num);
+
+	for (i = 0; i < sizeof(sess_kf0); i++)
 	{
-		return False;
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
 	}
 
-	auth_verify = IS_BITS_SET_ALL(a->netsec_chal.neg_flags,
-	                              NETSEC_NEGOTIATE_SIGN);
-	auth_seal   = IS_BITS_SET_ALL(a->netsec_chal.neg_flags,
-	                              NETSEC_NEGOTIATE_SEAL);
+	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
 
-	DEBUG(5,("decode_netsec_pdu: len: %d auth_len: %d verify %s seal %s\n",
-	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal)));
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, dataN, 0x4);
+	MD5Update(&ctx3, verf->sig, 8);
 
-	if (reply_data == NULL) return False;
+	MD5Update(&ctx3, verf->data8, 8); 
 
-	if (auth_seal)
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
+
+	hmac_md5(sess_kf0, dataN, 0x4, digest1 );
+	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
+	hmac_md5(digest1, verf->data3, 8, digest1);
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+	netsechash(digest1, verf->data8, 8);
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+
+	dump_data_pw("data   :\n", data, data_len);
+	MD5Update(&ctx3, data, data_len); 
+	netsechash(digest1, data , data_len);
+	dump_data_pw("data:\n", data, data_len);
+
+	hmac_md5(a->sess_key, dataN , 0x4, digest1 );
+	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
+
+	hmac_md5(digest1, verf->data1, 8, digest1);
+
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+	netsechash(digest1, verf->data3, 8);
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+
 	{
-		DEBUG(10,("decode_netsec_pdu: seal\n"));
-		dump_data(100, reply_data, data_len);
-		NETSECcalc_ap(a, (uchar*)reply_data, data_len);
-		dump_data(100, reply_data, data_len);
+		char digest_tmp[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(digest_tmp, a->sess_key, 16, digest1);
 	}
 
-	if (auth_verify || auth_seal)
-	{
-		RPC_HDR_AUTH         rhdr_auth; 
-		prs_struct auth_req;
-		char *data = prs_data(rdata, len - auth_len - 8);
-		prs_init(&auth_req , 0x0, 4, True);
-		prs_append_data(&auth_req, data, 8);
-		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
-		prs_free_data(&auth_req);
+	dump_data_pw("digest:\n", digest1, sizeof(digest1));
 
-		if (!rpc_hdr_netsec_auth_chk(&rhdr_auth))
-		{
-			return False;
-		}
-	}
-
-	if (auth_verify)
-	{
-		prs_struct auth_verf;
-		char *data = prs_data(rdata, len - auth_len);
-		if (data == NULL) return False;
-
-		DEBUG(10,("decode_netsec_pdu: verify\n"));
-		dump_data(100, data, auth_len);
-		NETSECcalc_ap(a, (uchar*)(data+4), auth_len - 4);
-		prs_init(&auth_verf, 0x0, 4, True);
-		prs_append_data(&auth_verf, data, 16);
-		smb_io_rpc_auth_netsec_chk("auth_sign", &chk, &auth_verf, 0);
-		dump_data(100, data, auth_len);
-		prs_free_data(&auth_verf);
-	}
-
-	if (auth_verify)
-	{
-		char *data = prs_data(rdata, 0x18);
-		crc32 = crc32_calc_buffer(data_len, data);
-		if (!rpc_auth_netsec_chk(&chk, crc32 , a->netsec_seq_num))
-		{
-			return False;
-		}
-		a->netsec_seq_num++;
-	}
 	return True;
-#endif
-	return False;
 }
 
 /****************************************************************************
@@ -132,23 +148,25 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 				prs_struct *dataa,
 				uint8 *flags)
 {
-#if 0
-	/* fudge this, at the moment: create the header; memcpy the data.  oops. */
 	prs_struct data_t;
 	prs_struct hdr;
 	prs_struct hdr_auth;
 	prs_struct auth_verf;
 	int data_len;
+	size_t len;
 	int frag_len;
 	int auth_len;
-	BOOL auth_verify;
-	BOOL auth_seal;
-	uint32 crc32 = 0;
 	char *d = prs_data(data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 	netsec_auth_struct *a = NULL;
-	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
+	BOOL ret;
+	RPC_HDR_AUTH  auth_info;
+	RPC_AUTH_NETSEC_CHK verf;
+	char *data_buf;
+	uchar chal[8];
+	uchar sign[8];
 
+	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
 	if (a == NULL)
 	{
 		return False;
@@ -156,12 +174,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 
 	*flags = 0;
 
-	auth_verify = IS_BITS_SET_ALL(a->netsec_chal.neg_flags,
-	                              NETSEC_NEGOTIATE_SIGN);
-	auth_seal   = IS_BITS_SET_ALL(a->netsec_chal.neg_flags,
-	                              NETSEC_NEGOTIATE_SEAL);
-
-	auth_len = (auth_verify ? 16 : 0);
+	auth_len = 0x20;
 	data_len = data->offset - data_start;
 
 	if (data_start == 0)
@@ -171,7 +184,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 
 	if (data_len > nt->max_recv_frag)
 	{
-		data_len = nt->max_recv_frag - (auth_len + (auth_verify ? 8 : 0) + 0x18);
+		data_len = nt->max_recv_frag - auth_len - 8 - 0x18;
 	}
 	else
 	{
@@ -181,7 +194,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	(*data_end) += data_len;
 
 	/* happen to know that NETSEC authentication verifier is 16 bytes */
-	frag_len = data_len + auth_len + (auth_verify ? 8 : 0) + 0x18;
+	frag_len = data_len + auth_len + 8 + 0x18;
 
 	prs_init(&data_t   , 0       , 4, False);
 	prs_init(&hdr      , frag_len, 4, False);
@@ -192,78 +205,48 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
+	data_buf = prs_data(&data_t, 0);
+	len      = prs_buf_len(&data_t);
+
 	create_rpc_request(&hdr, op_num, (*flags), frag_len, auth_len);
 
-	if (auth_seal)
+	DEBUG(5,("create_netsec_reply: data %d auth %d\n",
+		 data_len, auth_len));
+
+	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x08, 1);
+	smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &hdr_auth, 0);
+
+	generate_random_buffer(chal, 8, False);
+
+	memset(sign, 0, sizeof(sign));
+	sign[4] = 0x80;
+
+	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, chal, sign, NULL);
+	ret = netsec_encode(a, &verf, data_buf, len);
+
+	if (ret)
 	{
-		char *buf = prs_data(&data_t, 0);
-		size_t len = prs_buf_len(&data_t);
-		crc32 = crc32_calc_buffer(len, buf);
-		NETSECcalc_ap(a, (uchar*)buf, len);
+		smb_io_rpc_auth_netsec_chk("auth_sign", &verf, &auth_verf, 0);
+		a->seq_num++;
 	}
 
-	if (auth_seal || auth_verify)
-	{
-		RPC_HDR_AUTH         rhdr_auth;
-
-		make_rpc_hdr_auth(&rhdr_auth, 0x44, 0x06, 0x08, (auth_verify ? 1 : 0));
-		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &hdr_auth, 0);
-	}
-
-	if (auth_verify)
-	{
-		RPC_AUTH_NETSEC_CHK chk;
-
-		make_rpc_auth_netsec_chk(&chk, NETSEC_SIGN_VERSION, crc32, a->netsec_seq_num++);
-		smb_io_rpc_auth_netsec_chk("auth_sign", &chk, &auth_verf, 0);
-		NETSECcalc_ap(a, (uchar*)prs_data(&auth_verf, 4), 12);
-	}
-
-	if (auth_seal || auth_verify)
+	if (ret)
 	{
 		prs_link(NULL     , &hdr      , &data_t   );
 		prs_link(&hdr     , &data_t   , &hdr_auth );
 		prs_link(&data_t  , &hdr_auth , &auth_verf);
 		prs_link(&hdr_auth, &auth_verf, NULL      );
+
+		prs_init(dataa, 0, 4, False);
+		ret = prs_copy(dataa, &hdr);
 	}
-	else
-	{
-		prs_link(NULL, &hdr   , &data_t);
-		prs_link(&hdr, &data_t, NULL   );
-	}
-
-	DEBUG(100,("frag_len: 0x%x data_len: 0x%x data_calc_len: 0x%x\n",
-		frag_len, data_len, prs_buf_len(&data_t)));
-
-	if (frag_len != prs_buf_len(&hdr))
-	{
-		DEBUG(0,("expected fragment length does not match\n"));
-
-		prs_free_data(&hdr_auth );
-		prs_free_data(&auth_verf);
-		prs_free_data(&hdr      );
-		prs_free_data(&data_t   );
-
-		return False;
-	}
-
-	DEBUG(100,("create_netsec_pdu: %d\n", __LINE__));
-
-	/* this is all a hack */
-	prs_init(dataa, prs_buf_len(&hdr), 4, False);
-	prs_debug_out(dataa, "create_netsec_pdu", 200);
-	prs_buf_copy(dataa->data, &hdr, 0, frag_len);
-
-	DEBUG(100,("create_netsec_pdu: %d\n", __LINE__));
 
 	prs_free_data(&hdr_auth );
+	prs_free_data(&data_t   );
 	prs_free_data(&auth_verf);
 	prs_free_data(&hdr      );
-	prs_free_data(&data_t   );
 
 	return True;
-#endif
-	return False;
 }
 
 /*******************************************************************
@@ -290,6 +273,7 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 	RPC_AUTH_VERIFIER    auth_verifier;
 	RPC_AUTH_NETSEC_NEG  netsec_neg;
 
+	netsec_auth_struct *a;
 	struct netsec_creds *usr;
 	usr = (struct netsec_creds*)cli_conn_get_auth_creds(con);
 
@@ -343,8 +327,22 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 	prs_free_data(&rhdr_auth);
 	prs_free_data(&auth_req );
 
-	return cli_conn_set_auth_info(con,
-	             (void*)malloc(sizeof(struct netsec_auth_struct)));
+	a = malloc(sizeof(struct netsec_auth_struct));
+	if (a == NULL)
+	{
+		return False;
+	}
+	if (!cli_get_con_sesskey(con, a->sess_key))
+	{
+		return False;
+	}
+
+	if (!cli_conn_set_auth_info(con, (void*)a))
+	{
+		free(a);
+		return False;
+	}
+	return True;
 }
 
 static BOOL decode_netsec_bind_resp(struct cli_connection *con,
@@ -398,5 +396,5 @@ cli_auth_fns cli_netsec_fns =
 	decode_netsec_bind_resp,
 	NULL,
 	create_netsec_pdu,
-	decode_netsec_pdu
+	NULL,
 };

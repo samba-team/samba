@@ -53,7 +53,7 @@ typedef struct rpc_auth_netsec_chk_info
 	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
 	uint8 data1[8];
 	uint8 data3[8]; /* verifier, seq num */
-	uint8 data8[8]; 
+	uint8 data8[8]; /* random 8-byte nonce */
 
 } RPC_AUTH_NETSEC_CHK;
 

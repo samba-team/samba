@@ -1017,7 +1017,6 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 			int new_pwrd_size, uint32 *new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set);
-void hmac_md5( uchar*  key, uchar* data, int data_len, uchar* digest);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1947,6 +1946,8 @@ BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,
 				DOM_CRED *new_clnt_cred);
+void cli_con_get_sess_key(struct cli_connection *con,
+				uchar sess_key[16]);
 void cli_con_get_cli_cred(struct cli_connection *con,
 				DOM_CRED *clnt_cred);
 BOOL cli_con_deal_with_creds(struct cli_connection *con,

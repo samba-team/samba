@@ -92,9 +92,6 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 
 		safe_strcpy(creds.domain, domain    , sizeof(creds.myname)-1);
 		safe_strcpy(creds.myname, myhostname, sizeof(creds.myname)-1);
-#if 0
-		memcpy(creds.sess_key, sess_key, sizeof(creds.sess_key));
-#endif
 		
 		if (!cli_connection_init_auth(srv_name, PIPE_NETLOGON, &con,
 		                            &cli_netsec_fns,

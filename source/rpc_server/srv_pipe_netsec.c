@@ -75,11 +75,19 @@ static BOOL netsec_decode(struct netsec_auth_struct *a,
 	char dataN[4];
 	char digest1[16]; 
 	struct MD5Context ctx3; 
+	uchar sess_kf0[16];
+	int i;
 
 	/* store the sequence number */
 	SIVAL(dataN, 0, a->seq_num);
 
+	for (i = 0; i < sizeof(sess_kf0); i++)
+	{
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
+	}
+
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
 	hmac_md5(a->sess_key, dataN , 0x4, digest1 );
 	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
 
@@ -94,9 +102,9 @@ static BOOL netsec_decode(struct netsec_auth_struct *a,
 	MD5Update(&ctx3, dataN, 0x4);
 	MD5Update(&ctx3, verf->sig, 8);
 
-	dump_data_pw("a->sess_kf0:\n", a->sess_kf0, sizeof(a->sess_kf0));
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
 
-	hmac_md5(a->sess_kf0, dataN, 0x4, digest1 );
+	hmac_md5(sess_kf0, dataN, 0x4, digest1 );
 	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
 	hmac_md5(digest1, verf->data3, 8, digest1);
 	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
@@ -238,10 +246,10 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	{
 		RPC_AUTH_NETSEC_CHK netsec_chk;
 		char *auth_data;
-		a->seq_num++;
 		make_rpc_auth_netsec_chk(&netsec_chk,
 					  NETSEC_SIGN_VERSION, crc32,
 					  a->seq_num);
+		a->seq_num++;
 		smb_io_rpc_auth_netsec_chk("auth_sign", &netsec_chk, &rverf, 0);
 		auth_data = prs_data(&rverf, 4);
 		NETSECcalc_p(a, (uchar*)auth_data, 12);
@@ -300,7 +308,6 @@ static BOOL api_netsec_verify(rpcsrv_struct *l)
 {
 	netsec_auth_struct *a = (netsec_auth_struct *)l->auth_info;
 	struct dcinfo dc;
-	int i;
 
 	DEBUG(5,("api_netsec_verify: checking credential details\n"));
 
@@ -317,13 +324,7 @@ static BOOL api_netsec_verify(rpcsrv_struct *l)
 	memset(a->sess_key, 0, sizeof(a->sess_key));
 	memcpy(a->sess_key, dc.sess_key, sizeof(dc.sess_key));
 
-	for (i = 0; i < sizeof(a->sess_key); i++)
-	{
-		a->sess_kf0[i] = a->sess_key[i] ^ 0xf0;
-	}
-
 	dump_data_pw("sess_key:\n", a->sess_key, sizeof(a->sess_key));
-	dump_data_pw("sess_kf0:\n", a->sess_kf0, sizeof(a->sess_kf0));
 
 	if (l->auth_validated)
 	{
