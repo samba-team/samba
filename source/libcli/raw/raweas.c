@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 
 /*
   work out how many bytes on the wire a ea list will consume. 

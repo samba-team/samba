@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
-#include "system/network.h"
 
 /*
   send a nbt name query

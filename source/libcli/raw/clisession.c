@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
-#include "auth/auth.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \
 	req = smbcli_request_setup_session(session, cmd, wct, buflen); \

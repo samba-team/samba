@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "asn_1.h"
 #include "system/kerberos.h"
-#include "libcli/auth/kerberos.h"
 #include "libcli/auth/gensec.h"
 
 /*
