@@ -33,9 +33,6 @@ struct smbcli_composite {
 	/* the external state - will be queried by the caller */
 	enum smbcli_request_state state;
 
-	/* the internal stage */
-	uint16_t stage;
-
 	/* a private pointer for use by the composite function
 	   implementation */
 	void *private;

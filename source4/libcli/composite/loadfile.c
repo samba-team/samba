@@ -33,6 +33,7 @@ enum loadfile_stage {LOADFILE_OPEN, LOADFILE_READ, LOADFILE_CLOSE};
 static void loadfile_handler(struct smbcli_request *req);
 
 struct loadfile_state {
+	enum loadfile_stage stage;
 	struct smb_composite_loadfile *io;
 	struct smbcli_request *req;
 	union smb_open *io_open;
@@ -62,7 +63,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	/* call the handler again when the close is done */
 	state->req->async.fn = loadfile_handler;
 	state->req->async.private = c;
-	c->stage = LOADFILE_CLOSE;
+	state->stage = LOADFILE_CLOSE;
 
 	return NT_STATUS_OK;
 }
@@ -113,7 +114,7 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
 	/* call the handler again when the first read is done */
 	state->req->async.fn = loadfile_handler;
 	state->req->async.private = c;
-	c->stage = LOADFILE_READ;
+	state->stage = LOADFILE_READ;
 
 	talloc_free(state->io_open);
 
@@ -187,7 +188,7 @@ static void loadfile_handler(struct smbcli_request *req)
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
-	switch (c->stage) {
+	switch (state->stage) {
 	case LOADFILE_OPEN:
 		c->status = loadfile_open(c, state->io);
 		break;
@@ -251,7 +252,7 @@ struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree,
 	/* setup the callback handler */
 	state->req->async.fn = loadfile_handler;
 	state->req->async.private = c;
-	c->stage = LOADFILE_OPEN;
+	state->stage = LOADFILE_OPEN;
 
 	return c;
 
