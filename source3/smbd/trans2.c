@@ -1444,7 +1444,7 @@ int reply_findclose(char *inbuf,char *outbuf,int length,int bufsize)
 {
   int cnum;
   int outsize = 0;
-  int16 dptr_num=SSVAL(inbuf,smb_vwv0);
+  int16 dptr_num=SVALS(inbuf,smb_vwv0);
 
   cnum = SVAL(inbuf,smb_tid);
 
