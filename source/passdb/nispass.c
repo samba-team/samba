@@ -384,7 +384,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	if (new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val == NULL)
 	{
-		DEBUG(0, "Memory allocation failure in add_nisp21pwd_entry()\n");
+		DEBUG(0, "Memory allocation failure in add_nisp21pwd_entry()\n"));
 		return False;
 	}
 
