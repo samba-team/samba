@@ -260,7 +260,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC;
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC | SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 
@@ -329,6 +329,9 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
 					NULL);
 
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
 	set.set_secdesc.in.sd = sd;
 	status = smb_raw_setfileinfo(cli->tree, &set);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -484,7 +487,10 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC;
+	io.ntcreatex.in.access_mask = 
+		SEC_STD_READ_CONTROL | 
+		SEC_STD_WRITE_DAC | 
+		SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 
@@ -515,7 +521,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_create(mem_ctx,
-						NULL, NULL,
+						owner_sid, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						file_mappings[i].gen_bits,
@@ -523,7 +529,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 		set.set_secdesc.file.fnum = fnum;
-		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 		set.set_secdesc.in.sd = sd;
 
 		status = smb_raw_setfileinfo(cli->tree, &set);
@@ -550,13 +556,56 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, 
-				   SEC_STD_WRITE_DAC | 
 				   SEC_STD_READ_CONTROL | 
+				   SEC_STD_WRITE_DAC | 
 				   SEC_STD_DELETE | 
 				   SEC_FILE_READ_ATTRIBUTE |
 				   file_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.fnum);
 
+
+		printf("testing generic bits 0x%08x (anonymous)\n", 
+		       file_mappings[i].gen_bits);
+		sd = security_descriptor_create(mem_ctx,
+						SID_ANONYMOUS, NULL,
+						owner_sid,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						file_mappings[i].gen_bits,
+						NULL);
+
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+		set.set_secdesc.in.sd = sd;
+
+		status = smb_raw_setfileinfo(cli->tree, &set);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		sd2 = security_descriptor_create(mem_ctx,
+						 SID_ANONYMOUS, NULL,
+						 owner_sid,
+						 SEC_ACE_TYPE_ACCESS_ALLOWED,
+						 file_mappings[i].specific_bits,
+						 NULL);
+
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!security_descriptor_equal(q.query_secdesc.out.sd, sd2)) {
+			printf("security descriptors don't match!\n");
+			printf("got:\n");
+			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			printf("expected:\n");
+			NDR_PRINT_DEBUG(security_descriptor, sd2);
+		}
+
+		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, 
+				   SEC_STD_DELETE | 
+				   SEC_FILE_READ_ATTRIBUTE |
+				   file_mappings[i].specific_bits);
+		smbcli_close(cli->tree, io.ntcreatex.out.fnum);
 	}
 
 	printf("put back original sd\n");
