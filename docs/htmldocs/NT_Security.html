@@ -165,26 +165,71 @@ the <code>"Remove"</code> button, or set the component to only have the special
 <code>"Take Ownership"</code> permission (dsplayed as <code>"O"</code>) highlighted.
 <p><br><strong>Interaction with the standard Samba create mask parameters</strong><br>
 <strong>----------------------------------------------------------</strong>
+<p><br>Note that with Samba 2.0.5 there are four new parameters to
+control this interaction.
+<p><br>These are :
+<p><br><code>security mask</code>
+<code>force security mode</code>
+<code>directory security mask</code>
+<code>force directory security mode</code>
 <p><br>Once a user clicks <code>"OK"</code> to apply the permissions Samba maps
 the given permissions into a user/group/world r/w/x triple set,
-and then will mask the requested permissions for a file with
-the bits set in the <a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a>
-parameter. Samba then adds in the bits set in the <a href="smb.conf.5.html#forcecreatemode"><strong>"force create mode"</strong></a>
-parameter. For a directory Samba will mask the requested user/group/world
-permissions with the bits set in the <a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a>
-parameter and then add in the buts set in the <a href="smb.conf.5.html#forcedirectorymode"><strong>"force directory mode"</strong></a>
-parameter.
+and then will check the changed permissions for a file against
+the bits set in the <a href="smb.conf.5.html#securitymask"><strong>"security mask"</strong></a>
+parameter. Any bits that were changed that are not set to '1'
+in this parameter are left alone in the file permissions.
+<p><br>Essentially, zero bits in the <a href="smb.conf.5.html#securitymask"><strong>"security mask"</strong></a>
+mask may be treated as a set of bits the user is <em>not</em> allowed to change,
+and one bits are those the user is allowed to change.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#createmask"><strong>"create mask"</strong></a> parameter to provide compatibility
+with Samba 2.0.4 where this permission change facility was introduced.
+To allow a user to modify all the user/group/world permissions on a file,
+set this parameter to 0777.
+<p><br>Next Samba checks the changed permissions for a file against the
+bits set in the <a href="smb.conf.5.html#forcesecuritymode"><strong>"force security mode"</strong></a>
+parameter. Any bits that were changed that correspond to bits set
+to '1' in this parameter are forced to be set.
+<p><br>Essentially, bits set in the <a href="smb.conf.5.html#forcesecuritymode"><strong>"force security mode"</strong></a>
+parameter may be treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="??"><strong>force create mode</strong></a> parameter to provide compatibility
+with Samba 2.0.4 where the permission change facility was introduced.
+To allow a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+<p><br>The <a href="smb.conf.5.html#securitymask"><strong>"security mask"</strong></a> and
+<a href="smb.conf.5.html#forcesecuritymode"><strong>"force security mode"</strong></a> parameters
+are applied to the change request in that order.
+<p><br>For a directory Samba will perform the same operations as described above
+for a file except using the parameter <a href="smb.conf.5.html#directorysecuritymask"><strong>"directory security mask"</strong></a>
+instead of <a href="smb.conf.5.html#securitymask"><strong>"security mask"</strong></a>, and 
+<a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>"force directory security mode"</strong></a> parameter instead
+of <a href="smb.conf.5.html#forcesecuritymode"><strong>"force security mode"</strong></a>.
+<p><br>The <a href="smb.conf.5.html#directorysecuritymask"><strong>"directory security mask"</strong></a>
+parameter by default is set to the same value as the <a href="smb.conf.5.html#directorymask"><strong>"directory mask"</strong></a>
+parameter and the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>"force directory security mode"</strong></a>
+parameter by default is set to the same value as the 
+iurl(<strong>"force directory mode"</strong>)(smb.conf.5.html#forcedirectorymode) parameter
+to provide compatibility with Samba 2.0.4 where the permission change facility was introduced.
 <p><br>In this way Samba enforces the permission restrictions that an administrator
 can set on a Samba share, whilst still allowing users to modify the
 permission bits within that restriction.
 <p><br>If you want to set up a share that allows users full control
-over the permission bits on their files then set the following
+in modifying the permission bits on their files and directories and
+doesn't force any particular bits to be set 'on', then set the following
 parameters in the <a href="smb.conf.5.html"><strong>smb.conf.5</strong></a> file in
 that share specific section :
-<p><br><code>create mask = 0777</code>
-<code>force create mode = 0</code>
-<code>directory mask = 0777</code>
-<code>force directory mode = 0</code>
+<p><br><code>security mask = 0777</code>
+<code>force security mode = 0</code>
+<code>directory security mask = 0777</code>
+<code>force directory security mode = 0</code>
+<p><br>As described, in Samba 2.0.4 the parameters :
+<p><br><code>create mask</code>
+<code>force create mode</code>
+<code>directory mask</code>
+<code>force directory mode</code>
+<p><br>were used instead of the parameters discussed here.
 <p><br><strong>Interaction with the standard Samba file attribute mapping</strong><br>
 <strong>----------------------------------------------------------</strong>
 <p><br>Samba maps some of the DOS attribute bits (such as "read only")

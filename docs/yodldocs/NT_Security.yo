@@ -185,29 +185,88 @@ tt("Take Ownership") permission (dsplayed as tt("O")) highlighted.
 bf(Interaction with the standard Samba create mask parameters)nl()
 bf(----------------------------------------------------------)
 
+Note that with Samba 2.0.5 there are four new parameters to
+control this interaction.
+
+These are :
+
+tt(security mask)
+tt(force security mode)
+tt(directory security mask)
+tt(force directory security mode)
+
 Once a user clicks tt("OK") to apply the permissions Samba maps
 the given permissions into a user/group/world r/w/x triple set,
-and then will mask the requested permissions for a file with
-the bits set in the url(bf("create mask"))(smb.conf.5.html#createmask)
-parameter. Samba then adds in the bits set in the url(bf("force create mode"))(smb.conf.5.html#forcecreatemode)
-parameter. For a directory Samba will mask the requested user/group/world
-permissions with the bits set in the url(bf("directory mask"))(smb.conf.5.html#directorymask)
-parameter and then add in the buts set in the url(bf("force directory mode"))(smb.conf.5.html#forcedirectorymode)
-parameter.
+and then will check the changed permissions for a file against
+the bits set in the url(bf("security mask"))(smb.conf.5.html#securitymask)
+parameter. Any bits that were changed that are not set to '1'
+in this parameter are left alone in the file permissions.
+
+Essentially, zero bits in the url(bf("security mask"))(smb.conf.5.html#securitymask)
+mask may be treated as a set of bits the user is em(not) allowed to change,
+and one bits are those the user is allowed to change.
+
+If not set explicitly this parameter is set to the same value as the
+url(bf("create mask"))(smb.conf.5.html#createmask) parameter to provide compatibility
+with Samba 2.0.4 where this permission change facility was introduced.
+To allow a user to modify all the user/group/world permissions on a file,
+set this parameter to 0777.
+
+Next Samba checks the changed permissions for a file against the
+bits set in the url(bf("force security mode"))(smb.conf.5.html#forcesecuritymode)
+parameter. Any bits that were changed that correspond to bits set
+to '1' in this parameter are forced to be set.
+
+Essentially, bits set in the url(bf("force security mode"))(smb.conf.5.html#forcesecuritymode)
+parameter may be treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(force create mode))(forcecreatemode) parameter to provide compatibility
+with Samba 2.0.4 where the permission change facility was introduced.
+To allow a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+
+The url(bf("security mask"))(smb.conf.5.html#securitymask) and
+url(bf("force security mode"))(smb.conf.5.html#forcesecuritymode) parameters
+are applied to the change request in that order.
+
+For a directory Samba will perform the same operations as described above
+for a file except using the parameter url(bf("directory security mask"))(smb.conf.5.html#directorysecuritymask)
+instead of url(bf("security mask"))(smb.conf.5.html#securitymask), and 
+url(bf("force directory security mode"))(smb.conf.5.html#forcedirectorysecuritymode) parameter instead
+of url(bf("force security mode"))(smb.conf.5.html#forcesecuritymode).
+
+The url(bf("directory security mask"))(smb.conf.5.html#directorysecuritymask)
+parameter by default is set to the same value as the url(bf("directory mask"))(smb.conf.5.html#directorymask)
+parameter and the url(bf("force directory security mode"))(smb.conf.5.html#forcedirectorysecuritymode)
+parameter by default is set to the same value as the 
+iurl(bf("force directory mode"))(smb.conf.5.html#forcedirectorymode) parameter
+to provide compatibility with Samba 2.0.4 where the permission change facility was introduced.
 
 In this way Samba enforces the permission restrictions that an administrator
 can set on a Samba share, whilst still allowing users to modify the
 permission bits within that restriction.
 
 If you want to set up a share that allows users full control
-over the permission bits on their files then set the following
+in modifying the permission bits on their files and directories and
+doesn't force any particular bits to be set 'on', then set the following
 parameters in the url(bf(smb.conf.5))(smb.conf.5.html) file in
 that share specific section :
 
-tt(create mask = 0777)
-tt(force create mode = 0)
-tt(directory mask = 0777)
-tt(force directory mode = 0)
+tt(security mask = 0777)
+tt(force security mode = 0)
+tt(directory security mask = 0777)
+tt(force directory security mode = 0)
+
+As described, in Samba 2.0.4 the parameters :
+
+tt(create mask)
+tt(force create mode)
+tt(directory mask)
+tt(force directory mode)
+
+were used instead of the parameters discussed here.
 
 bf(Interaction with the standard Samba file attribute mapping)nl()
 bf(----------------------------------------------------------)

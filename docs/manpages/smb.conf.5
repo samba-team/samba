@@ -990,6 +990,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBdirectory mode\fP
 .IP 
 .IP o 
+linf(\fBdirectory security mask\fP)(directorysecuritymask)
+.IP 
+.IP o 
 \fBdont descend\fP
 .IP 
 .IP o 
@@ -1017,7 +1020,13 @@ parameter for details\&. Note that some are synonyms\&.
 \fBforce directory mode\fP
 .IP 
 .IP o 
+\fBforce directory security mode\fP
+.IP 
+.IP o 
 \fBforce group\fP
+.IP 
+.IP o 
+\fBforce security mode\fP
 .IP 
 .IP o 
 \fBforce user\fP
@@ -1180,6 +1189,9 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBroot preexec\fP
+.IP 
+.IP o 
+\fBsecurity mask\fP
 .IP 
 .IP o 
 \fBset directory\fP
@@ -2074,7 +2086,8 @@ See the \fB"force directory mode"\fP parameter
 to cause particular mode bits to always be set on created directories\&.
 .IP 
 See also the \fB"create mode"\fP parameter for masking
-mode bits on created files\&.
+mode bits on created files, and the \fB"directory security mask"\fP
+parameter\&.
 .IP 
 \fBDefault:\fP
 \f(CW	directory mask = 0755\fP
@@ -2085,6 +2098,38 @@ mode bits on created files\&.
 .IP "\fBdirectory mode (S)\fP" 
 .IP 
 Synonym for \fBdirectory mask\fP\&.
+.IP 
+.IP "\fBdirectory security mask (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (AND\'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified\&. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBdirectory mask\fP parameter\&. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0777\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBsecurity
+mask\fP, \fBforce security mode\fP
+parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	directory security mask = <same as directory mask>\fP
+.IP 
+\fBExample:\fP
+\f(CW	directory security mask = 0777\fP
 .IP 
 .IP "\fBdns proxy (G)\fP" 
 .IP 
@@ -2397,6 +2442,38 @@ would force all created directories to have read and execute
 permissions set for \'group\' and \'other\' as well as the
 read/write/execute bits set for the \'user\'\&.
 .IP 
+.IP "\fBforce directory security mode (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (OR\'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on\&. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be \'on\'\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBforce directory mode\fP parameter\&. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0000\&.
+.IP 
+See also the \fBdirectory security mask\fP,
+\fBsecurity mask\fP, \fBforce security
+mode\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	force directory security mode = <same as force directory mode>\fP
+.IP 
+\fBExample:\fP
+\f(CW	force directory security mode = 0\fP
+.IP 
 .IP "\fBforce group (S)\fP" 
 .IP 
 This specifies a UNIX group name that will be assigned as the default
@@ -2430,6 +2507,39 @@ See also \fB"force user"\fP
 .IP 
 \fBExample:\fP
 \f(CW	force group = agroup\fP
+.IP 
+.IP "\fBforce security mode (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (OR\'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on\&. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be \'on\'\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBforce create mode\fP parameter\&. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0000\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBdirectory security
+mask\fP, \fBsecurity mask\fP
+parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	force security mode = <same as force create mode>\fP
+.IP 
+\fBExample:\fP
+\f(CW	force security mode = 0\fP
 .IP 
 .IP "\fBforce user (S)\fP" 
 .IP 
@@ -4062,7 +4172,8 @@ for details\&.
 \fBExample:\fP
 \f(CW	oplocks = False\fP
 .IP 
-.IP "\fBoplock break wait time (G)\fP.YODLTAGSTART. roffcmd .IP 
+.IP "\fBoplock break wait time (G)\fP" 
+.IP 
 This is a tuning parameter added due to bugs in both Windows 9x and WinNT\&.
 If Samba responds to a client too quickly when that client issues an SMB that
 can cause an oplock break request, then the client redirector can fail and
@@ -4429,7 +4540,7 @@ time they log in\&. Maybe a message of the day? Here is an example:
  
 
 .IP 
-Of course, this could get annoying after a while :-" .YODLTAGEND. 
+Of course, this could get annoying after a while :-)
 .IP 
 See also \fBpostexec\fP\&.
 .IP 
@@ -5272,7 +5383,7 @@ users into the \fB"guest account"\fP\&. See the
 \fB"map to guest"\fP parameter for details on
 doing this\&.
 .IP 
-e,(BUG:) There is currently a bug in the implementation of
+\fIBUG:\fP There is currently a bug in the implementation of
 \fB"security=domain\fP with respect to multi-byte character
 set usernames\&. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -5292,6 +5403,38 @@ and the \fB"encrypted passwords"\fP parameter\&.
 .IP 
 \fBExample:\fP
 \f(CW 	security = DOMAIN\fP
+.IP 
+.IP "\fBsecurity mask (S)\fP" 
+.IP 
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box\&.
+.IP 
+This parameter is applied as a mask (AND\'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified\&. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change\&.
+.IP 
+If not set explicitly this parameter is set to the same value as the
+\fBcreate mask\fP parameter\&. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777\&.
+.IP 
+\fINote\fP that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems\&.  Administrators of
+most normal systems will probably want to set it to 0777\&.
+.IP 
+See also the \fBforce directory security
+mode\fP, \fBdirectory security
+mask\fP, \fBforce security
+mode\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW	security mask = <same as create mask>\fP
+.IP 
+\fBExample:\fP
+\f(CW	security mask = 0777\fP
 .IP 
 .IP "\fBserver string (G)\fP" 
 .IP 
@@ -5357,6 +5500,9 @@ increase this parameter\&. Signs that this parameter is set too low are
 users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like \f(CW"ERROR
 smb_shm_alloc : alloc of XX bytes failed"\fP\&.
+.IP 
+If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0\&.8 until the OS accepts it\&.
 .IP 
 \fBDefault:\fP
 \f(CW	shared mem size = 1048576\fP
@@ -6500,51 +6646,52 @@ permitting), but only via spooling operations\&.
  
 
 .IP 
+.PP 
 .SH "WARNINGS" 
-.IP 
+.PP 
 Although the configuration file permits service names to contain
 spaces, your client software may not\&. Spaces will be ignored in
 comparisons anyway, so it shouldn\'t be a problem - but be aware of the
 possibility\&.
-.IP 
+.PP 
 On a similar note, many clients - especially DOS clients - limit
 service names to eight characters\&. \fBSmbd\fP has no
 such limitation, but attempts to connect from such clients will fail
 if they truncate the service names\&.  For this reason you should
 probably keep your service names down to eight characters in length\&.
-.IP 
+.PP 
 Use of the \fB[homes]\fP and \fB[printers]\fP
 special sections make life for an administrator easy, but the various
 combinations of default attributes can be tricky\&. Take extreme care
 when designing these sections\&. In particular, ensure that the
 permissions on spool directories are correct\&.
-.IP 
+.PP 
 .SH "VERSION" 
-.IP 
+.PP 
 This man page is correct for version 2\&.0 of the Samba suite\&.
-.IP 
+.PP 
 .SH "SEE ALSO" 
-.IP 
+.PP 
 \fBsmbd (8)\fP, \fBsmbclient (1)\fP,
 \fBnmbd (8)\fP, \fBtestparm (1)\fP,
 \fBtestprns (1)\fP, \fBSamba\fP,
 \fBnmblookup (1)\fP, \fBsmbpasswd (5)\fP,
 \fBsmbpasswd (8)\fP\&.
-.IP 
+.PP 
 .SH "AUTHOR" 
-.IP 
+.PP 
 The original Samba software and related utilities were created by
 Andrew Tridgell \fIsamba-bugs@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
-.IP 
+.PP 
 The original Samba man pages were written by Karl Auer\&. The man page
 sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
 \fIsamba-bugs@samba\&.org\fP\&.
-.IP 
+.PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
 comments etc\&.
