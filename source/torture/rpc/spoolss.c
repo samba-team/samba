@@ -640,6 +640,85 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 	return ret;
 }
 
+static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *name)
+{
+	NTSTATUS status;
+	struct spoolss_OpenPrinter op;
+	struct spoolss_OpenPrinterEx opEx;
+	struct policy_handle handle;
+	BOOL ret = True;
+
+	op.in.printername	= name;
+	op.in.datatype		= NULL;
+	op.in.devmode_ctr.size	= 0;
+	op.in.devmode_ctr.devmode= NULL;
+	op.in.access_mask	= 0;
+	op.out.handle		= &handle;
+
+	printf("\nTesting OpenPrinter(%s) with bad name\n", op.in.printername);
+
+	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPrinter failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,op.out.result)) {
+		printf("OpenPrinter(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
+			name, win_errstr(op.out.result));
+	}
+
+	if (W_ERROR_IS_OK(op.out.result)) {
+		ret &=test_ClosePrinter(p, mem_ctx, &handle);
+	}
+
+	opEx.in.printername		= name;
+	opEx.in.datatype		= NULL;
+	opEx.in.devmode_ctr.size	= 0;
+	opEx.in.devmode_ctr.devmode	= NULL;
+	opEx.in.access_mask		= 0;
+	opEx.in.level			= 1;
+	opEx.in.userlevel.level1	= NULL;
+	opEx.out.handle			= &handle;
+
+	printf("\nTesting OpenPrinter(%s) with bad name\n", opEx.in.printername);
+
+	status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &opEx);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPrinter failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,opEx.out.result)) {
+		printf("OpenPrinterEx(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
+			name, win_errstr(opEx.out.result));
+	}
+
+	if (W_ERROR_IS_OK(opEx.out.result)) {
+		ret &=test_ClosePrinter(p, mem_ctx, &handle);
+	}
+
+	return ret;
+}
+
+static BOOL test_OpenPrinter_badnames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	char *name;
+
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "__INVALID_PRINTER__");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\127.0.0.1");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\localhost");
+
+	name = talloc_asprintf(mem_ctx, "\\\\%s\\", dcerpc_server_name(p));
+	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
+	talloc_free(name);
+
+	name = talloc_asprintf(mem_ctx, "\\\\%s\\__INVALID_PRINTER__", dcerpc_server_name(p));
+	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
+	talloc_free(name);
+
+	return ret;
+}
+
 static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			     const char *name)
 {
@@ -661,8 +740,7 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		printf("OpenPrinter failed - %s/%s\n", 
 		       nt_errstr(status), win_errstr(r.out.result));
-		/* don't consider failing this an error until we understand it */
-		return True;
+		return False;
 	}
 
 	if (!test_GetPrinter(p, mem_ctx, &handle)) {
@@ -687,18 +765,20 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct spoolss_UserLevel1 userlevel1;
 	NTSTATUS status;
 
-	if (name && name[0])
+	if (name && name[0]) {
 		r.in.printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s", 
 						   dcerpc_server_name(p), name);
-	else
+	} else {
 		r.in.printername = talloc_asprintf(mem_ctx, "\\\\%s", 
 						   dcerpc_server_name(p));
+	}
 
-	r.in.datatype = NULL;
-	r.in.devmode_ctr.size = 0;
-	r.in.devmode_ctr.devmode = NULL;
-	r.in.access_mask = 0x02000000;
-	r.in.level = 1;
+	r.in.datatype		= NULL;
+	r.in.devmode_ctr.size	= 0;
+	r.in.devmode_ctr.devmode= NULL;
+	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.level		= 1;
+	r.in.userlevel.level1	= &userlevel1;
 	r.out.handle = handle;
 
 	userlevel1.size = 1234;
@@ -708,7 +788,6 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	userlevel1.major = 2;
 	userlevel1.minor = 3;
 	userlevel1.processor = 4;
-	r.in.userlevel.level1 = &userlevel1;
 
 	printf("Testing OpenPrinterEx(%s)\n", r.in.printername);
 
@@ -968,18 +1047,14 @@ BOOL torture_rpc_spoolss(void)
 
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
-	if (!test_EnumPorts(p, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_OpenPrinter_badnames(p, mem_ctx);
 
-	if (!test_EnumPrinters(p, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_EnumPorts(p, mem_ctx);
 
-	if (!test_EnumPrinterDrivers(p, mem_ctx)) {
-		ret = False;
-	}
-printf("blub\n");
+	ret &= test_EnumPrinters(p, mem_ctx);
+
+	ret &= test_EnumPrinterDrivers(p, mem_ctx);
+
 	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
