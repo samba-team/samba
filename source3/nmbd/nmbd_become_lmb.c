@@ -78,7 +78,8 @@ static void remove_permanent_name_from_unicast( struct subnet_record *subrec,
  state back to potential browser, or none.
 ******************************************************************/
 
-static void reset_workgroup_state( struct subnet_record *subrec, char *workgroup_name )
+static void reset_workgroup_state( struct subnet_record *subrec, char *workgroup_name,
+                                   BOOL force_new_election )
 {
   struct work_record *work;
   struct server_record *servrec;
@@ -129,6 +130,8 @@ in workgroup %s on subnet %s\n",
 
   remove_permanent_name_from_unicast( subrec, &nmbname);
 
+  if(force_new_election)
+    work->needelection = True;
 }
 
 /*******************************************************************
@@ -140,11 +143,15 @@ void unbecome_local_master_success(struct subnet_record *subrec,
                              struct nmb_name *released_name,
                              struct in_addr released_ip)
 { 
+  BOOL force_new_election = False;
+
+  memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
+
   DEBUG(3,("unbecome_local_master_success: released name %s.\n",
              namestr(released_name)));
 
   /* Now reset the workgroup and server state. */
-  reset_workgroup_state( subrec, released_name->name );
+  reset_workgroup_state( subrec, released_name->name, force_new_election );
 
   DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
 on subnet %s *****\n\n", timestring(), global_myname, released_name->name, subrec->subnet_name));
@@ -159,6 +166,10 @@ void unbecome_local_master_fail(struct subnet_record *subrec, struct response_re
                        struct nmb_name *fail_name)
 {
   struct name_record *namerec;
+  struct userdata_struct *userdata = rrec->userdata;
+  BOOL force_new_election = False;
+
+  memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
 
   DEBUG(0,("unbecome_local_master_fail: failed to release name %s. \
 Removing from namelist anyway.\n", namestr(fail_name)));
@@ -169,19 +180,18 @@ Removing from namelist anyway.\n", namestr(fail_name)));
     remove_name_from_namelist(subrec, namerec);
 
   /* Now reset the workgroup and server state. */
-  reset_workgroup_state( subrec, fail_name->name );
+  reset_workgroup_state( subrec, fail_name->name, force_new_election );
 
   DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
 on subnet %s *****\n\n", timestring(), global_myname, fail_name->name, subrec->subnet_name));
-
 }
 
 /*******************************************************************
- Utility function to remove the WORKGROUP<1d> name called by both
- success and fail of releasing the MSBROWSE name.
+ Utility function to remove the WORKGROUP<1d> name.
 ******************************************************************/
 
-void release_1d_name( struct subnet_record *subrec, char *workgroup_name)
+static void release_1d_name( struct subnet_record *subrec, char *workgroup_name,
+                             BOOL force_new_election)
 {
   struct nmb_name nmbname;
   struct name_record *namerec;
@@ -189,10 +199,26 @@ void release_1d_name( struct subnet_record *subrec, char *workgroup_name)
   make_nmb_name(&nmbname, workgroup_name, 0x1d, scope);
   if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL)
   {
+    struct userdata_struct *userdata;
+
+    if((userdata = (struct userdata_struct *)malloc( 
+                      sizeof(struct userdata_struct) + sizeof(BOOL))) == NULL)
+    {
+      DEBUG(0,("release_1d_name: malloc fail.\n"));
+      return;
+    }
+
+    userdata->copy_fn = NULL;
+    userdata->free_fn = NULL;
+    userdata->userdata_len = sizeof(BOOL);
+    memcpy((char *)userdata->data, &force_new_election, sizeof(BOOL));
+
     release_name(subrec, namerec,
                  unbecome_local_master_success,
                  unbecome_local_master_fail,
-                 NULL);
+                 userdata);
+
+    free((char *)userdata);
   }
 }
 
@@ -210,8 +236,6 @@ static void release_msbrowse_name_success(struct subnet_record *subrec,
 
   /* Remove the permanent MSBROWSE name added into the unicast subnet. */
   remove_permanent_name_from_unicast( subrec, released_name);
-
-  release_1d_name( subrec, userdata->data );
 }
 
 /*******************************************************************
@@ -222,7 +246,6 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
                        struct response_record *rrec,
                        struct nmb_name *fail_name)
 {
-  struct userdata_struct *userdata = rrec->userdata;
   struct name_record *namerec;
 
   DEBUG(4,("release_msbrowse_name_fail: Failed to release name %s on subnet %s\n.",
@@ -235,20 +258,19 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
 
   /* Remove the permanent MSBROWSE name added into the unicast subnet. */
   remove_permanent_name_from_unicast( subrec, fail_name);
-
-  release_1d_name( subrec, userdata->data );
 }
 
 /*******************************************************************
-  Unbecome the local master browser.
+  Unbecome the local master browser. If force_new_election is true, restart
+  the election process after we've unbecome the local master.
 ******************************************************************/
 
-void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work)
+void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
+                                   BOOL force_new_election)
 {
   struct server_record *servrec;
   struct name_record *namerec;
   struct nmb_name nmbname;
-  struct userdata_struct *userdata;
 
   /* Sanity check. */
 
@@ -267,17 +289,12 @@ in workgroup %s on subnet %s\n",
   /* Set the state to unbecoming. */
   work->mst_state = MST_UNBECOMING_MASTER;
 
-  /* Setup the userdata for the MSBROWSE name release. */
-  if((userdata = (struct userdata_struct *)malloc( sizeof(struct userdata_struct) + sizeof(fstring)+1)) == NULL)
-  {
-    DEBUG(0,("unbecome_local_master_browser: malloc fail.\n"));
-    return;
-  }
+  /*
+   * Release the WORKGROUP<1d> name asap to allow another machine to
+   * claim it.
+   */
 
-  userdata->copy_fn = NULL;
-  userdata->free_fn = NULL;
-  userdata->userdata_len = strlen(work->work_group)+1;
-  pstrcpy(userdata->data, work->work_group);
+  release_1d_name( subrec, work->work_group, force_new_election);
 
   /* Deregister any browser names we may have. */
   make_nmb_name(&nmbname, MSBROWSE, 0x1, scope);
@@ -286,10 +303,16 @@ in workgroup %s on subnet %s\n",
     release_name(subrec, namerec,
                  release_msbrowse_name_success,
                  release_msbrowse_name_fail,
-                 userdata);
+                 NULL);
   }
 
-  free((char *)userdata);
+  /*
+   * Ensure we have sent and processed these release packets
+   * before returning - we don't want to process any election
+   * packets before dealing with the 1d release.
+   */
+
+  retransmit_or_expire_response_records(time(NULL));
 }
 
 /****************************************************************************
@@ -394,7 +417,7 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
   }
 
   /* Roll back all the way by calling unbecome_local_master_browser(). */
-  unbecome_local_master_browser(subrec, work);
+  unbecome_local_master_browser(subrec, work, False);
 }
 
 /****************************************************************************
@@ -465,7 +488,7 @@ in workgroup %s on subnet %s\n",
     return;
   }
 
-  reset_workgroup_state( subrec, work->work_group );
+  reset_workgroup_state( subrec, work->work_group, False );
 
   DEBUG(0,("become_local_master_fail1: Failed to become a local master browser for \
 workgroup %s on subnet %s. Couldn't register name %s.\n",

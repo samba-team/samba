@@ -602,6 +602,17 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
     return NULL;
   }
 
+  /*
+   * For a broadcast release packet, only send once.
+   * This will cause us to remove the name asap. JRA.
+   */
+
+  if(bcast)
+  {
+    rrec->repeat_count = 0;
+    rrec->repeat_time = 0;
+  }
+
   return rrec;
 }
 
