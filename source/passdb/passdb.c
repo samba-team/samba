@@ -759,24 +759,11 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 	
 	DEBUG(5,("local_lookup_sid: looking up RID %u.\n", (unsigned int)rid));
 	
-	if (rid == DOMAIN_USER_RID_ADMIN) {
-		const char **admin_list = lp_admin_users(-1);
-		*psid_name_use = SID_NAME_USER;
-		if (admin_list) {
-			const char *p = *admin_list;
-			if(!next_token(&p, name, NULL, sizeof(fstring)))
-				fstrcpy(name, "Administrator");
-		} else {
-			fstrcpy(name, "Administrator");
-		}
-		return True;
-	}
 
+	/* see if the passdb can help us with the name of the user */
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
 	}
-	
-	/* see if the passdb can help us with the name of the user */
 
 	/* BEING ROOT BLLOCK */
 	become_root();
@@ -804,6 +791,20 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 
 		fstrcpy(name, map.nt_name);
 		*psid_name_use = map.sid_name_use;
+		return True;
+	}
+
+	if (rid == DOMAIN_USER_RID_ADMIN) {
+		const char **admin_list = lp_admin_users(-1);
+		*psid_name_use = SID_NAME_USER;
+		if (admin_list) {
+			const char *p = *admin_list;
+			if(!next_token(&p, name, NULL, sizeof(fstring))) {
+				fstrcpy(name, "Administrator");
+			}
+		} else {
+			fstrcpy(name, "Administrator");
+		}
 		return True;
 	}
 
