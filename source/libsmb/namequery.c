@@ -822,6 +822,10 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   BOOL allones = (strcmp(name,"255.255.255.255") == 0);
   BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
   BOOL is_address = is_ipaddress(name);
+  BOOL result = False;
+  struct in_addr *nodupes_iplist;
+  int i;
+
   *return_iplist = NULL;
   *return_count = 0;
 
@@ -849,29 +853,89 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 		  if (name_type == 0x20 && resolve_hosts(name, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "wins")) {
 		  /* don't resolve 1D via WINS */
 		  if (name_type != 0x1D &&
-		      resolve_wins(name, name_type, return_iplist, return_count)) {
-			  return True;
+		        resolve_wins(name, name_type, return_iplist, return_count)) {
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "bcast")) {
 		  if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else {
 		  DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
 	  }
   }
 
+  /* All of the resolve_* functions above have returned false. */
+
   SAFE_FREE(*return_iplist);
   return False;
+
+  done:
+
+  /* Remove duplicate entries.  Some queries, notably #1c (domain
+     controllers) return the PDC in iplist[0] and then all domain
+     controllers including the PDC in iplist[1..n].  Iterating over
+     the iplist when the PDC is down will cause two sets of timeouts. */
+
+  if (*return_count && (nodupes_iplist =
+			(struct in_addr *)malloc(sizeof(struct in_addr) * (*return_count)))) {
+      int nodupes_count = 0;
+ 
+      /* Iterate over return_iplist looking for duplicates */
+ 
+      for (i = 0; i < *return_count; i++) {
+          BOOL is_dupe = False;
+          int j;
+ 
+          for (j = i + 1; j < *return_count; j++) {
+              if (ip_equal((*return_iplist)[i],
+                       (*return_iplist)[j])) {
+                  is_dupe = True;
+                  break;
+              }
+          }
+ 
+          if (!is_dupe) {
+ 
+              /* This one not a duplicate */
+ 
+              nodupes_iplist[nodupes_count] = (*return_iplist)[i];
+              nodupes_count++;
+          }
+      }
+ 
+      /* Switcheroo with original list */
+ 
+      free(*return_iplist);
+ 
+      *return_iplist = nodupes_iplist;
+      *return_count = nodupes_count;
+  }
+ 
+  /* Display some debugging info */
+ 
+  DEBUG(10, ("internal_resolve_name: returning %d addresses: ",
+         *return_count));
+ 
+  for (i = 0; i < *return_count; i++)
+      DEBUGADD(10, ("%s ", inet_ntoa((*return_iplist)[i])));
+ 
+  DEBUG(10, ("\n"));
+ 
+  return result;
 }
 
 /********************************************************
