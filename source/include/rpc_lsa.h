@@ -207,7 +207,7 @@ typedef struct lsa_r_open_pol2_info
                             POLICY_VIEW_AUDIT_INFORMATION    |\
                             POLICY_GET_PRIVATE_INFORMATION)
 
-#define POLICY_WRITE      ( STANDARD_RIGHTS_WRITE_ACCESS     |\
+#define POLICY_WRITE      ( STD_RIGHT_READ_CONTROL_ACCESS     |\
                             POLICY_TRUST_ADMIN               |\
                             POLICY_CREATE_ACCOUNT            |\
                             POLICY_CREATE_SECRET             |\
