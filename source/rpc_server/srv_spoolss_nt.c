@@ -6088,10 +6088,9 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-#if 0 /* see below. */
 	int snum;
-#endif
 	uint32 result = NT_STATUS_NO_PROBLEMO;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	DEBUG(5,("spoolss_addform\n"));
 
@@ -6137,7 +6136,23 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 
 	write_ntforms(&list, count);
 
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum)) {
+                result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
+
+	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
+	if ((result = mod_a_printer(*printer, 2)) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
 done:
+	free_a_printer(&printer, 2);
 	safe_free(list);
 
 	return result;
@@ -6153,6 +6168,9 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
 	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	int snum;
+	uint32 result = NT_STATUS_NO_PROBLEMO;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	DEBUG(5,("spoolss_deleteform\n"));
 
@@ -6170,6 +6188,23 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
 	if(!delete_a_form(&list, form_name, &count, &ret))
 		return ERROR_INVALID_PARAMETER;
 
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum)) {
+                result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
+
+	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
+	if ((result = mod_a_printer(*printer, 2)) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
+done:
+	free_a_printer(&printer, 2);
 	safe_free(list);
 
 	return ret;
@@ -6188,6 +6223,9 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	int snum;
+	uint32 result = NT_STATUS_NO_PROBLEMO;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
  	DEBUG(5,("spoolss_setform\n"));
 
@@ -6204,6 +6242,23 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
 
+	/*
+	 * ChangeID must always be set
+	 */
+	 
+	if (!get_printer_snum(p,handle, &snum)) {
+                result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
+
+	if ((result = get_a_printer(&printer, 2, lp_servicename(snum))) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
+	if ((result = mod_a_printer(*printer, 2)) != NT_STATUS_NO_PROBLEMO)
+		goto done;
+	
+done:
+	free_a_printer(&printer, 2);
 	safe_free(list);
 
 	return 0x0;
