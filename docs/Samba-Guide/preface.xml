@@ -84,6 +84,123 @@
 	makes deployment of Samba-3 a breeze.
 	</para>
 
+	<sect2>
+	<title>Samba 3.0.12 Update Edition</title>
+
+	<para>
+	The Samba 3.0.x series has been remarkably popular. At the time this book first
+	went to print samba-3.0.2 was being released. There have been significant modifications
+	and enhancements between samba-3.0.2 and samba-3.0.11 (the current release) that
+	necessitate this documentation update. This update has the specific intent to
+	refocus this books so that its guidance can be followed for samba-3.0.12
+	and beyond. Further changes are expected as Samba-3 matures further and will 
+	be reflected in future updates.
+	</para>
+
+	<para>
+	The changes shown in <link linkend="pref-new"/> are incorporated in this update:
+	</para>
+
+	<table id="pref-new">
+		<title></title>
+		<tgroup cols="2">
+			<colspec align="left"/>
+			<colspec align="justify"/>
+			<thead>
+				<row>
+					<entry align="left">
+						<para>
+						New Feature
+						</para>
+					</entry>
+					<entry align="left">
+						<para>
+						Description
+						</para>
+					</entry>
+				</row>
+			</thead>
+			<tbody>
+				<row>
+					<entry>
+						<para>
+						Winbind Case Handling
+						</para>
+					</entry>
+					<entry>
+						<para>
+						User and group names returned by <command>winbindd</command> are now converted to lower case
+						for better consistency. Samba implementations that depend on the case of information returned
+						by winbind (such as %u and %U) must now convert the dependency to expecting lower case values.
+						This affects mail spool files, home directories, valid user lines in the &smb.conf; file, etc.
+						</para>
+					</entry>
+				</row>
+				<row>
+					<entry>
+						<para>
+						Schema Changes
+						</para>
+					</entry>
+					<entry>
+						<para>
+						Addition of code to handle password aging, password uniqueness controls, bad
+						password instances at logon time, have made necessary extensions to the SambaSAM
+						schema. This change affects all sites that use LDAP and means that the directory
+						schema must be updated. 
+						</para>
+					</entry>
+				</row>
+				<row>
+					<entry>
+						<para>
+						Username Map Handling
+						</para>
+					</entry>
+					<entry>
+						<para>
+						Samba-3.0.8 redefined the behavior: Local authentication results in a username map file
+						lookup before authenticating the connection. All authentication via an external domain
+						controller will result in the use of the fully qualified name (i.e.: DOMAIN\username)
+						after the user has been successfully authenticated.
+						</para>
+					</entry>
+				</row>
+				<row>
+					<entry>
+						<para>
+						UNIX extension handling
+						</para>
+					</entry>
+					<entry>
+						<para>
+						Symbolicly linked files and directories on the UNIX host to absolute paths will
+						now be followed. This can be turned off using <quote>wide links = No</quote> in
+						the share stanza in the &smb.conf; file. Turning off <quote>wide links</quote>
+						support will degrade server performance because each path must be checked.
+						</para>
+					</entry>
+				</row>
+				<row>
+					<entry>
+						<para>
+						Privileges Support
+						</para>
+					</entry>
+					<entry>
+						<para>
+						Versions of Samba prior to samba-3.0.11 required the use of the UNIX <constant>root</constant>
+						account from network Windows clients. The new <quote>enable privileges = Yes</quote> capability
+						means that functions such as adding machines to the domain, managing printers, etc. can now
+						be delegated to normal user accounts or to groups of users.
+						</para>
+					</entry>
+				</row>
+			</tbody>
+		</tgroup>
+	</table>
+	</sect2>
+
   </sect1>
 
   <sect1>
