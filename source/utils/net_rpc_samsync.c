@@ -393,6 +393,8 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	if (pdb_get_acct_ctrl(account) != delta->acb_info)
 		pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
 
+	pdb_set_domain(account, lp_workgroup(), PDB_CHANGED);
+
 	return NT_STATUS_OK;
 }
 
