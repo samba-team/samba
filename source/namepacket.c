@@ -162,7 +162,10 @@ void initiate_netbios_packet(uint16 *id,
   p.timestamp = time(NULL);
   p.packet_type = NMB_PACKET;
   
-  if (!send_packet(&p)) *id = 0xffff;
+  if (!send_packet(&p)) {
+    DEBUG(3,("send_packet to %s %d failed\n",inet_ntoa(p.ip),p.port));
+    *id = 0xffff;
+  }
   
   return;
 }
@@ -296,6 +299,26 @@ void queue_packet(struct packet_struct *packet)
   packet->prev = p;
 }
 
+/****************************************************************************
+  determine if a packet is for us. Note that to have any chance of
+  being efficient we need to drop as many packets as possible at this
+  stage as subsequent processing is expensive. 
+
+  We also must make absolutely sure we don't tread on another machines
+  property by answering a packet that is not for us.
+  ****************************************************************************/
+static BOOL listening(struct packet_struct *p,struct nmb_name *n)
+{
+  struct subnet_record *d;
+  struct name_record *n1;
+
+  d = find_subnet(p->ip);
+  
+  n1 = find_name_search(&d,n,FIND_LOCAL|FIND_WINS|FIND_SELF,p->ip);
+
+  return (n1 != NULL);
+}
+
 
 /****************************************************************************
   process udp 138 datagrams
@@ -306,6 +329,11 @@ static void process_dgram(struct packet_struct *p)
   char *buf2;
   int len;
   struct dgram_packet *dgram = &p->packet.dgram;
+
+  /* if we aren't listening to the destination name then ignore the packet */
+  if (!listening(p,&dgram->dest_name))
+    return;
+
 
   if (dgram->header.msg_type != 0x10 &&
       dgram->header.msg_type != 0x11 &&

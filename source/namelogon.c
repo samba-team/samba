@@ -64,11 +64,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
     DEBUG(3,("No domain logons\n"));
     return;
   }
-  if (!listening_name(work, &dgram->dest_name))
-    {
-      DEBUG(4,("Not listening to that domain\n"));
-      return;
-    }
   
   code = SVAL(buf,0);
   switch (code) {

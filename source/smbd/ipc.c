@@ -963,7 +963,7 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   int f_len, s_len;
   struct srv_info_struct *servers=NULL;
   int counted=0,total=0;
-  int i;
+  int i,missed;
   fstring domain;
   BOOL domain_request;
   BOOL local_request = servertype & SV_TYPE_LOCAL_LIST_ONLY;
@@ -991,6 +991,7 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
     total = get_server_info(servertype,&servers,domain);
 
   data_len = fixed_len = string_len = 0;
+  missed = 0;
 
   qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
 
@@ -1006,12 +1007,13 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
       DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
 	       s->name, s->type, s->comment, s->domain));
       
-      if (data_len <= buf_len)
-	{
+      if (data_len <= buf_len) {
 	  counted++;
 	  fixed_len += f_len;
 	  string_len += s_len;
-	}
+      } else {
+	missed++;
+      }
     }
   }
 
@@ -1044,12 +1046,12 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   SSVAL(*rparam,0,NERR_Success);
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
-  SSVAL(*rparam,6,total);
+  SSVAL(*rparam,6,counted+missed);
 
   if (servers) free(servers);
 
   DEBUG(3,("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
-	   domain,uLevel,counted,total));
+	   domain,uLevel,counted,counted+missed));
 
   return(True);
 }

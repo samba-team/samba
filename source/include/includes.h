@@ -227,8 +227,10 @@ Here come some platform specific sections
 #endif
 #endif
 #ifdef SHADOW_PWD
+#if _LINUX_C_LIB_VERSION_MAJOR < 5
 #ifndef crypt
 #define crypt pw_encrypt
+#endif
 #endif
 #endif
 #endif

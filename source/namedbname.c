@@ -238,9 +238,9 @@ void dump_names(void)
 
         for (i = 0; i < n->num_ips; i++)
         {
-           DEBUG(3,("%15s NB=%2x ",
-						inet_ntoa(n->ip_flgs[i].ip),
-						n->ip_flgs[i].nb_flags));
+           DEBUG(3,("%15s NB=%2x source=%d",
+		    inet_ntoa(n->ip_flgs[i].ip),
+		    n->ip_flgs[i].nb_flags,n->source));
 
         }
 		DEBUG(3,("\n"));
@@ -486,12 +486,16 @@ void expire_names(time_t t)
 	for (d = subnetlist; d; d = d->next)
 	{
 	  for (n = d->namelist; n; n = next)
+	    {
+	      next = n->next;
+	      if (n->death_time && n->death_time < t)
 		{
-		  if (n->death_time && n->death_time < t)
-		{
+		  if (n->source == SELF) {
+		    DEBUG(3,("not expiring SELF name %s\n", namestr(&n->name)));
+		    n->death_time += 300;
+		    continue;
+		  }
 		  DEBUG(3,("Removing dead name %s\n", namestr(&n->name)));
-		  
-		  next = n->next;
 		  
 		  if (n->prev) n->prev->next = n->next;
 		  if (n->next) n->next->prev = n->prev;
@@ -501,11 +505,7 @@ void expire_names(time_t t)
 		  free(n->ip_flgs);
 		  free(n);
 		}
-		  else
-		{
-		  next = n->next;
-		}
-		}
+	    }
 	}
 }
 

@@ -679,7 +679,6 @@ int reply_coreplus(char *outbuf);
 int reply_lanman1(char *outbuf);
 int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
-void parse_connect(char *buf,char *service,char *user,char *password,int *pwlen,char *dev);
 void close_cnum(int cnum, int uid);
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);

@@ -130,6 +130,44 @@ static int connection_error(char *inbuf,char *outbuf,int connection_num)
 }
 
 
+
+/****************************************************************************
+  parse a share descriptor string
+****************************************************************************/
+static void parse_connect(char *p,char *service,char *user,
+			  char *password,int *pwlen,char *dev)
+{
+  char *p2;
+
+  DEBUG(4,("parsing connect string %s\n",p));
+    
+  p2 = strrchr(p,'\\');
+  if (p2 == NULL)
+    strcpy(service,p);
+  else
+    strcpy(service,p2+1);
+  
+  p += strlen(p) + 2;
+  
+  strcpy(password,p);
+  *pwlen = strlen(password);
+
+  p += strlen(p) + 2;
+
+  strcpy(dev,p);
+  
+  *user = 0;
+  p = strchr(service,'%');
+  if (p != NULL)
+    {
+      *p = 0;
+      strcpy(user,p+1);
+    }
+}
+
+
+
+
 /****************************************************************************
   reply to a tcon
 ****************************************************************************/
@@ -149,7 +187,7 @@ int reply_tcon(char *inbuf,char *outbuf)
 
   vuid = valid_uid(uid);
   
-  parse_connect(inbuf,service,user,password,&pwlen,dev);
+  parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
   connection_num = make_connection(service,user,password,pwlen,dev,vuid);
   
@@ -1209,6 +1247,11 @@ int reply_unlink(char *inbuf,char *outbuf)
 
     if (check_name(directory,cnum))
       dirptr = OpenDir(directory);
+
+    /* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
+       the pattern matches against the long name, otherwise the short name 
+       We don't implement this yet XXXX
+       */
 
     if (dirptr)
       {
