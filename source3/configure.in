@@ -109,7 +109,10 @@ case "$host_os" in
 #
 	*solaris*)
 		case `uname -r` in
-			5.6*|5.7*)
+			5.0*|5.1*|5.2*|5.3*|5.5*)
+	  			AC_MSG_RESULT([no large file support])
+				;;
+			5.*)
 			AC_MSG_RESULT([enabling large file support])
 			if test "$ac_cv_prog_gcc" = yes; then
 				${CC-cc} -v >conftest.c 2>&1

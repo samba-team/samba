@@ -124,7 +124,7 @@
 #undef WITH_SSL
 #undef WITH_LDAP
 #undef WITH_NISPLUS
-#undef WITH_TDBSAM
+#undef WITH_TDBPWD
 #undef WITH_PAM
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
@@ -221,6 +221,7 @@
 #undef MMAP_BLACKLIST
 #undef HAVE_IMMEDIATE_STRUCTURES
 #undef HAVE_CUPS
+#undef WITH_TDBSAM
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
