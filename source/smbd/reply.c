@@ -2195,7 +2195,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 	flush_write_cache(fsp, READRAW_FLUSH);
 
-	startpos = IVAL(inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
 	if(CVAL(inbuf,smb_wct) == 10) {
 		/*
 		 * This is a large offset (64 bit) read.
@@ -2296,7 +2296,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	release_level_2_oplocks_on_change(fsp);
 
 	numtoread = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
   
 	outsize = set_message(outbuf,5,3,True);
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
@@ -2365,7 +2365,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 	CHECK_READ(fsp);
 
 	numtoread = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
   
 	outsize = set_message(outbuf,5,3,True);
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
@@ -2404,7 +2404,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
-	SMB_OFF_T startpos = IVAL(inbuf,smb_vwv3);
+	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
 	ssize_t nread = -1;
@@ -2490,7 +2490,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	CHECK_WRITE(fsp);
   
 	tcount = IVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv3);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	write_through = BITSETW(inbuf+smb_vwv7,0);
 
 	/* We have to deal with slightly different formats depending
@@ -2616,7 +2616,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   CHECK_WRITE(fsp);
 
   numtowrite = SVAL(inbuf,smb_vwv1);
-  startpos = IVAL(inbuf,smb_vwv2);
+  startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
@@ -2683,7 +2683,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	CHECK_WRITE(fsp);
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
@@ -2744,7 +2744,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
-  SMB_OFF_T startpos = IVAL(inbuf,smb_vwv3);
+  SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
   size_t numtowrite = SVAL(inbuf,smb_vwv10);
   BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
   ssize_t nwritten = -1;
@@ -2856,7 +2856,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   flush_write_cache(fsp, SEEK_FLUSH);
 
   mode = SVAL(inbuf,smb_vwv1) & 3;
-  startpos = IVALS(inbuf,smb_vwv2);
+  /* NB. This doesn't use IVAL_TO_SMB_OFF_T as startpos can be signed in this case. */
+  startpos = (SMB_OFF_T)IVALS(inbuf,smb_vwv2);
 
   switch (mode) {
     case 0: umode = SEEK_SET; break;
@@ -3059,7 +3060,7 @@ int reply_writeclose(connection_struct *conn,
 	CHECK_WRITE(fsp);
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
@@ -4642,7 +4643,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	CHECK_READ(fsp);
 	CHECK_ERROR(fsp);
 
-	startpos = IVAL(inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
 	maxcount = SVAL(inbuf,smb_vwv3);
 
 	data = smb_buf(outbuf);
@@ -4769,7 +4770,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	CHECK_ERROR(fsp);
 
 	tcount = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv3);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	write_through = BITSETW(inbuf+smb_vwv7,0);
 	numtowrite = SVAL(inbuf,smb_vwv10);
 	smb_doff = SVAL(inbuf,smb_vwv11);
@@ -4870,7 +4871,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	CHECK_WRITE(fsp);
 
 	tcount = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	numtowrite = SVAL(inbuf,smb_vwv6);
 	smb_doff = SVAL(inbuf,smb_vwv7);
 
