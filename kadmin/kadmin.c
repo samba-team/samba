@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,7 @@ static int help_flag;
 static int version_flag;
 static char *realm;
 static char *admin_server;
+static int server_port = 0;
 static char *client_name;
 
 static struct getargs args[] = {
@@ -67,6 +68,10 @@ static struct getargs args[] = {
     },
     {	
 	"admin-server",	'a',	arg_string,   &admin_server, 
+	"server to contact", "host" 
+    },
+    {	
+	"server-port",	's',	arg_integer,   &server_port, 
 	"server to contact", "host" 
     },
     {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
@@ -234,6 +239,11 @@ main(int argc, char **argv)
     if (admin_server) {
 	conf.admin_server = admin_server;
 	conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
+    }
+
+    if (server_port) {
+	conf.kadmind_port = htons(server_port);
+	conf.mask |= KADM5_CONFIG_KADMIND_PORT;
     }
 
     if(local_flag){

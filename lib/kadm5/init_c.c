@@ -78,6 +78,11 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 	(*ctx)->realm = strdup(params->realm);
     else
 	krb5_get_default_realm((*ctx)->context, &(*ctx)->realm);
+    if(params->mask & KADM5_CONFIG_KADMIND_PORT)
+	(*ctx)->kadmind_port = params->kadmind_port;
+    else
+	(*ctx)->kadmind_port = krb5_getportbyname (context, "kerberos-adm", 
+						   "tcp", 749);
     if(params->mask & KADM5_CONFIG_ADMIN_SERVER)
 	(*ctx)->admin_server = strdup(params->admin_server);
     else{
@@ -289,7 +294,7 @@ kadm5_c_init_with_context(krb5_context context,
 	return KADM5_FAILURE;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = krb5_getportbyname (context, "kerberos-adm", "tcp", 749);
+    sin.sin_port   = ctx->kadmind_port;
     hp = gethostbyname(ctx->admin_server);
     if(hp == NULL)
 	return KADM5_BAD_SERVER_NAME;
