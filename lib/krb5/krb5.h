@@ -463,6 +463,10 @@ krb5_generate_subkey(krb5_context context,
 		     const krb5_keyblock *key,
 		     krb5_keyblock **subkey);
 
+krb5_error_code
+krb5_generate_seq_number(krb5_context context,
+			 const krb5_keyblock *key,
+			 int32_t *seqno);
 
 krb5_error_code
 krb5_rd_req(krb5_context context,
