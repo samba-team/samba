@@ -27,6 +27,9 @@ krb5.h:
 cache.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/cache.h .
 
+keytab.h:
+	$(LN_S) $(top_srcdir)/lib/krb5/keytab.h .
+
 config_file.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/config_file.h .
 
