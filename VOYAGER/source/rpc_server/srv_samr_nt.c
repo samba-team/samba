@@ -4090,12 +4090,8 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
                                           SAMR_R_REMOVE_SID_FOREIGN_DOMAIN *r_u)
 {
 	DOM_SID			delete_sid, alias_sid;
-	SAM_ACCOUNT 		*sam_pass=NULL;
 	uint32 			acc_granted;
-	GROUP_MAP 		map;
-	BOOL			is_user = False;
 	NTSTATUS		result;
-	enum SID_NAME_USE	type = SID_NAME_UNKNOWN;
 	
 	sid_copy( &delete_sid, &q_u->sid.sid );
 	
@@ -4115,81 +4111,11 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 			
 	DEBUG(8, ("_samr_remove_sid_foreign_domain:sid is %s\n", 
 		sid_string_static(&alias_sid)));
-		
-	/* make sure we can handle this */
-	
-	if ( sid_check_is_domain(&alias_sid) )
-		type = SID_NAME_DOM_GRP;
-	else if ( sid_check_is_builtin(&alias_sid) )
-		type = SID_NAME_ALIAS;
-	
-	if ( type == SID_NAME_UNKNOWN ) {
-		DEBUG(10, ("_samr_remove_sid_foreign_domain: can't operate on what we don't own!\n"));
-		return NT_STATUS_OK;
-	}
 
-	/* check if the user exists before trying to delete */
-	
-	pdb_init_sam(&sam_pass);
-	
-	if ( pdb_getsampwsid(sam_pass, &delete_sid) ) {
-		is_user = True;
-	} else {
-		/* maybe it is a group */
-		if( !pdb_getgrsid(&map, delete_sid) ) {
-			DEBUG(3,("_samr_remove_sid_foreign_domain: %s is not a user or a group!\n",
-				sid_string_static(&delete_sid)));
-			result = NT_STATUS_INVALID_SID;
-			goto done;
-		}
-	}
-	
-	/* we can only delete a user from a group since we don't have 
-	   nested groups anyways.  So in the latter case, just say OK */
-	   
-	if ( is_user ) {
-		GROUP_MAP	*mappings = NULL;
-		int		num_groups, i;
-		struct group	*grp2;
-		
-		if ( pdb_enum_group_mapping(type, &mappings, &num_groups, False) && num_groups>0 ) {
-		
-			/* interate over the groups */
-			for ( i=0; i<num_groups; i++ ) {
+	/* According to tridge's samba4 tests W2k3 simply accepts anything
+	 * here, it seems to be a complete no-op. Follow that :-) */
 
-				grp2 = getgrgid(mappings[i].gid);
-
-				if ( !grp2 ) {
-					DEBUG(0,("_samr_remove_sid_foreign_domain: group mapping without UNIX group!\n"));
-					continue;
-				}
-			
-				if ( !user_in_unix_group_list(pdb_get_username(sam_pass), grp2->gr_name) )
-					continue;
-				
-				smb_delete_user_group(grp2->gr_name, pdb_get_username(sam_pass));
-				
-				if ( user_in_unix_group_list(pdb_get_username(sam_pass), grp2->gr_name) ) {
-					/* should we fail here ? */
-					DEBUG(0,("_samr_remove_sid_foreign_domain: Delete user [%s] from group [%s] failed!\n",
-						pdb_get_username(sam_pass), grp2->gr_name ));
-					continue;
-				}
-					
-				DEBUG(10,("_samr_remove_sid_foreign_domain: Removed user [%s] from group [%s]!\n",
-					pdb_get_username(sam_pass), grp2->gr_name ));
-			}
-			
-			SAFE_FREE(mappings);
-		}
-	}
-	
-	result = NT_STATUS_OK;
-done:
-
-	pdb_free_sam(&sam_pass);
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
