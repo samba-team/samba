@@ -43,6 +43,9 @@ enum auth_method auth_method;
 int do_encrypt;
 int do_forward;
 int do_forwardable;
+int do_unique_tkfile = 0;
+char *unique_tkfile  = NULL;
+char tkfile[MAXPATHLEN];
 krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
@@ -258,8 +261,6 @@ send_krb5_auth(int s,
     size_t len;
     krb5_auth_context auth_context = NULL;
 
-    krb5_init_context(&context);
-
     status = krb5_sname_to_principal(context,
 				     hostname,
 				     "host",
@@ -301,6 +302,15 @@ send_krb5_auth(int s,
 	return 1;
     }
 
+    status = krb5_auth_con_setaddrs_from_fd (context,
+					     auth_context,
+					     &s);
+    if (status) {
+        warnx("krb5_auth_con_setaddrs_from_fd: %s",
+	      krb5_get_err_text(context, status));
+        return(1);
+    }
+
     status = krb5_crypto_init(context, keyblock, 0, &crypto);
     if(status) {
 	warnx ("krb5_crypto_init: %s", krb5_get_err_text(context, status));
@@ -319,6 +329,13 @@ send_krb5_auth(int s,
     if (net_write (s, cmd, cmd_len) != cmd_len) {
 	warn ("write");
 	return 1;
+    }
+
+    if (do_unique_tkfile) {
+	if (net_write (s, tkfile, strlen(tkfile)) != strlen(tkfile)) {
+	    warn ("write");
+	    return 1;
+	}
     }
     len = strlen(local_user) + 1;
     if (net_write (s, local_user, len) != len) {
@@ -455,6 +472,7 @@ proto (int s, int errsock,
 
 	while ((ret = read (s, buf, sizeof(buf))) > 0)
 	    write (STDOUT_FILENO, buf, ret);
+        write (STDOUT_FILENO,"\n",1);
 	close (errsock2);
 	return 1;
     }
@@ -678,6 +696,10 @@ struct getargs args[] = {
       NULL },
     { "forwardable", 'F', arg_flag,	&do_forwardable,
       "Forward forwardable credentials", NULL },
+    { "unique", 'u', arg_flag,	&do_unique_tkfile,
+      "Use unique remote tkfile", NULL },
+    { "tkfile", 'U', arg_string,  &unique_tkfile,
+      "Use that remote tkfile", NULL },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
       "number-or-service" },
     { "user",	'l', arg_string,	&user,		"Run as this user",
@@ -716,6 +738,7 @@ main(int argc, char **argv)
     const char *local_user;
     char *host = NULL;
     int host_index = -1;
+    int status; 
 
     priv_port1 = priv_port2 = IPPORT_RESERVED-1;
     priv_socket1 = rresvport(&priv_port1);
@@ -728,6 +751,19 @@ main(int argc, char **argv)
 	host = argv[host_index = 1];
 	optind = 1;
     }
+    
+    status = krb5_init_context (&context);
+    if (status)
+        errx(1, "krb5_init_context failed: %u", status);
+      
+    do_forwardable=krb5_config_get_bool (context, NULL,
+		    "libdefaults", "forwardable", NULL);
+	
+    do_forward=krb5_config_get_bool (context, NULL,
+                    "libdefaults", "forward", NULL);	    
+
+    do_encrypt=krb5_config_get_bool (context, NULL,
+                    "libdefaults", "encrypt", NULL);	    
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
@@ -757,6 +793,20 @@ main(int argc, char **argv)
 	return 0;
     }
 	
+    if (do_unique_tkfile && unique_tkfile != NULL)
+	errx (1, "Only one of -u and -U allowed.");
+
+    if (do_unique_tkfile)
+	strcpy(tkfile,"-u ");
+    else if (unique_tkfile != NULL) {
+	if (strchr(unique_tkfile,' ') != NULL) {
+	    warnx("Space is not allowed in tkfilename");
+	    usage(1);
+	}
+	do_unique_tkfile = 1;
+	snprintf (tkfile, sizeof(tkfile), "-U %s ", unique_tkfile);
+    }
+
     if (host == NULL) {
 	if (argc - optind < 1)
 	    usage (1);
