@@ -381,13 +381,13 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 	if(!lp_share_modes(SNUM(conn)))
 		return True;
 
-	if (desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) {
+	if (desired_access & ~(SYNCHRONIZE_ACCESS|READ_CONTROL_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) {
 		non_io_open_request = False;
 	} else {
 		non_io_open_request = True;
 	}
 
-	if (share->desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) {
+	if (share->desired_access & ~(SYNCHRONIZE_ACCESS|READ_CONTROL_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) {
 		non_io_open_existing = False;
 	} else {
 		non_io_open_existing = True;
