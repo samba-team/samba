@@ -297,6 +297,7 @@ enum RPC_PKT_TYPE
 #define LSA_REQCHAL         0x04
 #define LSA_SRVPWSET        0x06
 #define LSA_SAMLOGON        0x02
+#define LSA_SAMLOGOFF       0x03
 #define LSA_AUTH2           0x0f
 #define LSA_CLOSE           0x00
 
@@ -304,7 +305,6 @@ enum RPC_PKT_TYPE
 #define LSA_OPENSECRET      0xFF
 #define LSA_LOOKUPSIDS      0xFE
 #define LSA_LOOKUPNAMES     0xFD
-#define LSA_SAMLOGOFF       0xFC
 
 /* srvsvc pipe */
 #define NETSERVERGETINFO 0x15
@@ -678,6 +678,7 @@ typedef struct object_attributes_info
 /* LSA_Q_OPEN_POL - LSA Query Open Policy */
 typedef struct lsa_q_open_pol_info
 {
+	uint32       ptr;             /* undocumented buffer pointer */
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
 	LSA_OBJ_ATTR attr           ; /* object attributes */
 

@@ -2903,7 +2903,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   int i;
   int fd;
   int subcommand;
-  pstring pipe_name;
+  char *pipe_name;
   
   DEBUG(5,("api_fd_reply\n"));
   /* First find out the name of this file. */
@@ -2916,14 +2916,11 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   /* Get the file handle and hence the file name. */
   fd = setup[1];
   subcommand = setup[0];
-  if (fd >= 0 && fd < MAX_OPEN_FILES)
+  pipe_name = get_pipe_name(fd);
+
+  if (pipe_name == NULL)
   {
-    pstrcpy(pipe_name, Files[fd].name);
-  }
-  else
-  {
-    pipe_name[0] = 0;
-    DEBUG(1,("api_fd_reply: INVALID FILE HANDLE: %x\n", fd));
+    DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", fd));
   }
 
   DEBUG(3,("Got API command %d on pipe %s (fd %x)",
@@ -2946,7 +2943,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
 #ifdef NTDOMAIN
-  if (data != NULL && api_fd_commands[i].subcommand != -1)
+  if (data != NULL && api_fd_commands[i].subcommand == 0x26)
   {
     RPC_HDR hdr;
 

@@ -110,7 +110,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
-	DEBUG(4,("LSA RPC Bind[%d]\n", fnum));
+	DEBUG(4,("LSA RPC Bind[%x]\n", fnum));
 
 	for (i = 0; i < sizeof(trn_data); i++)
 	{

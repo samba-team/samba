@@ -37,18 +37,34 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
-extern int chain_fnum;
 extern char magic_char;
-extern connection_struct Connections[];
-extern files_struct Files[];
+static int chain_pnum = -1;
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
 extern fstring myworkgroup;
 
-/* this macro should always be used to extract an fnum (smb_fid) from
-a packet to ensure chaining works correctly */
-#define GETFNUM(buf,where) (chain_fnum!= -1?chain_fnum:SVAL(buf,where))
+#ifndef MAX_OPEN_PIPES
+#define MAX_OPEN_PIPES 50
+#endif
+
+static struct
+{
+  int cnum;
+  BOOL open;
+  fstring name;
+
+} Pipes[MAX_OPEN_PIPES];
+
+#define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
+#define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)
+#define PNUM_OK(pnum,c) (OPEN_PNUM(pnum) && (c)==Pipes[pnum].cnum)
+
+#define CHECK_PNUM(pnum,c) if (!PNUM_OK(pnum,c)) \
+                               return(ERROR(ERRDOS,ERRbadfid))
+/* this macro should always be used to extract an pnum (smb_fid) from
+   a packet to ensure chaining works correctly */
+#define GETPNUM(buf,where) (chain_pnum!= -1?chain_pnum:SVAL(buf,where))
 
 char * known_pipes [] =
 {
@@ -61,13 +77,50 @@ char * known_pipes [] =
 };
 
 /****************************************************************************
-  reply to an open and X on a named pipe
+  find first available file slot
+****************************************************************************/
+static int find_free_pipe(void )
+{
+  int i;
+  /* we start at 1 here for an obscure reason I can't now remember,
+     but I think is important :-) */
+  for (i = 1; i < MAX_OPEN_PIPES; i++)
+    if (!Pipes[i].open)
+      return(i);
 
-  In fact what we do is to open a regular file with the same name in
-  /tmp. This can then be closed as normal. Reading and writing won't
-  make much sense, but will do *something*. The real reason for this
-  support is to be able to do transactions on them (well, on lsarpc
-  for domain login purposes...).
+  DEBUG(1,("ERROR! Out of pipe structures - perhaps increase MAX_OPEN_PIPES?\n"));
+
+  return(-1);
+}
+
+/****************************************************************************
+  gets the name of a pipe
+****************************************************************************/
+char *get_pipe_name(int pnum)
+{
+	DEBUG(6,("get_pipe_name: "));
+
+	if (VALID_PNUM(pnum - 0x800))
+	{
+		DEBUG(6,("name: %s cnum: %d open: %s ",
+		          Pipes[pnum - 0x800].name,
+		          Pipes[pnum - 0x800].cnum,
+		          BOOLSTR(Pipes[pnum - 0x800].open)));
+	}
+	if (OPEN_PNUM(pnum - 0x800))
+	{
+		DEBUG(6,("OK\n"));
+		return Pipes[pnum - 0x800].name;
+	}
+	else
+	{
+		DEBUG(6,("NOT\n"));
+		return NULL;
+	}
+}
+
+/****************************************************************************
+  reply to an open and X on a named pipe
 
   This code is basically stolen from reply_open_and_X with some
   wrinkles to handle pipes.
@@ -76,21 +129,10 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
-  int fnum = -1;
-  int smb_mode = SVAL(inbuf,smb_vwv3);
-  int smb_attr = SVAL(inbuf,smb_vwv5);
-#if 0
-  int open_flags = SVAL(inbuf,smb_vwv2);
-  int smb_sattr = SVAL(inbuf,smb_vwv4); 
-  uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
-#endif
+  int pnum = -1;
   int smb_ofun = SVAL(inbuf,smb_vwv8);
-  int unixmode;
   int size=0,fmode=0,mtime=0,rmode=0;
-  struct stat sbuf;
-  int smb_action = 0;
   int i;
-  BOOL bad_path = False;
 
   /* XXXX we need to handle passed times, sattr and flags */
   pstrcpy(fname,smb_buf(inbuf));
@@ -117,76 +159,63 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* Known pipes arrive with DIR attribs. Remove it so a regular file */
   /* can be opened and add it in after the open. */
   DEBUG(3,("Known pipe %s opening.\n",fname));
-  smb_attr &= ~aDIR;
-  Connections[cnum].read_only = 0;
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  unix_convert(fname,cnum,0,&bad_path);
-    
-  fnum = find_free_file();
-  if (fnum < 0)
-    return(ERROR(ERRSRV,ERRnofids));
+  pnum = find_free_pipe();
+  if (pnum < 0) return(ERROR(ERRSRV,ERRnofids));
 
-  if (!check_name(fname,cnum))
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
-  unixmode = unix_mode(cnum,smb_attr);
-      
-  open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
-		   0, &rmode,&smb_action);
-      
-  if (!Files[fnum].open)
-  {
-    /* Change the error code if bad_path was set. */
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
-  }
-
-  size = sbuf.st_size;
-  fmode = dos_mode(cnum,fname,&sbuf);
-  mtime = sbuf.st_mtime;
-  if (fmode & aDIR) {
-    close_file(fnum,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
-  }
+  Pipes[pnum].open = True;
+  Pipes[pnum].cnum = cnum;
+  fstrcpy(Pipes[pnum].name, fname);
 
   /* Prepare the reply */
   set_message(outbuf,15,0,True);
 
-  /* Put things back the way they were. */
-  Connections[cnum].read_only = 1;
-
   /* Mark the opened file as an existing named pipe in message mode. */
   SSVAL(outbuf,smb_vwv9,2);
   SSVAL(outbuf,smb_vwv10,0xc700);
+
   if (rmode == 2)
   {
     DEBUG(4,("Resetting open result to open from create.\n"));
     rmode = 1;
   }
 
-  SSVAL(outbuf,smb_vwv2,fnum);
+  SSVAL(outbuf,smb_vwv2, pnum + 0x800); /* mark file handle up into high range */
   SSVAL(outbuf,smb_vwv3,fmode);
   put_dos_date3(outbuf,smb_vwv4,mtime);
   SIVAL(outbuf,smb_vwv6,size);
   SSVAL(outbuf,smb_vwv8,rmode);
-  SSVAL(outbuf,smb_vwv11,smb_action);
+  SSVAL(outbuf,smb_vwv11,0);
 
-  chain_fnum = fnum;
-
-  DEBUG(4,("Opened pipe %s with handle %d, saved name %s.\n",
-	   fname, fnum, Files[fnum].name));
+  DEBUG(4,("Opened pipe %s with handle %x name %s.\n",
+	   fname, pnum + 0x800, Pipes[pnum].name));
   
+  chain_pnum = pnum;
+
   return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+
+/****************************************************************************
+  reply to a close
+****************************************************************************/
+int reply_pipe_close(char *inbuf,char *outbuf)
+{
+  int pnum = GETPNUM(inbuf,smb_vwv0);
+  int cnum = SVAL(inbuf,smb_tid);
+  int outsize = set_message(outbuf,0,0,True);
+
+  /* mapping is 0x800 up... */
+
+  CHECK_PNUM(pnum-0x800,cnum);
+
+  DEBUG(3,("%s Closed pipe name %s pnum=%d cnum=%d\n",
+	   timestring(),Pipes[pnum-0x800].name, pnum,cnum));
+  
+  Pipes[pnum-0x800].open = False;
+
+  return(outsize);
 }
 
 

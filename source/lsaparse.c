@@ -35,6 +35,8 @@ void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 
 	DEBUG(5,("make_open_pol\n"));
 
+	r_q->ptr = 1; /* undocumented pointer */
+
 	make_unistr2 (&(r_q->uni_server_name), server_name, strlen(server_name));
 	make_obj_attr(&(r_q->attr           ), attributes, sec_qos);
 
@@ -50,6 +52,8 @@ char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int a
 
 	DEBUG(5,("%s%04x lsa_io_q_open_pol\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
+
+	DBG_RW_IVAL("ptr       ", depth, base, io, q, r_q->ptr       ); q += 4;
 
 	q = smb_io_unistr2 (io, &(r_q->uni_server_name), q, base, align, depth);
 	q = smb_io_obj_attr(io, &(r_q->attr           ), q, base, align, depth);
@@ -68,6 +72,7 @@ char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int a
 
 	DEBUG(5,("%s%04x lsa_io_r_open_pol\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
+
 
 	q = smb_io_pol_hnd(io, &(r_p->pol), q, base, align, depth);
 

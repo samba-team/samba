@@ -746,7 +746,9 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 
 /*The following definitions come from  pipes.c  */
 
+char *get_pipe_name(int pnum);
 int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_close(char *inbuf,char *outbuf);
 BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
