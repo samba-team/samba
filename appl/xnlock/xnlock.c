@@ -632,7 +632,8 @@ verify(char *password)
     /*
      * Try to verify as user with kerberos 4.
      */
-    ret = krb_verify_user(name, inst, realm, password, 0, NULL);
+    ret = krb_verify_user(name, inst, realm, password,
+			  KRB_VERIFY_NOT_SECURE, NULL);
     if (ret == KSUCCESS){
 	if (k_hasafs())
 	    krb_afslog(NULL, NULL);
