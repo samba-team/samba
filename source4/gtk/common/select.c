@@ -101,7 +101,7 @@ struct policy_handle gtk_select_domain_dialog_get_handle(GtkSelectDomainDialog *
 	return h;
 }
 
-GType gtk_select_domain_dialog_get_type ()
+GType gtk_select_domain_dialog_get_type (void)
 {
 	static GType mytype = 0;
 
@@ -246,7 +246,7 @@ void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
 	GTK_WIDGET_SET_FLAGS (okbutton2, GTK_CAN_DEFAULT);
 }
 
-GType gtk_select_host_dialog_get_type ()
+GType gtk_select_host_dialog_get_type (void)
 {
 	static GType mytype = 0;
 
