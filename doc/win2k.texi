@@ -240,6 +240,10 @@ unsupported types are generated.
 @comment  node-name,  next,  previous,  up
 @section Useful links when reading about the Windows 2000
 
+See also our paper presented at the 2001 usenix Annual Technical
+Conference, available in the proceedings or at
+@url{http://www.usenix.org/publications/library/proceedings/usenix01/freenix01/westerlund.html}.
+
 There are lots of text about Kerberos on Microsoft's web site, here is a
 short list of the interesting documents that we have managed to find.
 
