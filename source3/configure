@@ -8712,7 +8712,7 @@ else
    ac_cv_shlib_works=no
    # try building a trivial shared library
    $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-     $CC $LDSHFLAGS -o shlib.so shlib.po &&
+     $CC $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
      ac_cv_shlib_works=yes
    rm -f shlib.so shlib.po
 
@@ -13313,7 +13313,7 @@ fi
 
 # Display test results
 
-if test x"$HAVE_WINBIND" = x"yes"; then
+if test x"$HAVE_WINBIND" = x"yes" && test x"$BLDSHARED" = x"true"; then
 
         echo "$ac_t""yes" 1>&6
 
