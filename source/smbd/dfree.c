@@ -214,7 +214,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		char *p;
 		FILE *pp;
 
-		snprintf (line, sizeof(pstring), "%s %s", dfree_command, path);
+		slprintf (line, sizeof(pstring) - 1, "%s %s", dfree_command, path);
 		pp = popen(line, "r");
 		if (pp) {
 			fgets(line, sizeof(pstring), pp);
