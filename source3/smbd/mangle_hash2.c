@@ -283,7 +283,7 @@ static BOOL is_8_3(const char *name, BOOL check_case)
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
 		/* note that we allow wildcard petterns! */
-		if (!FLAG_CHECK(name[i], FLAG_ASCII|FLAG_WILDCARD)) {
+		if (!FLAG_CHECK(name[i], FLAG_ASCII|FLAG_WILDCARD) && name[i] != '.') {
 			return False;
 		}
 	}
@@ -513,7 +513,7 @@ static void init_tables(void)
 		    (i >= 'A' && i <= 'Z')) {
 			char_flags[i] |=  (FLAG_ASCII | FLAG_BASECHAR);
 		}
-		if (strchr("._-$~", i)) {
+		if (strchr("_-$~", i)) {
 			char_flags[i] |= FLAG_ASCII;
 		}
 
