@@ -255,7 +255,7 @@ EncryptDisable(type, mode)
 	if (isprefix(type, "help") || isprefix(type, "?")) {
 		printf("Usage: encrypt disable <type> [input|output]\n");
 		encrypt_list_types();
-	} else if ((ep = (Encryptions *)genget(type, encryptions,
+	} else if ((ep = (Encryptions *)genget(type, (char**)encryptions,
 						sizeof(Encryptions))) == 0) {
 		printf("%s: invalid encryption type\n", type);
 	} else if (Ambiguous(ep)) {
@@ -290,7 +290,7 @@ EncryptType(type, mode)
 	if (isprefix(type, "help") || isprefix(type, "?")) {
 		printf("Usage: encrypt type <type> [input|output]\n");
 		encrypt_list_types();
-	} else if ((ep = (Encryptions *)genget(type, encryptions,
+	} else if ((ep = (Encryptions *)genget(type, (char**)encryptions,
 						sizeof(Encryptions))) == 0) {
 		printf("%s: invalid encryption type\n", type);
 	} else if (Ambiguous(ep)) {

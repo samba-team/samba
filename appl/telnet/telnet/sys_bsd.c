@@ -676,9 +676,9 @@ TerminalNewMode(f)
 	(void) signal(SIGTSTP, SIG_DFL);
 # ifndef SOLARIS
 	(void) sigsetmask(sigblock(0) & ~(1<<(SIGTSTP-1)));
-# else	SOLARIS
+# else
 	(void) sigrelse(SIGTSTP);
-# endif	SOLARIS
+# endif
 #endif	/* SIGTSTP */
 #ifndef USE_TERMIO
 	ltc = oltc;

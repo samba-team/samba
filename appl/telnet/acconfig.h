@@ -67,16 +67,25 @@
 @BOTTOM@
 
 /* set this to a sensible login */
+#ifndef LOGIN_PATH
 #define LOGIN_PATH "/usr/athena/bin/login"
+#endif
 
 
 #ifdef HAVE_TGETENT
 #define TERMCAP 1
 #endif
 
-#ifdef HAVE_TERMIOS_H
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H)
 #define USE_TERMIO 1
+
+/* If this is not a POSIX boxen use SYSV, this may not work on CRAY
+ * se telnetd/desf.h */
+#ifndef HAVE_TERMIOS_H
+#define SYSV_TERMIO
 #endif
+
+#endif /* defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H) */
 
 #ifndef HAVE_VFORK
 #define vfork fork
