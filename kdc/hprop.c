@@ -144,7 +144,7 @@ v4_prop(void *arg, Principal *p)
 
     if(verbose_flag){
 	char *s;
-	krb5_unparse_name(pd->context, ent.principal, &s);
+	krb5_unparse_name_short(pd->context, ent.principal, &s);
 	krb5_warnx(pd->context, "%s.%s -> %s", p->name, p->instance, s);
 	free(s);
     }
