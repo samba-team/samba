@@ -208,7 +208,7 @@ while (@sorted) {
     print IDB "d 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
   }
   else {
-    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/),$nextfile)) {
+    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/ | /pcp\/Install/ | /pcp\/Remove/),$nextfile)) {
 	print IDB "f 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
     }
     else {

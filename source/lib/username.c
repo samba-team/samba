@@ -267,6 +267,13 @@ static BOOL user_in_group_list(char *user,char *gname)
 {
 	struct group *gptr;
 	char **member;  
+	struct passwd *pass = Get_Pwnam(user,False);
+
+	if (pass) {
+		gptr = getgrgid(pass->pw_gid);
+		if (gptr && strequal(gptr->gr_name,gname))
+			return True;
+	}
 
 	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
 		return False;

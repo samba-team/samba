@@ -233,6 +233,35 @@ static BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
+/* Fetch the list of groups a user is a member of from winbindd.  This is
+   used by winbind_initgroups and winbind_getgroups. */
+
+static int wb_getgroups(char *user, gid_t **groups)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	/* Call winbindd */
+
+	fstrcpy(request.data.username, user);
+
+	ZERO_STRUCT(response);
+
+	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+
+	if (result == NSS_STATUS_SUCCESS) {
+		
+		/* Return group list.  Don't forget to free the group list
+		   when finished. */
+
+		*groups = (gid_t *)response.extra_data;
+		return response.data.num_entries;
+	}
+
+	return -1;
+}
+
 /* Call winbindd to initialise group membership.  This is necessary for
    some systems (i.e RH5.2) that do not have an initgroups function as part
    of the nss extension.  In RH5.2 this is implemented using getgrent()
@@ -241,8 +270,7 @@ static BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 
 int winbind_initgroups(char *user, gid_t gid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	gid_t *groups = NULL;
 	int result;
 	char *sep;
 
@@ -254,17 +282,10 @@ int winbind_initgroups(char *user, gid_t gid)
 		return initgroups(user, gid);
 	}
 
-	/* Call winbindd */
+	result = wb_getgroups(user, &groups);
 
-	fstrcpy(request.data.username, user);
-
-	ZERO_STRUCT(response);
-
-	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
-
-	if (result == NSS_STATUS_SUCCESS) {
-		int ngroups = response.data.num_entries, i;
-		gid_t *groups = (gid_t *)response.extra_data;
+	if (result != -1) {
+		int ngroups = result, i;
 		BOOL is_member = False;
 
 		/* Check to see if the passed gid is already in the list */
@@ -282,7 +303,8 @@ int winbind_initgroups(char *user, gid_t gid)
 			
 			if (!groups) {
 				errno = ENOMEM;
-				return -1;
+				result = -1;
+				goto done;
 			}
 
 			groups[ngroups] = gid;
@@ -291,16 +313,51 @@ int winbind_initgroups(char *user, gid_t gid)
 
 		/* Set the groups */
 
-		if (setgroups(ngroups, groups) == -1) {
+		if (sys_setgroups(ngroups, groups) == -1) {
 			errno = EPERM;
-			return -1;
+			result = -1;
+			goto done;
 		}
 	}
 
 	/* Free response data if necessary */
 
-	safe_free(response.extra_data);
+ done:
+	safe_free(groups);
 
+	return result;
+}
+
+/* Return a list of groups the user is a member of.  This function is
+   useful for large systems where inverting the group database would be too
+   time consuming.  If size is zero, list is not modified and the total
+   number of groups for the user is returned. */
+
+int winbind_getgroups(char *user, int size, gid_t *list)
+{
+	gid_t *groups = NULL;
+	int result, i;
+
+	/* Fetch list of groups */
+
+	result = wb_getgroups(user, &groups);
+
+	if (size == 0) goto done;
+
+	if (result > size) {
+		result = -1;
+		errno = EINVAL; /* This is what getgroups() does */
+		goto done;
+	}
+
+	/* Copy list of groups across */
+
+	for (i = 0; i < result; i++) {
+		list[i] = groups[i];
+	}
+
+ done:
+	safe_free(groups);
 	return result;
 }
 
