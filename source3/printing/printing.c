@@ -929,8 +929,8 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
   
   if (!printername || !*printername)
     {
-      DEBUG(6,("replacing printer name with service (snum=(%s,%d))\n",
-	    lp_servicename(snum),snum));
+      DEBUG(6,("xx replacing printer name with service (snum=(%s,%d))\n",
+	       lp_servicename(snum),snum));
       printername = lp_servicename(snum);
     }
     
@@ -1080,3 +1080,23 @@ void status_printjob(int cnum,int snum,int jobid,int status)
 }
 
 
+
+/****************************************************************************
+we encode print job numbers over the wire so that when we get them back we can
+tell not only what print job they are but also what service it belongs to,
+this is to overcome the problem that windows clients tend to send the wrong
+service number when doing print queue manipulation!
+****************************************************************************/
+int printjob_encode(int snum, int job)
+{
+	return ((snum&0xFF)<<8) | (job & 0xFF);
+}
+
+/****************************************************************************
+and now decode them again ...
+****************************************************************************/
+void printjob_decode(int jobid, int *snum, int *job)
+{
+	(*snum) = (jobid >> 8) & 0xFF;
+	(*job) = jobid & 0xFF;
+}
