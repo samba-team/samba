@@ -74,6 +74,9 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 
 	sess->old.out.action = 0;
 	sess->old.out.vuid = register_vuid(req->smb_conn, session_info, sess->old.in.user);
+	if (sess->old.out.vuid == UID_FIELD_INVALID) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 	sesssetup_common_strings(req, 
 				 &sess->old.out.os,
 				 &sess->old.out.lanman,
