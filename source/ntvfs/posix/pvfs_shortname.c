@@ -36,11 +36,6 @@
   for simplicity, we only allow ascii characters in 8.3 names
 */
 
- /* hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
-  * see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
-  * discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
-  */
-
 /*
   ===============================================================================
   NOTE NOTE NOTE!!!
@@ -83,10 +78,6 @@
 
 #define DEFAULT_MANGLE_PREFIX 4
 
-#define FNV1_PRIME 0x01000193
-/*the following number is a fnv1 of the string: idra@samba.org 2002 */
-#define FNV1_INIT  0xa6b93095
-
 #define MANGLE_BASECHARS "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 #define FLAG_CHECK(c, flag) (ctx->char_flags[(uint8_t)(c)] & (flag))
@@ -105,19 +96,7 @@ static const char *reserved_names[] =
 static uint32_t mangle_hash(struct pvfs_mangle_context *ctx,
 			    const char *key, size_t length)
 {
-	uint32_t value = FNV1_INIT;
-	codepoint_t c;
-	size_t c_size;
-
-	while (*key && length--) {
-		c = next_codepoint(key, &c_size);
-		c = toupper_w(c);
-                value *= (uint32_t)FNV1_PRIME;
-                value ^= (uint32_t)c;
-		key += c_size;
-        }
-
-	return (value % ctx->mangle_modulus);
+	return pvfs_name_hash(key, length) % ctx->mangle_modulus;
 }
 
 /*

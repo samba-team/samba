@@ -300,17 +300,24 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file size */
 	if (newstats.st.st_size != h->name->st.st_size) {
-		int ret;
 		if (h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
-		if (f->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
-			ret = ftruncate(h->fd, newstats.st.st_size);
+		if (h->name->stream_name) {
+			status = pvfs_stream_truncate(pvfs, h->name, h->fd, newstats.st.st_size);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		} else {
-			ret = truncate(h->name->full_name, newstats.st.st_size);
-		}
-		if (ret == -1) {
-			return pvfs_map_errno(pvfs, errno);
+			int ret;
+			if (f->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+				ret = ftruncate(h->fd, newstats.st.st_size);
+			} else {
+				ret = truncate(h->name->full_name, newstats.st.st_size);
+			}
+			if (ret == -1) {
+				return pvfs_map_errno(pvfs, errno);
+			}
 		}
 	}
 
@@ -461,7 +468,12 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file size */
 	if (newstats.st.st_size != name->st.st_size) {
-		if (truncate(name->full_name, newstats.st.st_size) == -1) {
+		if (name->stream_name) {
+			status = pvfs_stream_truncate(pvfs, name, -1, newstats.st.st_size);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		} else if (truncate(name->full_name, newstats.st.st_size) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}

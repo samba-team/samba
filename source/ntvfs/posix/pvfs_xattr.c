@@ -100,6 +100,31 @@ static NTSTATUS push_xattr_blob(struct pvfs_state *pvfs,
 #endif
 }
 
+
+/*
+  delete a xattr
+*/
+static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name, 
+			     const char *fname, int fd)
+{
+#if HAVE_XATTR_SUPPORT
+	int ret;
+
+	if (fd != -1) {
+		ret = fremovexattr(fd, attr_name);
+	} else {
+		ret = removexattr(fname, attr_name);
+	}
+	if (ret == -1) {
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	return NT_STATUS_OK;
+#else
+	return NT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
 /*
   load a NDR structure from a xattr
 */
@@ -159,6 +184,12 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 	TALLOC_CTX *mem_ctx = talloc(name, 0);
 	struct xattr_DosInfo1 *info1;
 
+	if (name->stream_name != NULL) {
+		name->stream_exists = False;
+	} else {
+		name->stream_exists = True;
+	}
+
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
 		return NT_STATUS_OK;
 	}
@@ -209,9 +240,11 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_LEVEL;
 	}
-
 	talloc_free(mem_ctx);
-	return NT_STATUS_OK;
+	
+	status = pvfs_stream_info(pvfs, name, fd);
+
+	return status;
 }
 
 
@@ -312,4 +345,82 @@ NTSTATUS pvfs_streams_save(struct pvfs_state *pvfs, struct pvfs_filename *name, 
 				   XATTR_DOSSTREAMS_NAME, 
 				   streams, 
 				   (ndr_push_flags_fn_t)ndr_push_xattr_DosStreams);
+}
+
+/*
+  create a zero length xattr with the given name
+*/
+NTSTATUS pvfs_xattr_create(struct pvfs_state *pvfs, 
+			   const char *fname, int fd,
+			   const char *attr_prefix,
+			   const char *attr_name)
+{
+	NTSTATUS status;
+	DATA_BLOB blob = data_blob(NULL, 0);
+	char *aname = talloc_asprintf(NULL, "%s%s", attr_prefix, attr_name);
+	if (aname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = push_xattr_blob(pvfs, aname, fname, fd, &blob);
+	talloc_free(aname);
+	return status;
+}
+
+
+/*
+  delete a xattr with the given name
+*/
+NTSTATUS pvfs_xattr_delete(struct pvfs_state *pvfs, 
+			   const char *fname, int fd,
+			   const char *attr_prefix,
+			   const char *attr_name)
+{
+	NTSTATUS status;
+	char *aname = talloc_asprintf(NULL, "%s%s", attr_prefix, attr_name);
+	if (aname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = delete_xattr(pvfs, aname, fname, fd);
+	talloc_free(aname);
+	return status;
+}
+
+/*
+  load a xattr with the given name
+*/
+NTSTATUS pvfs_xattr_load(struct pvfs_state *pvfs, 
+			 TALLOC_CTX *mem_ctx,
+			 const char *fname, int fd,
+			 const char *attr_prefix,
+			 const char *attr_name,
+			 size_t estimated_size,
+			 DATA_BLOB *blob)
+{
+	NTSTATUS status;
+	char *aname = talloc_asprintf(mem_ctx, "%s%s", attr_prefix, attr_name);
+	if (aname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = pull_xattr_blob(pvfs, mem_ctx, aname, fname, fd, estimated_size, blob);
+	talloc_free(aname);
+	return status;
+}
+
+/*
+  save a xattr with the given name
+*/
+NTSTATUS pvfs_xattr_save(struct pvfs_state *pvfs, 
+			 const char *fname, int fd,
+			 const char *attr_prefix,
+			 const char *attr_name,
+			 const DATA_BLOB *blob)
+{
+	NTSTATUS status;
+	char *aname = talloc_asprintf(NULL, "%s%s", attr_prefix, attr_name);
+	if (aname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = push_xattr_blob(pvfs, aname, fname, fd, blob);
+	talloc_free(aname);
+	return status;
 }

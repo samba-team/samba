@@ -148,17 +148,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		info->stream_info.out.num_streams = 1;
-		info->stream_info.out.streams = talloc_array_p(mem_ctx, 
-							       struct stream_struct, 1);
-		if (!info->stream_info.out.streams) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		info->stream_info.out.streams[0].size          = name->st.st_size;
-		info->stream_info.out.streams[0].alloc_size    = name->dos.alloc_size;
-		info->stream_info.out.streams[0].stream_name.s = 
-			talloc_strdup(info->stream_info.out.streams, "::$DATA");
-		return NT_STATUS_OK;
+		return pvfs_stream_information(pvfs, mem_ctx, name, fd, &info->stream_info.out);
 
 	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
@@ -219,12 +209,12 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (!name->exists) {
+	if (!name->stream_exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
