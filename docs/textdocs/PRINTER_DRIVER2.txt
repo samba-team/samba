@@ -1,7 +1,7 @@
+!==
+!== PRINTER_DRIVER2.txt for Samba release 2.2.0-alpha0 09 Oct 2000
+!==
 
-!==
-!== PRINTER_DRIVER.txt for Samba release 2.2.0 14 Sep 2000
-!==
 ==========================================================================
         Gerald Carter <jerry@samba.org> 14 Sep 2000
 ===========================================================================
@@ -96,7 +96,6 @@ each architecture you wish to support.
 These directories should be owned by an administrative account.
 Currently this must initially be an "root" account (uid = 0).
 
-!== The Windows NT APW
 
 Once you have created the required [print$] service and associated
 subdirectories, simply log onto the Samba server using a root account
@@ -139,7 +138,6 @@ also be able modify other printer properties such as
 ACLs and device settings using this dialog box.
 
 
-!== Imprints  
 
 The Imprints tool set provides a UNIX equivalent of the Windows
 NT Add Printer Wizard.  For complete information, please refer
@@ -208,7 +206,6 @@ The Installation Client
 		create the printer
 		
 
-!== The printer driver name space problem
 
 	One of the problems encountered when implementing the Imprints
 	tool set was the name space issues between various supported
@@ -286,5 +283,3 @@ Here are the possible scenarios for supporting migration:
 
 
 
-!== end of PRINTER_DRIVER2.txt =======================================
-!=====================================================================

@@ -1,7 +1,5 @@
 !==
-!==	Imprints.txt for Samba release 2.2.0 14 Sep 2000
-!==
-!==	Author : 	Gerald Carter <jerry@samba.org>
+!== Imprints.txt for Samba release 2.2.0-alpha0 09 Oct 2000
 !==
 ==================================================================
 
