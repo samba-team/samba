@@ -650,38 +650,6 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 }
 
 /****************************************************************************
- Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
-****************************************************************************/
-
-uint32 map_lock_offset(uint32 high, uint32 low)
-{
-	unsigned int i;
-	uint32 mask = 0;
-	uint32 highcopy = high;
-
-	/*
-	 * Try and find out how many significant bits there are in high.
-	 */
-
-	for(i = 0; highcopy; i++)
-		highcopy >>= 1;
-
-	/*
-	 * We use 31 bits not 32 here as POSIX
-	 * lock offsets may not be negative.
-	 */
-
-	mask = (~0) << (31 - i);
-
-	if(low & mask)
-		return 0; /* Fail. */
-
-	high <<= (31 - i);
-
-	return (high|low);
-}
-
-/****************************************************************************
  Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
  broken NFS implementations.
 ****************************************************************************/
@@ -691,80 +659,39 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 	int ret;
 	struct connection_struct *conn = fsp->conn;
 
-#if defined(LARGE_SMB_OFF_T)
-	/*
-	 * In the 64 bit locking case we store the original
-	 * values in case we have to map to a 32 bit lock on
-	 * a filesystem that doesn't support 64 bit locks.
-	 */
-	SMB_OFF_T orig_offset = offset;
-	SMB_OFF_T orig_count = count;
-#endif /* LARGE_SMB_OFF_T */
-
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fd,op,(double)offset,(double)count,type));
 
 	ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 
-	if (!ret && ((errno == EFBIG) || (errno == ENOLCK))) {
-		if( DEBUGLVL( 0 )) {
-			dbgtext("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
-			dbgtext("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno));
-			dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
-		}
-		/* 32 bit NFS file system, retry with smaller offset */
-		errno = 0;
-		count &= 0x7fffffff;
-		ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
-	}
+	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
-	/* A lock query - just return. */
-	if (op == SMB_F_GETLK)
-		return ret;
+		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
+					(double)offset,(double)count));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
 
-	/* A lock set or unset. */
-	if (!ret) {
-		DEBUG(3,("posix_fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
-				(double)offset,(double)count,op,type,strerror(errno)));
+		/*
+		 * If the offset is > 0x7FFFFFFF then this will cause problems on
+		 * 32 bit NFS mounted filesystems. Just ignore it.
+		 */
 
-		/* Perhaps it doesn't support this sort of locking ? */
-		if (errno == EINVAL) {
-#if defined(LARGE_SMB_OFF_T)
-			{
-				/*
-				 * Ok - if we get here then we have a 64 bit lock request
-				 * that has returned EINVAL. Try and map to 31 bits for offset
-				 * and length and try again. This may happen if a filesystem
-				 * doesn't support 64 bit offsets (efs/ufs) although the underlying
-				 * OS does.
-				 */
-				uint32 off_low = (orig_offset & 0xFFFFFFFF);
-				uint32 off_high = ((orig_offset >> 32) & 0xFFFFFFFF);
-
-				count = (orig_count & 0x7FFFFFFF);
-				offset = (SMB_OFF_T)map_lock_offset(off_high, off_low);
-				ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
-				if (!ret) {
-					if (errno == EINVAL) {
-						DEBUG(3,("posix_fcntl_lock: locking not supported? returning True\n"));
-						return(True);
-					}
-					return False;
-				}
-				DEBUG(3,("posix_fcntl_lock: 64 -> 32 bit modified lock call successful\n"));
-				return True;
-			}
-#else /* LARGE_SMB_OFF_T */
-			DEBUG(3,("locking not supported? returning True\n"));
-			return(True);
-#endif /* LARGE_SMB_OFF_T */
+		if (offset & ~((SMB_OFF_T)0x7fffffff)) {
+			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
+			return True;
 		}
 
-		return(False);
+		if (count & ~((SMB_OFF_T)0x7fffffff)) {
+			/* 32 bit NFS file system, retry with smaller offset */
+			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
+			errno = 0;
+			count &= 0x7fffffff;
+			ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
+		}
 	}
 
-	DEBUG(8,("posix_fcntl_lock: Lock call successful\n"));
+	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
 
-	return(True);
+	return ret;
 }
 
 /****************************************************************************
