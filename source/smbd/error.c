@@ -90,10 +90,17 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	if (errno != 0)
 		DEBUG(3,("error string = %s\n",strerror(errno)));
   
-	if (global_client_caps & CAP_STATUS32) {
-		if (NT_STATUS_V(ntstatus) == 0 && eclass) {
+	/*
+	 * We can explicitly force 32 bit error codes even when the
+	 * parameter "nt status" is set to no by pre-setting the
+	 * FLAGS2_32_BIT_ERROR_CODES bit in the smb_flg2 outbuf.
+	 * This is to allow work arounds for client bugs that are needed
+	 * when talking with clients that normally expect nt status codes. JRA.
+	 */
+
+	if ((lp_nt_status_support() || (SVAL(outbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) && (global_client_caps & CAP_STATUS32)) {
+		if (NT_STATUS_V(ntstatus) == 0 && eclass)
 			ntstatus = dos_to_ntstatus(eclass, ecode);
-		}
 		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
 		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
 		DEBUG(3,("error packet at %s(%d) cmd=%d (%s) %s\n",
@@ -104,9 +111,8 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 		return outsize;
 	} 
 
-	if (eclass == 0 && NT_STATUS_V(ntstatus)) {
+	if (eclass == 0 && NT_STATUS_V(ntstatus))
 		ntstatus_to_dos(ntstatus, &eclass, &ecode);
-	}
 
 	SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)&~FLAGS2_32_BIT_ERROR_CODES);
 	SSVAL(outbuf,smb_rcls,eclass);
