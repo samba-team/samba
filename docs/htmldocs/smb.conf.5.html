@@ -1029,54 +1029,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#CHARACTERSET"
-><TT
-CLASS="PARAMETER"
-><I
->character set</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#CLIENTCODEPAGE"
-><TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#CODEPAGEDIRECTORY"
-><TT
-CLASS="PARAMETER"
-><I
->code page directory</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#CODINGSYSTEM"
-><TT
-CLASS="PARAMETER"
-><I
->coding system</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#CONFIGFILE"
 ><TT
 CLASS="PARAMETER"
@@ -2877,18 +2829,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#VALIDCHARS"
-><TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#WINBINDCACHETIME"
 ><TT
 CLASS="PARAMETER"
@@ -3047,7 +2987,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN986"
+NAME="AEN966"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4490,7 +4430,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1466"
+NAME="AEN1446"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4913,17 +4853,15 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > 
-		must be set to <TT
+		must <EM
+>NOT</EM
+> be set to <TT
 CLASS="PARAMETER"
 ><I
->security = server</I
+>security = share</I
 ></TT
-> or <TT
-CLASS="PARAMETER"
-><I
->		security = domain</I
-></TT
-> and <TT
+>
+		and <TT
 CLASS="PARAMETER"
 ><I
 >add user script</I
@@ -5757,504 +5695,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="CHARACTERSET"
-></A
->character set (G)</DT
-><DD
-><P
->This allows <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd</A
-> to map incoming filenames 
-		from a DOS Code page (see the <A
-HREF="#CLIENTCODEPAGE"
->client 
-		code page</A
-> parameter) to several built in UNIX character sets. 
-		The built in code page translations are:</P
-><P
-></P
-><UL
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->ISO8859-1</TT
-> : Western European 
-			UNIX character set. The parameter <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
->
-			<EM
->MUST</EM
-> be set to code page 850 if the 
-			<TT
-CLASS="PARAMETER"
-><I
->character set</I
-></TT
-> parameter is set to
-			<TT
-CLASS="CONSTANT"
->ISO8859-1</TT
-> in order for the conversion to the 
-			UNIX character set to be done correctly.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->ISO8859-2</TT
-> : Eastern European 
-			UNIX character set. The parameter <TT
-CLASS="PARAMETER"
-><I
->client code page
-			</I
-></TT
-> <EM
->MUST</EM
-> be set to code page 852 if 
-			the <TT
-CLASS="PARAMETER"
-><I
-> character set</I
-></TT
-> parameter is set 
-			to <TT
-CLASS="CONSTANT"
->ISO8859-2</TT
-> in order for the conversion 
-			to the UNIX character set to be done correctly. </P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->ISO8859-5</TT
-> : Russian Cyrillic 
-			UNIX character set. The parameter <TT
-CLASS="PARAMETER"
-><I
->client code page
-			</I
-></TT
-> <EM
->MUST</EM
-> be set to code page 
-			866 if the <TT
-CLASS="PARAMETER"
-><I
->character set </I
-></TT
-> parameter is 
-			set to <TT
-CLASS="CONSTANT"
->ISO8859-5</TT
-> in order for the conversion 
-			to the UNIX character set to be done correctly. </P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->ISO8859-7</TT
-> : Greek UNIX 
-			character set. The parameter <TT
-CLASS="PARAMETER"
-><I
->client code page
-			</I
-></TT
-> <EM
->MUST</EM
-> be set to code page 
-			737 if the <TT
-CLASS="PARAMETER"
-><I
->character set</I
-></TT
-> parameter is 
-			set to <TT
-CLASS="CONSTANT"
->ISO8859-7</TT
-> in order for the conversion 
-			to the UNIX character set to be done correctly.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->KOI8-R</TT
-> : Alternate mapping 
-			for Russian Cyrillic UNIX character set. The parameter 
-			<TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> <EM
->MUST</EM
-> 
-			be set to code page 866 if the <TT
-CLASS="PARAMETER"
-><I
->character set</I
-></TT
-> 
-			parameter is set to <TT
-CLASS="CONSTANT"
->KOI8-R</TT
-> in order for the 
-			conversion to the UNIX character set to be done correctly.</P
-></LI
-></UL
-><P
-><EM
->BUG</EM
->. These MSDOS code page to UNIX character 
-		set mappings should be dynamic, like the loading of MS DOS code pages, 
-		not static.</P
-><P
->Normally this parameter is not set, meaning no filename 
-		translation is done.</P
-><P
->Default: <B
-CLASS="COMMAND"
->character set = &#60;empty string&#62;</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->character set = ISO8859-1</B
-></P
-></DD
-><DT
-><A
-NAME="CLIENTCODEPAGE"
-></A
->client code page (G)</DT
-><DD
-><P
->This parameter specifies the DOS code page 
-		that the clients accessing Samba are using. To determine what code 
-		page a Windows or DOS client is using, open a DOS command prompt 
-		and type the command <B
-CLASS="COMMAND"
->chcp</B
->. This will output 
-		the code page. The default for USA MS-DOS, Windows 95, and
-		Windows NT releases is code page 437. The default for western 
-		European releases of the above operating systems is code page 850.</P
-><P
->This parameter tells <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
-> 
-		which of the <TT
-CLASS="FILENAME"
->codepage.<TT
-CLASS="REPLACEABLE"
-><I
->XXX</I
-></TT
->
-		</TT
-> files to dynamically load on startup. These files,
-		described more fully in the manual page <A
-HREF="make_smbcodepage.1.html"
-TARGET="_top"
->		<B
-CLASS="COMMAND"
->make_smbcodepage(1)</B
-></A
->, tell <B
-CLASS="COMMAND"
->		smbd</B
-> how to map lower to upper case characters to provide 
-		the case insensitivity of filenames that Windows clients expect.</P
-><P
->Samba currently ships with the following code page files :</P
-><P
-></P
-><UL
-><LI
-><P
->Code Page 437 - MS-DOS Latin US</P
-></LI
-><LI
-><P
->Code Page 737 - Windows '95 Greek</P
-></LI
-><LI
-><P
->Code Page 850 - MS-DOS Latin 1</P
-></LI
-><LI
-><P
->Code Page 852 - MS-DOS Latin 2</P
-></LI
-><LI
-><P
->Code Page 861 - MS-DOS Icelandic</P
-></LI
-><LI
-><P
->Code Page 866 - MS-DOS Cyrillic</P
-></LI
-><LI
-><P
->Code Page 932 - MS-DOS Japanese SJIS</P
-></LI
-><LI
-><P
->Code Page 936 - MS-DOS Simplified Chinese</P
-></LI
-><LI
-><P
->Code Page 949 - MS-DOS Korean Hangul</P
-></LI
-><LI
-><P
->Code Page 950 - MS-DOS Traditional Chinese</P
-></LI
-></UL
-><P
->Thus this parameter may have any of the values 437, 737, 850, 852,
-		861, 932, 936, 949, or 950.  If you don't find the codepage you need,
-		read the comments in one of the other codepage files and the
-		<B
-CLASS="COMMAND"
->make_smbcodepage(1)</B
-> man page and write one. Please 
-		remember to donate it back to the Samba user community.</P
-><P
->This parameter co-operates with the <TT
-CLASS="PARAMETER"
-><I
->valid
-		chars</I
-></TT
-> parameter in determining what characters are
-		valid in filenames and how capitalization is done. If you set both
-		this parameter and the <TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-> parameter
-		the <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> parameter 
-		<EM
->MUST</EM
-> be set before the <TT
-CLASS="PARAMETER"
-><I
->valid 
-		chars</I
-></TT
-> parameter in the <TT
-CLASS="FILENAME"
->smb.conf</TT
->
-		file. The <TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-> string will then 
-		augment the character settings in the <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> 
-		parameter.</P
-><P
->If not set, <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> defaults 
-		to 850.</P
-><P
->See also : <A
-HREF="#VALIDCHARS"
-><TT
-CLASS="PARAMETER"
-><I
->valid 
-		chars</I
-></TT
-></A
->, <A
-HREF="#CODEPAGEDIRECTORY"
->		<TT
-CLASS="PARAMETER"
-><I
->code page directory</I
-></TT
-></A
-></P
-><P
->Default: <B
-CLASS="COMMAND"
->client code page = 850</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->client code page = 936</B
-></P
-></DD
-><DT
-><A
-NAME="CODEPAGEDIRECTORY"
-></A
->code page directory (G)</DT
-><DD
-><P
->Define the location of the various client code page
-		files.</P
-><P
->See also <A
-HREF="#CLIENTCODEPAGE"
-><TT
-CLASS="PARAMETER"
-><I
->client
-		code page</I
-></TT
-></A
-></P
-><P
->Default: <B
-CLASS="COMMAND"
->code page directory = ${prefix}/lib/codepages
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->code page directory = /usr/share/samba/codepages
-		</B
-></P
-></DD
-><DT
-><A
-NAME="CODINGSYSTEM"
-></A
->coding system (G)</DT
-><DD
-><P
->This parameter is used to determine how incoming 
-		Shift-JIS Japanese characters are mapped from the incoming <A
-HREF="#CLIENTCODEPAGE"
-><TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
->
-		</A
-> used by the client, into file names in the UNIX filesystem. 
-		Only useful if <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> is set to 
-		932 (Japanese Shift-JIS).  The options are :</P
-><P
-></P
-><UL
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->SJIS</TT
->  - Shift-JIS. Does no 
-			conversion of the incoming filename.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->JIS8, J8BB, J8BH, J8@B, 
-			J8@J, J8@H </TT
-> - Convert from incoming Shift-JIS to eight 
-			bit JIS code with different shift-in, shift out codes.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->JIS7, J7BB, J7BH, J7@B, J7@J, 
-			J7@H </TT
-> - Convert from incoming Shift-JIS to seven bit 
-			JIS code with different shift-in, shift out codes.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->JUNET, JUBB, JUBH, JU@B, JU@J, JU@H </TT
-> 
-			- Convert from incoming Shift-JIS to JUNET code with different shift-in, 
-			shift out codes.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->EUC</TT
-> - Convert an incoming 
-			Shift-JIS character to EUC code.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->HEX</TT
-> - Convert an incoming 
-			Shift-JIS character to a 3 byte hex representation, i.e. 
-			<TT
-CLASS="CONSTANT"
->:AB</TT
->.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->CAP</TT
-> - Convert an incoming 
-			Shift-JIS character to the 3 byte hex representation used by 
-			the Columbia AppleTalk Program (CAP), i.e. <TT
-CLASS="CONSTANT"
->:AB</TT
->.  
-			This is used for compatibility between Samba and CAP.</P
-></LI
-></UL
-><P
->Default: <B
-CLASS="COMMAND"
->coding system = &#60;empty value&#62;</B
->
-		</P
-></DD
-><DT
-><A
 NAME="COMMENT"
 ></A
 >comment (S)</DT
@@ -7073,53 +6513,26 @@ CLASS="PARAMETER"
 ><I
 >security = domain</I
 ></TT
+> or <TT
+CLASS="PARAMETER"
+><I
+>security =
+		user</I
+></TT
 > and <TT
 CLASS="PARAMETER"
 ><I
->delete 
-		user script</I
+>delete user script</I
 ></TT
-> must be set to a full pathname for a script 
+> 
+		must be set to a full pathname for a script 
 		that will delete a UNIX user given one argument of <TT
 CLASS="PARAMETER"
 ><I
->%u
-		</I
+>%u</I
 ></TT
->, which expands into the UNIX user name to delete.
-		<EM
->NOTE</EM
-> that this is different to the <A
-HREF="#ADDUSERSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->add user script</I
-></TT
-></A
->
-		which will work with the <TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> option 
-		as well as <TT
-CLASS="PARAMETER"
-><I
->security = domain</I
-></TT
->. The reason for this
-		is only when Samba is a domain member does it get the information
-		on an attempted user logon that a user no longer exists. In the
-		<TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> mode a missing user
-		is treated the same as an invalid password logon attempt. Deleting
-		the user in this circumstance would not be a good idea.</P
+>, 
+		which expands into the UNIX user name to delete.</P
 ><P
 >When the Windows user attempts to access the Samba server, 
 		at <EM
@@ -18385,136 +17798,6 @@ CLASS="FILENAME"
 ></DD
 ><DT
 ><A
-NAME="VALIDCHARS"
-></A
->valid chars (G)</DT
-><DD
-><P
->The option allows you to specify additional 
-		characters that should be considered valid by the server in 
-		filenames. This is particularly useful for national character 
-		sets, such as adding u-umlaut or a-ring.</P
-><P
->The option takes a list of characters in either integer 
-		or character form with spaces between them. If you give two 
-		characters with a colon between them then it will be taken as 
-		an lowercase:uppercase pair.</P
-><P
->If you have an editor capable of entering the characters 
-		into the config file then it is probably easiest to use this 
-		method. Otherwise you can specify the characters in octal, 
-		decimal or hexadecimal form using the usual C notation.</P
-><P
->For example to add the single character 'Z' to the charset 
-		(which is a pointless thing to do as it's already there) you could 
-		do one of the following</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
-CLASS="PROGRAMLISTING"
->		valid chars = Z
-		valid chars = z:Z
-		valid chars = 0132:0172
-		</PRE
-></TD
-></TR
-></TABLE
-></P
-><P
->The last two examples above actually add two characters, 
-		and alter the uppercase and lowercase mappings appropriately.</P
-><P
->Note that you <EM
->MUST</EM
-> specify this parameter 
-		after the <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> parameter if you 
-		have both set. If <TT
-CLASS="PARAMETER"
-><I
->client code page</I
-></TT
-> is set after 
-		the <TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-> parameter the <TT
-CLASS="PARAMETER"
-><I
->valid 
-		chars</I
-></TT
-> settings will be overwritten.</P
-><P
->See also the <A
-HREF="#CLIENTCODEPAGE"
-><TT
-CLASS="PARAMETER"
-><I
->client 
-		code page</I
-></TT
-></A
-> parameter.</P
-><P
->Default: <EM
->Samba defaults to using a reasonable set 
-		of valid characters for English systems</EM
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->valid chars = 0345:0305 0366:0326 0344:0304
-		</B
-></P
-><P
->The above example allows filenames to have the Swedish 
-		characters in them.</P
-><P
-><EM
->NOTE:</EM
-> It is actually quite difficult to 
-		correctly produce a <TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-> line for 
-		a particular system. To automate the process <A
-HREF="mailto:tino@augsburg.net"
-TARGET="_top"
->tino@augsburg.net</A
-> has written 
-		a package called <B
-CLASS="COMMAND"
->validchars</B
-> which will automatically 
-		produce a complete <TT
-CLASS="PARAMETER"
-><I
->valid chars</I
-></TT
-> line for
-		a given client system. Look in the <TT
-CLASS="FILENAME"
->examples/validchars/
-		</TT
-> subdirectory of your Samba source code distribution 
-		for this package.</P
-></DD
-><DT
-><A
 NAME="VALIDUSERS"
 ></A
 >valid users (S)</DT
@@ -19409,7 +18692,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6125"
+NAME="AEN5915"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19439,7 +18722,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6131"
+NAME="AEN5921"
 ></A
 ><H2
 >VERSION</H2
@@ -19450,7 +18733,7 @@ NAME="AEN6131"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6134"
+NAME="AEN5924"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19529,7 +18812,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6154"
+NAME="AEN5944"
 ></A
 ><H2
 >AUTHOR</H2
