@@ -46,9 +46,9 @@
 
 extern int h_errno;
 
+#include "ftp_var.h"
 #include "extern.h"
 #include "common.h"
-#include "ftp_var.h"
 #include "pathnames.h"
 
 #include "krb4.h"
