@@ -190,9 +190,7 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 	const char *guest_account = lp_guestaccount();
 	GROUP_MAP map;
 	BOOL ret;
-	DOM_SID user_sid;
-	DOM_SID group_sid;
-
+	
 	if (!account_data || !pwd) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -200,7 +198,7 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 	/* this is a hack this thing should not be set
 	   this way --SSS */
 	if (!(guest_account && *guest_account)) {
-		DEBUG(1, ("pdb_set_sam_sids: NULL guest account!?!?\n"));
+		DEBUG(1, ("NULL guest account!?!?\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	} else {
 		/* Ensure this *must* be set right */
@@ -215,13 +213,8 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 		}
 	}
 
-	if (NT_STATUS_IS_OK(uid_to_sid(&user_sid, pwd->pw_uid))) {
-		if (!pdb_set_user_sid(account_data, &user_sid, PDB_SET)) {
-			DEBUG(0,("pdb_set_sam_sids: Can't set User SID from mapped UID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	} else if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-		DEBUG(0,("pdb_set_sam_sids: Can't set User SID from RID!\n"));
+	if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
+		DEBUG(0,("Can't set User SID from RID!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -232,18 +225,13 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 	
 	if( ret ) {
 		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
-			DEBUG(0,("pdb_set_sam_sids: Can't set Group SID!\n"));
+			DEBUG(0,("Can't set Group SID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} 
 	else {
-		if (NT_STATUS_IS_OK(gid_to_sid(&group_sid, pwd->pw_gid))) {
-			if (!pdb_set_group_sid(account_data, &group_sid, PDB_SET)) {
-				DEBUG(0,("pdb_set_sam_sids: Can't set Group SID from mapped GID\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		} else if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-			DEBUG(0,("pdb_set_sam_sids: Can't set Group SID\n"));
+		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
+			DEBUG(0,("Can't set Group SID\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
