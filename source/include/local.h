@@ -191,4 +191,7 @@
 /* Max number of jobs per print queue. */
 #define PRINT_MAX_JOBID 10000
 
+/* Max number of open RPC pipes. */
+#define MAX_OPEN_PIPES 2048
+
 #endif
