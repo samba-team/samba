@@ -535,7 +535,6 @@ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 */
 NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr, const void *p)
 {
-	uint32_t ptr = 0;
 	if (p == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
