@@ -4,6 +4,7 @@
 	<author><firstname>Alexander</firstname><surname>Bokovoy</surname></author>
 	<author><firstname>Tim</firstname><surname>Potter</surname></author>
 	<author><firstname>Simo</firstname><surname>Sorce</surname></author>
+	<author><firstname>John H</firstname><surname>Terpstra</surname></author>
 </chapterinfo>
 <title>Stackable VFS modules</title>
 
@@ -63,6 +64,18 @@ facility.  The following operations are logged:
 <member>directory opens/create/remove</member>
 <member>file open/close/rename/unlink/chmod</member>
 </simplelist>
+</para>
+</sect2>
+
+<sect2>
+<title>extd_audit</title>
+<para>
+This module is identical with the <emphasis>audit</emphasis> module above except
+that it sends audit logs to both syslog as well as the smbd log file/s. The 
+loglevel for this module is set in the smb.conf file. At loglevel = 0, only file
+and directory deletions and directory and file creations are logged. At loglevel = 1
+file opens are renames and permission changes are logged , while at loglevel = 2 file
+open and close calls are logged also.
 </para>
 </sect2>
 

@@ -1,5 +1,4 @@
 <chapter id="unix-permissions">
-
 <chapterinfo>
 	<author>
 		<firstname>Jeremy</firstname><surname>Allison</surname>
@@ -10,11 +9,8 @@
 			</address>
 		</affiliation>
 	</author>
-	
-		
 	<pubdate>12 Apr 1999</pubdate>
 </chapterinfo>
-
 
 <title>UNIX Permission Bits and Windows NT Access Control Lists</title>
 
@@ -29,6 +25,17 @@
 	the security of the UNIX host Samba is running on, and 
 	still obeys all the file permission rules that a Samba 
 	administrator can set.</para>
+
+	<note>
+	<para>
+	All access to Unix/Linux system file via Samba is controlled at
+	the operating system file access control level. When trying to
+	figure out file access problems it is vitally important to identify
+	the identity of the Windows user as it is presented by Samba at
+	the point of file access. This can best be determined from the
+	Samba log files.
+	</para>
+	</note>
 </sect1>
 
 <sect1>

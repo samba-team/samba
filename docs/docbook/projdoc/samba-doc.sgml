@@ -29,6 +29,8 @@
 <!ENTITY AdvancedNetworkAdmin SYSTEM "AdvancedNetworkAdmin.sgml">
 <!ENTITY PolicyMgmt SYSTEM "PolicyMgmt.sgml">
 <!ENTITY ProfileMgmt SYSTEM "ProfileMgmt.sgml">
+<!ENTITY NT4Migration SYSTEM "NT4Migration.sgml">
+<!ENTITY SWAT SYSTEM "SWAT.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -110,25 +112,27 @@ for various environments.
 <para>Samba has several features that you might want or might not want to use. The chapters in this 
 part each cover one specific feature.</para>
 </partintro>
-&AdvancedNetworkAdmin;
 &NT-Security;
 &GROUP-MAPPING-HOWTO;
-&Samba-PAM;
 &PRINTER-DRIVER2;
 &CUPS;
 &WINBIND;
+&AdvancedNetworkAdmin;
 &PolicyMgmt;
 &ProfileMgmt;
+&Samba-PAM;
+&VFS;
+&MS-Dfs-Setup;
 &IntegratingWithWindows;
 &BROWSING;
-&MS-Dfs-Setup;
-&VFS;
 &SecuringSamba;
 &unicode;
 </part>
 
 <part id="Appendixes">
 <title>Appendixes</title>
+&SWAT;
+&NT4Migration;
 &SPEED;
 &Portability;
 &Other-Clients;
