@@ -61,4 +61,4 @@ make_proto appl/login login_protos.h /dev/null '$(login_SOURCES)'
 rm fix-export make-release make-release.el
 find . -name .cvsignore -print | xargs rm
 find . -name .__afs\* -print | xargs rm
-rm -fr autom4te.cache
+rm -fr autom4te*.cache
