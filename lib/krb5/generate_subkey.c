@@ -16,15 +16,15 @@ krb5_generate_subkey(krb5_context context,
     if (k == NULL)
 	return ENOMEM;
     k->keytype = key->keytype;
-    k->contents.length = 0;
-    ret = krb5_data_copy (&k->contents,
-			  key->contents.data,
-			  key->contents.length);
+    k->keyvalue.length = 0;
+    ret = krb5_data_copy (&k->keyvalue,
+			  key->keyvalue.data,
+			  key->keyvalue.length);
     if (ret) {
 	free(k);
 	return ret;
     }
-    des_new_random_key ((des_cblock *)k->contents.data);
+    des_new_random_key ((des_cblock *)k->keyvalue.data);
     *subkey = k;
     return 0;
 }

@@ -121,10 +121,10 @@ krb5_auth_con_getkey(krb5_context context,
   if (*keyblock == NULL)
     return ENOMEM;
   (*keyblock)->keytype = auth_context->key.keytype;
-  (*keyblock)->contents.length = 0;
-  return krb5_data_copy (&(*keyblock)->contents,
-			 auth_context->key.contents.data,
-			 auth_context->key.contents.length);
+  (*keyblock)->keyvalue.length = 0;
+  return krb5_data_copy (&(*keyblock)->keyvalue,
+			 auth_context->key.keyvalue.data,
+			 auth_context->key.keyvalue.length);
 }
 
 krb5_error_code
@@ -136,10 +136,10 @@ krb5_auth_con_getlocalsubkey(krb5_context context,
   if (*keyblock == NULL)
     return ENOMEM;
   (*keyblock)->keytype = auth_context->local_subkey.keytype;
-  (*keyblock)->contents.length = 0;
-  return krb5_data_copy (&(*keyblock)->contents,
-			 auth_context->local_subkey.contents.data,
-			 auth_context->local_subkey.contents.length);
+  (*keyblock)->keyvalue.length = 0;
+  return krb5_data_copy (&(*keyblock)->keyvalue,
+			 auth_context->local_subkey.keyvalue.data,
+			 auth_context->local_subkey.keyvalue.length);
 }
 
 krb5_error_code
@@ -151,18 +151,18 @@ krb5_auth_con_getremotesubkey(krb5_context context,
   if (*keyblock == NULL)
     return ENOMEM;
   (*keyblock)->keytype = auth_context->remote_subkey.keytype;
-  (*keyblock)->contents.length = 0;
-  return krb5_data_copy (&(*keyblock)->contents,
-			 auth_context->remote_subkey.contents.data,
-			 auth_context->remote_subkey.contents.length);
+  (*keyblock)->keyvalue.length = 0;
+  return krb5_data_copy (&(*keyblock)->keyvalue,
+			 auth_context->remote_subkey.keyvalue.data,
+			 auth_context->remote_subkey.keyvalue.length);
 }
 
 void
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock)
 {
-    memset(keyblock->contents.data, 0, keyblock->contents.length);
-    krb5_data_free (&keyblock->contents);
+    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
+    krb5_data_free (&keyblock->keyvalue);
 }
 
 krb5_error_code

@@ -67,8 +67,8 @@ extract_ticket(krb5_context context,
     err = (*decrypt_proc)(context, key, decryptarg, rep);
     if (err)
 	return err;
-    memset (key->contents.data, 0, key->contents.length);
-    krb5_data_free (&key->contents);
+    memset (key->keyvalue.data, 0, key->keyvalue.length);
+    krb5_data_free (&key->keyvalue);
     free (key);
 
     principalname2krb5_principal(&creds->server, 
@@ -111,10 +111,10 @@ extract_ticket(krb5_context context,
     if (err)
 	return err;
 
-    creds->session.contents.length = 0;
-    creds->session.contents.data   = NULL;
+    creds->session.keyvalue.length = 0;
+    creds->session.keyvalue.data   = NULL;
     creds->session.keytype = rep->part2.key.keytype;
-    err = krb5_data_copy (&creds->session.contents,
+    err = krb5_data_copy (&creds->session.keyvalue,
 			  rep->part2.key.keyvalue.data,
 			  rep->part2.key.keyvalue.length);
     memset (rep->part2.key.keyvalue.data, 0,
@@ -161,10 +161,14 @@ krb5_get_in_tkt(krb5_context context,
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
     krb5_principal2principalname (a.req_body.sname, creds->server);
+#ifdef USE_ASN1_PRINCIPAL
+    copy_Realm(&creds->client->realm, &a.req_body.realm);
+#else
     a.req_body.realm = malloc(creds->client->realm.length + 1);
     strncpy (a.req_body.realm, creds->client->realm.data,
 	     creds->client->realm.length);
     a.req_body.realm[creds->client->realm.length] = '\0';
+#endif
 
     a.req_body.till  = creds->times.endtime;
     a.req_body.nonce = 17;

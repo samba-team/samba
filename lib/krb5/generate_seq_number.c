@@ -14,7 +14,7 @@ krb5_generate_seq_number(krb5_context context,
 
     if (key->keytype != KEYTYPE_DES)
 	abort ();
-    memmove (c, key->contents.data, sizeof(c));
+    memmove (c, key->keyvalue.data, sizeof(c));
     des_new_random_key(&c);
     q = 0;
     for (p = (u_char *)c, i = 0; i < sizeof(c); ++i, ++p)

@@ -17,8 +17,8 @@ key_proc (krb5_context context,
      if (*key == NULL)
 	  return ENOMEM;
      (*key)->keytype = type;
-     (*key)->contents.length = 0;
-     (*key)->contents.data   = NULL;
+     (*key)->keyvalue.length = 0;
+     (*key)->keyvalue.data   = NULL;
      if (password == NULL) {
 	  des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
 	  password = buf;

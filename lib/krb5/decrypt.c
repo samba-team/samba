@@ -15,7 +15,7 @@ krb5_decrypt (krb5_context context,
   des_cblock key;
   des_key_schedule schedule;
 
-  memcpy (&key, keyblock->contents.data, sizeof(key));
+  memcpy (&key, keyblock->keyvalue.data, sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_encrypt ((des_cblock *)ptr, (des_cblock *)ptr, len, 
 		   schedule, &key, DES_DECRYPT);

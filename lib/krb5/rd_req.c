@@ -96,7 +96,7 @@ krb5_rd_req_with_keyblock(krb5_context context,
     /* save key */
 
     (*auth_context)->key.keytype = t->tkt.key.keytype;
-    krb5_data_copy(&(*auth_context)->key.contents,
+    krb5_data_copy(&(*auth_context)->key.keyvalue,
 		   t->tkt.key.keyvalue.data,
 		   t->tkt.key.keyvalue.length);
 
