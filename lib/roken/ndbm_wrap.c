@@ -165,7 +165,12 @@ dbm_open (const char *file, int flags, mode_t mode)
 	free(fn);
 	return NULL;
     }
+
+#if (DB_VERSION_MAJOR > 3) && (DB_VERSION_MINOR > 0)
+    if(db->open(db, NULL, fn, NULL, DB_BTREE, myflags, mode) != 0) {
+#else
     if(db->open(db, fn, NULL, DB_BTREE, myflags, mode) != 0) {
+#endif
 	free(fn);
 	db->close(db, 0);
 	return NULL;
