@@ -1,3 +1,16 @@
+Changes in release 0.1l:
+
+ * make ftp and ftpd IPv6-aware
+ * add inet_pton to roken
+ * more IPv6-awareness
+ * make mini_inetd v6 aware
+
+Changes in release 0.1k:
+
+ * bump shared libraries versions
+ * add roken version of inet_ntop
+ * merge more changes to rshd
+
 Changes in release 0.1j:
 
  * restore back to the `old' 3DES code.  This was supposed to be done
