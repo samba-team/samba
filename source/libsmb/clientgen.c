@@ -341,8 +341,6 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
-	uint8 eclass;
-	uint32 num;
 	
 	*data_len = *param_len = 0;
 
@@ -357,8 +355,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	/* DOS error "more data" is an acceptable error code */
-	if (cli_error(cli, &eclass, &num) && !(eclass == ERRDOS && num == ERRmoredata))
+	if (cli_error(cli, NULL, NULL))
 	{
 		return(False);
 	}
@@ -409,8 +406,8 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		/* DOS error "more data" is an acceptable error code */
-		if (cli_error(cli, &eclass, &num) && eclass != ERRDOS && num != ERRmoredata)
+
+		if (cli_error(cli, NULL, NULL))
 		{
 			return(False);
 		}
@@ -1381,7 +1378,8 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 		mid = SVAL(cli->inbuf, smb_mid) - cli->mid;
 		size2 = SVAL(cli->inbuf, smb_vwv5);
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		if (cli_error(cli, NULL, NULL))
+		{
 			blocks = MIN(blocks, mid-1);
 			continue;
 		}
@@ -2535,6 +2533,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case ERRrename: return EEXIST;
 		case ERRbadshare: return EBUSY;
 		case ERRlock: return EBUSY;
+		case ERRmoredata: return 0; /* Informational only */
 		}
 	}
 	if (rcls == ERRSRV) {
