@@ -1793,6 +1793,9 @@ NOTE: THIS LOG IS IN CHRONOLOGICAL ORDER
 	- Linux quota patch from xeno@mix.hsv.no
 	- try to work around NT passlen2 problem in session setup
 	- released alpha1
+
+NOTE: From now on the cvs.log file will be used to give a complete log of
+changes to samba. This change-log is now obsolete.
 	
 	
 ==========
