@@ -139,7 +139,7 @@ NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param,
 	if (param && *param) {
 		/* we load the 'fallback' module - if winbind isn't here, call this
 		   module */
-		if (!load_auth_module(auth_context, param, &(*auth_method)->private_data)) {
+		if (!load_auth_module(auth_context, param, (auth_methods **)&(*auth_method)->private_data)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
