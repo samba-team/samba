@@ -1,3 +1,20 @@
+2004-02-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* set_keys.c (_kadm5_set_keys_randomly): make sure enctype to copy
+	enctype for des keys From: Andrew Bartlett <abartlet@samba.org>
+	
+	* create_s.c (kadm5_s_create_principal_with_key): don't call
+	_kadm5_set_keys2, create_principal will do that for us. Set kvno
+	to 1.
+
+	* chpass_s.c (change): bump kvno
+	(kadm5_s_chpass_principal_with_key): bump kvno
+
+	* randkey_s.c (kadm5_s_randkey_principal): bump kvno
+	
+	* set_keys.c (_kadm5_set_*): don't change the kvno, let the callee
+	to that
+
 2003-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* chpass_s.c (change): fix same-password-again by decrypting keys
