@@ -287,14 +287,8 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 {
 	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	NTSTATUS nt_status;
-	int num_ops;
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL,0);
-
-	if (num_ops < 1) {
-		DEBUG(1, ("no GENSEC backends available\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	mechTypes = gensec_security_oids(out_mem_ctx, OID_SPNEGO);
 
