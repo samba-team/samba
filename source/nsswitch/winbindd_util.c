@@ -769,19 +769,16 @@ BOOL winbindd_param_init(void)
 	return True;
 }
 
-/* Check if a domain is present in a comma-separated list of domains */
-
-BOOL check_domain_env(char *domain_env, char *domain)
+BOOL is_in_uid_range(uid_t uid)
 {
-	fstring name;
-	const char *tmp = domain_env;
+	return ((uid >= server_state.uid_low) &&
+		(uid <= server_state.uid_high));
+}
 
-	while(next_token(&tmp, name, ",", sizeof(fstring))) {
-		if (strequal(name, domain))
-			return True;
-	}
-
-	return False;
+BOOL is_in_gid_range(gid_t gid)
+{
+	return ((gid >= server_state.gid_low) &&
+		(gid <= server_state.gid_high));
 }
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
