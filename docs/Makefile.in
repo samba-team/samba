@@ -158,11 +158,15 @@ $(PDFDIR)/%.pdf: %.pdf
 	mkdir -p $(@D)
 	cp $< $@
 
+%.idx: %.tex latexfigures
+	-$(PDFLATEX) $<
+
+%.ind: %.idx
+	$(MAKEINDEX) $<
+
 # Adobe PDF files
-%.pdf: %.tex latexfigures 
+%.pdf: %.tex %.ind latexfigures 
 	-$(PDFLATEX) $<
-	-$(PDFLATEX) $<
-	$(MAKEINDEX) $*
 	$(THUMBPDF) $*.pdf
 	-$(PDFLATEX) $<
 
@@ -175,7 +179,7 @@ $(DVIDIR)/%.dvi: %.dvi
 	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".eps" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
 	-$(LATEX) $< 
 	-$(LATEX) $< 
-	$(MAKEINDEX) $*
+	$(MAKEINDEX) $*.idx
 	-$(LATEX) $< 
 
 %.eps: %.png
