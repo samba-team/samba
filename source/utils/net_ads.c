@@ -743,42 +743,45 @@ static int net_ads_printer_publish(int argc, const char **argv)
 {
         ADS_STRUCT *ads;
         ADS_STATUS rc;
-	char *uncname, *servername;
-	ADS_PRINTER_ENTRY prt;
-	char *ports[2] = {"Samba", NULL};
-
-	/* 
-	   these const strings are only here as an example.  The attributes
-	   they represent are not implemented yet
-	*/
-	const char *bins[] = {"Tray 21", NULL};
-	const char *media[] = {"Letter", NULL};
-	const char *orients[] = {"PORTRAIT", NULL};
+	char *servername;
+	struct cli_state *cli;
+	struct in_addr 		server_ip;
+	NTSTATUS nt_status;
+	extern char *opt_workgroup;
+	TALLOC_CTX *mem_ctx = talloc_init();
+	ADS_MODLIST mods = ads_init_mods(mem_ctx);
+	char *prt_dn, *srv_dn, **srv_cn;
+	void *res = NULL;
 
 	if (!(ads = ads_startup())) return -1;
 
 	if (argc < 1)
 		return net_ads_printer_usage(argc, argv);
+	
+	if (argc = 2)
+		servername = argv[1];
+	else
+		servername = global_myname();
+		
+	ads_find_machine_acct(ads, &res, servername);
+	srv_dn = ldap_get_dn(ads->ld, res);
+	srv_cn = ldap_explode_dn(srv_dn, 1);
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], argv[0], srv_dn);
 
-	memset(&prt, 0, sizeof(ADS_PRINTER_ENTRY));
+	resolve_name(servername, &server_ip, 0x20);
 
-	/* we don't sue the servername or unc name provided by 
-	   get_a_printer, because the server name might be
-	   localhost or an ip address */
-	prt.printerName = argv[0];
-	asprintf(&servername, "%s.%s", global_myname(), ads->config.realm);
-	prt.serverName = servername;
-	prt.shortServerName = global_myname();
-	prt.versionNumber = "4";
-	asprintf(&uncname, "\\\\%s\\%s", global_myname(), argv[0]);
-	prt.uNCName=uncname;
-	prt.printBinNames = (char **) bins;
-	prt.printMediaSupported = (char **) media;
-	prt.printOrientationsSupported = (char **) orients;
-	prt.portName = (char **) ports;
-	prt.printSpooling = "PrintAfterSpooled";
+	nt_status = cli_full_connection(&cli, global_myname(), servername, 
+					&server_ip, 0,
+					"IPC$", "IPC",  
+					opt_user_name, opt_workgroup,
+					opt_password ? opt_password : "", 
+					CLI_FULL_CONNECTION_USE_KERBEROS, 
+					NULL);
 
-        rc = ads_add_printer(ads, &prt);
+	cli_nt_session_open(cli, PI_SPOOLSS);
+	get_remote_printer_publishing_data(cli, mem_ctx, &mods, argv[0]);
+
+        rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
                 d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
                 return -1;
