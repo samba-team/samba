@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Generic authenticaion types
+   Generic authentication types
    Copyright (C) Andrew Bartlett         2001-2002
    Copyright (C) Jelmer Vernooij              2002
    
@@ -161,50 +161,12 @@ NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char
 	return NT_STATUS_OK;
 }
 
-/**
- * Outsorce an auth module to an external loadable .so
- *
- * Only works on systems with dlopen() etc.
- **/
-
-/* Plugin modules initialisation */
-
-NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+int auth_builtin_init(void)
 {
-	void * dl_handle;
-	char *plugin_param, *plugin_name, *p;
-	auth_init_function plugin_init;
-
-	if (param == NULL) {
-		DEBUG(0, ("auth_init_plugin: The plugin module needs an argument!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	plugin_name = smb_xstrdup(param);
-	p = strchr(plugin_name, ':');
-	if (p) {
-		*p = 0;
-		plugin_param = p+1;
-		trim_string(plugin_param, " ", " ");
-	} else plugin_param = NULL;
-
-	trim_string(plugin_name, " ", " ");
-
-	DEBUG(5, ("auth_init_plugin: Trying to load auth plugin %s\n", plugin_name));
-	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
-	if (!dl_handle) {
-		DEBUG(0, ("auth_init_plugin: Failed to load auth plugin %s using sys_dlopen (%s)\n",
-					plugin_name, sys_dlerror()));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-    
-	plugin_init = sys_dlsym(dl_handle, "auth_init");
-	if (!plugin_init){
-		DEBUG(0, ("Failed to find function 'auth_init' using sys_dlsym in sam plugin %s (%s)\n",
-					plugin_name, sys_dlerror()));	    
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	DEBUG(5, ("Starting sam plugin %s with paramater %s\n", plugin_name, plugin_param?plugin_param:"(null)"));
-	return plugin_init(auth_context, plugin_param, auth_method);
+	smb_register_auth("guest", auth_init_guest, AUTH_INTERFACE_VERSION);
+#ifdef DEVELOPER
+	smb_register_auth("fixed_challenge", auth_init_fixed_challenge, AUTH_INTERFACE_VERSION);
+	smb_register_auth("name_to_ntstatus", auth_init_name_to_ntstatus, AUTH_INTERFACE_VERSION);
+#endif
+	return True;
 }

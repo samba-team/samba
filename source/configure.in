@@ -239,7 +239,7 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 DYNEXP=
 
 dnl Add modules that have to be built by default here
-default_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss"
+default_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -3377,10 +3377,10 @@ SMB_MODULE(pdb_guest, passdb/pdb_guest.o, bin/guest.so, PDB)
 SMB_SUBSYSTEM(PDB)
 
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), bin/librpc_lsarpc.so, RPC)
-SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), bin/librpc_reg.so, RPC)
-SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), bin/librpc_wks.so, RPC)
-SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_netlog.so, RPC)
-SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_dfs.so, RPC)
+SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), bin/librpc_winreg.so, RPC)
+SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), bin/librpc_wkssvc.so, RPC)
+SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_NETLOGON.so, RPC)
+SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_netdfs.so, RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), bin/librpc_srvsvc.so, RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spoolss.so, RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
@@ -3388,6 +3388,15 @@ SMB_SUBSYSTEM(RPC)
 
 SMB_MODULE(charset_weird, modules/developer.o, bin/developer.so, CHARSET)
 SMB_SUBSYSTEM(CHARSET)
+
+SMB_MODULE(auth_rhosts, auth/auth_rhosts.o, bin/rhosts.so, AUTH)
+SMB_MODULE(auth_sam, auth/auth_sam.o, bin/sam.so, AUTH)
+SMB_MODULE(auth_unix, auth/auth_unix.o, bin/unix.so, AUTH)
+SMB_MODULE(auth_winbind, auth/auth_winbind.o, bin/winbind.so, AUTH)
+SMB_MODULE(auth_server, auth/auth_server.o, bin/server.so, AUTH)
+SMB_MODULE(auth_domain, auth/auth_domain.o, bin/domain.so, AUTH)
+SMB_MODULE(auth_builtin, auth/auth_builtin.o, bin/builtin.so, AUTH)
+SMB_SUBSYSTEM(AUTH)
 
 #################################################
 # do extra things if we are running insure
