@@ -78,5 +78,5 @@ if [ ! -d bins ]; then
 fi
 
 # do the packaging
-/usr/sbin/gendist -rbase / -sbase ../.. -idb samba.idb -spec samba.spec -dist ./bins -nostrip -all
+/usr/sbin/gendist -rbase / -sbase ../.. -idb samba.idb -spec samba.spec -dist ./bins -all
 
