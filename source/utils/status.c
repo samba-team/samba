@@ -575,7 +575,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	
-	while ((c = poptGetNextOpt(pc)) != EOF) {
+	while ((c = poptGetNextOpt(pc)) != -1) {
 		switch (c) {
 		case 'u':                                      
 			Ucrit_addUsername(poptGetOptArg(pc));             
