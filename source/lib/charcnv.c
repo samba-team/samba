@@ -97,7 +97,7 @@ void init_iconv(void)
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
 			if (conv_handles[c1][c2] != NULL) {
-				if (conv_handles[c1][c2] != -1) {
+				if (conv_handles[c1][c2] != (smb_iconv_t)-1) {
 					smb_iconv_close(conv_handles[c1][c2]);
 				}
 				conv_handles[c1][c2] = NULL;
