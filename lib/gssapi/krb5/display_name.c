@@ -28,5 +28,7 @@ OM_uint32 gss_display_name
   }
   memcpy (output_name_buffer->value, buf, len);
   free (buf);
+  if (output_name_type)
+      *output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
   return GSS_S_COMPLETE;
 }
