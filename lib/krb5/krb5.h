@@ -236,6 +236,8 @@ typedef struct krb5_cc_ops{
     krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
 } krb5_cc_ops;
 
+struct krb5_log_facility;
+
 typedef struct krb5_context_data{
     krb5_enctype *etypes;
     char *default_realm;
@@ -243,6 +245,7 @@ typedef struct krb5_context_data{
     time_t kdc_timeout;
     krb5_config_section *cf;
     struct error_table *et_list;
+    struct krb5_log_facility *warn_dest;
     krb5_cc_ops *cc_ops;
     int num_ops;
 } krb5_context_data;
@@ -411,6 +414,9 @@ krb5_log_msg(krb5_context context,
 	     ...);
 
 
+krb5_error_code krb5_warn(krb5_context, krb5_error_code, const char*, ...);
+krb5_error_code krb5_warnx(krb5_context, const char*, ...);
+krb5_error_code krb5_set_warn_dest(krb5_context, krb5_log_facility*);
 
 
 krb5_error_code
