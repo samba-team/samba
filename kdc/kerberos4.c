@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -325,12 +325,12 @@ do_version4(unsigned char *buf,
 			      sname, sinst, skey->key.keyvalue.data);
 	
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
-			life, server->kvno, &ticket, kdc_time, 
+			life, server->kvno % 256, &ticket, kdc_time, 
 			ckey->key.keyvalue.data);
 	    memset(&session, 0, sizeof(session));
 	    r = create_auth_reply(name, inst, realm, req_time, 0, 
 				  client->pw_end ? *client->pw_end : 0, 
-				  client->kvno, &cipher);
+				  client->kvno % 256, &cipher);
 	    krb5_data_copy(reply, r->dat, r->length);
 	    memset(&cipher, 0, sizeof(cipher));
 	    memset(&ticket, 0, sizeof(ticket));
@@ -373,9 +373,9 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 	
-	if(tgt->kvno != kvno){
+	if(tgt->kvno % 256 != kvno){
 	    kdc_log(0, "tgs-req with old kvno %d (current %d) for "
-		    "krbtgt.%s@%s", kvno, tgt->kvno, realm, v4_realm);
+		    "krbtgt.%s@%s", kvno, tgt->kvno % 256, realm, v4_realm);
 	    make_err_reply(reply, KDC_AUTH_EXP,
 			   "old krbtgt kvno used");
 	    goto out2;
@@ -499,7 +499,7 @@ do_version4(unsigned char *buf,
 			      sname, sinst, skey->key.keyvalue.data);
 	    
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
-			life, server->kvno, &ticket,
+			life, server->kvno % 256, &ticket,
 			kdc_time, &ad.session);
 
 	    memset(&session, 0, sizeof(session));
