@@ -82,7 +82,8 @@
 FILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
-int     DEBUGLEVEL = 1;
+int     DEBUGLEVEL_CLASS[DBGC_LAST];
+int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
 
 
 /* -------------------------------------------------------------------------- **
@@ -114,21 +115,136 @@ static int     syslog_level   = 0;
 static pstring format_bufr    = { '\0' };
 static size_t     format_pos     = 0;
 
+/*
+* Define all the debug class selection names here. Names *MUST NOT* contain 
+* white space. There must be one name for each DBGC_<class name>, and they 
+* must be in the table in the order of DBGC_<class name>.. 
+*/
+char *classname_table[] = {
+	"all",               /* DBGC_ALL; index references traditional DEBUGLEVEL */
+	"tdb",               /* DBGC_TDB	*/
+	"printdrivers",      /* DBGC_PRINTDRIVERS */
+	"lanman",            /* DBGC_LANMAN */
+};
+
 
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
 
 /****************************************************************************
+utility access to debug class names's
+****************************************************************************/
+char* debug_classname_from_index(int index)
+{
+	return classname_table[index];
+}
+
+/****************************************************************************
+utility to translate names to debug class index's
+****************************************************************************/
+int debug_lookup_classname(char* classname)
+{
+	int i;
+
+	if (!classname) return -1;
+
+	for (i=0; i<DBGC_LAST; i++) {
+		if (strcmp(classname, classname_table[i])==0)
+			return i;
+	}
+	return -1;
+}
+
+/****************************************************************************
+parse the debug levels from smbcontrol. Example debug level parameter:
+  printdrivers:7
+****************************************************************************/
+BOOL debug_parse_params(char **params, int *debuglevel_class)
+{
+	int   i, index;
+	char *class_name;
+	char *class_level;
+	
+	/* Set the new debug level array to the current DEBUGLEVEL array */
+	memcpy(debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS));
+
+	/* Allow DBGC_ALL to be specifies w/o requiring its class name e.g."10"  
+	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
+	 */
+	if (isdigit(params[0][0])) {
+		debuglevel_class[DBGC_ALL] = atoi(params[0]);
+		i = 1; /* start processing at the next params */
+	}
+	else
+		i = 0; /* DBGC_ALL not specified  OR calss name was included */
+
+	/* Fill in new debug class levels */
+	for (; i < DBGC_LAST && params[i]; i++) {
+		if ((class_name=strtok(params[i],":")) &&
+			(class_level=strtok(NULL, "\0")) &&
+            ((index = debug_lookup_classname(class_name)) != -1)) {
+				debuglevel_class[index] = atoi(class_level);
+		} else {
+			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
+			return False;
+		}
+	}
+
+	return True;
+}
+
+/****************************************************************************
+parse the debug levels from smb.conf. Example debug level string:
+  3 tdb:5 printdrivers:7
+Note: the 1st param has no "name:" preceeding it.
+****************************************************************************/
+BOOL debug_parse_levels(char *params_str)
+{
+	int  i;
+	char *params[DBGC_LAST];
+	int  debuglevel_class[DBGC_LAST];	
+
+	ZERO_ARRAY(params);
+	ZERO_ARRAY(debuglevel_class);
+
+	if (params[0]=strtok(params_str," ,")) {
+		for (i=1; i<DBGC_LAST;i++) {
+			if ((params[i]=strtok(NULL," ,"))==NULL)
+				break;
+		}
+	}
+	else
+		return False;
+
+	if (debug_parse_params(params, debuglevel_class)) {
+		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+		return True;
+	} else
+		return False;
+}
+
+/****************************************************************************
 receive a "set debug level" message
 ****************************************************************************/
 void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	int level;
-	memcpy(&level, buf, sizeof(int));
-	DEBUGLEVEL = level;
-	DEBUG(1,("INFO: Debug level set to %d from pid %d\n", level, (int)src));
+	int i;
+
+	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
+	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
+	
+	DEBUG(1,("INFO: Debug class %s level = %d   (pid %d from pid %d)\n",
+			classname_table[DBGC_ALL],
+			DEBUGLEVEL_CLASS[DBGC_ALL], getpid(), (int)src));
+
+	for (i=1; i<DBGC_LAST; i++) {
+		if (DEBUGLEVEL_CLASS[i])
+			 DEBUGADD(1,("INFO: Debug class %s level = %d\n", 
+						classname_table[i], DEBUGLEVEL_CLASS[i]));
+	}
 }
+
 
 /****************************************************************************
 send a "set debug level" message
@@ -175,7 +291,7 @@ void reopen_logs( void )
 	pstring fname;
 	mode_t oldumask;
 
-	if (DEBUGLEVEL <= 0) {
+	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
 		if (dbf) {
 			(void)fclose(dbf);
 			dbf = NULL;

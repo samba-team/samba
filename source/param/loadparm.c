@@ -68,7 +68,7 @@
 BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
-extern int DEBUGLEVEL;
+extern int DEBUGLEVEL_CLASS[DBGC_LAST];
 extern pstring user_socket_options;
 extern pstring global_myname;
 pstring global_scope = "";
@@ -531,6 +531,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
+static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -755,8 +756,8 @@ static struct parm_struct parm_table[] = {
 #endif /* WITH_SSL */
 
 	{"Logging Options", P_SEP, P_SEPARATOR},
-	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_BASIC},
-	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, 0},
+	{"log level",  P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
+	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, 0},
 	{"syslog only", P_BOOL, P_GLOBAL, &Globals.bSyslogOnly, NULL, NULL, 0},
 	{"log file", P_STRING, P_GLOBAL, &Globals.szLogFile, NULL, NULL, 0},
@@ -2454,6 +2455,18 @@ static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
   string_set( ptr, pszParmValue );
   return( True );
   }
+
+
+/***************************************************************************
+ Handle the DEBUG level list
+***************************************************************************/
+static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
+{
+	pstring pszParmValue;
+
+	pstrcpy(pszParmValue, pszParmValueIn);
+	return debug_parse_levels( pszParmValue );
+}
 
 
 /***************************************************************************
