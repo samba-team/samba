@@ -1222,6 +1222,13 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 
 	struct passwd 		*pwfile;
 	
+	if (!sam_pass)
+		return (False);
+	
+	/* make sure that we own the memory here--also clears
+	   any existing members as a side effect */
+	pdb_set_mem_ownership(sam_pass, True);
+	
 	/* is the user valid?  Verify in system password file...
 	
 	   FIXME!!!  This is where we should look up an internal
@@ -1347,10 +1354,8 @@ SAM_ACCOUNT* pdb_getsampwent (void)
 	if (pw_buf == NULL) 
 		return NULL;
 
-	/* clear out any preexisting information from the last call */
-	pdb_clear_sam (&global_sam_pass);
-
-	/* build the SAM_ACCOUNT entry from the smb_passwd struct */
+	/* build the SAM_ACCOUNT entry from the smb_passwd struct.
+	   This will also clear out the previous SAM_ACCOUNT fields */
 	if (!build_sam_account (&global_sam_pass, pw_buf))
 		return NULL;
 
@@ -1420,7 +1425,6 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
-	pdb_clear_sam (&global_sam_pass);
 	if (!build_sam_account (&global_sam_pass, smb_pw))
 			return NULL;
 
@@ -1460,7 +1464,6 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
-	pdb_clear_sam (&global_sam_pass);
 	if (!build_sam_account (&global_sam_pass, smb_pw))
 			return NULL;
 
@@ -1499,7 +1502,6 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
-	pdb_clear_sam (&global_sam_pass);
 	if (!build_sam_account (&global_sam_pass, smb_pw))
 			return NULL;
 

@@ -36,30 +36,6 @@ extern DOM_SID global_sam_sid;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
-/*
- * NOTE. All these functions are abstracted into a structure
- * that points to the correct function for the selected database. JRA.
- *
- * NOTE.  for the get/mod/add functions, there are two sets of functions.
- * one supports struct sam_passwd, the other supports struct smb_passwd.
- * for speed optimisation it is best to support both these sets.
- * 
- * it is, however, optional to support one set but not the other: there
- * is conversion-capability built in to passdb.c, and run-time error
- * detection for when neither are supported.
- * 
- * password database writers are recommended to implement the sam_passwd
- * functions in a first pass, as struct sam_passwd contains more
- * information, needed by the NT Domain support.
- * 
- * a full example set of derivative functions are listed below.  an API
- * writer is expected to cut/paste these into their module, replace
- * either one set (struct smb_passwd) or the other (struct sam_passwd)
- * OR both, and optionally also to write display info routines
- * (struct sam_disp_info).  lkcl
- *
- */
-
 struct passdb_ops *pdb_ops;
 
 static void* pdb_handle = NULL;
@@ -152,36 +128,30 @@ void pdb_init_sam(SAM_ACCOUNT *user)
  ***********************************************************/
 void pdb_clear_sam(SAM_ACCOUNT *user)
 {
-	if (user == NULL) 
+	/* do we have a SAM_CCOUTN struct to work with? */
+	if (user == NULL)
 		return;
 		
-	/* clear all pointer members */
-	if (user->username)
-		free(user->username);
-	if (user->full_name)
-		free(user->full_name);
-	if (user->home_dir)
-		free(user->home_dir);
-	if (user->dir_drive)
-		free(user->dir_drive);
-	if (user->logon_script)
-		free(user->logon_script);
-	if (user->profile_path)
-		free(user->profile_path);
-	if (user->acct_desc)
-		free(user->acct_desc);
-	if (user->workstations)
-		free(user->workstations);
-	if (user->unknown_str)
-		free(user->unknown_str);
-	if (user->munged_dial)
-		free(user->munged_dial);
-		
-	if (user->lm_pw)
-		free(user->lm_pw);
-	if (user->nt_pw)
-		free(user->nt_pw);
-	
+	/* do we own the memory? */
+	if  (user->own_memory) 
+	{
+		/* clear all pointer members */
+		if (user->username) 	free(user->username);
+		if (user->full_name) 	free(user->full_name);
+		if (user->domain) 	free(user->domain);
+		if (user->nt_username)	free(user->nt_username);
+		if (user->home_dir)	free(user->home_dir);
+		if (user->dir_drive)	free(user->dir_drive);
+		if (user->logon_script)	free(user->logon_script);
+		if (user->profile_path)	free(user->profile_path);
+		if (user->acct_desc)	free(user->acct_desc);
+		if (user->workstations)	free(user->workstations);
+		if (user->unknown_str)	free(user->unknown_str);
+		if (user->munged_dial)	free(user->munged_dial);
+			
+		if (user->lm_pw)	free(user->lm_pw);
+		if (user->nt_pw)	free(user->nt_pw);
+	}
 	
 	/* now initialize */
 	pdb_init_sam(user);
@@ -664,9 +634,9 @@ static void select_name(fstring *string, char **name, const UNISTR2 *from)
 }
 
 /*************************************************************
- copies a sam passwd.
+ copies a SAM_USER_INFO_23 to a SAM_ACCOUNT
  **************************************************************/
-void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
+void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 {
 	static fstring smb_name;
 	static fstring full_name;
@@ -679,7 +649,8 @@ void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
 	static fstring unknown_str;
 	static fstring munged_dial;
 
-	if (from == NULL || to == NULL) return;
+	if (from == NULL || to == NULL) 
+		return;
 
 	to->logon_time = nt_time_to_unix(&from->logon_time);
 	to->logoff_time = nt_time_to_unix(&from->logoff_time);
@@ -699,13 +670,8 @@ void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
 	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
 	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
 
-	to->uid = (uid_t)-1;
-	to->gid = (gid_t)-1;
 	to->user_rid = from->user_rid;
 	to->group_rid = from->group_rid;
-
-	to->lm_pw = NULL;
-	to->nt_pw = NULL;
 
 	to->acct_ctrl = from->acb_info;
 	to->unknown_3 = from->unknown_3;
@@ -721,7 +687,7 @@ void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
 /*************************************************************
  copies a sam passwd.
  **************************************************************/
-void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
+void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 {
 	static fstring smb_name;
 	static fstring full_name;
@@ -734,7 +700,8 @@ void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
 	static fstring unknown_str;
 	static fstring munged_dial;
 
-	if (from == NULL || to == NULL) return;
+	if (from == NULL || to == NULL) 
+		return;
 
 	to->logon_time = nt_time_to_unix(&from->logon_time);
 	to->logoff_time = nt_time_to_unix(&from->logoff_time);
@@ -754,13 +721,11 @@ void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
 	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
 	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
 
-	to->uid = (uid_t)-1;
-	to->gid = (gid_t)-1;
 	to->user_rid = from->user_rid;
 	to->group_rid = from->group_rid;
-
-	to->lm_pw = NULL;
-	to->nt_pw = NULL;
+	
+	/* FIXME!!  Do we need to copy the passwords here as well?
+	   I don't know.  Need to figure this out   --jerry */
 
 	to->acct_ctrl = from->acb_info;
 	to->unknown_3 = from->unknown_3;
@@ -776,13 +741,8 @@ void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
 
 /*************************************************************
  copies a sam passwd.
- 
- FIXME!  Do we need to use dynamically allocated strings
- here instead of static strings?     
- 
- Why are password hashes not also copied?     --jerry
  **************************************************************/
-void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
+void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 {
 	static fstring smb_name="";
 	static fstring full_name="";
@@ -794,60 +754,90 @@ void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
 	static fstring workstations="";
 	static fstring unknown_str="";
 	static fstring munged_dial="";
+	static BYTE lm_pw[16], nt_pw[16];
 
-	if (from == NULL || to == NULL) return;
+	if (from == NULL || to == NULL) 
+		return;
 
+	/* we won't own this memory so set the flag.
+	   This will also clear the strings from 'to' */
+	pdb_set_mem_ownership (to, False);
+	
 	memcpy(to, from, sizeof(*from));
 
-	if (from->username != NULL) {
-		fstrcpy(smb_name  , from->username);
+	if (from->username != NULL) 
+	{
+		fstrcpy(smb_name , from->username);
 		to->username = smb_name;
 	}
 	
-	if (from->full_name != NULL) {
+	if (from->full_name != NULL) 
+	{
 		fstrcpy(full_name, from->full_name);
 		to->full_name = full_name;
 	}
 
-	if (from->home_dir != NULL) {
-		fstrcpy(home_dir  , from->home_dir);
+	if (from->home_dir != NULL) 
+	{
+		fstrcpy(home_dir, from->home_dir);
 		to->home_dir = home_dir;
 	}
 
-	if (from->dir_drive != NULL) {
+	if (from->dir_drive != NULL) 
+	{
 		fstrcpy(dir_drive  , from->dir_drive);
 		to->dir_drive = dir_drive;
 	}
 
-	if (from->logon_script != NULL) {
+	if (from->logon_script != NULL) 
+	{
 		fstrcpy(logon_script  , from->logon_script);
 		to->logon_script = logon_script;
 	}
 
-	if (from->profile_path != NULL) {
+	if (from->profile_path != NULL) 
+	{
 		fstrcpy(profile_path  , from->profile_path);
 		to->profile_path = profile_path;
 	}
 
-	if (from->acct_desc != NULL) {
+	if (from->acct_desc != NULL) 
+	{
 		fstrcpy(acct_desc  , from->acct_desc);
 		to->acct_desc = acct_desc;
 	}
 
-	if (from->workstations != NULL) {
+	if (from->workstations != NULL) 
+	{
 		fstrcpy(workstations  , from->workstations);
 		to->workstations = workstations;
 	}
 
-	if (from->unknown_str != NULL) {
+	if (from->unknown_str != NULL) 
+	{
 		fstrcpy(unknown_str  , from->unknown_str);
 		to->unknown_str = unknown_str;
 	}
 
-	if (from->munged_dial != NULL) {
+	if (from->munged_dial != NULL) 
+	{
 		fstrcpy(munged_dial  , from->munged_dial);
 		to->munged_dial = munged_dial;
 	}
+	
+	if (from->nt_pw != NULL)
+	{
+		memcpy (nt_pw, from->nt_pw, 16);
+		to->nt_pw = nt_pw;
+	}
+
+	if (from->lm_pw != NULL)
+	{
+		memcpy (lm_pw, from->lm_pw, 16);
+		to->lm_pw = lm_pw;
+	}
+
+	return;
 }
 
 /*************************************************************
@@ -901,8 +891,11 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account */
+		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account.
+		   Because the new_sam_pwd only exists in the scope of this function
+		   we will not allocate memory for members */
 		pdb_init_sam 	      (&new_sam_acct);
+		pdb_set_mem_ownership (&new_sam_acct, False);
 		pdb_set_username      (&new_sam_acct, user_name);
 		pdb_set_uid	      (&new_sam_acct, pwd->pw_uid);
 		pdb_set_pass_last_set_time(&new_sam_acct, time(NULL));
@@ -1262,8 +1255,35 @@ uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass)
 /*********************************************************************
  collection of set...() functions for SAM_ACCOUNT_INFO
  ********************************************************************/
+
+/********************************************************************
+ The purpose of this flag is to determine whether or not we 
+ should free the memory when we are done.  This allows us to
+ use local static variables for string (reduce the number of
+ malloc() calls) while still allowing for flexibility of 
+ dynamic objects.
+ 
+ We always clear the structure even if setting the flag to the
+ same value.
+ *******************************************************************/
+void pdb_set_mem_ownership (SAM_ACCOUNT *sampass, BOOL flag)
+{
+	/* if we have no SAM_ACCOUNT struct or no change, then done */
+	if (sampass == NULL)
+		return;
+
+	/* clear the struct and set the ownership flag */
+	pdb_clear_sam (sampass);
+	sampass->own_memory = flag;
+
+	return;
+}
+
 BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 {
+	if (!sampass)
+		return False;
+		
 	if (sampass)
 	{
 		sampass->acct_ctrl = flags;
@@ -1275,264 +1295,360 @@ BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 
 BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->logon_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->logon_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->logoff_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->logoff_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->kickoff_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->kickoff_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->pass_can_change_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->pass_can_change_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->pass_must_change_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->pass_must_change_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
-	if (sampass)
-	{
-		sampass->pass_last_set_time = mytime;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->pass_last_set_time = mytime;
+	return True;
 }
 
 BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len)
 {
-	if (sampass)
-	{
-		sampass->hours_len = len;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->hours_len = len;
+	return True;
 }
 
 BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
 {
-	if (sampass)
-	{
-		sampass->logon_divs = hours;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->logon_divs = hours;
+	return True;
 }
 
 BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
 {
-	if (sampass)
-	{
-		sampass->uid = uid;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->uid = uid;
+	return True;
 }
 
 BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid)
 {
-	if (sampass)
-	{
-		sampass->gid = gid;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->gid = gid;
+	return True;
 }
 
 BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)
 {
-	if (sampass)
-	{
-		sampass->user_rid = rid;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->user_rid = rid;
+	return True;
 }
 
 BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
 {
-	if (sampass)
-	{
-		sampass->group_rid = grid;
-		return True;
-	}
-	
-	return False;
+	if (!sampass)
+		return False;
+
+	sampass->group_rid = grid;
+	return True;
 }
 
 BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->username = username;
+	else
 	{
-		sampass->username = strdup(username);
-		return True;
+		if ( (sampass->username=strdup(username)) == NULL )
+		{
+			DEBUG (0,("pdb_set_username: ERROR - Unable to malloc memory for [%s]\n", username));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->domain = domain;
+	else
 	{
-		sampass->domain = strdup(domain);
-		return True;
+		if ( (sampass->domain=strdup(domain)) == NULL )
+		{
+			DEBUG (0,("pdb_set_domain: ERROR - Unable to malloc memory for [%s]\n", domain));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->nt_username = nt_username;
+	else
 	{
-		sampass->nt_username = strdup(nt_username);
-		return True;
+		if ( (sampass->nt_username=strdup(nt_username)) == NULL )
+		{
+			DEBUG (0,("pdb_set_nt_username: ERROR - Unable to malloc memory for [%s]\n", nt_username));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->full_name = fullname;
+	else
 	{
-		sampass->full_name = strdup(fullname);
-		return True;
+		if ( (sampass->full_name=strdup(fullname)) == NULL )
+		{
+			DEBUG (0,("pdb_set_fullname: ERROR - Unable to malloc memory for [%s]\n", fullname));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->logon_script = logon_script;
+	else
 	{
-		sampass->logon_script = strdup(logon_script);
-		return True;
+		if ( (sampass->logon_script=strdup(logon_script)) == NULL )
+		{
+			DEBUG (0,("pdb_set_logon_script: ERROR - Unable to malloc memory for [%s]\n", logon_script));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->profile_path = profile_path;
+	else
 	{
-		sampass->profile_path = strdup(profile_path);
-		return True;
+		if ( (sampass->profile_path=strdup(profile_path)) == NULL )
+		{
+			DEBUG (0,("pdb_set_profile_path: ERROR - Unable to malloc memory for [%s]\n", profile_path));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->dir_drive = dir_drive;
+	else
 	{
-		sampass->dir_drive = strdup(dir_drive);
-		return True;
+		if ( (sampass->dir_drive=strdup(dir_drive)) == NULL )
+		{
+			DEBUG (0,("pdb_set_dir_drive: ERROR - Unable to malloc memory for [%s]\n", dir_drive));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 {
-	if (sampass)
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->home_dir = homedir;
+	else
 	{
-		sampass->home_dir = strdup(homedir);
-		return True;
+		if ( (sampass->home_dir=strdup(homedir)) == NULL )
+		{
+			DEBUG (0,("pdb_set_home_dir: ERROR - Unable to malloc memory for [%s]\n", homedir));
+			return False;
+		}
 	}
-	
-	return False;
+
+	return True;
 }
 
+BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
+{
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->acct_desc = acct_desc;
+	else
+	{
+		if ( (sampass->acct_desc=strdup(acct_desc)) == NULL )
+		{
+			DEBUG (0,("pdb_set_acct_desc: ERROR - Unable to malloc memory for [%s]\n", acct_desc));
+			return False;
+		}
+	}
+
+	return True;
+}
+BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
+{
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->workstations = workstations;
+	else
+	{
+		if ( (sampass->workstations=strdup(workstations)) == NULL )
+		{
+			DEBUG (0,("pdb_set_workstations: ERROR - Unable to malloc memory for [%s]\n", workstations));
+			return False;
+		}
+	}
+
+	return True;
+}
+
+BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
+{
+	if (!sampass)
+		return False;
+
+	if (!sampass->own_memory)
+		sampass->munged_dial = munged_dial;
+	else
+	{
+		if ( (sampass->munged_dial=strdup(munged_dial)) == NULL )
+		{
+			DEBUG (0,("pdb_set_munged_dial: ERROR - Unable to malloc memory for [%s]\n", munged_dial));
+			return False;
+		}
+	}
+
+	return True;
+}
 
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 {
-
-	if (pwd == NULL)
+	if ( (!sampass) ||(pwd == NULL) )
 		return False;
-		
-	/* allocate space for the password and make a copy of it */
-	if (sampass)
+
+	if (!sampass->own_memory)
+		sampass->nt_pw = pwd;
+	else
 	{
 		if ((sampass->nt_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
 		{
 			DEBUG(0,("pdb_set_nt_passwd: ERROR - out of memory for nt_pw!\n"));
 			return False;
 		}
-		if (memcpy(sampass->nt_pw, pwd, 16))
-			return True;
+		if (!memcpy(sampass->nt_pw, pwd, 16))
+			return False;
 	}	
 
-	return False;
+	return True;
 }
 
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 {
-	if (pwd == NULL)
+	if ( (!sampass) ||(pwd == NULL) )
 		return False;
-	
-	/* allocate space for the password and make a copy of it */
-	if (sampass)
+
+	if (!sampass->own_memory)
+		sampass->lm_pw = pwd;
+	else
 	{
 		if ((sampass->lm_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
 		{
 			DEBUG(0,("pdb_set_lanman_passwd: ERROR - out of memory for lm_pw!\n"));
 			return False;
 		}
-		if (memcpy(sampass->lm_pw, pwd, 16))
-			return True;
+		if (!memcpy(sampass->lm_pw, pwd, 16))
+			return False;
 	}	
 
-	return False;
+	return True;
 }
 
 

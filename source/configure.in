@@ -1392,9 +1392,9 @@ AC_ARG_WITH(pam,
 #################################################
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB password database)
-AC_ARG_WITH(tdbpwd,
-[  --with-tdbpwd   Include experimental TDB password database
-  --without-tdbpwd  Don't include experimental TDB password database (default)],
+AC_ARG_WITH(tdbsam,
+[  --with-tdbsam   Include experimental TDB password database
+  --without-tdbsam  Don't include experimental TDB password database (default)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)

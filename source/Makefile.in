@@ -50,7 +50,7 @@ PASSWD_PROGRAM = /bin/passwd
 PRIVATEDIR = @privatedir@
 
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
-TDB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd.tdb
+PRIVATE_DIR = $(PRIVATEDIR)
 
 # This is where SWAT images and help files go
 SWATDIR = @swatdir@
@@ -72,7 +72,7 @@ CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859
 SMBRUN = $(BINDIR)/smbrun
 
 
-PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DTDB_PASSWD_FILE=\"$(TDB_PASSWD_FILE)\"
+PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
@@ -156,7 +156,8 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/secrets.o \
              passdb/pass_check.o passdb/smbpassfile.o \
-	     passdb/machine_sid.o passdb/pdb_smbpasswd.o
+	     passdb/machine_sid.o passdb/pdb_smbpasswd.o \
+	     passdb/pdb_tdb.o
 
 # passdb/smbpass.o passdb/ldap.o passdb/nispass.o 
 

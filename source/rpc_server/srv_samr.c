@@ -2226,7 +2226,7 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 /*******************************************************************
  set_user_info_21
  ********************************************************************/
-static BOOL set_user_info_21(SAM_USER_INFO_21 * id21, uint32 rid)
+static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = pdb_getsampwrid(rid);
 	SAM_ACCOUNT new_pwd;
@@ -2239,33 +2239,20 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 * id21, uint32 rid)
 	if (pwd == NULL)
 		return False;
 
-	/* Zero out struct and set a few initial items */
-	pdb_init_sam(&new_pwd);
-	
-	/* FIXME!! these two calls may need to be fixed.  copy_sam_passwd()
-	   uses static strings and copy_id21..() reassigns some 
-	   strings.  Right now there is no memory leaks, but if
-	   the internals of copy_sam_passwd() changes to use dynamically
-	   allocated strings, this will need to be fixed    --jerry */
+	/* we make a copy so that we can modify stuff */	
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id21_to_sam_passwd(&new_pwd, id21);
+	
+	/*
+	 * The funny part about the previous two calls is 
+	 * that pwd still has the password hashes from the 
+	 * passdb entry.  These have not been updated from
+	 * id21.  I don't know if they need to be set.    --jerry
+	 */
 
-	/* passwords are not copied as part of copy_sam_passwd() */
-	if (pdb_get_nt_passwd(pwd) != NULL)
-		pdb_set_nt_passwd (&new_pwd, pdb_get_nt_passwd(pwd));
-
-	if (pdb_get_lanman_passwd(pwd) != NULL)
-		pdb_set_lanman_passwd (&new_pwd, pdb_get_lanman_passwd(pwd));
-
+	/* write the change out */
 	if(!pdb_update_sam_account(&new_pwd, True))
 		return False;
-
-	/* FIXME!!!  Memory leak here.  Cannot call pdb_clear_sam()
-	   because copy_sam_passwd uses static arrays.  Therefore,
-	   we will manually free the password pointers here.  This 
-	   needs to be fixed.    ---jerry */
-	if (new_pwd.nt_pw) free (new_pwd.nt_pw);
-	if (new_pwd.lm_pw) free (new_pwd.lm_pw);
 	
 	return True;
 }
@@ -2290,7 +2277,6 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	if (pwd == NULL)
 		return False;
 
-	pdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
@@ -2311,13 +2297,6 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 
 	if(!pdb_update_sam_account(&new_pwd, True))
 		return False;
-		
-	/* FIXME!!!  Memory leak here.  Cannot call pdb_clear_sam()
-	   because copy_sam_passwd uses static arrays.  Therefore,
-	   we will manually free the password pointers here.  This 
-	   needs to be fixed.    ---jerry */
-	if (new_pwd.nt_pw) free (new_pwd.nt_pw);
-	if (new_pwd.lm_pw) free (new_pwd.lm_pw);
 	
 	return True;
 }

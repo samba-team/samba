@@ -47,8 +47,8 @@ ac_help="$ac_help
   --with-pam     Include PAM password database support
   --without-pam  Don't include PAM password database support (default)"
 ac_help="$ac_help
-  --with-tdbpwd   Include experimental TDB password database
-  --without-tdbpwd  Don't include experimental TDB password database (default)"
+  --with-tdbsam   Include experimental TDB password database
+  --without-tdbsam  Don't include experimental TDB password database (default)"
 ac_help="$ac_help
   --with-ldap     Include LDAP support
   --without-ldap  Don't include LDAP support (default)"
@@ -10641,9 +10641,9 @@ fi
 # check for a TDB password database
 echo $ac_n "checking whether to use TDB password database""... $ac_c" 1>&6
 echo "configure:10644: checking whether to use TDB password database" >&5
-# Check whether --with-tdbpwd or --without-tdbpwd was given.
-if test "${with_tdbpwd+set}" = set; then
-  withval="$with_tdbpwd"
+# Check whether --with-tdbsam or --without-tdbsam was given.
+if test "${with_tdbsam+set}" = set; then
+  withval="$with_tdbsam"
    case "$withval" in
   yes)
     echo "$ac_t""yes" 1>&6
