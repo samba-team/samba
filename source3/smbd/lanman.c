@@ -760,18 +760,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		return(True);
 	}
  
-	snum = lp_servicenumber(QueueName);
-	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0) {
-			lp_add_printer(QueueName,pnum);
-			snum = lp_servicenumber(QueueName);
-		}
-	}
-  
-	if (snum < 0 || !VALID_SNUM(snum))
-		return(False);
-
+	snum = find_service(QueueName);
+	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+		return False;
+		
 	if (uLevel==52) {
 		count = get_printerdrivernumber(snum);
 		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
@@ -3048,20 +3040,18 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
   /* check it's a supported variant */
-  if (strcmp(str1,"zWrLeh") != 0) return False;
-  if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
-  if (!check_printjob_info(&desc,uLevel,str2)) return False;
+  if (strcmp(str1,"zWrLeh") != 0) 
+    return False;
+    
+  if (uLevel > 2) 
+    return False;	/* defined only for uLevel 0,1,2 */
+    
+  if (!check_printjob_info(&desc,uLevel,str2)) 
+    return False;
 
-  snum = lp_servicenumber(name);
-  if (snum < 0 && pcap_printername_ok(name,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(name,pnum);
-      snum = lp_servicenumber(name);
-    }
-  }
-
-  if (snum < 0 || !VALID_SNUM(snum)) return(False);
+  snum = find_service(name);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+    return False;
 
   count = print_queue_status(snum,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
@@ -3164,16 +3154,8 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   if (strcmp(str1,"zWrLh") != 0) return False;
   if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
-  snum = lp_servicenumber(PrinterName);
-  if (snum < 0 && pcap_printername_ok(PrinterName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(PrinterName,pnum);
-      snum = lp_servicenumber(PrinterName);
-    }
-  }
-
-  if (snum < 0) {
+  snum = find_service(PrinterName);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
     *rdata_len = 0;
     desc.errcode = NERR_DestNotFound;
     desc.neededlen = 0;
