@@ -969,7 +969,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 
 
 
-#if 1
+#if 0
 #define MANGLE_TDB_VERSION		"20010927"
 #define MANGLE_TDB_FILE_NAME		"mangle.tdb"
 #define MANGLED_PREFIX			"MANGLED_"
@@ -1410,7 +1410,7 @@ done:
 
 #endif /* 0 */
 
-#if 1 /* TEST_MANGLE_CODE */
+#ifdef TEST_MANGLE_CODE
 
 #define LONG		"this_is_a_long_file_name"
 #define	LONGM		"this_~01"
