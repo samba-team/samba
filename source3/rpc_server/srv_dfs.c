@@ -157,17 +157,23 @@ static BOOL api_dfs_enum(pipes_struct *p)
 /*******************************************************************
 \pipe\netdfs commands
 ********************************************************************/
-
-NTSTATUS rpc_dfs_init(void)
+static struct api_struct api_netdfs_cmds[] =
 {
-  struct api_struct api_netdfs_cmds[] =
-    {
       {"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
       {"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
       {"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
       {"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
       {"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     }
-    };
+};
+
+void netdfs_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_netdfs_cmds;
+	*n_fns = sizeof(api_netdfs_cmds) / sizeof(struct api_struct);
+}
+
+NTSTATUS rpc_dfs_init(void)
+{
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", api_netdfs_cmds,
 				    sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
 }
