@@ -7,17 +7,20 @@ char *prog;
 static void
 usage()
 {
-     fprintf (stderr, "Usage: %s host\n",
-	      prog);
+     fprintf (stderr, "Usage: %s host\n", prog);
      exit (1);
 }
+
+static u_int32_t display_num;
+static char xauthfile[MaxPathLen];
 
 /*
  * Establish authenticated connection
  */
 
 static int
-connect_host (char *host, des_cblock *key, des_key_schedule schedule)
+connect_host (char *host, des_cblock *key, des_key_schedule schedule,
+	      int passivep)
 {
      CREDENTIALS cred;
      KTEXT_ST text;
@@ -80,6 +83,23 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule)
 	  fprintf (stderr, "%s: %s: %s\n", prog, host, buf);
 	  return -1;
      }
+     b = passivep;
+     if (write (s, &b, sizeof(b)) != sizeof(b)) {
+	  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
+	  return -1;
+     }
+     if (read (s, &display_num, sizeof(display_num)) !=
+	 sizeof(display_num)) {
+	  fprintf (stderr, "%s: read: %s\n", prog,
+		   strerror(errno));
+	  return -1;
+     }
+     display_num = ntohl(display_num);
+     if (read (s, xauthfile, sizeof(xauthfile)) != sizeof(xauthfile)) {
+	  fprintf (stderr, "%s: read: %s\n", prog,
+		   strerror(errno));
+	  return -1;
+     }
 
      memcpy(key, &cred.session, sizeof(des_cblock));
      return s;
@@ -91,7 +111,7 @@ active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
      int kxd;
      u_char zero = 0;
 
-     kxd = connect_host (host, iv, schedule);
+     kxd = connect_host (host, iv, schedule, 0); /* XXX */
      if (kxd < 0)
 	  return 1;
      if (write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
@@ -102,6 +122,84 @@ active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
      return copy_encrypted (fd, kxd, iv, schedule);
 }
 
+/*
+ * Get rid of the cookie that we were sent and get the correct one
+ * from our own cookie file instead.
+ */
+
+static int
+start_session(int xserver, int fd, des_cblock *iv,
+	      des_key_schedule schedule)
+{
+     u_char beg[12];
+     int bigendianp;
+     unsigned n, d, npad, dpad;
+     Xauth *auth;
+     FILE *f;
+     char *filename;
+     u_char zeros[6] = {0, 0, 0, 0, 0, 0};
+
+     if (read (fd, beg, sizeof(beg)) != sizeof(beg))
+	  return 1;
+     if (write (xserver, beg, 6) != 6)
+	  return 1;
+     bigendianp = beg[0] == 'B';
+     if (bigendianp) {
+	  n = (beg[6] << 8) | beg[7];
+	  d = (beg[8] << 8) | beg[9];
+     } else {
+	  n = (beg[7] << 8) | beg[6];
+	  d = (beg[9] << 8) | beg[8];
+     }
+     if (n != 0 || d != 0)
+	  return 1;
+     filename = XauFileName();
+     if (filename == NULL)
+	  return 1;
+     f = fopen(filename, "r");
+     if (f) {
+	  u_char len[6] = {0, 0, 0, 0, 0, 0};
+
+	  auth = XauReadAuth(f);
+	  fclose(f);
+	  n = auth->name_length;
+	  d = auth->data_length;
+	  if (bigendianp) {
+	       len[0] = n >> 8;
+	       len[1] = n & 0xFF;
+	       len[2] = d >> 8;
+	       len[3] = d & 0xFF;
+	  } else {
+	       len[0] = n & 0xFF;
+	       len[1] = n >> 8;
+	       len[2] = d & 0xFF;
+	       len[3] = d >> 8;
+	  }
+	  if (write (xserver, len, 6) != 6)
+	       return 1;
+	  if(write (xserver, auth->name, n) != n)
+	       return 1;
+	  npad = (4 - (n % 4)) % 4;
+	  if (npad) { 
+	       if (write (xserver, zeros, npad) != npad)
+		    return 1;
+	  }
+	  if (write (xserver, auth->data, d) != d)
+	       return 1;
+	  dpad = (4 - (d % 4)) % 4;
+	  if (dpad) { 
+	       if (write (xserver, zeros, dpad) != dpad)
+		    return 1;
+	  }
+	  XauDisposeAuth(auth);
+     } else {
+	  if(write(xserver, zeros, 6) != 6)
+	       return 1;
+     }
+
+     return copy_encrypted (xserver, fd, iv, schedule);
+}
+
 static int
 passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
 {
@@ -110,7 +208,7 @@ passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
      xserver = connect_local_xsocket (0);
      if (xserver < 0)
 	  return 1;
-     return copy_encrypted (xserver, fd, iv, schedule);
+     return start_session (xserver, fd, iv, schedule);
 }
 
 /*
@@ -134,8 +232,9 @@ doit (char *host, int passivep)
 	  int addrlen;
 	  u_char b = passivep;
 	  int otherside;
+	  pid_t pid;
 
-	  otherside = connect_host (host, &key, schedule);
+	  otherside = connect_host (host, &key, schedule, passivep);
 	  if (otherside < 0)
 	       return 1;
 
@@ -162,14 +261,21 @@ doit (char *host, int passivep)
 	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
-	  if (write (otherside, &b, sizeof(b)) != sizeof(b) ||
-	      write (otherside, &newaddr.sin_port, sizeof(newaddr.sin_port))
+	  if (write (otherside, &newaddr.sin_port, sizeof(newaddr.sin_port))
 	      != sizeof(newaddr.sin_port)) {
 	       fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
 	  close (otherside);
 	  fn = passive;
+	  pid = fork();
+	  if (pid < 0) {
+	       fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
+	       return 1;
+	  } else if (pid > 0) {
+	       printf ("%d\t%s\n", display_num, xauthfile);
+	       exit (0);
+	  }
      } else {
 	  rendez_vous = get_local_xsocket (1); /* XXX */
 	  if (rendez_vous < 0)
@@ -220,7 +326,8 @@ main(int argc, char **argv)
      if (argc != 2)
 	  usage ();
      disp = getenv("DISPLAY");
-     passivep = disp != NULL && *disp == ':';
+     passivep = disp != NULL && 
+       (*disp == ':' || strncmp(disp, "unix", 4) == 0);
      signal (SIGCHLD, childhandler);
      return doit (argv[1], passivep);
 }
