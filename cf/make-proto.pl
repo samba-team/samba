@@ -49,9 +49,9 @@ while(<>) {
 	    s/\/\*(.|\n)*\ca//;
 	}
 	s/^\s*//;
-	s/\s$//;
+	s/\s*$//;
 	s/\s+/ /g;
-	if($line =~ /\)\s$/){
+	if($_ =~ /\)$/){
 	    if(!/^static/ && !/^PRIVATE/){
 		if(/(.*)(__attribute__\s?\(.*\))/) {
 		    $attr = $2;
