@@ -227,48 +227,27 @@ RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
-RPC_SERVER_OBJ = $(RPC_PIPE_OBJ)
+# These are like they are to avoid a dependency on GNU MAKE
+RPC_MODULES = \
+@LSA_DYNAMIC_YES@	bin/librpc_lsarpc.@SHLIBEXT@\
+@NETLOG_DYNAMIC_YES@	bin/librpc_NETLOGON.@SHLIBEXT@ \
+@SAMR_DYNAMIC_YES@	bin/librpc_samr.@SHLIBEXT@ \
+@SVC_DYNAMIC_YES@	bin/librpc_srvsvc.@SHLIBEXT@ \
+@WKS_DYNAMIC_YES@	bin/librpc_wkssvc.@SHLIBEXT@ \
+@REG_DYNAMIC_YES@	bin/librpc_winreg.@SHLIBEXT@ \
+@SPOOLSS_DYNAMIC_YES@	bin/librpc_spoolss.@SHLIBEXT@ \
+@DFS_DYNAMIC_YES@	bin/librpc_netdfs.@SHLIBEXT@
 
-ifeq (@LSA_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_lsarpc.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_LSA_OBJ)
-endif
-ifeq (@NETLOG_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_NETLOGON.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_NETLOG_OBJ)
-endif
-ifeq (@SAMR_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_samr.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SAMR_OBJ)
-endif
-ifeq (@SVC_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_srvsvc.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SVC_OBJ)
-endif
-ifeq (@WKS_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_wkssvc.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_WKS_OBJ)
-endif
-ifeq (@REG_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_winreg.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_REG_OBJ)
-endif
-ifeq (@SPOOLSS_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_spoolss.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SPOOLSS_OBJ)
-endif
-ifeq (@DFS_DYNAMIC@,yes)
-		RPC_MODULES := $(RPC_MODULES) bin/librpc_netdfs.@SHLIBEXT@
-else
-		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_DFS_OBJ)
-endif
+
+RPC_SERVER_OBJ = $(RPC_PIPE_OBJ) \
+@LSA_DYNAMIC_NO@	$(RPC_LSA_OBJ) \
+@NETLOG_DYNAMIC_NO@	$(RPC_NETLOG_OBJ) \
+@SAMR_DYNAMIC_NO@	$(RPC_SAMR_OBJ) \
+@SVC_DYNAMIC_NO@	$(RPC_SVC_OBJ) \
+@WKS_DYNAMIC_NO@	$(RPC_WKS_OBJ) \
+@REG_DYNAMIC_NO@	$(RPC_REG_OBJ) \
+@SPOOLSS_DYNAMIC_NO@	$(RPC_SPOOLSS_OBJ) \
+@DFS_DYNAMIC_NO@	$(RPC_DFS_OBJ)
 
 
 # this includes only the low level parse code, not stuff
