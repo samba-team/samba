@@ -1134,16 +1134,21 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	struct lsa_info *info = NULL;
 	SE_PRIV mask;
 	PRIVILEGE_SET *set = NULL;
+	struct current_user user;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
-	/* check to see if the pipe_user is a Domain Admin since 
+	/* check to see if the pipe_user is root or a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+
+	get_current_user( &user, p );
+	if ( user.uid != sec_initial_uid() 
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	{
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	set = &q_u->set;
 
@@ -1170,16 +1175,21 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	struct lsa_info *info = NULL;
 	SE_PRIV mask;
 	PRIVILEGE_SET *set = NULL;
+	struct current_user user;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is a Domain Admin since 
+	/* check to see if the pipe_user is root or a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+
+	get_current_user( &user, p );
+	if ( user.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
+	{
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	set = &q_u->set;
 

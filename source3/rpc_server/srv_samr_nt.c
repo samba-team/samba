@@ -270,8 +270,8 @@ static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 		saved_mask = (des_access & rights_mask);
 		des_access &= ~saved_mask;
 		
-		DEBUG(4,("access_check_samr_object: user rights saved access mask [0x%x]\n",
-			saved_mask));
+		DEBUG(4,("access_check_samr_object: user rights access mask [0x%x]\n",
+			rights_mask));
 	}
 		
 	
@@ -296,9 +296,9 @@ static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 	
 done:
 	/* add in any bits saved during the privilege check (only 
-	   matters is syayus is ok) */
+	   matters is status is ok) */
 	
-	*acc_granted |= saved_mask;
+	*acc_granted |= rights_mask;
 
 	DEBUG(4,("%s: access %s (requested: 0x%08x, granted: 0x%08x)\n", 
 		debug, NT_STATUS_IS_OK(status) ? "GRANTED" : "DENIED", 
