@@ -766,8 +766,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 
 	(*server_info)->ptok = token;
 	
-	debug_nt_user_token(DBGC_AUTH, 5, token);
-
 	DEBUG(5,("make_server_info_sam: made server info for user %s\n",
 		 pdb_get_username((*server_info)->sam_account)));
 
@@ -1035,8 +1033,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	(*server_info)->ptok = token; 
 
 	SAFE_FREE(all_group_SIDs);
-	
-	debug_nt_user_token(DBGC_AUTH, 5, token);
 	
 	return NT_STATUS_OK;
 }
