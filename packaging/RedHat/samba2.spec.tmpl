@@ -38,6 +38,9 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
+* Sat Nov 11 1999 Tridge <tridge@linuxcare.com>
+ - changed from mount.smb to mount.smbfs
+
 * Sat Oct 9 1999 Tridge <tridge@linuxcare.com>
  - removed smbwrapper
  - added smbmnt and smbmount
@@ -146,7 +149,7 @@ install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
 
 # we need a symlink for mount to recognise the smb filesystem type
-ln -sf /usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf /usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 
 # Install level 1 man pages
 for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1
@@ -279,7 +282,7 @@ fi
 %attr(-,root,root) /usr/sbin/smbmnt
 %attr(-,root,root) /usr/sbin/smbmount
 %attr(-,root,root) /usr/sbin/smbumount
-%attr(-,root,root) /sbin/mount.smb
+%attr(-,root,root) /sbin/mount.smbfs
 %attr(0750,root,root) /usr/sbin/samba
 %attr(-,root,root) /usr/bin/addtosmbpass
 %attr(-,root,root) /usr/bin/mksmbpasswd.sh
