@@ -3165,27 +3165,26 @@ AC_MSG_CHECKING(whether to build winbind)
 
 # Initially, the value of $host_os decides whether winbind is supported
 
+HAVE_WINBIND=yes
+
 case "$host_os" in
 	*linux*)
-		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
 	*irix*)
-		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_irix.o"
 		;;
 	*solaris*)
-		HAVE_WINBIND=yes
+		# Solaris winbind client is implemented as a wrapper around
+		# the Linux version.
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o \
 		    nsswitch/winbind_nss_linux.o"
 		WINBIND_NSS_EXTRA_LIBS="-lsocket"
 		;;
 	*hpux11*)
-		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
 		;;
 	*aix*)
-		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_aix.o"
 		;;
 	*)
