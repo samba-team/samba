@@ -450,6 +450,8 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	struct winbindd_cm_conn *conn, conn_temp;
 	NTSTATUS result;
 
+	*conn_out = NULL;
+
 	for (conn = cm_conns; conn; conn = conn->next) {
 		if (strequal(conn->domain, domain) && 
 		    strequal(conn->pipe_name, pipe_name)) {
