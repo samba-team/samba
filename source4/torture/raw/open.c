@@ -796,6 +796,61 @@ done:
 
 
 /*
+  test RAW_OPEN_CREATE
+*/
+static BOOL test_create(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open io;
+	const char *fname = BASEDIR "\\torture_create.txt";
+	NTSTATUS status;
+	int fnum;
+	BOOL ret = True;
+	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
+	union smb_fileinfo finfo;
+
+	printf("Checking RAW_OPEN_CREATE\n");
+
+	io.create.level = RAW_OPEN_CREATE;
+	io.create.in.attrib = 0;
+	io.create.in.write_time = 0;
+	io.create.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.create.out.fnum;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	cli_close(cli, io.create.out.fnum);
+	cli_close(cli, fnum);
+	cli_unlink(cli, fname);
+
+	/* make sure write_time works */
+	io.create.in.write_time = basetime;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.create.out.fnum;
+	CHECK_TIME(basetime, write_time);
+
+	cli_close(cli, fnum);
+	cli_unlink(cli, fname);
+
+	/* make sure file_attrs works */
+	io.create.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.create.out.fnum;
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, attrib);
+	
+done:
+	cli_close(cli, fnum);
+	cli_unlink(cli, fname);
+
+	return ret;
+}
+
+
+/*
   test RAW_OPEN_CTEMP
 */
 static BOOL test_ctemp(struct cli_state *cli, TALLOC_CTX *mem_ctx)
@@ -879,6 +934,10 @@ BOOL torture_raw_open(int dummy)
 	}
 
 	if (!test_mknew(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_create(cli, mem_ctx)) {
 		ret = False;
 	}
 
