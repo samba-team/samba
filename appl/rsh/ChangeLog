@@ -1,3 +1,9 @@
+Tue Mar 23 17:08:32 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* rsh_locl.h: kafs.h
+
+	* rshd.c: add `-P', `-v', and `-L' flags
+
 Thu Mar 18 11:37:24 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common
