@@ -5,6 +5,8 @@
 # OS release to build. If no version number is given it will default to 6.
 
 doclean=""
+SGI_ABI=-n32
+export SGI_ABI
 
 if [ "$1" = "clean" ]; then
   doclean=$1
@@ -13,28 +15,39 @@ fi
 
 if [ "$doclean" = "clean" ]; then
   cd ../../source
-  make distclean
+  if [ -f Makefile ]; then
+    make distclean
+  fi
   cd ../packaging/SGI
   rm -rf bins catman html codepages swat samba.idb samba.spec
 fi
 
 # create the catman versions of the manual pages
 #
-echo Making manual pages
-./mkman
-errstat=$?
-if [ $errstat -ne 0 ]; then
-  echo "Error $errstat making manual pages\n";
-  exit $errstat;
+if [ "$doclean" = "clean" ]; then
+  echo Making manual pages
+  ./mkman
+  errstat=$?
+  if [ $errstat -ne 0 ]; then
+    echo "Error $errstat making manual pages\n";
+    exit $errstat;
+  fi
 fi
 
 cd ../../source
-echo Create SGI specific Makefile
-./configure --prefix=/usr --mandir=/usr/src/man
-errstat=$?
-if [ $errstat -ne 0 ]; then
-  echo "Error $errstat creating Makefile\n";
-  exit $errstat;
+if [ "$doclean" = "clean" -o ! -f Makefile ]; then
+  echo Create SGI specific Makefile
+  chmod +x configure
+  chmod +x configure.developer
+  chmod +x config.guess
+  chmod +x config.status
+  chmod +x config.sub
+  ./configure --prefix=/usr --mandir=/usr/src/man
+  errstat=$?
+  if [ $errstat -ne 0 ]; then
+    echo "Error $errstat creating Makefile\n";
+    exit $errstat;
+  fi
 fi
 
 
@@ -43,11 +56,13 @@ fi
 echo Making binaries
 
 if [ "$1" = "5" ]; then
-  make "CFLAGS=-O -g3" all
+  myflags="CFLAGS=-O -g3"
+  shift
 else
-  make "CFLAGS=-O -g3 -n32" all
+  myflags="CFLAGS=-O -g3"
 fi
 
+make "$myflags" $*
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
