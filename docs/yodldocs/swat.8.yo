@@ -1,0 +1,220 @@
+mailto(samba-bugs@samba.anu.edu.au) 
+
+manpage(swat)(8)(23 Oct 1998)(Samba)(SAMBA)
+
+label(NAME)
+manpagename(swat)(swat - Samba Web Administration Tool)
+
+label(SYNOPSIS)
+manpagesynopsis()
+
+bf(swat) [link(-s smb config file)(minuss)] [link(-a)(minusa)]
+
+label(DESCRIPTION)
+manpagedescription()
+
+This program is part of the bf(Samba) suite.
+
+bf(swat) allows a Samba administrator to configure the complex
+url(bf(smb.conf))(smb.conf.5.html) file via a Web browser. In
+addition, a swat configuration page has help links to all the
+configurable options in the url(bf(smb.conf))(smb.conf.5.html) file
+allowing an administrator to easily look up the effects of any change.
+
+bf(swat) can be run as a stand-alone daemon, from bf(inetd),
+or invoked via CGI from a Web server.
+
+label(OPTIONS)
+manpageoptions()
+
+startdit()
+
+label(minuss)
+dit(bf(-s smb configuration file)) The default configuration file path is
+determined at compile time.
+
+The file specified contains the configuration details required by the
+url(bf(smbd))(smbd.8.html) server. This is the file that bf(swat) will
+modify. The information in this file includes server-specific
+information such as what printcap file to use, as well as descriptions
+of all the services that the server is to provide. See url(smb.conf
+(5))(smb.conf.5.html) for more information.
+
+label(minusa)
+dit(bf(-a)) 
+
+This option is only used if bf(swat) is running as it's own mini-web
+server (see the link(bf(INSTALLATION))(INSTALLATION) section below).
+
+This option removes the need for authentication needed to modify the
+url(bf(smb.conf))(smb.conf.5.html) file. em(**THIS IS ONLY MEANT FOR
+DEMOING SWAT AND MUST NOT BE SET IN NORMAL SYSTEMS**) as it would
+allow em(*ANYONE*) to modify the url(bf(smb.conf))(smb.conf.5.html)
+file, thus giving them root access.
+
+endit()
+
+label(INSTALLATION)
+manpagesection(INSTALLATION)
+
+After you compile SWAT you need to run tt("make install") to install the
+swat binary and the various help files and images. A default install
+would put these in:
+
+verb(
+/usr/local/samba/bin/swat
+/usr/local/samba/swat/images/*
+/usr/local/samba/swat/help/*
+)
+
+label(RUNNINGVIAINETD)
+manpagesection(RUNNING VIA INETD)
+
+You need to edit your tt(/etc/inetd.conf) and tt(/etc/services) to
+enable bf(SWAT) to be launched via inetd. Note that bf(swat) can also
+be launched via the cgi-bin mechanisms of a web server (such as
+apache) and that is described below in the section link(bf(RUNNING VIA
+CGI-BIN))(RUNNINGVIACGIBIN).
+
+In tt(/etc/services) you need to add a line like this:
+
+tt(swat            901/tcp)
+
+Note for NIS/YP users - you may need to rebuild the NIS service maps
+rather than alter your local tt(/etc/services) file.
+
+the choice of port number isn't really important except that it should
+be less than 1024 and not currently used (using a number above 1024
+presents an obscure security hole depending on the implementation
+details of your bf(inetd) daemon).
+
+In tt(/etc/inetd.conf) you should add a line like this:
+
+tt(swat    stream  tcp     nowait.400  root    /usr/local/samba/bin/swat swat)
+
+If you just want to see a demo of how swat works and don't want to be
+able to actually change any Samba config via swat then you may chose
+to change tt("root") to some other user that does not have permission
+to write to url(bf(smb.conf))(smb.conf.5.html).
+
+One you have edited tt(/etc/services) and tt(/etc/inetd.conf) you need
+to send a HUP signal to inetd. To do this use tt("kill -1 PID") where
+PID is the process ID of the inetd daemon.
+
+label(RUNNINGVIACGIBIN)
+manpagesection(RUNNING VIA CGI-BIN)
+
+To run bf(swat) via your web servers cgi-bin capability you need to
+copy the bf(swat) binary to your cgi-bin directory. Note that you
+should run bf(swat) either via link(bf(inetd))(RUNNINGVIAINETD) or via
+cgi-bin but not both.
+
+Then you need to create a tt(swat/) directory in your web servers root
+directory and copy the tt(images/*) and tt(help/*) files found in the
+tt(swat/) directory of your Samba source distribution into there so
+that they are visible via the URL tt(http://your.web.server/swat/)
+
+Next you need to make sure you modify your web servers authentication
+to require a username/pssword for the URL
+tt(http://your.web.server/cgi-bin/swat). em(**Don't forget this
+step!**) If you do forget it then you will be allowing anyone to edit
+your Samba configuration which would allow them to easily gain root
+access on your machine.
+
+After testing the authentication you need to change the ownership and
+permissions on the bf(swat) binary. It should be owned by root wth the
+setuid bit set. It should be ONLY executable by the user that the web
+server runs as. Make sure you do this carefully!
+
+for example, the following would be correct if the web server ran as
+group tt("nobody").
+
+tt(-rws--x---    1 root     nobody    )
+
+You must also realise that this means that any user who can run
+programs as the tt("nobody") group can run bf(swat) and modify your
+Samba config. Be sure to think about this!
+
+label(LAUNCHING)
+manpagesection(LAUNCHING)
+
+To launch bf(swat) just run your favourite web browser and point it at
+tt(http://localhost:901/) or tt(http://localhost/cgi-bin/swat/)
+depending on how you installed it.
+
+Note that you can attach to bf(swat) from any IP connected machine but
+connecting from a remote machine leaves your connection open to
+password sniffing as passwords will be sent in the clear over the
+wire.
+
+If installed via bf(inetd) then you should be prompted for a
+username/password when you connect. You will need to provide the
+username tt("root") and the correct root password. More sophisticated
+authentication options are planned for future versions of bf(swat).
+
+If installed via cgi-bin then you should receive whatever
+authentication request you configured in your web server.
+
+manpagefiles()
+
+bf(/etc/inetd.conf)
+
+If the server is to be run by the inetd meta-daemon, this file must
+contain suitable startup information for the meta-daemon. See the
+section link(bf(RUNNING VIA INETD))(RUNNINGVIAINETD) above.
+
+bf(/etc/services)
+
+If running the server via the meta-daemon inetd, this file must
+contain a mapping of service name (eg., swat) to service port
+(eg., 901) and protocol type (eg., tcp). See the section
+link(bf(RUNNING VIA INETD))(RUNNINGVIAINETD) above.
+
+bf(/usr/local/samba/lib/smb.conf)
+
+This is the default location of the em(smb.conf) server configuration
+file that bf(swat) edits. Other common places that systems install
+this file are em(/usr/samba/lib/smb.conf) and em(/etc/smb.conf).
+
+This file describes all the services the server is to make available
+to clients. See bf(smb.conf (5)) for more information.
+
+label(WARNINGS)
+manpagesection(WARNINGS)
+
+bf(swat) will rewrite your url(bf(smb.conf))(smb.conf.5.html) file. It
+will rearrange the entries and delete all comments,
+url(bf("include="))(smb.conf.5.html#include) and
+url(bf("copy="))(smb.conf.5.html#copy) options. If you have a
+carefully crafted url(bf(smb.conf))(smb.conf.5.html) then back it up
+or don't use bf(swat)!
+
+label(VERSION)
+manpagesection(VERSION)
+
+This man page is correct for version 2.0 of the Samba suite.
+
+label(SEEALSO)
+manpageseealso()
+
+bf(inetd (8)), url(bf(nmbd (8)))(nmbd.8.html),
+url(bf(smb.conf (5)))(smb.conf.5.html).
+
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software, available at
+url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
+and updated for the Samba2.0 release by Jeremy Allison.
+email(samba-bugs@samba.anu.edu.au).
+
+See url(bf(samba (7)))(samba.7.html) to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc.
