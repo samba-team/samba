@@ -59,7 +59,7 @@ make_proto () {
 
 make_proto lib/krb5 krb5-protos.h krb5-private.h '$(libkrb5_la_SOURCES)'
 make_proto lib/kadm5 kadm5-protos.h kadm5-private.h '$(libkadm5srv_la_SOURCES) $(libkadm5clnt_la_SOURCES)'
-ake_proto lib/hdb hdb-protos.h hdb-private.h '$(libhdb_la_SOURCES)'
+make_proto lib/hdb hdb-protos.h hdb-private.h '$(libhdb_la_SOURCES)'
 make_proto appl/login login_protos.h /dev/null '$(login_SOURCES)'
 
 rm fix-export make-release make-release.el
