@@ -252,7 +252,8 @@ verb(
 	samedit -S '*' -W DOMAIN -UAdministrator
 )
 
-Then within samedit run the command:
+The username after the -U can be any Domain user that has administrator 
+priviliges on the machine. Next from within samedit, run the command:
 verb(
 	createuser MACHINE$ -j DOMAIN -L
 )
