@@ -938,6 +938,15 @@ krb5_425_conv_principal(krb5_context context,
 			krb5_principal *princ);
 
 krb5_error_code
+krb5_425_conv_principal_ext(krb5_context context,
+			    const char *name,
+			    const char *instance,
+			    const char *realm,
+			    krb5_boolean (*func)(krb5_context, krb5_principal),
+			    krb5_boolean resolve,
+			    krb5_principal *princ);
+
+krb5_error_code
 krb5_524_conv_principal(krb5_context context,
 			const krb5_principal principal,
 			char *name, 
@@ -1053,7 +1062,7 @@ krb5_encrypt (krb5_context context,
 	      krb5_data *result);
 
 krb5_error_code
-krb5_encrypt_EncryptedData(krb5_context, void*, size_t, int,
+krb5_encrypt_EncryptedData(krb5_context, void*, size_t, int, int,
 			   const krb5_keyblock*, EncryptedData*);
 
 krb5_error_code
