@@ -505,8 +505,8 @@ void become_root(int save_dir)
 	current_user_saved = current_user;
 	become_root_depth = 1;
 
-	become_gid(0);
 	become_uid(0);
+	become_gid(0);
 }
 
 /****************************************************************************
