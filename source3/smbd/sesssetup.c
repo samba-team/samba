@@ -689,11 +689,17 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
 			pstring pass;
-			BOOL unic;
-			unic=SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS;
-			srvstr_pull(inbuf, pass, smb_buf(inbuf), 
-				    sizeof(pass),  unic ? passlen2 : passlen1, 
-				    STR_TERMINATE);
+			BOOL unic=SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS;
+
+			if ((ra_type == RA_WINNT) && (passlen2 == 0) && unic && passlen1) {
+				/* NT4.0 stuffs up plaintext unicode password lengths... */
+				srvstr_pull(inbuf, pass, smb_buf(inbuf) + 1,
+					sizeof(pass), passlen1, STR_TERMINATE);
+			} else {
+				srvstr_pull(inbuf, pass, smb_buf(inbuf), 
+					sizeof(pass),  unic ? passlen2 : passlen1, 
+					STR_TERMINATE);
+			}
 			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
 		
