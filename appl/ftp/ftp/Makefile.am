@@ -11,11 +11,6 @@ krb4_sources = krb4.c kauth.c
 endif
 if KRB5
 krb5_sources = gssapi.c
-x = \
-	$(top_builddir)/lib/gssapi/libgssapi.la \
-	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(top_builddir)/lib/asn1/libasn1.la
-
 endif
 
 ftp_SOURCES = \
@@ -37,11 +32,10 @@ ftp_SOURCES = \
 
 EXTRA_ftp_SOURCES = krb4.c kauth.c gssapi.c
 
-LIB_tgetent = @LIB_tgetent@
-
 LDADD = \
 	../common/libcommon.a \
-	$(x) \
+	$(LIB_gssapi) \
+	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/roken/libroken.la \
