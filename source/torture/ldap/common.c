@@ -120,10 +120,10 @@ BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 		return False;
 
 	status = gensec_seal_packet(conn->gensec, 
-					    msg->mem_ctx, 
-					    request.data, request.length,
-					    request.data, request.length,
-					    &creds);
+				    msg->mem_ctx, 
+				    request.data, request.length,
+				    request.data, request.length,
+				    &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("gensec_seal_packet: %s\n",nt_errstr(status)));
 		return False;
