@@ -2631,7 +2631,7 @@ address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
 static BOOL process_local_message(int sock, char *buffer, int buf_size)
 {
   int32 msg_len;
-  int16 from_port;
+  uint16 from_port;
   char *msg_start;
 
   msg_len = IVAL(buffer,UDP_CMD_LEN_OFFSET);
@@ -2995,7 +2995,7 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
   {
     char op_break_reply[UDP_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
     int32 reply_msg_len;
-    int16 reply_from_port;
+    uint16 reply_from_port;
     char *reply_msg_start;
 
     if(receive_local_message(oplock_sock, op_break_reply, sizeof(op_break_reply),
