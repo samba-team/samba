@@ -1,3 +1,7 @@
+Thu Feb 26 02:22:02 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: @LEXLIB@
+
 Sat Feb 21 15:18:21 1998  assar westerlund  <assar@sics.se>
 
 	* Makefile.in: set YACC and LEX
