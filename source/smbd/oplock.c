@@ -73,7 +73,7 @@ BOOL open_oplock_ipc(void)
   DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
 
   /* Open a lookback UDP socket on a random port. */
-  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK));
+  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK),False);
   if (oplock_sock == -1)
   {
     DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \

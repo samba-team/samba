@@ -144,7 +144,7 @@ max can be %d\n",
 				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
 				continue;
 			}
-			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr);
+			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 			if(s == -1)
 				return False;
 				/* ready to listen */
@@ -162,7 +162,7 @@ max can be %d\n",
 		
 		/* open an incoming socket */
 		s = open_socket_in(SOCK_STREAM, port, 0,
-				   interpret_addr(lp_socket_address()));
+				   interpret_addr(lp_socket_address()),True);
 		if (s == -1)
 			return(False);
 		

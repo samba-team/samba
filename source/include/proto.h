@@ -349,7 +349,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 void reset_globals_after_fork(void);
 char *client_name(int fd);

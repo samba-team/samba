@@ -43,7 +43,7 @@ static BOOL open_sockets(void)
   ServerFD = open_socket_in( SOCK_DGRAM,
                              (RootPort ? 137 :0),
                              3,
-                             interpret_addr(lp_socket_address()) );
+                             interpret_addr(lp_socket_address()), True );
 
   if (ServerFD == -1)
     return(False);

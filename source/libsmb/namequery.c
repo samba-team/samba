@@ -448,7 +448,7 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 	DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
-			       interpret_addr(lp_socket_address()) );
+			       interpret_addr(lp_socket_address()), True );
 
 	if (sock != -1) {
 		struct in_addr *iplist = NULL;
@@ -509,7 +509,7 @@ static BOOL resolve_wins(const char *name, struct in_addr *return_ip, int name_t
 
       if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
 	      sock = open_socket_in( SOCK_DGRAM, 0, 3,
-				     interpret_addr(lp_socket_address()) );
+				     interpret_addr(lp_socket_address()), True );
 	      
 	      if (sock != -1) {
 		      struct in_addr *iplist = NULL;
