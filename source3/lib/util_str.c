@@ -1535,6 +1535,100 @@ void rfc1738_unescape(char *buf)
 	}
 }
 
+static const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/***************************************************************************
+decode a base64 string into a DATA_BLOB - simple and slow algorithm
+  ***************************************************************************/
+DATA_BLOB base64_decode_data_blob(const char *s)
+{
+	int bit_offset, byte_offset, idx, i, n;
+	DATA_BLOB decoded = data_blob(s, strlen(s)+1);
+	unsigned char *d = decoded.data;
+	char *p;
+
+	n=i=0;
+
+	while (*s && (p=strchr_m(b64,*s))) {
+		idx = (int)(p - b64);
+		byte_offset = (i*6)/8;
+		bit_offset = (i*6)%8;
+		d[byte_offset] &= ~((1<<(8-bit_offset))-1);
+		if (bit_offset < 3) {
+			d[byte_offset] |= (idx << (2-bit_offset));
+			n = byte_offset+1;
+		} else {
+			d[byte_offset] |= (idx >> (bit_offset-2));
+			d[byte_offset+1] = 0;
+			d[byte_offset+1] |= (idx << (8-(bit_offset-2))) & 0xFF;
+			n = byte_offset+2;
+		}
+		s++; i++;
+	}
+
+	/* fix up length */
+	decoded.length = n;
+	return decoded;
+}
+
+/***************************************************************************
+decode a base64 string in-place - wrapper for the above
+***************************************************************************/
+void base64_decode(char *s)
+{
+	DATA_BLOB decoded = base64_decode_data_blob(s);
+	memcpy(s, decoded.data, decoded.length);
+	data_blob_free(&decoded);
+
+	/* null terminate */
+	s[decoded.length] = '\0';
+}
+
+/***************************************************************************
+encode a base64 string into a malloc()ed string caller to free.
+
+From SQUID: adopted from http://ftp.sunet.se/pub2/gnu/vm/base64-encode.c with adjustments
+***************************************************************************/
+char * base64_encode_data_blob(DATA_BLOB data)
+{
+	int bits = 0;
+	int char_count = 0;
+	size_t out_cnt = 0;
+	size_t len = data.length;
+	size_t output_len = data.length * 2;
+	char *result = malloc(output_len); /* get us plenty of space */
+
+	while (len-- && out_cnt < (data.length * 2) - 5) {
+		int c = (unsigned char) *(data.data++);
+		bits += c;
+		char_count++;
+		if (char_count == 3) {
+			result[out_cnt++] = b64[bits >> 18];
+			result[out_cnt++] = b64[(bits >> 12) & 0x3f];
+			result[out_cnt++] = b64[(bits >> 6) & 0x3f];
+	    result[out_cnt++] = b64[bits & 0x3f];
+	    bits = 0;
+	    char_count = 0;
+	} else {
+	    bits <<= 8;
+	}
+    }
+    if (char_count != 0) {
+	bits <<= 16 - (8 * char_count);
+	result[out_cnt++] = b64[bits >> 18];
+	result[out_cnt++] = b64[(bits >> 12) & 0x3f];
+	if (char_count == 1) {
+	    result[out_cnt++] = '=';
+	    result[out_cnt++] = '=';
+	} else {
+	    result[out_cnt++] = b64[(bits >> 6) & 0x3f];
+	    result[out_cnt++] = '=';
+	}
+    }
+    result[out_cnt] = '\0';	/* terminate */
+    return result;
+}
+
 #ifdef VALGRIND
 size_t valgrind_strlen(const char *s)
 {

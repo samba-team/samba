@@ -111,7 +111,7 @@ BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
-	bin/profiles@EXEEXT@ bin/smbgroupedit@EXEEXT@
+	bin/profiles@EXEEXT@ bin/smbgroupedit@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
 
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
@@ -186,7 +186,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/unexpected.o libsmb/doserr.o \
-	     libsmb/namecache.o $(RPC_PARSE_OBJ1)
+	     libsmb/namecache.o libsmb/ntlmssp.o \
+	     $(RPC_PARSE_OBJ1)
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
@@ -256,7 +257,7 @@ UNIGRP_OBJ = libsmb/netlogon_unigrp.o
 
 AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_builtin.o auth/auth_compat.o \
+	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
@@ -538,6 +539,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
+
+NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSMB_OBJ) $(POPT_LIB_OBJ)
 
 ######################################################################
 # now the rules...
@@ -868,6 +871,12 @@ bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
+
+bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"

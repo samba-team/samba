@@ -465,7 +465,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM;
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_REQUEST_TARGET;
 
 	memset(sess_key, 0, 16);
 
@@ -476,8 +477,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  neg_flags,
-		  workgroup, strlen(workgroup),
-		  cli->calling.name, strlen(cli->calling.name) + 1);
+		  workgroup, 
+		  cli->calling.name);
 	DEBUG(10, ("neg_flags: %0X, workgroup: %s, calling name %s\n",
 		  neg_flags, workgroup, cli->calling.name));
 	/* and wrap it in a SPNEGO wrapper */

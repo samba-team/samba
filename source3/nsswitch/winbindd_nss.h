@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 6
+#define WINBIND_INTERFACE_VERSION 7
 
 /* Socket commands */
 
@@ -102,6 +102,7 @@ enum winbindd_cmd {
 	/* this is like GETGRENT but gives an empty group list */
 	WINBINDD_GETGRLST,
 
+	WINBINDD_NETBIOS_NAME,       /* The netbios name of the server */
 	/* Placeholder for end of cmd list */
 
 	WINBINDD_NUM_CMDS
@@ -221,6 +222,7 @@ struct winbindd_response {
 			fstring samba_version;
 		} info;
 		fstring domain_name;
+		fstring netbios_name;
 
 		struct auth_reply {
 			uint32 nt_status;

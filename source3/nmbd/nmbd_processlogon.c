@@ -272,8 +272,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       pull_ucs2_fstring(asccomp, unicomp);
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
-      fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
-      fstrcpy(reply_name+2,my_name); 
+      fstrcpy(reply_name, "\\\\"); /* Here it wants \\LOGONSERVER. */
+      fstrcat(reply_name, my_name);
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
 	       asccomp,inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup(),
