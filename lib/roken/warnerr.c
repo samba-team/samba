@@ -43,6 +43,12 @@ RCSID("$Id$");
 const char *__progname;
 #endif
 
+const char *
+get_progname(void)
+{
+    return __progname;
+}
+
 void
 set_progname(char *argv0)
 {
