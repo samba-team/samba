@@ -61,9 +61,6 @@ struct ldap_enum_info {
 static struct ldap_enum_info global_ldap_ent;
 
 
-extern pstring samlogon_user;
-extern BOOL sam_logon_in_ssb;
-
 
 /*******************************************************************
  open a connection to the ldap server.
@@ -422,11 +419,9 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	get_single_attribute(ldap_struct, entry, "uid", username);
 	DEBUG(2, ("Entry found for user: %s\n", username));
 
-	pstrcpy(samlogon_user, username);
-	
 	pstrcpy(nt_username, username);
 
-		pstrcpy(domain, lp_workgroup());
+	pstrcpy(domain, lp_workgroup());
 
 	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
 	pass_last_set_time = (time_t) strtol(temp, NULL, 16);
@@ -451,8 +446,6 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	   * primary rules of LDAP: don't make a new attribute when one is already defined
 	 * that fits your needs; using cn then displayName rather than 'userFullName'
 	 */
-
-	sam_logon_in_ssb = True;
 
 	if (!get_single_attribute(ldap_struct, entry, "cn", fullname)) {
 		get_single_attribute(ldap_struct, entry, "displayName", fullname);
@@ -495,8 +488,6 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	else
 		pdb_set_profile_path(sampass, profile_path, True);
 		
-	sam_logon_in_ssb = False;
-
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
 	get_single_attribute(ldap_struct, entry, "rid", temp);
