@@ -75,7 +75,7 @@ get_cred(kafs_data *data, const char *name, const char *inst,
 }
 
 static krb5_error_code
-afslog_uid_int(kafs_data *data, const char *cell, uid_t uid,
+afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 	       const char *homedir)
 {
     krb5_error_code ret;
@@ -131,7 +131,7 @@ krb5_afslog_uid_home(krb5_context context,
     d.context = context;
     d.id = id;
     d.realm = realm;
-    return afslog_uid_int(&kd, cell, uid, homedir);
+    return afslog_uid_int(&kd, cell, 0, uid, homedir);
 }
 
 krb5_error_code

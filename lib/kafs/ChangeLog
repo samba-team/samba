@@ -1,3 +1,19 @@
+Fri Oct  8 18:17:22 1999  Bjoern Groenvall  <bg@mummel.sics.se>
+
+	* afskrb.c, common.c : Change code to make a clear distinction
+ 	between hinted realm and ticket realm.
+
+	* kafs_locl.h: Added argument realm_hint.
+
+	* common.c (_kafs_get_cred): Change code to acquire the ``best''
+ 	possible ticket. Use cross-cell authentication only as method of
+ 	last resort.
+
+	* afskrb.c (afslog_uid_int): Add realm_hint argument and extract
+ 	realm from ticket file.
+
+	* afskrb5.c (afslog_uid_int): Added argument realm_hint.
+
 1999-10-03  Assar Westerlund  <assar@sics.se>
 
 	* afskrb5.c (get_cred): update to new krb524_convert_creds_kdc

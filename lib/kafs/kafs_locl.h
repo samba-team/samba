@@ -106,8 +106,11 @@
 #include "afssysdefs.h"
 
 struct kafs_data;
-typedef int (*afslog_uid_func_t)(struct kafs_data*, const char*, uid_t,
-				 const char *);
+typedef int (*afslog_uid_func_t)(struct kafs_data *,
+				 const char *cell,
+				 const char *realm_hint,
+				 uid_t,
+				 const char *homedir);
 
 typedef int (*get_cred_func_t)(struct kafs_data*, const char*, const char*, 
 				    const char*, CREDENTIALS*);
