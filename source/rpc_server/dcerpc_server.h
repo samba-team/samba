@@ -94,7 +94,7 @@ struct dcesrv_handle {
 	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
 };
 
-struct dcesrv_cyrpto_ops {
+struct dcesrv_crypto_ops {
 	const char *name;
 	uint8 auth_type;
 	NTSTATUS (*start)(struct dcesrv_auth *auth);
@@ -116,7 +116,7 @@ struct dcesrv_auth {
 	struct dcerpc_auth *auth_info;
 	struct {
 		void *private_data;
-		const struct dcesrv_cyrpto_ops *ops;
+		const struct dcesrv_crypto_ops *ops;
 	} crypto_ctx;
 };
 
