@@ -30,7 +30,7 @@ extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern pstring global_myname;
 
-#define get_file_size(sbuf) (sbuf.st_size)
+#define get_file_size(sbuf) ((sbuf).st_size)
 
 /* given a stat buffer return the allocated size on disk, taking into
    account sparse files */
