@@ -2180,43 +2180,6 @@ static void cmd_cancel(char *inbuf,char *outbuf )
 }
 
 
-/****************************************************************************
-  get info on a file
-  ****************************************************************************/
-static void cmd_stat(char *inbuf,char *outbuf)
-{
-  fstring buf;
-  pstring param;
-  char *resp_data=NULL;
-  char *resp_param=NULL;
-  int resp_data_len = 0;
-  int resp_param_len=0;
-  char *p;
-  uint16 setup = TRANSACT2_QPATHINFO;
-
-  if (!next_token(NULL,buf,NULL)) {
-    printf("stat <file>\n");
-    return;
-  }
-
-  bzero(param,6);
-  SSVAL(param,0,4); /* level */
-  p = param+6;
-  strcpy(p,cur_dir);
-  strcat(p,buf);
-
-  cli_send_trans_request(outbuf,SMBtrans2,NULL,0,FID_UNUSED,0,
-		     NULL,param,&setup,
-		     0,6 + strlen(p)+1,1,
-		     BUFFER_SIZE,2,0);
-
-  cli_receive_trans_response(inbuf,SMBtrans2,
-			  &resp_data_len,&resp_param_len,
-			  &resp_data,&resp_param);
-
-  if (resp_data) free(resp_data); resp_data = NULL;
-  if (resp_param) free(resp_param); resp_param = NULL;
-}
 
 
 /****************************************************************************
@@ -3252,7 +3215,6 @@ struct
   {"queue",cmd_queue,"show the print queue"},
   {"qinfo",cmd_qinfo,"show print queue information"},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry"},
-  {"stat",cmd_stat,"<file> get info on a file (experimental!)"},
   {"quit",cli_send_logout,"logoff the server"},
   {"q",cli_send_logout,"logoff the server"},
   {"exit",cli_send_logout,"logoff the server"},
