@@ -114,3 +114,10 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
 #endif    
     return 0;
 }
+
+HDB *
+_kadm5_s_get_db(void *server_handle)
+{
+    kadm5_server_context *context = server_handle;
+    return context->db;
+}
