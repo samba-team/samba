@@ -107,6 +107,29 @@ krb5_auth_con_getflags(krb5_context context,
     return 0;
 }
 
+krb5_error_code
+krb5_auth_con_addflags(krb5_context context,
+		       krb5_auth_context auth_context,
+		       int32_t addflags,
+		       int32_t *flags)
+{
+    if (flags)
+	*flags = auth_context->flags;
+    auth_context->flags |= addflags;
+    return 0;
+}
+
+krb5_error_code
+krb5_auth_con_removeflags(krb5_context context,
+			  krb5_auth_context auth_context,
+			  int32_t removeflags,
+			  int32_t *flags)
+{
+    if (flags)
+	*flags = auth_context->flags;
+    auth_context->flags &= ~removeflags;
+    return 0;
+}
 
 krb5_error_code
 krb5_auth_con_setaddrs(krb5_context context,
