@@ -3043,7 +3043,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 {
 	char *params = *pparams;
 	enum remote_arch_types ra_type = get_remote_arch();
-	BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
+	BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K) || (ra_type == RA_WINXP) || (ra_type == RA_WIN2K3));
 	pstring pathname;
 	int reply_size = 0;
 	int max_referral_level;
