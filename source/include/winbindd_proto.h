@@ -208,10 +208,22 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 /*The following definitions come from  lib/snprintf.c  */
 
 
+/*The following definitions come from  lib/surs.c  */
+
+BOOL surs_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id, BOOL create);
+BOOL surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid, BOOL create);
+
 /*The following definitions come from  lib/sursalgdomonly.c  */
 
-BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id);
-BOOL sursalg_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id,
+				BOOL create);
+BOOL surs_algdomonly_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+				BOOL create);
+
+/*The following definitions come from  lib/sursalgnt5ldap.c  */
+
+BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id);
+BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create);
 
 /*The following definitions come from  lib/system.c  */

@@ -29,7 +29,7 @@ BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id)
     fstring sid_str;
     BOOL result;
 
-    result = sursalg_sam_sid_to_unixid(sid, type, id);
+    result = surs_sam_sid_to_unixid(sid, type, id, False);
 
     sid_to_string(sid_str, sid);
     DEBUG(0, ("surs_sam_sid_to_unixid: %s type %s -> %d\n", sid_str,
@@ -49,7 +49,7 @@ BOOL winbindd_surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
     fstring sid_str;
     BOOL result;
 
-    result = sursalg_unixid_to_sam_sid(id, type, sid, create);
+    result = surs_unixid_to_sam_sid(id, type, sid, create);
 
     if (sid) sid_to_string(sid_str, sid);
 

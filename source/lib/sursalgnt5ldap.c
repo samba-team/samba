@@ -137,7 +137,7 @@ static uint32 nt5ldap_sursalg_uid_to_user_rid(LDAPDB *hds, uint32 uid)
  converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL nt5ldap_sursalg_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id)
+BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id)
 {
 	BOOL ret;
 
@@ -168,7 +168,7 @@ BOOL nt5ldap_sursalg_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, u
  converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL nt5ldap_sursalg_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create)
 {
 	char *attribute;

@@ -725,7 +725,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	/* create a User SID for the unix user */
-	if (!nt5ldap_sursalg_unixid_to_sam_sid(hds, pass->pw_uid, SID_NAME_USER, &usr_sid,
+	if (!surs_unixid_to_sam_sid(hds, pass->pw_uid, SID_NAME_USER, &usr_sid,
 	                               True))
 	{
 		DEBUG(0,("create user: unix uid %d to RID failed\n",
@@ -734,7 +734,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	/* create a Group SID for the unix user */
-	if (!nt5ldap_sursalg_unixid_to_sam_sid(hds, pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid,
+	if (!surs_unixid_to_sam_sid(hds, pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid,
 	                               True))
 	{
 		DEBUG(0,("create user: unix uid %d to RID failed\n",

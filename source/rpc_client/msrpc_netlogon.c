@@ -42,7 +42,6 @@ BOOL modify_trust_password(const char *domain, const char *srv_name,
 			   const uchar new_trust_passwd_hash[16],
 			   uint16 sec_chan)
 {
-	struct nmb_name calling, called;
 	fstring trust_acct;
 
 	fstrcpy(trust_acct, global_myname);

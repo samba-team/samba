@@ -54,182 +54,6 @@ extern int DEBUGLEVEL;
 
 extern fstring global_myworkgroup;
 
-/*******************************************************************
- converts a RID to a UNIX ID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL pwdb_rid_to_unix_id(uint32 rid, uint32 *id, int type)
-{
-	if((id == NULL) || (rid < 1000))
-		return False;
-	rid -= 1000;
-	if((rid % RID_MULTIPLIER) != type)
-		return False;
-	*id = rid / RID_MULTIPLIER;
-	return True;
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL pwdb_user_rid_to_uid(uint32 user_rid, uint32 *id)
-{
-	return pwdb_rid_to_unix_id(user_rid, id, RID_TYPE_USER);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL pwdb_group_rid_to_gid(uint32 group_rid, uint32 *id)
-{
-	return pwdb_rid_to_unix_id(group_rid, id, RID_TYPE_GROUP);
-}
-
-/*******************************************************************
- converts NT Alias RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL pwdb_alias_rid_to_gid(uint32 alias_rid, uint32 *id)
-{
-	return pwdb_rid_to_unix_id(alias_rid, id, RID_TYPE_ALIAS);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 pwdb_gid_to_group_rid(uint32 gid)
-{
-	uint32 grp_rid = ((((gid)*RID_MULTIPLIER) + 1000) | RID_TYPE_GROUP);
-	return grp_rid;
-}
-
-/******************************************************************
- converts UNIX gid to an NT Alias RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 pwdb_gid_to_alias_rid(uint32 gid)
-{
-	uint32 alias_rid = ((((gid)*RID_MULTIPLIER) + 1000) | RID_TYPE_ALIAS);
-	return alias_rid;
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 pwdb_uid_to_user_rid(uint32 uid)
-{
-	uint32 user_rid = ((((uid)*RID_MULTIPLIER) + 1000) | RID_TYPE_USER);
-	return user_rid;
-}
-
-/******************************************************************
- converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
- and can only be, our own SID.
- ********************************************************************/
-static BOOL pwdb_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id)
-{
-	DOM_SID tmp_sid;
-	uint32 rid;
-
-	sid_copy(&tmp_sid, sid);
-	sid_split_rid(&tmp_sid, &rid);
-	if (!sid_equal(&global_sam_sid, &tmp_sid))
-	{
-		return False;
-	}
-
-	switch (type)
-	{
-		case SID_NAME_USER:
-		{
-			return pwdb_user_rid_to_uid(rid, id);
-		}
-		case SID_NAME_ALIAS:
-		{
-			return pwdb_alias_rid_to_gid(rid, id);
-		}
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
-		{
-			return pwdb_group_rid_to_gid(rid, id);
-		}
-	}
-	return False;
-}
-
-/******************************************************************
- converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
- and can only be, our own SID.
- ********************************************************************/
-static BOOL pwdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid)
-{
-	sid_copy(sid, &global_sam_sid);
-	switch (type)
-	{
-		case SID_NAME_USER:
-		{
-			sid_append_rid(sid, pwdb_uid_to_user_rid(id));
-			return True;
-		}
-		case SID_NAME_ALIAS:
-		{
-			sid_append_rid(sid, pwdb_gid_to_alias_rid(id));
-			return True;
-		}
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_WKN_GRP:
-		{
-			sid_append_rid(sid, pwdb_gid_to_group_rid(id));
-			return True;
-		}
-	}
-	return False;
-}
-
-/*******************************************************************
- Decides if a RID is a well known RID.
- ********************************************************************/
-static BOOL pwdb_rid_is_well_known(uint32 rid)
-{
-	return (rid < 1000);
-}
-
-/*******************************************************************
- determines a rid's type.  NOTE: THIS IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 pwdb_rid_type(uint32 rid)
-{
-	/* lkcl i understand that NT attaches an enumeration to a RID
-	 * such that it can be identified as either a user, group etc
-	 * type: SID_ENUM_TYPE.
-	 */
-	if (pwdb_rid_is_well_known(rid))
-	{
-		/*
-		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
-		 * and DOMAIN_USER_RID_GUEST.
-		 */
-		if (rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
-		{
-			return RID_TYPE_USER;
-		}
-		if (DOMAIN_GROUP_RID_ADMINS <= rid && rid <= DOMAIN_GROUP_RID_GUESTS)
-		{
-			return RID_TYPE_GROUP;
-		}
-		if (BUILTIN_ALIAS_RID_ADMINS <= rid && rid <= BUILTIN_ALIAS_RID_REPLICATOR)
-		{
-			return RID_TYPE_ALIAS;
-		}
-	}
-	return (rid & RID_TYPE_MASK);
-}
-
-/*******************************************************************
- checks whether rid is a user rid.  NOTE: THIS IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-BOOL pwdb_rid_is_user(uint32 rid)
-{
-	return pwdb_rid_type(rid) == RID_TYPE_USER;
-}
-
 /**************************************************************************
  Groupname map functionality. The code loads a groupname map file and
  (currently) loads it into a linked list. This is slow and memory
@@ -352,7 +176,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 			}
 		}
 
-		ret = pwdb_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid);
+		ret = surs_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid, False);
 	}
 
 	sid_to_string(sid_str, &grp->sid);
@@ -983,7 +807,7 @@ static BOOL get_sid_and_type(const char *fullntname, uint32 expected_type,
 	{
 		return False;
 	}
-	if (!pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid))
+	if (!surs_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid, False))
 	{
 		return False;
 	}
@@ -1040,7 +864,7 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 		 */
 
 		gmep->nt_domain = global_sam_name;
-		pwdb_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid);
+		surs_unixid_to_sam_sid(gmep->unix_id, gmep->type, &gmep->sid, False);
 
 		return True;
 	}
@@ -1145,7 +969,7 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 
 		gmep->type = SID_NAME_USER;
 		sid_copy(&gmep->sid, sid);
-		if (!pwdb_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id))
+		if (!surs_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id, False))
 		{
 			return False;
 		}
@@ -1242,7 +1066,7 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 		}
 
 		sid_copy(&gmep->sid, sid);
-		if (!pwdb_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id))
+		if (!surs_sam_sid_to_unixid(&gmep->sid, gmep->type, &gmep->unix_id, False))
 		{
 			return False;
 		}

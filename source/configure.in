@@ -14,8 +14,10 @@ AC_SUBST(LIBMSRPC32)
 AC_SUBST(LIBNMB)
 AC_SUBST(LIBNMB32)
 AC_SUBST(LIBSMB)
+AC_SUBST(LIBSURS)
 AC_SUBST(LIBSMBPW)
 AC_SUBST(LIBSMB32)
+AC_SUBST(LIBSURS32)
 AC_SUBST(LIBSMBPW32)
 AC_SUBST(LIBUBIQX)
 AC_SUBST(LIBUBIQX32)
@@ -283,6 +285,7 @@ case "$host_os" in
 		*irix*) AC_DEFINE(IRIX)
 			ATTEMPT_WRAP32_BUILD=yes
 			ATTEMPT_LIBSMB32_BUILD=yes
+			ATTEMPT_LIBSURS32_BUILD=yes
 			ATTEMPT_LIBSMBPW32_BUILD=yes
 			ATTEMPT_LIBNMB32_BUILD=yes
 			ATTEMPT_LIBSAMBA32_BUILD=yes
@@ -882,6 +885,39 @@ AC_ARG_WITH(libnmb,
 	   echo No support for PIC code - disabling libnmb
 	   LIBNMB=""
 	   LIBNMB32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
+#################################################
+# check for libsurs support
+AC_MSG_CHECKING(whether to use libsurs)
+AC_ARG_WITH(libsurs,
+[  --with-libsurs     Include SMB libsurs support (default)
+  --without-libsurs  Don't include SMB libsurs support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBSURS)
+	LIBSURS="bin/libsurs.so"
+
+	if test x$ATTEMPT_LIBSURS32_BUILD = x; then
+		LIBSURS32=""
+	else
+			LIBSURS32=bin/libsurs.32.so
+	fi
+
+# Conditions under which libsurs should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libsurs
+	   LIBSURS=""
+	   LIBSURS32=""
 	fi
     ;;
   *)

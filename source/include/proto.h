@@ -207,7 +207,6 @@ dbg_Token dbg_char2token( dbg_Token *state, int c );
 
 /*The following definitions come from  lib/domain_namemap.c  */
 
-BOOL pwdb_rid_is_user(uint32 rid);
 BOOL map_unix_group_name(char *group_name, DOM_NAME_MAP *grp_info);
 BOOL map_unix_alias_name(char *alias_name, DOM_NAME_MAP *grp_info);
 BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain, DOM_NAME_MAP *grp_info);
@@ -401,16 +400,22 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 void become_root(BOOL save_dir);
 void unbecome_root(BOOL restore_dir);
 
+/*The following definitions come from  lib/surs.c  */
+
+BOOL surs_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id, BOOL create);
+BOOL surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid, BOOL create);
+
 /*The following definitions come from  lib/sursalgdomonly.c  */
 
-BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id);
-BOOL sursalg_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id,
+				BOOL create);
+BOOL surs_algdomonly_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 
-BOOL nt5ldap_sursalg_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id);
-BOOL nt5ldap_sursalg_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id);
+BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create);
 
 /*The following definitions come from  lib/system.c  */

@@ -132,13 +132,14 @@ SMBPWLIB = bin/libsmbpw.la
 SAMRPASSLIB = bin/libsamrpass.la
 SAMRTDBLIB = bin/libsamrtdb.la
 SAMRNT5LDAPLIB = bin/libsamrnt5ldap.la
+LIBSURS = bin/libsurs.la
 
 SAM_PWDB_LIB = @SAM_PWDB_LIB@
 
 SAMBA_LIBS = $(MSRPCLIB) $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
 SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) \
-		$(SAM_PWDB_LIB)
+		$(SAM_PWDB_LIB) $(LIBSURS)
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
@@ -299,8 +300,7 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		rpc_server/srv_pipe_netsec.o \
 		lib/passcheck.o
 
-SAMRTDBLIB_OBJ = lib/sursalgdomonly.o \
-		lib/util_pwdb.o lib/domain_namemap.o \
+SAMRTDBLIB_OBJ = lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_tdb_init.o \
 		samrd/srv_samr_dom_tdb.o \
 		samrd/srv_samr_sam_tdb.o \
@@ -309,9 +309,7 @@ SAMRTDBLIB_OBJ = lib/sursalgdomonly.o \
 		samrd/srv_samr_als_tdb.o \
 		samrd/srv_samr_tdb.o
 
-SAMRNT5LDAPLIB_OBJ = lib/sursalgdomonly.o \
-		lib/sursalgnt5ldap.o \
-		lib/util_pwdb.o lib/domain_namemap.o \
+SAMRNT5LDAPLIB_OBJ = lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_usr_nt5ldap.o \
 		samrd/srv_samr_dom_nt5ldap.o \
 		samrd/srv_samr_nt5ldap.o
@@ -348,7 +346,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(UNIXPASSDB_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
 
-SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -388,13 +386,14 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
-NETLOGOND_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB)
+NETLOGOND_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) $(LIBSURS)
 
-NETLOGONPASSD_LIBS    = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB)
+NETLOGONPASSD_LIBS    = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB) \
+			$(LIBSURS)
 
-NETLOGONTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)  
+NETLOGONTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)   $(LIBSURS)
 
-NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)  
+NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)   $(LIBSURS)
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -402,7 +401,10 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
 
-SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB)
+LIBSURS_OBJ = lib/surs.o lib/sursalgdomonly.o \
+		lib/sursalgnt5ldap.o
+
+SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) $(LIBSURS)
 
 SAMRPASSD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB)
 
@@ -432,7 +434,8 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            $(SIDDB_OBJ) \
            $(UNIXPASSDB_OBJ) \
            $(STUB_UID_OBJ)
-SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+
+SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) $(LIBSURS)
 
 SMBRUN_OBJ = utils/smbrun.o
 
@@ -453,7 +456,8 @@ SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
            rpc_server/srv_lookup.o \
 		rpc_client/cli_netlogon_sync.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
-SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+
+SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) $(LIBSURS)
 
 REGEDIT_OBJ = lib/cmd_interp.o \
 		rpcclient/regedit.o \
@@ -623,6 +627,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(SAMRD_OBJ1) \
 		$(SAMRTDBLIB_OBJ) \
 		$(SAMRNT5LDAPLIB_OBJ) \
+		$(LIBSURS_OBJ) \
 		$(SAMRPASSLIB_OBJ) \
 		$(SAMRTDBD_OBJ1) \
 		$(SAMRNT5LDAPD_OBJ1) \
@@ -643,6 +648,8 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
+
+LIBSURS_LTOBJS = $(LIBSURS_OBJ:.o=.lo) 
 
 LIBSAMRTDB_LTOBJS = $(SAMRTDBLIB_OBJ:.o=.lo) 
 
@@ -671,10 +678,10 @@ rpc_parse/parse_samr.o rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
 lib/msrpc-client.o rpc_client/cli_pipe_noauth.o lib/set_uid.o \
 rpc_client/cli_netlogon.o rpc_client/msrpc_samr.o \
 rpc_client/cli_pipe_ntlmssp.o lib/msrpc_use.o \
-rpc_parse/parse_sec.o lib/set_vuid.o lib/sursalgdomonly.o \
+rpc_parse/parse_sec.o lib/set_vuid.o \
 rpc_client/ncalrpc_l_use.o rpc_client/ncacn_np_use.o \
 $(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) \
-$(NSSWINS_OBJ) $(SIDDB_OBJ)
+$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ)
 
 #msrpc/msrpcd.o browserd/browserd.o \
 #locking/locking.o msrpc/msrpcd_process.o rpc_server/srv_brs.o \
@@ -689,6 +696,8 @@ NSS_OBJ = $(NSS_OBJ_O:.o=.po)
 ######################################################################
 
 all : CHECK $(SPROGS) $(PROGS) 
+
+libsurs : CHECK $(LIBSURS)
 
 libsamrpass : CHECK $(SAMRPASSLIB)
 
@@ -797,6 +806,11 @@ bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
+
+bin/libsurs.la: $(LIBSURS_LTOBJS) bin/.dummy
+	@echo Linking shared library $@
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSURS_LTOBJS)
 
 bin/libmsrpc.la: $(LIBMSRPC_LTOBJS) bin/.dummy
 	@echo Linking shared library $@

@@ -100,7 +100,8 @@ static uint32 sursalg_uid_to_user_rid(uint32 uid)
  converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id)
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id,
+				BOOL create)
 {
 	DOM_SID tmp_sid;
 	uint32 rid;
@@ -135,7 +136,7 @@ BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id)
  converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL sursalg_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_algdomonly_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create)
 {
 	sid_copy(sid, &global_sam_sid);
