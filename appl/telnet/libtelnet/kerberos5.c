@@ -78,6 +78,12 @@ RCSID("$Id$");
 #include "auth.h"
 #include "misc.h"
 
+#if defined(DCE)
+int dfsk5ok = 0;
+int dfspag = 0;
+int dfsfwd = 0;
+#endif
+
 int forward_flags = 0;  /* Flags get set in telnet/main.c on -f and -F */
 
 /* These values need to be the same as those defined in telnet/main.c. */
@@ -470,6 +476,9 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    break;
 	}
 
+#if defined(DCE)
+	setenv("KRB5CCNAME", ccname, 1);
+#endif
 	ret = krb5_rd_cred (context,
 			    auth_context,
 			    ccache,
@@ -488,8 +497,12 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		printf("Could not read forwarded credentials: %s\r\n",
 		       errbuf);
 	    free (errbuf);
-	} else
+	} else {
 	    Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
+#if defined(DCE)
+	    dfsfwd = 1;
+#endif
+	}
 	chown (ccname + 5, pwd->pw_uid, -1);
 	if (auth_debug_mode)
 	    printf("Forwarded credentials obtained\r\n");
@@ -606,6 +619,9 @@ kerberos5_status(Authenticator *ap, char *name, size_t name_sz, int level)
 		     UserNameRequested))
 	{
 	    strlcpy(name, UserNameRequested, name_sz);
+#if defined(DCE)
+	    dfsk5ok = 1;
+#endif
 	    return(AUTH_VALID);
 	} else
 	    return(AUTH_USER);
@@ -749,4 +765,16 @@ kerberos5_forward(Authenticator *ap)
     }
 }
 
+#if defined(DCE)
+/* if this was a K5 authentication try and join a PAG for the user. */
+void
+kerberos5_dfspag(void)
+{
+    if (dfsk5ok) {
+	dfspag = krb5_dfs_pag(context, dfsfwd, ticket->client,
+				UserNameRequested);
+    }
+}
+#endif
+ 
 #endif /* KRB5 */

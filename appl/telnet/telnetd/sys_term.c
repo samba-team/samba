@@ -1177,6 +1177,10 @@ startslave(char *host, int autologin, char *autoname)
 # endif	/* PARENT_DOES_UTMP */
     } else {
 	getptyslave();
+#if defined(DCE)
+	/* if we authenticated via K5, try and join the PAG */
+	kerberos5_dfspag();
+#endif
 	start_login(host, autologin, autoname);
 	/*NOTREACHED*/
     }
