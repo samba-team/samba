@@ -1,3 +1,8 @@
+1999-12-06  Assar Westerlund  <assar@sics.se>
+
+	* ftp/krb4.c (krb4_auth): the nat-IP address might not be realm
+	bounded.
+
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (dolog): update prototype
