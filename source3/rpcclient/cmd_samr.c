@@ -714,7 +714,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli,
 		sscanf(argv[1], "%x", &access_mask);
 
 	if (argc > 2)
-		sscanf(argv[2], "%x", &acb_mask);
+		sscanf(argv[2], "%hx", &acb_mask);
 
 	/* Get sam policy handle */
 
