@@ -237,7 +237,7 @@ static int net_ads_leave(int argc, const char **argv)
 	return 0;
 }
 
-static int net_ads_join(int argc, const char **argv)
+int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
