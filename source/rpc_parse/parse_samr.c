@@ -1666,7 +1666,7 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 		}
 			
 		init_unistr2(&sam->str[i].uni_srv_name, username, UNI_FLAGS_NONE);
-		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), UNI_FLAGS_NONE);
+		init_unistr2(&sam->str[i].uni_srv_desc, acct_desc, UNI_FLAGS_NONE);
 
 		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
 			  &sam->str[i].uni_srv_name, &sam->str[i].uni_srv_desc,
