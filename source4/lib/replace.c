@@ -205,7 +205,7 @@ Corrections by richard.kettlewell@kewill.com
 	struct group *g;
 	char   *gr;
 	
-	if((grouplst = (gid_t *)malloc(sizeof(gid_t) * max_gr)) == NULL) {
+	if((grouplst = malloc_array_p(gid_t, max_gr)) == NULL) {
 		DEBUG(0,("initgroups: malloc fail !\n"));
 		return -1;
 	}

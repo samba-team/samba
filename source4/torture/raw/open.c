@@ -499,7 +499,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.size = 0;
 	io.t2open.in.timeout = 0;
 
-	io.t2open.in.eas = talloc(mem_ctx, sizeof(io.t2open.in.eas[0]));
+	io.t2open.in.eas = talloc_p(mem_ctx, struct ea_struct);
 	io.t2open.in.num_eas = 1;
 	io.t2open.in.eas[0].flags = 0;
 	io.t2open.in.eas[0].name.s = "EAONE";

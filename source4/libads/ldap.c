@@ -276,7 +276,7 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 
 	if (!in_val) return NULL;
 
-	value = talloc_zero(ctx, sizeof(struct berval));
+	value = talloc_zero_p(ctx, struct berval);
 	if (value == NULL)
 		return NULL;
 	if (in_val->bv_len == 0) return value;
@@ -317,7 +317,7 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char ** ) talloc_zero(ctx, (i+1)*sizeof(char *));
+	values = talloc_zero_array_p(ctx, char *, i+1);
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -336,7 +336,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char **) talloc_zero(ctx, (i+1)*sizeof(char *));
+	values = talloc_zero_array_p(ctx, char *, i+1);
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -758,11 +758,11 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 #define ADS_MODLIST_ALLOC_SIZE 10
 	LDAPMod **mods;
 	
-	if ((mods = (LDAPMod **) talloc_zero(ctx, sizeof(LDAPMod *) * 
-					     (ADS_MODLIST_ALLOC_SIZE + 1))))
+	if ((mods = talloc_zero_array_p(ctx, LDAPMod *, ADS_MODLIST_ALLOC_SIZE + 1))) {
 		/* -1 is safety to make sure we don't go over the end.
 		   need to reset it to NULL before doing ldap modify */
 		mods[ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
+	}
 	
 	return mods;
 }
@@ -804,7 +804,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		*mods = modlist;
 	}
 		
-	if (!(modlist[curmod] = talloc_zero(ctx, sizeof(LDAPMod))))
+	if (!(modlist[curmod] = talloc_zero_p(ctx, LDAPMod)))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
 	if (mod_op & LDAP_MOD_BVALUES) {

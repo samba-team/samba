@@ -51,7 +51,7 @@ NTSTATUS registry_register(const void *_function)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = malloc(sizeof(struct reg_init_function_entry));
+	entry = malloc_p(struct reg_init_function_entry);
 	entry->functions = functions;
 
 	DLIST_ADD(backends, entry);
@@ -85,7 +85,7 @@ WERROR reg_create(struct registry_context **_ret)
 	TALLOC_CTX *mem_ctx;
 	struct registry_context *ret;
 	mem_ctx = talloc_init("registry handle");
-	ret = talloc(mem_ctx, sizeof(struct registry_context));
+	ret = talloc_p(mem_ctx, struct registry_context);
 	ret->mem_ctx = mem_ctx;
 	ZERO_STRUCTP(ret);	
 	*_ret = ret;

@@ -101,7 +101,7 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* with EAs */
 	md.t2mkdir.in.num_eas = 1;
-	md.t2mkdir.in.eas = talloc(mem_ctx, sizeof(md.t2mkdir.in.eas[0]));
+	md.t2mkdir.in.eas = talloc_p(mem_ctx, struct ea_struct);
 	md.t2mkdir.in.eas[0].flags = 0;
 	md.t2mkdir.in.eas[0].name.s = "EAONE";
 	md.t2mkdir.in.eas[0].value = data_blob_talloc(mem_ctx, "1", 1);
