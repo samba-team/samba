@@ -627,13 +627,13 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	server_info->guest = False;
 
-	principal = talloc_strdup(server_info->mem_ctx, gensec_krb5_state->peer_principal);
+	principal = talloc_strdup(server_info, gensec_krb5_state->peer_principal);
 	p = strchr(principal, '@');
 	if (p) {
 		*p = '\0';
 	}
 	server_info->account_name = principal;
-	server_info->domain = talloc_strdup(server_info->mem_ctx, p++);
+	server_info->domain = talloc_strdup(server_info, p++);
 	if (!server_info->domain) {
 		free_server_info(&server_info);
 		return NT_STATUS_NO_MEMORY;
@@ -650,7 +650,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	 * kind... */
 
 	if (logon_info) {
-		ptoken = talloc_p(session_info->mem_ctx, struct nt_user_token);
+		ptoken = talloc_p(session_info, struct nt_user_token);
 		if (!ptoken) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -663,16 +663,16 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		}
 		
 		
-		sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-		ptoken->user_sids[0] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->user_rid);
+		sid = dom_sid_dup(session_info, logon_info->dom_sid);
+		ptoken->user_sids[0] = dom_sid_add_rid(session_info, sid, logon_info->user_rid);
 		ptoken->num_sids++;
-		sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-		ptoken->user_sids[1] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->group_rid);
+		sid = dom_sid_dup(session_info, logon_info->dom_sid);
+		ptoken->user_sids[1] = dom_sid_add_rid(session_info, sid, logon_info->group_rid);
 		ptoken->num_sids++;
 		
 		for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
-			sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-			ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->groups[ptoken->num_sids - 2].rid);
+			sid = dom_sid_dup(session_info, logon_info->dom_sid);
+			ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info, sid, logon_info->groups[ptoken->num_sids - 2].rid);
 		}
 		
 		debug_nt_user_token(DBGC_AUTH, 0, ptoken);

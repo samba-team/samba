@@ -433,7 +433,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			reply_arg = talloc_asprintf(*gensec_state, 
 						    "%s%s%s", session_info->server_info->domain, 
 						    lp_winbind_separator(), session_info->server_info->account_name);
-			talloc_destroy(session_info->mem_ctx);
+			talloc_free(session_info);
 		}
 	} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) {
 		reply_code = "AF";

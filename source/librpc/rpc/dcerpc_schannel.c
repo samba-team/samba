@@ -212,25 +212,18 @@ NTSTATUS dcerpc_schannel_session_info(struct gensec_security *gensec_security,
 				      struct auth_session_info **session_info)
 { 
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
-	TALLOC_CTX *mem_ctx;
-	mem_ctx = talloc_init("dcerpc_schannel_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
-	(*session_info) = talloc_p(mem_ctx, struct auth_session_info);
+	(*session_info) = talloc_p(gensec_security, struct auth_session_info);
 	if (*session_info == NULL) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(*session_info);
-	(*session_info)->mem_ctx = mem_ctx;
 	(*session_info)->refcount = 1;
 	
-	(*session_info)->workstation = talloc_strdup(mem_ctx, dce_schan_state->account_name);
+	(*session_info)->workstation = talloc_strdup(*session_info, dce_schan_state->account_name);
 	if ((*session_info)->workstation == NULL) {
-		talloc_destroy(mem_ctx);
+		talloc_free(*session_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
