@@ -69,8 +69,7 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 
 
 static const struct net_functable net_user_functable[] = {
-	{ "add", net_user_add, net_user_usage, net_user_help },
-	{ "help", net_user_help, net_user_usage, net_user_help },
+	{ "add", "create new user account\n", net_user_add, net_user_usage },
 	{ NULL, NULL }
 };
 
@@ -78,14 +77,6 @@ static const struct net_functable net_user_functable[] = {
 int net_user(struct net_context *ctx, int argc, const char **argv)
 {
 	return net_run_function(ctx, argc, argv, net_user_functable, net_user_usage);
-}
-
-
-int net_user_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("User accounts management:\n");
-	d_printf("\tadd\t\tcreates new account\n");
-	return 0;
 }
 
 
