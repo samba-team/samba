@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include <ctype.h>
 
 struct attribute_syntax {
 	const char *name;
@@ -103,15 +104,13 @@ static int schema_attr_cmp(const char *attr1, const char *attr2)
 
 	ret = ldb_attr_cmp(attr1, attr2);
 	if (ret != 0) {
-		if (tolower(*attr1) == 'd' && tolower(*attr2) == 'd') {
-			if ((ldb_attr_cmp("dn", attr1) == 0) &&
-			    (ldb_attr_cmp("distinguishedName", attr2) == 0)) {
-				return 0;
-			}
-			if ((ldb_attr_cmp("dn", attr2) == 0) &&
-			    (ldb_attr_cmp("distinguishedName", attr1) == 0)) {
-				return 0;
-			}
+		if ((ldb_attr_cmp("dn", attr1) == 0) &&
+		    (ldb_attr_cmp("distinguishedName", attr2) == 0)) {
+			return 0;
+		}
+		if ((ldb_attr_cmp("dn", attr2) == 0) &&
+		    (ldb_attr_cmp("distinguishedName", attr1) == 0)) {
+			return 0;
 		}
 	}
 	return ret;
