@@ -1,3 +1,16 @@
+2004-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/der_cmp.c: add heim_oid_cmp and heim_octet_string_cmp
+	
+	* lib/asn1/Makefile.am (libasn1_la_SOURCES) += der_cmp.c
+	
+	* lib/asn1/der.h: add heim_oid_cmp and heim_octet_string_cmp
+	
+	* lib/asn1/k5.asn1: add ETYPE_AESNNN_CBC_NONE
+	
+	* lib/asn1/k5.asn1: add CMS symmetrical parameters here, enctype
+	rc2-cbc, XXX RC2CBCParameter is wrong because the compiler is broken
+
 2004-04-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/config_file.c: allow parsing directly from strings with
