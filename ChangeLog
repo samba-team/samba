@@ -1,5 +1,25 @@
-2005-03-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-03-10  Love  <lha@kth.se>
 
+	* lib/krb5/pkinit.c: handle the -25 generation path
+
+	* lib/krb5/pkinit.c: use KRB5_PADATA_PK_AS_REQ_19
+	
+	* lib/krb5/pkinit.c: fold in pk-init-25 asn1 changes
+	
+2005-03-09  Love  <lha@kth.se>
+
+	* kdc/pkinit.c: use generated oid's
+	
+	* lib/krb5/pkinit.c: use generated oid's
+	
+2005-03-08  Love  <lha@kth.se>
+
+	* kdc/pkinit.c: update to the asn1 structures used in -25's
+
+	* lib/krb5/pkinit.c: update to the asn1 structures used in -25's
+
+2005-03-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/hdb/hdb-ldap.c: use the newly written hex function from
 	roken and remove the old implementation
 
