@@ -24,6 +24,7 @@
 
 static fstring password;
 static fstring username;
+static fstring server;
 static int got_pass;
 static int test_args;
 
@@ -60,27 +61,85 @@ static struct perm_value standard_values[] = {
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
-	if (numeric) {
-		sid_to_string(str, sid);
-	} else {
+	struct cli_state cli;
+	POLICY_HND pol;
+	struct ntuser_creds creds;
+	char **names;
+	uint32 *types;
+	int num_names;
 
-		/* Need to add LSA lookups */
+        ZERO_STRUCT(creds);             
+	ZERO_STRUCT(cli);
+	ZERO_STRUCT(pol);
 
+        creds.pwd.null_pwd = 1;
+
+	if (numeric || !cli_lsa_initialise(&cli, server, &creds) ||
+	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				&pol) != NT_STATUS_NOPROBLEMO ||
+	    cli_lsa_lookup_sids(&cli, &pol, 1, sid, &names, &types, 
+				&num_names) != NT_STATUS_NOPROBLEMO) {
 		sid_to_string(str, sid);
+		goto done;
+	}
+
+	fstrcpy(str, names[0]);
+
+	safe_free(names[0]);
+	safe_free(names);
+	safe_free(types);
+
+ done:
+	if (cli.initialised) {
+		cli_lsa_close(&cli, &pol);
+		cli_lsa_shutdown(&cli);
 	}
 }
 
 /* convert a string to a SID, either numeric or username/group */
 static BOOL StringToSid(DOM_SID *sid, fstring str)
 {
-	if (strncmp(str,"S-", 2) == 0) {
-		return string_to_sid(sid, str);
-	} else {
+	uint32 *types;
+	struct cli_state cli;
+	struct ntuser_creds creds;
+	POLICY_HND pol;
+	int num_sids;
+	BOOL result = True;
+	DOM_SID *sids;
+	
+	/* Short cut */
 
-		/* Need to add LSA lookups */
-
+	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
 	}
+
+	ZERO_STRUCT(creds);
+	ZERO_STRUCT(cli);
+	ZERO_STRUCT(pol);
+
+	creds.pwd.null_pwd = 1;      
+
+	if (!cli_lsa_initialise(&cli, server, &creds) ||
+	    cli_lsa_open_policy(&cli, True, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				&pol) != NT_STATUS_NOPROBLEMO ||
+	    cli_lsa_lookup_names(&cli, &pol, 1, &str, &sids, &types, 
+				 &num_sids) != NT_STATUS_NOPROBLEMO) {
+		result = string_to_sid(sid, str);
+		goto done;
+	}
+
+	sid_copy(sid, &sids[0]);
+
+	safe_free(sids);
+	safe_free(types);
+
+ done:
+	if (cli.initialised) {
+		cli_lsa_close(&cli, &pol);
+		cli_lsa_shutdown(&cli);
+	}
+
+	return result;
 }
 
 
@@ -178,7 +237,7 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	/* Try to parse text form */
 
-	if (!string_to_sid(&sid, str)) {
+	if (!StringToSid(&sid, str)) {
 		return False;
 	}
 
@@ -516,7 +575,6 @@ struct cli_state *connect_one(char *share)
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
-	fstring server;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 	extern pstring global_myname;
