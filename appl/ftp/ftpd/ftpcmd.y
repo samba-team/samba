@@ -45,8 +45,6 @@
 #include "ftpd_locl.h"
 RCSID("$Id$");
 
-#undef STAT /* conflicts with AIX sys/dir.h */
-
 off_t	restart_point;
 
 static	int cmd_type;
@@ -98,7 +96,7 @@ static int	 yylex (void);
 	APPE	MLFL	MAIL	MSND	MSOM	MSAM
 	MRSQ	MRCP	ALLO	REST	RNFR	RNTO
 	ABOR	DELE	CWD	LIST	NLST	SITE
-	STAT	HELP	NOOP	MKD	RMD	PWD
+	sTAT	HELP	NOOP	MKD	RMD	PWD
 	CDUP	STOU	SMNT	SYST	SIZE	MDTM
 
 	UMASK	IDLE	CHMOD
@@ -317,14 +315,14 @@ cmd
 			if ($4 != NULL)
 				free($4);
 		}
-	| STAT check_login SP pathname CRLF
+	| sTAT check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
 				statfilecmd($4);
 			if ($4 != NULL)
 				free($4);
 		}
-	| STAT CRLF
+	| sTAT CRLF
 		{
 		    if(oobflag){
 			if (file_size != (off_t) -1)
@@ -932,7 +930,7 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "NLST", NLST, OSTR, 1,	"[ <sp> path-name ]" },
 	{ "SITE", SITE, SITECMD, 1,	"site-cmd [ <sp> arguments ]" },
 	{ "SYST", SYST, ARGS, 1,	"(get type of operating system)" },
-	{ "STAT", STAT, OSTR, 1,	"[ <sp> path-name ]" },
+	{ "STAT", sTAT, OSTR, 1,	"[ <sp> path-name ]" },
 	{ "HELP", HELP, OSTR, 1,	"[ <sp> <string> ]" },
 	{ "NOOP", NOOP, ARGS, 1,	"" },
 	{ "MKD",  MKD,  STR1, 1,	"<sp> path-name" },
