@@ -86,6 +86,22 @@ AC_ARG_WITH(configdir,
     ;;
   esac])
 
+#################################################
+# set codepage directory location
+AC_ARG_WITH(codepagedir,
+[  --with-codepagedir=DIR     Where to put codepage files ($codepagedir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-codepagedir called without argument - will use default])
+  ;;
+  * )
+    codepagedir="$withval"
+    ;;
+  esac])
+
 
 AC_SUBST(codepagedir)
 AC_SUBST(configdir)
