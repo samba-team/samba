@@ -120,10 +120,8 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if(ret)
 	goto out;
 
-    ret = _kadm5_set_keys2(context, &ent, princ->n_key_data, princ->key_data);
-    if(ret)
-	goto out;
-    
+    ent.kvno = 1;
+
     ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out;
