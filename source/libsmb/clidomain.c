@@ -269,7 +269,7 @@ extern pstring global_myname;
 
 BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 {
-	fstring remote_machine;
+	fstring remote_machine, remote_domain;
 	struct cli_state cli;
 	uint16 fnum;
 	
@@ -289,6 +289,20 @@ BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
                 (char *) gettext("Cannot communicate with domain controller.Domain name: %s.Domain controller address: %s."),domain,inet_ntoa(dest_ip));
         /* END_ADMIN_LOG */
 
+		return False;
+	}
+
+	/* Check that this DC is actually a controller for the domain we
+	   are interested in by looking up the #1c name. */
+
+	if (name_status_find(domain, 0x1c, 0x1c, dest_ip, remote_domain)) {
+		if (!strequal(remote_domain, domain)) {
+			DEBUG(1, ("attempt_connect_dc: %s not a member of domain %s, rather %s\n", remote_machine, domain, remote_domain));
+			return False;
+		}
+	} else {
+		DEBUG(1, ("attempt_connect_dc(): could not look up %s#1c\n", 
+			  remote_machine));
 		return False;
 	}
 
@@ -532,23 +546,6 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 					  "address for %s\n", remote_machine));
 				continue;
 			}
-
-			/* Check that this DC is actually a member of the
-			   domain we are interested in */
-
-			if (name_status_find(domain, 0x1c, 0x1c, dest_ip, the_domain)) {
-                                if (!strequal(the_domain, domain)) {
-                                        DEBUG(1, ("get_any_dc_name(): dc %s not a member of domain %s (%s)\n",
-                                                  remote_machine, domain, the_domain));
-                                        connected_ok = False;
-                                        continue;
-                                }
-			} else {
-                                DEBUG(1, ("get_any_dc_name(): %s not a dc\n",
-                                          remote_machine));
-                                connected_ok = False;
-                                continue;
-                        }
 
 			connected_ok = attempt_connect_dc(domain, dest_ip);
 		}
