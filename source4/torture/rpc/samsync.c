@@ -428,6 +428,8 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 
 	nt_status = dcerpc_samr_QueryUserInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &user_handle)) {
+		printf("samr_handle_Close failed - %s\n", 
+		       nt_errstr(nt_status));
 		return False;
 	}
 
@@ -499,10 +501,6 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
 		creds_arcfour_crypt(samsync_state->creds, data.data, data.length);
-#if 0		
-		printf("Sensitive Data for %s:\n", username);
-		dump_data(0, data.data, data.length);
-#endif
 		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
@@ -513,8 +511,13 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
 				nt_hash_p = &nt_hash;
 			}
+		} else {
+			printf("Failed to parse Sensitive Data for %s:\n", username);
+#if 0
+			dump_data(0, data.data, data.length);
+#endif
+			return False;
 		}
-		
 	}
 
 	nt_status = test_SamLogon(samsync_state->p, mem_ctx, samsync_state->creds, 
@@ -553,6 +556,9 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (!lm_hash_p && !nt_hash_p) {
 			return True;
 		}
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE)) {
+		/* We would need to know the server's current time to test this properly */
+		return True;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		TEST_INT_EQUAL(user->rid, info3->base.rid);
 		TEST_INT_EQUAL(user->primary_gid, info3->base.primary_gid);
@@ -780,6 +786,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to decrypt secrets OLD blob\n");
 			return False;
 		}
 
@@ -819,6 +826,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to decrypt secrets OLD blob\n");
 			return False;
 		}
 		
@@ -953,11 +961,15 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 		return False;
 	}
 
-	if (!e.out.privs) {
-		return account->privilege_entries != 0;
+	if ((account->privilege_entries && !e.out.privs)) {
+		printf("Account %s has privilages in SamSync, but not LSA\n",
+		       dom_sid_string(mem_ctx, dom_sid));
+		return False;
 	}
 
-	if ((account->privilege_entries && !e.out.privs)) {
+	if (!account->privilege_entries && e.out.privs && e.out.privs->count) {
+		printf("Account %s has privilages in LSA, but not SamSync\n",
+		       dom_sid_string(mem_ctx, dom_sid));
 		return False;
 	}
 
@@ -1041,36 +1053,60 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 			for (d=0; d < r.out.delta_enum_array->num_deltas; d++) {
 				switch (r.out.delta_enum_array->delta_enum[d].delta_type) {
 				case NETR_DELTA_DOMAIN:
-					ret &= samsync_handle_domain(mem_ctx, samsync_state, 
-								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_domain(mem_ctx, samsync_state, 
+								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_DOMAIN\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_GROUP:
-					ret &= samsync_handle_group(mem_ctx, samsync_state, 
-								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_group(mem_ctx, samsync_state, 
+								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_USER\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_USER:
-					ret &= samsync_handle_user(mem_ctx, samsync_state, 
-								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_user(mem_ctx, samsync_state, 
+								 r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_USER\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_ALIAS:
-					ret &= samsync_handle_alias(mem_ctx, samsync_state, 
-								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_alias(mem_ctx, samsync_state, 
+								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_ALIAS\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_POLICY:
-					ret &= samsync_handle_policy(mem_ctx, samsync_state, 
-								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_policy(mem_ctx, samsync_state, 
+								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_POLICY\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_TRUSTED_DOMAIN:
-					ret &= samsync_handle_trusted_domain(mem_ctx, samsync_state, 
-									     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_trusted_domain(mem_ctx, samsync_state, 
+									   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_TRUSTED_DOMAIN\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_ACCOUNT:
-					ret &= samsync_handle_account(mem_ctx, samsync_state, 
-								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_account(mem_ctx, samsync_state, 
+								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_ACCOUNT\n");
+						ret = False;
+					}
 					break;
 				case NETR_DELTA_SECRET:
-					ret &= samsync_handle_secret(mem_ctx, samsync_state, 
-								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					if (!samsync_handle_secret(mem_ctx, samsync_state, 
+								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+						printf("Failed to handle DELTA_SECRET\n");
+						ret = False;
+					}
 					break;
 				}
 			}
@@ -1126,7 +1162,6 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 					printf("Verifiction of trust password to %s: should have failed (wrong password), instead: %s\n", 
 					       t->name, nt_errstr(nt_status));
-					ret = False;
 					ret = False;
 				}
 				
@@ -1410,18 +1445,22 @@ BOOL torture_rpc_samsync(void)
 	status = dcerpc_schannel_creds(samsync_state->p_netlogon_wksta->conn->security_state.generic_state, 
 				       mem_ctx, &samsync_state->creds_netlogon_wksta);
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to obtail schanel creds!\n");
 		ret = False;
 	}
 
 	if (!test_DatabaseSync(samsync_state, mem_ctx)) {
+		printf("DatabaseSync failed\n");
 		ret = False;
 	}
 
 	if (!test_DatabaseDeltas(samsync_state, mem_ctx)) {
+		printf("DatabaseDeltas failed\n");
 		ret = False;
 	}
 
 	if (!test_DatabaseSync2(samsync_state->p, mem_ctx, samsync_state->creds)) {
+		printf("DatabaseSync2 failed\n");
 		ret = False;
 	}
 failed:
