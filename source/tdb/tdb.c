@@ -610,7 +610,7 @@ char *tdb_error(TDB_CONTEXT *tdb)
 		{TDB_ERR_OOM, "Out of memory"},
 		{TDB_ERR_EXISTS, "Record exists"},
 		{TDB_ERR_NOEXIST, "Record does not exist"},
-		{-1, NULL}};
+		{(enum TDB_ERROR)-1, NULL}};
         if (tdb != NULL) {
             for (i=0;emap[i].estring;i++) {
 		if (tdb->ecode == emap[i].ecode) return emap[i].estring;
