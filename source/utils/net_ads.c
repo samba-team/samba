@@ -1032,7 +1032,7 @@ static int net_ads_search(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	const char *exp;
+	const char *ldap_exp;
 	const char **attrs;
 	void *res = NULL;
 
@@ -1044,12 +1044,12 @@ static int net_ads_search(int argc, const char **argv)
 		return -1;
 	}
 
-	exp = argv[0];
+	ldap_exp = argv[0];
 	attrs = (argv + 1);
 
 	rc = ads_do_search_all(ads, ads->config.bind_path,
 			       LDAP_SCOPE_SUBTREE,
-			       exp, attrs, &res);
+			       ldap_exp, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("search failed: %s\n", ads_errstr(rc));
 		return -1;
