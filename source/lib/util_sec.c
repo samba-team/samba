@@ -26,7 +26,7 @@
 
 void gain_root_privilege(void)
 {
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
+#if defined(HAVE_SETRESUID)
 
     /*
      * Ensure all our uids are set to root.
@@ -34,7 +34,7 @@ void gain_root_privilege(void)
      */
     setresuid(0,0,0);
 
-#else /* ! (defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID) ) */
+#else /* !HAVE_SETRESUID */
 
     /*
      * Ensure all our uids are set to root.
@@ -43,13 +43,13 @@ void gain_root_privilege(void)
 
     setuid(0);
 
-#if defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+#if defined(HAVE_SETREUID)
 	setreuid(0,0);
 #else
     seteuid(0);
 #endif
 
-#endif /* (defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID) ) */
+#endif /* HAVE_SETRESUID */
 }
 
 /****************************************************************************
@@ -88,7 +88,7 @@ int set_effective_uid(uid_t uid)
 
 #if defined(HAVE_SETRESUID)
     return setresuid(-1,uid,-1);
-#elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+#elif defined(HAVE_SETREUID)
 	return setreuid(-1,uid);
 #else
     if ((seteuid(uid) != 0) && (setuid(uid) != 0))
@@ -105,7 +105,7 @@ int set_effective_gid(gid_t gid)
 {
 #if defined(HAVE_SETRESGID)
 	return setresgid(-1,gid,-1);
-#elif defined(HAVE_SETREGID) && !defined(HAVE_SETEGID)
+#elif defined(HAVE_SETREGID)
 	return setregid(-1,gid);
 #else
 	if ((setegid(gid) != 0) && (setgid(gid) != 0))
@@ -129,7 +129,7 @@ int set_real_uid(uid_t uid)
 
 #if defined(HAVE_SETRESUID)
     return setresuid(uid,-1,-1);
-#elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+#elif defined(HAVE_SETREUID)
     return setreuid(uid,-1);
 #else
 	/* 
@@ -175,7 +175,7 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	 * Ensure we change all our gids.
 	 */
 	setgid(gid);
-#if defined(HAVE_SETREGID) && !defined(HAVE_SETEGID)
+#if defined(HAVE_SETREGID)
 	setregid(gid,gid);
 #else
 	setegid(gid);
@@ -186,7 +186,7 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	 */
 	setuid(uid);
 
-#if defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+#if defined(HAVE_SETREUID)
 	setreuid(uid,uid);
 #else
 	seteuid(uid);

@@ -19,7 +19,7 @@ non-trapdoor system\n");
         if (setresuid(0,0,0) != 0) exit(1);
         if (getuid() != 0) exit(1);
         if (geteuid() != 0) exit(1);
-#elif defined(HAVE_SETREUID) && !defined(HAVE_SETEUID)
+#elif defined(HAVE_SETREUID)
 		if (setreuid(1,1) != 0) exit(1);
 		if (getuid() != 1) exit(1);
 		if (geteuid() != 1) exit(1);
@@ -40,8 +40,8 @@ non-trapdoor system\n");
         if (setresgid(0,0,0) != 0) exit(1);
         if (getgid() != 0) exit(1);
         if (getegid() != 0) exit(1);
-#elif defined(HAVE_SETREGID) && !defined(HAVE_SETEGID)
-		if (setresgid(1,1) != 0) exit(1);
+#elif defined(HAVE_SETREGID)
+		if (setregid(1,1) != 0) exit(1);
 		if (getgid() != 1) exit(1);
 		if (getegid() != 1) exit(1);
 		if (setregid(0,0) != 0) exit(1);
