@@ -143,6 +143,78 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     flags->client =	        1; /* XXX */
 }
 
+#define KRB5_KDB_SALTTYPE_NORMAL	0
+#define KRB5_KDB_SALTTYPE_V4		1
+#define KRB5_KDB_SALTTYPE_NOREALM	2
+#define KRB5_KDB_SALTTYPE_ONLYREALM	3
+#define KRB5_KDB_SALTTYPE_SPECIAL	4
+#define KRB5_KDB_SALTTYPE_AFS3		5
+
+static krb5_error_code
+fix_salt(krb5_context context, hdb_entry *ent, int key_num)
+{
+    krb5_error_code ret;
+    Salt *salt = ent->keys.val[key_num].salt;
+    /* fix salt type */
+    switch((int)salt->type) {
+    case KRB5_KDB_SALTTYPE_NORMAL:
+	salt->type = KRB5_PADATA_PW_SALT;
+	break;
+    case KRB5_KDB_SALTTYPE_V4:
+	krb5_data_free(&salt->salt);
+	salt->type = KRB5_PADATA_PW_SALT;
+	break;
+    case KRB5_KDB_SALTTYPE_NOREALM:
+    {
+	size_t len;
+	int i;
+	krb5_error_code ret;
+	char *p;
+	    
+	len = 0;
+	for (i = 0; i < ent->principal->name.name_string.len; ++i)
+	    len += strlen(ent->principal->name.name_string.val[i]);
+	ret = krb5_data_alloc (&salt->salt, len);
+	if (ret)
+	    return ret;
+	p = salt->salt.data;
+	for (i = 0; i < ent->principal->name.name_string.len; ++i) {
+	    memcpy (p,
+		    ent->principal->name.name_string.val[i],
+		    strlen(ent->principal->name.name_string.val[i]));
+	    p += strlen(ent->principal->name.name_string.val[i]);
+	}
+
+	salt->type = KRB5_PADATA_PW_SALT;
+	break;
+    }
+    case KRB5_KDB_SALTTYPE_ONLYREALM:
+	krb5_data_free(&salt->salt);
+	ret = krb5_data_copy(&salt->salt, 
+			     ent->principal->realm, 
+			     strlen(ent->principal->realm));
+	if(ret)
+	    return ret;
+	salt->type = KRB5_PADATA_PW_SALT;
+	break;
+    case KRB5_KDB_SALTTYPE_SPECIAL:
+	salt->type = KRB5_PADATA_PW_SALT;
+	break;
+    case KRB5_KDB_SALTTYPE_AFS3:
+	krb5_data_free(&salt->salt);
+	ret = krb5_data_copy(&salt->salt, 
+		       ent->principal->realm, 
+		       strlen(ent->principal->realm));
+	if(ret)
+	    return ret;
+	salt->type = KRB5_PADATA_AFS3_SALT;
+	break;
+    default:
+	abort();
+    }
+    return 0;
+}
+
 int
 mit_prop_dump(void *arg, const char *file)
 {
@@ -269,7 +341,7 @@ mit_prop_dump(void *arg, const char *file)
 	    ent.keys.val[i].key.keytype = getint(&p); /* key type */
 	    tmp = getint(&p); /* key length */
 	    /* the first two bytes of the key is the key length --
-               skip it */
+	       skip it */
 	    krb5_data_alloc(&ent.keys.val[i].key.keyvalue, tmp - 2);
 	    q = nexttoken(&p); /* key itself */
 	    hex_to_octet_string(q + 4, &ent.keys.val[i].key.keyvalue);
@@ -279,9 +351,16 @@ mit_prop_dump(void *arg, const char *file)
 		ALLOC(ent.keys.val[i].salt);
 		ent.keys.val[i].salt->type = getint(&p); /* salt type */
 		tmp = getint(&p); /* salt length */
-		krb5_data_alloc(&ent.keys.val[i].salt->salt, tmp - 2);
-		q = nexttoken(&p); /* salt itself */
-		hex_to_octet_string(q + 4, &ent.keys.val[i].salt->salt);
+		if(tmp > 0) {
+		    krb5_data_alloc(&ent.keys.val[i].salt->salt, tmp - 2);
+		    q = nexttoken(&p); /* salt itself */
+		    hex_to_octet_string(q + 4, &ent.keys.val[i].salt->salt);
+		} else {
+		    ent.keys.val[i].salt->salt.length = 0;
+		    ent.keys.val[i].salt->salt.data = NULL;
+		    tmp = getint(&p);	/* -1, if no data. */
+		}
+		fix_salt(pd->context, &ent, i);
 	    }
 	}
 	q = nexttoken(&p); /* extra data */
