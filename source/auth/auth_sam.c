@@ -501,6 +501,8 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 	   unless it is one of our aliases. */
 	
 	if (!is_myname(user_info->domain.str)) {
+		DEBUG(7,("The requested user domain is not the local server name. [%s]\\[%s]\n",
+			user_info->domain.str,user_info->internal_username.str));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
@@ -519,8 +521,52 @@ NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *para
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+Check SAM security (above) but with a few extra checks if we're a DC.
+****************************************************************************/
+
+static NTSTATUS check_samstrict_dc_security(const struct auth_context *auth_context,
+					 void *my_private_data, 
+					 TALLOC_CTX *mem_ctx,
+					 const auth_usersupplied_info *user_info, 
+					 auth_serversupplied_info **server_info)
+{
+
+	if (!user_info || !auth_context) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	/* If we are a PDC we must not check the password here 
+	   unless it is one of our aliases, empty
+	   or equal to our domain name.  Other names may be
+	   Trusted domains.
+	*/
+
+	if ((!is_myworkgroup(user_info->domain.str))&&
+		(!is_myname(user_info->domain.str))) {
+		DEBUG(7,("The requested user domain is not the local server name or our domain. [%s]\\[%s]\n",
+			user_info->domain.str,user_info->internal_username.str));
+		return NT_STATUS_NO_SUCH_USER;
+	}		
+
+	return check_sam_security(auth_context, my_private_data, mem_ctx, user_info, server_info);
+}
+
+/* module initialisation */
+NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_context, auth_method)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*auth_method)->auth = check_samstrict_dc_security;
+	(*auth_method)->name = "samstrict_dc";
+	return NT_STATUS_OK;
+}
+
 NTSTATUS auth_sam_init(void)
 {
+	smb_register_auth(AUTH_INTERFACE_VERSION, "samstrict_dc", auth_init_samstrict_dc);
 	smb_register_auth(AUTH_INTERFACE_VERSION, "samstrict", auth_init_samstrict);
 	smb_register_auth(AUTH_INTERFACE_VERSION, "sam", auth_init_sam);
 	return NT_STATUS_OK;
