@@ -420,7 +420,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *nt_session_key) 
+		      DATA_BLOB *user_session_key) 
 {
 	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
@@ -437,12 +437,12 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	if (nt_response) {
 		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal,
 							names_blob); 
-		if (nt_session_key) {
-			*nt_session_key = data_blob(NULL, 16);
+		if (user_session_key) {
+			*user_session_key = data_blob(NULL, 16);
 			
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, nt_session_key->data);
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, user_session_key->data);
 		}
 	}
 	

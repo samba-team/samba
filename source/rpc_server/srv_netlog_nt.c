@@ -691,7 +691,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		pstring my_name;
 		fstring user_sid_string;
 		fstring group_sid_string;
-		uchar nt_session_key[16];
+		uchar user_session_key[16];
 		uchar lm_session_key[16];
 		uchar netlogon_sess_key[16];
 
@@ -727,10 +727,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 		ZERO_STRUCT(netlogon_sess_key);
 		memcpy(netlogon_sess_key, p->dc.sess_key, 8);
-		if (server_info->nt_session_key.length) {
-			memcpy(nt_session_key, server_info->nt_session_key.data, 
-			       MIN(sizeof(nt_session_key), server_info->nt_session_key.length));
-			SamOEMhash(nt_session_key, netlogon_sess_key, 16);
+		if (server_info->user_session_key.length) {
+			memcpy(user_session_key, server_info->user_session_key.data, 
+			       MIN(sizeof(user_session_key), server_info->user_session_key.length));
+			SamOEMhash(user_session_key, netlogon_sess_key, 16);
 		}
 		if (server_info->lm_session_key.length) {
 			memcpy(lm_session_key, server_info->lm_session_key.data, 
@@ -760,7 +760,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    num_gids,    /* uint32 num_groups */
 				    gids    , /* DOM_GID *gids */
 				    0x20    , /* uint32 user_flgs (?) */
-				    server_info->nt_session_key.length ? nt_session_key : NULL,
+				    server_info->user_session_key.length ? user_session_key : NULL,
 				    server_info->lm_session_key.length ? lm_session_key : NULL,
 				    my_name     , /* char *logon_srv */
 				    pdb_get_domain(sampw),
@@ -768,7 +768,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    /* Should be users domain sid, not servers - for trusted domains */
 				  
 				    NULL); /* char *other_sids */
-		ZERO_STRUCT(nt_session_key);
+		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}
 	free_server_info(&server_info);

@@ -150,7 +150,7 @@ typedef struct winbindd_gr {
 
 #define WBFLAG_PAM_INFO3_NDR  		0x0001
 #define WBFLAG_PAM_INFO3_TEXT 		0x0002
-#define WBFLAG_PAM_NTKEY      		0x0004
+#define WBFLAG_PAM_USER_SESSION_KEY     0x0004
 #define WBFLAG_PAM_LMKEY      		0x0008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
@@ -264,7 +264,7 @@ struct winbindd_response {
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
-			char nt_session_key[16];
+			char user_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
 		uint32 rid;	/* create user or group */

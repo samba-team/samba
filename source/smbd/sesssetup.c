@@ -881,8 +881,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
-	if (server_info->nt_session_key.data) {
-		session_key = data_blob(server_info->nt_session_key.data, server_info->nt_session_key.length);
+	if (server_info->user_session_key.data) {
+		session_key = data_blob(server_info->user_session_key.data, server_info->user_session_key.length);
 	} else {
 		session_key = data_blob(NULL, 0);
 	}

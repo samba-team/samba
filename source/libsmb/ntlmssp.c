@@ -500,7 +500,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				    const DATA_BLOB request, DATA_BLOB *reply) 
 {
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
-	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB user_session_key = data_blob(NULL, 0);
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint32 ntlmssp_command, auth_flags;
@@ -663,19 +663,19 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	/* Finally, actually ask if the password is OK */
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, 
-								       &nt_session_key, &lm_session_key))) {
+								       &user_session_key, &lm_session_key))) {
 		data_blob_free(&encrypted_session_key);
 		return nt_status;
 	}
 
-	dump_data_pw("NT session key:\n", nt_session_key.data, nt_session_key.length);
+	dump_data_pw("NT session key:\n", user_session_key.data, user_session_key.length);
 	dump_data_pw("LM first-8:\n", lm_session_key.data, lm_session_key.length);
 
 	/* Handle the different session key derivation for NTLM2 */
 	if (doing_ntlm2) {
-		if (nt_session_key.data && nt_session_key.length == 16) {
+		if (user_session_key.data && user_session_key.length == 16) {
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			hmac_md5(nt_session_key.data, session_nonce, 
+			hmac_md5(user_session_key.data, session_nonce, 
 				 sizeof(session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
@@ -702,8 +702,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
 			session_key = data_blob(NULL, 0);
 		}
-	} else if (nt_session_key.data) {
-		session_key = nt_session_key;
+	} else if (user_session_key.data) {
+		session_key = user_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 	} else if (lm_session_key.data) {
@@ -958,7 +958,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		uchar nt_hash[16];
 		uchar session_nonce[16];
 		uchar session_nonce_hash[16];
-		uchar nt_session_key[16];
+		uchar user_session_key[16];
 		E_md4hash(ntlmssp_state->password, nt_hash);
 		
 		lm_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
@@ -984,8 +984,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 
-		SMBsesskeygen_ntv1(nt_hash, NULL, nt_session_key);
-		hmac_md5(nt_session_key, session_nonce, sizeof(session_nonce), session_key.data);
+		SMBsesskeygen_ntv1(nt_hash, NULL, user_session_key);
+		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 	} else {
 		
