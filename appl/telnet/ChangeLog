@@ -1,5 +1,8 @@
 Mon Nov  3 07:09:16 1997  Assar Westerlund  <assar@sics.se>
 
+	* telnet/telnet_locl.h: only include <sys/termio.h> iff
+ 	!defined(HAVE_TERMIOS_H)
+
 	* libtelnet/kerberos.c (kerberos4_is): send the peer address to
  	krb_rd_req
 
