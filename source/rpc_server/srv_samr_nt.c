@@ -787,7 +787,7 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+static uint32 get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
 				    uint32 *p_num_entries, uint32 max_entries)
 {
 	fstring sid_str;
@@ -879,7 +879,9 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 
 	*p_num_entries = num_entries;
 
-	return True;
+	if (num_entries >= max_entries)
+		return STATUS_MORE_ENTRIES;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -967,12 +969,15 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 	sid_to_string(sid_str, &sid);
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
-	if (!get_group_alias_entries(grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
-		return NT_STATUS_ACCESS_DENIED;
+	r_u->status = get_group_alias_entries(grp, &sid, q_u->start_idx,
+						&num_entries, MAX_SAM_ENTRIES);
+
+	if (r_u->status != NT_STATUS_OK && r_u->status != STATUS_MORE_ENTRIES)
+		return r_u->status;
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
-	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx, num_entries);
+	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_entries, num_entries);
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
