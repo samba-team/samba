@@ -199,6 +199,9 @@ AC_CHECK_FUNCS(setbuffer)
 AC_CHECK_FUNCS(getdents)
 AC_CHECK_FUNCS(pread pwrite)
 
+AC_CHECK_HEADERS(sys/epoll.h)
+AC_CHECK_FUNCS(epoll_create)
+
 # needed for lib/charcnv.c
 AC_CHECK_FUNCS(setlocale)
 

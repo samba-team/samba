@@ -38,8 +38,8 @@
 
   2) a timed event. You can register an event that happens at a
      specific time.  You can register as many of these as you
-     like. When they are called the handler can choose to set the time
-     for the next event. If next_event is not set then the event is removed.
+     like. They are single shot - add a new timed event in the event
+     handler to get another event.
 
   To setup a set of events you first need to create a event_context
   structure using the function event_context_init(); This returns a
@@ -60,11 +60,14 @@
 #include "dlinklist.h"
 #include "events.h"
 
+/* use epoll if it is available */
+#if defined(HAVE_EPOLL_CREATE) && defined(HAVE_SYS_EPOLL_H)
+#define WITH_EPOLL 1
+#endif
 
-/*
-  please read the comments in events.c before modifying
-*/
-
+#if WITH_EPOLL
+#include <sys/epoll.h>
+#endif
 
 struct event_context {	
 	/* list of filedescriptor events */
@@ -92,13 +95,20 @@ struct event_context {
 	/* information for exiting from the event loop */
 	int exit_code;
 
-	/* this is changed by the destructors for any event type. It
-	   is used to detect event destruction by event handlers,
-	   which means the code that is calling all event handles
-	   needs to assume that the linked list is no longer valid 
+	/* this is changed by the destructors for the fd event
+	   type. It is used to detect event destruction by event
+	   handlers, which means the code that is calling the event
+	   handler needs to assume that the linked list is no longer
+	   valid
 	*/
 	uint32_t destruction_count;
+
+#if WITH_EPOLL
+	/* when using epoll this is the handle from epoll_create */
+	int epoll_fd;
+#endif
 };
+
 
 /*
   create a event_context structure. This must be the first events
@@ -112,8 +122,13 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 	ev = talloc_zero(mem_ctx, struct event_context);
 	if (!ev) return NULL;
 
+#if WITH_EPOLL
+	ev->epoll_fd = epoll_create(64);
+#endif
+
 	return ev;
 }
+
 
 /*
   recalculate the maxfd
@@ -129,20 +144,64 @@ static void calc_maxfd(struct event_context *ev)
 	}
 }
 
+
 /* to mark the ev->maxfd invalid
  * this means we need to recalculate it
  */
 #define EVENT_INVALID_MAXFD (-1)
 
 
+#if WITH_EPOLL
+/*
+  called when a epoll call fails, and we should fallback
+  to using select
+*/
+static void epoll_fallback_to_select(struct event_context *ev, const char *reason)
+{
+	DEBUG(0,("%s - using select() - %s\n", reason, strerror(errno)));
+	close(ev->epoll_fd);
+	ev->epoll_fd = -1;
+}
+#endif
+
+
+#if WITH_EPOLL
+/*
+  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+*/
+static uint32_t epoll_map_flags(uint16_t flags)
+{
+	uint32_t ret = 0;
+	if (flags & EVENT_FD_READ) ret |= EPOLLIN;
+	if (flags & EVENT_FD_WRITE) ret |= EPOLLOUT;
+	return ret;
+}
+#endif
+
+/*
+  destroy an fd_event
+*/
 static int event_fd_destructor(void *ptr)
 {
 	struct fd_event *fde = talloc_get_type(ptr, struct fd_event);
-	if (fde->event_ctx->maxfd == fde->fd) {
-		fde->event_ctx->maxfd = EVENT_INVALID_MAXFD;
+	struct event_context *ev = fde->event_ctx;
+
+	if (ev->maxfd == fde->fd) {
+		ev->maxfd = EVENT_INVALID_MAXFD;
 	}
-	DLIST_REMOVE(fde->event_ctx->fd_events, fde);
-	fde->event_ctx->destruction_count++;
+	DLIST_REMOVE(ev->fd_events, fde);
+	ev->destruction_count++;
+#if WITH_EPOLL
+	if (ev->epoll_fd != -1) {
+		struct epoll_event event;
+		ZERO_STRUCT(event);
+		event.events = epoll_map_flags(fde->flags);
+		event.data.ptr = fde;
+		if (epoll_ctl(ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
+			epoll_fallback_to_select(ev, "EPOLL_CTL_DEL failed");
+		}
+	}
+#endif
 	return 0;
 }
 
@@ -173,6 +232,19 @@ struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 	if (mem_ctx) {
 		talloc_steal(mem_ctx, e);
 	}
+
+#if WITH_EPOLL
+	if (ev->epoll_fd != -1) {
+		struct epoll_event event;
+		ZERO_STRUCT(event);
+		event.events = epoll_map_flags(flags);
+		event.data.ptr = e;
+		if (epoll_ctl(ev->epoll_fd, EPOLL_CTL_ADD, e->fd, &event) != 0) {
+			epoll_fallback_to_select(ev, "EPOLL_CTL_ADD failed");
+		}
+	}
+#endif
+
 	return e;
 }
 
@@ -182,7 +254,7 @@ struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 */
 uint16_t event_fd_flags(struct fd_event *fde)
 {
-	return fde->flags;
+	return fde?fde->flags:0;
 }
 
 /*
@@ -190,7 +262,23 @@ uint16_t event_fd_flags(struct fd_event *fde)
 */
 void event_fd_setflags(struct fd_event *fde, uint16_t flags)
 {
-	fde->flags = flags;
+#if WITH_EPOLL
+	struct event_context *ev;
+	if (fde == NULL) return;
+	ev = fde->event_ctx;
+	if (ev->epoll_fd != -1) {
+		struct epoll_event event;
+		ZERO_STRUCT(event);
+		event.events = epoll_map_flags(flags);
+		event.data.ptr = fde;
+		if (epoll_ctl(ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
+			epoll_fallback_to_select(ev, "EPOLL_CTL_MOD failed");
+		}
+	}
+#endif
+	if (fde) {
+		fde->flags = flags;
+	}
 }
 
 /*
@@ -242,16 +330,93 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 }
 
 /*
-  do a single event loop using the events defined in ev this function
+  a timer has gone off - call it
 */
-int event_loop_once(struct event_context *ev)
+static void event_loop_timer(struct event_context *ev)
+{
+	struct timeval t = timeval_current();
+	struct timed_event *te = ev->timed_events;
+
+	te->next_event = timeval_zero();
+
+	te->handler(ev, te, t, te->private);
+
+	/* note the care taken to prevent referencing a event
+	   that could have been freed by the handler */
+	if (ev->timed_events && timeval_is_zero(&ev->timed_events->next_event)) {
+		talloc_free(ev->timed_events);
+	}
+}
+
+#if WITH_EPOLL
+/*
+  event loop handling using epoll
+*/
+static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
+{
+	int ret, i;
+	const int maxevents = 8;
+	struct epoll_event events[maxevents];
+	uint32_t destruction_count = ev->destruction_count;
+	int timeout = -1;
+	struct timeval t;
+
+	if (tvalp) {
+		timeout = (tvalp->tv_usec / 1000) + (tvalp->tv_sec*1000);
+	}
+
+	ret = epoll_wait(ev->epoll_fd, events, maxevents, timeout);
+
+	if (ret == -1) {
+		epoll_fallback_to_select(ev, "epoll_wait() failed");
+		return -1;
+	}
+
+	if (ret == 0 && tvalp) {
+		event_loop_timer(ev);
+		return 0;
+	}
+
+	t = timeval_current();
+
+	for (i=0;i<ret;i++) {
+		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
+						       struct fd_event);
+		uint16_t flags = 0;
+
+		if (fde == NULL) {
+			epoll_fallback_to_select(ev, "epoll_wait() gave bad data");
+			return -1;
+		}
+		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (flags) {
+			fde->handler(ev, fde, t, flags, fde->private);
+			if (destruction_count != ev->destruction_count) {
+				break;
+			}
+		}
+	}
+
+	return 0;
+}		
+#endif
+
+/*
+  event loop handling using select()
+*/
+static int event_loop_select(struct event_context *ev, struct timeval *tvalp)
 {
 	fd_set r_fds, w_fds;
-	struct fd_event *fe;
 	int selrtn;
-	struct timeval tval, *tvalp;
 	uint32_t destruction_count = ev->destruction_count;
+	struct fd_event *fe;
 
+	/* we maybe need to recalculate the maxfd */
+	if (ev->maxfd == EVENT_INVALID_MAXFD) {
+		calc_maxfd(ev);
+	}
+		
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
 
@@ -267,20 +432,6 @@ int event_loop_once(struct event_context *ev)
 		fe = next;
 	}
 
-	tvalp = NULL;
-		
-	/* work out the right timeout for all timed events */
-	if (ev->timed_events) {
-		struct timeval t = timeval_current();
-		tval = timeval_diff(&ev->timed_events->next_event, &t);
-		tvalp = &tval;
-	}
-
-	/* we maybe need to recalculate the maxfd */
-	if (ev->maxfd == EVENT_INVALID_MAXFD) {
-		calc_maxfd(ev);
-	}
-		
 	selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
 		
 	if (selrtn == -1 && errno == EBADF) {
@@ -293,22 +444,12 @@ int event_loop_once(struct event_context *ev)
 		ev->exit_code = EBADF;
 		return -1;
 	}
-		
-	if (selrtn == 0) {
-		struct timeval t = timeval_current();
-		struct timed_event *te = ev->timed_events;
 
-		te->next_event = timeval_zero();
-
-		te->handler(ev, te, t, te->private);
-
-		/* note the care taken to prevent referencing a event
-		   that could have been freed by the handler */
-		if (ev->timed_events && timeval_is_zero(&ev->timed_events->next_event)) {
-			talloc_free(ev->timed_events);
-		}
+	if (selrtn == 0 && tvalp) {
+		event_loop_timer(ev);
+		return 0;
 	}
-	
+
 	if (selrtn > 0) {
 		struct timeval t = timeval_current();
 		/* at least one file descriptor is ready - check
@@ -328,6 +469,37 @@ int event_loop_once(struct event_context *ev)
 	}
 
 	return 0;
+}		
+
+/*
+  do a single event loop using the events defined in ev this function
+*/
+int event_loop_once(struct event_context *ev)
+{
+	struct timeval tval, *tvalp;
+
+	tvalp = NULL;
+		
+	/* work out the right timeout for all timed events */
+	if (ev->timed_events) {
+		struct timeval t = timeval_current();
+		tval = timeval_diff(&ev->timed_events->next_event, &t);
+		tvalp = &tval;
+		if (timeval_is_zero(tvalp)) {
+			event_loop_timer(ev);
+			return 0;
+		}
+	}
+
+#if WITH_EPOLL
+	if (ev->epoll_fd != -1) {
+		if (event_loop_epoll(ev, tvalp) == 0) {
+			return 0;
+		}
+	}
+#endif
+
+	return event_loop_select(ev, tvalp);
 }
 
 /*
