@@ -25,6 +25,7 @@
 <!ENTITY oplocks SYSTEM "oplocks.sgml">
 <!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
 <!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
+<!ENTITY VFS SYSTEM "VFS.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -113,6 +114,7 @@ part each cover one specific feature.</para>
 &WINBIND;
 &pdb-mysql;
 &pdb-xml;
+&VFS;
 &Samba-LDAP;
 &CVS-Access;
 &GROUP-MAPPING-HOWTO;
