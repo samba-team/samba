@@ -202,7 +202,10 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 				struct ldb_parse_tree tree2;
 				struct dn_list list2;
 				tree2.operation = LDB_OP_SIMPLE;
-				tree2.u.simple.attr = LTDB_OBJECTCLASS;
+				tree2.u.simple.attr = strdup(LTDB_OBJECTCLASS);
+				if (!tree2.u.simple.attr) {
+					return -1;
+				}
 				tree2.u.simple.value = el->values[j];
 				if (ltdb_index_dn_objectclass(ldb, &tree2, 
 							      index_list, &list2) == 1) {
@@ -214,6 +217,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 						dn_list_free(&list2);
 					}
 				}
+				free(tree2.u.simple.attr);
 			}
 		}
 	}
@@ -488,7 +492,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			    const char *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
-			    const char * const attrs[], struct ldb_message ***res)
+			    char * const attrs[], struct ldb_message ***res)
 {
 	int i;
 	unsigned int count = 0;
@@ -528,7 +532,7 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 			const char *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			const char * const attrs[], struct ldb_message ***res)
+			char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	struct dn_list dn_list;
@@ -569,7 +573,10 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 	}
 
 	msg->elements = el2;
-	msg->elements[msg->num_elements].name = LTDB_IDX;
+	msg->elements[msg->num_elements].name = strdup(LTDB_IDX);
+	if (!msg->elements[msg->num_elements].name) {
+		return -1;
+	}
 	msg->elements[msg->num_elements].num_values = 0;
 	msg->elements[msg->num_elements].values = malloc_p(struct ldb_val);
 	if (!msg->elements[msg->num_elements].values) {
@@ -627,7 +634,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 {
 	struct ldb_message msg;
 	char *dn_key;
-	int ret, i;
+	int ret, i, added=0;
 
 	dn_key = ldb_dn_key(el->name, &el->values[v_idx]);
 	if (!dn_key) {
@@ -661,6 +668,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 	}
 
 	if (i == msg.num_elements) {
+		added = 1;
 		ret = ltdb_index_add1_new(ldb, &msg, el, dn);
 	} else {
 		ret = ltdb_index_add1_add(ldb, &msg, el, i, dn);
@@ -668,6 +676,10 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 
 	if (ret == 0) {
 		ret = ltdb_store(ldb, &msg, TDB_REPLACE);
+	}
+
+	if (added) {
+		free(msg.elements[i].name);
 	}
 
 	ltdb_search_dn1_free(ldb, &msg);

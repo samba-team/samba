@@ -148,7 +148,7 @@ static int msg_add_all_elements(struct ldb_message *ret,
  */
 static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb, 
 					   const struct ldb_message *msg, 
-					   const char * const *attrs)
+					   char * const *attrs)
 {
 	struct ldb_message *ret;
 	int i;
@@ -294,7 +294,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
   search the database for a single simple dn
 */
 int ltdb_search_dn(struct ldb_context *ldb, char *dn,
-		   const char * const attrs[], struct ldb_message ***res)
+		   char * const attrs[], struct ldb_message ***res)
 {
 	int ret;
 	struct ldb_message msg, *msg2;
@@ -330,7 +330,7 @@ int ltdb_search_dn(struct ldb_context *ldb, char *dn,
   return 0 on success, -1 on failure
 */
 int ltdb_add_attr_results(struct ldb_context *ldb, struct ldb_message *msg,
-			  const char * const attrs[], 
+			  char * const attrs[], 
 			  unsigned int *count, 
 			  struct ldb_message ***res)
 {
@@ -368,7 +368,7 @@ struct ltdb_search_info {
 	struct ldb_parse_tree *tree;
 	const char *base;
 	enum ldb_scope scope;
-	const char * const *attrs;
+	char * const *attrs;
 	struct ldb_message **msgs;
 	int failures;
 	int count;
@@ -445,7 +445,7 @@ static int ltdb_search_full(struct ldb_context *ldb,
 			    const char *base,
 			    enum ldb_scope scope,
 			    struct ldb_parse_tree *tree,
-			    const char * const attrs[], struct ldb_message ***res)
+			    char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
@@ -478,7 +478,7 @@ static int ltdb_search_full(struct ldb_context *ldb,
 */
 int ltdb_search(struct ldb_context *ldb, const char *base,
 		enum ldb_scope scope, const char *expression,
-		const char * const attrs[], struct ldb_message ***res)
+		char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_parse_tree *tree;
 	int ret;

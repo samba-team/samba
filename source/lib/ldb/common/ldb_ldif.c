@@ -343,7 +343,7 @@ static char *next_chunk(int (*fgetc_fn)(void *), void *private_data)
 
 
 /* simple ldif attribute parser */
-static int next_attr(char **s, char **attr, struct ldb_val *value)
+static int next_attr(char **s, const char **attr, struct ldb_val *value)
 {
 	char *p;
 	int base64_encoded = 0;
@@ -454,7 +454,8 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;
-	char *attr=NULL, *chunk=NULL, *s;
+	const char *attr=NULL;
+	char *chunk=NULL, *s;
 	struct ldb_val value;
 	unsigned flags = 0;
 
