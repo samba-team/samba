@@ -267,6 +267,7 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 {
 	ASN1_DATA asn1;
 	ssize_t ret = -1;
+	uint8_t context;
 
 	ZERO_STRUCTP(token);
 	ZERO_STRUCT(asn1);
@@ -277,7 +278,6 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 
 	asn1_load(&asn1, data);
 
-	uint8_t context;
 	if (!asn1_peek_uint8(&asn1, &context)) {
 		asn1.has_error = True;
 	} else {
