@@ -38,7 +38,10 @@ extern userdom_struct current_user_info;
  **/
 
 static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
-						  char *server, unsigned char *trust_passwd)
+						  const char *server, 
+						  const char *setup_creds_as,
+						  uint16 sec_chan,
+						  const unsigned char *trust_passwd)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
@@ -121,7 +124,13 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = new_cli_nt_setup_creds(*cli, trust_passwd);
+	snprintf((*cli)->mach_acct, sizeof((*cli)->mach_acct) - 1, "%s$", setup_creds_as);
+
+	if (!(*cli)->mach_acct) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result = new_cli_nt_setup_creds(*cli, sec_chan, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
@@ -142,7 +151,9 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, 
 				      const char *domain, 
 				      struct in_addr *ip, 
-				      unsigned char *trust_passwd)
+				      const char *setup_creds_as, 
+				      uint16 sec_chan,
+				      const unsigned char *trust_passwd)
 {
 	fstring dc_name;
 
@@ -156,7 +167,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 	if (!lookup_dc_name(global_myname, domain, ip, dc_name))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	return connect_to_domain_password_server(cli, dc_name, trust_passwd);
+	return connect_to_domain_password_server(cli, dc_name, setup_creds_as, sec_chan, trust_passwd);
 }
 
 /***********************************************************************
@@ -165,6 +176,8 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 ************************************************************************/
 static NTSTATUS find_connect_pdc(struct cli_state **cli, 
 				 const char *domain,
+				 const char *setup_creds_as,
+				 uint16 sec_chan,
 				 unsigned char *trust_passwd, 
 				 time_t last_change_time)
 {
@@ -197,8 +210,10 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		if(!is_local_net(ip_list[i]))
 			continue;
 
-		if(NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
-						&ip_list[i], trust_passwd))) 
+		if(NT_STATUS_IS_OK(nt_status = 
+				   attempt_connect_to_dc(cli, domain, 
+							 &ip_list[i], setup_creds_as, 
+							 sec_chan, trust_passwd))) 
 			break;
 		
 		zero_ip(&ip_list[i]); /* Tried and failed. */
@@ -211,9 +226,11 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		i = (sys_random() % count);
 
 		if (!is_zero_ip(ip_list[i])) {
-			if (!NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
-						&ip_list[i], trust_passwd)))
-			zero_ip(&ip_list[i]); /* Tried and failed. */
+			if (!NT_STATUS_IS_OK(nt_status = 
+					     attempt_connect_to_dc(cli, domain, 
+								   &ip_list[i], setup_creds_as, 
+								   sec_chan, trust_passwd)))
+				zero_ip(&ip_list[i]); /* Tried and failed. */
 		}
 	}
 
@@ -231,7 +248,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 				continue;
 
 			if (NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
-						  &ip_list[i], trust_passwd)))
+						  &ip_list[i], setup_creds_as, sec_chan, trust_passwd)))
 				break;
 		}
 	}
@@ -251,7 +268,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       const char *domain,
 				       uchar chal[8],
 				       auth_serversupplied_info **server_info, 
-				       char *server, unsigned char *trust_passwd,
+				       char *server, char *setup_creds_as,
+				       uint16 sec_chan,
+				       unsigned char *trust_passwd,
 				       time_t last_change_time)
 {
 	fstring remote_machine;
@@ -271,9 +290,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	while (!NT_STATUS_IS_OK(nt_status) &&
 	       next_token(&server,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(strequal(remote_machine, "*")) {
-			nt_status = find_connect_pdc(&cli, domain, trust_passwd, last_change_time);
+			nt_status = find_connect_pdc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
 		} else {
-			nt_status = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+			nt_status = connect_to_domain_password_server(&cli, remote_machine, setup_creds_as, sec_chan, trust_passwd);
 		}
 	}
 
@@ -429,7 +448,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
 	{
-		DEBUG(0, ("check_domain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -449,8 +468,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
 					   (uchar *)auth_context->challenge.data, 
 					   server_info, 
-					   password_server, trust_passwd, last_change_time);
-	
+					   password_server, global_myname, SEC_CHAN_WKSTA, trust_passwd, last_change_time);
 	return nt_status;
 }
 
@@ -462,5 +480,92 @@ BOOL auth_init_ntdomain(struct auth_context *auth_context, auth_methods **auth_m
 	}
 
 	(*auth_method)->auth = check_ntdomain_security;
+	return True;
+}
+
+
+/****************************************************************************
+ Check for a valid username and password in a trusted domain
+****************************************************************************/
+
+static NTSTATUS check_trustdomain_security(const struct auth_context *auth_context,
+					   void *my_private_data, 
+					   TALLOC_CTX *mem_ctx,
+					   const auth_usersupplied_info *user_info, 
+					   auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	unsigned char trust_md4_password[16];
+	char *trust_password;
+	time_t last_change_time;
+	DOM_SID sid;
+
+	if (!user_info || !server_info || !auth_context) {
+		DEBUG(1,("check_trustdomain_security: Critical variables not present.  Failing.\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* 
+	 * Check that the requested domain is not our own machine name.
+	 * If it is, we should never check the PDC here, we use our own local
+	 * password file.
+	 */
+
+	if(is_netbios_alias_or_name(user_info->domain.str)) {
+		DEBUG(3,("check_trustdomain_security: Requested domain was for this machine.\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	/* 
+	 * Check that the requested domain is not our own domain,
+	 * If it is, we should use our own local password file.
+	 */
+
+	if(strequal(lp_workgroup(), (user_info->domain.str))) {
+		DEBUG(3,("check_trustdomain_security: Requested domain was for this domain.\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	/*
+	 * Get the machine account password for the trusted domain
+	 * No need to become_root() as secrets_init() is done at startup.
+	 */
+
+	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password, &sid, &last_change_time))
+	{
+		DEBUG(0, ("check_trustdomain_security: could not fetch trust account password for domain %s\n", user_info->domain.str));
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->domain.str, trust_password));
+#endif
+	E_md4hash((uchar *)trust_password, trust_md4_password);
+	SAFE_FREE(trust_password);
+
+#if 0
+	/* Test if machine password is expired and need to be changed */
+	if (time(NULL) > last_change_time + lp_machine_password_timeout())
+	{
+		global_machine_password_needs_changing = True;
+	}
+#endif
+
+	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
+					   (uchar *)auth_context->challenge.data, 
+					   server_info, "*" /* Do a lookup */, 
+					   lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
+	
+	return nt_status;
+}
+
+/* module initialisation */
+BOOL auth_init_trustdomain(struct auth_context *auth_context, auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_context, auth_method)) {
+		return False;
+	}
+
+	(*auth_method)->auth = check_trustdomain_security;
 	return True;
 }

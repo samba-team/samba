@@ -31,6 +31,7 @@ const struct auth_init_function builtin_auth_init_functions[] = {
 	{ "unix", auth_init_unix },
 	{ "smbserver", auth_init_smbserver },
 	{ "ntdomain", auth_init_ntdomain },
+	{ "trustdomain", auth_init_trustdomain },
 	{ "winbind", auth_init_winbind },
 #ifdef DEVELOPER
 	{ "name_to_ntstatus", auth_init_name_to_ntstatus },

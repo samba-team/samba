@@ -278,7 +278,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Request a challenge */
 
-        if (!NT_STATUS_IS_OK(new_cli_nt_setup_creds(cli, trust_passwd))) {
+        if (!NT_STATUS_IS_OK(new_cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd))) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }
