@@ -148,6 +148,8 @@ struct auth_init_function_entry {
 	/* Function to create a member of the authmethods list */
 
 	auth_init_function init;
+
+	struct auth_init_function_entry *prev, *next;
 };
 
 typedef struct auth_ntlmssp_state
@@ -157,5 +159,7 @@ typedef struct auth_ntlmssp_state
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
 } AUTH_NTLMSSP_STATE;
+
+#define AUTH_INTERFACE_VERSION 1
 
 #endif /* _SMBAUTH_H_ */

@@ -836,6 +836,10 @@ static BOOL init_structs(void )
 	if(!initialize_password_db(False))
 		exit(1);
 
+	static_init_rpc;
+
+	init_modules();
+
 	uni_group_cache_init(); /* Non-critical */
 	
 	/* possibly reload the services file. */

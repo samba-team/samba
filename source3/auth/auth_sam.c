@@ -518,4 +518,9 @@ NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *para
 	return NT_STATUS_OK;
 }
 
-
+int auth_sam_init(void)
+{
+	smb_register_auth("samstrict", auth_init_samstrict, AUTH_INTERFACE_VERSION);
+	smb_register_auth("sam", auth_init_sam, AUTH_INTERFACE_VERSION);
+	return True;
+}
