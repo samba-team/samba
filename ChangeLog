@@ -1,3 +1,17 @@
+Thu Aug 28 03:26:12 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c: restructured
+
+	* lib/krb5/warn.c (_warnerr): leak less memory
+
+	* lib/hdb/hdb.c (hdb_free_entry): zero keys
+	(hdb_check_db_format): leak less memory
+
+	* lib/hdb/ndbm.c (NDBM_seq): check for valid hdb_entries implement
+ 	NDBM__get, NDBM__put
+
+	* lib/hdb/db.c (DB_seq): check for valid hdb_entries
+
 Thu Aug 28 02:06:58 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/send_to_kdc.c: Don't use sendto on connected sockets.
