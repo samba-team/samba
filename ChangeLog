@@ -1,3 +1,16 @@
+1999-08-18  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (--enable-new-des3-code): remove check for `struct
+ 	addrinfo'
+
+	* lib/krb5/crypto.c (etypes): remove NEW_DES3_CODE, enable
+ 	des3-cbc-sha1 and keep old-des3-cbc-sha1 for backwards
+ 	compatability
+
+	* lib/krb5/krb5.h (krb5_enctype): des3-cbc-sha1 (with key
+ 	derivation) just got assigned etype 16 by <bcn@isi.edu>.  keep the
+ 	old etype at 7.
+
 1999-08-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/sendauth.c (krb5_sendauth): only look at errno if
