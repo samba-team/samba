@@ -1,4 +1,4 @@
-              WHATS NEW IN Samba 2.2.0alpha0
+              WHATS NEW IN Samba 2.2.0alpha1
               ==============================
 
 This is the first alpha release of the new 2.2.0 codebase
@@ -12,12 +12,32 @@ The documentation in this alpha snapshot is not up to date,
 there are many new parameters since 2.0.7. This will be
 corrected in a later alpha release.
 
+Several significant bugs have been fixed between alpha0
+and alpha1, these include :
+
+Fix for level II oplock bug.
+Support for detecting version 2/3 printer drivers (from HP).
+Samba profiling support (from SGI).
+Winbind integration fixes.
+Preliminary Win2K PDC support in compatibility mode for Win2K
+clients (from JF).
+VFS interface updates.
+Failover finding of BDC's now works again.
+lpq race condition fixes.
+utmp fixes.
+SWAT username detection fix.
+
 The upcoming 2.2.0 Samba release will include the following
 new features: 
 
+Integration with the winbind daemon that provides a single
+sign on facility for UNIX servers in Windows NT4/2000 networks
+driven by a Windows NT4/2000 PDC.
+
 Support for native Windows NT4/2000 printing RPCs.
 This includes support for automatic printer driver
-download. 
+download. This functionality should be complete in
+alpha1.
 
 Rewritten internal locking semantics for more robustness.
 This alpha supports full 64 bit locking semantics on all
@@ -42,7 +62,7 @@ support for the following filesystems:
     SGI Irix 
     Linux Kernel 2.2 with German ACL patch 
 
-Currently in this alpha snapshot (alpha0) this feature
+Currently in this alpha snapshot (alpha1) this feature
 is not enabled - the VFS layer has been modified to allow
 it, but the code is still under development and should
 be in a later alpha snapshot.
