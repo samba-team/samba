@@ -242,7 +242,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 	charset_initialise();
 	lp_load(servicesf,False,False,False);
 
-	message_init();
+	if (!message_init()) exit(1);
 
 	if (argc < 2) usage(True);
 
@@ -277,6 +277,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			myargc++;
 		}
 		if (!myargc) break;
+		if (strequal(myargv[0],"q")) break;
 		if (myargc < 2)
 			usage(False);
 		else if (!do_command(myargv[0],myargv[1],myargc > 2 ? myargv[2] : 0))
