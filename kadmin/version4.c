@@ -884,7 +884,7 @@ decode_packet(krb5_context context,
 	goto out;
     }
     
-    checksum = des_quad_cksum(msg + off, NULL, rlen, 0, &ad.session);
+    checksum = des_quad_cksum((void *)(msg + off), NULL, rlen, 0, &ad.session);
     if(checksum != ad.checksum) {
 	krb5_warnx(context, "decode_packet: bad checksum");
 	make_you_loose_packet (KADM_BAD_CHK, reply);
