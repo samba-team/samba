@@ -69,6 +69,8 @@
 #endif
 #include <roken.h>
 #include <getarg.h>
+#include <parse_time.h>
+#include <err.h>
 #include <krb5.h>
 
 #endif /* __KUSER_LOCL_H__ */
