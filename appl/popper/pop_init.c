@@ -234,11 +234,11 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->auth_level = AUTH_NONE;
 
     if(getarg(args, num_args, argcount, argmessage, &optind)){
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, NULL, "");
 	exit(1);
     }
     if(help_flag){
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, NULL, "");
 	exit(0);
     }
     if(version_flag){
@@ -253,7 +253,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     argmessage += optind;
 
     if (argcount != 0) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, NULL, "");
 	exit(1);
     }
 

@@ -84,7 +84,8 @@ usage (int ret)
 {
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
-		    "{po:username | hostname[:username]} filename");
+		    NULL,
+		    "{po:username[@hostname] | hostname[:username]} filename");
     exit (ret);
 }
 
