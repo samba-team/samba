@@ -106,6 +106,7 @@
 #define SPOOLSS_OPENPRINTEREX				0x45
 #define SPOOLSS_ADDPRINTEREX				0x46
 #define SPOOLSS_ENUMPRINTERDATA				0x48
+#define SPOOLSS_DELETEPRINTERDATA			0x49
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
 #define PRINTER_CONTROL_PAUSE		0x00000001
@@ -514,6 +515,19 @@ typedef struct spool_r_getprinterdata
 	uint32 status;
 }
 SPOOL_R_GETPRINTERDATA;
+
+typedef struct spool_q_deleteprinterdata
+{
+	POLICY_HND handle;
+	UNISTR2 valuename;
+}
+SPOOL_Q_DELETEPRINTERDATA;
+
+typedef struct spool_r_deleteprinterdata
+{
+	uint32 status;
+}
+SPOOL_R_DELETEPRINTERDATA;
 
 typedef struct spool_q_closeprinter
 {
