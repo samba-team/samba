@@ -227,6 +227,13 @@ to the following restrictions:
 * Things in search for a better place::  
 * Kerberos 4 issues::           
 * Acknowledgments::             
+
+ --- The Detailed Node Listing ---
+
+Kerberos 4 issues
+
+* Principal conversion issues::  
+* Converting a version 4 database::  
 @end menu
 
 @include intro.texi
