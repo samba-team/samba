@@ -4,7 +4,7 @@ RCS file: /data/cvs/samba/source/Makefile.in,v
 retrieving revision 1.500
 diff -u -r1.500 Makefile.in
 --- Makefile.in	2002/07/28 06:04:32	1.500
-+++ Makefile.in	2002/07/29 01:58:05
++++ Makefile.in	2002/07/29 03:48:03
 @@ -838,6 +838,45 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
@@ -12,7 +12,7 @@ diff -u -r1.500 Makefile.in
 +# Python extensions
 +
 +PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
-+	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)
++	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
 +
 +PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
 +		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
@@ -57,7 +57,7 @@ RCS file: /data/cvs/samba/source/configure.in,v
 retrieving revision 1.324
 diff -u -r1.324 configure.in
 --- configure.in	2002/07/27 01:37:32	1.324
-+++ configure.in	2002/07/29 01:58:06
++++ configure.in	2002/07/29 03:48:04
 @@ -2797,7 +2797,7 @@
  builddir=`pwd`
  AC_SUBST(builddir)
