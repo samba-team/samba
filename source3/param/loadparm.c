@@ -2296,13 +2296,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
 		pstrcpy(newHomedir, pszHomedir);
-	} else {
-		pstrcpy(newHomedir, lp_pathname(iDefaultService));
-		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
-		string_sub(newHomedir,"%S", pszHomename, sizeof(newHomedir)); 
-	}
-
-	string_set(&ServicePtrs[i]->szPath, newHomedir);
+		string_set(&ServicePtrs[i]->szPath, newHomedir);
+	} 
 
 	if (!(*(ServicePtrs[i]->comment))) {
 		pstring comment;
