@@ -203,7 +203,6 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 {
 	uint32 end = offset + len;
 	char *q = NULL;
-	uint32 data_len = prs_buf_len(buf);
 	uint32 start_offset = offset;
 	const prs_struct *bcp = buf;
 
@@ -211,8 +210,11 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 		return False;
 
 	CHECK_STRUCT(buf);
-	DEBUG(200, ("prs_struct_copy: data[%d..%d] offset %d len %d\n",
-		    buf->start, data_len, offset, len));
+	if (DEBUGLVL(200))
+	{
+		DEBUG(200, ("prs_struct_copy: data[%d..%d] offset %d len %d\n",
+		    buf->start, prs_buf_len(buf), offset, len));
+	}
 
 	prs_debug_out(bcp, "prs_struct_copy", 200);
 
