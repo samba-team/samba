@@ -117,10 +117,6 @@ BOOL make_auth_info_subsystem(auth_authsupplied_info **auth_info)
 {
 	char **auth_method_list = NULL; 
 	
-	if (!make_auth_info(auth_info)) {
-		return False;
-	}
-	
 	if (lp_auth_methods() && !lp_list_copy(&auth_method_list, lp_auth_methods())) {
 		return False;
 	}
