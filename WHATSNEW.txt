@@ -1,4 +1,4 @@
-          WHATS NEW IN 1.9.18alpha10 Nov 1st 1997
+          WHATS NEW IN 1.9.18alpha11 Nov 2nd 1997
           =======================================
 
 This is NOT a production release of Samba code.
@@ -139,6 +139,15 @@ rpc_pipe/, and a GLPL License issued specifically for code
 in this directory.  This is so that people can use this
 code in other projects.
 
+New workstation accounts are added to the smbpasswd file,
+when a user first logs in from that workstation.  The
+default machine password is used.  NTDOMAIN.txt has been
+updated to reflect this (you used to have to add workstation
+accounts manually).
+
+The "domain hosts allow/deny" parameters have been added
+to control access to the domain from specific workstations.
+
 
 New parameters in smb.conf.
 ---------------------------
@@ -146,25 +155,28 @@ New parameters in smb.conf.
 New Global parameters.
 ----------------------
 
-Documented in the smb.con man pages :
+Documented in the smb.conf man pages :
 
-"bind interfaces only"
-"username level"
+	"bind interfaces only"
+	"username level"
 
-"domain sid"
-"domain groups"
+	"domain hosts allow"
+	"domain hosts deny"
 
-"logon drive"
-"logon home"
+	"domain sid"
+	"domain groups"
+
+	"logon drive"
+	"logon home"
 
 
 Not yet documented in the smb.conf man page, please 
 read docs/NTDOMAIN.txt or examine the source code for
 information on the next parameters :
 
-"domain other sids"
-"domain admin users"
-"domain guest users"
+	"domain other sids"
+	"domain admin users"
+	"domain guest users"
 
 
 New Share level parameters.
@@ -172,8 +184,8 @@ New Share level parameters.
 
 Documented in the smb.con man pages :
 
-"delete veto files"
-"oplocks"
+	"delete veto files"
+	"oplocks"
 
 
 Reporting bugs.
@@ -182,7 +194,7 @@ Reporting bugs.
 If you have problems, or think you have found a
 bug please email a report to :
 
-samba-bugs@samba.anu.edu.au
+	samba-bugs@samba.anu.edu.au
 
 Please state the version number of Samba that
 you are running, and *full details* of the steps
