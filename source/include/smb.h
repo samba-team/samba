@@ -1659,4 +1659,10 @@ typedef struct smb_sign_info {
 	BOOL mandatory_signing;
 } smb_sign_info;
 
+struct ea_struct {
+	uint8 flags;
+	char *name;
+	DATA_BLOB value;
+};
+
 #endif /* _SMB_H */
