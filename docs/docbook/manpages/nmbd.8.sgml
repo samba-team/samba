@@ -37,7 +37,7 @@
 
 	<para><command>nmbd</command> is a server that understands 
 	and can reply to NetBIOS over IP name service requests, like 
-	those produced by SMBD/CIFS clients such as Windows 95/98/ME, 
+	those produced by SMB/CIFS clients such as Windows 95/98/ME, 
 	Windows NT, Windows 2000, and LanManager clients. It also
 	participates in the browsing protocols which make up the 
 	Windows "Network Neighborhood" view.</para>
