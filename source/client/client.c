@@ -624,7 +624,12 @@ static int cmd_dir(const char **cmd_ptr)
 			pstrcat(mask,p);
 	}
 	else {
-		pstrcat(mask,"*");
+		if (cli->tree->session->transport->negotiate.protocol <= 
+		    PROTOCOL_LANMAN1) {	
+			pstrcat(mask,"*.*");
+		} else {
+			pstrcat(mask,"*");
+		}
 	}
 
 	do_list(mask, attribute, display_finfo, recurse, True);
@@ -1528,24 +1533,6 @@ static int cmd_queue(const char **cmd_ptr)
 /****************************************************************************
 delete some files
 ****************************************************************************/
-static void do_del(file_info *finfo)
-{
-	pstring mask;
-
-	pstrcpy(mask,cur_dir);
-	pstrcat(mask,finfo->name);
-
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) 
-		return;
-
-	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, mask))) {
-		d_printf("%s deleting remote file %s\n",smbcli_errstr(cli->tree),mask);
-	}
-}
-
-/****************************************************************************
-delete some files
-****************************************************************************/
 static int cmd_del(const char **cmd_ptr)
 {
 	pstring mask;
@@ -1563,7 +1550,9 @@ static int cmd_del(const char **cmd_ptr)
 	}
 	pstrcat(mask,buf);
 
-	do_list(mask, attribute,do_del,False,False);
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, mask))) {
+		d_printf("%s deleting remote file %s\n",smbcli_errstr(cli->tree),mask);
+	}
 	
 	return 0;
 }
