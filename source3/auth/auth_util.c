@@ -983,7 +983,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	(*server_info)->n_groups = n_lgroupSIDs;
 	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
-	all_group_SIDs   = malloc(sizeof(DOM_SID) * (n_lgroupSIDs+info3->num_groups2));
+	all_group_SIDs   = malloc(sizeof(DOM_SID) * 
+				  (n_lgroupSIDs + info3->num_groups2 +
+				   info3->num_other_sids));
 	if (!all_group_SIDs) {
 		DEBUG(0, ("create_nt_token_info3: malloc() failed for DOM_SID list!\n"));
 		SAFE_FREE(lgroupSIDs);
@@ -1006,12 +1008,25 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	/* Copy 'other' sids.  We need to do sid filtering here to
+ 	   prevent possible elevation of privileges.  See:
+
+           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
+         */
+
+	for (i = 0; i < info3->num_other_sids; i++) 
+		sid_copy(&all_group_SIDs[
+				 n_lgroupSIDs + info3->num_groups2 + i],
+			 &info3->other_sids[i].sid);
+	
 	/* Where are the 'global' sids... */
 
 	/* can the user be guest? if yes, where is it stored? */
-	if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token(&user_sid, &group_sid,
-							     n_lgroupSIDs+info3->num_groups2, all_group_SIDs, 
-							      False, &token))) {
+	if (!NT_STATUS_IS_OK(
+		    nt_status = create_nt_user_token(
+			    &user_sid, &group_sid,
+			    n_lgroupSIDs + info3->num_groups2 + info3->num_other_sids, 
+			    all_group_SIDs, False, &token))) {
 		DEBUG(4,("create_nt_user_token failed\n"));
 		SAFE_FREE(all_group_SIDs);
 		return nt_status;
