@@ -497,6 +497,7 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
 				NTTIME *last_update);
+BOOL msrpc_lsa_query_trust_passwd(uchar trust_passwd[16]);
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 

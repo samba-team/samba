@@ -476,7 +476,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_eventlog.o \
            $(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
-RPCCLIENT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+RPCCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \

@@ -132,14 +132,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	res = res ? trust_get_passwd(trust_passwd, domain, info->myhostname) : False;
-
-#if 0
-	/* check whether the user wants to change their trust password */
-	res = res ? trust_account_check(info->dest_ip, info->dest_host,
-	                                info->myhostname, usr_creds->ntc.domain,
-	                                info->mach_acct, new_mach_pwd) : False;
-#endif
+	res = res ? msrpc_lsa_query_trust_passwd(trust_passwd) : False;
 
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 	                               trust_acct, 
@@ -258,7 +251,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 		fstrcpy(domain, info->dom.level3_dom);
 	}
 
-	if (!trust_get_passwd(trust_passwd, usr_creds->ntc.domain, info->myhostname))
+	if (!msrpc_lsa_query_trust_passwd(trust_passwd))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;

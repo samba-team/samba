@@ -75,13 +75,10 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 		return False;
 	}
 
-	become_root(False);
-	if (!trust_get_passwd( trust_passwd, domain, acct_name))
+	if (!msrpc_lsa_query_trust_passwd( trust_passwd))
 	{
-		unbecome_root(False);
 		return False;
 	}
-	unbecome_root(False);
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to

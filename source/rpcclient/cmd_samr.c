@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
@@ -948,6 +949,11 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	int len = 0;
 	UNISTR2 upw;
 
+	BOOL res = False;
+	POLICY_HND lsa_pol;
+
+	fstring wks_name;
+
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -981,7 +987,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt(argc, argv,"isjp:")) != EOF)
+	while ((opt = getopt(argc, argv,"isjp:w:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1013,6 +1019,23 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
+	/*
+	 * sort out the workstation name.  if it's ourselves, and we're
+	 * on MSRPC local loopback, must _also_ connect to workstation
+	 * local-loopback.
+	 */
+
+	fstrcpy(wks_name, "\\\\");
+	if (strequal(srv_name, "\\\\.") && strequal(name, info->myhostname))
+	{
+		fstrcat(wks_name, ".");
+	}
+	else
+	{
+		fstrcat(wks_name, name);
+	}
+	strupper(wks_name);
+
 	if (join_domain && acb_info == ACB_NORMAL)
 	{
 		report(out_hnd, "can only join trust accounts to a domain\n");
@@ -1041,7 +1064,26 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		plen = upw.uni_str_len * 2;
 	}
 
-	if (msrpc_sam_create_dom_user(srv_name, &sid1,
+	if (join_domain)
+	{
+		/*
+		 * ok.  this looks really weird, but if you don't open
+		 * the connection to the workstation first, then the
+		 * set trust account on the SAM database may get the
+		 * local copy-of trust account out-of-sync with the
+		 * remote one, and you're stuffed!
+		 */
+		res = lsa_open_policy2( wks_name, &lsa_pol, True, 0x02000000);
+
+		if (!res)
+		{
+			report(out_hnd, "Connection to %s FAILED\n", wks_name);
+			report(out_hnd, "(Do a \"net -S %s -U localadmin\")\n",
+					 wks_name);
+		}
+	}
+
+	if (res && msrpc_sam_create_dom_user(srv_name, &sid1,
 	                              acct_name, acb_info, password, plen,
 	                              &user_rid))
 	{
@@ -1049,6 +1091,10 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 		if (join_domain)
 		{
+			POLICY_HND pol_sec;
+			BOOL res1;
+			BOOL res2 = False;
+
 			uchar ntpw[16];
 			
 			nt_owf_genW(&upw, ntpw);
@@ -1056,21 +1102,65 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			strupper(domain);
 			strupper(name);
 
-			report(out_hnd, "Join %s to Domain %s", name, domain);
-			if (create_trust_account_file(domain, name, ntpw))
+			report(out_hnd, "Join %s to Domain %s\n", name, domain);
+
+			/* attempt to create, and if already exist, open */
+			res1 = lsa_create_secret( &lsa_pol, "$MACHINE.ACC",
+			                        0x020003, &pol_sec);
+
+			if (res1)
 			{
-				report(out_hnd, ": OK\n");
+				report(out_hnd, "Create $MACHINE.ACC: OK\n");
 			}
 			else
 			{
-				report(out_hnd, ": FAILED\n");
+				res1 = lsa_open_secret( &lsa_pol,
+				                  "$MACHINE.ACC",
+				                  0x020003, &pol_sec);
+
 			}
+
+			/* valid pol_sec on $MACHINE.ACC, set trust passwd */
+			if (res1)
+			{
+				STRING2 secret;
+
+				ZERO_STRUCT(secret);
+
+				secret.str_max_len = 16+8;
+				secret.undoc       = 0;
+				secret.str_str_len = 16+8;
+
+				SIVAL(secret.buffer, 0, 16);
+				SIVAL(secret.buffer, 4, 0x01);
+				memcpy(secret.buffer+8, ntpw, 16);
+
+				res2 = lsa_set_secret(&pol_sec, &secret) ==
+				                   NT_STATUS_NOPROBLEMO;
+
+			}
+
+			if (res2)
+			{
+				report(out_hnd, "Set $MACHINE.ACC: OK\n");
+			}
+			else
+			{
+				report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
+			}
+
+			res1 = res1 ? lsa_close(&pol_sec) : False;
+
+			memset(ntpw, 0, sizeof(ntpw));
 		}
 	}
 	else
 	{
 		report(out_hnd, "Create Domain User: FAILED\n");
 	}
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
 	memset(&upw, 0, sizeof(upw));
 }
 

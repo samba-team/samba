@@ -287,3 +287,35 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 	return res2;
 }
+
+/****************************************************************************
+****************************************************************************/
+BOOL msrpc_lsa_query_trust_passwd(uchar trust_passwd[16])
+{
+	STRING2 secret;
+	NTTIME last_update;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\.");
+
+	if (!msrpc_lsa_query_secret(srv_name, "$MACHINE.ACC", &secret,
+	                           &last_update))
+	{
+		return False;
+	}
+	if (secret.str_str_len != 0x18)
+	{
+		return False;
+	}
+	if (IVAL(secret.buffer, 0) != 0x10)
+	{
+		return False;
+	}
+	if (IVAL(secret.buffer, 4) != 0x1)
+	{
+		return False;
+	}
+	memcpy(trust_passwd, secret.buffer+8, 16);
+	return True;
+}
+

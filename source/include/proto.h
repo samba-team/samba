@@ -2582,6 +2582,7 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
 				NTTIME *last_update);
+BOOL msrpc_lsa_query_trust_passwd(uchar trust_passwd[16]);
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
@@ -4808,6 +4809,7 @@ void status_page(void);
 /*The following definitions come from  winregd/srv_reg_nt.c  */
 
 uint32 _reg_close(POLICY_HND *pol);
+uint32 _reg_open(uint32 *access_mask,POLICY_HND *pol);
 BOOL api_reg_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  winregd/winregd.c  */

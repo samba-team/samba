@@ -527,13 +527,13 @@ BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 
 	datalen = IVAL(out->buffer, 0);
 
-	dump_data_pw("nt_decrypt_string2\n", out->buffer, datalen);
-
 	if (datalen != in->str_str_len - 8)
 	{
 		DEBUG(2,("nt_decrypt_string2: length-match failed\n"));
 		return False;
 	}
+	dump_data_pw("nt_decrypt_string2\n", out->buffer, datalen);
+
 	return True;
 }
 
