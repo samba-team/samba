@@ -4104,7 +4104,7 @@ SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_gums, passdb/pdb_gums.o, "bin/gums.$SHLIBEXT", PDB)
-SMB_SUBSYSTEM(PDB,passdb/pdb_interface.c)
+SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 SMB_MODULE(gums_tdbsam2, sam/gums_tdbsam2.o, "bin/tdbsam2.$SHLIBEXT", GUMS)
 SMB_SUBSYSTEM(GUMS)
