@@ -406,7 +406,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	fstring sidstr;
 	uint32 i;
 
-	printf("REVISION:%d\n", sd->revision);
+	fprintf(f, "REVISION:%d\n", sd->revision);
 
 	/* Print owner and group sid */
 
@@ -416,7 +416,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		fstrcpy(sidstr, "");
 	}
 
-	printf("OWNER:%s\n", sidstr);
+	fprintf(f, "OWNER:%s\n", sidstr);
 
 	if (sd->grp_sid) {
 		SidToString(sidstr, sd->grp_sid);
