@@ -3614,7 +3614,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 BOOL create_next_pdu(pipes_struct *p);
 BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p);
-BOOL setup_fault_pdu(pipes_struct *p);
+BOOL setup_fault_pdu(pipes_struct *p, uint32 status);
 BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 					RPC_IFACE* transfer);
 BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
