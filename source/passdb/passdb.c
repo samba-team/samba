@@ -825,7 +825,7 @@ BOOL pdb_generate_sam_sid(void)
 	pstring sid_file;
 	fstring sid_string;
 	SMB_STRUCT_STAT st;
-	uchar raw_sid_data[12];
+	BOOL overwrite_bad_sid = False;
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
 	p = strrchr(sid_file, '/');
@@ -870,28 +870,57 @@ BOOL pdb_generate_sam_sid(void)
 			close(fd);
 			return False;
 		}
-		close(fd);
-		return True;
-	} 
-  
-	/*
-	 * The file contains no data - we need to generate our
-	 * own sid.
-	 */
-	
-	{
 		/*
+		 * Check for a previous bug where we were writing
+		 * a machine SID with an incorrect id_auth[5] of *decimal*
+		 * 21 which should have been hex 21. If so then fix it now...
+		 */
+		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 21) {
+			/*
+			 * Fix and re-write...
+			 */
+			overwrite_bad_sid = True;
+			global_sam_sid.sub_auths[0] = 0x21;
+			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of decimal 21 \
+detected - re-writing to be hex 0x21 instead.\n" ));
+			sid_to_string(sid_string, &global_sam_sid);
+			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
+				DEBUG(0,("unable to seek file file %s. Error was %s\n",
+                 sid_file, strerror(errno) ));
+				close(fd);
+				return False;
+	        }
+		} else {
+			close(fd);
+			return True;
+		}
+	} else {
+		/*
+		 * The file contains no data - we need to generate our
+		 * own sid.
 		 * Generate the new sid data & turn it into a string.
 		 */
 		int i;
-		generate_random_buffer( raw_sid_data, 12, True);
-		
+		uchar raw_sid_data[12];
+		DOM_SID mysid;
+
+		memset((char *)&mysid, '\0', sizeof(DOM_SID));
+		mysid.sid_rev_num = 1;
+		mysid.id_auth[5] = 5;
+		mysid.num_auths = 0;
+		mysid.sub_auths[mysid.num_auths++] = 0x21;
+
+#if 0
+		/* NB. This replaces this older code : */
 		fstrcpy( sid_string, "S-1-5-21");
-		for( i = 0; i < 3; i++) {
-			fstring tmp_string;
-			slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
-			fstrcat( sid_string, tmp_string);
-		}
+		/* which was incorrect - the 21 shoud have been 33 !. JRA. */
+#endif
+
+		generate_random_buffer( raw_sid_data, 12, True);
+		for( i = 0; i < 3; i++)
+			mysid.sub_auths[mysid.num_auths++] = IVAL(raw_sid_data, i*4);
+
+		sid_to_string(sid_string, &mysid);
 	} 
 	
 	fstrcat(sid_string, "\n");
@@ -915,44 +944,47 @@ BOOL pdb_generate_sam_sid(void)
 		close(fd);
 		return False;
 	} 
-  
-	/*
-	 * At this point we have a blocking lock on the SID
-	 * file - check if in the meantime someone else wrote
-	 * SID data into the file. If so - they were here first,
-	 * use their data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
+ 
+	if(!overwrite_bad_sid) {
 		/*
-		 * Unlock as soon as possible to reduce
-		 * contention on the exclusive lock.
-		 */ 
-		do_file_lock( fd, 60, F_UNLCK);
-		
-		/*
-		 * We have a valid SID - read it.
+		 * At this point we have a blocking lock on the SID
+		 * file - check if in the meantime someone else wrote
+		 * SID data into the file. If so - they were here first,
+		 * use their data.
 		 */
-		
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
+	
+		if(sys_fstat( fd, &st) < 0) {
+			DEBUG(0,("unable to stat file %s. Error was %s\n",
 				 sid_file, strerror(errno) ));
 			close(fd);
 			return False;
-		}
-		close(fd);
-		return True;
-	} 
+		} 
+  
+		if(st.st_size > 0) {
+			/*
+			 * Unlock as soon as possible to reduce
+			 * contention on the exclusive lock.
+			 */ 
+			do_file_lock( fd, 60, F_UNLCK);
+		
+			/*
+			 * We have a valid SID - read it.
+			 */
+		
+			if(!read_sid_from_file( fd, sid_file)) {
+				DEBUG(0,("unable to read file %s. Error was %s\n",
+					 sid_file, strerror(errno) ));
+				close(fd);
+				return False;
+			}
+			close(fd);
+			return True;
+		} 
+	}
 	
 	/*
-	 * The file is still empty and we have an exlusive lock on it.
+	 * The file is still empty and we have an exlusive lock on it,
+	 * or we're fixing an earlier mistake.
 	 * Write out out SID data into the file.
 	 */
 
@@ -964,6 +996,7 @@ BOOL pdb_generate_sam_sid(void)
 	if(chmod(sid_file, 0644) < 0) {
 		DEBUG(0,("unable to set correct permissions on file %s. \
 Error was %s\n", sid_file, strerror(errno) ));
+		do_file_lock( fd, 60, F_UNLCK);
 		close(fd);
 		return False;
 	} 
@@ -971,6 +1004,7 @@ Error was %s\n", sid_file, strerror(errno) ));
 	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
 		DEBUG(0,("unable to write file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
+		do_file_lock( fd, 60, F_UNLCK);
 		close(fd);
 		return False;
 	} 

@@ -19,9 +19,26 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "includes.h"
+
 #ifdef WITH_NISPLUS
 
-#include "includes.h"
+/*
+ * The following lines are needed due to buggy include files
+ * in Solaris 2.6 which define GROUP in both /usr/include/acl.h and
+ * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
+ * Also GROUP_OBJ is defined as 0x4 in /usr/include/acl.h and as
+ * an enum in /usr/include/rpcsvc/nis.h.
+ */
+
+#if defined(GROUP)
+#undef GROUP
+#endif
+
+#if defined(GROUP_OBJ)
+#undef GROUP_OBJ
+#endif
+
 #include <rpcsvc/nis.h>
 
 extern int      DEBUGLEVEL;
@@ -154,7 +171,7 @@ static void get_single_attribute(nis_object *new_obj, int col,
 		len = entry_len;
 	}
 
-	safe_strcpy(val, len, ENTRY_VAL(new_obj, col));
+	safe_strcpy(val, ENTRY_VAL(new_obj, col), len-1);
 }
 
 /***************************************************************
@@ -376,7 +393,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
 
-	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)); 
+	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)-1); 
 
 	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)     , 0);
 	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                  , 0);
