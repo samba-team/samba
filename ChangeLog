@@ -22,8 +22,20 @@
 	* lib/krb5/get_cred.c (init_tgs_req): use
 	in_creds->session.keytype literally instead of trying to convert
 	to a list of enctypes (it should already be an enctype)
+	
+	* lib/krb5/get_cred.c (init_tgs_req): init ret
 
 2002-09-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/asn1/k5.asn1: remove ETYPE_DES3_CBC_NONE_IVEC
+
+	* lib/krb5/krb5.h: remove ENCTYPE_DES3_CBC_NONE_IVEC
+
+	* lib/krb5/crypto.c: get rid of DES3_CBC_encrypt_ivec, just use
+	zero ivec in DES3_CBC_encrypt if passed ivec is NULL
+
+	* lib/krb5/Makefile.am: back out 1.144, since it will re-create
+	krb5-protos.h at build-time, which requires perl, which is bad
 
 	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): don't
 	blindly use the local subkey
