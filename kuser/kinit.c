@@ -68,7 +68,7 @@ int convert_524		= 0;
 int fcache_version;
 char *pk_cert_file	= NULL;
 char *pk_key_file	= NULL;
-char *pk_ca_dir		= NULL;
+char *pk_x509_anchors	= NULL;
 int pk_use_dh		= -1;
 
 static char *krb4_cc_name;
@@ -153,7 +153,7 @@ static struct getargs args[] = {
     {  "private-key",  'K',  arg_string, &pk_key_file,
        "principal's private key", "filename" },
 
-    {  "ca-dir",       'D',  arg_string, &pk_ca_dir,
+    {  "x509-anchors",       'D',  arg_string, &pk_x509_anchors,
        "directory with CA certificates", "directory" },
 
     {  "pkinit-use-dh",       0,  arg_flag, &pk_use_dh,
@@ -468,7 +468,7 @@ get_new_tickets(krb5_context context,
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 pk_cert_file,
 						 pk_key_file,
-						 pk_ca_dir,
+						 pk_x509_anchors,
 						 flags,
 						 NULL);
 	if (ret)
@@ -793,10 +793,10 @@ main (int argc, char **argv)
 				krb5_principal_get_realm(context, principal), 
 				"afslog", TRUE, &do_afslog);
 
-    if (pk_ca_dir == NULL)
+    if (pk_x509_anchors == NULL)
 	krb5_appdefault_string(context, "kinit",
 			       krb5_principal_get_realm(context, principal), 
-			       "pkinit-ca-dir", NULL, &pk_ca_dir);
+			       "pkinit-anchors", NULL, &pk_x509_anchors);
 
 #ifdef PKINIT
     if(pk_use_dh == -1)

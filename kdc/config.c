@@ -432,7 +432,7 @@ configure(int argc, char **argv)
 						 "enable-pkinit",
 						 NULL);
     if (enable_pkinit) {
-	const char *key_file, *certificate_file, *ca_dir;
+	const char *key_file, *certificate_file, *x509_anchors;
 
 	key_file = krb5_config_get_string(context, NULL,
 					  "kdc",
@@ -448,14 +448,14 @@ configure(int argc, char **argv)
 	if (certificate_file == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no certificate");
 
-	ca_dir = krb5_config_get_string(context, NULL,
-					"kdc",
-					"pki-ca-dir",
-					NULL);
-	if (ca_dir == NULL)
-	    krb5_errx(context, 1, "pkinit enabled but no CA directory");
+	x509_anchors = krb5_config_get_string(context, NULL,
+					      "kdc",
+					      "pki-anchors",
+					      NULL);
+	if (x509_anchors == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	pk_initialize(certificate_file, key_file, ca_dir);
+	pk_initialize(certificate_file, key_file, x509_anchors);
     }
 #endif
 

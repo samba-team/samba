@@ -1611,7 +1611,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 			 struct krb5_pk_identity **ret_id,
 			 const char *cert_file,
 			 const char *key_file,
-			 const char *ca_dir,
+			 const char *x509_anchors,
 			 char *password)
 {
     struct krb5_pk_identity *id = NULL;
@@ -1637,7 +1637,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	krb5_set_error_string(context, "key file missing");
 	return HEIM_PKINIT_NO_PRIVATE_KEY;
     }
-    if (ca_dir == NULL) {
+    if (x509_anchors == NULL) {
 	krb5_set_error_string(context, "No root ca directory given\n");
 	return HEIM_PKINIT_NO_VALID_CA;
     }
@@ -1697,16 +1697,16 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	goto out;
     }
     /* read ca certificates */
-    dir = opendir(ca_dir);
+    dir = opendir(x509_anchors);
     if (dir == NULL) {
 	ret = errno;
 	krb5_set_error_string(context, "open directory %s: %s",
-			      ca_dir, strerror(ret));
+			      x509_anchors, strerror(ret));
 	goto out;
     }
 
-    asprintf(&dirname, "%s%s", ca_dir, 
-	     ca_dir[strlen(ca_dir) - 1] == '/' ? "" : "/");
+    asprintf(&dirname, "%s%s", x509_anchors, 
+	     x509_anchors[strlen(x509_anchors) - 1] == '/' ? "" : "/");
 
     trusted_certs = sk_X509_new_null();
     while ((file = readdir(dir)) != NULL) {
@@ -1809,7 +1809,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_get_init_creds_opt *opt,
 				   const char *cert_file,
 				   const char *key_file,
-				   const char *ca_dir,
+				   const char *x509_anchors,
 				   int flags,
 				   char *password)
 {
@@ -1832,7 +1832,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   &opt->private->pk_init_ctx->id,
 				   cert_file,
 				   key_file,
-				   ca_dir,
+				   x509_anchors,
 				   password);
     if (ret) {
 	free(opt->private->pk_init_ctx);
