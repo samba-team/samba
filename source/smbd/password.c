@@ -38,16 +38,14 @@ add a name to the session users list
 ****************************************************************************/
 void add_session_user(char *user)
 {
-	fstring suser;
-	StrnCpy(suser, user, sizeof(suser) - 1);
+  fstring suser;
+  StrnCpy(suser, user, sizeof(suser) - 1);
 
-	if (!Get_Pwnam(suser, True))
-		return;
+  if (!Get_Pwnam(suser, True)) return;
 
 	if (suser && *suser && !in_list(suser, session_users, False))
 	{
-		if (strlen(suser) + strlen(session_users) + 2 >=
-		    sizeof(pstring))
+		if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring))
 			DEBUG(1, ("Too many session users??\n"));
 		else
 		{
@@ -168,23 +166,16 @@ static char *validate_group(char *group, char *password, int pwlen, int snum,
 	*member_list = '\0';
 	member = member_list;
 
-	for (i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++)
-	{
+	for (i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
 		size_t member_len = strlen(gptr->gr_mem[i]) + 1;
-		if (copied_len + member_len < sizeof(pstring))
-		{
+		if (copied_len + member_len < sizeof(pstring)) {
 
-			DEBUG(10,
-			      ("validate_group: = gr_mem = %s\n",
-			       gptr->gr_mem[i]));
+			DEBUG(10, ("validate_group: = gr_mem = %s\n", gptr->gr_mem[i]));
 
-			safe_strcpy(member, gptr->gr_mem[i],
-				    sizeof(pstring) - copied_len - 1);
+			safe_strcpy(member, gptr->gr_mem[i], sizeof(pstring) - copied_len - 1);
 			copied_len += member_len;
 			member += copied_len;
-		}
-		else
-		{
+		} else {
 			*member = '\0';
 		}
 	}
@@ -192,8 +183,7 @@ static char *validate_group(char *group, char *password, int pwlen, int snum,
 	endgrent();
 
 	member = member_list;
-	while (*member)
-	{
+	while (*member) {
 		static fstring name;
 		fstrcpy(name, member);
 		if (user_ok(name, snum) &&
@@ -213,6 +203,7 @@ static char *validate_group(char *group, char *password, int pwlen, int snum,
 }
 
 
+
 /****************************************************************************
 check for authority to login to a service with a given username/password
 ****************************************************************************/
@@ -226,9 +217,7 @@ BOOL authorise_login(int snum, char *user, char *domain,
 	*guest = False;
 
 #if DEBUG_PASSWORD
-	DEBUG(100,
-	      ("checking authorisation on user=%s pass=%s\n", user,
-	       password));
+	DEBUG(100, ("checking authorisation on user=%s pass=%s\n", user, password));
 #endif
 
 	/* there are several possibilities:
@@ -243,36 +232,28 @@ BOOL authorise_login(int snum, char *user, char *domain,
 	   if the service is guest_only then steps 1 to 5 are skipped
 	 */
 
-	if (GUEST_ONLY(snum))
-		*force = True;
+	if (GUEST_ONLY(snum)) *force = True;
 
 	if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
 	{
 		user_struct *vuser = get_valid_user_struct(key);
 
 		/* check the given username and password */
-		if (!ok && (*user) && user_ok(user, snum))
-		{
-			ok =
-				password_ok(user, domain, password, pwlen,
-					    NULL, 0, NULL, &vuser->usr);
-			if (ok)
-				DEBUG(3,
-				      ("ACCEPTED: given username password ok\n"));
+		if (!ok && (*user) && user_ok(user, snum)) {
+			ok = password_ok(user, domain, password, pwlen,
+					 NULL, 0, NULL, &vuser->usr);
+			if (ok) DEBUG(3, ("ACCEPTED: given username password ok\n"));
 		}
 
 		/* check for a previously registered guest username */
-		if (!ok && (vuser != 0) && vuser->guest)
-		{
+		if (!ok && (vuser != 0) && vuser->guest) {
 			if (user_ok(vuser->unix_name, snum) &&
 			    password_ok(vuser->unix_name, domain, password, pwlen,
 					NULL, 0, NULL, &vuser->usr))
 			{
 				fstrcpy(user, vuser->unix_name);
 				vuser->guest = False;
-				DEBUG(3,
-				      ("ACCEPTED: given password with registered user %s\n",
-				       user));
+				DEBUG(3, ("ACCEPTED: given password with registered user %s\n", user));
 				ok = True;
 			}
 		}
@@ -290,21 +271,19 @@ BOOL authorise_login(int snum, char *user, char *domain,
 			}
 
 			for (auser = strtok(user_list, LIST_SEP);
-			     !ok && auser; auser = strtok(NULL, LIST_SEP))
+			     !ok && auser;
+			     auser = strtok(NULL, LIST_SEP))
 			{
 				fstring user2;
 				fstrcpy(user2, auser);
-				if (!user_ok(user2, snum))
-					continue;
+				if (!user_ok(user2, snum)) continue;
 
-				if (password_ok
-				    (user2, domain, password, pwlen, NULL, 0,
-				     NULL, &vuser->usr))
+				if (password_ok(user2, domain, password, pwlen,
+						NULL, 0, NULL, &vuser->usr))
 				{
 					ok = True;
 					fstrcpy(user, user2);
-					DEBUG(3,
-					      ("ACCEPTED: session list username and given password ok\n"));
+					DEBUG(3, ("ACCEPTED: session list username and given password ok\n"));
 				}
 			}
 			free(user_list);
@@ -317,35 +296,31 @@ BOOL authorise_login(int snum, char *user, char *domain,
 		{
 			fstrcpy(user, vuser->unix_name);
 			*guest = False;
-			DEBUG(3,
-			      ("ACCEPTED: validated uid ok as non-guest\n"));
+			DEBUG(3, ("ACCEPTED: validated uid ok as non-guest\n"));
 			ok = True;
 		}
 
 		/* check for a rhosts entry */
-		if (!ok && user_ok(user, snum) && check_hosts_equiv(user))
-		{
+		if (!ok && user_ok(user, snum) && check_hosts_equiv(user)) {
 			ok = True;
 			DEBUG(3, ("ACCEPTED: hosts equiv or rhosts entry\n"));
 		}
 
 		/* check the user= fields and the given password */
-		if (!ok && lp_username(snum))
-		{
+		if (!ok && lp_username(snum)) {
 			char *auser;
 			pstring user_list;
-			StrnCpy(user_list, lp_username(snum),
-				sizeof(pstring));
+			StrnCpy(user_list, lp_username(snum), sizeof(pstring));
 
 			pstring_sub(user_list, "%S", lp_servicename(snum));
 
 			for (auser = strtok(user_list, LIST_SEP);
-			     auser && !ok; auser = strtok(NULL, LIST_SEP))
+			     auser && !ok;
+			     auser = strtok(NULL, LIST_SEP))
 			{
 				if (*auser == '@')
 				{
-					auser =
-						validate_group(auser + 1,
+					auser = validate_group(auser + 1,
 							       password,
 							       pwlen, snum,
 							       &vuser->usr);
@@ -353,8 +328,7 @@ BOOL authorise_login(int snum, char *user, char *domain,
 					{
 						ok = True;
 						fstrcpy(user, auser);
-						DEBUG(3,
-						      ("ACCEPTED: group username and given password ok\n"));
+						DEBUG(3, ("ACCEPTED: group username and given password ok\n"));
 					}
 				}
 				else
@@ -368,8 +342,7 @@ BOOL authorise_login(int snum, char *user, char *domain,
 					{
 						ok = True;
 						fstrcpy(user, user2);
-						DEBUG(3,
-						      ("ACCEPTED: user list username and given password ok\n"));
+						DEBUG(3, ("ACCEPTED: user list username and given password ok\n"));
 					}
 				}
 			}
@@ -387,8 +360,7 @@ BOOL authorise_login(int snum, char *user, char *domain,
 	if (!ok && GUEST_OK(snum))
 	{
 		fstring guestname;
-		StrnCpy(guestname, lp_guestaccount(snum),
-			sizeof(guestname) - 1);
+		StrnCpy(guestname, lp_guestaccount(snum), sizeof(guestname) - 1);
 		if (Get_Pwnam(guestname, True))
 		{
 			fstrcpy(user, guestname);
@@ -544,13 +516,12 @@ BOOL check_hosts_equiv(char *user)
 	const struct passwd *pass = Get_Pwnam(user, True);
 
 	if (!pass)
-		return False;
+		return(False);
 
 	fname = lp_hosts_equiv();
 
 	/* note: don't allow hosts.equiv on root */
-	if (fname && *fname && (pass->pw_uid != 0))
-	{
+	if (fname && *fname && (pass->pw_uid != 0)) {
 		if (check_user_equiv(user, client_name(), fname))
 			return (True);
 	}
