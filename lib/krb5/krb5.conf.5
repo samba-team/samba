@@ -11,7 +11,7 @@ Configuration file for Kerberos 5
 The 
 .Nm
 file specifies several configuration parameters for the Kerberos 5
-library, as well as some programs.
+library, as well as for some programs.
 .Pp
 The file consists of one or more sections, containing a number of
 bindings. The value of each binding can be either a string or a list
@@ -47,21 +47,21 @@ name:
 consists of one or more non-white space characters.
 Currently recognised sections and bindings are:
 
-.Bl -tag -width "xxxxxx" -offset indent
-.It Li libdefaults
-.Bl -tag -width "xxxxxx" -offset indent
+.Bl -tag -width "xxx" -offset indent
+.It Li [libdefaults]
+.Bl -tag -width "xxx" -offset indent
 .It Li default_realm = Va REALM
 Default realm to use, this is also known as your 
 .Dq local realm .
 The default is the result of
-.Fn krb5_get_host_realm "local host name" .
-.It Li clockskew = time
+.Fn krb5_get_host_realm "local hostname" .
+.It Li clockskew = Va time
 Maximum time differential (in seconds) allowed when comparing
 times. Default is 300 seconds (five minutes).
-.It Li kdc_timeout = time
+.It Li kdc_timeout = Va time
 Maximum time to wait for a reply from the kdc, default is 3 seconds.
 .El
-.It Li domain_realm
+.It Li [domain_realm]
 This is a list of mappings from DNS domain to Kerberos realm. Each
 binding in this section looks like:
 .Pp
@@ -70,10 +70,10 @@ binding in this section looks like:
 The domain can be either a full name of a host or a trailing
 component, in the latter case the domain-string should start with a
 perid.
-.It Li realms
-.Bl -tag -offset indent
+.It Li [realms]
+.Bl -tag -width "xxx" -offset indent
 .It Va REALM Li = {
-.Bl -tag -offset indent
+.Bl -tag -width "xxx" -offset indent
 .It Li kdc = Va host[:port]
 Specifies a kdc for this realm. If the optional port is absent, the
 default value for the
@@ -90,9 +90,9 @@ necessary. See also
 .It Li v4_name_convert = {
 Similar to
 .Li v4_instance_convert ,
-but converts the version 4 name, rather than the instance. This is not
-used by the MIT libkrb5, but before someone thinks up something better
-you will have to have a binding looking like:
+but converts the version 4 name, rather than the instance. Before
+someone thinks up something better you will (to use version 4 support)
+have to have a binding looking like:
 .Pp
 .Dl rcmd = host
 .Pp
@@ -103,6 +103,55 @@ The default domain to use when converting version 4 instances to
 version 5 principals.
 .El
 .It Li }
+.El
+.It Li [logging]
+.Bl -tag -width "xxx" -offset indent
+.It Va entity Li = Va destination
+Specifies that
+.Va entity
+should use the specified
+.Li destination
+for logging. The currently defined destinations are:
+.Bl -tag -width "xxx" -offset indent
+.It Li STDERR
+This logs to the programs stderr.
+.It Li FILE: Ns Pa /file
+.It Li FILE= Ns Pa /file
+Log to the specified file. The form using a colon appends to the file,
+the form with an equal truncates the file. The truncating form keeps
+the file open, while the appending form closes it after each log
+message (which makes it possible to rotate logs).
+.It Li DEVICE= Ns Pa /device
+This logs to the specified device, at present this is the same as
+.Li FILE:/device .
+.It Li CONSOLE
+Log to the console, this is the same as
+.Li DEVICE=/dev/console .
+.It Li SYSLOG Ns Op :priority Ns Op :facility
+Send messages to the syslog system, using priority, and facility. To
+get the name for one of these, you take the name of the macro passed
+to
+.Xr syslog 3 ,
+and remove the leading
+.Li LOG_ 
+.No ( Li LOG_NOTICE
+becomes 
+.Li NOTICE ) .
+The default values (as well as the values used for unrecognised
+values), are
+.Li ERR ,
+and
+.Li AUTH ,
+respectively.  See
+.Xr syslog 3
+for a list of priorities and facilities.
+.Pp
+The entity specifies which program should use the specified logging
+destination. If no entity is found for a program, the 
+.Li default
+entity will be used. If that is not present either no logging will
+happen.
+.El
 .El
 .El
 .Sh EXAMPLE
@@ -123,6 +172,10 @@ version 5 principals.
 		}
 		default_domain = foo.se
 	}
+[logging]
+	kdc = FILE:/var/heimdal/kdc.log
+	kdc = SYSLOG:INFO
+	default = SYSLOG:INFO:USER
 .Ed
 .Sh SEE ALSO
 .Xr Source tm
