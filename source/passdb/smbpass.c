@@ -508,7 +508,7 @@ Error was %s\n",
 	}
 
 	sprintf(new_entry, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
-	p = &new_entry[strlen(new_entry)];
+	p = (unsigned char*)(&new_entry[strlen(new_entry)]);
 
 	for( i = 0; i < 16; i++)
 	{

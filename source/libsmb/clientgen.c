@@ -104,7 +104,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout) || 
-		    CVAL(cli->inbuf,smb_rcls) != 0) {
+		    cli_error(cli,NULL, NULL)) {
 			return(False);
 		}      
 
@@ -176,8 +176,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,
 			 CVAL(cli->inbuf,smb_com)));
 		return(False);
 	}
-	if (CVAL(cli->inbuf,smb_rcls) != 0)
-		return(False);
+	if (cli_error(cli,NULL, NULL)) return(False);
 
 	/* parse out the lengths */
 	total_data = SVAL(cli->inbuf,smb_tdrcnt);
@@ -227,8 +226,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
-			return(False);
+		if (cli_error(cli,NULL, NULL)) return(False);
 	}
 	
 	return(True);
@@ -300,7 +298,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 		
 		if (cli->error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
-			cli->privilages = SVAL(p, 24);
+			cli->privileges = SVAL(p, 24);
 			fstrcpy(cli->eff_name,p+2);
 		} else {
 			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->error));
@@ -424,15 +422,22 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+	if ((cli->sec_mode & USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
+	{
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-	} else {
+	}
+	else
+	{
 		memcpy(pword, pass, passlen);
 	}
 
 	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
+	if (!(cli->sec_mode & USE_USER_LEVEL_SECURITY))
+	{
+		fstrcpy(pword, "");
+		passlen=1;
+	} 
 
 	/* send a session setup command */
 	bzero(cli->outbuf,smb_size);
@@ -487,9 +492,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
       show_msg(cli->inbuf);
 
-      if (CVAL(cli->inbuf,smb_rcls) != 0) {
-	      return False;
-      }
+      if (cli_error(cli,NULL, NULL)) return(False);
 
       /* use the returned uid from now on */
       cli->uid = SVAL(cli->inbuf,smb_uid);
@@ -509,19 +512,19 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
-	if (cli->sec_mode & 1) {
+	if (cli->sec_mode & USE_USER_LEVEL_SECURITY) {
 		passlen = 1;
 		pass = "";
 	}
 
-	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+	if ((cli->sec_mode & USE_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
 		memcpy(pword, pass, passlen);
 	}
 
-	sprintf(fullshare, "\\\\%s\\%s", cli->desthost, share);
+	sprintf(fullshare, "\\\\%s\\%s", cli->called_netbios_name, share);
 
 	set_message(cli->outbuf,4,
 		    2 + strlen(fullshare) + passlen + strlen(dev),True);
@@ -544,9 +547,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
+    if (cli_error(cli,NULL, NULL)) return(False);
 
 	cli->cnum = SVAL(cli->inbuf,smb_tid);
 	return True;
@@ -568,7 +569,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 	
-	return CVAL(cli->inbuf,smb_rcls) == 0;
+    return !cli_error(cli,NULL, NULL);
 }
 
 /****************************************************************************
@@ -599,9 +600,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
+    if (cli_error(cli,NULL, NULL)) return False;
 
 	return True;
 }
@@ -659,9 +658,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
+    if (cli_error(cli,NULL, NULL)) return -1;
 
 	return SVAL(cli->inbuf,smb_vwv2);
 }
@@ -692,9 +689,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
+    if (cli_error(cli,NULL, NULL)) return False;
 
 	return True;
 }
@@ -733,9 +728,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
+    if (cli_error(cli,NULL, NULL)) return False;
 
 	return True;
 }
@@ -773,9 +766,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
+    if (cli_error(cli,NULL, NULL)) return False;
 
 	return True;
 }
@@ -808,9 +799,7 @@ int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 s
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
+    if (cli_error(cli,NULL, NULL)) return -1;
 
 	size = SVAL(cli->inbuf, smb_vwv5);
 	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
@@ -852,9 +841,7 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
+    if (cli_error(cli,NULL, NULL)) return -1;
 
 	return SVAL(cli->inbuf, smb_vwv2);
 }
@@ -899,10 +886,8 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	show_msg(cli->inbuf);
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0 || 
-	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
-		return(False);
-	}
+    if (cli_error(cli,NULL, NULL)) return False;
+	if ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots) return(False);
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
 
@@ -936,33 +921,43 @@ BOOL cli_negprot(struct cli_state *cli)
 	return True;
 }
 
+#define TRUNCATE_NETBIOS_NAME 1
 
 /****************************************************************************
-  send a session request
+  send a session request.  see rfc1002.txt 4.3 and 4.3.2
 ****************************************************************************/
-BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
-			 char *myname)
+BOOL cli_session_request(struct cli_state *cli,
+			char *called_host_name        , int called_name_type,
+			char  calling_netbios_name[16], int calling_name_type)
 {
-	fstring dest;
 	char *p;
 	int len = 4;
 	/* send a session request (RFC 1002) */
 
-	fstrcpy(dest,host);
+	strncpy(cli->called_netbios_name , called_host_name    , sizeof(cli->called_netbios_name ));
+	strncpy(cli->calling_netbios_name, calling_netbios_name, sizeof(cli->calling_netbios_name));
   
-	p = strchr(dest,'.');
-	if (p) *p = 0;
+	/* sorry, don't trust strncpy to null-terminate the string... */
+	cli->called_netbios_name [sizeof(cli->called_netbios_name )-1] = 0;
+	cli->calling_netbios_name[sizeof(cli->calling_netbios_name)-1] = 0;
 
-	fstrcpy(cli->desthost, dest);
+#ifdef TRUNCATE_NETBIOS_NAME
+	/* ok.  this is because of a stupid microsoft-ism.  if the called host
+	   name contains a '.', microsoft clients expect you to truncate the
+	   netbios name up to and including the '.'
+	 */
+	p = strchr(cli->called_netbios_name, '.');
+	if (p) *p = 0;
+#endif /* TRUNCATE_NETBIOS_NAME */
 
 	/* put in the destination name */
 	p = cli->outbuf+len;
-	name_mangle(dest,p,name_type);
+	name_mangle(cli->called_netbios_name, p, called_name_type);
 	len += name_len(p);
 
 	/* and my name */
 	p = cli->outbuf+len;
-	name_mangle(myname,p,0);
+	name_mangle(cli->calling_netbios_name, p, calling_name_type);
 	len += name_len(p);
 
 	/* setup the packet length */
@@ -990,26 +985,27 @@ BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 {
 	struct in_addr dest_ip;
 
-	fstrcpy(cli->desthost, host);
+	fstrcpy(cli->full_dest_host_name, host);
 	
-	if (!ip) {
+	if (!ip)
+	{
+		/* no ip specified - look up the name */
 		struct hostent *hp;
 
-		if ((hp = Get_Hostbyname(cli->desthost)) == 0) {
+		if ((hp = Get_Hostbyname(host)) == 0) {
 			return False;
 		}
 
 		putip((char *)&dest_ip,(char *)hp->h_addr);
 	} else {
+		/* use the given ip address */
 		dest_ip = *ip;
 	}
 
-
+	/* open the socket */
 	cli->fd = open_socket_out(SOCK_STREAM, &dest_ip, 139, cli->timeout);
-	if (cli->fd == -1)
-		return False;
 
-	return True;
+	return (cli->fd != -1);
 }
 
 
@@ -1059,10 +1055,32 @@ char *cli_errstr(struct cli_state *cli)
 /****************************************************************************
   return error codes for the last packet
 ****************************************************************************/
-void cli_error(struct cli_state *cli, int *eclass, int *num)
+BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 {
-	*eclass = CVAL(cli->inbuf,smb_rcls);
-	*num = SVAL(cli->inbuf,smb_err);
+	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
+
+	if (eclass) *eclass = 0;
+	if (num   ) *num = 0;
+
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
+	{
+		/* 32 bit error codes detected */
+		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
+		if (num) *num = nt_err;
+		return (nt_err != 0);
+	}
+	else
+	{
+		/* dos 16 bit error codes detected */
+		char rcls  = CVAL(cli->inbuf,smb_rcls);
+		if (rcls != 0)
+		{
+			if (eclass) *eclass = rcls;
+			if (num   ) *num    = SVAL(cli->inbuf,smb_err);
+			return True;
+		}
+	}
+	return False;
 }
 
 /****************************************************************************

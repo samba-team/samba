@@ -25,6 +25,7 @@
 #endif
 
 #include "includes.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern pstring username;
@@ -35,11 +36,110 @@ extern pstring workgroup;
 
 #ifdef NTDOMAIN
 
+/************************************************************************
+ check workstation trust account status
+ ************************************************************************/
+BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
+				char *myhostname, char *domain)
+{
+	pstring tmp;
+	struct cli_state wksta_trust;
+	fstring mach_acct;
+	fstring mach_pwd;
+	fstring new_mach_pwd;
+	uchar lm_owf_mach_pwd[16];
+	uchar nt_owf_mach_pwd[16];
+	uchar lm_sess_pwd[24];
+	uchar nt_sess_pwd[24];
+	BOOL right_error_code = False;
+
+	char *start_mach_pwd;
+	char *change_mach_pwd;
+
+	fstrcpy(mach_acct, myhostname);
+	strlower(mach_pwd);
+
+	fstrcpy(mach_pwd , myhostname);
+	strcat(mach_acct, "$");
+	strupper(mach_acct);
+
+	sprintf(tmp, "Enter Workstation Trust Account password for [%s].\nDefault is [%s].  Password: ",
+				mach_acct, mach_pwd);
+
+	start_mach_pwd = (char*)getpass(tmp);
+
+	if (start_mach_pwd[0] != 0)
+	{
+		fstrcpy(mach_pwd, start_mach_pwd);
+	}
+
+	sprintf(tmp, "Enter new Workstation Trust Account password for [%s]\nPress Return to leave at old value.  Password: ",
+				mach_acct);
+
+	change_mach_pwd = (char*)getpass(tmp);
+
+	fstrcpy(new_mach_pwd, change_mach_pwd);
+
+	if (!cli_initialise(&wksta_trust))
+	{
+		DEBUG(1,("cli_initialise failed for wksta_trust\n"));
+		return False;
+	}
+
+	if (!server_connect_init(&wksta_trust, myhostname, dest_ip, dest_host))
+	{
+		int err_cls;
+		int err_num;
+		cli_error(&wksta_trust, &err_cls, &err_num);
+		DEBUG(1,("server_connect_init failed (%s)\n", cli_errstr(&wksta_trust)));
+
+		cli_shutdown(&wksta_trust);
+		return False;
+	}
+
+	nt_lm_owf_gen(mach_pwd, nt_owf_mach_pwd, lm_owf_mach_pwd);
+
+	DEBUG(5,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
+	SMBOWFencrypt(nt_owf_mach_pwd, wksta_trust.cryptkey, nt_sess_pwd);
+	SMBOWFencrypt(lm_owf_mach_pwd, wksta_trust.cryptkey, lm_sess_pwd);
+
+	right_error_code = False;
+
+	if (!server_validate2(&wksta_trust, mach_acct, domain,
+			lm_sess_pwd, sizeof(lm_sess_pwd),
+			nt_sess_pwd, sizeof(nt_sess_pwd)))
+	{
+		int err_cls;
+		int err_num;
+		cli_error(&wksta_trust, &err_cls, &err_num);
+
+		if (err_cls == 0xC000 && err_num == NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)
+		{
+			DEBUG(1,("server_validate: valid workstation trust account exists\n"));
+			right_error_code = True;
+		}
+
+		if (err_cls == 0xC000 && err_num == NT_STATUS_NO_SUCH_USER)
+		{
+			DEBUG(1,("server_validate: workstation trust account does not exist\n"));
+			right_error_code = False;
+		}
+	}
+
+	if (!right_error_code)
+	{
+		DEBUG(1,("server_validate failed (%s)\n", cli_errstr(&wksta_trust)));
+	}
+
+	cli_shutdown(&wksta_trust);
+	return right_error_code;
+}
 
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-BOOL do_nt_login(char *desthost, char *myhostname,
+BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
+				char *myhostname,
 				int Client, int cnum)
 {
 	DOM_CHAL clnt_chal;
@@ -66,9 +166,12 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	uchar sess_key[8];
 	char nt_owf_mach_pwd[16];
-	fstring mach_acct;
-	fstring mach_pwd;
+
 	fstring server_name;
+	fstring mach_acct;
+
+	fstring mach_pwd;
+	fstring new_mach_pwd;
 
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -88,6 +191,8 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	uint32 call_id = 0;
 	char *inbuf,*outbuf; 
 
+	/******************** initialise ********************************/
+
 	zerotime.time = 0;
 
 	inbuf  = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -99,6 +204,10 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 	
+	/************ check workstation trust account *******************/
+
+	wksta_trust_account_check(dest_ip, dest_host, myhostname, workgroup);
+
 	/******************* open the \PIPE\lsarpc file *****************/
 
 	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_LSARPC, Client, cnum)) == 0xffff)
@@ -216,17 +325,11 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/******************* Request Challenge ********************/
 
-	fstrcpy(mach_acct, myhostname);
-	strlower(mach_pwd);
-
-	fstrcpy(mach_pwd , myhostname);
-	strcat(mach_acct, "$");
-
 	SIVAL(clnt_chal.data, 0, 0x11111111);
 	SIVAL(clnt_chal.data, 4, 0x22222222);
 	
 	/* send a client challenge; receive a server challenge */
-	if (!do_lsa_req_chal(fnum, ++call_id, desthost, myhostname, &clnt_chal, &srv_chal))
+	if (!do_lsa_req_chal(fnum, ++call_id, dest_host, myhostname, &clnt_chal, &srv_chal))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
@@ -268,7 +371,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	cred_create(sess_key, &clnt_chal, zerotime, &(clnt_cred.challenge));
 
 	/* send client auth-2 challenge; receive an auth-2 challenge */
-	if (!do_lsa_auth2(fnum, ++call_id, desthost, mach_acct, 2, myhostname,
+	if (!do_lsa_auth2(fnum, ++call_id, dest_host, mach_acct, 2, myhostname,
 	                  &(clnt_cred.challenge), 0x000001ff, &auth2_srv_chal))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
@@ -311,7 +414,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/* send client sam-logon challenge; receive a sam-logon challenge */
 	if (!do_lsa_sam_logon(fnum, ++call_id, sess_key, &clnt_cred, 
-	                  desthost, mach_acct, 
+	                  dest_host, mach_acct, 
 	                  &sam_logon_clnt_cred, &sam_logon_rtn_cred,
 	                  1, 1, &id1, &user_info1,
 	                  &sam_logon_srv_cred))
@@ -332,7 +435,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/* send client sam-logoff challenge; receive a sam-logoff challenge */
 	if (!do_lsa_sam_logoff(fnum, ++call_id, sess_key, &clnt_cred,
-	                  desthost, mach_acct, 
+	                  dest_host, mach_acct, 
 	                  &sam_logoff_clnt_cred, &sam_logoff_rtn_cred,
 	                  1, 1, &id1,
 	                  &sam_logoff_srv_cred))
