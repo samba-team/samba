@@ -1113,7 +1113,7 @@ include/tdbsam2_parse_info.h:
 # parallel make.
 headers: delheaders include/proto.h include/build_env.h include/tdbsam2_parse_info.h
 
-proto: headers 
+proto: idl_test headers 
 
 proto_test:
 	@[ -f include/proto.h ] || $(MAKE) proto
