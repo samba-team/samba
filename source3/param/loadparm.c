@@ -738,7 +738,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
