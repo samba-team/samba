@@ -1,5 +1,7 @@
 Changes in release 0.2r:
 
+ * fix realloc memory corruption bug in kdc
+
  * `add --key' and `cpw --key' in kadmin
 
  * klist supports listing v4 tickets
