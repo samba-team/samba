@@ -40,103 +40,254 @@ static void winbindd_fill_grent(struct winbindd_gr *gr, char *gr_name,
 
 /* Fill in group membership */
 
-static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid, 
-                                    char *domain_name, uint32 group_rid, 
+struct grent_mem_group {
+    uint32 group_rid;
+    enum SID_NAME_USE group_name_type;
+    fstring domain_name;
+    struct grent_mem_group *prev, *next;
+};
+
+static BOOL winbindd_fill_grent_mem(char *server_name, char *domain_name, 
+                                    uint32 group_rid, 
                                     enum SID_NAME_USE group_name_type, 
                                     POLICY_HND *sam_dom_handle,
                                     struct winbindd_gr *gr)
 {
-    uint32 num_names = 0;
-    DOM_SID **sids = NULL;
-    uint32 *name_types = NULL;
-    char **names;
-    uint32 *rid_mem;
+    struct grent_mem_group *done_groups = NULL, *todo_groups = NULL;
+    struct grent_mem_group *temp;
     pstring groupmem_list;
-    int i;
     
     /* Initialise group membership information */
 
     gr->num_gr_mem = 0;
     pstrcpy(groupmem_list, "");
-        
-    /* Lookup group information */
 
-    if (group_name_type == SID_NAME_DOM_GRP) {
-         if (!winbindd_lookup_groupmem(server_name, domain_sid, group_rid, 
-                                       sam_dom_handle, &num_names, &rid_mem, 
-                                       &names, &name_types)) {
-             DEBUG(1, ("fill_grent_mem(): group rid %d not a domain group\n", 
-                       group_rid));
-             return False;
-         }
+    /* Add first group to todo_groups list */
+
+    if ((temp = (struct grent_mem_group *)malloc(sizeof(*temp))) == NULL) {
+        return False;
     }
 
-    if (group_name_type == SID_NAME_ALIAS) {
-        if (!winbindd_lookup_aliasmem(server_name, domain_sid, group_rid, 
-                                      sam_dom_handle, &num_names, &rid_mem, 
-                                      &names, &name_types) &&
-            !winbindd_lookup_aliasmem(server_name, global_sid_builtin, 
-                                      group_rid, sam_dom_handle, &num_names, 
-                                      &sids, &names, &name_types)) {
+    ZERO_STRUCTP(temp);
+    temp->group_rid = group_rid;
+    temp->group_name_type = group_name_type;
+    fstrcpy(temp->domain_name, domain_name);
 
-            DEBUG(1, ("fill_grent_mem(): group rid %d not a local group\n",
-                      group_rid));
-            return False;
-        }
-    }
-    
-    /* Map each user to UNIX equivalent and append to group list */
-    
-    for (i = 0; i < num_names; i++) {
-        enum SID_NAME_USE name_type;
-        
-        /* Lookup name */
+    DLIST_ADD(todo_groups, temp);
+            
+    /* Iterate over all groups to find members of */
 
-        if (winbindd_lookup_by_name(server_name, domain_sid, names[i],
-                                    NULL, &name_type) == WINBINDD_OK) {
+    while(todo_groups != NULL) {
+        struct grent_mem_group *current_group = todo_groups;
+        uint32 num_names = 0, num_sids = 0, *rid_mem = NULL, 
+            *name_types = NULL;
+        DOM_SID **sids = NULL, domain_sid;
+        char **names = NULL;
+        int i, done_group;
 
-            /* Check name type */
+        /* Find domain sid for this group */
 
-            if (name_type == SID_NAME_USER) {
-        
-                /* Add to group membership list if not a local group */
-                
-                if (group_name_type != SID_NAME_ALIAS) {
-                    pstrcat(groupmem_list, domain_name);
-                    pstrcat(groupmem_list, "/");
-                }
+        if (!find_domain_sid_from_name(current_group->domain_name, 
+                                       &domain_sid, NULL)) {
+            DEBUG(1, ("%s:%d: could not locate domain sid for domain "
+                      "%s\n", __FUNCTION__, __LINE__, 
+                      current_group->domain_name));
 
-                pstrcat(groupmem_list, names[i]);
-                pstrcat(groupmem_list, ",");
+            /* Exit if we cannot lookup the sid for the domain of the group
+               this function was called to look at */
 
-                gr->num_gr_mem++;
+            if (fstrcpy(current_group->domain_name, domain_name) == 0) {
+                return False;
             } else {
-
-                /* Recursively add members of other groups */
-
-                DEBUG(1, ("cannot add group %s - not supported\n", names[i]));
+                goto cleanup;
             }
+        }
+
+        /* Check we aren't doing it recursively */
+
+        done_group = 0;
+
+        for (temp = done_groups; temp != NULL; temp = temp->next) {
+            if ((temp->group_rid == current_group->group_rid) &&
+                (strcmp(temp->domain_name, current_group->domain_name) == 0)) {
+                
+                done_group = 1;
+            }
+        }
+
+        if (done_group) goto cleanup;
+
+        /* Lookup group membership for the current group */
+
+        if (current_group->group_name_type == SID_NAME_DOM_GRP) {
+            if (!winbindd_lookup_groupmem(server_name, &domain_sid, 
+                                          current_group->group_rid, 
+                                          sam_dom_handle, &num_names, 
+                                          &rid_mem, &names, &name_types)) {
+
+                DEBUG(1, ("fill_grent_mem(): group rid %d not a domain "
+                          "group\n", current_group->group_rid));
+
+                /* Exit if we cannot lookup the membership for the group
+                   this function was called to look at */
+
+                if (current_group->group_rid == group_rid) {
+                    return False;
+                } else {
+                    goto cleanup;
+                }
+            }
+        }
+
+        if (current_group->group_name_type == SID_NAME_ALIAS) {
+            if (!winbindd_lookup_aliasmem(server_name, &domain_sid, 
+                                          current_group->group_rid, 
+                                          sam_dom_handle, &num_names, 
+                                          &rid_mem, &names, &name_types) &&
+                !winbindd_lookup_aliasmem(server_name, global_sid_builtin, 
+                                          current_group->group_rid, 
+                                          sam_dom_handle, &num_sids, 
+                                          &sids, &names, &name_types)) {
+
+                DEBUG(1, ("fill_grent_mem(): group rid %d not a local group\n",
+                          group_rid));
+
+                /* Exit if we cannot lookup the membership for the group
+                   this function was called to look at */
+
+                if (current_group->group_rid == group_rid) {
+                    return False;
+                } else {
+                    goto cleanup;
+                }
+            }
+        }
+
+        /* Now for each member of the group, add it to the group list if it
+           is a user, otherwise push it onto the todo_group list if it is a
+           group or an alias. */
+    
+        for (i = 0; i < num_names; i++) {
+            enum SID_NAME_USE name_type;
+        
+            /* Lookup name */
+
+            if (winbindd_lookup_by_name(server_name, &domain_sid, names[i],
+                                        NULL, &name_type) == WINBINDD_OK) {
+
+                /* Check name type */
+
+                if (name_type == SID_NAME_USER) {
+        
+                    /* Add to group membership list */
+                
+                    if (current_group->group_name_type != SID_NAME_ALIAS) {
+                        pstrcat(groupmem_list, current_group->domain_name);
+                        pstrcat(groupmem_list, "/");
+                    }
+
+                    pstrcat(groupmem_list, names[i]);
+                    pstrcat(groupmem_list, ",");
+
+                    gr->num_gr_mem++;
+
+                } else {
+                    struct grent_mem_group *temp2;
+                    DOM_SID todo_sid;
+                    uint32 todo_rid;
+                    char *todo_domain;
+
+                    /* Add group to todo list */
+
+                    if ((winbindd_lookup_by_name(server_name, &domain_sid, 
+                                                 names[i], &todo_sid, 
+                                                 &name_type) == WINBINDD_OK) &&
+                        (todo_domain = strtok(names[i], "/\\"))) {
+                        
+                        /* Fill in group entry */
+
+                        sid_split_rid(&todo_sid, &todo_rid);
+
+                        if ((temp2 = (struct grent_mem_group *)
+                             malloc(sizeof(*temp2))) != NULL) {
+                            
+                            ZERO_STRUCTP(temp2);
+                            temp2->group_rid = todo_rid;
+                            temp2->group_name_type = name_type;
+                            fstrcpy(temp2->domain_name, todo_domain);
+                            
+                            DLIST_ADD(todo_groups, temp2);
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Remove group from todo list and add to done_groups list */
+
+    cleanup:
+
+        DLIST_REMOVE(todo_groups, current_group);
+        DLIST_ADD(done_groups, current_group);
+
+        /* Free memory allocated in winbindd_lookup_{alias,group}mem() */
+
+        if (name_types != NULL) { 
+            free(name_types);
+            name_types = NULL;
+        }
+
+        if (rid_mem != NULL) { 
+            free(rid_mem);
+            rid_mem = NULL;
+        }
+
+        if (names != NULL) { 
+            int j;
+            
+            for (j = 0; j < num_names; j++) {
+                if (names[j] != NULL) {
+                    free(names[j]);
+                }
+            }
+            
+            free(names); 
+            names = NULL;
+        }
+
+        if (sids != NULL) {
+            int j;
+
+            for (j = 0; j < num_sids; j++) {
+                if (sids[j] != NULL) {
+                    free(sids[j]);
+                }
+            }
+
+            free(sids);
+            sids = NULL;
         }
     }
     
-    pstrcpy(gr->gr_mem, groupmem_list);
+    /* Free done groups list */
 
-    /* Free memory */
+    temp = done_groups;
 
-    if (name_types != NULL) { free(name_types); }
-    if (rid_mem != NULL) { free(rid_mem); }
+    if (temp != NULL) {
+        while (temp != NULL) {
+            struct grent_mem_group *next;
 
-    if (names != NULL) { 
-        int j;
+            DLIST_REMOVE(done_groups, temp);
+            next = temp->next;
 
-        for (j = 0; j < num_names; j++) {
-            if (names[j] != NULL) {
-                free(names[j]);
-            }
+            free(temp);
+            temp = next;
         }
-
-        free(names); 
     }
+
+    /* Phew - copy group membership list into group structure and return */
+
+    pstrcpy(gr->gr_mem, groupmem_list);
 
     return True;
 }
@@ -207,9 +358,8 @@ enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
         sid_copy(&temp, &domain_group_sid);
         sid_split_rid(&temp, &group_rid);
         
-        if (!winbindd_fill_grent_mem(domain_controller, &domain_sid, 
-                                     name_domain, group_rid, name_type, 
-                                     NULL, gr)) {
+        if (!winbindd_fill_grent_mem(domain_controller, name_domain, 
+                                     group_rid, name_type, NULL, gr)) {
             return WINBINDD_ERROR;
         }
     }
@@ -279,9 +429,8 @@ enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid,
         sid_copy(&temp, &domain_group_sid);
         sid_split_rid(&temp, &group_rid);
         
-        if (!winbindd_fill_grent_mem(domain_controller, &domain_sid, 
-                                     domain_name, group_rid, name_type, 
-                                     NULL, gr)) {
+        if (!winbindd_fill_grent_mem(domain_controller, domain_name, 
+                                     group_rid, name_type, NULL, gr)) {
             return WINBINDD_ERROR;
         }
     }
