@@ -431,7 +431,8 @@ utility.  See the respective man pages for details.
 LDAP
 ####
 
-This section outlines the new features affecting Samba / LDAP integration.
+This section outlines the new features affecting Samba / LDAP 
+integration.
 
 New Schema
 ----------
@@ -521,11 +522,62 @@ share a uid/gid number space, thus avoiding the interoperability problems
 with NFS that were present in Samba 2.2.
     
 
+
+######################################################################
+Trust Relationships and a Samba Domain
+######################################
+
+Samba 3.0.0beta2 is able to utilize winbindd as the means of 
+allocating uids and gids to trusted users and groups.  More
+information regarding Samba's support for establishing trust 
+relationships can be found in the Samba-HOWTO-Collection included
+in the docs/ directory of this release.
+
+First create your Samba PDC and ensure that everything is 
+working correctly before moving on the trusts.
+
+To establish Samba as the trusting domain (named SAMBA) from a Windows NT
+4.0 domain named WINDOWS:
+
+  1) create the trust account for SAMBA in "User Manager for Domains"
+  2) connect the trust from the Samba domain using
+     'net rpc trustdom establish GLASS'
+
+To create a trustlationship with SAMBA as the trusted domain:
+
+  1) create the initial trust account for GLASS using
+     'smbpasswd -a -i GLASS'.  You may need to create a UNIX
+     account for GLASS$ prior to this stpe (depending on your
+     local configuration).
+  2) connect the trust from a WINDOWS DC using "User Manager
+     for Domains"
+
+Now join winbindd on the Samba PDC to the SAMBA domain using
+the normal steps for adding a Samba server to an NT4 domain:
+(note that smbd & nmbd must be running at this point)
+
+   root# net rpc join -U root
+   Password: <enter root password from smbpasswd file here>
+
+Start winbindd and test the join with 'wbinfo -t'.
+
+Now test the trust relationship by connecting to the SAMBA DC
+(e.g. POGO) as a user from the WINDOWS domain:
+
+   $ smbclient //pogo/netlogon -U Administrator -W WINDOWS
+   Password:
+
+Nowe connect to the WINDOWS DC (e.g. CRYSTAL) as a Samba user:
+
+   $ smbclient //crystal/netlogon -U root -W WINDOWS
+   Password:
+
+
 ######################################################################
 Known Issues
 ############
 
-* The smbldap perl scripts for managing user entries in an LDAP 
+* The smbldap perl scripts for managing user entries in an LDAP
   directory have not be updated to function with the Samba 3.0
   schema changes.  This (or an equivalent solution) work is planned
   to be completed prior to the stable 3.0.0 release.
