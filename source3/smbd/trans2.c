@@ -2762,7 +2762,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
 				pstring buffer;
-				char *bufp = buffer;
 
 				DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_LINK\n"));
 #ifdef S_ISLNK
@@ -2775,11 +2774,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				if (len == -1)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				buffer[len] = 0;
-				if (strncmp(buffer, CIFS_CLIENT_SYMLINK_STRING, strlen(CIFS_CLIENT_SYMLINK_STRING)) == 0) {
-					bufp += strlen(CIFS_CLIENT_SYMLINK_STRING);
-				}
-
-				len = srvstr_push(outbuf, pdata, bufp, -1, STR_TERMINATE);
+				len = srvstr_push(outbuf, pdata, buffer, -1, STR_TERMINATE);
 				pdata += len;
 				data_size = PTR_DIFF(pdata,(*ppdata));
 
@@ -2929,6 +2924,7 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 		errno = EACCES;
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -2972,6 +2968,10 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (!check_name(oldname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	rcdest = unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
 	if (!rcdest && bad_path_newname) {
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -2987,6 +2987,10 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 	/* Disallow if newname already exists. */
 	if (VALID_STAT(sbuf2)) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	if (!check_name(newname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* No links from a directory. */
@@ -3492,9 +3496,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		case SMB_SET_FILE_UNIX_LINK:
 		{
-			pstring oldname;
+			pstring link_target;
 			char *newname = fname;
-			BOOL cifs_client_link = False;
 
 			/* Set a symbolic link. */
 			/* Don't allow this if follow links is false. */
@@ -3502,15 +3505,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (!lp_symlinks(SNUM(conn)))
 				return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-			srvstr_pull(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE);
-			unix_format(oldname);
+			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), -1, STR_TERMINATE);
 
-			if (*oldname == '/') {
-				/* Absolute paths are automatically a client resolved link. */
-				cifs_client_link = True;
-			} else {
+			/* !widelinks forces the target path to be within the share. */
+			if (!lp_widelinks(SNUM(conn))) {
 				pstring rel_name;
 				char *last_dirp = NULL;
+
+				unix_format(link_target);
 
 				pstrcpy(rel_name, newname);
 				last_dirp = strrchr_m(rel_name, '/');
@@ -3519,23 +3521,20 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				} else {
 					pstrcpy(rel_name, "./");
 				}
-				pstrcat(rel_name, oldname);
-				if (ensure_link_is_safe(conn, rel_name, rel_name) != 0)
-					cifs_client_link = True;
+				pstrcat(rel_name, link_target);
+				if (ensure_link_is_safe(conn, rel_name, rel_name) != 0) {
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 
-			}
-
-			if (cifs_client_link) {
-				pstring tmp_name;
-				pstrcpy(tmp_name, CIFS_CLIENT_SYMLINK_STRING);
-				pstrcat(tmp_name, oldname);
-				pstrcpy(oldname, tmp_name);
+				if (check_name(link_target, conn)) {
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 			}
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
-				fname, oldname ));
+				fname, link_target ));
 
-			if (SMB_VFS_SYMLINK(conn,oldname,newname) != 0)
+			if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
