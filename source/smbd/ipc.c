@@ -502,7 +502,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			goto bad_param;
 		
 		if (pcnt) {
-			if (pdisp+pcnt >= tpscnt)
+			if (pdisp+pcnt > tpscnt)
 				goto bad_param;
 			if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
 				goto bad_param;
@@ -518,7 +518,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		}
 
 		if (dcnt) {
-			if (ddisp+dcnt >= tdscnt)
+			if (ddisp+dcnt > tdscnt)
 				goto bad_param;
 			if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
 				goto bad_param;
