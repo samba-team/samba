@@ -31,17 +31,16 @@
  * SUCH DAMAGE.
  */
 
-#ifndef __STDC__
-#define const
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
 #endif
 
-#include <sys/types.h>
-#include <sys/cdefs.h>
-#ifdef NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
+#include <sys/cdefs.h>
 
 #if defined(LIBC_SCCS) && !defined(lint)
 static char sccsid[] = "@(#)strcasecmp.c	8.1 (Berkeley) 6/4/93";
@@ -88,10 +87,9 @@ static const u_char charmap[] = {
 };
 
 int
-strcasecmp(s1, s2)
-	const char *s1, *s2;
+strcasecmp(const char *s1, const char *s2)
 {
-	register const u_char *cm = charmap,
+	const u_char *cm = charmap,
 			*us1 = (const u_char *)s1,
 			*us2 = (const u_char *)s2;
 
@@ -102,12 +100,10 @@ strcasecmp(s1, s2)
 }
 
 int
-strncasecmp(s1, s2, n)
-	const char *s1, *s2;
-	register size_t n;
+strncasecmp(const char *s1, const char *s2, size_t n)
 {
 	if (n != 0) {
-		register const u_char *cm = charmap,
+		const u_char *cm = charmap,
 				*us1 = (const u_char *)s1,
 				*us2 = (const u_char *)s2;
 
