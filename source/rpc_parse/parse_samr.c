@@ -1136,7 +1136,7 @@ static BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
 {
 	if (sam == NULL) return False;
 
-	DEBUG(5,("make_sam_entry\n"));
+	DEBUG(10,("make_sam_entry: %d %d\n", len_sam_name, rid));
 
 	sam->rid = rid;
 	make_uni_hdr(&(sam->hdr_name), len_sam_name);
@@ -1277,9 +1277,6 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct
 
 	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_users");
 	depth++;
-
-	r_u->sam = NULL;
-	r_u->uni_acct_name = NULL;
 
 	prs_align(ps);
 
@@ -2865,9 +2862,6 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps
 	prs_debug(ps, depth, desc, "samr_io_r_enum_domains");
 	depth++;
 
-	r_u->sam = NULL;
-	r_u->uni_dom_name = NULL;
-
 	prs_align(ps);
 
 	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
@@ -2895,14 +2889,18 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
+			fstring tmp;
+			slprintf(tmp, sizeof(tmp)-1, "dom[%d]", i);
 			prs_grow(ps);
-			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
+			sam_io_sam_entry(tmp, &(r_u->sam[i]), ps, depth);
 		}
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
+			fstring tmp;
+			slprintf(tmp, sizeof(tmp)-1, "dom[%d]", i);
 			prs_grow(ps);
-			smb_io_unistr2("", &(r_u->uni_dom_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+			smb_io_unistr2(tmp, &(r_u->uni_dom_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 		}
 
 		prs_align(ps);
@@ -3027,9 +3025,6 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 
 	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_groups");
 	depth++;
-
-	r_u->sam = NULL;
-	r_u->uni_grp_name = NULL;
 
 	prs_align(ps);
 
@@ -3190,9 +3185,6 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES *r_u, prs_st
 
 	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_aliases");
 	depth++;
-
-	r_u->sam = NULL;
-	r_u->uni_grp_name = NULL;
 
 	prs_align(ps);
 
