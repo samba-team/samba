@@ -1,3 +1,23 @@
+2003-03-10  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* kuser/kdestroy.c (main): handle that krb5_cc_default_name can
+	return NULL
+
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump minor
+	(TESTS): add test_cc
+
+	* lib/krb5/test_cc.c: test some
+	krb5_cc_default_name/krb5_cc_set_default_name combinations
+	
+	* lib/krb5/context.c (init_context_from_config_file): set
+	default_cc_name to NULL
+	(krb5_free_context): free default_cc_name if set
+
+	* lib/krb5/cache.c (krb5_cc_set_default_name): new function
+	(krb5_cc_default_name): use krb5_cc_set_default_name
+
+	* lib/krb5/krb5.h (krb5_context_data): add default_cc_name
+	
 2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* appl/kf/kf.1: s/securly/securely/ from NetBSD
