@@ -352,6 +352,14 @@ mkstemp(char *template);
 void pidfile (const char*);
 #endif
 
+#ifndef HAVE_BSWAP32
+u_int32_t bswap32(u_int32_t);
+#endif
+
+#ifndef HAVE_BSWAP16
+u_int16_t bswap16(u_int16_t);
+#endif
+
 #ifndef HAVE_FLOCK
 #ifndef LOCK_SH
 #define LOCK_SH   1		/* Shared lock */
