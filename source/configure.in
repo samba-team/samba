@@ -106,7 +106,7 @@ AC_CHECK_TYPE(ssize_t, int)
 
 AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
     AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
-	samba_cv_errno=yes,samba_cv_have_errno_decl=no)])
+	samba_cv_errno=yes,samba_cv_have_errno=no)])
 if test x"$samba_cv_errno" = x"yes"; then
    AC_DEFINE(HAVE_ERRNO_DECL)
 fi
@@ -771,7 +771,6 @@ AC_ARG_WITH(libmsrpc,
 [ case "$withval" in
   no)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBMSRPC)
 	LIBMSRPC="bin/libmsrpc.so"
 
 	if test x$ATTEMPT_LIBMSRPC32_BUILD = x; then
@@ -804,7 +803,6 @@ AC_ARG_WITH(libubiqx,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBUBIQX)
 	LIBUBIQX="bin/libubiqx.so"
 
 	if test x$ATTEMPT_LIBUBIQX32_BUILD = x; then
@@ -837,7 +835,6 @@ AC_ARG_WITH(libsamba,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBSAMBA)
 	LIBSAMBA="bin/libsamba.so"
 
 	if test x$ATTEMPT_LIBSAMBA32_BUILD = x; then
@@ -870,7 +867,6 @@ AC_ARG_WITH(libnmb,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBNMB)
 	LIBNMB="bin/libnmb.so"
 
 	if test x$ATTEMPT_LIBNMB32_BUILD = x; then
@@ -903,7 +899,6 @@ AC_ARG_WITH(libsurs,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBSURS)
 	LIBSURS="bin/libsurs.so"
 
 	if test x$ATTEMPT_LIBSURS32_BUILD = x; then
@@ -936,7 +931,6 @@ AC_ARG_WITH(libsmbpw,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBSMBPW)
 	LIBSMBPW="bin/libsmbpw.so"
 
 	if test x$ATTEMPT_LIBSMBPW32_BUILD = x; then
@@ -970,7 +964,6 @@ AC_ARG_WITH(libsmb,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LIBSMB)
 	LIBSMB="bin/libsmb.so"
 
 	if test x$ATTEMPT_LIBSMB32_BUILD = x; then
