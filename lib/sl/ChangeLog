@@ -1,3 +1,7 @@
+Tue Feb  9 23:45:37 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.in: add snprintf.o to make_cmds
+
 Sun Nov 22 10:46:23 1998  Assar Westerlund  <assar@sics.se>
 
 	* sl.c (sl_command_loop): remove unused variable
