@@ -1,3 +1,14 @@
+1999-07-22  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c: initialize kadm5 connection for every change
+ 	(otherwise the modifier in the database doesn't get set)
+
+	* kdc/hpropd.c: clean-up and re-organize
+
+	* kdc/hprop.c: clean-up and re-organize
+
+ 	* configure.in (SunOS): define to xy for SunOS x.y
+
 1999-07-19  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (AC_BROKEN): test for copyhostent, freehostent,
