@@ -471,7 +471,7 @@ static service sDefault = {
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
 	True,			/* bLocking */
-	False,			/* bStrictLocking */
+	True,			/* bStrictLocking */
 	True,			/* bPosixLocking */
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
