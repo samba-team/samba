@@ -70,7 +70,6 @@ void
 read_token (int sock, gss_buffer_t buf)
 {
     u_int32_t len, net_len;
-    int ret;
 
     enet_read (sock, &net_len, 4);
     len = ntohl(net_len);
