@@ -1570,6 +1570,7 @@ AC_ARG_WITH(swatdir,
 
 ################################################
 # include Using Samba O'Reilly book
+AC_MSG_CHECKING(whether to install Using Samba book)
 AC_ARG_WITH(sambabook,
 [  --with-sambabook=DIR  Where to put Using Samba book ($ac_default_prefix/swat/using_samba) (default)
   --without-sambabook   Don't install Using Samba book],
@@ -1577,18 +1578,20 @@ AC_ARG_WITH(sambabook,
   yes)
     AC_MSG_WARN([--with-sambabook called without argument - will use default])
     sambabook="${prefix}/swat/using_samba"
+    AC_MSG_RESULT(install in $sambabook)
   ;;
   no)
     AC_MSG_RESULT(no)
   ;;
   *)
-    AC_MSG_RESULT(yes)
+    AC_MSG_RESULT(install in $withval)
     sambabook="$withval"
     ;;
   esac
   AC_SUBST(sambabook)],
-  [sambabook='${prefix}/swat/using_samba'
-   AC_SUBST(sambabook)]
+  [sambabook='install in ${prefix}/swat/using_samba'
+   AC_SUBST(sambabook)
+   AC_MSG_RESULT($sambabook)]
 )
 
 #################################################

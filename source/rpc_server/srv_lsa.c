@@ -528,13 +528,12 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
 
 	switch (q_i.info_class) {
 	case 0x03:
-/* JRATEST */
-#if 0
-		fstrcpy(name, global_myworkgroup);
-		sid = &global_sam_sid;
-#else
-		*name = '\0';
-#endif
+		if(lp_domain_logons()) {
+			fstrcpy(name, global_myworkgroup);
+			sid = &global_sam_sid;
+		} else {
+			*name = '\0';
+		}
 		break;
 	case 0x05:
 		fstrcpy(name, global_myname);
