@@ -66,7 +66,8 @@ krb5_destroy (kx_context *kc)
 	krb5_free_principal (CONTEXT(kc), K5DATA(kc)->client);
     if (CONTEXT(kc))
 	krb5_free_context (CONTEXT(kc));
-    free (kc);
+    memset (kc->data, 0, sizeof(krb5_kx_context));
+    free (kc->data);
 }
 
 /*
