@@ -641,8 +641,8 @@ libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 		@SONAMEFLAG@libsmbclient.so.$(LIBSMBCLIENT_MAJOR)
 
 libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient non-shared library bin/$@.a
-	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
+	@echo Linking libsmbclient non-shared library bin/$@
+	@-$(AR) -rc bin/$@ $(LIBSMBCLIENT_PICOBJS)
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo Linking shared library $@
