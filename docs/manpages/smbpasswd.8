@@ -59,8 +59,9 @@ running.
 \fB-L\fR
 Run the smbpasswd command in local mode. This 
 allows a non-root user to specify the root-only options. This 
-is used in test environments where smbd is run as non-root. The 
-\fIsmbpasswd\fR file must have read/write 
+is used mostly in test environments where a non-root user needs
+to make changes to the local \fIsmbpasswd\fR file.
+The \fIsmbpasswd\fR file must have read/write 
 permissions for the user running the command.
 .TP
 \fB-h\fR
@@ -138,8 +139,8 @@ run as root or in local mode.\fR
 \fB-a\fR
 This option specifies that the username 
 following should be added to the local smbpasswd file, with the 
-new password typed (type <Enter> for the old password). This 
-option is ignored if the username following already exists in 
+new password typed. This 
+option is ignored if the username specified already exists in 
 the smbpasswd file and it is treated like a regular change 
 password command. Note that the user to be added must already exist 
 in the system password file (usually \fI/etc/passwd\fR)
@@ -265,7 +266,7 @@ any name type matches for lookup.
 host : Do a standard host 
 name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
-is operating system depended for instance on IRIX or Solaris this 
+is operating system dependent. For instance, on IRIX or Solaris this 
 may be controlled by the \fI/etc/nsswitch.conf\fR 
 file). Note that this method is only used if the NetBIOS name 
 type being queried is the 0x20 (server) name type, otherwise 

@@ -134,8 +134,12 @@ CLASS="VARIABLELIST"
 ><P
 >Run the smbpasswd command in local mode. This 
 		allows a non-root user to specify the root-only options. This 
-		is used in test environments where smbd is run as non-root. The 
-		<TT
+		is used mostly in test environments where a non-root user needs
+		to make changes to the local <TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file.
+		The <TT
 CLASS="FILENAME"
 >smbpasswd</TT
 > file must have read/write 
@@ -283,8 +287,8 @@ run as root or in local mode.</B
 ><P
 >This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &#60;Enter&#62; for the old password). This 
-		option is ignored if the username following already exists in 
+		new password typed. This 
+		option is ignored if the username specified already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command. Note that the user to be added must already exist 
 		in the system password file (usually <TT
@@ -540,7 +544,7 @@ CLASS="FILENAME"
 >/etc/hosts
 			</TT
 >, NIS, or DNS lookups. This method of name resolution 
-			is operating system depended for instance on IRIX or Solaris this 
+			is operating system dependent. For instance, on IRIX or Solaris this 
 			may be controlled by the <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
@@ -619,7 +623,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN194"
+NAME="AEN195"
 ></A
 ><H2
 >NOTES</H2
@@ -662,7 +666,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN204"
+NAME="AEN205"
 ></A
 ><H2
 >VERSION</H2
@@ -673,7 +677,7 @@ NAME="AEN204"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN207"
+NAME="AEN208"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -696,7 +700,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN214"
 ></A
 ><H2
 >AUTHOR</H2
