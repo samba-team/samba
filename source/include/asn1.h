@@ -42,5 +42,6 @@ typedef struct {
 #define ASN1_OCTET_STRING 0x4
 #define ASN1_OID 0x6
 #define ASN1_BOOLEAN 0x1
+#define ASN1_ENUMERATED 0xa
 
 #define ASN1_MAX_OIDS 20

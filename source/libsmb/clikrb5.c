@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
-   simple kerberos5/SPNEGO routines
+   simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
    
    This program is free software; you can redistribute it and/or modify
@@ -23,9 +23,6 @@
 
 #if HAVE_KRB5
 #include <krb5.h>
-
-#define OID_SPNEGO "1 3 6 1 5 5 2"
-#define OID_KERBEROS5 "1 2 840 113554 1 2 2"
 
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
@@ -86,7 +83,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-static DATA_BLOB krb5_get_ticket(char *service, char *realm)
+DATA_BLOB krb5_get_ticket(char *service, char *realm)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -126,213 +123,11 @@ failed:
 }
 
 
-/*
-  generate a negTokenInit packet given a GUID, a list of supported
-  OIDs (the mechanisms) and a principle name string 
-*/
-ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16], 
-				  const char *OIDs[], 
-				  const char *principle)
-{
-	int i;
-	ASN1_DATA data;
-
-	memset(&data, 0, sizeof(data));
-
-	asn1_write(&data, guid, 16);
-	asn1_push_tag(&data,ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
-
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
-	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(&data,OIDs[i]);
-	}
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_GeneralString(&data,principle);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
-	}
-
-	return data;
-}
-
-
-/*
-  parse a negTokenInit packet giving a GUID, a list of supported
-  OIDs (the mechanisms) and a principle name string 
-*/
-BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
-			       uint8 guid[16], 
-			       char *OIDs[ASN1_MAX_OIDS], 
-			       char **principle)
-{
-	int i;
-	BOOL ret;
-	ASN1_DATA data;
-
-	asn1_load(&data, blob);
-
-	asn1_read(&data, guid, 16);
-	asn1_start_tag(&data,ASN1_APPLICATION(0));
-	asn1_check_OID(&data,OID_SPNEGO);
-	asn1_start_tag(&data,ASN1_CONTEXT(0));
-	asn1_start_tag(&data,ASN1_SEQUENCE(0));
-
-	asn1_start_tag(&data,ASN1_CONTEXT(0));
-	asn1_start_tag(&data,ASN1_SEQUENCE(0));
-	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS; i++) {
-		char *oid = NULL;
-		asn1_read_OID(&data,&oid);
-		OIDs[i] = oid;
-	}
-	OIDs[i] = NULL;
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-
-	asn1_start_tag(&data, ASN1_CONTEXT(3));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_read_GeneralString(&data,principle);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-
-	asn1_end_tag(&data);
-
-	ret = !data.has_error;
-	asn1_free(&data);
-	return ret;
-}
-
-
-/*
-  generate a negTokenTarg packet given a list of OIDs and a security blob
-*/
-static ASN1_DATA gen_negTokenTarg(const char *OIDs[], ASN1_DATA blob)
-{
-	int i;
-	ASN1_DATA data;
-
-	memset(&data, 0, sizeof(data));
-
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(&data,OIDs[i]);
-	}
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_push_tag(&data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(&data,blob.data,blob.length);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build negTokenTarg at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
-	}
-
-	return data;
-}
-
-
-/*
-  generate a krb5 GSS-API wrapper packet given a ticket
-*/
-static ASN1_DATA spnego_gen_krb5_wrap(DATA_BLOB ticket)
-{
-	ASN1_DATA data;
-
-	memset(&data, 0, sizeof(data));
-
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data, OID_KERBEROS5);
-	asn1_write_BOOLEAN(&data, 0);
-	asn1_write(&data, ticket.data, ticket.length);
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
-	}
-
-	return data;
-}
-
-
-/* 
-   generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
-   kerberos session setup 
-*/
-DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
-{
-	char *p;
-	fstring service;
-	char *realm;
-	DATA_BLOB tkt, ret;
-	ASN1_DATA tkt_wrapped, targ;
-	const char *krb_mechs[] = 
-	{"1 2 840 48018 1 2 2", "1 3 6 1 4 1 311 2 2 10", NULL};
-
-	fstrcpy(service, principle);
-	p = strchr_m(service, '@');
-	if (!p) {
-		DEBUG(1,("Malformed principle [%s] in spnego_gen_negTokenTarg\n",
-			 principle));
-		return data_blob(NULL, 0);
-	}
-	*p = 0;
-	realm = p+1;
-
-	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(service, realm);
-
-	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tkt);
-
-	/* and wrap that in a shiny SPNEGO wrapper */
-	targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);
-
-	ret = data_blob(targ.data, targ.length);
-
-	asn1_free(&tkt_wrapped);
-	asn1_free(&targ);
-	data_blob_free(tkt);
-
-	return ret;
-}
-
 #else /* HAVE_KRB5 */
- void clikrb5_dummy(void) {}
+ /* this saves a few linking headaches */
+ DATA_BLOB krb5_get_ticket(char *service, char *realm) 
+ {
+	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
+	 return data_blob(NULL, 0);
+ }
 #endif

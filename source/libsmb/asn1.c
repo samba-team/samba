@@ -315,3 +315,30 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 	asn1_end_tag(data);
 	return !data->has_error;
 }
+
+/* read a octet string blob */
+BOOL asn1_read_octet_string(ASN1_DATA *data, DATA_BLOB *blob)
+{
+	int len;
+	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
+	len = asn1_tag_remaining(data);
+	blob->data = malloc(len);
+	if (!blob->data) {
+		data->has_error = True;
+		return False;
+	}
+	asn1_read(data, blob->data, len);
+	blob->length = len;
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
+/* check a enumarted value is correct */
+BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
+{
+	uint8 b;
+	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
+	asn1_read_uint8(data, &b);
+	asn1_end_tag(data);
+	return !data->has_error && (v == b);
+}

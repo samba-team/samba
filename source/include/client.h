@@ -128,7 +128,7 @@ struct cli_state {
 	uint16 max_recv_frag;
 	vuser_key key;
 	uint32 ntlmssp_flags;
-	BOOL use_spnego; /* until we do NTLMSSP we need to make this optional */
+	BOOL use_kerberos;
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */

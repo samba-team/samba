@@ -2115,10 +2115,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 	}
 
 	c->protocol = max_protocol;
-
-	if (use_kerberos) {
-		c->use_spnego = True;
-	}
+	c->use_kerberos = use_kerberos;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;

@@ -116,7 +116,8 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = param/loadparm.o param/params.o
 
-LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o libsmb/clikrb5.o libsmb/asn1.o \
+LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
