@@ -34,20 +34,48 @@
 
 #include "includes.h"
 
- int main(int argc, const char *argv[])
+static void usage(void)
 {
-	static struct ldb_context *ldb;
+	printf("Usage: ldbdel <options> <DN...>\n");
+	printf("Options:\n");
+	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
+	printf("\n");
+	printf("Deletes records from a ldb\n\n");
+	exit(1);
+}
+
+ int main(int argc, char * const argv[])
+{
+	struct ldb_context *ldb;
 	int ret, i;
 	const char *ldb_url;
+	int opt;
 
 	ldb_url = getenv("LDB_URL");
-	if (!ldb_url) {
-		ldb_url = "tdb://test.ldb";
+
+	while ((opt = getopt(argc, argv, "hH:")) != EOF) {
+		switch (opt) {
+		case 'H':
+			ldb_url = optarg;
+			break;
+
+		case 'h':
+		default:
+			usage();
+			break;
+		}
 	}
 
+	if (!ldb_url) {
+		fprintf(stderr, "You must specify a ldb URL\n");
+		exit(1);
+	}
 
-	if (argc < 2) {
-		printf("Usage: ldbdel <dn...>\n");
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1) {
+		usage();
 		exit(1);
 	}
 
@@ -57,7 +85,7 @@
 		exit(1);
 	}
 
-	for (i=1;i<argc;i++) {
+	for (i=0;i<argc;i++) {
 		ret = ldb_delete(ldb, argv[i]);
 		if (ret != 0) {
 			printf("delete of '%s' failed\n", argv[i]);
@@ -65,5 +93,6 @@
 	}
 
 	ldb_close(ldb);
+
 	return 0;
 }

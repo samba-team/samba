@@ -129,8 +129,9 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		transport->negotiate.sesskey =  IVAL(req->in.vwv,VWV(6));
 		transport->negotiate.server_zone = SVALS(req->in.vwv,VWV(10)) * 60;
 		
-		/* this time is converted to GMT by make_unix_date */
-		transport->negotiate.server_time = make_unix_date(req->in.vwv+VWV(8));
+		/* this time is converted to GMT by raw_pull_dos_date */
+		transport->negotiate.server_time = raw_pull_dos_date(transport,
+								     req->in.vwv+VWV(8));
 		if ((SVAL(req->in.vwv,VWV(5)) & 0x1)) {
 			transport->negotiate.readbraw_supported = 1;
 		}
@@ -144,7 +145,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		transport->negotiate.sec_mode = 0;
 		transport->negotiate.server_time = time(NULL);
 		transport->negotiate.max_xmit = ~0;
-		transport->negotiate.server_zone = TimeDiff(time(NULL));
+		transport->negotiate.server_zone = get_time_zone(transport->negotiate.server_time);
 	}
 
 	/* a way to force ascii SMB */

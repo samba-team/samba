@@ -223,7 +223,8 @@ struct cli_request *smb_raw_write_send(struct cli_tree *tree, union smb_write *p
 		SSVAL(req->out.vwv, VWV(0), parms->writeclose.in.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->writeclose.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->writeclose.in.offset);
-		put_dos_date3(req->out.vwv, VWV(4), parms->writeclose.in.mtime);
+		raw_push_dos_date3(tree->session->transport,
+				  req->out.vwv, VWV(4), parms->writeclose.in.mtime);
 		SCVAL(req->out.data, 0, 0);
 		if (parms->writeclose.in.count > 0) {
 			memcpy(req->out.data+1, parms->writeclose.in.data, 

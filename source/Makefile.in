@@ -54,7 +54,7 @@ LOCKDIR = @lockdir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-FLAGS = $(CFLAGS) -Iinclude -I$(srcdir)/include $(CPPFLAGS) -I. -I$(srcdir)
+FLAGS = $(CFLAGS) -Iinclude -I$(srcdir)/include $(CPPFLAGS) -I. -I$(srcdir) -Ilib
 FLAGS32 =
 
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
@@ -78,6 +78,8 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ \
 		bin/locktest@EXEEXT@ \
 		bin/masktest@EXEEXT@ \
 		bin/ndrdump@EXEEXT@
+
+LDB_PROGS = bin/ldbadd bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbsearch
 
 CHARSET_MODULES = @CHARSET_MODULES@
 CHARSET_LIBDIR = $(LIBDIR)/charset
@@ -143,6 +145,23 @@ DCERPC_LIBS = @DCERPC_LIBS@
 REG_OBJS = @REG_OBJS@
 REG_LIBS = @REG_LIBS@
 GTK_LIBS = @GTK_LIBS@
+
+LIBLDB_OBJS = @LIBLDB_OBJS@
+
+LDBADD_OBJS = @LDBADD_OBJS@
+LDBADD_LIBS = $(CONFIG_LIBS) $(LIBSMB_LIBS) $(LIBBASIC_LIBS)
+
+LDBDEL_OBJS = @LDBDEL_OBJS@
+LDBDEL_LIBS = $(CONFIG_LIBS) $(LIBSMB_LIBS) $(LIBBASIC_LIBS)
+
+LDBMODIFY_OBJS = @LDBMODIFY_OBJS@
+LDBMODIFY_LIBS = $(CONFIG_LIBS) $(LIBSMB_LIBS) $(LIBBASIC_LIBS)
+
+LDBSEARCH_OBJS = @LDBSEARCH_OBJS@
+LDBSEARCH_LIBS = $(CONFIG_LIBS) $(LIBSMB_LIBS) $(LIBBASIC_LIBS)
+
+LDBEDIT_OBJS = @LDBEDIT_OBJS@
+LDBEDIT_LIBS = $(CONFIG_LIBS) $(LIBSMB_LIBS) $(LIBBASIC_LIBS)
 
 TORTURE_RAW_OBJS = @TORTURE_RAW_OBJS@
 
@@ -210,7 +229,7 @@ PROTO_OBJ = 	$(SERVER_OBJS) $(PROCESS_MODEL_OBJS) $(CLIENT_OBJS) $(TORTURE_OBJS)
 ######################################################################
 # now the rules...
 ######################################################################
-all: SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) $(MODULES)
+all: SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) $(LDB_PROGS) $(MODULES)
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
@@ -332,6 +351,26 @@ bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJS) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJS) $(LDFLAGS) $(SMBTORTURE_LIBS)
 
+bin/ldbadd@EXEEXT@: $(LDBADD_OBJS) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDBADD_OBJS) $(LDFLAGS) $(LDBADD_LIBS)
+
+bin/ldbdel@EXEEXT@: $(LDBDEL_OBJS) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDBDEL_OBJS) $(LDFLAGS) $(LDBADD_LIBS)
+
+bin/ldbmodify@EXEEXT@: $(LDBMODIFY_OBJS) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDBMODIFY_OBJS) $(LDFLAGS) $(LDBADD_LIBS)
+
+bin/ldbsearch@EXEEXT@: $(LDBSEARCH_OBJS) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDBSEARCH_OBJS) $(LDFLAGS) $(LDBADD_LIBS)
+
+bin/ldbedit@EXEEXT@: $(LDBEDIT_OBJS) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDBEDIT_OBJS) $(LDFLAGS) $(LDBADD_LIBS)
+
 bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJS) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJS) $(LDFLAGS) $(NDRDUMP_LIBS)
@@ -433,7 +472,7 @@ uninstallmodules:
 TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders
-	-rm -f core */*~ *~ */*.o */*/*.o */*/*.po */*/*.po32 */*.po */*.po32 */*.@SHLIBEXT@ \
+	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o */*/*.po */*/*.po32 */*.po */*.po32 */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
 		.headers.stamp 
 	-rm -rf librpc/gen_*

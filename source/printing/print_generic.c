@@ -99,7 +99,7 @@ static int generic_job_delete(int snum, struct printjob *pjob)
 		   snum, 
 		   lp_lprmcommand(snum), NULL,
 		   "%j", jobstr,
-		   "%T", http_timestring(pjob->starttime),
+		   "%T", timestring(pjob->starttime),
 		   NULL);
 }
 

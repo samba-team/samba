@@ -174,7 +174,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       const char *attrs[], struct ldb_message ***res);
+	       char * const attrs[], struct ldb_message ***res);
 
 /* 
    free a set of messages returned by ldb_search

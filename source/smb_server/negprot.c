@@ -119,8 +119,8 @@ static void reply_lanman1(struct request_context *req, uint16 choice)
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
 	SIVAL(req->out.vwv, VWV(6), req->smb->pid);
-	put_dos_date(req->out.vwv, VWV(8), t);
-	SSVAL(req->out.vwv, VWV(10), TimeDiff(t)/60);
+	srv_push_dos_date(req->smb, req->out.vwv, VWV(8), t);
+	SSVAL(req->out.vwv, VWV(10), req->smb->negotiate.zone_offset/60);
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (req->smb->negotiate.encrypted_passwords) {
@@ -159,8 +159,8 @@ static void reply_lanman2(struct request_context *req, uint16 choice)
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
 	SIVAL(req->out.vwv, VWV(6), req->smb->pid);
-	put_dos_date(req->out.vwv, VWV(8), t);
-	SSVAL(req->out.vwv, VWV(10), TimeDiff(t)/60);
+	srv_push_dos_date(req->smb, req->out.vwv, VWV(8), t);
+	SSVAL(req->out.vwv, VWV(10), req->smb->negotiate.zone_offset/60);
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (req->smb->negotiate.encrypted_passwords) {
@@ -229,7 +229,10 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 	int capabilities;
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
+	NTTIME nttime;
 	BOOL negotiate_spnego = False;
+
+	unix_to_nt_time(&nttime, t);
 
 	capabilities = 
 		CAP_NT_FIND | CAP_LOCK_AND_READ | 
@@ -303,8 +306,8 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 	SIVAL(req->out.vwv+1, VWV(5), 0x10000); /* raw size. full 64k */
 	SIVAL(req->out.vwv+1, VWV(7), req->smb->pid); /* session key */
 	SIVAL(req->out.vwv+1, VWV(9), capabilities);
-	put_long_date(req->out.vwv + VWV(11) + 1, t);
-	SSVALS(req->out.vwv+1,VWV(15), TimeDiff(t)/60);
+	push_nttime(req->out.vwv+1, VWV(11), &nttime);
+	SSVALS(req->out.vwv+1,VWV(15), req->smb->negotiate.zone_offset/60);
 	
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */

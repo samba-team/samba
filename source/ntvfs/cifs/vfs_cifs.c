@@ -145,14 +145,15 @@ static NTSTATUS cvfs_connect(struct request_context *req, const char *sharename)
 		private->map_calls = talloc_strdup(conn->mem_ctx, map_calls);
 	}
 
-	/* if we are mapping trans2, then we need to not give a trans2
+	/* if we are mapping trans2, then we need to give a trans2
 	   pointer in the operations structure */
 	if (private->map_calls && in_list("trans2", private->map_calls, True)) {
 		struct ntvfs_ops *ops = talloc_memdup(conn->mem_ctx,conn->ntvfs_ops,sizeof(*ops));
+		static NTSTATUS cvfs_trans2(struct request_context *,struct smb_trans2 *);
 		if (!ops) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ops->trans2 = NULL;
+		ops->trans2 = cvfs_trans2;
 		conn->ntvfs_ops = ops;
 	}	  
 
@@ -725,10 +726,10 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.trans = cvfs_trans;
 
 	/* only define this one for trans2 testing */
-	ops.trans2 = cvfs_trans2;
+	ops.trans2 = NULL;
 
-	/* register ourselves with the NTVFS subsystem. We register under the name 'cifs'. */
-
+	/* register ourselves with the NTVFS subsystem. We register
+	   under the name 'cifs'. */
 	ret = register_backend("ntvfs", &ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {

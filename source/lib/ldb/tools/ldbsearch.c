@@ -33,26 +33,32 @@
  */
 
 #include "includes.h"
-#include <getopt.h>
+
+static void usage(void)
+{
+	printf("Usage: ldbsearch <options> <expression> <attrs...>\n");
+	printf("Options:\n");
+	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
+	printf("  -s base|sub|one  choose search scope\n");
+	printf("  -b basedn        choose baseDN\n");
+	exit(1);
+}
 
  int main(int argc, char * const argv[])
 {
-	static struct ldb_context *ldb;
+	struct ldb_context *ldb;
 	struct ldb_message **msgs;
 	int ret, i;
 	const char *expression;
-	const char * const *attrs = NULL;
+	char * const *attrs = NULL;
 	const char *ldb_url;
 	const char *basedn = NULL;
 	int opt;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 
 	ldb_url = getenv("LDB_URL");
-	if (!ldb_url) {
-		ldb_url = "tdb://test.ldb";
-	}
 
-	while ((opt = getopt(argc, argv, "b:H:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "b:H:s:h")) != EOF) {
 		switch (opt) {
 		case 'b':
 			basedn = optarg;
@@ -71,14 +77,24 @@
 				scope = LDB_SCOPE_ONELEVEL;
 			}
 			break;
+
+		case 'h':
+		default:
+			usage();
+			break;
 		}
+	}
+
+	if (!ldb_url) {
+		fprintf(stderr, "You must specify a ldb URL\n");
+		exit(1);
 	}
 
 	argc -= optind;
 	argv += optind;
 
 	if (argc < 1) {
-		printf("Usage: ldbsearch <expression> [attrs...]\n");
+		usage();
 		exit(1);
 	}
 

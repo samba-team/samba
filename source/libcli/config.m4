@@ -10,7 +10,8 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawtrans.o libcli/raw/clioplock.o \
 		libcli/raw/rawnegotiate.o libcli/raw/rawfsinfo.o \
 		libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
-		libcli/raw/rawioctl.o libcli/raw/rawacl.o],
+		libcli/raw/rawioctl.o libcli/raw/rawacl.o \
+		libcli/raw/rawdate.o ],
 		libcli/raw/libcli_raw_public_proto.h)
 
 SMB_SUBSYSTEM(LIBCLI_UTILS,[],

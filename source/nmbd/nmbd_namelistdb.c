@@ -566,7 +566,7 @@ static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
 
     if(namerec->data.death_time != PERMANENT_TTL)
     {
-      tm = LocalTime(&namerec->data.death_time);
+      tm = localtime(&namerec->data.death_time);
       x_fprintf(fp, "death_time = %s\t", asctime(tm));
     }
     else
@@ -574,7 +574,7 @@ static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
 
     if(namerec->data.refresh_time != PERMANENT_TTL)
     {
-      tm = LocalTime(&namerec->data.refresh_time);
+      tm = localtime(&namerec->data.refresh_time);
       x_fprintf(fp, "refresh_time = %s\n", asctime(tm));
     }
     else

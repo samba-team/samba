@@ -157,7 +157,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
 			(uint_t)nt_time_to_unix(&finfo2.stype.out.field)); \
-		printf("\t%s", http_timestring(mem_ctx, value)); \
+		printf("\t%s", timestring(mem_ctx, value)); \
 		printf("\t%s\n", nt_time_string(mem_ctx, &finfo2.stype.out.field)); \
 		dump_all_info(mem_ctx, &finfo1); \
 	}} while (0)

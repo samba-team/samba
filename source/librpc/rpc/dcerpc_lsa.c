@@ -27,7 +27,6 @@ NTSTATUS lsa_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 	struct lsa_OpenPolicy r;
-	NTSTATUS status;
 	uint16 system_name = '\\';
 
 	qos.len = 0;

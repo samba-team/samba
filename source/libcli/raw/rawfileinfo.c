@@ -52,9 +52,12 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 
 	case RAW_FILEINFO_STANDARD:
 		FINFO_CHECK_SIZE(22);
-		parms->standard.out.create_time = make_unix_date2(blob->data +  0);
-		parms->standard.out.access_time = make_unix_date2(blob->data +  4);
-		parms->standard.out.write_time =  make_unix_date2(blob->data +  8);
+		parms->standard.out.create_time = raw_pull_dos_date2(session->transport,
+								     blob->data +  0);
+		parms->standard.out.access_time = raw_pull_dos_date2(session->transport,
+								     blob->data +  4);
+		parms->standard.out.write_time =  raw_pull_dos_date2(session->transport,
+								     blob->data +  8);
 		parms->standard.out.size =        IVAL(blob->data,             12);
 		parms->standard.out.alloc_size =  IVAL(blob->data,             16);
 		parms->standard.out.attrib =      SVAL(blob->data,             20);
@@ -62,9 +65,12 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 
 	case RAW_FILEINFO_EA_SIZE:
 		FINFO_CHECK_SIZE(26);
-		parms->ea_size.out.create_time = make_unix_date2(blob->data +  0);
-		parms->ea_size.out.access_time = make_unix_date2(blob->data +  4);
-		parms->ea_size.out.write_time =  make_unix_date2(blob->data +  8);
+		parms->ea_size.out.create_time = raw_pull_dos_date2(session->transport,
+								    blob->data +  0);
+		parms->ea_size.out.access_time = raw_pull_dos_date2(session->transport,
+								    blob->data +  4);
+		parms->ea_size.out.write_time =  raw_pull_dos_date2(session->transport,
+								    blob->data +  8);
 		parms->ea_size.out.size =        IVAL(blob->data,             12);
 		parms->ea_size.out.alloc_size =  IVAL(blob->data,             16);
 		parms->ea_size.out.attrib =      SVAL(blob->data,             20);
@@ -376,7 +382,8 @@ static NTSTATUS smb_raw_getattr_recv(struct cli_request *req,
 
 	CLI_CHECK_WCT(req, 10);
 	parms->getattr.out.attrib =     SVAL(req->in.vwv, VWV(0));
-	parms->getattr.out.write_time = make_unix_date3(req->in.vwv + VWV(1));
+	parms->getattr.out.write_time = raw_pull_dos_date3(req->transport,
+							   req->in.vwv + VWV(1));
 	parms->getattr.out.size =       IVAL(req->in.vwv, VWV(3));
 
 failed:
@@ -416,9 +423,12 @@ static NTSTATUS smb_raw_getattrE_recv(struct cli_request *req,
 	}
 	
 	CLI_CHECK_WCT(req, 11);
-	parms->getattre.out.create_time =   make_unix_date2(req->in.vwv + VWV(0));
-	parms->getattre.out.access_time =   make_unix_date2(req->in.vwv + VWV(2));
-	parms->getattre.out.write_time  =   make_unix_date2(req->in.vwv + VWV(4));
+	parms->getattre.out.create_time =   raw_pull_dos_date2(req->transport,
+							       req->in.vwv + VWV(0));
+	parms->getattre.out.access_time =   raw_pull_dos_date2(req->transport,
+							       req->in.vwv + VWV(2));
+	parms->getattre.out.write_time  =   raw_pull_dos_date2(req->transport,
+							       req->in.vwv + VWV(4));
 	parms->getattre.out.size =          IVAL(req->in.vwv,             VWV(6));
 	parms->getattre.out.alloc_size =    IVAL(req->in.vwv,             VWV(8));
 	parms->getattre.out.attrib =        SVAL(req->in.vwv,             VWV(10));

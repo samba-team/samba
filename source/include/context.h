@@ -278,6 +278,9 @@ struct negotiate_context {
 
 	/* client capabilities */
 	uint32 client_caps;
+
+	/* the timezone we sent to the client */
+	int zone_offset;
 };
 	
 /* this is the context for a SMB socket associated with the socket itself */

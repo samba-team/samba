@@ -678,7 +678,7 @@ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
 	if (t == (time_t)-1 || t == 0) {
 		ndr->print(ndr, "%-25s: (time_t)%d", name, (int)t);
 	} else {
-		ndr->print(ndr, "%-25s: %s", name, http_timestring(ndr->mem_ctx, t));
+		ndr->print(ndr, "%-25s: %s", name, timestring(ndr->mem_ctx, t));
 	}
 }
 

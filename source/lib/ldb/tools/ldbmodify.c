@@ -34,27 +34,27 @@
 
 #include "includes.h"
 
- int main(void)
+static int failures;
+
+static void usage(void)
 {
-	static struct ldb_context *ldb;
+	printf("Usage: ldbmodify <options> <ldif...>\n");
+	printf("Options:\n");
+	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
+	printf("\n");
+	printf("Modifies a ldb based upon ldif change records\n\n");
+	exit(1);
+}
+
+/*
+  process modifies for one file
+*/
+static int process_file(struct ldb_context *ldb, FILE *f)
+{
 	struct ldb_ldif *ldif;
-	int ret;
-	int count=0, failures=0;
-	const char *ldb_url;
-
-	ldb_url = getenv("LDB_URL");
-	if (!ldb_url) {
-		ldb_url = "tdb://test.ldb";
-	}
-
-	ldb = ldb_connect(ldb_url, 0, NULL);
-
-	if (!ldb) {
-		perror("ldb_connect");
-		exit(1);
-	}
-
-	while ((ldif = ldif_read_file(stdin))) {
+	int ret, count = 0;
+	
+	while ((ldif = ldif_read_file(f))) {
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
@@ -75,6 +75,68 @@
 			count++;
 		}
 		ldif_read_free(ldif);
+	}
+
+	return count;
+}
+
+ int main(int argc, char * const argv[])
+{
+	struct ldb_context *ldb;
+	int count=0;
+	const char *ldb_url;
+	int opt, i;
+
+	ldb_url = getenv("LDB_URL");
+
+	while ((opt = getopt(argc, argv, "hH:")) != EOF) {
+		switch (opt) {
+		case 'H':
+			ldb_url = optarg;
+			break;
+
+		case 'h':
+		default:
+			usage();
+			break;
+		}
+	}
+
+	if (!ldb_url) {
+		fprintf(stderr, "You must specify a ldb URL\n");
+		exit(1);
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	ldb = ldb_connect(ldb_url, 0, NULL);
+
+	if (!ldb) {
+		perror("ldb_connect");
+		exit(1);
+	}
+
+	if (argc == 0) {
+		usage();
+		exit(1);
+	}
+
+	for (i=0;i<argc;i++) {
+		FILE *f;
+		if (strcmp(argv[i],"-") == 0) {
+			f = stdin;
+		} else {
+			f = fopen(argv[i], "r");
+		}
+		if (!f) {
+			perror(argv[i]);
+			exit(1);
+		}
+		count += process_file(ldb, f);
+		if (f != stdin) {
+			fclose(f);
+		}
 	}
 
 	ldb_close(ldb);

@@ -62,27 +62,6 @@
 /* zero out some reserved fields in a reply */
 #define REQ_VWV_RESERVED(start, count) memset(req->out.vwv + VWV(start), 0, (count)*2)
 
-/*
-  put a NTTIME into a packet
-*/
-void push_nttime(void *base, uint16 offset, NTTIME *t)
-{
-	SIVAL(base, offset,   t->low);
-	SIVAL(base, offset+4, t->high);
-}
-
-/*
-  pull a NTTIME from a packet
-*/
-NTTIME pull_nttime(void *base, uint16 offset)
-{
-	NTTIME ret;
-	ret.low = IVAL(base, offset);
-	ret.high = IVAL(base, offset+4);
-	return ret;
-}
-
-
 /****************************************************************************
  Reply to a simple request (async send)
 ****************************************************************************/
@@ -298,7 +277,7 @@ static void reply_getatr_send(struct request_context *req)
 	req_setup_reply(req, 10, 0);
 
 	SSVAL(req->out.vwv,         VWV(0), st->getattr.out.attrib);
-	put_dos_date3(req->out.vwv, VWV(1), st->getattr.out.write_time);
+	srv_push_dos_date3(req->smb, req->out.vwv, VWV(1), st->getattr.out.write_time);
 	SIVAL(req->out.vwv,         VWV(3), st->getattr.out.size);
 
 	REQ_VWV_RESERVED(5, 5);
@@ -348,7 +327,7 @@ void reply_setatr(struct request_context *req)
 
 	st->setattr.level = RAW_SFILEINFO_SETATTR;
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
-	st->setattr.in.write_time = make_unix_date3(req->in.vwv + VWV(1));
+	st->setattr.in.write_time = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(1));
 	
 	req_pull_ascii4(req, &st->setattr.file.fname, req->in.data, STR_TERMINATE);
 
@@ -425,7 +404,7 @@ static void reply_open_send(struct request_context *req)
 
 	SSVAL(req->out.vwv, VWV(0), oi->open.out.fnum);
 	SSVAL(req->out.vwv, VWV(1), oi->open.out.attrib);
-	put_dos_date3(req->out.vwv, VWV(2), oi->open.out.write_time);
+	srv_push_dos_date3(req->smb, req->out.vwv, VWV(2), oi->open.out.write_time);
 	SIVAL(req->out.vwv, VWV(4), oi->open.out.size);
 	SSVAL(req->out.vwv, VWV(6), oi->open.out.rmode);
 
@@ -484,7 +463,7 @@ static void reply_open_and_X_send(struct request_context *req)
 	SSVAL(req->out.vwv, VWV(1), 0);
 	SSVAL(req->out.vwv, VWV(2), oi->openx.out.fnum);
 	SSVAL(req->out.vwv, VWV(3), oi->openx.out.attrib);
-	put_dos_date3(req->out.vwv, VWV(4), oi->openx.out.write_time);
+	srv_push_dos_date3(req->smb, req->out.vwv, VWV(4), oi->openx.out.write_time);
 	SIVAL(req->out.vwv, VWV(6), oi->openx.out.size);
 	SSVAL(req->out.vwv, VWV(8), oi->openx.out.access);
 	SSVAL(req->out.vwv, VWV(9), oi->openx.out.ftype);
@@ -517,7 +496,7 @@ void reply_open_and_X(struct request_context *req)
 	oi->openx.in.open_mode    = SVAL(req->in.vwv, VWV(3));
 	oi->openx.in.search_attrs = SVAL(req->in.vwv, VWV(4));
 	oi->openx.in.file_attrs   = SVAL(req->in.vwv, VWV(5));
-	oi->openx.in.write_time   = make_unix_date3(req->in.vwv + VWV(6));
+	oi->openx.in.write_time   = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(6));
 	oi->openx.in.open_func    = SVAL(req->in.vwv, VWV(8));
 	oi->openx.in.size         = IVAL(req->in.vwv, VWV(9));
 	oi->openx.in.timeout      = IVAL(req->in.vwv, VWV(11));
@@ -570,7 +549,7 @@ void reply_mknew(struct request_context *req)
 
 	oi->mknew.level = RAW_OPEN_MKNEW;
 	oi->mknew.in.attrib  = SVAL(req->in.vwv, VWV(0));
-	oi->mknew.in.write_time  = make_unix_date3(req->in.vwv + VWV(1));
+	oi->mknew.in.write_time  = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(1));
 
 	req_pull_ascii4(req, &oi->mknew.in.fname, req->in.data, STR_TERMINATE);
 
@@ -621,7 +600,7 @@ void reply_ctemp(struct request_context *req)
 
 	oi->ctemp.level = RAW_OPEN_CTEMP;
 	oi->ctemp.in.attrib = SVAL(req->in.vwv, VWV(0));
-	oi->ctemp.in.write_time = make_unix_date3(req->in.vwv + VWV(1));
+	oi->ctemp.in.write_time = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(1));
 
 	/* the filename is actually a directory name, the server provides a filename
 	   in that directory */
@@ -1224,7 +1203,7 @@ void reply_close(struct request_context *req)
 
 	io->close.level = RAW_CLOSE_CLOSE;
 	io->close.in.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
-	io->close.in.write_time = make_unix_date3(req->in.vwv + VWV(1));
+	io->close.in.write_time = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(1));
 
 	req->async.send_fn = reply_simple_send;
 
@@ -1271,7 +1250,7 @@ void reply_writeclose(struct request_context *req)
 	io->writeclose.in.fnum   = req_fnum(req, req->in.vwv, VWV(0));
 	io->writeclose.in.count  = SVAL(req->in.vwv, VWV(1));
 	io->writeclose.in.offset = IVAL(req->in.vwv, VWV(2));
-	io->writeclose.in.mtime  = make_unix_date3(req->in.vwv + VWV(4));
+	io->writeclose.in.mtime  = srv_pull_dos_date3(req->smb, req->in.vwv + VWV(4));
 	io->writeclose.in.data   = req->in.data + 1;
 
 	/* make sure they gave us the data they promised */
@@ -1486,7 +1465,7 @@ void reply_printqueue_send(struct request_context *req)
 	req->out.ptr = req->out.data + 3;
 
 	for (i=0;i<lpq->retq.out.count;i++) {
-		put_dos_date2(req->out.ptr, 0 , lpq->retq.out.queue[i].time);
+		srv_push_dos_date2(req->smb, req->out.ptr, 0 , lpq->retq.out.queue[i].time);
 		SCVAL(req->out.ptr,  4, lpq->retq.out.queue[i].status);
 		SSVAL(req->out.ptr,  5, lpq->retq.out.queue[i].job);
 		SIVAL(req->out.ptr,  7, lpq->retq.out.queue[i].size);
@@ -1851,9 +1830,9 @@ void reply_setattrE(struct request_context *req)
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
 	info->setattre.file.fnum =      req_fnum(req, req->in.vwv,    VWV(0));
-	info->setattre.in.create_time = make_unix_date2(req->in.vwv + VWV(1));
-	info->setattre.in.access_time = make_unix_date2(req->in.vwv + VWV(3));
-	info->setattre.in.write_time  = make_unix_date2(req->in.vwv + VWV(5));
+	info->setattre.in.create_time = srv_pull_dos_date2(req->smb, req->in.vwv + VWV(1));
+	info->setattre.in.access_time = srv_pull_dos_date2(req->smb, req->in.vwv + VWV(3));
+	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb, req->in.vwv + VWV(5));
 
 	req->async.send_fn = reply_simple_send;
 
@@ -1897,9 +1876,9 @@ static void reply_getattrE_send(struct request_context *req)
 	/* setup reply */
 	req_setup_reply(req, 11, 0);
 
-	put_dos_date2(req->out.vwv, VWV(0), info->getattre.out.create_time);
-	put_dos_date2(req->out.vwv, VWV(2), info->getattre.out.access_time);
-	put_dos_date2(req->out.vwv, VWV(4), info->getattre.out.write_time);
+	srv_push_dos_date2(req->smb, req->out.vwv, VWV(0), info->getattre.out.create_time);
+	srv_push_dos_date2(req->smb, req->out.vwv, VWV(2), info->getattre.out.access_time);
+	srv_push_dos_date2(req->smb, req->out.vwv, VWV(4), info->getattre.out.write_time);
 	SIVAL(req->out.vwv,         VWV(6), info->getattre.out.size);
 	SIVAL(req->out.vwv,         VWV(8), info->getattre.out.alloc_size);
 	SSVAL(req->out.vwv,        VWV(10), info->getattre.out.attrib);

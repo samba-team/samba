@@ -45,9 +45,12 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 
 	case RAW_SFILEINFO_STANDARD:
 		NEED_BLOB(12);
-		put_dos_date2(blob->data, 0, parms->standard.in.create_time);
-		put_dos_date2(blob->data, 4, parms->standard.in.access_time);
-		put_dos_date2(blob->data, 8, parms->standard.in.write_time);
+		raw_push_dos_date2(tree->session->transport, 
+				  blob->data, 0, parms->standard.in.create_time);
+		raw_push_dos_date2(tree->session->transport, 
+				  blob->data, 4, parms->standard.in.access_time);
+		raw_push_dos_date2(tree->session->transport, 
+				  blob->data, 8, parms->standard.in.write_time);
 		return True;
 
 	case RAW_SFILEINFO_EA_SET:
@@ -204,7 +207,8 @@ static struct cli_request *smb_raw_setattr_send(struct cli_tree *tree,
 	if (!req) return NULL;
 	
 	SSVAL(req->out.vwv,         VWV(0), parms->setattr.in.attrib);
-	put_dos_date3(req->out.vwv, VWV(1), parms->setattr.in.write_time);
+	raw_push_dos_date3(tree->session->transport, 
+			  req->out.vwv, VWV(1), parms->setattr.in.write_time);
 	memset(req->out.vwv + VWV(3), 0, 10); /* reserved */
 	cli_req_append_ascii4(req, parms->setattr.file.fname, STR_TERMINATE);
 	cli_req_append_ascii4(req, "", STR_TERMINATE);
@@ -229,9 +233,12 @@ static struct cli_request *smb_raw_setattrE_send(struct cli_tree *tree,
 	if (!req) return NULL;
 	
 	SSVAL(req->out.vwv,         VWV(0), parms->setattre.file.fnum);
-	put_dos_date2(req->out.vwv, VWV(1), parms->setattre.in.create_time);
-	put_dos_date2(req->out.vwv, VWV(3), parms->setattre.in.access_time);
-	put_dos_date2(req->out.vwv, VWV(5), parms->setattre.in.write_time);
+	raw_push_dos_date2(tree->session->transport, 
+			  req->out.vwv, VWV(1), parms->setattre.in.create_time);
+	raw_push_dos_date2(tree->session->transport, 
+			  req->out.vwv, VWV(3), parms->setattre.in.access_time);
+	raw_push_dos_date2(tree->session->transport, 
+			  req->out.vwv, VWV(5), parms->setattre.in.write_time);
 
 	if (!cli_request_send(req)) {
 		cli_request_destroy(req);

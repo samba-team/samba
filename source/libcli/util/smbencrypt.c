@@ -342,10 +342,13 @@ static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob)
 	uchar client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
 	char long_date[8];
+	NTTIME nttime;
+
+	unix_to_nt_time(&nttime, time(NULL));
 
 	generate_random_buffer(client_chal, sizeof(client_chal), False);
 
-	put_long_date(long_date, time(NULL));
+	push_nttime(long_date, 0, &nttime);
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 

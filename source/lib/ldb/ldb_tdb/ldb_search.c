@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb_tdb.h"
+#include "ldb/ldb_tdb/ldb_tdb.h"
 
 /*
   free a message that has all parts separately allocated
@@ -54,22 +54,6 @@ static void msg_free_all_parts(struct ldb_message *msg)
 	free(msg);
 }
 
-
-/*
-  TODO: this should take advantage of the sorted nature of the message
-
-  return index of the attribute, or -1 if not found
-*/
-int ldb_msg_find_attr(const struct ldb_message *msg, const char *attr)
-{
-	int i;
-	for (i=0;i<msg->num_elements;i++) {
-		if (strcmp(msg->elements[i].name, attr) == 0) {
-			return i;
-		}
-	}
-	return -1;
-}
 
 /*
   duplicate a ldb_val structure
@@ -193,7 +177,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 	}
 
 	for (i=0;attrs[i];i++) {
-		int j;
+		struct ldb_message_element *el;
 
 		if (strcmp(attrs[i], "*") == 0) {
 			if (msg_add_all_elements(ret, msg) != 0) {
@@ -202,17 +186,15 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 			}
 			continue;
 		}
-		j = ldb_msg_find_attr(msg, attrs[i]);
-		if (j == -1) {
+
+		el = ldb_msg_find_element(msg, attrs[i]);
+		if (!el) {
 			continue;
 		}
-		do {
-			if (msg_add_element(ret, &msg->elements[j]) != 0) {
-				msg_free_all_parts(ret);
-				return NULL;				
-			}
-		} while (++j < msg->num_elements && 
-			 strcmp(attrs[i], msg->elements[j].name) == 0);
+		if (msg_add_element(ret, el) != 0) {
+			msg_free_all_parts(ret);
+			return NULL;				
+		}
 	}
 
 	return ret;

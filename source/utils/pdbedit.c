@@ -119,22 +119,22 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		printf ("Munged dial:          %s\n", pdb_get_munged_dial(sam_pwent));
 		
 		tmp = pdb_get_logon_time(sam_pwent);
-		printf ("Logon time:           %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Logon time:           %s\n", tmp ? timestring(tmp) : "0");
 		
 		tmp = pdb_get_logoff_time(sam_pwent);
-		printf ("Logoff time:          %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Logoff time:          %s\n", tmp ? timestring(tmp) : "0");
 		
 		tmp = pdb_get_kickoff_time(sam_pwent);
-		printf ("Kickoff time:         %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Kickoff time:         %s\n", tmp ? timestring(tmp) : "0");
 		
 		tmp = pdb_get_pass_last_set_time(sam_pwent);
-		printf ("Password last set:    %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password last set:    %s\n", tmp ? timestring(tmp) : "0");
 		
 		tmp = pdb_get_pass_can_change_time(sam_pwent);
-		printf ("Password can change:  %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password can change:  %s\n", tmp ? timestring(tmp) : "0");
 		
 		tmp = pdb_get_pass_must_change_time(sam_pwent);
-		printf ("Password must change: %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password must change: %s\n", tmp ? timestring(tmp) : "0");
 		
 	} else if (smbpwdstyle) {
 		if (IS_SAM_UNIX_USER(sam_pwent)) {

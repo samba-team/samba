@@ -44,7 +44,8 @@ static void smb_raw_search_backend(struct cli_request *req,
 	for (i=0; i < count; i++) {
 		search_data.search.search_id  = cli_req_pull_blob(req, mem_ctx, p, 21);
 		search_data.search.attrib     = CVAL(p,            21);
-		search_data.search.write_time = make_unix_date(p + 22);
+		search_data.search.write_time = raw_pull_dos_date(req->transport,
+								  p + 22);
 		search_data.search.size       = IVAL(p,            26);
 		cli_req_pull_ascii(req, mem_ctx, &search_data.search.name, p+30, 13, STR_ASCII);
 		if (!callback(private, &search_data)) {
@@ -255,9 +256,12 @@ static int parse_trans2_search(struct cli_tree *tree,
 			blob->length -= 4;
 		}
 		if (blob->length < 24) return -1;
-		data->standard.create_time = make_unix_date2(blob->data + 0);
-		data->standard.access_time = make_unix_date2(blob->data + 4);
-		data->standard.write_time  = make_unix_date2(blob->data + 8);
+		data->standard.create_time = raw_pull_dos_date2(tree->session->transport,
+								blob->data + 0);
+		data->standard.access_time = raw_pull_dos_date2(tree->session->transport,
+								blob->data + 4);
+		data->standard.write_time  = raw_pull_dos_date2(tree->session->transport,
+								blob->data + 8);
 		data->standard.size        = IVAL(blob->data, 12);
 		data->standard.alloc_size  = IVAL(blob->data, 16);
 		data->standard.attrib      = SVAL(blob->data, 20);
@@ -274,9 +278,12 @@ static int parse_trans2_search(struct cli_tree *tree,
 			blob->length -= 4;
 		}
 		if (blob->length < 28) return -1;
-		data->ea_size.create_time = make_unix_date2(blob->data + 0);
-		data->ea_size.access_time = make_unix_date2(blob->data + 4);
-		data->ea_size.write_time  = make_unix_date2(blob->data + 8);
+		data->ea_size.create_time = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 0);
+		data->ea_size.access_time = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 4);
+		data->ea_size.write_time  = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 8);
 		data->ea_size.size        = IVAL(blob->data, 12);
 		data->ea_size.alloc_size  = IVAL(blob->data, 16);
 		data->ea_size.attrib      = SVAL(blob->data, 20);

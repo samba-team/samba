@@ -348,7 +348,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		/* check for expired password */
 		if (must_change_time < time(NULL) && must_change_time != 0) {
 			DEBUG(1,("Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
-			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(mem_ctx, must_change_time), (long)must_change_time));
+			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", timestring(mem_ctx, must_change_time), (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
 	}

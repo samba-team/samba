@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-static struct dcerpc_interface_table *find_pipe(const char *pipe_name)
+static const struct dcerpc_interface_table *find_pipe(const char *pipe_name)
 {
 	int i;
 	for (i=0;dcerpc_pipes[i];i++) {

@@ -393,7 +393,7 @@ static void display_finfo(file_info *finfo)
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 asctime(LocalTime(&t)));
+			 asctime(localtime(&t)));
 		dir_total += finfo->size;
 	}
 }
@@ -2025,7 +2025,7 @@ static int cmd_newer(void)
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
-			 asctime(LocalTime(&newer_than))));
+			 asctime(localtime(&newer_than))));
 	} else {
 		newer_than = 0;
 	}

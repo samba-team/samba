@@ -240,7 +240,8 @@ static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree,
 	SSVAL(t2.in.params.data, VWV(1), parms->t2open.in.open_mode);
 	SSVAL(t2.in.params.data, VWV(2), 0); /* reserved */
 	SSVAL(t2.in.params.data, VWV(3), parms->t2open.in.file_attrs);
-	put_dos_date(t2.in.params.data, VWV(4), parms->t2open.in.write_time);
+	raw_push_dos_date(tree->session->transport, 
+			 t2.in.params.data, VWV(4), parms->t2open.in.write_time);
 	SSVAL(t2.in.params.data, VWV(6), parms->t2open.in.open_func);
 	SIVAL(t2.in.params.data, VWV(7), parms->t2open.in.size);
 	SIVAL(t2.in.params.data, VWV(9), parms->t2open.in.timeout);
@@ -278,7 +279,8 @@ static NTSTATUS smb_raw_t2open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx
 
 	parms->t2open.out.fnum =        SVAL(t2.out.params.data, VWV(0));
 	parms->t2open.out.attrib =      SVAL(t2.out.params.data, VWV(1));
-	parms->t2open.out.write_time = make_unix_date3(t2.out.params.data + VWV(2));
+	parms->t2open.out.write_time = raw_pull_dos_date3(req->transport,
+							  t2.out.params.data + VWV(2));
 	parms->t2open.out.size =        IVAL(t2.out.params.data, VWV(4));
 	parms->t2open.out.access =      SVAL(t2.out.params.data, VWV(6));
 	parms->t2open.out.ftype =       SVAL(t2.out.params.data, VWV(7));
@@ -316,7 +318,8 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SSVAL(req->out.vwv, VWV(3), parms->openx.in.open_mode);
 		SSVAL(req->out.vwv, VWV(4), parms->openx.in.search_attrs);
 		SSVAL(req->out.vwv, VWV(5), parms->openx.in.file_attrs);
-		put_dos_date3(req->out.vwv, VWV(6), parms->openx.in.write_time);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(6), parms->openx.in.write_time);
 		SSVAL(req->out.vwv, VWV(8), parms->openx.in.open_func);
 		SIVAL(req->out.vwv, VWV(9), parms->openx.in.size);
 		SIVAL(req->out.vwv, VWV(11),parms->openx.in.timeout);
@@ -327,21 +330,24 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 	case RAW_OPEN_MKNEW:
 		SETUP_REQUEST(SMBmknew, 3, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->mknew.in.attrib);
-		put_dos_date3(req->out.vwv, VWV(1), parms->mknew.in.write_time);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(1), parms->mknew.in.write_time);
 		cli_req_append_ascii4(req, parms->mknew.in.fname, STR_TERMINATE);
 		break;
 
 	case RAW_OPEN_CREATE:
 		SETUP_REQUEST(SMBcreate, 3, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->create.in.attrib);
-		put_dos_date3(req->out.vwv, VWV(1), parms->create.in.write_time);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(1), parms->create.in.write_time);
 		cli_req_append_ascii4(req, parms->create.in.fname, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_CTEMP:
 		SETUP_REQUEST(SMBctemp, 3, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->ctemp.in.attrib);
-		put_dos_date3(req->out.vwv, VWV(1), parms->ctemp.in.write_time);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(1), parms->ctemp.in.write_time);
 		cli_req_append_ascii4(req, parms->ctemp.in.directory, STR_TERMINATE);
 		break;
 		
@@ -398,7 +404,8 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 		CLI_CHECK_WCT(req, 7);
 		parms->open.out.fnum = SVAL(req->in.vwv, VWV(0));
 		parms->open.out.attrib = SVAL(req->in.vwv, VWV(1));
-		parms->open.out.write_time = make_unix_date3(req->in.vwv + VWV(2));
+		parms->open.out.write_time = raw_pull_dos_date3(req->transport,
+								req->in.vwv + VWV(2));
 		parms->open.out.size = IVAL(req->in.vwv, VWV(4));
 		parms->open.out.rmode = SVAL(req->in.vwv, VWV(6));
 		break;
@@ -407,7 +414,8 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 		CLI_CHECK_MIN_WCT(req, 15);
 		parms->openx.out.fnum = SVAL(req->in.vwv, VWV(2));
 		parms->openx.out.attrib = SVAL(req->in.vwv, VWV(3));
-		parms->openx.out.write_time = make_unix_date3(req->in.vwv + VWV(4));
+		parms->openx.out.write_time = raw_pull_dos_date3(req->transport,
+								 req->in.vwv + VWV(4));
 		parms->openx.out.size = IVAL(req->in.vwv, VWV(6));
 		parms->openx.out.access = SVAL(req->in.vwv, VWV(8));
 		parms->openx.out.ftype = SVAL(req->in.vwv, VWV(9));
@@ -491,7 +499,8 @@ struct cli_request *smb_raw_close_send(struct cli_tree *tree, union smb_close *p
 	case RAW_CLOSE_CLOSE:
 		SETUP_REQUEST(SMBclose, 3, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->close.in.fnum);
-		put_dos_date3(req->out.vwv, VWV(1), parms->close.in.write_time);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(1), parms->close.in.write_time);
 		break;
 
 	case RAW_CLOSE_SPLCLOSE:

@@ -336,14 +336,14 @@ BOOL torture_raw_qfileinfo(int dummy)
 	s1 = fnum_find(sname); \
 	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       time_string(mem_ctx, s1->stype.out.tfield), \
+		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, &correct_time)); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       time_string(mem_ctx, s1->stype.out.tfield), \
+		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, &correct_time)); \
 		ret = False; \
 	}} while (0)
@@ -352,14 +352,14 @@ BOOL torture_raw_qfileinfo(int dummy)
 	s1 = fnum_find(sname); \
 	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       time_string(mem_ctx, s1->stype.out.tfield), \
+		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, &correct_time)); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, &correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
-		       time_string(mem_ctx, s1->stype.out.tfield), \
+		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, &correct_time)); \
 		ret = False; \
 	}} while (0)

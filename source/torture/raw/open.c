@@ -88,8 +88,8 @@ static const char *rdwr_string(enum rdwr_mode m)
 	if (ABS(t1-t2) > 2) { \
 		printf("(%d) wrong time for field %s  %s - %s\n", \
 		       __LINE__, #field, \
-		       time_string(mem_ctx, t1), \
-		       time_string(mem_ctx, t2)); \
+		       timestring(mem_ctx, t1), \
+		       timestring(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
 		ret = False; \
 	}} while (0)
