@@ -938,6 +938,7 @@ if test "$enable_shared" = "yes"; then
 				PICSUFFIX="po.o"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
+			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*sunos*) AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
 			BLDSHARED="true"
@@ -945,6 +946,7 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*netbsd* | *freebsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -952,6 +954,7 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
+			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -959,6 +962,7 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
+			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
 			case "$host_os" in
@@ -1001,6 +1005,7 @@ if test "$enable_shared" = "yes"; then
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
+			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
 			;;
 		*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx])
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -1011,6 +1016,7 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
