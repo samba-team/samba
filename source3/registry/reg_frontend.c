@@ -304,6 +304,8 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 	{
 		len = strlen( name );
 
+		/* allocate a slot in the array of pointers */
+		
 		if (  ctr->num_values == 0 )
 			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
 		else {
@@ -312,6 +314,12 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 				ctr->values = ppreg;
 		}
 
+		/* allocate a new valuie and store the pointer in the arrya */
+		
+		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
+
+		/* init the value */
+	
 		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
 		ctr->values[ctr->num_values]->type = type;
 		switch ( type )
