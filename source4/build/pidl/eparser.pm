@@ -297,6 +297,9 @@ sub ParseElementPullSwitch($$$)
 
 	my $cprefix = util::c_pull_prefix($e);
 
+	pidl "\t{\n";
+	pidl "\t\tguint16 _level;\n";
+
 	my $utype = $structs{$e->{TYPE}};
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
@@ -304,6 +307,8 @@ sub ParseElementPullSwitch($$$)
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		pidl "\t\tndr_pull_level(ndr, tree, hf_level, &_level);\n";
 		pidl "\t}\n";
+	} else {
+		pidl "\t_level = $switch_var;\n";
 	}
 
 	my $sub_size = util::has_property($e, "subcontext");
@@ -312,8 +317,7 @@ sub ParseElementPullSwitch($$$)
 	} else {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags, _level);\n";
 	}
-
-
+	pidl "\t}\n";
 }
 
 #####################################################################
@@ -350,6 +354,13 @@ sub ParseElementPullScalar($$)
 			pidl "\tndr_pull_subcontext_flags_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
 		}
 	    } elsif (util::is_builtin_type($e->{TYPE})) {
+			$needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+			    'name' => $e->{NAME},
+			    'type' => $e->{TYPE},
+			    'ft'   => type2ft($e->{TYPE}),
+			    'base' => type2base($e->{TYPE})
+			    };
+	
 		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} else {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $ndr_flags);\n";
@@ -512,6 +523,13 @@ sub ParseUnionPull($)
 
 	pidl "\tndr_pull_struct_start(ndr);\n";
 
+	foreach my $el (@{$e->{DATA}}) {
+		my $e2 = $el->{DATA};
+		if ($e2->{POINTERS}) {
+			pidl "\tguint32 ptr_$e2->{NAME};\n";
+		}
+	}
+
 #	my $align = union_alignment($e);
 #	pidl "\tndr_pull_align(ndr, $align);\n";
 
@@ -524,19 +542,16 @@ sub ParseUnionPull($)
 			pidl "\tcase $el->{CASE}: {\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			my $e2 = $el->{DATA};
-			if ($e2->{POINTERS}) {
-				pidl "\t\tguint32 ptr_$e2->{NAME};\n";
-			}
 			ParseElementPullScalar($el->{DATA}, "NDR_SCALARS");
 		}
 		pidl "\t\tbreak;\n\t}\n";
 	}
 	if (! $have_default) {
-		pidl "\tdefault:\n";
+		pidl "\tdefault: {\n";
 		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad switch value %u\", level);\n";
+		pidl "\t}\n";
 	}
 	pidl "\t}\n";
 	pidl "buffers:\n";
@@ -544,12 +559,12 @@ sub ParseUnionPull($)
 	pidl "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
-			pidl "\tdefault:\n";
+			pidl "\tdefault: {\n";
 		} else {
 			pidl "\tcase $el->{CASE}: {\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPullBuffer($el->{DATA}, "NDR_BUFFERS");
+	        ParseElementPullBuffer($el->{DATA}, "NDR_BUFFERS");
 		}
 		pidl "\t\tbreak;\n\t}\n";
 	}
@@ -654,22 +669,12 @@ sub ParseFunctionElementPull($$)
 			pidl "\tndr_pull_ptr(ndr, tree, hf_ptr, &ptr_$e->{NAME});\n";
 			pidl "\tif (ptr_$e->{NAME}) {\n";
 			pidl "\t\tguint32 " . find_size_var($e, util::array_size($e)) . ";\n";
-		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
-			pidl "\tif (r->$inout.$e->{NAME}) {\n";
 		} else {
 			pidl "\t{\n";
 		}
 		ParseArrayPull($e, "NDR_SCALARS|NDR_BUFFERS");
 		pidl "\t}\n";
 	} else {
-		if ($inout eq "out" && util::has_property($e, "ref")) {
-#			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {\n";
-#			pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
-#			pidl "\t}\n";
-		}
-		if ($inout eq "in" && util::has_property($e, "ref")) {
-#			pidl "\tNDR_ALLOC(ndr, r->in.$e->{NAME});\n";
-		}
 
 		ParseElementPullScalar($e, "NDR_SCALARS|NDR_BUFFERS");
 		if ($e->{POINTERS}) {
