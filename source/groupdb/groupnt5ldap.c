@@ -480,9 +480,9 @@ nt5ldap_initialise_group_db (void)
 }
 
 #else
-void groupldap_dummy_function (void);
+void groupnt5ldap_dummy_function (void);
 void 
-groupldap_dummy_function (void)
+groupnt5ldap_dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif

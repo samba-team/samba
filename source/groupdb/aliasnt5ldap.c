@@ -468,9 +468,9 @@ nt5ldap_initialise_alias_db (void)
 }
 
 #else
-void aliasldap_dummy_function (void);
+void aliasnt5ldap_dummy_function (void);
 void 
-aliasldap_dummy_function (void)
+aliasnt5ldap_dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif

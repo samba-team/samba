@@ -479,9 +479,9 @@ nt5ldap_initialise_builtin_db (void)
 }
 
 #else
-void builtinldap_dummy_function (void);
+void builtinnt5ldap_dummy_function (void);
 void 
-builtinldap_dummy_function (void)
+builtinnt5ldap_dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif

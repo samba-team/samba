@@ -235,9 +235,9 @@ nt5ldap_initialise_password_grp (void)
 }
 
 #else
-void passgrpldap_dummy_function (void);
+void passgrpnt5ldap_dummy_function (void);
 void 
-passgrpldap_dummy_function (void)
+passgrpnt5ldap_dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif

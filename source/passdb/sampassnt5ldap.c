@@ -590,9 +590,9 @@ nt5ldap_initialise_sam_password_db (void)
 }
 
 #else
-void sampassldap_dummy_function (void);
+void sampassnt5ldap_dummy_function (void);
 void 
-sampassldap_dummy_function (void)
+sampassnt5ldap_dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif
