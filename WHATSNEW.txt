@@ -1,6 +1,6 @@
 		   ==============================
                    Release Notes for Samba 3.0.11
-                             XXX XX, 2005
+                             Feb 5, 2005
                    ==============================
 
 This is the latest stable release of Samba. This is the version
@@ -72,6 +72,7 @@ commits
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 2263: Guard base64_encode_data_blob() against empty blobs.
 
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 2262: Add support in configure.in for *freebsd6*.
     * BUG 2266: Portability fixes for queota code on FreeBSD4.
@@ -96,6 +97,10 @@ o   Guenther Deschner <gd@samba.org>
 o   Levente Farkas <lfarkas@lfarkas.org>
     * BUG 2299: Better logrotate scripts for RedHat and Fedora 
       packages.
+
+
+o   Jay Fenlason <fenlason@redhat.com>
+    * Several patches from RedHat's Fedora Core RPMS.
 
 
 o   Deryck Hodge <deryck@samba.org>
