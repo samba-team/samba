@@ -169,7 +169,6 @@ scheduler add job
 void cmd_at(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
-	pstring temp;
 	fstring dest_wks;
 	BOOL add = False;
 	BOOL del = False;
@@ -182,33 +181,36 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 	uint8 flags = JOB_NONINTERACTIVE;
 	pstring command;
 
-        while (next_token(NULL, temp, NULL, sizeof(temp)))
+        while (argc > 1)
 	{
-		if (checkopt(temp, "DELETE", NULL))
+		argc--;
+		argv++;
+
+		if (checkopt(argv[0], "DELETE", NULL))
 		{
 			del = True;
 			continue;
 		}
-		else if (checkopt(temp, "YES", NULL))
+		else if (checkopt(argv[0], "YES", NULL))
 		{
 			/* Compatibility */
 			continue;
 		}
 
-		jobid = strtol(temp, &p, 10);
+		jobid = strtol(argv[0], &p, 10);
 		if (*p == 0)   /* Entirely numeric field */
 			continue;
 
-		if (!strcasecmp(temp, "NOW"))
+		if (!strcasecmp(argv[0], "NOW"))
 		{
 			if (!at_soon(dest_wks, &hours, &minutes, &seconds))
 			{
 				return;
 			}
 		}
-		else if (sscanf(temp, "%d:%d:%d", &hours, &minutes, &seconds) >= 2)
+		else if (sscanf(argv[0], "%d:%d:%d", &hours, &minutes, &seconds) >= 2)
 		{
-			p = strchr(temp, 0);
+			p = strchr(argv[0], 0);
 
 			if (!strcasecmp(p-2, "AM"))
 			{
@@ -236,24 +238,26 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 		command[0] = 0;
 		p = NULL;
 
-		if (!next_token(NULL, temp, NULL, sizeof(temp)))
-			break;
+		if (argc <= 1) break;
+		argc--;
+		argv++;
 
-		if (checkopt(temp, "INTERACTIVE", NULL))
+		if (checkopt(argv[0], "INTERACTIVE", NULL))
 		{
 			flags &= ~JOB_NONINTERACTIVE;
 
-			if (!next_token(NULL, temp, NULL, sizeof(temp)))
-				break;
+			if (argc <= 1) break;
+			argc--;
+			argv++;
 		}
 
-		if (checkopt(temp, "EVERY", &p))
+		if (checkopt(argv[0], "EVERY", &p))
 		{
 			flags |= JOB_PERIODIC;
 		}
 		else
 		{
-			checkopt(temp, "NEXT", &p);
+			checkopt(argv[0], "NEXT", &p);
 		}
 
 		if (p != NULL)
@@ -268,16 +272,18 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 				weekdays = 0x7F;
 			}
 
-			if (!next_token(NULL, temp, NULL, sizeof(temp)))
-				break;
+			if (argc <= 1) break;
+			argc--;
+			argv++;
 		}
 
 		while (True)
 		{
-			safe_strcat(command, temp, sizeof(command));
+			safe_strcat(command, argv[0], sizeof(command));
 
-			if (!next_token(NULL, temp, NULL, sizeof(temp)))
-				break;
+			if (argc <= 1) break;
+			argc--;
+			argv++;
 
 			safe_strcat(command, " ", sizeof(command));
 		}

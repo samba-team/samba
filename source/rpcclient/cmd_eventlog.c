@@ -50,14 +50,13 @@ void cmd_eventlog(struct client_info *info, int argc, char *argv[])
 	uint32 num_of_bytes;
 	EVENTLOGRECORD ev;
 	
-	fstring journal;
-	fstring temp;
+	char *journal = NULL;
 	
 	flags=EVENTLOG_READ_SEQUENTIAL|EVENTLOG_READ_BACKWARD;
 
-	while (next_token(NULL, temp, NULL, sizeof(temp)))
+	if (argc > 1)
 	{
-		fstrcpy(journal, temp);
+		journal = argv[1];
 	}
 
 	/* open scheduler session. */
