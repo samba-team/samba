@@ -39,7 +39,7 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 	(*new_sock)->ops = socket_getops_byname(name, type);
 	if (!(*new_sock)->ops) {
 		talloc_free((*new_sock));
-		return status;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = (*new_sock)->ops->init((*new_sock));
@@ -120,7 +120,7 @@ NTSTATUS socket_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED ||
+	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -139,7 +139,7 @@ NTSTATUS socket_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED ||
+	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -169,13 +169,13 @@ char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->get_peer_addr(sock, mem_ctx);
 }
 
-int socket_get_peer_port(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+int socket_get_peer_port(struct socket_context *sock)
 {
 	if (!sock->ops->get_peer_port) {
 		return -1;
 	}
 
-	return sock->ops->get_peer_port(sock, mem_ctx);
+	return sock->ops->get_peer_port(sock);
 }
 
 char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
@@ -187,22 +187,22 @@ char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->get_my_addr(sock, mem_ctx);
 }
 
-int socket_get_my_port(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+int socket_get_my_port(struct socket_context *sock)
 {
 	if (!sock->ops->get_my_port) {
 		return -1;
 	}
 
-	return sock->ops->get_my_port(sock, mem_ctx);
+	return sock->ops->get_my_port(sock);
 }
 
-int socket_get_fd(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+int socket_get_fd(struct socket_context *sock)
 {
 	if (!sock->ops->get_fd) {
 		return -1;
 	}
 
-	return sock->ops->get_fd(sock, mem_ctx);
+	return sock->ops->get_fd(sock);
 }
 
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type)

@@ -56,11 +56,11 @@ struct socket_ops {
 	NTSTATUS (*set_option)(struct socket_context *sock, const char *option, const char *val);
 
 	char *(*get_peer_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	int (*get_peer_port)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	int (*get_peer_port)(struct socket_context *sock);
 	char *(*get_my_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	int (*get_my_port)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	int (*get_my_port)(struct socket_context *sock);
 
-	int (*get_fd)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	int (*get_fd)(struct socket_context *sock);
 };
 
 enum socket_state {
