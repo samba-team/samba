@@ -256,6 +256,18 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 		if ((pos >= wcp->offset) && (pos <= wcp->offset + wcp->data_size)) {
       
+			/* ASCII art.... JRA.
+
+      +--------------+-----
+      | Cached data  | Rest of allocated cache buffer....
+      +--------------+-----
+
+            +-------------------+
+            | Data to write     |
+            +-------------------+
+
+	    		*/
+
 			/*
 			 * Start of write overlaps or abutts the existing data.
 			 */
@@ -305,6 +317,18 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 		} else if ((pos < wcp->offset) && (pos + n > wcp->offset) && 
 					(pos + n <= wcp->offset + wcp->alloc_size)) {
 
+			/* ASCII art.... JRA.
+
+                        +---------------+
+                        | Cache buffer  |
+                        +---------------+
+
+            +-------------------+
+            | Data to write     |
+            +-------------------+
+
+	    		*/
+
 			/*
 			 * End of write overlaps the existing data.
 			 */
@@ -349,6 +373,20 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 					(wcp->offset + wcp->data_size == wcp->file_size) &&
 					(pos > wcp->offset + wcp->data_size) && 
 					(pos < wcp->offset + wcp->alloc_size) ) {
+
+			/* ASCII art.... JRA.
+
+                       End of file ---->|
+
+                        +---------------+---------------+
+                        | Cached data   | Cache buffer  |
+                        +---------------+---------------+
+
+                                              +-------------------+
+                                              | Data to write     |
+                                              +-------------------+
+
+	    		*/
 
 			/*
 			 * Non-contiguous write part of which fits within
@@ -413,7 +451,41 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 		} else {
 
-			/*
+			/* ASCII art..... JRA.
+
+   Case 1).
+
+                        +---------------+---------------+
+                        | Cached data   | Cache buffer  |
+                        +---------------+---------------+
+
+                                                              +-------------------+
+                                                              | Data to write     |
+                                                              +-------------------+
+
+   Case 2).
+
+                           +---------------+---------------+
+                           | Cached data   | Cache buffer  |
+                           +---------------+---------------+
+
+   +-------------------+
+   | Data to write     |
+   +-------------------+
+
+    Case 3).
+
+                           +---------------+---------------+
+                           | Cached data   | Cache buffer  |
+                           +---------------+---------------+
+
+                  +-----------------------------------------------------+
+                  | Data to write                                       |
+                  +-----------------------------------------------------+
+
+		  */
+
+ 			/*
 			 * Write is bigger than buffer, or there is no overlap on the
 			 * low or high ends.
 			 */
