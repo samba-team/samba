@@ -41,12 +41,14 @@ extern int DEBUGLEVEL;
 struct sock_redir
 {
 	int c;
+	int mid_offset;
 	struct cli_state *s;
 
 };
 
 static uint32 num_socks = 0;
 static struct sock_redir **socks = NULL;
+static uint16 mid_offset = 0x0;
 
 /****************************************************************************
 terminate sockent connection
@@ -129,6 +131,9 @@ static struct sock_redir *sock_redir_get(int fd, struct cli_state *cli)
 
 	sock->c = fd;
 	sock->s = cli;
+	sock->mid_offset = mid_offset;
+
+	DEBUG(10,("sock_redir_get:\tfd:\t%d\tmidoff:\t%d\n", fd, mid_offset));
 
 	return sock;
 }
@@ -275,6 +280,15 @@ static struct cli_state *init_client_connection(int c)
 			DEBUG(0,("Unable to connect to %s\n", srv_name));
 			return NULL;
 		}
+		
+		mid_offset += MIN(MAX(s->max_mux, 1), MAX_MAX_MUX_LIMIT);
+
+		if (mid_offset > 0xffff)
+		{
+			mid_offset = 0x0;
+		}
+		DEBUG(10,("new mid offset: %d\n", mid_offset));
+
 		if (write(c, s, sizeof(*s)) < 0)
 		{
 			DEBUG(0,("Could not write connection down pipe.\n"));
@@ -286,6 +300,29 @@ static struct cli_state *init_client_connection(int c)
 	return NULL;
 }
 
+static void filter_reply(char *buf, int moff)
+{
+	int msg_type = CVAL(buf,0);
+	int x;
+
+	if (msg_type != 0x0) return;
+
+	/* alter the mid */
+	x = SVAL(buf, smb_mid);
+	x += moff;
+
+	if (x < 0)
+	{
+		x += 0x10000;
+	}
+	if (x > 0xffff)
+	{
+		x -= 0x10000;
+	}
+
+	SCVAL(buf, smb_mid, x);
+
+}
 void process_cli_sock(struct sock_redir **sock)
 {
 	struct cli_state *s = (*sock)->s;
@@ -309,6 +346,8 @@ void process_cli_sock(struct sock_redir **sock)
 			*sock = NULL;
 			return;
 		}
+
+		filter_reply(packet, (*sock)->mid_offset);
 		/* ignore keep-alives */
 		if (CVAL(packet, 0) != 0x85)
 		{
@@ -323,25 +362,63 @@ void process_cli_sock(struct sock_redir **sock)
 	}
 }
 
-void process_srv_sock(struct sock_redir **sock)
+static int get_smbmid(char *buf)
 {
-	struct cli_state *s = (*sock)->s;
-	if (!receive_smb(s->fd, packet, 0))
+	int msg_type = CVAL(buf,0);
+
+	if (msg_type != 0x0)
 	{
-		DEBUG(0,("server closed connection\n"));
-		sock_redir_free(*sock);
-		(*sock) = NULL;
-		return;
+		return -1;
 	}
-	if (!send_smb((*sock)->c, packet))
-	{
-		DEBUG(0,("client is dead\n"));
-		sock_redir_free(*sock);
-		(*sock) = NULL;
-		return;
-	}			
+
+	return SVAL(buf,smb_mid);
 }
 
+static BOOL process_srv_sock(int fd)
+{
+	int smbmid;
+	int i;
+	if (!receive_smb(fd, packet, 0))
+	{
+		DEBUG(0,("server closed connection\n"));
+		return False;
+	}
+
+	smbmid = get_smbmid(packet);
+
+	DEBUG(10,("process_srv_sock:\tfd:\t%d\tmid:\t%d\n", fd, smbmid));
+
+	if (smbmid == -1)
+	{
+		return True;
+	}
+
+	for (i = 0; i < num_socks; i++)
+	{
+		int moff;
+		if (socks[i] == NULL || socks[i]->s == NULL)
+		{
+			continue;
+		}
+		moff = socks[i]->mid_offset;
+		DEBUG(10,("list:\tfd:\t%d\tmid:\t%d\tmoff:\t%d\n",
+		           socks[i]->s->fd,
+		           socks[i]->s->mid,
+		           moff));
+		if (smbmid != socks[i]->s->mid + moff)
+		{
+			continue;
+		}
+		filter_reply(packet, -moff);
+		if (!send_smb(socks[i]->c, packet))
+		{
+			DEBUG(0,("client is dead\n"));
+			return False;
+		}			
+		return True;
+	}
+	return False;
+}
 
 static void start_agent(void)
 {
@@ -463,7 +540,12 @@ static void start_agent(void)
 			}
 			if (FD_ISSET(socks[i]->s->fd, &fds))
 			{
-				process_srv_sock(&socks[i]);
+				FD_CLR(socks[i]->s->fd, &fds);
+				if (!process_srv_sock(socks[i]->s->fd))
+				{
+					sock_redir_free(socks[i]);
+					socks[i] = NULL;
+				}
 			}
 		}
 	}
