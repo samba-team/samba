@@ -1971,7 +1971,7 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.max_size = (uint32_t)-1;
+	r.in.account_flags = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainAliases(p, mem_ctx, &r);
