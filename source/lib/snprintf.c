@@ -83,6 +83,8 @@
 
 #ifndef VA_COPY
 #ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) va_copy(dest, src)
+#elif defined(HAVE___VA_COPY)
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
