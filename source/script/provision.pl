@@ -8,6 +8,10 @@ chomp $opt_hostname;
 my $opt_realm;
 my $opt_domain;
 my $opt_adminpass;
+my $opt_nobody;
+my $opt_nogroup;
+my $opt_wheel;
+my $opt_users;
 my $dnsname;
 my $basedn;
 
@@ -107,6 +111,22 @@ sub substitute($)
 		return "" . nttime();
 	}
 
+	if ($var eq "WHEEL") {
+		return $opt_wheel;
+	}
+
+	if ($var eq "NOBODY") {
+		return $opt_nobody;
+	}
+
+	if ($var eq "NOGROUP") {
+		return $opt_nogroup;
+	}
+
+	if ($var eq "USERS") {
+		return $opt_users;
+	}
+
 	die "ERROR: Uknown substitution variable $var\n";
 }
 
@@ -174,10 +194,14 @@ sub ShowHelp()
 Samba4 provisioning
 
 provision.pl [options]
-  --realm     REALM       set realm
-  --domain    DOMAIN      set domain
-  --hostname  HOSTNAME    set hostname
-  --adminpass PASSWORD    choose admin password (otherwise random)
+  --realm     REALM        set realm
+  --domain    DOMAIN       set domain
+  --hostname  HOSTNAME     set hostname
+  --adminpass PASSWORD     choose admin password (otherwise random)
+  --nobody    USERNAME     choose 'nobody' user
+  --nogroup   GROUPNAME    choose 'nogroup' group
+  --wheel     GROUPNAME    choose 'wheel' privileged group
+  --users     GROUPNAME    choose 'users' group
 
 You must provide at least a realm and domain
 
@@ -193,6 +217,10 @@ GetOptions(
 	    'domain=s' => \$opt_domain,
 	    'hostname=s' => \$opt_hostname,
 	    'adminpass=s' => \$opt_adminpass,
+	    'nobody=s' => \$opt_nobody,
+	    'nogroup=s' => \$opt_nogroup,
+	    'wheel=s' => \$opt_wheel,
+	    'users=s' => \$opt_users,
 	    );
 
 if ($opt_help || 
@@ -204,6 +232,41 @@ if ($opt_help ||
 
 print "Provisioning host '$opt_hostname' for domain '$opt_domain' in realm '$opt_realm'\n";
 
+if (!$opt_nobody) {
+	if (defined getpwnam("nobody")) {
+		$opt_nobody = "nobody";
+	}
+}
+
+if (!$opt_nogroup) {
+	if (defined getgrnam("nogroup")) {
+		$opt_nogroup = "nogroup";
+	} elsif (defined getgrnam("nobody")) {
+		$opt_nogroup = "nobody";
+	}
+}
+
+if (!$opt_wheel) {
+	if (defined getgrnam("wheel")) {
+		$opt_wheel = "wheel";
+	} elsif (defined getgrnam("root")) {
+		$opt_wheel = "root";
+	}
+}
+
+if (!$opt_users) {
+	if (defined getgrnam("users")) {
+		$opt_users = "users";
+	}
+}
+
+$opt_nobody || die "Unable to determine a user for 'nobody'\n";
+$opt_nogroup || die "Unable to determine a group for 'nogroup'\n";
+$opt_users || die "Unable to determine a group for 'user'\n";
+$opt_wheel || die "Unable to determine a group for 'wheel'\n";
+
+print "Using nobody='$opt_nobody'  nogroup='$opt_nogroup'  wheel='$opt_wheel'  users='$opt_users'\n";
+
 print "generating ldif ...\n";
 
 $dnsname = "$opt_hostname.$opt_realm";
@@ -211,9 +274,9 @@ $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 
 my $data = FileLoad("provision.ldif") || die "Unable to load provision.ldif\n";
 
-$data .= add_foreign("S-1-5-7", "Anonymous", "nobody");
+$data .= add_foreign("S-1-5-7", "Anonymous", "\${NOBODY}");
 $data .= add_foreign("S-1-5-18", "System", "root");
-$data .= add_foreign("S-1-5-11", "Authenticated Users", "users");
+$data .= add_foreign("S-1-5-11", "Authenticated Users", "\${USERS}");
 
 if (!$opt_adminpass) {
 	$opt_adminpass = randpass();

@@ -249,7 +249,7 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: root
+unixName: ${WHEEL}
 
 dn: CN=Users,CN=Builtin,${BASEDN}
 objectClass: top
@@ -293,7 +293,7 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: nogroup
+unixName: ${NOGROUP}
 
 dn: CN=Print Operators,CN=Builtin,${BASEDN}
 objectClass: top
@@ -566,7 +566,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: root
+unixName: ${WHEEL}
 
 dn: CN=Enterprise Admins,CN=Users,${BASEDN}
 objectClass: top
@@ -589,7 +589,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: root
+unixName: ${WHEEL}
 
 dn: CN=Cert Publishers,CN=Users,${BASEDN}
 objectClass: top
@@ -631,7 +631,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: root
+unixName: ${WHEEL}
 
 dn: CN=Domain Users,CN=Users,${BASEDN}
 objectClass: top
@@ -652,7 +652,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: users
+unixName: ${USERS}
 
 dn: CN=Domain Guests,CN=Users,${BASEDN}
 objectClass: top
@@ -693,7 +693,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: root
+unixName: ${WHEEL}
 
 dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
 objectClass: top
