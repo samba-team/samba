@@ -697,8 +697,8 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 {
 	struct cli_tree *tree;
 
-	if (p->security_state.ops) {
-		return p->security_state.ops->session_key(&p->security_state, session_key);
+	if (p->security_state.generic_state.ops) {
+		return p->security_state.generic_state.ops->session_key(&p->security_state.generic_state, session_key);
 	}
 	
 	tree = dcerpc_smb_tree(p);

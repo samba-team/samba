@@ -42,6 +42,7 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 
 SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		[libcli/auth/spnego.o
+		libcli/auth/spnego_parse.o
 		libcli/auth/ntlmssp.o
 		libcli/auth/ntlmssp_parse.o
 		libcli/auth/ntlmssp_sign.o
@@ -51,7 +52,9 @@ SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		libcli/auth/ntlm_check.o
 		libcli/auth/kerberos.o
 		libcli/auth/kerberos_verify.o
-		libcli/auth/clikrb5.o])
+		libcli/auth/clikrb5.o
+		libcli/auth/gensec.o
+		libcli/auth/gensec_ntlmssp.o])
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		[libcli/unexpected.o

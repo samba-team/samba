@@ -1,0 +1,64 @@
+/* 
+   Unix SMB/CIFS implementation.
+ 
+   Generic Authentication Interface
+
+   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+
+struct gensec_security;
+struct gensec_user {
+	const char *domain;
+	const char *name;
+	const char *password;
+};
+/* GENSEC mode */
+enum gensec_role
+{
+	GENSEC_SERVER,
+	GENSEC_CLIENT
+};
+
+struct gensec_security_ops {
+	const char *name;
+	const char *sasl_name;
+	uint8 auth_type;
+	const char *oid;  /* NULL if not offered by SPENGO */
+	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
+	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
+	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
+			   const DATA_BLOB in, DATA_BLOB *out);
+	NTSTATUS (*seal)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*sign)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_sig)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx, 
+				const uint8_t *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*unseal)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
+	void (*end)(struct gensec_security *gensec_security);
+};
+	
+struct gensec_security {
+	struct gensec_user user;
+	void *private_data;
+	const struct gensec_security_ops *ops;
+};
+
