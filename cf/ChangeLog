@@ -1,3 +1,12 @@
+2005-03-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sunos.m4: Match solaris 10.  From: Joakim Fallsjo
+	<fallsjo@sanchin.se>
+
+2004-12-29  Love  <lha@stacken.kth.se>
+
+	* check-symbols.sh: add -asn1compile symbols
+
 2004-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: add exported symbols test
