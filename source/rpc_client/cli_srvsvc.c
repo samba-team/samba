@@ -107,10 +107,11 @@ do a server net sess enum
 ****************************************************************************/
 
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+			      char *server_name, char *qual_name,
+			      char *user_name,
+			      uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			      uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	prs_struct data; 
 	prs_struct rdata;
@@ -134,7 +135,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	ctr->sess.info0.ptr_sess_info    = 1;
 
 	/* store the parameters */
-	init_srv_q_net_sess_enum(&q_o, server_name, qual_name,
+	init_srv_q_net_sess_enum(&q_o, server_name, qual_name, user_name,
 	                         switch_value, ctr,
 	                         preferred_len,
 	                         hnd);
