@@ -160,6 +160,8 @@ if test "$with_krb4" != "no"; then
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
 AM_CONDITIONAL(KRB5, true)
+AM_CONDITIONAL(do_roken_rename, true)
+
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
 
