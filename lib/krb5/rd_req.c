@@ -312,10 +312,10 @@ krb5_verify_ap_req2(krb5_context context,
     if(ret)
 	goto out;
 
-    principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
-				 ap_req->ticket.realm);
-    principalname2krb5_principal(&t->client, t->ticket.cname, 
-				 t->ticket.crealm);
+    _krb5_principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
+				       ap_req->ticket.realm);
+    _krb5_principalname2krb5_principal(&t->client, t->ticket.cname, 
+				       t->ticket.crealm);
 
     /* save key */
 
@@ -333,12 +333,12 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_principal p1, p2;
 	krb5_boolean res;
 	
-	principalname2krb5_principal(&p1,
-				     ac->authenticator->cname,
-				     ac->authenticator->crealm);
-	principalname2krb5_principal(&p2, 
-				     t->ticket.cname,
-				     t->ticket.crealm);
+	_krb5_principalname2krb5_principal(&p1,
+					   ac->authenticator->cname,
+					   ac->authenticator->crealm);
+	_krb5_principalname2krb5_principal(&p2, 
+					   t->ticket.cname,
+					   t->ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
 	krb5_free_principal (context, p1);
 	krb5_free_principal (context, p2);
@@ -501,9 +501,9 @@ krb5_rd_req(krb5_context context,
 	return ret;
 
     if(server == NULL){
-	principalname2krb5_principal(&service,
-				     ap_req.ticket.sname,
-				     ap_req.ticket.realm);
+	_krb5_principalname2krb5_principal(&service,
+					   ap_req.ticket.sname,
+					   ap_req.ticket.realm);
 	server = service;
     }
     if (ap_req.ap_options.use_session_key &&

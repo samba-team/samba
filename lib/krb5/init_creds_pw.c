@@ -545,7 +545,7 @@ init_creds_init_as_req (krb5_context context,
 	goto fail;
     }
     if (creds->client) {
-	ret = krb5_principal2principalname (a->req_body.cname, creds->client);
+	ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
 	if (ret)
 	    goto fail;
 	ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
@@ -561,7 +561,7 @@ init_creds_init_as_req (krb5_context context,
 	ret = copy_Realm(&realm, &a->req_body.realm);
 	free(realm);
     }
-    ret = krb5_principal2principalname (a->req_body.sname, creds->server);
+    ret = _krb5_principal2principalname (a->req_body.sname, creds->server);
     if (ret)
 	goto fail;
 

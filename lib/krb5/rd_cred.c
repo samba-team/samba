@@ -234,9 +234,9 @@ krb5_rd_cred(krb5_context context,
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 	copy_EncryptionKey (&kci->key, &creds->session);
 	if (kci->prealm && kci->pname)
-	    principalname2krb5_principal (&creds->client,
-					  *kci->pname,
-					  *kci->prealm);
+	    _krb5_principalname2krb5_principal (&creds->client,
+						*kci->pname,
+						*kci->prealm);
 	if (kci->flags)
 	    creds->flags.b = *kci->flags;
 	if (kci->authtime)
@@ -248,9 +248,9 @@ krb5_rd_cred(krb5_context context,
 	if (kci->renew_till)
 	    creds->times.renew_till = *kci->renew_till;
 	if (kci->srealm && kci->sname)
-	    principalname2krb5_principal (&creds->server,
-					  *kci->sname,
-					  *kci->srealm);
+	    _krb5_principalname2krb5_principal (&creds->server,
+						*kci->sname,
+						*kci->srealm);
 	if (kci->caddr)
 	    krb5_copy_addresses (context,
 				 kci->caddr,

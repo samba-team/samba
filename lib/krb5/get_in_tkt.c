@@ -137,9 +137,9 @@ _krb5_extract_ticket(krb5_context context,
     time_t tmp_time;
     krb5_timestamp sec_now;
 
-    ret = principalname2krb5_principal (&tmp_principal,
-					rep->kdc_rep.cname,
-					rep->kdc_rep.crealm);
+    ret = _krb5_principalname2krb5_principal (&tmp_principal,
+					      rep->kdc_rep.cname,
+					      rep->kdc_rep.crealm);
     if (ret)
 	goto out;
 
@@ -170,9 +170,9 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare server */
 
-    ret = principalname2krb5_principal (&tmp_principal,
-					rep->kdc_rep.ticket.sname,
-					rep->kdc_rep.ticket.realm);
+    ret = _krb5_principalname2krb5_principal (&tmp_principal,
+					      rep->kdc_rep.ticket.sname,
+					      rep->kdc_rep.ticket.realm);
     if (ret)
 	goto out;
     if(allow_server_mismatch){
@@ -440,10 +440,10 @@ init_as_req (krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto fail;
     }
-    ret = krb5_principal2principalname (a->req_body.cname, creds->client);
+    ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
     if (ret)
 	goto fail;
-    ret = krb5_principal2principalname (a->req_body.sname, creds->server);
+    ret = _krb5_principal2principalname (a->req_body.sname, creds->server);
     if (ret)
 	goto fail;
     ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
