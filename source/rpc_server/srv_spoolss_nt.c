@@ -316,7 +316,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	}
 
 	return WERR_OK;
-}	
+}
 
 /****************************************************************************
   return the snum of a printer corresponding to an handle

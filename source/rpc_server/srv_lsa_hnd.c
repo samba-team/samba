@@ -110,15 +110,16 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	pol->data_ptr = data_ptr;
 	pol->free_fn = free_fn;
 
-    pol_hnd_low++;
-    if (pol_hnd_low == 0) (pol_hnd_high)++;
+	pol_hnd_low++;
+	if (pol_hnd_low == 0)
+		(pol_hnd_high)++;
 
-    SIVAL(&pol->pol_hnd.data1, 0 , 0);  /* first bit must be null */
-    SIVAL(&pol->pol_hnd.data2, 0 , pol_hnd_low ); /* second bit is incrementing */
-    SSVAL(&pol->pol_hnd.data3, 0 , pol_hnd_high); /* second bit is incrementing */
-    SSVAL(&pol->pol_hnd.data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
-    SIVAL(pol->pol_hnd.data5, 0, time(NULL)); /* something random */
-    SIVAL(pol->pol_hnd.data5, 4, sys_getpid()); /* something more random */
+	SIVAL(&pol->pol_hnd.data1, 0 , 0);  /* first bit must be null */
+	SIVAL(&pol->pol_hnd.data2, 0 , pol_hnd_low ); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.data3, 0 , pol_hnd_high); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
+	SIVAL(pol->pol_hnd.data5, 0, time(NULL)); /* something random */
+	SIVAL(pol->pol_hnd.data5, 4, sys_getpid()); /* something more random */
 
 	DLIST_ADD(p->pipe_handles->Policy, pol);
 	p->pipe_handles->count++;
