@@ -1051,6 +1051,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	SAM_ACCOUNT *sampw = NULL;
 	struct passwd *unix_pw;
+	BOOL ret;
 	
 	winbind_off();
 	unix_pw = sys_getpwuid( uid );
@@ -1062,20 +1063,29 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	}
 	
 	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("local_uid_to_sid: failed to allocate SAM_ACCOUTN object\n"));
+		DEBUG(0,("local_uid_to_sid: failed to allocate SAM_ACCOUNT object\n"));
 		return NULL;
 	}
 	
 	become_root();
-	if ( !pdb_getsampwnam( sampw, unix_pw->pw_name ) ) {
-		unbecome_root();
-		DEBUG(4,("local_uid_to_sid: User %s [uid == %d] has no samba account\n",
-			unix_pw->pw_name, uid));
-		return NULL;
-	}
+	ret = pdb_getsampwnam( sampw, unix_pw->pw_name );
 	unbecome_root();
 	
-	sid_copy( psid, pdb_get_user_sid(sampw) );
+	if ( ret )
+		sid_copy( psid, pdb_get_user_sid(sampw) );
+	else {
+		DEBUG(4,("local_uid_to_sid: User %s [uid == %d] has no samba account\n",
+			unix_pw->pw_name, uid));
+			
+		if ( !lp_enable_rid_algorithm() ) 
+			return NULL;
+
+		DEBUG(8,("local_uid_to_sid: falling back to RID algorithm\n"));
+		
+		sid_copy( psid, get_global_sam_sid() );
+		sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
+	}
+
 	
 	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
 		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
