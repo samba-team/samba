@@ -11,10 +11,10 @@ endif
 
 TDBDIR=../tdb
 
-CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -I$(TDBDIR)/include -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 
-TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
+TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
 
 LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
@@ -70,7 +70,7 @@ clean:
 	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB) man/man?/*.[13]
 
 proto:
-	mkproto.pl */*.c > include/proto.h
+	perl ../../script/mkproto.pl */*.c > include/proto.h
 
 etags:
 	etags */*.[ch]

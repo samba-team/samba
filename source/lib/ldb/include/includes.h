@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #endif
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -18,5 +19,5 @@
 #include <sys/time.h>
 #include <time.h>
 #include "ldb.h"
-#include "tdb/tdb.h"
+#include "tdb.h"
 #include "proto.h"
