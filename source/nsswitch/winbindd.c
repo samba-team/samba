@@ -105,18 +105,21 @@ static int create_sock(void)
 
     /* Create the socket directory or reuse the existing one */
 
-    if ((lstat(WINBINDD_SOCKET_DIR, &st) == -1) && (errno != ENOENT)) {
-        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-                  WINBINDD_SOCKET_DIR, sys_errlist[errno]));
-        return -1;
-    }
+    if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
 
-    if (errno == ENOENT) {
+        if (errno == ENOENT) {
 
-        /* Create directory */
+            /* Create directory */
 
-        if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
-            DEBUG(0, ("error creating socket directory %s: %s\n",
+            if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
+                DEBUG(0, ("error creating socket directory %s: %s\n",
+                          WINBINDD_SOCKET_DIR, sys_errlist[errno]));
+                return -1;
+            }
+
+        } else {
+
+            DEBUG(0, ("lstat failed on socket directory %s: %s\n",
                       WINBINDD_SOCKET_DIR, sys_errlist[errno]));
             return -1;
         }
@@ -124,13 +127,13 @@ static int create_sock(void)
     } else {
 
         /* Check ownership and permission on existing directory */
-
+        
         if (!S_ISDIR(st.st_mode)) {
             DEBUG(0, ("socket directory %s isn't a directory\n",
                       WINBINDD_SOCKET_DIR));
             return -1;
         }
-
+        
         if ((st.st_uid != 0) || ((st.st_mode & 0777) != 0755)) {
             DEBUG(0, ("invalid permissions on socket directory %s\n",
                       WINBINDD_SOCKET_DIR));
@@ -187,6 +190,7 @@ static void process_request(struct winbindd_cli_state *state)
     /* Process command */
 
     state->response.result = WINBINDD_ERROR;
+    state->response.length = sizeof(struct winbindd_response);
 
     fprintf(stderr, "processing command %s from pid %d\n", 
             winbindd_cmd_to_string(state->request.cmd), state->pid);
@@ -297,6 +301,10 @@ static void remove_client(struct winbindd_cli_state *state)
         free_getent_state(state->getpwent_state);
         free_getent_state(state->getgrent_state);
 
+        /* Free any extra data */
+
+        safe_free(state->response.extra_data);
+
         /* Remove from list and free */
 
         DLIST_REMOVE(client_list, state);
@@ -352,13 +360,28 @@ static void client_read(struct winbindd_cli_state *state)
 
 static void client_write(struct winbindd_cli_state *state)
 {
+    char *data;
     int n;
 
     /* Write data */
 
-    n = write(state->sock, (sizeof(state->response) - state->write_buf_len) +
-              (char *)&state->response,
-              state->write_buf_len);
+    if (state->write_extra_data) {
+
+        /* Write extra data */
+
+        data = (char *)state->response.extra_data + 
+            state->response.length - sizeof(struct winbindd_response) - 
+            state->write_buf_len;
+
+    } else {
+
+        /* Write response structure */
+
+        data = (char *)&state->response + sizeof(state->response) - 
+            state->write_buf_len;
+    }
+
+    n = write(state->sock, data, state->write_buf_len);
 
     /* Write failed, kill cilent */
 
@@ -375,6 +398,33 @@ static void client_write(struct winbindd_cli_state *state)
     /* Update client state */
     
     state->write_buf_len -= n;
+
+    /* Have we written all data? */
+
+    if (state->write_buf_len == 0) {
+
+        /* Take care of extra data */
+
+        if (state->response.length > sizeof(struct winbindd_response)) {
+
+            if (state->write_extra_data) {
+
+                /* Already written extra data - free it */
+
+                safe_free(state->response.extra_data);
+                state->response.extra_data = NULL;
+                state->write_extra_data = False;
+
+            } else {
+
+                /* Start writing extra data */
+
+                state->write_buf_len = state->response.length -
+                    sizeof(struct winbindd_response);
+                state->write_extra_data = True;
+            }
+        }
+    }
 }
 
 /* Process incoming clients on accept_sock.  We use a tricky non-blocking,
@@ -524,7 +574,7 @@ int main(int argc, char **argv)
     codepage_initialise(lp_client_code_page());
 
     if (!lp_load(CONFIGFILE, True, False, False)) {
-        fprintf(stderr, "error opening config file\n");
+        DEBUG(0, ("error opening config file\n"));
         exit(1);
     }
 
