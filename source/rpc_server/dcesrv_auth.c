@@ -228,7 +228,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		return False;
 	}
 
-	if (pkt->drep[0] & DCERPC_DREP_LE) {
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
