@@ -38,7 +38,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 	fstring remote_machine;
         NTSTATUS result;
 
-	if(cli_initialise(pcli) == NULL) {
+	if (cli_initialise(pcli) == NULL) {
 		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
 		return False;
 	}

@@ -92,15 +92,6 @@ static BOOL make_auth_info_text_list(auth_authsupplied_info **auth_info, char **
 			if (strequal(builtin_auth_init_functions[i].name, *text_list))
 			{
 				DEBUG(5,("Found auth method %s (at pos %d)\n", *text_list, i));
-				/* Malloc entry,  fill it,  link it */
-				t = (auth_methods *)malloc(sizeof(*t));
-				if (!t) {
-					DEBUG(0,("make_pw_chat: malloc failed!\n"));
-					return False;
-				}
-				
-				ZERO_STRUCTP(t);
-				
 				if (builtin_auth_init_functions[i].init(&t)) {
 					DEBUG(5,("auth method %s has a valid init\n", *text_list));
 					t->name = builtin_auth_init_functions[i].name;
