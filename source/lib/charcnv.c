@@ -20,7 +20,8 @@
 
 */
 #include "includes.h"
-#define CTRLZ 26
+#define CTRLZ 	26
+#define SPC 	32
 
 static char cvtbuf[sizeof(pstring)];
 
@@ -58,8 +59,15 @@ static void setupmaps(void)
     /* Do not map undefined characters to some accidental code */
     for (i = 128; i < 256; i++)
     {
+#if 0 	/* JERRY */
+	/* Win2k & XP don't like the Ctrl-Z apparently */
+	/* patch from Toomas.Soome@microlink.ee */
        unix2dos[i] = CTRLZ;
        dos2unix[i] = CTRLZ;
+#else
+       unix2dos[i] = SPC;
+       dos2unix[i] = SPC;
+#endif
     }
 }
 
