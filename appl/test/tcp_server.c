@@ -56,19 +56,17 @@ proto (int sock, const char *service)
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
-	errx (1, "krb5_auth_con_init: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_auth_con_init");
 
     status = krb5_auth_con_setaddrs_from_fd (context,
 					     auth_context,
 					     &sock);
 
     if (status)
-	errx (1, "krb5_auth_con_setaddrs_from_fd: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_auth_con_setaddrs_from_fd");
 
     if(gethostname (hostname, sizeof(hostname)) < 0)
-	err (1, "gethostname");
+	krb5_err (context, 1, errno, "gethostname");
 
     status = krb5_sname_to_principal (context,
 				      hostname,
@@ -76,8 +74,7 @@ proto (int sock, const char *service)
 				      KRB5_NT_SRV_HST,
 				      &server);
     if (status)
-	errx (1, "krb5_sname_to_principal: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_sname_to_principal");
 
     status = krb5_recvauth (context,
 			    &auth_context,
@@ -88,15 +85,13 @@ proto (int sock, const char *service)
 			    NULL,
 			    &ticket);
     if (status)
-	errx (1, "krb5_recvauth: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_recvauth");
 
     status = krb5_unparse_name (context,
 				ticket->client,
 				&name);
     if (status)
-	errx (1, "krb5_unparse_name: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_unparse_name");
 
     printf ("User is `%s'\n", name);
     free (name);
@@ -120,8 +115,7 @@ proto (int sock, const char *service)
 			   &data,
 			   NULL);
     if (status)
-	errx (1, "krb5_rd_safe: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_rd_safe");
 
     printf ("safe packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
@@ -142,8 +136,7 @@ proto (int sock, const char *service)
 			   &data,
 			   NULL);
     if (status)
-	errx (1, "krb5_rd_priv: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_rd_priv");
 
     printf ("priv packet: %.*s\n", (int)data.length,
 	    (char *)data.data);

@@ -54,20 +54,17 @@ proto (int sock, const char *hostname, const char *service)
 
     status = krb5_init_context(&context);
     if (status)
-	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_init_context");
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
-	errx (1, "krb5_auth_con_init: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_auth_con_init");
 
     status = krb5_auth_con_setaddrs_from_fd (context,
 					     auth_context,
 					     &sock);
     if (status)
-	errx (1, "krb5_auth_con_setaddrs_from_fd: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_auth_con_setaddrs_from_fd");
 
     status = krb5_sname_to_principal (context,
 				      hostname,
@@ -75,8 +72,7 @@ proto (int sock, const char *hostname, const char *service)
 				      KRB5_NT_SRV_HST,
 				      &server);
     if (status)
-	errx (1, "krb5_sname_to_principal: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_sname_to_principal");
 
     status = krb5_sendauth (context,
 			    &auth_context,
@@ -92,8 +88,7 @@ proto (int sock, const char *hostname, const char *service)
 			    NULL,
 			    NULL);
     if (status)
-	errx (1, "krb5_sendauth: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_sendauth");
 
     data.data   = "hej";
     data.length = 3;
@@ -106,8 +101,7 @@ proto (int sock, const char *hostname, const char *service)
 			   &packet,
 			   NULL);
     if (status)
-	errx (1, "krb5_mk_safe: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_mk_safe");
 
     len = packet.length;
     net_len = htonl(len);
@@ -128,8 +122,7 @@ proto (int sock, const char *hostname, const char *service)
 			   &packet,
 			   NULL);
     if (status)
-	errx (1, "krb5_mk_priv: %s",
-	      krb5_get_err_text(context, status));
+	krb5_err (context, 1, status, "krb5_mk_priv");
 
     len = packet.length;
     net_len = htonl(len);
