@@ -53,6 +53,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -541,7 +542,7 @@ static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 
 	if (tailer != rec.rec_len + sizeof(rec)) {
 		printf("ERROR: tailer does not match record! tailer=%u totalsize=%u\n",
-				(uint_t)tailer, (uint_t)(rec.rec_len + sizeof(rec)));
+				(unsigned int)tailer, (unsigned int)(rec.rec_len + sizeof(rec)));
 	}
 	return rec.next;
 }
