@@ -1,3 +1,7 @@
+2003-03-27  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* sia/Makefile.am: libkafs is always built now, lets include it
+	
 2002-05-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pam/Makefile.am: set SUFFIXES with +=
