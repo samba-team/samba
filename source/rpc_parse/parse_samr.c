@@ -5671,8 +5671,28 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 	switch (switch_value)
 	{
 		case 0x18:
+		{
+			uchar sess_key[16];
+			if (!cli_get_usr_sesskey(hnd, sess_key))
+			{
+				return False;
+			}
+#ifdef DEBUG_PASSWORD
+			dump_data(100, sess_key, 16);
+#endif
+			SamOEMhash(q_u->info.id24->pass, sess_key, 1);
+		}
 		case 0x17:
 		{
+			uchar sess_key[16];
+			if (!cli_get_usr_sesskey(hnd, sess_key))
+			{
+				return False;
+			}
+#ifdef DEBUG_PASSWORD
+			dump_data(100, sess_key, 16);
+#endif
+			SamOEMhash(q_u->info.id23->pass, sess_key, 1);
 			break;
 		}
 		default:

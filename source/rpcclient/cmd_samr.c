@@ -256,7 +256,6 @@ Lookup domain in SAM server.
 ****************************************************************************/
 void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	char *domain;
 	fstring str_sid;
@@ -278,22 +277,16 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "Lookup Domain in SAM Server\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_query_lookup_domain(smb_cli, fnum, 
+	res = res ? samr_query_lookup_domain( 
 	            &sam_pol, domain, &dom_sid) : False;
 
-	res = res ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res)
 	{
@@ -315,7 +308,6 @@ SAM delete alias member.
 ****************************************************************************/
 void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -357,21 +349,18 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Domain Alias Member\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* connect to the domain */
-	res1 = res ? samr_open_alias(smb_cli, fnum,
+	res1 = res ? samr_open_alias(
 	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
@@ -381,7 +370,7 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 		argv++;
 		/* get a sid, delete a member from the alias */
 		res2 = res2 ? string_to_sid(&member_sid, argv[0]) : False;
-		res2 = res2 ? samr_del_aliasmem(smb_cli, fnum, &alias_pol, &member_sid) : False;
+		res2 = res2 ? samr_del_aliasmem( &alias_pol, &member_sid) : False;
 
 		if (res2)
 		{
@@ -389,12 +378,9 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? samr_close( &alias_pol) : False;
+	res  = res  ? samr_close( &pol_dom) : False;
+	res  = res  ? samr_close( &sam_pol) : False;
 
 	if (res && res1 && res2)
 	{
@@ -413,7 +399,6 @@ SAM delete alias.
 ****************************************************************************/
 void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	char *name;
@@ -456,22 +441,19 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Delete Domain Alias\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	names[0] = name;
 
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 	            &pol_dom, 0x000003e8,
 	            1, names,
 	            &num_rids, rid, type) : False;
@@ -482,18 +464,15 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* connect to the domain */
-	res1 = res1 ? samr_open_alias(smb_cli, fnum,
+	res1 = res1 ? samr_open_alias(
 	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
-	res2 = res1 ? samr_delete_dom_alias(smb_cli, fnum, &alias_pol) : False;
+	res2 = res1 ? samr_delete_dom_alias( &alias_pol) : False;
 
-	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? samr_close( &alias_pol) : False;
+	res  = res  ? samr_close( &pol_dom) : False;
+	res  = res  ? samr_close( &sam_pol) : False;
 
 	if (res && res1 && res2)
 	{
@@ -512,7 +491,6 @@ SAM add alias member.
 ****************************************************************************/
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring tmp;
@@ -593,28 +571,25 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	/* open SAMR session.  negotiate credentials */
-	res = res4 ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* connect to the domain */
-	res1 = res ? samr_open_alias(smb_cli, fnum,
+	res1 = res ? samr_open_alias(
 	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
 	for (i = 1; i < num_sids && res2 && res1; i++)
 	{
 		/* add a member to the alias */
-		res2 = res2 ? samr_add_aliasmem(smb_cli, fnum, &alias_pol, &sids[i]) : False;
+		res2 = res2 ? samr_add_aliasmem( &alias_pol, &sids[i]) : False;
 
 		if (res2)
 		{
@@ -623,12 +598,9 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? samr_close( &alias_pol) : False;
+	res  = res  ? samr_close( &pol_dom) : False;
+	res  = res  ? samr_close( &sam_pol) : False;
 
 	if (sids != NULL)
 	{
@@ -716,7 +688,7 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc, char *argv[
 	}
 	report(out_hnd, "SAM Create Domain Trusting Account\n");
 
-	if (msrpc_sam_create_dom_user(smb_cli, &sid1,
+	if (msrpc_sam_create_dom_user(srv_name,
 	                              acct_name, ACB_WSTRUST, &user_rid))
 	{
 		report(out_hnd, "Create Domain User: OK\n");
@@ -740,6 +712,11 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	uint32 user_rid; 
 	uint16 acb_info = ACB_NORMAL;
 	int opt;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -791,7 +768,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	                  domain, acct_name,
 	    pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
-	if (msrpc_sam_create_dom_user(smb_cli, &sid1,
+	if (msrpc_sam_create_dom_user(srv_name, &sid1,
 	                              acct_name, acb_info, &user_rid))
 	{
 		report(out_hnd, "Create Domain User: OK\n");
@@ -808,7 +785,6 @@ SAM create domain alias.
 ****************************************************************************/
 void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	char *acct_name;
@@ -857,32 +833,26 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* create a domain alias */
-	res1 = res ? create_samr_domain_alias(smb_cli, fnum, 
+	res1 = res ? create_samr_domain_alias( 
 				&pol_dom,
 	                        acct_name, acct_desc, &alias_rid) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res1)
 	{
@@ -902,7 +872,6 @@ SAM delete group member.
 ****************************************************************************/
 void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -944,21 +913,18 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Add Domain Group member\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* connect to the domain */
-	res1 = res ? samr_open_group(smb_cli, fnum,
+	res1 = res ? samr_open_group(
 	            &pol_dom,
 	            0x0000001f, group_rid, &pol_grp) : False;
 
@@ -969,7 +935,7 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 
 		/* get a rid, delete a member from the group */
 		member_rid = get_number(argv[0]);
-		res2 = res2 ? samr_del_groupmem(smb_cli, fnum, &pol_grp, member_rid) : False;
+		res2 = res2 ? samr_del_groupmem( &pol_grp, member_rid) : False;
 
 		if (res2)
 		{
@@ -977,12 +943,9 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	res1 = res1 ? samr_close(smb_cli, fnum, &pol_grp) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? samr_close( &pol_grp) : False;
+	res  = res  ? samr_close( &pol_dom) : False;
+	res  = res  ? samr_close( &sam_pol) : False;
 
 	if (res && res1 && res2)
 	{
@@ -1002,7 +965,6 @@ SAM delete group.
 ****************************************************************************/
 void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	char *name;
@@ -1045,22 +1007,19 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Delete Domain Group\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	names[0] = name;
 
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 	            &pol_dom, 0x000003e8,
 	            1, names,
 	            &num_rids, rid, type) : False;
@@ -1071,18 +1030,15 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* connect to the domain */
-	res1 = res1 ? samr_open_group(smb_cli, fnum,
+	res1 = res1 ? samr_open_group(
 	            &pol_dom,
 	            0x0000001f, group_rid, &pol_grp) : False;
 
-	res2 = res1 ? samr_delete_dom_group(smb_cli, fnum, &pol_grp) : False;
+	res2 = res1 ? samr_delete_dom_group( &pol_grp) : False;
 
-	res1 = res1 ? samr_close(smb_cli, fnum, &pol_grp) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res1 ? samr_close( &pol_grp) : False;
+	res  = res  ? samr_close( &pol_dom) : False;
+	res  = res  ? samr_close( &sam_pol) : False;
 
 	if (res && res1 && res2)
 	{
@@ -1102,7 +1058,6 @@ SAM add group member.
 ****************************************************************************/
 void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -1165,43 +1120,40 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Add Domain Group member\n");
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res4 = res ? samr_open_domain(smb_cli, fnum, 
+	res4 = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* connect to the domain */
-	res3 = res ? samr_open_domain(smb_cli, fnum, 
+	res3 = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid_1_5_20,
 	            &pol_blt) : False;
 
-	res2 = res4 ? samr_query_lookup_names(smb_cli, fnum,
+	res2 = res4 ? samr_query_lookup_names(
 	            &pol_dom, 0x000003e8,
 	            1, group_names,
 	            &num_group_rids, group_rid, group_type) : False;
 
 	/* open the group */
-	res2 = res2 ? samr_open_group(smb_cli, fnum,
+	res2 = res2 ? samr_open_group(
 	            &pol_dom,
 	            0x0000001f, group_rid[0], &pol_grp) : False;
 
 	if (!res2 || (group_type != NULL && group_type[0] == SID_NAME_UNKNOWN))
 	{
-		res2 = res3 ? samr_query_lookup_names(smb_cli, fnum,
+		res2 = res3 ? samr_query_lookup_names(
 			    &pol_blt, 0x000003e8,
 			    1, group_names, 
 			    &num_group_rids, group_rid, group_type) : False;
 
 		/* open the group */
-		res2 = res2 ? samr_open_group(smb_cli, fnum,
+		res2 = res2 ? samr_open_group(
 			    &pol_blt,
 			    0x0000001f, group_rid[0], &pol_grp) : False;
 	}
@@ -1212,7 +1164,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 			group_name);
 		return;
 	}
-	res1 = res2 ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res2 ? samr_query_lookup_names(
 	            &pol_dom, 0x000003e8,
 	            num_names, names,
 	            &num_rids, rid, type) : False;
@@ -1229,7 +1181,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		}
 		else
 		{
-			if (samr_add_groupmem(smb_cli, fnum, &pol_grp, rid[i]))
+			if (samr_add_groupmem( &pol_grp, rid[i]))
 			{
 				report(out_hnd, "RID added to Group 0x%x: 0x%x\n",
 						 group_rid[0], rid[i]);
@@ -1237,13 +1189,10 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	res1 = res ? samr_close(smb_cli, fnum, &pol_grp) : False;
-	res1 = res3 ? samr_close(smb_cli, fnum, &pol_blt) : False;
-	res1 = res4 ? samr_close(smb_cli, fnum, &pol_dom) : False;
-	res  = res ? samr_close(smb_cli, fnum, &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	res1 = res ? samr_close( &pol_grp) : False;
+	res1 = res3 ? samr_close( &pol_blt) : False;
+	res1 = res4 ? samr_close( &pol_dom) : False;
+	res  = res ? samr_close( &sam_pol) : False;
 
 	free_char_array(num_names, names);
 	
@@ -1275,7 +1224,6 @@ SAM create domain group.
 ****************************************************************************/
 void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	char *acct_name;
@@ -1325,32 +1273,26 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	/* read some users */
-	res1 = res ? create_samr_domain_group(smb_cli, fnum, 
+	res1 = res ? create_samr_domain_group( 
 				&pol_dom,
 	                        acct_name, acct_desc, &group_rid) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res1)
 	{
@@ -1421,7 +1363,7 @@ void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Users\n");
 
-	msrpc_sam_enum_users(smb_cli, domain, &sid1, srv_name,
+	msrpc_sam_enum_users( srv_name, domain, &sid1,
 	            &sam, &num_sam_entries,
 	            sam_display_user,
 	            request_user_info  ? sam_display_user_info     : NULL,
@@ -1440,7 +1382,6 @@ experimental SAM group query members.
 ****************************************************************************/
 void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -1483,29 +1424,26 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x304, &sid,
 	            &pol_dom) : False;
 
 	/* look up group rid */
 	names[0] = group_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	if (res1 && num_rids == 1)
 	{
-		res1 = req_groupmem_info(smb_cli, fnum,
+		res1 = req_groupmem_info(
 				&pol_dom,
 				domain,
 				&sid,
@@ -1514,14 +1452,11 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 				sam_display_group_members);
 	}
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -1539,7 +1474,6 @@ experimental SAM group query.
 ****************************************************************************/
 void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -1582,29 +1516,26 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x304, &sid,
 	            &pol_dom) : False;
 
 	/* look up group rid */
 	names[0] = group_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	if (res1 && num_rids == 1)
 	{
-		res1 = query_groupinfo(smb_cli, fnum,
+		res1 = query_groupinfo(
 				&pol_dom,
 				domain,
 				&sid,
@@ -1612,14 +1543,11 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 				sam_display_group_info);
 	}
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -1637,7 +1565,6 @@ experimental SAM user query.
 ****************************************************************************/
 void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -1680,22 +1607,19 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x304, &sid,
 	            &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
@@ -1703,21 +1627,18 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	/* send user info query */
 	if (res1 && num_rids == 1)
 	{
-		res1 = req_user_info(smb_cli, fnum,
+		res1 = req_user_info(
 				&pol_dom,
 				domain,
 				&sid,
 				rid[0],
 				sam_display_user_info);
 	}
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -1735,7 +1656,6 @@ experimental SAM user set.
 ****************************************************************************/
 void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -1800,28 +1720,25 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Set User Info: %s\n", user_name);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x02000000, &sid,
 	            &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	/* send set user info */
-	if (res1 && num_rids == 1 && get_samr_query_userinfo(smb_cli, fnum,
+	if (res1 && num_rids == 1 && get_samr_query_userinfo(
 						    &pol_dom,
 						    0x10, rid[0],
 	                                            (void*)&usr16))
@@ -1845,19 +1762,16 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		
 		if (usr != NULL)
 		{
-			res1 = set_samr_set_userinfo2(smb_cli, fnum,
+			res1 = set_samr_set_userinfo2(
 					    &pol_dom,
 					    switch_value, rid[0], usr);
 		}
 	}
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -1876,7 +1790,6 @@ experimental SAM user set.
 ****************************************************************************/
 void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -1961,28 +1874,25 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Set User Info: %s\n", user_name);
 	report(out_hnd, "Password: %s\n", password);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x02000000, &sid,
 	            &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	/* send set user info */
-	if (res1 && num_rids == 1 && get_samr_query_userinfo(smb_cli, fnum,
+	if (res1 && num_rids == 1 && get_samr_query_userinfo(
 						    &pol_dom,
 						    0x15, rid[0], &usr21))
 	{
@@ -1994,10 +1904,6 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		{
 			encode_pw_buffer(pwbuf, password,
 			               strlen(password), True);
-#ifdef DEBUG_PASSWORD
-			dump_data(100, smb_cli->sess_key, 16);
-#endif
-			SamOEMhash(pwbuf, smb_cli->sess_key, 1);
 		}
 
 		if (True)
@@ -2048,19 +1954,16 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		}
 		if (usr != NULL)
 		{
-			res1 = set_samr_set_userinfo(smb_cli, fnum,
+			res1 = set_samr_set_userinfo(
 					    &pol_dom,
 					    switch_value, rid[0], usr);
 		}
 	}
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -2080,7 +1983,6 @@ experimental SAM query display info.
 ****************************************************************************/
 void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -2118,34 +2020,28 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
+	res = res ? samr_connect( 
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res = res ? samr_open_domain( 
 	            &sam_pol, ace_perms, &sid1,
 	            &pol_dom) : False;
 
 	ctr.sam.info1 = &inf1;
 
 	/* send a samr query_disp_info command */
-	res = res ? samr_query_dispinfo(smb_cli, fnum,
+	res = res ? samr_query_dispinfo(
 	            &pol_dom, switch_value, 
 		    &num_entries, &ctr) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum, 
+	res = res ? samr_close( 
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res)
 	{
@@ -2172,6 +2068,11 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 	DOM_SID sid1;
 	uint32 switch_value = 2;
 	SAM_UNK_CTR ctr;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -2193,7 +2094,7 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s Domain: %s SID: %s\n",
 	                  info->myhostname, domain, sid);
 
-	if (sam_query_dominfo(smb_cli, &sid1, switch_value, &ctr))
+	if (sam_query_dominfo( srv_name, &sid1, switch_value, &ctr))
 	{
 		DEBUG(5,("cmd_sam_query_dominfo: succeeded\n"));
 		display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, &ctr);
@@ -2211,7 +2112,6 @@ experimental SAM alias query members.
 ****************************************************************************/
 void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -2254,29 +2154,26 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x304, &sid,
 	            &pol_dom) : False;
 
 	/* look up alias rid */
 	names[0] = alias_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	if (res1 && num_rids == 1)
 	{
-		res1 = req_aliasmem_info(smb_cli, fnum,
+		res1 = req_aliasmem_info(
 				&pol_dom,
 				domain,
 				&sid,
@@ -2285,14 +2182,11 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 				sam_display_alias_members);
 	}
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -2310,7 +2204,6 @@ experimental SAM alias query.
 ****************************************************************************/
 void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid_str;
@@ -2353,29 +2246,26 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
 	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum,
+	res = res ? samr_connect(
 				srv_name, 0x02000000,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum,
+	res = res ? samr_open_domain(
 	            &sam_pol, 0x304, &sid,
 	            &pol_dom) : False;
 
 	/* look up alias rid */
 	names[0] = alias_name;
-	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+	res1 = res ? samr_query_lookup_names(
 					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	if (res1 && num_rids == 1)
 	{
-		res1 = query_aliasinfo(smb_cli, fnum,
+		res1 = query_aliasinfo(
 				&pol_dom,
 				domain,
 				&sid,
@@ -2383,14 +2273,11 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 				sam_display_alias_info);
 	}
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &sam_pol) : False;
 
-	res = res ? samr_close(smb_cli, fnum,
+	res = res ? samr_close(
 	            &pol_dom) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
 
 	if (res1)
 	{
@@ -2454,7 +2341,7 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Aliases\n");
 
-	msrpc_sam_enum_aliases(smb_cli, domain, &sid1, srv_name,
+	msrpc_sam_enum_aliases(srv_name, domain, &sid1, 
 	            &sam, &num_sam_entries,
 	            sam_display_alias,
 	            request_alias_info  ? sam_display_alias_info    : NULL,
@@ -2517,7 +2404,7 @@ void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Groups\n");
 
-	msrpc_sam_enum_groups(smb_cli, domain, &sid1, srv_name,
+	msrpc_sam_enum_groups(srv_name, domain, &sid1, 
 	            &sam, &num_sam_entries,
 	            sam_display_group,
 	            request_group_info  ? sam_display_group_info    : NULL,
@@ -2562,7 +2449,7 @@ void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Enumerate Domains\n");
 
-	msrpc_sam_enum_domains(smb_cli, srv_name,
+	msrpc_sam_enum_domains(srv_name,
 	            &sam, &num_sam_entries,
 	            sam_display_domain);
 
