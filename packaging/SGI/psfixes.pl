@@ -18,7 +18,7 @@ while (<>) {
 	    print;
     }
 # remove VM test
-    elsif (/^\/VM?/) {
+    elsif (/^\/VM\?/) {
 	print "/VM? { pop } bind def\n";
 	do {
 	    $_ = <>;
