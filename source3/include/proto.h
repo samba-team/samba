@@ -919,7 +919,8 @@ char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, i
 void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
-				char arc4_lm_owf[16], char arc4_nt_owf[16]);
+				char *sess_key,
+				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
 char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
 void make_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
