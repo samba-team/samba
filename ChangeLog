@@ -1,5 +1,11 @@
 Sun Aug 31 17:15:49 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/hprop.h: Change port to 754.
+
+	* kdc/hpropd.c: Verify who tries to transmit a database.
+
+	* appl/popper: Use getarg and krb5_log.
+
 	* lib/krb5/get_port.c: Add context parameter. Now takes port in
  	host byte order.
 
