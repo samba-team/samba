@@ -515,6 +515,49 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 
 
 /****************************************************************************
+send a qfileinfo QUERY_FILE_NAME_INFO call
+****************************************************************************/
+BOOL cli_qfilename(struct cli_state *cli, int fnum, 
+		   pstring name)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QFILEINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	param_len = 4;
+	memset(param, 0, param_len);
+	SSVAL(param, 0, fnum);
+	SSVAL(param, 2, SMB_QUERY_FILE_NAME_INFO);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+                            NULL,                           /* name */
+                            -1, 0,                          /* fid, flags */
+                            &setup, 1, 0,                   /* setup, length, max */
+                            param, param_len, 2,            /* param, length, max */
+                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                           )) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                               &rparam, &param_len,
+                               &rdata, &data_len)) {
+		return False;
+	}
+
+	if (!rdata || data_len < 4) {
+		return False;
+	}
+
+	clistr_pull(cli, name, rdata+4, sizeof(pstring), IVAL(rdata, 0), STR_UNICODE);
+
+	return True;
+}
+
+
+/****************************************************************************
 send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
