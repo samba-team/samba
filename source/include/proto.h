@@ -629,7 +629,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 /*The following definitions come from  ntclient.c  */
 
 BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain,
+				char *myhostname, char *domain, fstring mach_acct,
 				fstring mach_pwd, fstring new_mach_pwd);
 BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 				char *myhostname,
@@ -795,6 +795,16 @@ BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
 void make_q_logon_ctrl2(LSA_Q_LOGON_CTRL2 *q_l, char *server_name,
 			uint32 function_code);
 char* lsa_io_q_logon_ctrl2(BOOL io, LSA_Q_LOGON_CTRL2 *q_l, char *q, char *base, int align, int depth);
+void make_r_logon_ctrl2(LSA_R_LOGON_CTRL2 *r_l, uint32 query_level,
+				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
+				uint32 tc_status, char *trusted_domain_name);
+char* lsa_io_r_logon_ctrl2(BOOL io, LSA_R_LOGON_CTRL2 *r_l, char *q, char *base, int align, int depth);
+void make_r_trust_dom(LSA_R_TRUST_DOM_LIST *r_t,
+			uint32 num_doms, char *dom_name);
+char* lsa_io_r_trust_dom(BOOL io, LSA_R_TRUST_DOM_LIST *r_t, char *q, char *base, int align, int depth);
+void make_q_trust_dom(LSA_Q_TRUST_DOM_LIST *q_l, char *server_name,
+			uint32 function_code);
+char* lsa_io_q_trust_dom(BOOL io, LSA_Q_TRUST_DOM_LIST *q_l, char *q, char *base, int align, int depth);
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 			uint32 attributes, uint32 sec_qos,
 			uint32 desired_access);
@@ -1046,6 +1056,13 @@ char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, 
 char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align, int depth);
 char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align, int depth);
 char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align, int depth);
+void make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts);
+char* smb_io_netinfo_3(BOOL io, NETLOGON_INFO_3 *info, char *q, char *base, int align, int depth);
+void make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status);
+char* smb_io_netinfo_1(BOOL io, NETLOGON_INFO_1 *info, char *q, char *base, int align, int depth);
+void make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
+				uint32 tc_status, char *trusted_dc_name);
+char* smb_io_netinfo_2(BOOL io, NETLOGON_INFO_2 *info, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */
 

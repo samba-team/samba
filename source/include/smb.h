@@ -263,6 +263,23 @@ typedef fstring string;
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
+/* RPC_IFACE */
+typedef struct rpc_iface_info
+{
+  uint8 data[16];    /* 16 bytes of rpc interface identification */
+  uint32 version;    /* the interface version number */
+
+} RPC_IFACE;
+
+struct pipe_id_info
+{
+	char *client_pipe;
+	RPC_IFACE abstr_syntax; /* this one is the abstract syntax id */
+
+	char *server_pipe;  /* this one is the secondary syntax name */
+	RPC_IFACE trans_syntax; /* this one is the primary syntax id */
+};
+
 /* NETLOGON opcodes and data structures */
 
 #define NET_QUERYFORPDC	     7 /* Query for PDC */

@@ -40,12 +40,11 @@ extern pstring workgroup;
  check workstation trust account status
  ************************************************************************/
 BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain,
+				char *myhostname, char *domain, fstring mach_acct,
 				fstring mach_pwd, fstring new_mach_pwd)
 {
 	pstring tmp;
 	struct cli_state wksta_trust;
-	fstring mach_acct;
 	uchar lm_owf_mach_pwd[16];
 	uchar nt_owf_mach_pwd[16];
 	uchar lm_sess_pwd[24];
@@ -55,31 +54,24 @@ BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
 	char *start_mach_pwd;
 	char *change_mach_pwd;
 
-	fstrcpy(mach_acct, myhostname);
+	/* initial machine password */
+	fstrcpy(mach_pwd, myhostname);
 	strlower(mach_pwd);
 
-	fstrcpy(mach_pwd , myhostname);
-	strcat(mach_acct, "$");
-	strupper(mach_acct);
-
-	printf("Enter Workstation Trust Account password for [%s].\nDefault is [%s]. ",
+	sprintf(tmp, "Enter Workstation Trust Account password for [%s].\nDefault is [%s].\nPassword:",
 				mach_acct, mach_pwd);
 
-	start_mach_pwd = (char*)getpass("Password:");
+	start_mach_pwd = (char*)getpass(tmp);
 
 	if (start_mach_pwd[0] != 0)
 	{
 		fstrcpy(mach_pwd, start_mach_pwd);
 	}
-	else
-	{
-		mach_pwd[0] = 0;
-	}
 
-	printf("Enter new Workstation Trust Account password for [%s]\nPress Return to leave at old value. ",
+	sprintf(tmp, "Enter new Workstation Trust Account password for [%s]\nPress Return to leave at old value.\nNew Password:",
 				mach_acct);
 
-	change_mach_pwd = (char*)getpass("New Password:");
+	change_mach_pwd = (char*)getpass(tmp);
 
 	if (change_mach_pwd[0] != 0)
 	{
@@ -197,32 +189,6 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
 
-#if 0
-	static char trn_data[16] =
-	{
-		0x04, 0x5d, 0x88, 0x8a,
-		0xeb, 0x1c, 0xc9, 0x11,
-		0x9f, 0xe8, 0x08, 0x00,
-		0x2b, 0x10, 0x48, 0x60
-	};
-
-	static char abs_data[16] = 
-	{
-		0xc8, 0x4f, 0x32, 0x4b,
-		0x70, 0x16, 0xd3, 0x01,
-		0x12, 0x78, 0x5a, 0x47,
-		0xbf, 0x6e, 0xe1, 0x88
-	};
-#endif
-
-	static char abs_data[16] = 
-	{
-		0x78, 0x57, 0x34, 0x12,
-		0x34, 0x12, 0xcd, 0xab,
-		0xef, 0x00, 0x01, 0x23,
-		0x45, 0x67, 0x89, 0xab
-	};
-
 	/* received from LSA Query Info Policy, level 5 */
 	fstring level5_domain_name;
 	pstring level5_domain_sid;
@@ -239,6 +205,11 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 
 	zerotime.time = 0;
 
+	/* machine account name */
+	fstrcpy(mach_acct, myhostname);
+	strcat(mach_acct, "$");
+	strupper(mach_acct);
+
 	inbuf  = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 	outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
@@ -254,7 +225,10 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 	fstrcpy(mach_pwd, myhostname);
 	strlower(mach_pwd);
 
-	wksta_trust_account_check(dest_ip, dest_host, myhostname, workgroup, mach_pwd, new_mach_pwd);
+	/* side-effect is to get a new workstation trust account password */
+	wksta_trust_account_check(dest_ip, dest_host,
+				myhostname, workgroup, mach_acct,
+				mach_pwd, new_mach_pwd);
 
 
 	/******************** Open the \PIPE\lsarpc *******************/
@@ -279,25 +253,7 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 
 	DEBUG(4,("LSA RPC Bind[%x]\n", fnum));
 
-#if 0
-	for (i = 0; i < sizeof(trn_data); i++)
-	{
-		trn_data[i] = 2 * i;
-	}
-
-	for (i = 0; i < sizeof(abs_data); i++)
-	{
-		abs_data[i] = (i*2) + ((i*2+1) << 4);
-	}
-
-	make_rpc_iface(&transfer, trn_data, 0x2);
-
-#endif
-
-	/* create interface UUIDs. */
-	make_rpc_iface(&abstract, abs_data, 0x0);
-
-	if (!rpc_pipe_bind(PIPE_LSARPC, fnum, 0x3b866ecd, &abstract, &transfer))
+	if (!rpc_pipe_bind(PIPE_LSARPC, fnum, ++call_id, &abstract, &transfer))
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -354,38 +310,6 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 	
 
 
-	/************ Long-term Session key (default) **********/
-
-	{
-		char lm_owf_mach_pwd[16];
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
-#endif
-		nt_lm_owf_gen(    mach_pwd, nt_owf_mach_pwd    , lm_owf_mach_pwd     );
-	}
-
-#ifdef DEBUG_PASSWORD
-	dump_data(6, nt_owf_mach_pwd, 16);
-#endif
-
-	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, nt_owf_mach_pwd, sess_key);
-
-	/*********** next new trust account password ************/
-	{
-		char lm_owf_new_mach_pwd[16];
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("generating nt owf from new     machine pwd: %s\n", new_mach_pwd));
-#endif
-		nt_lm_owf_gen(new_mach_pwd, nt_owf_new_mach_pwd, lm_owf_new_mach_pwd);
-	}
-
-#ifdef DEBUG_PASSWORD
-	dump_data(6, nt_owf_new_mach_pwd, 16);
-#endif
-
-
-
 	/******************* open the \PIPE\NETLOGON file *****************/
 
 	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
@@ -432,6 +356,24 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 		return False;
 	}
 
+	/**************** Long-term Session key **************/
+
+	{
+		char lm_owf_mach_pwd[16];
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
+#endif
+		nt_lm_owf_gen(    mach_pwd, nt_owf_mach_pwd    , lm_owf_mach_pwd     );
+	}
+
+#ifdef DEBUG_PASSWORD
+	dump_data(6, nt_owf_mach_pwd, 16);
+#endif
+
+	/* calculate the session key */
+	cred_session_key(&clnt_chal, &srv_chal, nt_owf_mach_pwd, sess_key);
+
+
 	/******************* Authenticate 2 ********************/
 
 	/* calculate auth-2 credentials */
@@ -448,21 +390,34 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 
 	/**************** Net Server Password Set **************/
 
-	clnt_cred.timestamp.time = srv_pwset_clnt_cred.timestamp.time = time(NULL);
-
-	/* calculate sam logon credentials, using the auth2 client challenge */
-	cred_create(sess_key, &(clnt_cred.challenge), srv_pwset_clnt_cred.timestamp,
-	                                  &(srv_pwset_clnt_cred.challenge));
-
-	/* send client srv_pwset challenge; receive a srv_pwset challenge */
-	if (!do_lsa_srv_pwset(fnum, ++call_id, sess_key, 
-	                  dest_host, mach_acct, 2, myhostname,
-	                  &srv_pwset_clnt_cred, &srv_pwset_srv_cred,
-	                  nt_owf_new_mach_pwd))
+	if (new_mach_pwd[0] != 0)
 	{
-		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
-		free(inbuf); free(outbuf);
-		return False;
+		char lm_owf_new_mach_pwd[16];
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("generating nt owf from new     machine pwd: %s\n", new_mach_pwd));
+#endif
+		nt_lm_owf_gen(new_mach_pwd, nt_owf_new_mach_pwd, lm_owf_new_mach_pwd);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(6, nt_owf_new_mach_pwd, 16);
+#endif
+
+		clnt_cred.timestamp.time = srv_pwset_clnt_cred.timestamp.time = time(NULL);
+
+		/* calculate sam logon credentials, using the auth2 client challenge */
+		cred_create(sess_key, &(clnt_cred.challenge), srv_pwset_clnt_cred.timestamp,
+										  &(srv_pwset_clnt_cred.challenge));
+
+		/* send client srv_pwset challenge; receive a srv_pwset challenge */
+		if (!do_lsa_srv_pwset(fnum, ++call_id, sess_key, 
+						  dest_host, mach_acct, 2, myhostname,
+						  &srv_pwset_clnt_cred, &srv_pwset_srv_cred,
+						  nt_owf_new_mach_pwd))
+		{
+			cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+			free(inbuf); free(outbuf);
+			return False;
+		}
 	}
 
 	/****************** SAM Info Preparation *******************/
@@ -540,3 +495,4 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 	return True;
 }
 #endif /* NTDOMAIN */
+

@@ -2880,7 +2880,7 @@ struct
     { "TransactNmPipe",     "samr",	"lsass",	0x26,	api_samrTNP },
     { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
     { "TransactNmPipe",     "wkssvc",	"ntsvcs",	0x26,	api_wkssvcTNP },
-    { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
+    { "TransactNmPipe",     "NETLOGON",	"lsass",	0x26,	api_netlogrpcTNP },
     { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
 #else
     { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },

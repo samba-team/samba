@@ -1475,4 +1475,3 @@ BOOL check_hosts_equiv(char *user)
   return(False);
 }
 
-

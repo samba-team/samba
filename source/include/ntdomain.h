@@ -59,16 +59,17 @@ enum RPC_PKT_TYPE
 #define SAMR_UNKNOWN_34     0x34
 #define SAMR_OPEN_POLICY    0x39
 
-#define LSA_OPENPOLICY      0x2c
-#define LSA_QUERYINFOPOLICY 0x07
-#define LSA_ENUMTRUSTDOM    0x0d
-#define LSA_REQCHAL         0x04
-#define LSA_SRVPWSET        0x06
-#define LSA_SAMLOGON        0x02
-#define LSA_SAMLOGOFF       0x03
-#define LSA_LOGON_CTRL2     0x0e
-#define LSA_AUTH2           0x0f
-#define LSA_CLOSE           0x00
+#define LSA_OPENPOLICY             0x2c
+#define LSA_QUERYINFOPOLICY        0x07
+#define LSA_ENUMTRUSTDOM           0x0d
+#define LSA_REQCHAL                0x04
+#define LSA_SRVPWSET               0x06
+#define LSA_SAMLOGON               0x02
+#define LSA_SAMLOGOFF              0x03
+#define LSA_LOGON_CTRL2            0x0e
+#define LSA_TRUST_DOM_LIST   0x13
+#define LSA_AUTH2                  0x0f
+#define LSA_CLOSE                  0x00
 
 /* XXXX these are here to get a compile! */
 
@@ -319,21 +320,6 @@ typedef struct rpc_hdr_rr_info
 
 } RPC_HDR_RR;
 
-/* the interfaces are numbered. as yet I haven't seen more than one interface
- * used on the same pipe name
- * srvsvc
- *   abstract (0x4B324FC8, 0x01D31670, 0x475A7812, 0x88E16EBF, 0x00000003)
- *   transfer (0x8A885D04, 0x11C91CEB, 0x0008E89F, 0x6048102B, 0x00000002)
- */
-/* RPC_IFACE */
-typedef struct rpc_iface_info
-{
-  uint8 data[16];    /* 16 bytes of number */
-  uint32 version;    /* the interface number */
-
-} RPC_IFACE;
-
-
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
  * "srvsvc", "\\PIPE\\ntsvcs"
@@ -435,6 +421,13 @@ typedef struct object_attributes_info
 
 } LSA_OBJ_ATTR;
 
+/********************************************************
+ Logon Control Query
+
+ query_level 0x1 - pdc status
+ query_level 0x3 - number of logon attempts.
+
+ ********************************************************/
 /* LSA_Q_LOGON_CTRL2 - LSA Netr Logon Control 2*/
 typedef struct lsa_q_logon_ctrl2_info
 {
@@ -442,18 +435,87 @@ typedef struct lsa_q_logon_ctrl2_info
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
 	
 	uint32       function_code; /* 0x1 */
-	uint32       query_level;   /* 0x1 */
+	uint32       query_level;   /* 0x1, 0x3 */
 	uint32       switch_value;  /* 0x1 */
 
 } LSA_Q_LOGON_CTRL2;
 
+/* NETLOGON_INFO_1 - pdc status info, i presume */
+typedef struct netlogon_1_info
+{
+	uint32 flags;            /* 0x0 - undocumented */
+	uint32 pdc_status;       /* 0x0 - undocumented */
+
+} NETLOGON_INFO_1;
+
+/* NETLOGON_INFO_2 - pdc status info, plus trusted domain info */
+typedef struct netlogon_2_info
+{
+	uint32  flags;            /* 0x0 - undocumented */
+	uint32  pdc_status;       /* 0x0 - undocumented */
+	uint32  ptr_trusted_dc_name; /* pointer to trusted domain controller name */
+	uint32  tc_status;           /* 0x051f - ERROR_NO_LOGON_SERVERS */
+	UNISTR2 uni_trusted_dc_name; /* unicode string - trusted dc name */
+
+} NETLOGON_INFO_2;
+
+/* NETLOGON_INFO_3 - logon status info, i presume */
+typedef struct netlogon_3_info
+{
+	uint32 flags;            /* 0x0 - undocumented */
+	uint32 logon_attempts;   /* number of logon attempts */
+	uint32 reserved_1;       /* 0x0 - undocumented */
+	uint32 reserved_2;       /* 0x0 - undocumented */
+	uint32 reserved_3;       /* 0x0 - undocumented */
+	uint32 reserved_4;       /* 0x0 - undocumented */
+	uint32 reserved_5;       /* 0x0 - undocumented */
+
+} NETLOGON_INFO_3;
+
+/*******************************************************
+ Logon Control Response
+
+ switch_value is same as query_level in request 
+ *******************************************************/
+
 /* LSA_R_LOGON_CTRL2 - response to LSA Logon Control2 */
 typedef struct lsa_r_logon_ctrl2_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	uint32       switch_value;  /* 0x1, 0x3 */
+	uint32       ptr;
+
+	union
+	{
+		NETLOGON_INFO_1 info1;
+		NETLOGON_INFO_2 info2;
+		NETLOGON_INFO_3 info3;
+
+	} logon;
+
 	uint32 status; /* return code */
 
 } LSA_R_LOGON_CTRL2;
+
+/* LSA_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
+typedef struct lsa_q_trust_dom_info
+{
+	uint32       ptr;             /* undocumented buffer pointer */
+	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	
+	uint32       function_code; /* 0x31 */
+
+} LSA_Q_TRUST_DOM_LIST;
+
+#define MAX_TRUST_DOMS 1
+
+/* LSA_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
+typedef struct lsa_r_trust_dom_info
+{
+	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
+
+	uint32 status; /* return code */
+
+} LSA_R_TRUST_DOM_LIST;
 
 /* LSA_Q_OPEN_POL - LSA Query Open Policy */
 typedef struct lsa_q_open_pol_info
@@ -470,7 +532,6 @@ typedef struct lsa_q_open_pol_info
 typedef struct lsa_r_open_pol_info
 {
 	LSA_POL_HND pol; /* policy handle */
-
 	uint32 status; /* return code */
 
 } LSA_R_OPEN_POL;
