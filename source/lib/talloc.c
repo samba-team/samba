@@ -464,7 +464,11 @@ char *talloc_strndup(TALLOC_CTX *t, const char *p, size_t n)
 
 	VA_COPY(ap2, ap);
 
-	s_len = strlen(s);
+	if (s) {
+		s_len = strlen(s);
+	} else {
+		s = 0;
+	}
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	s = talloc_realloc(t, s, s_len + len+1);
