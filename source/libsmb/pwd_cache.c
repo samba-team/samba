@@ -166,8 +166,8 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
 {
 	pwd_init(pwd);
 
-	Memcpy(pwd->smb_lm_pwd, lm_pwd, 16);
-	Memcpy(pwd->smb_nt_pwd, nt_pwd, 16);
+	memcpy_zero(pwd->smb_lm_pwd, lm_pwd, 16);
+	memcpy_zero(pwd->smb_nt_pwd, nt_pwd, 16);
 
 	pwd->null_pwd = False;
 	pwd->cleartext = False;
@@ -181,8 +181,8 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
 void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16],
 		      uchar nt_pwd[16])
 {
-	Memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
-	Memcpy(nt_pwd, pwd->smb_nt_pwd, 16);
+	memcpy_zero(lm_pwd, pwd->smb_lm_pwd, 16);
+	memcpy_zero(nt_pwd, pwd->smb_nt_pwd, 16);
 }
 
 /****************************************************************************
@@ -325,8 +325,8 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 		return;
 	}
 
-	Memcpy(lm_owf, pwd->smb_lm_owf, 24);
-	Memcpy(nt_owf, pwd->smb_nt_owf, pwd->nt_owf_len);
+	memcpy_zero(lm_owf, pwd->smb_lm_owf, 24);
+	memcpy_zero(nt_owf, pwd->smb_nt_owf, pwd->nt_owf_len);
 
 	if (nt_owf_len != NULL)
 	{

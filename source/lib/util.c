@@ -1688,7 +1688,7 @@ void *Realloc(void *p, size_t size)
 /****************************************************************************
  protected memcpy that deals with NULL parameters.
  ****************************************************************************/
-BOOL Memcpy(void *to, const void *from, size_t size)
+BOOL memcpy_zero(void *to, const void *from, size_t size)
 {
 	if (to == NULL)
 	{

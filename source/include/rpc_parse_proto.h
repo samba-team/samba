@@ -177,62 +177,6 @@ BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
 		    prs_struct *ps, int depth);
 
-/*The following definitions come from  rpc_parse/parse_misc.c  */
-
-BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
-BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
-uint32 get_enum_hnd(ENUM_HND *enh);
-BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
-BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
-BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
-BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-BOOL smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
-BOOL make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
-BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
-BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr(UNIHDR *hdr, int len);
-BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
-BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
-BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
-BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
-BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
-BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
-BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
-BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
-BOOL make_unistr(UNISTR *str, char *buf);
-BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
-BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
-BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len);
-BOOL make_buffer3_hex(BUFFER3 *str, char *buf);
-BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
-BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
-BOOL make_buffer4_str(BUFFER4 *str, const char *buf, int len);
-BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
-BOOL init_buffer5(BUFFER5 **str);
-BOOL clear_buffer5(BUFFER5 **str);
-BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
-BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
-BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
-BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
-BOOL make_string2(STRING2 *str, const char *buf, int len);
-BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
-BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
-BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
-BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
-BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
-
 /*The following definitions come from  rpc_parse/parse_netsec.c  */
 
 BOOL rpc_hdr_netsec_auth_chk(RPC_HDR_AUTH * rai);
@@ -369,55 +313,6 @@ BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_q, prs_struct *ps,
 		       int depth);
 BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_q, prs_struct *ps,
 		       int depth);
-
-/*The following definitions come from  rpc_parse/parse_rpc.c  */
-
-BOOL make_rpc_hdr(RPC_HDR * hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
-		  uint32 call_id, int frag_len, int auth_len);
-BOOL smb_io_rpc_hdr(char *desc, RPC_HDR * rpc, prs_struct * ps, int depth);
-BOOL is_complete_pdu(prs_struct * ps);
-BOOL smb_io_rpc_hdr_nack(char *desc, RPC_HDR_NACK * rpc, prs_struct * ps,
-			 int depth);
-BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
-			  int depth);
-BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
-		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint8 num_elements, uint16 context_id,
-		     uint8 num_syntaxes, RPC_IFACE * abstract,
-		     RPC_IFACE * transfer);
-BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
-		       int depth);
-BOOL make_rpc_hdr_ba(RPC_HDR_BA * rpc,
-		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     const char *pipe_addr,
-		     uint8 num_results, uint16 result, uint16 reason,
-		     RPC_IFACE * transfer);
-BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA * rpc, prs_struct * ps,
-		       int depth);
-BOOL make_rpc_hdr_req(RPC_HDR_REQ * hdr, uint32 alloc_hint, uint16 vuid,
-		      uint16 opnum);
-BOOL smb_io_rpc_hdr_req(char *desc, RPC_HDR_REQ * rpc, prs_struct * ps,
-			int depth);
-BOOL smb_io_rpc_hdr_resp(char *desc, RPC_HDR_RESP * rpc, prs_struct * ps,
-			 int depth);
-BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA * rai,
-			uint16 max_tsize, uint16 max_rsize,
-			uint8 auth_type, uint8 auth_level,
-			uint8 stub_type_len);
-BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA * rai, prs_struct * ps,
-			  int depth);
-BOOL make_rpc_hdr_auth(RPC_HDR_AUTH * rai,
-		       uint8 auth_type, uint8 auth_level,
-		       uint8 stub_type_len, uint32 ptr);
-BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH * rai, prs_struct * ps,
-			 int depth);
-BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER * rav,
-			    char *signature, uint32 msg_type);
-BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER * rav,
-			      prs_struct * ps, int depth);
-BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER * rav,
-			   char *signature, uint32 msg_type);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 

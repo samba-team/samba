@@ -4962,9 +4962,9 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 	DEBUG(5, ("make_sam_user_info12\n"));
 
 	usr->lm_pwd_active =
-		Memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd)) ? 1 : 0;
+		memcpy_zero(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd)) ? 1 : 0;
 	usr->nt_pwd_active =
-		Memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd)) ? 1 : 0;
+		memcpy_zero(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd)) ? 1 : 0;
 
 	return True;
 }
@@ -5260,7 +5260,7 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5349,7 +5349,7 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5528,8 +5528,8 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	make_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
 	make_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
 
-	Memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
-	Memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
+	memcpy_zero(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
+	memcpy_zero(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
 
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
@@ -5556,7 +5556,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }
@@ -5651,7 +5651,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	Memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
 
 	return True;
 }

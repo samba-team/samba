@@ -245,8 +245,8 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT * tdb,
 		return False;
 	}
 
-	Memcpy(usr.lm_pwd, lm_pwd, sizeof(usr.lm_pwd));
-	Memcpy(usr.nt_pwd, nt_pwd, sizeof(usr.nt_pwd));
+	memcpy_zero(usr.lm_pwd, lm_pwd, sizeof(usr.lm_pwd));
+	memcpy_zero(usr.nt_pwd, nt_pwd, sizeof(usr.nt_pwd));
 
 	if (!tdb_store_user(tdb, &usr))
 	{

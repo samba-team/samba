@@ -142,10 +142,10 @@ BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
 	if (chk == NULL)
 		return False;
 
-	Memcpy(chk->sig, sig, sizeof(chk->sig));
-	Memcpy(chk->data1, data1, sizeof(chk->data1));
-	Memcpy(chk->data3, data3, sizeof(chk->data3));
-	Memcpy(chk->data8, data8, sizeof(chk->data8));
+	memcpy_zero(chk->sig, sig, sizeof(chk->sig));
+	memcpy_zero(chk->data1, data1, sizeof(chk->data1));
+	memcpy_zero(chk->data3, data3, sizeof(chk->data3));
+	memcpy_zero(chk->data8, data8, sizeof(chk->data8));
 
 	return True;
 }

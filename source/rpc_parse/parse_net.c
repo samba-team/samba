@@ -162,7 +162,7 @@ BOOL make_clnt_info2(DOM_CLNT_INFO2 * clnt,
 
 	make_clnt_srv(&(clnt->login), logon_srv, comp_name);
 
-	clnt->ptr_cred = Memcpy(&clnt->cred, clnt_cred, sizeof(clnt->cred));
+	clnt->ptr_cred = memcpy_zero(&clnt->cred, clnt_cred, sizeof(clnt->cred));
 
 	return True;
 }
@@ -205,7 +205,7 @@ BOOL make_clnt_info(DOM_CLNT_INFO * clnt,
 
 	make_log_info(&(clnt->login), logon_srv, acct_name, sec_chan,
 		      comp_name);
-	Memcpy(&clnt->cred, cred, sizeof(clnt->cred));
+	memcpy_zero(&clnt->cred, cred, sizeof(clnt->cred));
 
 	return True;
 }
@@ -240,7 +240,7 @@ BOOL make_owf_info(OWF_INFO * hash, const uint8 data[16])
 
 	DEBUG(5, ("make_owf_info: %d\n", __LINE__));
 
-	Memcpy(hash->data, data, sizeof(hash->data));
+	memcpy_zero(hash->data, data, sizeof(hash->data));
 
 	return True;
 }
@@ -422,7 +422,7 @@ BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 * r_l,
 
 	r_l->switch_value = switch_value;	/* should only be 0x1 */
 	r_l->status = status;
-	Memcpy(&r_l->logon, logon_info, sizeof(NETLOGON_INFO));
+	memcpy_zero(&r_l->logon, logon_info, sizeof(NETLOGON_INFO));
 
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
@@ -1194,7 +1194,7 @@ BOOL make_sam_info(DOM_SAM_INFO * sam,
 	make_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
 
 	sam->ptr_rtn_cred =
-		Memcpy(&sam->rtn_cred, rtn_cred, sizeof(sam->rtn_cred));
+		memcpy_zero(&sam->rtn_cred, rtn_cred, sizeof(sam->rtn_cred));
 	sam->logon_level = logon_level;
 	sam->ctr = ctr;
 
@@ -1342,14 +1342,14 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	memcpy_zero(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	Memcpy(usr->padding, padding, sizeof(usr->padding));
+	memcpy_zero(usr->padding, padding, sizeof(usr->padding));
 
 	copy_unistr2(&(usr->uni_user_name), user_name);
 	copy_unistr2(&(usr->uni_full_name), full_name);
@@ -1440,14 +1440,14 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	memcpy_zero(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	Memcpy(usr->padding, padding, sizeof(usr->padding));
+	memcpy_zero(usr->padding, padding, sizeof(usr->padding));
 
 	make_unistr2(&(usr->uni_user_name), user_name, len_user_name);
 	make_unistr2(&(usr->uni_full_name), full_name, len_full_name);
@@ -1693,14 +1693,14 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	memcpy_zero(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	Memcpy(usr->padding, padding, sizeof(usr->padding));
+	memcpy_zero(usr->padding, padding, sizeof(usr->padding));
 
 	num_other_sids =
 		make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
@@ -1799,14 +1799,14 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 	usr->buffer_groups = 1;	/* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	Memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	memcpy_zero(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
 	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	Memcpy(usr->padding, padding, sizeof(usr->padding));
+	memcpy_zero(usr->padding, padding, sizeof(usr->padding));
 
 	num_other_sids =
 		make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);

@@ -584,7 +584,7 @@ void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p, size_t size);
-BOOL Memcpy(void *to, const void *from, size_t size);
+BOOL memcpy_zero(void *to, const void *from, size_t size);
 void safe_free(void *p);
 BOOL get_myname(char *my_name, struct in_addr *ip);
 int interpret_protocol(char *str, int def);
@@ -1794,11 +1794,12 @@ enum winbindd_result winbindd_getgrent(struct winbindd_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_surs.c  */
 
-BOOL winbindd_surs_init(void);
-BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, 
+BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
+                                     DOM_SID *sid, 
                                      enum SID_NAME_USE name_type,
                                      POSIX_ID *id);
-BOOL winbindd_surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create);
+BOOL winbindd_surs_unixid_to_sam_sid(struct winbindd_domain *domain,
+                                     POSIX_ID *id, DOM_SID *sid);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
@@ -1810,39 +1811,36 @@ enum winbindd_result winbindd_getpwent(struct winbindd_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_util.c  */
 
-BOOL lookup_domain_sid(fstring domain_name, DOM_SID *domain_sid,
-                       fstring domain_controller);
-BOOL winbindd_lookup_by_name(char *system_name, DOM_SID *level5_sid,
-                             fstring name, DOM_SID *sid,
-                             enum SID_NAME_USE *type);
-int winbindd_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
-                           DOM_SID *sid, char *name,
-                           enum SID_NAME_USE *type);
-int winbindd_lookup_userinfo(char *system_name, DOM_SID *dom_sid,
-                             uint32 user_rid, POLICY_HND *sam_dom_handle,
-                             SAM_USERINFO_CTR *user_info);
-int winbindd_lookup_groupinfo(char *system_name, DOM_SID *dom_sid,
+BOOL lookup_domain_sid(fstring domain_name, struct winbindd_domain *domain);
+BOOL get_domain_info(struct winbindd_domain *domain);
+BOOL open_lsa_handle(struct winbindd_domain *domain);
+BOOL open_sam_handles(struct winbindd_domain *domain);
+BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
+                                 fstring name, DOM_SID *sid,
+                                 enum SID_NAME_USE *type);
+BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
+                                 DOM_SID *sid, char *name,
+                                 enum SID_NAME_USE *type);
+BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
+                              uint32 user_rid, SAM_USERINFO_CTR *user_info);
+BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
                               uint32 group_rid, GROUP_INFO_CTR *info);
-int winbindd_lookup_groupmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 group_rid, POLICY_HND *sam_dom_handle,
-                             uint32 *num_names, uint32 **rid_mem, 
-                             char ***names, uint32 **name_types);
-int winbindd_lookup_aliasmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 alias_rid, POLICY_HND *sam_dom_handle,
-                             uint32 *num_names, DOM_SID ***sids, 
-                             char ***names, uint32 **name_types);
-int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
+BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
+                              uint32 group_rid, uint32 *num_names, 
+                              uint32 **rid_mem, char ***names, 
+                              enum SID_NAME_USE **name_types);
+int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
+                             uint32 alias_rid, uint32 *num_names, 
+                             DOM_SID ***sids, char ***names, 
+                             enum SID_NAME_USE **name_types);
+int winbindd_lookup_aliasinfo(struct winbindd_domain *domain,
                               uint32 alias_rid, ALIAS_INFO_CTR *info);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
-BOOL find_domain_sid_from_name(char *domain_name, DOM_SID *domain_sid, 
-                               char *domain_controller);
-BOOL find_domain_sid_from_uid(uid_t uid, DOM_SID *domain_sid,
-                              char *domain_name,
-                              char *domain_controller);
-BOOL find_domain_sid_from_gid(gid_t gid, DOM_SID *domain_sid,
-                              char *domain_controller,
-                              char *domain_name);
+struct winbindd_domain *find_domain_sid_from_name(char *domain_name);
+struct winbindd_domain *find_domain_from_uid(uid_t uid);
+struct winbindd_domain *find_domain_from_gid(gid_t gid);
 void free_getent_state(struct getent_state *state);
+BOOL winbindd_param_init(void);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -2383,6 +2381,11 @@ int cups_printername_ok(char *name);
 void sysv_printer_fn(void (*fn)(char *, char *));
 int sysv_printername_ok(char *name);
 
+/*The following definitions come from  printing/printfsp.c  */
+
+files_struct *print_fsp_open(connection_struct *conn,char *jobname);
+void print_fsp_end(files_struct *fsp);
+
 /*The following definitions come from  printing/printing.c  */
 
 BOOL print_backend_init(void);
@@ -2405,8 +2408,6 @@ int print_queue_snum(char *qname);
 BOOL print_queue_pause(int snum);
 BOOL print_queue_resume(int snum);
 BOOL print_queue_purge(int snum);
-files_struct *print_fsp_open(connection_struct *conn,char *jobname);
-void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  profile/profile.c  */
 

@@ -566,8 +566,8 @@ static BOOL check_oem_password(const char *user,
 
 	BOOL nt_pass_set = (_ntdata != NULL && nthash != NULL);
 
-	Memcpy(lmdata, _lmdata, sizeof(lmdata));
-	Memcpy(ntdata, _ntdata, sizeof(ntdata));
+	memcpy_zero(lmdata, _lmdata, sizeof(lmdata));
+	memcpy_zero(ntdata, _ntdata, sizeof(ntdata));
 
 	become_root(False);
 	(*psmbpw) = smbpw = getsmbpwnam(user);
