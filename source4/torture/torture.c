@@ -3993,6 +3993,7 @@ static struct {
         {"RPC-SPOOLSS", torture_rpc_spoolss, 0},
         {"RPC-SAMR", torture_rpc_samr, 0},
         {"RPC-WKSSVC", torture_rpc_wkssvc, 0},
+        {"RPC-SRVSVC", torture_rpc_srvsvc, 0},
 	{NULL, NULL, 0}};
 
 
