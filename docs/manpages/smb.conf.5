@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "14 August 2001" "" ""
+.TH "SMB.CONF" "5" "22 August 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -368,7 +368,7 @@ the Internet name of the client machine.
 the name of your NIS home directory server. 
 This is obtained from your NIS auto.map entry. If you have 
 not compiled Samba with the \fB--with-automount\fR 
-option then this value will be the same as %.
+option then this value will be the same as %L.
 .TP
 \fB%p\fR
 the path of the service's home directory, 
@@ -1282,9 +1282,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIset directory\fR
-.TP 0.2i
-\(bu
-\fIshare modes\fR
 .TP 0.2i
 \(bu
 \fIshort preserve case\fR
@@ -5849,29 +5846,6 @@ for details.
 
 Default: \fBset directory = no\fR
 .TP
-\fBshare modes (S)\fR
-This enables or disables the honoring of 
-the \fIshare modes\fR during a file open. These 
-modes are used by clients to gain exclusive read or write access 
-to a file.
-
-These open modes are not directly supported by UNIX, so
-they are simulated using shared memory, or lock files if your 
-UNIX doesn't support shared memory (almost all do).
-
-The share modes that are enabled by this option are 
-DENY_DOS, DENY_ALL,
-DENY_READ, DENY_WRITE,
-DENY_NONE and DENY_FCB.
-
-This option gives full share compatibility and enabled 
-by default.
-
-You should \fBNEVER\fR turn this parameter 
-off as many Windows applications will break if you do so.
-
-Default: \fBshare modes = yes\fR
-.TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 
 which conform to 8.3 syntax, that is all in upper case and of 
@@ -6840,12 +6814,13 @@ separator '/'.
 Note that the \fIcase sensitive\fR option 
 is applicable in vetoing files.
 
-One feature of the veto files parameter that it is important 
-to be aware of, is that if a directory contains nothing but files 
-that match the veto files parameter (which means that Windows/DOS 
-clients cannot ever see them) is deleted, the veto files within 
-that directory \fBare automatically deleted\fR along 
-with it, if the user has UNIX permissions to do so.
+One feature of the veto files parameter that it
+is important to be aware of is Samba's behaviour when
+trying to delete a directory. If a directory that is
+to be deleted contains nothing but veto files this
+deletion will \fBfail\fR unless you also set
+the \fIdelete veto files\fR parameter to
+\fIyes\fR.
 
 Setting this parameter will affect the performance 
 of Samba, as it will be forced to check all files and directories 
@@ -6890,7 +6865,7 @@ To cause Samba not to grant oplocks on these files you would use
 the line (either in the [global] section or in the section for 
 the particular NetBench share :
 
-Example: \fBveto oplock files = /*;.SEM/
+Example: \fBveto oplock files = /*.SEM/
 \fR.TP
 \fBvfs object (S)\fR
 This parameter specifies a shared object file that 

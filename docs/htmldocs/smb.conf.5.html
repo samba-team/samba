@@ -605,7 +605,7 @@ CLASS="VARIABLELIST"
 		not compiled Samba with the <EM
 >--with-automount</EM
 > 
-		option then this value will be the same as %.</P
+		option then this value will be the same as %L.</P
 ></DD
 ><DT
 >%p</DT
@@ -3982,18 +3982,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#SHAREMODES"
-><TT
-CLASS="PARAMETER"
-><I
->share modes</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
@@ -4248,7 +4236,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1385"
+NAME="AEN1381"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -15724,64 +15712,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="SHAREMODES"
-></A
->share modes (S)</DT
-><DD
-><P
->This enables or disables the honoring of 
-		the <TT
-CLASS="PARAMETER"
-><I
->share modes</I
-></TT
-> during a file open. These 
-		modes are used by clients to gain exclusive read or write access 
-		to a file.</P
-><P
->These open modes are not directly supported by UNIX, so
-		they are simulated using shared memory, or lock files if your 
-		UNIX doesn't support shared memory (almost all do).</P
-><P
->The share modes that are enabled by this option are 
-		<TT
-CLASS="CONSTANT"
->DENY_DOS</TT
->, <TT
-CLASS="CONSTANT"
->DENY_ALL</TT
->,
-		<TT
-CLASS="CONSTANT"
->DENY_READ</TT
->, <TT
-CLASS="CONSTANT"
->DENY_WRITE</TT
->,
-		<TT
-CLASS="CONSTANT"
->DENY_NONE</TT
-> and <TT
-CLASS="CONSTANT"
->DENY_FCB</TT
->.
-		</P
-><P
->This option gives full share compatibility and enabled 
-		by default.</P
-><P
->You should <EM
->NEVER</EM
-> turn this parameter 
-		off as many Windows applications will break if you do so.</P
-><P
->Default: <B
-CLASS="COMMAND"
->share modes = yes</B
-></P
-></DD
-><DT
-><A
 NAME="SHORTPRESERVECASE"
 ></A
 >short preserve case (S)</DT
@@ -17940,14 +17870,25 @@ CLASS="PARAMETER"
 > option 
 		is applicable in vetoing files.</P
 ><P
->One feature of the veto files parameter that it is important 
-		to be aware of, is that if a directory contains nothing but files 
-		that match the veto files parameter (which means that Windows/DOS 
-		clients cannot ever see them) is deleted, the veto files within 
-		that directory <EM
->are automatically deleted</EM
-> along 
-		with it, if the user has UNIX permissions to do so.</P
+>One feature of the veto files parameter that it
+		is important to be aware of is Samba's behaviour when
+		trying to delete a directory. If a directory that is
+		to be deleted contains nothing but veto files this
+		deletion will <EM
+>fail</EM
+> unless you also set
+		the <TT
+CLASS="PARAMETER"
+><I
+>delete veto files</I
+></TT
+> parameter to
+		<TT
+CLASS="PARAMETER"
+><I
+>yes</I
+></TT
+>.</P
 ><P
 >Setting this parameter will affect the performance 
 		of Samba, as it will be forced to check all files and directories 
@@ -18047,7 +17988,7 @@ CLASS="FILENAME"
 ><P
 >Example: <B
 CLASS="COMMAND"
->veto oplock files = /*;.SEM/
+>veto oplock files = /*.SEM/
 		</B
 ></P
 ></DD
@@ -18633,7 +18574,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5883"
+NAME="AEN5862"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18663,7 +18604,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5889"
+NAME="AEN5868"
 ></A
 ><H2
 >VERSION</H2
@@ -18674,7 +18615,7 @@ NAME="AEN5889"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5892"
+NAME="AEN5871"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18753,7 +18694,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5912"
+NAME="AEN5891"
 ></A
 ><H2
 >AUTHOR</H2

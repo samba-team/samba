@@ -856,7 +856,6 @@
 		<listitem><para><link linkend="ROOTPREEXECCLOSE"><parameter>root preexec close</parameter></link></para></listitem>
 		<listitem><para><link linkend="SECURITYMASK"><parameter>security mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="SETDIRECTORY"><parameter>set directory</parameter></link></para></listitem>
-		<listitem><para><link linkend="SHAREMODES"><parameter>share modes</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHORTPRESERVECASE"><parameter>short preserve case</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATUS"><parameter>status</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTLOCKING"><parameter>strict locking</parameter></link></para></listitem>
@@ -6509,34 +6508,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="SHAREMODES">share modes (S)</term>
-		<listitem><para>This enables or disables the honoring of 
-		the <parameter>share modes</parameter> during a file open. These 
-		modes are used by clients to gain exclusive read or write access 
-		to a file.</para>
-
-		<para>These open modes are not directly supported by UNIX, so
-		they are simulated using shared memory, or lock files if your 
-		UNIX doesn't support shared memory (almost all do).</para>
-
-		<para>The share modes that are enabled by this option are 
-		<constant>DENY_DOS</constant>, <constant>DENY_ALL</constant>,
-		<constant>DENY_READ</constant>, <constant>DENY_WRITE</constant>,
-		<constant>DENY_NONE</constant> and <constant>DENY_FCB</constant>.
-		</para>
-
-		<para>This option gives full share compatibility and enabled 
-		by default.</para>
-
-		<para>You should <emphasis>NEVER</emphasis> turn this parameter 
-		off as many Windows applications will break if you do so.</para>
-
-		<para>Default: <command>share modes = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="SHORTPRESERVECASE">short preserve case (S)</term>
@@ -7749,9 +7720,9 @@
 		is important to be aware of is Samba's behaviour when
 		trying to delete a directory. If a directory that is
 		to be deleted contains nothing but veto files this
-		deletion will <emph>fail</emph> unless you also set
-		the <parameter>delete veto files</param> parameter to
-		<parameter>yes</parameter>.
+		deletion will <emphasis>fail</emphasis> unless you also set
+		the <parameter>delete veto files</parameter> parameter to
+		<parameter>yes</parameter>.</para>
 
 		<para>Setting this parameter will affect the performance 
 		of Samba, as it will be forced to check all files and directories 
