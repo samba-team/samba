@@ -78,20 +78,30 @@
  * Thanks to Ollie Oldham <ollie.oldham@metro-optix.com> for spotting it.
  * few mods to make it easier to compile the tests.
  * addedd the "Ollie" test to the floating point ones.
+ *
+ * Martin Pool (mbp@samba.org) April 2003
+ *    Remove NO_CONFIG_H so that the test case can be built within a source
+ *    tree with less trouble.
+ *    Remove unnecessary SAFE_FREE() definition.
  **************************************************************/
 
-#ifndef NO_CONFIG_H /* for some tests */
+#ifndef NO_CONFIG_H
 #include "config.h"
 #else
 #define NULL 0
-#endif
-
-/* TODO: Perhaps always include config.h, but strip out the macros for
- * snprintf() etc when in test mode? */
+#endif 
 
 #ifdef TEST_SNPRINTF /* need math library headers for testing */
-#include <math.h>
-#endif
+
+/* In test mode, we pretend that this system doesn't have any snprintf
+ * functions, regardless of what config.h says. */
+#  undef HAVE_SNPRINTF
+#  undef HAVE_VSNPRINTF
+#  undef HAVE_C99_VSNPRINTF
+#  undef HAVE_ASPRINTF
+#  undef HAVE_VASPRINTF
+#  include <math.h>
+#endif /* TEST_SNPRINTF */
 
 #ifdef HAVE_STRING_H
 #include <string.h>
@@ -126,11 +136,6 @@
 #define LLONG long long
 #else
 #define LLONG long
-#endif
-
-/* free memory if the pointer is valid and zero the pointer */
-#ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
 #ifndef VA_COPY
@@ -1004,4 +1009,4 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 
 	return 0;
 }
-#endif /* SNPRINTF_TEST */
+#endif /* TEST_SNPRINTF */
