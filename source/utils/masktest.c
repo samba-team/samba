@@ -33,6 +33,7 @@ static BOOL old_list = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 static int verbose;
+static int die_on_error;
 
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(char *pattern, char *string)
@@ -327,7 +328,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	if (showall || strcmp(res1, res2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
 			 res1, res2, count, mask, file, long_name, short_name));
-		/* 		exit(1); */
+		if (die_on_error) exit(1);
 	}
 
 	cli_unlink(cli, file);
@@ -379,6 +380,8 @@ static void test_mask(int argc, char *argv[],
 		if (strcmp(file+l,".") == 0 || 
 		    strcmp(file+l,"..") == 0 ||
 		    strcmp(mask+l,"..") == 0) continue;
+
+		if (strspn(file+l, ".") == strlen(file+l)) continue;
 
 		testpair(cli, mask, file);
 	}
@@ -454,8 +457,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:v")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'E':
+			die_on_error = 1;
+			break;
 		case 'v':
 			verbose++;
 			break;
