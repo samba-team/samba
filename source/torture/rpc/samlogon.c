@@ -46,6 +46,7 @@ struct samlogon_state {
 	struct dcerpc_pipe *p;
 	int function_level;
 	struct netr_LogonSamLogon r;
+	struct netr_LogonSamLogonEx r_ex;
 	struct netr_LogonSamLogonWithFlags r_flags;
 	struct netr_Authenticator auth, auth2;
 	struct creds_CredentialState *creds;
@@ -68,6 +69,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogon *r = &samlogon_state->r;
+	struct netr_LogonSamLogonEx *r_ex = &samlogon_state->r_ex;
 	struct netr_LogonSamLogonWithFlags *r_flags = &samlogon_state->r_flags;
 	struct netr_NetworkInfo ninfo;
 	
@@ -76,6 +78,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	uint16 validation_level;
 	
 	samlogon_state->r.in.logon.network = &ninfo;
+	samlogon_state->r_ex.in.logon.network = &ninfo;
 	samlogon_state->r_flags.in.logon.network = &ninfo;
 	
 	ninfo.identity_info.domain_name.string = samlogon_state->account_domain;
@@ -132,11 +135,11 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		ninfo.lm.length = 0;
 	}
 	
-	ZERO_STRUCT(samlogon_state->auth2);
-	creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
-
 	switch (samlogon_state->function_level) {
 	case DCERPC_NETR_LOGONSAMLOGON: 
+		ZERO_STRUCT(samlogon_state->auth2);
+		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
+
 		r->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
 		if (!r->out.return_authenticator || 
@@ -162,7 +165,31 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			break;
 		}
 		break;
+	case DCERPC_NETR_LOGONSAMLOGONEX: 
+		status = dcerpc_netr_LogonSamLogonEx(samlogon_state->p, samlogon_state->mem_ctx, r_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+		}
+
+		validation_level = r_ex->in.validation_level;
+		switch (validation_level) {
+		case 2:
+			base = &r_ex->out.validation.sam2->base;
+			break;
+		case 3:
+			base = &r_ex->out.validation.sam3->base;
+			break;
+		case 6:
+			base = &r_ex->out.validation.sam6->base;
+			break;
+		}
+		break;
 	case DCERPC_NETR_LOGONSAMLOGONWITHFLAGS: 
+		ZERO_STRUCT(samlogon_state->auth2);
+		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
+
 		r_flags->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogonWithFlags(samlogon_state->p, samlogon_state->mem_ctx, r_flags);
 		if (!r_flags->out.return_authenticator || 
@@ -547,6 +574,10 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 		return break_which == BREAK_BOTH;
 	}
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
+	}
+
 	switch (break_which) {
 	case NO_NT:
 		if (memcmp(lmv2_session_key.data, user_session_key, 
@@ -872,6 +903,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int logon_levels[] = { 2, 6 };
 	int function_levels[] = { 
 		DCERPC_NETR_LOGONSAMLOGON,
+		DCERPC_NETR_LOGONSAMLOGONEX,
 		DCERPC_NETR_LOGONSAMLOGONWITHFLAGS };
 	struct samlogon_state samlogon_state;
 	
@@ -893,19 +925,25 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.r_flags.in.return_authenticator = &samlogon_state.auth2;
 	samlogon_state.r_flags.in.flags = 0;
 
+	samlogon_state.r_ex.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	samlogon_state.r_ex.in.workstation = TEST_MACHINE_NAME;
+	samlogon_state.r_ex.in.flags = 0;
+
 	samlogon_state.r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
 	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
 
-	for (i=0; test_table[i].fn; i++) {
-		for (v=0;v<ARRAY_SIZE(validation_levels);v++) {
-			for (l=0;l<ARRAY_SIZE(logon_levels);l++) {
-				for (f=0;f<ARRAY_SIZE(function_levels);f++) {
+	for (f=0;f<ARRAY_SIZE(function_levels);f++) {
+		for (i=0; test_table[i].fn; i++) {
+			for (v=0;v<ARRAY_SIZE(validation_levels);v++) {
+				for (l=0;l<ARRAY_SIZE(logon_levels);l++) {
 					char *error_string = NULL;
 					samlogon_state.function_level = function_levels[f];
 					samlogon_state.r.in.validation_level = validation_levels[v];
 					samlogon_state.r.in.logon_level = logon_levels[l];
+					samlogon_state.r_ex.in.validation_level = validation_levels[v];
+					samlogon_state.r_ex.in.logon_level = logon_levels[l];
 					samlogon_state.r_flags.in.validation_level = validation_levels[v];
 					samlogon_state.r_flags.in.logon_level = logon_levels[l];
 					if (!test_table[i].fn(&samlogon_state, &error_string)) {
@@ -998,10 +1036,12 @@ BOOL torture_rpc_samlogon(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
+	struct dcerpc_binding b;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	void *join_ctx;
-	const char *machine_pass;
+	const char *machine_password;
+	const char *binding = lp_parm_string(-1, "torture", "binding");
 	int i;
 	
 	unsigned int credential_flags[] = {
@@ -1011,69 +1051,88 @@ BOOL torture_rpc_samlogon(void)
 		NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT,
 		NETLOGON_NEG_AUTH2_ADS_FLAGS};
 
-	struct creds_CredentialState creds;
+	struct creds_CredentialState *creds;
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
-				       &machine_pass);
+				       &machine_password);
 	if (!join_ctx) {
 		printf("Failed to join as BDC\n");
 		return False;
 	}
 
-	status = torture_rpc_connection(&p, 
-					DCERPC_NETLOGON_NAME,
-					DCERPC_NETLOGON_UUID,
-					DCERPC_NETLOGON_VERSION);
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		printf("Bad binding string %s\n", binding);
+		ret = False;
+		goto failed;
 	}
 
-	if (!test_SetupCredentials(p, mem_ctx, 
-				   TEST_MACHINE_NAME, machine_pass, &creds)) {
+	/* We have to use schannel, otherwise the SamLogonEx fails
+	 * with INTERNAL_ERROR */
+
+	b.flags &= ~DCERPC_AUTH_OPTIONS;
+	b.flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+
+	status = dcerpc_pipe_connect_b(&p, &b, 
+				       DCERPC_NETLOGON_UUID,
+				       DCERPC_NETLOGON_VERSION,
+				       lp_workgroup(), 
+				       TEST_MACHINE_NAME,
+				       machine_password);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto failed;
+	}
+
+	status = dcerpc_schannel_creds(p->security_state.generic_state, mem_ctx, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto failed;
+	}
+
+	if (!test_InteractiveLogon(p, mem_ctx, creds)) {
 		ret = False;
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
+	if (!test_SamLogon(p, mem_ctx, creds)) {
 		ret = False;
 	}
 
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 		
 		if (!test_SetupCredentials2(p, mem_ctx, credential_flags[i],
-					    TEST_MACHINE_NAME, machine_pass, &creds)) {
+					    TEST_MACHINE_NAME, machine_password, creds)) {
 			return False;
 		}
 		
-		if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+		if (!test_InteractiveLogon(p, mem_ctx, creds)) {
 			ret = False;
 		}
 		
-		if (!test_SamLogon(p, mem_ctx, &creds)) {
+		if (!test_SamLogon(p, mem_ctx, creds)) {
 			ret = False;
 		}
 	}
 
 	for (i=0; i < 32; i++) {
 		if (!test_SetupCredentials2(p, mem_ctx, 1 << i,
-					    TEST_MACHINE_NAME, machine_pass, &creds)) {
+					    TEST_MACHINE_NAME, machine_password, creds)) {
 			return False;
 		}
 		
-		if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+		if (!test_InteractiveLogon(p, mem_ctx, creds)) {
 			ret = False;
 		}
 		
-		if (!test_SamLogon(p, mem_ctx, &creds)) {
+		if (!test_SamLogon(p, mem_ctx, creds)) {
 			ret = False;
 		}
 	}
 
+failed:
 	talloc_destroy(mem_ctx);
 
 	torture_rpc_close(p);

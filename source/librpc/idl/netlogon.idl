@@ -223,7 +223,7 @@ interface netlogon
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint32 authoritative
+		[out] uint8 authoritative
 		);
 
 
@@ -1048,7 +1048,16 @@ interface netlogon
 
 	/****************/
 	/* Function 0x27 */
-	WERROR netr_NETRLOGONSAMLOGONEX();
+	NTSTATUS netr_LogonSamLogonEx(
+		[in] unistr *server_name,
+		[in] unistr *workstation,
+		[in]  uint16 logon_level,
+		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
+		[in]  uint16 validation_level,
+		[out] [switch_is(validation_level)] netr_Validation validation,
+		[out] uint8 authoritative,
+		[in,out] uint32 flags
+		);
 
 	/****************/
 	/* Function 0x28 */
@@ -1108,7 +1117,7 @@ interface netlogon
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint32 authoritative,
+		[out] uint8 authoritative,
 		[in,out] uint32 flags
 		);
 

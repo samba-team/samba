@@ -1132,10 +1132,10 @@ static WERROR netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TAL
 
 
 /* 
-  netr_NETRLOGONSAMLOGONEX 
+  netr_LogonSamLogonEx
 */
-static WERROR netr_NETRLOGONSAMLOGONEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONSAMLOGONEX *r)
+static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonSamLogonEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
