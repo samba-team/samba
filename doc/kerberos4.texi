@@ -1,4 +1,4 @@
-@node Kerberos 4 issues, Acknowledgments, Things in search for a better place, Top
+@node Kerberos 4 issues, Windows 2000 compatability, Things in search for a better place, Top
 @comment  node-name,  next,  previous,  up
 @chapter Kerberos 4 issues
 

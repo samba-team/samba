@@ -1,4 +1,4 @@
-@node  Acknowledgments, , Kerberos 4 issues, Top
+@node  Acknowledgments, , Windows 2000 compatability, Top
 @comment  node-name,  next,  previous,  up
 @appendix Acknowledgments
 
