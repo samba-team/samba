@@ -124,7 +124,6 @@ extern int errno;
 #include "smb.h"
 #include "byteorder.h"
 #include "module.h"
-#include "mutex.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
