@@ -673,10 +673,10 @@ static void api_net_sam_logon( uint16 vuid,
     smb_pass = getsmbpwnam(samlogon_user);
     unbecome_root(True);
 
-    if (smb_pass->acct_ctrl & ACB_PWNOTREQ)
-      status = 0;
-    else if (smb_pass == NULL)
+    if (smb_pass == NULL)
       status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+    else if (smb_pass->acct_ctrl & ACB_PWNOTREQ)
+      status = 0;
     else if (smb_pass->acct_ctrl & ACB_DISABLED)
       status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
   }
