@@ -1,0 +1,24 @@
+[global]
+    workgroup = TESTWG
+    log level = 3
+    encrypt passwords = yes
+    server string = Samba %v Build Farm Tests
+
+[test]
+    path = PREFIX/testdir
+    read only = no
+
+[samba]
+    path = BUILD_FARM/samba
+    read only = yes
+    comment = Samba HEAD Sources
+
+[samba_2_2]
+    path = BUILD_FARM/samba_2_2
+    read only = yes
+    comment = Samba 2.2. Sources
+
+[rsync]
+    path = BUILD_FARM/rsync
+    read only = yes
+    comment = Rsync Sources
