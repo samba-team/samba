@@ -710,6 +710,7 @@ extern int errno;
 #include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
+#include "adt_tree.h"
 
 #include "util_getent.h"
 

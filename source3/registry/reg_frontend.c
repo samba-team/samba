@@ -18,317 +18,122 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* Implementation of registry database functions. */
+/* Implementation of registry frontend view functions. */
 
 #include "includes.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+extern REGISTRY_OPS printing_ops;
+
+/* array of REGISTRY_HOOK's which are read into a tree for easy access */
 
 
-static TDB_CONTEXT *tdb_reg;
-
-
-/***********************************************************************
- Open the registry database
- ***********************************************************************/
- 
-static BOOL init_registry_data( void )
-{
-	pstring keyname;
-	char *subkeys[3];
-
-	/* HKEY_LOCAL_MACHINE */
-	
-	pstrcpy( keyname, KEY_HKLM );
-	subkeys[0] = "SYSTEM";
-	if ( !store_reg_keys( keyname, subkeys, 1 ))
-		return False;
-		
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM" );
-	subkeys[0] = "CurrentControlSet";
-	if ( !store_reg_keys( keyname, subkeys, 1 ))
-		return False;
-		
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
-	subkeys[0] = "Control";
-	subkeys[1] = "services";
-	if ( !store_reg_keys( keyname, subkeys, 2 ))
-		return False;
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
-	subkeys[0] = "Print";
-	subkeys[1] = "ProduceOptions";
-	if ( !store_reg_keys( keyname, subkeys, 2 ))
-		return False;
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/Print" );
-	subkeys[0] = "Environments";
-	subkeys[1] = "Forms";
-	subkeys[2] = "Printers";
-	if ( !store_reg_keys( keyname, subkeys, 3 ))
-		return False;
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/ProductOptions" );
-	if ( !store_reg_keys( keyname, subkeys, 0 ))
-		return False;
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services" );
-	subkeys[0] = "Netlogon";
-	if ( !store_reg_keys( keyname, subkeys, 1 ))
-		return False;
-		
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon" );
-	subkeys[0] = "parameters";
-	if ( !store_reg_keys( keyname, subkeys, 1 ))
-		return False;
-		
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon/parameters" );
-	if ( !store_reg_keys( keyname, subkeys, 0 ))
-		return False;
-
-	
-	/* HKEY_USER */
-		
-	pstrcpy( keyname, KEY_HKU );
-	if ( !store_reg_keys( keyname, subkeys, 0 ) )
-		return False;
-		
-	return True;
-}
+REGISTRY_HOOK reg_hooks[] = {
+  { KEY_PRINTING, &printing_ops },
+  { NULL, NULL }
+};
 
 
 /***********************************************************************
- Open the registry database
+ Open the registry database and initialize the REGISTRY_HOOK cache
  ***********************************************************************/
  
 BOOL init_registry( void )
 {
-	static pid_t local_pid;
+	int i;
 	
-	
-	if (tdb_reg && local_pid == sys_getpid())
-		return True;
-
-	/* 
-	 * try to open first without creating so we can determine
-	 * if we need to init the data in the registry
-	 */
-	
-	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
-	if ( !tdb_reg ) 
-	{
-		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-		if ( !tdb_reg ) {
-			DEBUG(0,("init_registry: Failed to open registry %s (%s)\n",
-				lock_path("registry.tdb"), strerror(errno) ));
-			return False;
-		}
+	if ( !init_registry_db() ) {
+		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
+		return False;
+	}
 		
-		DEBUG(10,("init_registry: Successfully created registry tdb\n"));
-		
-		/* create the registry here */
-		if ( !init_registry_data() ) {
-			DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+	/* build the cache tree of registry hooks */
+	
+	reghook_cache_init();
+	
+	for ( i=0; reg_hooks[i].keyname; i++ ) {
+		if ( !reghook_cache_add(&reg_hooks[i]) )
 			return False;
-		}
 	}
 
-	local_pid = sys_getpid();
-	
+	reghook_dump_cache(20);
+
 	return True;
 }
 
+
+
+
 /***********************************************************************
- Add subkey strings to the registry tdb under a defined key
- fmt is the same format as tdb_pack except this function only supports
- fstrings
+ High level wrapper function for storing registry subkeys
  ***********************************************************************/
  
-BOOL store_reg_keys( char *keyname, char **subkeys, uint32 num_subkeys  )
+BOOL store_reg_keys( REGISTRY_KEY *key, char **subkeys, uint32 num_subkeys  )
 {
-	TDB_DATA kbuf, dbuf;
-	char *buffer, *tmpbuf;
-	int i = 0;
-	uint32 len, buflen;
-	BOOL ret = True;
-	
-	if ( !keyname )
-		return False;
-	
-	/* allocate some initial memory */
-		
-	buffer = malloc(sizeof(pstring));
-	buflen = sizeof(pstring);
-	len = 0;
-	
-	/* store the number of subkeys */
-	
-	len += tdb_pack(buffer+len, buflen-len, "d", num_subkeys);
-	
-	/* pack all the strings */
-	
-	for (i=0; i<num_subkeys; i++) {
-		len += tdb_pack(buffer+len, buflen-len, "f", subkeys[i]);
-		if ( len > buflen ) {
-			/* allocate some extra space */
-			if ((tmpbuf = Realloc( buffer, len*2 )) == NULL) {
-				DEBUG(0,("store_reg_keys: Failed to realloc memory of size [%d]\n", len*2));
-				ret = False;
-				goto done;
-			}
-			buffer = tmpbuf;
-			buflen = len*2;
-					
-			len = tdb_pack(buffer+len, buflen-len, "f", subkeys[i]);
-		}		
-	}
-	
-	/* finally write out the data */
-	
-	kbuf.dptr = keyname;
-	kbuf.dsize = strlen(keyname)+1;
-	dbuf.dptr = buffer;
-	dbuf.dsize = len;
-	if ( tdb_store( tdb_reg, kbuf, dbuf, TDB_REPLACE ) == -1) {
-		ret = False;
-		goto done;
-	}
+	return regdb_store_reg_keys( key->name, subkeys, num_subkeys );
 
-done:		
-	SAFE_FREE( buffer );
-	return ret;
 }
 
 /***********************************************************************
- Retrieve an array of strings containing subkeys.  Memory should be 
- released by the caller.  The subkeys are stored in a catenated string
- of null terminated character strings
+ High level wrapper function for storing registry values
  ***********************************************************************/
-
-int fetch_reg_keys( char* key, char **subkeys )
+ 
+BOOL store_reg_values( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 num_values )
 {
-	pstring path;
-	uint32 num_items;
-	TDB_DATA dbuf;
-	char *buf;
-	uint32 buflen, len;
-	int i;
-	char *s;
-
-	
-	pstrcpy( path, key );
-	
-	/* convert to key format */
-	pstring_sub( path, "\\", "/" );
-	
-	dbuf = tdb_fetch_by_string( tdb_reg, path );
-	
-	buf = dbuf.dptr;
-	buflen = dbuf.dsize;
-	
-	if ( !buf ) {
-		DEBUG(5,("fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
-		return 0;
-	}
-	
-	len = tdb_unpack( buf, buflen, "d", &num_items);
-	if (num_items) {
-		if ( (*subkeys = (char*)malloc(sizeof(fstring)*num_items)) == NULL ) {
-			DEBUG(0,("fetch_reg_keys: Failed to malloc memory for subkey array containing [%d] items!\n",
-				num_items));
-			num_items = -1;
-			goto done;
-		}
-	}
-	
-	s = *subkeys;
-	for (i=0; i<num_items; i++) {
-		len += tdb_unpack( buf+len, buflen-len, "f", s );
-		s += strlen(s) + 1;
-	}
-
-done:	
-	SAFE_FREE(dbuf.dptr);
-	return num_items;
-}
-
-/***********************************************************************
- count the number of subkeys dtored in the registry
- ***********************************************************************/
-
-int fetch_reg_keys_count( char* key )
-{
-	pstring path;
-	uint32 num_items;
-	TDB_DATA dbuf;
-	char *buf;
-	uint32 buflen, len;
-	
-	
-	pstrcpy( path, key );
-	
-	/* convert to key format */
-	pstring_sub( path, "\\", "/" );
-	
-	dbuf = tdb_fetch_by_string( tdb_reg, path );
-	
-	buf = dbuf.dptr;
-	buflen = dbuf.dsize;
-	
-	if ( !buf ) {
-		DEBUG(5,("fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
-		return 0;
-	}
-	
-	len = tdb_unpack( buf, buflen, "d", &num_items);
-	
-	SAFE_FREE( buf );
-	
-	return num_items;
-}
-
-/***********************************************************************
- retreive a specific subkey specified by index.  The subkey parameter
- is assumed to be an fstring.
- ***********************************************************************/
-
-BOOL fetch_reg_keys_specific( char* key, char* subkey, uint32 key_index )
-{
-	int num_subkeys, i;
-	char *subkeys = NULL;
-	char *s;
-	
-	num_subkeys = fetch_reg_keys( key, &subkeys );
-	if ( num_subkeys == -1 )
-		return False;
-
-	s = subkeys;
-	for ( i=0; i<num_subkeys; i++ ) {
-		/* copy the key if the index matches */
-		if ( i == key_index ) {
-			fstrcpy( subkey, s );
-			break;
-		}
-		
-		/* go onto the next string */
-		s += strlen(s) + 1;
-	}
-	
-	SAFE_FREE(subkeys);
-	
 	return True;
 }
 
 
-  
+/***********************************************************************
+ High level wrapper function for enumerating registry subkeys
+ ***********************************************************************/
+
+int fetch_reg_keys( REGISTRY_KEY *key, char **subkeys )
+{
+	int num_subkeys;
+	
+	if ( key->hook && key->hook->ops && key->hook->ops->subkey_fn )
+		num_subkeys = key->hook->ops->subkey_fn( key->name, subkeys );
+	else 
+		num_subkeys = regdb_fetch_reg_keys( key->name, subkeys );
+
+	return num_subkeys;
+}
+
+/***********************************************************************
+ High level wrapper function for retreiving a specific registry subkey
+ given and index.
+ ***********************************************************************/
+
+BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index )
+{
+	BOOL result;
+		
+	if ( key->hook && key->hook->ops && key->hook->ops->subkey_specific_fn )
+		result = key->hook->ops->subkey_specific_fn( key->name, subkey, key_index );
+	else
+		result = regdb_fetch_reg_keys_specific( key->name, subkey, key_index );
+	
+	return result;
+}
+
+
+/***********************************************************************
+ High level wrapper function for enumerating registry values
+ ***********************************************************************/
+
+int fetch_reg_values( REGISTRY_KEY *key, REGISTRY_VALUE **val )
+{
+	int num_values;
+	
+	if ( key->hook && key->hook->ops && key->hook->ops->value_fn )
+		num_values = key->hook->ops->value_fn( key->name, val );
+	else 
+		num_values = regdb_fetch_reg_values( key->name, val );
+		
+	return num_values;
+}
+
 

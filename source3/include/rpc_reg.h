@@ -65,6 +65,7 @@
 
 #define KEY_HKLM	"HKLM"
 #define KEY_HKU		"HKU"
+#define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 
 
 /* Registry data types */
@@ -86,16 +87,52 @@
 #define REG_FORCE_SHUTDOWN 0x001
 #define REG_REBOOT_ON_SHUTDOWN 0x100
 
+/* structure to contain registry values */
+
+typedef struct _RegistryValue {
+	fstring		valuename;
+	uint16		type;
+	uint32		size;	/* in bytes */
+	union {
+		char	*string;
+		uint32	dword;
+		uint8	*binary;
+	} data;
+} REGISTRY_VALUE;
+
+
+/* 
+ * container for function pointers to enumeration routines
+ * for vitural registry view 
+ */ 
+ 
+typedef struct _reg_ops {
+	/* functions for enumerating subkeys and values */	
+	int 	(*subkey_fn)( char *key, char **subkeys );
+	int 	(*subkey_specific_fn)( char *key, char** subkey, uint32 index );
+	int 	(*value_fn) ( char *key, REGISTRY_VALUE **val );
+	BOOL 	(*store_subkeys_fn)( char *key, char **subkeys, uint32 num_subkeys );
+	BOOL 	(*store_values_fn)( char *key, REGISTRY_VALUE **val, uint32 num_values );
+} REGISTRY_OPS;
+
+typedef struct _reg_hook {
+	char		*keyname;	/* full path to name of key */
+	REGISTRY_OPS	*ops;		/* registry function hooks */
+} REGISTRY_HOOK;
+
+
+
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
 
 	struct _RegistryKey *prev, *next;
 
-	fstring name; /* name of registry key */
 	POLICY_HND	hnd;
+	fstring 	name; 	/* full name of registry key */
+	REGISTRY_HOOK	*hook;
 	
-} Registry_Key;
+} REGISTRY_KEY;
 
 
 /* REG_Q_OPEN_HKCR   */
@@ -123,7 +160,7 @@ typedef struct q_reg_open_hklm_info
 	uint32 ptr;
 	uint16 unknown_0;	/* 0xE084      - 16 bit unknown */
 	uint16 unknown_1;	/* random.  changes */
-	uint32 access_mask;	/* 0x0000 0002 - 32 bit unknown */
+	uint32 access_mask;
 
 }
 REG_Q_OPEN_HKLM;

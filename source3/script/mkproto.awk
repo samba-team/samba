@@ -142,7 +142,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST|^PyObject/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST|^PyObject|^SORTED_TREE|^REGISTRY_HOOK/ ) {
     gotstart = 1;
   }
 

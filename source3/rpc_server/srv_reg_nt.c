@@ -1,11 +1,11 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison		    2001.
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Andrew Tridgell               1992-1997.
+ *  Copyright (C) Luke Kenneth Casson Leighton  1996-1997.
+ *  Copyright (C) Paul Ashton                        1997.
+ *  Copyright (C) Jeremy Allison                     2001.
+ *  Copyright (C) Gerald Carter                      2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,16 +33,16 @@
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
 
-static Registry_Key *regkeys_list;
+static REGISTRY_KEY *regkeys_list;
 
 
 /******************************************************************
- free() function for Registry_Key
+ free() function for REGISTRY_KEY
  *****************************************************************/
  
 static void free_reg_info(void *ptr)
 {
-	Registry_Key *info = (Registry_Key*)ptr;
+	REGISTRY_KEY *info = (REGISTRY_KEY*)ptr;
 	
 	DLIST_REMOVE(regkeys_list, info);
 
@@ -50,12 +50,12 @@ static void free_reg_info(void *ptr)
 }
 
 /******************************************************************
- Find a registry key handle and return a Registry_Key
+ Find a registry key handle and return a REGISTRY_KEY
  *****************************************************************/
 
-static Registry_Key *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
+static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
-	Registry_Key *regkey = NULL;
+	REGISTRY_KEY *regkey = NULL;
 
 	if(!find_policy_by_hnd(p,hnd,(void **)&regkey)) {
 		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: "));
@@ -69,34 +69,87 @@ static Registry_Key *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 /*******************************************************************
  Function for open a new registry handle and creating a handle 
  Note that P should be valid & hnd should already have space
+ 
+ When we open a key, we store the full path to the key as 
+ HK[LM|U]\<key>\<key>\...
  *******************************************************************/
  
-static BOOL open_registry_key(pipes_struct *p, POLICY_HND *hnd, char *name, 
-				uint32 access_granted)
+static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
+				char *subkeyname, uint32 access_granted  )
 {
-	Registry_Key *regkey = NULL;
+	REGISTRY_KEY *regkey = NULL;
+	pstring      parent_keyname;
+	NTSTATUS     result = NT_STATUS_OK;
+	int          num_subkeys;
+	char 	     *subkeys = NULL;
+	
+	if ( parent ) {
+		pstrcpy( parent_keyname, parent->name );
+		pstrcat( parent_keyname, "\\" );
+	}
+	else
+		*parent_keyname = '\0';
+		
 
-	DEBUG(7,("open_registry_key: name = [%s]\n", name));
+	DEBUG(7,("open_registry_key: name = [%s][%s]\n", parent_keyname, subkeyname));
 
 	/* All registry keys **must** have a name of non-zero length */
 	
-	if (!name || !*name )
-		return False;
+	if (!subkeyname || !*subkeyname )
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			
-	if ((regkey=(Registry_Key*)malloc(sizeof(Registry_Key))) == NULL)
-		return False;
+	if ((regkey=(REGISTRY_KEY*)malloc(sizeof(REGISTRY_KEY))) == NULL)
+		return NT_STATUS_NO_MEMORY;
 		
 	ZERO_STRUCTP( regkey );
 	
 	DLIST_ADD( regkeys_list, regkey );
 
-	/* copy the name and obtain a handle */
+	/* copy the name */
 	
-	fstrcpy( regkey->name, name );
+	pstrcpy( regkey->name, parent_keyname );
+	pstrcat( regkey->name, subkeyname );
+	
+	/* try to use en existing hook. Otherwise, try to lookup our own */
+
+	if ( parent && parent->hook )
+		regkey->hook = parent->hook;
+	else 
+		regkey->hook = reghook_cache_find( regkey->name );
+		
+	if ( regkey->hook ) {
+		DEBUG(10,("open_registry_key: Assigned REGISTRY_HOOK to [%s]\n",
+			regkey->name ));
+	}
+	
+	/* check if the path really exists...num_subkeys should be >= 0 */
+	
+	num_subkeys = fetch_reg_keys( regkey, &subkeys );	
+	
+	/* if the subkey count failed, bail out */
+	
+	if ( num_subkeys == -1 ) {
+		SAFE_FREE( regkey );
+		
+		/* don't really know what to return here */
+		
+		result = NT_STATUS_ACCESS_DENIED;
+	}
+	else {
+		/* 
+		 * This would previously return NT_STATUS_TOO_MANY_SECRETS
+		 * that doesn't sound quite right to me  --jerry
+		 */
+		
+		if ( !create_policy_hnd( p, hnd, free_reg_info, regkey ) )
+			result = NT_STATUS_OBJECT_NAME_NOT_FOUND; 
+	}
 	
 	DEBUG(7,("open_registry_key: exit\n"));
 	
-	return create_policy_hnd( p, hnd, free_reg_info, regkey );
+	SAFE_FREE( subkeys );
+
+	return result;
 }
 
 /*******************************************************************
@@ -106,7 +159,7 @@ static BOOL open_registry_key(pipes_struct *p, POLICY_HND *hnd, char *name,
 
 static BOOL close_registry_key(pipes_struct *p, POLICY_HND *hnd)
 {
-	Registry_Key *regkey = find_regkey_index_by_hnd(p, hnd);
+	REGISTRY_KEY *regkey = find_regkey_index_by_hnd(p, hnd);
 	
 	if ( !regkey ) {
 		DEBUG(2,("close_registry_key: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(hnd)));
@@ -122,7 +175,7 @@ static BOOL close_registry_key(pipes_struct *p, POLICY_HND *hnd)
  retrieve information about the subkeys
  *******************************************************************/
  
-static BOOL get_subkey_information( Registry_Key *key, uint32 *maxnum, uint32 *maxlen )
+static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *maxlen )
 {
 	int num_subkeys, i;
 	uint32 max_len;
@@ -133,7 +186,11 @@ static BOOL get_subkey_information( Registry_Key *key, uint32 *maxnum, uint32 *m
 	if ( !key )
 		return False;
 	
-	num_subkeys = fetch_reg_keys( key->name, &subkeys );
+	/* first use any registry hook available.  
+	   Fall back to tdb if non available */
+	   
+	num_subkeys = fetch_reg_keys( key, &subkeys );
+		
 	if ( num_subkeys == -1 )
 		return False;
 
@@ -161,28 +218,36 @@ static BOOL get_subkey_information( Registry_Key *key, uint32 *maxnum, uint32 *m
  Samba tdb's (such as ntdrivers.tdb).
  *******************************************************************/
  
-static BOOL get_value_information( Registry_Key *key, uint32 *maxnum, 
+static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
                                     uint32 *maxlen, uint32 *maxsize )
 {
+	REGISTRY_VALUE *val = NULL;
+	uint32 i, sizemax, lenmax;
+	int num_values;
+	
 	if ( !key )
 		return False;
 
-	/* Hard coded key names first */
-	/* nothing has valuies right now */
+	num_values = fetch_reg_values( key, &val );
 		
-	*maxnum   = 0;
-	*maxlen   = 0;
-	*maxsize  = 0;
+	if ( num_values == -1 )
+		return False;
+		
+	
+	lenmax = sizemax = 0;
+		
+	for ( i=0; i<num_values; i++ ) {
+		lenmax  = MAX(lenmax,  strlen(val[i].valuename)+1 );
+		sizemax = MAX(sizemax, val[i].size );
+	}
+		
+	*maxnum   = num_values;
+	*maxlen   = lenmax;
+	*maxsize  = sizemax;
+	
+	SAFE_FREE( val );
+	
 	return True;
-
-#if 0	/* JERRY */
-	/* 
-	 * FIXME!!! Need to add routines to look up values in other
-	 * databases   --jerry
-	 */
-
-	return False;
-#endif
 }
 
 
@@ -208,10 +273,7 @@ NTSTATUS _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 
 NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 {
-	if (!open_registry_key(p, &r_u->pol, KEY_HKLM, 0x0))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	return NT_STATUS_OK;
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, 0x0 );
 }
 
 /*******************************************************************
@@ -220,10 +282,7 @@ NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *
 
 NTSTATUS _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u)
 {
-	if (!open_registry_key(p, &r_u->pol, KEY_HKU, 0x0))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	return NT_STATUS_OK;
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, 0x0 );
 }
 
 /*******************************************************************
@@ -234,9 +293,8 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 {
 	POLICY_HND pol;
 	fstring name;
-	pstring path;
-	int num_subkeys;
-	Registry_Key *key = find_regkey_index_by_hnd(p, &q_u->pol);
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->pol);
+	NTSTATUS result;
 
 	DEBUG(5,("reg_open_entry: Enter\n"));
 
@@ -244,26 +302,14 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 		return NT_STATUS_INVALID_HANDLE;
 
 	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
-
-	/* store the full path in the regkey_list */
 	
-	pstrcpy( path, key->name );
-	pstrcat( path, "\\" );
-	pstrcat( path, name );
-
-	DEBUG(5,("reg_open_entry: %s\n", path));
-
-	/* do a check on the name, here */
+	DEBUG(5,("reg_open_entry: Enter\n"));
 	
-	if ( (num_subkeys=fetch_reg_keys_count( path )) == -1 )
-		return NT_STATUS_ACCESS_DENIED;
+	result = open_registry_key( p, &pol, key, name, 0x0 );
+	
+	init_reg_r_open_entry( r_u, &pol, result );
 
-	if (!open_registry_key(p, &pol, path, 0x0))
-		return NT_STATUS_TOO_MANY_SECRETS; 
-
-	init_reg_r_open_entry(r_u, &pol, NT_STATUS_OK);
-
-	DEBUG(5,("reg_open_entry: Exitn"));
+	DEBUG(5,("reg_open_entry: Exit\n"));
 
 	return r_u->status;
 }
@@ -280,7 +326,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	UNISTR2 *uni_key = NULL;
 	BUFFER2 *buf = NULL;
 	fstring name;
-	Registry_Key *key = find_regkey_index_by_hnd( p, &q_u->pol );
+	REGISTRY_KEY *key = find_regkey_index_by_hnd( p, &q_u->pol );
 
 	DEBUG(5,("_reg_info: Enter\n"));
 
@@ -346,7 +392,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_u)
 {
 	NTSTATUS 	status = NT_STATUS_OK;
-	Registry_Key	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
 	DEBUG(5,("_reg_query_key: Enter\n"));
 	
@@ -358,6 +404,7 @@ NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *
 		
 	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) )
 		return NT_STATUS_ACCESS_DENIED;	
+
 		
 	r_u->sec_desc = 0x00000078;	/* size for key's sec_desc */
 	
@@ -379,7 +426,7 @@ NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *
 NTSTATUS _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1A *r_u)
 {
 	NTSTATUS 	status = NT_STATUS_OK;
-	Registry_Key	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
 	DEBUG(5,("_reg_unknown_1a: Enter\n"));
 	
@@ -401,8 +448,8 @@ NTSTATUS _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1
 NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 {
 	NTSTATUS 	status = NT_STATUS_OK;
-	Registry_Key	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
-	fstring		subkey;
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	char		*subkey;
 	
 	
 	DEBUG(5,("_reg_enum_key: Enter\n"));
@@ -412,9 +459,9 @@ NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", regkey->name));
 	
-	if ( !fetch_reg_keys_specific( regkey->name, subkey, q_u->key_index ) )
+	if ( !fetch_reg_keys_specific( regkey, &subkey, q_u->key_index ) )
 	{
-		status = werror_to_ntstatus( WERR_NO_MORE_ITEMS );
+		status = NT_STATUS_NO_MORE_ENTRIES;
 		goto done;
 	}
 	
@@ -427,6 +474,7 @@ NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u
 	DEBUG(5,("_reg_enum_key: Exit\n"));
 	
 done:	
+	SAFE_FREE( subkey );
 	return status;
 }
 
