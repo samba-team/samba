@@ -288,13 +288,15 @@ nt registry enum
 ****************************************************************************/
 void cmd_reg_enum(struct client_info *info, int argc, char *argv[])
 {
-	fstring full_keyname;
+	char *full_keyname;
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regenum <key_name>\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	if (msrpc_reg_enum_key(smb_cli, full_keyname,
 				reg_display_key,
@@ -316,7 +318,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring key_name;
 	fstring keyname;
 	fstring val_name;
@@ -330,11 +332,13 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regvalinfo value_name\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	reg_get_subkey(full_keyname, keyname, val_name);
 
@@ -402,7 +406,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring key_name;
 
 	/*
@@ -422,11 +426,13 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regquery key_name\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
@@ -505,11 +511,10 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring keyname;
 	fstring parent_name;
 	fstring val_name;
-	fstring tmp;
 	uint32 val_type;
 	BUFFER3 value;
 
@@ -523,11 +528,17 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_create_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 4)
 	{
-		report(out_hnd, "regcreate <val_name> <val_type> <val>\n");
+		report(out_hnd, "regcreate <val_name> <val_type (1|3|4)> <val>\n");
+		report(out_hnd, "(val_type 1=UNISTR, 3=BYTES, 4=DWORD supported\n");
 		return;
 	}
+
+	argc--;
+	argv++;
+
+	full_keyname = argv[0];
 
 	reg_get_subkey(full_keyname, keyname, val_name);
 
@@ -537,13 +548,15 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 	
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (argc < 2)
 	{
-		report(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
 	}
 
-	val_type = atoi(tmp);
+	argc--;
+	argv++;
+
+	val_type = atoi(argv[0]);
 
 	if (val_type != 1 && val_type != 3 && val_type != 4)
 	{
@@ -551,36 +564,24 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		report(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
-		return;
-	}
+	argc--;
+	argv++;
 
 	switch (val_type)
 	{
 		case 0x01: /* UNISTR */
 		{
-			make_buffer3_str(&value, tmp, strlen(tmp)+1);
+			make_buffer3_str(&value, argv[0], strlen(argv[0])+1);
 			break;
 		}
 		case 0x03: /* BYTES */
 		{
-			make_buffer3_hex(&value, tmp);
+			make_buffer3_hex(&value, argv[0]);
 			break;
 		}
 		case 0x04: /* DWORD */
 		{
-			uint32 tmp_val;
-			if (strnequal(tmp, "0x", 2))
-			{
-				tmp_val = strtol(tmp, (char**)NULL, 16);
-			}
-			else
-			{
-				tmp_val = strtol(tmp, (char**)NULL, 10);
-			}
-			make_buffer3_uint32(&value, tmp_val);
+			make_buffer3_uint32(&value, get_number(argv[0]));
 			break;
 		}
 		default:
@@ -653,18 +654,20 @@ void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring keyname;
 	fstring parent_name;
 	fstring val_name;
 
 	DEBUG(5, ("cmd_reg_delete_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regdelete <val_name>\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	reg_get_subkey(full_keyname, keyname, val_name);
 
@@ -730,18 +733,20 @@ void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring parent_name;
 	fstring key_name;
 	fstring subkey_name;
 
 	DEBUG(5, ("cmd_reg_delete_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regdeletekey <key_name>\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	reg_get_subkey(full_keyname, parent_name, subkey_name);
 
@@ -811,7 +816,7 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 	POLICY_HND parent_pol;
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring parent_key;
 	fstring parent_name;
 	fstring key_name;
@@ -820,11 +825,13 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_create_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "regcreate <key_name> [key_class]\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	reg_get_subkey(full_keyname, parent_key, key_name);
 
@@ -834,7 +841,11 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 	
-	if (!next_token(NULL, key_class, NULL, sizeof(key_class)))
+	if (argc < 3)
+	{
+		fstrcpy(key_class, argv[2]);
+	}
+	else
 	{
 		memset(key_class, 0, sizeof(key_class));
 	}
@@ -905,7 +916,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring key_name;
 
 	/*
@@ -917,11 +928,13 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "reggetsec <key_name>\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
@@ -1007,7 +1020,7 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	fstring full_keyname;
+	char *full_keyname;
 	fstring key_name;
 
 	/*
@@ -1019,11 +1032,13 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (argc < 2)
 	{
 		report(out_hnd, "reggetsec <key_name>\n");
 		return;
 	}
+
+	full_keyname = argv[1];
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
@@ -1102,35 +1117,52 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 
 	fstring msg;
-	fstring tmp;
 	uint32 timeout = 20;
 	uint16 flgs = 0;
+	int opt;
 
 	DEBUG(5, ("cmd_reg_shutdown: smb_cli->fd:%d\n", smb_cli->fd));
 
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv,"fim:t:r-")) != EOF)
 	{
-		if (strequal(tmp, "-m"))
+		switch (opt)
 		{
-			if (next_token(NULL, msg, NULL, sizeof(msg)))
+			case 'm':
 			{
-				continue;
+				safe_strcpy(msg, optarg, sizeof(msg)-1);
+				break;
+			}
+			case 't':
+			{
+				timeout = atoi(optarg);
+				break;
+			}
+			case 'r':
+			{
+				flgs |= 0x100;
+				break;
+			}
+			case 'f':
+			{
+				flgs |= 0x100;
+				break;
+			}
+			case '-':
+			{
+				if (strequal(optarg, "-reboot"))
+				{
+					flgs |= 0x100;
+				}
+				if (strequal(optarg, "-force-close"))
+				{
+					flgs |= 0x001;
+				}
+				break;
 			}
 		}
-		else if (strequal(tmp, "-t"))
-		{
-			if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-			{
-				timeout = atoi(tmp);
-				continue;
-			}
-		}
-		else if (strequal(tmp, "-r") || strequal(tmp, "--reboot"))
-		{
-			flgs = 0x100;
-			continue;
-		}
-		report(out_hnd,"shutdown [-m msg] [-t timeout] [-r or --reboot]\n");
 	}
 
 	/* open WINREG session. */
@@ -1153,4 +1185,3 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 		report(out_hnd,"Failed\n");
 	}
 }
-
