@@ -94,42 +94,23 @@ static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
 }            
 
 /*******************************************************************
- reg_reply_open
- ********************************************************************/
-static void reg_reply_open(REG_Q_OPEN_HKLM *q_r, prs_struct *rdata)
-{
-	REG_R_OPEN_HKLM r_u;
-
-	r_u.status = NT_STATUS_NOPROBLEMO;
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(),
-	                                          &r_u.pol, q_r->access_mask))
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(5,("reg_open: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	reg_io_r_open_hklm("", &r_u, rdata, 0);
-
-	DEBUG(5,("reg_open: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_reg_open
  ********************************************************************/
 static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
-	REG_Q_OPEN_HKLM q_u;
-
-	/* grab the reg open */
-	reg_io_q_open_hklm("", &q_u, data, 0);
-
-	/* construct reply.  always indicate success */
-	reg_reply_open(&q_u, rdata);
+        REG_Q_OPEN_HKLM q_u;
+        REG_R_OPEN_HKLM r_u;
+        ZERO_STRUCT(q_u);
+        ZERO_STRUCT(r_u);
+ 
+        /* grab the reg open */
+        reg_io_q_open_hklm("", &q_u, data, 0);
+ 
+        r_u.status = _reg_open(&q_u.access_mask,&r_u.pol);
+ 
+        /* store the response in the SMB stream */
+        reg_io_r_open_hklm("", &r_u, rdata, 0); 
 }
 
 

@@ -113,30 +113,22 @@ uint32 _reg_close(POLICY_HND *pol)
 	return NT_STATUS_NOPROBLEMO;
 }                                 
 
-#if 0
 /*******************************************************************
  reg_reply_open
  ********************************************************************/
-static void reg_reply_open(REG_Q_OPEN_HKLM *q_r, prs_struct *rdata)
+uint32 _reg_open(uint32 *access_mask,POLICY_HND *pol)
 {
-	REG_R_OPEN_HKLM r_u;
+       /* get a (unique) handle.  open a policy on it. */
+       if (!open_policy_hnd(get_global_hnd_cache(),get_sec_ctx(),
+                               pol,*access_mask))
+       {
+               return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+       }
 
-	r_u.status = NT_STATUS_NOPROBLEMO;
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
-	                                          &r_u.pol, q_r->access_mask))
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(5,("reg_open: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	reg_io_r_open_hklm("", &r_u, rdata, 0);
-
-	DEBUG(5,("reg_open: %d\n", __LINE__));
+       return NT_STATUS_NOPROBLEMO;
 }
 
+#if 0
 /*******************************************************************
  api_reg_open
  ********************************************************************/
