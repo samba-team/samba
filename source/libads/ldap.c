@@ -24,9 +24,19 @@
 
 #ifdef HAVE_ADS
 
-/*
-  connect to the LDAP server
-*/
+/**
+ * @file ldap.c
+ * @brief basic ldap client-side routines for ads server communications
+ *
+ * The routines contained here should do the necessary ldap calls for
+ * ads setups.
+ **/
+
+/**
+ * Connect to the LDAP server
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
 ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
@@ -67,26 +77,32 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 }
 
 
-/* Do a search with paged results.  cookie must be null on the first
-   call, and then returned on each subsequent call.  It will be null
-   again when the entire search is complete */
-
+/**
+ * Do a search with paged results.  cookie must be null on the first
+ *  call, and then returned on each subsequent call.  It will be null
+ *  again when the entire search is complete 
+ * @param ads connection to ads server 
+ * @param bind_path Base dn for the search
+ * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param exp Search expression
+ * @param attrs Attributes to retrieve
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @param count Number of entries retrieved on this page
+ * @param cookie The paged results cookie to be returned on subsequent calls
+ * @return status of search
+ **/
 ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 			       int scope, const char *exp,
 			       const char **attrs, void **res, 
-			       int *count, void **cookie, const char *sort)
+			       int *count, void **cookie)
 {
 	int rc;
-#define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
-#define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
-#define ADS_SERVER_SORT_OID "1.2.840.113556.1.4.473"
 	int version;
 	LDAPControl PagedResults; 
 	LDAPControl NoReferrals;
-	LDAPControl ServerSort;
-	BerElement *cookie_be = NULL, *sort_be = NULL;
-	struct berval *cookie_bv= NULL, *sort_bv = NULL;
-	LDAPControl *controls[4];
+	BerElement *cookie_be = NULL;
+	struct berval *cookie_bv= NULL;
+	LDAPControl *controls[3];
 	LDAPControl **rcontrols;
 	int i;
 
@@ -119,20 +135,10 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = "";
 
-	if (sort && *sort) {
-		sort_be = ber_alloc_t(LBER_USE_DER);
-		ber_printf(sort_be, "{{s}}", sort);
-		ber_flatten(sort_be, &sort_bv);
-		ServerSort.ldctl_oid = ADS_SERVER_SORT_OID;
-		ServerSort.ldctl_iscritical = (char) 0;
-		ServerSort.ldctl_value.bv_len = sort_bv->bv_len;
-		ServerSort.ldctl_value.bv_val = sort_bv->bv_val;
-	}	
 
 	controls[0] = &NoReferrals;
 	controls[1] = &PagedResults;
-	controls[2] = (sort && *sort) ? &ServerSort : NULL;
-	controls[3] = NULL;
+	controls[2] = NULL;
 
 	*res = NULL;
 
@@ -153,10 +159,6 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 	ber_free(cookie_be, 1);
 	ber_bvfree(cookie_bv);
-	if (sort && *sort) {
-		ber_free(sort_be, 1);
-		ber_bvfree(sort_bv);
-	}
 
 	if (rc) {
 		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", exp, ldap_err2string(rc)));
@@ -192,11 +194,17 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 }
 
 
-/*
-  this uses ads_do_paged_search() to return all entries in a large
-  search.  The interface is the same as ads_do_search(), which makes
-  it more convenient than the paged interface
- */
+/**
+ * Get all results for a search.  This uses ads_do_paged_search() to return 
+ * all entries in a large search.
+ * @param ads connection to ads server 
+ * @param bind_path Base dn for the search
+ * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param exp Search expression
+ * @param attrs Attributes to retrieve
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @return status of search
+ **/
 ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 			     int scope, const char *exp,
 			     const char **attrs, void **res)
@@ -205,7 +213,8 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 	int count = 0;
 	ADS_STATUS status;
 
-	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res, &count, &cookie, NULL);
+	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res,
+				     &count, &cookie);
 
 	if (!ADS_ERR_OK(status)) return status;
 
@@ -214,7 +223,8 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
-		status2 = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res2, &count, &cookie, NULL);
+		status2 = ads_do_paged_search(ads, bind_path, scope, exp, 
+					      attrs, &res2, &count, &cookie);
 
 		if (!ADS_ERR_OK(status2)) break;
 
@@ -232,22 +242,30 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 	return status;
 }
 
-/* same as ads_do_search_all, but runs a function on each result, rather
-   than returning it.  Needed to get sorting working, as the merging of
-   ads_do_search_all messes it up.  This should eventually replace it.  */
-
-ADS_STATUS ads_do_search_all2(ADS_STRUCT *ads, const char *bind_path,
-			      int scope, const char *exp, 
-			      const char **attrs, const char *sort, 
-			      void(*fn)(char *, void **, void *), 
-			      void *data_area)
+/**
+ * Run a function on all results for a search.  Uses ads_do_paged_search() and
+ *  runs the function as each page is returned, using ads_process_results()
+ * @param ads connection to ads server
+ * @param bind_path Base dn for the search
+ * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param exp Search expression
+ * @param attrs Attributes to retrieve
+ * @param fn Function which takes attr name, values list, and data_area
+ * @param data_area Pointer which is passed to function on each call
+ * @return status of search
+ **/
+ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
+				int scope, const char *exp, const char **attrs,
+				void(*fn)(char *, void **, void *), 
+				void *data_area)
 {
 	void *cookie = NULL;
 	int count = 0;
 	ADS_STATUS status;
 	void *res;
 
-	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res, &count, &cookie, sort);
+	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res,
+				     &count, &cookie);
 
 	if (!ADS_ERR_OK(status)) return status;
 
@@ -255,7 +273,8 @@ ADS_STATUS ads_do_search_all2(ADS_STRUCT *ads, const char *bind_path,
 	ads_msgfree(ads, res);
 
 	while (cookie) {
-		status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res, &count, &cookie, NULL);
+		status = ads_do_paged_search(ads, bind_path, scope, exp, attrs,
+					     &res, &count, &cookie);
 
 		if (!ADS_ERR_OK(status)) break;
 		
@@ -266,9 +285,16 @@ ADS_STATUS ads_do_search_all2(ADS_STRUCT *ads, const char *bind_path,
 	return status;
 }
 
-/*
-  do a search with a timeout
-*/
+/**
+ * Do a search with a timeout.
+ * @param ads connection to ads server
+ * @param bind_path Base dn for the search
+ * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param exp Search expression
+ * @param attrs Attributes to retrieve
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @return status of search
+ **/
 ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
 			 const char *exp,
 			 const char **attrs, void **res)
@@ -292,9 +318,14 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 
 	return ADS_ERROR(rc);
 }
-/*
-  do a general ADS search
-*/
+/**
+ * Do a general ADS search
+ * @param ads connection to ads server
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @param exp Search expression
+ * @param attrs Attributes to retrieve
+ * @return status of search
+ **/
 ADS_STATUS ads_search(ADS_STRUCT *ads, void **res, 
 		      const char *exp, 
 		      const char **attrs)
@@ -303,9 +334,14 @@ ADS_STATUS ads_search(ADS_STRUCT *ads, void **res,
 			     exp, attrs, res);
 }
 
-/*
-  do a search on a specific DistinguishedName
-*/
+/**
+ * Do a search on a specific DistinguishedName
+ * @param ads connection to ads server
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @param dn DistinguishName to search
+ * @param attrs Attributes to retrieve
+ * @return status of search
+ **/
 ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void **res, 
 			 const char *dn, 
 			 const char **attrs)
@@ -313,35 +349,46 @@ ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void **res,
 	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
 }
 
-/*
-  free up memory from a ads_search
-*/
+/**
+ * Free up memory from a ads_search
+ * @param ads connection to ads server
+ * @param msg Search results to free
+ **/
 void ads_msgfree(ADS_STRUCT *ads, void *msg)
 {
 	if (!msg) return;
 	ldap_msgfree(msg);
 }
 
-/*
-  free up memory from various ads requests
-*/
+/**
+ * Free up memory from various ads requests
+ * @param ads connection to ads server
+ * @param mem Area to free
+ **/
 void ads_memfree(ADS_STRUCT *ads, void *mem)
 {
 	if (!mem) return;
 	ldap_memfree(mem);
 }
 
-/*
-  get a dn from search results
-*/
+/**
+ * Get a dn from search results
+ * @param ads connection to ads server
+ * @param res Search results
+ * @return dn string
+ **/
 char *ads_get_dn(ADS_STRUCT *ads, void *res)
 {
 	return ldap_get_dn(ads->ld, res);
 }
 
-/*
-  find a machine account given a hostname 
-*/
+/**
+ * Find a machine account given a hostname
+ * @param ads connection to ads server
+ * @param res ** which will contain results - free res* with ads_msgfree()
+ * @param host Hostname to search for
+ * @return status of search
+ **/
 ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 {
 	ADS_STATUS status;
@@ -375,10 +422,11 @@ static char **ads_dup_values(TALLOC_CTX *ctx, char **values)
 	return newvals;
 }
 
-/*
-  initialize a list of mods 
-*/
-
+/**
+ * Initialize a list of mods to be used in a modify request
+ * @param ctx An initialized TALLOC_CTX
+ * @return allocated ADS_MODLIST
+ **/
 ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 {
 #define ADS_MODLIST_ALLOC_SIZE 10
@@ -426,6 +474,14 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ADS_ERROR(LDAP_SUCCESS);
 }
 
+/**
+ * Add an already-constructed list of values to a mod list for an ADD
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to add
+ * @param values Constructed values list to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_add_list(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			    char *name, char **values)
 {
@@ -436,6 +492,14 @@ ADS_STATUS ads_mod_add_list(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
+/**
+ * Add an already-constructed list of values to a mod list for a REPLACE
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to add
+ * @param values Constructed values list to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_repl_list(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			     char *name, char **values)
 {
@@ -451,9 +515,15 @@ ADS_STATUS ads_mod_repl_list(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 }
 
-/*
-  add an attribute to the list, with values list to be built from args
-*/
+/**
+ * Add any number of string values to a mod list - for ADD or REPLACE
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param mod_op Operation to perform (LDAP_MOD_ADD | LDAP_MOD_REPLACE)
+ * @param name The attribute name to add
+ * @param ... Any number of values, in (char *) form
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_add_var(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			   int mod_op, const char *name, ...)
 {
@@ -483,6 +553,15 @@ ADS_STATUS ads_mod_add_var(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ads_modlist_add(ctx, mods, do_op, name, values);
 }
 
+/**
+ * Add any number of ber values to a mod list - for ADD or REPLACE
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param mod_op Operation to perform (LDAP_MOD_ADD | LDAP_MOD_REPLACE)
+ * @param name The attribute name to add
+ * @param ... Any number of values, in (struct berval *) form
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_add_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			   int mod_op, const char *name, ...)
 {
@@ -514,6 +593,14 @@ ADS_STATUS ads_mod_add_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ads_modlist_add(ctx, mods, do_op, name, values);
 }
 
+/**
+ * Add a single string value to a mod list - for REPLACE
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to replace
+ * @param val The value to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_repl(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			char *name, char *val)
 {
@@ -524,12 +611,29 @@ ADS_STATUS ads_mod_repl(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		return ads_mod_add_var(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 }
 
+/**
+ * Add a single string value to a mod list - for ADD
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to add
+ * @param val The value to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const char *val)
 {
 	return ads_mod_add_var(ctx, mods, LDAP_MOD_ADD, name, val, NULL);
 }
 
+/**
+ * Add a single berval value to a mod list - for ADD
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to add
+ * @param size The size of of the value
+ * @param val The value to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_add_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			   char *name, size_t size, char *val)
 {
@@ -545,6 +649,15 @@ ADS_STATUS ads_mod_add_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ads_mod_add_ber(ctx, mods, LDAP_MOD_ADD, name, bval, NULL);
 }
 
+/**
+ * Add a single berval value to a mod list - for REPLACE
+ * @param ctx An initialized TALLOC_CTX
+ * @param mods An initialized ADS_MODLIST
+ * @param name The attribute name to replace
+ * @param size The size of of the value
+ * @param val The value to add
+ * @return ADS STATUS indicating success of add
+ **/
 ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			    const char *name, size_t size, char *val)
 {
@@ -565,6 +678,13 @@ ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	}
 }
 
+/**
+ * Perform an ldap modify
+ * @param ads connection to ads server
+ * @param mod_dn DistinguishedName to modify
+ * @param mods list of modifications to perform
+ * @return status of modify
+ **/
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 {
 	int ret,i;
@@ -590,6 +710,13 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	return ADS_ERROR(ret);
 }
 
+/**
+ * Perform an ldap add
+ * @param ads connection to ads server
+ * @param new_dn DistinguishedName to add
+ * @param mods list of attributes and values for DN
+ * @return status of add
+ **/
 ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 {
 	int i;
@@ -602,17 +729,24 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	return ADS_ERROR(ldap_add_s(ads->ld, new_dn, mods));
 }
 
+/**
+ * Delete a DistinguishedName
+ * @param ads connection to ads server
+ * @param new_dn DistinguishedName to delete
+ * @return status of delete
+ **/
 ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
 	return ADS_ERROR(ldap_delete(ads->ld, del_dn));
 }
 
-/*
-  build an org unit string
-  if org unit is Computers or blank then assume a container, otherwise
-  assume a \ separated list of organisational units
-  caller must free
-*/
+/**
+ * Build an org unit string
+ *  if org unit is Computers or blank then assume a container, otherwise
+ *  assume a \ separated list of organisational units
+ * @param org_unit Organizational unit
+ * @return org unit string - caller must free
+ **/
 char *ads_ou_string(const char *org_unit)
 {	
 	if (!org_unit || !*org_unit || strcasecmp(org_unit, "Computers") == 0) {
@@ -785,23 +919,29 @@ static void ads_dump_field(char *field, void **values, void *data_area)
 	}
 }
 
-/*
-  dump a result from LDAP on stdout
-  used for debugging
-*/
+/**
+ * Dump a result from LDAP on stdout
+ *  used for debugging
+ * @param ads connection to ads server
+ * @param res Results to dump
+ **/
 
 void ads_dump(ADS_STRUCT *ads, void *res)
 {
 	ads_process_results(ads, res, ads_dump_field, NULL);
 }
 
-/*
-  Walk through results, calling a function for each entry found.
-  The function receives a field name, a berval * array of values,
-  and a data area passed through from the start.  The function is
-  called once with null for field and values at the end of each
-  entry.
-*/
+/**
+ * Walk through results, calling a function for each entry found.
+ *  The function receives a field name, a berval * array of values,
+ *  and a data area passed through from the start.  The function is
+ *  called once with null for field and values at the end of each
+ *  entry.
+ * @param ads connection to ads server
+ * @param res Results to process
+ * @param fn Function for processing each result
+ * @param data_area user-defined area to pass to function
+ **/
 void ads_process_results(ADS_STRUCT *ads, void *res,
 			 void(*fn)(char *, void **, void *),
 			 void *data_area)
@@ -830,6 +970,15 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 	}
 }
 
+/**
+ * Walk through an entry, calling a function for each attribute found.
+ *  The function receives a field name, a berval * array of values,
+ *  and a data area passed through from the start.
+ * @param ads connection to ads server
+ * @param res Results to process
+ * @param fn Function for processing each result
+ * @param data_area user-defined area to pass to function
+ **/
 void ads_process_entry(ADS_STRUCT *ads, void *msg,
 		       void(*fn)(ADS_STRUCT *, char *, void **, void *),
 		       void *data_area)
@@ -850,18 +999,25 @@ void ads_process_entry(ADS_STRUCT *ads, void *msg,
 	}
 	ber_free(b, 0);
 }
-/*
-  count how many replies are in a LDAPMessage
-*/
+/**
+ * count how many replies are in a LDAPMessage
+ * @param ads connection to ads server
+ * @param res Results to count
+ * @return number of replies
+ **/
 int ads_count_replies(ADS_STRUCT *ads, void *res)
 {
 	return ldap_count_entries(ads->ld, (LDAPMessage *)res);
 }
 
-/*
-  join a machine to a realm, creating the machine account
-  and setting the machine password
-*/
+/**
+ * Join a machine to a realm
+ *  Creates the machine account and sets the machine password
+ * @param ads connection to ads server
+ * @param hostname name of host to add
+ * @param org_unit Organizational unit to place machine in
+ * @return status of join
+ **/
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
 {
 	ADS_STATUS status;
@@ -900,9 +1056,12 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org
 	return status;
 }
 
-/*
-  delete a machine from the realm
-*/
+/**
+ * Delete a machine from the realm
+ * @param ads connection to ads server
+ * @param hostname Machine to remove
+ * @return status of delete
+ **/
 ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	ADS_STATUS status;
@@ -938,9 +1097,13 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return status;
 }
 
-/* 
-  add machine account to existing security descriptor 
-*/
+/**
+ * add machine account to existing security descriptor 
+ * @param ads connection to ads server
+ * @param hostname machine to add
+ * @param dn DN of security descriptor
+ * @return status
+ **/
 ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 {
 	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
@@ -1016,6 +1179,13 @@ ads_set_sd_error:
 	return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
+/**
+ * Set the machine account password
+ * @param ads connection to ads server
+ * @param hostname machine whose password is being set
+ * @param password new password
+ * @return status of password change
+ **/
 ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 				    const char *hostname, 
 				    const char *password)
@@ -1041,25 +1211,36 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	return status;
 }
 
-/*
-  pull the first entry from a ADS result
-*/
+/**
+ * pull the first entry from a ADS result
+ * @param ads connection to ads server
+ * @param res Results of search
+ * @return first entry from result
+ **/
 void *ads_first_entry(ADS_STRUCT *ads, void *res)
 {
 	return (void *)ldap_first_entry(ads->ld, (LDAPMessage *)res);
 }
 
-/*
-  pull the next entry from a ADS result
-*/
+/**
+ * pull the next entry from a ADS result
+ * @param ads connection to ads server
+ * @param res Results of search
+ * @return next entry from result
+ **/
 void *ads_next_entry(ADS_STRUCT *ads, void *res)
 {
 	return (void *)ldap_next_entry(ads->ld, (LDAPMessage *)res);
 }
 
-/*
-  pull a single string from a ADS result
-*/
+/**
+ * pull a single string from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX to use for allocating result string
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @return Result string in talloc context
+ **/
 char *ads_pull_string(ADS_STRUCT *ads, 
 		      TALLOC_CTX *mem_ctx, void *msg, const char *field)
 {
@@ -1076,8 +1257,13 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	return ret;
 }
 
-/*
-  pull a single uint32 from a ADS result
+/**
+ * pull a single uint32 from a ADS result
+ * @param ads connection to ads server
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param v Pointer to int to store result
+ * @return boolean inidicating success
 */
 BOOL ads_pull_uint32(ADS_STRUCT *ads, 
 		     void *msg, const char *field, uint32 *v)
@@ -1096,8 +1282,13 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
 	return True;
 }
 
-/*
-  pull a single DOM_SID from a ADS result
+/**
+ * pull a single DOM_SID from a ADS result
+ * @param ads connection to ads server
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param sid Pointer to sid to store result
+ * @return boolean inidicating success
 */
 BOOL ads_pull_sid(ADS_STRUCT *ads, 
 		  void *msg, const char *field, DOM_SID *sid)
@@ -1117,10 +1308,15 @@ BOOL ads_pull_sid(ADS_STRUCT *ads,
 	return ret;
 }
 
-/*
-  pull an array of DOM_SIDs from a ADS result
-  return the count of SIDs pulled
-*/
+/**
+ * pull an array of DOM_SIDs from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param sids pointer to sid array to allocate
+ * @return the count of SIDs pulled
+ **/
 int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		  void *msg, const char *field, DOM_SID **sids)
 {
@@ -1147,7 +1343,13 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 }
 
 
-/* find the update serial number - this is the core of the ldap cache */
+/**
+ * find the update serial number - this is the core of the ldap cache
+ * @param ads connection to ads server
+ * @param ads connection to ADS server
+ * @param usn Pointer to retrieved update serial number
+ * @return status of search
+ **/
 ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
@@ -1167,10 +1369,13 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 }
 
 
-/* find the servers name and realm - this can be done before authentication 
-   The ldapServiceName field on w2k  looks like this:
-     vnet3.home.samba.org:win2000-vnet3$@VNET3.HOME.SAMBA.ORG
-*/
+/**
+ * Find the servers name and realm - this can be done before authentication 
+ *  The ldapServiceName field on w2k  looks like this:
+ *    vnet3.home.samba.org:win2000-vnet3$@VNET3.HOME.SAMBA.ORG
+ * @param ads connection to ads server
+ * @return status of search
+ **/
 ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 {
 	const char *attrs[] = {"ldapServiceName", NULL};
@@ -1224,9 +1429,15 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 }
 
 
-/* 
-   find the list of trusted domains
-*/
+/**
+ * find the list of trusted domains
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating results
+ * @param num_trusts pointer to number of trusts
+ * @param names pointer to trusted domain name list
+ * @param sids pointer to list of sids of trusted domains
+ * @return the count of SIDs pulled
+ **/
 ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
 			       int *num_trusts, char ***names, DOM_SID **sids)
 {
@@ -1264,7 +1475,12 @@ ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	return ADS_SUCCESS;
 }
 
-/* find the domain sid for our domain */
+/**
+ * find the domain sid for our domain
+ * @param ads connection to ads server
+ * @param sid Pointer to domain sid
+ * @return status of search
+ **/
 ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 {
 	const char *attrs[] = {"objectSid", NULL};
