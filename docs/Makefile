@@ -1,5 +1,5 @@
 #################################################################
-# Makefile.in for Samba Documentation
+# Makefile for Samba Documentation
 # Authors:	
 # 		James Moore <jmoore@php.net>
 # 		Gerald Carter <jerry@samba.org>
@@ -172,6 +172,10 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
+# RTF files
+$(RTFDIR)/%.rtf: $(DOCBOOKDIR)/%.xml
+	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
+
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
@@ -190,7 +194,7 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 # Plucker docs
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
 	mkdir -p $(@D)
-	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $* -p $(PLUCKERDIR)
+	$(PLUCKERBUILD) -v -V 2 --stayonhost --zlib-compression -f $* -p $(PLUCKERDIR) file:$< 
 
 # Manpages
 $(MANPAGEDIR)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
@@ -241,7 +245,7 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl sc
 
 # Examples and the like
 
-files: $(HOWTODIR)/index.xml xslt/extract-smbfiles.xsl
+files: Samba-HOWTO-Collection/index.xml xslt/extract-smbfiles.xsl
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
 samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl

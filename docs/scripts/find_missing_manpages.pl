@@ -8,7 +8,7 @@ $topdir = (shift @ARGV) or $topdir = ".";
 
 $progs = "";
 
-open(IN, "$topdir/source/Makefile.in");
+open(IN, "$topdir/Makefile.in");
 while(<IN>) {
 	if($invar && /^([ \t]*)(.*?)([\\])$/) {
 		$progs.=" " . $2;
@@ -34,6 +34,6 @@ foreach(split(/bin\//, $progs)) {
 	}
 
 	if(!$found) {
-		print "$f doesn't have a manpage!\n";
+		print "'$f' does not have a manpage\n";
 	}
 }
