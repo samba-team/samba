@@ -91,6 +91,7 @@ static char * krb5kdcentry_attrs[] = {
     "modifyTimestamp",
     "objectClass",
     "sambaAcctFlags",
+    "sambaKickoffTime",
     "sambaNTPassword",
     "sambaPwdLastSet",
     "sambaPwdMustChange",
@@ -331,6 +332,24 @@ LDAP_addmod_generalized_time(LDAPMod *** mods, int modop,
 }
 
 static krb5_error_code
+LDAP_addmod_integer(krb5_context context,
+		    LDAPMod *** mods, int modop,
+		    const char *attribute, unsigned long l)
+{
+    krb5_error_code ret;
+    char *buf;
+
+    ret = asprintf(&buf, "%ld", l);
+    if (ret < 0) {
+	krb5_set_error_string(context, "asprintf: out of memory:");
+	return ret;
+    }
+    ret = LDAP_addmod(mods, modop, attribute, buf);
+    free (buf);
+    return ret;
+}
+
+static krb5_error_code
 LDAP_get_string_value(HDB * db, LDAPMessage * entry,
 		      const char *attribute, char **ptr)
 {
@@ -402,11 +421,11 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 {
     krb5_error_code ret;
     krb5_boolean is_new_entry;
-    int rc, i;
     char *tmp = NULL;
     LDAPMod **mods = NULL;
     hdb_entry orig;
     unsigned long oflags, nflags;
+    int i;
 
     krb5_boolean is_samba_account = FALSE;
     krb5_boolean is_account = FALSE;
@@ -521,15 +540,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     }
 
     if (is_heimdal_entry && (ent->kvno != orig.kvno || is_new_entry)) {
-	rc = asprintf(&tmp, "%d", ent->kvno);
-	if (rc < 0) {
-	    krb5_set_error_string(context, "asprintf: out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5KeyVersionNumber",
-			  tmp);
-	free(tmp);
+	ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+			    "krb5KeyVersionNumber", 
+			    ent->kvno);
 	if (ret)
 	    goto out;
     }
@@ -545,15 +558,23 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (is_heimdal_entry && ent->valid_end) {
-	if (orig.valid_end == NULL
-	    || (*(ent->valid_end) != *(orig.valid_end))) {
-	    ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
-					       "krb5ValidEnd",
-					       ent->valid_end);
-	    if (ret)
-		goto out;
-	}
+    if (ent->valid_end) {
+ 	if (orig.valid_end == NULL || (*(ent->valid_end) != *(orig.valid_end))) {
+	    if (is_heimdal_entry) { 
+		ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
+						   "krb5ValidEnd",
+						   ent->valid_end);
+		if (ret)
+		    goto out;
+            }
+	    if (is_samba_account) {
+		ret = LDAP_addmod_integer(context, &mods,  LDAP_MOD_REPLACE,
+					  "sambaKickoffTime", 
+					  *(ent->valid_end));
+		if (ret)
+		    goto out;
+	    }
+   	}
     }
 
     if (ent->pw_end) {
@@ -567,15 +588,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    }
 
 	    if (is_samba_account) {
-		rc = asprintf(&tmp, "%ld", *(ent->pw_end));
-		if (rc < 0) {
-		    krb5_set_error_string(context, "asprintf: out of memory");
-		    ret = ENOMEM;
-		    goto out;
-		}
-		ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE,
-				  "sambaPwdMustChange", tmp);
-		free(tmp);
+		ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+					  "sambaPwdMustChange", 
+					  *(ent->pw_end));
 		if (ret)
 		    goto out;
 	    }
@@ -586,14 +601,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 #if 0 /* we we have last_pw_change */
     if (is_samba_account && ent->last_pw_change) {
 	if (orig.last_pw_change == NULL || (*(ent->last_pw_change) != *(orig.last_pw_change))) {
-	    rc = asprintf(&tmp, "%ld", *(ent->last_pw_change));
-	    if (rc < 0) {
-		krb5_set_error_string(context, "asprintf: out of memory");
-		ret = ENOMEM;
-		goto out;
-	    }
-	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaPwdLastSet", tmp);
-	    free(tmp);
+	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+				      "sambaPwdLastSet", 
+				      *(ent->last_pw_change));
 	    if (ret)
 		goto out;
 	}
@@ -603,14 +613,10 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     if (is_heimdal_entry && ent->max_life) {
 	if (orig.max_life == NULL
 	    || (*(ent->max_life) != *(orig.max_life))) {
-	    rc = asprintf(&tmp, "%d", *(ent->max_life));
-	    if (rc < 0) {
-		krb5_set_error_string(context, "asprintf: out of memory");
-		ret = ENOMEM;
-		goto out;
-	    }
-	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5MaxLife", tmp);
-	    free(tmp);
+
+	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+				      "krb5MaxLife", 
+				      *(ent->max_life));
 	    if (ret)
 		goto out;
 	}
@@ -619,15 +625,10 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     if (is_heimdal_entry && ent->max_renew) {
 	if (orig.max_renew == NULL
 	    || (*(ent->max_renew) != *(orig.max_renew))) {
-	    rc = asprintf(&tmp, "%d", *(ent->max_renew));
-	    if (rc < 0) {
-		krb5_set_error_string(context, "asprintf: out of memory");
-		ret = ENOMEM;
-		goto out;
-	    }
-	    ret =
-		LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5MaxRenew", tmp);
-	    free(tmp);
+
+	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+				      "krb5MaxRenew",
+				      *(ent->max_renew));
 	    if (ret)
 		goto out;
 	}
@@ -637,14 +638,10 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     nflags = HDBFlags2int(ent->flags);
 
     if (is_heimdal_entry && oflags != nflags) {
-	rc = asprintf(&tmp, "%lu", nflags);
-	if (rc < 0) {
-	    krb5_set_error_string(context, "asprintf: out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5KDCFlags", tmp);
-	free(tmp);
+
+	ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+				  "krb5KDCFlags",
+				  nflags);
 	if (ret)
 	    goto out;
     }
@@ -730,15 +727,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    {
 		;
 	    } else if (is_heimdal_entry) {
-		rc = asprintf(&tmp, "%d", ent->etypes->val[i]);
-		if (rc < 0) {
-		    krb5_set_error_string(context, "asprintf: out of memory");
-		    ret = ENOMEM;
-		    goto out;
-		}
-		ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "krb5EncryptionType",
-				  tmp);
-		free(tmp);
+		ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_ADD,
+					  "krb5EncryptionType",
+					  ent->etypes->val[i]);
 		if (ret)
 		    goto out;
 	    }
@@ -1134,6 +1125,19 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ent->valid_end = NULL;
     }
 
+    ret = LDAP_get_integer_value(db, msg, "sambaKickoffTime", &tmp_time);
+    if (ret == 0) {
+ 	if (ent->valid_end == NULL) {
+ 	    ent->valid_end = malloc(sizeof(*ent->valid_end));
+ 	    if (ent->valid_end == NULL) {
+ 		krb5_set_error_string(context, "malloc: out of memory");
+ 		ret = ENOMEM;
+ 		goto out;
+ 	    }
+ 	}
+ 	*ent->valid_end = tmp_time;
+    }
+
     ent->pw_end = malloc(sizeof(*ent->pw_end));
     if (ent->pw_end == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -1298,7 +1302,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
     ret = 0;
 
-  out:
+ out:
     if (unparsed_name)
 	free(unparsed_name);
 
