@@ -49,9 +49,10 @@ struct table_node {
 /* and the notify info asked about */
 /* that's the central struct */
 typedef struct _Printer{
+	struct _Printer *prev, *next;
 	BOOL document_started;
 	BOOL page_started;
-    int jobid; /* jobid in printing backend */
+	int jobid; /* jobid in printing backend */
 	BOOL printer_type;
 	union {
 	  	fstring handlename;
@@ -73,6 +74,8 @@ typedef struct _Printer{
 		fstring user;
 	} client;
 } Printer_entry;
+
+static Printer_entry *printers_list;
 
 typedef struct _counter_printer_0 {
 	ubi_dlNode Next;
@@ -193,6 +196,9 @@ static void free_printer_entry(void *ptr)
 	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
+
+	/* Remove from the internal list. */
+	DLIST_REMOVE(printers_list, Printer);
 
 	SAFE_FREE(Printer);
 }
@@ -552,11 +558,14 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 
 	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
 
+	/* Add to the internal list. */
+	DLIST_ADD(printers_list, new_printer);
+
 	return True;
 }
 
 /********************************************************************
- Return True is the handle is a print server.
+ Return True if the handle is a print server.
  ********************************************************************/
 
 static BOOL handle_is_printserver(pipes_struct *p, POLICY_HND *handle)
@@ -607,99 +616,45 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 }
 
 /***************************************************************************
- receive the notify message
+ Receive the notify message.
 ****************************************************************************/
 
 static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
+	Printer_entry *find_printer;
 	WERROR status;
-	struct pipes_struct *p;
-	struct policy *pol;
-	struct handle_list *hl;
-	fstring printer;
-	char *msg = (char *)buf;
-	POLICY_HND sent_hnd;
-	BOOL valid_sent_hnd = False;
+	char msg[8];
+	uint32 low, high;
 
-	*printer = '\0';
-
-	if (len < 5 + sizeof(POLICY_HND)) {
-		DEBUG(0,("srv_spoolss_receive_message: got null message !\n"));
+	if (len != sizeof(msg)) {
+		DEBUG(0,("srv_spoolss_receive_message: got incorrect message size (%u)!\n", (unsigned int)len));
 		return;
 	}
 
-	/*
-	 * If this is a message to ourselves, take note of the fact.
-	 * we'll be looking for the handle attached to the pipe to find
-	 * the open printer instance.
-	 */
+	low = IVAL(msg,0);
+	high = IVAL(msg,4);
 
-	fstrcpy(printer,&msg[4 + sizeof(POLICY_HND)]);
-	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
+	DEBUG(10,("srv_spoolss_receive_message: Got message printer change low=0x%x  high=0x%x\n", (unsigned int)low,
+		(unsigned int)high ));
 
-	if (IVAL(buf,0) == (uint32)sys_getpid()) {
-		memcpy(&sent_hnd, &msg[4], sizeof(POLICY_HND));
-		DEBUG(10,("srv_spoolss_receive_message: using our own handle.\n"));
-		valid_sent_hnd = True;
-	}
+	find_printer = printers_list;
 
-	/*
-	 * We need to enumerate all printers. The handle list is shared
-	 * across pipes of the same name, so just find the first open
-	 * spoolss pipe.
-	 */
-
-	hl = NULL;	
-	for ( p = get_first_pipe(); p; p = get_next_pipe(p)) {
-		if (strequal(p->name, "spoolss")) {
-			hl = p->pipe_handles;
-			break;
-		}
-	}
-
-	if (!hl) {
-		DEBUG(0,("srv_spoolss_receive_message: no handle list on spoolss pipe !\n"));
-		return;
-	}
-
-	/*
-	 * If a handle was sent from this process, look for it only, don't
-	 * do the full search.
-	 */
-
-	if (valid_sent_hnd) {
-		Printer_entry *find_printer = find_printer_index_by_hnd(p, &sent_hnd);
-
-		if (!find_printer) {
-			DEBUG(0,("srv_spoolss_receive_message: Cannot find printer by sent handle.\n"));
-			return;
-		}
-
-		if (find_printer->notify.client_connected==True)
-			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
-
-		return;		
-	}
-
-	/* Handle was sent from a different process. */
-	/* Iterate the printer list on this pipe. */
-	for (pol = hl->Policy; pol; pol = pol->next ) {
-		Printer_entry *find_printer = (Printer_entry *)pol->data_ptr;
-
-		if (!find_printer)
-			continue;
+	/* Iterate the printer list */
+	for(; find_printer; find_printer = find_printer->next) {
 
 		/*
-		 * if the entry is the given printer or if it's a printerserver
-		 * we send the message
+		 * If the entry has a connected client we send the message.
 		 */
 
-		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
-			if (strcmp(find_printer->dev.handlename, printer))
-				continue;
 
-		if (find_printer->notify.client_connected==True)
-			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
+		if (find_printer->notify.client_connected==True) {
+			DEBUG(10,("srv_spoolss_receive_message: printerserver [%s]\n", find_printer->dev.printerservername ));
+			if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, low, high, &status))
+				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn status = 0x%x\n",
+					(unsigned int)W_ERROR_V(status)));
+			else
+				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn failed\n"));
+		}
 	}
 }
 
@@ -707,34 +662,15 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
  Send a notify event.
 ****************************************************************************/
 
-static BOOL srv_spoolss_sendnotify(pipes_struct *p, POLICY_HND *handle)
+static BOOL srv_spoolss_sendnotify(uint32 high, uint32 low)
 {
-	pstring msg;
-	size_t msg_len;
+	char msg[8];
 
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
+	SIVAL(msg,0,low);
+	SIVAL(msg,4,high);
+	DEBUG(10,("srv_spoolss_sendnotify: printer change low=%x  high=%x\n", msg[0], msg[1]));
 
-	if (!Printer) {
-		DEBUG(0,("srv_spoolss_sendnotify: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return False;
-	}
-
-	memset(msg, '\0', sizeof(msg));
-
-	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER) {
-		uint32 mypid = (uint32)sys_getpid();
-		SIVAL(msg,0,mypid);
-		memcpy(&msg[4], handle, sizeof(POLICY_HND));
-		fstrcpy(&msg[4+sizeof(POLICY_HND)], Printer->dev.handlename);
-		msg_len = 4 + sizeof(POLICY_HND) + strlen(Printer->dev.handlename) + 1;
-	} else {
-		fstrcpy(&msg[4+sizeof(POLICY_HND)], "");
-		msg_len = 4 + sizeof(POLICY_HND) + 1;
-	}
-
-	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", &msg[4+sizeof(POLICY_HND)] ));
-
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, msg_len, False);
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(msg), False);
 	return True;
 }	
 
@@ -1125,7 +1061,7 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	update_c_setprinter(FALSE);
 
 	if (W_ERROR_IS_OK(result)) {
-		srv_spoolss_sendnotify(p, handle);
+		srv_spoolss_sendnotify(0, PRINTER_CHANGE_DELETE_PRINTER);
 	}
 		
 	return result;
@@ -4858,7 +4794,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
-	srv_spoolss_sendnotify(p, handle);
+	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER);
 
 	return result;
 }
@@ -6020,7 +5956,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return WERR_INVALID_PARAM;
 	}
 
-    /*
+	/*
 	 * When a printer is created, the drivername bound to the printer is used
 	 * to lookup previously saved driver initialization info, which is then 
 	 * bound to the new printer, simulating what happens in the Windows arch.
@@ -6045,7 +5981,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	update_c_setprinter(False);
 
-	srv_spoolss_sendnotify(p, handle);
+	srv_spoolss_sendnotify(0, PRINTER_CHANGE_ADD_PRINTER);
 
 	return WERR_OK;
 }
@@ -6468,7 +6404,10 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		free_nt_printer_param(&param);
 	SAFE_FREE(old_param.data);
 
-	srv_spoolss_sendnotify(p, handle);
+#if 0
+	/* Is this correct. JRA ? */
+	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER); 
+#endif
 
 	return status;
 }
