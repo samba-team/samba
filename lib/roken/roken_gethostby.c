@@ -37,12 +37,6 @@ RCSID("$Id$");
 #endif
 
 #include <roken.h>
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
 
 #undef roken_gethostbyname
 #undef roken_gethostbyaddr
