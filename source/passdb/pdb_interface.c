@@ -385,6 +385,109 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_gettrustpwent(struct pdb_context *context,
+                                      SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *cur_methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	
+	cur_methods = context->pdb_methods;
+	
+	while (cur_methods) {
+		ret = cur_methods->gettrustpwent(cur_methods, trust);
+		if (NT_STATUS_IS_OK(ret)) {
+			trust->methods = cur_methods;
+			return ret;
+		}
+		cur_methods = cur_methods->next;
+	}
+	
+	return ret;
+}
+
+static NTSTATUS context_gettrustpwsid(struct pdb_context *context,
+                                      SAM_TRUST_PASSWD *trust,
+                                      const DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *cur_methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	
+	cur_methods = context->pdb_methods;
+	
+	while (cur_methods) {
+		ret = cur_methods->gettrustpwsid(cur_methods, trust, sid);
+		if (NT_STATUS_IS_OK(ret)) {
+			trust->methods = cur_methods;
+			return ret;
+		}
+		cur_methods = cur_methods->next;
+	}
+	
+	return ret;
+}
+
+static NTSTATUS context_add_trust_passwd(struct pdb_context *context,
+                                         SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	
+	return context->pdb_methods->add_trust_passwd(context->pdb_methods, trust);
+}
+
+static NTSTATUS context_update_trust_passwd(struct pdb_context *context,
+                                            SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	
+	if (!trust || !trust->methods) {
+		DEBUG(0, ("invalid trust pointer specified!\n"));
+		return ret;
+	}
+	
+	return trust->methods->update_trust_passwd(trust->methods, trust);
+}
+
+static NTSTATUS context_delete_trust_passwd(struct pdb_context *context,
+                                            SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *methods;
+	
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	
+	if (!trust || !trust->methods) {
+		DEBUG(0, ("invalid trust pointer specified!\n"));
+		return ret;
+	}
+	
+	return trust->methods->delete_trust_passwd(trust->methods, trust);
+}
+
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
   that the attached modules might have associated.
@@ -500,6 +603,11 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+	(*context)->pdb_gettrustpwent = context_gettrustpwent;
+	(*context)->pdb_gettrustpwsid = context_gettrustpwsid;
+	(*context)->pdb_add_trust_passwd = context_add_trust_passwd;
+	(*context)->pdb_update_trust_passwd = context_update_trust_passwd;
+	(*context)->pdb_delete_trust_passwd = context_delete_trust_passwd;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -840,6 +948,33 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
+static NTSTATUS pdb_default_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD* trust,
+                                          const DOM_SID* sid)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_add_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = talloc(mem_ctx, sizeof(struct pdb_methods));
@@ -866,6 +1001,12 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	
+	(*methods)->gettrustpwent = pdb_default_gettrustpwent;
+	(*methods)->gettrustpwsid = pdb_default_gettrustpwsid;
+	(*methods)->add_trust_passwd = pdb_default_add_trust_passwd;
+	(*methods)->update_trust_passwd = pdb_default_update_trust_passwd;
+	(*methods)->delete_trust_passwd = pdb_default_delete_trust_passwd;
 
 	return NT_STATUS_OK;
 }

@@ -78,6 +78,15 @@ enum pdb_group_elements {
 	PDB_GROUP_COUNT
 };
 
+enum pdb_trust_passwd_elements {
+	PDB_TRUST_PASS,
+	PDB_TRUST_SID,
+	PDB_TRUST_NAME,
+	PDB_TRUST_MODTIME,
+	PDB_TRUST_FLAGS,
+	
+	PDB_TRUST_COUNT
+};
 
 enum pdb_value_state {
 	PDB_DEFAULT=0,
@@ -186,6 +195,26 @@ typedef struct _GROUP_INFO {
 } GROUP_INFO;
 
 
+typedef struct sam_trust_passwd {
+	TALLOC_CTX *mem_ctx;
+	
+	void (*free_fn)(struct sam_trust_passwd **);
+	
+	struct pdb_methods *methods;
+
+	struct trust_passwd_data {
+		uint16 flags;			/* flags */
+		size_t uni_name_len;		/* unicode name length */
+		smb_ucs2_t uni_name[32];	/* unicode domain name */
+		fstring pass;			/* trust password */
+		time_t mod_time;		/* last change time */
+		DOM_SID domain_sid;		/* trusted domain sid */
+	} private;
+
+} SAM_TRUST_PASSWD;
+
+
+
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
@@ -195,7 +224,7 @@ typedef struct _GROUP_INFO {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 4
+#define PASSDB_INTERFACE_VERSION 5
 
 typedef struct pdb_context 
 {
@@ -267,6 +296,18 @@ typedef struct pdb_context
 
 	NTSTATUS (*pdb_get_group_uids)(struct pdb_context *context, const DOM_SID *group, uid_t **members, int *num_members);
 
+	/* trust password functions */
+
+	NTSTATUS (*pdb_gettrustpwent)(struct pdb_context *context, SAM_TRUST_PASSWD *trust);
+	
+	NTSTATUS (*pdb_gettrustpwsid)(struct pdb_context *context, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
+	
+	NTSTATUS (*pdb_add_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
+	
+	NTSTATUS (*pdb_update_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
+	
+	NTSTATUS (*pdb_delete_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
+	
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -347,6 +388,18 @@ typedef struct pdb_methods
 	void *private_data;  /* Private data of some kind */
 	
 	void (*free_private_data)(void **);
+	
+	/* trust password functions */
+
+	NTSTATUS (*gettrustpwent)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust);
+	
+	NTSTATUS (*gettrustpwsid)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
+	
+	NTSTATUS (*add_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
+	
+	NTSTATUS (*update_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
+	
+	NTSTATUS (*delete_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
 
 } PDB_METHODS;
 
