@@ -468,6 +468,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	char *princ_name = NULL;
 	char *realm = NULL;
 	krb5_creds creds, *credsp = NULL;
+	krb5_data orig_realm;
 	krb5_ccache ccache = NULL;
 
 	ZERO_STRUCT(creds);
@@ -518,12 +519,15 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 		return ADS_ERROR_KRB5(ret);
 	}
 
-	krb5_princ_set_realm(context, creds.server,
-			     krb5_princ_realm(context, principal));
+	/* The creds.server principal takes ownership of this memory.
+		Remember to set back to original value before freeing. */
+	orig_realm = *krb5_princ_realm(context, creds.server);
+	krb5_princ_set_realm(context, creds.server, krb5_princ_realm(context, principal));
 	
 	ret = krb5_cc_get_principal(context, ccache, &creds.client);
 	if (ret) {
 		krb5_cc_close(context, ccache);
+		krb5_princ_set_realm(context, creds.server, &orig_realm);
 	        krb5_free_principal(context, creds.server);
 	        krb5_free_principal(context, principal);
                 krb5_free_context(context);
@@ -536,6 +540,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	if (ret) {
 		krb5_cc_close(context, ccache);
 	        krb5_free_principal(context, creds.client);
+		krb5_princ_set_realm(context, creds.server, &orig_realm);
 	        krb5_free_principal(context, creds.server);
 	        krb5_free_principal(context, principal);
 	        krb5_free_context(context);
@@ -551,6 +556,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 
 	krb5_free_creds(context, credsp);
 	krb5_free_principal(context, creds.client);
+	krb5_princ_set_realm(context, creds.server, &orig_realm);
         krb5_free_principal(context, creds.server);
 	krb5_free_principal(context, principal);
 	krb5_cc_close(context, ccache);
