@@ -10,9 +10,9 @@ tcp_client_SOURCES = tcp_client.c
 
 tcp_server_SOURCES = tcp_server.c
 
-gssapi_server_SOURCES = gssapi_server.c
+gssapi_server_SOURCES = gssapi_server.c gss_common.c
 
-gssapi_client_SOURCES = gssapi_client.c
+gssapi_client_SOURCES = gssapi_client.c gss_common.c
 
 gssapi_server_LDADD = -L$(top_builddir)/lib/gssapi -lgssapi $(LDADD)
 
