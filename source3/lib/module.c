@@ -32,7 +32,7 @@ NTSTATUS smb_load_module(const char *module_name)
 	 * backwards compatibility, there might be symbols in the 
 	 * plugin referencing to old (removed) functions
 	 */
-	handle = dlopen(module_name, RTLD_LAZY);
+	handle = sys_dlopen(module_name, RTLD_LAZY);
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
