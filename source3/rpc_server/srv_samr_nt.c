@@ -2339,9 +2339,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	SAM_ACCOUNT *new_pwd = NULL;
-	uint8 nt_hash[16];
-	uint8 lm_hash[16];
-	pstring buf;
+	pstring plaintext_buf;
 	uint32 len;
 	uint16 acct_ctrl;
  
@@ -2366,13 +2364,12 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	
 	copy_id23_to_sam_passwd(new_pwd, id23);
  
-	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len, nt_hash, lm_hash)) {
+	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len)) {
 		pdb_free_sam(new_pwd);
 		return False;
  	}
   
-	pdb_set_lanman_passwd (new_pwd, lm_hash);
-	pdb_set_nt_passwd     (new_pwd, nt_hash);
+	pdb_set_plaintext_passwd (new_pwd, plaintext_buf);
  
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
@@ -2382,13 +2379,13 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	} else  {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() )
-			if(!chgpasswd(pdb_get_username(new_pwd), "", buf, True)) {
+			if(!chgpasswd(pdb_get_username(new_pwd), "", plaintext_buf, True)) {
 				pdb_free_sam(new_pwd);
 				return False;
 			}
 	}
  
-	memset(buf, 0, sizeof(buf));
+	ZERO_STRUCT(plaintext_buf);
  
 	if(!pdb_update_sam_account(new_pwd, True)) {
 		pdb_free_sam(new_pwd);
@@ -2407,10 +2404,8 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 static BOOL set_user_info_pw(char *pass, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	uchar nt_hash[16];
-	uchar lm_hash[16];
 	uint32 len;
-	pstring buf;
+	pstring plaintext_buf;
 	uint16 acct_ctrl;
  
  	pdb_init_sam(&pwd);
@@ -2422,15 +2417,14 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 	
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	memset(buf, 0, sizeof(buf));
+	ZERO_STRUCT(plaintext_buf);
  
-	if (!decode_pw_buffer(pass, buf, 256, &len, nt_hash, lm_hash)) {
+	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len)) {
 		pdb_free_sam(pwd);
 		return False;
  	}
 
-	pdb_set_lanman_passwd (pwd, lm_hash);
-	pdb_set_nt_passwd     (pwd, nt_hash);
+	pdb_set_plaintext_passwd (pwd, plaintext_buf);
  
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
@@ -2440,13 +2434,13 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 	} else {
 		/* update the UNIX password */
 		if (lp_unix_password_sync())
-			if(!chgpasswd(pdb_get_username(pwd), "", buf, True)) {
+			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
 				pdb_free_sam(pwd);
 				return False;
 			}
 	}
  
-	memset(buf, 0, sizeof(buf));
+	ZERO_STRUCT(plaintext_buf);
  
 	DEBUG(5,("set_user_info_pw: pdb_update_sam_account()\n"));
  
