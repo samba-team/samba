@@ -4453,7 +4453,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 }
 
 /**
- * Add interdomain trust account to the RPC server.
+ * Remove interdomain trust account from the RPC server.
  * All parameters (except for argc and argv) are passed by run_rpc_command
  * function.
  *
