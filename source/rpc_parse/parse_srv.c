@@ -392,11 +392,14 @@ static void srv_free_sh_info502_hdr(SH_INFO_502_HDR * sh502)
 {
 }
 
-static BOOL srv_io_sh_info502_hdr(char *desc, SH_INFO_502_HDR * sh502,
+static BOOL srv_io_sh_info502_hdr(char *desc, SHARE_INFO_502 *shi,
 				  prs_struct *ps, int depth)
 {
-	if (sh502 == NULL)
+	SH_INFO_502_HDR *sh502;
+	if (shi == NULL)
 		return False;
+
+	sh502 = &(shi->info502_hdr);
 
 	prs_debug(ps, depth, desc, "srv_io_sh_info502_hdr");
 	depth++;
@@ -424,13 +427,16 @@ static void srv_free_sh_info502_data(SH_INFO_502_DATA * sh502)
 	ZERO_STRUCT(sh502->sd);
 }
 
-static BOOL srv_io_sh_info502_data(char *desc,
-				   SH_INFO_502_DATA * sh502,
-				   SH_INFO_502_HDR * si502,
+static BOOL srv_io_sh_info502_data(char *desc, SHARE_INFO_502 *shi,
 				   prs_struct *ps, int depth)
 {
-	if (sh502 == NULL)
+	SH_INFO_502_DATA *sh502;
+	SH_INFO_502_HDR *si502;
+	if (shi == NULL)
 		return False;
+
+	sh502 = &(shi->info502_data);
+	si502 = &(shi->info502_hdr);
 
 	prs_debug(ps, depth, desc, "srv_io_sh_info502_data");
 	depth++;
@@ -463,16 +469,27 @@ static void srv_free_share_info_2(SHARE_INFO_2 * sh2)
 static BOOL srv_io_share_info_2(char *desc, SHARE_INFO_2 * sh2, uint32 count,
 				prs_struct *ps, int depth)
 {
+	uint32 i;
+
 	if (sh2 == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "srv_io_share_info2");
+	prs_debug(ps, depth, desc, "srv_io_share_info_2");
 	depth++;
 
 	prs_align(ps);
 
-	srv_io_sh_info2_hdr("", &sh2->info2_hdr, ps, depth);
-	srv_io_sh_info2_str("", &sh2->info2_str, &sh2->info2_hdr, ps, depth);
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info2_hdr("", &(sh2[i].info2_hdr), ps, depth))
+			return False;
+	}
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info2_str("", &(sh2[i].info2_str),
+					 &(sh2[i].info2_hdr), ps, depth))
+			return False;
+	}
 
 	return True;
 }
@@ -492,17 +509,26 @@ static BOOL srv_io_share_info_502(char *desc,
 				  SHARE_INFO_502 * sh502, uint32 count,
 				  prs_struct *ps, int depth)
 {
+	uint32 i;
+
 	if (sh502 == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "srv_io_share_info502");
+	prs_debug(ps, depth, desc, "srv_io_share_info_502");
 	depth++;
 
 	prs_align(ps);
 
-	srv_io_sh_info502_hdr("", &(sh502->info502_hdr), ps, depth);
-	srv_io_sh_info502_data("", &(sh502->info502_data),
-			       &(sh502->info502_hdr), ps, depth);
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info502_hdr("", &(sh502[i]), ps, depth))
+			return False;
+	}
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info502_data("", &(sh502[i]), ps, depth))
+			return False;
+	}
 
 	return True;
 }
@@ -516,6 +542,8 @@ static void srv_free_share_info_1005(SHARE_INFO_1005* sh1005)
 static BOOL srv_io_share_info_1005(char* desc, SHARE_INFO_1005* sh1005,
 				   uint32 count, prs_struct* ps, int depth)
 {
+	uint32 i;
+
 	if(sh1005 == NULL)
 		return False;
 		
@@ -524,7 +552,10 @@ static BOOL srv_io_share_info_1005(char* desc, SHARE_INFO_1005* sh1005,
 
 	prs_align(ps);
 
-	prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag);
+	for (i = 0; i < count; i++)
+	{
+		prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag);
+	}
 	return True;
 }
 
@@ -913,8 +944,7 @@ BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM * q_n,
 	prs_align(ps);
 
 	prs_uint32("ptr_srv_name", ps, depth, &(q_n->ptr_srv_name));
-	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth);
-
+	smb_io_unistr2("uni_srv_name", &(q_n->uni_srv_name), True, ps, depth);
 	prs_align(ps);
 
 	prs_uint32("share_level", ps, depth, &(q_n->share_level));
@@ -1150,8 +1180,7 @@ BOOL srv_io_q_net_share_del(char *desc, SRV_Q_NET_SHARE_DEL * q_n,
 	smb_io_unistr2("uni_srv_name", &(q_n->uni_srv_name), True, ps, depth);
 	prs_align(ps);
 
-	smb_io_unistr2("share_name", &(q_n->uni_share_name), True,
-		       ps, depth);
+	smb_io_unistr2("share_name", &(q_n->uni_share_name), True, ps, depth);
 	prs_align(ps);
 
 	prs_uint32("unknown0", ps, depth, &q_n->unknown0);
