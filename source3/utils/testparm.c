@@ -248,9 +248,10 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s))
-			if (strlen(lp_servicename(s)) > 8) {
-				printf("WARNING: You have some share names that are longer than 8 chars\n");
-				printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
+			if (strlen(lp_servicename(s)) > 12) {
+				printf( "WARNING: You have some share names that are longer than 12 characters.\n" );
+				printf( "These may not be accessible to some older clients.\n" );
+				printf( "(Eg. Windows9x, WindowsMe, and smbclient prior to Samba 3.0.)\n" );
 				break;
 			}
 	}
