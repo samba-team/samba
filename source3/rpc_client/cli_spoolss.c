@@ -720,7 +720,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 				    TALLOC_CTX *mem_ctx, 
 				    uint32 offered, uint32 *needed,
 				    POLICY_HND *pol, uint32 level, 
-				    const char *env, PRINTER_DRIVER_CTR *ctr)
+				    const char *env, int version, PRINTER_DRIVER_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVER2 q;
@@ -742,7 +742,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	make_spoolss_q_getprinterdriver2(&q, pol, env, level, 2, 2,
+	make_spoolss_q_getprinterdriver2(&q, pol, env, level, version, 2,
 					 &buffer, offered);
 
 	/* Marshall data and send request */
