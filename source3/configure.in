@@ -11,14 +11,12 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
-    codepagedir="\$(DATADIR)/samba/codepages"
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/cache/samba"
     piddir="\$(VARDIR)/run/samba"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     swatdir="\${DATADIR}/samba/swat",
-    codepagedir="\$(LIBDIR)/codepages"
     configdir="\$(LIBDIR)"
     logfilebase="\$(VARDIR)"
     lockdir="\${VARDIR}/locks"
@@ -107,22 +105,6 @@ AC_ARG_WITH(configdir,
   esac])
 
 #################################################
-# set codepage directory location
-AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR  Where to put codepage files (\$libdir/codepages)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-codepagedir called without argument - will use default])
-  ;;
-  * )
-    codepagedir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
 [  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
@@ -138,7 +120,6 @@ AC_ARG_WITH(logfilebase,
     ;;
   esac])
 
-AC_SUBST(codepagedir)
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)

@@ -80,14 +80,10 @@ static void nss_wins_init(void)
 	DEBUGLEVEL = 0;
 	AllowDebugChange = False;
 
-	/* needed for lp_xx() functions */
-	charset_initialise();
-
 	TimeInit();
 	setup_logging("nss_wins",False);
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
-	codepage_initialise(lp_client_code_page());
 }
 
 static struct node_status *lookup_byaddr_backend(char *addr, int *count)
