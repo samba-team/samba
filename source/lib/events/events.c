@@ -158,7 +158,7 @@ static void calc_maxfd(struct event_context *ev)
 */
 static void epoll_fallback_to_select(struct event_context *ev, const char *reason)
 {
-	DEBUG(0,("%s - using select() - %s\n", reason, strerror(errno)));
+	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
 	close(ev->epoll_fd);
 	ev->epoll_fd = -1;
 }
@@ -197,9 +197,7 @@ static int event_fd_destructor(void *ptr)
 		ZERO_STRUCT(event);
 		event.events = epoll_map_flags(fde->flags);
 		event.data.ptr = fde;
-		if (epoll_ctl(ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
-			epoll_fallback_to_select(ev, "EPOLL_CTL_DEL failed");
-		}
+		epoll_ctl(ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
 	}
 #endif
 	return 0;
