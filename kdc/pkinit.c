@@ -599,25 +599,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
     }
 
-    switch (enveloped_enctype) {
-    case ETYPE_DES3_CBC_NONE:
-	ret = krb5_data_alloc(&iv, 8);
-	if (ret) {
-	    krb5_set_error_string(context, "malloc out of memory");
-	    goto out;
-	}
-	break;
-    default:
-	krb5_set_error_string(context, "not support for enctype %d",
-			      enveloped_enctype);
-	ret = KRB5_PROG_KEYTYPE_NOSUPP;
-	goto out;
-    }
-
-    enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
-
-    krb5_generate_random_block(iv.data, iv.length);
-
     ret = krb5_generate_random_keyblock(context, enveloped_enctype, &tmp_key);
     if (ret)
 	goto out;
@@ -626,16 +607,24 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret)
 	goto out;
 
-    switch (enveloped_enctype) {
-    case ETYPE_DES3_CBC_NONE:
-	copy_oid(&heim_des_ede3_cbc_oid, &enc_alg->algorithm);
-	break;
-    default:
-	krb5_set_error_string(context, "PKINIT no support for enctype %d",
-			      enveloped_enctype);
-	ret = KRB5_PROG_KEYTYPE_NOSUPP;
+
+    ret = krb5_crypto_getblocksize(context, crypto, &iv.length);
+    if (ret)
+	goto out;
+
+    ret = krb5_data_alloc(&iv, iv.length);
+    if (ret) {
+	krb5_set_error_string(context, "malloc out of memory");
 	goto out;
     }
+
+    krb5_generate_random_block(iv.data, iv.length);
+
+    enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
+
+    ret = krb5_enctype_to_oid(context, enveloped_enctype, &enc_alg->algorithm);
+    if (ret)
+	goto out;
 
     ret = krb5_crypto_set_params(context, crypto, &iv, &params);
     if (ret)
