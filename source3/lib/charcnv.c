@@ -1313,3 +1313,27 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	}
 	return 0;
 }
+
+/****************************************************************
+ Calculate the size (in bytes) of the next multibyte character in
+ our internal character set. Note that p must be pointing to a
+ valid mb char, not within one.
+****************************************************************/
+
+size_t next_mb_char_size(const char *s)
+{
+	size_t i;
+
+	if (!(*s & 0x80))
+		return 1; /* ascii. */
+
+	for ( i = 1; i <=4; i++ ) {
+		smb_ucs2_t uc;
+		if (convert_string(CH_UNIX, CH_UCS2, s, i, &uc, 2, False) == 2) {
+			return i;
+		}
+	}
+	/* We're hosed - we don't know how big this is... */
+	DEBUG(10,("next_mb_char_size: unknown size at string %s\n", s));
+	return 1;
+}
