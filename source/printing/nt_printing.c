@@ -1075,6 +1075,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	NTSTATUS          nt_status;
  	pstring           driverpath;
 	DATA_BLOB         null_pw;
+	fstring           res_type;
 	files_struct      *fsp = NULL;
 	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
@@ -1098,8 +1099,9 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
+	fstrcpy(res_type, "A:");
  	become_root();
-	conn = make_connection_with_chdir("print$", null_pw, "A:", user->vuid, &nt_status);
+	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1389,6 +1391,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	NTSTATUS nt_status;
 	pstring inbuf;
 	pstring outbuf;
+	fstring res_type;
 	int ver = 0;
 	int i;
 
@@ -1413,9 +1416,10 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	 * Note we must be root to do this.
 	 */
 
-	become_root();
 	null_pw = data_blob(NULL, 0);
-	conn = make_connection_with_chdir("print$", null_pw, "A:", user->vuid, &nt_status);
+	fstrcpy(res_type, "A:");
+	become_root();
+	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -4308,7 +4312,8 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	connection_struct *conn;
 	DATA_BLOB null_pw;
 	NTSTATUS nt_status;
-	
+	fstring res_type;
+
 	if ( !info_3 )
 		return False;
 		
@@ -4320,9 +4325,10 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	 * do this.
 	 */
 	 
-	become_root();
 	null_pw = data_blob( NULL, 0 );
-        conn = make_connection_with_chdir( "print$", null_pw, "A:", user->vuid, &nt_status );
+	fstrcpy(res_type, "A:");
+	become_root();
+        conn = make_connection_with_chdir( "print$", null_pw, res_type, user->vuid, &nt_status );
 	unbecome_root();
 	
 	if ( !conn ) {
