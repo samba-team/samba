@@ -287,9 +287,9 @@ typedef Authenticator krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;
 
-typedef struct krb5_rcache {
-    int dummy;
-}krb5_rcache;
+struct krb5_rcache_data;
+typedef struct krb5_rcache_data *krb5_rcache;
+typedef Authenticator krb5_donot_reply;
 
 typedef struct krb5_keytab_data {
   char *filename;
