@@ -148,6 +148,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		if (ret)
 		    errx (1, "der_get_octet_string: %s",
 			  com_right (et_list, ret));
+		printf ("(length %d), ", length);
 		uc = (unsigned char *)str.data;
 		for (i = 0; i < 16; ++i)
 		    printf ("%02x", uc[i]);
