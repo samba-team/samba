@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 	sys_getwd(wd);
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", sys_getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", (int)getpid());
 
 	smbw_setshared(line, wd);
 
