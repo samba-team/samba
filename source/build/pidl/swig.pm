@@ -141,7 +141,7 @@ sub ArrayToPython($$)
     my($prefix) = shift;
     my($result) = "";
 
-    my($array_len) = $e->{ARRAY_LEN};
+    my($array_len) = util::array_size($e);
 
     if ($array_len eq "*" or util::has_property($e, "size_is")) {
 	$array_len = util::has_property($e, "size_is");
@@ -476,14 +476,16 @@ sub ParseUnion($)
     $result .= "\tu = talloc(mem_ctx, sizeof(union $u->{NAME}));\n\n";
 
     for my $e (@{$u->{DATA}{DATA}}) {
-	$result .= "\tif ((dict = PyDict_GetItemString(obj, \"$e->{DATA}{NAME}\"))) {\n";
-	if ($e->{DATA}{POINTERS} == 0) {
-	    $result .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
-	} elsif ($e->{DATA}{POINTERS} == 1) {
-	    $result .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict, \"$e->{DATA}{NAME}\");\n";
-	} else {
-	    $result .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
-	}
+	    if (defined $e->{DATA}{NAME}) {
+		    $result .= "\tif ((dict = PyDict_GetItemString(obj, \"$e->{DATA}{NAME}\"))) {\n";
+		    if ($e->{DATA}{POINTERS} == 0) {
+			    $result .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
+		    } elsif ($e->{DATA}{POINTERS} == 1) {
+			    $result .= "\t\tu->$e->{DATA}{NAME} = $e->{DATA}{TYPE}_ptr_from_python(mem_ctx, dict, \"$e->{DATA}{NAME}\");\n";
+		    } else {
+			    $result .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
+		    }
+	    }
 
 	$result .= "\t\treturn u;\n";
 	$result .= "\t}\n\n";
@@ -511,6 +513,7 @@ sub ParseUnion($)
     $result .= "\t}\n\n";
 
     for my $e (@{$u->{DATA}{DATA}}) {
+	    if (defined $e->{DATA}{NAME}) {
 	$result .= "\tif ((dict = PyDict_GetItemString(obj, \"$e->{DATA}{NAME}\"))) {\n";
 	if ($e->{DATA}{POINTERS} == 0) {
 	    $result .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
@@ -519,7 +522,7 @@ sub ParseUnion($)
 	} else {
 	    $result .= "\t\t// $e->{DATA}{TYPE} pointers=$e->{DATA}{POINTERS}\n";
 	}
-
+	}
 	$result .= "\t\treturn;\n";
 	$result .= "\t}\n\n";
     }
@@ -542,10 +545,9 @@ sub ParseUnion($)
 
     for my $e (@{$u->{DATA}{DATA}}) {
 	$result .= "\tif (switch_is == $e->{CASE}) {\n";
-	if ($e->{POINTERS} == 0) {
-	    $result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, &u->$e->{DATA}{NAME}));\n";
-	} else {
-	    $result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, u->$e->{DATA}{NAME}));\n";
+	my $prefix = util::c_pull_prefix($e);
+	if (defined $e->{DATA}{NAME}) {
+		$result .= "\t\tPyDict_SetItemString(obj, \"$e->{DATA}{NAME}\", $e->{DATA}{TYPE}_ptr_to_python(mem_ctx, $prefix\u->$e->{DATA}{NAME}));\n";
 	}
 	$result .= "\t}\n";
     }

@@ -360,7 +360,7 @@ sub has_direct_buffers($)
 sub is_constant($)
 {
 	my $s = shift;
-	if ($s =~ /^\d/) {
+	if (defined $s && $s =~ /^\d/) {
 		return 1;
 	}
 	return 0;
