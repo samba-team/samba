@@ -545,7 +545,7 @@ typedef struct lsa_r_lookup_sids
     DOM_R_REF dom_ref; /* domain reference info */
 
     uint32 num_entries;
-    uint32 undoc_buffer2; /* undocumented buffer pointer */
+    uint32 undoc_buffer; /* undocumented buffer pointer */
     uint32 num_entries2; 
 
     DOM_SID2 dom_sid[MAX_LOOKUP_SIDS]; /* domain SIDs being looked up */
@@ -558,7 +558,11 @@ typedef struct lsa_r_lookup_sids
 typedef struct dom_name_info
 {
     uint32 uni_str_len;
+#if 1 /* don't know if buffer is null-terminated */
+	UNISTR buffer;
+#else /* or length indicated by uni_str_len member */
     uint16 buffer[MAX_UNISTRLEN];
+#endif
 
 } DOM_NAME;
 
@@ -582,9 +586,10 @@ typedef struct lsa_q_lookup_rids
 /* LSA_R_LOOKUP_RIDS - response to LSA Lookup Names */
 typedef struct lsa_r_lookup_rids
 {
+    DOM_R_REF dom_ref; /* domain reference info */
 
     uint32 num_entries;
-    uint32 undoc_buffer2; /* undocumented buffer pointer */
+    uint32 undoc_buffer; /* undocumented buffer pointer */
 
     uint32 num_entries2; 
     DOM_RID2 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
