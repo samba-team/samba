@@ -3,7 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Paul Ashton                  1997-1998,
+ *  Copyright (C) Andrew Bartlett                   2004.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,17 +99,6 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	BOOL ret;
 	BOOL winbind_groups_exist;
 
-	/*
-	 * this code is far from perfect.
-	 * first it enumerates the full /etc/group and that can be slow.
-	 * second, it works only with users' SIDs
-	 * whereas the day we support nested groups, it will have to
-	 * support both users's SIDs and domain groups' SIDs
-	 *
-	 * having our own ldap backend would be so much faster !
-	 * we're far from that, but hope one day ;-) JFM.
-	 */
-
 	*prids=NULL;
 	*numgroups=0;
 
@@ -136,11 +126,8 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	become_root();
-	/* on some systems this must run as root */
-	num_groups = getgroups_user(user_name, &groups);	
-	unbecome_root();
-	if (num_groups == -1) {
+	ret = getgroups_user(user_name, &groups, &num_groups);	
+	if (!ret) {
 		/* this should never happen */
 		DEBUG(2,("get_alias_user_groups: getgroups_user failed\n"));
 		pdb_free_sam(&sam_pass);
@@ -272,115 +259,57 @@ done:
  ********************************************************************/
 BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SAM_ACCOUNT *sam_pass)
 {
-	GROUP_MAP *map=NULL;
-	int i, num, num_entries, cur_gid=0;
-	struct group *grp;
-	DOM_GID *gids;
-	fstring user_name;
-	uint32 grid;
-	uint32 tmp_rid;
-	BOOL ret;
 
-	*numgroups= 0;
+	const char *username = pdb_get_username(sam_pass);
+	int		n_unix_groups;
+	int		i,j;
+	gid_t *unix_groups;
 
-	fstrcpy(user_name, pdb_get_username(sam_pass));
-	grid=pdb_get_group_rid(sam_pass);
-
-	DEBUG(10,("get_domain_user_groups: searching domain groups [%s] is a member of\n", user_name));
-
-	/* we must wrap this is become/unbecome root for ldap backends */
+	*numgroups = 0;
+	*pgids   = NULL;
 	
+	if (!getgroups_user(username, &unix_groups, &n_unix_groups)) {
+		return False;
+	}
+
+	/* now setup the space for storing the SIDS */
+	
+	if (n_unix_groups > 0) {
+	
+		*pgids   = talloc(ctx, sizeof(DOM_GID) * n_unix_groups);
+		
+		if (!*pgids) {
+			DEBUG(0, ("get_user_group: malloc() failed for DOM_GID list!\n"));
+			SAFE_FREE(unix_groups);
+			return False;
+		}
+	}
+
 	become_root();
-	/* first get the list of the domain groups */
-	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
-	
+	j = 0;
+	for (i = 0; i < n_unix_groups; i++) {
+		GROUP_MAP map;
+		uint32 rid;
+		
+		if (!pdb_getgrgid(&map, unix_groups[i])) {
+			DEBUG(3, ("get_user_groups: failed to convert gid %ld to a domain group!\n", 
+				(long int)unix_groups[i+1]));
+			if (i == 0) {
+				DEBUG(1,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", username));
+				DEBUGADD(1,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
+			}
+		} else if ((map.sid_name_use == SID_NAME_DOM_GRP)
+			   && sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid)) {
+			(*pgids)[j].attr=7;
+			(*pgids)[j].g_rid=rid;
+			j++;
+		}
+	}
 	unbecome_root();
 
-	/* end wrapper for group enumeration */
+	*numgroups = j;
 
-	
-	if ( !ret )
-		return False;
-		
-	DEBUG(10,("get_domain_user_groups: there are %d mapped groups\n", num_entries));
-
-
-	/* 
-	 * alloc memory. In the worse case, we alloc memory for nothing.
-	 * but I prefer to alloc for nothing
-	 * than reallocing everytime.
-	 */
-	gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) *  num_entries);	
-
-	/* for each group, check if the user is a member of.  Only include groups 
-	   from this domain */
-	
-	for(i=0; i<num_entries; i++) {
-	
-		if ( !sid_check_is_in_our_domain(&map[i].sid) ) {
-			DEBUG(10,("get_domain_user_groups: skipping check of %s since it is not in our domain\n",
-				map[i].nt_name));
-			continue;
-		}
-			
-		if ((grp=getgrgid(map[i].gid)) == NULL) {
-			/* very weird !!! */
-			DEBUG(5,("get_domain_user_groups: gid %d doesn't exist anymore !\n", (int)map[i].gid));
-			continue;
-		}
-
-		for(num=0; grp->gr_mem[num]!=NULL; num++) {
-			if(strcmp(grp->gr_mem[num], user_name)==0) {
-				/* we found the user, add the group to the list */
-				sid_peek_rid(&map[i].sid, &(gids[cur_gid].g_rid));
-				gids[cur_gid].attr=7;
-				DEBUG(10,("get_domain_user_groups: user found in group %s\n", map[i].nt_name));
-				cur_gid++;
-				break;
-			}
-		}
-	}
-
-	/* we have checked the groups */
-	/* we must now check the gid of the user or the primary group rid, that's the same */
-	for (i=0; i<cur_gid && grid!=gids[i].g_rid; i++)
-		;
-	
-	/* the user's gid is already there */
-	if (i!=cur_gid) {
-		/* 
-		 * the primary group of the user but be the first one in the list
-		 * don't ask ! JFM.
-		 */
-		gids[i].g_rid=gids[0].g_rid;
-		gids[0].g_rid=grid;
-		goto done;
-	}
-
-	for(i=0; i<num_entries; i++) {
-		sid_peek_rid(&map[i].sid, &tmp_rid);
-		if (tmp_rid==grid) {
-			/* 
-			 * the primary group of the user but be the first one in the list
-			 * don't ask ! JFM.
-			 */
-			gids[cur_gid].g_rid=gids[0].g_rid;
-			gids[0].g_rid=tmp_rid;
-			gids[cur_gid].attr=7;
-			DEBUG(10,("get_domain_user_groups: primary gid of user found in group %s\n", map[i].nt_name));
-			cur_gid++;
-			goto done; /* leave the loop early */
-		}
-	}
-
-	DEBUG(0,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", user_name));
-	DEBUGADD(0,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
-
-
- done:
-	*pgids=gids;
-	*numgroups=cur_gid;
-	SAFE_FREE(map);
+	SAFE_FREE(unix_groups);
 
 	return True;
 }

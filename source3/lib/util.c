@@ -289,6 +289,28 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
 }
 
 /****************************************************************************
+ Add a gid to an array of gids if it's not already there.
+****************************************************************************/
+
+void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
+{
+	int i;
+
+	for (i=0; i<*num; i++) {
+		if ((*gids)[i] == gid)
+			return;
+	}
+	
+	*gids = Realloc(*gids, (*num+1) * sizeof(gid_t));
+
+	if (*gids == NULL)
+		return;
+
+	(*gids)[*num] = gid;
+	*num += 1;
+}
+
+/****************************************************************************
  Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 

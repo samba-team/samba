@@ -37,29 +37,58 @@
   NOTE! uses become_root() to gain correct priviages on systems
   that lack a native getgroups() call (uses initgroups and getgroups)
 */
-int getgroups_user(const char *user, gid_t **groups)
+BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
 {
 	struct passwd *pwd;
 	int ngrp, max_grp;
+	gid_t *temp_groups;
+	gid_t *groups;
+	int i;
 
 	pwd = getpwnam_alloc(user);
-	if (!pwd) return -1;
+	if (!pwd) return False;
 
 	max_grp = groups_max();
-	(*groups) = (gid_t *)malloc(sizeof(gid_t) * max_grp);
-	if (! *groups) {
+	temp_groups = (gid_t *)malloc(sizeof(gid_t) * max_grp);
+	if (! temp_groups) {
 		passwd_free(&pwd);
-		errno = ENOMEM;
-		return -1;
+		return False;
 	}
 
-	ngrp = sys_getgrouplist(user, pwd->pw_gid, *groups, &max_grp);
-	if (ngrp <= 0) {
-		passwd_free(&pwd);
-		free(*groups);
-		return ngrp;
+	if (sys_getgrouplist(user, pwd->pw_gid, temp_groups, &max_grp) == -1) {
+		
+		gid_t *groups_tmp;
+		
+		groups_tmp = Realloc(temp_groups, sizeof(gid_t) * max_grp);
+		
+		if (!groups_tmp) {
+			SAFE_FREE(temp_groups);
+			return False;
+		}
+		temp_groups = groups_tmp;
+		
+		if (sys_getgrouplist(user, pwd->pw_gid, temp_groups, &max_grp) == -1) {
+			DEBUG(0, ("get_user_groups: failed to get the unix group list\n"));
+			passwd_free(&pwd);
+			SAFE_FREE(temp_groups);
+			return False;
+		}
 	}
+	
+	ngrp = 0;
+	groups = NULL;
+
+	/* Add in primary group first */
+	add_gid_to_array_unique(pwd->pw_gid, &groups, &ngrp);
 
 	passwd_free(&pwd);
-	return ngrp;
+
+	for (i=0; i<max_grp; i++)
+		add_gid_to_array_unique(temp_groups[i], &groups, &ngrp);
+
+	*ngroups = ngrp;
+	*ret_groups = groups;
+	SAFE_FREE(temp_groups);
+	return True;
 }
+
