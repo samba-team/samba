@@ -959,9 +959,10 @@ static int skip_file(int skipsize)
 
 static int get_file(file_info2 finfo)
 {
-  int fnum = -1, pos = 0, dsize = 0, rsize = 0, bpos = 0;
+  int fnum = -1, pos = 0, dsize = 0, bpos = 0;
+  SMB_BIG_UINT rsize = 0;
 
-  DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, (int)finfo.size));
+  DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
   if (ensurepath(finfo.name) && 
       (fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
@@ -1052,7 +1053,7 @@ static int get_file(file_info2 finfo)
 
   ntarf++;
 
-  DEBUG(0, ("restore tar file %s of size %d bytes\n", finfo.name, (int)finfo.size));
+  DEBUG(0, ("restore tar file %s of size %.0f bytes\n", finfo.name, (double)finfo.size));
   
   return(True);
 }
@@ -1082,18 +1083,18 @@ static int get_dir(file_info2 finfo)
 */
 static char * get_longfilename(file_info2 finfo)
 {
-  int namesize = finfo.size + strlen(cur_dir) + 2;
+  int namesize = strlen(finfo.name) + strlen(cur_dir) + 2;
   char *longname = malloc(namesize);
   int offset = 0, left = finfo.size;
   BOOL first = True;
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
-  DEBUG(5, ("Len = %d\n", (int)finfo.size));
+  DEBUG(5, ("Len = %.0f\n", (double)finfo.size));
 
   if (longname == NULL) {
 
     DEBUG(0, ("could not allocate buffer of size %d for longname\n", 
-	      (int)(finfo.size + strlen(cur_dir) + 2)));
+	      namesize));
     return(NULL);
   }
 
