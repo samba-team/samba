@@ -64,6 +64,8 @@ openhive(HKCU)
 openhive(HKPD)
 openhive(HKU)
 openhive(HKCR)
+openhive(HKDD)
+openhive(HKCC)
 
 struct rpc_key_data {
 	struct policy_handle pol;
@@ -82,6 +84,8 @@ struct {
 { "HKEY_CLASSES_ROOT", open_HKCR },
 { "HKEY_PERFORMANCE_DATA", open_HKPD },
 { "HKEY_USERS", open_HKU },
+{ "HKEY_DYN_DATA", open_HKDD },
+{ "HKEY_CURRENT_CONFIG", open_HKCC },
 { NULL, NULL }
 };
 
