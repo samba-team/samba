@@ -1,5 +1,8 @@
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/config_file.c (parse_list): handle blank lines at
+ 	another place
+	
 	* kdc/connect.c (add_port_string): don't return a value
 
  	* lib/kadm5/init_c.c (get_cred_cache): you cannot reuse the cred
@@ -14,6 +17,39 @@
 
 	* kuser/kdestroy.c (main): try to destroy v4 ticket even if the
  	destruction of the v5 one fails
+
+	* lib/krb5/crypto.c (DES3_postproc): new version that does the
+ 	right thing
+	(*): don't put and recover length in 3DES encoding
+	other small fixes
+
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_default_principal.c: rewrite to use
+ 	get_default_username
+
+	* lib/krb5/Makefile.am: add n-fold-test
+
+	* kdc/connect.c: add fallbacks for all lookups by service name
+	(handle_tcp): break-up and clean-up
+
+1999-06-09  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/addr_families.c (ipv6_uninteresting): don't consider
+ 	the loopback address as uninteresting
+
+	* lib/krb5/get_addrs.c: new magic flag to get loopback address if
+ 	there are no other addresses.
+	(krb5_get_all_client_addrs): use that flag
+
+1999-06-04  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (HMAC_SHA1_DES3_checksum): don't include the
+ 	length
+	(checksum_sha1, checksum_hmac_sha1_des3): blocksize should be 64
+	(encrypt_internal_derived): don't include the length and don't
+	decrease by the checksum size twice
+	(_get_derived_key): the constant should be 5 bytes
 
 1999-06-02  Johan Danielsson  <joda@pdc.kth.se>
 
