@@ -192,6 +192,7 @@ typedef struct
   BOOL bBindInterfacesOnly;
   BOOL bNetWkstaUserLogon;
   BOOL bUnixPasswdSync;
+  BOOL bPasswdChatDebug;
 } global;
 
 static global Globals;
@@ -444,6 +445,7 @@ static struct parm_struct parm_table[] =
   {"root",             P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
   {"passwd program",   P_STRING,  P_GLOBAL, &Globals.szPasswdProgram,   NULL,   NULL,  0},
   {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL,   NULL,  0},
+  {"passwd chat debug",P_BOOL,    P_GLOBAL, &Globals.bPasswdChatDebug,  NULL,   NULL,  0},
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL,   NULL,  0},
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
@@ -751,6 +753,7 @@ static void init_globals(void)
   Globals.bBindInterfacesOnly = False;
   Globals.bNetWkstaUserLogon = True;
   Globals.bUnixPasswdSync = False;
+  Globals.bPasswdChatDebug = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -981,6 +984,7 @@ FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
 FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
+FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

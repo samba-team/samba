@@ -264,9 +264,8 @@ static int talktochild(int master, char *chatsequence)
     if (!strequal(chatbuf,"."))
       ok = expect(master,chatbuf,buf);
 
-#if DEBUG_PASSWORD
-      DEBUG(100,("chatbuf=[%s] responsebuf=[%s]\n",chatbuf,buf));
-#endif      
+    if(lp_passwd_chat_debug())
+      DEBUG(100,("talktochild: chatbuf=[%s] responsebuf=[%s]\n",chatbuf,buf));
 
     if (!ok) {
       DEBUG(3,("response %d incorrect\n",count));
@@ -278,9 +277,8 @@ static int talktochild(int master, char *chatsequence)
     if (!strequal(chatbuf,"."))
       writestring(master,chatbuf);
 
-#if DEBUG_PASSWORD
-    DEBUG(100,("sendbuf=[%s]\n",chatbuf));
-#endif      
+    if(lp_passwd_chat_debug())
+      DEBUG(100,("talktochild: sendbuf=[%s]\n",chatbuf));
   }
 
   if (count<1) return(False);

@@ -937,6 +937,7 @@ BOOL lp_time_server(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_net_wksta_user_logon(void);
 BOOL lp_unix_password_sync(void);
+BOOL lp_passwd_chat_debug(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
