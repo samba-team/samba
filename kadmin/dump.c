@@ -40,6 +40,28 @@
 
 RCSID("$Id$");
 
+/* 
+   This is the present contents of a dump line. This might change at
+   any time. Fields are separated by white space.
+
+  principal
+  keyblock
+  	kvno
+	keys...
+		mkvno (unused)
+		keytype
+		keyvalue
+		salt (- means use normal salt)
+  creation date and principal
+  modification date and principal
+  principal valid from date (not used)
+  principal valid end date (not used)
+  principal key expires (not used)
+  max ticket life
+  max renewable life
+  flags
+  */
+
 static void
 append_hex(char *str, krb5_data *data)
 {
