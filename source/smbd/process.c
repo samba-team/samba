@@ -414,14 +414,14 @@ do a switch on the message type, and return the response size
 ****************************************************************************/
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static int pid= -1;
+  static pid_t pid= (pid_t)-1;
   int outsize = 0;
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
   extern int Client;
 
-  if (pid == -1)
+  if (pid == (pid_t)-1)
     pid = getpid();
 
   errno = 0;
@@ -445,7 +445,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   }
   else
   {
-    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
+    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,(int)pid));
 
     if(global_oplock_break)
     {

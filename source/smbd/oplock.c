@@ -396,7 +396,7 @@ BOOL process_local_message(char *buffer, int buf_size)
   char *msg_start;
   SMB_DEV_T dev;
   SMB_INO_T inode;
-  uint32 remotepid;
+  pid_t remotepid;
   struct timeval tval;
   struct timeval *ptval = NULL;
 
@@ -472,10 +472,10 @@ should be %d).\n", (int)msg_len, (int)OPLOCK_BREAK_MSG_LEN));
 
         ptval = &tval;
 
-        remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
+        remotepid = (pid_t)IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
 
         DEBUG(5,("process_local_message: oplock break request from \
-pid %d, port %d, dev = %x, inode = %.0f\n", remotepid, from_port, (unsigned int)dev, (double)inode));
+pid %d, port %d, dev = %x, inode = %.0f\n", (int)remotepid, from_port, (unsigned int)dev, (double)inode));
       }
       break;
 
@@ -505,11 +505,11 @@ reply - dumping info.\n"));
         inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
 #endif /* LARGE_SMB_INO_T */
 
-        remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
+        remotepid = (pid_t)IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
         dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
 
         DEBUG(0,("process_local_message: unsolicited oplock break reply from \
-pid %d, port %d, dev = %x, inode = %.0f\n", remotepid, from_port, (unsigned int)dev, (double)inode));
+pid %d, port %d, dev = %x, inode = %.0f\n", (int)remotepid, from_port, (unsigned int)dev, (double)inode));
 
        }
        return False;
@@ -564,13 +564,13 @@ oplocks. Returning success.\n"));
             (struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) 
     {
       DEBUG(0,("process_local_message: sendto process %d failed. Errno was %s\n",
-                remotepid, strerror(errno)));
+                (int)remotepid, strerror(errno)));
       return False;
     }
 
     DEBUG(5,("process_local_message: oplock break reply sent to \
 pid %d, port %d, for file dev = %x, inode = %.0f\n",
-          remotepid, from_port, (unsigned int)dev, (double)inode));
+          (int)remotepid, from_port, (unsigned int)dev, (double)inode));
   }
 
   return True;
@@ -893,7 +893,7 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
 {
   char op_break_msg[OPLOCK_BREAK_MSG_LEN];
   struct sockaddr_in addr_out;
-  int pid = getpid();
+  pid_t pid = getpid();
   time_t start_time;
   int time_left;
 
@@ -903,7 +903,7 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
     if(share_entry->op_port != global_oplock_port)
     {
       DEBUG(0,("request_oplock_break: corrupt share mode entry - pid = %d, port = %d \
-should be %d\n", pid, share_entry->op_port, global_oplock_port));
+should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
       return False;
     }
 
@@ -917,7 +917,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
      port in the share mode entry. */
 
   SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
-  SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,pid);
+  SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,(uint32)pid);
   SIVAL(op_break_msg,OPLOCK_BREAK_SEC_OFFSET,(uint32)share_entry->time.tv_sec);
   SIVAL(op_break_msg,OPLOCK_BREAK_USEC_OFFSET,(uint32)share_entry->time.tv_usec);
   SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
@@ -940,7 +940,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
   if( DEBUGLVL( 3 ) )
   {
     dbgtext( "request_oplock_break: sending a oplock break message to " );
-    dbgtext( "pid %d on port %d ", share_entry->pid, share_entry->op_port );
+    dbgtext( "pid %d on port %d ", (int)share_entry->pid, share_entry->op_port );
     dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
             (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
             (int)share_entry->time.tv_usec );
@@ -953,7 +953,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
     if( DEBUGLVL( 0 ) )
     {
       dbgtext( "request_oplock_break: failed when sending a oplock " );
-      dbgtext( "break message to pid %d ", share_entry->pid );
+      dbgtext( "break message to pid %d ", (int)share_entry->pid );
       dbgtext( "on port %d ", share_entry->op_port );
       dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
           (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
@@ -996,7 +996,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
         if( DEBUGLVL( 0 ) )
         {
           dbgtext( "request_oplock_break: no response received to oplock " );
-          dbgtext( "break request to pid %d ", share_entry->pid );
+          dbgtext( "break request to pid %d ", (int)share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
           dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
           dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
@@ -1017,7 +1017,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
         if( DEBUGLVL( 0 ) )
         {
           dbgtext( "request_oplock_break: error in response received " );
-          dbgtext( "to oplock break request to pid %d ", share_entry->pid );
+          dbgtext( "to oplock break request to pid %d ", (int)share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
           dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
                (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,

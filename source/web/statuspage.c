@@ -32,7 +32,7 @@ static char *tstring(time_t t)
 
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
-	printf("<tr><td>%d</td>",e->pid);
+	printf("<tr><td>%d</td>",(int)e->pid);
 	printf("<td>");
 	switch ((e->share_mode>>4)&0xF) {
 	case DENY_NONE: printf("DENY_NONE"); break;
@@ -131,7 +131,7 @@ void status_page(void)
 			if (crec.magic == 0x280267 && crec.cnum == -1 &&
 			    process_exists(crec.pid)) {
 				char buf[30];
-				slprintf(buf,sizeof(buf)-1,"kill_%d", crec.pid);
+				slprintf(buf,sizeof(buf)-1,"kill_%d", (int)crec.pid);
 				if (cgi_variable(buf)) {
 					kill_pid(crec.pid);
 				}
@@ -211,12 +211,12 @@ void status_page(void)
 		    crec.cnum == -1 &&
 		    process_exists(crec.pid)) {
 			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
-			       crec.pid,
+			       (int)crec.pid,
 			       crec.machine,crec.addr,
 			       tstring(crec.start));
 			if (geteuid() == 0) {
 			    printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
-			       crec.pid);
+			       (int)crec.pid);
 			}
 			printf("</tr>\n");
 		}
@@ -237,7 +237,7 @@ void status_page(void)
 		if (crec.magic == 0x280267 && process_exists(crec.pid)) {
 			printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
 			       crec.name,uidtoname(crec.uid),
-			       gidtoname(crec.gid),crec.pid,
+			       gidtoname(crec.gid),(int)crec.pid,
 			       crec.machine,
 			       tstring(crec.start));
 		}

@@ -178,7 +178,7 @@ static int shm_get_share_modes(connection_struct *conn,
   entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
   {
-    int pid = entry_scanner_p->e.pid;
+    pid_t pid = entry_scanner_p->e.pid;
 
     if (pid && !process_exists(pid))
     {
@@ -210,7 +210,7 @@ static int shm_get_share_modes(connection_struct *conn,
         return 0;
       }
 
-      DEBUG(0,("get_share_modes: process %d no longer exists\n", pid));
+      DEBUG(0,("get_share_modes: process %d no longer exists\n", (int)pid));
 
       shmops->shm_free(shmops->addr2offset(delete_entry_p));
     } 
@@ -227,7 +227,7 @@ static int shm_get_share_modes(connection_struct *conn,
               sizeof(struct timeval));
        num_entries_copied++;
        DEBUG(5,("get_share_modes Read share mode 0x%X pid=%d\n", 
-		entry_scanner_p->e.share_mode, entry_scanner_p->e.pid));
+		entry_scanner_p->e.share_mode, (int)entry_scanner_p->e.pid));
        entry_prev_p = entry_scanner_p;
        entry_scanner_p = (shm_share_mode_entry *)
                            shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
@@ -271,7 +271,7 @@ static void shm_del_share_mode(int token, files_struct *fsp)
   shm_share_mode_entry *entry_scanner_p;
   shm_share_mode_entry *entry_prev_p;
   BOOL found = False;
-  int pid = getpid();
+  pid_t pid = getpid();
 
   dev = fsp->fd_ptr->dev;
   inode = fsp->fd_ptr->inode;
@@ -492,7 +492,7 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
   file_scanner_p->num_share_mode_entries += 1;
 
   DEBUG(3,("set_share_mode: Created share entry for %s with mode 0x%X pid=%d\n",
-	   fsp->fsp_name, fsp->share_mode, new_entry_p->e.pid));
+	   fsp->fsp_name, fsp->share_mode, (int)new_entry_p->e.pid));
 
   return(True);
 }
@@ -513,7 +513,7 @@ static BOOL shm_mod_share_entry(int token, files_struct *fsp,
   share_mode_record *file_prev_p;
   shm_share_mode_entry *entry_scanner_p;
   BOOL found = False;
-  int pid = getpid();
+  pid_t pid = getpid();
 
   dev = fsp->fd_ptr->dev;
   inode = fsp->fd_ptr->inode;

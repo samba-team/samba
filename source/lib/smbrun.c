@@ -80,7 +80,8 @@ if shared is not set then open the file with O_EXCL set
 ****************************************************************************/
 int smbrun(char *cmd,char *outfile,BOOL shared)
 {
-	int fd,pid;
+	int fd;
+	pid_t pid;
 	uid_t uid = current_user.uid;
 	gid_t gid = current_user.gid;
 
@@ -149,7 +150,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 		CatchChild(); 
 
 		if (wpid != pid) {
-			DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
+			DEBUG(2,("waitpid(%d) : %s\n",(int)pid,strerror(errno)));
 			return -1;
 		}
 		return status;

@@ -535,7 +535,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	struct semid_ds sem_ds;
 	union semun su;
 	int i;
-	int pid;
+	pid_t pid;
 
 	read_only = ronly;
 
@@ -599,9 +599,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		}
 
 		if (semctl(sem_id, 0, GETVAL, su) == 0 &&
-		    !process_exists((pid=semctl(sem_id, 0, GETPID, su)))) {
+		    !process_exists((pid=(pid_t)semctl(sem_id, 0, GETPID, su)))) {
 			DEBUG(0,("WARNING: clearing global IPC lock set by dead process %d\n",
-				 pid));
+				 (int)pid));
 			su.val = 1;
 			if (semctl(sem_id, 0, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear global lock. Error was %s\n",
@@ -624,9 +624,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 
 	for (i=1;i<hash_size+1;i++) {
 		if (semctl(sem_id, i, GETVAL, su) == 0 && 
-		    !process_exists((pid=semctl(sem_id, i, GETPID, su)))) {
+		    !process_exists((pid=(pid_t)semctl(sem_id, i, GETPID, su)))) {
 			DEBUG(1,("WARNING: clearing IPC lock %d set by dead process %d\n", 
-				 i, pid));
+				 i, (int)pid));
 			su.val = 1;
 			if (semctl(sem_id, i, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear IPC lock %d. Error was %s\n",

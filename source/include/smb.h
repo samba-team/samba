@@ -717,7 +717,7 @@ struct interface
 /* struct returned by get_share_modes */
 typedef struct
 {
-  int pid;
+  pid_t pid;
   uint16 op_port;
   uint16 op_type;
   int share_mode;
@@ -822,7 +822,7 @@ struct passdb_ops {
 struct connect_record
 {
   int magic;
-  int pid;
+  pid_t pid;
   int cnum;
   uid_t uid;
   gid_t gid;

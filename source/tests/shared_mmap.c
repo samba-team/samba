@@ -18,7 +18,7 @@
 main()
 {
 	int *buf;
-	int i, pid;
+	int i; 
 	int fd = open(DATA,O_RDWR|O_CREAT|O_TRUNC,0666);
 	int count=7;
 

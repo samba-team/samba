@@ -182,7 +182,7 @@ static void create_procs(int nprocs, int numops,
 	{
 		if (fork() == 0)
 		{
-			int mypid = getpid();
+			pid_t mypid = getpid();
 			sys_srandom(mypid ^ time(NULL));
 			fn(numops, cli_info, cli);
 			fflush(out_hnd);

@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 typedef struct _dptr_struct {
 	struct _dptr_struct *next, *prev;
 	int dnum;
-	int pid;
+	uint16 spid;
 	connection_struct *conn;
 	void *ptr;
 	BOOL expect_close;
@@ -314,15 +314,15 @@ void dptr_idlecnum(connection_struct *conn)
 }
 
 /****************************************************************************
- Close a dptr that matches a given path, only if it matches the pid also.
+ Close a dptr that matches a given path, only if it matches the spid also.
 ****************************************************************************/
 
-void dptr_closepath(char *path,int pid)
+void dptr_closepath(char *path,uint16 spid)
 {
   dptr_struct *dptr, *next;
   for(dptr = dirptrs; dptr; dptr = next) {
     next = dptr->next;
-    if (pid == dptr->pid && strequal(dptr->path,path))
+    if (spid == dptr->spid && strequal(dptr->path,path))
       dptr_close_internal(dptr);
   }
 }
@@ -394,7 +394,7 @@ static void dptr_old_close_oldest(void)
  me at Andrew's knee.... :-) :-). JRA.
 ****************************************************************************/
 
-int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,int pid)
+int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,uint16 spid)
 {
   dptr_struct *dptr;
 
@@ -463,7 +463,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
   dptr->ptr = conn->dirptr;
   string_set(&dptr->path,path);
   dptr->conn = conn;
-  dptr->pid = pid;
+  dptr->spid = spid;
   dptr->expect_close = expect_close;
   dptr->wcard = NULL; /* Only used in lanman2 searches */
   dptr->attr = 0; /* Only used in lanman2 searches */

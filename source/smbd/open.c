@@ -645,12 +645,12 @@ enum {AFAIL,AREAD,AWRITE,AALL};
 reproduce the share mode access table
 ********************************************************************/
 static int access_table(int new_deny,int old_deny,int old_mode,
-			int share_pid,char *fname)
+			pid_t share_pid,char *fname)
 {
   if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
   if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    int pid = getpid();
+    pid_t pid = getpid();
     if (old_deny == new_deny && share_pid == pid) 
 	return(AALL);    
 
@@ -739,7 +739,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
     {
       DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
-                share->pid,fname, fcbopen, *flags, access_allowed));
+                (int)share->pid,fname, fcbopen, *flags, access_allowed));
 
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadshare;
@@ -1216,7 +1216,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   int num_share_modes;
   SMB_STRUCT_STAT sbuf;
   int token;
-  int pid = getpid();
+  pid_t pid = getpid();
   SMB_DEV_T dev;
   SMB_INO_T inode;
 

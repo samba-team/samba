@@ -40,7 +40,7 @@ struct sync_record {
 	fstring server;
 	pstring fname;
 	struct in_addr ip;
-	int pid;
+	pid_t pid;
 };
 
 /* a linked list of current sync connections */

@@ -2329,7 +2329,7 @@ struct hostent *Get_Hostbyname(const char *name)
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(int pid)
+BOOL process_exists(pid_t pid)
 {
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }

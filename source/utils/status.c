@@ -39,8 +39,8 @@
 struct connect_record crec;
 
 struct session_record{
-  int pid;
-  int uid;
+  pid_t pid;
+  uid_t uid;
   char machine[31];
   time_t start;
   struct session_record *next;
@@ -51,7 +51,7 @@ extern FILE *dbf;
 extern pstring myhostname;
 
 static pstring Ucrit_username = "";                   /* added by OH */
-int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
+pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 int            Ucrit_MaxPid=0;                        /* added by OH */
 unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
@@ -78,7 +78,7 @@ static unsigned int Ucrit_checkUsername(char *username)
 	return 0;
 }
 
-static void Ucrit_addPid(int pid)
+static void Ucrit_addPid(pid_t pid)
 {
 	int i;
 	if ( !Ucrit_IsActive) return;
@@ -87,7 +87,7 @@ static void Ucrit_addPid(int pid)
 	Ucrit_pid[Ucrit_MaxPid++] = pid;
 }
 
-static unsigned int Ucrit_checkPid(int pid)
+static unsigned int Ucrit_checkPid(pid_t pid)
 {
 	int i;
 	if ( !Ucrit_IsActive) return 1;
@@ -108,7 +108,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	count++;
 
 	if (Ucrit_checkPid(e->pid)) {
-          printf("%-5d  ",e->pid);
+          printf("%-5d  ",(int)e->pid);
 	  switch ((e->share_mode>>4)&0xF) {
 	  case DENY_NONE: printf("DENY_NONE  "); break;
 	  case DENY_ALL:  printf("DENY_ALL   "); break;
@@ -148,7 +148,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   extern char *optarg;
   int verbose = 0, brief =0;
   BOOL processes_only=False;
-  int last_pid=0;
+  pid_t last_pid=(pid_t)0;
   struct session_record *ptr;
 
 
@@ -278,13 +278,13 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 		Ucrit_addPid(crec.pid);                                             /* added by OH */
 		if (processes_only) {
 		  if (last_pid != crec.pid)
-		    printf("%d\n",crec.pid);
+		    printf("%d\n",(int)crec.pid);
 		  last_pid = crec.pid; /* XXXX we can still get repeats, have to
 				    add a sort at some time */
 		}
 		else	  
 		  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
+			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),(int)crec.pid,
 			 crec.machine,crec.addr,
 			 asctime(LocalTime(&crec.start)));
 	      }
@@ -299,7 +299,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     ptr=srecs;
     while (ptr!=NULL)
     {
-      printf("%-8d%-10.10s%-30.30s%s",ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
+      printf("%-8d%-10.10s%-30.30s%s",(int)ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
     ptr=ptr->next;
     }
     printf("\n");

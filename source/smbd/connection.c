@@ -34,7 +34,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	struct connect_record crec;
 	pstring fname;
 	int fd;
-	int mypid = getpid();
+	pid_t mypid = getpid();
 	int i;
 
 	DEBUG(3,("Yielding connection to %s\n",name));

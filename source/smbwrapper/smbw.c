@@ -97,7 +97,7 @@ void smbw_init(void)
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", (int)getpid());
 	
 	p = smbw_getshared(line);
 	if (!p) {
@@ -1388,7 +1388,7 @@ int smbw_fork(void)
 		smbw_srv_close(srv);
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", (int)getpid());
 	smbw_setshared(line,smbw_cwd);
 
 	/* unblock the parent */
