@@ -27,6 +27,22 @@
 
 static struct winbindd_cli_state *client_list;
 
+/* Reload configuration */
+
+static BOOL reload_services_file(void)
+{
+        pstring servicesf = CONFIGFILE;
+	BOOL ret;
+
+	reopen_logs();
+	ret = lp_load(servicesf,False,False,True);
+
+	reopen_logs();
+	load_interfaces();
+
+	return(ret);
+}
+
 /* Print client information */
 
 static void do_print_client_info(void)
@@ -494,6 +510,7 @@ static void process_loop(int accept_sock)
 
         if (flush_cache) {
             do_flush_caches();
+            reload_services_file();
             flush_cache = False;
         }
 
