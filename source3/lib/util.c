@@ -1260,11 +1260,18 @@ int ChDir(char *path)
 ********************************************************************/
 static char *Dumb_GetWd(char *s)
 {
+  char *p;
 #ifdef USE_GETCWD
-    return ((char *)getcwd(s,sizeof(pstring)));
+  p = (char *)getcwd(s,sizeof(pstring));
 #else
-    return ((char *)getwd(s));
+  p = (char *)getwd(s));
 #endif
+  if(!p)
+    return NULL;
+
+  /* Ensure we always return in dos format. */
+  unix_to_dos(p,True);
+  return p;
 }
 
 

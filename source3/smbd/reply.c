@@ -1374,7 +1374,7 @@ int reply_readbraw(char *inbuf, char *outbuf)
 {
   int cnum,maxcount,mincount,fnum;
   int nread = 0;
-  int startpos;
+  uint32 startpos;
   char *header = outbuf;
   int ret=0;
   int fd;
@@ -1418,7 +1418,7 @@ int reply_readbraw(char *inbuf, char *outbuf)
 	  Files[fnum].size = size;
       }
 
-      nread = MIN(maxcount,size - startpos);	  
+      nread = MIN(maxcount,(int)(size - startpos));	  
     }
 
   if (nread < mincount)
@@ -1515,7 +1515,7 @@ int reply_read(char *inbuf,char *outbuf)
   int cnum,numtoread,fnum;
   int nread = 0;
   char *data;
-  int startpos;
+  uint32 startpos;
   int outsize = 0;
   
   cnum = SVAL(inbuf,smb_tid);
@@ -3081,7 +3081,7 @@ int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize)
   int nread = -1;
   int total_read;
   char *data;
-  int32 startpos;
+  uint32 startpos;
   int outsize, mincount, maxcount;
   int max_per_packet;
   int tcount;
@@ -3152,7 +3152,7 @@ int reply_writebmpx(char *inbuf,char *outbuf)
   int cnum,numtowrite,fnum;
   int nwritten = -1;
   int outsize = 0;
-  int32 startpos;
+  uint32 startpos;
   int tcount, write_through, smb_doff;
   char *data;
   

@@ -176,12 +176,14 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
   if (cli_open_sockets(SMB_PORT))
     {
       if (cli_send_login(NULL,NULL,True,True))
-	{
-	  add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
-	  add_info(d, work, local_type|(SV_TYPE_ALL&
-                      ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY)));
-	}
+      {
+	    add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
+        if(local)
+          add_info(d, work, SV_TYPE_LOCAL_LIST_ONLY);
+        else
+          add_info(d, work, SV_TYPE_ALL);
+      }
       
-      close_sockets();
-    }
+    close_sockets();
+  }
 }

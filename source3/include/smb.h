@@ -314,11 +314,11 @@ typedef struct
   int cnum;
   file_fd_struct *fd_ptr;
   int pos;
-  int size;
+  uint32 size;
   int mode;
   int uid;
   char *mmap_ptr;
-  int mmap_size;
+  uint32 mmap_size;
   write_bmpx_struct *wbmpx_ptr;
   struct timeval open_time;
   BOOL open;

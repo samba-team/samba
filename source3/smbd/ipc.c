@@ -991,6 +991,15 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   if (servertype == SV_TYPE_ALL) 
     servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
 
+  /* If someone sets SV_TYPE_LOCAL_LIST_ONLY but hasn't set
+     any other bit (they may just set this bit on it's own) they 
+     want all the locally seen servers. However this bit can be 
+     set on its own so set the requested servers to be 
+     ALL - DOMAIN_ENUM. */
+
+  if ((servertype & SV_TYPE_LOCAL_LIST_ONLY) && !(servertype & SV_TYPE_DOMAIN_ENUM)) 
+    servertype = SV_TYPE_ALL & ~(SV_TYPE_DOMAIN_ENUM);
+
   domain_request = ((servertype & SV_TYPE_DOMAIN_ENUM) != 0);
   local_request = ((servertype & SV_TYPE_LOCAL_LIST_ONLY) != 0);
 
