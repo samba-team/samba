@@ -28,8 +28,8 @@ PyObject *spoolss_error, *spoolss_werror;
  * Routines to convert from python hashes to Samba structures
  */
 
-PyObject *new_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				POLICY_HND *pol)
+PyObject *new_spoolss_policy_hnd_object(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, POLICY_HND *pol)
 {
 	spoolss_policy_hnd_object *o;
 

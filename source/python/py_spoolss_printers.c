@@ -75,7 +75,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	result = new_policy_hnd_object(cli, mem_ctx, &hnd);
+	result = new_spoolss_policy_hnd_object(cli, mem_ctx, &hnd);
 
  done:
 	SAFE_FREE(computer_name);
