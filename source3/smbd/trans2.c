@@ -192,7 +192,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
     
   fnum = find_free_file();
   if (fnum < 0)
@@ -581,7 +581,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,cnum);
+  unix_convert(directory,cnum,0);
   if(!check_name(directory,cnum)) {
     return(ERROR(ERRDOS,ERRbadpath));
   }
@@ -1024,7 +1024,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     info_level = SVAL(params,0);
     fname = &fname1[0];
     strcpy(fname,&params[6]);
-    unix_convert(fname,cnum);
+    unix_convert(fname,cnum,0);
     if (!check_name(fname,cnum) || sys_stat(fname,&sbuf)) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadpath));
@@ -1219,7 +1219,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     info_level = SVAL(params,0);    
     fname = fname1;
     strcpy(fname,&params[6]);
-    unix_convert(fname,cnum);
+    unix_convert(fname,cnum,0);
     if(!check_name(fname, cnum))
       return(ERROR(ERRDOS,ERRbadpath));
     
@@ -1353,7 +1353,7 @@ static int call_trans2mkdir(char *inbuf, char *outbuf, int length, int bufsize,
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-  unix_convert(directory,cnum);
+  unix_convert(directory,cnum,0);
   if (check_name(directory,cnum))
     ret = sys_mkdir(directory,unix_mode(cnum,aDIR));
   

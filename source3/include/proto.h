@@ -662,7 +662,7 @@ int reply_getattrE(char *inbuf,char *outbuf);
 mode_t unix_mode(int cnum,int dosmode);
 int dos_mode(int cnum,char *path,struct stat *sbuf);
 int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st);
-BOOL unix_convert(char *name,int cnum);
+BOOL unix_convert(char *name,int cnum,char *);
 int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
