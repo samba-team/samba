@@ -72,6 +72,7 @@ static WERROR gconf_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p,
 	GConfValue *value;
 	struct registry_value *newval;
 	char *fullpath = p->backend_data;
+	const char *tmp;
 	int i;
 	cur = entries = gconf_client_all_entries((GConfClient*)p->hive->backend_data, fullpath, NULL);
 
@@ -92,8 +93,8 @@ static WERROR gconf_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p,
 
 		case GCONF_VALUE_STRING:
 			newval->data_type = REG_SZ;
-			newval->data_blk = talloc_strdup(mem_ctx, gconf_value_get_string(value));
-			newval->data_len = strlen(newval->data_blk);
+			tmp = gconf_value_get_string(value);
+			newval->data_len = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, tmp, strlen(tmp), &(newval->data_blk));
 			break;
 
 		case GCONF_VALUE_INT:
@@ -149,7 +150,7 @@ static WERROR gconf_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p
 	return WERR_OK;
 }
 
-static WERROR gconf_set_value(struct registry_key *key, const char *valname, int type, void *data, int len)
+static WERROR gconf_set_value(struct registry_key *key, const char *valname, uint32 type, void *data, int len)
 {
 	GError *error = NULL;
 	char *valpath;
