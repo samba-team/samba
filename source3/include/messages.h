@@ -22,6 +22,11 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
-enum message_type {MSG_DEBUG};
+/* general messages */
+#define MSG_DEBUG 1
+#define MSG_PING  2
+
+/* nmbd messages */
+#define MSG_FORCE_ELECTION 1001
 
 #endif

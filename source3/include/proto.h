@@ -59,7 +59,7 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
-void debug_message(enum message_type msg_type, pid_t src, void *buf, size_t len);
+void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
 void reopen_logs( void );
@@ -153,10 +153,10 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 /*The following definitions come from  lib/messages.c  */
 
 BOOL message_init(void);
-BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t len);
+BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len);
 void message_dispatch(void);
-void message_register(enum message_type msg_type, 
-		      void (*fn)(enum message_type msg_type, pid_t pid, void *buf, size_t len));
+void message_register(int msg_type, 
+		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -997,6 +997,7 @@ void check_master_browser_exists(time_t t);
 void run_elections(time_t t);
 void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf);
 BOOL check_elections(void);
+void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len);
 
 /*The following definitions come from  nmbd/nmbd_incomingdgrams.c  */
 

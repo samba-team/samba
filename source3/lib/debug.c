@@ -122,7 +122,7 @@ static size_t     format_pos     = 0;
 /****************************************************************************
 receive a "set debug level" message
 ****************************************************************************/
-void debug_message(enum message_type msg_type, pid_t src, void *buf, size_t len)
+void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	int level;
 	memcpy(&level, buf, sizeof(int));

@@ -56,7 +56,7 @@
 	pid = atoi(argv[1]);
 	level = atoi(argv[2]);
 
-	debug_message_send(pid, level);
+	message_send_pid(pid, MSG_FORCE_ELECTION, NULL, 0);
 
 	return (0);
 }
