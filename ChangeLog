@@ -1,3 +1,7 @@
+2002-04-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/verify_init.c: fix typo in error string
+
 2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* acconfig.h: remove some stuff that is defined elsewhere
@@ -102,6 +106,12 @@
 	constify local variable
 
 	* lib/krb5/addr_families.c (ipv4_sockaddr2port): constify
+
+2002-04-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/verify_krb5_conf.c: add some log checking
+	
+	* lib/krb5/log.c (krb5_addlog_dest): reorganise syslog parsing
 
 2002-04-16  Johan Danielsson  <joda@pdc.kth.se>
 
